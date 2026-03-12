@@ -1,0 +1,236 @@
+// Select
+
+.p-dropdown {
+  @apply w-full min-w-full h-8 flex items-center bg-surface-base-content px-3 border-1 border-border-primary;
+  @apply rounded-lg text-sm text-text-primary transition-none;
+
+  &:hover,
+  &:focus,
+  &.p-focus,
+  &.p-highlight {
+    @apply outline-none shadow-none  border-1 border-border-secondary;
+    box-shadow: none;
+  }
+
+  .p-dropdown-label {
+    @apply p-0 font-geist-mono text-sm mr-1 text-text-primary;
+  }
+
+  &.p-dropdown-clearable .p-dropdown-label {
+    @apply pr-4;
+  }
+
+  .p-placeholder {
+    @apply text-text-specific-input-placeholder !important;
+  }
+
+  .p-dropdown-trigger {
+    @apply w-[18px];
+  }
+
+  .p-dropdown-clear-icon {
+    @apply right-[32px] top-[54%] scale-90;
+  }
+
+  .p-dropdown-trigger svg {
+    @apply transition duration-75;
+  }
+}
+
+.p-dropdown.p-overlay-open .p-dropdown-trigger svg {
+  @apply -rotate-180;
+}
+
+.p-dropdown-panel {
+  @apply p-0 rounded-lg border !mt-1.5 bg-surface-base-secondary border-border-specific-panel-outline;
+
+  .p-dropdown-items-wrapper {
+    @apply rounded-b-xl rounded-t-none p-0;
+
+    .p-dropdown-items {
+      @apply p-2;
+    }
+
+    .p-dropdown-item {
+      @apply py-1.5 px-2.5 !bg-transparent text-sm rounded-md transition hover:bg-surface-base-secondary text-text-primary;
+
+      &.p-focus {
+        @apply bg-surface-specific-dropdown-hover text-text-accent !important;
+      }
+
+      .p-dropdown-item-label {
+        @apply break-all;
+      }
+    }
+  }
+}
+
+.select-wrapper {
+  @apply flex flex-col gap-[6px] text-neutral-750 w-full;
+
+  .select-label {
+    @apply text-xs text-text-quaternary;
+  }
+}
+
+// Multiselect
+
+.p-multiselect-single {
+  .p-checkbox {
+    @apply hidden #{!important};
+  }
+}
+
+.p-multiselect {
+  @apply py-0 border border-border-primary rounded-lg bg-surface-base-content min-w-full max-w-full;
+  @apply hover:border-border-secondary h-[34px];
+
+  .p-multiselect-label-container {
+    @apply flex items-center flex-wrap;
+  }
+
+  .p-multiselect-label {
+    @apply text-sm text-text-primary truncate pl-3 pr-1 py-0;
+
+    &.p-placeholder {
+      @apply text-text-specific-input-placeholder;
+    }
+
+    .p-multiselect-token {
+      @apply py-0.5 pl-2 pr-1 text-xs -ml-1 bg-surface-base-secondary border border-border-specific-panel-outline rounded-lg;
+
+      svg {
+        @apply w-3 opacity-50;
+      }
+    }
+  }
+
+  .p-multiselect-trigger {
+    @apply w-[18px] mr-2;
+  }
+
+  .p-multiselect-filter-container {
+    @apply m-0;
+  }
+}
+
+.p-multiselect-panel {
+  @apply border border-border-structural rounded-lg !mt-1.5;
+  @apply bg-surface-base-secondary text-sm text-text-primary;
+
+  .p-multiselect-header {
+    @apply border-none pt-2 pb-0 px-0 border-b border-border-primary rounded-none;
+
+    .p-multiselect-filter {
+      @apply py-1.5 border mx-0 border-border-primary font-geist;
+      @apply rounded-lg bg-surface-base-content text-sm text-text-primary;
+      @apply focus:outline-none focus:border-border-secondary;
+
+      ~ svg {
+        @apply text-text-quaternary;
+      }
+    }
+
+    .p-multiselect-close {
+      @apply min-w-8 hidden !important;
+    }
+  }
+
+  .p-multiselect-items {
+    @apply px-1 py-2;
+  }
+
+  .p-multiselect-item {
+    @apply bg-transparent py-0 text-text-primary truncate;
+
+    > span {
+      @apply flex w-full py-1.5 px-2 text-sm rounded-md transition items-center gap-x-3;
+    }
+
+    &.p-focus > span {
+      @apply px-2 bg-surface-specific-dropdown-hover text-text-accent;
+    }
+
+    &:hover > span {
+      @apply hover:bg-surface-specific-dropdown-hover hover:text-text-accent;
+    }
+
+    .p-checkbox {
+      @apply w-fit h-fit flex items-center justify-center;
+    }
+
+    .p-checkbox-box {
+      @apply w-4 h-4 rounded-[4px] border-2 border-text-primary bg-transparent transition-colors;
+    }
+
+    .p-checkbox-icon {
+      @apply text-text-primary w-2.5;
+    }
+
+    .p-checkbox.p-highlight {
+      .p-checkbox-box {
+        @apply bg-border-accent border-border-accent text-surface-base-content !important;
+      }
+
+      .p-checkbox-icon {
+        @apply text-surface-base-content;
+      }
+    }
+
+    &:hover .p-checkbox-box {
+      @apply border-border-accent;
+    }
+  }
+
+  .p-multiselect-empty-message {
+    @apply text-center text-text-quaternary py-2;
+  }
+}
+
+.multiselect-clear {
+  @apply absolute top-[19px] right-[30px] cursor-pointer;
+}
+
+// Sidebar Toggle
+
+.bg-curve {
+  clip-path: path("M 0 0 C 0 41.76 21.6 41.76 21.6 63.36 C 21.6 84.96 0 84.96 0 122.4");
+
+  svg path {
+    @apply fill-text-primary;
+  }
+}
+
+// Checkbox
+.p-checkbox {
+  @apply w-fit h-fit;
+
+  + label {
+    @apply transition;
+  }
+
+  .p-checkbox-box {
+    @apply w-4 h-4 rounded-[4px] bg-surface-base-content border-text-primary bg-transparent;
+  }
+
+  .p-checkbox-icon {
+    @apply text-text-primary w-2.5;
+  }
+
+  &.p-highlight {
+    .p-checkbox-box {
+      @apply bg-border-accent border-border-accent text-surface-base-content !important;
+    }
+  }
+
+  &.p-highlight + label {
+    @apply text-text-primary hover:text-border-accent;
+  }
+}
+
+// Autocomplete
+.p-autocomplete-panel {
+  .p-autocomplete-items > li.p-highlight {
+    @apply bg-surface-specific-dropdown-hover text-text-accent;
+  }
+}

@@ -1,0 +1,48 @@
+{{- if .Values.ingress.enabled -}}
+{{- $fullName := include "codemie-ui.fullname" . -}}
+{{- $svcPort := .Values.service.port -}}
+{{- $ingressApiIsStable := eq (include "codemie-ui.ingress.isStable" .) "true" -}}
+{{- $ingressSupportsIngressClassName := eq (include "codemie-ui.ingress.supportsIngressClassName" .) "true" -}}
+{{- $ingressSupportsPathType := eq (include "codemie-ui.ingress.supportsPathType" .) "true" -}}
+{{- $ingressPathType := .Values.ingress.pathType -}}
+kind: Ingress
+apiVersion: {{ include "codemie-ui.ingress.apiVersion" . }}
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "codemie-ui.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and $ingressSupportsIngressClassName .Values.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+{{ toYaml .Values.ingress.tls | indent 4 }}
+  {{- end }}
+  rules:
+    {{- if .Values.ingress.host }}
+    - host: {{ .Values.ingress.host }}
+    {{- else }}
+    - host: {{ $fullName }}-{{ .Release.Namespace}}.{{ .Values.ingress.dnsWildcard}}
+    {{- end }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.path }}
+            {{- if $ingressSupportsPathType }}
+            pathType: {{ $ingressPathType }}
+            {{- end }}
+            backend:
+              {{- if $ingressApiIsStable }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
+              {{- else }}
+              serviceName: {{ $fullName }}
+              servicePort: {{ $svcPort }}
+              {{- end }}
+  {{- end }}

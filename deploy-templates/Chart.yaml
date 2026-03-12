@@ -1,0 +1,12 @@
+apiVersion: v2
+name: codemie-ui
+description: A Helm chart for AI/Run UI
+type: application
+version: 0.1.0
+appVersion: 0.1.0
+home: https://codemie.lab.epam.com
+sources:
+  - https://gitbud.epam.com/epm-cdme/codemie-ui.git
+maintainers:
+  - name: AI/Run
+    email: SpecialEPM-CDMEDevelopmentTeam@epam.com

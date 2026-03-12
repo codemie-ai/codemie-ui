@@ -1,0 +1,22 @@
+<svg width="156" height="103" viewBox="0 0 156 103" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0.5" y="0.5" width="155" height="102" rx="8.5" fill="#302F2F" stroke="white"/>
+    <path d="M1 9C1 4.58172 4.58172 1 9 1H14V102H9C4.58172 102 1 98.4183 1 94V9Z" fill="#111111"/>
+    <path d="M14 1H39V102H14V1Z" fill="#202020"/>
+    <circle cx="93.5" cy="32.5" r="7.5" fill="#5D5D5D"/>
+    <rect x="52" y="79" width="86" height="18" rx="2" fill="#202020"/>
+    <rect x="52" y="47" width="86" height="7" rx="2" fill="#202020"/>
+    <rect x="52" y="56" width="58" height="7" rx="2" fill="#202020"/>
+    <rect x="19" y="7" width="13" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="19" y="18" width="13" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="19" y="25" width="13" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="19" y="38" width="13" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="19" y="45" width="13" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="19" y="52" width="13" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="19" y="58" width="13" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="5" y="15" width="4" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="5" y="23" width="4" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="5" y="31" width="4" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="5" y="39" width="4" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="5" y="88" width="4" height="4" rx="2" fill="#3D3D3D"/>
+    <rect x="5" y="81" width="4" height="4" rx="2" fill="#3D3D3D"/>
+</svg>

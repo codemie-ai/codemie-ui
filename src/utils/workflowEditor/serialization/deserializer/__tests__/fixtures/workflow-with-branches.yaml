@@ -1,0 +1,72 @@
+assistants:
+  - id: analyzer
+    model: gpt-4o-2024-11-20
+    system_prompt: |
+      You are a code analyzer. Review codebase and determine the programming language.
+    temperature: 0.2
+  - id: documentation
+    model: gpt-4o-2024-11-20
+    system_prompt: |
+      You are a technical writer. Generate concise documentation for code snippets in any language.
+    temperature: 0.4
+  - id: validator
+    model: gpt-4o-2024-11-20
+    system_prompt: |
+      You are a code validator.
+    temperature: 0.1
+states:
+  - id: check_quality
+    assistant_id: validator
+    task: |
+      Check if the code quality is acceptable.
+    output_schema: |
+      {
+        "is_quality_good": "Boolean"
+      }
+    next:
+      condition:
+        then: analyzer
+        otherwise: end
+  - id: analyzer
+    assistant_id: analyzer
+    task: |
+      Analyze the provided code base and identify its primary programming language (such as Java, Python, etc.).
+    output_schema: |
+      {
+        "language": "String representing the programming language, e.g. Java, Python"
+      }
+    next:
+      switch:
+        cases:
+          - condition: language == 'Java'
+            state_id: documentation_java
+          - condition: language == 'Python'
+            state_id: documentation_python
+        default: unknown_language
+  - id: documentation_java
+    assistant_id: documentation
+    task: |
+      Provide documentation for the Java codebase including usage examples and API highlights.
+    next:
+      state_id: end
+  - id: documentation_python
+    assistant_id: documentation
+    task: |
+      Provide documentation for the Python codebase including usage examples and API highlights.
+    next:
+      state_id: end
+  - id: unknown_language
+    assistant_id: documentation
+    task: |
+      Provide generic documentation for the detected codebase since its language is not Java or Python.
+    next:
+      state_id: end
+  - id: orphan_test
+    assistant_id: documentation
+    task: |
+      Provide generic documentation for the detected codebase since its language is not Java or Python.
+    next:
+      state_id: end
+retry_policy: {}
+tokens_limit_before_summarization: 3123
+enable_summarization_node: true

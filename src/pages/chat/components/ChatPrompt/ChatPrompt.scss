@@ -1,0 +1,85 @@
+// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+.prompt-shadow {
+  position: absolute;
+  height: 1rem;
+  left: 0;
+  right: 0;
+  top: 0.5rem;
+  box-shadow: 0px -10px 20px 20px var(--colors-surface-base-primary);
+}
+
+.prompt-border-gradient {
+  background: linear-gradient(
+    90deg,
+    theme("colors.border.specific.chat.gradient-from"),
+    theme("colors.border.specific.chat.gradient-from"),
+    theme("colors.transparent"),
+    theme("colors.border.specific.accent-chat"),
+    theme("colors.border.specific.chat.gradient-from"),
+    theme("colors.border.specific.accent-chat")
+  );
+  background-size: 500% 100%;
+  transition: background-position 0.15s ease-in-out;
+  background-position-x: 25%;
+
+  &:hover {
+    background-position-x: 15%;
+  }
+
+  &-focused {
+    background-position-x: 0%;
+
+    &:hover {
+      background-position-x: 0%;
+    }
+  }
+
+  &-in-progress {
+    background-position-x: 74%;
+    animation: prompt-border-gradient-in-progress 3s ease-in-out infinite;
+  }
+}
+
+@keyframes prompt-border-gradient-in-progress {
+  0% {
+    background-position-x: 74%;
+  }
+
+  50% {
+    background-position-x: 99%;
+  }
+
+  100% {
+    background-position-x: 74%;
+  }
+}
+
+.pulse-ring {
+  content: "";
+  animation: pulse infinite 1.5s;
+}
+
+@keyframes pulse {
+  0% {
+    -webkit-transform: scale(1, 1);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: scale(1.3, 1.3);
+    opacity: 0;
+  }
+}

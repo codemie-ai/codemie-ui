@@ -1,0 +1,24 @@
+assistants:
+  - id: processor
+    model: gpt-4o-2024-11-20
+    system_prompt: |
+      You are a data processor.
+    temperature: 0.3
+states:
+  - id: fetch_items
+    assistant_id: processor
+    task: |
+      Fetch a list of items to process.
+    output_schema: |
+      {
+        "items": "Array of items"
+      }
+    next:
+      state_id: process_item
+      iter_key: items
+  - id: process_item
+    assistant_id: processor
+    task: |
+      Process a single item.
+    next:
+      state_id: end

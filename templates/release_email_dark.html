@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>EPAM AI/Run CodeMie Updates</title>
+    <style>
+      body {
+        background-color: #1c1c1c;
+        margin: 0;
+        padding: 0 20px;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        line-height: 22px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        max-width: 650px;
+        margin: 0 auto;
+        background-color: #1c1c1c;
+      }
+
+      table tr {
+        padding: 0 10px;
+      }
+
+      /* Better styles for adequate email clients */
+      .footer-link {
+        display: flex;
+        gap: 6px;
+        text-align: left;
+      }
+
+      @media (max-width: 650px) {
+        .footer-link {
+          flex-direction: column;
+          padding: 10px 0;
+          text-align: center;
+        }
+
+        .footer-link img {
+          margin: 0 auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table
+      align="center"
+      width="650"
+      class="container"
+      style="
+        background: url('https://github.com/epam-gen-ai-run/ai-run-install/blob/main/docs/assets/ai/email_bg.png?raw=true')
+          no-repeat top right;
+        border-radius: 8px;
+      "
+    >
+      <tr>
+        <td colspan="5">
+          <img
+            src="https://github.com/epam-gen-ai-run/ai-run-install/blob/main/docs/assets/ai/email_logo.png?raw=true"
+            alt="logo"
+            width="156"
+            height="45"
+            style="padding-top: 50px"
+          />
+        </td>
+      </tr>
+
+      <tr>
+        <td
+          colspan="5"
+          style="padding-top: 45px; font-size: 32px; line-height: 34px; font-weight: bold"
+        >
+          EPAM AI/Run CodeMie Updates
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="5" style="padding-top: 42px">
+          <b> Dear EPAM AI/Run CodeMie users, </b>
+          <br /><br />
+          We're excited to share the latest advancements in EPAM AI/Run CodeMie version 1.4.0! Our
+          goal is to constantly innovate and improve your experience. Here's what's new:
+        </td>
+      </tr>
+
+      <tr>
+        <td
+          colspan="5"
+          style="font-size: 16px; font-weight: bold; padding-top: 42px; padding-bottom: 22px"
+        >
+          ⚡️ New Features and Enhancements
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="5" style="background-color: #3a224b; padding: 24px; border-radius: 8px">
+          <b style="font-size: 16px">LangGraph Supervisor Agent Integration</b>
+          <br /><br />
+          Introduced the LangGraph Supervisor agent to manage workflows, enhancing efficiency and
+          retiring the older autonomous workflow system in CodeMie. This improvement optimizes
+          workflow management and resource allocation.
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="5" style="font-size: 16px; font-weight: bold; padding-top: 42px">🪲 Fixes</td>
+      </tr>
+
+      <tr>
+        <td colspan="5" style="padding-bottom: 24px; font-size: 12px; line-height: 18px">
+          <ul>
+            <li>
+              Search Error Handling Improvements: Resolved an issue where searches with special
+              characters (e.g., “C#”) triggered invalid filter errors in the Marketplace,
+              significantly enhancing search reliability.
+            </li>
+            <br />
+            <li>
+              File-Type Detection for PPTX: Fixed MIME type assignment errors for PPTX files under
+              the FILE_STORAGE_TYPE=filesystem setting, ensuring seamless file processing
+            </li>
+            <br />
+            <li>
+              Workflow and Operation Cancellation: Addressed issues where workflows or chat
+              operations ran indefinitely post-cancellation, aligning the behavior with user
+              expectations
+            </li>
+            <br />
+            <li>
+              ServiceNow Integration Fixes: Fixed an issue where unsupported arguments in API calls
+              caused ServiceNow integration test failures, enabling smoother integration processes.
+            </li>
+          </ul>
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="5" style="background-color: #3a224b; padding: 24px; border-radius: 8px">
+          <b style="font-size: 16px"> 🎁 Additional Improvements</b>
+          <br /><br />
+          Made in hotfix Prod 1.3.1 include fixes addressing MIME type error messages during file
+          uploads in chats, resolving iteration state failures with the Claude 3.7 model in
+          workflows, and enhancing dynamic template processing with centralized argument handling
+          for workflow nodes. These updates boost reliability, streamline workflows, and improve
+          user interaction during development.
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="5" style="text-align: center; padding: 20px 0">
+          For further insights into this update, visit our 
+          <a href="https://codemie.lab.epam.com/#/release-notes" class="link" style="color: #fff"
+            >Release Notes</a
+          >.
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="5" style="background-color: #464e77; padding: 24px; border-radius: 8px">
+          <b style="font-size: 16px">
+            👉️ Interested in joining the CodeMie project as a contributor?
+          </b>
+          <br /><br />
+          Our updated <a
+            style="color: #fff"
+            href="https://codemie.lab.epam.com/#/assistants/codemie-onboarding-for-developers/start"
+            >CodeMie Contributors Assistant </a
+          > streamlines the process for you. With automated scripts, credential setup, and
+          step-by-step guidance, you’ll have all the resources you need to contribute quickly and
+          easily.
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding: 14px 0"></td>
+      </tr>
+
+      <tr style="background-color: #2e485e; padding: 20px 0; table-layout: fixed">
+        <td
+          class="footer-title"
+          style="
+            width: 20%;
+            padding-top: 2px;
+            padding-left: 20px;
+            padding-bottom: 2px;
+            border-radius: 8px 0 0 8px;
+          "
+        >
+          <h3>
+            Stay <br />
+            Connected
+          </h3>
+        </td>
+
+        <td align="center">
+          <a
+            class="footer-link"
+            href="https://forms.office.com/Pages/ResponsePage.aspx?id=0HIbtJ9OJkyKaflJ82fJHf973Np-tJVBqnGXAVBQ0FVUMEdNQ05OVUVXWkQzUlNMRDlZWU9CV0ZBRy4u"
+          >
+            <img
+              src="https://github.com/epam-gen-ai-run/ai-run-install/blob/main/docs/assets/ai/email_support.png?raw=true"
+              alt="survey_icon"
+              width="32"
+              height="32"
+              style="display: block"
+            />
+            <div
+              style="color: #fff; font-size: 12px; line-height: 16px; text-decoration: underline"
+            >
+              Complete <br />
+              Survey
+            </div>
+          </a>
+        </td>
+
+        <td align="center">
+          <a class="footer-link" href="https://videoportal.epam.com/channel/z1Je1k9Jv5/videos">
+            <img
+              src="https://github.com/epam-gen-ai-run/ai-run-install/blob/main/docs/assets/ai/email_subscribe.png?raw=true"
+              alt="subscribe_icon"
+              width="32"
+              height="32"
+              style="display: block"
+            />
+            <div
+              style="color: #fff; font-size: 12px; line-height: 16px; text-decoration: underline"
+            >
+              Subscribe to <br />Channel
+            </div>
+          </a>
+        </td>
+
+        <td align="center">
+          <a class="footer-link" href="https://leap.epam.com/news/subscriptions">
+            <img
+              src="https://github.com/epam-gen-ai-run/ai-run-install/blob/main/docs/assets/ai/email_leap.png?raw=true"
+              alt="leap_icon"
+              width="32"
+              height="32"
+              style="display: block"
+            />
+            <div
+              style="color: #fff; font-size: 12px; line-height: 16px; text-decoration: underline"
+            >
+              Leap Platform <br />News
+            </div>
+          </a>
+        </td>
+
+        <td align="center" style="padding-right: 10px; border-radius: 0 8px 8px 0">
+          <a class="footer-link" href="https://epa.ms/codemie-support">
+            <img
+              src="https://github.com/epam-gen-ai-run/ai-run-install/blob/main/docs/assets/ai/email_support.png?raw=true"
+              alt="support_icon"
+              width="32"
+              height="32"
+              style="display: block"
+            />
+            <div
+              style="color: #fff; font-size: 12px; line-height: 16px; text-decoration: underline"
+            >
+              Contact <br />
+              Support
+            </div>
+          </a>
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="5" style="text-align: center; padding-top: 40px">
+          <img
+            src="https://github.com/epam-gen-ai-run/ai-run-install/blob/main/docs/assets/ai/email_logo.png?raw=true"
+            alt="logo"
+            width="100"
+            height="28"
+          />
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="5" style="padding-top: 14px; text-align: center">
+          Sincerely,<br />
+          EPAM AI/Run CodeMie Team
+        </td>
+      </tr>
+
+      <tr>
+        <td
+          colspan="5"
+          style="
+            padding-top: 25px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            padding-bottom: 80px;
+          "
+        >
+          This letter was entirely composed and sent by an AI assistant.
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

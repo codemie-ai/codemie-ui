@@ -1,0 +1,31 @@
+# Copyright 2026 EPAM Systems, Inc. ("EPAM")
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+FROM node:20.19.6-alpine3.23
+
+# Specify API URL for compiled dist
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
+ARG PORT
+ENV PORT=${PORT}
+
+WORKDIR /app
+COPY .. .
+
+RUN npm install
+
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+CMD  ["sh", "-c", "npm run dev"]

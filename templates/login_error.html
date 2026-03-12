@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" charset="utf-8">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>403 Forbidden</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Geist Mono', monospace;
+      }
+
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: #1a1a1a;
+        color: white;
+      }
+
+      .gradient {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+      }
+
+      .header {
+        width: fit-content;
+        display: flex;
+        align-items: center;
+        background: #f0524f1a;
+        gap: 10px;
+        border-radius: 100px;
+        padding: 6px 14px;
+        border: 1px solid #f0524f;
+        color: #f0524f;
+      }
+
+      .header__icon {
+        width: 24px;
+      }
+
+      .header__title {
+        font-size: 24px;
+        font-weight: 500;
+      }
+
+      section {
+        max-width: 600px;
+        z-index: 10;
+      }
+
+      .subtitle {
+        margin: 24px 0 12px 0;
+        font-weight: 500;
+        font-size: 18px;
+      }
+
+      .description {
+        font-size: 14px;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body class="has-background-light">
+    <img
+      src="https://github.com/epam-gen-ai-run/ai-run-install/blob/main/docs/assets/ai/login_gradient.png?raw=true"
+      class="gradient"
+      alt=""
+    />
+    <section class="section">
+      <div class="header">
+        <img
+          class="header__icon"
+          src="https://raw.githubusercontent.com/epam-gen-ai-run/ai-run-install/b26244bd14683481cbb99344818c4fe56380347d/docs/assets/ai/login_error.svg"
+          alt=""
+        />
+        <h1 class="header__title">Access Denied</h1>
+      </div>
+
+      <div class="block">
+        <p class="subtitle">More Info</p>
+        <p class="description">
+          We're sorry, but it seems you don't have the necessary permissions to access this
+          resource. If you believe this is an error, please contact our support team for assistance.
+        </p>
+      </div>
+    </section>
+  </body>
+</html>

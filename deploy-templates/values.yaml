@@ -1,0 +1,138 @@
+# Default values for codemie-ui.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- The number of AI/Run UI pods to run.
+replicaCount: 1
+
+## AI/Run UI image
+image:
+  # -- Repository to use for the AI/Run UI.
+  repository: ""
+  # -- Image pull policy for the AI/Run UI.
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# -- AI/Run UI API URL
+viteApiUrl: https://codemie.%%DOMAIN%%/code-assistant-api
+# -- AI/Run UI ENV. Set to local for dev development
+viteEnv: prod
+# -- Enable analytics feature in AI/Run UI
+viteEnableAnalytics: false
+
+# -- Secrets with credentials to pull images from a private registry.
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: false
+  # -- Annotations applied to created service account
+  annotations: {}
+  # -- Service account name for AI/Run UI pod
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -- Annotations to be added to AI/Run UI pods.
+podAnnotations: {}
+
+# -- Labels to be added to AI/Run UI pods.
+podLabels: {}
+
+# -- Toggle and define pod-level security context.
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# -- AI/Run UI container-level security context.
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  # -- AI/Run UI service type
+  type: ClusterIP
+  # -- AI/Run UI service port
+  port: 8080
+  # -- AI/Run UI service annotations
+  annotations: {}
+
+# AI/Run UI ingress configuration
+ingress:
+  # -- Enable an ingress resource for the AI/Run UI
+  enabled: true
+  # -- Defines which ingress controller will implement the resource
+  ingressClassName: nginx
+  # -- Additional ingress annotations
+  annotations:
+    nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-Access-Token,Authorization
+    nginx.ingress.kubernetes.io/auth-signin: https://$host/oauth2/start?rd=$escaped_request_uri
+    nginx.ingress.kubernetes.io/auth-url: http://oauth2-proxy.oauth2-proxy.svc.cluster.local:80/oauth2/auth
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "64k"
+  # -- Ingress path type. One of `Exact`, `Prefix` or `ImplementationSpecific`
+  pathType: ImplementationSpecific
+  # -- AI/Run UI hostname
+  host: codemie.%%DOMAIN%%
+  # -- The path to AI/Run UI
+  path: /(.*)
+  # -- AI/Run UI ingress TLS configuration
+  tls: []
+
+## Probes for the AI/Run UI
+## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /healthcheck
+    port: 8080
+  # -- Minimum consecutive failures for the probe to be considered failed after having succeeded
+  failureThreshold: 3
+  # -- Number of seconds after the container has started before probe is initiated
+  initialDelaySeconds: 10
+   # -- How often (in seconds) to perform the probe
+  periodSeconds: 15
+  # -- Minimum consecutive successes for the probe to be considered successful after having failed
+  successThreshold: 1
+  # -- Number of seconds after which the probe times out
+  timeoutSeconds: 1
+
+readinessProbe:
+  httpGet:
+    path: /healthcheck
+    port: 8080
+  # -- Minimum consecutive failures for the probe to be considered failed after having succeeded
+  failureThreshold: 3
+  # -- Number of seconds after the container has started before probe is initiated
+  initialDelaySeconds: 10
+   # -- How often (in seconds) to perform the probe
+  periodSeconds: 15
+  # -- Minimum consecutive successes for the probe to be considered successful after having failed
+  successThreshold: 1
+  # -- Number of seconds after which the probe times out
+  timeoutSeconds: 1
+
+# -- Resource limits and requests for the AI/Run UI pods.
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# -- Priority class for the pod
+priorityClassName: ""
+
+# -- Node selector to be added to the AI/Run UI pods.
+nodeSelector: {}
+
+# -- Node selector to be added to the AI/Run UI pods.
+tolerations: []
+
+# -- Assign affinity rules to the deployment.
+affinity: {}

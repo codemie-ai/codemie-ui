@@ -1,0 +1,343 @@
+@use "~bootstrap-icons/font/bootstrap-icons.min.css";
+@use "colors.scss";
+@use "primevue_custom.scss";
+@use "toastify.scss";
+@import "react-datepicker/dist/react-datepicker.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/src/assets/fonts/Geist-VariableFont_wght.ttf") format("woff2");
+}
+
+@font-face {
+  font-family: "GeistMono";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/src/assets/fonts/GeistMono-VariableFont_wght.ttf") format("woff2");
+}
+
+html,
+body,
+#app {
+  @apply flex flex-col h-screen max-h-screen;
+
+  //Hides scrollbars in WebKit-based browsers for all elements except textareas
+  :not(textarea):not(.show-scroll)::-webkit-scrollbar {
+    display: none;
+  }
+
+  .show-scroll {
+    scrollbar-color: theme("colors.border.structural") transparent;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: theme("colors.border.structural");
+      border-radius: 8px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+  }
+}
+
+.show-scroll {
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @apply bg-border-structural rounded-full;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-specific-interactive-outline;
+  }
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: theme("colors.border.structural") transparent;
+}
+
+// Generic styles to override default HTML
+body {
+  font-family: "GeistMono", monospace;
+  font-optical-sizing: auto;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  @apply bg-surface-base-primary text-text-primary;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+
+  li {
+    list-style: none;
+  }
+}
+
+a {
+  @apply no-underline text-inherit;
+
+  &:hover {
+    @apply underline;
+  }
+}
+
+th {
+  font-weight: 600;
+}
+
+// Override webkit autofill input
+input:-internal-autofill-selected,
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: theme("colors.text.primary") !important;
+  transition: background-color 0s 600000s, color 0s 600000s !important;
+}
+
+input[type="radio"] {
+  accent-color: colors.$gray-700;
+  width: 24px;
+  height: 24px;
+  background-color: colors.$white;
+  border: 2px solid colors.$black;
+  margin-top: 0px;
+  margin-right: 10px;
+
+  &:checked {
+    background-color: colors.$white;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3E%3Ccircle r='2.3' fill='%23000'/%3E%3C/svg%3E");
+    border: 2px solid colors.$black;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: none;
+    border: 2px solid colors.$black;
+  }
+}
+
+.btn {
+  min-height: 48px;
+  border-radius: 24px;
+  border: 2px solid colors.$black;
+  padding: 0 30px;
+  background-color: colors.$black;
+  color: colors.$white;
+  line-height: 48px;
+
+  &:hover {
+    border: 2px solid colors.$black;
+    background-color: transparent;
+    color: colors.$black;
+    text-decoration: none;
+  }
+}
+
+.btn-secondary {
+  background: transparent;
+  color: colors.$black;
+
+  &:hover {
+    background: transparent;
+    color: colors.$black;
+  }
+}
+
+.btn-sm {
+  height: 38px;
+  min-height: 38px;
+  line-height: 36px;
+  font-size: 12px;
+}
+
+textarea.form-control,
+input.form-control {
+  &:disabled {
+    background-color: transparent;
+    color: colors.$gray-700;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: none;
+  }
+}
+
+// Increate bootstrap icons font weight
+i.bi {
+  -webkit-text-stroke: 0.5px colors.$black;
+}
+
+// Animate Vue transitions
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+}
+
+// Content container
+.page-container {
+  @apply overflow-y-auto bg-surface-base-primary text-text-primary w-full flex flex-col mt-[70px] p-0 px-[5px];
+
+  .page-container-inner {
+    @apply min-w-[800px] max-w-[1000px] mx-auto px-5;
+  }
+}
+
+.popup {
+  &.assistant-details-popup {
+    width: 75%;
+    max-width: 1000px;
+  }
+  &.workflow-details-popup {
+    width: 75%;
+    max-width: 1100px;
+  }
+  &.workflow-execution-content-popup {
+    width: 75%;
+    max-height: 100%;
+  }
+  &.workflow-execution-state-details-popup {
+    width: 75%;
+    max-height: 100%;
+  }
+}
+
+// PrimeVue Tooltip
+.p-tooltip {
+  @apply shadow-none p-2 min-w-[50px] max-w-[700px] rounded-lg;
+
+  .p-tooltip-arrow {
+    @apply hidden;
+  }
+
+  .p-tooltip-text {
+    @apply px-3.5 py-1 bg-surface-base-secondary border-border-specific-panel-outline border text-text-primary;
+    @apply text-sm font-medium rounded-lg overflow-hidden max-h-[190px] line-clamp-[9];
+  }
+
+  &.p-tooltip-bottom,
+  &.p-tooltip-top {
+    @apply px-0 py-2;
+  }
+
+  &.p-tooltip-right,
+  &.p-tooltip-left {
+    @apply px-2 py-0;
+  }
+}
+
+.bi-no-stroke {
+  -webkit-text-stroke: 0 !important;
+}
+
+// Primereact Overrides
+.p-dropdown-label.p-placeholder {
+  color: theme("colors.text.quaternary") !important;
+}
+
+.splitbutton-menu-content {
+  @apply bg-surface-base-secondary py-1 rounded-md shadow-md mt-2 px-1;
+
+  .p-menuitem-link {
+    text-decoration: none;
+    @apply text-sm px-2 py-3 rounded-md disabled:cursor-not-allowed;
+    @apply hover:bg-surface-specific-dropdown-hover hover:text-text-accent;
+  }
+}
+
+.v-enter-active,
+.v-leave-active {
+  @apply transition-opacity duration-150 ease-in-out;
+}
+
+.v-enter-from,
+.v-leave-to {
+  @apply opacity-0;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* For Mozilla Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.scrollbar-gutter {
+  scrollbar-gutter: stable both-edges;
+}
+
+.scrollbar-gutter-edge {
+  scrollbar-gutter: stable;
+}
+
+.break-word {
+  word-break: break-word;
+}
+
+/* React Flow styling */
+
+.react-flow__edge-path {
+  stroke: theme("colors.border.specific.node.edge") !important;
+  stroke-width: 2.3 !important;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: theme("colors.border.focus") !important;
+}
+
+/* React Datepicker styling */
+
+.react-datepicker__time-container,
+.react-datepicker__time,
+.react-datepicker__header,
+.react-datepicker__header--time,
+.react-datepicker__time-box,
+.react-datepicker__time-list {
+  background: theme("colors.surface.base.primary") !important;
+}
+
+.react-datepicker-time__header {
+  color: theme("colors.text.primary") !important;
+}
+
+.react-datepicker__header--time {
+  border-left: 1px solid theme("colors.border.secondary") !important;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background: transparent !important;
+}

@@ -1,0 +1,19 @@
+{
+  "/v1/info": "/info",
+  "/v1/llm_models": "/llm_models",
+  "/v1/embeddings_models": "/embeddings_models",
+  "/v1/user": "/user",
+  "/v1/applications": "/applications",
+  "/v1/user/data": "/user_data",
+  "/v1/config": "/config",
+  "/v1/assistants?*": "/assistants",
+  "/v1/assistants/slug/codemie-feedback": "/codemie_feedback",
+  "/v1/assistants/slug/ai-run-chatbot": "/assistants_data?slug=ai-run-chatbot",
+  "/v1/assistants/slug/codemie-onboarding": "/assistants_data?slug=codemie-onboarding",
+  "/v1/conversations": "/conversations",
+  "/v1/conversations/folders/list": "/folders_list",
+  "/v1/index/users": "/users_index",
+  "/v1/index?page=*": "/index",
+  "/v1/settings/user/available": "/user_available_settings",
+  "/v1/providers/datasource_schemas": "/datasource_schemas"
+}

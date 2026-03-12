@@ -1,0 +1,75 @@
+// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+import { useEffect, useState, useMemo, useCallback } from 'react'
+
+import { SKILLS_PER_PAGE } from '@/constants/skills'
+import { skillsStore } from '@/store/skills'
+import { Pagination } from '@/types/common'
+import { Skill, SkillsFilters } from '@/types/entity/skill'
+
+export const useSkills = (filters?: SkillsFilters, page?: number) => {
+  const [skills, setSkills] = useState<Skill[]>([])
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 0,
+    perPage: SKILLS_PER_PAGE,
+    totalPages: 0,
+    totalCount: 0,
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  // Stringify filters to avoid infinite loop from object reference changes
+  const filtersKey = useMemo(() => JSON.stringify(filters || {}), [filters])
+  const pageNum = page ?? 0
+
+  const loadSkills = useCallback(async () => {
+    // Parse filters from the key to avoid stale closure
+    const currentFilters = JSON.parse(filtersKey) as SkillsFilters
+    setLoading(true)
+    setError(null)
+
+    try {
+      const result = await skillsStore.indexSkills(currentFilters, pageNum, SKILLS_PER_PAGE)
+
+      // Update local state with results
+      setSkills(result || [])
+      setPagination({
+        page: skillsStore.skillsPagination.page,
+        perPage: skillsStore.skillsPagination.perPage,
+        totalPages: skillsStore.skillsPagination.totalPages,
+        totalCount: skillsStore.skillsPagination.totalCount,
+      })
+    } catch (err) {
+      console.error('[useSkills] Error loading skills:', err)
+      setError(err instanceof Error ? err : new Error('Failed to load skills'))
+      setSkills([])
+    } finally {
+      setLoading(false)
+    }
+  }, [filtersKey, pageNum])
+
+  useEffect(() => {
+    loadSkills()
+  }, [loadSkills])
+
+  return {
+    skills,
+    loading,
+    error,
+    pagination,
+    refresh: loadSkills,
+  }
+}

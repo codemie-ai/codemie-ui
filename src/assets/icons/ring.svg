@@ -1,0 +1,62 @@
+<svg width="18" height="18" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes spinner {
+        0% { opacity: 1; }
+        12.5% { opacity: 0.3; }
+        25% { opacity: 0.15; }
+        37.5% { opacity: 0.1; }
+        50% { opacity: 0.15; }
+        62.5% { opacity: 0.3; }
+        75% { opacity: 0.5; }
+        87.5% { opacity: 0.75; }
+        100% { opacity: 1; }
+        }
+
+        .segment-1 {
+        animation: spinner 1s linear infinite;
+        }
+        .segment-2 {
+        animation: spinner 1s linear infinite;
+        animation-delay: -0.875s;
+        }
+        .segment-3 {
+        animation: spinner 1s linear infinite;
+        animation-delay: -0.75s;
+        }
+        .segment-4 {
+        animation: spinner 1s linear infinite;
+        animation-delay: -0.625s;
+        }
+        .segment-5 {
+        animation: spinner 1s linear infinite;
+        animation-delay: -0.5s;
+        }
+        .segment-6 {
+        animation: spinner 1s linear infinite;
+        animation-delay: -0.375s;
+        }
+        .segment-7 {
+        animation: spinner 1s linear infinite;
+        animation-delay: -0.25s;
+        }
+        .segment-8 {
+        animation: spinner 1s linear infinite;
+        animation-delay: -0.125s;
+        }
+    </style>
+    <g clip-path="url(#clip0_162_29013)">
+        <path class="segment-1" d="M6 3.33329C5.724 3.33329 5.5 3.10929 5.5 2.83329V1.16663C5.5 0.890626 5.724 0.666626 6 0.666626C6.276 0.666626 6.5 0.890626 6.5 1.16663V2.83329C6.5 3.10929 6.276 3.33329 6 3.33329Z" fill="currentColor"/>
+        <path class="segment-2" d="M8.23958 4.26065C8.11158 4.26065 7.98358 4.21198 7.88625 4.11398C7.69091 3.91865 7.69091 3.60198 7.88625 3.40665L9.06491 2.22798C9.26025 2.03265 9.57691 2.03265 9.77225 2.22798C9.96758 2.42332 9.96758 2.73998 9.77225 2.93532L8.59358 4.11398C8.49625 4.21132 8.36758 4.26065 8.23958 4.26065Z" fill="currentColor"/>
+        <path class="segment-3" d="M10.8332 6.49994H9.1665C8.8905 6.49994 8.6665 6.27594 8.6665 5.99994C8.6665 5.72394 8.8905 5.49994 9.1665 5.49994H10.8332C11.1092 5.49994 11.3332 5.72394 11.3332 5.99994C11.3332 6.27594 11.1092 6.49994 10.8332 6.49994Z" fill="currentColor"/>
+        <path class="segment-4" d="M9.41727 9.9172C9.28927 9.9172 9.16127 9.86854 9.06394 9.77054L7.88527 8.59187C7.68994 8.39654 7.68994 8.07987 7.88527 7.88454C8.0806 7.6892 8.39727 7.6892 8.5926 7.88454L9.77127 9.0632C9.9666 9.25854 9.9666 9.5752 9.77127 9.77054C9.67394 9.86787 9.54527 9.9172 9.41727 9.9172Z" fill="currentColor"/>
+        <path class="segment-5" d="M6 11.3333C5.724 11.3333 5.5 11.1093 5.5 10.8333V9.16663C5.5 8.89063 5.724 8.66663 6 8.66663C6.276 8.66663 6.5 8.89063 6.5 9.16663V10.8333C6.5 11.1093 6.276 11.3333 6 11.3333Z" fill="currentColor"/>
+        <path class="segment-6" d="M2.58235 9.9172C2.45435 9.9172 2.32635 9.86854 2.22902 9.77054C2.03369 9.5752 2.03369 9.25854 2.22902 9.0632L3.40769 7.88454C3.60302 7.6892 3.91969 7.6892 4.11502 7.88454C4.31035 8.07987 4.31035 8.39654 4.11502 8.59187L2.93635 9.77054C2.83902 9.86787 2.71035 9.9172 2.58235 9.9172Z" fill="currentColor"/>
+        <path class="segment-7" d="M2.83317 6.49994H1.1665C0.890504 6.49994 0.666504 6.27594 0.666504 5.99994C0.666504 5.72394 0.890504 5.49994 1.1665 5.49994H2.83317C3.10917 5.49994 3.33317 5.72394 3.33317 5.99994C3.33317 6.27594 3.10917 6.49994 2.83317 6.49994Z" fill="currentColor"/>
+        <path class="segment-8" d="M3.76053 4.26065C3.63253 4.26065 3.50453 4.21198 3.4072 4.11398L2.22853 2.93532C2.0332 2.73998 2.0332 2.42332 2.22853 2.22798C2.42386 2.03265 2.74053 2.03265 2.93586 2.22798L4.11453 3.40665C4.30986 3.60198 4.30986 3.91865 4.11453 4.11398C4.0172 4.21132 3.8892 4.26065 3.7612 4.26065H3.76053Z" fill="currentColor"/>
+    </g>
+    <defs>
+        <clipPath id="clip0_162_29013">
+            <rect width="12" height="12" fill="currentColor"/>
+        </clipPath>
+    </defs>
+</svg>

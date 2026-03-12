@@ -1,0 +1,100 @@
+// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+.code-block {
+  code[class*="language-"],
+  pre[class*="language-"] {
+    @apply whitespace-pre-wrap break-words;
+    margin-top: none;
+    color: theme("colors.text.primary");
+    background: none;
+    font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+    font-size: 1em;
+    text-align: left;
+    word-spacing: normal;
+    line-height: 1.5;
+
+    -moz-tab-size: 4;
+    -o-tab-size: 4;
+    tab-size: 4;
+
+    -webkit-hyphens: none;
+    -moz-hyphens: none;
+    -ms-hyphens: none;
+    hyphens: none;
+  }
+
+  /* Code blocks */
+  pre[class*="language-"] {
+    @apply p-6 !m-0 font-geist text-sm leading-6 border-t border-border-primary whitespace-pre-wrap break-words;
+  }
+
+  pre.code-content {
+    @apply p-6 m-0 font-geist text-sm !rounded-t-none rounded-b-lg leading-6 border-t border-border-primary whitespace-pre-wrap break-words max-w-full;
+  }
+
+  &.chat-code-block {
+    @apply border-border-structural;
+
+    pre[class*="language-"] {
+      @apply border-border-structural;
+    }
+  }
+
+  pre[class*="language-"] > code {
+    @apply block whitespace-pre-wrap break-words;
+  }
+
+  /* Inline code */
+  :not(pre) > code[class*="language-"] {
+    position: relative;
+    padding: 0.2em;
+    border-radius: 0.3em;
+    color: theme("colors.text.primary");
+    border: 1px solid theme("colors.border.structural");
+    display: inline;
+    white-space: normal;
+    background-color: theme("colors.surface.base.chat");
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+  }
+}
+
+.language-css .token.string,
+.style .token.string {
+  color: #a67f59;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.token.important {
+  font-weight: normal;
+}
+
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+.token.entity {
+  cursor: help;
+}
+
+.token.namespace {
+  opacity: 0.7;
+}

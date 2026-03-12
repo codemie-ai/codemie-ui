@@ -1,0 +1,50 @@
+# Build outputs
+dist
+build
+coverage
+.vite
+
+# Dependencies
+node_modules
+.pnpm-store
+
+# Generated files
+*.min.js
+*.bundle.js
+*.map
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Logs
+*.log
+logs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+
+# Temporary files
+*.tmp
+*.temp
+
+# Public assets (if they're generated/vendored)
+public/assets/vendor
+
+# Vendor libraries (third-party unmodified code)
+src/assets/vendor/speechSdk.js
+
+# Helm templates (contain Go template syntax incompatible with Prettier)
+deploy-templates/
+
+# Markdown, YAML and JSON files
+*.md
+*.yaml
+*.yml
+*.json

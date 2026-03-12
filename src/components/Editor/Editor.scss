@@ -1,0 +1,114 @@
+// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+.ql-mention-list {
+  .ql-ml {
+    &-item {
+      @apply flex items-center h-10 px-2 py-1.5 rounded-lg hover:bg-surface-specific-dropdown-hover cursor-pointer;
+
+      &-icon {
+        @apply w-4 h-4 mr-2 flex items-center justify-center;
+      }
+
+      &-img {
+        @apply w-7 h-7 min-w-7 mr-2 rounded-full object-cover border-1 border-border-primary;
+      }
+
+      &-text {
+        @apply flex flex-col truncate;
+
+        &-label {
+          @apply text-sm truncate group-hover:text-text-accent;
+        }
+
+        &-description {
+          @apply text-xs text-text-quaternary truncate group-hover:text-text-accent;
+        }
+      }
+    }
+
+    // Style for the selected/focused item (keyboard navigation)
+    &-item.selected {
+      @apply bg-surface-specific-dropdown-hover;
+    }
+  }
+}
+
+.editor,
+.chat-editor {
+  @apply flex flex-col grow min-h-0;
+
+  .ql-editor {
+    @apply text-text-primary !leading-6 font-geist-mono overflow-y-auto whitespace-pre-wrap;
+  }
+
+  .ql-editor::before {
+    @apply not-italic text-text-quaternary !important;
+  }
+
+  .mention {
+    @apply bg-surface-interactive-active;
+
+    &-file {
+      @apply py-1 px-2 !rounded-md;
+    }
+
+    &-assistant {
+      @apply relative !rounded-md pl-8 pr-2 py-1;
+
+      &::before {
+        @apply absolute left-1.5 top-[3px] rounded-full size-5 min-w-5 min-h-5 border border-white;
+
+        content: "";
+        object-fit: cover;
+        background-size: cover;
+        background-position: center;
+        background-image: var(--mention-avatar);
+      }
+
+      span {
+        @apply break-all;
+      }
+    }
+  }
+
+  &-default {
+    .ql-container {
+      @apply grow flex flex-col min-h-0 !border-none;
+    }
+  }
+
+  &-message {
+    @apply w-full whitespace-pre-wrap;
+
+    .ql-container {
+      @apply grow flex flex-col min-h-0 !border-none;
+
+      .ql-editor {
+        @apply text-sm !leading-6 px-0 py-px;
+      }
+    }
+
+    &:has(.ql-blank) {
+      .ql-container {
+        @apply w-32;
+      }
+
+      .ql-blank::before {
+        @apply left-0;
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(mkdir -p .codemie/reviews/*)",
+      "Write(.codemie/reviews/**)",
+      "Edit(.codemie/reviews/**)",
+      "Read(.codemie/reviews/**)"
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+@use "colors.scss";
+
+#toast-container {
+  @apply fixed right-0 z-[9999] pointer-events-none;
+  @apply w-full max-w-[450px];
+
+  top: 55px;
+  &.workflow-editor-mode {
+    top: 100px;
+  }
+}
+
+.toastify.codemie-toast {
+  @apply bg-none bg-surface-elevated border-1 border-border-specific-interactive-outline;
+  @apply cursor-default rounded-xl my-0 py-4 pl-4 pr-10 text-sm-1 text-text-primary font-normal max-w-[450px];
+  @apply bg-[url('~images/toaster-bg-success.svg')] bg-no-repeat shadow-none !absolute pointer-events-auto;
+
+  &:before {
+    @apply absolute left-0 top-0 w-[12px] h-full;
+  }
+
+  .codemie-toast-header {
+    @apply block text-success-primary font-semibold text-sm;
+  }
+
+  .codemie-toast-content:not(:empty) {
+    @apply mt-8;
+  }
+
+  &.codemie-toast-err {
+    @apply bg-[url('~images/toaster-bg-error.svg')];
+  }
+
+  &.codemie-toast-err .codemie-toast-header {
+    @apply text-failed-secondary;
+  }
+
+  .toast-close {
+    @apply absolute top-[7px] right-[10px] opacity-100;
+  }
+
+  .toast-close-icon {
+    @apply text-transparent;
+
+    &:after {
+      @apply text-text-primary text-[1.5rem] font-light;
+      content: "✕";
+
+      &:hover {
+        @apply text-text-quaternary;
+      }
+    }
+  }
+}
