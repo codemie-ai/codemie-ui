@@ -1,5 +1,46 @@
 [
   {
+    "version": "2.15.0",
+    "issues": [
+      {
+        "title": "Add gpt-5.4 model to CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10929",
+        "key": "EPMCDME-10929"
+      },
+      {
+        "title": "Extend Wiki Tool with \"List Pages\" action to retrieve all pages in an Azure DevOps Wiki",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10916",
+        "key": "EPMCDME-10916"
+      },
+      {
+        "title": "Add API Parameter for Automatic Workflow Execution Deletion After Completion (with Conditional Langfuse Trace Check)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10905",
+        "key": "EPMCDME-10905"
+      },
+      {
+        "title": "No ability to download generated files in code_executor tool (local execution mode): file URL not returned",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10854",
+        "key": "EPMCDME-10854"
+      },
+      {
+        "title": "Brianna assistant: \"Created by\" is missing on assistant card while \"id\" is shown on assistant details page",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10810",
+        "key": "EPMCDME-10810"
+      },
+      {
+        "title": "Retire legacy LLM model IDs and migrate to latest provider models (default gpt-5.2; keep Anthropic 4.1+)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10605",
+        "key": "EPMCDME-10605"
+      }
+    ]
+  },
+  {
     "version": "2.14.0",
     "issues": [
       {
