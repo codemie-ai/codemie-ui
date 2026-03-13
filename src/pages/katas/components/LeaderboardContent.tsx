@@ -24,7 +24,8 @@ import { ColumnDefinition } from '@/types/table'
 const getRankBadgeClass = (rank: number): string => {
   if (rank === 1) return 'bg-aborted-tertiary text-aborted-primary border-aborted-secondary'
   if (rank === 2) return 'bg-not-started-tertiary text-not-started-primary border-border-subtle'
-  if (rank === 3) return 'bg-interrupted-tertiary text-interrupted-primary border-interrupted-secondary'
+  if (rank === 3)
+    return 'bg-interrupted-tertiary text-interrupted-primary border-interrupted-secondary'
   return 'text-text-quaternary'
 }
 

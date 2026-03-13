@@ -301,7 +301,9 @@ const GuardrailAssignmentPanel = <TFormSchema extends GuardrailAssignmentsSchema
                         <BasketSvg className="size-4" />
                       </button>
                     </div>
-                    {rowError && <div className="text-failed-secondary text-xs ml-1">{rowError}</div>}
+                    {rowError && (
+                      <div className="text-failed-secondary text-xs ml-1">{rowError}</div>
+                    )}
                   </div>
                 )
               })}

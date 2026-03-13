@@ -119,7 +119,10 @@ const VendorEntitiesTableCell = ({
   return (
     <div className="flex gap-4 items-center">
       {item.entities.slice(0, 3).map((name: string) => (
-        <div className="flex items-center border rounded-md px-2 border-border-structural" key={name}>
+        <div
+          className="flex items-center border rounded-md px-2 border-border-structural"
+          key={name}
+        >
           {ENTITY_UI_CONFIG[type].icon}
           <span className="ml-2">{name}</span>
         </div>

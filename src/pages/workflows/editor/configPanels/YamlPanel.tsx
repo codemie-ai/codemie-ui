@@ -157,7 +157,9 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
     const currentTab = (
       <div className="flex flex-col gap-2">
         {validationError && (
-          <div className="text-failed-secondary text-xs sticky top-0">YAML Error: {validationError}</div>
+          <div className="text-failed-secondary text-xs sticky top-0">
+            YAML Error: {validationError}
+          </div>
         )}
 
         <div

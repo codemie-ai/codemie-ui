@@ -81,7 +81,9 @@ const WorkflowExecutionHistoryItem: React.FC<WorkflowExecutionHistoryItemProps> 
             text={execution.overall_status}
             status={WORKFLOW_STATUS_BADGE_MAPPING[execution.overall_status]}
           />
-          <p className="text-text-quaternary text-xs text-right">{execution.date && executionDate}</p>
+          <p className="text-text-quaternary text-xs text-right">
+            {execution.date && executionDate}
+          </p>
         </div>
 
         <div className="flex items-center justify-between gap-2">

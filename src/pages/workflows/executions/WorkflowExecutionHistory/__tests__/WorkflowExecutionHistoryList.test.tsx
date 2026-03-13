@@ -94,7 +94,9 @@ describe('WorkflowExecutionHistoryList', () => {
       />
     )
 
-    const activeItem = screen.getByText('Test execution 1').closest('div[class*="bg-surface-specific-dropdown-hover"]')
+    const activeItem = screen
+      .getByText('Test execution 1')
+      .closest('div[class*="bg-surface-specific-dropdown-hover"]')
     expect(activeItem).toHaveClass('bg-surface-specific-dropdown-hover/60', 'text-text-primary')
   })
 

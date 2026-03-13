@@ -48,7 +48,9 @@ const ConfigAccordion: React.FC<ConfigAccordionProps> = ({
               props.tabIndex === activeTabIndex ? 'rotate-0' : '-rotate-90'
             )}
           />
-          <h3 className="text-xs font-semibold text-text-primary uppercase tracking-wide">{title}</h3>
+          <h3 className="text-xs font-semibold text-text-primary uppercase tracking-wide">
+            {title}
+          </h3>
         </div>
         {headerActions}
       </div>

@@ -38,7 +38,8 @@ const GuardrailAssignmentPanelAccordion: FC<GuardrailAssignmentPanelAccordionPro
       onTabChange={() => onToggle(!isOpen)}
       pt={{
         root: {
-          className: 'border rounded-lg border-border-primary bg-surface-base-secondary overflow-hidden mt-px',
+          className:
+            'border rounded-lg border-border-primary bg-surface-base-secondary overflow-hidden mt-px',
         },
       }}
     >

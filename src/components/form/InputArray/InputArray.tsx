@@ -107,10 +107,15 @@ const InputArray = forwardRef<HTMLInputElement, InputArrayProps>(
               {hint && <TooltipButton content={hint} />}
             </label>
           )}
-          <Button type="secondary" className="ml-auto" onClick={addEmptyItem} aria-label={addButtonLabel}>
+          <Button
+            type="secondary"
+            className="ml-auto"
+            onClick={addEmptyItem}
+            aria-label={addButtonLabel}
+          >
             <PlusSvg /> Add
           </Button>
-        </div>  
+        </div>
 
         {value.map((item, index) => {
           const itemError = itemErrors?.[index]

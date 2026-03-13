@@ -31,9 +31,7 @@ import { ACTOR_FIELD_MAP } from '@/utils/workflowEditor/constants'
  * @param config - The workflow configuration to clean up
  * @returns Updated configuration with unused references removed
  */
-export const cleanupUnusedReferences = (
-  config: WorkflowConfiguration
-): WorkflowConfiguration => {
+export const cleanupUnusedReferences = (config: WorkflowConfiguration): WorkflowConfiguration => {
   const states = config.states ?? []
 
   // Collect all referenced IDs from states

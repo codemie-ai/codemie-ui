@@ -211,7 +211,9 @@ const WorkflowExecutionStates: FC<WorkflowExecutionStatesProps> = ({
                 onRefreshThoughts={handleRefreshThoughts}
               />
 
-              {!isLastItemOnPage && <div className="w-[1px] h-[24px] bg-border-specific-panel-outline ml-6" />}
+              {!isLastItemOnPage && (
+                <div className="w-[1px] h-[24px] bg-border-specific-panel-outline ml-6" />
+              )}
             </Fragment>
           )
         })}

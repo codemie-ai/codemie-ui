@@ -28,9 +28,7 @@ const InfoMessage: React.FC<InfoMessageProps> = ({ children }) => {
         <InfoSvg />
       </div>
 
-      <div className="text-text-quaternary text-xs flex-1">
-        {children}
-      </div>
+      <div className="text-text-quaternary text-xs flex-1">{children}</div>
     </div>
   )
 }

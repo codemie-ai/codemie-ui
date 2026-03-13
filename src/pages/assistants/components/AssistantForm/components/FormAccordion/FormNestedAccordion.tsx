@@ -66,7 +66,9 @@ const FormNestedAccordion = <T,>({
             </div>
           }
         >
-          <div className="border-t border-border-specific-panel-outline flex flex-col">{itemContent(item)}</div>
+          <div className="border-t border-border-specific-panel-outline flex flex-col">
+            {itemContent(item)}
+          </div>
         </AccordionTab>
       ))}
     </Accordion>

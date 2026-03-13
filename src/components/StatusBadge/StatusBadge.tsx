@@ -46,7 +46,8 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, text, className }) =>
         status === StatusEnum.InProgress,
       'bg-interrupted-tertiary text-interrupted-primary border border-interrupted-secondary':
         status === StatusEnum.Pending,
-      'bg-failed-tertiary text-failed-secondary border border-failed-secondary': status === StatusEnum.Error,
+      'bg-failed-tertiary text-failed-secondary border border-failed-secondary':
+        status === StatusEnum.Error,
       'bg-aborted-tertiary text-aborted-primary border border-aborted-secondary':
         status === StatusEnum.Warning,
       'bg-success-secondary text-success-primary border border-success-primary':

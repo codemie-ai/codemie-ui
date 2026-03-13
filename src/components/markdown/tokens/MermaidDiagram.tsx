@@ -254,7 +254,10 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code }) => {
 
   return (
     <div className="mermaid-diagram flex my-4 w-full overflow-x-auto relative">
-      <div ref={diagramContainerRef} className="flex-grow border-b border-border-specific-panel-outline pb-4">
+      <div
+        ref={diagramContainerRef}
+        className="flex-grow border-b border-border-specific-panel-outline pb-4"
+      >
         <ZoomableImage>
           <div
             dangerouslySetInnerHTML={{ __html: renderedSvg }}

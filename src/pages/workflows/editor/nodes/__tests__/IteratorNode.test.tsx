@@ -168,7 +168,9 @@ describe('IteratorNode', () => {
       const { container } = renderIteratorNode()
 
       // Check that there's no badge element
-      const badge = container.querySelector('.border-border-structural.bg-surface-interactive-hover')
+      const badge = container.querySelector(
+        '.border-border-structural.bg-surface-interactive-hover'
+      )
       expect(badge).toBeNull()
     })
 

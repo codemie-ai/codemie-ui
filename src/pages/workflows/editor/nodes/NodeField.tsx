@@ -27,9 +27,12 @@ const NodeField = ({ value, title = '', isError = false }: NodeFieldProps) => {
       {title && <div className="text-text-primary text-sm mb-2"> {title} </div>}
 
       <div
-        className={cn('text-text-quaternary text-sm bg-surface-specific-card rounded-md px-2 py-1', {
-          'border-1 border-failed-secondary/70': isError,
-        })}
+        className={cn(
+          'text-text-quaternary text-sm bg-surface-specific-card rounded-md px-2 py-1',
+          {
+            'border-1 border-failed-secondary/70': isError,
+          }
+        )}
       >
         {value}
       </div>

@@ -100,7 +100,7 @@ const ThoughtMessage: FC<ThoughtMessageProps> = ({ thought }) => {
       workflowStateJsonContent === null)
 
   const messageSegments = useMemo(() => {
-    const {message} = thought
+    const { message } = thought
     if (!message) return [{ type: 'text', content: '' }]
 
     const recognizedArray = tryParseMessageArray(message)

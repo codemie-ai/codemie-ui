@@ -29,7 +29,9 @@ const SeverityBadge: React.FC<SeverityBadgeProps> = ({ severity }) => {
     <span
       className={cn(
         'px-2 py-0.5 rounded text-xs font-medium uppercase',
-        isCritical ? 'bg-failed-tertiary text-failed-primary' : 'bg-aborted-tertiary text-aborted-primary'
+        isCritical
+          ? 'bg-failed-tertiary text-failed-primary'
+          : 'bg-aborted-tertiary text-aborted-primary'
       )}
     >
       {isCritical ? 'Critical' : 'Optional'}

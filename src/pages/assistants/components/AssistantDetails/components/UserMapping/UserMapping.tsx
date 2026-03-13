@@ -308,7 +308,9 @@ export const UserMapping: React.FC<UserMappingProps> = ({
         {hasOrchestratorMapping && (
           <div>
             {showOrchestratorHeader && (
-              <h4 className="text-base font-semibold text-text-primary mb-4">Orchestrator Settings</h4>
+              <h4 className="text-base font-semibold text-text-primary mb-4">
+                Orchestrator Settings
+              </h4>
             )}
             <div className="flex flex-col gap-4">
               {displayableToolkits.map((toolkit) => (

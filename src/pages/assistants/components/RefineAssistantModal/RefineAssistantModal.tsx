@@ -335,7 +335,9 @@ const RefineAssistantModal: React.FC<RefineAssistantModalProps> = ({
       return (
         <div className="flex flex-col items-center justify-center pb-12 pt-6">
           <Spinner inline className="w-8 h-8" />
-          <p className="mt-4 text-sm text-text-quaternary">Analyzing your Assistant configuration</p>
+          <p className="mt-4 text-sm text-text-quaternary">
+            Analyzing your Assistant configuration
+          </p>
         </div>
       )
     }
@@ -416,7 +418,9 @@ const RefineAssistantModal: React.FC<RefineAssistantModalProps> = ({
           {contextRecommendations.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-normal text-text-primary">Datasource Recommendations</h3>
+                <h3 className="text-base font-normal text-text-primary">
+                  Datasource Recommendations
+                </h3>
                 <RecommendationCountBadge fieldRecommendations={contextRecommendations} />
               </div>
               {contextRecommendations.map((context) => (

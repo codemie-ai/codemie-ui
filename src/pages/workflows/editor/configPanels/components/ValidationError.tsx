@@ -21,7 +21,10 @@ const ValidationError = ({ message }: ValidationErrorProps) => {
   if (!message) return null
 
   return (
-    <div className="bg-failed-secondary/10 border border-failed-secondary rounded-md px-3 py-2.5" role="alert">
+    <div
+      className="bg-failed-secondary/10 border border-failed-secondary rounded-md px-3 py-2.5"
+      role="alert"
+    >
       <div className="flex items-start gap-2">
         <p className="text-failed-secondary text-xs leading-relaxed">{message}</p>
       </div>

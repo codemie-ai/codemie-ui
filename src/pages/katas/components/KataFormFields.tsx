@@ -83,7 +83,9 @@ const KataFormFields = ({
             render={({ field }) => (
               <>
                 <Select {...field} label="Level" options={levelOptions} required />
-                {errors.level && <div className="text-text-error text-sm">{errors.level.message}</div>}
+                {errors.level && (
+                  <div className="text-text-error text-sm">{errors.level.message}</div>
+                )}
               </>
             )}
           />

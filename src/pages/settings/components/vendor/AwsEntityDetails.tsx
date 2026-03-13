@@ -88,7 +88,9 @@ const AwsEntityDetails: FC<Props> = ({
             <h3 className="text-base font-medium mb-1">{entity.name}</h3>
             <div className="flex items-center gap-2 text-xs mb-3">
               {entity.id && (
-                <div className="border border-border-structural rounded-xl px-2">Id: {entity.id}</div>
+                <div className="border border-border-structural rounded-xl px-2">
+                  Id: {entity.id}
+                </div>
               )}
             </div>
           </div>

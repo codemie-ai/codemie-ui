@@ -42,7 +42,9 @@ const ReasoningSection: React.FC<ReasoningSectionProps> = ({ field }) => (
       </div>
       <SeverityBadge severity={field.severity} />
     </div>
-    {field.reason && <p className="text-xs text-text-primary leading-relaxed mt-1">{field.reason}</p>}
+    {field.reason && (
+      <p className="text-xs text-text-primary leading-relaxed mt-1">{field.reason}</p>
+    )}
   </li>
 )
 
@@ -85,7 +87,9 @@ const ContextSection: React.FC<ContextSectionProps> = ({ context }) => (
     <div className="flex flex-row gap-2 items-center justify-between">
       <div className="flex flex-row gap-2 items-center flex-1">
         <AIGenerateSVG className="text-base flex-shrink-0 mt-0.5" />
-        <p className="text-sm font-semibold text-text-primary">Datasource {humanize(context.name)}</p>
+        <p className="text-sm font-semibold text-text-primary">
+          Datasource {humanize(context.name)}
+        </p>
       </div>
       <SeverityBadge severity={context.severity} />
     </div>

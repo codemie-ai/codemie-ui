@@ -172,7 +172,14 @@ export const useDnD = () => {
       dropAction?.({ position: flowPosition })
     },
 
-    [screenToFlowPosition, setIsDragging, dropAction, isDragging, appSidebarExpanded, navigationExpanded]
+    [
+      screenToFlowPosition,
+      setIsDragging,
+      dropAction,
+      isDragging,
+      appSidebarExpanded,
+      navigationExpanded,
+    ]
   )
 
   // Add global touch event listeners
