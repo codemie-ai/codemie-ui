@@ -15,23 +15,18 @@ import path from 'path'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
+  const isKeycloak = process.env.VITE_ENTRY === 'keycloakify'
+
   return {
     plugins: [
-      {
-        name: 'keycloak-entry',
-        enforce: 'pre',
-        transformIndexHtml: {
-          order: 'pre',
-          handler(html) {
-            if (process.env.VITE_ENTRY === 'keycloakify') {
-              console.log('[keycloak-entry] Switching entry to keycloakify.tsx')
-              return html.replace(
-                '/src/main.tsx',
-                '/src/authentication/keycloak-theme/keycloakify.tsx'
-              )
-            }
-            return html
-          },
+      // When building for Keycloak, rename dist/index-keycloak.html → dist/index.html
+      // because keycloakify v11 hardcodes dist/index.html in generateResources.
+      isKeycloak && {
+        name: 'rename-keycloak-html',
+        enforce: 'post' as const,
+        generateBundle(_options: unknown, bundle: Record<string, { fileName: string }>) {
+          const entry = bundle['index-keycloak.html']
+          if (entry) entry.fileName = 'index.html'
         },
       },
       react({ include: /\.(jsx|tsx)$/ }),
@@ -73,6 +68,11 @@ export default defineConfig(({ mode }) => {
       },
     },
     base: env.VITE_SUFFIX || '/',
+    build: {
+      rollupOptions: {
+        input: isKeycloak ? 'index-keycloak.html' : 'index.html',
+      },
+    },
     server: {
       host: true,
       watch: {
