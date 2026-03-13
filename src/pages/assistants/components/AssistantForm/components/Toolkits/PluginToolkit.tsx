@@ -123,7 +123,7 @@ const PluginToolkit = ({
     const updatedToolkit = {
       ...toolkit,
       tools,
-      settings: selectedToolkit?.settings,
+      settings: selectedSetting ?? selectedToolkit?.settings,
     }
 
     const otherToolkits = selectedToolkits.filter((tk) => tk.toolkit !== toolkit.toolkit)
@@ -139,8 +139,18 @@ const PluginToolkit = ({
   }
 
   const handleToggleToolSingle = (tool: Tool) => {
-    const tools = isToolSelected(tool) ? [] : [tool]
-    updatePluginToolkit(tools)
+    if (isToolSelected(tool)) {
+      // Deselect current tool
+      updatePluginToolkit([])
+    } else {
+      // Select new tool - clear ALL toolkits and set only this one
+      const updatedToolkit = {
+        ...toolkit,
+        tools: [tool],
+        settings: selectedSetting ?? selectedToolkit?.settings,
+      }
+      onToolkitsChange([updatedToolkit])
+    }
   }
 
   const handleToggleTool = (tool: Tool) => {

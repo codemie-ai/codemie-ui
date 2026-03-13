@@ -67,6 +67,14 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
     }
   }, [mcpServers?.length])
 
+  useEffect(() => {
+    const toolkitSelected = toolkits?.length > 0
+
+    if (toolkitSelected && mcpServers?.length > 0) {
+      onMcpServersChange([])
+    }
+  }, [toolkits?.length])
+
   const handleOpenToolPopup = () => {
     setStagedToolkits(toolkits)
     setIsToolPopupOpen(true)
