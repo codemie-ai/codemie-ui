@@ -67,8 +67,8 @@ const SignInPage: React.FC = () => {
     >
       <div className="flex flex-col items-center">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-semibold text-text-primary mb-2">Sign In</h1>
-          <p className="text-sm text-text-quaternary">Welcome back! Please sign in to continue.</p>
+          <h1 className="text-3xl font-semibold text-text-primary mb-2">Welcome to CodeMie</h1>
+          <p className="text-sm text-text-quaternary">Please, sign in to continue.</p>
         </div>
 
         <SignInForm onSubmit={(data, reset) => handleSignIn(data, reset)} isLoading={isLoading} />

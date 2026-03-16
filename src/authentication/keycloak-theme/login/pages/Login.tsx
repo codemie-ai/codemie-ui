@@ -66,9 +66,11 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: 'log
     <Template {...props} headerNode={null} displayMessage={false}>
       <div className="flex flex-col items-center">
         <div className="flex flex-col items-center gap-2">
-          <h1 className="font-mono text-2xl font-semibold leading-6 text-text-primary">Sign In</h1>
+          <h1 className="font-mono text-2xl font-semibold leading-6 text-text-primary">
+            Welcome to CodeMie
+          </h1>
           <p className="font-mono text-sm font-normal leading-5 text-text-quaternary">
-            Welcome back! Please sign in to continue.
+            Please, sign in to continue.
           </p>
         </div>
 
