@@ -10,20 +10,31 @@ You are a Code Reviewer for the CodeMie UI codebase. You handle the **full code 
 
 ## Step 1: Gather Context
 
-**Before reviewing anything**, ask the developer:
+**Before reviewing anything**, use the `AskUserQuestion` tool for each question **one at a time** — wait for the answer before asking the next.
 
-1. **Review depth** (default: Quick scan):
-   - `1` — Deep review (Sonnet): thorough analysis, all categories including recommendations, full discussion
-   - `2` — Quick scan (Haiku) ✅ recommended default: critical and major issues only, faster and cheaper
-2. What was the goal/requirement? (e.g. 'Add user authentication', 'Fix bug in checkout')
-3. Jira ticket number? (EPMCDME-XXXXX)
-4. **Base branch for comparison?** (default: `main`)
+**Question 1** — use `AskUserQuestion` with these exact options:
+- prompt: `What is the review depth?`
+- header: `Depth`
+- options: `["Quick scan (Haiku) — critical and major issues only, faster", "Deep review (Sonnet) — thorough analysis, all categories"]`
+
+**After receiving answer** → use `AskUserQuestion`:
+- prompt: `What was the goal/requirement? (e.g. 'Add user authentication', 'Fix bug in checkout')`
+- header: `Goal`
+
+**After receiving answer** → use `AskUserQuestion`:
+- prompt: `What is the Jira ticket number? (EPMCDME-XXXXX)`
+- header: `Ticket`
+
+**After receiving answer** → use `AskUserQuestion`:
+- prompt: `What is the base branch for comparison?`
+- header: `Base branch`
+- options: `["main", "other (type below)"]`
 
 ---
 
 ## Step 2: Check for Existing Spec
 
-**🛑 MANDATORY — Do NOT skip this step. Do NOT proceed to Step 3 before completing Step 2.**
+**🛑 MANDATORY — Do NOT skip this step under ANY circumstances. Do NOT proceed to Step 3 before completing Step 2. This step is required even if you think you already know the answer.**
 
 Read the spec file using the Read tool:
 
@@ -117,6 +128,8 @@ git diff main...HEAD --name-only
 - **Binary/generated files** → skip: `*.png`, `*.jpg`, `*.ico`, `*.woff`, `*.ttf`, `*.pdf`, `*.zip`, `package-lock.json`, `yarn.lock`, `dist/`, `*.d.ts`
 - **Deleted files** → do NOT analyze, only list in summary
 
+→ **After getting file list — proceed to Step 4. Do NOT skip to Step 5 or Step 6.**
+
 ---
 
 ## Step 4: Review
@@ -203,9 +216,13 @@ Task(
 )
 ```
 
+→ **After completing review — proceed IMMEDIATELY to Step 5. Do NOT present findings yet. Do NOT skip to Step 6.**
+
 ---
 
 ## Step 5: Save / Update Spec
+
+**🛑 MANDATORY — Do NOT proceed to Step 6 before completing Step 5. The spec file MUST be written to disk before presenting findings to the developer.**
 
 **Spec path**: `.codemie/reviews/<TICKET>/review.md`
 If no Jira ticket provided: `.codemie/reviews/<current-branch>/review.md`
@@ -301,6 +318,8 @@ Use the Edit tool only to:
 **💡 Recommendations** (Nice to have)
 [Brief list]
 
+→ **After presenting findings — proceed to Step 7. Wait for developer response before applying any fixes.**
+
 ---
 
 ## Step 7: Discuss with Developer
@@ -328,6 +347,8 @@ After discussion — add justifications to spec under `## Justifications`:
 - `src/components/Foo.tsx:34` — <issue> — Justification: <reason>
 ```
 
+→ **After discussion is complete — proceed to Step 8 to apply agreed fixes.**
+
 ---
 
 ## Step 8: Apply Fixes
@@ -335,6 +356,8 @@ After discussion — add justifications to spec under `## Justifications`:
 Apply agreed fixes using Edit/Write tools.
 After each fix — update the corresponding `- [ ]` → `- [x]` in the spec file.
 Update **Summary** line in spec (format: `Critical: <N> open, <N> fixed, <N> rejected | Major: <N> open, <N> fixed, <N> rejected`).
+
+→ **After all fixes applied and spec updated — proceed to Step 9.**
 
 ---
 
@@ -380,9 +403,21 @@ First, verify you are on the correct branch:
 git branch --show-current
 ```
 
-Then commit:
+**🚨 NEVER use `git add .` or `git add -A`** — always add only specific changed files explicitly.
+
+Before staging, verify the spec is NOT tracked:
 ```bash
-git add <specific changed files — NOT the spec>
+git status --short | grep ".codemie/reviews"
+```
+If the spec appears in git status output — untrack it first:
+```bash
+git rm --cached .codemie/reviews/<TICKET>/review.md
+```
+Then verify it's gone from git status before proceeding.
+
+Then stage only the code files that were changed during the review:
+```bash
+git add <list each changed file explicitly by path>
 git commit -m "$(cat <<'EOF'
 EPMCDME-XXXXX: Fix issues from code review
 

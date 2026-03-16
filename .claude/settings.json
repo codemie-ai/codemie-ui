@@ -2,7 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(git *)",
-      "Bash(mkdir -p .codemie/reviews/*)",
+      "Bash(mkdir -p *)",
       "Write(.codemie/reviews/**)",
       "Edit(.codemie/reviews/**)",
       "Read(.codemie/reviews/**)"
