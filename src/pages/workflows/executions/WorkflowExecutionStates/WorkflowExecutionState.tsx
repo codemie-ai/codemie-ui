@@ -37,7 +37,7 @@ interface WorkflowExecutionStateProps {
   state: WorkflowExecutionStateType
   executionStatus: WorkflowExecutionStatus
   isExpanded: boolean
-  isLastItem: boolean
+  isInterruptPoint: boolean
   workflowId: string
   executionId: string
   onExpand: (stateId: string) => void
@@ -57,7 +57,7 @@ const WorkflowExecutionState = forwardRef<WorkflowExecutionStateRef, WorkflowExe
       state,
       executionStatus,
       isExpanded,
-      isLastItem,
+      isInterruptPoint,
       workflowId,
       executionId,
       onExpand,
@@ -110,7 +110,7 @@ const WorkflowExecutionState = forwardRef<WorkflowExecutionStateRef, WorkflowExe
                 </Button>
               </div>
 
-              {isLastItem && (
+              {isInterruptPoint && (
                 <WorkflowExecutionStateControls
                   executionStatus={executionStatus}
                   workflowId={workflowId}

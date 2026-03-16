@@ -30,6 +30,7 @@ import {
 } from '@/types/entity/workflow'
 
 import WorkflowExecutionStateOutputPopup from './popups/WorkflowExecutionStateOutputPopup'
+import { getLastInterruptibleStateId } from './utils'
 import WorkflowExecutionState, { WorkflowExecutionStateRef } from './WorkflowExecutionState'
 
 interface WorkflowExecutionStatesProps {
@@ -45,7 +46,6 @@ const WorkflowExecutionStates: FC<WorkflowExecutionStatesProps> = ({
   executionId,
   executionStatus,
   paginationPage,
-  paginationTotalPages,
 }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [isStateOutputPopupVisible, setIsStateOutputPopupVisible] = useState(false)
@@ -53,7 +53,18 @@ const WorkflowExecutionStates: FC<WorkflowExecutionStatesProps> = ({
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
   const stateRefs = useRef<Map<string, WorkflowExecutionStateRef>>(new Map())
 
-  const { executionStates } = useSnapshot(workflowExecutionsStore) as typeof workflowExecutionsStore
+  const { executionStates, workflow } = useSnapshot(
+    workflowExecutionsStore
+  ) as typeof workflowExecutionsStore
+
+  const lastInterruptibleStateId = useMemo(
+    () =>
+      getLastInterruptibleStateId(
+        executionStates as WorkflowExecutionStateType[],
+        workflow?.yaml_config
+      ),
+    [executionStates, workflow?.yaml_config]
+  )
 
   const onViewDetails = (stateId: string) => {
     const state = executionStates.find((item) => item.id === stateId)
@@ -189,7 +200,6 @@ const WorkflowExecutionStates: FC<WorkflowExecutionStatesProps> = ({
 
       <div className="pb-8">
         {executionStates.map((item, index) => {
-          const isLastPage = paginationPage + 1 === paginationTotalPages
           const isLastItemOnPage = index === executionStates.length - 1
 
           return (
@@ -202,7 +212,7 @@ const WorkflowExecutionStates: FC<WorkflowExecutionStatesProps> = ({
                 state={item}
                 executionStatus={executionStatus}
                 isExpanded={!!expandedRows[item.id]}
-                isLastItem={isLastItemOnPage && isLastPage}
+                isInterruptPoint={item.id === lastInterruptibleStateId}
                 workflowId={workflowId}
                 executionId={executionId}
                 onExpand={expandRow}

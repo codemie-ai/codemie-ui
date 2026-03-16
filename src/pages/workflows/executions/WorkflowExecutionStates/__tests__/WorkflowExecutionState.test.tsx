@@ -83,7 +83,7 @@ describe('WorkflowExecutionState', () => {
     state: mockState,
     executionStatus: 'Succeeded' as const,
     isExpanded: false,
-    isLastItem: false,
+    isInterruptPoint: false,
     workflowId: 'workflow-1',
     executionId: 'execution-1',
     onExpand: vi.fn(),
@@ -178,16 +178,16 @@ describe('WorkflowExecutionState', () => {
     expect(mockWorkflowExecutionsStore.getStateThought).toHaveBeenCalledWith('thought-1')
   })
 
-  it('renders controls only when isLastItem is true', () => {
-    // Controls rendered when isLastItem
+  it('renders controls only when isInterruptPoint is true', () => {
+    // Controls rendered when isInterruptPoint
     const { container: containerWithControls } = render(
-      <WorkflowExecutionState {...defaultProps} isLastItem={true} />
+      <WorkflowExecutionState {...defaultProps} isInterruptPoint={true} />
     )
     expect(containerWithControls).toBeInTheDocument()
 
-    // Controls not rendered when not isLastItem
+    // Controls not rendered when not isInterruptPoint
     const { container: containerWithoutControls } = render(
-      <WorkflowExecutionState {...defaultProps} isLastItem={false} />
+      <WorkflowExecutionState {...defaultProps} isInterruptPoint={false} />
     )
     const buttons = containerWithoutControls.querySelectorAll('button')
     // Should only have Open button and expand/collapse button
