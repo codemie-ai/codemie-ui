@@ -1,10 +1,26 @@
 # CodeMie UI
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Website](https://img.shields.io/badge/website-codemie.ai-informational)](https://codemie.ai)
+[![Docs](https://img.shields.io/badge/docs-docs.codemie.ai-informational)](https://docs.codemie.ai)
+
+**The web interface for CodeMie — Platform for AI-Native Delivery, Modernization, and Business.**
+
+**This repository — `codemie-ui` — is the web interface component of the CodeMie platform.** Built with React and TypeScript, it is the browser application where teams interact with AI assistants, design multi-agent workflows, manage integrations, configure knowledge bases, and monitor platform activity. It connects to the `codemie` backend via REST API.
+
+**What the platform enables:**
+
+- 🚀 **AI-Native SDLC & Delivery** — AI agents covering every phase: discovery, architecture, development, testing, and deployment.
+- 🔄 **AI Migration & Modernization** — Legacy system and mainframe modernization powered by AI-driven code analysis and transformation.
+- 💼 **AI for Business & Operations** — AI assistants for finance, HR, sales, support, and other business functions.
+
+🌐 **Website:** [codemie.ai](https://codemie.ai)
+📖 **Documentation:** [docs.codemie.ai](https://docs.codemie.ai)
+🖥️ **CLI tool:** [codemie-code](https://github.com/codemie-ai/codemie-code)
+
 ## Description 🗒
 
-An AI-powered assistant platform with a modern web interface.
-
-Built with React, TypeScript, and Vite ⚡
+The CodeMie web application — built with React, TypeScript, and Vite ⚡
 
 ### Technology Stack 🛠
 
@@ -198,6 +214,10 @@ VITE_API_URL=http://localhost:8080
 VITE_SUFFIX=/app
 ```
 
+## Contributing 🤝
+
+We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a pull request.
+
 ## License 📄
 
-[Add license information here]
+CodeMie UI is licensed under the [Apache License 2.0](LICENSE).
