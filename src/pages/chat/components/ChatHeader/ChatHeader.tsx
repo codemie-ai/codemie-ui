@@ -16,6 +16,7 @@
 import { FC } from 'react'
 import { useSnapshot } from 'valtio'
 
+import ChatNewSvg from '@/assets/icons/chat-new.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
 import Plus from '@/assets/icons/plus.svg?react'
 import SidebarSvg from '@/assets/icons/sidebar.svg?react'
@@ -44,6 +45,26 @@ const ChatHeader: FC = () => {
     const chat = await createChat('', '', false)
     router.push({ name: 'chats', params: { id: chat.id } })
   }
+
+  const handleCreateChatWithSameAssistant = async () => {
+    const lastAssistantMessage = currentChat?.history
+      ?.slice()
+      .reverse()
+      .flat()
+      .find((msg) => msg.role === 'Assistant')
+    const assistantId =
+      lastAssistantMessage?.assistantId ??
+      currentChat?.initialAssistantId ??
+      currentChat?.assistantIds?.[0] ??
+      ''
+    const isWorkflow = currentChat?.isWorkflow ?? false
+    const folder = currentChat?.folder ?? ''
+    const chat = await createChat(assistantId, folder, isWorkflow)
+    router.push({ name: 'chats', params: { id: chat.id } })
+  }
+
+  const hasAssistant =
+    !!currentChat?.initialAssistantId || !!currentChat?.assistantIds?.length
 
   const handleViewWorkflowDetails = () => {
     if (currentChat?.initialAssistantId) {
@@ -86,6 +107,18 @@ const ChatHeader: FC = () => {
 
       {currentChat && (
         <div className="flex gap-2 ml-auto">
+          {hasAssistant && (
+            <Button
+              type="secondary"
+              data-tooltip-id="react-tooltip"
+              data-tooltip-content="New Chat with Same Assistant"
+              aria-label="New Chat with Same Assistant"
+              onClick={handleCreateChatWithSameAssistant}
+            >
+              <ChatNewSvg aria-hidden="true" />
+            </Button>
+          )}
+
           <DataOverlayButton<ChatMetrics>
             title="Usage details"
             subtitle="Chat totals, auto-updated"

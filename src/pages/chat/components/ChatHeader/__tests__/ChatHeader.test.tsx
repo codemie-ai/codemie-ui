@@ -81,6 +81,27 @@ const mockChat = {
   name: 'Test Chat',
   isGroup: false,
   assistantData: [],
+  initialAssistantId: 'assistant-abc',
+  assistantIds: ['assistant-abc'],
+} as unknown as Conversation
+
+const mockNewChat = {
+  id: 'chat-new',
+  name: 'New Chat',
+  isGroup: false,
+  assistantData: [],
+  initialAssistantId: null,
+  assistantIds: [],
+} as unknown as Conversation
+
+const mockWorkflowChat = {
+  id: 'chat-workflow',
+  name: 'Workflow Chat',
+  isGroup: false,
+  isWorkflow: true,
+  assistantData: [],
+  initialAssistantId: 'workflow-assistant-id',
+  assistantIds: ['workflow-assistant-id'],
 } as unknown as Conversation
 
 const mockGroupChat = {
@@ -151,7 +172,94 @@ describe('ChatHeader', () => {
     })
   })
 
-  const buttonLabels = ['Share Chat', 'Usage details', 'Open chat configuration']
+  it('calls createChat with initialAssistantId when New Chat with Same Assistant is clicked', async () => {
+    const newChat = { id: 'new-chat-456', name: 'New Chat' }
+    const chatWithAssistant = {
+      ...mockChat,
+      initialAssistantId: 'assistant-abc',
+      assistantIds: ['assistant-xyz'],
+    }
+    mockChatsStore.currentChat = chatWithAssistant as unknown as Conversation
+    mockChatsStore.createChat = vi.fn().mockResolvedValue(newChat)
+    render(<ChatHeader />)
+
+    await user.click(screen.getByLabelText('New Chat with Same Assistant'))
+
+    expect(mockChatsStore.createChat).toHaveBeenCalledWith('assistant-abc', '', false)
+    await waitFor(() => {
+      expect(mockRouter.push).toHaveBeenCalledWith({
+        name: 'chats',
+        params: { id: 'new-chat-456' },
+      })
+    })
+  })
+
+  it('falls back to first assistantId when initialAssistantId is null', async () => {
+    const newChat = { id: 'new-chat-789', name: 'New Chat' }
+    const chatWithoutInitialAssistant = {
+      ...mockChat,
+      initialAssistantId: null,
+      assistantIds: ['assistant-fallback'],
+    }
+    mockChatsStore.currentChat = chatWithoutInitialAssistant as unknown as Conversation
+    mockChatsStore.createChat = vi.fn().mockResolvedValue(newChat)
+    render(<ChatHeader />)
+
+    await user.click(screen.getByLabelText('New Chat with Same Assistant'))
+
+    expect(mockChatsStore.createChat).toHaveBeenCalledWith('assistant-fallback', '', false)
+  })
+
+  it('creates new chat in the same folder when current chat has a folder', async () => {
+    const newChat = { id: 'new-chat-folder', name: 'New Chat' }
+    const chatInFolder = {
+      ...mockChat,
+      folder: 'my-folder',
+    }
+    mockChatsStore.currentChat = chatInFolder as unknown as Conversation
+    mockChatsStore.createChat = vi.fn().mockResolvedValue(newChat)
+    render(<ChatHeader />)
+
+    await user.click(screen.getByLabelText('New Chat with Same Assistant'))
+
+    expect(mockChatsStore.createChat).toHaveBeenCalledWith('assistant-abc', 'my-folder', false)
+  })
+
+  it('creates new chat with empty folder when current chat has no folder', async () => {
+    const newChat = { id: 'new-chat-no-folder', name: 'New Chat' }
+    mockChatsStore.currentChat = mockChat
+    mockChatsStore.createChat = vi.fn().mockResolvedValue(newChat)
+    render(<ChatHeader />)
+
+    await user.click(screen.getByLabelText('New Chat with Same Assistant'))
+
+    expect(mockChatsStore.createChat).toHaveBeenCalledWith('assistant-abc', '', false)
+  })
+
+  it('hides New Chat with Same Assistant button for newly created chats with no assistants', () => {
+    mockChatsStore.currentChat = mockNewChat
+    render(<ChatHeader />)
+    expect(screen.queryByLabelText('New Chat with Same Assistant')).not.toBeInTheDocument()
+  })
+
+  it('calls createChat with isWorkflow=true for workflow chats', async () => {
+    const newChat = { id: 'new-workflow-chat', name: 'Workflow Chat' }
+    mockChatsStore.currentChat = mockWorkflowChat
+    mockChatsStore.createChat = vi.fn().mockResolvedValue(newChat)
+    render(<ChatHeader />)
+
+    await user.click(screen.getByLabelText('New Chat with Same Assistant'))
+
+    expect(mockChatsStore.createChat).toHaveBeenCalledWith('workflow-assistant-id', '', true)
+    await waitFor(() => {
+      expect(mockRouter.push).toHaveBeenCalledWith({
+        name: 'chats',
+        params: { id: 'new-workflow-chat' },
+      })
+    })
+  })
+
+  const buttonLabels = ['New Chat with Same Assistant', 'Share Chat', 'Usage details', 'Open chat configuration']
   const exportButtonLabel =
     'Export conversation - Choose from multiple file formats including JSON, DOCX, and PDF'
 
