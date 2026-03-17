@@ -19,10 +19,9 @@ import { jsonValidator, commandOrUrlXorValidator, streamableHttpValidator } from
 
 interface FormSchemaParams {
   nameUniqueValidator: (value: string) => boolean
-  isFormInput: () => boolean
 }
 
-export const createFormSchema = ({ nameUniqueValidator, isFormInput }: FormSchemaParams) => {
+export const createFormSchema = ({ nameUniqueValidator }: FormSchemaParams) => {
   return Yup.object({
     name: Yup.string()
       .required('MCP server name is required')
@@ -39,32 +38,19 @@ export const createFormSchema = ({ nameUniqueValidator, isFormInput }: FormSchem
       .notRequired()
       .min(0, 'Tokens size cannot be less than zero')
       .max(1000000, 'Maximum tokens for tool output is 1000000'),
-    configJson: Yup.string().when('inputModeJson', {
-      is: () => !isFormInput(),
-      then: (schema) =>
-        schema
-          .test('format', 'Invalid JSON format', jsonValidator)
-          .test(
-            'command-or-url-xor',
-            'Configuration must include exactly one of "command" or "url" (not both)',
-            commandOrUrlXorValidator
-          )
-          .test(
-            'streamable-http',
-            'When type is "streamable-http", "url" field is required',
-            streamableHttpValidator
-          ),
-      otherwise: (schema) => schema.notRequired(),
-    }),
-    command: Yup.string().when('inputModeJson', {
-      is: isFormInput,
-      then: (schema) => schema.required('Command is required'),
-      otherwise: (schema) => schema.notRequired(),
-    }),
-    arguments: Yup.string().when('inputModeJson', {
-      is: isFormInput,
-      then: (schema) => schema.required('Arguments are required'),
-      otherwise: (schema) => schema.notRequired(),
-    }),
+    configJson: Yup.string()
+      .test('format', 'Invalid JSON format', jsonValidator)
+      .test(
+        'command-or-url-xor',
+        'Configuration must include exactly one of "command" or "url" (not both)',
+        commandOrUrlXorValidator
+      )
+      .test(
+        'streamable-http',
+        'When type is "streamable-http", "url" field is required',
+        streamableHttpValidator
+      ),
+    command: Yup.string().notRequired(),
+    arguments: Yup.string().notRequired(),
   })
 }

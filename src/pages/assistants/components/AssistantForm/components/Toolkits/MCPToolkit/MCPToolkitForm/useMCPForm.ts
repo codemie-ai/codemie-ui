@@ -26,8 +26,6 @@ import { formatJson } from '../validators'
 interface UseMCPFormParams {
   mcpServer?: MCPServerDetails
   mcpServerNames: string[]
-  inputMode: 'JSON' | 'Form'
-  onInputModeChange: (mode: 'JSON' | 'Form') => void
 }
 
 const getInitialValues = (mcpServer?: MCPServerDetails): MCPFormValues => ({
@@ -50,22 +48,15 @@ const checkConfigHasEnv = (configJson: string): boolean => {
   }
 }
 
-export const useMCPForm = ({
-  mcpServer,
-  mcpServerNames,
-  inputMode,
-  onInputModeChange,
-}: UseMCPFormParams) => {
+export const useMCPForm = ({ mcpServer, mcpServerNames }: UseMCPFormParams) => {
   const nameUniqueValidator = (value: string) => {
     if (mcpServer) return true
     return !mcpServerNames.includes(value)
   }
 
-  const isFormInput = () => inputMode === 'Form'
-
   const formSchema = useMemo(
-    () => createFormSchema({ nameUniqueValidator, isFormInput }),
-    [mcpServerNames, mcpServer, inputMode]
+    () => createFormSchema({ nameUniqueValidator }),
+    [mcpServerNames, mcpServer]
   )
 
   const form = useForm<MCPFormValues>({
@@ -82,8 +73,7 @@ export const useMCPForm = ({
     const initValues = getInitialValues(mcpServer)
     reset(initValues)
     formatJson(initValues.configJson, setValue)
-    onInputModeChange(mcpServer?.config ? 'JSON' : 'Form')
-  }, [mcpServer, reset, setValue, onInputModeChange])
+  }, [mcpServer, reset, setValue])
 
   return {
     form,

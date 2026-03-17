@@ -19,7 +19,7 @@ import toaster from '@/utils/toaster'
 
 import { parseConfigJson } from '../validators'
 
-export const buildServerConfig = (values: any, inputMode: 'JSON' | 'Form'): MCPServerDetails => {
+export const buildServerConfig = (values: any): MCPServerDetails => {
   const mcpServer: MCPServerDetails = {
     name: values.name,
     description: values.description,
@@ -32,12 +32,7 @@ export const buildServerConfig = (values: any, inputMode: 'JSON' | 'Form'): MCPS
     mcpServer.tools_tokens_size_limit = values.tokensSizeLimit
   }
 
-  if (inputMode === 'JSON') {
-    mcpServer.config = config
-  } else {
-    mcpServer.command = values.command ?? ''
-    mcpServer.arguments = values.arguments ?? ''
-  }
+  mcpServer.config = config
 
   return mcpServer
 }

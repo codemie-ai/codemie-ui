@@ -17,9 +17,7 @@ import debounce from 'lodash/debounce'
 import React, { useCallback } from 'react'
 import { Controller, Control } from 'react-hook-form'
 
-import Input from '@/components/form/Input'
 import Textarea from '@/components/form/Textarea'
-import SelectButton from '@/components/SelectButton/SelectButton'
 import { MCP_CONFIG_SAMPLE } from '@/constants/assistants'
 
 import { MCPFormValues } from './formTypes'
@@ -37,25 +35,15 @@ const JSON_CONFIG_PLACEHOLDER = `{
 
 interface MCPConfigSectionProps {
   control: Control<MCPFormValues>
-  inputMode: 'JSON' | 'Form'
   configHasEnv: boolean
-  onInputModeChange: (mode: 'JSON' | 'Form') => void
   setValue: (name: keyof MCPFormValues, value: any) => void
 }
 
-const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({
-  control,
-  inputMode,
-  configHasEnv,
-  onInputModeChange,
-  setValue,
-}) => {
+const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({ control, configHasEnv, setValue }) => {
   const debouncedFormatJson = useCallback(
     debounce((value: string) => formatJson(value, setValue), 1000),
     [setValue]
   )
-
-  const isFormInput = inputMode === 'Form'
 
   return (
     <div className="flex flex-col gap-2">
@@ -63,78 +51,41 @@ const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({
         <label htmlFor="json-config" className="font-bold text-sm">
           MCP Configuration
         </label>
-        <SelectButton
-          value={inputMode}
-          onChange={(value: typeof inputMode) => onInputModeChange(value)}
-          options={['JSON', 'Form']}
-        />
       </div>
 
-      {!isFormInput ? (
-        <div className="flex flex-col gap-2">
-          <Controller
-            key="1"
-            name="configJson"
-            control={control}
-            render={({ field, fieldState }) => (
-              <Textarea
-                id="json-config"
-                label="Configuration (JSON format)"
-                rows={10}
-                className="font-mono"
-                hint={MCP_CONFIG_SAMPLE}
-                placeholder={JSON_CONFIG_PLACEHOLDER}
-                error={fieldState.error?.message}
-                aria-label="Configuration (JSON format)"
-                {...field}
-                onChange={(e) => {
-                  field.onChange(e)
-                  debouncedFormatJson(e.target.value)
-                }}
-              />
-            )}
-          />
-          <div className="text-xs text-text-quaternary">
-            Must include at least &rdquo;command&rdquo; or &rdquo;url&rdquo; field.
-          </div>
-          {configHasEnv && (
-            <div className="text-failed-secondary">
-              When using the &rdquo;env&rdquo; key in the configuration, ensure that it does not
-              contain any sensitive information or secrets. For secret values, it is recommended to
-              use &rdquo;Integrations&rdquo; instead.
-            </div>
+      <div className="flex flex-col gap-2">
+        <Controller
+          name="configJson"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Textarea
+              id="json-config"
+              label="Configuration (JSON format)"
+              rows={10}
+              className="font-mono"
+              hint={MCP_CONFIG_SAMPLE}
+              placeholder={JSON_CONFIG_PLACEHOLDER}
+              error={fieldState.error?.message}
+              aria-label="Configuration (JSON format)"
+              {...field}
+              onChange={(e) => {
+                field.onChange(e)
+                debouncedFormatJson(e.target.value)
+              }}
+            />
           )}
+        />
+        <div className="text-xs text-text-quaternary">
+          Must include at least &rdquo;command&rdquo; or &rdquo;url&rdquo; field.
         </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <Controller
-            key="2"
-            name="command"
-            control={control}
-            render={({ field, fieldState }) => (
-              <Input
-                label="Command"
-                placeholder="Command*"
-                error={fieldState.error?.message}
-                {...field}
-              />
-            )}
-          />
-
-          <Controller
-            name="arguments"
-            control={control}
-            render={({ field, fieldState }) => (
-              <Textarea
-                label="Arguments"
-                placeholder="Arguments (space-separated)*"
-                error={fieldState.error?.message}
-                {...field}
-              />
-            )}
-          />
-        </div>
-      )}
+        {configHasEnv && (
+          <div className="text-failed-secondary">
+            When using the &rdquo;env&rdquo; key in the configuration, ensure that it does not
+            contain any sensitive information or secrets. For secret values, it is recommended to
+            use &rdquo;Integrations&rdquo; instead.
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -61,7 +61,6 @@ const MCPToolkitForm = ({
   singleToolSelection = false,
 }: MCPToolkitFormProps) => {
   const formRef = useRef<HTMLFormElement>(null)
-  const [inputMode, setInputMode] = useState<'JSON' | 'Form'>('JSON')
   const [wizardStep, setWizardStep] = useState<WizardStep>(WIZARD_STEPS.CONFIGURE_SERVER)
   const [selectedTools, setSelectedTools] = useState<Tool[]>(
     mcpServer?.tools?.map((name) => ({ name } as Tool)) ?? []
@@ -71,8 +70,6 @@ const MCPToolkitForm = ({
   const { form, configHasEnv, isEditing } = useMCPForm({
     mcpServer,
     mcpServerNames,
-    inputMode,
-    onInputModeChange: setInputMode,
   })
 
   const { control, setValue, getValues, watch, handleSubmit, reset, trigger } = form
@@ -83,8 +80,8 @@ const MCPToolkitForm = ({
 
   const serverConfig = useMemo(() => {
     const values = getValues()
-    return buildServerConfig(values, inputMode)
-  }, [watch(), inputMode])
+    return buildServerConfig(values)
+  }, [watch()])
 
   const onSubmit = handleSubmit(async () => {
     await handleFormSubmit({
@@ -147,9 +144,7 @@ const MCPToolkitForm = ({
           <MCPServerConfigStep
             control={control}
             isEditing={isEditing}
-            inputMode={inputMode}
             configHasEnv={configHasEnv}
-            onInputModeChange={setInputMode}
             setValue={setValue}
             mcpServer={mcpServer}
             envVarMode={envVarHook.envVarMode}

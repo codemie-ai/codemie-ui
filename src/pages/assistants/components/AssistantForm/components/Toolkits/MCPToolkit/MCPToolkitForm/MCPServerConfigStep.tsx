@@ -28,9 +28,7 @@ import MCPToolkitTest from '../MCPToolkitTest'
 interface MCPServerConfigStepProps {
   control: Control<any>
   isEditing: boolean
-  inputMode: 'JSON' | 'Form'
   configHasEnv: boolean
-  onInputModeChange: (mode: 'JSON' | 'Form') => void
   setValue: UseFormSetValue<any>
   mcpServer?: MCPServerDetails
   envVarMode: 'new' | 'existing'
@@ -53,9 +51,7 @@ interface MCPServerConfigStepProps {
 const MCPServerConfigStep = ({
   control,
   isEditing,
-  inputMode,
   configHasEnv,
-  onInputModeChange,
   setValue,
   mcpServer,
   envVarMode,
@@ -95,9 +91,7 @@ const MCPServerConfigStep = ({
 
         <MCPConfigSection
           control={control}
-          inputMode={inputMode}
           configHasEnv={configHasEnv}
-          onInputModeChange={onInputModeChange}
           setValue={setValue}
         />
 
