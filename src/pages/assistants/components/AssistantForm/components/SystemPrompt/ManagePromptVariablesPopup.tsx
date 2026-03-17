@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 
 import DeleteDangerSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
@@ -47,7 +47,11 @@ const ManagePromptVariablesPopup = ({
 }: ManagePromptVariablesPopupProps) => {
   const [variables, setVariables] = useState<AssistantPromptVariable[]>([])
   const [showNewVariableForm, setShowNewVariableForm] = useState(false)
-  const [updatedKeysMapping, setUpdatedKeysMapping] = useState({})
+  const variablesRef = useRef(variables)
+
+  useEffect(() => {
+    variablesRef.current = variables
+  }, [variables])
 
   const getVariable = (key: string) => {
     return variables.find((item) => item.key === key)
@@ -81,24 +85,22 @@ const ManagePromptVariablesPopup = ({
   }
 
   const handleNew = (value: AssistantPromptVariable) => {
-    setVariables((vars) => [...vars, value])
+    const updatedVars = [...variables, value]
+    setVariables(updatedVars)
     setShowNewVariableForm(false)
+    onSave(updatedVars, {})
   }
 
-  const handleSave = () => {
-    setShowNewVariableForm(false)
-    onSave(variables, updatedKeysMapping)
-  }
-
-  const handleCancelNew = () => {
-    setVariables(promptVariables)
+  const handleClose = () => {
     setShowNewVariableForm(false)
     onHide()
   }
 
-  const onRemoveVariable = useCallback((key: string) => {
-    setVariables((vars) => vars.filter((variable) => variable.key !== key))
-  }, [])
+  const onRemoveVariable = (key: string) => {
+    const updatedVars = variables.filter((variable) => variable.key !== key)
+    setVariables(updatedVars)
+    onSave(updatedVars, {})
+  }
 
   const onEditVariable = (key: string) => {
     const variable = getVariable(key)
@@ -115,13 +117,12 @@ const ManagePromptVariablesPopup = ({
   }
 
   const onUpdateVariable = (key: string, values: AssistantPromptVariable) => {
-    applyVariable(key, values, { customRender: undefined })
-
-    if (key !== values.key) {
-      setUpdatedKeysMapping((mapping) => {
-        return { ...mapping, [key]: values.key }
-      })
-    }
+    const updatedVars = variablesRef.current.map((v) => {
+      if (v.key !== key) return { ...v }
+      return { ...v, ...values, _meta: { ...v._meta, customRender: undefined } }
+    })
+    setVariables(updatedVars)
+    onSave(updatedVars, key !== values.key ? { [key]: values.key } : {})
   }
 
   const tableColumns: ColumnDefinition[] = useMemo(
@@ -172,18 +173,17 @@ const ManagePromptVariablesPopup = ({
 
   useEffect(() => {
     setVariables(promptVariables)
-  }, [promptVariables, isVisible])
+  }, [isVisible])
 
   return (
     <Popup
       hideFooter
       visible={isVisible}
-      submitText={'Save'}
       header="Manage Prompt Variables"
       className="w-[965px]"
-      onHide={handleCancelNew}
+      onHide={handleClose}
     >
-      <div>
+      <div className="mb-4">
         <p className="text-sm text-text-quaternary mb-4 leading-6">
           Define custom prompt variables that can be used in system instructions. These variables
           can be inserted as <code>{VARIABLE_TEMPLATE_TEXT}</code> in the system prompt.
@@ -216,15 +216,6 @@ const ManagePromptVariablesPopup = ({
           customRenderColumns={customRenderColumns}
           embedded={true}
         />
-
-        <div className="flex justify-end gap-4 mt-6 mb-4">
-          <Button type="secondary" onClick={handleCancelNew}>
-            Cancel
-          </Button>
-          <Button type="primary" onClick={handleSave} disabled={showNewVariableForm}>
-            Save
-          </Button>
-        </div>
       </div>
     </Popup>
   )

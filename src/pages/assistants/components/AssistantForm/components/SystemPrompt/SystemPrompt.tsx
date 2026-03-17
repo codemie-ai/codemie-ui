@@ -118,7 +118,6 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
 
     const handleUpdatePromptVariables = (variables, updatedKeys) => {
       onUpdatePromptVariables(variables)
-      setIsManagePromptVariblesVisible(false)
 
       if (updatedKeys)
         Object.keys(updatedKeys).forEach((key) => replaceVarible(key, updatedKeys[key]))
