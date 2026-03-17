@@ -82,7 +82,7 @@ export interface WorkflowExecutionState {
 
 export interface CreateWorkflowExecutionRequest {
   user_input: string
-  file_name?: string | null
+  file_names?: string[]
 }
 
 export interface UpdateWorkflowExecutionOutputRequest {

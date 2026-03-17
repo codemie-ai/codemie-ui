@@ -21,7 +21,7 @@ import {
   INITIAL_WORKFLOWS_FILTERS,
 } from '@/pages/workflows/constants'
 import { Pagination } from '@/types/common'
-import { Workflow, WorkflowTemplate, WorkflowExecution } from '@/types/entity/workflow'
+import { Workflow, WorkflowTemplate, WorkflowExecution, CreateWorkflowExecutionRequest } from '@/types/entity/workflow'
 import { CustomNodeSchemaResponse } from '@/types/workflowEditor/configuration'
 import api from '@/utils/api'
 import { cleanObject } from '@/utils/helpers'
@@ -259,10 +259,11 @@ export const workflowsStore = proxy<WorkflowsStore>({
     message: string,
     fileNames: string[] = []
   ) {
-    const response = await api.post(`v1/workflows/${workflowId}/executions`, {
+    const requestBody: CreateWorkflowExecutionRequest = {
       user_input: message,
-      file_name: fileNames[0] ?? null,
-    })
+      file_names: fileNames,
+    }
+    const response = await api.post(`v1/workflows/${workflowId}/executions`, requestBody)
     const execution = await response.json()
     this.workflowExecutions.unshift(execution)
     return execution

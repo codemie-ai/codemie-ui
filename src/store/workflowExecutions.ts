@@ -424,13 +424,13 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
    * Adds the new execution to the top of the list
    * @param workflowId - The workflow ID
    * @param message - User input message
-   * @param fileNames - Optional array of file names (only first is used)
+   * @param fileNames - Optional array of file names
    * @returns The created workflow execution
    */
   async createWorkflowExecution(workflowId, message, fileNames = []) {
     const requestBody: CreateWorkflowExecutionRequest = {
       user_input: message,
-      file_name: fileNames.length ? fileNames[0] : null,
+      file_names: fileNames,
     }
 
     const response = await api.post(`v1/workflows/${workflowId}/executions`, requestBody)

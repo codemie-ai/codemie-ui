@@ -64,7 +64,6 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
   const { inputProps, removeFile, openFilePicker, addFiles } = useFileUpload({
     files,
     setFiles,
-    maxFiles: 1,
     handleErrors: (errors) => {
       errors.forEach(({ message }) => toaster.error(message))
     },
