@@ -152,7 +152,7 @@ const AssistantDetails = ({
           <ConversationStarters items={assistant.conversation_starters} />
           <SystemInstructions text={assistant.system_prompt} />
 
-          {assistant.is_global && !!assistant.prompt_variables?.length && (
+          {!!assistant.prompt_variables?.length && (
             <AssistantPromptVariables
               promptVariables={assistant.prompt_variables}
               assistantID={assistant.id}
