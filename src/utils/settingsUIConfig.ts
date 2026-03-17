@@ -135,6 +135,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     displayName: 'LiteLLM',
     serverEnum: 'LiteLLM',
     enterpriseOnly: true,
+    roleRestrictionType: CredentialRoleRestriction.ADMIN_ONLY,
     fields: {
       api_key: { placeholder: 'API Key', sensitive: true },
     },
