@@ -13,14 +13,14 @@
 // limitations under the License.
 //
 
-import { FC, useCallback, useEffect, useState } from 'react'
+import { FC, useCallback, useEffect, useState, ReactElement } from 'react'
 import { useSnapshot } from 'valtio'
 
 import Pagination from '@/components/Pagination'
 import Table from '@/components/Table'
 import { analyticsStore } from '@/store/analytics'
-import type { TabularMetricType, TabularResponse, AnalyticsQueryParams } from '@/types/analytics'
-import { ColumnType } from '@/types/analytics'
+import type { TabularResponse, AnalyticsQueryParams } from '@/types/analytics'
+import { TabularMetricType, ColumnType, MetricFormat } from '@/types/analytics'
 import type { ColumnDefinition } from '@/types/table'
 import { DefinitionTypes } from '@/types/table'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
@@ -37,6 +37,20 @@ interface TableWidgetProps {
   onRowClick?: (row: Record<string, unknown>, rowIndex: number) => void
   expandable?: boolean
   waitForAdoptionConfig?: boolean
+  initialData?: TabularResponse | null
+  hideWrapper?: boolean
+  hidePagination?: boolean
+  hiddenColumns?: string[]
+  tableStyles?: {
+    className: string
+    minWidth?: string
+    cellPadding?: string
+    columnWidths?: Record<string, string>
+  }
+  customRenderColumns?: Record<
+    string,
+    (item: Record<string, string | number | boolean>) => ReactElement
+  >
 }
 
 const TableWidget: FC<TableWidgetProps> = ({
@@ -48,13 +62,21 @@ const TableWidget: FC<TableWidgetProps> = ({
   onRowClick,
   expandable,
   waitForAdoptionConfig = true,
+  initialData,
+  hideWrapper = false,
+  hidePagination = false,
+  hiddenColumns = [],
+  tableStyles,
+  customRenderColumns: customRenderColumnsProp,
 }) => {
   const { loading, loaded, error, aiAdoptionConfig } = useSnapshot(analyticsStore)
-  const [data, setData] = useState<TabularResponse | null>(null)
+  const [data, setData] = useState<TabularResponse | null>(initialData || null)
   const [page, setPage] = useState(0)
   const [perPage, setPerPage] = useState(10)
 
   const fetchData = useCallback(async () => {
+    if (initialData) return
+
     if (!loaded['ai-adoption-config'] && waitForAdoptionConfig) return
 
     const result = await analyticsStore.fetchTabularData(metricType, {
@@ -66,7 +88,15 @@ const TableWidget: FC<TableWidgetProps> = ({
     if (result) {
       setData(result)
     }
-  }, [metricType, page, perPage, filters, loaded['ai-adoption-config'], waitForAdoptionConfig])
+  }, [
+    metricType,
+    page,
+    perPage,
+    filters,
+    loaded['ai-adoption-config'],
+    waitForAdoptionConfig,
+    initialData,
+  ])
 
   useEffect(() => {
     fetchData().catch(console.error)
@@ -87,46 +117,78 @@ const TableWidget: FC<TableWidgetProps> = ({
 
   // Convert analytics column definitions to table column definitions
   const columnDefinitions: ColumnDefinition[] =
-    data?.data.columns.map((col) => ({
-      key: col.id,
-      label: col.label,
-      // Use 'custom' type for project column when onRowClick is enabled
-      type: onRowClick && col.id === 'project' ? DefinitionTypes.Custom : mapColumnType(col.type),
-    })) ?? []
+    data?.data.columns
+      .filter((col) => !hiddenColumns.includes(col.id))
+      .map((col) => {
+        let type: DefinitionTypes
+        if (
+          col.format === MetricFormat.PERCENTAGE &&
+          col.id === 'total' &&
+          metricType === TabularMetricType.KEY_SPENDING
+        ) {
+          type = DefinitionTypes.Custom
+        } else if (onRowClick && col.id === 'project') {
+          type = DefinitionTypes.Custom
+        } else {
+          type = mapColumnType(col.type)
+        }
+
+        let maxLength: number | undefined
+        if (col.id === 'project') {
+          maxLength = tableStyles?.columnWidths ? undefined : 17
+        }
+
+        return {
+          key: col.id,
+          label: col.label,
+          type,
+          maxLength,
+          headClassNames: 'whitespace-normal',
+        }
+      }) ?? []
+
+  const formatCellValue = (col: any, rawValue: any): string | number | boolean => {
+    if (rawValue === null || rawValue === undefined) return '-'
+
+    if (
+      col.format === MetricFormat.PERCENTAGE &&
+      col.id === 'total' &&
+      metricType === TabularMetricType.KEY_SPENDING
+    ) {
+      return rawValue as number
+    }
+
+    return formatMetricValue(rawValue as string | number | boolean, col.format)
+  }
 
   // Format table items with proper value formatting
   const items =
     data?.data.rows.map((row) => {
       const formattedRow: Record<string, string | number | boolean> = {}
 
-      data.data.columns.forEach((col) => {
-        const rawValue = row[col.id]
-        if (rawValue !== null && rawValue !== undefined) {
-          formattedRow[col.id] = formatMetricValue(
-            rawValue as string | number | boolean,
-            col.format
-          )
-        } else {
-          formattedRow[col.id] = '-'
-        }
-      })
+      data.data.columns
+        .filter((col) => !hiddenColumns.includes(col.id))
+        .forEach((col) => {
+          formattedRow[col.id] = formatCellValue(col, row[col.id])
+        })
 
       return formattedRow
     }) ?? []
 
-  // Custom render for project column when row click is enabled
-  const customRenderColumns = onRowClick
-    ? {
-        project: (item: Record<string, string | number | boolean>) => (
-          <span
-            className="font-bold hover:underline cursor-pointer"
-            onClick={() => onRowClick(item, 0)}
-          >
-            {item.project}
-          </span>
-        ),
-      }
-    : undefined
+  const customRenderColumns =
+    customRenderColumnsProp ||
+    (onRowClick
+      ? {
+          project: (item: Record<string, string | number | boolean>) => (
+            <span
+              className="font-bold hover:underline cursor-pointer"
+              onClick={() => onRowClick(item, 0)}
+            >
+              {item.project}
+            </span>
+          ),
+        }
+      : undefined)
 
   const totalPages = data ? Math.ceil(data.pagination.total_count / data.pagination.per_page) : 0
 
@@ -185,9 +247,68 @@ const TableWidget: FC<TableWidgetProps> = ({
   const renderTableContent = () => {
     if (!data) return null
 
+    const tableStyleTag = tableStyles ? (
+      <style>{`
+        .${tableStyles.className} th,
+        .${tableStyles.className} td {
+          ${
+            tableStyles.cellPadding
+              ? `padding-left: ${tableStyles.cellPadding} !important; padding-right: ${tableStyles.cellPadding} !important;`
+              : ''
+          }
+        }
+        .${tableStyles.className} th:first-child,
+        .${tableStyles.className} td:first-child {
+          padding-left: 1rem !important;
+        }
+        .${tableStyles.className} th:last-child,
+        .${tableStyles.className} td:last-child {
+          padding-right: 1rem !important;
+        }
+        .${tableStyles.className} table {
+          ${tableStyles.minWidth ? `min-width: ${tableStyles.minWidth};` : ''}
+          table-layout: ${tableStyles.columnWidths ? 'fixed' : 'auto'};
+          width: 100%;
+        }
+        ${
+          tableStyles.columnWidths && data
+            ? data.data.columns
+                .map((col, index) => {
+                  const width = tableStyles.columnWidths![col.id]
+                  if (!width) return ''
+                  const isFirstColumn = index === 0
+                  return `
+          .${tableStyles.className} th:nth-child(${index + 1}),
+          .${tableStyles.className} td:nth-child(${index + 1}) {
+            width: ${width};
+            min-width: ${width};
+            max-width: ${width};
+            box-sizing: border-box;
+            ${
+              isFirstColumn
+                ? `
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            `
+                : `
+            white-space: normal;
+            word-wrap: break-word;
+            `
+            }
+          }
+        `
+                })
+                .join('')
+            : ''
+        }
+      `}</style>
+    ) : null
+
     return (
       <div className="flex flex-col w-full">
-        <div className="overflow-x-auto w-full">
+        {tableStyleTag}
+        <div className={cn('overflow-x-auto w-full', tableStyles?.className)}>
           <Table
             items={items}
             columnDefinitions={columnDefinitions}
@@ -198,7 +319,7 @@ const TableWidget: FC<TableWidgetProps> = ({
             tableClassName="mt-0"
           />
         </div>
-        {data.pagination.total_count > parseInt(perPageOptions[0].value, 10) && (
+        {!hidePagination && data.pagination.total_count > parseInt(perPageOptions[0].value, 10) && (
           <Pagination
             currentPage={page}
             totalPages={totalPages}
@@ -211,6 +332,10 @@ const TableWidget: FC<TableWidgetProps> = ({
         )}
       </div>
     )
+  }
+
+  if (hideWrapper) {
+    return renderTableContent()
   }
 
   return (

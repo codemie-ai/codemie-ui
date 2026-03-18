@@ -202,6 +202,7 @@ export enum TabularMetricType {
   AI_ADOPTION_ASSET_REUSABILITY = 'ai-adoption-asset-reusability',
   AI_ADOPTION_EXPERTISE_DISTRIBUTION = 'ai-adoption-expertise-distribution',
   AI_ADOPTION_FEATURE_ADOPTION = 'ai-adoption-feature-adoption',
+  KEY_SPENDING = 'budget_usage',
 }
 
 export enum OverviewMetricType {
