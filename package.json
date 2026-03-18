@@ -22,7 +22,8 @@
     "license-check": "npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;Python-2.0;CC-BY-4.0;Apache*;(MIT OR CC0-1.0);MulanPSL-2.0;MPL-2.0;LGPL-3.0-only;UNLICENSED'",
     "license-headers:check": "node scripts/license_headers/check_license_headers.mjs --check",
     "license-headers:fix": "node scripts/license_headers/check_license_headers.mjs --fix",
-    "license-headers": "npm run license-headers:fix && npm run license-headers:check"
+    "license-headers": "npm run license-headers:fix && npm run license-headers:check",
+    "secrets:check": "docker run --rm -v \"$(pwd):/path\" zricethezav/gitleaks:v8.30.0 dir --no-banner --verbose /path"
   },
   "dependencies": {
     "@dnd-kit/abstract": "^0.3.0",
