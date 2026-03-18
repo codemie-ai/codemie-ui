@@ -1,5 +1,100 @@
 [
   {
+    "version": "2.16.0",
+    "issues": [
+      {
+        "title": "Backend: budget check throws TypeError (float >= NoneType) for CLI user activity",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11079",
+        "key": "EPMCDME-11079"
+      },
+      {
+        "title": "Sensitive prompt variable value is not saved correctly when is_sensitive is set during assistant creation",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11026",
+        "key": "EPMCDME-11026"
+      },
+      {
+        "title": "Workflow step review interruption occurs at the wrong state despite interrupt_before configuration",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11018",
+        "key": "EPMCDME-11018"
+      },
+      {
+        "title": "MCP_CLIENT_TIMEOUT configuration is not enforced at tool execution layer—future.result() waits indefinitely",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11015",
+        "key": "EPMCDME-11015"
+      },
+      {
+        "title": "Workflow Tool node: schema is not loaded in UI when code_executor tool is selected (schema exists in YAML)",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11002",
+        "key": "EPMCDME-11002"
+      },
+      {
+        "title": "Workflow execution in Iterator node fails with \"Graph node execution failed\" error",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10986",
+        "key": "EPMCDME-10986"
+      },
+      {
+        "title": "Datasource creation fails for large Xray test repository folders using JQL due to read timeout (CodeMie-Xray integration)",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10880",
+        "key": "EPMCDME-10880"
+      },
+      {
+        "title": "RiMa \"close release\" closes tickets but does not set Resolution (tickets remain Unresolved)",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10820",
+        "key": "EPMCDME-10820"
+      },
+      {
+        "title": "Integration test successful with invalid credentials",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-6291",
+        "key": "EPMCDME-6291"
+      },
+      {
+        "title": "Make Prompt Vars editable for all project users with whom Assistant is shared",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11039",
+        "key": "EPMCDME-11039"
+      },
+      {
+        "title": "Allow users to upload multiple files as workflow input in CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11017",
+        "key": "EPMCDME-11017"
+      },
+      {
+        "title": "Implement Azure Key Vault envelope encryption (AES-256-GCM + RSA-OAEP key wrap) to support large secrets and fail-secure decryption",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11016",
+        "key": "EPMCDME-11016"
+      },
+      {
+        "title": "Add \"+\" button in chat header to create a new chat with previously selected assistant",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10902",
+        "key": "EPMCDME-10902"
+      },
+      {
+        "title": "Clicking \"wrong\" save button while editing prompt vars causes loss of changes",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10898",
+        "key": "EPMCDME-10898"
+      },
+      {
+        "title": "Extend Wiki Tool with \"Add Comments\" Action (with Attachment Support)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10699",
+        "key": "EPMCDME-10699"
+      }
+    ]
+  },
+  {
     "version": "2.15.0",
     "issues": [
       {
