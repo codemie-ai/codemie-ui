@@ -54,7 +54,12 @@ export default function LoginUpdatePassword(
         </div>
 
         <div className="flex w-[400px] flex-col gap-6">
-          <form action={url.loginAction} method="post" className="flex flex-col gap-6">
+          <form
+            action={url.loginAction}
+            method="post"
+            className="flex flex-col gap-6"
+            autoComplete="new-password"
+          >
             {/* New Password */}
             <div className="relative">
               <Input
@@ -63,7 +68,7 @@ export default function LoginUpdatePassword(
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder={msgStr('passwordNew')}
-                autoComplete="off"
+                autoComplete="new-password"
                 autoFocus
                 error={
                   messagesPerField?.existsError('password')
@@ -91,7 +96,7 @@ export default function LoginUpdatePassword(
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder={msgStr('passwordConfirm')}
-                autoComplete="off"
+                autoComplete="new-password"
                 error={
                   messagesPerField?.existsError('password-confirm')
                     ? messagesPerField.get('password-confirm')

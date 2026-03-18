@@ -61,7 +61,11 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading = false }) 
   }
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-6 w-[400px]">
+    <form
+      onSubmit={handleSubmit(onFormSubmit)}
+      className="flex flex-col gap-6 w-[400px]"
+      autoComplete="new-password"
+    >
       {/* Email Input Field */}
       <Controller
         name="email"
@@ -76,7 +80,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading = false }) 
               type="email"
               placeholder="Email"
               disabled={isLoading}
-              autoComplete="off"
+              autoComplete="new-password"
               error={emailError}
               errorClassName="!text-xs !text-error"
               aria-label="Email address"
@@ -102,7 +106,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading = false }) 
                 type={inputType}
                 placeholder="Password"
                 disabled={isLoading}
-                autoComplete="off"
+                autoComplete="new-password"
                 error={errors.password?.message}
                 errorClassName="!text-xs !text-error"
                 aria-label="Password"

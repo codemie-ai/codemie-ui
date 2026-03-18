@@ -109,7 +109,7 @@ export default function LoginOtp(
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value)}
               placeholder={msgStr('loginOtpOneTime')}
-              autoComplete="off"
+              autoComplete="new-password"
               autoFocus
               error={
                 messagesPerField?.existsError('totp') ? messagesPerField.get('totp') : undefined

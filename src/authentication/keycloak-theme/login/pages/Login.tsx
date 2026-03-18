@@ -86,7 +86,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: 'log
                   window.location.href = provider.loginUrl
                 }}
               >
-                Sign in with {provider.displayName}
+                {provider.displayName}
               </Button>
             ))}
 
@@ -123,6 +123,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: 'log
               method="post"
               className="flex flex-col gap-2"
               onSubmit={handleSubmit}
+              autoComplete="new-password"
             >
               {/* Email/Username */}
               <Input
@@ -134,7 +135,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: 'log
                   setEmptyFieldsError(false)
                 }}
                 placeholder="Email"
-                autoComplete="off"
+                autoComplete="new-password"
                 containerClass={hasErrors ? 'border-failed-secondary' : undefined}
                 aria-label="Email address"
                 aria-required="true"
@@ -153,7 +154,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: 'log
                     setEmptyFieldsError(false)
                   }}
                   placeholder="Password"
-                  autoComplete="off"
+                  autoComplete="new-password"
                   error={getPasswordError()}
                   errorClassName="!text-xs !text-error"
                   aria-label="Password"

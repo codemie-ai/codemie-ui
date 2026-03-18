@@ -79,7 +79,12 @@ export default function LoginResetPassword(
         </div>
 
         <div className="flex w-[400px] flex-col gap-6">
-          <form action={url.loginAction} method="post" className="flex flex-col gap-6">
+          <form
+            action={url.loginAction}
+            method="post"
+            className="flex flex-col gap-6"
+            autoComplete="new-password"
+          >
             {/* Username/Email */}
             <Input
               name="username"
@@ -87,7 +92,7 @@ export default function LoginResetPassword(
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder={getUsernameLabel()}
-              autoComplete="off"
+              autoComplete="new-password"
               autoFocus
               error={
                 messagesPerField?.existsError('username')

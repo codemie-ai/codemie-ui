@@ -131,7 +131,7 @@ export default function LoginConfigTotp(
               value={totpCode}
               onChange={(e) => setTotpCode(e.target.value)}
               placeholder={msgStr('authenticatorCode')}
-              autoComplete="off"
+              autoComplete="new-password"
               autoFocus
               error={
                 messagesPerField?.existsError('totp') ? messagesPerField.get('totp') : undefined
@@ -149,7 +149,7 @@ export default function LoginConfigTotp(
               value={deviceName}
               onChange={(e) => setDeviceName(e.target.value)}
               placeholder={msgStr('loginTotpDeviceName')}
-              autoComplete="off"
+              autoComplete="new-password"
               error={
                 messagesPerField?.existsError('userLabel')
                   ? messagesPerField.get('userLabel')
