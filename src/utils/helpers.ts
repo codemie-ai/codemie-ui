@@ -76,6 +76,11 @@ export const humanize = (string: string): string => {
     return 'X-ray'
   }
 
+  // Special case for sharepoint to display as SharePoint
+  if (string.toLowerCase() === 'sharepoint') {
+    return 'SharePoint'
+  }
+
   const words = string.split('_')
 
   return words

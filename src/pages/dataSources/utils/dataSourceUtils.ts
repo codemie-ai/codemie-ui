@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import { SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
 import { dataSourceStore } from '@/store/dataSources'
 import { DataSource } from '@/types/entity/dataSource'
 import { canEdit } from '@/utils/entity'
@@ -24,10 +25,22 @@ import {
   isXrayIndex,
   isAzureDevOpsWikiIndex,
   isAzureDevOpsWorkItemIndex,
+  isSharePointIndex,
   isCodeIndex,
   isProviderIndex,
   isPlatformIndex,
 } from '@/utils/indexing'
+
+/**
+ * Determines if a SharePoint data source uses Microsoft OAuth auth (not Integration)
+ * @param item The data source to check
+ * @returns boolean indicating if Microsoft auth is used
+ */
+export const isSharePointMicrosoftAuth = (item: DataSource): boolean => {
+  if (!isSharePointIndex(item)) return false
+  const authType = item.sharepoint?.auth_type
+  return authType === SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE || authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+}
 
 /**
  * Determines if a data source can be incrementally reindexed
@@ -61,6 +74,7 @@ export const canFullReindex = (item: DataSource): boolean => {
   if (isXrayIndex(item)) return true
   if (isAzureDevOpsWikiIndex(item)) return true
   if (isAzureDevOpsWorkItemIndex(item)) return true
+  if (isSharePointIndex(item)) return true
   if (isProviderIndex(item)) return true
 
   return !isKBIndex(item)
@@ -198,6 +212,16 @@ export const performFullReindex = (
         project_name: item.project_name,
         wiki_query: item.azure_devops_wiki?.wiki_query ?? '',
         wiki_name: item.azure_devops_wiki?.wiki_name ?? undefined,
+      },
+      true
+    )
+  } else if (isSharePointIndex(item) && !isSharePointMicrosoftAuth(item)) {
+    updateKBIndex(
+      item.index_type,
+      {
+        name: item.repo_name,
+        project_name: item.project_name,
+        site_url: item.sharepoint?.site_url ?? '',
       },
       true
     )

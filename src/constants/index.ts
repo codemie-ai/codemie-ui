@@ -128,16 +128,7 @@ export const CHECKER_STATUSES = {
 
 export type CheckerStatus = (typeof CHECKER_STATUSES)[keyof typeof CHECKER_STATUSES]
 
-export const INDEX_TYPES = {
-  GIT: 'git',
-  CONFLUENCE: 'confluence',
-  JIRA: 'jira',
-  FILE: 'file',
-  GOOGLE: 'google',
-  AZURE_DEVOPS_WIKI: 'azure_devops_wiki',
-  AZURE_DEVOPS_WORK_ITEM: 'azure_devops_work_item',
-  PROVIDER: 'provider',
-}
+export { INDEX_TYPES } from '@/constants/dataSources'
 
 export enum InfoWarningType {
   WARNING = 'warning',

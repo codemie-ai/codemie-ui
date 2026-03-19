@@ -18,7 +18,7 @@ import { UseFormGetValues, UseFormSetValue, UseFormWatch } from 'react-hook-form
 import { useSnapshot } from 'valtio'
 
 import { TEXT_EMBEDDING_ADA, GPT_3_5_TURBO } from '@/constants'
-import { INDEX_TYPES } from '@/constants/dataSources'
+import { INDEX_TYPES, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
 import { appInfoStore } from '@/store/appInfo'
 import { userSettingsStore } from '@/store/userSettings'
 import { getConfigItemSettings, isConfigItemEnabled } from '@/utils/settings'
@@ -54,6 +54,7 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
       [INDEX_TYPES.GIT]: getSettingOptions(INDEX_TYPES.GIT),
       [INDEX_TYPES.AZURE_DEVOPS_WIKI]: getSettingOptions('azuredevops'),
       [INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM]: getSettingOptions('azuredevops'),
+      [INDEX_TYPES.SHAREPOINT]: getSettingOptions('sharepoint'),
     }),
     [getSettingOptions]
   )
@@ -94,6 +95,15 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
   }
 
   useEffect(() => {
+    const sharepointAuthType = getValues('sharepointAuthType')
+    if (
+      indexType === INDEX_TYPES.SHAREPOINT &&
+      sharepointAuthType &&
+      sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
+    ) {
+      return
+    }
+
     const newSettingOptions = getSettingOptions(indexType)
 
     if (newSettingOptions.length === 1) {
@@ -103,7 +113,8 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
         indexType === INDEX_TYPES.CONFLUENCE ||
         indexType === INDEX_TYPES.GIT ||
         indexType === INDEX_TYPES.AZURE_DEVOPS_WIKI ||
-        indexType === INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM
+        indexType === INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM ||
+        indexType === INDEX_TYPES.SHAREPOINT
       ) {
         setValue('setting_id', newSettingOptions[0].id)
       }

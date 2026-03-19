@@ -26,6 +26,7 @@ import ReindexSvg from '@/assets/icons/reindex.svg?react'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import NavigationMore from '@/components/NavigationMore'
 import { ButtonType } from '@/constants'
+import { INDEX_TYPES, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { userStore } from '@/store'
 import { dataSourceStore } from '@/store/dataSources'
@@ -33,11 +34,13 @@ import { DataSource } from '@/types/entity/dataSource'
 import { canDelete, canEdit } from '@/utils/entity'
 import { copyToClipboard } from '@/utils/helpers'
 
+import SharePointReindexAuthPopup from './SharePointReindexAuthPopup'
 import {
   canFullReindex,
   canIncrementalReindex,
   canResumeIndexing,
   canForceReindex,
+  isSharePointMicrosoftAuth,
   performFullReindex,
   performIncrementalReindex,
   performResumeIndexing,
@@ -71,6 +74,35 @@ const DataSourceActions: FC<Props> = ({ item }) => {
     { id: string; name: string; created_by: { name?: string } }[]
   >([])
 
+  const [spOauthVisible, setSpOauthVisible] = useState(false)
+
+  const handleSpOauthSuccess = useCallback(
+    (accessToken: string) => {
+      const customClientId =
+        item.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+          ? (item.sharepoint?.oauth_client_id || undefined)
+          : undefined
+      const customTenantId =
+        item.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+          ? (item.sharepoint?.oauth_tenant_id || undefined)
+          : undefined
+      updateKBIndex(
+        INDEX_TYPES.SHAREPOINT,
+        {
+          name: item.repo_name,
+          project_name: item.project_name,
+          site_url: item.sharepoint?.site_url ?? '',
+          auth_type: item.sharepoint?.auth_type ?? SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE,
+          access_token: accessToken,
+          oauth_client_id: customClientId,
+          oauth_tenant_id: customTenantId,
+        },
+        true
+      )
+    },
+    [item, updateKBIndex]
+  )
+
   const getDatasourceAssistants = useCallback(async () => {
     const result = await showAssistantsWithGivenContext(item.id)
     setDatasourceAssistants(result || [])
@@ -103,8 +135,12 @@ const DataSourceActions: FC<Props> = ({ item }) => {
   }, [])
 
   const fullReindex = useCallback(() => {
-    setIsReindexConfirmationVisible(true)
-  }, [])
+    if (isSharePointMicrosoftAuth(item)) {
+      setSpOauthVisible(true)
+    } else {
+      setIsReindexConfirmationVisible(true)
+    }
+  }, [item])
 
   const showResumeConfirmation = useCallback(() => {
     setIsResumeConfirmationVisible(true)
@@ -255,6 +291,13 @@ const DataSourceActions: FC<Props> = ({ item }) => {
         confirmText="Confirm"
         confirmButtonType={ButtonType.BASE}
         onConfirm={confirmResume}
+      />
+
+      <SharePointReindexAuthPopup
+        item={item}
+        visible={spOauthVisible}
+        onHide={() => setSpOauthVisible(false)}
+        onSuccess={handleSpOauthSuccess}
       />
     </div>
   )

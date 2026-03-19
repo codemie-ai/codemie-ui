@@ -37,6 +37,7 @@ import {
   INDEX_TYPE_SUMMARY,
   INDEX_TYPE_CHUNK_SUMMARY,
   IndexType,
+  SHAREPOINT_AUTH_TYPES,
 } from '@/constants/dataSources'
 import { FormIDs } from '@/constants/formIds'
 import { useActiveHelpSegment } from '@/hooks/useActiveHelpSegment'
@@ -189,6 +190,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
   const files = watch('files')
   const repoIndexType = watch('repoIndexType')
   const indexType = watch('indexType') as IndexType
+  const sharepointAuthType = watch('sharepointAuthType')
 
   useActiveHelpSegment(Object.values(INDEX_TYPES).includes(indexType) ? indexType : 'provider')
 
@@ -454,6 +456,28 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                   filteredSettings,
                   value: field.value,
                   embeddingModels,
+                  setValue,
+                  watch,
+                  onIntegrationCreated: () => {
+                    userSettingsStore.resetIsSettingsIndexed()
+                    userSettingsStore.indexSettings()
+                  },
+                }}
+              />
+            )}
+            {field.value === INDEX_TYPES.SHAREPOINT && (
+              <IndexTypeField.SharePoint
+                {...{
+                  errors,
+                  control,
+                  projectName,
+                  hasNoSettings,
+                  isDropdownShown,
+                  filteredSettings,
+                  value: field.value,
+                  embeddingModels,
+                  setValue,
+                  watch,
                   onIntegrationCreated: () => {
                     userSettingsStore.resetIsSettingsIndexed()
                     userSettingsStore.indexSettings()
@@ -473,7 +497,11 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
               />
             )}
 
-            {field.value !== INDEX_TYPES.FILE && (
+            {field.value !== INDEX_TYPES.FILE &&
+              !(
+                field.value === INDEX_TYPES.SHAREPOINT &&
+                sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
+              ) && (
               <>
                 <Divider />
                 <Controller

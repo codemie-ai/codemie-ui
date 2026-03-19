@@ -22,7 +22,7 @@ interface TooltipProps extends PrimeTooltipProps {
 }
 
 const Tooltip = forwardRef<PrimeTooltip, TooltipProps>(
-  ({ showDelay, appendTo = 'self', ...props }, ref) => {
+  ({ showDelay, appendTo = 'self', textStyles, ...props }, ref) => {
     return (
       <PrimeTooltip
         ref={ref}
@@ -35,7 +35,7 @@ const Tooltip = forwardRef<PrimeTooltip, TooltipProps>(
           },
           text: {
             className: `bg-surface-charts-tooltip-background text-white p-3 leading-none rounded-md [word-break:break-word] ${
-              props.textStyles ?? ''
+              textStyles ?? ''
             }`,
           },
         }}

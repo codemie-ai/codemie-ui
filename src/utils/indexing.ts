@@ -60,6 +60,10 @@ export const isAzureDevOpsWorkItemIndex = (info: IndexInfo): boolean => {
   return info.index_type.includes(INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM)
 }
 
+export const isSharePointIndex = (info: IndexInfo): boolean => {
+  return info.index_type.includes(INDEX_TYPES.SHAREPOINT)
+}
+
 export const isProviderIndex = (info: IndexInfo): boolean => {
   return info.index_type.includes(INDEX_TYPES.PROVIDER)
 }

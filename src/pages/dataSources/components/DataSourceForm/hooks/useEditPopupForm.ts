@@ -26,6 +26,7 @@ import {
   CSV_SEPARATORS,
   FILE_SIZE_ERR,
   DEFAULT_DOCUMENTATION_PROMPT,
+  SHAREPOINT_AUTH_TYPES,
 } from '@/constants/dataSources'
 import { useSearchParams } from '@/hooks/useSearchParams'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
@@ -80,6 +81,49 @@ const baseValidationSchema = Yup.object({
         .required('Google Docs link is required')
         .test('googleDoc', 'Invalid Google Docs link', googleDocLinkValidator),
   }),
+
+  // SharePoint fields
+  siteUrl: Yup.string().when('indexType', {
+    is: INDEX_TYPES.SHAREPOINT,
+    then: (schema) => schema.required('SharePoint Site URL is required').url('Must be a valid URL'),
+  }),
+  includePages: Yup.boolean().notRequired(),
+  includeDocuments: Yup.boolean().notRequired(),
+  includeLists: Yup.boolean().notRequired(),
+  sharepointAuthType: Yup.string().notRequired(),
+  sharepointCustomClientId: Yup.string().when(['indexType', 'sharepointAuthType'], {
+    is: (indexType: string, sharepointAuthType: string) =>
+      indexType === INDEX_TYPES.SHAREPOINT && sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
+    then: (schema) =>
+      schema
+        .required('Azure Application (client) ID is required')
+        .matches(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+          'Must be a valid GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)'
+        ),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  sharepointTenantId: Yup.string().when(['indexType', 'sharepointAuthType'], {
+    is: (indexType: string, sharepointAuthType: string) =>
+      indexType === INDEX_TYPES.SHAREPOINT && sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
+    then: (schema) =>
+      schema
+        .required('Azure Directory (tenant) ID is required')
+        .matches(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+          'Must be a valid GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)'
+        ),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  sharepointAccessToken: Yup.string().when(['indexType', 'sharepointAuthType', 'isEditing'], {
+    is: (indexType: string, sharepointAuthType: string, isEditing: boolean) =>
+      indexType === INDEX_TYPES.SHAREPOINT &&
+      sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION &&
+      isEditing === false,
+    then: (schema) => schema.required('Please sign in with Microsoft before saving'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  sharepointFilesFilter: Yup.string().notRequired(),
 
   files: Yup.array().when(['indexType'], {
     is: (indexType) => indexType === INDEX_TYPES.FILE,
@@ -137,16 +181,20 @@ const baseValidationSchema = Yup.object({
     otherwise: (schema) => schema.optional(),
   }),
 
-  setting_id: Yup.string().when('indexType', {
-    is: (indexType) =>
-      [
+  setting_id: Yup.string().when(['indexType', 'sharepointAuthType'], {
+    is: (indexType, sharepointAuthType) => {
+      if (indexType === INDEX_TYPES.SHAREPOINT) {
+        return !sharepointAuthType || sharepointAuthType === SHAREPOINT_AUTH_TYPES.INTEGRATION
+      }
+      return [
         INDEX_TYPES.JIRA,
         INDEX_TYPES.XRAY,
         INDEX_TYPES.CONFLUENCE,
         INDEX_TYPES.GIT,
         INDEX_TYPES.AZURE_DEVOPS_WIKI,
         INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM,
-      ].includes(indexType),
+      ].includes(indexType)
+    },
     then: (schema) => schema.required('Integration is required for this data source type'),
   }),
 
@@ -277,6 +325,15 @@ export const useEditPopupForm = (
       promptTemplate: DEFAULT_DOCUMENTATION_PROMPT,
       guardrail_assignments: defaults?.guardrail_assignments ?? [],
       cronExpression: '',
+      siteUrl: '',
+      includePages: true,
+      includeDocuments: true,
+      includeLists: true,
+      sharepointAuthType: SHAREPOINT_AUTH_TYPES.INTEGRATION,
+      sharepointCustomClientId: '',
+      sharepointTenantId: '',
+      sharepointAccessToken: '',
+      sharepointFilesFilter: '',
     },
     mode: 'onChange',
   })
@@ -312,6 +369,24 @@ export const useEditPopupForm = (
       wikiQuery: defaults?.azure_devops_wiki?.wiki_query ?? '',
       wikiName: defaults?.azure_devops_wiki?.wiki_name ?? '',
       wiqlQuery: defaults?.azure_devops_work_item?.wiql_query ?? '',
+      siteUrl: defaults?.sharepoint?.site_url ?? '',
+      includePages:
+        defaults?.sharepoint?.include_pages !== undefined
+          ? defaults.sharepoint.include_pages
+          : true,
+      includeDocuments:
+        defaults?.sharepoint?.include_documents !== undefined
+          ? defaults.sharepoint.include_documents
+          : true,
+      includeLists:
+        defaults?.sharepoint?.include_lists !== undefined
+          ? defaults.sharepoint.include_lists
+          : true,
+      sharepointAuthType: defaults?.sharepoint?.auth_type ?? SHAREPOINT_AUTH_TYPES.INTEGRATION,
+      sharepointCustomClientId: defaults?.sharepoint?.oauth_client_id ?? '',
+      sharepointTenantId: defaults?.sharepoint?.oauth_tenant_id ?? '',
+      sharepointAccessToken: '',
+      sharepointFilesFilter: defaults?.sharepoint?.files_filter ?? '',
       setting_id: defaults?.setting_id ?? '',
       enableCustomPrompts: !!defaults?.prompt,
       promptTemplate: defaults?.prompt ?? DEFAULT_DOCUMENTATION_PROMPT,

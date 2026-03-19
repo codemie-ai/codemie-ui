@@ -23,6 +23,7 @@ import { RadioButton } from '../RadioButton'
 export interface RadioOption {
   label: string
   value: string | number | boolean | null
+  tooltip?: string
 }
 
 export interface RadioGroupProps {
@@ -94,6 +95,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
             checked={selectedValue === option.value}
             onChange={() => handleChange(option.value)}
             className={optionClassName}
+            tooltip={option.tooltip}
           />
         ))}
       </div>

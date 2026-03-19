@@ -13,11 +13,37 @@
 // limitations under the License.
 //
 
-import { SCHEDULE_PRESETS } from '@/constants/dataSources'
+import { SCHEDULE_PRESETS, SharePointAuthType } from '@/constants/dataSources'
 import { PROVIDER_FIELD_TYPES } from '@/pages/dataSources/constants'
 import type { CreatedBy, PaginatedResponse } from '@/types/common'
 
 import { EntityGuardrailAssignment } from './guardrail'
+
+export type OAuthStatus = 'idle' | 'waiting' | 'success' | 'error'
+
+export interface SharePointOAuthInitiateResponse {
+  user_code: string
+  verification_uri: string
+  device_code: string
+  interval?: number
+  message?: string
+}
+
+export interface SharePointOAuthPollResponse {
+  status: 'success' | 'error' | 'pending'
+  access_token?: string
+  username?: string
+  message?: string
+  slow_down?: boolean
+}
+
+export interface DeviceCodeState {
+  userCode: string
+  verificationUri: string
+  deviceCode: string
+  interval: number
+  message: string
+}
 
 // Schedule types
 export type SchedulePreset = (typeof SCHEDULE_PRESETS)[keyof typeof SCHEDULE_PRESETS]
@@ -65,6 +91,16 @@ export interface DataSource {
   azure_devops_work_item?: {
     wiql_query?: string
   }
+  sharepoint?: {
+    site_url: string
+    include_pages?: boolean
+    include_documents?: boolean
+    include_lists?: boolean
+    files_filter?: string
+    auth_type?: SharePointAuthType
+    oauth_client_id?: string
+    oauth_tenant_id?: string
+  }
   cron_expression?: string | null
 }
 
@@ -101,6 +137,16 @@ export interface DataSourceDetailsResponse {
   xray: any
   azure_devops_wiki: any
   azure_devops_work_item: any
+  sharepoint?: {
+    site_url: string
+    include_pages?: boolean
+    include_documents?: boolean
+    include_lists?: boolean
+    files_filter?: string
+    auth_type?: SharePointAuthType
+    oauth_client_id?: string
+    oauth_tenant_id?: string
+  }
   is_fetching: boolean
   setting_id: string
   tokens_usage: {

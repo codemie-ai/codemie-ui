@@ -30,7 +30,9 @@ import {
   isKBIndex,
   isConfluenceIndex,
   isJiraIndex,
+  isXrayIndex,
   isAzureDevOpsWikiIndex,
+  isSharePointIndex,
   isProviderIndex,
 } from '@/utils/indexing'
 
@@ -53,7 +55,9 @@ const DataSourceEditPage: FC = () => {
     if (isLLMRoutingIndex(item)) return true
     if (isConfluenceIndex(item)) return true
     if (isJiraIndex(item)) return true
+    if (isXrayIndex(item)) return true
     if (isAzureDevOpsWikiIndex(item)) return true
+    if (isSharePointIndex(item)) return true
     if (isProviderIndex(item)) return true
 
     return !isKBIndex(item)

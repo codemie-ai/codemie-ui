@@ -21,6 +21,7 @@ import Git from './IndexTypeGit'
 import Google from './IndexTypeGoogle'
 import Jira from './IndexTypeJira'
 import Provider from './IndexTypeProvider'
+import SharePoint from './IndexTypeSharePoint'
 import Xray from './IndexTypeXray'
 
 const IndexTypeField = {
@@ -32,6 +33,7 @@ const IndexTypeField = {
   Xray,
   AzureDevOpsWiki,
   AzureDevOpsWorkItem,
+  SharePoint,
   Provider,
 }
 

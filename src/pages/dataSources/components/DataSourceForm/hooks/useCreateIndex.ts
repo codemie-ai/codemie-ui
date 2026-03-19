@@ -16,7 +16,7 @@
 import { useState } from 'react'
 import { UseFormSetError } from 'react-hook-form'
 
-import { INDEX_TYPES, IndexType } from '@/constants/dataSources'
+import { INDEX_TYPES, IndexType, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
 import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 
@@ -129,6 +129,8 @@ export const useIndexCreation = ({
             return createOrUpdateAzureDevOpsWikiIndex(values)
           case INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM:
             return createOrUpdateAzureDevOpsWorkItemIndex(values)
+          case INDEX_TYPES.SHAREPOINT:
+            return createOrUpdateSharePointIndex(values)
           default:
             return createOrUpdateProviderIndex(values.indexMetadata, values)
         }
@@ -350,6 +352,67 @@ export const useIndexCreation = ({
       request.guardrail_assignments,
       request.cron_expression ?? undefined
     )
+  }
+
+  const createOrUpdateSharePointIndex = async (values: FormValues) => {
+    const { isEditMode, isReindex, hasProjectChanged } = getIndexEditContext(index, values)
+    const authType = values.sharepointAuthType ?? SHAREPOINT_AUTH_TYPES.INTEGRATION
+    const isMicrosoftAuth =
+      authType === SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE ||
+      authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+
+    const request = {
+      ...getBaseRequestFields(values, index, hasProjectChanged),
+      site_url: values.siteUrl,
+      include_pages: values.includePages ?? true,
+      include_documents: values.includeDocuments ?? true,
+      include_lists: values.includeLists ?? true,
+      files_filter: values.sharepointFilesFilter ?? '',
+      auth_type: authType,
+      ...(isMicrosoftAuth
+        ? {
+            access_token: values.sharepointAccessToken ?? '',
+            oauth_client_id:
+              authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+                ? (values.sharepointCustomClientId ?? undefined)
+                : undefined,
+            oauth_tenant_id:
+              authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+                ? (values.sharepointTenantId ?? undefined)
+                : undefined,
+          }
+        : { setting_id: values.setting_id }),
+    }
+
+    if (isEditMode) {
+      return dataSourceStore.updateKBIndex(INDEX_TYPES.SHAREPOINT, request, isReindex)
+    }
+
+    return dataSourceStore.createKBIndexSharePoint({
+      name: request.name,
+      project_name: request.project_name,
+      project_space_visible: request.project_space_visible,
+      description: request.description,
+      site_url: request.site_url!,
+      setting_id: isMicrosoftAuth ? '' : (values.setting_id ?? ''),
+      embedding_model: request.embedding_model as string | undefined,
+      guardrail_assignments: request.guardrail_assignments,
+      cron_expression: request.cron_expression ?? undefined,
+      include_pages: request.include_pages,
+      include_documents: request.include_documents,
+      include_lists: request.include_lists,
+      files_filter: request.files_filter,
+      auth_type: authType,
+      access_token: isMicrosoftAuth ? (values.sharepointAccessToken ?? '') : undefined,
+      oauth_client_id:
+        authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+          ? (values.sharepointCustomClientId ?? undefined)
+          : undefined,
+      oauth_tenant_id:
+        authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+          ? (values.sharepointTenantId ?? undefined)
+          : undefined,
+    })
   }
 
   const createOrUpdateProviderIndex = async (indexMetadata: any, values: FormValues) => {

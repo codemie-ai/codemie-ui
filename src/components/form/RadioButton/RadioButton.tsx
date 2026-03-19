@@ -17,21 +17,28 @@ import {
   RadioButton as PrimeRadioButton,
   RadioButtonProps as PrimeRadioButtonProps,
 } from 'primereact/radiobutton'
-import React from 'react'
+import React, { useId } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+import InfoIcon from '@/assets/icons/info.svg?react'
+import Tooltip from '@/components/Tooltip/Tooltip'
 
 export interface RadioButtonProps extends Omit<PrimeRadioButtonProps, 'pt'> {
   label?: string
   className?: string
   labelClassName?: string
+  tooltip?: string
 }
 
 const RadioButton: React.FC<RadioButtonProps> = ({
   label,
   className,
   labelClassName,
+  tooltip,
   ...props
 }) => {
+  const rawTooltipId = useId()
+  const tooltipId = `rb-${rawTooltipId.replace(/:/g, '')}`
   const customPT = {
     root: {
       className: twMerge('flex items-center text-sm', className),
@@ -68,6 +75,17 @@ const RadioButton: React.FC<RadioButtonProps> = ({
         >
           {label}
         </span>
+      )}
+      {tooltip && (
+        <>
+          <InfoIcon
+            id={tooltipId}
+            data-pr-tooltip={tooltip}
+            data-pr-position="top"
+            className="ml-1.5 w-3.5 h-3.5 shrink-0 text-text-tertiary hover:text-text-secondary cursor-help"
+          />
+          <Tooltip target={`#${tooltipId}`} textStyles="text-xs max-w-[440px] leading-relaxed" />
+        </>
       )}
     </label>
   )

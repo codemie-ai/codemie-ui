@@ -30,11 +30,12 @@ import GuardrailAssignmentsDetails from '@/components/guardrails/GuardrailAssign
 import TabsMenu from '@/components/TabsMenu/TabsMenu'
 import Tooltip from '@/components/Tooltip/Tooltip'
 import { ButtonType } from '@/constants'
-import { INDEX_TYPES, IndexType, REPO_INDEX_TYPE_OPTIONS } from '@/constants/dataSources'
+import { INDEX_TYPES, IndexType, REPO_INDEX_TYPE_OPTIONS, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
 import DataSourceTypeIcon from '@/pages/dataSources/components/DataSourceTypeIcon'
 import {
   canFullReindex,
   canIncrementalReindex,
+  isSharePointMicrosoftAuth,
   performIncrementalReindex,
   performFullReindex,
 } from '@/pages/dataSources/utils/dataSourceUtils'
@@ -47,6 +48,7 @@ import { humanize, isNumberValue } from '@/utils/helpers'
 import { getIndexTypeCode } from '@/utils/indexing'
 
 import DataSourceDetailsProvider from './DataSourceDetails/DetaSourceDetailsProvider'
+import SharePointReindexAuthPopup from './SharePointReindexAuthPopup'
 
 import type { MenuItem } from 'primereact/menuitem'
 
@@ -57,6 +59,7 @@ interface DataSourceDetailsProps {
 enum TabsId {
   extension,
   files,
+  sharepointFilter,
   data,
 }
 
@@ -141,6 +144,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
   } = useSnapshot(dataSourceStore) as typeof dataSourceStore
 
   const [isReindexConfirmationVisible, setIsReindexConfirmationVisible] = useState(false)
+  const [spReindexVisible, setSpReindexVisible] = useState(false)
   const showIncrementalReindexButton = useMemo(
     () => canIncrementalReindex(dataSource),
     [dataSource]
@@ -165,13 +169,16 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
     if (indexType === INDEX_TYPES.GIT) {
       tabsList.push({ id: TabsId.files, label: 'Files Filter' })
     }
+    if (indexType === INDEX_TYPES.SHAREPOINT && dataSource.sharepoint?.files_filter) {
+      tabsList.push({ id: TabsId.sharepointFilter, label: 'Document Filter' })
+    }
 
     if (indexType && !SECTIONS_DISABLED.processingData.includes(indexType)) {
       tabsList.push({ id: TabsId.data, label: 'Processed Data' })
     }
 
     return tabsList
-  }, [processingSummary, indexType])
+  }, [processingSummary, indexType, dataSource.sharepoint?.files_filter])
 
   const [activeTabId, setActiveTabId] = useState(tabs.length ? tabs[0].id : '')
 
@@ -193,6 +200,21 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
         <div className={styles.textScroll}>
           <ul className="overflow-y-visible">
             {dataSource.files_filter.split('\n').map((pattern, idx) => (
+              <li key={`${pattern}-${idx}`}>{pattern}</li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className={styles.textScroll}>N/A</div>
+      )
+    }
+
+    if (activeTabId === TabsId.sharepointFilter) {
+      const filter = dataSource.sharepoint?.files_filter
+      return filter ? (
+        <div className={styles.textScroll}>
+          <ul className="overflow-y-visible">
+            {filter.split('\n').filter(Boolean).map((pattern, idx) => (
               <li key={`${pattern}-${idx}`}>{pattern}</li>
             ))}
           </ul>
@@ -232,7 +254,11 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
   }, [tabs, activeTabId, processingSummary, dataSource])
 
   const showFullReindexConfirmation = () => {
-    setIsReindexConfirmationVisible(true)
+    if (isSharePointMicrosoftAuth(dataSource)) {
+      setSpReindexVisible(true)
+    } else {
+      setIsReindexConfirmationVisible(true)
+    }
   }
 
   const confirmFullReindex = () => {
@@ -245,6 +271,30 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
       reindexMarketplace
     )
     setIsReindexConfirmationVisible(false)
+  }
+
+  const handleSpOauthSuccess = (accessToken: string) => {
+    const customClientId =
+      dataSource.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+        ? (dataSource.sharepoint?.oauth_client_id || undefined)
+        : undefined
+    const customTenantId =
+      dataSource.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+        ? (dataSource.sharepoint?.oauth_tenant_id || undefined)
+        : undefined
+    updateKBIndex(
+      INDEX_TYPES.SHAREPOINT,
+      {
+        name: dataSource.repo_name,
+        project_name: dataSource.project_name,
+        site_url: dataSource.sharepoint?.site_url ?? '',
+        auth_type: dataSource.sharepoint?.auth_type ?? SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE,
+        access_token: accessToken,
+        oauth_client_id: customClientId,
+        oauth_tenant_id: customTenantId,
+      },
+      true
+    )
   }
 
   const confirmIncrementalReindex = () => {
@@ -380,6 +430,47 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                       {dataSource.azure_devops_work_item?.wiql_query || 'N/A'}
                     </div>
                   </div>
+                )}
+                {indexType === INDEX_TYPES.SHAREPOINT && (
+                  <>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>Site URL:</span>
+                      <span className={styles.propertyValue}>
+                        {dataSource.sharepoint?.site_url || 'N/A'}
+                      </span>
+                    </div>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>Auth Method:</span>
+                      <span className={styles.propertyValue}>
+                        {(
+                          {
+                            [SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE]:
+                              'Sign in with Microsoft (CodeMie Project)',
+                            [SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM]:
+                              'Sign in with Microsoft (Custom Project)',
+                          } as Record<string, string>
+                        )[dataSource.sharepoint?.auth_type ?? ''] ?? 'Integration'}
+                      </span>
+                    </div>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>Include Pages:</span>
+                      <span className={styles.propertyValue}>
+                        {(dataSource.sharepoint?.include_pages ?? true) ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>Include Documents:</span>
+                      <span className={styles.propertyValue}>
+                        {(dataSource.sharepoint?.include_documents ?? true) ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>Include Lists:</span>
+                      <span className={styles.propertyValue}>
+                        {(dataSource.sharepoint?.include_lists ?? true) ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                  </>
                 )}
                 {indexType === INDEX_TYPES.GOOGLE && (
                   <div className="flex flex-col">
@@ -555,6 +646,12 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
         confirmText="Confirm"
         onConfirm={confirmFullReindex}
         confirmButtonType={ButtonType.BASE}
+      />
+      <SharePointReindexAuthPopup
+        item={dataSource}
+        visible={spReindexVisible}
+        onHide={() => setSpReindexVisible(false)}
+        onSuccess={handleSpOauthSuccess}
       />
     </div>
   )

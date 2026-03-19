@@ -28,11 +28,20 @@ export const INDEX_TYPES = {
   GOOGLE: 'google',
   AZURE_DEVOPS_WIKI: 'azure_devops_wiki',
   AZURE_DEVOPS_WORK_ITEM: 'azure_devops_work_item',
+  SHAREPOINT: 'sharepoint',
   PROVIDER: 'provider',
   BEDROCK: 'bedrock',
 } as const
 
 export type IndexType = (typeof INDEX_TYPES)[keyof typeof INDEX_TYPES]
+
+export const SHAREPOINT_AUTH_TYPES = {
+  INTEGRATION: 'integration',
+  OAUTH_CODEMIE: 'oauth_codemie',
+  OAUTH_CUSTOM: 'oauth_custom',
+} as const
+
+export type SharePointAuthType = (typeof SHAREPOINT_AUTH_TYPES)[keyof typeof SHAREPOINT_AUTH_TYPES]
 
 export const INDEX_STATUSES = {
   COMPLETED: 'completed',
@@ -68,6 +77,10 @@ export const FILE_FILTER_PLACEHOLDER = `*.py
 *.txt
 debug.log*
 `
+
+export const FILES_FILTER_TOOLTIP = `- Patterns (e.g., *.pdf): Include ONLY matching files
+- !Patterns (e.g., !*.tmp): EXCLUDE matching files
+- Combined (e.g., *.docx + !draft_*.docx): Include .docx files except draft_*.docx files`
 
 interface CsvSeparatorOption {
   value: string

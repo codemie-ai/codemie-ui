@@ -15,13 +15,39 @@
 
 import { proxy } from 'valtio'
 
-import { DataProvider, DatasetResponse, DataSourceDetailsResponse } from '@/types/entity/dataSource'
+import {
+  DataProvider,
+  DatasetResponse,
+  DataSourceDetailsResponse,
+  SharePointOAuthInitiateResponse,
+  SharePointOAuthPollResponse,
+} from '@/types/entity/dataSource'
 import { EntityGuardrailAssignment } from '@/types/entity/guardrail'
 import api from '@/utils/api'
 import { getIndexTypeCode } from '@/utils/indexing'
 import toaster from '@/utils/toaster'
 
 import { makeCleanObject } from '../utils/utils'
+
+interface CreateSharePointIndexOptions {
+  name: string
+  project_name: string
+  project_space_visible: boolean
+  description: string
+  site_url: string
+  setting_id: string
+  embedding_model?: string
+  guardrail_assignments?: EntityGuardrailAssignment[]
+  cron_expression?: string
+  include_pages?: boolean
+  include_documents?: boolean
+  include_lists?: boolean
+  files_filter?: string
+  auth_type?: string
+  access_token?: string
+  oauth_client_id?: string
+  oauth_tenant_id?: string
+}
 
 const DEFAULT_SORT_KEY = 'date'
 const DEFAULT_SORT_ORDER = 'desc'
@@ -58,11 +84,13 @@ const handleIndexResponse = async (
 
     toaster.info(data.message)
     return data
-  } catch (err: any) {
-    const data = await err.json()
-    const error = errorMessage || data.details || data.error?.details
-
-    return { error }
+  } catch (err: unknown) {
+    if (err instanceof Response) {
+      const data = await err.json()
+      const error = errorMessage || data.details || data.error?.details
+      return { error }
+    }
+    return { error: errorMessage ?? 'Unknown error' }
   }
 }
 
@@ -367,6 +395,26 @@ export const dataSourceStore = proxy({
         cron_expression,
       })
     )
+  },
+
+  createKBIndexSharePoint(options: CreateSharePointIndexOptions) {
+    return handleIndexResponse(api.post('v1/index/knowledge_base/sharepoint', options))
+  },
+
+  async initiateSharePointOAuth(client_id?: string, tenant_id?: string): Promise<SharePointOAuthInitiateResponse> {
+    const body: Record<string, string> = {}
+    if (client_id) body.client_id = client_id
+    if (tenant_id) body.tenant_id = tenant_id
+    const response = await api.post('v1/sharepoint/oauth/initiate', body)
+    return response.json()
+  },
+
+  async pollSharePointOAuth(device_code: string, client_id?: string, tenant_id?: string): Promise<SharePointOAuthPollResponse> {
+    const body: Record<string, string> = { device_code }
+    if (client_id) body.client_id = client_id
+    if (tenant_id) body.tenant_id = tenant_id
+    const response = await api.post('v1/sharepoint/oauth/poll', body, { skipErrorHandling: true })
+    return response.json()
   },
 
   createKBIndexGoogleDoc(

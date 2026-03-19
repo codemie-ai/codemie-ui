@@ -85,10 +85,11 @@ const DataSourceFilters: React.FC<Props> = ({
         value: getFullIndexType(INDEX_TYPES[key]),
       }
 
-      // Add NEW badge for X-ray and Azure DevOps Work Item types
+      // Add NEW badge for X-ray, Azure DevOps Work Item, and SharePoint types
       if (
         INDEX_TYPES[key] === INDEX_TYPES.XRAY ||
-        INDEX_TYPES[key] === INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM
+        INDEX_TYPES[key] === INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM ||
+        INDEX_TYPES[key] === INDEX_TYPES.SHAREPOINT
       ) {
         return { ...option, badge: 'NEW' }
       }

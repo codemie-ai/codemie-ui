@@ -20,6 +20,7 @@ import IconConfluence from '@/assets/icons/confluence.svg?react'
 import IconFile from '@/assets/icons/file.svg?react'
 import IconGoogle from '@/assets/icons/google.svg?react'
 import IconJira from '@/assets/icons/jira.svg?react'
+import IconSharePoint from '@/assets/icons/sharepoint.svg?react'
 import { INDEX_TYPES } from '@/constants'
 
 const DataSourceTypeIcon: FC<{ type: string; classNames?: string }> = ({ type, classNames }) => {
@@ -32,6 +33,7 @@ const DataSourceTypeIcon: FC<{ type: string; classNames?: string }> = ({ type, c
       [INDEX_TYPES.CONFLUENCE]: IconConfluence,
       [INDEX_TYPES.AZURE_DEVOPS_WIKI]: IconCode,
       [INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM]: IconCode,
+      [INDEX_TYPES.SHAREPOINT]: IconSharePoint,
     }[type] ?? IconCode
 
   return <Icon className={classNames} />
