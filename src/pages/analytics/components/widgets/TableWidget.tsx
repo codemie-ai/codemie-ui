@@ -190,7 +190,9 @@ const TableWidget: FC<TableWidgetProps> = ({
         }
       : undefined)
 
-  const totalPages = data ? Math.ceil(data.pagination.total_count / data.pagination.per_page) : 0
+  const totalPages = data?.pagination
+    ? Math.ceil(data.pagination.total_count / data.pagination.per_page)
+    : 0
 
   const handlePaginationChange = (newPage: number, newPerPage?: number) => {
     setPage(newPage)
