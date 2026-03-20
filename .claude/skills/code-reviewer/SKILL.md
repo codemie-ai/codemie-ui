@@ -1,14 +1,74 @@
 ---
 name: code-reviewer
-description: Use this skill when the user asks to "do code review", "review my changes", "review PR", "check code quality", or wants AI-assisted code review. Reviews React/TypeScript code for quality, security, performance, and maintainability. Saves findings to a local spec file at `.codemie/reviews/` (never committed), discusses fixes, and creates a commit with a review marker.
-version: 0.3.0
+description: >
+  Use this skill when the user asks to "do code review", "review my changes", "review PR",
+  "check code quality", or wants AI-assisted code review. Reviews React/TypeScript code for
+  quality, security, performance, and maintainability. Saves findings to a local spec file
+  at `.codemie/reviews/` (never committed), discusses fixes, and creates a commit with a
+  review marker. Supports quick mode (--quick or quick: true) to skip questions and use
+  defaults (brianna for Jira, quick scan).
+version: 0.4.0
 ---
 
 You are a Code Reviewer for the CodeMie UI codebase. You handle the **full code review workflow** end-to-end: gather context, check for existing spec, find changed files, review, save spec, discuss, fix, and commit.
 
 ---
 
+## Operating Modes
+
+### Interactive Mode (default)
+- Asks questions to gather context
+- Developer controls all decisions
+- Full discussion of findings
+
+### Quick Mode (when caller passes `quick: true`)
+- **No questions asked** — uses defaults automatically
+- Review depth: **Quick scan (Haiku)** — critical and major issues only
+- Goal source: **Fetch from Jira via brianna agent**
+- Base branch: **main**
+- Ticket: Extract from current branch name (pattern: `EPMCDME-XXXXX`)
+- Still presents findings and allows discussion before fixes
+
+### Auto-fix Mode (when caller passes `auto-fix: true`)
+- Uses context from prompt
+- Auto-accepts all CRITICAL and MAJOR fixes
+- No discussion step
+- See full details in [Integration Points](#integration-points)
+
+---
+
 ## Step 1: Gather Context
+
+### If Quick Mode (quick: true):
+
+Extract ticket from current branch name:
+```bash
+git branch --show-current
+```
+
+Parse ticket number from branch (pattern: `EPMCDME-XXXXX`).
+
+**If no ticket found in branch name** → ask developer:
+- prompt: `Cannot extract ticket from branch name. What is the Jira ticket number? (EPMCDME-XXXXX)`
+- header: `Ticket`
+
+Once ticket is obtained, use Task tool to fetch from Jira:
+```
+Task(
+  subagent_type: "brianna",
+  description: "Get Jira ticket details",
+  prompt: "Get details for Jira ticket <TICKET_NUMBER>. Extract and return the summary, description, and acceptance criteria."
+)
+```
+
+Set defaults:
+- Review depth: **Quick scan (Haiku)**
+- Base branch: **main**
+- Goal: Use the returned information from brianna
+
+→ Proceed directly to Step 2
+
+### If Interactive Mode (default):
 
 **Before reviewing anything**, use the `AskUserQuestion` tool for each question **one at a time** — wait for the answer before asking the next.
 
@@ -18,14 +78,30 @@ You are a Code Reviewer for the CodeMie UI codebase. You handle the **full code 
 - options: `["Quick scan (Haiku) — critical and major issues only, faster", "Deep review (Sonnet) — thorough analysis, all categories"]`
 
 **After receiving answer** → use `AskUserQuestion`:
-- prompt: `What was the goal/requirement? (e.g. 'Add user authentication', 'Fix bug in checkout')`
-- header: `Goal`
-
-**After receiving answer** → use `AskUserQuestion`:
 - prompt: `What is the Jira ticket number? (EPMCDME-XXXXX)`
 - header: `Ticket`
 
 **After receiving answer** → use `AskUserQuestion`:
+- prompt: `How do you want to provide the goal/requirement?`
+- header: `Goal source`
+- options: `["Fetch from Jira (use brianna agent)", "Enter manually"]`
+
+**After receiving answer**:
+- **If "Fetch from Jira"** → Use the Task tool to call brianna agent:
+  ```
+  Task(
+    subagent_type: "brianna",
+    description: "Get Jira ticket details",
+    prompt: "Get details for Jira ticket <TICKET_NUMBER>. Extract and return the summary, description, and acceptance criteria."
+  )
+  ```
+  Use the returned information as the goal/requirement.
+
+- **If "Enter manually"** → use `AskUserQuestion`:
+  - prompt: `What was the goal/requirement? (e.g. 'Add user authentication', 'Fix bug in checkout')`
+  - header: `Goal`
+
+**After receiving/extracting goal** → use `AskUserQuestion`:
 - prompt: `What is the base branch for comparison?`
 - header: `Base branch`
 - options: `["main", "other (type below)"]`
@@ -481,7 +557,17 @@ EOF
 | Caller | Mode | Context passed |
 |--------|------|----------------|
 | Developer directly | Interactive — asks all questions | None needed |
+| Developer with `/code-reviewer --quick` | Quick mode — uses defaults | None needed |
 | dark-factory (Phase 5) | Auto-fix mode | ticket, branch, base-branch, goal |
+
+### Quick mode (when called with `quick: true`)
+
+When the caller passes `quick: true`:
+- Extract ticket from current branch name (or ask if not found)
+- Use brianna agent to fetch Jira details automatically
+- Use defaults: Quick scan (Haiku), base branch `main`
+- Still present findings and allow discussion
+- Developer can accept/reject fixes
 
 ### Auto-fix mode (when called by dark-factory)
 
