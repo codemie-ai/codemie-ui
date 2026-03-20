@@ -1,5 +1,58 @@
 [
   {
+    "version": "2.17.0",
+    "issues": [
+      {
+        "title": "Fix MCP Radar query_radar validation for nested conditions (json_schema_utils array anyOf handling)",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11162",
+        "key": "EPMCDME-11162"
+      },
+      {
+        "title": "Support resolving Azure OpenAI api_version from config or LiteLLM endpoint (preview API compatible)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11104",
+        "key": "EPMCDME-11104"
+      },
+      {
+        "title": "MCP Server invocation: tool arguments (facetFilters) are dropped/emptied in mcp-connect execution logs",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11065",
+        "key": "EPMCDME-11065"
+      },
+      {
+        "title": "Create codemie-chargeback standalone nightly CronJob to write LiteLLM spend deltas into BigQuery chargeback table",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11040",
+        "key": "EPMCDME-11040"
+      },
+      {
+        "title": "Assistants created via @codemieai/cdk are not shown in the Assistants list but are accessible via direct link",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11028",
+        "key": "EPMCDME-11028"
+      },
+      {
+        "title": "Workflow history does not show change history",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10985",
+        "key": "EPMCDME-10985"
+      },
+      {
+        "title": "Workflow execution incorrectly calculates input/output tokens and money spent in Usage details",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10935",
+        "key": "EPMCDME-10935"
+      },
+      {
+        "title": "Add SharePoint datasource support",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10143",
+        "key": "EPMCDME-10143"
+      }
+    ]
+  },
+  {
     "version": "2.16.0",
     "issues": [
       {
