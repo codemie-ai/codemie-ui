@@ -278,7 +278,6 @@ const TableWidget: FC<TableWidgetProps> = ({
                 .map((col, index) => {
                   const width = tableStyles.columnWidths![col.id]
                   if (!width) return ''
-                  const isFirstColumn = index === 0
                   return `
           .${tableStyles.className} th:nth-child(${index + 1}),
           .${tableStyles.className} td:nth-child(${index + 1}) {
@@ -286,18 +285,8 @@ const TableWidget: FC<TableWidgetProps> = ({
             min-width: ${width};
             max-width: ${width};
             box-sizing: border-box;
-            ${
-              isFirstColumn
-                ? `
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            `
-                : `
             white-space: normal;
             word-wrap: break-word;
-            `
-            }
           }
         `
                 })
