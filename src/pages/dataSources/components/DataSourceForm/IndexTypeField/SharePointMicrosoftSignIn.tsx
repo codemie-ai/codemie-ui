@@ -27,6 +27,7 @@ interface Props {
   deviceCode: DeviceCodeState | null
   onSignIn: () => void
   isDark: boolean
+  validationError?: string
 }
 
 const SharePointMicrosoftSignIn: FC<Props> = ({
@@ -36,6 +37,7 @@ const SharePointMicrosoftSignIn: FC<Props> = ({
   deviceCode,
   onSignIn,
   isDark,
+  validationError,
 }) => (
   <div className="mb-4 flex flex-col gap-2">
     {oauthStatus === 'success' ? (
@@ -76,9 +78,9 @@ const SharePointMicrosoftSignIn: FC<Props> = ({
           </div>
         )}
 
-        {oauthStatus === 'error' && (
-          <p className="text-xs text-text-error">{oauthError}</p>
-        )}
+        {oauthStatus === 'error' && <p className="text-sm text-failed-secondary">{oauthError}</p>}
+
+        {validationError && <p className="text-sm text-failed-secondary">{validationError}</p>}
       </>
     )}
   </div>

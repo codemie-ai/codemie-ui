@@ -97,8 +97,19 @@ const IndexTypeSharePoint: FC<Props> = ({
   const storedAuthType = watch('sharepointAuthType') ?? INTEGRATION
   const [authMethod, setAuthMethod] = useState<string>(storedAuthType)
 
-  const { oauthStatus, oauthUsername, oauthError, deviceCode, handleSignIn, onAuthMethodChange, initForEditMode } =
-    useSharePointOAuth({ projectName, setValue, initialAuthType: isEditing ? storedAuthType : INTEGRATION })
+  const {
+    oauthStatus,
+    oauthUsername,
+    oauthError,
+    deviceCode,
+    handleSignIn,
+    onAuthMethodChange,
+    initForEditMode,
+  } = useSharePointOAuth({
+    projectName,
+    setValue,
+    initialAuthType: isEditing ? storedAuthType : INTEGRATION,
+  })
 
   // Sync authMethod when editing an existing datasource (storedAuthType populated from defaults).
   // Use a ref to track the previous stored value so the effect only fires on actual changes,
@@ -128,9 +139,8 @@ const IndexTypeSharePoint: FC<Props> = ({
 
   const handleMicrosoftSignIn = useCallback(() => {
     const customClientId =
-      authMethod === OAUTH_CUSTOM ? (watch('sharepointCustomClientId') ?? '') : undefined
-    const tenantId =
-      authMethod === OAUTH_CUSTOM ? (watch('sharepointTenantId') ?? '') : undefined
+      authMethod === OAUTH_CUSTOM ? watch('sharepointCustomClientId') ?? '' : undefined
+    const tenantId = authMethod === OAUTH_CUSTOM ? watch('sharepointTenantId') ?? '' : undefined
     handleSignIn(customClientId || undefined, tenantId || undefined)
   }, [authMethod, watch, handleSignIn])
 
@@ -229,6 +239,7 @@ const IndexTypeSharePoint: FC<Props> = ({
           deviceCode={deviceCode}
           onSignIn={handleMicrosoftSignIn}
           isDark={isDark}
+          validationError={errors.sharepointAccessToken?.message}
         />
       )}
 
