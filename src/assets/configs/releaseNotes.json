@@ -1,5 +1,40 @@
 [
   {
+    "version": "2.18.0",
+    "issues": [
+      {
+        "title": "SharePoint datasource creation: Save takes very long before redirecting to Data Sources list for large file volumes",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11259",
+        "key": "EPMCDME-11259"
+      },
+      {
+        "title": "summarize_memory_node triggers unexpectedly and crashes when message history is empty or very small",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11235",
+        "key": "EPMCDME-11235"
+      },
+      {
+        "title": "DB failure in large workflow runs: workflow_executions.checkpoints JSONB exceeds PostgreSQL 256MB limit",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11230",
+        "key": "EPMCDME-11230"
+      },
+      {
+        "title": "Datasource Save: no validation when Microsoft auth selected but user didn't authenticate",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11132",
+        "key": "EPMCDME-11132"
+      },
+      {
+        "title": "Add new widgets to Insights page (DAU, MAU, weekly usage histogram) and money-spent drill-down tables",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11093",
+        "key": "EPMCDME-11093"
+      }
+    ]
+  },
+  {
     "version": "2.17.0",
     "issues": [
       {
