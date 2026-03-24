@@ -60,7 +60,7 @@ export const formatUserOptions = (users: any[]): Array<{ label: string; value: s
 
   users.forEach((user: any) => {
     const { id } = user
-    const name = createdBy(user)
+    const name = createdBy(user, true)
 
     if (!userMap.has(id)) {
       userMap.set(id, [])

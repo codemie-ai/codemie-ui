@@ -111,11 +111,11 @@ interface CreatedBy {
   id?: string
 }
 
-export const createdBy = (createdBy?: CreatedBy | null): string => {
+export const createdBy = (createdBy?: CreatedBy | null, fallbackToId = false): string => {
   if (!createdBy) return SYSTEM_CREATED_BY
 
   if (!createdBy.name && !createdBy.username) {
-    return SYSTEM_CREATED_BY
+    return fallbackToId ? createdBy.user_id || createdBy.id || SYSTEM_CREATED_BY : SYSTEM_CREATED_BY
   }
 
   return (
