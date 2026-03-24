@@ -81,14 +81,12 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
     if (!aiAdoptionConfig) {
       analyticsStore.fetchAiAdoptionConfig(activeTab).catch(console.error)
     }
-    if (activeTab === AnalyticsDashboard.insights) {
-      analyticsStore.fetchCliSummary(filters).catch(console.error)
-    } else if (activeTab === AnalyticsDashboard.adoption && aiAdoptionConfig) {
+    if (activeTab === AnalyticsDashboard.adoption && aiAdoptionConfig) {
       // Wait for config to load before fetching overview (prevents using default config)
       analyticsStore
         .fetchAiAdoptionOverview({
           ...(filters.projects && filters.projects.length > 0 && { projects: filters.projects }),
-          config: aiAdoptionConfig.data as any,
+          config: aiAdoptionConfig.data,
         })
         .catch(console.error)
     }
@@ -149,7 +147,7 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
         bodyClassName="max-h-[80vh]"
       >
         <AiAdoptionConfigView
-          config={(aiAdoptionConfig?.data ?? null) as any}
+          config={aiAdoptionConfig?.data ?? null}
           loading={loading['ai-adoption-config']}
           error={error['ai-adoption-config']?.message}
           readOnly={false}

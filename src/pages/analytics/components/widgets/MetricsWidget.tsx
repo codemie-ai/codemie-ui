@@ -21,6 +21,7 @@ import { type AnalyticsQueryParams, OverviewMetricType, SummariesResponse } from
 import { formatMetricValue } from '@/utils/analyticsFormatters'
 
 import AnalyticsWidget from '../AnalyticsWidget'
+import TimePeriodBadge from './TimePeriodBadge'
 
 interface Props {
   type: OverviewMetricType
@@ -37,10 +38,13 @@ const MetricsWidget: FC<Props> = ({ type, filters }: Props) => {
   const [summaries, setSummaries] = useState<SummariesResponse | null>(null)
 
   useEffect(() => {
-    analyticsStore.fetchSummaries(type, filters).then((result) => {
-      setSummaries(result)
-    })
-  }, [filters])
+    analyticsStore
+      .fetchSummaries(type, filters)
+      .then((result) => {
+        setSummaries(result)
+      })
+      .catch(console.error)
+  }, [type, filters])
 
   const renderMetrics = () => {
     if (!summaries) return null
@@ -52,7 +56,15 @@ const MetricsWidget: FC<Props> = ({ type, filters }: Props) => {
             key={metric.id}
             className="bg-surface-elevated rounded-lg p-4 border border-border-specific-panel-outline"
           >
-            <p className="text-sm text-text-quaternary mb-1 font-bold">{metric.label}</p>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <p className="text-sm text-text-quaternary font-bold truncate">{metric.label}</p>
+              {metric.fixed_timeframe && (
+                <TimePeriodBadge
+                  label={metric.fixed_timeframe}
+                  tooltip="Time filters are ignored for this metric. It always reflects its own fixed window."
+                />
+              )}
+            </div>
             <p className="text-2xl font-bold text-text-primary">
               {formatMetricValue(metric.value, metric.format)}
             </p>

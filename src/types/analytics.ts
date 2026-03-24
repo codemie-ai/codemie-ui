@@ -130,6 +130,7 @@ export interface Metric {
   value: MetricValue
   format?: MetricFormat
   description?: string
+  fixed_timeframe?: string
   secondary_metrics?: Metric[]
 }
 
@@ -169,6 +170,7 @@ export interface TabularResponse {
   data: TabularData
   metadata: ResponseMetadata
   pagination: AnalyticsPagination
+  fixed_timeframe?: string
 }
 
 // Note: ErrorDetails and ErrorResponse have been moved to @/types/common
@@ -203,6 +205,9 @@ export enum TabularMetricType {
   AI_ADOPTION_EXPERTISE_DISTRIBUTION = 'ai-adoption-expertise-distribution',
   AI_ADOPTION_FEATURE_ADOPTION = 'ai-adoption-feature-adoption',
   KEY_SPENDING = 'budget_usage',
+  ENGAGEMENT_WEEKLY_HISTOGRAM = 'engagement/weekly-histogram',
+  PLATFORM_SPENDING_BY_USERS = 'spending/by-users/platform',
+  CLI_SPENDING_BY_USERS = 'spending/by-users/cli',
 }
 
 export enum OverviewMetricType {
