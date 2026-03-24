@@ -15,6 +15,7 @@
 
 import { FC } from 'react'
 
+import DonutChartWidget from '@/pages/analytics/components/widgets/DonutChartWidget'
 import MetricsWidget from '@/pages/analytics/components/widgets/MetricsWidget'
 import StackedBarChartWidget from '@/pages/analytics/components/widgets/StackedBarChartWidget'
 import TableWidget from '@/pages/analytics/components/widgets/TableWidget'
@@ -79,6 +80,27 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
             metricType={TabularMetricType.CLI_SPENDING_BY_USERS}
             title="CLI Spent by User"
             description="CLI proxy usage spending per user"
+            filters={filters}
+          />
+        </div>
+      </section>
+
+      {/* ===== LLM & CLI USAGE SECTION ===== */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4 text-text-primary">LLM Usage</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <DonutChartWidget
+            metricType={TabularMetricType.LLMS_USAGE}
+            title="Top LLMs"
+            labelField="model_name"
+            valueField="total_requests"
+            filters={filters}
+          />
+          <DonutChartWidget
+            metricType={TabularMetricType.CLI_LLMS}
+            title="Top CLI LLMs"
+            labelField="model_name"
+            valueField="total_requests"
             filters={filters}
           />
         </div>
