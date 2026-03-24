@@ -48,6 +48,7 @@ import KataDetailView from '@/pages/katas/components/KataDetailView'
 import EditKataPage from '@/pages/katas/EditKataPage'
 import KatasPage, { KatasCategory } from '@/pages/katas/KatasPage'
 import NewKataPage from '@/pages/katas/NewKataPage'
+import LoginSuccessPage from '@/pages/login-success/LoginSuccessPage'
 import ReleaseNotesPage from '@/pages/releaseNotes/ReleaseNotesPage'
 import AiAdoptionConfigPage from '@/pages/settings/administration/AiAdoptionConfigPage'
 import CategoriesManagementPage from '@/pages/settings/administration/CategoriesManagementPage'
@@ -532,6 +533,11 @@ export const router = createHashRouter([
       ...awsSettingsRoutes,
       ...otherRoutes,
     ],
+  },
+  {
+    id: 'login-success',
+    path: '/login-success',
+    Component: LoginSuccessPage,
   },
   // {
   //   id: 'sign-in',

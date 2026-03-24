@@ -401,7 +401,10 @@ export const dataSourceStore = proxy({
     return handleIndexResponse(api.post('v1/index/knowledge_base/sharepoint', options))
   },
 
-  async initiateSharePointOAuth(client_id?: string, tenant_id?: string): Promise<SharePointOAuthInitiateResponse> {
+  async initiateSharePointOAuth(
+    client_id?: string,
+    tenant_id?: string
+  ): Promise<SharePointOAuthInitiateResponse> {
     const body: Record<string, string> = {}
     if (client_id) body.client_id = client_id
     if (tenant_id) body.tenant_id = tenant_id
@@ -409,7 +412,11 @@ export const dataSourceStore = proxy({
     return response.json()
   },
 
-  async pollSharePointOAuth(device_code: string, client_id?: string, tenant_id?: string): Promise<SharePointOAuthPollResponse> {
+  async pollSharePointOAuth(
+    device_code: string,
+    client_id?: string,
+    tenant_id?: string
+  ): Promise<SharePointOAuthPollResponse> {
     const body: Record<string, string> = { device_code }
     if (client_id) body.client_id = client_id
     if (tenant_id) body.tenant_id = tenant_id

@@ -93,7 +93,8 @@ const baseValidationSchema = Yup.object({
   sharepointAuthType: Yup.string().notRequired(),
   sharepointCustomClientId: Yup.string().when(['indexType', 'sharepointAuthType'], {
     is: (indexType: string, sharepointAuthType: string) =>
-      indexType === INDEX_TYPES.SHAREPOINT && sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
+      indexType === INDEX_TYPES.SHAREPOINT &&
+      sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
     then: (schema) =>
       schema
         .required('Azure Application (client) ID is required')
@@ -105,7 +106,8 @@ const baseValidationSchema = Yup.object({
   }),
   sharepointTenantId: Yup.string().when(['indexType', 'sharepointAuthType'], {
     is: (indexType: string, sharepointAuthType: string) =>
-      indexType === INDEX_TYPES.SHAREPOINT && sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
+      indexType === INDEX_TYPES.SHAREPOINT &&
+      sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
     then: (schema) =>
       schema
         .required('Azure Directory (tenant) ID is required')

@@ -74,11 +74,11 @@ const SharePointReindexAuthPopup: FC<Props> = ({ item, visible, onHide, onSucces
   const startAuth = useCallback(async () => {
     const customClientId =
       item.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-        ? (item.sharepoint?.oauth_client_id || undefined)
+        ? item.sharepoint?.oauth_client_id || undefined
         : undefined
     const customTenantId =
       item.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-        ? (item.sharepoint?.oauth_tenant_id || undefined)
+        ? item.sharepoint?.oauth_tenant_id || undefined
         : undefined
 
     stopPolling()

@@ -56,9 +56,7 @@ export const useSharePointOAuth = ({
   const pollAliasRef = useRef<string>('')
   const currentMethodRef = useRef<string>(initialAuthType)
   const savedStatusRef = useRef<Record<string, OAuthStatus>>(
-    initialAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
-      ? { [initialAuthType]: 'success' }
-      : {}
+    initialAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION ? { [initialAuthType]: 'success' } : {}
   )
   const savedUsernameRef = useRef<Record<string, string>>({})
 

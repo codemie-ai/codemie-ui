@@ -39,7 +39,10 @@ import {
 export const isSharePointMicrosoftAuth = (item: DataSource): boolean => {
   if (!isSharePointIndex(item)) return false
   const authType = item.sharepoint?.auth_type
-  return authType === SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE || authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+  return (
+    authType === SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE ||
+    authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+  )
 }
 
 /**

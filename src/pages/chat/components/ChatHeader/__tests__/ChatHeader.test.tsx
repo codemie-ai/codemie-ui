@@ -259,7 +259,12 @@ describe('ChatHeader', () => {
     })
   })
 
-  const buttonLabels = ['New Chat with Same Assistant', 'Share Chat', 'Usage details', 'Open chat configuration']
+  const buttonLabels = [
+    'New Chat with Same Assistant',
+    'Share Chat',
+    'Usage details',
+    'Open chat configuration',
+  ]
   const exportButtonLabel =
     'Export conversation - Choose from multiple file formats including JSON, DOCX, and PDF'
 

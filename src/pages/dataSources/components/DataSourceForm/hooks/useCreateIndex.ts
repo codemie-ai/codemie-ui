@@ -374,11 +374,11 @@ export const useIndexCreation = ({
             access_token: values.sharepointAccessToken ?? '',
             oauth_client_id:
               authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-                ? (values.sharepointCustomClientId ?? undefined)
+                ? values.sharepointCustomClientId ?? undefined
                 : undefined,
             oauth_tenant_id:
               authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-                ? (values.sharepointTenantId ?? undefined)
+                ? values.sharepointTenantId ?? undefined
                 : undefined,
           }
         : { setting_id: values.setting_id }),
@@ -394,7 +394,7 @@ export const useIndexCreation = ({
       project_space_visible: request.project_space_visible,
       description: request.description,
       site_url: request.site_url!,
-      setting_id: isMicrosoftAuth ? '' : (values.setting_id ?? ''),
+      setting_id: isMicrosoftAuth ? '' : values.setting_id ?? '',
       embedding_model: request.embedding_model as string | undefined,
       guardrail_assignments: request.guardrail_assignments,
       cron_expression: request.cron_expression ?? undefined,
@@ -403,14 +403,14 @@ export const useIndexCreation = ({
       include_lists: request.include_lists,
       files_filter: request.files_filter,
       auth_type: authType,
-      access_token: isMicrosoftAuth ? (values.sharepointAccessToken ?? '') : undefined,
+      access_token: isMicrosoftAuth ? values.sharepointAccessToken ?? '' : undefined,
       oauth_client_id:
         authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-          ? (values.sharepointCustomClientId ?? undefined)
+          ? values.sharepointCustomClientId ?? undefined
           : undefined,
       oauth_tenant_id:
         authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-          ? (values.sharepointTenantId ?? undefined)
+          ? values.sharepointTenantId ?? undefined
           : undefined,
     })
   }

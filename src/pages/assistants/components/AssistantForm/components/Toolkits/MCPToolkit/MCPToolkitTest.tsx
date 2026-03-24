@@ -16,8 +16,9 @@
 import { useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import Button from '@/components/Button'
 import Checker from '@/components/Checker'
-import { CHECKER_STATUSES, CheckerStatus } from '@/constants'
+import { ButtonSize, ButtonType, CHECKER_STATUSES, CheckerStatus } from '@/constants'
 import { assistantsStore } from '@/store'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import toaster from '@/utils/toaster'
@@ -30,11 +31,13 @@ interface MCPToolkitTestProps {
 const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
   const { testMCP } = useSnapshot(assistantsStore)
   const [status, setStatus] = useState<CheckerStatus>(CHECKER_STATUSES.UNDEFINED)
+  const [loginUrl, setLoginUrl] = useState<string | null>(null)
 
   const check = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.stopPropagation()
     if (status === CHECKER_STATUSES.IN_PROGRESS) return
     setStatus(CHECKER_STATUSES.IN_PROGRESS)
+    setLoginUrl(null)
 
     try {
       const response = await testMCP(mcpServer)
@@ -45,21 +48,34 @@ const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
         toaster.info('MCP Server configuration test successful')
         setStatus(CHECKER_STATUSES.SUCCESS)
       }
-    } catch {
+    } catch (error: any) {
+      const url = error?.parsedError?.login_url
+      if (url) setLoginUrl(url)
       setStatus(CHECKER_STATUSES.FAILED)
     }
   }
 
   return (
-    <Checker
-      status={status}
-      onCheck={check}
-      classNames={
-        inline
-          ? 'border-none flex items-center justify-start gap-4 px-1 h-[34px] text-text-primary hover:bg-surface-specific-dropdown-hover hover:text-text-accent'
-          : ''
-      }
-    />
+    <>
+      <Checker
+        status={status}
+        onCheck={check}
+        classNames={
+          inline
+            ? 'border-none flex items-center justify-start gap-4 px-1 h-[34px] text-text-primary hover:bg-surface-specific-dropdown-hover hover:text-text-accent'
+            : ''
+        }
+      />
+      {loginUrl && (
+        <Button
+          type={ButtonType.SECONDARY}
+          size={ButtonSize.SMALL}
+          onClick={() => window.open(loginUrl, '_blank', 'noopener,noreferrer')}
+        >
+          Login to MCP Server
+        </Button>
+      )}
+    </>
   )
 }
 

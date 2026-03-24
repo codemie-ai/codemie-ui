@@ -30,7 +30,12 @@ import GuardrailAssignmentsDetails from '@/components/guardrails/GuardrailAssign
 import TabsMenu from '@/components/TabsMenu/TabsMenu'
 import Tooltip from '@/components/Tooltip/Tooltip'
 import { ButtonType } from '@/constants'
-import { INDEX_TYPES, IndexType, REPO_INDEX_TYPE_OPTIONS, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
+import {
+  INDEX_TYPES,
+  IndexType,
+  REPO_INDEX_TYPE_OPTIONS,
+  SHAREPOINT_AUTH_TYPES,
+} from '@/constants/dataSources'
 import DataSourceTypeIcon from '@/pages/dataSources/components/DataSourceTypeIcon'
 import {
   canFullReindex,
@@ -214,9 +219,12 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
       return filter ? (
         <div className={styles.textScroll}>
           <ul className="overflow-y-visible">
-            {filter.split('\n').filter(Boolean).map((pattern, idx) => (
-              <li key={`${pattern}-${idx}`}>{pattern}</li>
-            ))}
+            {filter
+              .split('\n')
+              .filter(Boolean)
+              .map((pattern, idx) => (
+                <li key={`${pattern}-${idx}`}>{pattern}</li>
+              ))}
           </ul>
         </div>
       ) : (
@@ -276,11 +284,11 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
   const handleSpOauthSuccess = (accessToken: string) => {
     const customClientId =
       dataSource.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-        ? (dataSource.sharepoint?.oauth_client_id || undefined)
+        ? dataSource.sharepoint?.oauth_client_id || undefined
         : undefined
     const customTenantId =
       dataSource.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-        ? (dataSource.sharepoint?.oauth_tenant_id || undefined)
+        ? dataSource.sharepoint?.oauth_tenant_id || undefined
         : undefined
     updateKBIndex(
       INDEX_TYPES.SHAREPOINT,
@@ -455,19 +463,19 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                     <div className={styles.row}>
                       <span className={styles.propertyLabel}>Include Pages:</span>
                       <span className={styles.propertyValue}>
-                        {(dataSource.sharepoint?.include_pages ?? true) ? 'Yes' : 'No'}
+                        {dataSource.sharepoint?.include_pages ?? true ? 'Yes' : 'No'}
                       </span>
                     </div>
                     <div className={styles.row}>
                       <span className={styles.propertyLabel}>Include Documents:</span>
                       <span className={styles.propertyValue}>
-                        {(dataSource.sharepoint?.include_documents ?? true) ? 'Yes' : 'No'}
+                        {dataSource.sharepoint?.include_documents ?? true ? 'Yes' : 'No'}
                       </span>
                     </div>
                     <div className={styles.row}>
                       <span className={styles.propertyLabel}>Include Lists:</span>
                       <span className={styles.propertyValue}>
-                        {(dataSource.sharepoint?.include_lists ?? true) ? 'Yes' : 'No'}
+                        {dataSource.sharepoint?.include_lists ?? true ? 'Yes' : 'No'}
                       </span>
                     </div>
                   </>

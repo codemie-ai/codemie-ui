@@ -18,8 +18,10 @@ import { useSnapshot } from 'valtio'
 
 import ProcessingCompleteSvg from '@/assets/icons/processing-status.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
+import Button from '@/components/Button'
 import Markdown from '@/components/markdown/Markdown'
 import Thought from '@/components/Thought/Thought'
+import { ButtonSize, ButtonType } from '@/constants'
 import { AvatarType } from '@/constants/avatar'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatGenerationStore } from '@/store/chatGeneration'
@@ -215,6 +217,16 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
         {!isEditing && (
           <div ref={messageElementRef}>
             <Markdown className="mt-4" content={message.response} />
+            {message.loginUrl && (
+              <Button
+                type={ButtonType.SECONDARY}
+                size={ButtonSize.SMALL}
+                className="mt-3"
+                onClick={() => window.open(message.loginUrl!, '_blank', 'noopener,noreferrer')}
+              >
+                Login to MCP Server
+              </Button>
+            )}
           </div>
         )}
 

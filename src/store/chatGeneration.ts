@@ -394,6 +394,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       reader = await api.stream(endpoint, requestData, abortController)
     } catch (error: any) {
       historyItem.response = chatGenerationStore._handleGenerationStreamError(error)
+      historyItem.loginUrl = error?.error?.login_url ?? error?.login_url
       historyItem.inProgress = false
       historyItem.stream = null
       chatGenerationStore._finishThoughts(historyItem)

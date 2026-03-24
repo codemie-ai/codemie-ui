@@ -502,22 +502,22 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                 field.value === INDEX_TYPES.SHAREPOINT &&
                 sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
               ) && (
-              <>
-                <Divider />
-                <Controller
-                  name="cronExpression"
-                  control={control}
-                  render={({ field: cronField, fieldState }) => (
-                    <CronScheduleInput
-                      value={cronField.value ?? undefined}
-                      onChange={cronField.onChange}
-                      error={fieldState.error?.message}
-                      hint="Set up automatic reindexing schedule for this datasource. Manual reindexing will always be available."
-                    />
-                  )}
-                />
-              </>
-            )}
+                <>
+                  <Divider />
+                  <Controller
+                    name="cronExpression"
+                    control={control}
+                    render={({ field: cronField, fieldState }) => (
+                      <CronScheduleInput
+                        value={cronField.value ?? undefined}
+                        onChange={cronField.onChange}
+                        error={fieldState.error?.message}
+                        hint="Set up automatic reindexing schedule for this datasource. Manual reindexing will always be available."
+                      />
+                    )}
+                  />
+                </>
+              )}
           </>
         )}
       />

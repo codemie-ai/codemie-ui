@@ -45,7 +45,7 @@ git commit -m "EPMCDME-xxx: Action and message"
 
 **"push changes"** → Push only:
 ```bash
-git push origin $(git branch --show-current)
+git push --set-upstream origin $(git branch --show-current)
 ```
 
 **"create MR"** → Full workflow below.
@@ -58,14 +58,14 @@ git push origin $(git branch --show-current)
 
 #### If MR already exists:
 ```bash
-git push origin $(git branch --show-current)
+git push --set-upstream origin $(git branch --show-current)
 # Inform: "Changes pushed to existing MR: <url>"
 ```
 
 #### If no MR exists:
 ```bash
 # Push changes
-git push origin $(git branch --show-current)
+git push --set-upstream origin $(git branch --show-current)
 
 # Create MR - use template structure
 glab mr create \

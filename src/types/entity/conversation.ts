@@ -145,6 +145,7 @@ export interface ChatMessage {
   fileNames?: string[]
   userMark?: UserMark | null
   debug?: any
+  loginUrl?: string
   workflowExecution?: ChatWorkflowExecution
   historyIndex?: number
   messageIndex?: number

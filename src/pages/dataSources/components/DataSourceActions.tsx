@@ -80,11 +80,11 @@ const DataSourceActions: FC<Props> = ({ item }) => {
     (accessToken: string) => {
       const customClientId =
         item.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-          ? (item.sharepoint?.oauth_client_id || undefined)
+          ? item.sharepoint?.oauth_client_id || undefined
           : undefined
       const customTenantId =
         item.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-          ? (item.sharepoint?.oauth_tenant_id || undefined)
+          ? item.sharepoint?.oauth_tenant_id || undefined
           : undefined
       updateKBIndex(
         INDEX_TYPES.SHAREPOINT,

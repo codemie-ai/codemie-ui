@@ -63,8 +63,7 @@ const ChatHeader: FC = () => {
     router.push({ name: 'chats', params: { id: chat.id } })
   }
 
-  const hasAssistant =
-    !!currentChat?.initialAssistantId || !!currentChat?.assistantIds?.length
+  const hasAssistant = !!currentChat?.initialAssistantId || !!currentChat?.assistantIds?.length
 
   const handleViewWorkflowDetails = () => {
     if (currentChat?.initialAssistantId) {
