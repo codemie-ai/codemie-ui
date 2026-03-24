@@ -25,6 +25,27 @@ git status --short
 glab mr list --source-branch=$(git branch --show-current) 2>/dev/null || echo "No MR"
 ```
 
+### 1b. Check for Code Review Spec
+
+After checking git state, look for a code review spec for this branch/ticket.
+
+Extract ticket from current branch name (pattern `EPMCDME-XXXXX`).
+
+Try to read the spec:
+```
+Read: .codemie/reviews/<TICKET>/review.md
+# Fallback (if no ticket found):
+Read: .codemie/reviews/<branch-name>/review.md
+```
+
+If spec is found → extract for MR description:
+- **Issues found**: count of `- [ ]` + `- [x]` + `- [~]` under CRITICAL and MAJOR
+- **Issues fixed**: count of `- [x]` items
+- **Issues rejected**: count of `- [~]` items with justifications
+- **Clean**: if no issues were found at all
+
+Keep this data — it will be injected into the MR description in Step 4.
+
 ### 2. Validate Jira Ticket (Required for Commits)
 
 **Before any commit**, verify Jira ticket exists in context:
@@ -45,7 +66,7 @@ git commit -m "EPMCDME-xxx: Action and message"
 
 **"push changes"** → Push only:
 ```bash
-git push --set-upstream origin $(git branch --show-current)
+git push origin $(git branch --show-current)
 ```
 
 **"create MR"** → Full workflow below.
@@ -58,26 +79,46 @@ git push --set-upstream origin $(git branch --show-current)
 
 #### If MR already exists:
 ```bash
-git push --set-upstream origin $(git branch --show-current)
+git push origin $(git branch --show-current)
 # Inform: "Changes pushed to existing MR: <url>"
 ```
 
 #### If no MR exists:
 ```bash
 # Push changes
-git push --set-upstream origin $(git branch --show-current)
+git push origin $(git branch --show-current)
+```
 
-# Create MR - use template structure
+Build the MR title from the Jira ticket and a concise description of the work done (read commit history since main if needed to understand what was implemented):
+```bash
+git log main..HEAD --oneline
+```
+
+Title rules:
+- Pattern: `EPMCDME-xxx: <Short description starting with capital letter>`
+- Max ~70 characters
+- Describe the feature/fix, not the process ("Add SharePoint datasource support", not "Implement EPMCDME-123")
+
+Build the description — always include **Summary** and **Changes**. If a code review spec was found in Step 1b, include the **Code Review** section:
+
+```bash
 glab mr create \
-  --title "EPMCDME-xxx: Brief description" \
+  --title "EPMCDME-xxx: <Short feature description>" \
   --description "## Summary
-[2-4 sentence overview]
+[2-4 sentence overview of what was implemented and why]
 
 ## Changes
-- [Key highlights only]
+- [Key change 1]
+- [Key change 2]
 
-## Impact
-[Optional: before/after for user-facing changes]
+## Code Review
+<!-- Include ONLY if review spec was found in Step 1b -->
+AI code review completed (AI-Code-Review marker in commit history).
+- Issues found: <N critical, N major> / No issues found (clean)
+- Issues fixed: <N> / N/A
+- Issues rejected: <N with justification> / N/A
+
+:white_check_mark: Reviewed and approved by AI Code Reviewer
 
 ## Checklist
 - [ ] Self-reviewed
@@ -85,6 +126,15 @@ glab mr create \
 - [ ] Documentation updated (if needed)
 - [ ] No breaking changes (or documented)"
 ```
+
+**If no review spec was found** → omit the `## Code Review` section entirely from the description.
+
+After MR is created, immediately approve it using the MR IID returned by `glab mr create`:
+```bash
+glab mr approve <MR_IID>
+```
+
+This adds the AI reviewer's +1 to the MR. If `glab mr approve` fails (e.g., self-approval not allowed on this GitLab instance), inform the user but do not treat it as a blocking error.
 
 ## Commit Format
 

@@ -4,42 +4,85 @@ description: >
   Use this skill when the user asks to "do code review", "review my changes", "review PR",
   "check code quality", or wants AI-assisted code review. Reviews React/TypeScript code for
   quality, security, performance, and maintainability. Saves findings to a local spec file
-  at `.codemie/reviews/` (never committed), discusses fixes, and creates a commit with a
-  review marker. Supports quick mode (--quick or quick: true) to skip questions and use
-  defaults (brianna for Jira, quick scan).
-version: 0.4.0
+  at `.codemie/reviews/` (never committed), auto-fixes all issues, commits, pushes, and
+  approves (or creates) the MR — fully automated by default. Use --interactive for full
+  interactive mode with questions and discussion.
+version: 0.5.0
 ---
 
-You are a Code Reviewer for the CodeMie UI codebase. You handle the **full code review workflow** end-to-end: gather context, check for existing spec, find changed files, review, save spec, discuss, fix, and commit.
+You are a Code Reviewer for the CodeMie UI codebase. You handle the **full code review workflow** end-to-end: gather context, check for existing spec, find changed files, review, save spec, fix, commit, push, and approve MR.
 
 ---
 
 ## Operating Modes
 
-### Interactive Mode (default)
-- Asks questions to gather context
-- Developer controls all decisions
-- Full discussion of findings
-
-### Quick Mode (when caller passes `quick: true`)
-- **No questions asked** — uses defaults automatically
+### Default Mode (no flags)
+- **Fully automated — no questions asked, no waiting for developer input**
 - Review depth: **Quick scan (Haiku)** — critical and major issues only
 - Goal source: **Fetch from Jira via brianna agent**
 - Base branch: **main**
 - Ticket: Extract from current branch name (pattern: `EPMCDME-XXXXX`)
-- Still presents findings and allows discussion before fixes
+- **Auto-applies ALL found fixes** (CRITICAL and MAJOR) — skips Step 7 discussion
+- After fixes: commit → push → check MR:
+  - MR exists → approve it
+  - MR does not exist → create MR via `codemie-mr` skill, then approve
 
-### Auto-fix Mode (when caller passes `auto-fix: true`)
-- Uses context from prompt
-- Auto-accepts all CRITICAL and MAJOR fixes
-- No discussion step
-- See full details in [Integration Points](#integration-points)
+### Interactive Mode (`--interactive` flag)
+- Asks questions to gather context one at a time
+- Developer controls all decisions
+- Full discussion of findings before applying fixes
+- After discussion: applies agreed fixes → commit → push → MR handling (same as default)
+- Activated by: `/code-reviewer --interactive`
+
+---
+
+## Progress Tracking
+
+**Throughout the entire workflow**, maintain a `progress.md` file at `.codemie/reviews/<TICKET>/progress.md` (same folder as `review.md`). This file is **never committed** — local only.
+
+**Purpose**: Keeps workflow state in context. If the conversation grows long or context is lost, read `progress.md` first to know exactly where you are and what was gathered.
+
+### Format
+
+```markdown
+# Review Progress: <TICKET>
+
+**Started**: <ISO-8601 UTC timestamp>
+**Branch**: <branch>
+**Ticket**: <ticket>
+**Depth**: <Quick scan | Deep review>
+**Base**: <base branch>
+**Goal**: <brief goal — 1 sentence>
+
+## Workflow State
+
+| Step | Status | Notes |
+|------|--------|-------|
+| 1. Context    | ✅ done    | depth=quick, base=main, goal=... |
+| 2. Spec check | ✅ done    | no existing spec / found, case B |
+| 3. Files      | ✅ done    | 5 files: src/components/Foo.tsx, ... |
+| 4. Review     | ✅ done    | 2 critical, 1 major |
+| 5. Spec saved | ✅ done    | .codemie/reviews/EPMCDME-123/review.md |
+| 6. Findings   | ✅ done    | presented |
+| 7. Discussion | ✅ done    | all accepted / N rejected |
+| 8. Fixes      | ✅ done    | 3 files changed |
+| 9. Commit     | ✅ done    | abc1234: EPMCDME-123: Fix issues |
+| 10. MR        | ✅ done    | approved MR !42 / created MR !42 |
+```
+
+### Rules
+
+- **Create** `progress.md` at the end of Step 1 (after all context is gathered)
+- **Update** the relevant row after each step completes — use `✅ done`, `⏳ in progress`, or `⏭️ skipped`
+- **Read** `progress.md` at the start if the file already exists — this means review was started earlier, resume from the last incomplete step
+- `progress.md` lives in the same folder as `review.md` — create the folder with `mkdir -p` if needed
+- **Never commit** this file (same rule as `review.md`)
 
 ---
 
 ## Step 1: Gather Context
 
-### If Quick Mode (quick: true):
+### If default mode (no `--interactive` flag):
 
 Extract ticket from current branch name:
 ```bash
@@ -61,14 +104,21 @@ Task(
 )
 ```
 
+**If brianna returns an error, cannot find the ticket, or returns empty/unclear content:**
+→ Do NOT block the review
+→ Ask developer using `AskUserQuestion`:
+  - prompt: `Brianna couldn't fetch the ticket details. What was the goal/requirement for this work?`
+  - header: `Goal`
+→ Use the developer's answer as the goal
+
 Set defaults:
 - Review depth: **Quick scan (Haiku)**
 - Base branch: **main**
-- Goal: Use the returned information from brianna
+- Goal: Use the returned information from brianna (or developer's manual input if fallback)
 
 → Proceed directly to Step 2
 
-### If Interactive Mode (default):
+### If Interactive Mode (`--interactive`):
 
 **Before reviewing anything**, use the `AskUserQuestion` tool for each question **one at a time** — wait for the answer before asking the next.
 
@@ -95,7 +145,12 @@ Set defaults:
     prompt: "Get details for Jira ticket <TICKET_NUMBER>. Extract and return the summary, description, and acceptance criteria."
   )
   ```
-  Use the returned information as the goal/requirement.
+  **If brianna returns an error, cannot find the ticket, or returns empty/unclear content:**
+  → Inform developer: `"Couldn't fetch ticket from Jira (brianna error or ticket not found)."`
+  → Fall through to "Enter manually" path below — ask for goal manually.
+  → Do NOT abort the review.
+
+  If brianna succeeded → use the returned information as the goal/requirement.
 
 - **If "Enter manually"** → use `AskUserQuestion`:
   - prompt: `What was the goal/requirement? (e.g. 'Add user authentication', 'Fix bug in checkout')`
@@ -105,6 +160,14 @@ Set defaults:
 - prompt: `What is the base branch for comparison?`
 - header: `Base branch`
 - options: `["main", "other (type below)"]`
+
+**After all context is gathered** → create or update `progress.md`:
+```bash
+mkdir -p .codemie/reviews/<TICKET>
+```
+Write `.codemie/reviews/<TICKET>/progress.md` with the full header and workflow state table (all steps as `⏳ pending` except Step 1 which is `✅ done`).
+
+If `progress.md` already exists (resuming a previous session) → read it first, then update Step 1 row and continue from the last incomplete step.
 
 ---
 
@@ -187,22 +250,35 @@ Merge both lists, filter same as Step 3 (skip binary/generated/deleted).
 - Only the `file:line` locations from open spec issues
 - Plus any new changed files (if Case B)
 
+→ Update `progress.md`: Step 2 = `✅ done | existing spec, case B, continuing`
+
 ---
 
 ## Step 3: Find Changed Files (Full Review)
 
-Use the base branch provided (default `main`):
+Run **all three** checks against the base branch provided (default `main`):
 
 ```bash
+# 1. Committed changes since base branch
 git diff <base-branch>...HEAD --name-only
-# Example with default:
-git diff main...HEAD --name-only
+
+# 2. Staged changes not yet committed
+git diff HEAD --name-only
+
+# 3. Unstaged working-tree changes
+git diff --name-only
 ```
 
-- **No changes found** → inform developer, do NOT create spec or commit marker
+Merge and deduplicate all three lists into a single file list.
+
+**Track for Step 9:** note whether commands 2 or 3 returned any files — this means there is **uncommitted user code** that will need special handling during commit.
+
+- **No changes found in any of the three checks** → inform developer, do NOT create spec or commit marker
 - **More than 15 files** → warn developer, suggest reviewing in smaller chunks
 - **Binary/generated files** → skip: `*.png`, `*.jpg`, `*.ico`, `*.woff`, `*.ttf`, `*.pdf`, `*.zip`, `package-lock.json`, `yarn.lock`, `dist/`, `*.d.ts`
 - **Deleted files** → do NOT analyze, only list in summary
+
+→ Update `progress.md`: Step 3 = `✅ done | N files: <comma-separated list>`
 
 → **After getting file list — proceed to Step 4. Do NOT skip to Step 5 or Step 6.**
 
@@ -292,6 +368,8 @@ Task(
 )
 ```
 
+→ Update `progress.md`: Step 4 = `✅ done | N critical, N major`
+
 → **After completing review — proceed IMMEDIATELY to Step 5. Do NOT present findings yet. Do NOT skip to Step 6.**
 
 ---
@@ -361,6 +439,8 @@ Use the Edit tool only to:
 - Append new issues found in new files (if Case B) under existing sections
 - Update the **Summary** line (open = items still `- [ ]`, fixed = `- [x]`, rejected = `- [~]`)
 
+→ Update `progress.md`: Step 5 = `✅ done | spec saved`
+
 ---
 
 ## Step 6: Present Findings
@@ -394,7 +474,11 @@ Use the Edit tool only to:
 **💡 Recommendations** (Nice to have)
 [Brief list]
 
-→ **After presenting findings — proceed to Step 7. Wait for developer response before applying any fixes.**
+→ Update `progress.md`: Step 6 = `✅ done | findings presented`
+
+→ **After presenting findings:**
+- **Default mode** — skip Step 7, proceed directly to Step 8 and apply all fixes automatically
+- **Interactive mode (`--interactive`)** — proceed to Step 7 and wait for developer response before applying any fixes
 
 ---
 
@@ -423,6 +507,18 @@ After discussion — add justifications to spec under `## Justifications`:
 - `src/components/Foo.tsx:34` — <issue> — Justification: <reason>
 ```
 
+**If developer says "done", "fixed", "I fixed it myself", "already applied", or similar:**
+→ Developer applied fixes in another tool or terminal window — do NOT apply them again
+→ Re-verify ALL open `- [ ]` issues from spec by reading each `file:line` location:
+  - Read the file at the noted location
+  - If fix is confirmed → mark `- [ ]` → `- [x]` in spec
+  - If still present → keep `- [ ]` and inform developer ("still open at `file:line`")
+→ Update **Summary** line in spec
+→ **Skip Step 8** (nothing to apply)
+→ **Proceed directly to Step 9**
+
+→ Update `progress.md`: Step 7 = `✅ done | N accepted, N rejected`
+
 → **After discussion is complete — proceed to Step 8 to apply agreed fixes.**
 
 ---
@@ -432,6 +528,8 @@ After discussion — add justifications to spec under `## Justifications`:
 Apply agreed fixes using Edit/Write tools.
 After each fix — update the corresponding `- [ ]` → `- [x]` in the spec file.
 Update **Summary** line in spec (format: `Critical: <N> open, <N> fixed, <N> rejected | Major: <N> open, <N> fixed, <N> rejected`).
+
+→ Update `progress.md`: Step 8 = `✅ done | N files changed`
 
 → **After all fixes applied and spec updated — proceed to Step 9.**
 
@@ -491,7 +589,13 @@ git rm --cached .codemie/reviews/<TICKET>/review.md
 ```
 Then verify it's gone from git status before proceeding.
 
-Then stage only the code files that were changed during the review:
+**Check for uncommitted user code** (from Step 3 tracking):
+```bash
+git status --short
+```
+If there are uncommitted files (lines NOT starting with `??`) that belong to the feature work (not reviewer-introduced) → stage those **together** with the reviewer fixes in the same commit. Do NOT separate them into two commits — one commit carries all changes + the review marker.
+
+Then stage all files explicitly (reviewer fixes + uncommitted user code):
 ```bash
 git add <list each changed file explicitly by path>
 git commit -m "$(cat <<'EOF'
@@ -515,6 +619,24 @@ EOF
 
 ### If no fixes (clean code or all critical fixed/justified without code changes):
 
+First check for uncommitted user code:
+```bash
+git status --short
+```
+
+**If there are uncommitted changes** (tracked files — lines NOT starting with `??`) → ask developer:
+
+```
+Your code changes are uncommitted. Include them in the review commit?
+1. Yes — stage my changes + add review marker in one commit
+2. No — create empty review-only commit (I will commit my code separately)
+```
+
+- **If Yes** → stage all uncommitted tracked files explicitly (no `git add .`), then create regular commit with a description of the feature work + review marker fields. Title should describe what was implemented, not "Code review completed".
+- **If No** → proceed with empty commit below
+
+**If no uncommitted changes** (or developer chose No):
+
 ```bash
 git commit --allow-empty -m "$(cat <<'EOF'
 EPMCDME-XXXXX: Code review completed (no changes applied)
@@ -532,6 +654,8 @@ Co-Authored-By: <MODEL> (Code Reviewer) <noreply@anthropic.com>
 EOF
 )"
 ```
+
+→ Update `progress.md`: Step 9 = `✅ done | <short-commit-hash>: <commit title>`
 
 ### Commit Format Rules
 
@@ -552,26 +676,86 @@ EOF
 
 ---
 
+## Step 10: Push and MR
+
+**After a successful commit**, first check if an MR already exists for this branch:
+
+```bash
+glab mr list --source-branch=$(git branch --show-current) 2>/dev/null
+```
+
+### If MR already exists:
+
+Set up API variables (reuse across all calls):
+```bash
+REMOTE=$(git remote get-url origin | sed 's|https://[^@]*@[^/]*/||' | sed 's/\.git$//')
+ENCODED=$(echo "$REMOTE" | sed 's/\//%2F/g')
+```
+
+→ Check current approval state:
+```bash
+glab api "projects/${ENCODED}/merge_requests/<MR_IID>/approvals"
+```
+
+→ If `user_has_approved: true` — unapprove first:
+```bash
+glab api -X POST "projects/${ENCODED}/merge_requests/<MR_IID>/unapprove"
+```
+
+→ Push the commit:
+```bash
+git push origin $(git branch --show-current)
+```
+
+→ Approve:
+```bash
+glab api -X POST "projects/${ENCODED}/merge_requests/<MR_IID>/approve"
+```
+
+→ Inform developer: `"Pushed and approved existing MR: <MR_URL>"`
+→ Update `progress.md`: Step 10 = `✅ done | pushed + approved <MR_URL>`
+
+### If no MR exists:
+
+Ask developer:
+```
+AskUserQuestion:
+- prompt: "Commit created. Would you like to create a Merge Request?"
+- header: "Create MR"
+- options: ["Yes — create MR now", "No — I'll do it later"]
+```
+
+**If "Yes"** → invoke the `codemie-mr` skill, passing:
+- Current branch
+- Jira ticket number
+- Instruction: skip commit step — code is already committed, go straight to push + MR creation
+
+**If "No"** → end workflow. Inform developer they can run `codemie-mr` later.
+→ Update `progress.md`: Step 10 = `⏳ skipped by developer`
+
+---
+
 ## Integration Points
 
 | Caller | Mode | Context passed |
 |--------|------|----------------|
-| Developer directly | Interactive — asks all questions | None needed |
-| Developer with `/code-reviewer --quick` | Quick mode — uses defaults | None needed |
-| dark-factory (Phase 5) | Auto-fix mode | ticket, branch, base-branch, goal |
+| Developer directly (no flags) | Default — fully automated | None needed |
+| Developer with `/code-reviewer --interactive` | Interactive — asks all questions | None needed |
+| dark-factory (Phase 5) | Default — fully automated | ticket, branch, base-branch, goal |
 
-### Quick mode (when called with `quick: true`)
+### Default mode (no flags)
 
-When the caller passes `quick: true`:
+When invoked without flags:
 - Extract ticket from current branch name (or ask if not found)
 - Use brianna agent to fetch Jira details automatically
 - Use defaults: Quick scan (Haiku), base branch `main`
-- Still present findings and allow discussion
-- Developer can accept/reject fixes
+- **Auto-apply all CRITICAL and MAJOR fixes** — skip Step 7 discussion
+- Commit → push → approve or create MR automatically
 
-### Auto-fix mode (when called by dark-factory)
+### Interactive mode (`--interactive`)
 
-When the caller passes `auto-fix: true`:
-- Skip Step 1 (use context from prompt)
-- Skip Step 7 discussion — auto-accept all CRITICAL and MAJOR fixes
-- Still save spec and create commit marker
+When the caller passes `--interactive`:
+- Ask questions one at a time to gather context
+- Present findings and discuss with developer before applying fixes
+- Developer can accept/reject each fix
+- After discussion: apply agreed fixes → commit → push → MR handling

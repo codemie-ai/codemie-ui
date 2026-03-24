@@ -21,6 +21,7 @@ Built with React and TypeScript, teams interact with AI assistants, design multi
 - [Development Commands](#development-commands)
 - [Testing](#testing)
 - [Code Quality](#code-quality)
+- [AI Code Review](#ai-code-review)
 - [Docker Support](#docker-support)
 - [Keycloak Theme Development](#keycloak-theme-development)
 - [Project Structure](#project-structure)
@@ -112,6 +113,85 @@ npm run lint        # Check with ESLint
 npm run lint:fix    # Auto-fix issues
 npm run format      # Format with Prettier
 ```
+
+## AI Code Review
+
+AI-assisted code review powered by Claude Code. Scans for CRITICAL and MAJOR issues, auto-fixes them, commits, pushes, and approves (or creates) the GitLab MR — fully automated.
+
+### How to run
+
+```
+/code-reviewer
+@code-reviewer
+```
+
+Or say: **"do code review"**, **"review my changes"**
+
+Use `--interactive` for manual control over each step:
+
+```
+/code-reviewer --interactive
+@code-reviewer --interactive
+```
+
+In interactive mode Claude will ask questions one at a time:
+- Review depth (Quick scan or Deep review)
+- Jira ticket number (`EPMCDME-XXXXX`)
+- Goal source (fetch from Jira or enter manually)
+- Base branch (default: `main`)
+
+After reviewing, it will present findings and wait for your decision on each fix before applying anything.
+
+### What it does
+
+```
+1. Reads ticket from branch name → fetches goal from Jira
+2. Finds all changed files vs main
+3. Scans for CRITICAL and MAJOR issues (Tailwind, Popup, API patterns, types, security)
+4. Saves findings to .codemie/reviews/<TICKET>/review.md  (never committed)
+5. Auto-applies all fixes
+6. Creates a commit with a review marker
+7. Pushes the branch
+8. Approves the existing MR — or creates a new one if none exists
+```
+
+### Prerequisites: git + glab setup
+
+Both `git` and `glab` (GitLab CLI) must be configured with a personal access token before the reviewer can push and approve MRs.
+
+#### 1. Generate a GitLab Personal Access Token
+
+1. Go to your GitLab profile: **User Settings → Access Tokens** (or visit `https://<your-gitlab>/profile/personal_access_tokens`)
+2. Click **Add new token**
+3. Set a name (e.g. `codemie-cli`), expiry date, and select scopes: `api`, `read_repository`, `write_repository`
+4. Click **Create personal access token** and copy the value — it is shown only once
+
+#### 2. Configure git
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
+git config --global credential.helper store
+git remote set-url origin https://oauth2:<YOUR_TOKEN>@<your-gitlab-host>/<namespace>/codemie-ui.git
+```
+
+Replace `Your Name` and `your@email.com` with your actual name and GitLab email, `<YOUR_TOKEN>` with the token from step 1, and `<your-gitlab-host>/<namespace>` with your actual GitLab host and group path.
+
+#### 3. Configure glab
+
+```bash
+glab auth login --hostname <your-gitlab-host> --token <YOUR_TOKEN>
+```
+
+Verify it works:
+
+```bash
+glab auth status
+```
+
+Once both are configured, `/code-reviewer` will push and approve MRs without any extra prompts.
+
+---
 
 ## Docker Support
 

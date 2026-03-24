@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(git *)",
+      "Bash(glab *)",
       "Bash(mkdir -p *)",
       "Write(.codemie/reviews/**)",
       "Edit(.codemie/reviews/**)",
@@ -19,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npm run format"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\") && [[ \"$FILE\" == */src/* ]] && npx prettier --write \"$FILE\" && npx eslint --fix \"$FILE\" || true"
           }
         ]
       }
