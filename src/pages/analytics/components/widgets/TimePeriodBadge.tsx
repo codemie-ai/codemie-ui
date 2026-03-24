@@ -23,7 +23,8 @@ interface TimePeriodBadgeProps {
 const TimePeriodBadge: FC<TimePeriodBadgeProps> = ({ label, tooltip }) => {
   return (
     <span
-      title={tooltip}
+      data-tooltip-id={tooltip ? 'react-tooltip' : undefined}
+      data-tooltip-content={tooltip}
       className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold bg-surface-base-secondary border border-border-secondary whitespace-nowrap"
     >
       <svg

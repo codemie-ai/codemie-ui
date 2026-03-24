@@ -132,8 +132,25 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
     }
   }, [labels, series, data])
 
-  const chartOptions: ChartOptions<'bar'> = useMemo(
-    () => ({
+  const chartOptions: ChartOptions<'bar'> = useMemo(() => {
+    const rows = data?.data.rows ?? []
+    const firstDayTickIndices = new Set<number>()
+    const seenDates = new Set<string>()
+    rows.forEach((row, index) => {
+      const raw = String(row[labelField] ?? '')
+      const d = new Date(raw)
+      if (Number.isNaN(d.getTime())) return
+      const h = d.getHours()
+      const m = d.getMinutes()
+      if (h % 2 !== 0 || m !== 0) return
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      if (!seenDates.has(dateStr)) {
+        seenDates.add(dateStr)
+        firstDayTickIndices.add(index)
+      }
+    })
+
+    return {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
@@ -207,10 +224,12 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
               const h = d.getHours()
               const m = d.getMinutes()
               if (h % 2 !== 0 || m !== 0) return null
-              if (h === 0) {
-                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              const timeStr = `${String(h).padStart(2, '0')}:00`
+              const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              if (firstDayTickIndices.has(index)) {
+                return h === 0 ? dateStr : [dateStr, timeStr]
               }
-              return `${String(h).padStart(2, '0')}:00`
+              return timeStr
             },
           },
           border: {
@@ -237,9 +256,8 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
           },
         },
       },
-    }),
-    [gridColor, textColor, data, labelField]
-  )
+    }
+  }, [gridColor, textColor, data, labelField])
 
   const hasData = chartData.datasets.some((ds) => ds.data.some((v) => v > 0))
 
@@ -265,7 +283,14 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
       description={description}
       loading={loading[metricType]}
       error={error[metricType]}
-      actions={data?.fixed_timeframe ? <TimePeriodBadge label={data.fixed_timeframe} /> : undefined}
+      actions={
+        data?.fixed_timeframe ? (
+          <TimePeriodBadge
+            label={data.fixed_timeframe}
+            tooltip="Time filters are ignored for this metric. It always reflects its own fixed window."
+          />
+        ) : undefined
+      }
     >
       {renderChartContent()}
     </AnalyticsWidget>
