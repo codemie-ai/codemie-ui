@@ -92,29 +92,37 @@ const ChatSkillsSelector: React.FC<ChatSkillsSelectorProps> = ({
 
   // Combine skills from API with cached selected skills that might not be in current search
   const displaySkills = useMemo(() => {
-    const skillMap = new Map<string, Skill>()
+    const seenIds = new Set<string>()
+    const result: Skill[] = []
 
-    // Add all skills from current search results
-    skills.forEach((skill) => skillMap.set(skill.id, skill))
-
-    // Add cached selected skills that are not in current results
-    localSelectedSkills.forEach((skillOption) => {
-      if (!skillMap.has(skillOption.value) && selectedSkillsCache.has(skillOption.value)) {
-        skillMap.set(skillOption.value, selectedSkillsCache.get(skillOption.value)!)
+    // 1. Initially selected skills first (already selected by user)
+    initialSelectedSkills.forEach((skillOption) => {
+      const skill =
+        skills.find((s) => s.id === skillOption.value) || selectedSkillsCache.get(skillOption.value)
+      if (skill && !seenIds.has(skill.id)) {
+        result.push(skill)
+        seenIds.add(skill.id)
       }
     })
 
-    const result = Array.from(skillMap.values())
-
-    // Sort: initially selected skills first, then alphabetically
-    const initialSelectedIds = initialSelectedSkills.map((s) => s.value)
-    return result.sort((a, b) => {
-      const aSelected = initialSelectedIds.includes(a.id)
-      const bSelected = initialSelectedIds.includes(b.id)
-      if (aSelected && !bSelected) return -1
-      if (!aSelected && bSelected) return 1
-      return a.name.localeCompare(b.name)
+    // 2. Skills from API in server order (relevance-sorted by backend)
+    skills.forEach((skill) => {
+      if (!seenIds.has(skill.id)) {
+        result.push(skill)
+        seenIds.add(skill.id)
+      }
     })
+
+    // 3. Cached selected skills not in current results
+    localSelectedSkills.forEach((skillOption) => {
+      if (!seenIds.has(skillOption.value) && selectedSkillsCache.has(skillOption.value)) {
+        const skill = selectedSkillsCache.get(skillOption.value)!
+        result.push(skill)
+        seenIds.add(skill.id)
+      }
+    })
+
+    return result
   }, [skills, localSelectedSkills, selectedSkillsCache, initialSelectedSkills])
 
   const handleToggleSkill = useCallback(

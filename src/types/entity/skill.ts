@@ -22,6 +22,12 @@ export enum SkillVisibility {
   PUBLIC = 'public',
 }
 
+export enum SkillSortBy {
+  CREATED_DATE = 'created_date',
+  ASSISTANTS_COUNT = 'assistants_count',
+  RELEVANCE = 'relevance',
+}
+
 export interface SkillCategoryDefinition {
   value: string
   label: string

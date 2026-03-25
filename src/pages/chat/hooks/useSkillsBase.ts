@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { SKILLS_SEARCH_DEBOUNCE_DELAY } from '@/constants/skills'
 import { skillsStore } from '@/store/skills'
-import { Skill } from '@/types/entity/skill'
+import { Skill, SkillSortBy } from '@/types/entity/skill'
 
 interface UseSkillsBaseOptions {
   onFetchSuccess?: (skills: Skill[]) => void
@@ -118,5 +118,6 @@ export const fetchSkillsWithFilters = async (
   pageSize: number
 ): Promise<Skill[]> => {
   const filters = search.trim() ? { search: search.trim() } : {}
-  return skillsStore.indexSkills(filters, page, pageSize)
+  // Use relevance sorting for chat context
+  return skillsStore.indexSkills(filters, page, pageSize, SkillSortBy.RELEVANCE)
 }

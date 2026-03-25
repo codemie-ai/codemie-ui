@@ -23,6 +23,7 @@ import {
   SkillCategoryDefinition,
   SkillCreateRequest,
   SkillsFilters,
+  SkillSortBy,
   SkillUpdateRequest,
   SkillVisibility,
 } from '@/types/entity/skill'
@@ -38,7 +39,12 @@ interface SkillsStoreType {
   selectedSkill: Skill | null
   loading: boolean
 
-  indexSkills: (filters?: SkillsFilters, page?: number, perPage?: number) => Promise<Skill[]>
+  indexSkills: (
+    filters?: SkillsFilters,
+    page?: number,
+    perPage?: number,
+    sortBy?: SkillSortBy
+  ) => Promise<Skill[]>
   getSkillById: (id: string) => Promise<Skill>
   createSkill: (data: SkillCreateRequest) => Promise<Skill>
   updateSkill: (id: string, data: SkillUpdateRequest) => Promise<Skill>
@@ -79,13 +85,22 @@ export const skillsStore = proxy<SkillsStoreType>({
   loading: false,
 
   async indexSkills(
-    filters: SkillsFilters = {},
-    page = 0,
-    perPage = SKILLS_PER_PAGE
+    filters?: SkillsFilters,
+    page?: number,
+    perPage?: number,
+    sortBy?: SkillSortBy
   ): Promise<Skill[]> {
-    const url = `v1/skills?page=${page}&per_page=${perPage}&filters=${encodeURIComponent(
-      JSON.stringify(filters)
+    const _filters = filters ?? {}
+    const _page = page ?? 0
+    const _perPage = perPage ?? SKILLS_PER_PAGE
+    let url = `v1/skills?page=${_page}&per_page=${_perPage}&filters=${encodeURIComponent(
+      JSON.stringify(_filters)
     )}`
+
+    // Add sort_by parameter
+    if (sortBy) {
+      url += `&sort_by=${sortBy}`
+    }
 
     try {
       skillsStore.loading = true
@@ -104,8 +119,8 @@ export const skillsStore = proxy<SkillsStoreType>({
       // Update store
       skillsStore.skills = skills
       skillsStore.skillsPagination = {
-        page: pagination.page ?? pagination.current_page ?? page,
-        perPage: pagination.per_page ?? pagination.perPage ?? perPage,
+        page: pagination.page ?? pagination.current_page ?? _page,
+        perPage: pagination.per_page ?? pagination.perPage ?? _perPage,
         totalPages:
           pagination.pages ??
           pagination.total_pages ??
@@ -115,7 +130,7 @@ export const skillsStore = proxy<SkillsStoreType>({
       }
 
       // Update skills with user reaction status if viewing marketplace
-      if (filters.scope === SKILL_INDEX_SCOPES.MARKETPLACE) {
+      if (_filters.scope === SKILL_INDEX_SCOPES.MARKETPLACE) {
         await skillsStore.updateSkillsWithReactionStatus()
         // Return the updated skills from the store (with reactions)
         return skillsStore.skills
@@ -275,7 +290,10 @@ export const skillsStore = proxy<SkillsStoreType>({
       filters.search = search
     }
 
-    const url = `v1/skills?filters=${encodeURIComponent(JSON.stringify(filters))}&per_page=100`
+    // Use relevance sorting for assistant editing
+    const url = `v1/skills?filters=${encodeURIComponent(
+      JSON.stringify(filters)
+    )}&per_page=100&sort_by=${SkillSortBy.RELEVANCE}`
 
     try {
       const response = await api.get(url)
