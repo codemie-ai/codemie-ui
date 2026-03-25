@@ -211,6 +211,7 @@ export enum TabularMetricType {
   CLI_INSIGHTS_TOP_PROJECTS_BY_COST = 'cli-insights-top-projects-by-cost',
   CLI_INSIGHTS_SHARED_REPOSITORIES = 'cli-insights-shared-repositories',
   CLI_INSIGHTS_TOP_SPENDERS = 'cli-insights-top-spenders',
+  CLI_INSIGHTS_USER_REPOSITORIES = 'cli-insights-user-repositories',
   CLI_INSIGHTS_USERS = 'cli-insights-users',
   CLI_INSIGHTS_PROJECTS = 'cli-insights-projects',
   AI_ADOPTION_USER_ENGAGEMENT = 'ai-adoption-user-engagement',

@@ -21,6 +21,7 @@ import { humanizeAnalyticsLabel } from '@/utils/analyticsFormatters'
 import { getDeterministicChartColor } from '@/utils/chartColors'
 
 import CLIInsightsUserDetailsModal from './cliInsights/CLIInsightsUserDetailsModal'
+import { getPrimitiveString } from './cliInsights/helpers'
 import BarChartWidget from './widgets/BarChartWidget'
 import DonutChartWidget from './widgets/DonutChartWidget'
 import MetricsWidget from './widgets/MetricsWidget'
@@ -34,11 +35,6 @@ interface SelectedCliUser {
   name: string
   id: string | null
 }
-
-const getPrimitiveString = (value: unknown, fallback = ''): string =>
-  typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-    ? String(value)
-    : fallback
 
 const renderCliClassificationBadge = (item: Record<string, unknown>) => {
   const key = getPrimitiveString(item.classification).toLowerCase()
@@ -232,6 +228,16 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
           metricType={TabularMetricType.CLI_INSIGHTS_TOP_SPENDERS}
           title="Top Spenders"
           description="Users with the highest CLI spending in the selected period."
+          filters={filters}
+          customRenderColumns={topSpenderRenderColumns}
+        />
+      </section>
+
+      <section>
+        <TableWidget
+          metricType={TabularMetricType.CLI_INSIGHTS_USERS}
+          title="All Users"
+          description="All CLI users with activity in the selected period, sorted alphabetically."
           filters={filters}
           customRenderColumns={topSpenderRenderColumns}
         />
