@@ -683,9 +683,14 @@ function* walkDirectory(dir) {
 }
 
 function collectSpecificFiles(fileArgs, processor) {
+  const projectRoot = process.cwd()
   const files = []
   for (const file of fileArgs) {
     const fullPath = path.resolve(file)
+    if (!fullPath.startsWith(projectRoot + path.sep) && fullPath !== projectRoot) {
+      console.error(`Error: Path outside project: ${file}`)
+      return null
+    }
     if (!fs.existsSync(fullPath)) {
       console.error(`Error: File not found: ${file}`)
       return null
