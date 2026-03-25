@@ -116,7 +116,7 @@ const cleanupMetaStates = (
 
 const fixForbiddenStateIDs = (states: SerializedState[]) => {
   return states.map((state) => {
-    if ([START_NODE_ID, END_NODE_ID].includes(state.id.toLowerCase())) {
+    if (state.id && [START_NODE_ID, END_NODE_ID].includes(state.id.toLowerCase())) {
       state.id += '_state'
     }
 

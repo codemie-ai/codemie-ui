@@ -65,7 +65,17 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
       }
 
       try {
-        jsYaml.load(yamlText)
+        const parsed = jsYaml.load(yamlText) as any
+
+        const stateArrays: any[][] = [parsed?.states, parsed?.orphaned_states].filter(Boolean)
+        for (const stateArray of stateArrays) {
+          const hasMissingId = stateArray.some((s: any) => s != null && !s.id)
+          if (hasMissingId) {
+            setValidationError('Each state must have an "id" field')
+            return false
+          }
+        }
+
         setValidationError(null)
         return true
       } catch (error: any) {
