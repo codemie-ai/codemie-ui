@@ -15,7 +15,7 @@
 
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartOptions } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
-import { FC, useEffect, useState, useMemo } from 'react'
+import { FC, useEffect, useState, useMemo, ReactNode } from 'react'
 import { Pie } from 'react-chartjs-2'
 import { useSnapshot } from 'valtio'
 
@@ -24,7 +24,7 @@ import type {
   TabularMetricType,
   TabularResponse,
   MetricFormat,
-  AnalyticsQueryParams,
+  PaginatedQueryParams,
 } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { generateChartColors } from '@/utils/chartColors'
@@ -42,8 +42,10 @@ interface PieChartWidgetProps {
   description?: string
   valueField: string
   labelField: string
-  filters?: AnalyticsQueryParams
+  filters?: PaginatedQueryParams
   expandable?: boolean
+  actions?: ReactNode
+  colorByLabel?: (label: string, index: number) => string
 }
 
 /**
@@ -58,6 +60,8 @@ const PieChartWidget: FC<PieChartWidgetProps> = ({
   valueField,
   labelField,
   expandable,
+  actions,
+  colorByLabel,
 }) => {
   const [data, setData] = useState<TabularResponse | null>(null)
   const { loading, error } = useSnapshot(analyticsStore)
@@ -84,7 +88,16 @@ const PieChartWidget: FC<PieChartWidgetProps> = ({
   const valueFormat: MetricFormat | undefined = valueColumn?.format
 
   // Generate background colors using Tailwind status colors
-  const backgroundColors = useMemo(() => generateChartColors(values.length), [values.length])
+  const backgroundColors = useMemo(
+    () =>
+      labels.length
+        ? labels.map(
+            (label, index) =>
+              colorByLabel?.(label, index) || generateChartColors(labels.length)[index]
+          )
+        : [],
+    [labels, colorByLabel]
+  )
 
   const chartData = useMemo(
     () => ({
@@ -191,6 +204,7 @@ const PieChartWidget: FC<PieChartWidgetProps> = ({
       loading={loading[metricType]}
       error={error[metricType]}
       expandable={expandable}
+      actions={actions}
     >
       {renderChartContent()}
     </AnalyticsWidget>

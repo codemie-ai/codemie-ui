@@ -16,9 +16,9 @@
 import { FC } from 'react'
 
 import { CliSummaryResponse, SummariesResponse, WidgetSize } from '@/types/analytics'
-import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { cn } from '@/utils/utils'
 
+import MetricCard from './MetricCard'
 import TimePeriodBadge from './TimePeriodBadge'
 
 interface MetricsGridProps {
@@ -26,6 +26,7 @@ interface MetricsGridProps {
   data: SummariesResponse | CliSummaryResponse | null
   isExpanded?: boolean
   selectedMetrics?: string[]
+  className?: string
 }
 
 /**
@@ -33,7 +34,13 @@ interface MetricsGridProps {
  * Displays metrics in a responsive card grid layout
  * If selectedMetrics is provided, only displays those metrics
  */
-const MetricsGrid: FC<MetricsGridProps> = ({ data, size, isExpanded, selectedMetrics }) => {
+const MetricsGrid: FC<MetricsGridProps> = ({
+  data,
+  size,
+  isExpanded,
+  selectedMetrics,
+  className,
+}) => {
   if (!data) return null
 
   const metricsToDisplay =
@@ -44,31 +51,24 @@ const MetricsGrid: FC<MetricsGridProps> = ({ data, size, isExpanded, selectedMet
   return (
     <div
       className={cn(
-        'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4',
-        size === WidgetSize.HALF && !isExpanded && 'xl:grid-cols-3 md:grid-cols-2'
+        'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3',
+        size === WidgetSize.HALF && !isExpanded && 'xl:grid-cols-3 lg:grid-cols-2',
+        className
       )}
     >
       {metricsToDisplay.map((metric) => (
-        <div
+        <MetricCard
           key={metric.id}
-          className="bg-surface-elevated rounded-lg p-4 border border-border-specific-panel-outline"
-        >
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <p className="text-sm text-text-quaternary font-bold truncate">{metric.label}</p>
-            {metric.fixed_timeframe && (
+          metric={metric}
+          badge={
+            metric.fixed_timeframe ? (
               <TimePeriodBadge
                 label={metric.fixed_timeframe}
                 tooltip="Time filters are ignored for this metric. It always reflects its own fixed window."
               />
-            )}
-          </div>
-          <p className="text-2xl font-bold text-text-primary break-words">
-            {formatMetricValue(metric.value, metric.format)}
-          </p>
-          {metric.description && (
-            <p className="text-xs text-text-quaternary mt-2">{metric.description}</p>
-          )}
-        </div>
+            ) : null
+          }
+        />
       ))}
     </div>
   )

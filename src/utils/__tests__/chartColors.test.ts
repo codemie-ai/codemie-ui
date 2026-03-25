@@ -75,23 +75,14 @@ describe('chartColors', () => {
       vi.clearAllMocks()
     })
 
-    it('should retrieve all 6 status colors', () => {
-      const mockColors = [
-        'rgb(34 151 246)',
-        'rgb(192 132 252)',
-        'rgb(6 182 212)',
-        'rgb(254 59 76)',
-        'rgb(245 165 52)',
-        'rgb(37 159 76)',
-      ]
+    it('should retrieve all safe status colors', () => {
+      const mockColors = ['rgb(34 151 246)', 'rgb(192 132 252)', 'rgb(6 182 212)', 'rgb(37 159 76)']
 
       vi.mocked(tailwindColors.getTailwindColor).mockImplementation((name) => {
         const index = [
           '--colors-surface-specific-charts-blue',
           '--colors-surface-specific-charts-purple',
           '--colors-surface-specific-charts-cyan',
-          '--colors-surface-specific-charts-red',
-          '--colors-surface-specific-charts-yellow',
           '--colors-surface-specific-charts-green',
         ].indexOf(name)
         return mockColors[index] || ''
@@ -99,7 +90,7 @@ describe('chartColors', () => {
 
       const colors = getStatusColors()
       expect(colors).toEqual(mockColors)
-      expect(tailwindColors.getTailwindColor).toHaveBeenCalledTimes(6)
+      expect(tailwindColors.getTailwindColor).toHaveBeenCalledTimes(4)
     })
 
     it('should return black for missing colors and warn', () => {
@@ -107,8 +98,8 @@ describe('chartColors', () => {
       vi.mocked(tailwindColors.getTailwindColor).mockReturnValue('')
 
       const colors = getStatusColors()
-      expect(colors).toEqual(['#000000', '#000000', '#000000', '#000000', '#000000', '#000000'])
-      expect(consoleSpy).toHaveBeenCalledTimes(6)
+      expect(colors).toEqual(['#000000', '#000000', '#000000', '#000000'])
+      expect(consoleSpy).toHaveBeenCalledTimes(4)
       consoleSpy.mockRestore()
     })
   })
@@ -143,7 +134,7 @@ describe('chartColors', () => {
       expect(generateChartColors(0)).toEqual([])
     })
 
-    it('should return base colors for count 1-6', () => {
+    it('should return base colors for count 1-4', () => {
       const colors = generateChartColors(3)
       expect(colors).toHaveLength(3)
       expect(colors[0]).toBe('rgb(34 151 246)') // in-progress
@@ -151,15 +142,15 @@ describe('chartColors', () => {
       expect(colors[2]).toBe('rgb(6 182 212)') // pending
     })
 
-    it('should generate variations for count > 6', () => {
+    it('should generate variations for count > 4', () => {
       const colors = generateChartColors(8)
       expect(colors).toHaveLength(8)
-      // First 6 are base colors
+      // First 4 are base colors
       expect(colors[0]).toBe('rgb(34 151 246)')
-      expect(colors[5]).toBe('rgb(37 159 76)')
-      // Colors 7-8 are variations (darker) of first two colors
-      expect(colors[6]).not.toBe('rgb(34 151 246)') // Should be darker version
-      expect(colors[7]).not.toBe('rgb(192 132 252)') // Should be darker version
+      expect(colors[3]).toBe('rgb(37 159 76)')
+      // Colors 5-8 are variations (darker) of first four colors
+      expect(colors[4]).not.toBe('rgb(34 151 246)') // Should be darker version
+      expect(colors[5]).not.toBe('rgb(192 132 252)') // Should be darker version
     })
 
     it('should cycle through colors with variations', () => {
@@ -167,8 +158,8 @@ describe('chartColors', () => {
       expect(colors).toHaveLength(14)
       // Verify it cycles: colors[6] and colors[12] should be variations of same base color
       const base = parseRgb(colors[0])
-      const firstCycle = parseRgb(colors[6])
-      const secondCycle = parseRgb(colors[12])
+      const firstCycle = parseRgb(colors[4])
+      const secondCycle = parseRgb(colors[8])
 
       // First cycle should be darker
       expect(firstCycle[0]).toBeLessThan(base[0])

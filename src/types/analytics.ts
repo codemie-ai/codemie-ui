@@ -20,6 +20,7 @@
 
 export enum AnalyticsDashboard {
   insights = 'insights',
+  cliInsights = 'cliInsights',
   adoption = 'adoption',
 }
 
@@ -197,9 +198,21 @@ export enum TabularMetricType {
   PROJECTS_ACTIVITY = 'projects-activity',
   CLI_AGENTS = 'cli-agents',
   CLI_LLMS = 'cli-llms',
+  CLI_TOOLS = 'cli-tools',
   CLI_USERS = 'cli-users',
   CLI_ERRORS = 'cli-errors',
   CLI_REPOSITORIES = 'cli-repositories',
+  CLI_INSIGHTS_WEEKDAY_PATTERN = 'cli-insights-weekday-pattern',
+  CLI_INSIGHTS_HOURLY_USAGE = 'cli-insights-hourly-usage',
+  CLI_INSIGHTS_SESSION_DEPTH = 'cli-insights-session-depth',
+  CLI_INSIGHTS_USER_CLASSIFICATION = 'cli-insights-user-classification',
+  CLI_INSIGHTS_TOP_USERS_BY_COST = 'cli-insights-top-users-by-cost',
+  CLI_INSIGHTS_PROJECT_CLASSIFICATION = 'cli-insights-project-classification',
+  CLI_INSIGHTS_TOP_PROJECTS_BY_COST = 'cli-insights-top-projects-by-cost',
+  CLI_INSIGHTS_SHARED_REPOSITORIES = 'cli-insights-shared-repositories',
+  CLI_INSIGHTS_TOP_SPENDERS = 'cli-insights-top-spenders',
+  CLI_INSIGHTS_USERS = 'cli-insights-users',
+  CLI_INSIGHTS_PROJECTS = 'cli-insights-projects',
   AI_ADOPTION_USER_ENGAGEMENT = 'ai-adoption-user-engagement',
   AI_ADOPTION_ASSET_REUSABILITY = 'ai-adoption-asset-reusability',
   AI_ADOPTION_EXPERTISE_DISTRIBUTION = 'ai-adoption-expertise-distribution',
@@ -214,6 +227,8 @@ export enum OverviewMetricType {
   SPENDING = 'spending',
   SUMMARIES = 'summaries',
   CLI_SUMMARY = 'cli-summary',
+  CLI_INSIGHTS_BUDGET_RECOMMENDATIONS = 'cli-insights-budget-recommendations',
+  CLI_INSIGHTS_TEAM_SUMMARY = 'cli-insights-team-summary',
   AI_ADOPTION_OVERVIEW = 'ai-adoption-overview',
   AI_ADOPTION_MATURITY = 'ai-adoption-maturity',
 }

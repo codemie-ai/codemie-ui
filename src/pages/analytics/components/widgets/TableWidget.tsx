@@ -13,13 +13,13 @@
 // limitations under the License.
 //
 
-import { FC, useCallback, useEffect, useState, ReactElement } from 'react'
+import { FC, useCallback, useEffect, useState, ReactElement, ReactNode } from 'react'
 import { useSnapshot } from 'valtio'
 
 import Pagination from '@/components/Pagination'
 import Table from '@/components/Table'
 import { analyticsStore } from '@/store/analytics'
-import type { TabularResponse, AnalyticsQueryParams } from '@/types/analytics'
+import type { TabularResponse, PaginatedQueryParams } from '@/types/analytics'
 import { TabularMetricType, ColumnType, MetricFormat } from '@/types/analytics'
 import type { ColumnDefinition } from '@/types/table'
 import { DefinitionTypes } from '@/types/table'
@@ -32,7 +32,7 @@ interface TableWidgetProps {
   metricType: TabularMetricType
   title: string
   description?: string
-  filters?: AnalyticsQueryParams
+  filters?: PaginatedQueryParams
   refreshTrigger?: number
   onRowClick?: (row: Record<string, unknown>, rowIndex: number) => void
   expandable?: boolean
@@ -47,11 +47,35 @@ interface TableWidgetProps {
     cellPadding?: string
     columnWidths?: Record<string, string>
   }
-  customRenderColumns?: Record<
-    string,
-    (item: Record<string, string | number | boolean>) => ReactElement
-  >
+  customRenderColumns?: Record<string, (item: Record<string, any>) => ReactElement>
+  actions?: ReactNode
 }
+
+interface ProjectButtonCellProps {
+  item: Record<string, any>
+  onRowClick: (row: Record<string, unknown>, rowIndex: number) => void
+}
+
+const getPrimitiveString = (value: unknown, fallback = ''): string =>
+  typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+    ? String(value)
+    : fallback
+
+const ProjectButtonCell: FC<ProjectButtonCellProps> = ({ item, onRowClick }) => (
+  <button
+    type="button"
+    className="font-bold hover:underline cursor-pointer"
+    onClick={() => onRowClick(item, 0)}
+  >
+    {getPrimitiveString(item.project)}
+  </button>
+)
+
+const buildProjectRenderColumns = (
+  onRowClick: (row: Record<string, unknown>, rowIndex: number) => void
+): Record<string, (item: Record<string, any>) => ReactElement> => ({
+  project: (item: Record<string, any>) => <ProjectButtonCell item={item} onRowClick={onRowClick} />,
+})
 
 const TableWidget: FC<TableWidgetProps> = ({
   metricType,
@@ -68,6 +92,7 @@ const TableWidget: FC<TableWidgetProps> = ({
   hiddenColumns = [],
   tableStyles,
   customRenderColumns: customRenderColumnsProp,
+  actions,
 }) => {
   const { loading, loaded, error, aiAdoptionConfig } = useSnapshot(analyticsStore)
   const [data, setData] = useState<TabularResponse | null>(initialData || null)
@@ -127,6 +152,8 @@ const TableWidget: FC<TableWidgetProps> = ({
           metricType === TabularMetricType.KEY_SPENDING
         ) {
           type = DefinitionTypes.Custom
+        } else if (customRenderColumnsProp?.[col.id]) {
+          type = DefinitionTypes.Custom
         } else if (onRowClick && col.id === 'project') {
           type = DefinitionTypes.Custom
         } else {
@@ -147,7 +174,7 @@ const TableWidget: FC<TableWidgetProps> = ({
         }
       }) ?? []
 
-  const formatCellValue = (col: any, rawValue: any): string | number | boolean => {
+  const formatCellValue = (col: any, rawValue: any): unknown => {
     if (rawValue === null || rawValue === undefined) return '-'
 
     if (
@@ -164,11 +191,16 @@ const TableWidget: FC<TableWidgetProps> = ({
   // Format table items with proper value formatting
   const items =
     data?.data.rows.map((row) => {
-      const formattedRow: Record<string, string | number | boolean> = {}
+      const formattedRow: Record<string, unknown> = { ...row }
 
       data.data.columns
         .filter((col) => !hiddenColumns.includes(col.id))
         .forEach((col) => {
+          if (customRenderColumnsProp?.[col.id]) {
+            formattedRow[col.id] = row[col.id]
+            return
+          }
+
           formattedRow[col.id] = formatCellValue(col, row[col.id])
         })
 
@@ -176,19 +208,7 @@ const TableWidget: FC<TableWidgetProps> = ({
     }) ?? []
 
   const customRenderColumns =
-    customRenderColumnsProp ||
-    (onRowClick
-      ? {
-          project: (item: Record<string, string | number | boolean>) => (
-            <span
-              className="font-bold hover:underline cursor-pointer"
-              onClick={() => onRowClick(item, 0)}
-            >
-              {item.project}
-            </span>
-          ),
-        }
-      : undefined)
+    customRenderColumnsProp || (onRowClick ? buildProjectRenderColumns(onRowClick) : undefined)
 
   const totalPages = data?.pagination
     ? Math.ceil(data.pagination.total_count / data.pagination.per_page)
@@ -336,6 +356,7 @@ const TableWidget: FC<TableWidgetProps> = ({
       loading={loading[metricType]}
       error={error[metricType]}
       expandable={expandable}
+      actions={actions}
     >
       {renderTableContent()}
     </AnalyticsWidget>

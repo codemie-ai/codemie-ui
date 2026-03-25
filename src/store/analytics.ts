@@ -354,7 +354,7 @@ export const analyticsStore = proxy<Analytics>({
       this,
       type,
       `v1/analytics/${type}`,
-      queryParams,
+      cleanedParams,
       `Failed to fetch ${type} data`
     )
   },

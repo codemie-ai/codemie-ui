@@ -70,7 +70,7 @@ export const adjustLightness = (color: string, adjustment: number): string => {
  * @returns Array of 6 status colors from Tailwind theme
  */
 export const getStatusColors = (): string[] => {
-  const colorTokens = ['blue', 'purple', 'cyan', 'red', 'yellow', 'green']
+  const colorTokens = ['blue', 'purple', 'cyan', 'green']
 
   return colorTokens.map((name) => {
     const color = getTailwindColor(`--colors-surface-specific-charts-${name}`, '')
@@ -111,4 +111,19 @@ export const generateChartColors = (count: number): string[] => {
 
     return adjustLightness(baseColor, adjustment)
   })
+}
+
+/**
+ * Get a deterministic chart color for a label using the shared status palette.
+ * Keeps color assignment stable without feature-specific mappings.
+ */
+export const getDeterministicChartColor = (label: string, fallbackIndex = 0): string => {
+  const normalized = label.trim().toLowerCase()
+  if (!normalized) {
+    return generateChartColors(1)[fallbackIndex % 1]
+  }
+
+  const palette = getStatusColors()
+  const hash = Array.from(normalized).reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  return palette[hash % palette.length] || generateChartColors(fallbackIndex + 1)[fallbackIndex]
 }

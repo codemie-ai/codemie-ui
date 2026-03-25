@@ -15,7 +15,7 @@
 
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartOptions } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
-import { FC, useEffect, useState, useMemo } from 'react'
+import { FC, useEffect, useMemo, useState, ReactNode } from 'react'
 import { Doughnut } from 'react-chartjs-2'
 import { useSnapshot } from 'valtio'
 
@@ -24,7 +24,7 @@ import type {
   TabularMetricType,
   TabularResponse,
   MetricFormat,
-  AnalyticsQueryParams,
+  PaginatedQueryParams,
 } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { generateChartColors } from '@/utils/chartColors'
@@ -33,7 +33,6 @@ import { getTailwindColor } from '@/utils/tailwindColors'
 import AnalyticsWidget from '../AnalyticsWidget'
 import ChartLegend from './ChartLegend'
 
-// Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels)
 
 interface DonutChartWidgetProps {
@@ -42,14 +41,20 @@ interface DonutChartWidgetProps {
   description?: string
   valueField: string
   labelField: string
-  filters?: AnalyticsQueryParams
+  filters?: PaginatedQueryParams
   expandable?: boolean
+  actions?: ReactNode
+  colorByLabel?: (label: string, index: number) => string
+  dataOverride?: TabularResponse | null
+  emptyStateLabel?: string
+  className?: string
 }
 
-/**
- * Donut chart widget component
- * Displays tabular analytics data as a donut chart with labels on slices
- */
+const getPrimitiveLabel = (value: unknown, fallback = 'Unknown'): string =>
+  typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+    ? String(value)
+    : fallback
+
 const DonutChartWidget: FC<DonutChartWidgetProps> = ({
   metricType,
   title,
@@ -58,16 +63,26 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
   labelField,
   filters,
   expandable,
+  actions,
+  colorByLabel,
+  dataOverride,
+  emptyStateLabel = 'No data available',
+  className,
 }) => {
   const { loading, error } = useSnapshot(analyticsStore)
-  const [data, setData] = useState<TabularResponse | null>(null)
+  const [data, setData] = useState<TabularResponse | null>(dataOverride ?? null)
 
   useEffect(() => {
+    if (dataOverride) {
+      setData(dataOverride)
+      return
+    }
+
     const fetchData = async () => {
       const result = await analyticsStore.fetchTabularData(metricType, {
         ...filters,
         page: 0,
-        per_page: 100, // Fetch more items for chart
+        per_page: 100,
       })
       if (result) {
         setData(result)
@@ -75,16 +90,24 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
     }
 
     fetchData().catch(console.error)
-  }, [metricType, filters])
+  }, [dataOverride, metricType, filters])
 
-  // Extract labels, values, and format from data
-  const labels = data?.data.rows.map((row) => String(row[labelField] ?? 'Unknown')) ?? []
-  const values = data?.data.rows.map((row) => Number(row[valueField] ?? 0)) ?? []
-  const valueColumn = data?.data.columns.find((col) => col.id === valueField)
+  const resolvedData = dataOverride ?? data
+  const labels = resolvedData?.data.rows.map((row) => getPrimitiveLabel(row[labelField])) ?? []
+  const values = resolvedData?.data.rows.map((row) => Number(row[valueField] ?? 0)) ?? []
+  const valueColumn = resolvedData?.data.columns.find((col) => col.id === valueField)
   const valueFormat: MetricFormat | undefined = valueColumn?.format
 
-  // Generate background colors using Tailwind status colors
-  const backgroundColors = useMemo(() => generateChartColors(values.length), [values.length])
+  const backgroundColors = useMemo(
+    () =>
+      labels.length
+        ? labels.map(
+            (label, index) =>
+              colorByLabel?.(label, index) || generateChartColors(labels.length)[index]
+          )
+        : [],
+    [labels, colorByLabel]
+  )
   const total = values.reduce((a, b) => a + b, 0)
 
   const chartData = useMemo(
@@ -102,7 +125,6 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
     [labels, values, backgroundColors]
   )
 
-  // Prepare legend items for custom HTML legend
   const legendItems = useMemo(
     () =>
       labels.map((label, i) => ({
@@ -118,10 +140,10 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
     () => ({
       responsive: true,
       maintainAspectRatio: true,
-      cutout: '65%', // Creates the donut hole
+      cutout: '65%',
       plugins: {
         legend: {
-          display: false, // Hide legend since we show labels on slices
+          display: false,
         },
         tooltip: {
           backgroundColor: getTailwindColor('--colors-surface-specific-charts-tooltip-background'),
@@ -134,21 +156,19 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
               const label = context.label || ''
               const value = context.parsed
               const formattedValue = formatMetricValue(value, valueFormat)
-              const percentage = ((value / total) * 100).toFixed(2)
+              const percentage = total ? ((value / total) * 100).toFixed(2) : '0.00'
               return ` ${label}: ${formattedValue} (${percentage}%)`
             },
           },
         },
         datalabels: {
-          color: '#FFFFFF', // always white because used on colored backgrounds regardless of theme
+          color: '#FFFFFF',
           font: {
             weight: 'bold' as const,
             size: 13,
           },
           formatter: (value) => {
-            const percentage = ((value / total) * 100).toFixed(1)
-
-            // Only show label if slice is large enough (> 5%)
+            const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0'
             if (parseFloat(percentage) > 5) {
               return `${percentage}%`
             }
@@ -168,20 +188,17 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
   const renderChartContent = () => {
     if (!hasData) {
       return (
-        <div className="flex justify-center items-center w-full h-[400px] text-text-quaternary">
-          No data available
+        <div className="flex h-[400px] w-full items-center justify-center text-text-quaternary">
+          {emptyStateLabel}
         </div>
       )
     }
 
     return (
-      <div className="flex gap-4 w-full h-[400px] p-4 overflow-hidden">
-        {/* Chart */}
-        <div className="flex-1 flex justify-center items-center min-w-0">
+      <div className="flex h-[400px] w-full gap-4 overflow-hidden p-4">
+        <div className="flex min-w-0 flex-1 items-center justify-center">
           <Doughnut data={chartData} options={chartOptions} />
         </div>
-
-        {/* Legend */}
         <ChartLegend items={legendItems} />
       </div>
     )
@@ -192,8 +209,10 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
       title={title}
       description={description}
       expandable={expandable}
-      loading={loading[metricType]}
-      error={error[metricType]}
+      loading={dataOverride ? false : loading[metricType]}
+      error={dataOverride ? null : error[metricType]}
+      actions={actions}
+      className={className}
     >
       {renderChartContent()}
     </AnalyticsWidget>

@@ -23,19 +23,21 @@ import {
   Legend,
   ChartOptions,
 } from 'chart.js'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { DateTime } from 'luxon'
-import { FC, useEffect, useState, useMemo } from 'react'
+import { FC, useEffect, useState, useMemo, ReactNode } from 'react'
 import { Bar } from 'react-chartjs-2'
 import { useSnapshot } from 'valtio'
 
 import { analyticsStore } from '@/store/analytics'
-import type { TabularMetricType, TabularResponse, AnalyticsQueryParams } from '@/types/analytics'
+import type { TabularMetricType, TabularResponse, PaginatedQueryParams } from '@/types/analytics'
+import { generateChartColors } from '@/utils/chartColors'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
 import AnalyticsWidget from '../AnalyticsWidget'
 
 // Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels)
 
 interface BarChartWidgetProps {
   metricType: TabularMetricType
@@ -45,8 +47,11 @@ interface BarChartWidgetProps {
   labelField: string
   yAxisLabel: string
   yAxisInteger?: boolean
-  filters?: AnalyticsQueryParams
+  filters?: PaginatedQueryParams
   expandable?: boolean
+  horizontal?: boolean
+  actions?: ReactNode
+  colorByLabel?: (label: string, index: number) => string
 }
 
 /**
@@ -63,9 +68,13 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
   yAxisInteger,
   filters,
   expandable,
+  horizontal = false,
+  actions,
+  colorByLabel,
 }) => {
   const { loading, error } = useSnapshot(analyticsStore)
   const [data, setData] = useState<TabularResponse | null>(null)
+  const shouldFormatLabelsAsDates = labelField === 'date' || labelField.endsWith('_date')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,8 +95,11 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     data?.data.rows.map((row) => {
       const label = row[labelField]
       if (typeof label === 'string') {
-        const date = new Date(label)
+        if (!shouldFormatLabelsAsDates) {
+          return label
+        }
 
+        const date = new Date(label)
         if (DateTime.fromISO(label).invalid) return label
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       }
@@ -105,6 +117,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     'rgba(255, 255, 255, 0.1)'
   )
   const textColor = getTailwindColor('--colors-text-secondary', '#9CA3AF')
+  const palette = useMemo(() => generateChartColors(labels.length), [labels.length])
 
   const chartData = useMemo(
     () => ({
@@ -113,16 +126,20 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
         {
           label: yAxisLabel,
           data: values,
-          backgroundColor: barColor,
-          borderColor: barColor,
+          backgroundColor: labels.map(
+            (label, index) => colorByLabel?.(label, index) || palette[index] || barColor
+          ),
+          borderColor: labels.map(
+            (label, index) => colorByLabel?.(label, index) || palette[index] || barColor
+          ),
           borderWidth: 0,
-          borderRadius: 2,
+          borderRadius: 6,
           barPercentage: 0.9,
           categoryPercentage: 0.95,
         },
       ],
     }),
-    [labels, values, yAxisLabel, barColor]
+    [labels, values, yAxisLabel, barColor, colorByLabel, palette]
   )
 
   const yAxisLabelValue = data?.data.columns.find((c) => c.id === yAxisLabel)?.label
@@ -131,8 +148,12 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      indexAxis: horizontal ? 'y' : 'x',
       plugins: {
         legend: {
+          display: false,
+        },
+        datalabels: {
           display: false,
         },
         tooltip: {
@@ -152,10 +173,12 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
               if (row) {
                 const dateValue = row[labelField]
                 if (typeof dateValue === 'string') {
-                  const date = new Date(dateValue)
+                  if (!shouldFormatLabelsAsDates) return dateValue
 
-                  if (DateTime.fromISO(dateValue).invalid) return dateValue
-                  return date.toLocaleDateString('en-US', {
+                  const parsedDate = DateTime.fromISO(dateValue)
+
+                  if (parsedDate.invalid) return dateValue
+                  return parsedDate.toJSDate().toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -165,7 +188,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
               return context[0].label
             },
             label: (context) => {
-              const value = context.parsed.y ?? 0
+              const value = horizontal ? context.parsed.x ?? 0 : context.parsed.y ?? 0
               return ` ${yAxisLabelValue}: ${value.toLocaleString()}`
             },
           },
@@ -173,29 +196,48 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
       },
       scales: {
         x: {
+          beginAtZero: horizontal,
           grid: {
-            display: false,
+            display: horizontal,
+            color: horizontal ? gridColor : undefined,
+            drawBorder: false,
           },
           ticks: {
             color: textColor,
-            maxRotation: 45,
-            minRotation: 45,
-            autoSkip: true,
-            maxTicksLimit: 20,
+            maxRotation: horizontal ? 0 : 45,
+            minRotation: horizontal ? 0 : 45,
+            autoSkip: !horizontal,
+            maxTicksLimit: horizontal ? undefined : 20,
+            callback: (value) => {
+              if (typeof value === 'number') {
+                if (horizontal) {
+                  return yAxisInteger && !Number.isInteger(value) ? null : value.toLocaleString()
+                }
+                return labels[value] ?? value.toLocaleString()
+              }
+              return value
+            },
           },
           border: {
             color: gridColor,
           },
         },
         y: {
-          beginAtZero: true,
+          beginAtZero: !horizontal,
           grid: {
-            color: gridColor,
+            color: horizontal ? undefined : gridColor,
+            display: !horizontal,
             drawBorder: false,
           },
           ticks: {
             color: textColor,
             callback: (value) => {
+              if (horizontal) {
+                if (typeof value === 'number') {
+                  return labels[value] ?? value.toLocaleString()
+                }
+                return value
+              }
               if (typeof value === 'number') {
                 return yAxisInteger && !Number.isInteger(value) ? null : value.toLocaleString()
               }
@@ -208,7 +250,17 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
         },
       },
     }),
-    [yAxisLabel, gridColor, textColor, data, labelField]
+    [
+      yAxisLabel,
+      gridColor,
+      textColor,
+      data,
+      labelField,
+      horizontal,
+      yAxisInteger,
+      labels,
+      shouldFormatLabelsAsDates,
+    ]
   )
 
   const hasData = values.length > 0 && values.some((v) => v > 0)
@@ -236,6 +288,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
       loading={loading[metricType]}
       error={error[metricType]}
       expandable={expandable}
+      actions={actions}
     >
       {renderChartContent()}
     </AnalyticsWidget>

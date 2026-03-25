@@ -13,19 +13,30 @@
 // limitations under the License.
 //
 
-import { FC, useEffect, useState } from 'react'
+import { FC, ReactNode, useEffect, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import { analyticsStore } from '@/store/analytics'
-import { type AnalyticsQueryParams, OverviewMetricType, SummariesResponse } from '@/types/analytics'
-import { formatMetricValue } from '@/utils/analyticsFormatters'
+import {
+  type AnalyticsQueryParams,
+  OverviewMetricType,
+  SummariesResponse,
+  WidgetSize,
+} from '@/types/analytics'
 
 import AnalyticsWidget from '../AnalyticsWidget'
-import TimePeriodBadge from './TimePeriodBadge'
+import MetricsGrid from './MetricsGrid'
 
 interface Props {
   type: OverviewMetricType
   filters?: AnalyticsQueryParams
+  title?: string
+  description?: string
+  expandable?: boolean
+  actions?: ReactNode
+  selectedMetrics?: string[]
+  size?: WidgetSize
+  metricsGridClassName?: string
 }
 
 /**
@@ -33,7 +44,17 @@ interface Props {
  * Displays summary metrics as cards
  * Data is fetched by the parent AnalyticsDashboard component
  */
-const MetricsWidget: FC<Props> = ({ type, filters }: Props) => {
+const MetricsWidget: FC<Props> = ({
+  type,
+  filters,
+  title = 'Summary Metrics',
+  description = 'High-level overview of usage and costs',
+  expandable = true,
+  actions,
+  selectedMetrics,
+  size,
+  metricsGridClassName,
+}: Props) => {
   const { loading, error } = useSnapshot(analyticsStore)
   const [summaries, setSummaries] = useState<SummariesResponse | null>(null)
 
@@ -46,45 +67,25 @@ const MetricsWidget: FC<Props> = ({ type, filters }: Props) => {
       .catch(console.error)
   }, [type, filters])
 
-  const renderMetrics = () => {
-    if (!summaries) return null
-
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {summaries.data.metrics.map((metric) => (
-          <div
-            key={metric.id}
-            className="bg-surface-elevated rounded-lg p-4 border border-border-specific-panel-outline"
-          >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="text-sm text-text-quaternary font-bold truncate">{metric.label}</p>
-              {metric.fixed_timeframe && (
-                <TimePeriodBadge
-                  label={metric.fixed_timeframe}
-                  tooltip="Time filters are ignored for this metric. It always reflects its own fixed window."
-                />
-              )}
-            </div>
-            <p className="text-2xl font-bold text-text-primary">
-              {formatMetricValue(metric.value, metric.format)}
-            </p>
-            {metric.description && (
-              <p className="text-xs text-text-quaternary mt-2">{metric.description}</p>
-            )}
-          </div>
-        ))}
-      </div>
-    )
-  }
-
   return (
     <AnalyticsWidget
-      title="Summary Metrics"
-      description="High-level overview of usage and costs"
+      title={title}
+      description={description}
       loading={loading[type]}
       error={error[type]}
+      expandable={expandable}
+      actions={actions}
+      renderContent={({ isExpanded }) => (
+        <MetricsGrid
+          data={summaries}
+          size={size}
+          isExpanded={isExpanded}
+          selectedMetrics={selectedMetrics}
+          className={metricsGridClassName}
+        />
+      )}
     >
-      {renderMetrics()}
+      {null}
     </AnalyticsWidget>
   )
 }

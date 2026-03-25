@@ -20,7 +20,7 @@ import { WidgetType } from '@/types/analytics'
 
 import BarChartWidget from './BarChartWidget'
 import DonutChartWidget from './DonutChartWidget'
-import DynamicOverviewWidget from './DynamicOverviewWidget'
+import MetricsWidget from './MetricsWidget'
 import PieChartWidget from './PieChartWidget'
 import RatioWidget from './RatioWidget'
 import TableWidget from './TableWidget'
@@ -33,14 +33,14 @@ type DynamicWidgetProps = {
 
 const DynamicWidget: FC<DynamicWidgetProps> = ({ expandable, filters, widget }) => {
   const { widgetType, metricType, title, description, size } = widget
-  const sharedProps = { metricType, title, description, size, filters, expandable }
+  const sharedProps = { title, description, size, filters, expandable }
 
   if (widgetType === WidgetType.OVERVIEW) {
     const { selectedMetrics } = widget
     return (
-      <DynamicOverviewWidget
+      <MetricsWidget
         {...sharedProps}
-        metricType={metricType}
+        type={metricType}
         size={size}
         selectedMetrics={selectedMetrics}
       />

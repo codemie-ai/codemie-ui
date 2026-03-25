@@ -26,6 +26,7 @@ import { analyticsStore } from '@/store/analytics'
 import { AnalyticsQueryParams, AnalyticsDashboard } from '@/types/analytics'
 
 import AIAdoptionTab from './AIAdoptionTab'
+import CLIInsightsTab from './CLIInsightsTab'
 import CustomDashboard from './CustomDashboard'
 import InfoNotice from './InfoNotice'
 import InsightsTab from './InsightsTab'
@@ -102,6 +103,12 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
         id: AnalyticsDashboard.insights,
         label: 'Insights',
         element: <InsightsTab filters={filters} />,
+        className: '[overflow-wrap:normal]',
+      },
+      {
+        id: AnalyticsDashboard.cliInsights,
+        label: 'CLI Insights',
+        element: <CLIInsightsTab filters={filters} />,
         className: '[overflow-wrap:normal]',
       },
     ]
