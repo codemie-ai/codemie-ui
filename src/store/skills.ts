@@ -70,6 +70,10 @@ interface SkillsStoreType {
     failureCount: number
   }>
   getAssistantsUsingSkill: (skillId: string) => Promise<SkillAssistantItem[]>
+  generateSkillInstructionsWithAI: (
+    description: string,
+    existingContent: string
+  ) => Promise<{ content: string }>
 }
 
 export const skillsStore = proxy<SkillsStoreType>({
@@ -608,6 +612,43 @@ export const skillsStore = proxy<SkillsStoreType>({
     } catch (error) {
       console.error('[skillsStore.getAssistantsUsingSkill] Error:', error)
       toaster.error('Failed to load assistants using this skill')
+      throw error
+    }
+  },
+
+  async generateSkillInstructionsWithAI(
+    description: string,
+    existingContent: string
+  ): Promise<{ content: string }> {
+    const url = 'v1/skills/instructions/generate'
+
+    try {
+      const response = await api.post(
+        url,
+        {
+          description,
+          existing_content: existingContent,
+        },
+        { skipErrorHandling: true }
+      )
+      const result = await response.json()
+      return result
+    } catch (error: any) {
+      if (error?.parsedError?.details && Array.isArray(error.parsedError.details)) {
+        const errorMessages = error.parsedError.details
+          .map((detail: any) => detail.msg)
+          .filter(Boolean)
+          .join('<br>')
+
+        if (errorMessages) {
+          toaster.error(errorMessages)
+          throw error
+        }
+      }
+
+      const errorMessage =
+        error?.parsedError?.message ?? error?.message ?? 'Failed to generate skill instructions'
+      toaster.error(errorMessage)
       throw error
     }
   },

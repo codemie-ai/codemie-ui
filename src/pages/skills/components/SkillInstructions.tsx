@@ -15,14 +15,19 @@
 
 import { forwardRef, useState } from 'react'
 
+import AIGenerateSvg from '@/assets/icons/ai-generate.svg?react'
 import CollapseSvg from '@/assets/icons/collapse.svg?react'
 import CopySvg from '@/assets/icons/copy.svg?react'
 import ExpandSvg from '@/assets/icons/expand.svg?react'
 import Button from '@/components/Button'
 import Textarea, { TextareaRef } from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
+import { ButtonType } from '@/constants'
 import { MAX_CONTENT_LENGTH, SKILL_INSTRUCTIONS_PLACEHOLDER } from '@/constants/skills'
 import { copyToClipboard } from '@/utils/utils'
+
+import SkillInstructionsDiffModal from './SkillInstructionsDiffModal'
+import SkillInstructionsGenAIPopup from './SkillInstructionsGenAIPopup'
 
 interface SkillInstructionsProps {
   value: string
@@ -34,6 +39,9 @@ interface SkillInstructionsProps {
 const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
   ({ value, error, onChange, onBlur }, ref) => {
     const [isExpanded, setIsExpanded] = useState(false)
+    const [showGenAIPopup, setShowGenAIPopup] = useState(false)
+    const [showDiffModal, setShowDiffModal] = useState(false)
+    const [suggestedContent, setSuggestedContent] = useState('')
 
     const handleExpand = () => setIsExpanded(true)
     const handleCollapse = () => setIsExpanded(false)
@@ -50,7 +58,10 @@ const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
               Instructions ({charCount.toLocaleString()}/{MAX_CONTENT_LENGTH.toLocaleString()})
             </p>
             <div className="ml-auto flex gap-4">
-              <Button type="secondary" onClick={handleExpand}>
+              <Button variant={ButtonType.MAGICAL} onClick={() => setShowGenAIPopup(true)}>
+                <AIGenerateSvg /> {value ? 'Refine with AI' : 'Generate with AI'}
+              </Button>
+              <Button variant={ButtonType.SECONDARY} onClick={handleExpand}>
                 <ExpandSvg /> Expand
               </Button>
             </div>
@@ -112,6 +123,40 @@ const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
             />
           </div>
         </Popup>
+
+        <SkillInstructionsGenAIPopup
+          isVisible={showGenAIPopup}
+          existingContent={value}
+          onHide={() => setShowGenAIPopup(false)}
+          onGenerated={(generated) => {
+            setShowGenAIPopup(false)
+
+            // If current value is empty (new skill), apply directly without diff
+            if (!value || !value.trim()) {
+              onChange(generated)
+              return
+            }
+
+            // Otherwise, show diff modal for review
+            setSuggestedContent(generated)
+            setShowDiffModal(true)
+          }}
+        />
+
+        <SkillInstructionsDiffModal
+          visible={showDiffModal}
+          currentContent={value}
+          suggestedContent={suggestedContent}
+          onHide={() => {
+            setShowDiffModal(false)
+            setSuggestedContent('')
+          }}
+          onApply={() => {
+            onChange(suggestedContent)
+            setShowDiffModal(false)
+            setSuggestedContent('')
+          }}
+        />
       </>
     )
   }

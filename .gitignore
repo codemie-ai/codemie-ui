@@ -36,6 +36,7 @@ public/keycloakify-dev-resources
 .codemie/virtual_assistants
 .codemie/claude.extension.json
 .codemie/reviews
+.codemie/specs
 .claude/settings.local.json
 bmad/*
 .gemini/*
