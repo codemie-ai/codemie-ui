@@ -90,6 +90,7 @@ const c = {
     '675': '#47484A',
     '675-a70': '#47484AB3',
     '700': '#4C4C4C',
+    '710': '#444444',
     '725': '#333436',
     '750': '#2E3033',
     '775': '#333333',
@@ -213,6 +214,8 @@ const themeTokens: ThemeConfig = {
       content: [c['neutral']['925'], c['neutral']['0']],
       chat: [c['neutral']['900'], c['neutral']['0']],
       sidebar: [c['neutral']['950'], c['neutral']['25']],
+      dropzone: [c['neutral']['775'], c['neutral']['50']],
+      'dropzone-hover': [c['neutral']['710'], c['blue']['50']],
     },
     specific: {
       'node-note-bg': [c['yellow']['200'], c['yellow']['200']],
@@ -305,6 +308,7 @@ const themeTokens: ThemeConfig = {
     error: [c['red']['500'], c['red']['500']],
     'error-hover': [c['red']['500'], c['red']['500']],
     specific: {
+      dropzone: [c['neutral']['525'], c['neutral']['400']],
       'icon-outline': [c['neutral']['725'], c['blue']['50']],
       sidebar: [c['neutral']['90'], c['black']['a10']],
       'panel-outline': [c['neutral']['725'], c['neutral']['90']],

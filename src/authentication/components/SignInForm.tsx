@@ -15,24 +15,28 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import React, { useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, UseFormSetError } from 'react-hook-form'
 import * as Yup from 'yup'
 
 import Button from '@/components/Button'
 import Input from '@/components/form/Input/Input'
-import { VALIDATION_MESSAGES } from '@/constants/validation'
+import { VALIDATION_MESSAGES, VALIDATION_PATTERNS } from '@/constants/validation'
 import { SignInFormData } from '@/types/auth'
 
 import PasswordToggleButton from './PasswordToggleButton'
 
 interface SignInFormProps {
-  onSubmit: (data: SignInFormData, reset: () => void) => void | Promise<void>
+  onSubmit: (
+    data: SignInFormData,
+    setError: UseFormSetError<SignInFormData>
+  ) => void | Promise<void>
   isLoading?: boolean
 }
 
 const signInSchema = Yup.object().shape({
   email: Yup.string()
-    .email(VALIDATION_MESSAGES.EMAIL_INVALID)
+    .max(254, VALIDATION_MESSAGES.EMAIL_INVALID)
+    .matches(VALIDATION_PATTERNS.EMAIL, VALIDATION_MESSAGES.EMAIL_INVALID)
     .required(VALIDATION_MESSAGES.EMAIL_REQUIRED),
   password: Yup.string().required(VALIDATION_MESSAGES.PASSWORD_REQUIRED),
 })
@@ -48,23 +52,17 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading = false }) 
     },
   })
 
-  const { control, handleSubmit, reset, formState } = formMethods
+  const { control, handleSubmit, formState, setError } = formMethods
   const { errors, isValid } = formState
 
   // Password visibility toggle state
   const [showPassword, setShowPassword] = useState(false)
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev)
 
-  // Form submit handler
-  const onFormSubmit = (data: SignInFormData) => {
-    onSubmit(data, reset)
-  }
-
   return (
     <form
-      onSubmit={handleSubmit(onFormSubmit)}
+      onSubmit={handleSubmit((data) => onSubmit(data, setError))}
       className="flex flex-col gap-6 w-[400px]"
-      autoComplete="new-password"
     >
       {/* Email Input Field */}
       <Controller

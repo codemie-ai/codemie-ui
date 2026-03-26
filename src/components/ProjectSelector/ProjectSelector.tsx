@@ -30,6 +30,8 @@ interface ProjectSelectorProps {
   multiple?: boolean
   fullWidth?: boolean
   adminOnly?: boolean
+  selectDefault?: boolean
+  error?: string
 }
 
 const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
@@ -44,6 +46,8 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
       multiple = false,
       fullWidth = false,
       adminOnly = false,
+      selectDefault = true,
+      error,
     },
     ref
   ) => {
@@ -67,7 +71,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
       setAvailableProjects(projects.map((project) => ({ label: project, value: project })))
 
       // Auto-select first project only for single select when no value
-      if (!value && projects.length > 0 && !multiple) {
+      if (!value && projects.length > 0 && !multiple && selectDefault) {
         onChange?.(projects[0])
       }
     }
@@ -106,6 +110,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
         onFilter={handleFilter}
         showCheckbox={multiple}
         singleValue={!multiple}
+        error={error}
         ref={ref}
       />
     )

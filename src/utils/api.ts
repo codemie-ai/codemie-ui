@@ -13,9 +13,9 @@
 // limitations under the License.
 //
 
-import { ENV } from '@/constants'
+import { ENV, HTTP_STATUS } from '@/constants'
 import toaster from '@/utils/toaster'
-import { getMode } from '@/utils/utils'
+import { getMode, getIsLocalAuth } from '@/utils/utils'
 
 export const ABORT_ERROR = 'AbortError'
 export const DEFAULT_ERROR_MESSAGE = 'Oops! Something went wrong'
@@ -68,12 +68,16 @@ class API {
     return this.makeRequest(url, 'POST', body, options)
   }
 
+  patch(url: string, body?: any, options?: RequestOptions): Promise<Response> {
+    return this.makeRequest(url, 'PATCH', body, options)
+  }
+
   put(url: string, body?: any, options?: RequestOptions): Promise<Response> {
     return this.makeRequest(url, 'PUT', body, options)
   }
 
-  delete(url: string, body?: any): Promise<Response> {
-    return this.makeRequest(url, 'DELETE', body)
+  delete(url: string, body?: any, options?: RequestOptions): Promise<Response> {
+    return this.makeRequest(url, 'DELETE', body, options)
   }
 
   postMultipart(url: string, body: FormData): Promise<Response> {
@@ -84,6 +88,7 @@ class API {
       },
       body,
       redirect: 'manual',
+      ...(getIsLocalAuth() && { credentials: 'include' as RequestCredentials }),
     }
 
     return new Promise((resolve, reject) => {
@@ -117,6 +122,7 @@ class API {
       headers,
       body: JSON.stringify(body),
       redirect: 'manual',
+      ...(getIsLocalAuth() && { credentials: 'include' as RequestCredentials }),
     }
 
     if (abortController) {
@@ -148,6 +154,7 @@ class API {
       const requestOptions: RequestInit = {
         method: 'GET',
         headers,
+        ...(getIsLocalAuth() && { credentials: 'include' as RequestCredentials }),
       }
       const response = await fetch(`${this.BASE_URL}/${url}`, requestOptions)
 
@@ -243,6 +250,7 @@ class API {
         },
         body: JSON.stringify(body),
         redirect: 'manual',
+        ...(getIsLocalAuth() && { credentials: 'include' }),
       }
 
       fetch(fullUrl, requestOptions)
@@ -254,6 +262,20 @@ class API {
 
           if (response.ok) {
             return resolve(response)
+          }
+          if (response.status === HTTP_STATUS.UNAUTHORIZED && getIsLocalAuth()) {
+            const isUserEndpoint = url === 'v1/user'
+            const isAuthPage = window.location.hash === '#/auth/sign-in'
+
+            if (!isUserEndpoint) {
+              sessionStorage.setItem('sessionExpired', 'true')
+            }
+
+            if (!isAuthPage) {
+              window.location.hash = '#/auth/sign-in'
+            }
+
+            return reject(response)
           }
           const responseClone = response.clone() as ResponseWithParsedError
           let errorData: ErrorBody
@@ -287,7 +309,7 @@ class API {
    * In prod we use Keycloak
    */
   authHeaders(): Record<string, string> {
-    return getMode() === ENV.LOCAL ? { 'user-id': DEV_USER_ID } : {}
+    return getMode() === ENV.LOCAL && !getIsLocalAuth() ? { 'user-id': DEV_USER_ID } : {}
   }
 
   handleError(body: ErrorBody, includeHelp = true): void {

@@ -60,3 +60,10 @@ export const isFeatureEnabled = (featureName: string): boolean => {
 export const isMcpEnabled = (): boolean => {
   return isFeatureEnabled('mcpConnect')
 }
+
+/**
+ * Check if Cost Centers feature is enabled (non-reactive utility)
+ */
+export const isCostCentersEnabled = (): boolean => {
+  return isFeatureEnabled('features:costCenters')
+}

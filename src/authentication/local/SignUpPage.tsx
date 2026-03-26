@@ -13,42 +13,44 @@
 // limitations under the License.
 //
 
-import React, { useState } from 'react'
+import React from 'react'
+import { UseFormSetError } from 'react-hook-form'
 import { useNavigate } from 'react-router'
+import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
 import StandaloneLayout from '@/components/Layouts/StandaloneLayout'
+import { authStore } from '@/store/auth'
+import { SignUpFormData } from '@/types/auth'
 import toaster from '@/utils/toaster'
+import { ValidationError } from '@/utils/validationError'
 
 import SignUpForm from '../components/SignUpForm'
 
 const SignUpPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const { loading } = useSnapshot(authStore)
 
-  const handleSignUp = async (
-    data: { name: string; email: string; password: string },
-    reset: () => void
-  ) => {
-    setIsLoading(true)
+  const handleSignUp = async (data: SignUpFormData, setError: UseFormSetError<SignUpFormData>) => {
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => {
-        setTimeout(resolve, 2000)
+      await authStore.register({
+        email: data.email,
+        username: data.username,
+        password: data.password,
       })
-
-      console.log('Sign up payload:', data)
-
-      // Clear form
-      reset()
-
-      // TODO: Add redirect logic when backend is ready
-      // navigate('/auth/sign-in') or navigate('/dashboard')
-    } catch (error) {
-      console.error('Sign up error:', error)
-      toaster.error('Failed to create account')
-    } finally {
-      setIsLoading(false)
+      navigate('/')
+    } catch (e) {
+      if (e instanceof ValidationError) {
+        const items = e.fieldErrors
+          .map(({ msg }) => `<li class="mt-1.5">${msg.charAt(0).toUpperCase() + msg.slice(1)}</li>`)
+          .join('')
+        toaster.error(`Validation error<br><ul>${items}</ul>`)
+        e.fieldErrors.forEach(({ field, msg }) => {
+          setError(field as keyof SignUpFormData, { message: msg })
+        })
+      } else if (e instanceof Error) {
+        toaster.error(e.message)
+      }
     }
   }
 
@@ -74,7 +76,7 @@ const SignUpPage: React.FC = () => {
           <p className="text-sm text-text-quaternary">Create an account to get started.</p>
         </div>
 
-        <SignUpForm onSubmit={(data, reset) => handleSignUp(data, reset)} isLoading={isLoading} />
+        <SignUpForm onSubmit={handleSignUp} isLoading={loading} />
       </div>
     </StandaloneLayout>
   )

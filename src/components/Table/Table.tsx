@@ -13,16 +13,16 @@
 // limitations under the License.
 //
 
-import React, { memo } from 'react'
+import { classNames as cn } from 'primereact/utils'
+import React, { memo, MouseEvent, useCallback, useMemo } from 'react'
 
 import Spinner from '@/components/Spinner'
 import { useSidebarOffsetClass } from '@/hooks/useSidebarOffsetClass'
 import { ColumnDefinition, SortState, TableItem } from '@/types/table'
-import { cn } from '@/utils/utils'
 
 import EmptyList from './EmptyList'
-import SortIcon from './SortIcon'
 import TableCell from './TableCell'
+import TableColHeader, { SelectionProps, SortProps } from './TableColHeader'
 import { propsAreEqual } from './utils'
 import Pagination, { PaginationProps } from '../Pagination/Pagination'
 
@@ -30,18 +30,24 @@ export interface TableProps<T = TableItem> {
   items: Array<T> | ReadonlyArray<T>
   columnDefinitions: Array<ColumnDefinition>
   customRenderColumns?: Record<string, (item: T, i: number) => React.ReactNode>
-  idPath?: string
+  idPath?: keyof T
   sort?: SortState
   loading?: boolean
   onSort?: (key: string) => void
   innerPagination?: boolean
   onPaginationChange?: PaginationProps['setPage']
   perPageOptions?: PaginationProps['perPageOptions']
-  pagination?: { page: number; totalPages: number; perPage: number }
+  pagination?: { page: number; totalPages: number; perPage: number; totalCount?: number }
   embedded?: boolean
   noWrap?: boolean
   footer?: React.ReactNode
+  className?: string
   tableClassName?: string
+
+  selected?: T[] | null
+  onSelectRow?: (value: T[]) => void
+  isAllSelected?: boolean
+  onSelectAllChange?: (checked: boolean) => void
 }
 
 const Table = <T,>({
@@ -59,9 +65,35 @@ const Table = <T,>({
   embedded = false,
   noWrap = false,
   footer,
+  className,
   tableClassName,
+
+  selected,
+  onSelectRow,
+  isAllSelected = false,
+  onSelectAllChange,
 }: TableProps<T>): React.ReactNode => {
-  const isSorted = (key) => !!sort && sort.sortKey === key
+  const isLazyMode = !!pagination?.totalCount && !!onSelectAllChange
+
+  const selectionProps: SelectionProps<T> | undefined = useMemo(
+    () =>
+      onSelectRow
+        ? {
+            selected,
+            isAllSelected,
+            isLazyMode,
+            items,
+            onSelectRow,
+            onSelectAllChange,
+          }
+        : undefined,
+    [selected, isAllSelected, isLazyMode, items, onSelectRow, onSelectAllChange]
+  )
+
+  const sortProps: SortProps | undefined = useMemo(
+    () => (sort ? { sort, onSort } : undefined),
+    [sort, onSort]
+  )
 
   const paginationProps = {
     perPageOptions,
@@ -72,12 +104,36 @@ const Table = <T,>({
   }
   const paginationOffset = useSidebarOffsetClass()
 
-  if (loading) {
-    return <Spinner />
-  }
+  const handleRowSelect = useCallback(
+    (item: T) => {
+      const isSelected = !!selected?.find((s) => s[idPath!] === item[idPath!])
+      if (isSelected) onSelectRow?.(selected?.filter((s) => s[idPath!] !== item[idPath!]) ?? [])
+      else onSelectRow?.([...(selected ?? []), item])
+    },
+    [selected, idPath, onSelectRow]
+  )
+
+  const handleRowClick = useCallback(
+    (item: T, event: MouseEvent<HTMLTableRowElement>) => {
+      const target = event.target as HTMLElement
+
+      const interactiveElement = target.closest('button, a, input, [role="button"], [role="link"]')
+      const isSelectionCheckbox = target.closest('[data-selection-checkbox]')
+
+      if (interactiveElement && !isSelectionCheckbox) return
+
+      handleRowSelect(item)
+    },
+    [handleRowSelect]
+  )
 
   return (
     <div className="w-full relative flex flex-col">
+      {loading && (
+        <div className="absolute inset-0 bg-surface-base-primary flex items-center justify-center z-30">
+          <Spinner />
+        </div>
+      )}
       <div className={cn('w-full grow', { 'overflow-scroll min-h-[300px]': !embedded })}>
         <table
           className={cn(
@@ -85,34 +141,21 @@ const Table = <T,>({
             {
               'mb-[80px]': !embedded,
             },
-            tableClassName
+            tableClassName,
+            className
           )}
         >
-          <thead className="bg-surface-base-tertiary text-text-primary sticky top-0">
+          <thead className="bg-surface-base-tertiary text-text-primary sticky top-0 z-20">
             <tr className="font-semibold border-y">
               {columnDefinitions.map((column, i) => (
-                <th
+                <TableColHeader
                   key={column.key}
-                  className={cn(
-                    column.headClassNames,
-                    'text-left px-4 py-2.5 border-border-structural border-t border-b text-nowrap',
-                    {
-                      'rounded-tl-lg border-l': i === 0,
-                      'rounded-tr-lg border-r': i === columnDefinitions.length - 1,
-                    }
-                  )}
-                >
-                  <span>{column.label}</span>
-                  {sort && column.sortable && (
-                    <span className="inline-block ml-2">
-                      <SortIcon
-                        order={sort.sortOrder}
-                        sorted={isSorted(column.key)}
-                        onClick={() => onSort?.(column.key)}
-                      />
-                    </span>
-                  )}
-                </th>
+                  column={column}
+                  isFirst={i === 0}
+                  isLast={i === columnDefinitions.length - 1}
+                  selectionProps={selectionProps}
+                  sortProps={sortProps}
+                />
               ))}
             </tr>
           </thead>
@@ -122,13 +165,23 @@ const Table = <T,>({
             ) : (
               items.map((value, rowIndex) => {
                 const idField = idPath ?? 'id'
-                const idValue = value[idField] as string
+                const idValue = value[idField]
                 const rowKey = idValue ? String(idValue) : `fallback-row-${rowIndex}`
+                const isSelected = !!selected?.find((s) => s[idField as keyof T] === value[idField])
 
                 if (value._meta?.customRender) return value._meta?.customRender(value)
 
                 return (
-                  <tr key={rowKey}>
+                  <tr
+                    onClick={(e) => handleRowClick(value, e)}
+                    key={rowKey}
+                    className={cn(
+                      onSelectRow &&
+                        !isSelected &&
+                        '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
+                      isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer'
+                    )}
+                  >
                     {columnDefinitions.map((definition, colIndex) => (
                       <TableCell
                         value={value}
@@ -142,6 +195,8 @@ const Table = <T,>({
                         customRender={customRenderColumns[definition.key]}
                         shrink={definition.shrink}
                         noWrap={noWrap}
+                        isSelected={isSelected}
+                        onSelect={() => handleRowSelect(value)}
                       />
                     ))}
                   </tr>
@@ -153,7 +208,7 @@ const Table = <T,>({
         </table>
       </div>
 
-      {pagination && (
+      {pagination && !embedded && (
         <Pagination
           {...paginationProps}
           className={cn(

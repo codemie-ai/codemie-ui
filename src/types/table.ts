@@ -20,6 +20,7 @@ export enum DefinitionTypes {
   Boolean = 'boolean',
   RadioGroup = 'radioGroup',
   Custom = 'custom',
+  Selection = 'selection',
 }
 
 export interface SortState {
@@ -33,7 +34,7 @@ export interface PaginationState {
 }
 
 export interface ColumnDefinition {
-  label: string
+  label?: string
   key: string
   type: DefinitionTypes | `${DefinitionTypes}`
   maxLength?: number

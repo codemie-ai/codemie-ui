@@ -15,7 +15,11 @@
 
 // Validation regex patterns
 export const VALIDATION_PATTERNS = {
-  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  // RFC 5322 subset matching Pydantic EmailStr / email-validator rules:
+  // - local part: a-z A-Z 0-9 . _ + -, no leading/trailing dot, no consecutive dots, max 64 chars
+  // - domain: labels a-z A-Z 0-9 -, no leading/trailing hyphen per label, TLD min 2 chars
+  EMAIL:
+    /^(?=[^@]{1,64}@)[-a-zA-Z0-9_+]+(\.[-a-zA-Z0-9_+]+)*@([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/,
   PASSWORD_NUMBER: /[0-9]/,
   PASSWORD_UPPERCASE: /[A-Z]/,
   PASSWORD_LOWERCASE: /[a-z]/,
@@ -26,6 +30,8 @@ export const VALIDATION_PATTERNS = {
 export const VALIDATION_CONSTRAINTS = {
   PASSWORD_MIN_LENGTH: 8,
   PASSWORD_REQUIREMENTS_TOTAL: 4,
+  USERNAME_MIN_LENGTH: 3,
+  USERNAME_MAX_LENGTH: 50,
 }
 
 // Validation error messages
@@ -41,6 +47,8 @@ export const VALIDATION_MESSAGES = {
   NAME_REQUIRED: 'Name is required',
   NAME_INVALID_CHARS:
     'Only English letters, digits and special characters ("-", "[", "]", ".", "\\s") are allowed',
+  USERNAME_MIN_LENGTH: `Username must be at least ${VALIDATION_CONSTRAINTS.USERNAME_MIN_LENGTH} characters`,
+  USERNAME_MAX_LENGTH: `Username must be at most ${VALIDATION_CONSTRAINTS.USERNAME_MAX_LENGTH} characters`,
 }
 
 // Password requirement labels for UI

@@ -39,6 +39,8 @@ const StandaloneLayout: React.FC<StandaloneLayoutProps> = ({ children, headerCon
 
   return (
     <div className="relative min-h-screen bg-surface-base-primary overflow-hidden">
+      <div id="toast-container" role="region" aria-live="polite" />
+
       {/* Top-left gradient */}
       <img
         src={leftGradientImg}
@@ -82,12 +84,8 @@ const StandaloneLayout: React.FC<StandaloneLayoutProps> = ({ children, headerCon
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 pt-20">
         {/* Logo */}
-        <div className="absolute left-[112px] top-[76px] h-[48px] w-[192px]">
-          {isDark ? (
-            <LogoFullDarkSvg width={192} height={48} />
-          ) : (
-            <LogoFullLightSvg width={192} height={48} />
-          )}
+        <div className="absolute left-[112px] top-[80px] h-[48px] w-[192px]">
+          {isDark ? <LogoFullDarkSvg /> : <LogoFullLightSvg />}
         </div>
 
         {/* Header content (e.g., Sign In/Sign Up buttons) */}

@@ -60,7 +60,7 @@ export const createFileMetadata = (fileInput: File | string): FileMetadata => {
     return {
       fileName: fileInput.name,
       mimeType: fileInput.type,
-      user: userStore.user?.userId ?? '',
+      user: userStore.user?.user_id ?? '',
       isUploading: false,
     }
   }

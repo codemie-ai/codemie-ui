@@ -144,10 +144,7 @@ describe('SignInForm', () => {
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledTimes(1)
         expect(mockOnSubmit).toHaveBeenCalledWith(
-          {
-            email: TEST_EMAIL,
-            password: TEST_PASSWORD,
-          },
+          { email: TEST_EMAIL, password: TEST_PASSWORD },
           expect.any(Function)
         )
       })
@@ -166,22 +163,19 @@ describe('SignInForm', () => {
       expect(mockOnSubmit).not.toHaveBeenCalled()
     })
 
-    it('resets form after successful submission', async () => {
-      mockOnSubmit.mockImplementation((_data, reset) => {
-        reset()
-      })
-
+    it('calls onSubmit once per submission', async () => {
       renderComponent()
 
-      const { emailInput, passwordInput } = getFormInputs()
       await fillEmailAndPassword(user, TEST_EMAIL, TEST_PASSWORD)
 
-      const submitButton = screen.getByRole('button', { name: 'Sign in to your account' })
-      await user.click(submitButton)
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Sign in to your account' })).not.toBeDisabled()
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Sign in to your account' }))
 
       await waitFor(() => {
-        expect((emailInput as HTMLInputElement).value).toBe('')
-        expect((passwordInput as HTMLInputElement).value).toBe('')
+        expect(mockOnSubmit).toHaveBeenCalledTimes(1)
       })
     })
   })

@@ -268,7 +268,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
   const renderChartContent = () => {
     if (!hasData) {
       return (
-        <div className="flex justify-center items-center w-full h-[400px] text-text-secondary">
+        <div className="flex justify-center items-center w-full h-[400px] text-text-quaternary">
           No data available
         </div>
       )

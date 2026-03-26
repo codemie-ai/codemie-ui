@@ -31,6 +31,7 @@ export enum FILTER_ENTITY {
   USER_SETTINGS = 'user_settings',
   PROJECT_SETTINGS = 'project_settings',
   ANALYTICS = 'analytics',
+  USERS_MANAGEMENT = 'users_management',
 }
 
 const knownFilterKeys = {
@@ -44,6 +45,8 @@ const knownFilterKeys = {
     'time_period',
     'start_date',
     'end_date',
+    'user_type',
+    'platform_role',
   ],
   boolean: ['is_global', 'shared'],
   multiple: ['project', 'index_type', 'type', 'categories', 'roles', 'tags', 'users', 'projects'],
@@ -58,7 +61,7 @@ export const getFilters = <T extends object>(entityKey: string): T => {
     throw new Error('Entity key is required for filter operations')
   }
 
-  const userId = userStore.user?.userId
+  const userId = userStore.user?.user_id
   if (!userId) return {} as T
 
   // Get filters from URL and storage
@@ -143,7 +146,7 @@ export const setFilters = <T extends object>(entityKey: string, filters: T): voi
     throw new Error('Entity key is required for filter operations')
   }
 
-  const userId = userStore.user?.userId
+  const userId = userStore.user?.user_id
   if (!userId) return
 
   // Update URL with filters
@@ -200,7 +203,7 @@ export const clearFilters = (entityKey: string): void => {
     throw new Error('Entity key is required for filter operations')
   }
 
-  const userId = userStore.user?.userId
+  const userId = userStore.user?.user_id
   if (!userId) return
 
   // Clear URL filters
@@ -255,7 +258,7 @@ export const updateFilters = (entityKey: string, filterUpdates: Record<string, u
     throw new Error('Entity key is required for filter operations')
   }
 
-  const userId = userStore.user?.userId
+  const userId = userStore.user?.user_id
   if (!userId) return
 
   // Get current filters (prioritizing URL filters)

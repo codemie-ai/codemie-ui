@@ -13,39 +13,48 @@
 // limitations under the License.
 //
 
-import React, { useState } from 'react'
+import React, { useEffect } from 'react'
+import { UseFormSetError } from 'react-hook-form'
 import { useNavigate } from 'react-router'
+import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
 import StandaloneLayout from '@/components/Layouts/StandaloneLayout'
+import { authStore } from '@/store/auth'
+import { SignInFormData } from '@/types/auth'
 import toaster from '@/utils/toaster'
+import { ValidationError } from '@/utils/validationError'
 
 import SignInForm from '../components/SignInForm'
 
 const SignInPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const { loading } = useSnapshot(authStore)
 
-  const handleSignIn = async (data: { email: string; password: string }, reset: () => void) => {
-    setIsLoading(true)
+  useEffect(() => {
+    const wasExpired = sessionStorage.getItem('sessionExpired')
+    if (wasExpired === 'true') {
+      toaster.error('Session expired')
+      sessionStorage.removeItem('sessionExpired')
+    }
+  }, [])
+
+  const handleSignIn = async (data: SignInFormData, setError: UseFormSetError<SignInFormData>) => {
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => {
-        setTimeout(resolve, 2000)
-      })
-
-      console.log('Sign in payload:', data)
-
-      // Clear form
-      reset()
-
-      // TODO: Add redirect logic when backend is ready
-      // navigate('/dashboard')
-    } catch (error) {
-      console.error('Sign in error:', error)
-      toaster.error('Failed to sign in')
-    } finally {
-      setIsLoading(false)
+      await authStore.login(data)
+      navigate('/')
+    } catch (e) {
+      if (e instanceof ValidationError) {
+        const items = e.fieldErrors
+          .map(({ msg }) => `<li class="mt-1.5">${msg.charAt(0).toUpperCase() + msg.slice(1)}</li>`)
+          .join('')
+        toaster.error(`Validation error<br><ul>${items}</ul>`)
+        e.fieldErrors.forEach(({ field, msg }) => {
+          setError(field as keyof SignInFormData, { message: msg })
+        })
+      } else if (e instanceof Error) {
+        toaster.error(e.message)
+      }
     }
   }
 
@@ -71,7 +80,7 @@ const SignInPage: React.FC = () => {
           <p className="text-sm text-text-quaternary">Please, sign in to continue.</p>
         </div>
 
-        <SignInForm onSubmit={(data, reset) => handleSignIn(data, reset)} isLoading={isLoading} />
+        <SignInForm onSubmit={handleSignIn} isLoading={loading} />
       </div>
     </StandaloneLayout>
   )

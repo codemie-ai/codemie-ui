@@ -34,19 +34,9 @@ const defaultValues: MCPFormValues = {
   arguments: '',
 }
 
-const Wrapper = ({
-  configHasEnv = false,
-}: {
-  configHasEnv?: boolean
-}) => {
+const Wrapper = ({ configHasEnv = false }: { configHasEnv?: boolean }) => {
   const { control, setValue } = useForm<MCPFormValues>({ defaultValues })
-  return (
-    <MCPConfigSection
-      control={control}
-      configHasEnv={configHasEnv}
-      setValue={setValue}
-    />
-  )
+  return <MCPConfigSection control={control} configHasEnv={configHasEnv} setValue={setValue} />
 }
 
 describe('MCPConfigSection', () => {
@@ -68,9 +58,7 @@ describe('MCPConfigSection', () => {
 
   it('shows env warning when configHasEnv is true', () => {
     render(<Wrapper configHasEnv={true} />)
-    expect(
-      screen.getByText(/When using the.*env.*key in the configuration/i)
-    ).toBeInTheDocument()
+    expect(screen.getByText(/When using the.*env.*key in the configuration/i)).toBeInTheDocument()
   })
 
   it('does not show env warning when configHasEnv is false', () => {
@@ -82,8 +70,6 @@ describe('MCPConfigSection', () => {
 
   it('shows hint about required command or url field', () => {
     render(<Wrapper />)
-    expect(
-      screen.getByText(/Must include at least.*command.*or.*url.*field/i)
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Must include at least.*command.*or.*url.*field/i)).toBeInTheDocument()
   })
 })

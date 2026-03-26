@@ -33,6 +33,7 @@ export interface RadioGroupProps {
   name: string
   onChange: (value: string | number | boolean | null) => void
   className?: string
+  rootClassName?: string
   optionClassName?: string
   vertical?: boolean
   label?: string
@@ -46,6 +47,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
   name,
   onChange,
   className,
+  rootClassName,
   optionClassName,
   vertical = false,
   label,
@@ -76,14 +78,14 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
   }
 
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
+    <div className={cn('flex flex-col gap-2', rootClassName)}>
       {label && (
         <label htmlFor={id} className="text-xs font-medium text-text-quaternary">
           {label}
           {required && <span className="text-text-error">*</span>}
         </label>
       )}
-      <div className={twMerge('flex', vertical ? 'flex-col gap-4' : 'flex-row gap-4')}>
+      <div className={twMerge('flex', vertical ? 'flex-col gap-4' : 'flex-row gap-4', className)}>
         {options.map((option, index) => (
           <RadioButton
             id={id}

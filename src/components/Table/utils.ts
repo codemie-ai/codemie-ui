@@ -66,5 +66,7 @@ export const propsAreEqual = <T extends Record<string, unknown>>(
   if (prevProps.customRenderColumns !== nextProps.customRenderColumns) return false
   if (prevProps.onSort !== nextProps.onSort) return false
   if (prevProps.onPaginationChange !== nextProps.onPaginationChange) return false
+  if (prevProps.selected !== nextProps.selected) return false
+  if (prevProps.isAllSelected !== nextProps.isAllSelected) return false
   return true
 }

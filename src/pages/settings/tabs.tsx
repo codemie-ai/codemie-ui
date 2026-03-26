@@ -19,38 +19,24 @@ import ProfileTabSvg from '@/assets/icons/profile-tab.svg?react'
 import { LayoutTab } from '@/components/Layouts/Layout/Layout'
 import { SettingsTab } from '@/constants'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
-import { isMcpEnabled } from '@/utils/featureFlags'
+import { isCostCentersEnabled, isMcpEnabled } from '@/utils/featureFlags'
 
 export const getNavigationTabs = (isAdmin: boolean, awsSupported = false): LayoutTab[] => {
   const isMcpFeatureEnabled = isMcpEnabled()
+  const isCostCentersFeatureEnabled = isCostCentersEnabled()
+  const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
   const isEnterprise = isEnterpriseEdition()
 
   // Build administration children and sort alphabetically
   const administrationChildren = isAdmin
     ? [
-        ...(isEnterprise
+        ...(isCostCentersFeatureEnabled
           ? [
               {
-                id: SettingsTab.AI_ADOPTION_CONFIG,
-                name: 'AI/Run Adoption Framework',
-                title: 'AI/Run Adoption Framework',
-                url: '/settings/administration/ai-adoption-config',
-              },
-            ]
-          : []),
-        {
-          id: SettingsTab.CATEGORIES_MANAGEMENT,
-          name: 'Categories management',
-          title: 'Categories management',
-          url: '/settings/administration/categories',
-        },
-        ...(isMcpFeatureEnabled
-          ? [
-              {
-                id: SettingsTab.MCP_MANAGEMENT,
-                name: 'MCPs management',
-                title: 'MCPs catalog management',
-                url: '/settings/administration/mcps',
+                id: SettingsTab.COST_CENTERS_MANAGEMENT,
+                name: 'Cost centers management',
+                title: 'Cost centers management',
+                url: '/settings/administration/cost-centers',
               },
             ]
           : []),
@@ -60,12 +46,48 @@ export const getNavigationTabs = (isAdmin: boolean, awsSupported = false): Layou
           title: 'Projects management',
           url: '/settings/administration/projects',
         },
-        {
-          id: SettingsTab.PROVIDERS_MANAGEMENT,
-          name: 'Providers management',
-          title: 'Providers management',
-          url: '/settings/administration/providers',
-        },
+        ...(isEnterprise
+          ? [
+              {
+                id: SettingsTab.AI_ADOPTION_CONFIG,
+                name: 'AI/Run Adoption Framework',
+                title: 'AI/Run Adoption Framework',
+                url: '/settings/administration/ai-adoption-config',
+              },
+              {
+                id: SettingsTab.CATEGORIES_MANAGEMENT,
+                name: 'Categories management',
+                title: 'Categories management',
+                url: '/settings/administration/categories',
+              },
+              ...(isMcpFeatureEnabled
+                ? [
+                    {
+                      id: SettingsTab.MCP_MANAGEMENT,
+                      name: 'MCPs management',
+                      title: 'MCPs catalog management',
+                      url: '/settings/administration/mcps',
+                    },
+                  ]
+                : []),
+              {
+                id: SettingsTab.PROVIDERS_MANAGEMENT,
+                name: 'Providers management',
+                title: 'Providers management',
+                url: '/settings/administration/providers',
+              },
+              ...(isUserManagementEnabled
+                ? [
+                    {
+                      id: SettingsTab.USERS_MANAGEMENT,
+                      name: 'Users management',
+                      title: 'Users management',
+                      url: '/settings/administration/users',
+                    },
+                  ]
+                : []),
+            ]
+          : []),
       ].sort((a, b) => a.name.localeCompare(b.name))
     : []
 

@@ -15,6 +15,7 @@
 
 import { useEffect } from 'react'
 
+import { HTTP_STATUS } from '@/constants'
 import { assistantsStore, chatsStore, userStore } from '@/store'
 import { appInfoStore } from '@/store/appInfo'
 import { applicationsStore } from '@/store/applications'
@@ -23,7 +24,12 @@ import { skillsStore } from '@/store/skills'
 const useInitialDataFetch = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
-      userStore.loadUser()
+      try {
+        await userStore.loadUser()
+      } catch (error: unknown) {
+        if (error instanceof Response && error.status === HTTP_STATUS.UNAUTHORIZED) return
+        throw error
+      }
       chatsStore.getFolders()
       chatsStore.getChats()
 

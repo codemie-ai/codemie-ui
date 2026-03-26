@@ -17,7 +17,6 @@ import { ComponentType, FC, useEffect, useState } from 'react'
 import { resolvePath } from 'react-router'
 import { useSnapshot } from 'valtio'
 
-import LearnSvg from '@/assets/icons/learn.svg?react'
 import PaperSvg from '@/assets/icons/paper.svg?react'
 import SheetSvg from '@/assets/icons/sheet.svg?react'
 import VideoSvg from '@/assets/icons/video.svg?react'
@@ -126,12 +125,6 @@ const HelpPage: FC = () => {
       youtubeChannel: {
         icon: VideoSvg,
         description: 'Watch tutorials and product guides on our YouTube channel.',
-      },
-      learningCourses: {
-        icon: LearnSvg,
-        buttonText: 'Open Courses',
-        description:
-          'Explore comprehensive courses to deepen your knowledge and skills with CodeMie.',
       },
     }
 

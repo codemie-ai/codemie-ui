@@ -75,6 +75,13 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api/, ''),
+        },
+      },
       watch: {
         ignored: ['**/__tests__/**/*.{test,spec}.?(c|m)[jt]s?(x)', '**/coverage/**'],
       },

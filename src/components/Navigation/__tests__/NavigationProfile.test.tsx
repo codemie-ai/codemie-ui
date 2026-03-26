@@ -20,30 +20,37 @@ import NavigationProfile from '../NavigationProfile'
 
 vi.hoisted(() => vi.resetModules())
 
-const { mockUserStore, mockAppInfoStore, mockRouter, mockCopyToClipboard, mockUser } = vi.hoisted(
-  () => {
-    const mockUser = {
-      userId: 'user-123',
-      name: 'John Doe',
-      picture: 'https://example.com/avatar.jpg',
-    } as any
+const {
+  mockAuthStore,
+  mockUserStore,
+  mockAppInfoStore,
+  mockRouter,
+  mockCopyToClipboard,
+  mockUser,
+} = vi.hoisted(() => {
+  const mockUser = {
+    user_id: 'user-123',
+    name: 'John Doe',
+    picture: 'https://example.com/avatar.jpg',
+  } as any
 
-    return {
-      mockUser,
-      mockUserStore: {
-        user: mockUser,
-        logOutUser: vi.fn(),
-      },
-      mockAppInfoStore: {
-        apiVersion: '1.2.3',
-      },
-      mockRouter: {
-        push: vi.fn(),
-      },
-      mockCopyToClipboard: vi.fn(),
-    }
+  return {
+    mockUser,
+    mockAuthStore: {
+      logout: vi.fn(),
+    },
+    mockUserStore: {
+      user: mockUser,
+    },
+    mockAppInfoStore: {
+      apiVersion: '1.2.3',
+    },
+    mockRouter: {
+      push: vi.fn(),
+    },
+    mockCopyToClipboard: vi.fn(),
   }
-)
+})
 
 vi.mock('valtio', () => ({
   proxy: (obj: any) => obj,
@@ -57,6 +64,10 @@ vi.mock('valtio', () => ({
 
 vi.mock('@/store/user', () => ({
   userStore: mockUserStore,
+}))
+
+vi.mock('@/store/auth', () => ({
+  authStore: mockAuthStore,
 }))
 
 vi.mock('@/store/appInfo', () => ({
@@ -152,7 +163,7 @@ describe('NavigationProfile', () => {
   it('displays user information in panel', () => {
     render(<NavigationProfile isExpanded={false} />)
     expect(screen.getByText(mockUser.name)).toBeInTheDocument()
-    expect(screen.getByText(`ID: ${mockUser.userId}`)).toBeInTheDocument()
+    expect(screen.getByText(`ID: ${mockUser.user_id}`)).toBeInTheDocument()
   })
 
   it('displays version information', () => {
@@ -194,7 +205,10 @@ describe('NavigationProfile', () => {
     render(<NavigationProfile isExpanded={false} />)
     const copyButton = screen.getByTitle('Copy user ID')
     fireEvent.click(copyButton)
-    expect(mockCopyToClipboard).toHaveBeenCalledWith(mockUser.userId, 'User ID copied to clipboard')
+    expect(mockCopyToClipboard).toHaveBeenCalledWith(
+      mockUser.user_id,
+      'User ID copied to clipboard'
+    )
   })
 
   it('navigates to settings when Settings button is clicked', () => {
@@ -204,10 +218,10 @@ describe('NavigationProfile', () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ name: 'settings' })
   })
 
-  it('calls logOutUser when Log out button is clicked', () => {
+  it('calls logout when Log out button is clicked', () => {
     render(<NavigationProfile isExpanded={false} />)
     const logoutButton = screen.getByRole('button', { name: /Log out/i })
     fireEvent.click(logoutButton)
-    expect(mockUserStore.logOutUser).toHaveBeenCalledTimes(1)
+    expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
   })
 })

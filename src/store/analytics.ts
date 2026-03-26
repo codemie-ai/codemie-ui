@@ -505,7 +505,7 @@ export const analyticsStore = proxy<Analytics>({
    * @returns Promise with AnalyticsDashboardItem array
    */
   async loadDashboards() {
-    const userId = userStore.user?.userId ?? ''
+    const userId = userStore.user?.user_id ?? ''
 
     let dashboards = storage.getObject<AnalyticsDashboardItem[] | null>(
       userId,
@@ -523,7 +523,7 @@ export const analyticsStore = proxy<Analytics>({
    * @param dashboards - Array of dashboards to save
    */
   async saveDashboards(dashboards: AnalyticsDashboardItem[]) {
-    const userId = userStore.user?.userId ?? ''
+    const userId = userStore.user?.user_id ?? ''
     storage.put(userId, ANALYTICS_DASHBOARDS_KEY, dashboards)
     this.dashboards = dashboards
   },

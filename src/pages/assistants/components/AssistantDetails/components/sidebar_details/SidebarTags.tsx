@@ -25,6 +25,8 @@ interface SidebarTagsProps {
   noItemsMessage?: string
   className?: string
   items?: { value: string; icon?: ReactNode; onClick?: () => void }[]
+  filledTags?: boolean
+  children?: ReactNode
 }
 
 const SidebarTags = ({
@@ -34,10 +36,13 @@ const SidebarTags = ({
   noItemsMessage,
   className,
   items,
+  filledTags,
+  children,
 }: SidebarTagsProps) => {
   const itemClass = (item) => {
     return classNames(
       'py-1.5 px-2 flex items-center gap-2 rounded-lg bg-surface-base-secondary border border-border-specific-panel-outline font-semibold',
+      filledTags && 'bg-surface-base-chat',
       {
         'hover:bg-border-structural transition cursor-pointer': item.onClick,
       }
@@ -53,13 +58,18 @@ const SidebarTags = ({
 
   return (
     <div className={cn('text-xs flex flex-col gap-2', className)}>
-      <p
-        className={cn('flex items-center gap-2 font-semibold text-text-quaternary', labelClassName)}
-      >
-        {labelIcon}
-        {label}
-      </p>
-      {!items?.length && <p className="text-text-secondary">{noItemsMessage}</p>}
+      {label && (
+        <p
+          className={cn(
+            'flex items-center gap-2 font-semibold text-text-quaternary',
+            labelClassName
+          )}
+        >
+          {labelIcon}
+          {label}
+        </p>
+      )}
+      {!items?.length && <p className="text-text-quaternary">{noItemsMessage}</p>}
       {!!items?.length && (
         <div className="flex flex-wrap gap-2">
           {items.map((item, index) => (
@@ -76,6 +86,7 @@ const SidebarTags = ({
               {item.icon} {item.value}
             </div>
           ))}
+          {children}
         </div>
       )}
     </div>

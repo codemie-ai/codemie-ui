@@ -89,7 +89,7 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
     (config: DynamicToolsConfig) => {
       setDynamicToolsConfig(config)
       const chatId = currentChat?.id
-      const userId = userStore.user?.userId
+      const userId = userStore.user?.user_id
       if (chatId && userId) {
         saveChatTools(userId, chatId, config)
       }
@@ -101,7 +101,7 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
     (skills: SkillOption[]) => {
       setSelectedSkills(skills)
       const chatId = currentChat?.id
-      const userId = userStore.user?.userId
+      const userId = userStore.user?.user_id
       if (chatId && userId) {
         saveChatSkills(userId, chatId, skills)
       }
@@ -165,7 +165,7 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
     }
 
     const chatId = currentChat?.id
-    const userId = userStore.user?.userId
+    const userId = userStore.user?.user_id
 
     if (chatId && userId) {
       // Restore persisted tools config for this chat

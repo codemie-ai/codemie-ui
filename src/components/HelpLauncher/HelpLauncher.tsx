@@ -105,7 +105,7 @@ const HelpLauncher: React.FC<HelpLauncherProps> = ({ links, tooltipText, classNa
             'flex items-center justify-end gap-2',
             'py-1.5 px-2 max-w-96',
             'rounded-lg',
-            'bg-surface-base-quateary text-text-secondary',
+            'bg-surface-base-quateary text-text-quaternary',
             'text-xs font-normal leading-5'
           )}
           style={getTooltipPositionStyle()}

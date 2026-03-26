@@ -59,7 +59,7 @@ describe('SignUpForm', () => {
     it('renders form with all required inputs', () => {
       renderComponent()
 
-      expect(screen.getByLabelText('Full name')).toBeInTheDocument()
+      expect(screen.getByLabelText('Username')).toBeInTheDocument()
       expect(screen.getByLabelText('Email address')).toBeInTheDocument()
       expect(screen.getByLabelText('Password')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument()
@@ -189,7 +189,7 @@ describe('SignUpForm', () => {
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledTimes(1)
         expect(mockOnSubmit).toHaveBeenCalledWith(
-          { name: TEST_NAME, email: TEST_EMAIL, password: TEST_VALID_PASSWORD },
+          { username: TEST_NAME, email: TEST_EMAIL, password: TEST_VALID_PASSWORD },
           expect.any(Function)
         )
       })
@@ -206,22 +206,19 @@ describe('SignUpForm', () => {
       expect(mockOnSubmit).not.toHaveBeenCalled()
     })
 
-    it('resets form after successful submission', async () => {
-      mockOnSubmit.mockImplementation((_data, reset) => {
-        reset()
-      })
-
+    it('calls onSubmit once per submission', async () => {
       renderComponent()
 
-      const { nameInput, emailInput, passwordInput } = getSignUpFormInputs()
       await fillSignUpForm(user, TEST_NAME, TEST_EMAIL, TEST_VALID_PASSWORD)
+
+      await waitFor(() => {
+        expect(getSubmitButton('Create account')).not.toBeDisabled()
+      })
 
       await user.click(getSubmitButton('Create account'))
 
       await waitFor(() => {
-        expect((nameInput as HTMLInputElement).value).toBe('')
-        expect((emailInput as HTMLInputElement).value).toBe('')
-        expect((passwordInput as HTMLInputElement).value).toBe('')
+        expect(mockOnSubmit).toHaveBeenCalledTimes(1)
       })
     })
   })
@@ -247,7 +244,7 @@ describe('SignUpForm', () => {
       renderComponent()
 
       const { nameInput, emailInput, passwordInput } = getSignUpFormInputs()
-      expectAriaLabel(nameInput, 'Full name')
+      expectAriaLabel(nameInput, 'Username')
       expectAriaLabel(emailInput, 'Email address')
       expectAriaLabel(passwordInput, 'Password')
     })

@@ -20,6 +20,10 @@ viteApiUrl: https://codemie.%%DOMAIN%%/code-assistant-api
 viteEnv: prod
 # -- Enable analytics feature in AI/Run UI
 viteEnableAnalytics: false
+# -- Enable user management feature in AI/Run UI
+viteEnableUserManagement: false
+# -- Identity provider. Options: 'keycloak', 'local'
+viteIdpProvider: keycloak
 
 # -- Secrets with credentials to pull images from a private registry.
 imagePullSecrets: []

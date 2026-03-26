@@ -77,7 +77,9 @@ export enum AssistantTab {
 export enum SettingsTab {
   PROFILE = 'profile',
   ADMINISTRATION = 'administration',
+  COST_CENTERS_MANAGEMENT = 'cost_centers_management',
   PROJECTS_MANAGEMENT = 'projects_management',
+  USERS_MANAGEMENT = 'users_management',
   CATEGORIES_MANAGEMENT = 'categories_management',
   MCP_MANAGEMENT = 'mcp_management',
   PROVIDERS_MANAGEMENT = 'providers_management',
@@ -144,3 +146,7 @@ export const CATEGORIES = 'categories'
 
 // Sensitive value masking
 export const SENSITIVE_VALUE_MASK = '********'
+
+export const HTTP_STATUS = {
+  UNAUTHORIZED: 401,
+} as const

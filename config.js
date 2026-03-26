@@ -1,7 +1,10 @@
 window._env_ = window._env_ || {}
-window._env_.VITE_API_URL = 'http://localhost:8080'
+window._env_.VITE_API_URL = '/api'
 window._env_.VITE_ENV = 'local'
 window._env_.VITE_APP_VERSION = '7.7.7'
 window._env_.VITE_BANNER_MESSAGE = ''
 window._env_.VITE_CAN_SWITCH_DESIGN = ''
 window._env_.VITE_SHOW_ALL_PROJECTS = 'false'
+window._env_.VITE_IS_EXTERNAL_LOGIN = 'false'
+window._env_.VITE_ENABLE_USER_MANAGEMENT = 'false'
+window._env_.VITE_IDP_PROVIDER = 'keycloak'

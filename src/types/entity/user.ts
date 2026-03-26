@@ -13,15 +13,21 @@
 // limitations under the License.
 //
 
+export interface UserAssignedProject {
+  name: string
+  is_project_admin: boolean
+}
+
 export interface User {
   userId: string
   email: string
   name?: string
   isAdmin: boolean
   isAuthenticated: boolean
-  userType?: string
+  user_type?: string
   applications?: string[]
   applicationsAdmin?: string[]
+  projects?: UserAssignedProject[]
   currentProject?: string
   username?: string
   picture?: string
@@ -34,4 +40,32 @@ export interface UserData {
   date: string
   id: string
   stt_support: boolean
+}
+
+export type UserType = 'regular' | 'external'
+
+export interface UserListItem {
+  id: string
+  name: string | null
+  username: string
+  email: string
+  is_admin: boolean
+  is_active: boolean
+  user_type: UserType
+  auth_source: string
+  last_login_at: string | null
+  projects: UserAssignedProject[]
+  picture: string | null
+  date: string | null
+}
+
+export interface PaginationInfo {
+  total: number
+  page: number
+  per_page: number
+}
+
+export interface GetUsersResponse {
+  data: UserListItem[]
+  pagination: PaginationInfo
 }

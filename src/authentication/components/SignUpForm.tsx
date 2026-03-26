@@ -15,7 +15,7 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import React, { useState, useMemo } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, UseFormSetError } from 'react-hook-form'
 import { Tooltip } from 'react-tooltip'
 import * as Yup from 'yup'
 
@@ -36,17 +36,23 @@ import { validatePassword } from '@/utils/validation'
 import PasswordToggleButton from './PasswordToggleButton'
 
 interface SignUpFormProps {
-  onSubmit: (data: SignUpFormData, reset: () => void) => void | Promise<void>
+  onSubmit: (
+    data: SignUpFormData,
+    setError: UseFormSetError<SignUpFormData>
+  ) => void | Promise<void>
   isLoading?: boolean
 }
 
 const signUpSchema = Yup.object().shape({
-  name: Yup.string()
+  username: Yup.string()
     .trim()
     .required(VALIDATION_MESSAGES.NAME_REQUIRED)
+    .min(VALIDATION_CONSTRAINTS.USERNAME_MIN_LENGTH, VALIDATION_MESSAGES.USERNAME_MIN_LENGTH)
+    .max(VALIDATION_CONSTRAINTS.USERNAME_MAX_LENGTH, VALIDATION_MESSAGES.USERNAME_MAX_LENGTH)
     .matches(VALIDATION_PATTERNS.NAME_ALLOWED_CHARS, VALIDATION_MESSAGES.NAME_INVALID_CHARS),
   email: Yup.string()
-    .email(VALIDATION_MESSAGES.EMAIL_INVALID)
+    .max(254, VALIDATION_MESSAGES.EMAIL_INVALID)
+    .matches(VALIDATION_PATTERNS.EMAIL, VALIDATION_MESSAGES.EMAIL_INVALID)
     .required(VALIDATION_MESSAGES.EMAIL_REQUIRED),
   password: Yup.string()
     .min(VALIDATION_CONSTRAINTS.PASSWORD_MIN_LENGTH, VALIDATION_MESSAGES.PASSWORD_MIN_LENGTH)
@@ -63,13 +69,13 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
     control,
     handleSubmit,
     watch,
-    reset,
+    setError,
     formState: { errors, isValid },
   } = useForm<SignUpFormData>({
     resolver: yupResolver(signUpSchema),
     mode: 'onChange',
     defaultValues: {
-      name: '',
+      username: '',
       email: '',
       password: '',
     },
@@ -80,26 +86,26 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
 
   return (
     <form
-      onSubmit={handleSubmit((data) => onSubmit(data, reset))}
+      onSubmit={handleSubmit((data) => onSubmit(data, setError))}
       className="flex flex-col gap-6 w-[400px]"
       autoComplete="new-password"
     >
-      {/* Name Input */}
+      {/* Username Input */}
       <Controller
-        name="name"
+        name="username"
         control={control}
         render={({ field }) => (
           <Input
             {...field}
             type="text"
-            placeholder="Name"
+            placeholder="Username"
             disabled={isLoading}
-            autoComplete="new-password"
-            error={errors.name?.message}
+            autoComplete="off"
+            error={errors.username?.message}
             errorClassName="!text-xs !text-error"
-            aria-label="Full name"
+            aria-label="Username"
             aria-required="true"
-            aria-invalid={!!errors.name}
+            aria-invalid={!!errors.username}
           />
         )}
       />

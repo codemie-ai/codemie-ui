@@ -19,6 +19,8 @@ import React from 'react'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import { createdBy, formatDate, truncateInput } from '@/utils/utils'
 
+import { Checkbox } from '../form/Checkbox'
+
 interface TableCellProps<T = Record<string, unknown>> {
   index: number
   value: T
@@ -30,6 +32,8 @@ interface TableCellProps<T = Record<string, unknown>> {
   customRender?: (item: T, i: number) => React.ReactNode
   shrink?: boolean
   noWrap?: boolean
+  isSelected?: boolean
+  onSelect?: () => void
 }
 
 const TableCell = <T,>({
@@ -43,6 +47,8 @@ const TableCell = <T,>({
   customRender,
   shrink = false,
   noWrap = false,
+  isSelected,
+  onSelect,
 }: TableCellProps<T>): React.ReactNode => {
   let content: React.ReactNode = null
 
@@ -52,6 +58,8 @@ const TableCell = <T,>({
     }
     return ''
   }
+
+  const isSelectionCell = definition.type === DefinitionTypes.Selection
 
   if (definition.type === DefinitionTypes.Date) {
     content = <span>{formatDate(value[definition.key])}</span>
@@ -64,6 +72,12 @@ const TableCell = <T,>({
           ? 'Yes'
           : 'No'}
       </span>
+    )
+  } else if (isSelectionCell) {
+    content = (
+      <div data-selection-checkbox="true">
+        <Checkbox checked={isSelected} onChange={onSelect ?? (() => {})} />
+      </div>
     )
   } else if (definition.type === DefinitionTypes.Custom && customRender) {
     content = customRender(value, index)
@@ -90,6 +104,7 @@ const TableCell = <T,>({
           'font-bold': isSemiBold,
           'min-w-[120px] break-all': shrink,
           'whitespace-nowrap': noWrap,
+          'pr-0.5': isSelectionCell,
         }
       )}
     >

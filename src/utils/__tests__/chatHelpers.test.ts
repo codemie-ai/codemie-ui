@@ -13,10 +13,16 @@
 // limitations under the License.
 //
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 import { ROLE_ASSISTANT, ROLE_USER } from '@/constants'
-import { transformChatBEtoFE, getChatBEMessageIndex } from '@/utils/chatHelpers'
+import {
+  transformChatBEtoFE,
+  getChatBEMessageIndex,
+  transformChatHistoryFEtoBE,
+} from '@/utils/chatHelpers'
+
+vi.mock('@/constants', () => ({ ROLE_ASSISTANT: 'assistant', ROLE_USER: 'user' }))
 
 describe('transformChatBEtoFE', () => {
   it('returns a transformed chat', () => {
@@ -187,5 +193,164 @@ describe('getChatBEMessageIndex', () => {
     expect(getChatBEMessageIndex(chat, 0, 0, ROLE_ASSISTANT)).toEqual(1) // First assistant response
     expect(getChatBEMessageIndex(chat, 0, 1, ROLE_ASSISTANT)).toEqual(3) // Second assistant response
     expect(getChatBEMessageIndex(chat, 1, 0, ROLE_ASSISTANT)).toEqual(5) // Third assistant response
+  })
+})
+
+describe('transformChatHistoryFEtoBE', () => {
+  const baseChat = {
+    history: [
+      [
+        {
+          request: 'hello',
+          response: 'hi',
+          createdAt: '2024-01-01',
+          requestRaw: null,
+          fileNames: [],
+        },
+      ],
+      [
+        {
+          request: 'foo',
+          response: 'bar',
+          createdAt: '2024-01-02',
+          requestRaw: null,
+          fileNames: [],
+        },
+      ],
+    ],
+  }
+
+  it('includes all history groups when historyIndex is null', () => {
+    const result = transformChatHistoryFEtoBE(baseChat, null)
+    // 2 groups × 2 messages (user + assistant) = 4 messages
+    expect(result).toHaveLength(4)
+  })
+
+  it('produces alternating user and assistant messages', () => {
+    const result = transformChatHistoryFEtoBE(baseChat, null)
+    expect(result[0].role).toBe(ROLE_USER)
+    expect(result[1].role).toBe(ROLE_ASSISTANT)
+    expect(result[2].role).toBe(ROLE_USER)
+    expect(result[3].role).toBe(ROLE_ASSISTANT)
+  })
+
+  it('maps request to user message and response to assistant message', () => {
+    const result = transformChatHistoryFEtoBE(baseChat, null)
+    expect(result[0].message).toBe('hello')
+    expect(result[1].message).toBe('hi')
+    expect(result[2].message).toBe('foo')
+    expect(result[3].message).toBe('bar')
+  })
+
+  it('includes createdAt on each produced message', () => {
+    const result = transformChatHistoryFEtoBE(baseChat, null)
+    expect(result[0].createdAt).toBe('2024-01-01')
+    expect(result[1].createdAt).toBe('2024-01-01')
+    expect(result[2].createdAt).toBe('2024-01-02')
+    expect(result[3].createdAt).toBe('2024-01-02')
+  })
+
+  it('slices history up to historyIndex when historyIndex is a number', () => {
+    // historyIndex=1 → slice(-2, 1) → only the first group
+    const result = transformChatHistoryFEtoBE(baseChat, 1)
+    expect(result).toHaveLength(2)
+    expect(result[0].message).toBe('hello')
+    expect(result[1].message).toBe('hi')
+  })
+
+  it('returns an empty array when historyIndex is 0', () => {
+    const result = transformChatHistoryFEtoBE(baseChat, 0)
+    expect(result).toEqual([])
+  })
+
+  it('takes only the last message from each history group', () => {
+    const chatWithMultiple = {
+      history: [
+        [
+          {
+            request: 'first',
+            response: 'first response',
+            createdAt: '2024-01-01',
+            requestRaw: null,
+            fileNames: [],
+          },
+          {
+            request: 'last',
+            response: 'last response',
+            createdAt: '2024-01-02',
+            requestRaw: null,
+            fileNames: [],
+          },
+        ],
+      ],
+    }
+    const result = transformChatHistoryFEtoBE(chatWithMultiple, null)
+    // Only last message in the group is used
+    expect(result).toHaveLength(2)
+    expect(result[0].message).toBe('last')
+    expect(result[1].message).toBe('last response')
+  })
+
+  it('returns an empty array when history is empty', () => {
+    const result = transformChatHistoryFEtoBE({ history: [] }, null)
+    expect(result).toEqual([])
+  })
+
+  it('does not include assistantName or assistantId when isGroup is false', () => {
+    const result = transformChatHistoryFEtoBE({ ...baseChat, isGroup: false }, null)
+    result
+      .filter((msg) => msg.role === ROLE_ASSISTANT)
+      .forEach((msg) => {
+        expect(msg).not.toHaveProperty('assistantName')
+        expect(msg).not.toHaveProperty('assistantId')
+      })
+  })
+
+  it('includes assistantName and assistantId on assistant messages when isGroup is true', () => {
+    const chatGroup = {
+      isGroup: true,
+      history: [
+        [
+          {
+            request: 'hello',
+            response: 'hi',
+            createdAt: '2024-01-01',
+            requestRaw: null,
+            fileNames: [],
+            assistantName: 'MyBot',
+            assistantId: 'bot-42',
+          },
+        ],
+      ],
+    }
+    const result = transformChatHistoryFEtoBE(chatGroup, null)
+    const assistantMsg = result.find((msg) => msg.role === ROLE_ASSISTANT)
+    expect(assistantMsg).toBeDefined()
+    expect(assistantMsg?.assistantName).toBe('MyBot')
+    expect(assistantMsg?.assistantId).toBe('bot-42')
+  })
+
+  it('does not include assistantName or assistantId on user messages even when isGroup is true', () => {
+    const chatGroup = {
+      isGroup: true,
+      history: [
+        [
+          {
+            request: 'hello',
+            response: 'hi',
+            createdAt: '2024-01-01',
+            requestRaw: null,
+            fileNames: [],
+            assistantName: 'MyBot',
+            assistantId: 'bot-42',
+          },
+        ],
+      ],
+    }
+    const result = transformChatHistoryFEtoBE(chatGroup, null)
+    const userMsg = result.find((msg) => msg.role === ROLE_USER)
+    expect(userMsg).toBeDefined()
+    expect(userMsg).not.toHaveProperty('assistantName')
+    expect(userMsg).not.toHaveProperty('assistantId')
   })
 })

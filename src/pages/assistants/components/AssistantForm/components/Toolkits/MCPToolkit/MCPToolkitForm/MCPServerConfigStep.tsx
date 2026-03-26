@@ -89,11 +89,7 @@ const MCPServerConfigStep = ({
       <div className="flex flex-col gap-4">
         <MCPBasicFields control={control} isEditing={isEditing} />
 
-        <MCPConfigSection
-          control={control}
-          configHasEnv={configHasEnv}
-          setValue={setValue}
-        />
+        <MCPConfigSection control={control} configHasEnv={configHasEnv} setValue={setValue} />
 
         <MCPEnvVarsSection
           mcpServer={mcpServer}

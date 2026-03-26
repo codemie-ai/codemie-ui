@@ -329,7 +329,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     })
 
     const hasUserSettings = useMemo(() => {
-      const isCreatedByCurrentUser = assistant?.created_by?.id === userStore.user?.userId || true
+      const isCreatedByCurrentUser = assistant?.created_by?.id === userStore.user?.user_id || true
 
       if (!isCreatedByCurrentUser && (toolkits?.length || mcpServers.length)) return false
       if (mcpServers.some((ms) => ms.enabled && ms.settings?.setting_type === SETTING_TYPE_USER))

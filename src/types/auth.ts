@@ -24,7 +24,14 @@ export interface SignInFormData extends BaseAuthFormData {}
 
 // Sign up specific data
 export interface SignUpFormData extends BaseAuthFormData {
-  name: string
+  username: string
+}
+
+// API request payloads
+export interface RegisterPayload {
+  email: string
+  username: string
+  password: string
 }
 
 // Password validation result

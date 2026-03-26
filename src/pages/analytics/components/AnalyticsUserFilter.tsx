@@ -51,7 +51,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
     const matchingOption = userOptions.find((option) => {
       const { value: optionId } = option
       return (
-        optionId === currentUser.userId ||
+        optionId === currentUser.user_id ||
         optionId === currentUser.username ||
         optionId === currentUser.name
       )

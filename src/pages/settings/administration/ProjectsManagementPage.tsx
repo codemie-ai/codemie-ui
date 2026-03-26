@@ -14,25 +14,16 @@
 //
 
 import { FC } from 'react'
-import { useSnapshot } from 'valtio'
 
-import { userStore } from '@/store'
-
-import AdminToolsCard from '../components/AdminToolsCard'
-import SettingsLayout from '../components/SettingsLayout'
+import ProjectsManagementDefault from './projectsManagement/ProjectsManagementDefault'
+import ProjectsManagementFull from './projectsManagement/ProjectsManagementFull'
 
 const ProjectsManagementPage: FC = () => {
-  const { user } = useSnapshot(userStore) as typeof userStore
+  const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
 
-  const renderContent = () => {
-    return (
-      <div className="settings-cards flex flex-col gap-6 max-w-lg pt-8 gap-x-6">
-        {user?.isAdmin ? <AdminToolsCard /> : null}
-      </div>
-    )
-  }
-
-  return <SettingsLayout contentTitle="Projects management" content={renderContent()} />
+  // Show simple view when user management is disabled (production default)
+  // Show full table view when user management is enabled
+  return isUserManagementEnabled ? <ProjectsManagementFull /> : <ProjectsManagementDefault />
 }
 
 export default ProjectsManagementPage

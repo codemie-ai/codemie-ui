@@ -145,7 +145,7 @@ export function getConfigItem(config: unknown, id: string): ConfigItem | null {
 export function isConfigItemEnabled(config: readonly ConfigItem[], id: string): boolean {
   const settings = getConfigItemSettings(config, id)
   if (!settings?.enabled) return false
-  const isExternalUser = userStore.user?.userType === USER_TYPE_EXTERNAL
+  const isExternalUser = userStore.user?.user_type === USER_TYPE_EXTERNAL
 
   // Check if item is available for external users
   return !(isExternalUser && settings.availableForExternal === false)

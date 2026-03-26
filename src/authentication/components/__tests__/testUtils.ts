@@ -57,7 +57,7 @@ export async function fillSignUpForm(
   email: string,
   password: string
 ): Promise<void> {
-  const nameInput = screen.getByLabelText('Full name')
+  const nameInput = screen.getByLabelText('Username')
   const emailInput = screen.getByLabelText('Email address')
   const passwordInput = screen.getByLabelText('Password')
 
@@ -71,7 +71,7 @@ export async function fillSignUpForm(
  */
 export function getSignUpFormInputs() {
   return {
-    nameInput: screen.getByLabelText('Full name'),
+    nameInput: screen.getByLabelText('Username'),
     emailInput: screen.getByLabelText('Email address'),
     passwordInput: screen.getByLabelText('Password'),
   }

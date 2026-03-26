@@ -15,8 +15,8 @@
 
 import { createHashRouter, redirect, RouteObject } from 'react-router'
 
-// import SignInPage from '@/authentication/local/SignInPage'
-// import SignUpPage from '@/authentication/local/SignUpPage'
+import SignInPage from '@/authentication/local/SignInPage'
+import SignUpPage from '@/authentication/local/SignUpPage'
 import { AssistantTab } from '@/constants'
 import { ANALYTICS, ANALYTICS_EDIT_DASHBOARD, ANALYTICS_NEW_DASHBOARD } from '@/constants/routes'
 import AnalyticsDashboardFormPage from '@/pages/analytics/AnalyticsDashboardFormPage'
@@ -52,12 +52,16 @@ import LoginSuccessPage from '@/pages/login-success/LoginSuccessPage'
 import ReleaseNotesPage from '@/pages/releaseNotes/ReleaseNotesPage'
 import AiAdoptionConfigPage from '@/pages/settings/administration/AiAdoptionConfigPage'
 import CategoriesManagementPage from '@/pages/settings/administration/CategoriesManagementPage'
+import CostCenterDetailsPage from '@/pages/settings/administration/CostCenterDetailsPage'
+import CostCentersManagementPage from '@/pages/settings/administration/CostCentersManagementPage'
 import MCPManagementPage from '@/pages/settings/administration/MCPManagementPage'
+import ProjectDetailsPage from '@/pages/settings/administration/ProjectDetailsPage'
 import ProjectsManagementPage from '@/pages/settings/administration/ProjectsManagementPage'
 import ProvidersCreatePage from '@/pages/settings/administration/ProvidersCreatePage'
 import ProvidersEditPage from '@/pages/settings/administration/ProvidersEditPage'
 import ProvidersManagementPage from '@/pages/settings/administration/ProvidersManagementPage'
 import ProvidersViewPage from '@/pages/settings/administration/ProvidersViewPage'
+import UsersManagementPage from '@/pages/settings/administration/UsersManagementPage'
 import AdministrationPage from '@/pages/settings/AdministrationPage'
 import {
   AwsAssistantsPage,
@@ -389,8 +393,29 @@ const settingsRoutes: RouteObject[] = [
     Component: AdministrationPage,
   },
   {
+    id: 'projects-management',
     path: '/settings/administration/projects',
     Component: ProjectsManagementPage,
+  },
+  {
+    id: 'projects-management-detail',
+    path: '/settings/administration/projects/:projectName',
+    Component: ProjectDetailsPage,
+  },
+  {
+    id: 'cost-centers-management',
+    path: '/settings/administration/cost-centers',
+    Component: CostCentersManagementPage,
+  },
+  {
+    id: 'cost-centers-management-detail',
+    path: '/settings/administration/cost-centers/:costCenterId',
+    Component: CostCenterDetailsPage,
+  },
+  {
+    id: 'administration-users',
+    path: '/settings/administration/users',
+    Component: UsersManagementPage,
   },
   {
     path: '/settings/administration/mcps',
@@ -539,16 +564,16 @@ export const router = createHashRouter([
     path: '/login-success',
     Component: LoginSuccessPage,
   },
-  // {
-  //   id: 'sign-in',
-  //   path: '/auth/sign-in',
-  //   Component: SignInPage,
-  // },
-  // {
-  //   id: 'sign-up',
-  //   path: '/auth/sign-up',
-  //   Component: SignUpPage,
-  // },
+  {
+    id: 'sign-in',
+    path: '/auth/sign-in',
+    Component: SignInPage,
+  },
+  {
+    id: 'sign-up',
+    path: '/auth/sign-up',
+    Component: SignUpPage,
+  },
 ])
 
 export default router

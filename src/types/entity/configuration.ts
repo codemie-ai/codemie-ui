@@ -25,6 +25,7 @@ export interface ConfigItem {
     name?: string
     url?: string
     slug?: string
+    maxProjects?: number
   }
 }
 

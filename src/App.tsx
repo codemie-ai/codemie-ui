@@ -67,12 +67,16 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <NewReleasePopup />
-        <OnboardingPopup />
+        {user && (
+          <>
+            <NewReleasePopup />
+            <OnboardingPopup />
+            <FloatingKataWindow />
+            <UnsavedChangesPopup />
+            <HelpPanel />
+          </>
+        )}
         <SessionExpiredPopup />
-        <FloatingKataWindow />
-        <UnsavedChangesPopup />
-        <HelpPanel />
       </UnsavedChangesProvider>
     </PrimeReactProvider>
   )

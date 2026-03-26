@@ -238,7 +238,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
         1
       )
       storage.put(
-        userStore.user!.userId,
+        userStore.user!.user_id,
         RECENT_ASSISTANTS_STORAGE_KEY,
         assistantsStore.recentAssistants
       )
@@ -270,14 +270,14 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       assistantsStore.recentAssistants.pop()
     }
     storage.put(
-      userStore.user!.userId,
+      userStore.user!.user_id,
       RECENT_ASSISTANTS_STORAGE_KEY,
       assistantsStore.recentAssistants
     )
   },
 
   getRecentAssistants() {
-    const recentAssistants = storage.get(userStore.user!.userId, RECENT_ASSISTANTS_STORAGE_KEY)
+    const recentAssistants = storage.get(userStore.user!.user_id, RECENT_ASSISTANTS_STORAGE_KEY)
     if (!recentAssistants?.length) {
       assistantsStore.recentAssistants = []
       return Promise.resolve([])
@@ -622,13 +622,13 @@ export const assistantsStore = proxy<AssistantsStoreType>({
   },
 
   updateRecentAssistant(id, fields) {
-    if (!userStore.user?.userId) return
+    if (!userStore.user?.user_id) return
     const assistant = assistantsStore.recentAssistants.find((item) => item.id === id)
     if (assistant) {
       assistant.name = fields.name
       assistant.icon_url = fields.icon_url
       storage.put(
-        userStore.user?.userId,
+        userStore.user?.user_id,
         RECENT_ASSISTANTS_STORAGE_KEY,
         assistantsStore.recentAssistants
       )

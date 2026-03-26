@@ -15,4 +15,6 @@ data:
       VITE_BANNER_MESSAGE: "{{ .Values.viteBannerMessage }}",
       {{- end }}
       VITE_ENABLE_ANALYTICS: "{{ .Values.viteEnableAnalytics }}",
+      VITE_ENABLE_USER_MANAGEMENT: "{{ .Values.viteEnableUserManagement }}",
+      VITE_IDP_PROVIDER: "{{ .Values.viteIdpProvider }}",
     };

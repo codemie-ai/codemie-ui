@@ -28,12 +28,14 @@ export interface ConfirmationModalProps {
   cancelText?: string
   confirmButtonType?: ButtonType
   confirmButtonIcon?: ReactNode
+  confirmDisabled?: boolean
   visible: boolean
   onCancel: () => void
   onConfirm: () => void
   children?: ReactNode
   className?: string
   limitWidth?: boolean
+  hideIcon?: boolean
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -43,12 +45,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   cancelText = 'Cancel',
   confirmButtonType = ButtonType.PRIMARY,
   confirmButtonIcon,
+  confirmDisabled,
   visible,
   onCancel,
   onConfirm,
   children,
   className,
   limitWidth = false,
+  hideIcon = false,
 }) => {
   const footerContent = (
     <div className="flex justify-end gap-3">
@@ -68,7 +72,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           onConfirm()
         }}
       >
-        {confirmButtonIcon ?? confirmButtonType === ButtonType.DELETE ? <DeleteDangerSvg /> : null}
+        {confirmButtonIcon ??
+          (confirmButtonType === ButtonType.DELETE && !hideIcon ? <DeleteDangerSvg /> : null)}
         {confirmText}
       </Button>
     </div>
@@ -85,6 +90,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       withBorder
       limitWidth={limitWidth}
       footerContent={footerContent}
+      submitDisabled={confirmDisabled}
     >
       <p className="mb-2 text-sm text-text-quaternary">{message}</p>
       {children}

@@ -131,7 +131,7 @@ const InputArray = forwardRef<HTMLInputElement, InputArrayProps>(
                   'flex rounded-lg border bg-surface-base-content transition min-h-8 max-h-8',
                   itemError
                     ? 'border-failed-secondary'
-                    : 'border-border-primary hover:border-border-secondary focus-within:border-border-secondary'
+                    : 'border-border-primary hover:border-border-specific-panel-outline focus-within:border-border-specific-panel-outline'
                 )}
               >
                 <Input

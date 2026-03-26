@@ -20,6 +20,9 @@ export interface EnvConfig {
   VITE_BANNER_MESSAGE: string
   VITE_CAN_SWITCH_DESIGN: string
   VITE_SHOW_ALL_PROJECTS: string
+  VITE_IS_EXTERNAL_LOGIN: string
+  VITE_ENABLE_USER_MANAGEMENT: string
+  VITE_IDP_PROVIDER: string
 }
 
 declare global {

@@ -15,13 +15,12 @@
 
 import { proxy } from 'valtio'
 
-import { ENV } from '@/constants'
 import type { AnalyticsQueryParams } from '@/types/analytics'
-import { User, UserData } from '@/types/entity/user'
+import { ProjectRole } from '@/types/entity/project'
+import { User, UserData, GetUsersResponse, UserListItem, UserType } from '@/types/entity/user'
 import api from '@/utils/api'
 import toaster from '@/utils/toaster'
 import { formatUserOptions } from '@/utils/user'
-import { getMode } from '@/utils/utils'
 
 api.redirectHandler = () => {
   userStore.isSessionExpired = true
@@ -35,7 +34,6 @@ interface UserStoreType {
 
   isSSOUser: () => boolean
   loadUser: () => Promise<void>
-  logOutUser: () => void
   getUserData: () => Promise<void>
   loadIndexUsers: () => Promise<User[]>
   loadAssistantsUsers: (params?: { scope?: string }) => Promise<User[]>
@@ -45,12 +43,49 @@ interface UserStoreType {
   ) => Promise<Array<{ label: string; value: string }>>
   loadWorkflowsUsers: () => Promise<User[]>
   loadProjectSettingsUsers: () => Promise<User[]>
+  searchUsers: (query: string, perPage?: number) => Promise<UserListItem[]>
+  assignUserToProject: (projectName: string, userId: string, role: string) => Promise<void>
+  updateUserProjectRole: (projectName: string, userId: string, role: string) => Promise<void>
+  unassignUserFromProject: (projectName: string, userId: string) => Promise<void>
+  getCurrentUser: () => Promise<User>
   getProjects: (query?: string, adminOnly?: boolean) => Promise<string[]>
   getDefaultProject: () => Promise<string | null>
   getAdminProjects: (search?: string) => Promise<string[]>
   getUserProjects: (adminOnly?: boolean) => string[]
   addProject: (projectName: string) => any
   isUserVisibleProject: (projectName?: string) => boolean
+  getUsers: (params?: {
+    page?: number
+    perPage?: number
+    filters?: {
+      projects?: string[]
+      search?: string
+      user_type?: UserType | null
+      platform_role?: 'user' | 'platform_admin' | 'super_admin' | null
+      is_active?: boolean | null
+    }
+  }) => Promise<GetUsersResponse>
+  getUserById: (userId: string) => Promise<UserListItem>
+  updateUser: (userId: string, data: Partial<UserListItem>) => Promise<void>
+  addUserProjectAccess: (
+    userId: string,
+    projectName: string,
+    isProjectAdmin: boolean
+  ) => Promise<void>
+  updateUserProjectAccess: (
+    userId: string,
+    projectName: string,
+    isProjectAdmin: boolean
+  ) => Promise<void>
+  removeUserProjectAccess: (userId: string, projectName: string) => Promise<void>
+  bulkUpdateUsers: (userIds: string[], updates: { role: 'user' | 'admin' }) => Promise<void>
+  bulkUpdateUsersProjectRole: (
+    userIds: string[],
+    projectName: string,
+    role: string
+  ) => Promise<void>
+  bulkAssignToProject: (userIds: string[], projectName: string, role: string) => Promise<void>
+  bulkUnassignFromProject: (userIds: string[], projectName: string) => Promise<void>
 }
 
 export const userStore = proxy<UserStoreType>({
@@ -65,14 +100,6 @@ export const userStore = proxy<UserStoreType>({
     })
   },
 
-  logOutUser() {
-    if (getMode() === ENV.LOCAL) {
-      return
-    }
-
-    document.location.href = `${api.BASE_URL}/v1/user/log_out`
-  },
-
   loadUser() {
     userStore.isLoadingUser = true
     return api
@@ -84,9 +111,9 @@ export const userStore = proxy<UserStoreType>({
           email: apiUser.email,
           name: apiUser.name,
           username: apiUser.username,
-          isAdmin: apiUser.is_super_admin || apiUser.is_admin,
+          isAdmin: apiUser.is_admin,
           isAuthenticated: true,
-          userType: apiUser.user_type,
+          user_type: apiUser.user_type,
           applications: apiUser.applications || [],
           applicationsAdmin: apiUser.applications_admin || [],
           projects: apiUser.projects || [],
@@ -105,6 +132,32 @@ export const userStore = proxy<UserStoreType>({
       .then((res) => res.json())
       .then((data) => {
         userStore.userData = data
+      })
+  },
+
+  getCurrentUser() {
+    return api
+      .get('v1/user')
+      .then((response) => response.json())
+      .then((apiUser: any) => {
+        userStore.user = {
+          userId: apiUser.user_id,
+          email: apiUser.email,
+          name: apiUser.name,
+          username: apiUser.username,
+          isAdmin: apiUser.is_admin,
+          isAuthenticated: true,
+          user_type: apiUser.user_type,
+          applications: apiUser.applications || [],
+          applicationsAdmin: apiUser.applications_admin || [],
+          projects: apiUser.projects || [],
+          picture: apiUser.picture,
+        }
+        return userStore.user
+      })
+      .catch(() => {
+        toaster.error('Failed to fetch current user')
+        return { name: '' }
       })
   },
 
@@ -166,6 +219,75 @@ export const userStore = proxy<UserStoreType>({
       .catch(() => {
         toaster.error('Failed to fetch Project Settings users')
         return []
+      })
+  },
+
+  async searchUsers(query: string, perPage = 10) {
+    const params = new URLSearchParams()
+    params.append('search', query)
+    params.append('per_page', String(perPage))
+
+    return api
+      .get(`v1/admin/users?${params.toString()}`, { skipErrorHandling: true })
+      .then((response) => response.json())
+      .then((data: GetUsersResponse) => {
+        const users = data?.data ?? []
+        return users.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+      })
+      .catch((error) => {
+        console.error('Failed to search users:', error)
+        throw error
+      })
+  },
+
+  async assignUserToProject(projectName: string, userId: string, role: string) {
+    const isProjectAdmin = role === ProjectRole.ADMINISTRATOR
+
+    return api
+      .post(
+        `v1/projects/${encodeURIComponent(projectName)}/assignment`,
+        {
+          user_id: userId,
+          is_project_admin: isProjectAdmin,
+        },
+        { skipErrorHandling: true }
+      )
+      .then((response) => response.json())
+      .catch((error) => {
+        console.error('Failed to assign user to project:', error)
+        throw error
+      })
+  },
+
+  async updateUserProjectRole(projectName: string, userId: string, role: string) {
+    const isProjectAdmin = role === ProjectRole.ADMINISTRATOR
+
+    return api
+      .put(
+        `v1/projects/${encodeURIComponent(projectName)}/assignment/${encodeURIComponent(userId)}`,
+        {
+          is_project_admin: isProjectAdmin,
+        },
+        { skipErrorHandling: true }
+      )
+      .then((response) => response.json())
+      .catch((error) => {
+        console.error('Failed to update user project role:', error)
+        throw error
+      })
+  },
+
+  async unassignUserFromProject(projectName: string, userId: string) {
+    return api
+      .delete(
+        `v1/projects/${encodeURIComponent(projectName)}/assignment/${encodeURIComponent(userId)}`,
+        undefined,
+        { skipErrorHandling: true }
+      )
+      .then((response) => response.json())
+      .catch((error) => {
+        console.error('Failed to unassign user from project:', error)
+        throw error
       })
   },
 
@@ -238,5 +360,192 @@ export const userStore = proxy<UserStoreType>({
 
   isUserVisibleProject(projectName?: string) {
     return !!userStore.user?.isAdmin || userStore.user?.applications?.includes(projectName)
+  },
+
+  getUsers(params = {}) {
+    const { page, perPage, filters = {} } = params
+
+    const queryParams = new URLSearchParams()
+    // Only add page and perPage if explicitly provided
+    if (page !== undefined) {
+      queryParams.append('page', String(page))
+    }
+    if (perPage !== undefined) {
+      queryParams.append('per_page', String(perPage))
+    }
+    if (filters.search) {
+      queryParams.append('search', filters.search)
+    }
+
+    const filtersJson: Record<string, unknown> = {}
+    if (filters.projects?.length) filtersJson.projects = filters.projects
+    if (filters.user_type != null) filtersJson.user_type = filters.user_type
+    if (filters.platform_role != null) filtersJson.platform_role = filters.platform_role
+    if (filters.is_active != null) filtersJson.is_active = filters.is_active
+    if (Object.keys(filtersJson).length > 0) {
+      queryParams.append('filters', JSON.stringify(filtersJson))
+    }
+
+    return api
+      .get(`v1/admin/users?${queryParams.toString()}`, { skipErrorHandling: true })
+      .then((response) => response.json())
+      .then((data: GetUsersResponse) => data)
+      .catch((error) => {
+        console.error('Failed to fetch users:', error)
+        toaster.error('Failed to fetch users')
+        throw error
+      })
+  },
+
+  getUserById(userId) {
+    return api
+      .get(`v1/admin/users/${userId}`, { skipErrorHandling: true })
+      .then((response) => response.json())
+      .then((data) => data)
+      .catch((error) => {
+        console.error('Failed to fetch user:', error)
+        toaster.error('Failed to fetch user')
+        throw error
+      })
+  },
+
+  updateUser(userId, data) {
+    return api
+      .put(`v1/admin/users/${userId}`, data, { skipErrorHandling: true })
+      .then((response) => response.json())
+      .then(() => {
+        toaster.info('User updated successfully')
+      })
+      .catch((error) => {
+        console.error('Failed to update user:', error)
+        toaster.error('Failed to update user')
+        throw error
+      })
+  },
+
+  addUserProjectAccess(userId, projectName, isProjectAdmin) {
+    return api
+      .post(
+        `v1/admin/users/${userId}/projects`,
+        { project_name: projectName, is_project_admin: isProjectAdmin },
+        { skipErrorHandling: true }
+      )
+      .then((response) => response.json())
+      .then(() => {
+        toaster.info('Project access added successfully')
+      })
+      .catch((error) => {
+        toaster.error('Failed to add project access')
+        throw error
+      })
+  },
+
+  updateUserProjectAccess(userId, projectName, isProjectAdmin) {
+    return api
+      .put(
+        `v1/admin/users/${userId}/projects/${encodeURIComponent(projectName)}`,
+        { is_project_admin: isProjectAdmin },
+        { skipErrorHandling: true }
+      )
+      .then((response) => response.json())
+      .then(() => {
+        toaster.info('Project access updated successfully')
+      })
+      .catch((error) => {
+        toaster.error('Failed to update project access')
+        throw error
+      })
+  },
+
+  removeUserProjectAccess(userId, projectName) {
+    return api
+      .delete(`v1/admin/users/${userId}/projects/${encodeURIComponent(projectName)}`, undefined, {
+        skipErrorHandling: true,
+      })
+      .then((response) => response.json())
+      .then(() => {
+        toaster.info('Project access removed successfully')
+      })
+      .catch((error) => {
+        toaster.error('Failed to remove project access')
+        throw error
+      })
+  },
+
+  async bulkUpdateUsers(userIds, updates) {
+    const isAdmin = updates.role === 'admin'
+
+    try {
+      const response = await api.post(
+        'v1/users/bulk/update',
+        { userIds, isAdmin },
+        { skipErrorHandling: true }
+      )
+      await response.json()
+      toaster.info(`Updated ${userIds.length} user(s) successfully`)
+    } catch (error) {
+      toaster.error('Failed to update users')
+      throw error
+    }
+  },
+
+  async bulkUpdateUsersProjectRole(userIds, projectName, role) {
+    const isProjectAdmin = role === ProjectRole.ADMINISTRATOR
+
+    try {
+      const users = userIds.map((userId) => ({
+        user_id: userId,
+        is_project_admin: isProjectAdmin,
+      }))
+
+      const response = await api.post(
+        `v1/projects/${encodeURIComponent(projectName)}/assignments`,
+        { users },
+        { skipErrorHandling: true }
+      )
+      await response.json()
+      toaster.info(`Updated role for ${userIds.length} user(s) successfully`)
+    } catch (error) {
+      toaster.error('Failed to update user roles')
+      throw error
+    }
+  },
+
+  async bulkAssignToProject(userIds, projectName, role) {
+    const isProjectAdmin = role === ProjectRole.ADMINISTRATOR
+
+    try {
+      const users = userIds.map((userId) => ({
+        user_id: userId,
+        is_project_admin: isProjectAdmin,
+      }))
+
+      const response = await api.post(
+        `v1/projects/${encodeURIComponent(projectName)}/assignments`,
+        { users },
+        { skipErrorHandling: true }
+      )
+      await response.json()
+      toaster.info(`Assigned ${userIds.length} user(s) to project successfully`)
+    } catch (error) {
+      toaster.error('Failed to assign users to project')
+      throw error
+    }
+  },
+
+  async bulkUnassignFromProject(userIds, projectName) {
+    try {
+      const queryParams = userIds.map((id) => `user_id=${encodeURIComponent(id)}`).join('&')
+      const response = await api.delete(
+        `v1/projects/${encodeURIComponent(projectName)}/assignments?${queryParams}`,
+        undefined,
+        { skipErrorHandling: true }
+      )
+      await response.json()
+      toaster.info(`Unassigned ${userIds.length} user(s) from project successfully`)
+    } catch (error) {
+      toaster.error('Failed to unassign users from project')
+      throw error
+    }
   },
 })

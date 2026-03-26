@@ -189,7 +189,7 @@ const DataSourceFilters: React.FC<Props> = ({
   // Handle applying filters - update URL and localStorage
   const handleApplyFilters = (filters: Record<string, unknown>) => {
     // Update URL with filters
-    if (userStore.user?.userId) {
+    if (userStore.user?.user_id) {
       setFilters(FILTER_ENTITY.DATASOURCES, filters)
     }
 

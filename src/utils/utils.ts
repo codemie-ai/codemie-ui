@@ -37,13 +37,6 @@ export const SHARED = {
 
 const SYSTEM_CREATED_BY = 'System'
 
-interface CreatedBy {
-  name?: string
-  username?: string
-  user_id?: string
-  id?: string
-}
-
 /**
  * Patches Quill's image paste handler to only process clipboard data that contains files.
  * This prevents Quill from intercepting text paste events while still allowing image pastes.
@@ -68,6 +61,16 @@ export function monkeyPatchQuill(): void {
 /** Returns the current environment mode */
 export function getMode(): string {
   return window?._env_?.VITE_ENV || import.meta.env.VITE_ENV
+}
+
+/** Returns the configured Identity Provider (IDP) */
+export function getIdpProvider(): string {
+  return window?._env_?.VITE_IDP_PROVIDER || import.meta.env.VITE_IDP_PROVIDER || 'keycloak'
+}
+
+/** Returns whether local authentication is enabled */
+export function getIsLocalAuth(): boolean {
+  return getIdpProvider() === 'local'
 }
 
 export const hash = (str: string, seed = 0): number => {
@@ -182,13 +185,8 @@ export const copyRichTextToClipboard = async (
   }
 }
 
-export const createdBy = (createdBy?: CreatedBy | null): string => {
+export const createdBy = (createdBy) => {
   if (!createdBy) return SYSTEM_CREATED_BY
-
-  if (!createdBy.name && !createdBy.username) {
-    return SYSTEM_CREATED_BY
-  }
-
   return (
     createdBy.name || createdBy.username || createdBy.user_id || createdBy.id || SYSTEM_CREATED_BY
   )

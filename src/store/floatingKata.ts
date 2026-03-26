@@ -112,7 +112,7 @@ export const floatingKataStore = proxy<FloatingKataStoreType>({
 
   loadFromLocalStorage() {
     try {
-      const userId = userStore.user?.userId ?? ''
+      const userId = userStore.user?.user_id ?? ''
       if (!userId) {
         return
       }
@@ -162,7 +162,7 @@ export const floatingKataStore = proxy<FloatingKataStoreType>({
 
   saveToLocalStorage() {
     try {
-      const userId = userStore.user?.userId ?? ''
+      const userId = userStore.user?.user_id ?? ''
       if (!userId) {
         return
       }
