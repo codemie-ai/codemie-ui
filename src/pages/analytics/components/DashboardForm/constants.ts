@@ -48,6 +48,10 @@ export const TABULAR_METRIC_OPTIONS: SelectOption<TabularMetricType>[] = [
   { label: 'CLI Users', value: TabularMetricType.CLI_USERS },
   { label: 'CLI Errors', value: TabularMetricType.CLI_ERRORS },
   { label: 'CLI Repositories', value: TabularMetricType.CLI_REPOSITORIES },
+  { label: 'Power Users', value: TabularMetricType.POWER_USERS },
+  { label: 'Top Agents Usage', value: TabularMetricType.TOP_AGENTS_USAGE },
+  { label: 'Top Workflow Usage', value: TabularMetricType.TOP_WORKFLOW_USAGE },
+  { label: 'Published to Marketplace', value: TabularMetricType.PUBLISHED_TO_MARKETPLACE },
 ]
 
 export const OVERVIEW_METRIC_OPTIONS: SelectOption<OverviewMetricType>[] = [

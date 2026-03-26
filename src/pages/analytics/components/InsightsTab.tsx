@@ -105,6 +105,77 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
           />
         </div>
       </section>
+
+      {/* ===== PLATFORM ACTIVITY SECTION ===== */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4 text-text-primary">Platform Activity</h2>
+        <div className="grid grid-cols-1 gap-6">
+          <TableWidget
+            metricType={TabularMetricType.POWER_USERS}
+            title="Power Users"
+            description="Assistant and workflow creation/update/deletion activity per user"
+            filters={filters}
+          />
+        </div>
+      </section>
+
+      {/* Row 2: Top Agents + Top Workflow */}
+      <section>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TableWidget
+            metricType={TabularMetricType.TOP_AGENTS_USAGE}
+            title="Top Agents Usage"
+            description="Most used assistants with invocations, cost, and user metrics"
+            filters={filters}
+          />
+          <TableWidget
+            metricType={TabularMetricType.TOP_WORKFLOW_USAGE}
+            title="Top Workflow Usage"
+            description="Most used workflows with invocations, cost, and user metrics"
+            filters={filters}
+          />
+        </div>
+      </section>
+
+      {/* Full-width: Assistants Chats + Workflows */}
+      <section>
+        <div className="grid grid-cols-1 gap-6">
+          <TableWidget
+            metricType={TabularMetricType.ASSISTANTS_CHATS}
+            title="Assistants Chats"
+            description="Chat performance metrics per assistant"
+            filters={filters}
+          />
+        </div>
+      </section>
+
+      <section>
+        <div className="grid grid-cols-1 gap-6">
+          <TableWidget
+            metricType={TabularMetricType.WORKFLOWS}
+            title="Workflows"
+            description="Workflow execution metrics"
+            filters={filters}
+          />
+        </div>
+      </section>
+      {/* Row 3: Published to Marketplace + Webhooks Invocations */}
+      <section>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TableWidget
+            metricType={TabularMetricType.PUBLISHED_TO_MARKETPLACE}
+            title="Published to Marketplace"
+            description="Assistants published to marketplace per user"
+            filters={filters}
+          />
+          <TableWidget
+            metricType={TabularMetricType.WEBHOOKS_INVOCATION}
+            title="Webhooks Invocations"
+            description="Webhook invocation counts per user"
+            filters={filters}
+          />
+        </div>
+      </section>
     </div>
   )
 }

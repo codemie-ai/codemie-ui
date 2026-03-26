@@ -222,6 +222,10 @@ export enum TabularMetricType {
   ENGAGEMENT_WEEKLY_HISTOGRAM = 'engagement/weekly-histogram',
   PLATFORM_SPENDING_BY_USERS = 'spending/by-users/platform',
   CLI_SPENDING_BY_USERS = 'spending/by-users/cli',
+  POWER_USERS = 'power-users',
+  TOP_AGENTS_USAGE = 'top-agents-usage',
+  TOP_WORKFLOW_USAGE = 'top-workflow-usage',
+  PUBLISHED_TO_MARKETPLACE = 'published-to-marketplace',
 }
 
 export enum OverviewMetricType {
