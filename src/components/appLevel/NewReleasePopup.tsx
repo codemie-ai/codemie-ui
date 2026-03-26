@@ -32,7 +32,9 @@ const NewReleasePopup: FC = () => {
 
   useEffect(() => {
     appInfoStore.loadReleaseNotes()
-    setIsVisible(appInfoStore.isAppReleaseNew())
+    if (appInfoStore.isOnboardingCompleted()) {
+      setIsVisible(appInfoStore.isAppReleaseNew())
+    }
   }, [])
 
   const closePopup = () => {

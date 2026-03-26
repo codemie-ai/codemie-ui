@@ -34,6 +34,7 @@ const { mockAppInfoStore } = vi.hoisted(() => {
       ],
       loadReleaseNotes: vi.fn(),
       isAppReleaseNew: vi.fn(() => true),
+      isOnboardingCompleted: vi.fn(() => true),
       setViewedAppVersion: vi.fn(),
     },
   }
@@ -64,6 +65,7 @@ describe('NewReleasePopup', () => {
       { version: '1.1.0', date: '2024-01-01', notes: 'Previous release' },
     ]
     mockAppInfoStore.isAppReleaseNew.mockReturnValue(true)
+    mockAppInfoStore.isOnboardingCompleted.mockReturnValue(true)
   })
 
   describe('basic rendering', () => {
@@ -92,6 +94,13 @@ describe('NewReleasePopup', () => {
 
     it('does not show popup when release is not new', () => {
       mockAppInfoStore.isAppReleaseNew.mockReturnValue(false)
+      render(<NewReleasePopup />)
+      expect(screen.queryByText('New CodeMie Release')).not.toBeInTheDocument()
+    })
+
+    it('does not show popup on first login when onboarding is not completed', () => {
+      mockAppInfoStore.isOnboardingCompleted.mockReturnValue(false)
+      mockAppInfoStore.isAppReleaseNew.mockReturnValue(true)
       render(<NewReleasePopup />)
       expect(screen.queryByText('New CodeMie Release')).not.toBeInTheDocument()
     })
