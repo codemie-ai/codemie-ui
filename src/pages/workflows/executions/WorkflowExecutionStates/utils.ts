@@ -57,7 +57,9 @@ export const getLastInterruptibleStateId = (
       const configStates = parsed.states ?? []
 
       const interruptedStateIds = new Set(
-        configStates.filter((s) => s.interrupt_before).map((s) => s.id)
+        configStates
+          .filter((s) => s.interrupt_before || s.wait_for_user_confirmation)
+          .map((s) => s.id)
       )
 
       const predecessorStateIds = new Set(

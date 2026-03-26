@@ -353,6 +353,58 @@ states:
     })
   })
 
+  describe('legacy wait_for_user_confirmation routing', () => {
+    it('should treat wait_for_user_confirmation: true the same as interrupt_before: true', () => {
+      // Arrange
+      //   state-a  --next.state_id-->  state-b (wait_for_user_confirmation: true)
+      const states: WorkflowExecutionState[] = [
+        makeState({ id: 'es-1', name: 'state-a', completed_at: '2024-01-01T10:00:00Z' }),
+      ]
+      const yamlConfig = `
+states:
+  - id: state-a
+    iter_key: ''
+    tool_id: ''
+    next:
+      state_id: state-b
+  - id: state-b
+    iter_key: ''
+    tool_id: ''
+    wait_for_user_confirmation: true
+`
+
+      // Act
+      const result = getLastInterruptibleStateId(states, yamlConfig)
+
+      // Assert
+      expect(result).toBe('es-1')
+    })
+
+    it('should return undefined when YAML has no states with wait_for_user_confirmation or interrupt_before', () => {
+      // Arrange
+      const states: WorkflowExecutionState[] = [
+        makeState({ id: 'es-1', name: 'state-a', completed_at: '2024-01-01T10:00:00Z' }),
+      ]
+      const yamlConfig = `
+states:
+  - id: state-a
+    iter_key: ''
+    tool_id: ''
+    next:
+      state_id: state-b
+  - id: state-b
+    iter_key: ''
+    tool_id: ''
+`
+
+      // Act
+      const result = getLastInterruptibleStateId(states, yamlConfig)
+
+      // Assert
+      expect(result).toBeUndefined()
+    })
+  })
+
   describe('most recent by completed_at when multiple predecessors match', () => {
     it('should return the ID of the execution state with the latest completed_at', () => {
       // Arrange
