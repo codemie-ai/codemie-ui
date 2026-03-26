@@ -138,7 +138,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
   )
 
   const fetchUsers = useCallback(
-    async (page = 0, perPage = pagination.per_page, search = localFilters.search) => {
+    async (page: number, perPage: number, search?: string) => {
       const result = await userStore.getUsers({
         page,
         perPage,
@@ -151,7 +151,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
       setPagination(result.pagination)
       return result
     },
-    [project.name, pagination.per_page, localFilters.search]
+    [project.name, pagination.per_page]
   )
 
   const tableSelection = useTableSelection<UserListItem>({
@@ -210,7 +210,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
       const perPage = newPerPage ?? pagination.per_page
       setLoading(true)
       try {
-        await fetchUsers(page, perPage)
+        await fetchUsers(page, perPage, localFilters.search)
       } catch (error) {
         console.error('Failed to load users:', error)
         toaster.error('Failed to load project users')
@@ -218,20 +218,20 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
         setLoading(false)
       }
     },
-    [pagination.per_page, fetchUsers]
+    [pagination.per_page, fetchUsers, localFilters.search]
   )
 
   const reloadUsers = useCallback(
     async (shouldClearSelection: boolean = true) => {
       try {
-        await fetchUsers(pagination.page, pagination.per_page)
+        await fetchUsers(pagination.page, pagination.per_page, localFilters.search)
         if (shouldClearSelection) clearSelection()
       } catch (error) {
         console.error('Failed to reload users:', error)
         toaster.error('Failed to load project users')
       }
     },
-    [fetchUsers, pagination.page, pagination.per_page, clearSelection]
+    [fetchUsers, pagination.page, pagination.per_page, clearSelection, localFilters.search]
   )
 
   const refreshFromFirstPage = useCallback(async () => {
@@ -323,14 +323,14 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
     setLoading(true)
     try {
       clearSelection()
-      await fetchUsers(0, pagination.per_page)
+      await fetchUsers(0, pagination.per_page, localFilters.search)
     } catch (error) {
       console.error('Failed to load users:', error)
       toaster.error('Failed to load project users')
     } finally {
       setLoading(false)
     }
-  }, [clearSelection, fetchUsers, pagination.per_page])
+  }, [clearSelection, fetchUsers, pagination.per_page, localFilters.search])
 
   useDebouncedApply(localFilters.search, 500, applySearch)
 
