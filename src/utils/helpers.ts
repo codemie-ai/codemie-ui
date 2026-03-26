@@ -118,7 +118,9 @@ export const createdBy = (createdBy?: CreatedBy | null, fallbackToId = false): s
     return fallbackToId ? createdBy.user_id || createdBy.id || SYSTEM_CREATED_BY : SYSTEM_CREATED_BY
   }
 
-  return SYSTEM_CREATED_BY
+  return (
+    createdBy.name || createdBy.username || createdBy.user_id || createdBy.id || SYSTEM_CREATED_BY
+  )
 }
 
 export const fileToBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
