@@ -52,4 +52,5 @@ export const ADDITIONAL_USER_MATERIALS = {
   VIDEO_PORTAL: 'videoPortal',
   USER_GUIDE: 'userGuide',
   YOUTUBE_CHANNEL: 'youtubeChannel',
+  LEARNING_COURSES: 'learningCourses',
 }

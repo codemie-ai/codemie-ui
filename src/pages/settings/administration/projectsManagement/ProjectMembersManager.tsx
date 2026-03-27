@@ -359,7 +359,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
       ),
       role: (user: UserListItem) => {
         const currentRole = getUserRole(user)
-        const isCurrentUser = currentUser?.user_id === user.id
+        const isCurrentUser = currentUser?.userId === user.id
         const isDisabled = isPersonal || !canManageProject || (isProjectAdmin && isCurrentUser)
 
         return (
@@ -402,7 +402,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
       ),
     }),
     [
-      currentUser?.user_id,
+      currentUser?.userId,
       canManageProject,
       isProjectAdmin,
       isPersonal,
@@ -460,7 +460,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
               projectName={project.name}
               selectedUsers={selected}
               totalCount={pagination.total}
-              currentUserId={currentUser?.user_id}
+              currentUserId={currentUser?.userId}
               canManageProject={canManageProject}
               isProjectAdmin={isProjectAdmin}
               onClearSelection={clearSelection}

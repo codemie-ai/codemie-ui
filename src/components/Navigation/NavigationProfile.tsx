@@ -45,7 +45,7 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
   }
 
   const copyUserID = () => {
-    copyToClipboard(user?.user_id ?? '', 'User ID copied to clipboard')
+    copyToClipboard(user?.userId ?? '', 'User ID copied to clipboard')
   }
 
   const copyUserName = () => {
@@ -127,7 +127,7 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
               </div>
               <div className="flex items-center justify-between mt-0.5">
                 <span className="text-xs text-text-quaternary overflow-hidden text-ellipsis whitespace-nowrap">
-                  ID: {user?.user_id}
+                  ID: {user?.userId}
                 </span>
                 <button
                   className="ml-1 text-text-primary hover:opacity-80"

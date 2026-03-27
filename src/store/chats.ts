@@ -116,7 +116,7 @@ export const chatsStore = proxy<ChatsStoreType>({
   abortControllers: {},
 
   getLastChat() {
-    return storage.get(userStore.user!.user_id, LAST_CHAT_ID) as unknown as string
+    return storage.get(userStore.user!.userId, LAST_CHAT_ID) as unknown as string
   },
 
   getChats: async () => {
@@ -139,7 +139,7 @@ export const chatsStore = proxy<ChatsStoreType>({
   getChat: async (id) => {
     const response = await api.get(`v1/conversations/${id}`)
     const chat = transformChatBEtoFE(await response.json())
-    storage.put(userStore.user?.user_id ?? '', LAST_CHAT_ID, id)
+    storage.put(userStore.user?.userId ?? '', LAST_CHAT_ID, id)
     return chatsStore.setOpenChat(chat)
   },
 

@@ -61,7 +61,7 @@ export const getFilters = <T extends object>(entityKey: string): T => {
     throw new Error('Entity key is required for filter operations')
   }
 
-  const userId = userStore.user?.user_id
+  const userId = userStore.user?.userId
   if (!userId) return {} as T
 
   // Get filters from URL and storage
@@ -146,7 +146,7 @@ export const setFilters = <T extends object>(entityKey: string, filters: T): voi
     throw new Error('Entity key is required for filter operations')
   }
 
-  const userId = userStore.user?.user_id
+  const userId = userStore.user?.userId
   if (!userId) return
 
   // Update URL with filters
@@ -203,7 +203,7 @@ export const clearFilters = (entityKey: string): void => {
     throw new Error('Entity key is required for filter operations')
   }
 
-  const userId = userStore.user?.user_id
+  const userId = userStore.user?.userId
   if (!userId) return
 
   // Clear URL filters
@@ -258,7 +258,7 @@ export const updateFilters = (entityKey: string, filterUpdates: Record<string, u
     throw new Error('Entity key is required for filter operations')
   }
 
-  const userId = userStore.user?.user_id
+  const userId = userStore.user?.userId
   if (!userId) return
 
   // Get current filters (prioritizing URL filters)

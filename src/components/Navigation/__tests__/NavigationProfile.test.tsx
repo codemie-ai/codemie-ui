@@ -29,7 +29,7 @@ const {
   mockUser,
 } = vi.hoisted(() => {
   const mockUser = {
-    user_id: 'user-123',
+    userId: 'user-123',
     name: 'John Doe',
     picture: 'https://example.com/avatar.jpg',
   } as any
@@ -163,7 +163,7 @@ describe('NavigationProfile', () => {
   it('displays user information in panel', () => {
     render(<NavigationProfile isExpanded={false} />)
     expect(screen.getByText(mockUser.name)).toBeInTheDocument()
-    expect(screen.getByText(`ID: ${mockUser.user_id}`)).toBeInTheDocument()
+    expect(screen.getByText(`ID: ${mockUser.userId}`)).toBeInTheDocument()
   })
 
   it('displays version information', () => {
@@ -205,10 +205,7 @@ describe('NavigationProfile', () => {
     render(<NavigationProfile isExpanded={false} />)
     const copyButton = screen.getByTitle('Copy user ID')
     fireEvent.click(copyButton)
-    expect(mockCopyToClipboard).toHaveBeenCalledWith(
-      mockUser.user_id,
-      'User ID copied to clipboard'
-    )
+    expect(mockCopyToClipboard).toHaveBeenCalledWith(mockUser.userId, 'User ID copied to clipboard')
   })
 
   it('navigates to settings when Settings button is clicked', () => {
