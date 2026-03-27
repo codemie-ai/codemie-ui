@@ -1,5 +1,100 @@
 [
   {
+    "version": "2.19.0",
+    "issues": [
+      {
+        "title": "Implement CLI Insights tab",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11262",
+        "key": "EPMCDME-11262"
+      },
+      {
+        "title": "Admin can manage Cost Centers and link Projects to Cost Centers (UI + API contracts)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11126",
+        "key": "EPMCDME-11126"
+      },
+      {
+        "title": "Add support for EPAM Managed MCP Servers to CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11033",
+        "key": "EPMCDME-11033"
+      },
+      {
+        "title": "Create a new platform Analytics tab, deprecate previous version, and validate metrics completeness/accuracy",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11031",
+        "key": "EPMCDME-11031"
+      },
+      {
+        "title": "Introduce core logic for user management in CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10160",
+        "key": "EPMCDME-10160"
+      },
+      {
+        "title": "Comprehensive project management: list, add (name & description), and delete projects with dependency validation in administration panel",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-9517",
+        "key": "EPMCDME-9517"
+      },
+      {
+        "title": "Created By and Users filters show \"System\" instead of real user names",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11327",
+        "key": "EPMCDME-11327"
+      },
+      {
+        "title": "Elasticsearch index creation fails with invalid_index_name_exception when using non-lowercase or email-like names",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11324",
+        "key": "EPMCDME-11324"
+      },
+      {
+        "title": "Workflow does not stop and shows no interruption controls when state has wait_for_user_confirmation: true",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11321",
+        "key": "EPMCDME-11321"
+      },
+      {
+        "title": "\"Rerun Conversation\" in workflow does not restore files uploaded in last run—only last text input is restored",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11317",
+        "key": "EPMCDME-11317"
+      },
+      {
+        "title": "Analytics includes usage and spending of non-project members for assistants published to the marketplace, misleading project-level spend analysis",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11293",
+        "key": "EPMCDME-11293"
+      },
+      {
+        "title": "App crashes when user saves invalid YAML config in Workflow editor",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11245",
+        "key": "EPMCDME-11245"
+      },
+      {
+        "title": "DB failure in large workflow runs: workflow_executions.checkpoints JSONB exceeds PostgreSQL 256MB limit",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11230",
+        "key": "EPMCDME-11230"
+      },
+      {
+        "title": "Integration dropdown overlaps \"Features to use:\" label",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11167",
+        "key": "EPMCDME-11167"
+      },
+      {
+        "title": "Code data source type: \"Repository not found\" error after changing project and then saving datasource edits",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10924",
+        "key": "EPMCDME-10924"
+      }
+    ]
+  },
+  {
     "version": "2.18.0",
     "issues": [
       {
