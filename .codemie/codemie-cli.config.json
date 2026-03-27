@@ -40,6 +40,15 @@
           "project": "epm-cdme",
           "registeredAt": "2026-03-18T18:38:32.181Z",
           "registrationMode": "skill"
+        },
+        {
+          "id": "dc92440f-030e-47dd-9b22-666bbf56d381",
+          "name": "TAF Regression Advisor",
+          "slug": "taf-regression-advisor",
+          "description": "Assistant that suggests what tests cases from TAF must be run depending on the changes mage in backend/frontent codebase",
+          "project": "epm-cdme",
+          "registeredAt": "2026-03-26T00:00:00.000Z",
+          "registrationMode": "skill"
         }
       ]
     }

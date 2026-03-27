@@ -59,10 +59,8 @@ const Toolkit = ({
 
   return (
     <div className="flex flex-col p-6 pt-4">
-      <div className="h-8 flex justify-between items-center gap-2">
-        <h3 className="text-xs text-text-quaternary overflow-hidden overflow-ellipsis text-nowrap">
-          Features to use:
-        </h3>
+      <div className="flex items-center gap-2 min-h-8">
+        <h3 className="text-xs text-text-quaternary shrink-0">Features to use:</h3>
         {toolkit.settings_config && selectedToolkit && !toolkit.is_external && (
           <IntegrationSelector
             value={selectedToolkit.settings}
