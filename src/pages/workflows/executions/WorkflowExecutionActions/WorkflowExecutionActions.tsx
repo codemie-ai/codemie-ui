@@ -39,6 +39,9 @@ const WorkflowExecutionActions: FC<WorkflowExecutionActionsProps> = ({ workflowI
   const hidePopup = () => setActivePopup(null)
 
   const canAbort = !WORKFLOW_FINAL_STATUSES.includes(execution.overall_status)
+  const initialFiles = execution.file_names?.length
+    ? execution.file_names
+    : [execution.file_name].filter((f): f is string => f !== null)
 
   const handleAbort = async () => {
     await workflowExecutionsStore.abortWorkflowExecution(workflowId, execution.execution_id)
@@ -84,7 +87,7 @@ const WorkflowExecutionActions: FC<WorkflowExecutionActionsProps> = ({ workflowI
       <WorkflowStartExecutionPopup
         workflowId={workflowId}
         initialPrompt={execution.prompt}
-        initialFiles={[...(execution.file_name ? [execution.file_name] : [])]}
+        initialFiles={initialFiles}
         isVisible={activePopup === 'run'}
         onHide={hidePopup}
       />

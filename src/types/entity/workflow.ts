@@ -61,6 +61,7 @@ export interface WorkflowExecution {
   name: string | null
   prompt: string | null
   file_name: string | null
+  file_names: string[] | null
   created_by: CreatedBy | null
   tokens_usage: WorkflowExecutionTokensUsage | null
 }

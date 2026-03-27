@@ -47,6 +47,9 @@ const WorkflowExecutionConfigYaml: FC<WorkflowExecutionConfigYamlProps> = ({
   const [isRunPopupVisible, setIsRunPopupVisible] = useState(false)
 
   const closeEditPopup = () => setIsEditPopupVisible(false)
+  const initialFiles = execution.file_names?.length
+    ? execution.file_names
+    : [execution.file_name].filter((f): f is string => f !== null)
 
   const handleSubmit = async (values: any) => {
     try {
@@ -104,7 +107,7 @@ const WorkflowExecutionConfigYaml: FC<WorkflowExecutionConfigYamlProps> = ({
       <WorkflowStartExecutionPopup
         workflowId={workflow.id}
         initialPrompt={execution.prompt}
-        initialFiles={[...(execution.file_name ? [execution.file_name] : [])]}
+        initialFiles={initialFiles}
         isVisible={isRunPopupVisible}
         onStart={closePopups}
         onHide={() => setIsRunPopupVisible(false)}
