@@ -19,6 +19,7 @@ import AIFieldSVG from '@/assets/icons/ai-field.svg?react'
 import AIGenerateSVG from '@/assets/icons/ai-generate.svg?react'
 import ConfigureSVG from '@/assets/icons/configure.svg?react'
 import ExpandSvg from '@/assets/icons/expand.svg?react'
+import HistorySVG from '@/assets/icons/history.svg?react'
 import Button from '@/components/Button'
 import Textarea, { TextareaRef } from '@/components/form/Textarea'
 import { SYSTEM_PROMPT_VARIABLES } from '@/constants'
@@ -38,6 +39,7 @@ interface SystemPromptCurrentTabProps {
   error?: string
   onBlur: () => void
   onExpand?: () => void
+  onShowVersionHistory?: () => void
   onManagePromptVariables?: () => void
   onPromptChange: (value: string) => void
   onShowGenAIPopup: () => void
@@ -54,6 +56,7 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
       error,
       onBlur,
       onExpand,
+      onShowVersionHistory,
       onPromptChange,
       onShowGenAIPopup,
       onManagePromptVariables,
@@ -66,24 +69,44 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
 
     const handleVariableClick = (variable: string) => {
       if (!textAreaRef.current) return
+
+      const cursorPosition = textAreaRef.current.getCursor() ?? value.length
+      const textToInsert = `{{${variable}}}`
+      const newValue = value.slice(0, cursorPosition) + textToInsert + value.slice(cursorPosition)
+
+      onPromptChange(newValue)
       textAreaRef.current.focus()
-      document.execCommand('insertText', false, `{{${variable}}}`)
+      textAreaRef.current.setCursor(cursorPosition + textToInsert.length)
     }
 
     return (
       <div className="flex flex-col h-full">
         <div
           className={cn(
-            'flex justify-between items-end min-h-8 max-h-8 mb-4',
-            isChatConfig && !isExpanded && 'flex-col items-end gap-4'
+            'flex justify-between items-center gap-2 mb-2.5',
+            isChatConfig && !isExpanded && 'flex-col items-end'
           )}
         >
-          {showLabel && <p className="text-sm font-semibold">System Instructions</p>}
-          <div className="ml-auto flex gap-4">
-            <Button type="magical" onClick={onShowGenAIPopup}>
+          {showLabel && (
+            <p className="text-sm font-mono text-text-quaternary">System Instructions</p>
+          )}
+          <div className={cn('flex gap-2', isChatConfig && !isExpanded ? 'flex-wrap' : 'ml-auto')}>
+            <Button type="magical" size="medium" className="py-1 gap-2" onClick={onShowGenAIPopup}>
               <AIGenerateSVG />
               {value ? 'Refine with AI' : 'Generate with AI'}
             </Button>
+
+            {onShowVersionHistory && (
+              <Button
+                type="secondary"
+                size="medium"
+                className="py-1 gap-2"
+                onClick={onShowVersionHistory}
+              >
+                <HistorySVG />
+                Version History
+              </Button>
+            )}
 
             {!isExpanded && (
               <Button type="secondary" onClick={onExpand}>
@@ -93,67 +116,71 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
           </div>
         </div>
 
-        <div
-          className={cn(
-            'flex flex-wrap px-3 py-1.5 gap-2 items-center bg-border-primary rounded-t-lg',
-            { 'bg-border-primary/10 border-1 border-b-0 border-border-primary': !isDark }
-          )}
-        >
-          {SYSTEM_PROMPT_VARIABLES.map((variable: string) => (
-            <button
-              type="button"
-              key={variable}
-              onClick={() => handleVariableClick(variable)}
-              className="
-                cursor-pointer font-semibold text-xs bg-surface-base-secondary py-1.5 px-2 !rounded-lg
-                hover:bg-surface-base-secondary/50 transition border border-border-primary
-                select-none 
-              "
+        <div className="flex flex-col border border-border-primary rounded-lg overflow-hidden flex-1">
+          <div
+            className={cn('flex px-4 py-2 items-center bg-surface-base-quateary', {
+              'bg-border-primary/10 border-b border-border-primary': !isDark,
+            })}
+          >
+            <div
+              className={cn(
+                'flex gap-4 flex-1',
+                isChatConfig ? 'flex-col items-stretch' : 'items-center'
+              )}
             >
-              {humanize(variable)}
-            </button>
-          ))}
+              <div className="flex flex-wrap items-center gap-0.5 flex-1">
+                {SYSTEM_PROMPT_VARIABLES.map((variable: string) => (
+                  <button
+                    type="button"
+                    key={variable}
+                    onClick={() => handleVariableClick(variable)}
+                    className="cursor-pointer font-mono font-semibold text-xs text-text-primary bg-surface-base-secondary py-0.5 px-2 h-7 rounded-lg hover:bg-surface-base-secondary/50 transition border border-border-primary select-none"
+                  >
+                    {humanize(variable)}
+                  </button>
+                ))}
 
-          {!!customPromptVariables?.length &&
-            customPromptVariables.map((variable: AssistantPromptVariable) => (
-              <button
-                type="button"
-                key={variable.key}
-                onClick={() => handleVariableClick(variable.key)}
-                className="
-                cursor-pointer font-semibold text-xs py-1.5 px-2 !rounded-lg
-                transition border border-border-primary
-                select-none text-in-progress-primary bg-in-progress-tertiary hover:bg-in-progress-tertiary/70
-              "
+                {!!customPromptVariables?.length &&
+                  customPromptVariables.map((variable: AssistantPromptVariable) => (
+                    <button
+                      type="button"
+                      key={variable.key}
+                      onClick={() => handleVariableClick(variable.key)}
+                      className="cursor-pointer font-mono font-semibold text-xs py-0.5 px-2 h-7 rounded-lg transition border border-border-primary select-none text-in-progress-primary bg-in-progress-tertiary hover:bg-in-progress-tertiary/70"
+                    >
+                      {humanize(variable.key)}
+                    </button>
+                  ))}
+              </div>
+
+              <Button
+                type="primary"
+                onClick={onManagePromptVariables}
+                className={cn(isChatConfig && 'ml-auto')}
               >
-                {humanize(variable.key)}
-              </button>
-            ))}
-
-          <div className="ml-auto">
-            <Button type="primary" onClick={onManagePromptVariables}>
-              <ConfigureSVG />
-              Manage Prompt Vars
-            </Button>
-          </div>
-        </div>
-        <Textarea
-          ref={textAreaRef}
-          rows={15}
-          value={value}
-          error={error}
-          rootClass="h-full"
-          className="resize-none min-h-full rounded-t-none"
-          placeholder="System Instructions*"
-          onBlur={onBlur}
-          onChange={(e) => onPromptChange(e.target.value)}
-        >
-          {isAIGenerated && (
-            <div className="absolute top-3 right-6">
-              <AIFieldSVG />
+                <ConfigureSVG />
+                Manage Prompt Vars
+              </Button>
             </div>
-          )}
-        </Textarea>
+          </div>
+          <Textarea
+            ref={textAreaRef}
+            rows={15}
+            value={value}
+            error={error}
+            rootClass="h-full"
+            className="resize-none min-h-full rounded-none leading-5 !border-0 !p-2"
+            placeholder="System Instructions*"
+            onBlur={onBlur}
+            onChange={(e) => onPromptChange(e.target.value)}
+          >
+            {isAIGenerated && (
+              <div className="absolute top-3 right-6">
+                <AIFieldSVG />
+              </div>
+            )}
+          </Textarea>
+        </div>
       </div>
     )
   }

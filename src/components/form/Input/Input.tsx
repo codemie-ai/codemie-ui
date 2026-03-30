@@ -32,7 +32,7 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value'
   errorClassName?: string
   disabled?: boolean
   sensitive?: boolean
-  value?: any
+  value?: string | number | readonly string[] | null
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -83,7 +83,6 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       if (keyfilter) e.target.value = e.target.value.replace(keyfilter, '')
       onChange?.(e)
     }
-
     return (
       <label
         htmlFor={id}
@@ -98,7 +97,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {label && (
             <div className="flex justify-between">
               <div className="flex items-center gap-x-1 input-label-container">
-                <div className="flex text-xs text-text-quaternary input-label">
+                <div className="flex text-sm font-mono text-text-quaternary input-label">
                   {label}
                   {required && (
                     <span className="text-text-error input-label-required ml-0.5">*</span>

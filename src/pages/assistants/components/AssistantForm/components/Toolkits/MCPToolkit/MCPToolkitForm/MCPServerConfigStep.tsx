@@ -17,6 +17,7 @@ import { Controller, Control, UseFormSetValue } from 'react-hook-form'
 
 import Button from '@/components/Button'
 import Input from '@/components/form/Input'
+import { ButtonType } from '@/constants'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 
@@ -119,11 +120,13 @@ const MCPServerConfigStep = ({
         />
       </div>
       <div className="flex justify-end gap-4">
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant={ButtonType.SECONDARY} onClick={onCancel}>
           Cancel
         </Button>
         <MCPToolkitTest mcpServer={serverConfig} />
-        <Button onClick={handleNext}>Next</Button>
+        <Button variant={ButtonType.PRIMARY} onClick={handleNext}>
+          Next
+        </Button>
       </div>
     </>
   )

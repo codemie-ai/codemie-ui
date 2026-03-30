@@ -60,6 +60,43 @@ interface AssistantSelectorProps {
   selectClassName?: string
   errorClassName?: string
   initialOptions?: AssistantOption[]
+  enlargedLabel?: boolean
+}
+
+// Extracted AssistantOption component to comply with Rules of Hooks
+const AssistantOptionComponent: React.FC<{ option: AssistantOption }> = ({ option }) => {
+  const optionEl = useRef<HTMLParagraphElement>(null)
+  const isTruncated = useIsTruncated(optionEl)
+
+  const createdByName = option.created_by?.name ?? option.created_by?.username ?? ''
+  const hasMetadata = option.project || createdByName
+
+  return (
+    <div className="flex items-center gap-2 w-full overflow-hidden">
+      <Avatar
+        iconUrl={option.iconUrl ?? option.icon_url}
+        name={option.name}
+        type={AvatarType.DROPDOWN}
+      />
+      <div className="flex flex-col min-w-0 flex-1">
+        <p
+          ref={optionEl}
+          className="truncate text-sm font-medium"
+          data-tooltip-id="react-tooltip"
+          data-tooltip-content={isTruncated ? option.name : ''}
+        >
+          {option.name}
+        </p>
+        {hasMetadata && (
+          <p className="text-xs text-text-tertiary truncate">
+            {option.project && <span>{option.project}</span>}
+            {option.project && createdByName && <span> • </span>}
+            {createdByName && <span>by {createdByName}</span>}
+          </p>
+        )}
+      </div>
+    </div>
+  )
 }
 
 const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
@@ -81,6 +118,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
       selectClassName,
       errorClassName,
       initialOptions,
+      enlargedLabel = false,
     },
     ref
   ) => {
@@ -150,38 +188,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
 
     // Custom option renderer for MultiSelect
     const Option = (option: AssistantOption): React.ReactNode => {
-      const optionEl = useRef<HTMLParagraphElement>(null)
-      const isTruncated = useIsTruncated(optionEl)
-
-      const createdByName = option.created_by?.name ?? option.created_by?.username ?? ''
-      const hasMetadata = option.project || createdByName
-
-      return (
-        <div className="flex items-center gap-2 w-full overflow-hidden">
-          <Avatar
-            iconUrl={option.iconUrl ?? option.icon_url}
-            name={option.name}
-            type={AvatarType.DROPDOWN}
-          />
-          <div className="flex flex-col min-w-0 flex-1">
-            <p
-              ref={optionEl}
-              className="truncate text-sm font-medium"
-              data-tooltip-id="react-tooltip"
-              data-tooltip-content={isTruncated ? option.name : ''}
-            >
-              {option.name}
-            </p>
-            {hasMetadata && (
-              <p className="text-xs text-text-tertiary truncate">
-                {option.project && <span>{option.project}</span>}
-                {option.project && createdByName && <span> • </span>}
-                {createdByName && <span>by {createdByName}</span>}
-              </p>
-            )}
-          </div>
-        </div>
-      )
+      return <AssistantOptionComponent option={option} />
     }
 
     const handleChange = (selectedOptions: { value: string[] }) => {
@@ -205,7 +212,13 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
       <div className={cn('flex flex-col gap-2', className)}>
         {!hideHeader && (
           <>
-            <div className="text-xs text-text-quaternary">Sub-Assistants</div>
+            <div
+              className={cn(
+                enlargedLabel ? 'text-sm leading-6 text-white' : 'text-xs text-text-quaternary'
+              )}
+            >
+              Sub-Assistants
+            </div>
             <InfoBox className="mb-2">
               Important note: Including Assistants that have Sub-Assistants is not supported.
             </InfoBox>

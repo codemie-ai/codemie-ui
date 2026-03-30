@@ -97,11 +97,9 @@ const Popup: React.FC<PopupProps> = ({
     return (
       <div className="flex items-center justify-between">
         {header && (
-          <h4
-            id={headerId}
-            className="text-base font-semibold mb-0"
-            dangerouslySetInnerHTML={{ __html: header }}
-          />
+          <h4 id={headerId} className="text-base font-semibold mb-0">
+            {header}
+          </h4>
         )}
       </div>
     )
@@ -118,11 +116,15 @@ const Popup: React.FC<PopupProps> = ({
     }
 
     return (
-      <div className={`flex justify-end gap-3 `}>
-        <CustomButton variant={cancelButtonType ?? ButtonType.BASE} onClick={onHide}>
+      <div className="flex justify-end gap-4">
+        <CustomButton variant={cancelButtonType ?? ButtonType.SECONDARY} onClick={onHide}>
           {cancelText}
         </CustomButton>
-        <CustomButton disabled={submitDisabled} onClick={onSubmit} type={submitButtonType}>
+        <CustomButton
+          disabled={submitDisabled}
+          onClick={onSubmit}
+          variant={submitButtonType ?? ButtonType.PRIMARY}
+        >
           {submitText}
         </CustomButton>
       </div>
@@ -157,16 +159,16 @@ const Popup: React.FC<PopupProps> = ({
           'aria-describedby': '',
         },
         header: {
-          className: `px-4 py-3 flex items-center justify-between gap-4 bg-transparent ${
-            withBorder ? 'border-b border-border-structural' : 'border-none'
-          }`,
+          className: `px-4 py-3 flex items-center justify-between bg-transparent ${
+            !hideClose ? 'gap-4' : ''
+          } ${withBorder ? 'border-b border-border-structural' : 'border-none'}`,
         },
         headerIcons: { className: cn('self-auto', hideClose && 'hidden') },
         mask: { className: '!z-50' },
         content: { className: 'border-none p-0 text-sm' },
         footer: {
           className: cn(
-            `px-4 py-4 flex items-center justify-end gap-3 sticky bg-surface-base-secondary bottom-0 rounded-b-md bg-transparent ${
+            `px-4 py-4 flex items-center justify-end gap-4 sticky bg-surface-base-secondary bottom-0 rounded-b-md bg-transparent ${
               withBorder && withBorderBottom && !footerContent && !hideFooter
                 ? 'border-t border-border-structural'
                 : 'border-none'

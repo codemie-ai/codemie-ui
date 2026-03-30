@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 
-import isEmpty from 'lodash/isEmpty'
 import {
   MultiSelect as PrimeMultiselect,
   MultiSelectChangeEvent,
@@ -22,6 +21,7 @@ import {
 import React, {
   useCallback,
   useMemo,
+  useState,
   forwardRef,
   useImperativeHandle,
   useEffect,
@@ -35,7 +35,9 @@ import { useInputWidth } from '@/hooks/useInputWidth'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { cn } from '@/utils/utils'
 
+import { ChipWrapper } from './ChipWrapper'
 import ptPreset from './ptPreset'
+import { useMultiSelectLogic } from './useMultiSelectLogic'
 
 const DefaultOption = ({ label }: { label: string }) => {
   const optionEl = useRef<HTMLParagraphElement>(null)
@@ -60,17 +62,15 @@ export enum MultiSelectSize {
   MEDIUM = 'medium',
 }
 
+export type MultiSelectOptionType = Record<
+  string,
+  string | undefined | { label: string; value: string | number | boolean }
+>
+
 export type MultiSelectProps = {
   label?: string
-  value?:
-    | string[]
-    | string
-    | object
-    | Record<string, string | { label: string; value: string | number | boolean }>[]
-  options: Record<
-    string,
-    string | undefined | { label: string; value: string | number | boolean }
-  >[]
+  value?: string[] | string | object | MultiSelectOptionType[]
+  options: MultiSelectOptionType[]
   onChange: (e: MultiSelectChangeEvent) => void
   onFilter?: (filter: string) => void
   disabled?: boolean
@@ -86,7 +86,8 @@ export type MultiSelectProps = {
   error?: string
   fullWidth?: boolean
   size?: MultiSelectSize | `${MultiSelectSize}`
-  renderOption?: (option: any) => React.ReactNode
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  renderOption?: (option: any) => React.ReactNode // Intentionally flexible - accepts various option shapes (GuardrailSelectorOption, AssistantOption, WorkflowSelectorOption, etc.)
   optionLabel?: string
   optionValue?: string
   loading?: boolean
@@ -95,6 +96,9 @@ export type MultiSelectProps = {
   required?: boolean
   filterPlaceholder?: string
   max?: number
+  display?: 'comma' | 'chip'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  selectedItemTemplate?: ((option: any) => React.ReactNode) | null // Intentionally flexible - same reasoning as renderOption
 }
 
 const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
@@ -127,63 +131,21 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       required = false,
       filterPlaceholder,
       max,
+      display,
+      selectedItemTemplate,
     },
     ref
   ) => {
     const selectRef = React.useRef<PrimeMultiselect>(null)
     const inputWidth = useInputWidth(selectRef)
 
-    const preparedValue = useMemo((): Array<
-      string | Record<string, string | { label: string; value: string | number | boolean }>
-    > => {
-      if (value === undefined || value === null) {
-        return []
-      }
-      if (typeof value === 'string') {
-        if (value.trim() === '') {
-          return []
-        }
-        return [value]
-      }
-      if (Array.isArray(value)) {
-        return value
-      }
-      return []
-    }, [value])
+    const { preparedValue, handleChange } = useMultiSelectLogic({
+      value,
+      singleValue,
+      max,
+      onChange,
+    })
 
-    const getValue = useCallback(
-      (v: string | string[]) => {
-        if (singleValue) {
-          return Array.isArray(v) ? v[0] : v
-        }
-        return Array.isArray(v) ? v : [v]
-      },
-      [singleValue]
-    )
-
-    const handleChange = (e: MultiSelectChangeEvent) => {
-      if (singleValue) {
-        selectRef.current?.hide()
-      }
-      if (singleValue && preparedValue.includes(e.selectedOption.value)) {
-        return null
-      }
-
-      // Check if max limit is reached and trying to add more items
-      if (max !== undefined && Array.isArray(e.value) && e.value.length > max) {
-        return null
-      }
-
-      const newValue = getValue(e.selectedOption.value)
-
-      return onChange({
-        ...e,
-        target: {
-          ...e.target,
-          value: newValue,
-        },
-      })
-    }
     useImperativeHandle(ref, () => selectRef.current!, [])
 
     const handleOutsideClick = useCallback((event: MouseEvent | TouchEvent) => {
@@ -227,13 +189,15 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
     }[size]
 
     const preparedPreset = useMemo<MultiSelectPassThroughOptions>(() => {
+      const labelClassName =
+        display === 'chip' ? 'flex flex-wrap gap-2 text-text-unfocused' : 'text-text-unfocused'
       const errorBorderClass = error ? '!border-failed-secondary' : ''
 
       if (!showCheckbox) {
         return {
           ...ptPreset!,
           label: {
-            className: 'text-text-tertiary',
+            className: labelClassName,
           },
           checkboxContainer: {
             className: '!hidden',
@@ -252,13 +216,13 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           },
         },
         label: {
-          className: 'text-text-tertiary',
+          className: labelClassName,
         },
         root: {
           className: errorBorderClass,
         },
       }
-    }, [showCheckbox, error])
+    }, [showCheckbox, display, error])
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !disabled) {
@@ -279,10 +243,47 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       }
     }
 
+    const [selectedSnapshot, setSelectedSnapshot] = useState<typeof preparedValue>(preparedValue)
+    const [isPanelOpen, setIsPanelOpen] = useState(false)
+
+    useEffect(() => {
+      if (!isPanelOpen) {
+        setSelectedSnapshot(preparedValue)
+      }
+    }, [preparedValue, isPanelOpen])
+
+    const sortedOptions = useMemo(() => {
+      const sorted = [...options].sort((a, b) =>
+        String(a[optionLabel] ?? '').localeCompare(String(b[optionLabel] ?? ''))
+      )
+      const selected = sorted.filter((o) => selectedSnapshot.includes(o[optionValue] as string))
+      const unselected = sorted.filter((o) => !selectedSnapshot.includes(o[optionValue] as string))
+      return [...selected, ...unselected]
+    }, [options, optionLabel, optionValue, selectedSnapshot])
+
+    const preparedSelectedItemTemplate = useMemo(() => {
+      if (display !== 'chip') return selectedItemTemplate
+
+      if (preparedValue.length === 0) return null
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (option: any) => (
+        <ChipWrapper
+          option={option}
+          selectedItemTemplate={selectedItemTemplate}
+          preparedValue={preparedValue}
+          onChange={onChange}
+        />
+      )
+    }, [display, selectedItemTemplate, preparedValue, onChange])
+
     return (
       <div className={cn('relative flex flex-col', fullWidth && 'flex-grow', className)}>
         {label && !hideLabel && (
-          <label htmlFor={id} className="text-xs pb-2 text-text-quaternary flex items-center">
+          <label
+            htmlFor={id}
+            className="text-sm font-mono pb-2 text-text-quaternary flex items-center"
+          >
             {label}
             {required && <span className="text-text-error input-label-required ml-0.5">*</span>}
             {hint && <TooltipButton className="ml-1" content={hint} iconClassName="h-4" />}
@@ -294,10 +295,15 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           id={id}
           name={name}
           value={preparedValue}
-          options={options}
+          options={sortedOptions}
           placeholder={placeholder}
           disabled={disabled}
-          onChange={handleChange}
+          onChange={(e) => handleChange(e, selectRef)}
+          onShow={() => setIsPanelOpen(true)}
+          onHide={() => {
+            setIsPanelOpen(false)
+            setSelectedSnapshot(preparedValue)
+          }}
           onFilter={(e) => onFilter?.(e.filter)}
           multiple={!singleValue}
           className={cn(className, mappedSizeClassname, inputClassName)}
@@ -314,8 +320,10 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           filterPlaceholder={filterPlaceholder ?? 'Search'}
           dropdownIcon={<ChevronDownSvg />}
           aria-label={label || placeholder}
+          display={display}
+          selectedItemTemplate={preparedSelectedItemTemplate ?? undefined}
         >
-          {!isEmpty(value) && !singleValue && (
+          {preparedValue.length > 0 && !singleValue && (
             <div
               className="absolute right-[34px] top-1/2 -translate-y-1/2 cursor-pointer text-text-secondary hover:text-text-accent-hover"
               onClick={(e) => onChange({ ...e, value: [] } as unknown as MultiSelectChangeEvent)}

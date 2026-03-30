@@ -17,8 +17,16 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import isEmpty from 'lodash/isEmpty'
 import isNumber from 'lodash/isNumber'
 import isString from 'lodash/isString'
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { useForm, Resolver } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
 import * as Yup from 'yup'
 
@@ -26,12 +34,13 @@ import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import Button from '@/components/Button'
 import ExpandableTextarea from '@/components/form/ExpandableTextarea/ExpandableTextarea'
 import Input from '@/components/form/Input'
+import { AssistantFormContext } from '@/pages/assistants/components/AssistantForm/AssistantForm'
 import ContextSelector from '@/pages/assistants/components/AssistantForm/components/ContextSelector'
 import LLMSelector from '@/pages/assistants/components/AssistantForm/components/LLMSelector'
 import SystemPromptGenAIPopup from '@/pages/assistants/components/AssistantForm/components/SystemPrompt/SystemPromptGenAIPopup'
-import Toolkits, {
+import ToolsConfiguration, {
   ToolkitSection,
-} from '@/pages/assistants/components/AssistantForm/components/Toolkits/Toolkits'
+} from '@/pages/assistants/components/AssistantForm/components/Toolkits/ToolsConfiguration'
 import { assistantsStore } from '@/store'
 import { settingsStore } from '@/store/settings'
 import { isWorkflowAssistantToolIssue, isWorkflowAssistantMcpIssue } from '@/types/entity'
@@ -41,6 +50,7 @@ import {
   AssistantAIGeneratedFields,
 } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
+import { Setting } from '@/types/entity/setting'
 import { NodeTypes } from '@/types/workflowEditor/base'
 import { AssistantConfiguration } from '@/types/workflowEditor/configuration'
 import { getMCPServersFromConfiguration, getToolkitsFromConfiguration } from '@/utils/workflows'
@@ -128,7 +138,7 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
       formState: { isDirty },
       reset,
     } = useForm<VirtualAssistantFormValues>({
-      resolver: yupResolver(validationSchema as any),
+      resolver: yupResolver(validationSchema) as unknown as Resolver<VirtualAssistantFormValues>,
       mode: 'onChange',
       defaultValues: getDefaultValues(assistantConfig),
     })
@@ -140,31 +150,17 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
     const systemPrompt = watch('system_prompt')
 
     // eslint-disable-next-line consistent-return
-    const defaultOpenToolkitSection: ToolkitSection | undefined = useMemo(() => {
+    const defaultOpenToolkitSection = useMemo(() => {
       if (activeIssue && isWorkflowAssistantMcpIssue(activeIssue)) {
-        return 'mcp'
+        return 'mcp' as ToolkitSection
       }
 
       if (activeIssue && isWorkflowAssistantToolIssue(activeIssue)) {
         const toolkit = availableToolkits?.find((tk) => tk.toolkit === activeIssue.meta.toolkitName)
-        if (!toolkit) return 'tools'
-        return activeIssue.meta.toolkitType
+        if (!toolkit) return 'tools' as ToolkitSection
+        return 'tools' as ToolkitSection
       }
     }, [activeIssue, availableToolkits])
-
-    // eslint-disable-next-line consistent-return
-    const defaultOpenToolkitName: string | undefined = useMemo(() => {
-      if (activeIssue && isWorkflowAssistantToolIssue(activeIssue)) {
-        return activeIssue.meta.toolkitName
-      }
-    }, [activeIssue])
-
-    // eslint-disable-next-line consistent-return
-    const defaultOpenMcpName: string | undefined = useMemo(() => {
-      if (activeIssue && isWorkflowAssistantMcpIssue(activeIssue)) {
-        return activeIssue.meta.mcpName
-      }
-    }, [activeIssue])
 
     const handleAIGenerated = (fields: AssistantAIGeneratedFields) => {
       setIsSystemPromptAIGenerated(true)
@@ -201,18 +197,27 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
       [getValues, trigger, isDirty, setValue, setIsSystemPromptAIGenerated, reset]
     )
 
-    const handleToolkitsChange = (newToolkits: AssistantToolkit[]) => {
-      setValue('toolkits', newToolkits, { shouldValidate: true })
-    }
+    const handleToolkitsChange = useCallback(
+      (newToolkits: AssistantToolkit[]) => {
+        setValue('toolkits', newToolkits, { shouldValidate: true })
+      },
+      [setValue]
+    )
 
-    const handleMcpServersChange = (newMcpServers: MCPServerDetails[]) => {
-      setValue('mcp_servers', newMcpServers, { shouldValidate: true })
-    }
+    const handleMcpServersChange = useCallback(
+      (newMcpServers: MCPServerDetails[]) => {
+        setValue('mcp_servers', newMcpServers, { shouldValidate: true })
+      },
+      [setValue]
+    )
 
     const handlePromptRefined = (refinedPrompt: string) => {
       setValue('system_prompt', refinedPrompt, { shouldValidate: true })
       setIsSystemPromptAIGenerated(true)
     }
+
+    const settingsRef = useRef(settings)
+    settingsRef.current = settings
 
     useEffect(() => {
       if (!availableContext?.length || !assistantConfig?.datasource_ids?.length) return
@@ -225,7 +230,9 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
     }, [availableContext, assistantConfig?.datasource_ids, setValue])
 
     useEffect(() => {
-      if (!availableToolkits?.length || isEmpty(settings)) return
+      if (!availableToolkits?.length) return
+
+      const typedSettings = settingsRef.current as Record<string, Setting[]>
 
       if (assistantConfig?.tools?.length) {
         setValue(
@@ -233,7 +240,7 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
           getToolkitsFromConfiguration(
             assistantConfig.tools,
             availableToolkits as AssistantToolkit[],
-            settings as any
+            typedSettings
           ),
           { shouldValidate: true, shouldDirty: false }
         )
@@ -242,11 +249,12 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
       if (assistantConfig?.mcp_servers?.length) {
         setValue(
           'mcp_servers',
-          getMCPServersFromConfiguration(assistantConfig.mcp_servers, settings as any),
+          getMCPServersFromConfiguration(assistantConfig.mcp_servers, typedSettings),
           { shouldValidate: true, shouldDirty: false }
         )
       }
-    }, [availableToolkits?.length, assistantConfig?.tools, settings])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [availableToolkits?.length, assistantConfig?.tools])
 
     useEffect(() => {
       const isEmpty = !systemPrompt && (!toolkits || toolkits.length === 0)
@@ -344,17 +352,16 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
             )}
           />
 
-          <Toolkits
-            toolkits={toolkits || []}
-            mcpServers={mcpServers || []}
-            onToolkitsChange={handleToolkitsChange}
-            onMcpServersChange={handleMcpServersChange}
-            showNewIntegrationPopup={showNewIntegrationPopup}
-            project={project}
-            defaultOpenSection={defaultOpenToolkitSection}
-            defaultOpenToolkitName={defaultOpenToolkitName}
-            defaultOpenMcpName={defaultOpenMcpName}
-          />
+          <AssistantFormContext.Provider value={{ project, isChatConfig: true }}>
+            <ToolsConfiguration
+              toolkits={toolkits || []}
+              mcpServers={mcpServers || []}
+              onToolkitsChange={handleToolkitsChange}
+              onMcpServersChange={handleMcpServersChange}
+              showNewIntegrationPopup={showNewIntegrationPopup}
+              defaultOpenSection={defaultOpenToolkitSection}
+            />
+          </AssistantFormContext.Provider>
         </div>
 
         <SystemPromptGenAIPopup

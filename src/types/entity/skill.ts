@@ -15,6 +15,7 @@
 
 import { CreatedBy } from '@/types/common'
 import { AssistantToolkit } from '@/types/entity/assistant'
+import { MCPServerDetails } from '@/types/entity/mcp'
 
 export enum SkillVisibility {
   PRIVATE = 'private',
@@ -55,6 +56,7 @@ export interface Skill {
   unique_likes_count?: number
   unique_dislikes_count?: number
   toolkits?: AssistantToolkit[]
+  mcp_servers?: MCPServerDetails[]
 }
 
 export interface SkillCreateRequest {
@@ -65,6 +67,7 @@ export interface SkillCreateRequest {
   visibility: SkillVisibility
   categories: string[]
   toolkits?: AssistantToolkit[]
+  mcp_servers?: MCPServerDetails[]
 }
 
 export interface SkillUpdateRequest {
@@ -75,6 +78,7 @@ export interface SkillUpdateRequest {
   visibility?: SkillVisibility
   categories?: string[]
   toolkits?: AssistantToolkit[]
+  mcp_servers?: MCPServerDetails[]
 }
 
 export interface SkillAssistantItem {

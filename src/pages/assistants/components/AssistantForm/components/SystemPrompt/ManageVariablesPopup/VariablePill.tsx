@@ -20,7 +20,7 @@ interface ValuePillProps {
 
 const VariablePill = ({ value, userDefined = false }: ValuePillProps) => {
   return (
-    <span className="flex fle-row items-center border-surface-base-tertiary my-1 py-1.5 px-2 rounded-xl bg-border-structural font-semibold w-fit break-keep">
+    <span className="flex fle-row items-center border-surface-base-tertiary my-1 py-1.5 px-2 rounded-xl bg-border-structural font-semibold max-w-full break-all">
       {userDefined && (
         <span className="inline-block min-w-2 min-h-2 align-middle rounded-full bg-in-progress-primary mr-2 mt-0.5 ml-0.5"></span>
       )}

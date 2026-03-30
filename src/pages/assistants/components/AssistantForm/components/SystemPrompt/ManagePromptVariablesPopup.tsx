@@ -127,11 +127,11 @@ const ManagePromptVariablesPopup = ({
 
   const tableColumns: ColumnDefinition[] = useMemo(
     () => [
-      { label: 'Key', key: 'key', type: 'custom', shrink: true, semiBold: true },
-      { label: 'Default Value', key: 'default_value', type: 'custom', shrink: true },
-      { label: 'Description', key: 'description', type: 'string', shrink: true },
-      { label: 'Sensitive', key: 'is_sensitive', type: 'custom', shrink: true },
-      { label: '', key: 'actions', type: 'custom' },
+      { label: 'Key', key: 'key', type: 'custom', shrink: true, semiBold: true, headClassNames: 'w-[20%]' },
+      { label: 'Default Value', key: 'default_value', type: 'custom', shrink: true, headClassNames: 'w-[30%]' },
+      { label: 'Description', key: 'description', type: 'custom', shrink: true, headClassNames: 'w-[28%]' },
+      { label: 'Sensitive', key: 'is_sensitive', type: 'custom', shrink: true, headClassNames: 'w-[10%]' },
+      { label: '', key: 'actions', type: 'custom', headClassNames: 'w-[12%]' },
     ],
     []
   )
@@ -139,13 +139,24 @@ const ManagePromptVariablesPopup = ({
   const customRenderColumns = useMemo(
     () => ({
       key: (item) => <VariablePill value={item.key} />,
-      default_value: (item) => (
-        <span className="text-sm">
-          {item.is_sensitive && item.default_value ? '••••••••••' : item.default_value || ''}
-        </span>
-      ),
+      default_value: (item) =>
+        item.is_sensitive && item.default_value ? (
+          <div className="pl-9">••••••••••</div>
+        ) : (
+          <div className="max-h-[80px] overflow-y-auto">
+            <span className="text-sm break-all">{item.default_value || ''}</span>
+          </div>
+        ),
+      description: (item) =>
+        item.description ? (
+          <div className="max-h-[80px] overflow-y-auto">
+            <span className="text-sm break-all">{item.description}</span>
+          </div>
+        ) : (
+          <div className="pl-9">-</div>
+        ),
       is_sensitive: (item) => (
-        <div className="flex items-center justify-start pointer-events-none">
+        <div className="flex items-center justify-center pointer-events-none">
           <Checkbox checked={!!item.is_sensitive} onChange={() => {}} label="" />
         </div>
       ),
@@ -215,6 +226,7 @@ const ManagePromptVariablesPopup = ({
           columnDefinitions={tableColumns}
           customRenderColumns={customRenderColumns}
           embedded={true}
+          tableClassName="table-fixed"
         />
       </div>
     </Popup>

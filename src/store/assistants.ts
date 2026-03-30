@@ -335,6 +335,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
 
   async getAssistantToolkits() {
     const toolkits = await api.get('v1/assistants/tools').then((response) => response.json())
+
     assistantsStore.availableToolkits = toolkits
     return toolkits
   },
@@ -360,21 +361,24 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       .then((response) => response.json())
   },
 
-  getAssistantContext(project_name, withID = false) {
-    return api
-      .get(`v1/assistants/context?project_name=${project_name}`)
-      .then((response) => response.json())
-      .then((options) =>
-        options.map((option) => ({
-          ...(withID ? { id: option.id } : {}),
-          name: option.name,
-          context_type: option.context_type,
-        }))
-      )
-      .then((contextOptions) => {
-        assistantsStore.availableContext = contextOptions
-        return contextOptions
-      })
+  async getAssistantContext(project_name, withID = false) {
+    try {
+      const options = await api
+        .get(`v1/assistants/context?project_name=${project_name}`)
+        .then((response) => response.json())
+
+      const contextOptions = options.map((option) => ({
+        ...(withID ? { id: option.id } : {}),
+        name: option.name,
+        context_type: option.context_type,
+      })) as AssistantContext[]
+
+      assistantsStore.availableContext = contextOptions
+      return contextOptions
+    } catch {
+      assistantsStore.availableContext = []
+      return []
+    }
   },
 
   getAssistantOptions(

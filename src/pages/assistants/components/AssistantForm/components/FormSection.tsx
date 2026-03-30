@@ -18,6 +18,7 @@ import { ReactNode } from 'react'
 import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import { cn } from '@/utils/utils'
 
+// TODO: This component is no longer used - isAIGenerated functionality moved to Accordion component. Consider removing.
 interface FormSectionProps {
   title?: string
   description?: string

@@ -65,6 +65,7 @@ export interface Assistant {
   temperature?: number
   max_tokens?: number
   top_p?: number | null
+  tools_tokens_size_limit?: number
   frequency_penalty?: number
   presence_penalty?: number
   type?: AssistantType
@@ -404,6 +405,7 @@ export interface CreateAssistantDto {
   slug?: string
   temperature?: number
   top_p?: number
+  tools_tokens_size_limit?: number
   mcp_servers?: MCPServerDetails[]
   assistant_ids?: string[]
   type?: AssistantType

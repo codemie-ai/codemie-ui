@@ -230,15 +230,16 @@ const MCPToolsSelectionStep = ({
         )}
       </div>
       <div className="flex justify-between gap-4">
-        <Button variant="secondary" onClick={onBack}>
+        <Button variant={ButtonType.SECONDARY} onClick={onBack}>
           Back
         </Button>
         <div className="flex gap-4">
-          <Button variant="secondary" onClick={onCancel}>
+          <Button variant={ButtonType.SECONDARY} onClick={onCancel}>
             Cancel
           </Button>
 
           <Button
+            variant={ButtonType.PRIMARY}
             onClick={onSave}
             disabled={
               toolsStatus === MCP_TOOLS_STATUS.LOADING ||

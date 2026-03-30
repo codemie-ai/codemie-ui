@@ -99,8 +99,8 @@ const MissingIntegrationsModal: React.FC<MissingIntegrationsModalProps> = ({
   }, [onSaveWithValidation, selectedIntegrations])
 
   const footerContent = (
-    <div className="flex justify-end gap-3">
-      <Button variant={ButtonType.BASE} onClick={onCancel} disabled={isSubmitting}>
+    <div className="flex justify-end gap-4">
+      <Button variant={ButtonType.SECONDARY} onClick={onCancel} disabled={isSubmitting}>
         Cancel
       </Button>
       <Button variant={ButtonType.SECONDARY} onClick={onSkipValidation} disabled={isSubmitting}>

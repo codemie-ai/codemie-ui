@@ -50,7 +50,7 @@ const IntegrationSelector = ({
   tooltipPosition,
   onChange,
   onAddSettingClick,
-  short,
+  short: _short,
   error,
 }: IntegrationSelectorProps) => {
   const selectRef = useRef<Dropdown>(null)
@@ -66,7 +66,6 @@ const IntegrationSelector = ({
   }
 
   const buttonLabel = addButtonLabel ?? 'Add User Integration'
-  const widthClass = short ? 'max-w-56' : 'max-w-[300px]'
 
   return (
     <div className={cn('flex flex-col w-full', className)}>
@@ -80,8 +79,8 @@ const IntegrationSelector = ({
           optionTruncateThreshold={optionTruncateThreshold}
           label={label}
           placeholder={placeholder ?? 'Default integration'}
-          rootClassName={cn('w-full', widthClass, selectClassName)}
-          panelClassName={short ? widthClass : undefined}
+          rootClassName={cn('w-full max-w-[300px]', selectClassName)}
+          panelClassName={'max-w-[300px]'}
           onChange={(e) => {
             const value = settingsDefinitions.find((s) => s.id === e.target.value)!
             onChange(value)

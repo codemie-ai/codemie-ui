@@ -24,17 +24,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npm run check:pre-commit"
-          }
-        ]
-      }
     ]
   }
 }

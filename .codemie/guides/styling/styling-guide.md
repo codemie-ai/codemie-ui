@@ -368,7 +368,23 @@ bg-surface-*, text-text-*, border-border-*, text-icon-*
 
 ### Standard Tailwind Spacing
 
-**MUST USE ONLY THESE VALUES**
+**MUST USE ONLY THESE VALUES - NEVER USE ARBITRARY PIXEL VALUES**
+
+```tsx
+// ✅ CORRECT: Use Tailwind classes
+className="mt-5"        // 20px
+className="max-w-sm"    // 384px
+className="gap-6"       // 24px
+className="p-4"         // 16px
+
+// ❌ WRONG: Arbitrary pixel values
+className="mt-[20px]"
+className="max-w-[340px]"
+className="gap-[24px]"
+className="p-[16px]"
+```
+
+**Spacing Values:**
 
 ```tsx
 className="p-0"    // 0px
@@ -603,6 +619,25 @@ const BadComponent = () => (
   </>
 )
 ```
+
+### ❌ WRONG: Arbitrary Pixel Values and Undefined Colors
+
+```tsx
+const BadComponent = () => (
+  <div
+    className="bg-[#f0f0f0] border-[#cccccc] p-[18px] mt-[20px] max-w-[340px] gap-[24px]"  // Never do this!
+    style={{ color: '#333333' }}  // Never use inline styles!
+  >
+    Bad styling example
+  </div>
+)
+```
+
+**Why this is wrong:**
+- Uses arbitrary pixel values (`mt-[20px]`, `max-w-[340px]`)
+- Uses arbitrary hex colors (`bg-[#f0f0f0]`)
+- Uses inline styles
+- Breaks design system consistency
 
 ### ✅ CORRECT: Theme-Aware Button Styling
 

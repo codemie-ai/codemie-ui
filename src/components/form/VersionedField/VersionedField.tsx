@@ -15,7 +15,6 @@
 
 import React, { ReactNode } from 'react'
 
-import ProcessingStatusSvg from '@/assets/icons/processing-status.svg?react'
 import Tabs from '@/components/Tabs'
 import { cn } from '@/utils/utils'
 
@@ -48,6 +47,8 @@ interface VersionedFieldProps {
   isLoading?: boolean
   isEditing?: boolean
   isFullHeight?: boolean
+  isSmall?: boolean
+  hideTabs?: boolean
   onRestore: () => void
   emptyPlaceholder?: string
 }
@@ -70,13 +71,15 @@ const VersionedField: React.FC<VersionedFieldProps> = ({
   isLoading,
   isEditing,
   isFullHeight,
+  isSmall,
+  hideTabs = false,
   onRestore,
   emptyPlaceholder = 'Value was not yet modified',
 }) => {
   const tabItems: Tab<VersionedFieldTabId>[] = [
     {
       id: 'current',
-      label: 'Edit Current Version',
+      label: 'Edit mode',
       element: currentTab,
     },
   ]
@@ -84,8 +87,7 @@ const VersionedField: React.FC<VersionedFieldProps> = ({
   if (isEditing)
     tabItems.push({
       id: 'history',
-      label: 'History',
-      icon: <ProcessingStatusSvg />,
+      label: 'Version History',
       element: (
         <VersionedFieldHistoryTab
           isLoading={isLoading}
@@ -101,11 +103,16 @@ const VersionedField: React.FC<VersionedFieldProps> = ({
       ),
     })
 
+  if (hideTabs) {
+    const activeItem = tabItems.find((t) => t.id === activeTab) ?? tabItems[0]
+    return <div className={cn(isFullHeight && 'h-full')}>{activeItem?.element}</div>
+  }
+
   return (
     <div className={cn('flex flex-col gap-2', isFullHeight && 'h-full')}>
       {label && (
         <div className="flex items-center">
-          <label className="text-sm">{label}</label>
+          <label className="text-sm text-text-quaternary">{label}</label>
           <div className="ml-auto gap-2">{headerContent}</div>
         </div>
       )}
@@ -115,6 +122,7 @@ const VersionedField: React.FC<VersionedFieldProps> = ({
         onChange={onTabChange}
         headerContent={tabsHeaderContent}
         className="h-full"
+        isSmall={isSmall}
       />
     </div>
   )

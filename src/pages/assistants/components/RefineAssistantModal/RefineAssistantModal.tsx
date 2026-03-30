@@ -463,8 +463,8 @@ const RefineAssistantModal: React.FC<RefineAssistantModalProps> = ({
         )}
       </div>
 
-      <div className="flex gap-3">
-        <Button variant={ButtonType.BASE} onClick={onHide}>
+      <div className="flex gap-4">
+        <Button variant={ButtonType.SECONDARY} onClick={onHide}>
           Close
         </Button>
         {hasUnappliedChanges && (

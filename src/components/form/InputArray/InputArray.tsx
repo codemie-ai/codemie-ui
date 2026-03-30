@@ -16,7 +16,7 @@
 import { forwardRef, useRef, useEffect } from 'react'
 
 import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
-import ActionDeleteSvg from '@/assets/icons/delete.svg?react'
+import ActionDeleteSvg from '@/assets/icons/delete-filled.svg?react'
 import PlusSvg from '@/assets/icons/plus.svg?react'
 import Input from '@/components/form/Input'
 import TooltipButton from '@/components/TooltipButton'
@@ -102,7 +102,10 @@ const InputArray = forwardRef<HTMLInputElement, InputArrayProps>(
       <div ref={ref} className={className}>
         <div className="flex items-end">
           {label && (
-            <label htmlFor={id} className="text-xs text-text-quaternary flex items-center gap-2">
+            <label
+              htmlFor={id}
+              className="text-sm font-mono text-text-quaternary flex items-center gap-2"
+            >
               {label}
               {hint && <TooltipButton content={hint} />}
             </label>

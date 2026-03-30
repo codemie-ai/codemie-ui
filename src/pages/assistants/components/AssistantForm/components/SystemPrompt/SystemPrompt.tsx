@@ -13,17 +13,9 @@
 // limitations under the License.
 //
 
-import { ComponentProps, forwardRef, useContext, useState } from 'react'
+import { ComponentProps, forwardRef, useContext } from 'react'
 
-import CollapseSvg from '@/assets/icons/collapse.svg?react'
-import CopySvg from '@/assets/icons/copy.svg?react'
-import ExpandSvg from '@/assets/icons/expand.svg?react'
-import Button from '@/components/Button'
-import Textarea, { TextareaRef } from '@/components/form/Textarea'
-import VersionedField, {
-  VersionedFieldTabId,
-} from '@/components/form/VersionedField/VersionedField'
-import Popup from '@/components/Popup'
+import { TextareaRef } from '@/components/form/Textarea'
 import { goBackAssistants } from '@/pages/assistants/utils/goBackAssistants'
 import { assistantsStore } from '@/store'
 import { AssistantPromptVariable } from '@/types/entity/assistant'
@@ -34,7 +26,9 @@ import { copyToClipboard } from '@/utils/utils'
 import ManagePromptVariablesPopup from './ManagePromptVariablesPopup'
 import SystemPromptCurrentTab from './SystemPromptCurrentTab'
 import SystemPromptDiffModal from './SystemPromptDiffModal'
+import { SystemPromptExpandedModal } from './SystemPromptExpandedModal'
 import SystemPromptGenAIPopup from './SystemPromptGenAIPopup'
+import { useSystemPromptState } from './useSystemPromptState'
 import { AssistantFormContext } from '../../AssistantForm'
 
 interface SystemPromptProps {
@@ -68,19 +62,30 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
   ) => {
     const { assistant, isChatConfig, isEditing, goBack } = useContext(AssistantFormContext)
 
-    const [isExpanded, setIsExpanded] = useState(false)
-    const [isLoading, setIsLoading] = useState(false)
-    const [isGenAIPopupVisible, setIsGenAIPopupVisible] = useState(false)
-    const [isDiffModalVisible, setIsDiffModalVisible] = useState(false)
-    const [suggestedPrompt, setSuggestedPrompt] = useState('')
-    const [isManagePromptVariblesVisible, setIsManagePromptVariblesVisible] = useState(false)
-
-    const [activeTab, setActiveTab] = useState<VersionedFieldTabId>('current')
-    const [selectedHistoryOption, setSelectedHistoryOption] = useState(
-      assistant?.system_prompt_history[0] || null
-    )
+    const {
+      isExpanded,
+      setIsExpanded,
+      isLoading,
+      setIsLoading,
+      isGenAIPopupVisible,
+      setIsGenAIPopupVisible,
+      isDiffModalVisible,
+      setIsDiffModalVisible,
+      suggestedPrompt,
+      setSuggestedPrompt,
+      isManagePromptVariblesVisible,
+      setIsManagePromptVariblesVisible,
+      activeTab,
+      setActiveTab,
+      selectedHistoryOption,
+      setSelectedHistoryOption,
+    } = useSystemPromptState(assistant)
 
     const handleExpand = () => setIsExpanded(!isExpanded)
+    const handleShowVersionHistory = () => {
+      setIsExpanded(true)
+      setActiveTab('history')
+    }
     const handleShowGenAIPopup = () => setIsGenAIPopupVisible(true)
 
     const handleCopyClick = () =>
@@ -154,32 +159,20 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
     }
 
     const historyOptions =
-      assistant?.system_prompt_history.map((entry) => ({
-        label: `${formatDate(entry.date, SHORT_DATE_FORMAT)} - ${createdBy(entry.created_by)}`,
-        value: entry.date,
-      })) || []
-
-    const sharedVersionedFieldProps: Omit<
-      ComponentProps<typeof VersionedField>,
-      'currentTab' | 'historyTab'
-    > = {
-      isLoading,
-      isEditing,
-      historyOptions,
-      activeTab,
-      selectedHistoryOption: selectedHistoryOption?.date,
-      onRestore: () => handleRestore(),
-      onTabChange: setActiveTab,
-      onHistoryOptionChange: (value) => {
-        setSelectedHistoryOption(
-          assistant?.system_prompt_history.find((option) => option.date === value) || null
-        )
-      },
-    }
+      assistant?.system_prompt_history.map((entry, index) => {
+        const versionNumber = assistant.system_prompt_history.length - index
+        return {
+          label: `[${String(versionNumber).padStart(2, '0')}] - ${formatDate(
+            entry.date,
+            SHORT_DATE_FORMAT
+          )} - ${createdBy(entry.created_by)}`,
+          value: entry.date,
+        }
+      }) || []
 
     const sharedSystemPromptCurrentTabProps: Omit<
       ComponentProps<typeof SystemPromptCurrentTab>,
-      'customPromptVariables'
+      'customPromptVariables' | 'onShowVersionHistory'
     > = {
       ref,
       value,
@@ -191,35 +184,21 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
 
     return (
       <>
-        <VersionedField
-          {...sharedVersionedFieldProps}
-          label={isEditing ? 'System Instructions' : ''}
-          historyTabHeaderContent={
-            <Button type="secondary" onClick={() => setIsExpanded(true)}>
-              <ExpandSvg /> Expand
-            </Button>
-          }
-          historyTab={
-            <Textarea
-              disabled
-              rows={15}
-              value={selectedHistoryOption?.system_prompt}
-              rootClass="h-full mt-4"
-              className="resize-none min-h-full"
-            />
-          }
-          currentTab={
-            <SystemPromptCurrentTab
-              {...sharedSystemPromptCurrentTabProps}
-              showLabel={!isEditing}
-              customPromptVariables={promptVariables}
-              isExpanded={false}
-              isAIGenerated={isAIGenerated}
-              error={error}
-              onExpand={() => setIsExpanded(true)}
-            />
-          }
-        />
+        <div className="flex flex-col gap-2">
+          {isEditing && (
+            <label className="text-sm font-mono text-text-quaternary">System Instructions</label>
+          )}
+          <SystemPromptCurrentTab
+            {...sharedSystemPromptCurrentTabProps}
+            showLabel={!isEditing}
+            customPromptVariables={promptVariables}
+            isExpanded={false}
+            isAIGenerated={isAIGenerated}
+            error={error}
+            onExpand={() => setIsExpanded(true)}
+            {...(isEditing && { onShowVersionHistory: handleShowVersionHistory })}
+          />
+        </div>
 
         <SystemPromptGenAIPopup
           existingPrompt={value}
@@ -243,61 +222,27 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
           onSave={handleUpdatePromptVariables}
         />
 
-        <Popup
-          hideFooter
-          hideClose
-          isFullWidth
-          visible={isExpanded}
-          onHide={handleExpand}
-          className="h-[90vh] pb-6"
-          headerContent={
-            <div className="flex items-center justify-between">
-              <h4>System Instructions</h4>
-              <div className="flex gap-4">
-                <Button
-                  type="secondary"
-                  onClick={handleCopyClick}
-                  disabled={
-                    isExpanded &&
-                    activeTab === 'history' &&
-                    !assistant?.system_prompt_history.length
-                  }
-                >
-                  <CopySvg />
-                  Copy
-                </Button>
-                <Button type="secondary" onClick={handleExpand}>
-                  <CollapseSvg />
-                  Collapse
-                </Button>
-              </div>
-            </div>
-          }
-        >
-          <VersionedField
-            {...sharedVersionedFieldProps}
-            isFullHeight
-            historyTab={
-              <div className="h-full pt-4">
-                <Textarea
-                  disabled
-                  rows={15}
-                  value={selectedHistoryOption?.system_prompt}
-                  rootClass="h-full"
-                  className="resize-none min-h-full"
-                  onChange={(e) => onChange(e.target.value)}
-                />
-              </div>
-            }
-            currentTab={
-              <SystemPromptCurrentTab
-                {...sharedSystemPromptCurrentTabProps}
-                isExpanded={true}
-                customPromptVariables={promptVariables}
-              />
-            }
-          />
-        </Popup>
+        <SystemPromptExpandedModal
+          isExpanded={isExpanded}
+          activeTab={activeTab}
+          selectedHistoryOption={selectedHistoryOption}
+          assistant={assistant}
+          isEditing={isEditing}
+          isLoading={isLoading}
+          promptVariables={promptVariables}
+          value={value}
+          onExpand={handleExpand}
+          onCopyClick={handleCopyClick}
+          onTabChange={setActiveTab}
+          onRestore={handleRestore}
+          onHistoryOptionChange={(value) => {
+            setSelectedHistoryOption(
+              assistant?.system_prompt_history.find((option) => option.date === value) || null
+            )
+          }}
+          sharedSystemPromptCurrentTabProps={sharedSystemPromptCurrentTabProps}
+          historyOptions={historyOptions}
+        />
       </>
     )
   }

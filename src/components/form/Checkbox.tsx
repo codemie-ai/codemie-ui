@@ -14,7 +14,7 @@
 //
 
 import { Checkbox as PrimeCheckbox, CheckboxPassThroughOptions } from 'primereact/checkbox'
-import { forwardRef, useId } from 'react'
+import { forwardRef, ReactNode, useId } from 'react'
 
 import CheckedIcon from '@/assets/icons/check-18.svg?react'
 import CheckboxMinusSvg from '@/assets/icons/checkbox-minus.svg?react'
@@ -23,7 +23,7 @@ import { cn } from '@/utils/utils'
 import TooltipButton from '../TooltipButton'
 
 type Props = {
-  label?: string
+  label?: ReactNode
   name?: string
   id?: string
   hint?: string

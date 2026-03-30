@@ -26,13 +26,18 @@ import { cn } from '@/utils/utils'
 interface MCPEmptyStateProps {
   onBrowseMarketplace: () => void
   onAddCustom: () => void
+  isCompactView?: boolean
 }
 
 const NARROW_THRESHOLD = 500
 const DESCRIPTION =
   'Get started by installing your first MCP server from our catalog or configuring one manually.'
 
-const MCPEmptyState: React.FC<MCPEmptyStateProps> = ({ onBrowseMarketplace, onAddCustom }) => {
+const MCPEmptyState: React.FC<MCPEmptyStateProps> = ({
+  onBrowseMarketplace,
+  onAddCustom,
+  isCompactView,
+}) => {
   const observerRef = useRef<HTMLDivElement>(null)
   const [isNarrow, setIsNarrow] = useState(false)
 
@@ -68,7 +73,7 @@ const MCPEmptyState: React.FC<MCPEmptyStateProps> = ({ onBrowseMarketplace, onAd
       <div
         className={cn(
           'flex flex-col items-center justify-center text-center',
-          !isNarrow && 'py-12 px-6'
+          !isNarrow ? 'py-12 px-6' : 'px-4'
         )}
       >
         <div
@@ -81,7 +86,11 @@ const MCPEmptyState: React.FC<MCPEmptyStateProps> = ({ onBrowseMarketplace, onAd
         </div>
 
         <h3
-          className={cn('text-text-primary mb-2 font-semibold', isNarrow ? 'text-lg' : 'text-h2')}
+          className={cn('text-text-primary mb-5 font-semibold', {
+            'text-sm': isCompactView,
+            'text-lg': !isCompactView && isNarrow,
+            'text-h2': !isCompactView && !isNarrow,
+          })}
         >
           No MCP Servers Installed
           {isNarrow && (

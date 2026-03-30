@@ -67,6 +67,7 @@ const NewIntegrationPopup: React.FC<NewIntegrationPopupProps> = ({
       submitDisabled={isSubmitting}
       bodyClassName="show-scroll !px-0 !pb-0"
       hideFooter={false}
+      withBorderBottom={false}
       className="!w-[600px]"
     >
       <div className="px-4">

@@ -26,6 +26,7 @@ import {
   SKILL_NAME_PATTERN,
 } from '@/constants/skills'
 import { AssistantToolkit } from '@/types/entity/assistant'
+import { MCPServerDetails } from '@/types/entity/mcp'
 import { SkillVisibility } from '@/types/entity/skill'
 
 export const skillValidationSchema = Yup.object().shape({
@@ -66,4 +67,6 @@ export const skillValidationSchema = Yup.object().shape({
     .default([]),
 
   toolkits: Yup.array().of(Yup.mixed<AssistantToolkit>().required()).default([]),
+
+  mcp_servers: Yup.array().of(Yup.mixed<MCPServerDetails>().required()).default([]),
 })

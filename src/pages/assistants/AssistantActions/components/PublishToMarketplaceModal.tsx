@@ -262,8 +262,8 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
   }
 
   const footerContent = (
-    <div className="flex justify-end gap-3">
-      <Button variant={ButtonType.BASE} onClick={onClose} disabled={isLoading}>
+    <div className="flex justify-end gap-4">
+      <Button variant={ButtonType.SECONDARY} onClick={onClose} disabled={isLoading}>
         Cancel
       </Button>
       <Button variant={ButtonType.PRIMARY} onClick={handlePublish} disabled={isLoading}>

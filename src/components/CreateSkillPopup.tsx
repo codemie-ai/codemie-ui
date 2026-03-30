@@ -213,9 +213,10 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
               onSubmit={handleFormSubmit}
               onSuccess={handleFormSuccess}
               showNewIntegrationPopup={showNewIntegrationPopup}
+              isCompactView
             />
 
-            <div className="flex gap-x-4 px-6 pb-5 justify-end">
+            <div className="flex gap-4 py-4 justify-end">
               <Button variant="secondary" onClick={handleCancel}>
                 Cancel
               </Button>

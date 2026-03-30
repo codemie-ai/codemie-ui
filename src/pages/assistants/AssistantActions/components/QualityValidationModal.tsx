@@ -70,8 +70,8 @@ const QualityValidationModal: React.FC<QualityValidationModalProps> = ({
   }
 
   const footerContent = (
-    <div className="flex justify-end gap-3">
-      <Button variant={ButtonType.BASE} onClick={onHide} disabled={publishing}>
+    <div className="flex justify-end gap-4">
+      <Button variant={ButtonType.SECONDARY} onClick={onHide} disabled={publishing}>
         Cancel
       </Button>
       <Button variant={ButtonType.PRIMARY} onClick={handlePublishAnyway} disabled={publishing}>

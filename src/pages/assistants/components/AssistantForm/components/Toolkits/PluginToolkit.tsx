@@ -46,7 +46,6 @@ interface PluginToolkitProps {
   updateToolkitSetting: (toolkit: AssistantToolkit, setting?: Setting) => void
   singleToolSelection?: boolean
   onAddSettingClick: (credentialType: string) => void
-  isChatConfig?: boolean
   onToolkitsChange: (toolkits: AssistantToolkit[]) => void
 }
 
@@ -60,7 +59,6 @@ const PluginToolkit = ({
   updateToolkitSetting,
   singleToolSelection = false,
   onAddSettingClick,
-  isChatConfig,
   onToolkitsChange,
 }: PluginToolkitProps) => {
   const [pluginToolsStatus, setPluginToolsStatus] = useState<PluginToolsStatus>(
@@ -171,7 +169,6 @@ const PluginToolkit = ({
     return (
       <IntegrationSelector
         className="ml-4"
-        short={isChatConfig}
         value={selectedToolkit?.tools.find((tl) => tool.name === tl.name)?.settings}
         settingsDefinitions={settings[getCredentialType(tool.name)]}
         onAddSettingClick={() => onAddSettingClick(getCredentialType(tool.name))}

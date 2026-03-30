@@ -289,7 +289,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
     }, [schemaRequiredFields])
 
     useEffect(() => {
-      if (!availableToolkits?.length || isEmpty(settings)) return
+      if (!availableToolkits?.length) return
       if (hasInitialized.current) return
 
       hasInitialized.current = true
@@ -326,7 +326,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
 
         setValue('mcpServers', mcpServers, { shouldValidate: true, shouldDirty: false })
       }
-    }, [availableToolkits?.length, isEmpty(settings)])
+    }, [availableToolkits?.length])
 
     useEffect(() => {
       if (!availableToolkits.length) {

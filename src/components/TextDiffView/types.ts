@@ -39,4 +39,5 @@ export interface TextDiffViewProps {
   oldLabel?: string
   newLabel?: string
   className?: string
+  columnClassName?: string
 }

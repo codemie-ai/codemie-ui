@@ -55,6 +55,7 @@ const EditIndexPopup: FC<Props> = ({
   return (
     <Popup
       hideFooter
+      withBorderBottom={false}
       onHide={handleCancel}
       visible={visible}
       className="h-auto w-[600px]"
@@ -70,7 +71,7 @@ const EditIndexPopup: FC<Props> = ({
         onSubmittingChange={setIsSubmitting}
         isPopup
       />
-      <div className="flex gap-x-4 mb-5 ml-auto">
+      <div className="flex w-full justify-end gap-4 py-4">
         <Button variant="secondary" onClick={handleCancel}>
           Cancel
         </Button>

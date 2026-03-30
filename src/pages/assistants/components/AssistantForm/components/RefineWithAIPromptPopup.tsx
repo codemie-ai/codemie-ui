@@ -22,6 +22,7 @@ import Button from '@/components/Button'
 import InfoBox from '@/components/form/InfoBox'
 import Textarea, { TextareaRef } from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
+import { ButtonType } from '@/constants'
 
 interface RefineWithAIPromptPopupProps {
   isVisible: boolean
@@ -103,11 +104,11 @@ const RefineWithAIPromptPopup = ({ isVisible, onHide, onRefine }: RefineWithAIPr
           />
         </div>
 
-        <div className="flex gap-4 justify-end mt-2 my-4">
-          <Button type="secondary" onClick={handleHide}>
+        <div className="flex gap-4 justify-end my-4">
+          <Button variant={ButtonType.SECONDARY} onClick={handleHide}>
             Cancel
           </Button>
-          <Button type="magical" onClick={handleSubmit(handleRefineClick)}>
+          <Button variant={ButtonType.MAGICAL} onClick={handleSubmit(handleRefineClick)}>
             Refine with AI
           </Button>
         </div>

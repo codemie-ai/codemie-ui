@@ -38,8 +38,8 @@ const SystemPromptDiffModal: React.FC<SystemPromptDiffModalProps> = ({
 }) => {
   const footerContent = useMemo(
     () => (
-      <div className="flex items-center justify-end w-full gap-3">
-        <Button variant={ButtonType.BASE} onClick={onHide}>
+      <div className="flex items-center justify-end w-full gap-4">
+        <Button variant={ButtonType.SECONDARY} onClick={onHide}>
           Cancel
         </Button>
         <Button variant={ButtonType.PRIMARY} onClick={onApply}>

@@ -19,6 +19,7 @@ import { useForm } from 'react-hook-form'
 import { skillValidationSchema } from '@/pages/skills/validation/skillValidation'
 import { skillsStore } from '@/store/skills'
 import { AssistantToolkit } from '@/types/entity/assistant'
+import { MCPServerDetails } from '@/types/entity/mcp'
 import {
   Skill,
   SkillCreateRequest,
@@ -34,6 +35,7 @@ export interface SkillFormData {
   visibility: SkillVisibility
   categories: string[]
   toolkits: AssistantToolkit[]
+  mcp_servers: MCPServerDetails[]
 }
 
 export const useSkillForm = (initialData?: Skill) => {
@@ -48,6 +50,7 @@ export const useSkillForm = (initialData?: Skill) => {
           visibility: initialData.visibility,
           categories: initialData.categories,
           toolkits: initialData.toolkits ?? [],
+          mcp_servers: initialData.mcp_servers ?? [],
         }
       : {
           name: '',
@@ -57,6 +60,7 @@ export const useSkillForm = (initialData?: Skill) => {
           visibility: SkillVisibility.PRIVATE,
           categories: [],
           toolkits: [],
+          mcp_servers: [],
         },
     mode: 'all',
   })
@@ -72,6 +76,7 @@ export const useSkillForm = (initialData?: Skill) => {
         visibility: data.visibility,
         categories: data.categories,
         toolkits: data.toolkits,
+        mcp_servers: data.mcp_servers,
       }
 
       return skillsStore.updateSkill(initialData.id, updateData)
@@ -85,6 +90,7 @@ export const useSkillForm = (initialData?: Skill) => {
       visibility: data.visibility,
       categories: data.categories,
       toolkits: data.toolkits,
+      mcp_servers: data.mcp_servers,
     }
 
     return skillsStore.createSkill(createData)

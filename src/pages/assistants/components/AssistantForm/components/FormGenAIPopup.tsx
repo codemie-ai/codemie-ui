@@ -25,6 +25,7 @@ import Switch from '@/components/form/Switch'
 import Textarea, { TextareaRef } from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
+import { ButtonType } from '@/constants'
 import { assistantsStore } from '@/store'
 import { AssistantAIGeneratedFields } from '@/types/entity/assistant'
 
@@ -156,11 +157,11 @@ const FormGenAIPopup = ({ isVisible, onHide, onGenerated }: GenWithAIPopupProps)
             label="Include tools"
           />
           <div className="flex gap-4 ml-auto">
-            <Button type="secondary" onClick={handleHide}>
+            <Button variant={ButtonType.SECONDARY} onClick={handleHide}>
               {isManual ? 'Cancel' : 'Create Manualy'}
             </Button>
             <Button
-              type="magical"
+              variant={ButtonType.MAGICAL}
               disabled={!!errors.prompt?.message}
               onClick={handleSubmit(handleGenerateClick)}
             >

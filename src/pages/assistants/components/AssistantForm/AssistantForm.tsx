@@ -27,20 +27,15 @@ import {
 import { Controller, useForm } from 'react-hook-form'
 import * as Yup from 'yup'
 
-import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
+import Accordion from '@/components/Accordion'
 import Button from '@/components/Button'
-import InfoBox from '@/components/form/InfoBox'
-import Input from '@/components/form/Input'
-import InputArray from '@/components/form/InputArray'
-import Switch from '@/components/form/Switch'
-import Textarea from '@/components/form/Textarea'
 import GuardrailAssignmentPanel from '@/components/guardrails/GuardrailAssignmentPanel/GuardrailAssignmentPanel'
 import { guardrailAssignmentsSchema } from '@/components/guardrails/GuardrailAssignmentPanel/schemas/guardrailAssignmentSchema'
-import ProjectSelector from '@/components/ProjectSelector'
 import SkillSelector from '@/components/SkillSelector'
 import { SYSTEM_PROMPT_VARIABLES } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { FormIDs } from '@/constants/formIds'
+import { MAX_SKILLS_PER_ASSISTANT } from '@/constants/skills'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import MissingIntegrationsModal from '@/pages/assistants/components/MissingIntegrationsModal'
@@ -56,7 +51,6 @@ import {
   AssistantAIFieldMarkers,
   AssistantCategory,
   AssistantToolkit,
-  AssistantPromptVariable,
   AssistantContext,
 } from '@/types/entity/assistant'
 import { GuardrailEntity } from '@/types/entity/guardrail'
@@ -65,17 +59,14 @@ import { SETTING_TYPE_USER } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
-import AssistantSelector from '../AssistantSelector'
-import FormSection from './components/FormSection'
-import LLMSelector from './components/LLMSelector'
-import RefineAssistantModal from '../RefineAssistantModal/RefineAssistantModal'
-import ContextSelector from './components/ContextSelector'
-import MarketplaceCategories from './components/MarketplaceCategories'
-import RefineWithAIPromptPopup from './components/RefineWithAIPromptPopup'
-import SystemPrompt from './components/SystemPrompt/SystemPrompt'
-import Toolkits from './components/Toolkits/Toolkits'
-import { useRefineAIRecommendations } from './hooks/useRefineAIRecommendations'
 import { compareFormData } from '../../utils/compareFormData'
+import AssistantSelector from '../AssistantSelector'
+import RefineAssistantModal from '../RefineAssistantModal/RefineAssistantModal'
+import { AssistantSetupSection } from './components/AssistantSetup'
+import ContextSelector from './components/ContextSelector'
+import RefineWithAIPromptPopup from './components/RefineWithAIPromptPopup'
+import ToolsConfiguration from './components/Toolkits/ToolsConfiguration'
+import { useRefineAIRecommendations } from './hooks/useRefineAIRecommendations'
 
 export const MAX_CATEGORIES = 3
 const PROMPT_VARIABLE_RE = /\{\{(.*?)\}\}/g
@@ -110,7 +101,7 @@ const formSchema = Yup.object()
     system_prompt: Yup.string()
       .required('System instructions are required')
       .test('format', systemPromptVariablesValidator),
-    icon_url: Yup.string().url('Icon URL must be a valid URL'),
+    icon_url: Yup.string().nullable().optional(),
     llm_model_type: Yup.string(),
     categories: Yup.array().of(Yup.string().required()),
     conversation_starters: Yup.array()
@@ -129,6 +120,10 @@ const formSchema = Yup.object()
       .max(1, 'Top P must be at most 1')
       .transform((value, originalValue) => (originalValue === '' ? undefined : value))
       .typeError('Top P must be a number'),
+    tools_tokens_size_limit: Yup.number()
+      .min(0, 'Tools Tokens Size Limit must be at least 0')
+      .transform((value, originalValue) => (originalValue === '' ? undefined : value))
+      .typeError('Tools Tokens Size Limit must be a number'),
     context: Yup.array().of(
       Yup.object().shape({ name: Yup.string().required(), context_type: Yup.string().required() })
     ),
@@ -137,7 +132,10 @@ const formSchema = Yup.object()
     mcp_servers: Yup.array().of(Yup.object()),
     prompt_variables: Yup.array().default([]),
     smart_tool_selection_enabled: Yup.boolean().default(false),
-    skill_ids: Yup.array().of(Yup.string()).max(10, 'Maximum 10 skills allowed').default([]),
+    skill_ids: Yup.array()
+      .of(Yup.string())
+      .max(MAX_SKILLS_PER_ASSISTANT, `Maximum ${MAX_SKILLS_PER_ASSISTANT} skills allowed`)
+      .default([]),
   })
   .shape(guardrailAssignmentsSchema)
 
@@ -173,6 +171,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     ref
   ) => {
     const [toolkits, setToolkits] = useState<AssistantToolkit[]>(assistant?.toolkits ?? [])
+
     const [mcpServers, setMcpServers] = useState<MCPServerDetails[]>(assistant?.mcp_servers ?? [])
     const [showRefinePromptPopup, setShowRefinePromptPopup] = useState(false)
     const [showRefineModal, setShowRefineModal] = useState(false)
@@ -213,6 +212,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     const { control, formState, watch, handleSubmit, setValue, getValues, trigger } =
       useForm<AssistantFormSchema>({
         mode: 'all',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         resolver: yupResolver(formSchema) as any,
         defaultValues: {
           project: assistant?.project ?? '',
@@ -228,6 +228,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           slug: assistant?.slug?.length ? assistant.slug : getSlugFromName(assistant?.name),
           temperature: assistant?.temperature ?? undefined,
           top_p: assistant?.top_p ?? undefined,
+          tools_tokens_size_limit: assistant?.tools_tokens_size_limit ?? undefined,
           context: assistant?.context ?? [],
           nestedAssistants: assistant?.nestedAssistants ?? [],
           prompt_variables: assistant?.prompt_variables ?? [],
@@ -252,11 +253,20 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       preparedValues.is_react = !!assistant?.is_react
       preparedValues.slug ??= getSlugFromName(preparedValues.name)
 
-      if (!preparedValues.temperature) delete preparedValues.temperature
+      if (preparedValues.temperature == null || (preparedValues.temperature as unknown) === '')
+        delete preparedValues.temperature
       else preparedValues.temperature = Number(preparedValues.temperature)
 
-      if (!preparedValues.top_p) delete preparedValues.top_p
+      if (preparedValues.top_p == null || (preparedValues.top_p as unknown) === '')
+        delete preparedValues.top_p
       else preparedValues.top_p = Number(preparedValues.top_p)
+
+      if (
+        preparedValues.tools_tokens_size_limit == null ||
+        (preparedValues.tools_tokens_size_limit as unknown) === ''
+      )
+        delete preparedValues.tools_tokens_size_limit
+      else preparedValues.tools_tokens_size_limit = Number(preparedValues.tools_tokens_size_limit)
 
       return preparedValues
     }
@@ -271,7 +281,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       (newToolkits: AssistantToolkit[] | ((prev: AssistantToolkit[]) => AssistantToolkit[])) => {
         setToolkits(newToolkits)
       },
-      []
+      [] // stable: only wraps the setState setter, which never changes
     )
 
     const {
@@ -319,7 +329,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       unblockTransition()
 
       const values = prepareFormData()
-      const result = await handleMissingIntegrationsSubmit(values as any)
+      const result = await handleMissingIntegrationsSubmit(values)
       if (result?.error) {
         toaster.error(result.error)
       }
@@ -424,14 +434,14 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       if (hasUserSettings) {
         setValue('shared', false, { shouldDirty: false })
       }
-    }, [hasUserSettings])
+    }, [hasUserSettings, setValue])
 
     useEffect(() => {
       if (!promptVariables?.length) return
       const systemPrompt = getValues('system_prompt')
       if (!systemPrompt) return
       trigger('system_prompt')
-    }, [promptVariables])
+    }, [promptVariables, trigger, getValues])
 
     return (
       <AssistantFormContext.Provider value={contextValue}>
@@ -439,7 +449,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           onSubmit={handleFormSubmit}
           className={cn(
             'relative flex flex-col gap-y-6 p-6 pb-10',
-            isChatConfig && 'pl-4 pr-2 pt-0 max-w-full max-h-full overflow-y-auto overflow-x-hidden'
+            isChatConfig && 'pl-4 pr-2 pt-0 max-w-full'
           )}
         >
           {isChatConfig && (
@@ -457,286 +467,105 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             </div>
           )}
 
-          <FormSection title={isChatConfig ? undefined : 'Assistant Setup'}>
-            <div className={cn('flex gap-4 items-end', isChatConfig && 'flex-col items-start')}>
-              <Controller
-                name="project"
-                control={control}
-                render={({ field }) => (
-                  <ProjectSelector
-                    label="Project name:"
-                    className={cn('grow', isChatConfig && 'w-full ')}
-                    value={field.value ?? ''}
-                    onChange={(value) =>
-                      setValue('project', Array.isArray(value) ? value[0] : value, {
-                        shouldDirty: false,
-                      })
-                    }
-                  />
-                )}
-              />
-              <Controller
-                name="shared"
-                control={control}
-                disabled={hasUserSettings}
-                render={({ field }) => (
-                  <Switch label="Shared with project" className="mb-2" {...field} />
-                )}
-              />
-            </div>
+          <AssistantSetupSection
+            control={control}
+            errors={errors}
+            setValue={setValue}
+            hasUserSettings={hasUserSettings}
+            aiGeneratedFieldMarkers={aiGeneratedFieldMarkers}
+            setAiGeneratedFieldMarkers={setAiGeneratedFieldMarkers}
+            promptVariables={promptVariables}
+            onNameChange={handleNameChange}
+            isCompactView={isChatConfig}
+          />
 
-            {hasUserSettings && (
-              <InfoBox>
-                Important note: You can&apos;t share an assistant that has personal integrations on
-                one of it&apos;s tools.
-              </InfoBox>
-            )}
-
-            <Controller
-              name="name"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Input
-                  label="Name:"
-                  placeholder="Name*"
-                  rightIcon={aiGeneratedFieldMarkers.name && <AIFieldSvg />}
-                  error={fieldState.error?.message}
-                  {...field}
-                  onChange={(e) => {
-                    handleNameChange(e.target.value, field.value)
-                    field.onChange(e)
-                  }}
-                />
-              )}
-            />
-
-            <Controller
-              name="slug"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Input
-                  sideLabel="Slug:"
-                  placeholder="Unique human-readable identifier"
-                  error={fieldState.error?.message}
-                  {...field}
-                />
-              )}
-            />
-
-            <Controller
-              name="icon_url"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Input
-                  label="Icon URL:"
-                  placeholder="URL to the assistant's icon"
-                  error={fieldState.error?.message}
-                  {...field}
-                />
-              )}
-            />
-
-            <Controller
-              name="description"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Textarea
-                  label="Description:"
-                  placeholder="Description*"
-                  rows={5}
-                  className={aiGeneratedFieldMarkers.description ? '!pr-9' : ''}
-                  error={fieldState.error?.message}
-                  {...field}
-                >
-                  {aiGeneratedFieldMarkers.description && (
-                    <div className="absolute top-10 right-4">
-                      <AIFieldSvg />
-                    </div>
-                  )}
-                </Textarea>
-              )}
-            />
-
-            <Controller
-              name="categories"
-              control={control}
-              render={({ field }) => (
-                <MarketplaceCategories
-                  {...field}
-                  isAIGenerated={aiGeneratedFieldMarkers.categories}
-                />
-              )}
-            />
-
-            <Controller
-              name="conversation_starters"
-              control={control}
-              render={({ field }) => (
-                <InputArray
-                  label="Conversation starters"
-                  hint="These will appear as suggestions to the user when they start a new chat with this assistant."
-                  maxLength={4}
-                  isAIGenerated={aiGeneratedFieldMarkers.conversation_starters}
-                  error={errors.conversation_starters?.[0]?.message}
-                  {...field}
-                  onChange={(value) => {
-                    setAiGeneratedFieldMarkers((prev) => ({
-                      ...prev,
-                      conversation_starters: false,
-                    }))
-                    field.onChange(value)
-                  }}
-                />
-              )}
-            />
-          </FormSection>
-
-          <FormSection
-            title="Behavior & Logic"
-            description="Control how your assistant responds, reasons, and communicates."
-          >
-            <Controller
-              name="system_prompt"
-              control={control}
-              render={({ field, fieldState }) => (
-                <SystemPrompt
-                  isAIGenerated={aiGeneratedFieldMarkers.system_prompt}
-                  setIsAiGenerated={(value) =>
-                    setAiGeneratedFieldMarkers((pr) => ({ ...pr, system_prompt: value }))
-                  }
-                  promptVariables={promptVariables}
-                  onUpdatePromptVariables={(values: AssistantPromptVariable[]) => {
-                    setValue('prompt_variables', values, { shouldValidate: false })
-                  }}
-                  error={fieldState.error?.message}
-                  {...field}
-                />
-              )}
-            />
-
-            <div className="flex gap-x-8 gap-y-4 flex-wrap">
-              <Controller
-                name="llm_model_type"
-                control={control}
-                render={({ field }) => (
-                  <LLMSelector
-                    label="LLM model:"
-                    placeholder="LLM model"
-                    className={cn('grow max-w-sm', isChatConfig && 'w-full max-w-none')}
-                    value={field.value ?? ''}
-                    onChange={(value) => setValue('llm_model_type', value, { shouldDirty: false })}
-                  />
-                )}
-              />
-              <Controller
-                name="temperature"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <Input
-                    label="Temperature:"
-                    placeholder="0-2"
-                    rootClass="w-24"
-                    error={fieldState.error?.message}
-                    {...field}
-                  />
-                )}
-              />
-              <Controller
-                name="top_p"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <Input
-                    label="Top P:"
-                    placeholder="0-1"
-                    rootClass="w-24"
-                    error={fieldState.error?.message}
-                    {...field}
-                  />
-                )}
-              />
-            </div>
-          </FormSection>
-
-          <FormSection
+          <Accordion
             title="Context & Data Sources"
-            description="Control how your assistant responds, reasons, and communicates."
+            description="Connect your assistant to relevant data, documents, or supporting agents."
+            defaultOpen={false}
           >
-            <Controller
-              name="context"
-              control={control}
-              render={({ field }) => (
-                <ContextSelector {...field} isAIGenerated={aiGeneratedFieldMarkers.context} />
-              )}
-            />
-            <Controller
-              name="nestedAssistants"
-              control={control}
-              render={({ field }) => (
-                <AssistantSelector
-                  {...field}
-                  project={project}
-                  scope={ASSISTANT_INDEX_SCOPES.PROJECT_WITH_MARKETPLACE}
-                />
-              )}
-            />
-            <GuardrailAssignmentPanel
-              project={project}
-              entityType={GuardrailEntity.ASSISTANT}
-              isEmbedded={isChatConfig}
-              control={control}
-              formState={formState}
-              trigger={trigger}
-              getValues={getValues}
-            />
-          </FormSection>
+            <div className="px-4 pb-4 flex flex-col gap-6">
+              <Controller
+                name="context"
+                control={control}
+                render={({ field }) => (
+                  <ContextSelector
+                    {...field}
+                    isAIGenerated={aiGeneratedFieldMarkers.context}
+                    enlargedLabel
+                    display="chip"
+                  />
+                )}
+              />
+              <Controller
+                name="nestedAssistants"
+                control={control}
+                render={({ field }) => (
+                  <AssistantSelector
+                    {...field}
+                    project={project}
+                    scope={ASSISTANT_INDEX_SCOPES.PROJECT_WITH_MARKETPLACE}
+                    enlargedLabel
+                  />
+                )}
+              />
+              <GuardrailAssignmentPanel
+                project={project}
+                entityType={GuardrailEntity.ASSISTANT}
+                isEmbedded={isChatConfig}
+                control={control}
+                formState={formState}
+                trigger={trigger}
+                getValues={getValues}
+              />
+            </div>
+          </Accordion>
 
           {isSkillsEnabled && (
-            <FormSection
+            <Accordion
               title="Skills"
               description="Add specialized knowledge and expertise to your assistant."
+              defaultOpen={false}
             >
-              <Controller
-                name="skill_ids"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <SkillSelector {...field} project={project} error={fieldState.error?.message} />
-                )}
-              />
-            </FormSection>
+              <div className="px-4 pb-4 flex flex-col gap-6">
+                <Controller
+                  name="skill_ids"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <SkillSelector {...field} project={project} error={fieldState.error?.message} />
+                  )}
+                />
+              </div>
+            </Accordion>
           )}
 
-          <FormSection
-            title="Tools & Integrations"
-            description="Extend your assistant's abilities with additional tools and integrations."
-            isAIGenerated={aiGeneratedFieldMarkers.toolkits}
-          >
-            {/* Smart Tools toggle temporarily hidden */}
-            {/* <Controller
-              name="smart_tool_selection_enabled"
-              control={control}
-              render={({ field }) => (
-                <div className="flex flex-col gap-2">
-                  <Switch
-                    label="Enable Smart Tools selection"
-                    value={field.value ?? false}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                  />
-                  <InfoBox>
-                    When enabled, the assistant will intelligently analyze the user&apos;s request and automatically select only the most relevant tools from those available below. This helps optimize response quality, reduce processing time, and lower costs by avoiding unnecessary tool usage.
-                  </InfoBox>
-                </div>
-              )}
-            /> */}
+          {/* Smart Tools toggle temporarily hidden */}
+          {/* <Controller
+            name="smart_tool_selection_enabled"
+            control={control}
+            render={({ field }) => (
+              <div className="flex flex-col gap-2">
+                <Switch
+                  label="Enable Smart Tools selection"
+                  value={field.value ?? false}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                />
+                <InfoBox>
+                  When enabled, the assistant will intelligently analyze the user&apos;s request and automatically select only the most relevant tools from those available below. This helps optimize response quality, reduce processing time, and lower costs by avoiding unnecessary tool usage.
+                </InfoBox>
+              </div>
+            )}
+          /> */}
 
-            <Toolkits
-              toolkits={toolkits}
-              mcpServers={mcpServers}
-              onToolkitsChange={handleToolkitsChange}
-              onMcpServersChange={handleMcpServersChange}
-              showNewIntegrationPopup={showNewIntegrationPopup}
-            />
-          </FormSection>
+          <ToolsConfiguration
+            toolkits={toolkits}
+            mcpServers={mcpServers}
+            onToolkitsChange={handleToolkitsChange}
+            onMcpServersChange={handleMcpServersChange}
+            showNewIntegrationPopup={showNewIntegrationPopup}
+            isAIGenerated={aiGeneratedFieldMarkers.toolkits}
+          />
         </form>
 
         <RefineWithAIPromptPopup

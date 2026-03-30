@@ -13,19 +13,21 @@
 // limitations under the License.
 //
 
-import { ChangeEvent, forwardRef, useImperativeHandle, useMemo } from 'react'
+import { ChangeEvent, forwardRef, useCallback, useImperativeHandle, useMemo } from 'react'
 import { Controller, UseFormReturn } from 'react-hook-form'
 
-import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import ProjectSelector from '@/components/ProjectSelector'
+import TooltipButton from '@/components/TooltipButton'
 import { MAX_DESCRIPTION_LENGTH } from '@/constants/skills'
 import { AssistantFormContext } from '@/pages/assistants/components/AssistantForm/AssistantForm'
 import FormSection from '@/pages/assistants/components/AssistantForm/components/FormSection'
-import Toolkits from '@/pages/assistants/components/AssistantForm/components/Toolkits/Toolkits'
+import ToolsConfiguration from '@/pages/assistants/components/AssistantForm/components/Toolkits/ToolsConfiguration'
 import { SkillFormData } from '@/pages/skills/hooks/useSkillForm'
+import { AssistantToolkit } from '@/types/entity/assistant'
+import { MCPServerDetails } from '@/types/entity/mcp'
 import { Skill, SkillVisibility } from '@/types/entity/skill'
 
 import SkillCategories from './SkillCategories'
@@ -40,21 +42,36 @@ interface SkillFormProps {
   onSubmit: (data: SkillFormData) => Promise<Skill>
   onSuccess?: () => void
   showNewIntegrationPopup: (project: string, credentialType: string) => void
+  isCompactView?: boolean
 }
 
 const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
-  ({ form, onSubmit, onSuccess, showNewIntegrationPopup }, ref) => {
+  ({ form, onSubmit, onSuccess, showNewIntegrationPopup, isCompactView = false }, ref) => {
     const { control, watch, setValue, handleSubmit } = form
 
     const descriptionValue = watch('description') ?? ''
     const visibility = watch('visibility')
     const toolkits = watch('toolkits') ?? []
+    const mcpServers = watch('mcp_servers') ?? []
     const project = watch('project') ?? ''
 
     // Derive shared state from visibility
     const isShared = visibility === SkillVisibility.PROJECT || visibility === SkillVisibility.PUBLIC
 
-    const assistantFormContextValue = useMemo(() => ({ project }), [project])
+    const assistantFormContextValue = useMemo(
+      () => ({ project, isChatConfig: isCompactView }),
+      [project, isCompactView]
+    )
+
+    const handleToolkitsChange = useCallback(
+      (updated: AssistantToolkit[]) => setValue('toolkits', updated, { shouldDirty: true }),
+      [setValue]
+    )
+
+    const handleMcpServersChange = useCallback(
+      (updated: MCPServerDetails[]) => setValue('mcp_servers', updated, { shouldDirty: true }),
+      [setValue]
+    )
 
     const handleSharedChange = (e: ChangeEvent<HTMLInputElement>) => {
       setValue('visibility', e.target.checked ? SkillVisibility.PROJECT : SkillVisibility.PRIVATE, {
@@ -82,7 +99,7 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
     }))
 
     return (
-      <form onSubmit={handleFormSubmit} className="relative flex flex-col gap-y-6 p-6 pb-10">
+      <form onSubmit={handleFormSubmit} className="relative flex flex-col gap-y-6 p-6 pb-2">
         <FormSection title="Skill Setup">
           <div className="flex gap-4 items-end">
             <Controller
@@ -177,30 +194,20 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
         </FormSection>
 
         <AssistantFormContext.Provider value={assistantFormContextValue}>
-          <FormSection
-            title="Required Tools"
+          {/* TODO: Re-enable MCP servers section once the backend supports saving mcp_servers for skills */}
+          <ToolsConfiguration
+            toolkits={toolkits}
+            mcpServers={mcpServers}
+            onToolkitsChange={handleToolkitsChange}
+            onMcpServersChange={handleMcpServersChange}
+            showMcpServers={true}
+            showNewIntegrationPopup={showNewIntegrationPopup}
             description="Select tools this skill needs to function. These tools are automatically applied to any assistant that uses this skill."
-          >
-            <InfoBox>
-              Some skills depend on specific tools to work correctly. For example, a business
-              analysis skill that interacts with Jira must have the Jira tool selected here.{' '}
-              <span className="font-medium text-text-secondary">
-                Tools selected here are automatically enabled for any assistant using this skill
-              </span>
-              {
-                ', so the skill will work even if the assistant does not have those tools configured directly.'
-              }
-            </InfoBox>
-            <Toolkits
-              toolkits={toolkits}
-              mcpServers={[]}
-              onToolkitsChange={(updated) => setValue('toolkits', updated, { shouldDirty: true })}
-              onMcpServersChange={() => {}}
-              project={project}
-              showNewIntegrationPopup={showNewIntegrationPopup}
-              showMcpServers={false}
-            />
-          </FormSection>
+            availableToolsDescription="Select the tools your assistant may need. If Smart Tools selection is disabled, choose only relevant tools as selecting too many can negatively affect results, slow down responses, and increase costs. When Smart Tools selection is enabled, the assistant will automatically choose the most appropriate tools from your selection."
+            renderHint={() => (
+              <TooltipButton content="Some skills depend on specific tools to work correctly. For example, a business analysis skill that interacts with Jira must have the Jira tool selected here. Tools selected here are automatically enabled for any assistant using this skill, so the skill will work even if the assistant does not have those tools configured directly." />
+            )}
+          />
         </AssistantFormContext.Provider>
       </form>
     )

@@ -14,6 +14,7 @@
 //
 
 import { DynamicFormFieldSchema } from '@/types/dynamicForm'
+import { AssistantPromptVariable } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 
 export interface RetryPolicy {
@@ -40,6 +41,7 @@ export interface AssistantConfiguration {
   datasource_ids?: string[]
   mcp_servers?: MCPServerDetails[]
   exclude_extra_context_tools?: boolean
+  prompt_variables?: AssistantPromptVariable[]
 }
 
 export interface ToolConfiguration {

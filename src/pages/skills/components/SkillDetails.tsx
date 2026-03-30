@@ -26,8 +26,9 @@ import ToolkitsViewList from '@/pages/assistants/components/ToolkitsViewList/Too
 import SkillAssistantsModal from '@/pages/skills/components/SkillAssistantsModal'
 import SkillDetailsActions from '@/pages/skills/components/SkillDetailsActions'
 import { getVisibilityLabel } from '@/pages/skills/utils/skillUtils'
+import { AssistantToolkit } from '@/types/entity/assistant'
 import { Skill } from '@/types/entity/skill'
-import { copyToClipboard, getRootPath } from '@/utils/utils'
+import { copyToClipboard, getToolkitFromMcpServers, getRootPath } from '@/utils/utils'
 
 interface SkillDetailsProps {
   skill: Skill
@@ -46,6 +47,19 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
   const skillDetailsLink = useMemo(() => {
     return `${getRootPath()}/#/skills/${skill.id}`
   }, [skill.id])
+
+  const displayToolkits = useMemo(() => {
+    const baseToolkits: AssistantToolkit[] = skill.toolkits || []
+
+    if (skill.mcp_servers?.length) {
+      return [
+        ...baseToolkits,
+        getToolkitFromMcpServers(skill.mcp_servers, true),
+      ] as AssistantToolkit[]
+    }
+
+    return baseToolkits
+  }, [skill.toolkits, skill.mcp_servers])
 
   return (
     <div className="flex flex-col max-w-5xl mx-auto py-8">
@@ -133,9 +147,9 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
             </DetailsSidebarSection>
           )}
 
-          {skill.toolkits && skill.toolkits.length > 0 && (
+          {displayToolkits.length > 0 && (
             <DetailsSidebarSection headline="REQUIRED TOOLS">
-              <ToolkitsViewList toolkits={skill.toolkits} className="flex flex-col gap-4" />
+              <ToolkitsViewList toolkits={displayToolkits} className="flex flex-col gap-4" />
             </DetailsSidebarSection>
           )}
 

@@ -6,6 +6,14 @@
 
 **All components MUST be under 300 lines**
 
+## 🚨 CRITICAL: Never Delete During Refactoring
+
+**Refactoring = Restructuring code, NOT deleting functionality**
+
+- Never delete components, functions, imports during cleanup
+- Only delete if user explicitly requests OR verified 100% unused with `grep -r "Name" src/`
+- When in doubt - keep it or ask user
+
 ## When to Refactor
 
 Refactor when:

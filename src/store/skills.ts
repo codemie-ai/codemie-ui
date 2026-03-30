@@ -183,7 +183,7 @@ export const skillsStore = proxy<SkillsStoreType>({
       const response = await api.post(url, data)
       const result = await response.json()
 
-      const newSkill = result.data
+      const newSkill = result
       skillsStore.skills = [newSkill, ...skillsStore.skills]
       return newSkill
     } catch (error: any) {
@@ -203,7 +203,7 @@ export const skillsStore = proxy<SkillsStoreType>({
       const response = await api.put(url, data)
       const result = await response.json()
 
-      const updatedSkill = result.data
+      const updatedSkill = result
       skillsStore.skills = skillsStore.skills.map((skill) =>
         skill.id === id ? updatedSkill : skill
       )
@@ -260,7 +260,7 @@ export const skillsStore = proxy<SkillsStoreType>({
       const response = await api.post(url, payload)
       const result = await response.json()
 
-      const importedSkill = result.data
+      const importedSkill = result
       skillsStore.skills = [importedSkill, ...skillsStore.skills]
       toaster.success('Skill imported successfully')
       return importedSkill

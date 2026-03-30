@@ -22,7 +22,8 @@ import Button from '@/components/Button'
 import Popup from '@/components/Popup'
 import { ButtonType } from '@/constants'
 import { useMcpEnabled } from '@/hooks/useFeatureFlags'
-import Toolkits from '@/pages/assistants/components/AssistantForm/components/Toolkits/Toolkits'
+import { AssistantFormContext } from '@/pages/assistants/components/AssistantForm/AssistantForm'
+import ToolsConfiguration from '@/pages/assistants/components/AssistantForm/components/Toolkits/ToolsConfiguration'
 import ToolkitIcon from '@/pages/assistants/components/ToolkitIcon'
 import { AssistantToolkit } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
@@ -136,7 +137,7 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
             id="tool-select-btn"
             type={ButtonType.SECONDARY}
             className={cn(
-              'h-auto grow justify-start pl-4 py-3 gap-4 bg-surface-base-content select-non'
+              'h-auto grow justify-start pl-4 py-3 gap-4 bg-surface-base-content select-none'
             )}
             onClick={handleOpenToolPopup}
           >
@@ -166,7 +167,7 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
             id="mcp-select-btn"
             type={ButtonType.SECONDARY}
             className={cn(
-              'h-auto grow justify-start pl-4 py-3 gap-4 bg-surface-base-content select-non'
+              'h-auto grow justify-start pl-4 py-3 gap-4 bg-surface-base-content select-none'
             )}
             onClick={handleOpenMcpPopup}
           >
@@ -206,18 +207,18 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
         className="w-full max-w-4xl"
       >
         <div className="p-4">
-          <Toolkits
-            toolkits={stagedToolkits}
-            mcpServers={[]}
-            onToolkitsChange={setStagedToolkits}
-            onMcpServersChange={() => {}}
-            showNewIntegrationPopup={showNewIntegrationPopup}
-            project={project}
-            singleToolSelection={true}
-            showInternalTools={true}
-            showExternalTools={true}
-            showMcpServers={false}
-          />
+          <AssistantFormContext.Provider value={{ project, isChatConfig: true }}>
+            <ToolsConfiguration
+              toolkits={stagedToolkits}
+              mcpServers={[]}
+              onToolkitsChange={setStagedToolkits}
+              onMcpServersChange={() => {}}
+              showNewIntegrationPopup={showNewIntegrationPopup}
+              singleToolSelection={true}
+              showMcpServers={false}
+              showWrapper={false}
+            />
+          </AssistantFormContext.Provider>
         </div>
       </Popup>
 
@@ -234,18 +235,19 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
           className="w-full max-w-4xl"
         >
           <div className="p-4">
-            <Toolkits
-              toolkits={[]}
-              mcpServers={stagedMcpServers}
-              onToolkitsChange={() => {}}
-              onMcpServersChange={setStagedMcpServers}
-              showNewIntegrationPopup={showNewIntegrationPopup}
-              project={project}
-              singleToolSelection={true}
-              showInternalTools={false}
-              showExternalTools={false}
-              showMcpServers={true}
-            />
+            <AssistantFormContext.Provider value={{ project, isChatConfig: true }}>
+              <ToolsConfiguration
+                toolkits={[]}
+                mcpServers={stagedMcpServers}
+                onToolkitsChange={() => {}}
+                onMcpServersChange={setStagedMcpServers}
+                showNewIntegrationPopup={showNewIntegrationPopup}
+                singleToolSelection={true}
+                showInternalTools={false}
+                showMcpServers={true}
+                showWrapper={false}
+              />
+            </AssistantFormContext.Provider>
           </div>
         </Popup>
       )}

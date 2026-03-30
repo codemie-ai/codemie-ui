@@ -27,6 +27,7 @@ export interface AvatarProps {
   name?: string
   type?: AvatarType
   className?: string
+  imgClassName?: string
   withTooltip?: boolean
   onClick?: () => void
 }
@@ -36,6 +37,7 @@ const Avatar: React.FC<AvatarProps> = ({
   name,
   type = AvatarType.CHAT,
   className = '',
+  imgClassName = '',
   withTooltip = false,
   onClick,
 }) => {
@@ -86,7 +88,11 @@ const Avatar: React.FC<AvatarProps> = ({
           data-tooltip-content={tooltip}
           className={classNames}
         >
-          <img src={icon} alt="" className="w-full h-full object-cover rounded-full" />
+          <img
+            src={icon}
+            alt=""
+            className={cn('w-full h-full object-cover rounded-full', imgClassName)}
+          />
         </button>
       ) : (
         <img

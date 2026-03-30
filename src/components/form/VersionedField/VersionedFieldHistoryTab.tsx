@@ -52,7 +52,7 @@ const VersionedFieldHistoryTab = ({
     <div className="flex flex-col gap-2 h-full">
       {isHistoryAvailable ? (
         <>
-          <div className="flex items-center gap-4 mb-2">
+          <div className="flex gap-4 items-center self-end w-1/2">
             <Autocomplete
               placeholder="Select a version"
               options={options}
@@ -69,6 +69,16 @@ const VersionedFieldHistoryTab = ({
               {headerContent}
             </div>
           </div>
+
+          <div className="flex items-center shrink-0 px-4 h-8 bg-surface-base-secondary border border-border-structural rounded-md">
+            <p className="font-mono text-xs text-text-secondary leading-4">
+              Review the changes below. Lines highlighted in{' '}
+              <span className="text-failed-secondary font-semibold">red</span> will be removed,
+              lines in <span className="text-success-primary font-semibold">green</span> will be
+              added.
+            </p>
+          </div>
+
           <div className="grow">{children}</div>
         </>
       ) : (

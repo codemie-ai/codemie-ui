@@ -35,8 +35,10 @@ import { assistantsStore } from '@/store'
 import { dataSourceStore } from '@/store/dataSources'
 import { humanize } from '@/utils/helpers'
 import { getContextTypeLabel } from '@/utils/indexing'
+import { cn } from '@/utils/utils'
 
 import { AssistantFormContext } from '../AssistantForm'
+import { createContextChipRenderer } from './ContextChip'
 
 export type AssistantContextOption = {
   id?: string
@@ -61,6 +63,8 @@ interface ContextSelectorProps {
   error?: string
   disabled?: boolean
   paginated?: boolean
+  enlargedLabel?: boolean
+  display?: 'comma' | 'chip'
 }
 
 const OptionTemplate = ({ data: value }: { data: AssistantContextOption }) => {
@@ -106,7 +110,9 @@ const ContextSelector = forwardRef<
       error,
       disabled = false,
       paginated,
-    },
+      enlargedLabel = false,
+      display,
+    }: ContextSelectorProps,
     ref
   ) => {
     const multiSelectRef = useRef<PrimeMultiselect | null>(null)
@@ -221,18 +227,30 @@ const ContextSelector = forwardRef<
 
     const shouldShowAddButton = !hideHeader && !hideAddButton
 
+    const preparedSelectedItemTemplate = useMemo(() => {
+      if (display === 'chip') {
+        return createContextChipRenderer(value || [])
+      }
+      return null
+    }, [display, value])
+
     return (
       <div className={className}>
         {!hideHeader && (
           <div className="flex flex-col gap-4 mb-2">
             <div className="flex justify-between items-end">
-              <div className="text-xs text-text-quaternary flex items-center gap-2">
+              <div
+                className={cn(
+                  'flex items-center gap-2',
+                  enlargedLabel ? 'text-sm leading-6 text-white' : 'text-xs text-text-quaternary'
+                )}
+              >
                 Datasource Context
                 {isAIGenerated && <AIFieldSvg className="w-4 h-4" />}
               </div>
               {shouldShowAddButton && (
                 <Button variant="secondary" onClick={() => setIsEditIndexPopupVisible(true)}>
-                  <PlusSvg /> Add
+                  <PlusSvg /> Create
                 </Button>
               )}
             </div>
@@ -274,6 +292,8 @@ const ContextSelector = forwardRef<
             error={error}
             errorClassName={errorClassName}
             showCheckbox={!singleValue}
+            display={display}
+            selectedItemTemplate={preparedSelectedItemTemplate}
           />
         </div>
 

@@ -320,16 +320,71 @@ for (let i = 0; i < items.length; i++) { }
 
 ---
 
+## Component Architecture Rules
+
+### Presentation vs Container Components
+
+**Presentation Components** (< 100 lines):
+- Accept explicit props only (`value`, `onChange`, `error`)
+- No form library dependencies (`control`, `register`)
+- Focused on single responsibility
+- Reusable across different contexts
+
+**Container/Section Components** (200-300 lines acceptable):
+- Manage Controllers (React Hook Form)
+- Coordinate state between children
+- Handle complex form logic
+- Can have `control` prop
+
+### Props Design
+
+```tsx
+// ✅ CORRECT: Semantic single prop
+interface ComponentProps {
+  isCompactView: boolean
+}
+
+// ❌ WRONG: Many styling props
+interface ComponentProps {
+  accordionClassName?: string
+  layoutClassName?: string
+  showDivider?: boolean
+  logoClassName?: string
+  panelClassName?: string
+}
+```
+
+### Component Splitting
+
+```tsx
+// ✅ CORRECT: Focused single-purpose components
+<NameField value={name} onChange={setName} error={errors.name} />
+<SlugField value={slug} onChange={setSlug} error={errors.slug} />
+<CategoriesField value={categories} onChange={setCategories} />
+
+// ❌ WRONG: Combining unrelated fields
+<NameAndSlugFields name={name} slug={slug} ... />
+<SlugAndCategoriesFields slug={slug} categories={categories} ... />
+```
+
+**Rules:**
+- Split by domain/responsibility, not arbitrarily
+- Each component should have a clear single purpose
+- Don't combine unrelated fields just to reduce file count
+
 ## Best Practices Checklist
 
 Before delivering a component:
 
-- [ ] Component is under 300 lines
+- [ ] Component is under 300 lines (containers 200-300 OK if managing Controllers)
 - [ ] TypeScript interfaces defined for all props
+- [ ] Presentation components use explicit props, not `control`
+- [ ] Using semantic props instead of multiple styling props
+- [ ] Components are focused and single-purpose
 - [ ] Using `cn()` utility for className combinations
 - [ ] Following import order (external → @ → relative)
 - [ ] No semicolons (ESLint enforced)
-- [ ] Using Tailwind classes only (no custom CSS)
+- [ ] Using Tailwind classes only (no custom CSS, no pixel values)
 - [ ] Proper cleanup in useEffect (if applicable)
 - [ ] No magic strings/numbers (use constants)
 - [ ] Using `??` for default values (not `||`)

@@ -27,6 +27,9 @@ const preset: PrimeReactPTOptions['multiselect'] = {
       // Shape
       'rounded-[3px]',
 
+      // Sizing
+      { 'min-h-11': props.display === 'chip' },
+
       // Color and Background
       'bg-surface-elevated',
       'outline-none outline-offset-0',
@@ -60,7 +63,12 @@ const preset: PrimeReactPTOptions['multiselect'] = {
   label: ({ props }: MultiSelectPassThroughMethodOptions) => ({
     className: [
       'leading-none',
-      'block ',
+
+      // Display
+      {
+        block: props.display !== 'chip',
+        'flex flex-wrap gap-2': props.display === 'chip',
+      },
 
       // Spacing
       {
@@ -80,7 +88,11 @@ const preset: PrimeReactPTOptions['multiselect'] = {
       'transition duration-200',
 
       // Misc
-      'overflow-hidden whitespace-nowrap cursor-pointer overflow-ellipsis',
+      {
+        'overflow-hidden whitespace-nowrap overflow-ellipsis': props.display !== 'chip',
+        'overflow-visible': props.display === 'chip',
+      },
+      'cursor-pointer',
     ],
   }),
   token: {
@@ -89,14 +101,20 @@ const preset: PrimeReactPTOptions['multiselect'] = {
       'inline-flex items-center',
 
       // Spacings
-      'py-1.5 px-3 mr-2',
+      'py-0.5 px-2 mr-2',
+      'gap-1.5',
+      'h-7',
 
       // Shape
-      'rounded-[1.14rem]',
+      'rounded-lg',
+      'border border-border-structural',
 
       // Colors
       'bg-surface-interactive-active',
       'text-text-primary',
+
+      // Typography
+      'font-geist-mono text-xs leading-6 font-semibold',
 
       // Misc
       'cursor-default',

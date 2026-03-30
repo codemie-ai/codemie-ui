@@ -14,125 +14,59 @@
 //
 
 import * as Diff from 'diff'
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo, useRef } from 'react'
 
 import { cn } from '@/utils/utils'
 
+import {
+  trimNewlines,
+  processPairedChange,
+  processRemoved,
+  processAdded,
+  processUnchanged,
+} from './diffProcessors'
 import { TextDiffViewProps, SyncedLine, WordDiffInfo } from './types'
 
 const TextDiffView: React.FC<TextDiffViewProps> = ({
   oldText,
   newText,
   showLineNumbers = true,
-  oldLabel = 'Original',
-  newLabel = 'Modified',
+  oldLabel,
+  newLabel,
   className,
+  columnClassName = 'border border-border-structural rounded-lg overflow-hidden',
 }) => {
-  const trimNewlines = (str: string): string => {
-    let start = 0
-    let end = str.length
+  const leftColRef = useRef<HTMLDivElement>(null)
+  const rightColRef = useRef<HTMLDivElement>(null)
+  const isSyncing = useRef(false)
 
-    while (start < end && str[start] === '\n') {
-      start += 1
-    }
-    while (end > start && str[end - 1] === '\n') {
-      end -= 1
-    }
+  const handleLeftScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (isSyncing.current) return
+    const target = rightColRef.current
+    if (!target) return
+    isSyncing.current = true
+    target.scrollTop = e.currentTarget.scrollTop
+    requestAnimationFrame(() => {
+      isSyncing.current = false
+    })
+  }, [])
 
-    return str.slice(start, end)
-  }
+  const handleRightScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (isSyncing.current) return
+    const target = leftColRef.current
+    if (!target) return
+    isSyncing.current = true
+    target.scrollTop = e.currentTarget.scrollTop
+    requestAnimationFrame(() => {
+      isSyncing.current = false
+    })
+  }, [])
 
   const diffResult = useMemo(() => {
     const oldLines = trimNewlines(oldText || '').split('\n')
     const newLines = trimNewlines(newText || '').split('\n')
     return Diff.diffArrays(oldLines, newLines)
   }, [oldText, newText])
-
-  const processPairedChange = (
-    lines: string[],
-    nextLines: string[],
-    oldLineNum: number,
-    newLineNum: number,
-    result: SyncedLine[]
-  ): { oldLineNum: number; newLineNum: number } => {
-    const maxLines = Math.max(lines.length, nextLines.length)
-    let updatedOldLineNum = oldLineNum
-    let updatedNewLineNum = newLineNum
-
-    for (let j = 0; j < maxLines; j += 1) {
-      const oldLine = lines[j] !== undefined ? lines[j] : null
-      const newLine = nextLines[j] !== undefined ? nextLines[j] : null
-
-      updatedOldLineNum += oldLine !== null ? 1 : 0
-      updatedNewLineNum += newLine !== null ? 1 : 0
-
-      result.push({
-        oldLine,
-        newLine,
-        oldLineNumber: oldLine !== null ? updatedOldLineNum : null,
-        newLineNumber: newLine !== null ? updatedNewLineNum : null,
-        isRemoved: oldLine !== null,
-        isAdded: newLine !== null,
-      })
-    }
-
-    return { oldLineNum: updatedOldLineNum, newLineNum: updatedNewLineNum }
-  }
-
-  const processRemoved = (lines: string[], oldLineNum: number, result: SyncedLine[]): number => {
-    let updatedOldLineNum = oldLineNum
-    for (let j = 0; j < lines.length; j += 1) {
-      updatedOldLineNum += 1
-      result.push({
-        oldLine: lines[j],
-        newLine: null,
-        oldLineNumber: updatedOldLineNum,
-        newLineNumber: null,
-        isRemoved: true,
-        isAdded: false,
-      })
-    }
-    return updatedOldLineNum
-  }
-
-  const processAdded = (lines: string[], newLineNum: number, result: SyncedLine[]): number => {
-    let updatedNewLineNum = newLineNum
-    for (let j = 0; j < lines.length; j += 1) {
-      updatedNewLineNum += 1
-      result.push({
-        oldLine: null,
-        newLine: lines[j],
-        oldLineNumber: null,
-        newLineNumber: updatedNewLineNum,
-        isRemoved: false,
-        isAdded: true,
-      })
-    }
-    return updatedNewLineNum
-  }
-
-  const processUnchanged = (
-    lines: string[],
-    oldLineNum: number,
-    newLineNum: number,
-    result: SyncedLine[]
-  ): { oldLineNum: number; newLineNum: number } => {
-    let updatedOldLineNum = oldLineNum
-    let updatedNewLineNum = newLineNum
-    for (let j = 0; j < lines.length; j += 1) {
-      updatedOldLineNum += 1
-      updatedNewLineNum += 1
-      result.push({
-        oldLine: lines[j],
-        newLine: lines[j],
-        oldLineNumber: updatedOldLineNum,
-        newLineNumber: updatedNewLineNum,
-        isRemoved: false,
-        isAdded: false,
-      })
-    }
-    return { oldLineNum: updatedOldLineNum, newLineNum: updatedNewLineNum }
-  }
 
   const { syncedLines, wordDiffMap } = useMemo(() => {
     const result: SyncedLine[] = []
@@ -206,27 +140,20 @@ const TextDiffView: React.FC<TextDiffViewProps> = ({
       })
   }
 
-  const getBackgroundClasses = (
-    isChanged: boolean,
-    isEmpty: boolean,
-    isOld: boolean,
-    otherSideChanged: boolean
-  ) => {
+  const getBackgroundClasses = (isChanged: boolean, isEmpty: boolean, isOld: boolean) => {
     return cn({
       'bg-surface-specific-diff-linebg-remove': isChanged && !isEmpty && isOld,
       'bg-surface-specific-diff-linebg-add': isChanged && !isEmpty && !isOld,
-      'bg-surface-specific-diff-emptyline-remove': isEmpty && otherSideChanged && isOld,
-      'bg-surface-specific-diff-emptyline-add': isEmpty && otherSideChanged && !isOld,
     })
   }
 
   const getLineNumberClasses = (isChanged: boolean, isEmpty: boolean, isOld: boolean) => {
     return cn(
-      'min-w-12 px-2 py-1 text-xs text-text-tertiary text-right select-none border-r border-border-structural flex items-center justify-end',
+      'min-w-12 px-2 py-1 text-xs text-text-tertiary text-right select-none flex items-center justify-end',
       {
         'bg-surface-specific-diff-linenumber-remove': isChanged && !isEmpty && isOld,
         'bg-surface-specific-diff-linenumber-add': isChanged && !isEmpty && !isOld,
-        'bg-surface-elevated': !isChanged || isEmpty,
+        'bg-surface-elevated': !isChanged && !isEmpty,
       }
     )
   }
@@ -267,57 +194,54 @@ const TextDiffView: React.FC<TextDiffViewProps> = ({
     )
   }
 
-  const renderDiffRow = (lineData: SyncedLine, index: number) => {
-    const isFirst = index === 0
-    const isLast = index === syncedLines.length - 1
-
-    const renderSide = (isOld: boolean) => {
-      const line = isOld ? lineData.oldLine : lineData.newLine
-      const lineNumber = isOld ? lineData.oldLineNumber : lineData.newLineNumber
-      const isEmpty = line === null
-      const isChanged = isOld ? lineData.isRemoved : lineData.isAdded
-      const hasWordDiff = wordDiffMap.has(index)
-      const otherSideChanged = isOld ? lineData.isAdded : lineData.isRemoved
-
-      const contentBgClass = getBackgroundClasses(isChanged, isEmpty, isOld, otherSideChanged)
-      const roundedClass = cn({
-        'rounded-tl-lg rounded-tr-lg': isFirst,
-        'rounded-bl-lg rounded-br-lg': isLast,
-      })
-      const lineNumberBgClass = getLineNumberClasses(isChanged, isEmpty, isOld)
-
-      return (
-        <div className={cn('flex leading-6 h-full', contentBgClass, roundedClass)}>
-          {showLineNumbers && <div className={lineNumberBgClass}>{isEmpty ? '' : lineNumber}</div>}
-          <div className="flex px-3 py-1 flex-1 min-h-[24px]">
-            {renderLineContent(isEmpty, isChanged, isOld, hasWordDiff, index, line)}
-          </div>
-        </div>
-      )
-    }
-
-    const columnClasses = cn('border-l border-r border-border-structural overflow-hidden', {
-      'border-t rounded-tl-lg rounded-tr-lg': isFirst,
-      'border-b rounded-bl-lg rounded-br-lg': isLast,
-    })
+  const renderCell = (isOld: boolean, lineData: SyncedLine, index: number) => {
+    const line = isOld ? lineData.oldLine : lineData.newLine
+    const lineNumber = isOld ? lineData.oldLineNumber : lineData.newLineNumber
+    const isEmpty = line === null
+    const isChanged = isOld ? lineData.isRemoved : lineData.isAdded
+    const hasWordDiff = wordDiffMap.has(index)
+    const contentBgClass = getBackgroundClasses(isChanged, isEmpty, isOld)
+    const lineNumberBgClass = getLineNumberClasses(isChanged, isEmpty, isOld)
 
     return (
-      <div key={index} className="grid grid-cols-2 gap-4">
-        <div className={columnClasses}>{renderSide(true)}</div>
-        <div className={columnClasses}>{renderSide(false)}</div>
+      <div key={index} className={cn('flex leading-6', contentBgClass)}>
+        {showLineNumbers && <div className={lineNumberBgClass}>{isEmpty ? '' : lineNumber}</div>}
+        <div className="flex px-3 py-1 flex-1 min-h-[24px]">
+          {renderLineContent(isEmpty, isChanged, isOld, hasWordDiff, index, line)}
+        </div>
       </div>
     )
   }
 
   return (
     <div className={className}>
-      <div className="grid grid-cols-2 gap-4 mb-2">
-        <h5 className="text-xs font-normal text-text-tertiary">{oldLabel}:</h5>
-        <h5 className="text-xs font-normal text-text-accent-status">{newLabel}:</h5>
-      </div>
-      <div>
-        <div className="font-mono text-xs">
-          {syncedLines.map((lineData, index) => renderDiffRow(lineData, index))}
+      {(oldLabel || newLabel) && (
+        <div className="grid grid-cols-2 gap-4 mb-2">
+          <h5 className="text-xs font-normal text-text-tertiary">{oldLabel}:</h5>
+          <h5 className="text-xs font-normal text-text-accent-status">{newLabel}:</h5>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-4">
+        <div
+          ref={leftColRef}
+          className={cn('font-mono text-xs relative', columnClassName)}
+          onScroll={handleLeftScroll}
+        >
+          {showLineNumbers && (
+            <div className="absolute left-12 top-0 bottom-0 border-r border-border-structural pointer-events-none" />
+          )}
+          {syncedLines.map((lineData, index) => renderCell(true, lineData, index))}
+        </div>
+        <div
+          ref={rightColRef}
+          className={cn('font-mono text-xs relative', columnClassName)}
+          onScroll={handleRightScroll}
+        >
+          {showLineNumbers && (
+            <div className="absolute left-12 top-0 bottom-0 border-r border-border-structural pointer-events-none" />
+          )}
+
+          {syncedLines.map((lineData, index) => renderCell(false, lineData, index))}
         </div>
       </div>
     </div>

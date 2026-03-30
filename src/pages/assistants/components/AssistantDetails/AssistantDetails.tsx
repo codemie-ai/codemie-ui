@@ -98,7 +98,7 @@ const AssistantDetails = ({
     const resp = await dataSourceStore.findDatasourceID(
       context.name,
       context.context_type,
-      assistant?.project
+      assistant.project
     )
     router.push({
       name: 'data-source-details',

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useContext } from 'react'
+import { Fragment, useContext } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowContext'
@@ -22,6 +22,7 @@ import { Setting } from '@/types/entity/setting'
 import { getCredentialType } from '@/utils/settings'
 
 import IntegrationSelector from './IntegrationSelector'
+import ToolkitIcon from '../../../ToolkitIcon'
 
 interface ToolkitProps {
   toolkit: AssistantToolkit
@@ -33,7 +34,21 @@ interface ToolkitProps {
   updateToolkitSetting: (toolkit: AssistantToolkit, setting?: Setting) => void
   singleToolSelection?: boolean
   onAddSettingClick: (credentialType: string) => void
+  searchQuery?: string
   isChatConfig?: boolean
+}
+
+const highlightText = (text: string, query: string) => {
+  if (!query) return text
+  const index = text.toLowerCase().indexOf(query.toLowerCase())
+  if (index === -1) return text
+  return (
+    <Fragment>
+      {text.slice(0, index)}
+      <span className="text-text-accent-status">{text.slice(index, index + query.length)}</span>
+      {text.slice(index + query.length)}
+    </Fragment>
+  )
 }
 
 const Toolkit = ({
@@ -46,6 +61,7 @@ const Toolkit = ({
   updateToolkitSetting,
   singleToolSelection = false,
   onAddSettingClick,
+  searchQuery = '',
   isChatConfig,
 }: ToolkitProps) => {
   const workflowContext = useContext(WorkflowContext)
@@ -99,75 +115,102 @@ const Toolkit = ({
   }
 
   return (
-    <div className="flex flex-col p-6 pt-4">
-      <div className="min-flex items-center gap-2 min-h-8">
-        <h3 className="text-xs text-text-quaternary shrink-0">Features to use:</h3>
-        {toolkit.settings_config &&
-          selectedToolkit &&
-          !toolkit.is_external &&
-          (() => {
-            const field = getToolkitFieldData()
-            return (
-              <IntegrationSelector
-                value={selectedToolkit.settings}
-                tooltipPosition="left"
-                settingsDefinitions={toolkitSettingsOptions}
-                onAddSettingClick={() => onAddSettingClick(getCredentialType(toolkit.toolkit))}
-                onChange={(setting) => {
-                  updateToolkitSetting(toolkit, setting)
-                  field?.onChange()
-                }}
-                error={field?.error}
-              />
-            )
-          })()}
+    <div className="flex flex-col">
+      {/* Header */}
+      <div className="h-[86px] flex items-center gap-4 px-6 bg-surface-base-chat border-b border-border-structural">
+        <div className="flex justify-center items-center size-8 min-w-8 rounded-lg bg-accordion-icon-bg border border-border-specific-icon-outline">
+          <ToolkitIcon toolkitType={toolkit.toolkit} />
+        </div>
+        <div className="flex flex-col">
+          <h2 className="font-medium text-text-primary">{toolkit.label || toolkit.toolkit}</h2>
+        </div>
       </div>
-      <div className="mt-2 flex flex-col gap-4">
-        {!singleToolSelection && (
-          <Checkbox
-            label="Select all"
-            hint="Select all tools"
-            checked={allToolsSelected}
-            mixed={someToolsSelected}
-            id={toolkit.toolkit}
-            onChange={() => {
-              toggleAllTools(toolkit, allToolsSelected)
-              markAllToolIssuesDirty()
-            }}
-          />
-        )}
 
-        {toolkit.tools.map((tool) => {
-          const integrationField = getToolFieldData(tool.name)
-
-          return (
-            <div key={tool.name} className="flex flex-col gap-2">
+      <div className="flex gap-6 p-6">
+        {/* Left: tools list */}
+        <div className="flex flex-col gap-4 flex-1 min-w-0">
+          <h3 className="text-xs text-text-tertiary overflow-hidden overflow-ellipsis text-nowrap">
+            Features to use:
+          </h3>
+          {!singleToolSelection && (
+            <>
               <Checkbox
-                label={tool.label}
-                hint={tool.user_description ?? tool.description ?? ''}
-                checked={isToolSelected(tool)}
+                label="Select all"
+                hint="Select all tools"
+                checked={allToolsSelected}
+                mixed={someToolsSelected}
+                id={toolkit.toolkit}
                 onChange={() => {
-                  toggleTool(toolkit, tool)
-                  integrationField?.onChange()
+                  toggleAllTools(toolkit, allToolsSelected)
+                  markAllToolIssuesDirty()
                 }}
               />
-              {isToolSelected(tool) && tool.settings_config && !toolkit.is_external && (
-                <IntegrationSelector
-                  className="ml-4"
-                  short={isChatConfig}
-                  value={selectedToolkit?.tools.find((tl) => tool.name === tl.name)?.settings}
-                  settingsDefinitions={settings[getCredentialType(tool.name)]}
-                  onAddSettingClick={() => onAddSettingClick(getCredentialType(tool.name))}
-                  onChange={(setting) => {
-                    updateToolSetting(toolkit, tool, setting)
+              <hr className="border-border-structural" />
+            </>
+          )}
+          {toolkit.tools.map((tool) => {
+            const integrationField = getToolFieldData(tool.name)
+            return (
+              <div key={tool.name} className="flex items-center gap-4">
+                <Checkbox
+                  label={highlightText(tool.label, searchQuery)}
+                  hint={tool.user_description ?? tool.description ?? ''}
+                  checked={isToolSelected(tool)}
+                  onChange={() => {
+                    toggleTool(toolkit, tool)
                     integrationField?.onChange()
                   }}
-                  error={integrationField?.error}
                 />
-              )}
-            </div>
-          )
-        })}
+                {isToolSelected(tool) && tool.settings_config && !toolkit.is_external && (
+                  <div className={'min-w-[50px] max-w-[180px] shrink-0'}>
+                    <IntegrationSelector
+                      className="justify-end"
+                      short={isChatConfig}
+                      value={selectedToolkit?.tools.find((tl) => tool.name === tl.name)?.settings}
+                      settingsDefinitions={settings[getCredentialType(tool.name)]}
+                      onAddSettingClick={() => onAddSettingClick(getCredentialType(tool.name))}
+                      onChange={(setting) => {
+                        updateToolSetting(toolkit, tool, setting)
+                        integrationField?.onChange()
+                      }}
+                      error={integrationField?.error}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Right: integration selector (always reserved to keep left column width stable) */}
+        <div className="min-w-[50px] max-w-[180px] shrink-0">
+          {toolkit.settings_config &&
+            selectedToolkit &&
+            !toolkit.is_external &&
+            (() => {
+              const field = getToolkitFieldData()
+              return (
+                <div>
+                  <div className="flex flex-col gap-6">
+                    <span className="font-geist-mono text-xs text-text-tertiary">Integrations:</span>
+                    <IntegrationSelector
+                      value={selectedToolkit.settings}
+                      tooltipPosition="left"
+                      settingsDefinitions={toolkitSettingsOptions}
+                      onAddSettingClick={() =>
+                        onAddSettingClick(getCredentialType(toolkit.toolkit))
+                      }
+                      onChange={(setting) => {
+                        updateToolkitSetting(toolkit, setting)
+                        field?.onChange()
+                      }}
+                      error={field?.error}
+                    />
+                  </div>
+                </div>
+              )
+            })()}
+        </div>
       </div>
     </div>
   )

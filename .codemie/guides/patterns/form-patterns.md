@@ -407,7 +407,135 @@ export const FormSection1: React.FC<FormSection1Props> = ({
 
 ## Form Best Practices
 
-### 1. Use React Hook Form + Yup
+### 1. Never Pass `control` to Presentation Components
+
+**Controllers should stay in container/section components only.**
+
+```tsx
+// ✅ CORRECT: Explicit props
+interface DescriptionFieldProps {
+  value: string
+  onChange: (value: string) => void
+  onBlur: () => void
+  error?: string
+  isAIGenerated: boolean
+}
+
+const DescriptionField = ({ value, onChange, error }: DescriptionFieldProps) => (
+  <Textarea value={value} onChange={onChange} error={error} />
+)
+
+// Usage in container with Controller
+<Controller
+  name="description"
+  control={control}
+  render={({ field, fieldState }) => (
+    <DescriptionField
+      value={field.value}
+      onChange={field.onChange}
+      onBlur={field.onBlur}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+
+// ❌ WRONG: Passing control
+interface DescriptionFieldProps {
+  control: Control<FormSchema>
+  name: string
+}
+
+const DescriptionField = ({ control, name }: DescriptionFieldProps) => (
+  <Controller name={name} control={control} render={...} />
+)
+```
+
+**Why?**
+- Makes component responsibilities clear
+- Presentation components become reusable outside React Hook Form
+- Props are explicit and self-documenting
+- Easier to test in isolation
+
+### 2. Keep Components Focused
+
+```tsx
+// ✅ CORRECT: Separate focused components
+<SlugField value={slug} onChange={setSlug} error={errors.slug} />
+<CategoriesField value={categories} onChange={setCategories} />
+
+// ❌ WRONG: Combining unrelated fields
+<SlugAndCategoriesFields
+  slug={slug}
+  categories={categories}
+  onSlugChange={setSlug}
+  onCategoriesChange={setCategories}
+/>
+```
+
+### 3. Use Semantic Props, Not Multiple Styling Props
+
+```tsx
+// ✅ CORRECT: Single semantic prop
+<FormSection isCompactView={isMobile} />
+
+// Inside FormSection:
+const FormSection = ({ isCompactView }: Props) => (
+  <div className={isCompactView ? 'max-w-sm mt-5' : 'mt-8'}>
+    ...
+  </div>
+)
+
+// ❌ WRONG: Many styling props
+<FormSection
+  accordionClassName="max-w-sm mt-5"
+  layoutClassName="flex-col"
+  showDivider={false}
+  logoClassName="w-full"
+  panelClassName="p-4"
+/>
+```
+
+### 4. Keep Logic at Form Level
+
+```tsx
+// ✅ CORRECT: Logic in form container
+const AssistantForm = () => {
+  const isMobile = useIsMobile()
+  return <AssistantSetupSection isCompactView={isMobile} />
+}
+
+// ❌ WRONG: Logic scattered in children
+const AssistantSetupSection = ({ isChatConfig }: Props) => {
+  // Child determines its own styling logic
+  const className = isChatConfig ? 'mobile' : 'desktop'
+}
+```
+
+### 5. Use Tailwind Classes, Not Pixel Values
+
+```tsx
+// ✅ CORRECT: Tailwind classes
+<div className="mt-5 max-w-sm gap-6">
+
+// ❌ WRONG: Pixel values
+<div className="mt-[20px] max-w-[340px] gap-[24px]">
+```
+
+### 6. Container vs Presentation Components
+
+**Container/Section Components** (200-300 lines acceptable):
+- Manage Controllers
+- Coordinate state
+- Handle form logic
+- Can have `control` prop
+
+**Presentation/Field Components** (< 100 lines):
+- Render UI only
+- Accept explicit props (`value`, `onChange`, `error`)
+- No form library dependencies
+- Never have `control` prop
+
+### 7. Use React Hook Form + Yup
 
 Never implement manual form validation:
 
@@ -424,7 +552,7 @@ const validate = () => {
 }
 ```
 
-### 2. Extract Validation Schemas
+### 8. Extract Validation Schemas
 
 ```tsx
 // ✅ CORRECT: Separate schema file
@@ -437,7 +565,7 @@ const MyForm = () => {
 }
 ```
 
-### 3. Use Controller for Controlled Inputs
+### 9. Use Controller for Controlled Inputs
 
 ```tsx
 // ✅ CORRECT: Use Controller
@@ -451,7 +579,7 @@ const MyForm = () => {
 <Input {...register('email')} />
 ```
 
-### 4. Handle Loading States
+### 10. Handle Loading States
 
 ```tsx
 // ✅ CORRECT: Disable button while submitting
@@ -463,7 +591,7 @@ const MyForm = () => {
 </Button>
 ```
 
-### 5. Clean Up on Close
+### 11. Clean Up on Close
 
 ```tsx
 // ✅ CORRECT: Reset form when modal closes
@@ -473,7 +601,7 @@ const handleClose = useCallback(() => {
 }, [form, onHide])
 ```
 
-### 6. Accessibility
+### 12. Accessibility
 
 ```tsx
 // ✅ CORRECT: Proper labels and ARIA
@@ -494,7 +622,7 @@ const handleClose = useCallback(() => {
 />
 ```
 
-### 7. Component Size Management
+### 13. Component Size Management
 
 Keep forms under 300 lines:
 - Extract validation schemas to `formSchema.ts`
@@ -502,6 +630,10 @@ Keep forms under 300 lines:
 - Extract helpers to `formHelpers.ts`
 - Extract complex logic to custom hooks `useMyForm.ts`
 - Split large forms into sub-components
+
+### 14. 🚨 Never Delete Validation Components During Refactoring
+
+Forms have associated modals/validation wrappers. Never delete them during refactoring without explicit request.
 
 ---
 
