@@ -89,7 +89,14 @@ export const getNavigationTabs = (isAdmin: boolean, awsSupported = false): Layou
             ]
           : []),
       ].sort((a, b) => a.name.localeCompare(b.name))
-    : []
+    : [
+        {
+          id: SettingsTab.PROJECTS_MANAGEMENT,
+          name: 'Projects management',
+          title: 'Projects management',
+          url: '/settings/administration/projects',
+        },
+      ]
 
   const administrationTab: LayoutTab = {
     id: SettingsTab.ADMINISTRATION,
