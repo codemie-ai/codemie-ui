@@ -143,7 +143,13 @@ const MCPMarketplaceCard: React.FC<MCPMarketplaceCardProps> = ({
         {/* Name and Badges */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="text-h3 text-text-primary font-semibold truncate">{config.name}</h3>
+            <h3
+              className="text-h3 text-text-primary font-semibold truncate"
+              data-tooltip-id="react-tooltip"
+              data-tooltip-content={config.name}
+            >
+              {config.name}
+            </h3>
             <StatusBadges isPublic={config.is_public} isSystem={config.is_system} />
           </div>
 
@@ -152,7 +158,11 @@ const MCPMarketplaceCard: React.FC<MCPMarketplaceCardProps> = ({
       </div>
 
       {/* Description */}
-      <p className="text-sm text-text-quaternary mb-4 line-clamp-2 min-h-[40px]">
+      <p
+        className="text-sm text-text-quaternary mb-4 line-clamp-2 min-h-[40px]"
+        data-tooltip-id="react-tooltip"
+        data-tooltip-content={config.description ?? 'No description available'}
+      >
         {config.description ?? 'No description available'}
       </p>
 

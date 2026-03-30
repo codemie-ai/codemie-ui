@@ -210,8 +210,28 @@ import Pagination from '@/components/Pagination'
 
 - **`Checker/Checker.tsx`** - Status checker
 - **`Link/Link.tsx`** - Styled link component
-- **`Tooltip/Tooltip.tsx`** - Tooltip wrapper
 - **`ProjectSelector/ProjectSelector.tsx`** - Project selection dropdown
+
+---
+
+## Tooltips
+
+**Always use the global `react-tooltip` instance** — no imports, no extra components needed.
+
+Add two attributes to any element:
+
+```tsx
+<span
+  data-tooltip-id="react-tooltip"
+  data-tooltip-content="Text to show in tooltip"
+>
+  ...
+</span>
+```
+
+The global tooltip is mounted app-wide in `main.tsx` via `src/utils/tooltip.ts`.
+
+> ❌ Never use `@/components/Tooltip` (PrimeReact) or `data-pr-tooltip` for new code.
 
 ---
 
