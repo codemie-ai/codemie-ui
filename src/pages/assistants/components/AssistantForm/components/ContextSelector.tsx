@@ -13,7 +13,16 @@
 // limitations under the License.
 //
 
-import { forwardRef, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { MultiSelect as PrimeMultiselect } from 'primereact/multiselect'
+import {
+  forwardRef,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import PlusSvg from '@/assets/icons/plus.svg?react'
@@ -75,7 +84,10 @@ const OptionTemplate = ({ data: value }: { data: AssistantContextOption }) => {
   )
 }
 
-const ContextSelector = forwardRef(
+const ContextSelector = forwardRef<
+  { focus: () => void; scrollIntoView: (options: ScrollIntoViewOptions) => void },
+  ContextSelectorProps
+>(
   (
     {
       value = [],
@@ -94,9 +106,10 @@ const ContextSelector = forwardRef(
       error,
       disabled = false,
       paginated,
-    }: ContextSelectorProps,
-    _
+    },
+    ref
   ) => {
+    const multiSelectRef = useRef<PrimeMultiselect | null>(null)
     const [isLoading, setIsLoading] = useState(!initialOptions)
     const [contextOptions, setContextOptions] = useState<AssistantContextOption[]>(
       initialOptions ?? []
@@ -107,6 +120,17 @@ const ContextSelector = forwardRef(
     const { project: contextProject } = useContext(AssistantFormContext)
     const project = projectProps || contextProject
     const optionKey = withID ? 'id' : 'name'
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        focus: () => multiSelectRef.current?.getElement()?.focus(),
+        scrollIntoView: (options: ScrollIntoViewOptions) => {
+          multiSelectRef.current?.getElement()?.scrollIntoView(options)
+        },
+      }),
+      []
+    )
 
     const fetchAssistantContextOptions = async (searchQuery = '') => {
       setIsLoading(true)
@@ -226,6 +250,7 @@ const ContextSelector = forwardRef(
 
         <div className="flex gap-2">
           <MultiSelect
+            ref={multiSelectRef}
             label=""
             id="context-selector"
             name="context"

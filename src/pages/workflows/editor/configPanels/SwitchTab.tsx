@@ -15,7 +15,7 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useMemo, forwardRef } from 'react'
-import { useForm, Controller, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import * as Yup from 'yup'
 
 import DeleteSVG from '@/assets/icons/delete.svg?react'
@@ -23,6 +23,7 @@ import InfoSVG from '@/assets/icons/info.svg?react'
 import PlusSVG from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import Input from '@/components/form/Input'
+import { NodeTypes } from '@/types/workflowEditor/base'
 import {
   SwitchStateConfiguration,
   StateSwitch,
@@ -31,9 +32,14 @@ import {
 import { ConfigurationUpdate } from '@/utils/workflowEditor/actions'
 import { getStateNext } from '@/utils/workflowEditor/helpers/states'
 
+import FieldController from './components/FieldController'
 import TabFooter from './components/TabFooter'
 import ValidationError from './components/ValidationError'
 import { useConditionalTabForm, ConfigTabRef } from './hooks/useConditionalTabForm'
+import { useWorkflowContext } from '../hooks/useWorkflowContext'
+import { registerFields } from '../utils/visualEditorFieldRegistry'
+
+registerFields([/^data\.next\.switch\.cases/], NodeTypes.SWITCH)
 
 interface SwitchTabProps {
   stateId: string
@@ -85,6 +91,7 @@ const SwitchTab = forwardRef<SwitchTabRef, SwitchTabProps>(
     { stateId, config, onConfigChange, onClose, onDelete, validationError, onClearStateError },
     ref
   ) => {
+    const { removeArrayIssue } = useWorkflowContext()
     const state = useMemo(() => {
       return config.states?.find((s) => s.id === stateId) as SwitchStateConfiguration
     }, [stateId, config.states])
@@ -105,6 +112,11 @@ const SwitchTab = forwardRef<SwitchTabRef, SwitchTabProps>(
       control,
       name: 'cases',
     })
+
+    const handleRemove = (removedIndex: number) => {
+      removeArrayIssue(removedIndex, stateId, 'data.next.switch.cases')
+      remove(removedIndex)
+    }
 
     const saveData = async (): Promise<boolean> => {
       if (validationError && onClearStateError) {
@@ -162,11 +174,12 @@ const SwitchTab = forwardRef<SwitchTabRef, SwitchTabProps>(
           {!!fields.length && (
             <div className="flex flex-col gap-3 mt-2">
               {fields.map((field, index) => (
-                <div key={field.id} className="flex gap-2 items-center">
+                <div key={field.id} className="flex gap-2">
                   <div className="flex-1">
-                    <Controller
-                      name={`cases.${index}.condition`}
+                    <FieldController
                       control={control}
+                      name={`cases.${index}.condition`}
+                      issuePathPrefix="data.next.switch"
                       render={({ field, fieldState }) => (
                         <Input
                           {...field}
@@ -177,7 +190,11 @@ const SwitchTab = forwardRef<SwitchTabRef, SwitchTabProps>(
                       )}
                     />
                   </div>
-                  <Button type="delete" onClick={() => remove(index)} className="mt-6 opacity-85">
+                  <Button
+                    type="delete"
+                    onClick={() => handleRemove(index)}
+                    className="mt-[1.65rem] opacity-85"
+                  >
                     <DeleteSVG className="w-4 h-4" />
                   </Button>
                 </div>

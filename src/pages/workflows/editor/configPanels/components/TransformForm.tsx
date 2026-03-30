@@ -21,14 +21,29 @@ import Input from '@/components/form/Input'
 import Select from '@/components/form/Select'
 import Textarea from '@/components/form/Textarea'
 import TooltipButton from '@/components/TooltipButton'
+import { NodeTypes } from '@/types/workflowEditor/base'
 import {
   TransformConfig,
   TransformInputSource,
   TransformErrorStrategy,
 } from '@/types/workflowEditor/configuration'
 
+import FieldController from './FieldController'
 import MappingBuilder from './MappingBuilder'
 import { validationSchema } from './transformFormSchemas'
+import { registerFields } from '../../utils/visualEditorFieldRegistry'
+
+registerFields(
+  [
+    'input_source',
+    'input_key',
+    'on_error',
+    'default_output',
+    'output_schema',
+    /^config\.mappings\./,
+  ],
+  NodeTypes.TRANSFORM
+)
 
 export interface TransformFormRef {
   getValues: () => TransformConfig
@@ -38,11 +53,12 @@ export interface TransformFormRef {
 }
 
 interface TransformFormProps {
+  stateId: string
   transformConfig: TransformConfig
 }
 
 const TransformForm = forwardRef<TransformFormRef, TransformFormProps>(
-  ({ transformConfig }, ref) => {
+  ({ transformConfig, stateId }, ref) => {
     const { control, getValues, trigger, watch, formState, clearErrors, reset } =
       useForm<TransformConfig>({
         resolver: yupResolver(validationSchema) as any,
@@ -85,39 +101,31 @@ const TransformForm = forwardRef<TransformFormRef, TransformFormProps>(
 
     return (
       <div className="flex flex-col gap-4">
-        <Controller
+        <FieldController
           name="input_source"
           control={control}
-          render={({ field }) => (
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <label htmlFor="input_source_select" className="text-xs text-text-quaternary">
-                  Input Source
-                </label>
-                <TooltipButton
-                  content="Where to read data from:
+          render={({ field, fieldState }) => (
+            <Select
+              id="input_source_select"
+              label="Input Source"
+              hint="Where to read data from:
 - context_store: Workflow context (most common)
 - messages: Last message content
 - user_input: User's initial input
 - state_schema: Custom state fields"
-                />
-              </div>
-              <Select
-                id="input_source_select"
-                {...field}
-                options={[
-                  { label: 'Context Store', value: TransformInputSource.CONTEXT_STORE },
-                  { label: 'Messages', value: TransformInputSource.MESSAGES },
-                  { label: 'User Input', value: TransformInputSource.USER_INPUT },
-                  { label: 'State Schema', value: TransformInputSource.STATE_SCHEMA },
-                ]}
-                allowCustom
-              />
-            </div>
+              {...field}
+              error={fieldState.error?.message}
+              options={[
+                { label: 'Context Store', value: TransformInputSource.CONTEXT_STORE },
+                { label: 'Messages', value: TransformInputSource.MESSAGES },
+                { label: 'User Input', value: TransformInputSource.USER_INPUT },
+                { label: 'State Schema', value: TransformInputSource.STATE_SCHEMA },
+              ]}
+              allowCustom
+            />
           )}
         />
-
-        <Controller
+        <FieldController
           name="input_key"
           control={control}
           render={({ field, fieldState }) => (
@@ -130,39 +138,30 @@ const TransformForm = forwardRef<TransformFormRef, TransformFormProps>(
             />
           )}
         />
-
-        <Controller
+        <FieldController
           name="on_error"
           control={control}
-          render={({ field }) => (
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <label htmlFor="error_handling_select" className="text-xs text-text-quaternary">
-                  Error Handling
-                </label>
-                <TooltipButton
-                  content="How to handle transformation errors:
+          render={({ field, fieldState }) => (
+            <Select
+              id="error_handling_select"
+              label="Error Handling"
+              hint="How to handle transformation errors:
 - fail: Abort workflow (default)
 - skip: Return empty dict, continue
 - default: Use default_output"
-                />
-              </div>
-              <Select
-                id="error_handling_select"
-                {...field}
-                options={[
-                  { label: 'Fail (abort workflow)', value: TransformErrorStrategy.FAIL },
-                  { label: 'Skip (return empty)', value: TransformErrorStrategy.SKIP },
-                  { label: 'Use Default Output', value: TransformErrorStrategy.DEFAULT },
-                ]}
-                allowCustom
-              />
-            </div>
+              {...field}
+              error={fieldState.error?.message}
+              options={[
+                { label: 'Fail (abort workflow)', value: TransformErrorStrategy.FAIL },
+                { label: 'Skip (return empty)', value: TransformErrorStrategy.SKIP },
+                { label: 'Use Default Output', value: TransformErrorStrategy.DEFAULT },
+              ]}
+              allowCustom
+            />
           )}
         />
-
         {onErrorValue === TransformErrorStrategy.DEFAULT && (
-          <Controller
+          <FieldController
             name="default_output"
             control={control}
             render={({ field, fieldState }) => (
@@ -178,13 +177,12 @@ const TransformForm = forwardRef<TransformFormRef, TransformFormProps>(
             )}
           />
         )}
-
         <Controller
           name="mappings"
           control={control}
           render={({ field, fieldState }) => (
             <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-1">
                 <label htmlFor="mappings_builder" className="text-xs text-text-quaternary">
                   Mappings
                 </label>
@@ -192,6 +190,7 @@ const TransformForm = forwardRef<TransformFormRef, TransformFormProps>(
               </div>
               <MappingBuilder
                 id="mappings_builder"
+                stateId={stateId}
                 value={field.value}
                 onChange={field.onChange}
                 error={fieldState.error?.message}
@@ -201,8 +200,7 @@ const TransformForm = forwardRef<TransformFormRef, TransformFormProps>(
             </div>
           )}
         />
-
-        <Controller
+        <FieldController
           name="output_schema"
           control={control}
           render={({ field, fieldState }) => (

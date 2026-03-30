@@ -14,11 +14,11 @@
 //
 
 import * as jsYaml from 'js-yaml'
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import ExternalSvg from '@/assets/icons/external.svg?react'
-import AceEditor from '@/components/AceEditor/AceEditor'
+import AceEditor, { AceEditorRef } from '@/components/AceEditor/AceEditor'
 import Button from '@/components/Button'
 import VersionedField, {
   VERSIONED_FIELD_TAB_ID,
@@ -32,6 +32,7 @@ import { isConfigItemEnabled, getConfigItemSettings } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
+import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import TabFooter from './components/TabFooter'
 
 interface YamlPanelProps {
@@ -45,11 +46,14 @@ export interface YamlPanelRef {
   isDirty: () => boolean
   reset: () => void
   save: () => Promise<boolean>
+  jumpToLine: (line: number, column?: number) => void
 }
 
 const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
   ({ yaml, history = [], onUpdate, onClose }, ref) => {
     const { configs } = useSnapshot(appInfoStore)
+    const { activeIssue } = useWorkflowContext()
+    const aceEditorRef = useRef<AceEditorRef>(null)
     const [value, setValue] = useState(yaml)
     const [validationError, setValidationError] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState<VersionedFieldTabId>(VERSIONED_FIELD_TAB_ID.current)
@@ -98,6 +102,12 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
       }
     }
 
+    const jumpToLine = (line: number, column?: number) => {
+      if (aceEditorRef.current) {
+        aceEditorRef.current.jumpToLine(line, column)
+      }
+    }
+
     useImperativeHandle(
       ref,
       () => ({
@@ -107,9 +117,15 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
           setValidationError(null)
         },
         save: saveData,
+        jumpToLine,
       }),
       [value, yaml, onUpdate]
     )
+
+    useEffect(() => {
+      if (!activeIssue?.configLine || !aceEditorRef.current) return
+      jumpToLine(activeIssue.configLine!)
+    }, [activeIssue?.configLine])
 
     useEffect(() => {
       setValue(yaml)
@@ -177,7 +193,13 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
             'border-failed-secondary': validationError,
           })}
         >
-          <AceEditor value={value} onChange={handleYamlChange} lang="yaml" name="yaml_config" />
+          <AceEditor
+            ref={aceEditorRef}
+            value={value}
+            onChange={handleYamlChange}
+            lang="yaml"
+            name="yaml_config"
+          />
         </div>
       </div>
     )

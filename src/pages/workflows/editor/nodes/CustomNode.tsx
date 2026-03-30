@@ -25,10 +25,9 @@ import NodeHeader from './NodeHeader'
 export const CustomNode = ({ data, selected, id }: CommonNodeProps) => {
   const state = data.findState(id)
   const isConnected = state?._meta?.is_connected ?? false
-  const hasError = data.stateErrors?.has(id) ?? false
 
   return (
-    <BaseNode selected={selected} isConnected={isConnected} hasError={hasError}>
+    <BaseNode selected={selected} isConnected={isConnected} hasError={data.hasError}>
       <Handle type="target" position={Position.Left} />
       <NodeHeader type={NodeTypes.CUSTOM} title={id} />
       <Handle type="source" position={Position.Right} />

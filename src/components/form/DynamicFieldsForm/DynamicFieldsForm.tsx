@@ -13,18 +13,25 @@
 // limitations under the License.
 //
 
+import { type MultiSelect as MultiSelectType } from 'primereact/multiselect'
+import { Ref, useContext } from 'react'
+
 import { Checkbox } from '@/components/form/Checkbox'
 import ExpandableTextarea from '@/components/form/ExpandableTextarea/ExpandableTextarea'
 import Input from '@/components/form/Input'
 import MultiSelect from '@/components/form/MultiSelect'
+import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowContext'
 import { FIELD_TYPES, FieldType, DynamicFormFieldSchema } from '@/types/dynamicForm'
 import { humanize } from '@/utils/helpers'
+
+import { TextareaRef } from '../Textarea'
 
 interface DynamicFieldsFormProps {
   schema: Record<string, DynamicFormFieldSchema>
   value: Record<string, unknown>
   onChange: (value: Record<string, unknown>) => void
   errors?: Record<string, string>
+  issuePathPrefix?: string
 }
 
 const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
@@ -32,8 +39,19 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
   value,
   onChange,
   errors = {},
+  issuePathPrefix = '',
 }) => {
+  const workflowContext = useContext(WorkflowContext)
+  const getIssueField = workflowContext?.getIssueField
+  const markIssueDirty = workflowContext?.markIssueDirty
+
   const handleFieldChange = (fieldName: string, fieldValue: unknown) => {
+    if (getIssueField && markIssueDirty) {
+      const issuePath = issuePathPrefix ? `${issuePathPrefix}.${fieldName}` : fieldName
+      const issueField = getIssueField(issuePath)
+      if (issueField.issue) markIssueDirty(issueField.issue)
+    }
+
     onChange({
       ...value,
       [fieldName]: fieldValue,
@@ -62,7 +80,11 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
     const { type, required, values } = fieldSchema
     const fieldValue = getFieldValue(fieldName, type)
     const label = humanize(fieldName)
-    const error = errors[fieldName]
+
+    const issuePath = issuePathPrefix ? `${issuePathPrefix}.${fieldName}` : fieldName
+    const issueField = getIssueField ? getIssueField(issuePath) : null
+
+    const error = errors[fieldName] || issueField?.fieldError
 
     switch (type) {
       case FIELD_TYPES.BOOLEAN:
@@ -72,6 +94,8 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
             label={label}
             checked={fieldValue}
             onChange={(checked) => handleFieldChange(fieldName, checked)}
+            error={issueField?.fieldError}
+            ref={issueField?.ref}
           />
         )
 
@@ -90,6 +114,7 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
             placeholder={`Enter ${label}`}
             error={error}
             required={required}
+            ref={issueField?.ref}
           />
         )
 
@@ -108,6 +133,7 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
             placeholder={`Enter ${label}`}
             error={error}
             required={required}
+            ref={issueField?.ref}
           />
         )
 
@@ -128,6 +154,7 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
               showCheckbox
               error={error}
               required={required}
+              ref={issueField?.ref as Ref<MultiSelectType>}
             />
           )
         }
@@ -144,6 +171,7 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
             rows={5}
             error={error}
             required={required}
+            ref={issueField?.ref as Ref<TextareaRef>}
           />
         )
 
@@ -159,6 +187,7 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
             placeholder={`Enter ${label}`}
             error={error}
             required={required}
+            ref={issueField?.ref}
           />
         )
     }

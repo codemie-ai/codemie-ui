@@ -32,7 +32,7 @@ export const ConditionalNode = ({ data, selected, id }: CommonNodeProps) => {
   const expression = conditionData?.expression || 'condition'
 
   return (
-    <BaseNode selected={selected} isConnected={isConnected}>
+    <BaseNode selected={selected} isConnected={isConnected} hasError={data.hasError}>
       <Handle type="target" position={Position.Left} />
       <NodeHeader type={NodeTypes.CONDITIONAL} title="Conditional" />
 

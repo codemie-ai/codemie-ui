@@ -14,7 +14,7 @@
 //
 
 import { Checkbox as PrimeCheckbox, CheckboxPassThroughOptions } from 'primereact/checkbox'
-import { FC, useId } from 'react'
+import { forwardRef, useId } from 'react'
 
 import CheckedIcon from '@/assets/icons/check-18.svg?react'
 import CheckboxMinusSvg from '@/assets/icons/checkbox-minus.svg?react'
@@ -32,70 +32,81 @@ type Props = {
   disabled?: boolean
   classNames?: string
   rootClassName?: string
+  error?: string
   onChange: (checked: boolean) => void
 }
 
-export const Checkbox: FC<Props> = ({
-  label,
-  name,
-  id,
-  hint,
-  checked = false,
-  mixed = false,
-  disabled = false,
-  classNames,
-  rootClassName,
-  onChange,
-}) => {
-  const reactId = useId()
-  const idKey = id ?? reactId
+export const Checkbox = forwardRef<HTMLInputElement, Props>(
+  (
+    {
+      label,
+      name,
+      id,
+      hint,
+      checked = false,
+      mixed = false,
+      disabled = false,
+      classNames,
+      rootClassName,
+      error,
+      onChange,
+    },
+    ref
+  ) => {
+    const reactId = useId()
+    const idKey = id ?? reactId
 
-  const mixedIcon = mixed ? <CheckboxMinusSvg /> : null
+    const mixedIcon = mixed ? <CheckboxMinusSvg /> : null
 
-  const handleChange = () => {
-    if (disabled) return
-    if (mixed) onChange(true)
-    else onChange(!checked)
-  }
+    const handleChange = () => {
+      if (disabled) return
+      if (mixed) onChange(true)
+      else onChange(!checked)
+    }
 
-  return (
-    <div className="flex items-center gap-x-2">
-      <div
-        className={cn(
-          'flex items-center group gap-x-2 text-text-primary transition',
-          {
-            'hover:text-border-accent': !disabled,
-            'opacity-50 cursor-not-allowed': disabled,
-          },
-          rootClassName
-        )}
-      >
-        <PrimeCheckbox
-          name={name}
-          inputId={idKey}
-          pt={checkboxPT}
-          checked={checked || mixed}
-          disabled={disabled}
-          className={classNames}
-          icon={checked ? <CheckedIcon className="text-surface-base-primary" /> : mixedIcon}
-          onChange={handleChange}
-        />
-        {!!label && (
-          <label
-            htmlFor={idKey}
-            className={cn('text-sm ml-2 transition', {
-              'cursor-pointer hover:text-border-accent': !disabled && checked,
-              'cursor-not-allowed': disabled,
-            })}
+    return (
+      <div className="flex flex-col gap-y-1">
+        <div className="flex items-center gap-x-2">
+          <div
+            className={cn(
+              'flex items-center group gap-x-2 text-text-primary transition',
+              {
+                'hover:text-border-accent': !disabled,
+                'opacity-50 cursor-not-allowed': disabled,
+              },
+              rootClassName
+            )}
           >
-            {label}
-          </label>
-        )}
+            <PrimeCheckbox
+              name={name}
+              inputId={idKey}
+              pt={checkboxPT}
+              checked={checked || mixed}
+              disabled={disabled}
+              className={classNames}
+              icon={checked ? <CheckedIcon className="text-surface-base-primary" /> : mixedIcon}
+              onChange={handleChange}
+              inputRef={ref}
+            />
+            {!!label && (
+              <label
+                htmlFor={idKey}
+                className={cn('text-sm ml-2 transition', {
+                  'cursor-pointer hover:text-border-accent': !disabled && checked,
+                  'cursor-not-allowed': disabled,
+                })}
+              >
+                {label}
+              </label>
+            )}
+          </div>
+          {hint && <TooltipButton content={hint} />}
+        </div>
+        {error && <span className="text-xs text-text-error ml-6">{error}</span>}
       </div>
-      {hint && <TooltipButton content={hint} />}
-    </div>
-  )
-}
+    )
+  }
+)
 
 const checkboxPT: CheckboxPassThroughOptions = {
   root: {

@@ -28,6 +28,7 @@ import { ConfigurationUpdate } from '@/utils/workflowEditor'
 import { generateActorID, shouldReuseActorId } from '@/utils/workflowEditor/helpers/states'
 
 import CommonStateFields, { CommonStateFieldsRef } from './CommonStateFields'
+import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import ConfigAccordion from './components/ConfigAccordion'
 import TabFooter from './components/TabFooter'
 import ToolForm, { ToolFormRef } from './components/ToolForm'
@@ -108,8 +109,33 @@ const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(
       onIntegrationSuccess,
     } = useNewIntegrationPopup()
 
+    const { activeIssue } = useWorkflowContext()
+    const [toolConfigExpanded, setToolConfigExpanded] = useState(true)
+
     const commonStateFieldsRef = useRef<CommonStateFieldsRef>(null)
     const toolFormRef = useRef<ToolFormRef>(null)
+
+    useEffect(() => {
+      if (!activeIssue?.path) return
+
+      const toolFields = [
+        'tool',
+        'tool_args',
+        'tool_result_json_pointer',
+        'integration_alias',
+        'trace',
+        'resolve_dynamic_values_in_response',
+        'mcp_server',
+      ]
+
+      if (
+        toolFields.some(
+          (field) => activeIssue.path === field || activeIssue.path.startsWith(`${field}.`)
+        )
+      ) {
+        setToolConfigExpanded(true)
+      }
+    }, [activeIssue?.path])
 
     useEffect(() => {
       if (!state) return
@@ -212,7 +238,12 @@ const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(
         <form onSubmit={handleSave} className="flex flex-col gap-4">
           <ValidationError message={validationError} />
 
-          <ConfigAccordion title="Tool Configuration" defaultExpanded={true}>
+          <ConfigAccordion
+            title="Tool Configuration"
+            defaultExpanded={true}
+            expanded={toolConfigExpanded}
+            onExpandedChange={setToolConfigExpanded}
+          >
             <ToolForm
               ref={toolFormRef}
               project={project}

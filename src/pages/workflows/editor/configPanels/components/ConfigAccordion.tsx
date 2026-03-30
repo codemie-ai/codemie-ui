@@ -23,6 +23,8 @@ interface ConfigAccordionProps {
   title: string
   children: React.ReactNode
   defaultExpanded?: boolean
+  expanded?: boolean
+  onExpandedChange?: (expanded: boolean) => void
   className?: string
   headerActions?: React.ReactNode
 }
@@ -31,12 +33,25 @@ const ConfigAccordion: React.FC<ConfigAccordionProps> = ({
   title,
   children,
   defaultExpanded = true,
+  expanded,
+  onExpandedChange,
   className,
   headerActions,
 }) => {
-  const [activeTabIndex, setActiveTabIndex] = useState<number | number[] | null>(
+  const [internalActiveIndex, setInternalActiveIndex] = useState<number | number[] | null>(
     defaultExpanded ? 0 : null
   )
+
+  const isControlled = expanded !== undefined
+  const isExpanded = expanded ? 0 : null
+  const activeTabIndex = isControlled ? isExpanded : internalActiveIndex
+
+  const handleTabChange = (e: { index: number | number[] | null }) => {
+    if (!isControlled) {
+      setInternalActiveIndex(e.index)
+    }
+    onExpandedChange?.(e.index === 0)
+  }
 
   const renderHeader = (props) => {
     return (
@@ -62,7 +77,7 @@ const ConfigAccordion: React.FC<ConfigAccordionProps> = ({
       expandIcon={() => null}
       collapseIcon={() => null}
       activeIndex={activeTabIndex}
-      onTabChange={(e) => setActiveTabIndex(e.index)}
+      onTabChange={handleTabChange}
       className={className}
       pt={{
         root: () => '',

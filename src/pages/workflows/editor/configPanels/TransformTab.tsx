@@ -190,7 +190,11 @@ const TransformTab = forwardRef<TransformTabRef, TransformTabProps>(
           <ValidationError message={validationError} />
 
           <ConfigAccordion title="Transform Configuration" defaultExpanded={true}>
-            <TransformForm ref={transformFormRef} transformConfig={transformConfig} />
+            <TransformForm
+              stateId={stateId}
+              ref={transformFormRef}
+              transformConfig={transformConfig}
+            />
           </ConfigAccordion>
 
           <CommonStateFields ref={commonStateFieldsRef} state={state} showAllFields={false} />

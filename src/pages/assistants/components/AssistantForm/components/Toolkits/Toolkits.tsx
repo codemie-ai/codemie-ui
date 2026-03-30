@@ -45,6 +45,7 @@ import FormAccordion from '../FormAccordion/FormAccordion'
 
 export const SECTION = {
   TOOLS: 'tools',
+  EXTERNAL_TOOLS: 'external-tools',
   MCP: 'mcp',
 } as const
 
@@ -58,6 +59,8 @@ interface ToolkitsProps {
   project?: string
   singleToolSelection?: boolean
   defaultOpenSection?: ToolkitSection
+  defaultOpenToolkitName?: string
+  defaultOpenMcpName?: string
   showNewIntegrationPopup: (project: string, credentialType: string) => void
   customToolkitRenderer?: {
     [toolkitType: string]: React.ComponentType<ComponentProps<typeof Toolkit>>
@@ -74,7 +77,9 @@ const Toolkits = ({
   onMcpServersChange,
   project: projectProps,
   singleToolSelection = false,
-  defaultOpenSection = undefined,
+  defaultOpenSection,
+  defaultOpenToolkitName,
+  defaultOpenMcpName,
 
   showNewIntegrationPopup,
 
@@ -93,13 +98,17 @@ const Toolkits = ({
 
   const toolsAccordionRef = useRef<HTMLDivElement>(null)
   const externalToolsAccordionRef = useRef<HTMLDivElement>(null)
+  const mcpAccordionRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (defaultOpenSection === SECTION.TOOLS && toolsAccordionRef.current) {
         toolsAccordionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      } else if (defaultOpenSection === SECTION.MCP && externalToolsAccordionRef.current) {
+      }
+      if (defaultOpenSection === SECTION.EXTERNAL_TOOLS && externalToolsAccordionRef.current) {
         externalToolsAccordionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } else if (defaultOpenSection === SECTION.MCP && mcpAccordionRef.current) {
+        mcpAccordionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
     }, 100)
 
@@ -115,6 +124,20 @@ const Toolkits = ({
     () => availableToolkits.filter((tk) => tk.is_external),
     [availableToolkits]
   ) as AssistantToolkit[]
+
+  const defaultOpenInternalIndexes = useMemo(() => {
+    if (!defaultOpenToolkitName || defaultOpenSection !== SECTION.TOOLS) return []
+    const index = internalToolkits.findIndex((tk) => tk.toolkit === defaultOpenToolkitName)
+    return index >= 0 ? [index] : []
+  }, [defaultOpenToolkitName, defaultOpenSection, internalToolkits])
+
+  const defaultOpenExternalIndexes = useMemo(() => {
+    if (!defaultOpenToolkitName || defaultOpenSection !== SECTION.EXTERNAL_TOOLS) return []
+    const index = externalToolkits.findIndex((tk) => tk.toolkit === defaultOpenToolkitName)
+    return index >= 0 ? [index] : []
+  }, [defaultOpenToolkitName, defaultOpenSection, externalToolkits])
+
+  const defaultOpenMcpIndexes = useMemo(() => [0], [])
 
   const filteredSettings = useMemo(() => {
     return Object.fromEntries(
@@ -364,6 +387,7 @@ const Toolkits = ({
       indexSettings,
       toolkitProps,
       singleToolSelection,
+      defaultOpenMcpName,
     ]
   )
 
@@ -386,25 +410,27 @@ const Toolkits = ({
             defaultOpen={
               defaultOpenSection ? defaultOpenSection === SECTION.TOOLS : singleToolSelection
             }
+            defaultOpenIndexes={defaultOpenInternalIndexes}
           />
         </div>
       )}
 
       {showExternalTools && externalToolkits.length > 0 && (
-        <div>
+        <div ref={externalToolsAccordionRef}>
           <FormAccordion
             title="External Tools"
             description="These toolkits are provided by third-party vendors."
             items={externalToolkits}
             itemHeader={renderExternalToolkitHeader}
             itemContent={renderExternalToolkitContent}
-            defaultOpen={false}
+            defaultOpen={defaultOpenSection === SECTION.EXTERNAL_TOOLS}
+            defaultOpenIndexes={defaultOpenExternalIndexes}
           />
         </div>
       )}
 
       {showMcpServers && isMcpFeatureEnabled && (
-        <div ref={externalToolsAccordionRef}>
+        <div ref={mcpAccordionRef}>
           <FormAccordion
             title="MCP Servers"
             description="Model Context Protocol servers provide additional capabilities."
@@ -416,7 +442,7 @@ const Toolkits = ({
                 ? defaultOpenSection === SECTION.MCP
                 : !showInternalTools && !showExternalTools
             }
-            defaultOpenIndexes={[0]}
+            defaultOpenIndexes={defaultOpenMcpIndexes}
           />
         </div>
       )}

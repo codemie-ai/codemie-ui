@@ -13,7 +13,16 @@
 // limitations under the License.
 //
 
-import { useState, useRef, forwardRef, useImperativeHandle, useCallback, useEffect } from 'react'
+import {
+  useState,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+  useEffect,
+  Dispatch,
+  SetStateAction,
+} from 'react'
 import { useSnapshot } from 'valtio'
 
 import { FormIDs } from '@/constants/formIds'
@@ -22,6 +31,7 @@ import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import WorkflowNodeEditor, { WorkflowEditorRef } from '@/pages/workflows/editor/WorkflowEditor'
 import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
+import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
 import { isVisualEditorEnabled } from '@/utils/workflows'
 
@@ -36,7 +46,8 @@ interface WorkflowFormProps {
   onlyConfiguration?: boolean
   hideConfiguration?: boolean
   onValidityChange?: (isValid: boolean) => void
-  validationErrors?: any
+  issues?: WorkflowIssue[] | null
+  setIssues?: Dispatch<SetStateAction<WorkflowIssue[] | null>>
 }
 
 const MODES = {
@@ -49,6 +60,8 @@ export interface WorkflowFormRef {
   triggerValidation: () => void
   save: (shouldOpenExecution: boolean) => Promise<void>
   getFormValues: () => any
+  openIssuesPanel: () => void
+  clearAllResolvedFields: () => void
 }
 
 const DEFAULT_YAML_CONFIG = 'states: []'
@@ -62,7 +75,8 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
       onlyConfiguration = false,
       hideConfiguration = false,
       onValidityChange,
-      validationErrors,
+      issues,
+      setIssues,
     },
     ref
   ) => {
@@ -217,6 +231,12 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
       triggerValidation,
       save,
       getFormValues,
+      openIssuesPanel: () => {
+        editorRef.current?.openIssuesPanel()
+      },
+      clearAllResolvedFields: () => {
+        editorRef.current?.clearAllResolvedFields()
+      },
     }))
 
     const handleLoadExample = () => {
@@ -263,7 +283,8 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
             onWorkflowUpdate={handleWorkflowUpdate}
             isFullscreen={true}
             onLoadExample={shouldShowLoadExample ? handleLoadExample : undefined}
-            validationErrors={validationErrors}
+            issues={issues}
+            setIssues={setIssues}
           />
         ) : (
           <WorkflowFormFields

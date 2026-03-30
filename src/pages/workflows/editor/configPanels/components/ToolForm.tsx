@@ -28,6 +28,7 @@ import { assistantsStore } from '@/store'
 import { settingsStore } from '@/store/settings'
 import { AssistantToolkit } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
+import { NodeTypes } from '@/types/workflowEditor/base'
 import { ToolConfiguration } from '@/types/workflowEditor/configuration'
 import { extractToolkitSettings } from '@/utils/toolkit'
 import {
@@ -36,8 +37,24 @@ import {
   normalizeToolkitSettingsForToolForm,
 } from '@/utils/workflows'
 
+import FieldController from './FieldController'
 import ToolArgumentsForm from './ToolArgumentsForm'
 import ToolSelector from './ToolSelector'
+import { useWorkflowContext } from '../../hooks/useWorkflowContext'
+import { registerFields } from '../../utils/visualEditorFieldRegistry'
+
+registerFields(
+  [
+    'tool_result_json_pointer',
+    'tool',
+    'trace',
+    'integration_alias',
+    'resolve_dynamic_values_in_response',
+    /^tool_args\./,
+    /^mcp_server\./,
+  ],
+  NodeTypes.TOOL
+)
 
 const TOOL_ARGS_MODE = {
   FORM: 'form',
@@ -124,6 +141,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
   ({ toolConfig, project, showNewIntegrationPopup }, ref) => {
     const { availableToolkits, getAssistantToolkits } = useSnapshot(assistantsStore)
     const { settings, indexSettings } = useSnapshot(settingsStore)
+    const { tempIssues, markIssueDirty, getIssueField, selectedStateId } = useWorkflowContext()
     const [dynamicSchema, setDynamicSchema] = useState(() => getValidationSchema([]))
 
     const {
@@ -186,11 +204,22 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
       [getValues, trigger, isDirty, reset, schemaRequiredFields, toolArgs]
     )
 
+    const resolveToolArgsIssues = () => {
+      const toolArgsIssues = tempIssues?.filter(
+        (issue) =>
+          (issue.stateId === selectedStateId || !issue.stateId) &&
+          issue.path.startsWith('tool_args.')
+      )
+
+      toolArgsIssues?.forEach((issue) => markIssueDirty(issue))
+    }
+
     const handleToolkitsChange = (newToolkits: AssistantToolkit[]) => {
       setValue('toolkits', newToolkits, { shouldValidate: true, shouldDirty: true })
       setValue('tool_args', {}, { shouldValidate: true, shouldDirty: true })
       setArgsMode(TOOL_ARGS_MODE.FORM)
       setSchemaRequiredFields([])
+      resolveToolArgsIssues()
     }
 
     const handleMcpServersChange = (newMcpServers: MCPServerDetails[]) => {
@@ -198,6 +227,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
       setValue('tool_args', {}, { shouldValidate: true, shouldDirty: true })
       setArgsMode(TOOL_ARGS_MODE.FORM)
       setSchemaRequiredFields([])
+      resolveToolArgsIssues()
     }
 
     const handleToolArgsChange = (value: Record<string, any>) => {
@@ -311,16 +341,32 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
       return <Spinner inline rootClassName="pt-0" />
     }
 
+    const toolField =
+      getIssueField('tool') ||
+      getIssueField('integration_alias') ||
+      getIssueField('mcp_server.description')
+
     return (
       <div className="flex flex-col gap-4">
         <ToolSelector
           toolkits={toolkits || []}
           project={project}
           mcpServers={mcpServers || []}
-          onToolkitsChange={handleToolkitsChange}
-          onMcpServersChange={handleMcpServersChange}
-          showNewIntegrationPopup={showNewIntegrationPopup}
+          onToolkitsChange={(toolkits) => {
+            handleToolkitsChange(toolkits)
+            toolField.onChange()
+          }}
+          onMcpServersChange={(servers) => {
+            handleMcpServersChange(servers)
+            toolField.onChange()
+          }}
+          showNewIntegrationPopup={(project, credentialType) => {
+            showNewIntegrationPopup(project, credentialType)
+            toolField.onChange()
+          }}
         />
+
+        {toolField?.fieldError && <p className="text-text-error text-sm">{toolField.fieldError}</p>}
 
         {getSelectedToolName() && (
           <div className="flex flex-col gap-4">
@@ -358,7 +404,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
           </div>
         )}
 
-        <Controller
+        <FieldController
           name="tool_result_json_pointer"
           control={control}
           render={({ field, fieldState }) => (
@@ -371,17 +417,29 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
           )}
         />
 
-        <Controller
+        <FieldController
           name="trace"
           control={control}
-          render={({ field }) => <Switch {...field} label="Enable Tracing" value={field.value} />}
+          render={({ field, fieldState }) => (
+            <Switch
+              {...field}
+              label="Enable Tracing"
+              value={field.value}
+              error={fieldState.error?.message}
+            />
+          )}
         />
 
-        <Controller
+        <FieldController
           name="resolve_dynamic_values_in_response"
           control={control}
-          render={({ field }) => (
-            <Switch {...field} label="Resolve Dynamic Values in Response" value={field.value} />
+          render={({ field, fieldState }) => (
+            <Switch
+              {...field}
+              label="Resolve Dynamic Values in Response"
+              value={field.value}
+              error={fieldState.error?.message}
+            />
           )}
         />
       </div>

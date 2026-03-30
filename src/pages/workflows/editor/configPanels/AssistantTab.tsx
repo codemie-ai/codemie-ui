@@ -15,7 +15,7 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import * as Yup from 'yup'
 
 import Button from '@/components/Button'
@@ -25,7 +25,7 @@ import { useNewIntegrationPopup } from '@/hooks/useNewIntegrationPopup'
 import FormGenAIPopup from '@/pages/assistants/components/AssistantForm/components/FormGenAIPopup'
 import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
 import { AssistantAIGeneratedFields } from '@/types/entity/assistant'
-import { ActorTypes } from '@/types/workflowEditor/base'
+import { ActorTypes, NodeTypes } from '@/types/workflowEditor/base'
 import {
   AssistantConfiguration,
   AssistantStateConfiguration,
@@ -35,12 +35,18 @@ import { ConfigurationUpdate } from '@/utils/workflowEditor'
 import { generateActorID, shouldReuseActorId } from '@/utils/workflowEditor/helpers/states'
 
 import CommonStateFields, { CommonStateFieldsRef } from './CommonStateFields'
-import AssistantSelector from './components/AssistantSelector'
+import AssistantSelector, { AssistantSelectorRef } from './components/AssistantSelector'
 import ConfigAccordion from './components/ConfigAccordion'
 import TabFooter from './components/TabFooter'
 import ValidationError from './components/ValidationError'
 import VirtualAssistantForm, { VirtualAssistantFormRef } from './components/VirtualAssistantForm'
 import { buildCommonStateConfig } from './utils/formUtils'
+import { registerFields } from '../utils/visualEditorFieldRegistry'
+import FieldController from './components/FieldController'
+import { useWorkflowContext } from '../hooks/useWorkflowContext'
+
+registerFields(['limit_tool_output_tokens'], NodeTypes.ASSISTANT)
+registerFields(['assistant_id'], NodeTypes.ASSISTANT, 'resource_validation')
 
 interface AssistantTabProps {
   project: string
@@ -141,6 +147,9 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
 
     const initialUseVirtualAssistant = useRef(!assistantActorConfig?.assistant_id)
     const initialAssistantId = useRef(assistantActorConfig?.assistant_id)
+
+    const { getIssueField, markIssueDirty, issues } = useWorkflowContext()
+    const assistantIdIssue = getIssueField<AssistantSelectorRef>('assistant_id')
 
     useEffect(() => {
       if (!state) return
@@ -295,6 +304,12 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
       }
     }
 
+    const clearIssues = () => {
+      issues?.forEach((issue) => {
+        if (issue.stateId === stateId) markIssueDirty(issue)
+      })
+    }
+
     if (!state) return null
 
     return (
@@ -326,7 +341,10 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
             <div className="flex flex-col gap-4">
               <Switch
                 value={useVirtualAssistant}
-                onChange={(e) => setUseVirtualAssistant(e.target.checked)}
+                onChange={(e) => {
+                  setUseVirtualAssistant(e.target.checked)
+                  clearIssues()
+                }}
                 label="Use Virtual Assistant"
               />
 
@@ -344,10 +362,13 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
                 <AssistantSelector
                   assistantConfig={assistantActorConfig}
                   onAssistantConfigUpdate={handleAssistantConfigUpdate}
+                  ref={assistantIdIssue.ref}
+                  issueError={assistantIdIssue.fieldError}
+                  onIssueChange={assistantIdIssue.onChange}
                 />
               )}
 
-              <Controller
+              <FieldController
                 name="limit_tool_output_tokens"
                 control={control}
                 render={({ field, fieldState }) => (

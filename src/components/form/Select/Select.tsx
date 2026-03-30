@@ -15,9 +15,10 @@
 
 import { isNil } from 'lodash'
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown'
-import { forwardRef, ReactNode, useRef } from 'react'
+import { forwardRef, ReactNode, Ref, useRef } from 'react'
 
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
+import TooltipButton from '@/components/TooltipButton'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { FilterOption } from '@/types/filters'
 import { cn } from '@/utils/utils'
@@ -45,6 +46,8 @@ interface SelectProps {
   allowCustom?: boolean
   required?: boolean
   loading?: boolean
+  inputRef?: Ref<HTMLSelectElement>
+  hint?: string
 }
 
 const Select = forwardRef<Dropdown, SelectProps>(
@@ -70,6 +73,8 @@ const Select = forwardRef<Dropdown, SelectProps>(
       allowCustom = false,
       required = false,
       loading,
+      inputRef,
+      hint,
     },
     ref
   ) => {
@@ -96,17 +101,21 @@ const Select = forwardRef<Dropdown, SelectProps>(
 
     return (
       <div className={cn('flex flex-col', rootClassName)}>
-        <label className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           {label && (
-            <div className="text-xs text-text-quaternary">
-              {label}
-              {required && <span className="text-text-error ml-0.5">*</span>}
+            <div className="flex gap-2 items-center">
+              <label className="text-xs text-text-quaternary" htmlFor={id}>
+                {label}
+                {required && <span className="text-text-error ml-0.5">*</span>}
+              </label>
+              {hint && <TooltipButton content={hint} />}
             </div>
           )}
           <Dropdown
             showClear={showClear}
             id={id}
             ref={ref}
+            inputRef={inputRef}
             name={name}
             value={value}
             options={enhancedOptions}
@@ -120,6 +129,7 @@ const Select = forwardRef<Dropdown, SelectProps>(
             className={cn(
               'h-8 gap-2 !px-2 text-sm flex text-text-primary justify-between items-center bg-surface-base-content border border-border-primary rounded-lg transition hover:border-border-secondary cursor-pointer',
               !value && 'text-text-quaternary',
+              error && '!border-failed-secondary',
               className
             )}
             panelClassName={cn(
@@ -142,8 +152,10 @@ const Select = forwardRef<Dropdown, SelectProps>(
             collapseIcon={<ChevronDownSvg className="text-text-secondary" />}
             dropdownIcon={<ChevronDownSvg className="text-text-secondary" />}
           />
-        </label>
-        {error && <div className={cn('text-failed-secondary', errorClassName)}>{error}</div>}
+        </div>
+        {error && (
+          <div className={cn('text-failed-secondary text-sm mt-1', errorClassName)}>{error}</div>
+        )}
       </div>
     )
   }

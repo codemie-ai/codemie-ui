@@ -62,6 +62,7 @@ type UseWorkflowEditorReturn = {
   duplicateState: (nodeId: string) => void
   deleteNode: (nodeId: string) => void
   deleteConnection: (edgeId: string) => void
+  selectNode: (nodeId: string) => void
 
   config: WorkflowConfiguration
   onBeautify: () => void
@@ -69,10 +70,15 @@ type UseWorkflowEditorReturn = {
   undo: () => void
 }
 
+type UseWorkflowEditorOptions = {
+  handleSelectionChange?: (selection: { node?: WorkflowNode; edge?: WorkflowEdge }) => void
+}
+
 /* Main hook for managing workflow graph and configuration */
 const useWorkflowEditor = (
   configurationString: string,
-  onConfigurationUpdate: (configYaml: string) => void
+  onConfigurationUpdate: (configYaml: string) => void,
+  options?: UseWorkflowEditorOptions
 ) => {
   const isInitialLoad = useRef(true)
   const initialConfigRef = useRef(configurationString)
@@ -154,16 +160,19 @@ const useWorkflowEditor = (
         const node = selectedNodes[0] as WorkflowNode
         setSelectedNode(node)
         setSelectedEdge(undefined)
+        options?.handleSelectionChange?.({ node })
       } else if (selectedEdges.length > 0) {
         const edge = selectedEdges[0] as WorkflowEdge
         setSelectedNode(undefined)
         setSelectedEdge(edge)
+        options?.handleSelectionChange?.({ edge })
       } else {
         setSelectedNode(undefined)
         setSelectedEdge(undefined)
+        options?.handleSelectionChange?.({})
       }
     },
-    []
+    [options?.handleSelectionChange]
   )
 
   const onSelectionReset = useCallback(() => {
@@ -303,6 +312,41 @@ const useWorkflowEditor = (
     []
   )
 
+  const selectNode = useCallback(
+    (nodeId: string) => {
+      const nodeChanges = nodes
+        .filter((node) => node.selected)
+        .map((node) => ({
+          id: node.id,
+          type: NODE_CHANGE_TYPE.SELECT,
+          selected: false,
+        }))
+
+      const edgeChanges = edges
+        .filter((edge) => edge.selected)
+        .map((edge) => ({
+          id: edge.id,
+          type: EDGE_CHANGE_TYPE.SELECT,
+          selected: false,
+        }))
+
+      const selectChange = {
+        id: nodeId,
+        type: NODE_CHANGE_TYPE.SELECT,
+        selected: true,
+      }
+
+      if (nodeChanges.length > 0) {
+        onNodesChange(nodeChanges)
+      }
+      if (edgeChanges.length > 0) {
+        onEdgesChange(edgeChanges)
+      }
+      onNodesChange([selectChange])
+    },
+    [nodes, edges, onNodesChange, onEdgesChange]
+  )
+
   const editor: UseWorkflowEditorReturn = {
     nodes,
     edges,
@@ -323,6 +367,7 @@ const useWorkflowEditor = (
     duplicateState,
     deleteNode,
     deleteConnection,
+    selectNode,
 
     updateConfig,
     updateAdvancedConfig,

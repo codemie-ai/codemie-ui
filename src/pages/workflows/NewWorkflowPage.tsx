@@ -27,10 +27,12 @@ import { history } from '@/hooks/appLevel/useHistoryStack'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
+import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
 import API from '@/utils/api'
 import { preprocessYamlConfig } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
+import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
 import { isVisualEditorEnabled } from '@/utils/workflows'
 
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
@@ -64,7 +66,7 @@ const NewWorkflowPage: React.FC = () => {
   const [template, setTemplate] = useState<WorkflowTemplate | null>(null)
   const [showExecutionPopup, setShowExecutionPopup] = useState(false)
   const [createdWorkflowId, setCreatedWorkflowId] = useState<string>('')
-  const [validationErrors, setValidationErrors] = useState<any>(null)
+  const [issues, setIssues] = useState<WorkflowIssue[] | null>(null)
 
   const { configs } = useSnapshot(appInfoStore)
 
@@ -151,7 +153,9 @@ const NewWorkflowPage: React.FC = () => {
     const errorFormat = visualEditorEnabled ? ERROR_FORMAT_JSON : undefined
 
     try {
-      setValidationErrors(null) // Clear previous errors
+      setIssues(null)
+      formRef.current?.clearAllResolvedFields()
+
       const response = await workflowsStore.createWorkflow(values, errorFormat)
       const workflow = await response.json()
       toaster.info('Workflow has been created successfully!')
@@ -172,7 +176,14 @@ const NewWorkflowPage: React.FC = () => {
         return
       }
 
-      setValidationErrors(error.parsedError)
+      const { issues: backendIssues, generalError } = processBackendError(error.parsedError)
+
+      if (backendIssues) {
+        setIssues(backendIssues)
+        formRef.current?.openIssuesPanel()
+      } else if (generalError) {
+        toaster.error(generalError)
+      }
     } finally {
       if (!shouldOpenExecution) setIsSubmitting(false)
     }
@@ -210,10 +221,11 @@ const NewWorkflowPage: React.FC = () => {
         {!loading && (
           <WorkflowForm
             ref={formRef}
+            issues={issues}
+            setIssues={setIssues}
             onSubmit={submit}
             workflow={template}
             isEditing={false}
-            validationErrors={validationErrors}
           />
         )}
 

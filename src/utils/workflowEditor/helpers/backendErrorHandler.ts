@@ -17,62 +17,82 @@
  * Backend error handling utilities for workflow editor
  */
 
-export interface WorkflowErrorItem {
-  resource_type: string
-  resource_id: string
-  message: string
-  reference_state?: string
-}
+import { WorkflowIssue } from '@/types/entity'
 
 export interface WorkflowValidationError {
   message: string
   help?: string
-  details?: { error_type: string; message: string; errors: WorkflowErrorItem[] }
+  details?: {
+    error_type: string
+    message: string
+    errors: WorkflowIssue[]
+  }
 }
 
-export interface StateError {
-  path: string
-  message: string
+export interface ProcessedWorkflowError {
+  issues: WorkflowIssue[] | null
+  generalError: string | null
 }
 
-export interface CategorizedWorkflowErrors {
-  generalError: string
-  stateErrors: Map<string, string>
-}
-
-const GENERAL_ERROR_SEP = '<br>'
-const RESOURCE_TYPE_STATE = 'state'
+const errorTypes = [
+  'resource_validation',
+  'cross_reference_validation',
+  'schema_validation',
+  'workflow_schema',
+]
 
 /**
- * Parse error response from backend into general and state-specific errors
- * @param errorResponse - The error response from the API
- * @returns Parsed errors with general errors and state-specific errors map
+ * Process backend error response and extract validation issues
+ * @param error - The error response from the API
+ * @returns Processed error with issues array (for schema_validation or cross_reference_validation) or general error message
  */
-export const handleWorkflowErrors = (error: WorkflowValidationError): CategorizedWorkflowErrors => {
-  let generalError = error.message || 'An error occurred'
-  const stateErrors = new Map<string, string>()
-
-  if (!error.details) return { generalError, stateErrors }
-
-  if (!Array.isArray(error.details) && error.details?.message) {
-    generalError += `${GENERAL_ERROR_SEP} ${error.details.message}`
-  }
-
-  if (!error.details.errors || !Array.isArray(error.details.errors)) {
-    return { generalError, stateErrors }
-  }
-
-  for (const item of error.details.errors) {
-    if (item) {
-      if (item.resource_type === RESOURCE_TYPE_STATE) {
-        stateErrors.set(item.resource_id, item.message)
-      } else if (item.reference_state) {
-        stateErrors.set(item.reference_state, item.message)
-      } else {
-        generalError += `${GENERAL_ERROR_SEP}${item.message}`
-      }
+export const processBackendError = (error: WorkflowValidationError): ProcessedWorkflowError => {
+  if (error.details?.error_type && errorTypes.includes(error.details.error_type)) {
+    const issues = error.details.errors
+    // Add error_type to each issue
+    const issuesWithType = issues?.map((issue) => ({
+      ...transformErrorKeys(issue),
+      error_type: error.details!.error_type,
+    }))
+    return {
+      issues: issuesWithType && issuesWithType.length > 0 ? issuesWithType : null,
+      generalError: null,
     }
   }
 
-  return { generalError, stateErrors }
+  let generalError = error.message || 'An error occurred'
+
+  if (error.details?.message) generalError += `: ${error.details.message}`
+  if (error.help) generalError += `. ${error.help}`
+
+  return { issues: null, generalError }
+}
+
+/**
+ * Transforms API error response fields from snake_case to camelCase
+ * @param issue - The error issue from the API (with snake_case fields)
+ * @returns The transformed issue with camelCase fields
+ */
+const transformErrorKeys = (issue: any): WorkflowIssue => {
+  const { state_id, config_line, meta, ...rest } = issue
+
+  // Transform meta object if present
+  let transformedMeta
+  if (meta) {
+    const { toolkit_type, toolkit_name, tool_name, mcp_name, ...metaRest } = meta
+    transformedMeta = {
+      ...metaRest,
+      ...(toolkit_type ? { toolkitType: toolkit_type } : {}),
+      ...(toolkit_name ? { toolkitName: toolkit_name } : {}),
+      ...(tool_name ? { toolName: tool_name } : {}),
+      ...(mcp_name ? { mcpName: mcp_name } : {}),
+    }
+  }
+
+  return {
+    ...rest,
+    stateId: state_id,
+    configLine: config_line,
+    ...(transformedMeta ? { meta: transformedMeta } : {}),
+  }
 }

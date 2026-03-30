@@ -17,8 +17,8 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import isEmpty from 'lodash/isEmpty'
 import isNumber from 'lodash/isNumber'
 import isString from 'lodash/isString'
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
 import * as Yup from 'yup'
 
@@ -29,17 +29,27 @@ import Input from '@/components/form/Input'
 import ContextSelector from '@/pages/assistants/components/AssistantForm/components/ContextSelector'
 import LLMSelector from '@/pages/assistants/components/AssistantForm/components/LLMSelector'
 import SystemPromptGenAIPopup from '@/pages/assistants/components/AssistantForm/components/SystemPrompt/SystemPromptGenAIPopup'
-import Toolkits from '@/pages/assistants/components/AssistantForm/components/Toolkits/Toolkits'
+import Toolkits, {
+  ToolkitSection,
+} from '@/pages/assistants/components/AssistantForm/components/Toolkits/Toolkits'
 import { assistantsStore } from '@/store'
 import { settingsStore } from '@/store/settings'
+import { isWorkflowAssistantToolIssue, isWorkflowAssistantMcpIssue } from '@/types/entity'
 import {
   AssistantContext,
   AssistantToolkit,
   AssistantAIGeneratedFields,
 } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
+import { NodeTypes } from '@/types/workflowEditor/base'
 import { AssistantConfiguration } from '@/types/workflowEditor/configuration'
 import { getMCPServersFromConfiguration, getToolkitsFromConfiguration } from '@/utils/workflows'
+
+import FieldController from './FieldController'
+import { useWorkflowContext } from '../../hooks/useWorkflowContext'
+import { registerFields } from '../../utils/visualEditorFieldRegistry'
+
+registerFields(['system_prompt', 'model', 'temperature', 'datasource_ids'], NodeTypes.ASSISTANT)
 
 export interface VirtualAssistantFormValues {
   system_prompt: string
@@ -107,6 +117,7 @@ const getDefaultValues = (config?: AssistantConfiguration): VirtualAssistantForm
 const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistantFormProps>(
   ({ assistantConfig, showNewIntegrationPopup, project, onContentChange }, ref) => {
     const { availableContext, availableToolkits } = useSnapshot(assistantsStore)
+    const { activeIssue } = useWorkflowContext()
     const { settings } = useSnapshot(settingsStore)
     const {
       control,
@@ -127,6 +138,33 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
     const toolkits = watch('toolkits')
     const mcpServers = watch('mcp_servers')
     const systemPrompt = watch('system_prompt')
+
+    // eslint-disable-next-line consistent-return
+    const defaultOpenToolkitSection: ToolkitSection | undefined = useMemo(() => {
+      if (activeIssue && isWorkflowAssistantMcpIssue(activeIssue)) {
+        return 'mcp'
+      }
+
+      if (activeIssue && isWorkflowAssistantToolIssue(activeIssue)) {
+        const toolkit = availableToolkits?.find((tk) => tk.toolkit === activeIssue.meta.toolkitName)
+        if (!toolkit) return 'tools'
+        return activeIssue.meta.toolkitType
+      }
+    }, [activeIssue, availableToolkits])
+
+    // eslint-disable-next-line consistent-return
+    const defaultOpenToolkitName: string | undefined = useMemo(() => {
+      if (activeIssue && isWorkflowAssistantToolIssue(activeIssue)) {
+        return activeIssue.meta.toolkitName
+      }
+    }, [activeIssue])
+
+    // eslint-disable-next-line consistent-return
+    const defaultOpenMcpName: string | undefined = useMemo(() => {
+      if (activeIssue && isWorkflowAssistantMcpIssue(activeIssue)) {
+        return activeIssue.meta.mcpName
+      }
+    }, [activeIssue])
 
     const handleAIGenerated = (fields: AssistantAIGeneratedFields) => {
       setIsSystemPromptAIGenerated(true)
@@ -235,7 +273,7 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
               </div>
             )}
 
-            <Controller
+            <FieldController
               name="system_prompt"
               control={control}
               render={({ field, fieldState }) => (
@@ -262,20 +300,22 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
           </div>
 
           <div className="flex gap-x-4 gap-y-4 flex-wrap">
-            <Controller
+            <FieldController
               name="llm_model_type"
+              configPath="model"
               control={control}
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <LLMSelector
                   label="LLM model:"
                   placeholder="Select model"
                   className="grow max-w-sm"
+                  error={fieldState.error?.message}
                   {...field}
                 />
               )}
             />
 
-            <Controller
+            <FieldController
               name="temperature"
               control={control}
               render={({ field, fieldState }) => (
@@ -290,10 +330,18 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
             />
           </div>
 
-          <Controller
+          <FieldController
             name="context"
+            configPath="datasource_ids"
             control={control}
-            render={({ field }) => <ContextSelector {...field} project={project} withID />}
+            render={({ field, fieldState }) => (
+              <ContextSelector
+                {...field}
+                error={fieldState.error?.message}
+                project={project}
+                withID
+              />
+            )}
           />
 
           <Toolkits
@@ -303,6 +351,9 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
             onMcpServersChange={handleMcpServersChange}
             showNewIntegrationPopup={showNewIntegrationPopup}
             project={project}
+            defaultOpenSection={defaultOpenToolkitSection}
+            defaultOpenToolkitName={defaultOpenToolkitName}
+            defaultOpenMcpName={defaultOpenMcpName}
           />
         </div>
 

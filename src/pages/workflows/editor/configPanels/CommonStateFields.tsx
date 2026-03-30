@@ -14,8 +14,8 @@
 //
 
 import { yupResolver } from '@hookform/resolvers/yup'
-import { forwardRef, useImperativeHandle } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { forwardRef, useEffect, useImperativeHandle, useState, useMemo } from 'react'
+import { useForm } from 'react-hook-form'
 import * as Yup from 'yup'
 
 import ExpandableTextarea from '@/components/form/ExpandableTextarea/ExpandableTextarea'
@@ -23,12 +23,30 @@ import Input from '@/components/form/Input'
 import Select from '@/components/form/Select'
 import Switch from '@/components/form/Switch'
 import TooltipButton from '@/components/TooltipButton'
+import { NodeTypes } from '@/types/workflowEditor'
 import { CommonStateConfiguration, RetryPolicy } from '@/types/workflowEditor/configuration'
 import { START_NODE_ID, END_NODE_ID } from '@/utils/workflowEditor/constants'
 
 import ConfigAccordion from './components/ConfigAccordion'
+import FieldController from './components/FieldController'
+import { useWorkflowContext } from '../hooks/useWorkflowContext'
+import { registerFields } from '../utils/visualEditorFieldRegistry'
 
 const CONTEXT_STORE_KEEP_CURRENT = 'keep_current'
+
+registerFields(
+  [
+    'id',
+    'task',
+    'output_schema',
+    'interrupt_before',
+    'finish_iteration',
+    'resolve_dynamic_values_in_prompt',
+    'result_as_human_message',
+    /^retry_policy\./,
+  ],
+  [NodeTypes.ASSISTANT, NodeTypes.CUSTOM, NodeTypes.TOOL, NodeTypes.TRANSFORM]
+)
 
 /** Normalize clear_context_store value to valid option */
 const normalizeClearContextStore = (val: any): boolean | 'keep_current' => {
@@ -142,6 +160,7 @@ const validationSchema = Yup.object().shape({
 
 const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps>(
   ({ state, idDisabled = false, showAllFields = true }, ref) => {
+    const { setActiveIssue, activeIssue } = useWorkflowContext()
     const {
       control,
       getValues,
@@ -153,6 +172,26 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
       mode: 'onChange',
       defaultValues: getDefaultValues(state),
     })
+
+    const [transitionExpanded, setTransitionExpanded] = useState(false)
+    const [retryExpanded, setRetryExpanded] = useState(false)
+
+    const activeIssueAccordion = useMemo(() => {
+      if (!activeIssue?.path) return null
+
+      const { path } = activeIssue
+      if (path.startsWith('next.')) return 'transition'
+      if (path.startsWith('retry_policy.')) return 'retry'
+      return 'state'
+    }, [activeIssue?.path])
+
+    useEffect(() => {
+      if (activeIssueAccordion === 'transition' && !transitionExpanded) {
+        setTransitionExpanded(true)
+      } else if (activeIssueAccordion === 'retry' && !retryExpanded) {
+        setRetryExpanded(true)
+      }
+    }, [activeIssueAccordion, transitionExpanded, retryExpanded])
 
     useImperativeHandle(
       ref,
@@ -167,11 +206,15 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
       [getValues, trigger, isDirty, reset]
     )
 
+    useEffect(() => {
+      return () => setActiveIssue(null)
+    }, [])
+
     return (
       <>
         <ConfigAccordion title="State Settings" defaultExpanded={true}>
           <div className="flex flex-col gap-4">
-            <Controller
+            <FieldController
               name="id"
               control={control}
               render={({ field, fieldState }) => (
@@ -188,7 +231,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
 
             {showAllFields && (
               <>
-                <Controller
+                <FieldController
                   name="task"
                   control={control}
                   render={({ field, fieldState }) => (
@@ -202,7 +245,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="output_schema"
                   control={control}
                   render={({ field, fieldState }) => (
@@ -216,54 +259,58 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="interrupt_before"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Switch
                       {...field}
                       label="Interrupt Before"
                       value={field.value}
                       hint="Pause workflow execution before specified nodes to allow manual review or intervention."
+                      error={fieldState.error?.message}
                     />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="finish_iteration"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Switch
                       {...field}
                       label="Finish Iteration"
                       value={field.value}
                       hint="Complete the current workflow iteration fully before stopping, ensuring the workflow reaches a logical completion point."
+                      error={fieldState.error?.message}
                     />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="resolve_dynamic_values_in_prompt"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Switch
                       {...field}
                       label="Resolve Dynamic Values in Prompt"
                       value={field.value}
                       hint="Automatically resolve variables, placeholders, and dynamic expressions (e.g., {{variable_name}}) in prompts before sending to the LLM."
+                      error={fieldState.error?.message}
                     />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="result_as_human_message"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Switch
                       {...field}
                       label="Result as Human Message"
                       value={field.value}
                       hint="Format workflow results as human messages in the conversation history instead of system messages."
+                      error={fieldState.error?.message}
                     />
                   )}
                 />
@@ -274,9 +321,14 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
 
         {showAllFields && (
           <>
-            <ConfigAccordion title="Transition Settings" defaultExpanded={false}>
+            <ConfigAccordion
+              title="Transition Settings"
+              defaultExpanded={false}
+              expanded={transitionExpanded}
+              onExpandedChange={setTransitionExpanded}
+            >
               <div className="flex flex-col gap-4">
-                <Controller
+                <FieldController
                   name="next.output_key"
                   control={control}
                   render={({ field, fieldState }) => (
@@ -290,7 +342,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="next.append_to_context"
                   control={control}
                   render={({ field }) => (
@@ -303,10 +355,10 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="next.include_in_llm_history"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Switch
                       {...field}
                       label="Keep History"
@@ -314,27 +366,29 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                       hint="If true, the state outcome from context store will be included in the message history sent to the LLM.
 
                             When false, the outcome is stored in context but not sent to LLM."
+                      error={fieldState.error?.message}
                     />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="next.override_task"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Switch
                       {...field}
                       label="Override Task"
                       value={field.value}
                       hint="Override the task definition for the next state"
+                      error={fieldState.error?.message}
                     />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="next.store_in_context"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Switch
                       {...field}
                       label="Store in Context"
@@ -342,14 +396,15 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                       hint="If true, the state outcome will be stored in the context store.
 
                             When false, the state outcome will not be added to context_store, but may still be added to message history if Keep History is true."
+                      error={fieldState.error?.message}
                     />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="next.clear_prior_messages"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Switch
                       {...field}
                       label="Clear Prior Messages"
@@ -357,14 +412,15 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                       hint="If true, all prior messages in the message history will be excluded from the message history sent to the LLM starting from this state.
 
                             This effectively creates a 'fresh start' for LLM context while preserving the full context_store for dynamic expression resolution."
+                      error={fieldState.error?.message}
                     />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="next.clear_context_store"
                   control={control}
-                  render={({ field }) => {
+                  render={({ field, fieldState }) => {
                     const displayValue = String(normalizeClearContextStore(field.value))
 
                     return (
@@ -389,6 +445,8 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                         <Select
                           id="clear_context_store_select"
                           value={displayValue}
+                          inputRef={field.ref}
+                          error={fieldState.error?.message}
                           onChange={(e) => {
                             const { value } = e
                             const computedValue =
@@ -408,7 +466,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                   }}
                 />
 
-                <Controller
+                <FieldController
                   name="next.reset_keys_in_context_store"
                   control={control}
                   render={({ field, fieldState }) => (
@@ -442,93 +500,86 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
               </div>
             </ConfigAccordion>
 
-            <ConfigAccordion title="Retry Policy" defaultExpanded={false}>
+            <ConfigAccordion
+              title="Retry Policy"
+              defaultExpanded={false}
+              expanded={retryExpanded}
+              onExpandedChange={setRetryExpanded}
+            >
               <div className="flex flex-col gap-3">
-                <Controller
+                <FieldController
                   name="retry_policy.initial_interval"
                   control={control}
                   render={({ field, fieldState }) => (
-                    <div className="flex items-center gap-4">
-                      <label className="text-sm text-text-primary whitespace-nowrap min-w-[100px]">
-                        Initial (s):
-                      </label>
-                      <Input
-                        {...field}
-                        placeholder="1"
-                        type="number"
-                        error={fieldState.error?.message}
-                        onChange={(e) =>
-                          field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                        }
-                        className="flex-1"
-                      />
-                    </div>
+                    <Input
+                      {...field}
+                      placeholder="1"
+                      type="number"
+                      label="Initial (s):"
+                      orientation="horizontal"
+                      error={fieldState.error?.message}
+                      onChange={(e) =>
+                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
+                      }
+                      className="flex-1"
+                    />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="retry_policy.backoff_factor"
                   control={control}
                   render={({ field, fieldState }) => (
-                    <div className="flex items-center gap-4">
-                      <label className="text-sm text-text-primary whitespace-nowrap min-w-[100px]">
-                        Backoff:
-                      </label>
-                      <Input
-                        {...field}
-                        placeholder="2"
-                        type="number"
-                        error={fieldState.error?.message}
-                        onChange={(e) =>
-                          field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                        }
-                        className="flex-1"
-                      />
-                    </div>
+                    <Input
+                      {...field}
+                      placeholder="2"
+                      type="number"
+                      label="Backoff:"
+                      orientation="horizontal"
+                      error={fieldState.error?.message}
+                      onChange={(e) =>
+                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
+                      }
+                      className="flex-1"
+                    />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="retry_policy.max_interval"
                   control={control}
                   render={({ field, fieldState }) => (
-                    <div className="flex items-center gap-4">
-                      <label className="text-sm text-text-primary whitespace-nowrap min-w-[100px]">
-                        Max (s):
-                      </label>
-                      <Input
-                        {...field}
-                        placeholder="60"
-                        type="number"
-                        error={fieldState.error?.message}
-                        onChange={(e) =>
-                          field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                        }
-                        className="flex-1"
-                      />
-                    </div>
+                    <Input
+                      {...field}
+                      placeholder="60"
+                      type="number"
+                      label="Max (s):"
+                      orientation="horizontal"
+                      error={fieldState.error?.message}
+                      onChange={(e) =>
+                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
+                      }
+                      className="flex-1"
+                    />
                   )}
                 />
 
-                <Controller
+                <FieldController
                   name="retry_policy.max_attempts"
                   control={control}
                   render={({ field, fieldState }) => (
-                    <div className="flex items-center gap-4">
-                      <label className="text-sm text-text-primary whitespace-nowrap min-w-[100px]">
-                        Attempts:
-                      </label>
-                      <Input
-                        {...field}
-                        placeholder="3"
-                        type="number"
-                        error={fieldState.error?.message}
-                        onChange={(e) =>
-                          field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                        }
-                        className="flex-1"
-                      />
-                    </div>
+                    <Input
+                      {...field}
+                      placeholder="3"
+                      type="number"
+                      label="Attempts:"
+                      orientation="horizontal"
+                      error={fieldState.error?.message}
+                      onChange={(e) =>
+                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
+                      }
+                      className="flex-1"
+                    />
                   )}
                 />
               </div>

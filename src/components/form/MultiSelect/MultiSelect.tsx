@@ -227,6 +227,8 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
     }[size]
 
     const preparedPreset = useMemo<MultiSelectPassThroughOptions>(() => {
+      const errorBorderClass = error ? '!border-failed-secondary' : ''
+
       if (!showCheckbox) {
         return {
           ...ptPreset!,
@@ -235,6 +237,9 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           },
           checkboxContainer: {
             className: '!hidden',
+          },
+          root: {
+            className: errorBorderClass,
           },
         }
       }
@@ -249,8 +254,11 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
         label: {
           className: 'text-text-tertiary',
         },
+        root: {
+          className: errorBorderClass,
+        },
       }
-    }, [showCheckbox])
+    }, [showCheckbox, error])
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !disabled) {

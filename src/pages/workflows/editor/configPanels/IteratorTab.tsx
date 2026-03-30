@@ -15,16 +15,21 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useEffect, useMemo, forwardRef, useImperativeHandle } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import * as Yup from 'yup'
 
 import Input from '@/components/form/Input'
+import { NodeTypes } from '@/types/workflowEditor/base'
 import { StateConfiguration, WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 import { ConfigurationUpdate } from '@/utils/workflowEditor/actions'
 
 import ConfigAccordion from './components/ConfigAccordion'
+import FieldController from './components/FieldController'
 import TabFooter from './components/TabFooter'
 import ValidationError from './components/ValidationError'
+import { registerFields } from '../utils/visualEditorFieldRegistry'
+
+registerFields([/^data\.next\.iter_key/], NodeTypes.ITERATOR)
 
 interface IteratorTabProps {
   stateId: string
@@ -139,8 +144,9 @@ const IteratorTab = forwardRef<IteratorTabRef, IteratorTabProps>(
           </div>
 
           <ConfigAccordion title="Node Settings" defaultExpanded={true}>
-            <Controller
+            <FieldController
               name="iter_key"
+              issuePathPrefix="data.next"
               control={control}
               render={({ field, fieldState }) => (
                 <Input

@@ -22,6 +22,7 @@ import ExpandableTextarea from '@/components/form/ExpandableTextarea/ExpandableT
 import Input from '@/components/form/Input'
 import YamlEditor from '@/components/form/YamlEditor/YamlEditor'
 import LLMSelector from '@/pages/assistants/components/AssistantForm/components/LLMSelector'
+import { NodeTypes } from '@/types/workflowEditor/base'
 import {
   CustomNodeConfiguration,
   CustomNodeConfigurationValues,
@@ -34,6 +35,10 @@ import {
   convertConfigToTypedValues,
 } from './CustomNodeForm/useCustomNodeSchema'
 import CustomNodeSelector from './CustomNodeSelector'
+import FieldController from './FieldController'
+import { registerFields } from '../../utils/visualEditorFieldRegistry'
+
+registerFields(['name', 'custom_node_id', 'model', 'system_prompt', /^config\./], NodeTypes.CUSTOM)
 
 interface CustomNodeFormProps {
   project: string
@@ -218,7 +223,7 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
 
     return (
       <div className="flex flex-col gap-4">
-        <Controller
+        <FieldController
           name="name"
           control={control}
           render={({ field, fieldState }) => (
@@ -231,7 +236,7 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
           )}
         />
 
-        <Controller
+        <FieldController
           name="custom_node_id"
           control={control}
           render={({ field, fieldState }) => (
@@ -241,7 +246,10 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
                 ...customNodeConfig,
                 custom_node_id: field.value,
               }}
-              onCustomNodeConfigUpdate={handleCustomNodeTypeChange}
+              onCustomNodeConfigUpdate={(config) => {
+                field.markIssueDirty()
+                handleCustomNodeTypeChange(config)
+              }}
             />
           )}
         />
@@ -279,20 +287,21 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
           </div>
         )}
 
-        <Controller
+        <FieldController
           name="model"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <LLMSelector
               label="LLM model:"
               placeholder="Select model (optional)"
               className="w-full"
+              error={fieldState.error?.message}
               {...field}
             />
           )}
         />
 
-        <Controller
+        <FieldController
           name="system_prompt"
           control={control}
           render={({ field, fieldState }) => (

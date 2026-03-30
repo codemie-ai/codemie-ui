@@ -32,6 +32,7 @@ const FormAccordion = <T,>({
   title,
   description,
   defaultOpen = false,
+  defaultOpenIndexes = [],
   ...props
 }: FormAccordionProps<T>) => {
   const [activeTabIndex, setActiveTabIndex] = useState<number | number[] | null>(
@@ -65,7 +66,7 @@ const FormAccordion = <T,>({
           </div>
         )}
       >
-        <FormNestedAccordion {...props} />
+        <FormNestedAccordion defaultOpenIndexes={defaultOpenIndexes} {...props} />
       </AccordionTab>
     </Accordion>
   )

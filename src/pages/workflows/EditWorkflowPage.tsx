@@ -26,9 +26,11 @@ import { useVueRoute } from '@/hooks/useVueRouter'
 import { goBackWorkflows } from '@/pages/workflows/utils/goBackWorkflows'
 import { appInfoStore } from '@/store/appInfo'
 import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
+import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
 import API from '@/utils/api'
 import toaster from '@/utils/toaster'
+import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
 import { isVisualEditorEnabled } from '@/utils/workflows'
 
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
@@ -40,7 +42,7 @@ const EditWorkflowPage: React.FC = () => {
   const { id } = route.params as { id: string }
   const formRef = useRef<WorkflowFormRef>(null)
   const [showExecutionPopup, setShowExecutionPopup] = useState(false)
-  const [validationErrors, setValidationErrors] = useState<any>(null)
+  const [issues, setIssues] = useState<WorkflowIssue[] | null>(null)
 
   const { currentWorkflow, currentWorkflowLoading, currentWorkflowError } =
     useSnapshot(workflowsStore)
@@ -66,7 +68,9 @@ const EditWorkflowPage: React.FC = () => {
     const errorFormat = visualEditorEnabled ? ERROR_FORMAT_JSON : undefined
 
     try {
-      setValidationErrors(null) // Clear previous errors
+      setIssues(null)
+      formRef.current?.clearAllResolvedFields()
+
       await workflowsStore.updateWorkflow(id, values, errorFormat)
       toaster.info('Workflow has been updated successfully!')
 
@@ -80,7 +84,15 @@ const EditWorkflowPage: React.FC = () => {
         API.handleError({ error: error.parsedError })
         return
       }
-      setValidationErrors(error.parsedError)
+
+      const { issues: backendIssues, generalError } = processBackendError(error.parsedError)
+
+      if (backendIssues) {
+        setIssues(backendIssues)
+        formRef.current?.openIssuesPanel()
+      } else if (generalError) {
+        toaster.error(generalError)
+      }
     }
   }
 
@@ -167,9 +179,10 @@ const EditWorkflowPage: React.FC = () => {
           <WorkflowForm
             ref={formRef}
             onSubmit={submit}
+            issues={issues}
+            setIssues={setIssues}
             workflow={currentWorkflow}
             isEditing
-            validationErrors={validationErrors}
           />
         )}
       </PageLayout>

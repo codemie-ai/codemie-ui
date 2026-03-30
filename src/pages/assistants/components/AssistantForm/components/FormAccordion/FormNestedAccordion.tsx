@@ -47,11 +47,12 @@ const FormNestedAccordion = <T,>({
         <AccordionTab
           key={i}
           pt={{
-            root: (options) =>
-              cn(
+            root: (options) => ({
+              className: cn(
                 'border rounded-lg border-border-primary mb-3 group/item overflow-hidden transition-colors',
                 options?.context.selected && 'border-border-primary-active'
               ),
+            }),
             headerAction: () => 'hover:no-underline',
           }}
           header={

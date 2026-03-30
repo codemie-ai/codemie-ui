@@ -100,3 +100,51 @@ export interface ExportWorkflowExecutionOptions {
   output_format: string
   combined: boolean | string
 }
+
+export type WorkflowFieldPath = string
+
+export interface WorkflowBaseIssue {
+  id: string
+  message: string
+  details?: string
+  stateId?: string
+  path: WorkflowFieldPath
+  configLine: number
+  error_type?: string
+  status?: 'resolved' | 'dirty'
+}
+
+export interface WorkflowAssistantToolIssue extends WorkflowBaseIssue {
+  meta: {
+    toolkitType: 'tools' | 'external-tools'
+    toolkitName: string
+    toolName?: string
+  }
+}
+
+export interface WorkflowAssistantMcpIssue extends WorkflowBaseIssue {
+  meta: { mcpName: string }
+}
+
+export type WorkflowIssue =
+  | WorkflowBaseIssue
+  | WorkflowAssistantToolIssue
+  | WorkflowAssistantMcpIssue
+
+export function isWorkflowAssistantToolIssue(
+  issue: WorkflowIssue
+): issue is WorkflowAssistantToolIssue {
+  return (
+    'meta' in issue &&
+    issue.meta &&
+    'toolkitName' in issue.meta &&
+    'toolkitType' in issue.meta &&
+    issue.path === 'tools'
+  )
+}
+
+export function isWorkflowAssistantMcpIssue(
+  issue: WorkflowIssue
+): issue is WorkflowAssistantMcpIssue {
+  return 'meta' in issue && issue.meta && 'mcpName' in issue.meta
+}

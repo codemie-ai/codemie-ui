@@ -28,6 +28,6 @@ export interface CommonNodeProps extends NodeProps {
     removeState: (nodeID: string) => void
     onNodesChange: (changes: NodeChange[]) => void
     isFullscreen?: boolean
-    stateErrors?: Map<string, any>
+    hasError: boolean
   }
 }

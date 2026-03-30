@@ -40,6 +40,7 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 }
 
 export interface TextareaRef {
+  scrollIntoView: (options: ScrollIntoViewOptions) => void
   focus: () => void
   getCursor: () => number | undefined
   setCursor: (position: number) => void
@@ -70,9 +71,8 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     useImperativeHandle(ref, () => ({
-      focus: () => {
-        textareaRef.current?.focus()
-      },
+      scrollIntoView: () => textareaRef.current?.scrollIntoView(),
+      focus: () => textareaRef.current?.focus(),
       getCursor: () => {
         return textareaRef.current?.selectionStart
       },
@@ -82,6 +82,7 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
           textareaRef.current.focus()
         }
       },
+      ...textareaRef.current,
     }))
 
     return (

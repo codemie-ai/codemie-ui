@@ -13,8 +13,9 @@
 // limitations under the License.
 //
 
-import React from 'react'
+import React, { useContext } from 'react'
 
+import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowContext'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 
@@ -46,25 +47,52 @@ const MCPServerList: React.FC<MCPServerListProps> = ({
   onBrowseMarketplace,
   onAddCustom,
 }) => {
+  const workflowContext = useContext(WorkflowContext)
+
   if (mcpServers.length === 0) {
     return <MCPEmptyState onBrowseMarketplace={onBrowseMarketplace} onAddCustom={onAddCustom} />
   }
 
+  const getMcpServerIssue = (serverName: string) => {
+    if (!workflowContext?.getMcpIssue) return null
+    const possiblePaths: Array<string | RegExp> = [
+      'settings',
+      'command',
+      'arguments',
+      'env',
+      'config',
+      'integration_alias',
+      'name',
+      'description',
+      /^config\./,
+    ]
+    for (const path of possiblePaths) {
+      const issueResult = workflowContext.getMcpIssue({ mcpName: serverName, path })
+      if (issueResult) return issueResult
+    }
+    return null
+  }
+
   return (
     <div className="flex flex-col gap-3">
-      {mcpServers.map((server) => (
-        <MCPServerCard
-          key={server.name}
-          mcpServer={server}
-          isSelected={isSelected(server)}
-          onToggle={() => onToggle(server)}
-          onEdit={() => onEdit(server)}
-          onDelete={() => onDelete(server)}
-          settingsDefinitions={settingsDefinitions}
-          onSettingsChange={(settings) => onUpdateSettings(server, settings)}
-          onAddSettingClick={onAddSettingClick}
-        />
-      ))}
+      {mcpServers.map((server) => {
+        const mcpIssue = getMcpServerIssue(server.name)
+        return (
+          <MCPServerCard
+            key={server.name}
+            mcpServer={server}
+            isSelected={isSelected(server)}
+            onToggle={() => onToggle(server)}
+            onEdit={() => onEdit(server)}
+            onDelete={() => onDelete(server)}
+            settingsDefinitions={settingsDefinitions}
+            onSettingsChange={(settings) => onUpdateSettings(server, settings)}
+            onAddSettingClick={onAddSettingClick}
+            error={mcpIssue?.fieldError}
+            onErrorChange={mcpIssue?.onChange}
+          />
+        )
+      })}
     </div>
   )
 }

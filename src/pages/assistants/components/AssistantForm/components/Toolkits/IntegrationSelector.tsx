@@ -35,6 +35,7 @@ interface IntegrationSelectorProps {
   onChange: (value?: Setting) => void
   onAddSettingClick: () => void
   short?: boolean
+  error?: string
 }
 
 const IntegrationSelector = ({
@@ -50,6 +51,7 @@ const IntegrationSelector = ({
   onChange,
   onAddSettingClick,
   short,
+  error,
 }: IntegrationSelectorProps) => {
   const selectRef = useRef<Dropdown>(null)
 
@@ -67,7 +69,7 @@ const IntegrationSelector = ({
   const widthClass = short ? 'max-w-56' : 'max-w-[300px]'
 
   return (
-    <div className={cn('flex w-full', className)}>
+    <div className={cn('flex flex-col w-full', className)}>
       {selectOptions && settingsDefinitions && settingsDefinitions.length > 0 ? (
         <Select
           showClear
@@ -84,6 +86,7 @@ const IntegrationSelector = ({
             const value = settingsDefinitions.find((s) => s.id === e.target.value)!
             onChange(value)
           }}
+          error={error}
           panelFooterTemplate={
             <Button
               onClick={handleClick}
@@ -96,9 +99,12 @@ const IntegrationSelector = ({
           }
         />
       ) : (
-        <Button variant="secondary" onClick={handleClick}>
-          <PlusFilledSvg /> {buttonLabel}
-        </Button>
+        <>
+          <Button variant="secondary" onClick={handleClick}>
+            <PlusFilledSvg /> {buttonLabel}
+          </Button>
+          {error && <div className="text-failed-secondary text-sm mt-1">{error}</div>}
+        </>
       )}
     </div>
   )

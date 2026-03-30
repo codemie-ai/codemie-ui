@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
@@ -37,6 +37,8 @@ interface MCPServerCardProps {
   settingsDefinitions: Setting[]
   onSettingsChange: (settings: Setting | undefined) => void
   onAddSettingClick: () => void
+  error?: string
+  onErrorChange?: () => void
 }
 
 const MCPServerCard: React.FC<MCPServerCardProps> = ({
@@ -48,15 +50,25 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
   settingsDefinitions,
   onSettingsChange,
   onAddSettingClick,
+  error,
+  onErrorChange,
 }) => {
   const [imageError, setImageError] = useState(false)
   const categories = useMemo(() => mcpServer.categories ?? [], [mcpServer.categories])
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const handleImageError = () => {
     setImageError(true)
   }
 
   const logoUrl = mcpServer.logo_url ?? null
+  const hasError = !!error
+
+  const handleChange = () => {
+    if (onErrorChange) {
+      onErrorChange()
+    }
+  }
 
   useEffect(() => {
     setImageError(false)
@@ -64,9 +76,12 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
 
   return (
     <div
+      ref={cardRef}
       className={cn(
-        'flex flex-col gap-3 p-4 rounded-lg border border-border-structural bg-surface-base-secondary transition-all',
-        'hover:border-specific-interactive-outline',
+        'flex flex-col gap-3 p-4 rounded-lg border transition-all',
+        hasError
+          ? 'border-border-error bg-surface-base-secondary'
+          : 'border-border-structural bg-surface-base-secondary hover:border-specific-interactive-outline',
         isSelected
       )}
     >
@@ -74,7 +89,14 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
       <div className="flex items-start gap-3">
         {/* Checkbox */}
         <div className="flex-shrink-0 pt-3.5">
-          <Checkbox checked={isSelected} onChange={onToggle} label="" />
+          <Checkbox
+            checked={isSelected}
+            onChange={() => {
+              handleChange()
+              onToggle()
+            }}
+            label=""
+          />
         </div>
 
         {/* Logo */}
@@ -151,9 +173,19 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
             settingsDefinitions={settingsDefinitions}
             addButtonLabel="Add Environment Variables"
             placeholder="Environment Variables"
-            onChange={onSettingsChange}
+            onChange={(settings) => {
+              handleChange()
+              onSettingsChange(settings)
+            }}
             onAddSettingClick={onAddSettingClick}
           />
+        </div>
+      )}
+
+      {/* Error Message */}
+      {hasError && error && (
+        <div className="pl-4 pt-2">
+          <p className="text-xs text-text-error">{error}</p>
         </div>
       )}
     </div>

@@ -14,7 +14,7 @@
 //
 
 import { MultiSelect as PrimeMultiSelect } from 'primereact/multiselect'
-import { useState, forwardRef, useEffect, useMemo } from 'react'
+import { useState, forwardRef, useEffect, useMemo, useImperativeHandle, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import MultiSelect from '@/components/form/MultiSelect'
@@ -28,12 +28,16 @@ interface LLMSelectorProps {
   className?: string
   value?: string
   hint?: string
+  error?: string
   defaultOptionLabelPrefix?: string
   allowEmpty?: boolean
   onChange: (value: string) => void
 }
 
-const LLMSelector = forwardRef<PrimeMultiSelect, LLMSelectorProps>(
+const LLMSelector = forwardRef<
+  { focus: () => void; scrollIntoView: (options: ScrollIntoViewOptions) => void },
+  LLMSelectorProps
+>(
   (
     {
       label,
@@ -44,11 +48,24 @@ const LLMSelector = forwardRef<PrimeMultiSelect, LLMSelectorProps>(
       allowEmpty,
       defaultOptionLabelPrefix = 'Default',
       hint,
+      error,
     },
     ref
   ) => {
     const { llmModels, getLLMModels } = useSnapshot(appInfoStore)
     const [invalidModel, setInvalidModel] = useState<string | null>(null)
+    const selectRef = useRef<PrimeMultiSelect>(null)
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        focus: () => selectRef.current?.getElement()?.focus(),
+        scrollIntoView: (options: ScrollIntoViewOptions) => {
+          selectRef.current?.getElement()?.scrollIntoView(options)
+        },
+      }),
+      []
+    )
 
     const defaultLlmModel = useMemo(() => {
       const defaultModel = llmModels.find((model) => model.isDefault)
@@ -92,13 +109,14 @@ const LLMSelector = forwardRef<PrimeMultiSelect, LLMSelectorProps>(
           singleValue
           label={label}
           hint={hint}
+          error={error}
           placeholder={placeholder}
           className={className}
           value={value}
           options={options}
           onChange={(e) => onChange(e.target.value)}
           onFilter={() => {}}
-          ref={ref}
+          ref={selectRef}
         />
         {invalidModel && (
           <InfoWarning

@@ -37,6 +37,7 @@ const CustomNodeArgumentsForm: React.FC<CustomNodeArgumentsFormProps> = ({
       value={value}
       onChange={onChange}
       errors={errors}
+      issuePathPrefix="config"
     />
   )
 }

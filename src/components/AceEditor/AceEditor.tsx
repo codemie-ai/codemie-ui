@@ -14,7 +14,7 @@
 //
 
 import ace from 'ace-builds'
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 
 import 'ace-builds/src-noconflict/mode-yaml'
 import 'ace-builds/src-noconflict/mode-json'
@@ -33,95 +33,123 @@ interface AceEditorProps {
   placeholder?: string
 }
 
-const AceEditor: React.FC<AceEditorProps> = ({
-  value,
-  onChange,
-  lang = 'yaml',
-  readonly = false,
-  name = 'ace_editor',
-  className,
-  placeholder,
-}) => {
-  const { isDark } = useTheme()
-  const containerRef = useRef<HTMLDivElement>(null)
-  const editorRef = useRef<ace.Ace.Editor | null>(null)
-  const valueRef = useRef(value)
-
-  useEffect(() => {
-    valueRef.current = value
-  }, [value])
-
-  useEffect(() => {
-    if (!containerRef.current) {
-      return () => {}
-    }
-
-    const editor = ace.edit(containerRef.current, {
-      mode: `ace/mode/${lang}`,
-      theme: `ace/theme/${isDark ? 'tomorrow_night' : 'tomorrow'}`,
-      value,
-      readOnly: readonly,
-      fontSize: 14,
-      fontFamily: 'Geist',
-      showPrintMargin: false,
-      highlightActiveLine: !readonly,
-      highlightGutterLine: !readonly,
-      useWorker: false,
-      placeholder: placeholder || '',
-    })
-
-    editorRef.current = editor
-
-    editor.commands.addCommand({
-      name: 'copy',
-      bindKey: { win: 'Ctrl-C', mac: 'Command-C' },
-      exec: (editor: ace.Ace.Editor) => {
-        const selectedText = editor.getSelectedText()
-        if (selectedText) {
-          navigator.clipboard.writeText(selectedText)
-        }
-      },
-    })
-
-    editor.on('change', () => {
-      const newValue = editor.getValue()
-      if (onChange && newValue !== valueRef.current) {
-        onChange(newValue)
-      }
-    })
-
-    return () => {
-      editor.destroy()
-    }
-  }, [])
-
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.setTheme(`ace/theme/${isDark ? 'tomorrow_night' : 'tomorrow'}`)
-    }
-  }, [isDark])
-
-  useEffect(() => {
-    if (editorRef.current && value !== editorRef.current.getValue()) {
-      const cursorPosition = editorRef.current.getCursorPosition()
-      editorRef.current.setValue(value, -1)
-      editorRef.current.moveCursorToPosition(cursorPosition)
-    }
-  }, [value])
-
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.setReadOnly(readonly)
-    }
-  }, [readonly])
-
-  return (
-    <div
-      ref={containerRef}
-      className={cn('text-sm rounded-xl w-full h-full [&_div]:!font-geist-mono', className)}
-      data-name={name}
-    />
-  )
+export interface AceEditorRef {
+  editor: ace.Ace.Editor | null
+  jumpToLine: (line: number, column?: number) => void
 }
+
+const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
+  (
+    {
+      value,
+      onChange,
+      lang = 'yaml',
+      readonly = false,
+      name = 'ace_editor',
+      className,
+      placeholder,
+    },
+    ref
+  ) => {
+    const { isDark } = useTheme()
+    const containerRef = useRef<HTMLDivElement>(null)
+    const editorRef = useRef<ace.Ace.Editor | null>(null)
+    const valueRef = useRef(value)
+
+    useEffect(() => {
+      valueRef.current = value
+    }, [value])
+
+    useEffect(() => {
+      if (!containerRef.current) {
+        return () => {}
+      }
+
+      const editor = ace.edit(containerRef.current, {
+        mode: `ace/mode/${lang}`,
+        theme: `ace/theme/${isDark ? 'tomorrow_night' : 'tomorrow'}`,
+        value,
+        readOnly: readonly,
+        fontSize: 14,
+        fontFamily: 'Geist',
+        showPrintMargin: false,
+        highlightActiveLine: !readonly,
+        highlightGutterLine: !readonly,
+        useWorker: false,
+        placeholder: placeholder || '',
+      })
+
+      editorRef.current = editor
+
+      editor.commands.addCommand({
+        name: 'copy',
+        bindKey: { win: 'Ctrl-C', mac: 'Command-C' },
+        exec: (editor: ace.Ace.Editor) => {
+          const selectedText = editor.getSelectedText()
+          if (selectedText) {
+            navigator.clipboard.writeText(selectedText)
+          }
+        },
+      })
+
+      editor.on('change', () => {
+        const newValue = editor.getValue()
+        if (onChange && newValue !== valueRef.current) {
+          onChange(newValue)
+        }
+      })
+
+      return () => {
+        editor.destroy()
+      }
+    }, [])
+
+    useEffect(() => {
+      if (editorRef.current) {
+        editorRef.current.setTheme(`ace/theme/${isDark ? 'tomorrow_night' : 'tomorrow'}`)
+      }
+    }, [isDark])
+
+    useEffect(() => {
+      if (editorRef.current && value !== editorRef.current.getValue()) {
+        const cursorPosition = editorRef.current.getCursorPosition()
+        editorRef.current.setValue(value, -1)
+        editorRef.current.moveCursorToPosition(cursorPosition)
+      }
+    }, [value])
+
+    useEffect(() => {
+      if (editorRef.current) {
+        editorRef.current.setReadOnly(readonly)
+      }
+    }, [readonly])
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        editor: editorRef.current,
+        jumpToLine: (line: number, column: number = 0) => {
+          if (!editorRef.current) return
+
+          const row = line - 1
+          editorRef.current.gotoLine(line, column, true)
+          editorRef.current.scrollToLine(row, true, true, () => {})
+          editorRef.current.focus()
+        },
+      }),
+      []
+    )
+
+    return (
+      <div
+        ref={containerRef}
+        className={cn('text-sm rounded-xl w-full h-full [&_div]:!font-geist-mono', className)}
+        data-name={name}
+      />
+    )
+  }
+)
+
+AceEditor.displayName = 'AceEditor'
 
 export default AceEditor

@@ -97,6 +97,7 @@ export const CONFIG_PANEL_HEADERS = {
   NODE: 'Node configuration',
   CONNECTION: 'Connection configuration',
   WORKFLOW: 'Workflow configuration',
+  ISSUES: 'Issues',
 } as const
 
 /* Actor Field Mapping */
@@ -104,5 +105,20 @@ export const ACTOR_FIELD_MAP = {
   assistant: 'assistant_id',
   tool: 'tool_id',
   custom_node: 'custom_node_id',
+  transform: 'custom_node_id',
+} as const
+
+/* Issue Validation Mappings */
+export const NODE_TYPE_TO_CONFIG_ARRAY = {
+  assistant: 'assistants',
+  transform: 'custom_nodes',
+  tool: 'tools',
+  custom: 'custom_nodes',
+} as const
+
+export const ISSUE_FIELD_MAP = {
+  assistant: 'assistant_id',
+  tool: 'tool_id',
+  custom: 'custom_node_id',
   transform: 'custom_node_id',
 } as const

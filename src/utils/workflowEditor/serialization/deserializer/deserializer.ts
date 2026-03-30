@@ -43,7 +43,7 @@ import toaster from '@/utils/toaster'
 import { addIteratorStates } from './iterators'
 import { START_NODE_ID, END_NODE_ID, TRANSFORM_CUSTOM_ACTOR_ID } from '../../constants'
 import { findEntryState, findOrphanedStates } from '../../helpers/connections'
-import { generateStateID } from '../../helpers/states'
+import { generateStateID, findDirectChildren } from '../../helpers/states'
 import { SerializedWorkflowConfig, SerializedState, SerializedMetaState } from '../types'
 
 /** Parses YAML string into SerializedWorkflowConfig */
@@ -199,6 +199,29 @@ const processOrphanedMetaStates = (
   }
 }
 
+/**
+ * Removes stale meta references from state.next after YAML is loaded.
+ * - meta_iter_state_id without iter_key on parent → dangling iterator reference
+ * - meta_next_state_id without condition/switch → dangling branch reference
+ */
+export const cleanupMetaStateReferences = (loadedConfig: WorkflowConfiguration): void => {
+  const iterChildren = new Set(
+    loadedConfig.states
+      .filter((s) => s.next?.iter_key)
+      .flatMap((s) => findDirectChildren(s.id, loadedConfig.states))
+  )
+
+  for (const state of loadedConfig.states) {
+    if (state.next?.meta_iter_state_id && !iterChildren.has(state.id)) {
+      delete state.next.meta_iter_state_id
+    }
+
+    if (state.next?.meta_next_state_id && !state.next.condition && !state.next.switch) {
+      delete state.next.meta_next_state_id
+    }
+  }
+}
+
 /** Adds boundary state (START/END) to configuration */
 const addBoundaryState = (
   id: string,
@@ -265,6 +288,7 @@ export const deserialize = (yamlString: string): WorkflowConfiguration => {
   processOrphanedMetaStates(metaStates, loadedConfig)
 
   addIteratorStates(loadedConfig)
+  cleanupMetaStateReferences(loadedConfig)
 
   addBoundaryState(END_NODE_ID, NodeTypes.END, metaStates, loadedConfig)
 

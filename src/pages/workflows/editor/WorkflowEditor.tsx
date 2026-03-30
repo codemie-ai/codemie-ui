@@ -13,41 +13,45 @@
 // limitations under the License.
 //
 
-import { ReactFlow, ReactFlowProvider, NodeChange } from '@xyflow/react'
-import React, {
-  useEffect,
-  useState,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-  useCallback,
-} from 'react'
+import { NodeChange, ReactFlow, ReactFlowProvider } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import isEqual from 'lodash/isEqual'
+import React, {
+  Dispatch,
+  forwardRef,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { DnDProvider } from '@/hooks/useReactFlowDnD'
 import { useTheme } from '@/hooks/useTheme'
 import useWorkflowEditor from '@/hooks/useWorkflowEditor'
 import { WorkflowFormValues } from '@/pages/workflows/components/workflowSchema'
-import { NodeType } from '@/types/workflowEditor/base'
-import toaster from '@/utils/toaster'
+import { WorkflowIssue, isWorkflowAssistantToolIssue } from '@/types/entity'
+import { NodeType, WorkflowEdge, WorkflowNode } from '@/types/workflowEditor/base'
 import { cn } from '@/utils/utils'
-import {
-  handleWorkflowErrors,
-  WorkflowValidationError,
-  CategorizedWorkflowErrors,
-} from '@/utils/workflowEditor/helpers/backendErrorHandler'
 import { downloadWorkflowImage } from '@/utils/workflowEditor/helpers/export/downloadWorkflowImage'
-import { isStartOrEndNode, isNoteNode } from '@/utils/workflowEditor/helpers/nodes/nodeTypeCheckers'
+import { isNoteNode, isStartOrEndNode } from '@/utils/workflowEditor/helpers/nodes/nodeTypeCheckers'
 import { serialize } from '@/utils/workflowEditor/serialization'
 
 import ConfigPanel, { ConfigPanelRef } from './ConfigPanel'
+import { PanelTabId, TAB_DATA } from './constants'
 import BackwardsEdge from './edges/BackwardsEdge'
 import EditorActions from './EditorActions'
 import EditorBackground from './EditorBackground'
 import EditorControls from './EditorControls'
+import { WorkflowContext } from './hooks/useWorkflowContext'
+import useWorkflowFieldIssues from './hooks/useWorkflowFieldIssues'
+import useWorkflowIssues from './hooks/useWorkflowIssues'
 import { nodeTypeComponents } from './nodes'
 import Sidebar from './Sidebar'
+import { isFieldSupported } from './utils/visualEditorFieldRegistry'
 
 const edgeTypeComponents = {
   backwards: BackwardsEdge,
@@ -82,7 +86,8 @@ interface WorkflowEditorProps {
   onWorkflowUpdate?: (values: any) => void
   isFullscreen: boolean
   onLoadExample?: () => void
-  validationErrors?: Record<string, any>
+  issues?: WorkflowIssue[] | null
+  setIssues?: Dispatch<SetStateAction<WorkflowIssue[] | null>>
 }
 
 enum ColorMode {
@@ -119,6 +124,8 @@ export interface WorkflowEditorRef {
   saveCurrentTab: () => Promise<boolean>
   getYamlConfig: () => string
   getWorkflowFields: () => WorkflowFormValues | null
+  openIssuesPanel: () => void
+  clearAllResolvedFields: () => void
 }
 
 const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
@@ -130,23 +137,58 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       onWorkflowUpdate,
       isFullscreen = false,
       onLoadExample,
-      validationErrors,
+      issues,
+      setIssues,
     },
     ref
   ) => {
     const { isDark } = useTheme()
     const [locked, setLocked] = useState(false)
-    const [showConfigPanel, setShowConfigPanel] = useState(false)
-    const [showWorkflowConfig, setShowWorkflowConfig] = useState(false)
-    const [showYamlPanel, setShowYamlPanel] = useState(false)
     const [configPanelCollapsed, setConfigPanelCollapsed] = useState(false)
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
-    const [errors, setErrors] = useState<CategorizedWorkflowErrors | null>()
     const configPanelRef = useRef<ConfigPanelRef>(null)
 
-    const editor = useWorkflowEditor(yamlConfig, onConfigurationUpdate)
+    const [tabs, setTabs] = useState<PanelTabId[]>([])
+    const [activeTab, setActiveTab] = useState<PanelTabId | null>(null)
+    const isYamlTabVisible = tabs.includes(TAB_DATA.YAML.ID)
+    const isConfigTabVisible = tabs.includes(TAB_DATA.CONFIGURATION.ID)
 
-    // expand in readonly mode logic
+    const closeTabs = useCallback(() => {
+      setTabs([])
+      setActiveTab(null)
+    }, [])
+
+    const prevSelectionRef = useRef<{ nodeId?: string; edgeId?: string }>({})
+    const handleSelectionChange = useCallback(
+      ({ node, edge }: { node?: WorkflowNode; edge?: WorkflowEdge }) => {
+        const currentNodeId = node?.id
+        const currentEdgeId = edge?.id
+
+        const selectionChanged =
+          prevSelectionRef.current.nodeId !== currentNodeId ||
+          prevSelectionRef.current.edgeId !== currentEdgeId
+
+        prevSelectionRef.current = { nodeId: currentNodeId, edgeId: currentEdgeId }
+        if (!selectionChanged) return
+
+        if (node && (isStartOrEndNode(node) || isNoteNode(node))) {
+          closeTabs()
+          return
+        }
+
+        if (node) {
+          setTabs([TAB_DATA.NODE.ID])
+          setActiveTab(TAB_DATA.NODE.ID)
+        } else if (edge) {
+          setTabs([TAB_DATA.EDGE.ID])
+          setActiveTab(TAB_DATA.EDGE.ID)
+        }
+      },
+      [closeTabs]
+    )
+
+    const editor = useWorkflowEditor(yamlConfig, onConfigurationUpdate, { handleSelectionChange })
+
     const [isExpanded, setIsExpanded] = useState(false)
     const handleToggleExpand = useCallback(() => {
       setIsExpanded((prev) => !prev)
@@ -169,21 +211,6 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       }
     }
 
-    const handleClearStateError = useCallback(
-      (stateId: string) => {
-        if (!errors?.stateErrors) return
-
-        const newStateErrors = new Map(errors.stateErrors)
-        newStateErrors.delete(stateId)
-
-        setErrors({
-          ...errors,
-          stateErrors: newStateErrors,
-        })
-      },
-      [errors]
-    )
-
     const handleCloseConfigPanel = (forceClose = false) => {
       if (!forceClose && configPanelRef.current?.isDirty()) {
         configPanelRef.current?.showUnsavedChangesDialog()
@@ -194,15 +221,14 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
         editor.onSelectionReset()
       }
 
-      setShowYamlPanel(false)
-      setShowWorkflowConfig(false)
+      closeTabs()
     }
 
     const handleToggleLock = () => {
       setLocked(!locked)
     }
 
-    const executeWithUnsavedCheck = (action: () => void) => {
+    const executeWithUnsavedCheck = useCallback((action: () => void) => {
       if (configPanelRef.current?.isDirty()) {
         setPendingAction(() => action)
         configPanelRef.current?.showUnsavedChangesDialog()
@@ -210,7 +236,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       }
       action()
       return true
-    }
+    }, [])
 
     const handleUndo = () => {
       executeWithUnsavedCheck(() => editor.undo())
@@ -234,9 +260,8 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
     const openWorkflowConfig = () => {
       executeWithUnsavedCheck(() => {
         editor.onSelectionReset()
-        setShowYamlPanel(false)
-        setShowWorkflowConfig(true)
-        setShowConfigPanel(true)
+        setTabs([TAB_DATA.CONFIGURATION.ID])
+        setActiveTab(TAB_DATA.CONFIGURATION.ID)
       })
     }
 
@@ -252,19 +277,24 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       saveCurrentTab: async () => (await configPanelRef.current?.save()) ?? true,
       getYamlConfig: () => serialize(editor.config),
       getWorkflowFields: () => configPanelRef.current?.getWorkflowFields() ?? null,
+      openIssuesPanel: () => {
+        setTabs([TAB_DATA.ISSUES.ID])
+        setActiveTab(TAB_DATA.ISSUES.ID)
+      },
+      clearAllResolvedFields: clearAllResolvedIssues,
     }))
 
     useEffect(() => {
-      setLocked(showYamlPanel)
-    }, [showYamlPanel])
+      setLocked(isYamlTabVisible)
+    }, [isYamlTabVisible])
 
     useEffect(() => {
       // Cmd+Z / Ctrl+Z
-      const handleKeyDown = createUndoShortcut(handleUndo, editor.canUndo, showYamlPanel)
+      const handleKeyDown = createUndoShortcut(handleUndo, editor.canUndo, isYamlTabVisible)
 
       window.addEventListener('keydown', handleKeyDown) // nosonar
       return () => window.removeEventListener('keydown', handleKeyDown) // nosonar
-    }, [editor.canUndo, handleUndo, showYamlPanel])
+    }, [editor.canUndo, handleUndo, isYamlTabVisible])
 
     useEffect(() => {
       // Cmd+D / Ctrl+D
@@ -276,11 +306,11 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
         }
       }
 
-      const handleKeyDown = createDuplicateShortcut(handleDuplicate, showYamlPanel)
+      const handleKeyDown = createDuplicateShortcut(handleDuplicate, isYamlTabVisible)
 
       window.addEventListener('keydown', handleKeyDown) // nosonar
       return () => window.removeEventListener('keydown', handleKeyDown) // nosonar
-    }, [editor.selectedNode, editor.duplicateState, showYamlPanel, executeWithUnsavedCheck])
+    }, [editor.selectedNode, editor.duplicateState, isYamlTabVisible, executeWithUnsavedCheck])
 
     const adjustViewport = (isFullscreen) => {
       const viewport = isFullscreen ? VIEWPORT.FULLSCREEN : VIEWPORT.WINDOWED
@@ -299,47 +329,120 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       (changes: NodeChange[]) => {
         executeWithUnsavedCheck(() => editor.onNodesChange(changes))
       },
-      [editor, showConfigPanel]
+      [editor, isConfigTabVisible]
     )
 
     const handleEdgesChange = useCallback(
       (changes) => {
         executeWithUnsavedCheck(() => editor.onEdgesChange(changes))
       },
-      [editor, showConfigPanel]
+      [editor, isConfigTabVisible]
     )
+
+    const [activeIssue, setActiveIssue] = useState<WorkflowIssue | null>(null)
+    const toggleTabs = useCallback(
+      (newTabs: PanelTabId[]) => {
+        executeWithUnsavedCheck(() => {
+          editor.onSelectionReset()
+          setActiveIssue(null)
+
+          const result = isEqual(tabs, newTabs) ? [] : newTabs
+          setTabs(result)
+
+          if (!result.length) setActiveTab(null)
+          setActiveTab(result[0])
+        })
+      },
+      [editor.onSelectionReset, executeWithUnsavedCheck, tabs]
+    )
+
+    useEffect(() => {
+      setTempIssues(issues)
+    }, [editor.selectedNode?.id, issues?.length])
+
+    const { issueMethods } = useWorkflowIssues({
+      issues,
+      selectedStateId: editor.selectedNode?.id ?? null,
+      editorConfig: editor.config,
+    })
+    const {
+      isIssueDirty,
+      isIssueResolved,
+      clearAllResolvedIssues,
+      markIssueDirty,
+      setDirtyIssues,
+    } = issueMethods
+
+    const [tempIssues, setTempIssues] = useState<WorkflowIssue[] | undefined | null>(issues)
+    const {
+      getIssueField,
+      getToolIssue,
+      getMcpIssue,
+      goToField,
+      clearAllDirtyMcpIssues,
+      removeArrayIssue,
+    } = useWorkflowFieldIssues({
+      configStates: editor.config.states,
+      activeIssue,
+      selectedStateId: editor.selectedNode?.id ?? null,
+      setDirtyIssues,
+      isIssueDirty,
+      isIssueResolved,
+      markIssueDirty,
+      openNodeTab: useCallback(
+        (issue) => {
+          toggleTabs([TAB_DATA.NODE.ID])
+          setActiveTab(TAB_DATA.NODE.ID)
+          setActiveIssue(issue)
+        },
+        [toggleTabs]
+      ),
+      openYamlTab: useCallback(
+        (issue) => {
+          toggleTabs([TAB_DATA.YAML.ID, TAB_DATA.CONFIGURATION.ID, TAB_DATA.ADVANCED.ID])
+          setActiveTab(TAB_DATA.YAML.ID)
+          setActiveIssue(issue)
+        },
+        [toggleTabs]
+      ),
+      openAdvancedConfigTab: useCallback(
+        (issue) => {
+          toggleTabs([TAB_DATA.CONFIGURATION.ID, TAB_DATA.ADVANCED.ID])
+          setActiveTab(TAB_DATA.ADVANCED.ID)
+          setActiveIssue(issue)
+        },
+        [toggleTabs]
+      ),
+      openState: useCallback(
+        (stateId: string) => {
+          editor.selectNode(stateId)
+        },
+        [editor.selectNode]
+      ),
+      issues: issues ?? null,
+      tempIssues,
+      setTempIssues,
+    })
 
     useEffect(() => {
       adjustViewport(isFullscreen)
     }, [isFullscreen])
 
     useEffect(() => {
-      const validNode =
-        editor.selectedNode &&
-        !isStartOrEndNode(editor.selectedNode) &&
-        !isNoteNode(editor.selectedNode)
-      const show = validNode || editor.selectedEdge || showWorkflowConfig || showYamlPanel
-
-      if (validNode || editor.selectedEdge) setShowWorkflowConfig(false)
-      if (!show && !editor.selectedNode) handleCloseConfigPanel()
-
-      setShowConfigPanel(!!show)
-    }, [editor.selectedNode, editor.selectedEdge, showWorkflowConfig, showYamlPanel])
-
-    useEffect(() => {
-      // Clear selection for windowed mode
       if (!isFullscreen) editor.onSelectionReset()
     }, [])
 
     useEffect(() => {
-      if (!validationErrors) return
+      if (
+        (activeTab === TAB_DATA.NODE.ID || activeTab === TAB_DATA.EDGE.ID) &&
+        !editor.selectedNode &&
+        !editor.selectedEdge
+      ) {
+        closeTabs()
+      }
+    }, [closeTabs, editor.selectedNode, editor.selectedEdge])
 
-      const handledErrors = handleWorkflowErrors(validationErrors as WorkflowValidationError)
-      if (handledErrors.generalError) toaster.error(handledErrors.generalError)
-      setErrors(handledErrors)
-    }, [validationErrors])
-
-    const nodeCallbacks = React.useMemo(
+    const nodeCallbacks = useMemo(
       () => ({
         getConfig: editor.getConfig,
         findState: editor.findState,
@@ -347,7 +450,6 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
         removeState: editor.removeState,
         onNodesChange: editor.onNodesChange,
         isFullscreen,
-        stateErrors: errors?.stateErrors,
       }),
       [
         editor.removeState,
@@ -356,22 +458,68 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
         editor.findState,
         editor.onNodesChange,
         isFullscreen,
-        validationErrors?.stateErrors,
       ]
     )
 
-    const wrappedNodes = React.useMemo(() => {
+    const nodeHasError = useCallback(
+      (node: WorkflowNode) => {
+        return (
+          issues
+            ?.filter((issue) => issue.stateId === node.id)
+            .filter((issue) => {
+              if (isWorkflowAssistantToolIssue(issue)) return true
+              return isFieldSupported(issue.path, node.type)
+            })
+            .some((issue) => !isIssueResolved(issue)) ?? false
+        )
+      },
+      [issues, isIssueResolved, isIssueDirty]
+    )
+
+    const wrappedNodes = useMemo(() => {
       return editor.nodes.map((node) => ({
         ...node,
         data: {
           ...node.data,
           ...nodeCallbacks,
+          hasError: nodeHasError(node),
         },
       }))
-    }, [editor.nodes, nodeCallbacks])
+    }, [editor.nodes, nodeCallbacks, nodeHasError])
+
+    const context = useMemo(
+      () => ({
+        issues: issues ?? null,
+        activeIssue,
+        selectedStateId: editor.selectedNode?.id ?? null,
+        tempIssues,
+        getIssueField,
+        getToolIssue,
+        getMcpIssue,
+        goToField,
+        setActiveIssue,
+        clearAllDirtyMcpIssues,
+        removeArrayIssue,
+        setIssues,
+        setTempIssues,
+        ...issueMethods,
+      }),
+      [
+        getIssueField,
+        getToolIssue,
+        getMcpIssue,
+        goToField,
+        activeIssue,
+        editor.selectedNode?.id,
+        issues,
+        tempIssues,
+        removeArrayIssue,
+        issueMethods,
+      ]
+    )
 
     return (
-      <>
+      <WorkflowContext.Provider value={context}>
         {isExpanded && (
           <div className="fixed inset-0 z-40 bg-black/50" onClick={handleToggleExpand} />
         )}
@@ -384,26 +532,13 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
         >
           <EditorActions
             isFullscreen={isFullscreen}
-            showWorkflowConfig={showWorkflowConfig}
-            showYamlPanel={showYamlPanel}
             canUndo={editor.canUndo}
+            hasValidationErrors={!!(issues && issues.length > 0)}
             onUndo={handleUndo}
             onLoadExample={onLoadExample ? handleLoadExample : undefined}
             onBeautify={handleBeautify}
-            onShowYaml={() => {
-              executeWithUnsavedCheck(() => {
-                editor.onSelectionReset()
-                setShowWorkflowConfig(false)
-                setShowYamlPanel((prev) => !prev)
-              })
-            }}
-            onToggleWorkflowConfig={() => {
-              executeWithUnsavedCheck(() => {
-                editor.onSelectionReset()
-                setShowYamlPanel(false)
-                setShowWorkflowConfig((prev) => !prev)
-              })
-            }}
+            tabs={tabs}
+            toggleTabs={toggleTabs}
           />
 
           {isFullscreen && <Sidebar createState={handleCreateState} disabled={locked} />}
@@ -445,21 +580,26 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
               onFitView={() => adjustViewport(isFullscreen)}
               onToggleLock={handleToggleLock}
               onDownloadImage={handleDownloadImage}
-              disableLockToggle={showYamlPanel}
+              disableLockToggle={isYamlTabVisible}
               isExpanded={isExpanded}
               onToggleExpand={!isFullscreen ? handleToggleExpand : undefined}
             />
           </ReactFlow>
 
-          {isFullscreen && showConfigPanel && (
+          {isFullscreen && !!tabs.length && (
             <ConfigPanel
               ref={configPanelRef}
               workflow={workflow}
               yamlConfig={yamlConfig}
+              visibleTabs={tabs}
+              activeTab={activeTab}
+              onActiveTabChange={setActiveTab}
+              toggleTabs={toggleTabs}
               selectedNode={editor.selectedNode}
               selectedEdge={editor.selectedEdge}
               config={editor.config}
-              showYamlPanel={showYamlPanel}
+              showIssuesPanel={tabs.includes(TAB_DATA.ISSUES.ID)}
+              showYamlPanel={isYamlTabVisible}
               project={workflow?.project}
               isCollapsed={configPanelCollapsed}
               onCollapsedChange={setConfigPanelCollapsed}
@@ -475,12 +615,10 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
               onUpdateAdvancedConfig={editor.updateAdvancedConfig}
               pendingAction={pendingAction}
               setPendingAction={setPendingAction}
-              stateErrors={errors?.stateErrors}
-              onClearStateError={handleClearStateError}
             />
           )}
         </div>
-      </>
+      </WorkflowContext.Provider>
     )
   }
 )

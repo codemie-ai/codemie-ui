@@ -32,7 +32,12 @@ export const IteratorNode = ({ data, selected, id }: CommonNodeProps) => {
   const iterKey = state?._meta?.data?.next?.iter_key
 
   return (
-    <div className="relative w-full h-full">
+    <div
+      className={cn(
+        'relative w-full h-full rounded-lg',
+        data.hasError && 'outline outline-offset-2 outline-failed-secondary'
+      )}
+    >
       <NodeIteratorBorderSvg
         className={cn(
           'absolute inset-0 w-full h-full pointer-events-none transition-all rounded-[8px]',

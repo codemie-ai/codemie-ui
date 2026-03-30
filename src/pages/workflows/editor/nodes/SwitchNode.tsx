@@ -37,7 +37,7 @@ export const SwitchNode = ({ id, data, selected }: CommonNodeProps) => {
   }, [cases.length, id, updateNodeInternals])
 
   return (
-    <BaseNode selected={selected} isConnected={isConnected}>
+    <BaseNode selected={selected} isConnected={isConnected} hasError={data.hasError}>
       <Handle type="target" position={Position.Left} />
       <NodeHeader type={NodeTypes.SWITCH} title="Switch" />
 

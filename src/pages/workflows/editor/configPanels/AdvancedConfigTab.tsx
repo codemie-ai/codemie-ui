@@ -17,8 +17,8 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import isEqual from 'lodash/isEqual'
 import toInteger from 'lodash/toInteger'
 import toNumber from 'lodash/toNumber'
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useEffect, useRef, forwardRef, useImperativeHandle, useState, useMemo } from 'react'
+import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 
 import Input from '@/components/form/Input'
@@ -28,7 +28,9 @@ import { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 import { cleanObject } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 
+import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import ConfigAccordion from './components/ConfigAccordion'
+import FieldController from './components/FieldController'
 import TabFooter from './components/TabFooter'
 
 const transformToInteger = (_value: any, originalValue: any) => {
@@ -184,18 +186,47 @@ const cleanFormValues = (values: any) => {
 const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProps>(
   ({ config, workflow, onConfigChange, onClose }, ref) => {
     const defaultValuesRef = useRef(getDefaultValues(config, workflow))
+    const { activeIssue } = useWorkflowContext()
 
-    const {
-      control,
-      formState: { errors },
-      reset,
-      trigger,
-      getValues,
-    } = useForm<Partial<WorkflowConfiguration>>({
+    const { control, reset, trigger, getValues } = useForm<Partial<WorkflowConfiguration>>({
       resolver: yupResolver(schema) as any,
       mode: 'onChange',
       defaultValues: defaultValuesRef.current,
     })
+
+    const [summarizationExpanded, setSummarizationExpanded] = useState(true)
+    const [performanceExpanded, setPerformanceExpanded] = useState(false)
+    const [retryPolicyExpanded, setRetryPolicyExpanded] = useState(false)
+
+    const activeIssueAccordion = useMemo(() => {
+      if (!activeIssue?.path) return null
+
+      const { path } = activeIssue
+      if (
+        path === 'enable_summarization_node' ||
+        path === 'tokens_limit_before_summarization' ||
+        path === 'messages_limit_before_summarization'
+      ) {
+        return 'summarization'
+      }
+      if (path === 'max_concurrency' || path === 'recursion_limit') {
+        return 'performance'
+      }
+      if (path.startsWith('retry_policy.') || path === 'retry_policy') {
+        return 'retryPolicy'
+      }
+      return null
+    }, [activeIssue?.path])
+
+    useEffect(() => {
+      if (activeIssueAccordion === 'summarization' && !summarizationExpanded) {
+        setSummarizationExpanded(true)
+      } else if (activeIssueAccordion === 'performance' && !performanceExpanded) {
+        setPerformanceExpanded(true)
+      } else if (activeIssueAccordion === 'retryPolicy' && !retryPolicyExpanded) {
+        setRetryPolicyExpanded(true)
+      }
+    }, [activeIssueAccordion, summarizationExpanded, performanceExpanded, retryPolicyExpanded])
 
     const saveData = async (): Promise<boolean> => {
       const isValid = await trigger()
@@ -240,18 +271,24 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
     return (
       <>
         <form className="flex flex-col gap-4">
-          <ConfigAccordion title="Summarization Settings" defaultExpanded>
+          <ConfigAccordion
+            title="Summarization Settings"
+            expanded={summarizationExpanded}
+            onExpandedChange={setSummarizationExpanded}
+          >
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <Controller
+                <FieldController
                   name="enable_summarization_node"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Switch
                       id="enable_summarization_node"
                       label="Enable Summarization"
                       value={field.value || false}
                       onChange={(e) => field.onChange(e.target.checked)}
+                      error={fieldState.error?.message}
+                      ref={field.ref}
                     />
                   )}
                 />
@@ -268,15 +305,15 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                   Tokens Limit Before Summarization
                   <TooltipButton content="Sets the token threshold that triggers summarization. Must be a positive integer." />
                 </label>
-                <Controller
+                <FieldController
                   name="tokens_limit_before_summarization"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Input
                       id="tokens_limit_before_summarization"
                       type="number"
                       placeholder="100000"
-                      error={errors.tokens_limit_before_summarization?.message}
+                      error={fieldState.error?.message}
                       {...field}
                     />
                   )}
@@ -291,15 +328,15 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                   Messages Limit Before Summarization
                   <TooltipButton content="Sets the number of messages which triggers summarization. Must be a positive integer." />
                 </label>
-                <Controller
+                <FieldController
                   name="messages_limit_before_summarization"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <Input
                       id="messages_limit_before_summarization"
                       type="number"
                       placeholder="20"
-                      error={errors.messages_limit_before_summarization?.message}
+                      error={fieldState.error?.message}
                       {...field}
                     />
                   )}
@@ -308,206 +345,128 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
             </div>
           </ConfigAccordion>
 
-          <ConfigAccordion title="Performance Settings" defaultExpanded={false}>
+          <ConfigAccordion
+            title="Performance Settings"
+            expanded={performanceExpanded}
+            onExpandedChange={setPerformanceExpanded}
+          >
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center gap-4">
-                  <label
-                    htmlFor="max_concurrency"
-                    className="text-xs text-text-primary flex items-center gap-1"
-                  >
-                    Max Concurrency
-                    <TooltipButton content="Defines how many tasks run in parallel. Must be a positive integer." />
-                    {errors.max_concurrency && (
-                      <span className="text-failed-secondary text-xs">*</span>
-                    )}
-                  </label>
-                  <Controller
-                    name="max_concurrency"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        id="max_concurrency"
-                        type="number"
-                        placeholder="10"
-                        rootClass="w-12"
-                        {...field}
-                      />
-                    )}
+              <FieldController
+                name="max_concurrency"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Input
+                    id="max_concurrency"
+                    type="number"
+                    label="Max Concurrency"
+                    orientation="horizontal"
+                    hint="Defines how many tasks run in parallel. Must be a positive integer."
+                    placeholder="10"
+                    inputClass="w-12"
+                    error={fieldState.error?.message}
+                    {...field}
                   />
-                </div>
-                {errors.max_concurrency && (
-                  <p className="text-xs text-failed-secondary">{errors.max_concurrency.message}</p>
                 )}
-              </div>
+              />
 
-              <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center gap-4">
-                  <label
-                    htmlFor="recursion_limit"
-                    className="text-xs text-text-primary flex items-center gap-1"
-                  >
-                    Recursion Limit
-                    <TooltipButton content="Sets max recursion depth to avoid infinite loops. Must be a positive integer. Typical range: 25-100." />
-                    {errors.recursion_limit && (
-                      <span className="text-failed-secondary text-xs">*</span>
-                    )}
-                  </label>
-                  <Controller
-                    name="recursion_limit"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        id="recursion_limit"
-                        type="number"
-                        placeholder="25"
-                        rootClass="w-12"
-                        {...field}
-                      />
-                    )}
+              <FieldController
+                name="recursion_limit"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Input
+                    id="recursion_limit"
+                    type="number"
+                    label="Recursion Limit"
+                    orientation="horizontal"
+                    hint="Sets max recursion depth to avoid infinite loops. Must be a positive integer. Typical range: 25-100."
+                    placeholder="25"
+                    inputClass="w-12"
+                    error={fieldState.error?.message}
+                    {...field}
                   />
-                </div>
-                {errors.recursion_limit && (
-                  <p className="text-xs text-failed-secondary">{errors.recursion_limit.message}</p>
                 )}
-              </div>
+              />
             </div>
           </ConfigAccordion>
 
-          <ConfigAccordion title="Retry Policy" defaultExpanded={false}>
+          <ConfigAccordion
+            title="Retry Policy"
+            expanded={retryPolicyExpanded}
+            onExpandedChange={setRetryPolicyExpanded}
+          >
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center gap-4">
-                  <label
-                    htmlFor="retry_policy_max_attempts"
-                    className="text-xs text-text-primary flex items-center gap-1"
-                  >
-                    Max Attempts
-                    <TooltipButton content="Upper limit of retry attempts after a failure. Must be a positive integer. Typical range: 1-10." />
-                    {errors.retry_policy?.max_attempts && (
-                      <span className="text-failed-secondary text-xs">*</span>
-                    )}
-                  </label>
-                  <Controller
-                    name="retry_policy.max_attempts"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        id="retry_policy_max_attempts"
-                        type="number"
-                        placeholder="3"
-                        rootClass="w-12"
-                        {...field}
-                      />
-                    )}
+              <FieldController
+                name="retry_policy.max_attempts"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Input
+                    id="retry_policy_max_attempts"
+                    type="number"
+                    label="Max Attempts"
+                    orientation="horizontal"
+                    hint="Upper limit of retry attempts after a failure. Must be a positive integer. Typical range: 1-10."
+                    placeholder="3"
+                    inputClass="w-12"
+                    error={fieldState.error?.message}
+                    {...field}
                   />
-                </div>
-                {errors.retry_policy?.max_attempts && (
-                  <p className="text-xs text-failed-secondary">
-                    {errors.retry_policy.max_attempts.message}
-                  </p>
                 )}
-              </div>
+              />
 
-              <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center gap-4">
-                  <label
-                    htmlFor="retry_policy_initial_interval"
-                    className="text-xs text-text-primary flex items-center gap-1"
-                  >
-                    Initial Interval (sec)
-                    <TooltipButton content="Time (seconds) before the first retry after a failure. Must be a positive number. Typical range: 1-60 seconds." />
-                    {errors.retry_policy?.initial_interval && (
-                      <span className="text-failed-secondary text-xs">*</span>
-                    )}
-                  </label>
-                  <Controller
-                    name="retry_policy.initial_interval"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        id="retry_policy_initial_interval"
-                        type="number"
-                        placeholder="1"
-                        rootClass="w-12"
-                        {...field}
-                      />
-                    )}
+              <FieldController
+                name="retry_policy.initial_interval"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Input
+                    id="retry_policy_initial_interval"
+                    type="number"
+                    label="Initial Interval (sec)"
+                    orientation="horizontal"
+                    hint="Time (seconds) before the first retry after a failure. Must be a positive number. Typical range: 1-60 seconds."
+                    placeholder="1"
+                    inputClass="w-12"
+                    error={fieldState.error?.message}
+                    {...field}
                   />
-                </div>
-                {errors.retry_policy?.initial_interval && (
-                  <p className="text-xs text-failed-secondary">
-                    {errors.retry_policy.initial_interval.message}
-                  </p>
                 )}
-              </div>
+              />
 
-              <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center gap-4">
-                  <label
-                    htmlFor="retry_policy_max_interval"
-                    className="text-xs text-text-primary flex items-center gap-1"
-                  >
-                    Max Interval (sec)
-                    <TooltipButton content="Upper limit of delay between retries. Must be >= initial interval. Typical range: 10-300 seconds." />
-                    {errors.retry_policy?.max_interval && (
-                      <span className="text-failed-secondary text-xs">*</span>
-                    )}
-                  </label>
-                  <Controller
-                    name="retry_policy.max_interval"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        id="retry_policy_max_interval"
-                        type="number"
-                        placeholder="60"
-                        rootClass="w-12"
-                        {...field}
-                      />
-                    )}
+              <FieldController
+                name="retry_policy.max_interval"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Input
+                    id="retry_policy_max_interval"
+                    type="number"
+                    label="Max Interval (sec)"
+                    orientation="horizontal"
+                    hint="Upper limit of delay between retries. Must be >= initial interval. Typical range: 10-300 seconds."
+                    placeholder="60"
+                    inputClass="w-12"
+                    error={fieldState.error?.message}
+                    {...field}
                   />
-                </div>
-                {errors.retry_policy?.max_interval && (
-                  <p className="text-xs text-failed-secondary">
-                    {errors.retry_policy.max_interval.message}
-                  </p>
                 )}
-              </div>
+              />
 
-              <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center gap-4">
-                  <label
-                    htmlFor="retry_policy_backoff_factor"
-                    className="text-xs text-text-primary flex items-center gap-1"
-                  >
-                    Backoff Factor
-                    <TooltipButton content="Multiplier to increase the interval between retries. Must be a positive number. Typical range: 1.5-3.0." />
-                    {errors.retry_policy?.backoff_factor && (
-                      <span className="text-failed-secondary text-xs">*</span>
-                    )}
-                  </label>
-                  <Controller
-                    name="retry_policy.backoff_factor"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        id="retry_policy_backoff_factor"
-                        type="number"
-                        step="0.1"
-                        placeholder="2"
-                        rootClass="w-12"
-                        {...field}
-                      />
-                    )}
+              <FieldController
+                name="retry_policy.backoff_factor"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Input
+                    id="retry_policy_backoff_factor"
+                    type="number"
+                    step="0.1"
+                    label="Backoff Factor"
+                    orientation="horizontal"
+                    hint="Multiplier to increase the interval between retries. Must be a positive number. Typical range: 1.5-3.0."
+                    placeholder="2"
+                    inputClass="w-12"
+                    error={fieldState.error?.message}
+                    {...field}
                   />
-                </div>
-                {errors.retry_policy?.backoff_factor && (
-                  <p className="text-xs text-failed-secondary">
-                    {errors.retry_policy.backoff_factor.message}
-                  </p>
                 )}
-              </div>
+              />
             </div>
           </ConfigAccordion>
         </form>

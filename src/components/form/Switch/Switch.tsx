@@ -30,6 +30,7 @@ interface SwitchProps {
   id?: string
   className?: string
   hint?: string
+  error?: string
 }
 
 /**
@@ -49,6 +50,7 @@ const Switch = forwardRef<HTMLInputElement, SwitchProps>(
       labelClassName,
       className = '',
       hint,
+      error,
       ...rest
     },
     ref
@@ -59,64 +61,70 @@ const Switch = forwardRef<HTMLInputElement, SwitchProps>(
     const { isDark } = useTheme()
 
     return (
-      <label
-        className={cn(
-          'flex items-center gap-4 cursor-pointer group relative',
-          disabled && 'cursor-default',
-          className
-        )}
-      >
-        <input
-          id={id}
-          ref={ref}
-          role="switch"
-          type="checkbox"
-          checked={value}
-          onChange={handleChange}
-          onBlur={onBlur}
-          disabled={disabled}
-          className={cn('sr-only', 'peer')}
-          {...rest}
-        />
-        <span
-          style={{ transform: value ? 'translateZ(0)' : 'none' }}
+      <div className="flex flex-col gap-1">
+        <label
           className={cn(
-            // General
-            'switch',
-            'flex items-center relative flex-shrink-0',
-            'transition-colors duration-100 ease-in-out',
-
-            // Container
-            'h-[var(--switch-size)] basis-[var(--switch-container-width)] rounded-[var(--switch-size)]',
-            'border bg-origin-border border-border-primary peer-checked:border-border-accent',
-            'bg-gradient-switch-off peer-checked:bg-gradient-switch-on',
-            `${isDark ? 'border-0' : ''}`,
-
-            // Circle
-            "before:content-[''] before:absolute before:left-[2px]",
-            'before:h-[calc(var(--switch-size)_-_6px)] before:w-[calc(var(--switch-size)_-_6px)] before:rounded-full',
-            'before:transition-transform before:duration-150 before:ease-in-out',
-            'peer-checked:before:translate-x-[calc(var(--switch-container-width)_-_var(--switch-size))]',
-            'before:bg-surface-specific-circle-passive peer-checked:before:bg-surface-specific-circle-active',
-
-            styledDisabled && disabled && 'transition opacity-65'
+            'flex items-center gap-4 cursor-pointer group relative',
+            disabled && 'cursor-default',
+            className
           )}
-        ></span>
-        <span className="flex items-center gap-1">
+        >
+          <input
+            id={id}
+            ref={ref}
+            role="switch"
+            type="checkbox"
+            checked={value}
+            onChange={handleChange}
+            onBlur={onBlur}
+            disabled={disabled}
+            className={cn('sr-only', 'peer')}
+            {...rest}
+          />
           <span
+            style={{ transform: value ? 'translateZ(0)' : 'none' }}
             className={cn(
-              'text-xs text-text-tertiary group-hover:text-border-accent group-has-[*:focus-visible]:text-border-accent transition',
-              styledDisabled &&
-                disabled &&
-                'opacity-65 group-hover:text-text-tertiary group-has-[*:focus-visible]:text-text-tertiary',
-              labelClassName
+              // General
+              'switch',
+              'flex items-center relative flex-shrink-0',
+              'transition-colors duration-100 ease-in-out',
+
+              // Container
+              'h-[var(--switch-size)] basis-[var(--switch-container-width)] rounded-[var(--switch-size)]',
+              'border bg-origin-border border-border-primary peer-checked:border-border-accent',
+              'bg-gradient-switch-off peer-checked:bg-gradient-switch-on',
+              `${isDark ? 'border-0' : ''}`,
+
+              // Error state
+              error && '!border-failed-secondary peer-checked:!border-failed-secondary',
+
+              // Circle
+              "before:content-[''] before:absolute before:left-[2px]",
+              'before:h-[calc(var(--switch-size)_-_6px)] before:w-[calc(var(--switch-size)_-_6px)] before:rounded-full',
+              'before:transition-transform before:duration-150 before:ease-in-out',
+              'peer-checked:before:translate-x-[calc(var(--switch-container-width)_-_var(--switch-size))]',
+              'before:bg-surface-specific-circle-passive peer-checked:before:bg-surface-specific-circle-active',
+
+              styledDisabled && disabled && 'transition opacity-65'
             )}
-          >
-            {label}
+          ></span>
+          <span className="flex items-center gap-1">
+            <span
+              className={cn(
+                'text-xs text-text-tertiary group-hover:text-border-accent group-has-[*:focus-visible]:text-border-accent transition',
+                styledDisabled &&
+                  disabled &&
+                  'opacity-65 group-hover:text-text-tertiary group-has-[*:focus-visible]:text-text-tertiary',
+                labelClassName
+              )}
+            >
+              {label}
+            </span>
+            {hint && <TooltipButton content={hint} className="ml-1" />}
           </span>
-          {hint && <TooltipButton content={hint} className="ml-1" />}
-        </span>
-      </label>
+        </label>
+        {error && <p className="text-sm text-failed-secondary mt-1">{error}</p>}
+      </div>
     )
   }
 )

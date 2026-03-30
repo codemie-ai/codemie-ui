@@ -15,11 +15,12 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useMemo, forwardRef } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import * as Yup from 'yup'
 
 import InfoSVG from '@/assets/icons/info.svg?react'
 import Input from '@/components/form/Input'
+import { NodeTypes } from '@/types/workflowEditor/base'
 import {
   ConditionalStateConfiguration,
   StateCondition,
@@ -28,9 +29,14 @@ import {
 import { ConfigurationUpdate } from '@/utils/workflowEditor/actions'
 import { getStateNext } from '@/utils/workflowEditor/helpers/states'
 
+import FieldController from './components/FieldController'
 import TabFooter from './components/TabFooter'
 import ValidationError from './components/ValidationError'
 import { useConditionalTabForm, ConfigTabRef } from './hooks/useConditionalTabForm'
+import { registerFields } from '../utils/visualEditorFieldRegistry'
+
+registerFields(['expression'], NodeTypes.CONDITIONAL)
+registerFields([/^data\.next\.condition\.expression/], NodeTypes.CONDITIONAL)
 
 interface ConditionalTabProps {
   stateId: string
@@ -131,8 +137,9 @@ const ConditionalTab = forwardRef<ConditionalTabRef, ConditionalTabProps>(
             Decides the next state based on a condition evaluated at runtime.
           </div>
 
-          <Controller
+          <FieldController
             name="expression"
+            configPath="data.next.condition.expression"
             control={control}
             render={({ field, fieldState }) => (
               <Input

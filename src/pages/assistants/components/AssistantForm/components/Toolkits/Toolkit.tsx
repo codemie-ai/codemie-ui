@@ -13,7 +13,10 @@
 // limitations under the License.
 //
 
+import { useContext } from 'react'
+
 import { Checkbox } from '@/components/form/Checkbox'
+import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowContext'
 import { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
 import { getCredentialType } from '@/utils/settings'
@@ -45,6 +48,8 @@ const Toolkit = ({
   onAddSettingClick,
   isChatConfig,
 }: ToolkitProps) => {
+  const workflowContext = useContext(WorkflowContext)
+
   const selectedToolkit = selectedToolkits.find(
     (selectedToolkit) => selectedToolkit.toolkit === toolkit.toolkit
   )
@@ -57,19 +62,65 @@ const Toolkit = ({
   const allToolsSelected = toolkit.tools.every((tool) => isToolSelected(tool))
   const someToolsSelected = !allToolsSelected && toolkit.tools.some((tool) => isToolSelected(tool))
 
+  const getToolFieldData = (toolName: string): { error?: string; onChange: () => void } | null => {
+    if (!workflowContext || !selectedToolkit) return null
+    const toolExists = selectedToolkit.tools.some((t) => t.name === toolName)
+    if (!toolExists) return null
+
+    const issue = workflowContext.getToolIssue({
+      toolkit: toolkit.toolkit,
+      tool: toolName,
+      path: 'tools',
+    })
+    if (!issue) return null
+
+    return { error: issue.fieldError, onChange: issue.onChange }
+  }
+
+  const getToolkitFieldData = (): { error?: string; onChange: () => void } | null => {
+    if (!workflowContext || !selectedToolkit) return null
+
+    const issue = workflowContext.getToolIssue({
+      toolkit: toolkit.toolkit,
+      path: 'tools',
+    })
+    if (!issue) return null
+
+    return { error: issue.fieldError, onChange: issue.onChange }
+  }
+
+  const markAllToolIssuesDirty = () => {
+    if (!workflowContext?.getToolIssue || !selectedToolkit) return
+
+    toolkit.tools.forEach((tool) => {
+      const integrationField = getToolFieldData(tool.name)
+      integrationField?.onChange()
+    })
+  }
+
   return (
     <div className="flex flex-col p-6 pt-4">
-      <div className="flex items-center gap-2 min-h-8">
+      <div className="min-flex items-center gap-2 min-h-8">
         <h3 className="text-xs text-text-quaternary shrink-0">Features to use:</h3>
-        {toolkit.settings_config && selectedToolkit && !toolkit.is_external && (
-          <IntegrationSelector
-            value={selectedToolkit.settings}
-            tooltipPosition="left"
-            settingsDefinitions={toolkitSettingsOptions}
-            onAddSettingClick={() => onAddSettingClick(getCredentialType(toolkit.toolkit))}
-            onChange={(setting) => updateToolkitSetting(toolkit, setting)}
-          />
-        )}
+        {toolkit.settings_config &&
+          selectedToolkit &&
+          !toolkit.is_external &&
+          (() => {
+            const field = getToolkitFieldData()
+            return (
+              <IntegrationSelector
+                value={selectedToolkit.settings}
+                tooltipPosition="left"
+                settingsDefinitions={toolkitSettingsOptions}
+                onAddSettingClick={() => onAddSettingClick(getCredentialType(toolkit.toolkit))}
+                onChange={(setting) => {
+                  updateToolkitSetting(toolkit, setting)
+                  field?.onChange()
+                }}
+                error={field?.error}
+              />
+            )
+          })()}
       </div>
       <div className="mt-2 flex flex-col gap-4">
         {!singleToolSelection && (
@@ -79,18 +130,26 @@ const Toolkit = ({
             checked={allToolsSelected}
             mixed={someToolsSelected}
             id={toolkit.toolkit}
-            onChange={() => toggleAllTools(toolkit, allToolsSelected)}
+            onChange={() => {
+              toggleAllTools(toolkit, allToolsSelected)
+              markAllToolIssuesDirty()
+            }}
           />
         )}
 
         {toolkit.tools.map((tool) => {
+          const integrationField = getToolFieldData(tool.name)
+
           return (
             <div key={tool.name} className="flex flex-col gap-2">
               <Checkbox
                 label={tool.label}
                 hint={tool.user_description ?? tool.description ?? ''}
                 checked={isToolSelected(tool)}
-                onChange={() => toggleTool(toolkit, tool)}
+                onChange={() => {
+                  toggleTool(toolkit, tool)
+                  integrationField?.onChange()
+                }}
               />
               {isToolSelected(tool) && tool.settings_config && !toolkit.is_external && (
                 <IntegrationSelector
@@ -99,7 +158,11 @@ const Toolkit = ({
                   value={selectedToolkit?.tools.find((tl) => tool.name === tl.name)?.settings}
                   settingsDefinitions={settings[getCredentialType(tool.name)]}
                   onAddSettingClick={() => onAddSettingClick(getCredentialType(tool.name))}
-                  onChange={(setting) => updateToolSetting(toolkit, tool, setting)}
+                  onChange={(setting) => {
+                    updateToolSetting(toolkit, tool, setting)
+                    integrationField?.onChange()
+                  }}
+                  error={integrationField?.error}
                 />
               )}
             </div>

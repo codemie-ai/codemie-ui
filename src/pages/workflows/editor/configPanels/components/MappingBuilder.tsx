@@ -13,18 +13,20 @@
 // limitations under the License.
 //
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import Button from '@/components/Button'
 import { ButtonType, ButtonSize } from '@/constants'
 import { TransformMapping, TransformMappingType } from '@/types/workflowEditor/configuration'
 
 import MappingRow from './MappingRow'
+import { useWorkflowContext } from '../../hooks/useWorkflowContext'
 
 interface MappingBuilderProps {
   value: TransformMapping[]
   onChange: (mappings: TransformMapping[]) => void
   id?: string
+  stateId: string
   error?: string
   errors?: Array<Record<string, { message?: string }>>
   onClearMappingErrors?: (index: number) => void
@@ -37,6 +39,7 @@ const createNewMapping = (): TransformMapping => ({
 })
 
 const MappingBuilder: React.FC<MappingBuilderProps> = ({
+  stateId,
   id,
   value,
   onChange,
@@ -45,6 +48,19 @@ const MappingBuilder: React.FC<MappingBuilderProps> = ({
   onClearMappingErrors,
 }) => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  const { activeIssue, removeArrayIssue } = useWorkflowContext()
+
+  useEffect(() => {
+    if (!activeIssue?.path) return
+
+    const match = activeIssue.path.match(/^(?:data\.)?config\.mappings\.(\d+)\./)
+    if (match) {
+      const issueIndex = parseInt(match[1], 10)
+      if (issueIndex >= 0 && issueIndex < value.length && expandedIndex !== issueIndex) {
+        setExpandedIndex(issueIndex)
+      }
+    }
+  }, [activeIssue?.path])
 
   const handleAddMapping = () => {
     const newIndex = value.length
@@ -67,6 +83,8 @@ const MappingBuilder: React.FC<MappingBuilderProps> = ({
     } else if (expandedIndex !== null && expandedIndex > index) {
       setExpandedIndex(expandedIndex - 1)
     }
+
+    removeArrayIssue(index, stateId, `config.mappings`)
   }
 
   const toggleExpanded = (index: number) => {
@@ -91,6 +109,7 @@ const MappingBuilder: React.FC<MappingBuilderProps> = ({
               onUpdate={(updated) => handleUpdateMapping(index, updated)}
               onDelete={() => handleDeleteMapping(index)}
               errors={errors?.[index]}
+              invalid={activeIssue?.id === id}
               onClearErrors={() => onClearMappingErrors?.(index)}
             />
           ))}

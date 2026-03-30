@@ -15,33 +15,61 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { handleWorkflowErrors, WorkflowValidationError } from '../backendErrorHandler'
+import { processBackendError, WorkflowValidationError } from '../backendErrorHandler'
 
-describe('handleWorkflowErrors', () => {
-  describe('basic error handling', () => {
-    it('should return general error message when no details provided', () => {
+describe('processBackendError', () => {
+  describe('validation errors', () => {
+    it('should extract WorkflowIssue array from schema_validation errors', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
+        details: {
+          error_type: 'schema_validation',
+          message: 'Invalid YAML config was provided',
+          errors: [
+            {
+              id: '1',
+              message: 'Assistant model error',
+              details: 'Assistant model error details',
+              state_id: 'assistant_12',
+              path: 'model',
+              config_line: 3,
+            },
+            {
+              id: '2',
+              message: 'object is expected',
+              details: 'retry_policy must be an object',
+              path: 'retry_policy',
+              config_line: 42,
+            },
+          ] as any,
+        },
       }
 
-      const result = handleWorkflowErrors(error)
+      const result = processBackendError(error)
 
-      expect(result.generalError).toBe('Workflow Configuration error')
-      expect(result.stateErrors.size).toBe(0)
+      expect(result.issues).not.toBeNull()
+      expect(result.issues).toHaveLength(2)
+      expect(result.generalError).toBeNull()
+      expect(result.issues?.[0]).toEqual({
+        id: '1',
+        message: 'Assistant model error',
+        details: 'Assistant model error details',
+        stateId: 'assistant_12',
+        path: 'model',
+        configLine: 3,
+        error_type: 'schema_validation',
+      })
+      expect(result.issues?.[1]).toEqual({
+        id: '2',
+        message: 'object is expected',
+        details: 'retry_policy must be an object',
+        path: 'retry_policy',
+        configLine: 42,
+        error_type: 'schema_validation',
+      })
     })
 
-    it('should use fallback message when error message is missing', () => {
-      const error: WorkflowValidationError = {
-        message: '',
-      }
-
-      const result = handleWorkflowErrors(error)
-
-      expect(result.generalError).toBe('An error occurred')
-      expect(result.stateErrors.size).toBe(0)
-    })
-
-    it('should append details message to general error', () => {
+    it('should return null for empty errors array', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
         details: {
@@ -51,17 +79,13 @@ describe('handleWorkflowErrors', () => {
         },
       }
 
-      const result = handleWorkflowErrors(error)
+      const result = processBackendError(error)
 
-      expect(result.generalError).toBe(
-        'Workflow Configuration error<br> Invalid YAML config was provided'
-      )
-      expect(result.stateErrors.size).toBe(0)
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBeNull()
     })
-  })
 
-  describe('state error mapping', () => {
-    it('should map errors with resource_type state to state errors', () => {
+    it('should handle issues without stateId (global fields)', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
         details: {
@@ -69,48 +93,24 @@ describe('handleWorkflowErrors', () => {
           message: 'Invalid YAML config was provided',
           errors: [
             {
-              resource_type: 'state',
-              resource_id: 'assistant_2',
-              message: "'next' is required",
+              id: '1',
+              message: 'max_concurrency must be positive',
+              details: 'max_concurrency value is invalid',
+              path: 'max_concurrency',
+              config_line: 10,
             },
-          ],
+          ] as any,
         },
       }
 
-      const result = handleWorkflowErrors(error)
+      const result = processBackendError(error)
 
-      expect(result.generalError).toBe(
-        'Workflow Configuration error<br> Invalid YAML config was provided'
-      )
-      expect(result.stateErrors.size).toBe(1)
-      expect(result.stateErrors.get('assistant_2')).toBe("'next' is required")
+      expect(result.issues).toHaveLength(1)
+      expect(result.issues?.[0].stateId).toBeUndefined()
+      expect(result.issues?.[0].path).toBe('max_concurrency')
     })
 
-    it('should map errors with reference_state to state errors', () => {
-      const error: WorkflowValidationError = {
-        message: 'Workflow Configuration error',
-        details: {
-          error_type: 'reference_error',
-          message: 'Invalid references',
-          errors: [
-            {
-              resource_type: 'transition',
-              resource_id: 'transition_1',
-              message: 'Referenced state does not exist',
-              reference_state: 'assistant_1',
-            },
-          ],
-        },
-      }
-
-      const result = handleWorkflowErrors(error)
-
-      expect(result.generalError).toBe('Workflow Configuration error<br> Invalid references')
-      expect(result.stateErrors.size).toBe(1)
-      expect(result.stateErrors.get('assistant_1')).toBe('Referenced state does not exist')
-    })
-
-    it('should handle multiple state errors', () => {
+    it('should handle multiple issues with mixed state and global fields', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
         details: {
@@ -118,218 +118,394 @@ describe('handleWorkflowErrors', () => {
           message: 'Multiple validation errors',
           errors: [
             {
-              resource_type: 'state',
-              resource_id: 'assistant_1',
-              message: 'Missing assistant_id',
+              id: '1',
+              message: 'Assistant model error',
+              state_id: 'assistant_12',
+              path: 'model',
+              config_line: 5,
             },
             {
-              resource_type: 'state',
-              resource_id: 'assistant_2',
-              message: "'next' is required",
+              id: '2',
+              message: 'recursion_limit must be positive',
+              path: 'recursion_limit',
+              config_line: 15,
             },
             {
-              resource_type: 'state',
-              resource_id: 'tool_1',
-              message: 'Invalid tool configuration',
+              id: '3',
+              message: 'Transform mapping error',
+              state_id: 'transform_1',
+              path: 'config.mappings.0.output_field',
+              config_line: 25,
             },
-          ],
+          ] as any,
         },
       }
 
-      const result = handleWorkflowErrors(error)
+      const result = processBackendError(error)
 
-      expect(result.stateErrors.size).toBe(3)
-      expect(result.stateErrors.get('assistant_1')).toBe('Missing assistant_id')
-      expect(result.stateErrors.get('assistant_2')).toBe("'next' is required")
-      expect(result.stateErrors.get('tool_1')).toBe('Invalid tool configuration')
+      expect(result.issues).toHaveLength(3)
+      expect(result.generalError).toBeNull()
+      expect(result.issues?.[0].stateId).toBe('assistant_12')
+      expect(result.issues?.[1].stateId).toBeUndefined()
+      expect(result.issues?.[2].stateId).toBe('transform_1')
     })
 
-    it('should prefer resource_type state over reference_state', () => {
+    it('should handle issues with optional details field', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
         details: {
           error_type: 'schema_validation',
-          message: 'Validation error',
+          message: 'Invalid config',
           errors: [
             {
-              resource_type: 'state',
-              resource_id: 'assistant_1',
-              message: 'State error',
-              reference_state: 'assistant_2',
+              id: '1',
+              message: 'Field is required',
+              path: 'name',
+              config_line: 1,
             },
-          ],
+          ] as any,
         },
       }
 
-      const result = handleWorkflowErrors(error)
+      const result = processBackendError(error)
 
-      expect(result.stateErrors.size).toBe(1)
-      expect(result.stateErrors.get('assistant_1')).toBe('State error')
-      expect(result.stateErrors.get('assistant_2')).toBeUndefined()
+      expect(result.issues).toHaveLength(1)
+      expect(result.issues?.[0].details).toBeUndefined()
+      expect(result.issues?.[0].message).toBe('Field is required')
     })
-  })
 
-  describe('general error mapping', () => {
-    it('should map non-state errors to general error', () => {
+    it('should extract WorkflowIssue array from cross_reference_validation errors', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
         details: {
-          error_type: 'validation_error',
-          message: 'General validation issues',
+          error_type: 'cross_reference_validation',
+          message: 'Configuration contains cross-reference errors',
           errors: [
             {
-              resource_type: 'workflow',
-              resource_id: 'main',
-              message: 'Invalid workflow structure',
+              id: '7a0d614b-cd1b-4806-bd6c-dd59230e283e',
+              message: 'Invalid reference',
+              path: 'assistant_id',
+              details: "Assistant 'assistant_123' not found",
+              state_id: 'assistant_12',
+              config_line: 142,
             },
-          ],
+          ] as any,
         },
       }
 
-      const result = handleWorkflowErrors(error)
+      const result = processBackendError(error)
 
-      expect(result.generalError).toBe(
-        'Workflow Configuration error<br> General validation issues<br>Invalid workflow structure'
-      )
-      expect(result.stateErrors.size).toBe(0)
+      expect(result.issues).not.toBeNull()
+      expect(result.issues).toHaveLength(1)
+      expect(result.generalError).toBeNull()
+      expect(result.issues?.[0]).toEqual({
+        id: '7a0d614b-cd1b-4806-bd6c-dd59230e283e',
+        message: 'Invalid reference',
+        path: 'assistant_id',
+        details: "Assistant 'assistant_123' not found",
+        stateId: 'assistant_12',
+        configLine: 142,
+        error_type: 'cross_reference_validation',
+      })
     })
 
-    it('should handle mixed state and general errors', () => {
+    it('should handle multiple cross-reference validation errors', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
         details: {
-          error_type: 'validation_error',
-          message: 'Multiple errors',
+          error_type: 'cross_reference_validation',
+          message: 'Multiple reference errors found',
           errors: [
             {
-              resource_type: 'state',
-              resource_id: 'assistant_1',
-              message: 'State error',
+              id: '1',
+              message: 'Invalid reference',
+              path: 'assistant_id',
+              details: "Assistant 'assistant_123' not found",
+              state_id: 'assistant_12',
+              config_line: 142,
             },
             {
-              resource_type: 'workflow',
-              resource_id: 'main',
-              message: 'Workflow error',
+              id: '2',
+              message: 'Invalid reference',
+              path: 'data_source_id',
+              details: "Data source 'ds_456' not found",
+              state_id: 'transform_1',
+              config_line: 158,
             },
-            {
-              resource_type: 'state',
-              resource_id: 'tool_1',
-              message: 'Tool state error',
-            },
-          ],
+          ] as any,
         },
       }
 
-      const result = handleWorkflowErrors(error)
+      const result = processBackendError(error)
 
-      expect(result.generalError).toBe(
-        'Workflow Configuration error<br> Multiple errors<br>Workflow error'
-      )
-      expect(result.stateErrors.size).toBe(2)
-      expect(result.stateErrors.get('assistant_1')).toBe('State error')
-      expect(result.stateErrors.get('tool_1')).toBe('Tool state error')
+      expect(result.issues).toHaveLength(2)
+      expect(result.generalError).toBeNull()
+      expect(result.issues?.[0].path).toBe('assistant_id')
+      expect(result.issues?.[1].path).toBe('data_source_id')
     })
-  })
 
-  describe('edge cases', () => {
-    it('should handle empty errors array', () => {
+    it('should return null for empty cross_reference_validation errors array', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
         details: {
-          error_type: 'validation_error',
-          message: 'No specific errors',
+          error_type: 'cross_reference_validation',
+          message: 'No references to validate',
           errors: [],
         },
       }
 
-      const result = handleWorkflowErrors(error)
+      const result = processBackendError(error)
 
-      expect(result.generalError).toBe('Workflow Configuration error<br> No specific errors')
-      expect(result.stateErrors.size).toBe(0)
-    })
-
-    it('should handle null items in errors array', () => {
-      const error: WorkflowValidationError = {
-        message: 'Workflow Configuration error',
-        details: {
-          error_type: 'validation_error',
-          message: 'Some errors',
-          errors: [
-            null as any,
-            {
-              resource_type: 'state',
-              resource_id: 'assistant_1',
-              message: 'Valid error',
-            },
-            null as any,
-          ],
-        },
-      }
-
-      const result = handleWorkflowErrors(error)
-
-      expect(result.stateErrors.size).toBe(1)
-      expect(result.stateErrors.get('assistant_1')).toBe('Valid error')
-    })
-
-    it('should handle missing errors field', () => {
-      const error: WorkflowValidationError = {
-        message: 'Workflow Configuration error',
-        details: {
-          error_type: 'validation_error',
-          message: 'General error',
-        } as any,
-      }
-
-      const result = handleWorkflowErrors(error)
-
-      expect(result.generalError).toBe('Workflow Configuration error<br> General error')
-      expect(result.stateErrors.size).toBe(0)
-    })
-
-    it('should handle non-array errors field', () => {
-      const error: WorkflowValidationError = {
-        message: 'Workflow Configuration error',
-        details: {
-          error_type: 'validation_error',
-          message: 'General error',
-          errors: 'not an array' as any,
-        },
-      }
-
-      const result = handleWorkflowErrors(error)
-
-      expect(result.generalError).toBe('Workflow Configuration error<br> General error')
-      expect(result.stateErrors.size).toBe(0)
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBeNull()
     })
   })
 
-  describe('state error overwriting', () => {
-    it('should overwrite previous state error with same state id', () => {
+  describe('non-validation errors', () => {
+    it('should return formatted general error for non-schema_validation errors', () => {
       const error: WorkflowValidationError = {
-        message: 'Workflow Configuration error',
+        message: 'Database connection failed',
         details: {
-          error_type: 'validation_error',
-          message: 'Multiple errors for same state',
-          errors: [
-            {
-              resource_type: 'state',
-              resource_id: 'assistant_1',
-              message: 'First error',
-            },
-            {
-              resource_type: 'state',
-              resource_id: 'assistant_1',
-              message: 'Second error',
-            },
-          ],
+          error_type: 'database_error',
+          message: 'Could not connect to database server',
+          errors: [],
         },
       }
 
-      const result = handleWorkflowErrors(error)
+      const result = processBackendError(error)
 
-      expect(result.stateErrors.size).toBe(1)
-      expect(result.stateErrors.get('assistant_1')).toBe('Second error')
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBe(
+        'Database connection failed: Could not connect to database server'
+      )
+    })
+
+    it('should handle error without details', () => {
+      const error: WorkflowValidationError = {
+        message: 'Something went wrong',
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBe('Something went wrong')
+    })
+
+    it('should use fallback message when error message is missing', () => {
+      const error: WorkflowValidationError = {
+        message: '',
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBe('An error occurred')
+    })
+
+    it('should format error with details but no help', () => {
+      const error: WorkflowValidationError = {
+        message: 'Network error',
+        details: {
+          error_type: 'network_error',
+          message: 'Connection timeout',
+          errors: [],
+        },
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBe('Network error: Connection timeout')
+    })
+
+    it('should handle authentication errors', () => {
+      const error: WorkflowValidationError = {
+        message: 'Authentication failed',
+        help: 'Please log in again',
+        details: {
+          error_type: 'auth_error',
+          message: 'Token expired',
+          errors: [],
+        },
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBe('Authentication failed: Token expired. Please log in again')
+    })
+  })
+
+  describe('edge cases', () => {
+    it('should handle undefined details', () => {
+      const error: WorkflowValidationError = {
+        message: 'Error occurred',
+        details: undefined,
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBe('Error occurred')
+    })
+
+    it('should handle null errors in schema_validation', () => {
+      const error: WorkflowValidationError = {
+        message: 'Workflow Configuration error',
+        details: {
+          error_type: 'schema_validation',
+          message: 'Invalid config',
+          errors: null as any,
+        },
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBeNull()
+    })
+
+    it('should handle undefined errors in schema_validation', () => {
+      const error: WorkflowValidationError = {
+        message: 'Workflow Configuration error',
+        details: {
+          error_type: 'schema_validation',
+          message: 'Invalid config',
+          errors: undefined as any,
+        },
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBeNull()
+    })
+
+    it('should handle missing error_type in details', () => {
+      const error: WorkflowValidationError = {
+        message: 'Error',
+        details: {
+          error_type: '',
+          message: 'Some error',
+          errors: [
+            {
+              id: '1',
+              message: 'Issue',
+              path: 'field',
+              config_line: 1,
+            },
+          ] as any,
+        },
+      }
+
+      const result = processBackendError(error)
+
+      // Should not be treated as schema_validation
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBe('Error: Some error')
+    })
+
+    it('should handle case-sensitive error_type', () => {
+      const error: WorkflowValidationError = {
+        message: 'Error',
+        details: {
+          error_type: 'SCHEMA_VALIDATION', // Wrong case
+          message: 'Invalid',
+          errors: [
+            {
+              id: '1',
+              message: 'Issue',
+              path: 'field',
+              config_line: 1,
+            },
+          ] as any,
+        },
+      }
+
+      const result = processBackendError(error)
+
+      // Should not match schema_validation
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBe('Error: Invalid')
+    })
+  })
+
+  describe('real-world scenarios', () => {
+    it('should handle retry_policy validation error', () => {
+      const error: WorkflowValidationError = {
+        message: 'Workflow Configuration error',
+        details: {
+          error_type: 'schema_validation',
+          message: 'Invalid YAML config was provided',
+          errors: [
+            {
+              id: '1',
+              message: 'object is expected',
+              details: 'retry_policy field must be an object',
+              path: 'retry_policy',
+              config_line: 42,
+            },
+          ] as any,
+        },
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toHaveLength(1)
+      expect(result.generalError).toBeNull()
+      expect(result.issues?.[0].path).toBe('retry_policy')
+      expect(result.issues?.[0].configLine).toBe(42)
+    })
+
+    it('should handle nested field validation errors', () => {
+      const error: WorkflowValidationError = {
+        message: 'Workflow Configuration error',
+        details: {
+          error_type: 'schema_validation',
+          message: 'Invalid configuration',
+          errors: [
+            {
+              id: '1',
+              message: 'max_attempts is required',
+              state_id: 'assistant_1',
+              path: 'retry_policy.max_attempts',
+              config_line: 50,
+            },
+            {
+              id: '2',
+              message: 'output_field cannot be empty',
+              state_id: 'transform_1',
+              path: 'config.mappings.0.output_field',
+              config_line: 75,
+            },
+          ] as any,
+        },
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toHaveLength(2)
+      expect(result.issues?.[0].path).toBe('retry_policy.max_attempts')
+      expect(result.issues?.[1].path).toBe('config.mappings.0.output_field')
+    })
+
+    it('should handle permission denied error', () => {
+      const error: WorkflowValidationError = {
+        message: 'Permission denied',
+        help: 'Contact your administrator',
+        details: {
+          error_type: 'authorization_error',
+          message: 'You do not have permission to update this workflow',
+          errors: [],
+        },
+      }
+
+      const result = processBackendError(error)
+
+      expect(result.issues).toBeNull()
+      expect(result.generalError).toBe(
+        'Permission denied: You do not have permission to update this workflow. Contact your administrator'
+      )
     })
   })
 })

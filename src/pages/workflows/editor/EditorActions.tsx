@@ -19,48 +19,65 @@ import CodeSVG from '@/assets/icons/code.svg?react'
 import ExternalSvg from '@/assets/icons/external.svg?react'
 import RevertSVG from '@/assets/icons/revert.svg?react'
 import SidebarSVG from '@/assets/icons/sidebar.svg?react'
+import StatusFailedSvg from '@/assets/icons/status-failed.svg?react'
 import WorkflowSVG from '@/assets/icons/workflow.svg?react'
 import Button from '@/components/Button'
 import { ButtonType } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
 import { isConfigItemEnabled, getConfigItemSettings } from '@/utils/settings'
 
+import { PanelTabId, TAB_DATA } from './constants'
+import { useWorkflowContext } from './hooks/useWorkflowContext'
+
 interface EditorActionsProps {
   isFullscreen: boolean
-  showWorkflowConfig: boolean
-  showYamlPanel: boolean
   canUndo: boolean
+  hasValidationErrors: boolean
   onUndo: () => void
   onLoadExample?: () => void
   onBeautify: () => void
-  onShowYaml: () => void
-  onToggleWorkflowConfig: () => void
+  tabs: PanelTabId[]
+  toggleTabs: (tabs: PanelTabId[]) => void
 }
 
 const BUTTON_LABELS = {
   YAML: 'YAML',
   WORKFLOW_CONFIG: 'Workflow Config',
   UNDO: 'Undo',
+  ISSUES: 'Issues',
 }
 
 const EditorActions = ({
   isFullscreen,
-  showWorkflowConfig,
-  showYamlPanel,
   canUndo,
   onUndo,
   onLoadExample,
   onBeautify,
-  onShowYaml,
-  onToggleWorkflowConfig,
+  tabs,
+  toggleTabs,
 }: EditorActionsProps) => {
+  const { issues } = useWorkflowContext()
   const { configs } = useSnapshot(appInfoStore)
+  const isYamlTabVisible = tabs.includes(TAB_DATA.YAML.ID)
+  const isConfigTabVisible = tabs[0] === TAB_DATA.CONFIGURATION.ID
 
   const isDocumentationEnabled = isConfigItemEnabled(configs, 'workflowDocumentation')
   const documentationUrl = getConfigItemSettings(configs, 'workflowDocumentation')?.url
 
   return (
     <div className="absolute top-4 right-4 z-10 flex gap-4">
+      {issues !== null && (
+        <Button
+          variant="delete"
+          onClick={() => toggleTabs([TAB_DATA.ISSUES.ID])}
+          aria-label={BUTTON_LABELS.ISSUES}
+          type={tabs.includes(TAB_DATA.ISSUES.ID) ? ButtonType.PRIMARY : ButtonType.SECONDARY}
+        >
+          <StatusFailedSvg />
+          {BUTTON_LABELS.ISSUES}
+        </Button>
+      )}
+
       {isDocumentationEnabled && documentationUrl && (
         <a
           href={documentationUrl}
@@ -88,7 +105,7 @@ const EditorActions = ({
               type="secondary"
               onClick={onUndo}
               aria-label={BUTTON_LABELS.UNDO}
-              disabled={showYamlPanel}
+              disabled={isYamlTabVisible}
             >
               <RevertSVG className="scale-x-[-1]" />
               {BUTTON_LABELS.UNDO}
@@ -99,15 +116,15 @@ const EditorActions = ({
             type="secondary"
             onClick={onBeautify}
             aria-label="Beautify layout"
-            disabled={showYamlPanel}
+            disabled={isYamlTabVisible}
           >
             <WorkflowSVG />
             Beautify
           </Button>
 
           <Button
-            type={showYamlPanel ? ButtonType.PRIMARY : ButtonType.SECONDARY}
-            onClick={onShowYaml}
+            type={isYamlTabVisible ? ButtonType.PRIMARY : ButtonType.SECONDARY}
+            onClick={() => toggleTabs([TAB_DATA.YAML.ID, TAB_DATA.CONFIGURATION.ID])}
             aria-label={BUTTON_LABELS.YAML}
           >
             <CodeSVG />
@@ -117,11 +134,11 @@ const EditorActions = ({
           <div className="text-border-specific-node-border">|</div>
 
           <Button
-            type={showWorkflowConfig ? ButtonType.PRIMARY : ButtonType.SECONDARY}
-            onClick={onToggleWorkflowConfig}
+            type={isConfigTabVisible ? ButtonType.PRIMARY : ButtonType.SECONDARY}
+            onClick={() => toggleTabs([TAB_DATA.CONFIGURATION.ID])}
             aria-label={BUTTON_LABELS.WORKFLOW_CONFIG}
           >
-            <SidebarSVG className={showWorkflowConfig ? 'rotate-180 transition' : 'transition'} />
+            <SidebarSVG className={isConfigTabVisible ? 'rotate-180 transition' : 'transition'} />
             {BUTTON_LABELS.WORKFLOW_CONFIG}
           </Button>
         </>

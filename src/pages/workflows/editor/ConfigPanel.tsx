@@ -22,17 +22,19 @@ import {
   useRef,
   forwardRef,
   useImperativeHandle,
-  Ref,
+  Dispatch,
+  SetStateAction,
 } from 'react'
 
 import ChevronRightIconSvg from '@/assets/icons/chevron-right.svg?react'
 import CrossIconSvg from '@/assets/icons/cross.svg?react'
 import Button from '@/components/Button'
-import Tabs, { Tab } from '@/components/Tabs/Tabs'
+import Tabs from '@/components/Tabs/Tabs'
 import { ButtonType } from '@/constants'
 import { FormIDs } from '@/constants/formIds'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import { WorkflowFormValues } from '@/pages/workflows/components/workflowSchema'
+import { WorkflowIssue } from '@/types/entity'
 import { WorkflowNode, WorkflowEdge, NodeTypes } from '@/types/workflowEditor/base'
 import { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 import { cn } from '@/utils/utils'
@@ -51,15 +53,23 @@ import ToolTab from './configPanels/ToolTab'
 import TransformTab from './configPanels/TransformTab'
 import UnsavedChangesConfirmation from './configPanels/UnsavedChangesConfirmation'
 import YamlPanel from './configPanels/YamlPanel'
+import { PanelTab, PanelTabId, TAB_DATA } from './constants'
+import { useWorkflowContext } from './hooks/useWorkflowContext'
+import IssuesPanel from './IssuesPanel'
 
 interface ConfigPanelProps {
   workflow?: any
   config: WorkflowConfiguration
   project?: string
   yamlConfig?: string
+  visibleTabs: PanelTabId[]
+  activeTab: PanelTabId | null
+  toggleTabs: (tabs: PanelTabId[]) => void
+  onActiveTabChange: (tab: PanelTabId) => void
 
   selectedNode?: WorkflowNode | null
   selectedEdge?: WorkflowEdge | null
+  showIssuesPanel: boolean
   showYamlPanel?: boolean
   isCollapsed?: boolean
 
@@ -74,8 +84,9 @@ interface ConfigPanelProps {
   onCollapsedChange?: (collapsed: boolean) => void
   pendingAction?: (() => void) | null
   setPendingAction?: (action: (() => void) | null) => void
-  stateErrors?: Map<string, string>
-  onClearStateError?: (stateId: string) => void
+
+  issues?: WorkflowIssue[]
+  setIssues?: Dispatch<SetStateAction<WorkflowIssue[]>>
 }
 
 export interface ConfigPanelRef {
@@ -93,189 +104,14 @@ interface ConfigTab {
   getValues?: () => any
 }
 
-interface RenderNodeTabParams {
-  node: WorkflowNode
-  config: WorkflowConfiguration
-  project: string
-  onUpdateConfig?: (updates: ConfigurationUpdate) => void
-  onClose?: (skipDirtyCheck?: boolean) => void
-  onDeleteNode?: () => void
-  onDuplicateNode?: () => void
-  ref?: Ref<ConfigTab>
-  stateErrors?: Map<string, string>
-  onClearStateError?: (stateId: string) => void
-}
-
-interface RenderGeneralConfigTabParams {
-  workflow: any
-  onUpdateWorkflow: (values: any) => void
-  onClose: (skipDirtyCheck?: boolean) => void
-  ref: Ref<ConfigTab>
-}
-
-interface RenderAdvancedConfigTabParams {
-  config: WorkflowConfiguration
-  workflow?: any
-  onUpdateAdvancedConfig: (updates: Partial<WorkflowConfiguration>) => void
-  onClose: (skipDirtyCheck?: boolean) => void
-  ref: Ref<ConfigTab>
-}
-
-interface RenderEdgeTabParams {
-  edge: WorkflowEdge
-  onClose: () => void
-  onDeleteConnection?: (edgeId: string) => void
-}
-
-const TAB_DATA = {
-  CONFIGURATION: { ID: 'configuration', LABEL: 'Basic' },
-  ADVANCED: { ID: 'advanced', LABEL: 'Advanced' },
-  NODE: { ID: 'node', LABEL: '' },
-  EDGE: { ID: 'edge', LABEL: 'Connection' },
-  YAML: { ID: 'yaml', LABEL: 'YAML' },
-}
-
-const renderGeneralConfigTab = ({
-  workflow,
-  onUpdateWorkflow,
-  onClose,
-  ref,
-}: RenderGeneralConfigTabParams): Tab => {
-  const defaultValues = workflow
-    ? {
-        name: workflow.name ?? '',
-        project: workflow.project ?? '',
-        description: workflow.description ?? '',
-        icon_url: workflow.icon_url ?? '',
-        shared: workflow.shared ?? false,
-        guardrail_assignments: workflow.guardrail_assignments ?? [],
-      }
-    : undefined
-
-  return {
-    id: TAB_DATA.CONFIGURATION.ID,
-    label: TAB_DATA.CONFIGURATION.LABEL,
-    element: (
-      <GeneralConfigTab
-        ref={ref}
-        defaultValues={defaultValues}
-        onUpdate={onUpdateWorkflow}
-        onClose={onClose}
-      />
-    ),
-  }
-}
-
-const renderAdvancedConfigTab = ({
-  config,
-  workflow,
-  onUpdateAdvancedConfig,
-  onClose,
-  ref,
-}: RenderAdvancedConfigTabParams): Tab => {
-  return {
-    id: TAB_DATA.ADVANCED.ID,
-    label: TAB_DATA.ADVANCED.LABEL,
-    element: (
-      <AdvancedConfigTab
-        ref={ref}
-        config={config}
-        workflow={workflow}
-        onConfigChange={onUpdateAdvancedConfig}
-        onClose={onClose}
-      />
-    ),
-  }
-}
-
-const renderNodeTab = ({
-  node,
-  config,
-  project,
-  onUpdateConfig,
-  onClose,
-  onDeleteNode,
-  onDuplicateNode,
-  ref,
-  stateErrors,
-  onClearStateError,
-}: RenderNodeTabParams): Tab | null => {
-  const nodeType = node.type ?? NodeTypes.CUSTOM
-  const nodeConfigPanels = {
-    [NodeTypes.ASSISTANT]: AssistantTab,
-    [NodeTypes.CUSTOM]: CustomTab,
-    [NodeTypes.TOOL]: ToolTab,
-    [NodeTypes.TRANSFORM]: TransformTab,
-    [NodeTypes.CONDITIONAL]: ConditionalTab,
-    [NodeTypes.SWITCH]: SwitchTab,
-    [NodeTypes.ITERATOR]: IteratorTab,
-  }
-
-  const NodePanel = nodeConfigPanels[nodeType]
-
-  if (!NodePanel) return null
-
-  const validationError = stateErrors?.get(node.id)
-
-  return {
-    id: TAB_DATA.NODE.ID,
-    label: capitalize(nodeType),
-    element: (
-      <NodePanel
-        ref={ref}
-        key={node.id}
-        stateId={node.id}
-        config={config}
-        onConfigChange={onUpdateConfig}
-        onClose={onClose ?? (() => {})}
-        onDelete={onDeleteNode}
-        onDuplicate={onDuplicateNode}
-        project={project}
-        validationError={validationError}
-        onClearStateError={onClearStateError}
-      />
-    ),
-  }
-}
-
-const renderEdgeTab = ({ edge, onClose, onDeleteConnection }: RenderEdgeTabParams): Tab => {
-  return {
-    id: TAB_DATA.EDGE.ID,
-    label: TAB_DATA.EDGE.LABEL,
-    element: (
-      <ConnectionTab
-        key={edge.id}
-        edge={edge}
-        onDeleteConnection={onDeleteConnection ?? (() => {})}
-        onClose={onClose}
-      />
-    ),
-  }
-}
-
-interface RenderYamlTabParams {
-  yaml: string
-  history: any[]
-  onUpdate: (yaml: string) => void
-  onClose: (forceCloseAll?: boolean) => void
-  ref?: Ref<ConfigTab>
-}
-
-const renderYamlTab = ({ yaml, history, onUpdate, onClose, ref }: RenderYamlTabParams): Tab => {
-  return {
-    id: TAB_DATA.YAML.ID,
-    label: TAB_DATA.YAML.LABEL,
-    element: (
-      <YamlPanel
-        ref={ref as any}
-        key={yaml}
-        yaml={yaml}
-        history={history}
-        onUpdate={onUpdate}
-        onClose={onClose}
-      />
-    ),
-  }
+const nodeConfigPanels = {
+  [NodeTypes.ASSISTANT]: AssistantTab,
+  [NodeTypes.CUSTOM]: CustomTab,
+  [NodeTypes.TOOL]: ToolTab,
+  [NodeTypes.TRANSFORM]: TransformTab,
+  [NodeTypes.CONDITIONAL]: ConditionalTab,
+  [NodeTypes.SWITCH]: SwitchTab,
+  [NodeTypes.ITERATOR]: IteratorTab,
 }
 
 const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
@@ -285,8 +121,11 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       config,
       selectedNode,
       selectedEdge,
-      showYamlPanel,
+      showIssuesPanel,
       project,
+      visibleTabs,
+      activeTab,
+      onActiveTabChange,
       yamlConfig,
       isCollapsed = false,
       onUpdateConfig,
@@ -300,14 +139,19 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       onCollapsedChange,
       pendingAction,
       setPendingAction,
-      stateErrors,
-      onClearStateError,
     },
     ref
   ) => {
-    const [activeTab, setActiveTab] = useState<string>()
+    const {
+      issues,
+      tempIssues,
+      setIssues,
+      setTempIssues,
+      resolveAllDirtyIssues,
+      clearAllDirtyIssues,
+    } = useWorkflowContext()
     const [showUnsavedChangesConfirmation, setShowUnsavedChangesConfirmation] = useState(false)
-    const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null)
+    const [pendingTabSwitch, setPendingTabSwitch] = useState<PanelTabId | null>(null)
     const activeTabRef = useRef<ConfigTab>(null)
 
     // Global unsaved changes tracking - unblock/block navigation during save
@@ -331,21 +175,26 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       [onUpdateWorkflow]
     )
 
-    const handleTabChange = useCallback((newTab: string) => {
-      const isDirty = activeTabRef.current?.isDirty?.() ?? false
+    const handleTabChange = useCallback(
+      (newTab: PanelTabId) => {
+        const isDirty = activeTabRef.current?.isDirty?.() ?? false
 
-      if (isDirty) {
-        setPendingTabSwitch(newTab)
-        setShowUnsavedChangesConfirmation(true)
-      } else {
-        setActiveTab(newTab)
-      }
-    }, [])
+        if (isDirty) {
+          setPendingTabSwitch(newTab)
+          setShowUnsavedChangesConfirmation(true)
+        } else {
+          onActiveTabChange?.(newTab)
+        }
+      },
+      [onActiveTabChange]
+    )
 
     const handleClose = useCallback(
       (skipDirtyCheck = false) => {
         if (skipDirtyCheck) {
           onClose(true)
+          clearAllDirtyIssues()
+          setTempIssues(issues)
           return
         }
 
@@ -355,15 +204,19 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
           setShowUnsavedChangesConfirmation(true)
         } else {
           onClose()
+          clearAllDirtyIssues()
+          setTempIssues(issues)
         }
       },
-      [onClose]
+      [onClose, clearAllDirtyIssues, issues, setTempIssues]
     )
 
     const handleChangesDiscard = useCallback(() => {
       setShowUnsavedChangesConfirmation(false)
+      clearAllDirtyIssues()
+      setTempIssues(issues)
       if (pendingTabSwitch) {
-        setActiveTab(pendingTabSwitch)
+        onActiveTabChange?.(pendingTabSwitch)
         setPendingTabSwitch(null)
       } else if (pendingAction) {
         onClose(true)
@@ -374,15 +227,25 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       } else {
         onClose(true)
       }
-    }, [onClose, pendingAction, setPendingAction, pendingTabSwitch])
+    }, [
+      onClose,
+      pendingAction,
+      setPendingAction,
+      pendingTabSwitch,
+      onActiveTabChange,
+      clearAllDirtyIssues,
+      issues,
+      setTempIssues,
+    ])
 
     const handleChangesSave = useCallback(async () => {
       // Temporarily unblock global navigation during save
       unblockTransition()
 
       const saveSuccessful = (await activeTabRef.current?.save()) ?? false
-
+      resolveAllDirtyIssues()
       setShowUnsavedChangesConfirmation(false)
+      setIssues?.(tempIssues ?? null)
 
       if (!saveSuccessful) {
         setPendingTabSwitch(null)
@@ -400,7 +263,7 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       }, 100)
 
       if (pendingTabSwitch) {
-        setActiveTab(pendingTabSwitch)
+        onActiveTabChange?.(pendingTabSwitch)
         setPendingTabSwitch(null)
         return
       }
@@ -422,15 +285,24 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       setPendingAction,
       unblockTransition,
       blockTransition,
+      onActiveTabChange,
+      resolveAllDirtyIssues,
+      tempIssues,
+      setIssues,
     ])
 
-    const triggerValidation = async () => {
-      setActiveTab(TAB_DATA.CONFIGURATION.ID)
+    const triggerValidation = useCallback(async () => {
+      onActiveTabChange?.(TAB_DATA.CONFIGURATION.ID)
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 0)
       })
       await activeTabRef.current?.validate?.()
-    }
+    }, [onActiveTabChange])
+
+    const updateIssues = useCallback(() => {
+      resolveAllDirtyIssues()
+      clearAllDirtyIssues()
+    }, [])
 
     useImperativeHandle(
       ref,
@@ -450,109 +322,177 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       [triggerValidation, activeTab]
     )
 
-    const tabs: Tab[] = useMemo(() => {
-      const result: Tab[] = []
+    const renderGeneralConfigTab = useCallback((): PanelTab => {
+      const defaultValues = workflow
+        ? {
+            name: workflow.name ?? '',
+            project: workflow.project ?? '',
+            description: workflow.description ?? '',
+            icon_url: workflow.icon_url ?? '',
+            shared: workflow.shared ?? false,
+            guardrail_assignments: workflow.guardrail_assignments ?? [],
+          }
+        : undefined
 
-      if (selectedNode) {
-        const nodeTab = renderNodeTab({
-          node: selectedNode,
-          config,
-          project: project ?? '',
-          onUpdateConfig,
-          onClose: handleClose,
-          onDeleteNode,
-          onDuplicateNode,
-          ref: activeTabRef,
-          stateErrors,
-          onClearStateError,
-        })
-
-        if (nodeTab) result.push(nodeTab)
-      } else if (selectedEdge) {
-        result.push(
-          renderEdgeTab({
-            edge: selectedEdge,
-            onClose: handleClose,
-            onDeleteConnection,
-          })
-        )
-      } else if (showYamlPanel && yamlConfig) {
-        result.push(
-          renderYamlTab({
-            yaml: yamlConfig,
-            history: workflow?.yaml_config_history || [],
-            onUpdate: onUpdateYaml,
-            onClose: handleClose,
-            ref: activeTabRef,
-          })
-        )
+      return {
+        id: TAB_DATA.CONFIGURATION.ID,
+        label: TAB_DATA.CONFIGURATION.LABEL,
+        element: (
+          <GeneralConfigTab
+            ref={activeTabRef}
+            defaultValues={defaultValues}
+            onUpdate={handleWorkflowUpdate}
+            onClose={handleClose}
+          />
+        ),
       }
+    }, [workflow, handleWorkflowUpdate, handleClose])
 
-      // Only add workflow configuration tabs when no node is selected
-      if (!selectedNode && !selectedEdge) {
-        result.push(
-          renderGeneralConfigTab({
-            workflow,
-            onUpdateWorkflow: handleWorkflowUpdate,
-            onClose: handleClose,
-            ref: activeTabRef,
-          }),
-          renderAdvancedConfigTab({
-            config,
-            workflow,
-            onUpdateAdvancedConfig,
-            onClose: handleClose,
-            ref: activeTabRef,
-          })
-        )
+    const renderAdvancedConfigTab = useCallback((): PanelTab => {
+      return {
+        id: TAB_DATA.ADVANCED.ID,
+        label: TAB_DATA.ADVANCED.LABEL,
+        element: (
+          <AdvancedConfigTab
+            ref={activeTabRef}
+            config={config}
+            workflow={workflow}
+            onConfigChange={(values) => {
+              onUpdateAdvancedConfig(values)
+            }}
+            onClose={handleClose}
+          />
+        ),
       }
+    }, [config, workflow, onUpdateAdvancedConfig, handleClose])
 
-      return result
+    const renderNodeTab = useCallback((): PanelTab | null => {
+      if (!selectedNode) return null
+
+      const nodeType = selectedNode.type ?? NodeTypes.CUSTOM
+      const NodePanel = nodeConfigPanels[nodeType]
+      if (!NodePanel) return null
+
+      return {
+        id: TAB_DATA.NODE.ID,
+        label: capitalize(nodeType),
+        element: (
+          <NodePanel
+            ref={activeTabRef}
+            key={selectedNode.id}
+            stateId={selectedNode.id}
+            config={config}
+            onConfigChange={(values) => {
+              updateIssues()
+              onUpdateConfig(values)
+            }}
+            onClose={handleClose}
+            onDelete={onDeleteNode}
+            onDuplicate={onDuplicateNode}
+            project={project ?? ''}
+          />
+        ),
+      }
     }, [
-      selectedNode,
-      selectedEdge,
-      showYamlPanel,
-      yamlConfig,
-      handleClose,
       config,
       project,
+      selectedNode,
+      updateIssues,
       onUpdateConfig,
+      handleClose,
       onDeleteNode,
       onDuplicateNode,
-      onDeleteConnection,
-      workflow,
-      handleWorkflowUpdate,
-      onUpdateAdvancedConfig,
-      onUpdateYaml,
-      stateErrors,
-      onClearStateError,
+    ])
+
+    const renderEdgeTab = useCallback((): PanelTab | null => {
+      if (!selectedEdge) return null
+
+      return {
+        id: TAB_DATA.EDGE.ID,
+        label: TAB_DATA.EDGE.LABEL,
+        element: (
+          <ConnectionTab
+            key={selectedEdge.id}
+            edge={selectedEdge}
+            onDeleteConnection={onDeleteConnection ?? (() => {})}
+            onClose={handleClose}
+          />
+        ),
+      }
+    }, [selectedEdge, onDeleteConnection, handleClose])
+
+    const renderYamlTab = useCallback(
+      (): PanelTab => ({
+        id: TAB_DATA.YAML.ID,
+        label: TAB_DATA.YAML.LABEL,
+        element: (
+          <YamlPanel
+            ref={activeTabRef as any}
+            key={yamlConfig}
+            yaml={yamlConfig ?? ''}
+            history={workflow?.yaml_config_history || []}
+            onUpdate={onUpdateYaml}
+            onClose={handleClose}
+          />
+        ),
+      }),
+      [yamlConfig, workflow?.yaml_config_history, onUpdateYaml, handleClose]
+    )
+
+    const renderIssuesTab = useCallback((): PanelTab => {
+      return {
+        id: TAB_DATA.ISSUES.ID,
+        label: TAB_DATA.ISSUES.LABEL,
+        element: <IssuesPanel />,
+      }
+    }, [])
+
+    const tabs: PanelTab[] = useMemo(() => {
+      const result: (PanelTab | null)[] = []
+
+      visibleTabs.forEach((tab) => {
+        switch (tab) {
+          case TAB_DATA.NODE.ID:
+            return result.push(renderNodeTab())
+          case TAB_DATA.EDGE.ID:
+            return result.push(renderEdgeTab())
+          case TAB_DATA.YAML.ID:
+            return result.push(renderYamlTab())
+          case TAB_DATA.ISSUES.ID:
+            return result.push(renderIssuesTab())
+          case TAB_DATA.CONFIGURATION.ID:
+            return result.push(renderGeneralConfigTab(), renderAdvancedConfigTab())
+          default:
+            return null
+        }
+      })
+
+      return result.filter((result): result is PanelTab => !!result)
+    }, [
+      renderNodeTab,
+      renderEdgeTab,
+      renderYamlTab,
+      renderIssuesTab,
+      renderGeneralConfigTab,
+      renderAdvancedConfigTab,
     ])
 
     const panelHeader = useMemo(() => {
       if (selectedNode) return CONFIG_PANEL_HEADERS.NODE
       if (selectedEdge) return CONFIG_PANEL_HEADERS.CONNECTION
+      if (showIssuesPanel) return CONFIG_PANEL_HEADERS.ISSUES
       return CONFIG_PANEL_HEADERS.WORKFLOW
-    }, [selectedNode, selectedEdge])
+    }, [selectedNode, selectedEdge, showIssuesPanel])
 
     const showTabs = tabs.length > 1
 
     useEffect(() => {
-      let tab
-
-      if (selectedNode) tab = TAB_DATA.NODE.ID
-      else if (selectedEdge) tab = TAB_DATA.EDGE.ID
-      else if (showYamlPanel) tab = TAB_DATA.YAML.ID
-      else tab = TAB_DATA.CONFIGURATION.ID
-
-      setActiveTab(tab)
-    }, [selectedNode, selectedEdge, showYamlPanel])
-
-    useEffect(() => {
-      if (
-        [TAB_DATA.CONFIGURATION.ID, TAB_DATA.ADVANCED.ID, TAB_DATA.YAML.ID].includes(
-          activeTab ?? ''
-        )
-      ) {
+      const configTabs: PanelTabId[] = [
+        TAB_DATA.CONFIGURATION.ID,
+        TAB_DATA.ADVANCED.ID,
+        TAB_DATA.YAML.ID,
+      ]
+      if (activeTab && configTabs.includes(activeTab)) {
         onCollapsedChange?.(false)
       }
     }, [activeTab, onCollapsedChange])
@@ -570,7 +510,9 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
           'transition-all duration-100',
           {
             'w-[500px] max-w-[500px]': !isCollapsed && activeTab === TAB_DATA.YAML.ID,
-            'w-96 max-w-[340px]': !isCollapsed && activeTab !== TAB_DATA.YAML.ID,
+            'w-[400px] max-w-[400px]': !isCollapsed && showIssuesPanel,
+            'w-96 max-w-[340px]':
+              !isCollapsed && activeTab !== TAB_DATA.YAML.ID && activeTab !== TAB_DATA.ISSUES.ID,
             'max-w-96 w-96':
               !isCollapsed &&
               selectedNode &&

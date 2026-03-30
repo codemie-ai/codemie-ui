@@ -186,6 +186,13 @@ export interface CommonStateConfiguration extends MinimalStateConfiguration {
   result_as_human_message?: boolean
 }
 
+export type EntityConfiguration =
+  | StateConfiguration
+  | AssistantConfiguration
+  | ToolConfiguration
+  | StateCondition
+  | NextState
+
 export interface MinimalStateConfiguration {
   id: string
   _meta?: StateMeta // UI data

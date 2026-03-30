@@ -20,6 +20,11 @@ import Spinner from '@/components/Spinner'
 import { assistantsStore } from '@/store'
 import { DynamicFormFieldSchema } from '@/types/dynamicForm'
 import { AssistantToolSchemaResponse } from '@/types/entity/assistant'
+import { NodeTypes } from '@/types/workflowEditor'
+
+import { registerFields } from '../../utils/visualEditorFieldRegistry'
+
+registerFields([/^tool_args\./], NodeTypes.TOOL)
 
 interface ToolArgumentsFormProps {
   toolName: string | null
@@ -29,6 +34,7 @@ interface ToolArgumentsFormProps {
   onSchemaEmpty?: () => void
   onSchemaLoaded?: (requiredFields: string[]) => void
   errors?: Record<string, string>
+  issuePathPrefix?: string
 }
 
 const ToolArgumentsForm: React.FC<ToolArgumentsFormProps> = ({
@@ -39,6 +45,7 @@ const ToolArgumentsForm: React.FC<ToolArgumentsFormProps> = ({
   onSchemaEmpty,
   onSchemaLoaded,
   errors = {},
+  issuePathPrefix = 'tool_args',
 }) => {
   const [schema, setSchema] = useState<AssistantToolSchemaResponse | null>(null)
   const [loading, setLoading] = useState(false)
@@ -102,6 +109,7 @@ const ToolArgumentsForm: React.FC<ToolArgumentsFormProps> = ({
       value={value}
       onChange={onChange}
       errors={errors}
+      issuePathPrefix={issuePathPrefix}
     />
   )
 }

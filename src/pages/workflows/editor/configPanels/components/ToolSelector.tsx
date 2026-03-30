@@ -28,6 +28,8 @@ import { AssistantToolkit } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { cn } from '@/utils/utils'
 
+import { useWorkflowContext } from '../../hooks/useWorkflowContext'
+
 interface ToolSelectorProps {
   toolkits: AssistantToolkit[]
   mcpServers: MCPServerDetails[]
@@ -45,6 +47,7 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
   showNewIntegrationPopup,
   project,
 }) => {
+  const { activeIssue, setActiveIssue } = useWorkflowContext()
   const [isToolPopupOpen, setIsToolPopupOpen] = useState(false)
   const [isMcpPopupOpen, setIsMcpPopupOpen] = useState(false)
   const [isMCPSelected, setIsMCPSelected] = useState(false)
@@ -108,6 +111,13 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
     onToolkitsChange([])
     onMcpServersChange([])
   }
+
+  useEffect(() => {
+    if (activeIssue && activeIssue.path.startsWith('mcp_server.') && mcpServers.length) {
+      setStagedMcpServers(mcpServers)
+      setIsMcpPopupOpen(true)
+    }
+  }, [activeIssue, setActiveIssue, mcpServers])
 
   return (
     <>
