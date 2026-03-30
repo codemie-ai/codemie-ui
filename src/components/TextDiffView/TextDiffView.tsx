@@ -149,11 +149,11 @@ const TextDiffView: React.FC<TextDiffViewProps> = ({
 
   const getLineNumberClasses = (isChanged: boolean, isEmpty: boolean, isOld: boolean) => {
     return cn(
-      'min-w-12 px-2 py-1 text-xs text-text-tertiary text-right select-none flex items-center justify-end',
+      'min-w-12 px-2 py-1 text-xs text-text-tertiary text-right select-none border-r border-border-primary flex items-center justify-end',
       {
         'bg-surface-specific-diff-linenumber-remove': isChanged && !isEmpty && isOld,
         'bg-surface-specific-diff-linenumber-add': isChanged && !isEmpty && !isOld,
-        'bg-surface-elevated': !isChanged && !isEmpty,
+        'bg-surface-base-float': !isChanged || isEmpty,
       }
     )
   }

@@ -51,7 +51,7 @@ const c = {
     q2: '#262941',
   },
   green: {
-    '25': '#4D4D4D',
+    '25': '#FAFBFC',
     '40': '#DFFAFF',
     '50': '#E6F7E6',
     '100': '#CFF2CF',
@@ -63,7 +63,7 @@ const c = {
     '800': '#1E4B2D',
     '850': '#243428',
     '900': '#1B271F',
-    '1000': '#1B271F',
+    '1000': '#212624',
     a0: '#259F4C00',
     a10: '#259F4C1A',
     a30: '#259F4C4D',
@@ -250,7 +250,7 @@ const themeTokens: ThemeConfig = {
         'linenumber-add': [c['green']['850'], c['green']['100']],
         'linebg-add': [c['green']['900'], c['green']['50']],
         'highlight-add': [c['green']['800'], c['green']['150']],
-        'emptyline-add': [c['green']['800'], c['green']['25']],
+        'emptyline-add': [c['green']['1000'], c['green']['25']],
       },
       charts: {
         blue: c['blue']['300'],
