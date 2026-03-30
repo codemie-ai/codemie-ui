@@ -65,9 +65,10 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   }, [currentUser, userOptions])
 
   // Update checkbox state based on current selection
+  // Checkbox is checked only when current user is the sole selection
   useEffect(() => {
     if (currentUserId && value) {
-      setIsChecked(value.includes(currentUserId))
+      setIsChecked(value.length === 1 && value.includes(currentUserId))
     }
   }, [value, currentUserId])
 
@@ -89,18 +90,16 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
     setIsChecked(checked)
 
     if (checked) {
-      // Save previous selection before adding current user
-      if (value.length > 0 && !value.includes(currentUserId)) {
+      // Save previous selection before replacing with only current user
+      if (value.length > 0) {
         setPreviousUsers(value)
       }
-      // Add current user to the selection
-      if (!value.includes(currentUserId)) {
-        onChange([...value, currentUserId])
-      }
+      // Replace selection with only current user
+      onChange([currentUserId])
     } else {
-      // Remove current user from selection
-      const newValue = value.filter((id) => id !== currentUserId)
-      onChange(newValue.length > 0 ? newValue : previousUsers)
+      // Restore previous selection or clear
+      onChange(previousUsers.length > 0 ? previousUsers : [])
+      setPreviousUsers([])
     }
   }
 
