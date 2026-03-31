@@ -13,20 +13,17 @@
 // limitations under the License.
 //
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import MCPIconSvg from '@/assets/icons/mcp.svg?react'
-import TemplatesSvg from '@/assets/icons/templates.svg?react'
-import ToolSvg from '@/assets/icons/tool.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
-import Popup from '@/components/Popup'
 import { ButtonType } from '@/constants'
-import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { MCPConfig, MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
-import { cn } from '@/utils/utils'
 
+import MCPActionButtons from './MCPActionButtons'
+import MCPCompactServerItem from './MCPCompactServerItem'
+import MCPDetailModal from './MCPDetailModal'
 import MCPEmptyState from './MCPEmptyState'
 import MCPMarketplaceModal from './MCPMarketplaceModal'
 import MCPServerDetail from './MCPServerDetail'
@@ -39,36 +36,9 @@ interface MCPToolkitProps {
   onMcpServersChange: (mcpServers: MCPServerDetails[]) => void
   showNewIntegrationPopup: () => void
   project: string
-  refreshSettings: () => Promise<any>
+  refreshSettings: () => Promise<void>
   singleToolSelection?: boolean
   isCompactView?: boolean
-}
-
-const MCPCompactServerItem = ({ server }: { server: MCPServerDetails }) => {
-  const labelRef = useRef<HTMLHeadingElement>(null)
-  const isTruncated = useIsTruncated(labelRef)
-
-  return (
-    <div className="flex items-center p-3 gap-3 rounded-lg border border-transparent bg-surface-base-float">
-      <div className="flex-shrink-0 w-8 h-8 rounded border border-border-structural bg-surface-base-secondary flex items-center justify-center overflow-hidden">
-        {server.logo_url ? (
-          <img src={server.logo_url} alt={server.name} className="w-full h-full object-cover" />
-        ) : (
-          <MCPIconSvg className="w-5 h-5 text-text-quaternary" />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <h2
-          ref={labelRef}
-          className="font-geist-mono font-medium text-base text-text-primary truncate"
-          data-tooltip-id={isTruncated ? 'react-tooltip' : undefined}
-          data-tooltip-content={isTruncated ? server.name : undefined}
-        >
-          {server.name}
-        </h2>
-      </div>
-    </div>
-  )
 }
 
 const MCPToolkit = ({
@@ -94,6 +64,12 @@ const MCPToolkit = ({
 
   const isSelected = (mcpServer: MCPServerDetails) =>
     !!mcpServers.some((ms) => ms.name === mcpServer.name && ms.enabled)
+
+  const toggleMcpServer = (mcpServer: MCPServerDetails) => {
+    onMcpServersChange(
+      mcpServers.map((ms) => (ms.name === mcpServer.name ? { ...ms, enabled: !ms.enabled } : ms))
+    )
+  }
 
   const updateMcpServer = (mcpServer: MCPServerDetails) => {
     const existingMcpServer = mcpServers.find((ms) => ms.name === mcpServer.name)
@@ -140,9 +116,7 @@ const MCPToolkit = ({
     setIsFormPopupVisible(true)
   }
 
-  const handleBrowseMarketplace = () => {
-    setIsMarketplaceVisible(true)
-  }
+  const handleBrowseMarketplace = () => setIsMarketplaceVisible(true)
 
   const handleAddCustom = () => {
     setSelectedMcpServer(undefined)
@@ -150,11 +124,10 @@ const MCPToolkit = ({
   }
 
   const detailServer = mcpServers[selectedIndex]
-
   if (mcpServers.length === 0) {
     return (
       <>
-        <div className={cn(isCompactView && 'pb-4')}>
+        <div className={isCompactView ? 'pb-4' : undefined}>
           <MCPEmptyState
             onBrowseMarketplace={handleBrowseMarketplace}
             onAddCustom={handleAddCustom}
@@ -185,22 +158,6 @@ const MCPToolkit = ({
     )
   }
 
-  const actionButtons = (compact = false) => (
-    <div
-      className={cn(
-        'flex gap-2 p-4 border-t border-border-structural bg-surface-base-primary',
-        compact && 'flex-col'
-      )}
-    >
-      <Button variant="primary" className="flex-1" onClick={handleBrowseMarketplace}>
-        <TemplatesSvg className="w-4 h-4" /> Browse Catalog
-      </Button>
-      <Button variant="secondary" className="flex-1" onClick={handleAddCustom}>
-        <ToolSvg className="w-4 h-4" /> Manual Setup
-      </Button>
-    </div>
-  )
-
   return (
     <>
       {isCompactView ? (
@@ -216,7 +173,7 @@ const MCPToolkit = ({
           <Button
             variant="secondary"
             onClick={() => setIsDetailModalVisible(true)}
-            className="self-center w-[212px] h-7 px-4 py-1"
+            className="self-center w-52 h-7 px-4 py-1"
           >
             <span className="font-geist-mono font-semibold text-xs leading-4">
               Configure MCP Servers
@@ -224,7 +181,11 @@ const MCPToolkit = ({
           </Button>
 
           {/* Action buttons */}
-          {actionButtons(true)}
+          <MCPActionButtons
+            compact
+            onBrowseMarketplace={handleBrowseMarketplace}
+            onAddCustom={handleAddCustom}
+          />
         </div>
       ) : (
         <div className="relative -mt-4">
@@ -239,12 +200,18 @@ const MCPToolkit = ({
                     server={server}
                     index={index}
                     selectedIndex={selectedIndex}
+                    isSelected={isSelected(server)}
                     isCompactView={isCompactView}
                     onClick={() => setSelectedIndex(index)}
+                    onToggle={() => toggleMcpServer(server)}
                   />
                 ))}
               </div>
-              {actionButtons(true)}
+              <MCPActionButtons
+                compact
+                onBrowseMarketplace={handleBrowseMarketplace}
+                onAddCustom={handleAddCustom}
+              />
             </div>
 
             {/* Right: selected server detail */}
@@ -304,64 +271,29 @@ const MCPToolkit = ({
         onConfirm={deleteMcpServer}
       />
 
-      {/* Detail modal for compact view */}
       {isCompactView && (
-        <Popup
+        <MCPDetailModal
           visible={isDetailModalVisible}
           onHide={() => setIsDetailModalVisible(false)}
-          header="MCP Servers"
-          hideFooter
-          isFullWidth
-          bodyClassName="p-0"
-        >
-          <div className="w-[1128px] h-[662px] bg-surface-base-secondary border border-border-structural rounded-lg overflow-hidden">
-            <div className="relative grid grid-cols-[376px_1fr] h-full">
-              <div className="absolute top-0 bottom-0 left-[376px] border-l border-border-structural z-10" />
-
-              {/* Left: server list + buttons */}
-              <div className="flex flex-col h-full bg-surface-base-primary">
-                <div className="flex flex-col gap-1 overflow-y-auto h-[532px] pt-6 pb-2 pl-4 pr-2 show-scroll border-t border-border-structural bg-surface-base-primary">
-                  {mcpServers.map((server, index) => (
-                    <MCPServerListItem
-                      key={server.name}
-                      server={server}
-                      index={index}
-                      selectedIndex={selectedIndex}
-                      isCompactView={isCompactView}
-                      onClick={() => setSelectedIndex(index)}
-                    />
-                  ))}
-                </div>
-                {actionButtons(true)}
-              </div>
-
-              {/* Right: selected server detail */}
-              <div className="bg-surface-base-primary h-full overflow-y-auto show-scroll">
-                {detailServer ? (
-                  <MCPServerDetail
-                    server={detailServer}
-                    settingsDefinitions={settingsDefinitions}
-                    isSelected={isSelected(detailServer)}
-                    onUpdate={updateMcpServer}
-                    onEdit={() => {
-                      setSelectedMcpServer(detailServer)
-                      setIsFormPopupVisible(true)
-                    }}
-                    onDelete={() => {
-                      setSelectedMcpServer(detailServer)
-                      setIsDeletePopupVisible(true)
-                    }}
-                    showNewIntegrationPopup={showNewIntegrationPopup}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-text-quaternary text-sm">
-                    No available data for display
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </Popup>
+          mcpServers={mcpServers}
+          selectedIndex={selectedIndex}
+          onSelectIndex={setSelectedIndex}
+          isSelected={isSelected}
+          onToggle={toggleMcpServer}
+          settingsDefinitions={settingsDefinitions}
+          onUpdate={updateMcpServer}
+          onEdit={(server) => {
+            setSelectedMcpServer(server)
+            setIsFormPopupVisible(true)
+          }}
+          onDelete={(server) => {
+            setSelectedMcpServer(server)
+            setIsDeletePopupVisible(true)
+          }}
+          showNewIntegrationPopup={showNewIntegrationPopup}
+          onBrowseMarketplace={handleBrowseMarketplace}
+          onAddCustom={handleAddCustom}
+        />
       )}
     </>
   )

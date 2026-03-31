@@ -13,61 +13,46 @@
 // limitations under the License.
 //
 
-import { useRef } from 'react'
-
-import MCPIconSvg from '@/assets/icons/mcp.svg?react'
-import { useIsTruncated } from '@/hooks/useIsTruncated'
+import { Checkbox } from '@/components/form/Checkbox'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { cn } from '@/utils/utils'
+
+import MCPServerInfo from './MCPServerInfo'
 
 interface MCPServerListItemProps {
   server: MCPServerDetails
   index: number
   selectedIndex: number
+  isSelected: boolean
   isCompactView?: boolean
   onClick: () => void
+  onToggle: () => void
 }
 
 const MCPServerListItem = ({
   server,
   index,
   selectedIndex,
+  isSelected,
   isCompactView,
   onClick,
-}: MCPServerListItemProps) => {
-  const labelRef = useRef<HTMLHeadingElement>(null)
-  const isTruncated = useIsTruncated(labelRef)
-
-  return (
-    <div
-      onClick={onClick}
-      className={cn(
-        'flex items-center p-3 gap-3 rounded-lg cursor-pointer transition-all border min-w-0',
-        isCompactView ? 'w-[207px]' : 'w-[280px]',
-        selectedIndex === index
-          ? 'bg-surface-base-float border-border-structural'
-          : 'border-transparent hover:bg-border-structural/10'
-      )}
-    >
-      <div className="flex-shrink-0 w-8 h-8 rounded border border-border-structural bg-surface-base-secondary flex items-center justify-center overflow-hidden">
-        {server.logo_url ? (
-          <img src={server.logo_url} alt={server.name} className="w-full h-full object-cover" />
-        ) : (
-          <MCPIconSvg className="w-5 h-5 text-text-quaternary" />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <h2
-          ref={labelRef}
-          className="font-geist-mono font-medium text-base text-text-primary truncate"
-          data-tooltip-id={isTruncated ? 'react-tooltip' : undefined}
-          data-tooltip-content={isTruncated ? server.name : undefined}
-        >
-          {server.name}
-        </h2>
-      </div>
+  onToggle,
+}: MCPServerListItemProps) => (
+  <div
+    onClick={onClick}
+    className={cn(
+      'flex items-center p-3 gap-3 rounded-lg cursor-pointer transition-all border min-w-0',
+      isCompactView ? 'w-52' : 'w-72',
+      selectedIndex === index
+        ? 'bg-surface-base-float border-border-structural'
+        : 'border-transparent hover:bg-border-structural/10'
+    )}
+  >
+    <div onClick={(e) => e.stopPropagation()}>
+      <Checkbox checked={isSelected} onChange={onToggle} label="" />
     </div>
-  )
-}
+    <MCPServerInfo server={server} />
+  </div>
+)
 
 export default MCPServerListItem
