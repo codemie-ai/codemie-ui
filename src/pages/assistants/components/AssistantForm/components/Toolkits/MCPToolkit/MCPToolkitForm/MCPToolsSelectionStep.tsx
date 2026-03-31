@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 
 import RefreshIcon from '@/assets/icons/refresh.svg?react'
 import Button from '@/components/Button'
@@ -59,8 +59,10 @@ const MCPToolsSelectionStep = ({
   const [toolsStatus, setToolsStatus] = useState<ToolsStatus>(MCP_TOOLS_STATUS.PENDING)
   const [tools, setTools] = useState<Tool[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [loginUrl, setLoginUrl] = useState<string | null>(null)
   const [useAllTools, setUseAllTools] = useState(false)
   const [initialSelectedTools, setInitialSelectedTools] = useState<Tool[]>([])
+  const focusListenerRef = useRef<(() => void) | null>(null)
 
   const isToolSelected = (tool: Tool) => {
     return selectedTools.some((t) => t.name === tool.name)
@@ -111,6 +113,7 @@ const MCPToolsSelectionStep = ({
   const fetchTools = async () => {
     setToolsStatus(MCP_TOOLS_STATUS.LOADING)
     setError(null)
+    setLoginUrl(null)
 
     try {
       const toolkits = await assistantsStore.getMcpTools(mcpServer)
@@ -119,11 +122,25 @@ const MCPToolsSelectionStep = ({
       setToolsStatus(MCP_TOOLS_STATUS.LOADED)
     } catch (err) {
       console.error('Error fetching MCP tools:', err)
-      const { details, message } = (err as any).parsedError || {}
+      const { details, message, login_url } = (err as any).parsedError || {}
       setError(message ? `${message}\n${details || ''}` : 'Failed to fetch tools')
+      if (login_url) setLoginUrl(login_url)
       setTools([])
       setToolsStatus(MCP_TOOLS_STATUS.ERROR)
     }
+  }
+
+  const handleLoginClick = () => {
+    if (!loginUrl) return
+    window.open(loginUrl, '_blank', 'noopener,noreferrer')
+
+    const handleFocus = () => {
+      window.removeEventListener('focus', handleFocus)
+      focusListenerRef.current = null
+      fetchTools()
+    }
+    focusListenerRef.current = handleFocus
+    window.addEventListener('focus', handleFocus)
   }
 
   useEffect(() => {
@@ -132,6 +149,11 @@ const MCPToolsSelectionStep = ({
     }
     if (selectedTools.length > 0) {
       setInitialSelectedTools(selectedTools)
+    }
+    return () => {
+      if (focusListenerRef.current) {
+        window.removeEventListener('focus', focusListenerRef.current)
+      }
     }
   }, [])
 
@@ -220,7 +242,12 @@ const MCPToolsSelectionStep = ({
               </div>
             ))}
 
-            <div className="flex justify-center px-6">
+            <div className="flex justify-center gap-4 px-6">
+              {loginUrl && (
+                <Button type={ButtonType.SECONDARY} onClick={handleLoginClick}>
+                  Login to MCP Server
+                </Button>
+              )}
               <Button type={ButtonType.SECONDARY} onClick={fetchTools}>
                 <RefreshIcon className="w-3.5 h-3.5" />
                 {toolsStatus === MCP_TOOLS_STATUS.ERROR ? 'Retry' : 'Reload'}

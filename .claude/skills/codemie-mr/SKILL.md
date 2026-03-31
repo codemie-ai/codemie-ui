@@ -66,7 +66,7 @@ git commit -m "EPMCDME-xxx: Action and message"
 
 **"push changes"** → Push only:
 ```bash
-git push origin $(git branch --show-current)
+git push --set-upstream origin $(git branch --show-current)
 ```
 
 **"create MR"** → Full workflow below.
@@ -79,14 +79,14 @@ git push origin $(git branch --show-current)
 
 #### If MR already exists:
 ```bash
-git push origin $(git branch --show-current)
+git push --set-upstream origin $(git branch --show-current)
 # Inform: "Changes pushed to existing MR: <url>"
 ```
 
 #### If no MR exists:
 ```bash
 # Push changes
-git push origin $(git branch --show-current)
+git push --set-upstream origin $(git branch --show-current)
 ```
 
 Build the MR title from the Jira ticket and a concise description of the work done (read commit history since main if needed to understand what was implemented):
