@@ -79,33 +79,49 @@ const ChatHeader: FC = () => {
     }
   }
 
+  const assistantDisplayName = currentChat?.isGroup
+    ? currentChat.assistantData.map((a) => a.name).join(', ')
+    : currentChat?.assistantData[0]?.name
+
   return (
     <div className="flex justify-between items-center grow">
-      {!sidebarExpanded && (
-        <Button onClick={handleCreateChat} className="mr-4">
-          <Plus />
-          New Chat
-        </Button>
-      )}
+      <div className="flex items-center min-w-0 flex-1">
+        {!sidebarExpanded && (
+          <Button onClick={handleCreateChat} className="mr-4 shrink-0">
+            <Plus />
+            New Chat
+          </Button>
+        )}
 
-      {currentChat?.isGroup && !!currentChat?.assistantData.length && (
-        <div className="flex items-center gap-2">
-          {currentChat.assistantData.slice(0, 3).map((assistant) => (
-            <Avatar
-              key={assistant.id}
-              iconUrl={assistant.iconUrl}
-              name={assistant.name}
-              type={AvatarType.SMALL}
-              onClick={handleAvatarClick}
-              withTooltip
-            />
-          ))}
-          {currentChat.assistantData.length > 3 ? <div className="mr-2">...</div> : null}
-        </div>
-      )}
+        {currentChat?.isGroup && !!currentChat?.assistantData.length && (
+          <div className="flex items-center gap-2 shrink-0">
+            {currentChat.assistantData.slice(0, 3).map((assistant) => (
+              <Avatar
+                key={assistant.id}
+                iconUrl={assistant.iconUrl}
+                name={assistant.name}
+                type={AvatarType.SMALL}
+                onClick={handleAvatarClick}
+                withTooltip
+              />
+            ))}
+            {currentChat.assistantData.length > 3 ? <div className="mr-2">...</div> : null}
+          </div>
+        )}
+
+        {assistantDisplayName && (currentChat?.assistantData?.length ?? 0) <= 1 && (
+          <span
+            className="ml-2 line-clamp-1 font-semibold text-text-primary"
+            data-tooltip-id="react-tooltip"
+            data-tooltip-content={assistantDisplayName}
+          >
+            {assistantDisplayName}
+          </span>
+        )}
+      </div>
 
       {currentChat && (
-        <div className="flex gap-2 ml-auto">
+        <div className="flex gap-2 ml-auto shrink-0">
           {hasAssistant && (
             <Button
               type="secondary"
