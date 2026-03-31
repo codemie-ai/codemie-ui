@@ -83,7 +83,7 @@ const SkillInstructionsGenAIPopup = ({
       if (currentRequestId !== requestIdRef.current) return
 
       handleHide()
-      onGenerated(result.content)
+      onGenerated(result.instructions)
     } catch (error) {
       setIsLoading(false)
     }

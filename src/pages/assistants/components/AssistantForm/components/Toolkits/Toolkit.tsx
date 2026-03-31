@@ -192,7 +192,9 @@ const Toolkit = ({
               return (
                 <div>
                   <div className="flex flex-col gap-6">
-                    <span className="font-geist-mono text-xs text-text-tertiary">Integrations:</span>
+                    <span className="font-geist-mono text-xs text-text-tertiary">
+                      Integrations:
+                    </span>
                     <IntegrationSelector
                       value={selectedToolkit.settings}
                       tooltipPosition="left"

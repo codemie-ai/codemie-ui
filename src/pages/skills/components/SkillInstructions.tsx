@@ -15,6 +15,7 @@
 
 import { forwardRef, useState } from 'react'
 
+import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import AIGenerateSvg from '@/assets/icons/ai-generate.svg?react'
 import CollapseSvg from '@/assets/icons/collapse.svg?react'
 import CopySvg from '@/assets/icons/copy.svg?react'
@@ -32,12 +33,13 @@ import SkillInstructionsGenAIPopup from './SkillInstructionsGenAIPopup'
 interface SkillInstructionsProps {
   value: string
   error?: string
+  isAIGenerated?: boolean
   onChange: (value: string) => void
   onBlur?: () => void
 }
 
 const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
-  ({ value, error, onChange, onBlur }, ref) => {
+  ({ value, error, isAIGenerated = false, onChange, onBlur }, ref) => {
     const [isExpanded, setIsExpanded] = useState(false)
     const [showGenAIPopup, setShowGenAIPopup] = useState(false)
     const [showDiffModal, setShowDiffModal] = useState(false)
@@ -78,7 +80,13 @@ const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
             onBlur={onBlur}
             maxLength={MAX_CONTENT_LENGTH}
             onChange={(e) => onChange(e.target.value)}
-          />
+          >
+            {isAIGenerated && (
+              <div className="absolute top-3 right-6">
+                <AIFieldSvg />
+              </div>
+            )}
+          </Textarea>
         </div>
 
         <Popup

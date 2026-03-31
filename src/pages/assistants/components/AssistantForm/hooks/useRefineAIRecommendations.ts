@@ -26,6 +26,7 @@ import {
   FieldRecommendation,
   RecommendationAction,
 } from '@/types/entity/assistant'
+import { applyToolRecommendationsToToolkits } from '@/utils/toolkit'
 
 interface UseRefineAIRecommendationsProps {
   toolkits: AssistantToolkit[]
@@ -46,62 +47,6 @@ export const useRefineAIRecommendations = ({
   setAiGeneratedFieldMarkers,
 }: UseRefineAIRecommendationsProps) => {
   const { assistantCategories, availableToolkits } = useSnapshot(assistantsStore)
-
-  const processToolDeletion = useCallback(
-    (updatedToolkits: AssistantToolkit[], toolkitName: string, toolName: string) => {
-      const existingToolkitIndex = updatedToolkits.findIndex((tk) => tk.toolkit === toolkitName)
-
-      if (existingToolkitIndex >= 0) {
-        const existingToolkit = updatedToolkits[existingToolkitIndex]
-        const updatedTools = existingToolkit.tools?.filter((t) => t.name !== toolName) ?? []
-
-        // If no tools left in toolkit, remove the entire toolkit
-        if (updatedTools.length === 0) {
-          updatedToolkits.splice(existingToolkitIndex, 1)
-        } else {
-          updatedToolkits[existingToolkitIndex] = {
-            ...existingToolkit,
-            tools: updatedTools,
-          }
-        }
-      }
-    },
-    []
-  )
-
-  const processToolAddition = useCallback(
-    (updatedToolkits: AssistantToolkit[], toolkitName: string, toolName: string) => {
-      const availableToolkit = availableToolkits.find((tk) => tk.toolkit === toolkitName)
-
-      if (!availableToolkit) return
-
-      const toolToAdd = availableToolkit.tools?.find((t) => t.name === toolName)
-      if (!toolToAdd) return
-
-      const existingToolkitIndex = updatedToolkits.findIndex((tk) => tk.toolkit === toolkitName)
-
-      if (existingToolkitIndex >= 0) {
-        const existingToolkit = updatedToolkits[existingToolkitIndex]
-        const toolExists = existingToolkit.tools?.some((t) => t.name === toolName)
-
-        if (!toolExists) {
-          updatedToolkits[existingToolkitIndex] = {
-            ...existingToolkit,
-            tools: [...(existingToolkit.tools ?? []), toolToAdd],
-          }
-        }
-      } else {
-        updatedToolkits.push({
-          toolkit: toolkitName,
-          label: availableToolkit.label,
-          tools: [toolToAdd],
-          settings_config: availableToolkit.settings_config,
-          is_external: availableToolkit.is_external,
-        } as AssistantToolkit)
-      }
-    },
-    [availableToolkits]
-  )
 
   const applyStringField = useCallback(
     (fieldName: string, value: unknown) => {
@@ -146,25 +91,12 @@ export const useRefineAIRecommendations = ({
 
   const applyToolRecommendations = useCallback(
     (tools: Array<{ toolkitName: string; name: string; action: string }>) => {
-      const updatedToolkits = [...toolkits]
-
-      // First, process all DELETE actions
-      tools
-        .filter((t) => t.action === RecommendationAction.DELETE)
-        .forEach((tool) => processToolDeletion(updatedToolkits, tool.toolkitName, tool.name))
-
-      // Then, process all ADD/CHANGE actions
-      tools
-        .filter(
-          (t) => t.action === RecommendationAction.ADD || t.action === RecommendationAction.CHANGE
-        )
-        .forEach((tool) => processToolAddition(updatedToolkits, tool.toolkitName, tool.name))
-
-      // Apply all changes in one setState call
-      setToolkits(updatedToolkits)
+      setToolkits(
+        applyToolRecommendationsToToolkits(toolkits, tools, availableToolkits as AssistantToolkit[])
+      )
       setAiGeneratedFieldMarkers((prev) => ({ ...prev, toolkits: true }))
     },
-    [toolkits, setToolkits, processToolDeletion, processToolAddition, setAiGeneratedFieldMarkers]
+    [toolkits, setToolkits, availableToolkits, setAiGeneratedFieldMarkers]
   )
 
   const processContextDeletion = useCallback((updatedContext: any[], contextName: string) => {

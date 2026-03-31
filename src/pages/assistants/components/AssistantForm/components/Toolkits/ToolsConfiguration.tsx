@@ -215,49 +215,47 @@ const ToolsConfiguration = ({
   if (isLoading) return <Spinner inline />
 
   const content = (
-      <div className={cn('flex flex-col gap-2', showWrapper && 'px-4 pb-4')}>
-        {showInternalTools && (
-          <div ref={toolsAccordionRef}>
-            <AvailableToolsSection
-              internalToolkits={internalToolkits}
-              toolkitRenderProps={toolkitRenderProps}
-              singleToolSelection={singleToolSelection}
-              defaultOpen={
-                defaultOpenSection ? defaultOpenSection === SECTION.TOOLS : singleToolSelection
-              }
-              isCompactView={isChatConfig}
-              customToolkitRenderer={customToolkitRenderer}
-              availableToolsDescription={availableToolsDescription}
-            />
-          </div>
-        )}
-
-        <ExternalToolsSection
-          toolkits={selectedToolkits}
-          onToolkitsChange={onToolkitsChange}
-          project={project}
-          singleToolSelection={singleToolSelection}
-          showNewIntegrationPopup={showNewIntegrationPopup}
-          isCompactView={isChatConfig}
-        />
-
-        {showMcpServers && isMcpFeatureEnabled && (
-          <McpServersSection
-            mcpServers={mcpServers}
-            onMcpServersChange={onMcpServersChange}
-            settingsDefinitions={filteredSettings[MCP_SETTINGS_TYPE]}
-            project={project}
-            showNewIntegrationPopup={() => showNewIntegrationPopup(project, MCP_SETTINGS_TYPE)}
-            refreshSettings={indexSettings}
+    <div className={cn('flex flex-col gap-2', showWrapper && 'px-4 pb-4')}>
+      {showInternalTools && (
+        <div ref={toolsAccordionRef}>
+          <AvailableToolsSection
+            internalToolkits={internalToolkits}
+            toolkitRenderProps={toolkitRenderProps}
             singleToolSelection={singleToolSelection}
             defaultOpen={
-              defaultOpenSection ? defaultOpenSection === SECTION.MCP : !showInternalTools
+              defaultOpenSection ? defaultOpenSection === SECTION.TOOLS : singleToolSelection
             }
-            scrollRef={mcpAccordionRef}
             isCompactView={isChatConfig}
+            customToolkitRenderer={customToolkitRenderer}
+            availableToolsDescription={availableToolsDescription}
           />
-        )}
-      </div>
+        </div>
+      )}
+
+      <ExternalToolsSection
+        toolkits={selectedToolkits}
+        onToolkitsChange={onToolkitsChange}
+        project={project}
+        singleToolSelection={singleToolSelection}
+        showNewIntegrationPopup={showNewIntegrationPopup}
+        isCompactView={isChatConfig}
+      />
+
+      {showMcpServers && isMcpFeatureEnabled && (
+        <McpServersSection
+          mcpServers={mcpServers}
+          onMcpServersChange={onMcpServersChange}
+          settingsDefinitions={filteredSettings[MCP_SETTINGS_TYPE]}
+          project={project}
+          showNewIntegrationPopup={() => showNewIntegrationPopup(project, MCP_SETTINGS_TYPE)}
+          refreshSettings={indexSettings}
+          singleToolSelection={singleToolSelection}
+          defaultOpen={defaultOpenSection ? defaultOpenSection === SECTION.MCP : !showInternalTools}
+          scrollRef={mcpAccordionRef}
+          isCompactView={isChatConfig}
+        />
+      )}
+    </div>
   )
 
   if (!showWrapper) return content

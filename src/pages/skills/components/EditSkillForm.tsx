@@ -15,6 +15,7 @@
 
 import React, { useRef } from 'react'
 
+import AIGenerateSVG from '@/assets/icons/ai-generate.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
@@ -65,6 +66,13 @@ const EditSkillForm: React.FC<EditSkillFormProps> = ({ skill, onBack }) => {
         onBack={onBack}
         rightContent={
           <div className="flex gap-4">
+            <Button
+              type="magical"
+              buttonType="button"
+              onClick={() => formRef.current?.handleRefineWithAI()}
+            >
+              <AIGenerateSVG /> Refine with AI
+            </Button>
             <Button type="secondary" onClick={onBack}>
               Cancel
             </Button>

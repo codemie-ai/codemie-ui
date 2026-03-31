@@ -19,6 +19,9 @@ import { SKILLS_PER_PAGE, SKILL_INDEX_SCOPES } from '@/constants/skills'
 import { Pagination } from '@/types/common'
 import {
   Skill,
+  SkillAIGeneratedFields,
+  SkillAIRefineFields,
+  SkillAIRefineResponse,
   SkillAssistantItem,
   SkillCategoryDefinition,
   SkillCreateRequest,
@@ -31,6 +34,8 @@ import api from '@/utils/api'
 import toaster from '@/utils/toaster'
 
 import { extractArrayFromResponse } from './utils/parseApiResponse'
+
+const SHOW_NEW_SKILL_AI_POPUP = 'codemie-new-skill-ai-popup'
 
 interface SkillsStoreType {
   skills: Skill[]
@@ -61,6 +66,11 @@ interface SkillsStoreType {
     Array<{ resource_id?: string; resourceId?: string; skill_id?: string; reaction: string }>
   >
   updateSkillsWithReactionStatus: () => Promise<void>
+  showNewSkillAIPopup: boolean
+  setShowNewSkillAIPopup: (show: boolean) => void
+  loadShowNewSkillAIPopup: () => boolean
+  generateSkillWithAI: (prompt: string, includeTools?: boolean) => Promise<SkillAIGeneratedFields>
+  refineSkillWithAI: (fields: SkillAIRefineFields) => Promise<SkillAIRefineResponse>
   attachSkillToAssistants: (
     skillId: string,
     assistants: Array<{ id: string; name: string }>
@@ -73,7 +83,7 @@ interface SkillsStoreType {
   generateSkillInstructionsWithAI: (
     description: string,
     existingContent: string
-  ) => Promise<{ content: string }>
+  ) => Promise<{ instructions: string }>
 }
 
 export const skillsStore = proxy<SkillsStoreType>({
@@ -87,6 +97,7 @@ export const skillsStore = proxy<SkillsStoreType>({
   skillCategories: [],
   selectedSkill: null,
   loading: false,
+  showNewSkillAIPopup: true,
 
   async indexSkills(
     filters?: SkillsFilters,
@@ -533,6 +544,27 @@ export const skillsStore = proxy<SkillsStoreType>({
     }
   },
 
+  setShowNewSkillAIPopup(show = true) {
+    localStorage.setItem(SHOW_NEW_SKILL_AI_POPUP, show ? 'true' : 'false')
+    skillsStore.showNewSkillAIPopup = show
+  },
+
+  loadShowNewSkillAIPopup() {
+    const show = localStorage.getItem(SHOW_NEW_SKILL_AI_POPUP) !== 'false'
+    skillsStore.showNewSkillAIPopup = show
+    return show
+  },
+
+  generateSkillWithAI(prompt, include_tools = true) {
+    return api
+      .post('v1/skills/generate', { text: prompt, include_tools })
+      .then((response) => response.json())
+  },
+
+  refineSkillWithAI(fields) {
+    return api.post('v1/skills/refine', fields).then((response) => response.json())
+  },
+
   async attachSkillToAssistants(
     skillId: string,
     assistants: Array<{ id: string; name: string }>
@@ -619,24 +651,32 @@ export const skillsStore = proxy<SkillsStoreType>({
   async generateSkillInstructionsWithAI(
     description: string,
     existingContent: string
-  ): Promise<{ content: string }> {
+  ): Promise<{ instructions: string }> {
     const url = 'v1/skills/instructions/generate'
+
+    interface ErrorDetail {
+      msg: string
+    }
 
     try {
       const response = await api.post(
         url,
         {
           description,
-          existing_content: existingContent,
+          existing_instructions: existingContent,
         },
         { skipErrorHandling: true }
       )
       const result = await response.json()
       return result
-    } catch (error: any) {
-      if (error?.parsedError?.details && Array.isArray(error.parsedError.details)) {
-        const errorMessages = error.parsedError.details
-          .map((detail: any) => detail.msg)
+    } catch (error: unknown) {
+      const err = error as {
+        parsedError?: { details?: ErrorDetail[]; message?: string }
+        message?: string
+      }
+      if (err?.parsedError?.details && Array.isArray(err.parsedError.details)) {
+        const errorMessages = err.parsedError.details
+          .map((detail: ErrorDetail) => detail.msg)
           .filter(Boolean)
           .join('<br>')
 
@@ -647,7 +687,7 @@ export const skillsStore = proxy<SkillsStoreType>({
       }
 
       const errorMessage =
-        error?.parsedError?.message ?? error?.message ?? 'Failed to generate skill instructions'
+        err?.parsedError?.message ?? err?.message ?? 'Failed to generate skill instructions'
       toaster.error(errorMessage)
       throw error
     }

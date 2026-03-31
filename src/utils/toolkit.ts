@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { AssistantToolkit, Tool } from '@/types/entity/assistant'
+import { AssistantToolkit, RecommendationAction, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
 
 export const extractToolkitSettings = (
@@ -35,6 +35,67 @@ export const extractToolkitSettings = (
     alias: toolkit.settings?.alias,
     id: toolkit.settings?.id,
   }
+}
+
+export type ToolRecommendationInput = {
+  toolkitName: string
+  name: string
+  action: string
+}
+
+export const applyToolRecommendationsToToolkits = (
+  currentToolkits: AssistantToolkit[],
+  tools: ToolRecommendationInput[],
+  availableToolkits: AssistantToolkit[]
+): AssistantToolkit[] => {
+  const updatedToolkits = [...currentToolkits]
+
+  tools
+    .filter((t) => t.action === RecommendationAction.DELETE)
+    .forEach((tool) => {
+      const tkIdx = updatedToolkits.findIndex((tk) => tk.toolkit === tool.toolkitName)
+      if (tkIdx >= 0) {
+        const updatedTools = updatedToolkits[tkIdx].tools?.filter((t) => t.name !== tool.name) ?? []
+        if (updatedTools.length === 0) {
+          updatedToolkits.splice(tkIdx, 1)
+        } else {
+          updatedToolkits[tkIdx] = { ...updatedToolkits[tkIdx], tools: updatedTools }
+        }
+      }
+    })
+
+  tools
+    .filter(
+      (t) => t.action === RecommendationAction.ADD || t.action === RecommendationAction.CHANGE
+    )
+    .forEach((tool) => {
+      const availableTk = availableToolkits.find((tk) => tk.toolkit === tool.toolkitName)
+      if (!availableTk) return
+
+      const toolToAdd = availableTk.tools?.find((t) => t.name === tool.name)
+      if (!toolToAdd) return
+
+      const tkIdx = updatedToolkits.findIndex((tk) => tk.toolkit === tool.toolkitName)
+      if (tkIdx >= 0) {
+        const toolExists = updatedToolkits[tkIdx].tools?.some((t) => t.name === tool.name)
+        if (!toolExists) {
+          updatedToolkits[tkIdx] = {
+            ...updatedToolkits[tkIdx],
+            tools: [...(updatedToolkits[tkIdx].tools ?? []), toolToAdd],
+          }
+        }
+      } else {
+        updatedToolkits.push({
+          toolkit: tool.toolkitName,
+          label: availableTk.label,
+          tools: [toolToAdd],
+          settings_config: availableTk.settings_config,
+          is_external: availableTk.is_external,
+        } as AssistantToolkit)
+      }
+    })
+
+  return updatedToolkits
 }
 
 export const applyToolkitSettings = (

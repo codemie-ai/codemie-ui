@@ -17,6 +17,7 @@ import { MultiSelect as PrimeMultiselect } from 'primereact/multiselect'
 import { forwardRef, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import InfoBox from '@/components/form/InfoBox'
 import MultiSelect from '@/components/form/MultiSelect'
 import { MAX_SKILL_CATEGORIES } from '@/constants/skills'
@@ -25,6 +26,7 @@ import { skillsStore } from '@/store/skills'
 interface SkillCategoriesProps {
   value?: string[]
   error?: string
+  isAIGenerated?: boolean
   onChange: (categoryIds: string[]) => void
 }
 
@@ -37,7 +39,7 @@ const CategoryOption = ({ label }: { label: string }) => (
 const renderCategoryOption = (option: { label: string }) => <CategoryOption label={option.label} />
 
 const SkillCategories = forwardRef<PrimeMultiselect, SkillCategoriesProps>(
-  ({ value, error: formError, onChange }, ref) => {
+  ({ value, error: formError, isAIGenerated = false, onChange }, ref) => {
     const [isLoading, setIsLoading] = useState(true)
     const [localError, setLocalError] = useState('')
     const { skillCategories } = useSnapshot(skillsStore)
@@ -79,11 +81,17 @@ const SkillCategories = forwardRef<PrimeMultiselect, SkillCategoriesProps>(
 
     return (
       <div className="flex flex-col gap-y-3">
+        {isAIGenerated && (
+          <div className="text-xs pb-2 text-text-quaternary flex items-center gap-2">
+            Categories:
+            <AIFieldSvg className="w-4 h-4" />
+          </div>
+        )}
         <MultiSelect
           showCheckbox
           ref={ref}
           scrollHeight="215px"
-          label="Categories:"
+          label={isAIGenerated ? undefined : 'Categories:'}
           placeholder="Select categories"
           options={categoryOptions}
           value={controlledValue}

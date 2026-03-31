@@ -127,10 +127,35 @@ const ManagePromptVariablesPopup = ({
 
   const tableColumns: ColumnDefinition[] = useMemo(
     () => [
-      { label: 'Key', key: 'key', type: 'custom', shrink: true, semiBold: true, headClassNames: 'w-[20%]' },
-      { label: 'Default Value', key: 'default_value', type: 'custom', shrink: true, headClassNames: 'w-[30%]' },
-      { label: 'Description', key: 'description', type: 'custom', shrink: true, headClassNames: 'w-[28%]' },
-      { label: 'Sensitive', key: 'is_sensitive', type: 'custom', shrink: true, headClassNames: 'w-[10%]' },
+      {
+        label: 'Key',
+        key: 'key',
+        type: 'custom',
+        shrink: true,
+        semiBold: true,
+        headClassNames: 'w-[20%]',
+      },
+      {
+        label: 'Default Value',
+        key: 'default_value',
+        type: 'custom',
+        shrink: true,
+        headClassNames: 'w-[30%]',
+      },
+      {
+        label: 'Description',
+        key: 'description',
+        type: 'custom',
+        shrink: true,
+        headClassNames: 'w-[28%]',
+      },
+      {
+        label: 'Sensitive',
+        key: 'is_sensitive',
+        type: 'custom',
+        shrink: true,
+        headClassNames: 'w-[10%]',
+      },
       { label: '', key: 'actions', type: 'custom', headClassNames: 'w-[12%]' },
     ],
     []

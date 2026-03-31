@@ -14,7 +14,11 @@
 //
 
 import { CreatedBy } from '@/types/common'
-import { AssistantToolkit } from '@/types/entity/assistant'
+import {
+  AssistantToolkit,
+  FieldRecommendation,
+  ToolkitRecommendation,
+} from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 
 export enum SkillVisibility {
@@ -94,6 +98,30 @@ export interface SkillAssistantItem {
   }
   project?: string
 }
+
+export interface SkillAIRefineFields {
+  name?: string
+  description?: string
+  instructions?: string
+  categories?: string[]
+  toolkits?: { toolkit: string; tools: { name: string; label: string }[] }[]
+  refine_prompt?: string
+}
+
+export interface SkillAIRefineResponse {
+  fields: FieldRecommendation[]
+  toolkits: ToolkitRecommendation[]
+}
+
+export interface SkillAIGeneratedFields {
+  name: string
+  description: string
+  instructions: string
+  categories: string[]
+  toolkits: { toolkit: string; tools: { name: string; label: string }[] }[]
+}
+
+export type SkillAIFieldMarkers = Record<keyof SkillAIGeneratedFields, boolean>
 
 /**
  * Unified filter interface for skills - used for both UI state and API requests.

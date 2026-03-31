@@ -15,6 +15,7 @@
 
 import React, { useRef, useState } from 'react'
 
+import AIGenerateSVG from '@/assets/icons/ai-generate.svg?react'
 import PlusSVG from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
@@ -25,8 +26,10 @@ import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationP
 import { useSkillForm } from '@/pages/skills/hooks/useSkillForm'
 import { goBackSkills } from '@/pages/skills/utils/goBackSkills'
 import { downloadSkillExample, parseSkillMarkdownFile } from '@/pages/skills/utils/skillUtils'
+import { skillsStore } from '@/store/skills'
 import toaster from '@/utils/toaster'
 
+import FormGenAIPopup from './components/FormGenAIPopup'
 import SkillForm, { SkillFormRef } from './components/SkillForm'
 import SkillsNavigation from './components/SkillsNavigation'
 
@@ -35,6 +38,9 @@ const NewSkillPage: React.FC = () => {
   const formRef = useRef<SkillFormRef>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
+  const [isGenWithAIPopupVisible, setIsGenWithAIPopupVisible] = useState(
+    skillsStore.loadShowNewSkillAIPopup()
+  )
   const { form, onSubmit } = useSkillForm()
   const {
     showNewIntegration,
@@ -124,6 +130,13 @@ const NewSkillPage: React.FC = () => {
             >
               {importing ? 'Importing...' : 'Import from File'}
             </Button>
+            <Button
+              type="magical"
+              buttonType="button"
+              onClick={() => setIsGenWithAIPopupVisible(true)}
+            >
+              <AIGenerateSVG /> Generate with AI
+            </Button>
             <Button type="secondary" onClick={handleBack}>
               Cancel
             </Button>
@@ -141,6 +154,12 @@ const NewSkillPage: React.FC = () => {
           showNewIntegrationPopup={showNewIntegrationPopup}
         />
       </PageLayout>
+
+      <FormGenAIPopup
+        isVisible={isGenWithAIPopupVisible}
+        onHide={() => setIsGenWithAIPopupVisible(false)}
+        onGenerated={(values) => formRef.current?.addAIGeneratedFields(values)}
+      />
 
       <NewIntegrationPopup
         visible={showNewIntegration}
