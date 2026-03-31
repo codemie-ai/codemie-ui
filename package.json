@@ -24,7 +24,7 @@
     "license-headers:check": "node scripts/license_headers/check_license_headers.mjs --check",
     "license-headers:fix": "node scripts/license_headers/check_license_headers.mjs --fix",
     "license-headers": "npm run license-headers:fix && npm run license-headers:check",
-    "secrets:check": "docker run --rm -v \"$(pwd):/path\" zricethezav/gitleaks:v8.30.0 dir --no-banner --verbose /path"
+    "secrets:check": "node scripts/validate-secrets.js"
   },
   "dependencies": {
     "@dnd-kit/abstract": "0.3.0",
