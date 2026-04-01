@@ -24,7 +24,7 @@ interface MCPServerListItemProps {
   index: number
   selectedIndex: number
   isSelected: boolean
-  isCompactView?: boolean
+  isActive?: boolean
   onClick: () => void
   onToggle: () => void
 }
@@ -34,16 +34,15 @@ const MCPServerListItem = ({
   index,
   selectedIndex,
   isSelected,
-  isCompactView,
+  isActive,
   onClick,
   onToggle,
 }: MCPServerListItemProps) => (
   <div
     onClick={onClick}
     className={cn(
-      'flex items-center p-3 gap-3 rounded-lg cursor-pointer transition-all border min-w-0',
-      isCompactView ? 'w-52' : 'w-72',
-      selectedIndex === index
+      'flex items-center p-3 gap-3 rounded-lg cursor-pointer transition-all border min-w-0 w-full',
+      (isActive !== undefined ? isActive : selectedIndex === index)
         ? 'bg-surface-base-float border-border-structural'
         : 'border-transparent hover:bg-border-structural/10'
     )}

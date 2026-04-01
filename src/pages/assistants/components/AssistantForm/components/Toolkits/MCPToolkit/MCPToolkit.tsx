@@ -22,7 +22,6 @@ import { MCPConfig, MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 
 import MCPActionButtons from './MCPActionButtons'
-import MCPCompactServerItem from './MCPCompactServerItem'
 import MCPDetailModal from './MCPDetailModal'
 import MCPEmptyState from './MCPEmptyState'
 import MCPMarketplaceModal from './MCPMarketplaceModal'
@@ -164,8 +163,17 @@ const MCPToolkit = ({
         <div className="flex flex-col gap-4 px-4 pb-4">
           {/* Vertical scrollable list of servers */}
           <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto show-scroll pr-2">
-            {mcpServers.map((server) => (
-              <MCPCompactServerItem key={server.name} server={server} />
+            {mcpServers.map((server, index) => (
+              <MCPServerListItem
+                key={server.name}
+                server={server}
+                index={index}
+                selectedIndex={-1}
+                isSelected={isSelected(server)}
+                isActive
+                onClick={() => {}}
+                onToggle={() => toggleMcpServer(server)}
+              />
             ))}
           </div>
 
@@ -201,7 +209,6 @@ const MCPToolkit = ({
                     index={index}
                     selectedIndex={selectedIndex}
                     isSelected={isSelected(server)}
-                    isCompactView={isCompactView}
                     onClick={() => setSelectedIndex(index)}
                     onToggle={() => toggleMcpServer(server)}
                   />

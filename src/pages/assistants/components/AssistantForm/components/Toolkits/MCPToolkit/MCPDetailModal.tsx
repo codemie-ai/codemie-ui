@@ -79,7 +79,6 @@ const MCPDetailModal = ({
                   index={index}
                   selectedIndex={selectedIndex}
                   isSelected={isSelected(server)}
-                  isCompactView
                   onClick={() => onSelectIndex(index)}
                   onToggle={() => onToggle(server)}
                 />
