@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useCallback, useEffect, useMemo, useState } from 'react'
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import ImportSvg from '@/assets/icons/input.svg?react'
@@ -137,6 +137,9 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
     [canManageProject]
   )
 
+  const perPageRef = useRef(pagination.per_page)
+  perPageRef.current = pagination.per_page
+
   const fetchUsers = useCallback(
     async (page: number, perPage: number, search?: string) => {
       const result = await userStore.getUsers({
@@ -151,7 +154,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
       setPagination(result.pagination)
       return result
     },
-    [project.name, pagination.per_page]
+    [project.name]
   )
 
   const tableSelection = useTableSelection<UserListItem>({
@@ -159,6 +162,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
     currentItems: users,
     onFetchAll: async () => {
       const response = await userStore.getUsers({
+        page: 0,
+        perPage: pagination.total,
         filters: {
           projects: [project.name],
           search: localFilters.search || undefined,
@@ -190,7 +195,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
   const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
-      await fetchUsers(0, pagination.per_page, '')
+      await fetchUsers(0, perPageRef.current, '')
       clearSelection()
       setLocalFilters({ search: '' })
     } catch (error) {
@@ -199,7 +204,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
     } finally {
       setLoading(false)
     }
-  }, [fetchUsers, pagination.per_page, clearSelection])
+  }, [fetchUsers, clearSelection])
 
   useEffect(() => {
     loadUsers()
@@ -322,7 +327,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
   const applySearch = useCallback(async () => {
     setLoading(true)
     try {
-      clearSelection()
       await fetchUsers(0, pagination.per_page, localFilters.search)
     } catch (error) {
       console.error('Failed to load users:', error)
@@ -330,7 +334,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
     } finally {
       setLoading(false)
     }
-  }, [clearSelection, fetchUsers, pagination.per_page, localFilters.search])
+  }, [fetchUsers, pagination.per_page, localFilters.search])
 
   useDebouncedApply(localFilters.search, 500, applySearch)
 
@@ -459,7 +463,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
             <ProjectMembersBulkActions
               projectName={project.name}
               selectedUsers={selected}
-              totalCount={pagination.total}
               currentUserId={currentUser?.userId}
               canManageProject={canManageProject}
               isProjectAdmin={isProjectAdmin}

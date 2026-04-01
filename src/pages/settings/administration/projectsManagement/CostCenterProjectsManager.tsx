@@ -206,7 +206,6 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
   useDebouncedApply(search, 300, () => {
     setAppliedSearch(search)
     setPage(0)
-    clearSelection()
   })
 
   return (
@@ -225,7 +224,6 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
           {canManage && (
             <CostCenterProjectsBulkActions
               selectedProjects={selected}
-              totalCount={filteredProjects.length}
               onClearSelection={clearSelection}
               refresh={refresh}
             />

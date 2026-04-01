@@ -22,23 +22,15 @@ import Button from '../Button'
 
 interface BulkActionsProps {
   selected: number
-  total?: number
   onUnselect: () => void
   children?: ReactNode
   className?: string
 }
 
-const BulkActions: FC<BulkActionsProps> = ({
-  selected,
-  total,
-  onUnselect,
-  children,
-  className,
-}) => {
+const BulkActions: FC<BulkActionsProps> = ({ selected, onUnselect, children, className }) => {
   if (selected === 0) return null
 
-  const selectionText =
-    total !== undefined ? `${selected} of ${total} selected` : `${selected} selected`
+  const selectionText = `${selected} selected`
 
   return (
     <div

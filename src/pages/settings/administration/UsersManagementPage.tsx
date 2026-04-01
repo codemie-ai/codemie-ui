@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useMemo, useCallback, useEffect, useState } from 'react'
+import { FC, useMemo, useCallback, useEffect, useRef, useState } from 'react'
 
 import InfoSvg from '@/assets/icons/info.svg?react'
 import DetailsBadges from '@/components/details/DetailsBadges'
@@ -80,6 +80,8 @@ const columnDefinitions: ColumnDefinition[] = [
 const UsersManagementPage: FC = () => {
   const { filters, handleFilterChange } = useUsersManagementFilters()
 
+  const perPageRef = useRef(10)
+
   const [isLoading, setIsLoading] = useState(true)
   const [isSelectAllLoading, setIsSelectAllLoading] = useState(false)
   const [users, setUsers] = useState<UserListItem[]>([])
@@ -89,12 +91,15 @@ const UsersManagementPage: FC = () => {
     totalPages: 0,
     totalCount: 0,
   })
+  perPageRef.current = pagination.perPage
 
   const tableSelection = useTableSelection<UserListItem>({
     totalCount: pagination.totalCount,
     currentItems: users,
     onFetchAll: async () => {
       const response = await userStore.getUsers({
+        page: 0,
+        perPage: pagination.totalCount,
         filters,
       })
       return response.data
@@ -115,7 +120,7 @@ const UsersManagementPage: FC = () => {
         setIsSelectAllLoading(false)
       }
     },
-    [onSelectAllChange, pagination.totalCount, pagination.perPage]
+    [onSelectAllChange]
   )
 
   const selection = {
@@ -169,9 +174,8 @@ const UsersManagementPage: FC = () => {
   }, [pagination.perPage, filters, loadUsers, clearSelection])
 
   useEffect(() => {
-    loadUsers(0, 10, filters)
-    clearSelection()
-  }, [filters, loadUsers, clearSelection])
+    loadUsers(0, perPageRef.current, filters)
+  }, [filters, loadUsers])
 
   const handlePageChange = useCallback(
     (page: number, newPerPage?: number) => {
@@ -252,7 +256,6 @@ const UsersManagementPage: FC = () => {
             />
             <UsersManagementBulkActions
               selectedUsers={selected}
-              totalCount={pagination.totalCount}
               refresh={refreshFromFirstPage}
               onClearSelection={clearSelection}
             />

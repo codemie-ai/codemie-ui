@@ -26,7 +26,6 @@ import UnassignFromProjectPopup from './bulkPopups/UnassignFromProjectPopup'
 type ActivePopup = 'changeRole' | 'assignToProject' | 'unassignFromProject'
 
 interface UsersManagementBulkActionsProps {
-  totalCount: number
   selectedUsers: UserListItem[]
   onClearSelection: () => void
   refresh: () => void
@@ -34,7 +33,6 @@ interface UsersManagementBulkActionsProps {
 
 const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
   selectedUsers,
-  totalCount,
   onClearSelection,
   refresh,
 }) => {
@@ -63,7 +61,7 @@ const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
 
   return (
     <>
-      <BulkActions selected={selectedUsers.length} total={totalCount} onUnselect={onClearSelection}>
+      <BulkActions selected={selectedUsers.length} onUnselect={onClearSelection}>
         <DropdownButton size="medium" label="Bulk Actions" items={bulkActionItems} />
       </BulkActions>
 

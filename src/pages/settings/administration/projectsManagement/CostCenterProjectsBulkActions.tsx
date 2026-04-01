@@ -23,14 +23,12 @@ import UnassignFromCostCenterConfirmationPopup from './UnassignFromCostCenterCon
 
 interface CostCenterProjectsBulkActionsProps {
   selectedProjects: ProjectListItem[]
-  totalCount: number
   onClearSelection: () => void
   refresh: () => void
 }
 
 const CostCenterProjectsBulkActions: FC<CostCenterProjectsBulkActionsProps> = ({
   selectedProjects,
-  totalCount,
   onClearSelection,
   refresh,
 }) => {
@@ -47,11 +45,7 @@ const CostCenterProjectsBulkActions: FC<CostCenterProjectsBulkActionsProps> = ({
 
   return (
     <>
-      <BulkActions
-        selected={selectedProjects.length}
-        total={totalCount}
-        onUnselect={onClearSelection}
-      >
+      <BulkActions selected={selectedProjects.length} onUnselect={onClearSelection}>
         <DropdownButton size="medium" label="Unassign Projectd" items={bulkActionItems} />
       </BulkActions>
 

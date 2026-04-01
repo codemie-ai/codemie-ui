@@ -27,7 +27,6 @@ type ActivePopup = 'changeRole' | 'unassign'
 
 interface ProjectMembersBulkActionsProps {
   projectName: string
-  totalCount: number
   selectedUsers: UserListItem[]
   currentUserId: string | undefined
   canManageProject: boolean
@@ -40,7 +39,6 @@ interface ProjectMembersBulkActionsProps {
 const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
   projectName,
   selectedUsers,
-  totalCount,
   currentUserId,
   canManageProject,
   isProjectAdmin,
@@ -105,7 +103,7 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
 
   return (
     <>
-      <BulkActions selected={selectedUsers.length} total={totalCount} onUnselect={onClearSelection}>
+      <BulkActions selected={selectedUsers.length} onUnselect={onClearSelection}>
         <DropdownButton size="medium" label="Bulk Actions" items={bulkActionItems} />
       </BulkActions>
 
