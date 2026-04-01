@@ -16,7 +16,7 @@
 import { proxy } from 'valtio'
 
 import type { AnalyticsQueryParams } from '@/types/analytics'
-import { ProjectRole } from '@/types/entity/project'
+import { ProjectRole, ProjectRoleBE } from '@/types/entity/project'
 import { User, UserData, GetUsersResponse, UserListItem, UserType } from '@/types/entity/user'
 import api from '@/utils/api'
 import toaster from '@/utils/toaster'
@@ -61,7 +61,7 @@ interface UserStoreType {
       projects?: string[]
       search?: string
       user_type?: UserType | null
-      platform_role?: 'user' | 'platform_admin' | 'super_admin' | null
+      platform_role?: ProjectRoleBE | null
       is_active?: boolean | null
     }
   }) => Promise<GetUsersResponse>

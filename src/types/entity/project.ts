@@ -47,6 +47,12 @@ export enum ProjectType {
   SHARED = 'shared',
 }
 
+export enum ProjectRoleBE {
+  USER = 'user',
+  PLATFORM_ADMIN = 'platform_admin',
+  SUPER_ADMIN = 'super_admin',
+}
+
 export enum ProjectRole {
   ADMINISTRATOR = 'administrator',
   USER = 'user',

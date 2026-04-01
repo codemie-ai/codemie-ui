@@ -18,16 +18,13 @@ import { useSnapshot } from 'valtio'
 
 import ImportSvg from '@/assets/icons/input.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
-import SearchIcon from '@/assets/icons/search.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
-import Input from '@/components/form/Input/Input'
 import Select from '@/components/form/Select'
 import Pagination from '@/components/Pagination'
 import Spinner from '@/components/Spinner'
 import Table from '@/components/Table'
 import { ButtonSize, ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
-import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { getErrorMessage } from '@/pages/integrations/utils/getErrorMessage'
 import AddUserModal, {
@@ -43,6 +40,10 @@ import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import toaster from '@/utils/toaster'
 
 import ImportUsersModal from './ImportUsersModal'
+import ProjectMembersFilters, {
+  PROJECT_MEMBERS_INITIAL_FILTERS,
+  ProjectMembersFiltersState,
+} from './ProjectMembersFilters'
 
 interface ProjectMembersManagerProps {
   project: ProjectDetail
@@ -107,13 +108,15 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
   } | null>(null)
   const [showAddUserModal, setShowAddUserModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({
     page: 0,
     per_page: 10,
     total: 0,
   })
-  const [localFilters, setLocalFilters] = useState({ search: '' })
+  const [filters, setFilters] = useState<ProjectMembersFiltersState>(
+    PROJECT_MEMBERS_INITIAL_FILTERS
+  )
   const [hasScroll, setHasScroll] = useState(false)
   const [isSelectAllLoading, setIsSelectAllLoading] = useState(false)
 
@@ -141,20 +144,21 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
   perPageRef.current = pagination.per_page
 
   const fetchUsers = useCallback(
-    async (page: number, perPage: number, search?: string) => {
+    async (page: number, perPage: number) => {
       const result = await userStore.getUsers({
         page,
         perPage,
         filters: {
           projects: [project.name],
-          search: search || undefined,
+          search: filters.search || undefined,
+          platform_role: filters.role === 'all' ? null : filters.role,
         },
       })
       setUsers(result.data)
       setPagination(result.pagination)
       return result
     },
-    [project.name]
+    [project.name, filters]
   )
 
   const tableSelection = useTableSelection<UserListItem>({
@@ -166,7 +170,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
         perPage: pagination.total,
         filters: {
           projects: [project.name],
-          search: localFilters.search || undefined,
+          search: filters.search || undefined,
+          platform_role: filters.role === 'all' ? null : filters.role,
         },
       })
       return response.data
@@ -195,9 +200,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
   const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
-      await fetchUsers(0, perPageRef.current, '')
+      await fetchUsers(0, perPageRef.current)
       clearSelection()
-      setLocalFilters({ search: '' })
     } catch (error) {
       console.error('Failed to load users:', error)
       toaster.error('Failed to load project users')
@@ -208,14 +212,14 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
 
   useEffect(() => {
     loadUsers()
-  }, [loadUsers, project.name])
+  }, [loadUsers])
 
   const handlePageChange = useCallback(
     async (page: number, newPerPage?: number) => {
       const perPage = newPerPage ?? pagination.per_page
       setLoading(true)
       try {
-        await fetchUsers(page, perPage, localFilters.search)
+        await fetchUsers(page, perPage)
       } catch (error) {
         console.error('Failed to load users:', error)
         toaster.error('Failed to load project users')
@@ -223,20 +227,20 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
         setLoading(false)
       }
     },
-    [pagination.per_page, fetchUsers, localFilters.search]
+    [pagination.per_page, fetchUsers]
   )
 
   const reloadUsers = useCallback(
     async (shouldClearSelection: boolean = true) => {
       try {
-        await fetchUsers(pagination.page, pagination.per_page, localFilters.search)
+        await fetchUsers(pagination.page, pagination.per_page)
         if (shouldClearSelection) clearSelection()
       } catch (error) {
         console.error('Failed to reload users:', error)
         toaster.error('Failed to load project users')
       }
     },
-    [fetchUsers, pagination.page, pagination.per_page, clearSelection, localFilters.search]
+    [fetchUsers, pagination.page, pagination.per_page, clearSelection]
   )
 
   const refreshFromFirstPage = useCallback(async () => {
@@ -319,24 +323,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
     await reloadUsers()
     await onMembersChanged?.()
   }, [reloadUsers, onMembersChanged])
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalFilters({ search: e.target.value })
-  }
-
-  const applySearch = useCallback(async () => {
-    setLoading(true)
-    try {
-      await fetchUsers(0, pagination.per_page, localFilters.search)
-    } catch (error) {
-      console.error('Failed to load users:', error)
-      toaster.error('Failed to load project users')
-    } finally {
-      setLoading(false)
-    }
-  }, [fetchUsers, pagination.per_page, localFilters.search])
-
-  useDebouncedApply(localFilters.search, 500, applySearch)
 
   const getUserRole = useCallback(
     (user: UserListItem): string => {
@@ -450,15 +436,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
         </div>
 
         <div className="flex justify-between items-center gap-4 h-10 mb-5">
-          <div className="w-64">
-            <Input
-              placeholder="Search"
-              value={localFilters.search}
-              onChange={handleSearchChange}
-              leftIcon={<SearchIcon className="w-4 h-4 text-text-tertiary" />}
-              className="w-full"
-            />
-          </div>
+          <ProjectMembersFilters onFilterChange={setFilters} />
           {canManageProject && (
             <ProjectMembersBulkActions
               projectName={project.name}
