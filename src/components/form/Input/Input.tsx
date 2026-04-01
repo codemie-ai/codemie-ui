@@ -97,7 +97,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {label && (
             <div className="flex justify-between">
               <div className="flex items-center gap-x-1 input-label-container">
-                <div className="flex text-sm font-mono text-text-quaternary input-label">
+                <div className="flex text-xs text-text-quaternary input-label">
                   {label}
                   {required && (
                     <span className="text-text-error input-label-required ml-0.5">*</span>

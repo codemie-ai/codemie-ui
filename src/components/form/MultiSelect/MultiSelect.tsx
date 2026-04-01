@@ -280,10 +280,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
     return (
       <div className={cn('relative flex flex-col', fullWidth && 'flex-grow', className)}>
         {label && !hideLabel && (
-          <label
-            htmlFor={id}
-            className="text-sm font-mono pb-2 text-text-quaternary flex items-center"
-          >
+          <label htmlFor={id} className="text-xs pb-2 text-text-quaternary flex items-center">
             {label}
             {required && <span className="text-text-error input-label-required ml-0.5">*</span>}
             {hint && <TooltipButton className="ml-1" content={hint} iconClassName="h-4" />}

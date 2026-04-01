@@ -94,6 +94,11 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
                 value={user.projects.some((p) => p.is_project_admin) ? 'Yes' : 'No'}
                 className="text-sm"
               />
+              <DetailsProperty
+                label="User Type"
+                value={<span className="capitalize">{user.user_type}</span>}
+                className="text-sm"
+              />
             </div>
 
             <DetailsCopyField label="Email:" value={user.email} className="mb-2" />

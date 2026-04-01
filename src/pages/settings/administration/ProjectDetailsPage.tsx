@@ -75,7 +75,7 @@ const ProjectDetailsPage = () => {
     if (!project) return
 
     try {
-      await projectsStore.updateProject(project.name, {
+      const updatedProject = await projectsStore.updateProject(project.name, {
         name: payload.name,
         description: payload.description,
         cost_center_id: payload.cost_center_id,
@@ -83,7 +83,8 @@ const ProjectDetailsPage = () => {
       })
       toaster.info(`Project ${payload.name} updated successfully`)
       setIsEditPopupVisible(false)
-      if (payload.name !== project.name) {
+
+      if (updatedProject.name !== project.name) {
         router.push({
           name: 'projects-management-detail',
           params: { projectName: payload.name },

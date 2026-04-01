@@ -34,47 +34,22 @@ import UsersManagementBulkActions from './usersManagement/components/UsersManage
 import UsersManagementFilters from './usersManagement/components/UsersManagementFilters'
 import { useUsersManagementFilters } from './usersManagement/hooks/useUsersManagementFilters'
 
+const createCustomColumn = (key: string, label: string, width: string): ColumnDefinition => ({
+  key,
+  label,
+  type: DefinitionTypes.Custom,
+  headClassNames: `w-[${width}]`,
+})
+
 const columnDefinitions: ColumnDefinition[] = [
-  {
-    key: 'select',
-    type: DefinitionTypes.Selection,
-  },
-  {
-    key: 'name',
-    label: 'Name',
-    type: DefinitionTypes.String,
-    headClassNames: 'w-[15%]',
-  },
-  {
-    key: 'email',
-    label: 'Email',
-    type: DefinitionTypes.Custom,
-    headClassNames: 'w-[15%]',
-  },
-  {
-    key: 'superadmin',
-    label: 'Project Admin',
-    type: DefinitionTypes.Custom,
-    headClassNames: 'w-[5%]',
-  },
-  {
-    key: 'is_admin',
-    label: 'Super Admin',
-    type: DefinitionTypes.Custom,
-    headClassNames: 'w-[5%]',
-  },
-  {
-    key: 'projects',
-    label: 'Projects',
-    type: DefinitionTypes.Custom,
-    headClassNames: 'w-[34%]',
-  },
-  {
-    key: 'actions',
-    label: 'Actions',
-    type: DefinitionTypes.Custom,
-    headClassNames: 'w-[5%]',
-  },
+  { key: 'select', type: DefinitionTypes.Selection },
+  { key: 'name', label: 'Name', type: DefinitionTypes.String, headClassNames: 'w-[14%]' },
+  createCustomColumn('email', 'Email', '14%'),
+  createCustomColumn('user_type', 'User Type', '8%'),
+  createCustomColumn('superadmin', 'Project Admin', '5%'),
+  createCustomColumn('is_admin', 'Super Admin', '5%'),
+  createCustomColumn('projects', 'Projects', '28%'),
+  createCustomColumn('actions', 'Actions', '5%'),
 ]
 
 const UsersManagementPage: FC = () => {
@@ -197,6 +172,10 @@ const UsersManagementPage: FC = () => {
           </button>
         )
       },
+
+      user_type: (item: UserListItem) => (
+        <span className="text-xs font-medium capitalize">{item.user_type}</span>
+      ),
 
       superadmin: (item: UserListItem) => {
         return (

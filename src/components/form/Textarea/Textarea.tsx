@@ -90,10 +90,7 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
         {(label || headerContent) && (
           <div className="flex items-center justify-between">
             {label && (
-              <label
-                htmlFor={id}
-                className="flex items-center text-sm font-mono text-text-quaternary"
-              >
+              <label htmlFor={id} className="flex items-center text-xs text-text-quaternary">
                 {label} {required && <span className="text-text-error ml-0.5">*</span>}
                 {hint && <TooltipButton className="ml-2" content={hint} />}
               </label>

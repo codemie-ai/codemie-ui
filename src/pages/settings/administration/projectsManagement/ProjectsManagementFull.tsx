@@ -70,9 +70,6 @@ const FEATURE_FLAG_PROJECT_CREATION = 'features:userAbilityToCreateProject'
 const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
 const COST_CENTER_COLUMN_KEY = 'cost_center_name'
 
-const personalProjectTooltip = (action: string) =>
-  `You cannot ${action} a personal project. Create a separate one instead.`
-
 const calculateTotalAssignments = (project: Project): number => {
   const c = project.counters
   if (!c) return 0
@@ -250,9 +247,19 @@ const ProjectsManagementFull: FC = () => {
 
   const customRenderColumns = useMemo(
     () => ({
-      name: (item: Project) => (
-        <NameLinkCell onClick={() => handleOpenProjectDetails(item.name)}>{item.name}</NameLinkCell>
-      ),
+      name: (item: Project) => {
+        const isPersonal = item.project_type === ProjectType.PERSONAL
+
+        return (
+          <NameLinkCell
+            disabled={isPersonal}
+            onClick={() => handleOpenProjectDetails(item.name)}
+            tooltip={isPersonal ? 'Personal projects cannot be viewed or updated.' : undefined}
+          >
+            {item.name}
+          </NameLinkCell>
+        )
+      },
       [COST_CENTER_COLUMN_KEY]: (item: Project) => (
         <span className="text-text-primary break-all">{item.cost_center_name || '-'}</span>
       ),
@@ -307,15 +314,15 @@ const ProjectsManagementFull: FC = () => {
       },
       actions: (item: Project) => {
         const isPersonal = item.project_type === ProjectType.PERSONAL
-        const hasCountData = item.counters !== undefined
 
+        if (isPersonal) return null
+
+        const hasCountData = item.counters !== undefined
         const totalCount = calculateTotalAssignments(item)
-        const shouldDisableDelete = isPersonal || !hasCountData || totalCount > 0
+        const shouldDisableDelete = !hasCountData || totalCount > 0
 
         let deleteTooltip: string | undefined
-        if (isPersonal) {
-          deleteTooltip = personalProjectTooltip('delete')
-        } else if (!hasCountData) {
+        if (!hasCountData) {
           deleteTooltip = ERROR_MESSAGES.DELETE_NO_COUNT_DATA
         } else if (totalCount > 0) {
           deleteTooltip = ERROR_MESSAGES.DELETE_HAS_ASSIGNMENTS
@@ -330,8 +337,6 @@ const ProjectsManagementFull: FC = () => {
             title: 'View',
             icon: <ViewSvg className="w-[18px] h-[18px]" />,
             onClick: () => handleOpenProjectDetails(item.name),
-            disabled: isPersonal,
-            tooltip: isPersonal ? personalProjectTooltip('view') : undefined,
           })
         }
 
@@ -342,8 +347,6 @@ const ProjectsManagementFull: FC = () => {
               title: 'Edit',
               icon: <EditSvg />,
               onClick: () => handleEditProject(item),
-              disabled: isPersonal,
-              tooltip: isPersonal ? personalProjectTooltip('edit') : undefined,
             },
             {
               title: 'Delete',

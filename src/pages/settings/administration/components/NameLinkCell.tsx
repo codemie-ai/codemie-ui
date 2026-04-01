@@ -15,17 +15,27 @@
 
 import { FC, ReactNode } from 'react'
 
+import { cn } from '@/utils/utils'
+
 interface NameLinkCellProps {
+  disabled?: boolean
   children: ReactNode
   onClick: () => void
+  tooltip?: string
 }
 
-const NameLinkCell: FC<NameLinkCellProps> = ({ children, onClick }) => {
+const NameLinkCell: FC<NameLinkCellProps> = ({ children, disabled, onClick, tooltip }) => {
   return (
     <button
       type="button"
-      className="text-left font-bold hover:underline break-all cursor-pointer"
+      className={cn(
+        'text-left font-bold hover:underline break-all cursor-pointer',
+        disabled && 'hover:no-underline cursor-default opacity-75 font-medium'
+      )}
       onClick={onClick}
+      disabled={disabled}
+      data-tooltip-id={tooltip ? 'react-tooltip' : undefined}
+      data-tooltip-content={tooltip}
     >
       {children}
     </button>

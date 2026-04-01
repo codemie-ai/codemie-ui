@@ -101,6 +101,7 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
           multiple
           value={localFilters.projects ?? []}
           onChange={handleProjectsChange}
+          size="small"
         />
       </div>
 
@@ -116,7 +117,7 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
 
       {!areFiltersEmpty && (
         <div className="flex items-end">
-          <Button onClick={handleClearFilters} variant="tertiary" className="gap-[5px] h-9">
+          <Button onClick={handleClearFilters} variant="tertiary" className="gap-[5px] h-8">
             <CrossIcon className="w-3.5 h-3.5" /> {!hasSelection && 'Clear All'}
           </Button>
         </div>

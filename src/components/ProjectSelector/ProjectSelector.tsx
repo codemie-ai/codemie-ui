@@ -20,6 +20,8 @@ import { forwardRef, useEffect, useState } from 'react'
 import MultiSelect from '@/components/form/MultiSelect'
 import { userStore } from '@/store/user'
 
+import { MultiSelectSize } from '../form/MultiSelect/MultiSelect'
+
 interface ProjectSelectorProps {
   value?: string | string[] | null
   onChange: (value: string | string[]) => void
@@ -32,6 +34,7 @@ interface ProjectSelectorProps {
   adminOnly?: boolean
   selectDefault?: boolean
   error?: string
+  size?: MultiSelectSize | `${MultiSelectSize}`
 }
 
 const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
@@ -48,6 +51,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
       adminOnly = false,
       selectDefault = true,
       error,
+      size = 'medium',
     },
     ref
   ) => {
@@ -94,7 +98,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
 
     return (
       <MultiSelect
-        size="medium"
+        size={size}
         label={label ?? 'Select project:'}
         value={value ?? ''}
         options={availableProjects}
