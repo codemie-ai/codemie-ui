@@ -14,6 +14,7 @@
 //
 
 import { useCallback, useEffect, useState } from 'react'
+import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
 import Spinner from '@/components/Spinner'
@@ -25,6 +26,7 @@ import ProjectModal, {
 } from '@/pages/settings/administration/projectsManagement/ProjectModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { projectsStore } from '@/store/projects'
+import { userStore } from '@/store/user'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import toaster from '@/utils/toaster'
 import { formatDate } from '@/utils/utils'
@@ -35,11 +37,16 @@ const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
 
 const ProjectDetailsPage = () => {
   const router = useVueRouter()
+  const { user: currentUser } = useSnapshot(userStore)
   const projectName = router.params.projectName as string
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
   const [project, setProject] = useState<ProjectDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditPopupVisible, setIsEditPopupVisible] = useState(false)
+
+  const canManageProject =
+    (currentUser?.isAdmin ?? false) ||
+    (currentUser?.applicationsAdmin?.includes(project?.name ?? '') ?? false)
 
   const loadProject = useCallback(async () => {
     setLoading(true)
@@ -130,9 +137,11 @@ const ProjectDetailsPage = () => {
         contentTitle={project.name}
         onBack={handleBack}
         rightContent={
-          <Button size={ButtonSize.MEDIUM} onClick={() => setIsEditPopupVisible(true)}>
-            Edit Project
-          </Button>
+          canManageProject ? (
+            <Button size={ButtonSize.MEDIUM} onClick={() => setIsEditPopupVisible(true)}>
+              Edit Project
+            </Button>
+          ) : null
         }
         content={
           <div className="flex flex-col gap-6 pt-6 pb-8">

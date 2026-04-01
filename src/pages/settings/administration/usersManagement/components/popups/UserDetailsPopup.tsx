@@ -90,11 +90,6 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
           <div className="flex flex-col gap-4">
             <div className="flex gap-12">
               <DetailsProperty
-                label="Project Admin"
-                value={user.projects.some((p) => p.is_project_admin) ? 'Yes' : 'No'}
-                className="text-sm"
-              />
-              <DetailsProperty
                 label="User Type"
                 value={<span className="capitalize">{user.user_type}</span>}
                 className="text-sm"
