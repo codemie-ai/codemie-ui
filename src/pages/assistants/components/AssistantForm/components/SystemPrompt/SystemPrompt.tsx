@@ -42,7 +42,7 @@ interface SystemPromptProps {
   setIsAiGenerated: (value: boolean) => void
 }
 
-const buildVariableRegexp = (variable) => {
+const buildVariableRegexp = (variable: string) => {
   return new RegExp(`{{\\s*${variable}\\s*}}`, 'g')
 }
 
@@ -121,7 +121,10 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
       setIsManagePromptVariblesVisible(true)
     }
 
-    const handleUpdatePromptVariables = (variables, updatedKeys) => {
+    const handleUpdatePromptVariables = (
+      variables: AssistantPromptVariable[],
+      updatedKeys: Record<string, string> | undefined
+    ) => {
       onUpdatePromptVariables(variables)
 
       if (updatedKeys)
@@ -145,6 +148,7 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
         const response = await assistantsStore.updateAssistant(assistant.id, {
           ...assistant,
           system_prompt: selectedHistoryOption.system_prompt,
+          prompt_variables: promptVariables,
         })
         if (response.error) {
           toaster.error(response.error)

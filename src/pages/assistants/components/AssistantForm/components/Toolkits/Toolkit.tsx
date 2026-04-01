@@ -16,6 +16,7 @@
 import { Fragment, useContext } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
+import TooltipButton from '@/components/TooltipButton'
 import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowContext'
 import { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
@@ -150,11 +151,36 @@ const Toolkit = ({
           )}
           {toolkit.tools.map((tool) => {
             const integrationField = getToolFieldData(tool.name)
+            const description = tool.user_description ?? tool.description
+            const lastSpaceIdx = description ? tool.label.lastIndexOf(' ') : -1
+            let toolLabel: React.ReactNode
+            if (!description) {
+              toolLabel = highlightText(tool.label, searchQuery)
+            } else if (lastSpaceIdx === -1) {
+              toolLabel = (
+                <span className="whitespace-nowrap">
+                  {highlightText(tool.label, searchQuery)}
+                  <TooltipButton className="inline-block align-middle ml-2" content={description} />
+                </span>
+              )
+            } else {
+              toolLabel = (
+                <>
+                  {highlightText(tool.label.slice(0, lastSpaceIdx), searchQuery)}{' '}
+                  <span className="whitespace-nowrap">
+                    {highlightText(tool.label.slice(lastSpaceIdx + 1), searchQuery)}
+                    <TooltipButton
+                      className="inline-block align-middle ml-2"
+                      content={description}
+                    />
+                  </span>
+                </>
+              )
+            }
             return (
               <div key={tool.name} className="flex items-center gap-4">
                 <Checkbox
-                  label={highlightText(tool.label, searchQuery)}
-                  hint={tool.user_description ?? tool.description ?? ''}
+                  label={toolLabel}
                   checked={isToolSelected(tool)}
                   onChange={() => {
                     toggleTool(toolkit, tool)
@@ -191,7 +217,7 @@ const Toolkit = ({
               const field = getToolkitFieldData()
               return (
                 <div>
-                  <div className="flex flex-col gap-6">
+                  <div className="flex flex-col h-[57px] justify-between">
                     <span className="font-geist-mono text-xs text-text-tertiary">
                       Integrations:
                     </span>

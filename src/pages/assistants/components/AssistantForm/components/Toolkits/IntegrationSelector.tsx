@@ -16,7 +16,7 @@
 import { Dropdown } from 'primereact/dropdown'
 import { useRef } from 'react'
 
-import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
+import PlusSvg from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import Select from '@/components/form/Select'
 import { Setting } from '@/types/entity/setting'
@@ -79,7 +79,7 @@ const IntegrationSelector = ({
           optionTruncateThreshold={optionTruncateThreshold}
           label={label}
           placeholder={placeholder ?? 'Default integration'}
-          rootClassName={cn('w-full max-w-[300px]', selectClassName)}
+          rootClassName={cn('ml-auto w-[180px]', selectClassName)}
           panelClassName={'max-w-[300px]'}
           onChange={(e) => {
             const value = settingsDefinitions.find((s) => s.id === e.target.value)!
@@ -92,15 +92,15 @@ const IntegrationSelector = ({
               variant="secondary"
               className="w-full rounded-t-sm rounded-b-none border-x-0 border-t-0 border-border-specific-panel-outline hover:border-border-specific-panel-outline"
             >
-              <PlusFilledSvg />
+              <PlusSvg />
               {buttonLabel}
             </Button>
           }
         />
       ) : (
         <>
-          <Button variant="secondary" onClick={handleClick}>
-            <PlusFilledSvg /> {buttonLabel}
+          <Button variant="secondary" onClick={handleClick} className="ml-auto w-[180px]">
+            <PlusSvg /> {buttonLabel}
           </Button>
           {error && <div className="text-failed-secondary text-sm mt-1">{error}</div>}
         </>

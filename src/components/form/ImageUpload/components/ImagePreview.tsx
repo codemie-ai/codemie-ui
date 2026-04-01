@@ -62,7 +62,7 @@ const ImagePreview = ({
         <div className="flex flex-row items-center gap-2 h-7">
           {/* Upload Button */}
           <Button
-            variant="secondary"
+            type="primary"
             size="small"
             onClick={onUploadClick}
             className="font-mono text-xs font-semibold h-7 px-2 gap-2 flex-shrink-0 w-32"
