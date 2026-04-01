@@ -179,16 +179,18 @@ const Toolkit = ({
             }
             return (
               <div key={tool.name} className="flex items-center gap-4">
-                <Checkbox
-                  label={toolLabel}
-                  checked={isToolSelected(tool)}
-                  onChange={() => {
-                    toggleTool(toolkit, tool)
-                    integrationField?.onChange()
-                  }}
-                />
+                <div className="flex-1 min-w-0">
+                  <Checkbox
+                    label={toolLabel}
+                    checked={isToolSelected(tool)}
+                    onChange={() => {
+                      toggleTool(toolkit, tool)
+                      integrationField?.onChange()
+                    }}
+                  />
+                </div>
                 {isToolSelected(tool) && tool.settings_config && !toolkit.is_external && (
-                  <div className={'flex-1 min-w-[50px]'}>
+                  <div className={'shrink-0'}>
                     <IntegrationSelector
                       className="justify-end"
                       short={isChatConfig}
