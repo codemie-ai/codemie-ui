@@ -294,7 +294,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
 
       hasInitialized.current = true
 
-      if (toolConfig?.tool) {
+      if (toolConfig?.tool && !toolConfig?.mcp_server) {
         const tools = [
           {
             name: toolConfig.tool,

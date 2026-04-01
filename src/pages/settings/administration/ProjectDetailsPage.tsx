@@ -164,7 +164,7 @@ const ProjectDetailsPage = () => {
                     <div>{project.created_by || '-'}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-text-quaternary mb-1">Users</div>
+                    <div className="text-xs text-text-quaternary mb-1">Total Users</div>
                     <div>{project.user_count}</div>
                   </div>
                   <div>

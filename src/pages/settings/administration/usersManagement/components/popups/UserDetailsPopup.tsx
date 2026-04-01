@@ -14,11 +14,9 @@
 //
 
 import { FC, useEffect, useState } from 'react'
-import { useSnapshot } from 'valtio'
 
 import DetailsCopyField from '@/components/details/DetailsCopyField'
 import DetailsProperty from '@/components/details/DetailsProperty'
-import Switch from '@/components/form/Switch/Switch'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
@@ -34,7 +32,6 @@ interface UserDetailsModalProps {
 }
 
 const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, onSave }) => {
-  const { user: currentUser } = useSnapshot(userStore)
   const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<UserListItem | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
@@ -65,13 +62,6 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     fetchUserDetails()
   }
 
-  const handleSuperAdminToggle = async (value: boolean) => {
-    if (!userId) return
-    await userStore.updateUser(userId, { is_admin: value })
-    setUser((prev) => (prev ? { ...prev, is_admin: value } : prev))
-    setHasChanges(true)
-  }
-
   const handleClose = () => {
     if (hasChanges && onSave) {
       onSave()
@@ -99,17 +89,6 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
           <div className="flex flex-col gap-4">
             <div className="flex gap-12 items-center">
-              {currentUser?.isAdmin && (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-text-quaternary">Super Admin:</span>
-                  <Switch
-                    label=""
-                    value={user.is_admin}
-                    onChange={(e) => handleSuperAdminToggle(e.target.checked)}
-                  />
-                </div>
-              )}
-
               <DetailsProperty
                 label="User Type"
                 value={<span className="capitalize">{user.user_type}</span>}
