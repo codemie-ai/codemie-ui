@@ -75,7 +75,7 @@ const ImageDropZone = ({
         )}
       >
         <Button
-          variant="secondary"
+          type="primary"
           size="small"
           onClick={(e) => {
             e.stopPropagation()

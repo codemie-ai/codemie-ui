@@ -167,9 +167,11 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
             ref={textAreaRef}
             rows={15}
             value={value}
-            error={error}
             rootClass="h-full"
-            className="resize-none min-h-full rounded-none leading-5 !border-0 !p-2"
+            className={cn(
+              'resize-none min-h-full rounded-none leading-5 !border-0 !p-2',
+              error && '!border !border-border-error !rounded-b-lg'
+            )}
             placeholder="System Instructions*"
             onBlur={onBlur}
             onChange={(e) => onPromptChange(e.target.value)}
@@ -181,6 +183,7 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
             )}
           </Textarea>
         </div>
+        {error && <div className="mt-2 text-text-error text-sm">{error}</div>}
       </div>
     )
   }

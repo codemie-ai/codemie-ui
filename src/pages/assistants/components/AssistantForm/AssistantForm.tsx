@@ -63,6 +63,7 @@ import { compareFormData } from '../../utils/compareFormData'
 import AssistantSelector from '../AssistantSelector'
 import RefineAssistantModal from '../RefineAssistantModal/RefineAssistantModal'
 import { AssistantSetupSection } from './components/AssistantSetup'
+import { isBackendFileUrl } from './components/AssistantSetup/utils/getFileNameFromUrl'
 import ContextSelector from './components/ContextSelector'
 import RefineWithAIPromptPopup from './components/RefineWithAIPromptPopup'
 import ToolsConfiguration from './components/Toolkits/ToolsConfiguration'
@@ -101,7 +102,13 @@ const formSchema = Yup.object()
     system_prompt: Yup.string()
       .required('System instructions are required')
       .test('format', systemPromptVariablesValidator),
-    icon_url: Yup.string().nullable().optional(),
+    icon_url: Yup.string()
+      .nullable()
+      .optional()
+      .test('url', 'Please enter a valid URL', (value) => {
+        if (!value || isBackendFileUrl(value)) return true
+        return /^https?:\/\/.+/.test(value)
+      }),
     llm_model_type: Yup.string(),
     categories: Yup.array().of(Yup.string().required()),
     conversation_starters: Yup.array()

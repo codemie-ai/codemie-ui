@@ -60,7 +60,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setUploadError('')
   }
 
-  const hasImage = value && value.length > 0 && !isUploading
+  const hasImage = value && value.length > 0 && !isUploading && !error
 
   return (
     <div className={cn('flex flex-col items-center gap-y-2 w-full min-w-0', rootClass)}>
@@ -104,9 +104,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           disabled={disabled || isUploading}
         />
       </div>
-
-      {/* Error Messages - only show external validation errors (uploadError is shown inline) */}
-      {error && <div className="text-sm text-failed-secondary">{error}</div>}
     </div>
   )
 }

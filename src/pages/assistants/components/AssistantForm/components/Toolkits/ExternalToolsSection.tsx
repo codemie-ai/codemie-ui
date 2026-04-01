@@ -64,8 +64,8 @@ const ExternalToolsSection = ({
     const query = search.toLowerCase()
     return externalToolkits.filter(
       (tk) =>
-        tk.label.toLowerCase().includes(query) ||
-        tk.tools.some((tool) => tool.label.toLowerCase().includes(query))
+        (tk.label || tk.toolkit).toLowerCase().includes(query) ||
+        tk.tools.some((tool) => (tool.label || tool.name).toLowerCase().includes(query))
     )
   }, [externalToolkits, search])
 

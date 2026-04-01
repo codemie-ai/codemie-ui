@@ -119,7 +119,7 @@ const SkillSelector = forwardRef<PrimeMultiselect, SkillSelectorProps>(
             disabled={!project}
             onClick={() => setIsCreatePopupVisible(true)}
           >
-            <PlusSvg /> Add
+            <PlusSvg /> Create
           </Button>
         </div>
 

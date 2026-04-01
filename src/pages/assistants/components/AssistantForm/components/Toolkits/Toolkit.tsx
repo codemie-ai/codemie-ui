@@ -162,7 +162,7 @@ const Toolkit = ({
                   }}
                 />
                 {isToolSelected(tool) && tool.settings_config && !toolkit.is_external && (
-                  <div className={'min-w-[50px] max-w-[180px] shrink-0'}>
+                  <div className={'flex-1 min-w-[50px]'}>
                     <IntegrationSelector
                       className="justify-end"
                       short={isChatConfig}
