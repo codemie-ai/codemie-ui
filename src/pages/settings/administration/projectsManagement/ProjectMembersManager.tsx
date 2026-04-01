@@ -373,23 +373,31 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
           </div>
         )
       },
-      actions: (user: UserListItem) => (
-        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-          <span
-            data-tooltip-id="react-tooltip"
-            data-tooltip-content={isPersonal ? personalProjectTooltip('unassign from') : undefined}
-          >
-            <Button
-              onClick={() => handleDeleteUser(user)}
-              size={ButtonSize.MEDIUM}
-              type={ButtonType.DELETE}
-              disabled={isPersonal || !canManageProject}
-            >
-              Unassign
-            </Button>
-          </span>
-        </div>
-      ),
+      actions: (user: UserListItem) => {
+        const isCreator = user.id === project.created_by
+
+        return (
+          <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+            {!isCreator && (
+              <span
+                data-tooltip-id="react-tooltip"
+                data-tooltip-content={
+                  isPersonal ? personalProjectTooltip('unassign from') : undefined
+                }
+              >
+                <Button
+                  onClick={() => handleDeleteUser(user)}
+                  size={ButtonSize.MEDIUM}
+                  type={ButtonType.DELETE}
+                  disabled={isPersonal || !canManageProject}
+                >
+                  Unassign
+                </Button>
+              </span>
+            )}
+          </div>
+        )
+      },
     }),
     [
       currentUser?.userId,

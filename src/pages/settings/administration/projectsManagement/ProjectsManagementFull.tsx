@@ -375,11 +375,7 @@ const ProjectsManagementFull: FC = () => {
   )
 
   const renderHeaderActions = useMemo(() => {
-    // Don't show button until configs are loaded
     if (!isConfigLoaded) return null
-
-    // Only show Create button if project creation is enabled in config
-    // Let backend handle validation (limits, permissions, etc.)
     if (!isProjectCreationEnabled) return null
 
     return (
