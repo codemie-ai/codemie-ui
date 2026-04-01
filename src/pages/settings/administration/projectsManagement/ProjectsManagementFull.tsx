@@ -119,7 +119,9 @@ const ProjectsManagementFull: FC = () => {
   const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
 
   // Check if project creation feature is enabled
-  const [isProjectCreationEnabled, isConfigLoaded] = useFeatureFlag(FEATURE_FLAG_PROJECT_CREATION)
+  const [isProjectCreationForNonAdminsEnabled, isConfigLoaded] = useFeatureFlag(
+    FEATURE_FLAG_PROJECT_CREATION
+  )
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
 
   const effectiveColumnDefinitions = useMemo(
@@ -376,7 +378,7 @@ const ProjectsManagementFull: FC = () => {
 
   const renderHeaderActions = useMemo(() => {
     if (!isConfigLoaded) return null
-    if (!isProjectCreationEnabled) return null
+    if (!isProjectCreationForNonAdminsEnabled && !currentUser?.isAdmin) return null
 
     return (
       <Button onClick={handleAddProject} size={ButtonSize.MEDIUM}>
@@ -384,7 +386,7 @@ const ProjectsManagementFull: FC = () => {
         Create
       </Button>
     )
-  }, [handleAddProject, isProjectCreationEnabled, isConfigLoaded])
+  }, [handleAddProject, isProjectCreationForNonAdminsEnabled, isConfigLoaded, currentUser?.isAdmin])
 
   const renderContent = () => {
     return (
