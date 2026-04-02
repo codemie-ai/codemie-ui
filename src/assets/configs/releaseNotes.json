@@ -1,5 +1,76 @@
 [
   {
+    "version": "2.20.0",
+    "issues": [
+      {
+        "title": "Workflow Editor crashes with TypeError when clicking on MCP (Conditional Node) in Edit mode",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11363",
+        "key": "EPMCDME-11363"
+      },
+      {
+        "title": "Datasource indexing hangs in \"In progress\" after Kubernetes pod restart; should resume from interruption point",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11354",
+        "key": "EPMCDME-11354"
+      },
+      {
+        "title": "SharePoint datasource: PDF indexing fails with error \"pymupdf package not found, please install it with `pip install pymupdf`\"",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11342",
+        "key": "EPMCDME-11342"
+      },
+      {
+        "title": "Payload to Assistant passed via Webhook is not visible in the GUI",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11334",
+        "key": "EPMCDME-11334"
+      },
+      {
+        "title": "Assistant edit: System prompts layout shifts right when marking as sensitive with long variable_key + long default value",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11247",
+        "key": "EPMCDME-11247"
+      },
+      {
+        "title": "Conversation History Tool Replay: rebuild model-facing history incl. tool execution context with compaction and debug visibility",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10953",
+        "key": "EPMCDME-10953"
+      },
+      {
+        "title": "Enable seamless processing of Jira screenshot attachments for AI-powered multimodal analysis",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10952",
+        "key": "EPMCDME-10952"
+      },
+      {
+        "title": "Add Assistant Name Display to Chat Header for Better Context Visibility",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10676",
+        "key": "EPMCDME-10676"
+      },
+      {
+        "title": "Advanced workflow validation on Save: backend YAML validation returns state-linked issues with actions, highlights, and grey-out",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10637",
+        "key": "EPMCDME-10637"
+      },
+      {
+        "title": "Implement Redesign of Assistant Form",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-9988",
+        "key": "EPMCDME-9988"
+      },
+      {
+        "title": "Enhance Confluence pages indexing to support more than 1000 pages",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-7188",
+        "key": "EPMCDME-7188"
+      }
+    ]
+  },
+  {
     "version": "2.19.0",
     "issues": [
       {
