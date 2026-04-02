@@ -92,6 +92,8 @@ const MCPServerDetail = ({
           placeholder="Environment Variables"
           onChange={(settings) => onUpdate({ ...server, settings })}
           onAddSettingClick={showNewIntegrationPopup}
+          selectClassName={'!mr-auto ml-0 w-[280px]'}
+          buttonClassName={'mr-auto ml-0 w-[210px]'}
         />
       </div>
     )}

@@ -30,6 +30,7 @@ interface IntegrationSelectorProps {
   placeholder?: string
   className?: string
   selectClassName?: string
+  buttonClassName?: string
   optionTruncateThreshold?: number
   tooltipPosition?: 'top' | 'bottom' | 'left' | 'right' | 'mouse'
   onChange: (value?: Setting) => void
@@ -47,6 +48,7 @@ const IntegrationSelector = ({
   optionTruncateThreshold = 16,
   className,
   selectClassName,
+  buttonClassName,
   tooltipPosition,
   onChange,
   onAddSettingClick,
@@ -99,7 +101,11 @@ const IntegrationSelector = ({
         />
       ) : (
         <>
-          <Button variant="secondary" onClick={handleClick} className="ml-auto w-[180px]">
+          <Button
+            variant="secondary"
+            onClick={handleClick}
+            className={cn('ml-auto w-[180px]', buttonClassName)}
+          >
             <PlusSvg /> {buttonLabel}
           </Button>
           {error && <div className="text-failed-secondary text-sm mt-1">{error}</div>}
