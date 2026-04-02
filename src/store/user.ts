@@ -534,18 +534,12 @@ export const userStore = proxy<UserStoreType>({
   },
 
   async bulkUnassignFromProject(userIds, projectName) {
-    try {
-      const queryParams = userIds.map((id) => `user_id=${encodeURIComponent(id)}`).join('&')
-      const response = await api.delete(
-        `v1/projects/${encodeURIComponent(projectName)}/assignments?${queryParams}`,
-        undefined,
-        { skipErrorHandling: true }
-      )
-      await response.json()
-      toaster.info(`Unassigned ${userIds.length} user(s) from project successfully`)
-    } catch (error) {
-      toaster.error('Failed to unassign users from project')
-      throw error
-    }
+    const queryParams = userIds.map((id) => `user_id=${encodeURIComponent(id)}`).join('&')
+    const response = await api.delete(
+      `v1/projects/${encodeURIComponent(projectName)}/assignments?${queryParams}`,
+      undefined
+    )
+    await response.json()
+    toaster.info(`Unassigned ${userIds.length} user(s) from project successfully`)
   },
 })
