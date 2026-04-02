@@ -20,6 +20,20 @@ import { Project, ProjectRequest } from '@/types/entity/project'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import api from '@/utils/api'
 
+interface ImportUserRow {
+  email: string
+  role: string
+  error: string | null
+}
+
+interface ImportValidationResult {
+  users: ImportUserRow[]
+}
+
+interface ImportUsersResult {
+  imported_count: number
+}
+
 interface ProjectsStore {
   projects: Project[]
   selectedProject: Project | null
@@ -52,6 +66,8 @@ interface ProjectsStore {
     assignments: Array<{ userId: string; isAdmin: boolean }>
   ) => Promise<void>
   bulkRemoveUsersFromProject: (projectName: string, userIds: string[]) => Promise<void>
+  validateImportUsers: (projectId: string, formData: FormData) => Promise<ImportValidationResult>
+  importUsers: (projectId: string, formData: FormData) => Promise<ImportUsersResult>
 }
 
 const DEFAULT_PAGE = 0
@@ -345,6 +361,29 @@ export const projectsStore = proxy<ProjectsStore>({
       throw error
     } finally {
       this.loading = false
+    }
+  },
+
+  async validateImportUsers(projectId: string, formData: FormData) {
+    try {
+      const response = await api.postMultipart(
+        `v1/projects/${projectId}/import-users/validate`,
+        formData
+      )
+      return await response.json()
+    } catch (error: any) {
+      console.error('Projects Store Error (validateImportUsers):', error)
+      throw error
+    }
+  },
+
+  async importUsers(projectId: string, formData: FormData) {
+    try {
+      const response = await api.postMultipart(`v1/projects/${projectId}/import-users`, formData)
+      return await response.json()
+    } catch (error: any) {
+      console.error('Projects Store Error (importUsers):', error)
+      throw error
     }
   },
 

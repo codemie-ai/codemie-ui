@@ -23,7 +23,6 @@ import Input from '@/components/form/Input/Input'
 import Pagination from '@/components/Pagination'
 import Table from '@/components/Table'
 import { ButtonSize, ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
-import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { projectsStore } from '@/store/projects'
@@ -105,7 +104,6 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
   const router = useVueRouter()
   const { user } = useSnapshot(userStore)
   const [search, setSearch] = useState('')
-  const [appliedSearch, setAppliedSearch] = useState('')
   const [page, setPage] = useState(0)
   const [projectToUnassign, setProjectToUnassign] = useState<ProjectListItem | null>(null)
   const [isAssignPopupOpen, setIsAssignPopupOpen] = useState(false)
@@ -113,7 +111,7 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
   const canManage = !!user?.isAdmin
 
   const filteredProjects = useMemo(() => {
-    const query = appliedSearch.trim().toLowerCase()
+    const query = search.trim().toLowerCase()
     if (!query) return projects
 
     return projects.filter((project) => {
@@ -128,7 +126,7 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
 
       return haystack.includes(query)
     })
-  }, [projects, appliedSearch])
+  }, [projects, search])
 
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE))
 
@@ -203,11 +201,6 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
     [handleOpenProject, canManage]
   )
 
-  useDebouncedApply(search, 300, () => {
-    setAppliedSearch(search)
-    setPage(0)
-  })
-
   return (
     <>
       <section>
@@ -216,7 +209,11 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
             <Input
               placeholder="Search"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(0)
+                clearSelection()
+              }}
               leftIcon={<SearchIcon className="w-4 h-4 text-text-tertiary" />}
               className="w-full"
             />
