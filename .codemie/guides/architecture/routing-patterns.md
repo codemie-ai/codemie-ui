@@ -6,9 +6,10 @@
 1. [Overview](#overview)
 2. [Route Structure](#route-structure)
 3. [Navigation](#navigation)
-4. [Route Parameters](#route-parameters)
-5. [Protected Routes](#protected-routes)
-6. [Common Patterns](#common-patterns)
+4. ["Go Back" Navigation](#go-back-navigation)
+5. [Route Parameters](#route-parameters)
+6. [Protected Routes](#protected-routes)
+7. [Common Patterns](#common-patterns)
 
 ---
 
@@ -133,6 +134,55 @@ import { useLocation } from 'react-router'
 
 const location = useLocation()
 const from = location.state?.from
+```
+
+---
+
+## "Go Back" Navigation
+
+Use **feature-specific `goBack` utilities** instead of `navigate(-1)` on create/edit pages — ensures correct fallback after page refresh or direct link.
+
+### Two Patterns
+
+**History-first** — single list destination (see `src/pages/skills/utils/goBackSkills.ts`):
+
+```typescript
+export const goBackMyFeature = (router: RouterState) => {
+  const prevRoute = history.stack[history.currentIndex - 1]
+
+  if (prevRoute) {
+    router.back()
+    return
+  }
+
+  router.push({ name: MY_FEATURE_LIST }) // fallback when no history
+}
+```
+
+**Path-matching** — multiple possible destinations, e.g. project / marketplace / templates (see `src/pages/assistants/utils/goBackAssistants.ts`):
+
+```typescript
+export const goBackMyFeature = () => {
+  navigateBack(
+    MY_FEATURE_ALL,      // first = default fallback
+    MY_FEATURE_PROJECT,
+    MY_FEATURE_MARKETPLACE,
+  )
+}
+```
+
+`navigateBack` resolves in order: in-memory history → `matchPath` on current URL → first allowed route.
+
+### Usage
+
+```typescript
+// ✅ DO
+function NewAssistantPage() {
+  return <button onClick={() => goBackAssistants()}>Cancel</button>
+}
+
+// ❌ DON'T — breaks on refresh / direct link
+navigate(-1)
 ```
 
 ---

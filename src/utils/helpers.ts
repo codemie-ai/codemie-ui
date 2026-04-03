@@ -273,7 +273,7 @@ export const navigateBack = async (...allowedRoutesArgs: AllowedRoute[]): Promis
         currentRoute?.pathname ?? ''
       )?.pathname
 
-      if (path) {
+      if (path && path !== currentRoute?.pathname) {
         hashRouter.navigate(path)
         return
       }
