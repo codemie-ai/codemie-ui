@@ -483,7 +483,7 @@ describe('ImportUsersModal', () => {
         { email: 'c@d.com', role: 'project_admin', error: null },
       ]
       vi.mocked(projectsStore.validateImportUsers).mockResolvedValue({ users: validUsers })
-      vi.mocked(projectsStore.importUsers).mockResolvedValue({ imported_count: 2 })
+      vi.mocked(projectsStore.importUsers).mockResolvedValue({ total: 2 })
 
       renderModal()
       await user.upload(document.getElementById('csv-upload') as HTMLInputElement, createCsvFile())
@@ -503,7 +503,7 @@ describe('ImportUsersModal', () => {
       vi.mocked(projectsStore.validateImportUsers).mockResolvedValue({
         users: [{ email: 'a@b.com', role: 'user', error: null }],
       })
-      vi.mocked(projectsStore.importUsers).mockResolvedValue({ imported_count: 1 })
+      vi.mocked(projectsStore.importUsers).mockResolvedValue({ total: 1 })
 
       renderModal()
       await user.upload(document.getElementById('csv-upload') as HTMLInputElement, createCsvFile())
@@ -515,7 +515,7 @@ describe('ImportUsersModal', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Import' }))
 
       await waitFor(() => {
-        expect(toaster.info).toHaveBeenCalledWith('Users imported successfully! 1 users added.')
+        expect(toaster.info).toHaveBeenCalledWith('Users imported successfully! 1 users added')
       })
     })
 
@@ -523,7 +523,7 @@ describe('ImportUsersModal', () => {
       vi.mocked(projectsStore.validateImportUsers).mockResolvedValue({
         users: [{ email: 'a@b.com', role: 'user', error: null }],
       })
-      vi.mocked(projectsStore.importUsers).mockResolvedValue({ imported_count: 1 })
+      vi.mocked(projectsStore.importUsers).mockResolvedValue({ total: 1 })
 
       const onSuccess = vi.fn()
       renderModal({ onSuccess })
@@ -545,7 +545,7 @@ describe('ImportUsersModal', () => {
       // Use all-valid users so Import button is enabled
       const allValidUsers = [{ email: 'valid@b.com', role: 'user', error: null }]
       vi.mocked(projectsStore.validateImportUsers).mockResolvedValue({ users: allValidUsers })
-      vi.mocked(projectsStore.importUsers).mockResolvedValue({ imported_count: 1 })
+      vi.mocked(projectsStore.importUsers).mockResolvedValue({ total: 1 })
 
       renderModal()
       await user.upload(document.getElementById('csv-upload') as HTMLInputElement, createCsvFile())

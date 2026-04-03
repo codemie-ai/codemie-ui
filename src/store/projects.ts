@@ -31,7 +31,7 @@ interface ImportValidationResult {
 }
 
 interface ImportUsersResult {
-  imported_count: number
+  total: number
 }
 
 interface ProjectsStore {

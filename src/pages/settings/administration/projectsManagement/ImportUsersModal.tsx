@@ -55,7 +55,7 @@ const DEFAULT_PER_PAGE = 10
 const MESSAGES = {
   ONLY_CSV_ALLOWED: 'Only CSV files are allowed',
   FILE_TOO_LARGE: 'File size must be less than 10MB',
-  IMPORT_SUCCESS: (count: number) => `Users imported successfully! ${count} users added.`,
+  IMPORT_SUCCESS: (count: number) => `Users imported successfully! ${count} users added`,
   CSV_VALIDATION_ERROR:
     'An error has been detected in your CSV file. Please fix it and upload the file again.',
   CSV_FORMAT_HINT:
@@ -179,7 +179,7 @@ const ImportUsersModal: FC<ImportUsersModalProps> = ({ visible, project, onHide,
       formData.append('file', csvFile)
       formData.append('project_id', project.id)
       const result = await projectsStore.importUsers(project.id, formData)
-      toaster.info(MESSAGES.IMPORT_SUCCESS(result.imported_count ?? 0))
+      toaster.info(MESSAGES.IMPORT_SUCCESS(result.total))
       onSuccess?.()
       handleClose()
     } catch (error: any) {
