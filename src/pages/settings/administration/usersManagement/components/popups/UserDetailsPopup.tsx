@@ -14,15 +14,24 @@
 //
 
 import { FC, useEffect, useState } from 'react'
+import { useSnapshot } from 'valtio'
 
 import DetailsCopyField from '@/components/details/DetailsCopyField'
 import DetailsProperty from '@/components/details/DetailsProperty'
+import Select from '@/components/form/Select/Select'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
+import { USER_TYPES } from '@/constants/user'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
 import UserProjectsTable from '@/pages/settings/administration/usersManagement/components/UserProjectsTable'
 import { userStore } from '@/store/user'
-import { UserListItem } from '@/types/entity/user'
+import { UserListItem, UserType } from '@/types/entity/user'
+import { FilterOption } from '@/types/filters'
+
+const USER_TYPE_OPTIONS: FilterOption[] = [
+  { label: 'Regular', value: USER_TYPES.regular },
+  { label: 'External User', value: USER_TYPES.external },
+]
 
 interface UserDetailsModalProps {
   userId?: string
@@ -34,7 +43,10 @@ interface UserDetailsModalProps {
 const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, onSave }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<UserListItem | null>(null)
+  const [userType, setUserType] = useState<UserType>('regular')
   const [hasChanges, setHasChanges] = useState(false)
+  const { user: currentUser } = useSnapshot(userStore)
+  const isSuperAdmin = currentUser?.isAdmin ?? false
 
   const fetchUserDetails = async () => {
     if (!userId) return
@@ -43,6 +55,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     try {
       const details = await userStore.getUserById(userId)
       setUser(details)
+      setUserType(details.user_type)
     } catch (error) {
       console.error('Failed to fetch user details:', error)
     } finally {
@@ -60,6 +73,20 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   const handleProjectsChange = () => {
     setHasChanges(true)
     fetchUserDetails()
+  }
+
+  const handleUserTypeChange = async (newType: UserType) => {
+    if (!user || !userId) return
+
+    const previousType = userType
+    setUserType(newType)
+
+    try {
+      await userStore.updateUser(userId, { user_type: newType })
+      setHasChanges(true)
+    } catch {
+      setUserType(previousType)
+    }
   }
 
   const handleClose = () => {
@@ -89,11 +116,23 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
           <div className="flex flex-col gap-4">
             <div className="flex gap-12 items-center">
-              <DetailsProperty
-                label="User Type"
-                value={<span className="capitalize">{user.user_type}</span>}
-                className="text-sm"
-              />
+              {isSuperAdmin ? (
+                <div className="flex flex-row items-center gap-1.5">
+                  <span className="text-xs text-text-primary">User Type:</span>
+                  <Select
+                    value={userType}
+                    onChange={(e) => handleUserTypeChange(e.value as UserType)}
+                    options={USER_TYPE_OPTIONS}
+                    className="w-40"
+                  />
+                </div>
+              ) : (
+                <DetailsProperty
+                  label="User Type"
+                  value={<span className="capitalize">{user.user_type}</span>}
+                  className="text-sm"
+                />
+              )}
             </div>
 
             <DetailsCopyField label="Email:" value={user.email} className="mb-2" />
