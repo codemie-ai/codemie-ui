@@ -70,13 +70,14 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
     const handleVariableClick = (variable: string) => {
       if (!textAreaRef.current) return
 
-      const cursorPosition = textAreaRef.current.getCursor() ?? value.length
+      const selectionStart = textAreaRef.current.getCursor() ?? value.length
+      const selectionEnd = textAreaRef.current.getSelectionEnd() ?? selectionStart
       const textToInsert = `{{${variable}}}`
-      const newValue = value.slice(0, cursorPosition) + textToInsert + value.slice(cursorPosition)
+      const newValue = value.slice(0, selectionStart) + textToInsert + value.slice(selectionEnd)
 
       onPromptChange(newValue)
       textAreaRef.current.focus()
-      textAreaRef.current.setCursor(cursorPosition + textToInsert.length)
+      textAreaRef.current.setCursor(selectionStart + textToInsert.length)
     }
 
     return (

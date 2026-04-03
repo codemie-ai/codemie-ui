@@ -43,6 +43,7 @@ export interface TextareaRef {
   scrollIntoView: (options: ScrollIntoViewOptions) => void
   focus: () => void
   getCursor: () => number | undefined
+  getSelectionEnd: () => number | undefined
   setCursor: (position: number) => void
 }
 
@@ -76,6 +77,9 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
       getCursor: () => {
         return textareaRef.current?.selectionStart
       },
+      getSelectionEnd: () => {
+        return textareaRef.current?.selectionEnd
+      },
       setCursor: (position: number) => {
         if (textareaRef.current) {
           textareaRef.current.setSelectionRange(position, position)
@@ -108,7 +112,7 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
           onChange={onChange}
           className={cn(
             'rounded-lg border border-border-primary p-2 py-2.5 px-3 max-h-96 min-h-12 text-sm transition',
-            'bg-surface-base-content placeholder:text-text-specific-input-placeholder focus:outline-none !text-text-primary show-scroll w-auto',
+            'bg-surface-base-content placeholder:text-text-specific-input-placeholder focus:outline-none !text-text-primary show-scroll w-auto [scrollbar-width:auto]',
             error && 'border-border-error',
             !error && 'focus:border-border-secondary hover:border-border-secondary',
             className,
@@ -117,7 +121,6 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
           readOnly={readonly}
           autoComplete={sensitive ? 'off' : undefined}
           required={required}
-          style={{ scrollbarWidth: 'auto' }}
           disabled={disabled}
           {...rest}
         />

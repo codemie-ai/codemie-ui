@@ -75,6 +75,7 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
     const [textValue, setTextValue] = useState<string>('')
     const [filteredOptions, setFilteredOptions] = useState<FilterOption[]>(options)
     const inputWidth = useInputWidth(autocompleteEl)
+    const isPanelOpen = useRef(false)
 
     useImperativeHandle(ref, () => autocompleteEl.current!, [])
 
@@ -138,9 +139,17 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
       if (allowEmpty && value && !textValue) onChange?.('')
       else if (allowNew) onChange?.(textValue)
     }
-    const handleFocus = (e) => {
-      if (autocompleteEl.current && !disabled) {
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (autocompleteEl.current && !disabled && !isPanelOpen.current) {
         autocompleteEl.current.search(e, '')
+      }
+    }
+
+    const handleDropdownClick = (e: { originalEvent: React.SyntheticEvent }) => {
+      if (isPanelOpen.current) {
+        autocompleteEl.current?.hide()
+      } else {
+        autocompleteEl.current?.search(e.originalEvent, '')
       }
     }
 
@@ -162,7 +171,7 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
     }
 
     return (
-      <div className={cn('flex flex-col gap-[6px] text-text-tertiary w-full', className)}>
+      <div className={cn('flex flex-col gap-1.5 text-text-tertiary w-full', className)}>
         {label && (
           <label htmlFor={id} className="flex gap-1.5 text-xs text-text-quaternary ">
             {label}
@@ -182,6 +191,13 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          onShow={() => {
+            isPanelOpen.current = true
+          }}
+          onHide={() => {
+            isPanelOpen.current = false
+          }}
+          onDropdownClick={handleDropdownClick}
           field="label"
           dropdown
           panelFooterTemplate={panelFooterTemplate}

@@ -81,7 +81,10 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
       setSelectedHistoryOption,
     } = useSystemPromptState(assistant)
 
-    const handleExpand = () => setIsExpanded(!isExpanded)
+    const handleExpand = () => {
+      if (isExpanded) setActiveTab('current')
+      setIsExpanded(!isExpanded)
+    }
     const handleShowVersionHistory = () => {
       setIsExpanded(true)
       setActiveTab('history')
