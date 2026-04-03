@@ -14,39 +14,32 @@
 //
 
 import { FC, useCallback } from 'react'
+import { useSnapshot } from 'valtio'
 
 import EditOutputForm from '@/components/EditOutputForm/EditOutputForm'
-import { workflowExecutionsStore } from '@/store/workflowExecutions'
+import { chatGenerationStore } from '@/store/chatGeneration'
+import { chatsStore } from '@/store/chats'
 
-interface WorkflowExecutionEditOutputFormProps {
-  workflowId: string
-  executionId: string
-  stateId: string
+interface ChatEditOutputFormProps {
+  chatId: string
   onCancel: () => void
   onUpdate: () => void
 }
 
-const WorkflowExecutionEditOutputForm: FC<WorkflowExecutionEditOutputFormProps> = ({
-  workflowId,
-  executionId,
-  stateId,
-  onUpdate,
-  onCancel,
-}) => {
+const ChatEditOutputForm: FC<ChatEditOutputFormProps> = ({ chatId, onUpdate, onCancel }) => {
+  const { currentChat } = useSnapshot(chatsStore)
+
   const fetchOutput = useCallback(async () => {
-    return workflowExecutionsStore.getWorkflowExecutionStateOutput(workflowId, executionId, stateId)
-  }, [workflowId, executionId, stateId])
+    const lastHistoryGroup = currentChat?.history.at(-1)
+    const lastMessage = lastHistoryGroup?.at(-1)
+    return lastMessage?.response || ''
+  }, [currentChat?.history])
 
   const updateOutput = useCallback(
     async (output: string) => {
-      return workflowExecutionsStore.updateWorkflowExecutionStateOutput(
-        workflowId,
-        executionId,
-        stateId,
-        output
-      )
+      return chatGenerationStore.updateWorkflowChatOutput(chatId, output)
     },
-    [workflowId, executionId, stateId]
+    [chatId]
   )
 
   return (
@@ -59,4 +52,4 @@ const WorkflowExecutionEditOutputForm: FC<WorkflowExecutionEditOutputFormProps> 
   )
 }
 
-export default WorkflowExecutionEditOutputForm
+export default ChatEditOutputForm

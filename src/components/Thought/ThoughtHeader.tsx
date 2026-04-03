@@ -19,9 +19,41 @@ import AssistantSvg from '@/assets/icons/assistant-alt.svg?react'
 import ChevronRightSvg from '@/assets/icons/chevron-right.svg?react'
 import ToolSvg from '@/assets/icons/tool.svg?react'
 import StatusBadge from '@/components/StatusBadge'
-import StatusIndicator, { StatusEnum } from '@/components/StatusIndicator'
+import StatusIndicator, { StatusEnum, StatusType } from '@/components/StatusIndicator'
 import { Thought, ThoughtAuthorType } from '@/types/entity/conversation'
 import { cn } from '@/utils/utils'
+
+type ThoughtStatusConfig = { status: StatusType; label: string }
+
+const getThoughtStatus = (thought: Thought, isInProgress?: boolean): ThoughtStatusConfig => {
+  if (isInProgress) return { status: StatusEnum.InProgress, label: 'In Progress' }
+  if (thought.interrupted) return { status: StatusEnum.Pending, label: 'Interrupted' }
+  if (thought.aborted) return { status: StatusEnum.Warning, label: 'Aborted' }
+  if (thought.error) return { status: StatusEnum.Error, label: 'Failed' }
+  return { status: StatusEnum.Success, label: 'Success' }
+}
+
+interface ThoughtStatusProps {
+  thought: Thought
+  isInProgress?: boolean
+  isEmbedded?: boolean
+}
+
+const ThoughtStatus: FC<ThoughtStatusProps> = ({ thought, isInProgress, isEmbedded }) => {
+  const { status, label } = getThoughtStatus(thought, isInProgress)
+  return (
+    <>
+      {!isEmbedded && (
+        <div aria-hidden="true" className="min-h-4 h-4">
+          <StatusIndicator status={status} naked={true} />
+        </div>
+      )}
+      <div aria-hidden="true" className="ml-auto flex-shrink-0">
+        <StatusBadge status={status} text={label} />
+      </div>
+    </>
+  )
+}
 
 interface ThoughtHeaderProps {
   isExpanded?: boolean
@@ -74,18 +106,6 @@ const ThoughtHeader: FC<ThoughtHeaderProps> = ({
         {toolName}
       </div>
 
-      {!isEmbedded && (
-        <div aria-hidden="true" className="min-h-4">
-          {isInProgress && <StatusIndicator status={StatusEnum.InProgress} naked={true} />}
-          {!isInProgress && thought.error && (
-            <StatusIndicator status={StatusEnum.Error} naked={true} />
-          )}
-          {!isInProgress && !thought.error && (
-            <StatusIndicator status={StatusEnum.Success} naked={true} />
-          )}
-        </div>
-      )}
-
       {thought.input_text && (
         <div
           aria-hidden="true"
@@ -96,15 +116,7 @@ const ThoughtHeader: FC<ThoughtHeaderProps> = ({
         </div>
       )}
 
-      <div aria-hidden="true" className="ml-auto flex-shrink-0">
-        {isInProgress && <StatusBadge status={StatusEnum.InProgress} text="In Progress" />}
-        {!isInProgress &&
-          (thought.error ? (
-            <StatusBadge status={StatusEnum.Error} text="Failed" />
-          ) : (
-            <StatusBadge status={StatusEnum.Success} text="Success" />
-          ))}
-      </div>
+      <ThoughtStatus thought={thought} isInProgress={isInProgress} isEmbedded={isEmbedded} />
     </button>
   )
 }

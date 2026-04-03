@@ -75,6 +75,8 @@ export interface ChatRequest {
   skill_ids?: string[]
   enable_web_search?: boolean | null
   enable_code_interpreter?: boolean | null
+  resumeExecution?: boolean
+  executionId?: string
 }
 
 export interface ChatRequestInput {
@@ -108,4 +110,6 @@ export interface ChatGenerationOptions {
   moveToLast?: boolean
   skillIds?: string[]
   dynamicToolsConfig?: DynamicToolsConfig
+  resumeExecution?: boolean
+  executionId?: string
 }

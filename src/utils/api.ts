@@ -110,7 +110,8 @@ class API {
   async stream(
     url: string,
     body: any,
-    abortController: AbortController | null = null
+    abortController: AbortController | null = null,
+    method: string = 'POST'
   ): Promise<ReadableStreamDefaultReader<string> | Response> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -118,7 +119,7 @@ class API {
     }
 
     const requestOptions: RequestInit = {
-      method: 'POST',
+      method,
       headers,
       body: JSON.stringify(body),
       redirect: 'manual',

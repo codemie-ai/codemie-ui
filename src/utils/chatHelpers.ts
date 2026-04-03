@@ -27,6 +27,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
     name: chatBE.conversation_name,
     llmModel: chatBE.llm_model,
     isWorkflow: chatBE.is_workflow_conversation ?? chatBE.is_workflow ?? false,
+    isInterrupted: chatBE.history.some((item) => item.thoughts?.some((t) => t.interrupted)),
     isGroup: true,
     folder: chatBE.folder,
     assistantIds: chatBE.assistant_ids ?? [],
@@ -127,6 +128,8 @@ function transformHistoryGroup(
             output_format: thought.output_format,
             in_progress: false,
             error: thought.error ?? false,
+            interrupted: thought.interrupted ?? false,
+            aborted: thought.aborted ?? false,
           }))
         : [],
       assistantId: assistantItem.assistantId,
@@ -144,6 +147,7 @@ function transformHistoryGroup(
       inProgress: false,
       stream: null,
       executionId: assistantItem.executionId,
+      stateId: assistantItem.stateId,
     }
   })
 }

@@ -44,6 +44,7 @@ import ChatPromptVoiceRecorder from './ChatPromptVoiceRecorder'
 import DynamicToolsSettings from './DynamicToolsSettings'
 import { useChatContext } from '../../hooks/useChatContext'
 import { useFilePaste } from '../../hooks/useFilePaste'
+import ChatControls from '../ChatControls'
 
 const ChatPrompt: FC = () => {
   const editorRef = useRef<EditorRef>(null)
@@ -74,12 +75,15 @@ const ChatPrompt: FC = () => {
   })
 
   const isInProgress = currentChat?.history.at(-1)?.at(-1)?.inProgress
+  const isInterrupted = currentChat?.isInterrupted
 
   const canSubmit = (() => {
     const hasFiles = !!files.length
     const hasPrompt = prompt.message.length > 0
 
-    return (hasPrompt || hasFiles) && !fileUpload.hasActiveUploads && !isInProgress
+    return (
+      (hasPrompt || hasFiles) && !fileUpload.hasActiveUploads && !isInProgress && !isInterrupted
+    )
   })()
 
   const handleSubmit = () => {
@@ -132,13 +136,14 @@ const ChatPrompt: FC = () => {
   }
 
   const focusEditor = (e: MouseEvent<HTMLDivElement>) => {
+    if (isInterrupted) return
     if (e.target === e.currentTarget) editorRef.current?.focus()
   }
 
-  const isVoiceRecorderVisible = !!userData?.stt_support && !isInProgress
+  const isVoiceRecorderVisible = !!userData?.stt_support && !isInProgress && !isInterrupted
 
   useEffect(() => {
-    editorRef.current?.focus()
+    if (!isInterrupted) editorRef.current?.focus()
   }, [currentChat?.id])
 
   const hasChatHistory = !!currentChat?.history.length
@@ -150,74 +155,84 @@ const ChatPrompt: FC = () => {
           onStarterClick={(text) => setPrompt({ message: text, messageRaw: sanitizeMessage(text) })}
         />
       )}
-      <div className="w-full flex flex-col px-6 scrollbar-gutter overflow-y-auto min-h-32 h-fit -translate-y-3 z-10 shrink-0">
-        <div
-          className={twJoin(
-            'p-px rounded-xl border-gradient promp-shadow w-full max-w-5xl mx-auto prompt-border-gradient min-h-fit',
-            isEditorFocused && 'prompt-border-gradient-focused',
-            isInProgress && 'prompt-border-gradient-in-progress'
-          )}
-        >
+      <div className="relative w-full">
+        {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
+        <div className="w-full flex flex-col px-6 scrollbar-gutter overflow-y-auto min-h-32 h-fit -translate-y-3 z-10 shrink-0">
           <div
-            onClick={focusEditor}
-            onMouseDown={handleMouseDown}
-            className="flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated cursor-text min-h-32 max-h-64"
+            className={twJoin(
+              'p-px rounded-xl border-gradient promp-shadow w-full max-w-5xl mx-auto prompt-border-gradient min-h-fit',
+              isEditorFocused && 'prompt-border-gradient-focused',
+              isInProgress && 'prompt-border-gradient-in-progress',
+              isInterrupted && 'opacity-60 pointer-events-none'
+            )}
           >
-            <Editor
-              ref={editorRef}
-              value={prompt}
-              withMentions={!currentChat?.isWorkflow}
-              onChange={setPrompt}
-              onAddFiles={fileUpload.addFiles}
-              onSubmit={handleSubmit}
-              onFocusChange={setIsEditorFocused}
-              onEditorLoad={setupPasteHandler}
-              placeholder={
-                currentChat?.isWorkflow
-                  ? 'Ask anything'
-                  : "Ask anything or add an assistant with '@'"
-              }
-            />
-
             <div
               onClick={focusEditor}
               onMouseDown={handleMouseDown}
-              className="flex justify-between items-center pl-2"
+              className={cn(
+                'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated min-h-32 max-h-64',
+                !isInterrupted && 'cursor-text'
+              )}
             >
-              <div className="flex items-center gap-2">
-                <ChatPromptFileUpload {...fileUpload} files={files} />
-                {!currentChat?.isWorkflow && !isSharedPage && (
-                  <>
-                    <DynamicToolsSettings disabled={!!isInProgress} />
-                    <ChatPromptLlmSelector disabled={!!isInProgress} />
-                    <ChatPromptSkillsButton disabled={!!isInProgress} />
-                  </>
-                )}
-              </div>
+              <Editor
+                ref={editorRef}
+                value={prompt}
+                withMentions={!currentChat?.isWorkflow}
+                onChange={setPrompt}
+                onAddFiles={fileUpload.addFiles}
+                disabled={isInterrupted}
+                onSubmit={handleSubmit}
+                onFocusChange={setIsEditorFocused}
+                onEditorLoad={setupPasteHandler}
+                placeholder={
+                  currentChat?.isWorkflow
+                    ? 'Ask anything'
+                    : "Ask anything or add an assistant with '@'"
+                }
+              />
 
-              <div className="flex items-center ml-auto">
-                {isVoiceRecorderVisible && (
-                  <ChatPromptVoiceRecorder
-                    onTextReady={(text) => setPrompt({ message: text, messageRaw: text })}
-                  />
-                )}
+              <div
+                onClick={focusEditor}
+                onMouseDown={handleMouseDown}
+                className="flex justify-between items-center pl-2"
+              >
+                <div className="flex items-center gap-2">
+                  <ChatPromptFileUpload {...fileUpload} files={files} />
+                  {!currentChat?.isWorkflow && !isSharedPage && (
+                    <>
+                      <DynamicToolsSettings disabled={!!isInProgress} />
+                      <ChatPromptLlmSelector disabled={!!isInProgress} />
+                      <ChatPromptSkillsButton disabled={!!isInProgress} />
+                    </>
+                  )}
+                </div>
 
-                {isVoiceRecorderVisible && <div className="bg-border-primary h-4 w-px mr-4 ml-2" />}
+                <div className="flex items-center ml-auto">
+                  {isVoiceRecorderVisible && (
+                    <ChatPromptVoiceRecorder
+                      onTextReady={(text) => setPrompt({ message: text, messageRaw: text })}
+                    />
+                  )}
 
-                {isInProgress ? (
-                  <Button size={ButtonSize.LARGE} onClick={handleStopGeneration}>
-                    <StopSvg className={cn(isDark && 'text-white')} />
-                  </Button>
-                ) : (
-                  <Button
-                    disabled={!canSubmit}
-                    onClick={handleSubmit}
-                    size={ButtonSize.LARGE}
-                    className="select-none"
-                  >
-                    Send
-                  </Button>
-                )}
+                  {isVoiceRecorderVisible && (
+                    <div className="bg-border-primary h-4 w-px mr-4 ml-2" />
+                  )}
+
+                  {isInProgress ? (
+                    <Button size={ButtonSize.LARGE} onClick={handleStopGeneration}>
+                      <StopSvg className={cn(isDark && 'text-white')} />
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled={!canSubmit}
+                      onClick={handleSubmit}
+                      size={ButtonSize.LARGE}
+                      className="select-none"
+                    >
+                      Send
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

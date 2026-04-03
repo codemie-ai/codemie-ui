@@ -97,6 +97,8 @@ export interface Thought {
   output_format?: WorkflowOutputFormat | string
   in_progress: boolean
   error?: boolean | string
+  interrupted?: boolean
+  aborted?: boolean
   parent_id?: string
   content?: string
 }
@@ -151,6 +153,7 @@ export interface ChatMessage {
   messageIndex?: number
   stream?: Stream | null
   executionId: string | null
+  stateId?: string | null
 }
 
 export type ChatHistoryGroup = ChatMessage[]
@@ -172,6 +175,7 @@ export interface Conversation {
   pinned?: boolean
   isWorkflow?: boolean
   isGroup?: boolean
+  isInterrupted?: boolean
   assistantIds: string[]
   initialAssistantId?: string
   initial_assistant_id?: string
@@ -239,6 +243,8 @@ export interface ThoughtBackend {
   children?: any[]
   output_format?: string
   error?: boolean
+  interrupted?: boolean
+  aborted?: boolean
 }
 
 export interface HistoryItemBackend {
@@ -252,6 +258,7 @@ export interface HistoryItemBackend {
   responseTime?: number
   userMark?: any
   executionId: string | null
+  stateId?: string | null
 }
 
 export interface ChatBackend {

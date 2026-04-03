@@ -154,11 +154,14 @@ export const chatsStore = proxy<ChatsStoreType>({
     const existingChat = chatsStore.openedChatsHistory.find((chat) => chat.id === id)
     if (!existingChat) return
 
+    existingChat.isInterrupted = freshChat.isInterrupted
+
     freshChat.history.forEach((historyGroup, historyIndex) => {
       historyGroup.forEach((message, messageIndex) => {
         const conversation = existingChat.history[historyIndex]
         if (conversation && conversation[messageIndex]) {
           conversation[messageIndex].executionId = message.executionId
+          conversation[messageIndex].thoughts = message.thoughts
         }
       })
     })

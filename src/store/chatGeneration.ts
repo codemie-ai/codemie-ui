@@ -26,6 +26,7 @@ import toaster from '@/utils/toaster'
 
 import { assistantsStore } from './assistants'
 import { chatsStore } from './chats'
+import { workflowExecutionsStore } from './workflowExecutions'
 
 const STREAMING_NOTIFICATION = 'Still waiting for response, agent is thinking'
 const STREAMING_NOTIFICATION_INTERVAL = 5_000 // 5 seconds
@@ -49,6 +50,9 @@ interface ChatGenerationStoreType {
   deleteChatMessage: (chatId: string, historyIndex: number) => Promise<void>
 
   stopChatGeneration: (chatId: string) => void
+  resumeWorkflowExecution: () => Promise<void>
+  abortWorkflowChat: (chatId: string) => Promise<void>
+  updateWorkflowChatOutput: (chatId: string, output: string) => Promise<void>
 
   // Private methods
   _getAssistant: (assistantId: string | undefined) => Promise<Assistant>
@@ -94,6 +98,24 @@ interface ChatGenerationStoreType {
   _handleGenerationAbort: (historyItem: ChatMessage, reader: ReadableStreamDefaultReader) => any
   _scheduleWaitingNotification: (historyItem: ChatMessage) => NodeJS.Timeout
   _clearWaitingNotification: (historyItem: ChatMessage, timeoutId?: NodeJS.Timeout) => void
+  _prepareRequestData: (
+    chat: Conversation,
+    entityId: string,
+    data: ChatRequest
+  ) => { endpoint: string; requestData?: any }
+  _handleRequestError: (historyItem: ChatMessage, error: any, startTime: Date) => void
+  _handleNonStreamResponse: (
+    reader: Response,
+    historyItem: ChatMessage,
+    chat: Conversation,
+    startTime: Date
+  ) => Promise<void>
+  _handleStreamResponse: (
+    reader: ReadableStreamDefaultReader,
+    historyItem: ChatMessage,
+    chat: Conversation,
+    startTime: Date
+  ) => Promise<void>
 }
 
 export const chatGenerationStore = proxy<ChatGenerationStoreType>({
@@ -348,6 +370,81 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
   },
 
+  async resumeWorkflowExecution() {
+    const chat = chatsStore.currentChat
+    if (!chat) return Promise.resolve()
+
+    const historyIndex = chat.history.length - 1
+    const messageIndex = chat.history[historyIndex].length - 1
+
+    chat.history[historyIndex][messageIndex].thoughts?.forEach((thought) => {
+      if (thought.interrupted) thought.interrupted = false
+    })
+
+    const data: ChatRequest = {
+      conversationId: chat.id,
+      resumeExecution: true,
+    } as ChatRequest
+
+    return chatGenerationStore._sendRequest(chat, historyIndex, messageIndex, data)
+  },
+
+  async abortWorkflowChat(chatId) {
+    try {
+      const chat = chatsStore.currentChat
+      if (!chat) return
+
+      const lastMessage = chat.history.at(-1)?.at(-1)
+      const workflowId = lastMessage?.assistantId
+      const executionId = lastMessage?.executionId
+
+      if (!workflowId || !executionId) return
+
+      const response = await api.put(`v1/workflows/${workflowId}/executions/${executionId}/abort`, {
+        conversation_id: chatId,
+      })
+
+      await chatsStore.getChat(chatId)
+      await response.json()
+    } catch (error) {
+      toaster.error('Failed to abort chat')
+      console.error('Failed to abort chat:', error)
+      throw error
+    }
+  },
+
+  async updateWorkflowChatOutput(chatId, output) {
+    try {
+      const chat = chatsStore.currentChat
+      if (!chat) return
+
+      const lastMessage = chat.history.at(-1)?.at(-1)
+      const workflowId = lastMessage?.assistantId
+      const executionId = lastMessage?.executionId
+
+      if (!workflowId || !executionId) return
+
+      const interruptedThought = lastMessage?.thoughts?.find((t: any) => t.interrupted)
+      if (!interruptedThought) return
+
+      const states = await workflowExecutionsStore.getExecutionStates(workflowId, executionId)
+      const stateId = states?.find((s) => s.name === interruptedThought.author_name)?.id
+      if (!stateId) return
+
+      await workflowExecutionsStore.updateWorkflowExecutionStateOutput(
+        workflowId,
+        executionId,
+        stateId,
+        output
+      )
+      await chatsStore.getChat(chatId)
+    } catch (error) {
+      toaster.error('Failed to update chat output')
+      console.error('Failed to update chat output:', error)
+      throw error
+    }
+  },
+
   async _sendRequest(
     chat: Conversation,
     historyIndex: number,
@@ -355,27 +452,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     data: ChatRequest
   ): Promise<void> {
     const historyItem = chat.history[historyIndex][messageIndex]
-    // chat.assistantID is for backward compatibility
-    const assistantId = historyItem.assistantId ?? (chat as any).assistantID
+    const entityId = historyItem.assistantId ?? (chat as any).assistantID
 
-    // Determine endpoint based on whether this is a workflow chat
-    let endpoint: string
-    let requestData: any
-
-    if (chat.isWorkflow) {
-      // Workflow chat: use workflow execution endpoint
-      endpoint = `v1/workflows/${assistantId}/executions`
-      requestData = {
-        user_input: data.text ?? '',
-        file_name: data.file_names?.[0] ?? null,
-        stream: true,
-        conversation_id: data.conversationId,
-      }
-    } else {
-      // Regular assistant chat: use assistant model endpoint
-      endpoint = `v1/assistants/${assistantId}/model`
-      requestData = data
-    }
+    const { endpoint, requestData } = chatGenerationStore._prepareRequestData(chat, entityId, data)
 
     const abortController = ref(new AbortController())
     const startTime = new Date()
@@ -383,48 +462,84 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     chatGenerationStore.chatAbortControllers[chat.id] = abortController
 
     // Handle file conversion if needed (legacy support) - only for non-workflow chats
-    if (!chat.isWorkflow && (requestData as any).file) {
-      ;(requestData as any).file_name = (requestData as any).file.name
-      ;(requestData as any).file = await fileToBase64((requestData as any).file)
+    if (!chat.isWorkflow && requestData.file) {
+      requestData.file_name = requestData.file.name
+      requestData.file = await fileToBase64(requestData.file)
     }
 
     let reader: ReadableStreamDefaultReader | Response
 
     try {
-      reader = await api.stream(endpoint, requestData, abortController)
+      reader = await api.stream(endpoint, requestData, abortController, 'POST')
     } catch (error: any) {
-      historyItem.response = chatGenerationStore._handleGenerationStreamError(error)
-      historyItem.loginUrl = error?.error?.login_url ?? error?.login_url
-      historyItem.inProgress = false
+      chatGenerationStore._handleRequestError(historyItem, error, startTime)
+      return
+    }
+
+    if (reader instanceof Response) {
+      await chatGenerationStore._handleNonStreamResponse(reader, historyItem, chat, startTime)
+    } else {
+      await chatGenerationStore._handleStreamResponse(reader, historyItem, chat, startTime)
+    }
+  },
+
+  _prepareRequestData(chat, entityId, data) {
+    if (!chat.isWorkflow) {
+      return {
+        endpoint: `v1/assistants/${entityId}/model`,
+        requestData: data,
+      }
+    }
+
+    if (data.resumeExecution) {
+      return {
+        endpoint: `v1/conversations/${data.conversationId}/resume`,
+      }
+    }
+
+    return {
+      endpoint: `v1/workflows/${entityId}/executions`,
+      requestData: {
+        user_input: data.text ?? '',
+        file_name: data.file_names?.[0] ?? null,
+        stream: true,
+        conversation_id: data.conversationId,
+      },
+    }
+  },
+
+  _handleRequestError(historyItem, error, startTime) {
+    historyItem.response = chatGenerationStore._handleGenerationStreamError(error)
+    historyItem.loginUrl = error?.error?.login_url ?? error?.login_url
+    historyItem.inProgress = false
+    historyItem.stream = null
+    chatGenerationStore._finishThoughts(historyItem)
+
+    const endTime = new Date()
+    historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
+  },
+
+  async _handleNonStreamResponse(reader, historyItem, chat, startTime) {
+    historyItem.inProgress = false
+
+    if (!reader.ok) return
+
+    const endTime = new Date()
+
+    try {
+      const data = await reader.json()
+      historyItem.response = data.generated
+      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
       historyItem.stream = null
       chatGenerationStore._finishThoughts(historyItem)
-
-      const endTime = new Date()
-      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
-      return
+    } catch (error) {
+      console.error('Failed to parse response JSON:', error)
     }
 
-    // Response is not a stream
-    if (reader instanceof Response) {
-      historyItem.inProgress = false
+    if (chat.isWorkflow) chatsStore.getChat(chat.id)
+  },
 
-      if (!reader.ok) return
-
-      const endTime = new Date()
-
-      try {
-        const data = await reader.json()
-        historyItem.response = data.generated
-        historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
-        historyItem.stream = null
-        chatGenerationStore._finishThoughts(historyItem)
-      } catch (error) {
-        console.error('Failed to parse response JSON:', error)
-      }
-
-      return
-    }
-
+  async _handleStreamResponse(reader, historyItem, chat, startTime) {
     const response = await chatGenerationStore._handleGenerationStream(historyItem, reader)
 
     const endTime = new Date()

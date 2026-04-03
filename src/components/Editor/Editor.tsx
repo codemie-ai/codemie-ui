@@ -70,6 +70,7 @@ interface EditorProps {
   variant?: 'default' | 'message'
   placeholder?: string
   className?: string
+  disabled?: boolean
   onChange: (value: EditorValue) => void
   onSubmit: () => void
   onAddFiles: (files: File[]) => void
@@ -85,6 +86,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(
       variant = 'default',
       placeholder,
       className,
+      disabled,
       onChange,
       onSubmit,
       onAddFiles,
@@ -153,6 +155,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(
         formats={[withMentions ? 'mention' : '']}
         className={cn(`editor editor-${variant} [&>.ql-toolbar]:!hidden`, className)}
         placeholder={placeholder}
+        readOnly={disabled}
         onFocus={() => onFocusChange?.(true)}
         onBlur={() => onFocusChange?.(false)}
         onTextChange={(e) => onChange(processText(e))}
