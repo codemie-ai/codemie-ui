@@ -32,11 +32,18 @@ function hashString(str: string): number {
 export function getAssistantInitials(name: string): string {
   const trimmed = name.trim()
   if (!trimmed) return '?'
+
+  const firstAlphanumeric = (str: string): string => str.match(/[a-zA-Z0-9]/)?.[0] ?? ''
+
   const words = trimmed.split(/\s+/)
   if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase()
+    const alphanum = words[0].replace(/[^a-zA-Z0-9]/g, '')
+    return (alphanum.slice(0, 2) || '?').toUpperCase()
   }
-  return (words[0][0] + words[words.length - 1][0]).toUpperCase()
+
+  const first = firstAlphanumeric(words[0])
+  const last = firstAlphanumeric(words[words.length - 1])
+  return (first + last || '?').toUpperCase()
 }
 
 export function getAssistantAvatarColor(name: string): string {
