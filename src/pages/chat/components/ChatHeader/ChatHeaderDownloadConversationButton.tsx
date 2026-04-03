@@ -14,7 +14,7 @@
 //
 
 import { OverlayPanel } from 'primereact/overlaypanel'
-import { FC, useRef, useState } from 'react'
+import { FC, KeyboardEvent, useRef, useState } from 'react'
 
 import ExportSvg from '@/assets/icons/download.svg?react'
 import ExportToDocxSvg from '@/assets/icons/export-to-docx.svg?react'
@@ -38,12 +38,15 @@ const ButtonOverlay: FC<ButtonOverlayProps> = ({ icon, label, onClick }) => {
   return (
     <button
       type="button"
-      className="flex items-center gap-4 hover:bg-surface-specific-dropdown-hover px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:text-text-quaternary hover:text-text-accent"
+      role="menuitem"
+      className="flex items-center gap-4 hover:bg-surface-specific-dropdown-hover px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:text-text-quaternary hover:text-text-accent focus:bg-surface-specific-dropdown-hover"
       onClick={onClick}
       aria-label={ariaLabel}
       data-pr-tooltip={label}
     >
-      <span className="w-[18px] h-[18px] flex justify-center items-center">{icon}</span>
+      <span className="w-[18px] h-[18px] flex justify-center items-center" aria-hidden="true">
+        {icon}
+      </span>
       <span className="text-left">{label}</span>
     </button>
   )
@@ -51,6 +54,8 @@ const ButtonOverlay: FC<ButtonOverlayProps> = ({ icon, label, onClick }) => {
 
 const ChatHeaderDownloadConversationButton: FC = () => {
   const ref = useRef<OverlayPanel>(null)
+  const triggerWrapperRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [isOverlayVisible, setIsOverlayVisible] = useState(false)
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -58,11 +63,49 @@ const ChatHeaderDownloadConversationButton: FC = () => {
     setIsOverlayVisible(!isOverlayVisible)
   }
 
+  const handleOverlayShow = () => {
+    setIsOverlayVisible(true)
+    setTimeout(() => {
+      const firstItem = menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')
+      firstItem?.focus()
+    }, 0)
+  }
+
+  const handleOverlayHide = () => {
+    setIsOverlayVisible(false)
+    triggerWrapperRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
+  }
+
+  const handleMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []
+    )
+    const currentIndex = items.findIndex((item) => item === document.activeElement)
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      items[(currentIndex + 1) % items.length]?.focus()
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      items[(currentIndex - 1 + items.length) % items.length]?.focus()
+    } else if (e.key === 'Escape') {
+      ref.current?.hide()
+    } else if (e.key === 'Tab') {
+      e.preventDefault()
+      ref.current?.hide()
+    }
+  }
+
+  const handleMenuBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (!menuRef.current?.contains(e.relatedTarget as Node)) {
+      ref.current?.hide()
+    }
+  }
+
   const handleExport = async (format: ChatExportFormat) => {
     const success = chatsStore.exportChat(format)
 
     ref.current?.hide()
-    setIsOverlayVisible(false)
 
     if (await success) {
       const formatUpper = format.toUpperCase()
@@ -74,22 +117,34 @@ const ChatHeaderDownloadConversationButton: FC = () => {
 
   return (
     <>
-      <Button
-        type="secondary"
-        aria-label="Export conversation - Choose from multiple file formats including JSON, DOCX, and PDF"
-        data-tooltip-id="react-tooltip"
-        data-tooltip-content={isOverlayVisible ? '' : 'Export Conversation'}
-        onClick={handleButtonClick}
-      >
-        <ExportSvg />
-      </Button>
+      <div ref={triggerWrapperRef}>
+        <Button
+          type="secondary"
+          aria-label="Export Conversation"
+          aria-haspopup="menu"
+          aria-expanded={isOverlayVisible}
+          data-tooltip-id="react-tooltip"
+          data-tooltip-content={isOverlayVisible ? '' : 'Export Conversation'}
+          onClick={handleButtonClick}
+        >
+          <ExportSvg aria-hidden="true" />
+        </Button>
+      </div>
       <OverlayPanel
         ref={ref}
-        onHide={() => setIsOverlayVisible(false)}
+        onShow={handleOverlayShow}
+        onHide={handleOverlayHide}
         className="bg-surface-base-secondary p-2 rounded-lg border border-border-structural shadow-xl"
         pt={{ root: { style: { transform: 'translateX(-64px)' } } }}
       >
-        <div className="flex flex-col gap-1">
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label="Export Conversation"
+          className="flex flex-col gap-1"
+          onKeyDown={handleMenuKeyDown}
+          onBlur={handleMenuBlur}
+        >
           <ButtonOverlay
             icon={<ExportToJsonSvg />}
             label="Export to JSON"

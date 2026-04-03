@@ -110,6 +110,9 @@ const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded 
         <a
           key={assistant.id}
           href={assistant.link ? `/#${assistant.link}` : ''}
+          role="link"
+          aria-label={assistant.name}
+          aria-describedby={assistant.description ? `assistant-desc-${assistant.id}` : undefined}
           data-tooltip-id="react-tooltip"
           data-tooltip-place="right"
           data-tooltip-content={getTooltipText(assistant)}
@@ -121,7 +124,8 @@ const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded 
           )}
         >
           <img
-            alt={assistant.name}
+            alt=""
+            aria-hidden="true"
             src={assistant.iconUrl}
             className="rounded-full min-w-6 w-6 min-h-6 h-6 flex-shrink-0 border-border-primary border"
           />
@@ -134,6 +138,12 @@ const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded 
           >
             {assistant.name}
           </div>
+
+          {assistant.description && (
+            <span id={`assistant-desc-${assistant.id}`} className="sr-only">
+              {assistant.description}
+            </span>
+          )}
         </a>
       ))}
     </>

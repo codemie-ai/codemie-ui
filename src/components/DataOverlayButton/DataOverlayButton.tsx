@@ -62,7 +62,7 @@ const DataOverlayButton = <T,>({ title, subtitle, data, render }: DataOverlayBut
         aria-label="Usage details"
         onClick={handleSeeUsageDetails}
       >
-        <InfoSvg />
+        <InfoSvg aria-hidden="true" />
       </Button>
       <OverlayPanel
         ref={ref}

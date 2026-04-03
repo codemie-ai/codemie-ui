@@ -364,11 +364,11 @@ describe('ChatSidebarAssistants', () => {
     expect(container.querySelector('.flex.flex-col')).toBeInTheDocument()
   })
 
-  it('applies correct title attribute to assistant name', () => {
+  it('applies correct aria-label to assistant button', () => {
     mockAssistantsStore.recentAssistants = [mockAssistants[0]]
     render(<ChatSidebarAssistants />)
 
-    const nameElement = screen.getByText('Code Helper')
-    expect(nameElement).toHaveAttribute('title', 'Start a new conversation with this Assistant')
+    const button = screen.getByRole('button', { name: 'Start new chat with Code Helper' })
+    expect(button).toBeInTheDocument()
   })
 })

@@ -151,7 +151,9 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
               className={tooltipClass}
               data-pr-tooltip={assistant.is_liked ? 'Remove like' : 'Like this assistant'}
               aria-label={
-                assistant.is_liked ? `Remove like from ${assistant.name}` : `Like ${assistant.name}`
+                assistant.is_liked
+                  ? `Remove like from ${assistant.name}, ${assistant.unique_likes_count}`
+                  : `Like ${assistant.name}, ${assistant.unique_likes_count}`
               }
               onClick={toggleLike}
             >
@@ -173,8 +175,8 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
               data-pr-tooltip={assistant.is_disliked ? 'Remove dislike' : 'Dislike this assistant'}
               aria-label={
                 assistant.is_disliked
-                  ? `Remove dislike from ${assistant.name}`
-                  : `Dislike ${assistant.name}`
+                  ? `Remove dislike from ${assistant.name}, ${assistant.unique_dislikes_count}`
+                  : `Dislike ${assistant.name}, ${assistant.unique_dislikes_count}`
               }
               onClick={toggleDislike}
             >

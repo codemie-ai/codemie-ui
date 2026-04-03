@@ -108,13 +108,16 @@ const styleMention = (mentionElement: MentionElement | null, data: MentionItem |
 const renderAssistantListItem = (item: AssistantItem) => {
   const container = document.createElement('div')
   container.className = 'flex items-center w-full'
+  container.setAttribute('aria-label', `${item.value}, ${item.owner}`)
 
   const img = document.createElement('img')
   img.className = 'ql-ml-item-img'
   img.src = item.icon === '' ? defaultAvatar : item.icon ?? defaultAvatar
+  img.setAttribute('aria-hidden', 'true')
 
   const textContainer = document.createElement('div')
   textContainer.className = 'ql-ml-item-text'
+  textContainer.setAttribute('aria-hidden', 'true')
 
   const label = document.createElement('p')
   label.className = 'ql-ml-item-text-label'
@@ -133,13 +136,16 @@ const renderAssistantListItem = (item: AssistantItem) => {
 const renderFileListItem = (item: FileItem) => {
   const container = document.createElement('div')
   container.className = 'flex items-center w-full'
+  container.setAttribute('aria-label', item.value)
 
   const fileIcon = document.createElement('div')
   fileIcon.className = 'ql-ml-item-icon'
   fileIcon.innerHTML = FILE_ICON_SVG
+  fileIcon.setAttribute('aria-hidden', 'true')
 
   const textContainer = document.createElement('div')
   textContainer.className = 'ql-ml-item-text'
+  textContainer.setAttribute('aria-hidden', 'true')
 
   const label = document.createElement('p')
   label.className = 'ql-ml-item-text-label'

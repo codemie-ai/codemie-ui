@@ -109,54 +109,78 @@ const Pagination: React.FC<PaginationProps> = ({
           <div className="text-text-quaternary text-h5 flex-shrink-0">Page: </div>
           <div className="flex gap-[4px] items-stretch h-[32px]">
             {currentPage !== 0 && (
-              <span
+              <button
+                type="button"
+                aria-label="Previous page"
                 className={buttonClasses()}
                 onClick={() => setPage(currentPage - 1, currentPerPage)}
               >
-                <ChevronLeftSvg />
-              </span>
+                <ChevronLeftSvg aria-hidden="true" />
+              </button>
             )}
 
             {!hasFirstPage && (
-              <span className={buttonClasses()} onClick={() => setPage(0, currentPerPage)}>
+              <button
+                type="button"
+                aria-label="Page 1"
+                className={buttonClasses()}
+                onClick={() => setPage(0, currentPerPage)}
+              >
                 1
-              </span>
+              </button>
             )}
 
             {showFirstPageSpread && (
-              <span className="text-text-primary text-h5 select-none leading-[32px]">...</span>
+              <span
+                aria-hidden="true"
+                className="text-text-primary text-h5 select-none leading-[32px]"
+              >
+                ...
+              </span>
             )}
 
             {pageNumbers.map((page) => (
-              <span
+              <button
                 key={page}
+                type="button"
+                aria-label={`Page ${page + 1}`}
+                aria-current={isActivePage(page) ? 'page' : undefined}
                 className={buttonClasses(isActivePage(page))}
                 onClick={() => setPage(page, currentPerPage)}
               >
                 {page + 1}
-              </span>
+              </button>
             ))}
 
             {showLastPageSpread && (
-              <span className="text-text-primary text-h5 select-none leading-[32px]">...</span>
+              <span
+                aria-hidden="true"
+                className="text-text-primary text-h5 select-none leading-[32px]"
+              >
+                ...
+              </span>
             )}
 
             {!hasLastPage && (
-              <span
+              <button
+                type="button"
+                aria-label={`Page ${totalPages}`}
                 className={buttonClasses()}
                 onClick={() => setPage(totalPages - 1, currentPerPage)}
               >
                 {totalPages}
-              </span>
+              </button>
             )}
 
             {currentPage !== totalPages - 1 && (
-              <span
+              <button
+                type="button"
+                aria-label="Next page"
                 className={buttonClasses()}
                 onClick={() => setPage(currentPage + 1, currentPerPage)}
               >
-                <ChevronRightSvg />
-              </span>
+                <ChevronRightSvg aria-hidden="true" />
+              </button>
             )}
           </div>
         </div>

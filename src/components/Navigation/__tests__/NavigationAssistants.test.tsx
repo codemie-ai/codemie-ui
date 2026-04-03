@@ -123,7 +123,8 @@ describe('NavigationAssistants', () => {
     setAssistants([mockOnboardingAssistant])
     render(<NavigationAssistants isExpanded={false} />)
 
-    const img = screen.getByAltText('Onboarding Assistant')
+    const link = screen.getByRole('link', { name: /Onboarding Assistant/i })
+    const img = link.querySelector('img')
 
     expect(img).toBeInTheDocument()
     expect(img).toHaveAttribute('src', 'onboarding.png')
@@ -132,7 +133,10 @@ describe('NavigationAssistants', () => {
   it('uses generated avatar when icon_url is not provided', () => {
     setAssistants([{ ...mockOnboardingAssistant, icon_url: '' }])
     render(<NavigationAssistants isExpanded={false} />)
-    const img = screen.getByAltText('Onboarding Assistant')
+
+    const link = screen.getByRole('link', { name: /Onboarding Assistant/i })
+    const img = link.querySelector('img')
+
     expect(img).toHaveAttribute('src', expect.stringContaining('data:image/svg+xml'))
   })
 

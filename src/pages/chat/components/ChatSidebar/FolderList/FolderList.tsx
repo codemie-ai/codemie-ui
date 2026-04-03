@@ -117,7 +117,7 @@ const FolderList: FC<FolderListProps> = ({
           return (
             <AccordionTab
               key={folder}
-              pt={{ headerAction: { href: null } }}
+              pt={{ headerAction: { href: null, tabIndex: 0, 'aria-label': folder } }}
               header={() => (
                 <div className="flex items-center justify-between my-1 ml-2 text-sm">
                   <div className="flex items-center whitespace-nowrap overflow-hidden text-ellipsis h-12">

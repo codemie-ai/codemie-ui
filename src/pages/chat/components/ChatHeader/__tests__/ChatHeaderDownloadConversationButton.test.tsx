@@ -53,9 +53,7 @@ describe('ChatHeaderDownloadConversationButton', () => {
   it('renders the export button', () => {
     render(<ChatHeaderDownloadConversationButton />)
 
-    const button = screen.getByLabelText(
-      'Export conversation - Choose from multiple file formats including JSON, DOCX, and PDF'
-    )
+    const button = screen.getByLabelText('Export Conversation')
     expect(button).toBeInTheDocument()
   })
 
@@ -74,14 +72,9 @@ describe('ChatHeaderDownloadConversationButton', () => {
   it('export button has correct accessibility attributes', () => {
     render(<ChatHeaderDownloadConversationButton />)
 
-    const button = screen.getByLabelText(
-      'Export conversation - Choose from multiple file formats including JSON, DOCX, and PDF'
-    )
+    const button = screen.getByLabelText('Export Conversation')
 
-    expect(button).toHaveAttribute(
-      'aria-label',
-      'Export conversation - Choose from multiple file formats including JSON, DOCX, and PDF'
-    )
+    expect(button).toHaveAttribute('aria-label', 'Export Conversation')
     expect(button).toHaveAttribute('data-tooltip-content', 'Export Conversation')
     expect(button).toHaveAttribute('type', 'button')
   })

@@ -55,7 +55,9 @@ const SidebarToggle = () => {
 
   return (
     sidebarOffsetClass && (
-      <div // nosonar
+      <button
+        type="button"
+        aria-label={isOpen ? 'Hide Sidebar' : 'Open Sidebar'}
         className={classNames(
           'bg-curve absolute left-0 top-[calc(50%-100px)] flex',
           'items-center justify-center cursor-pointer bg-surface-base-primary-border',
@@ -66,11 +68,12 @@ const SidebarToggle = () => {
         onClick={toggle}
       >
         <ChevronLeftSvg
+          aria-hidden="true"
           className={classNames('scale-[140%] mr-[3.5px]', {
             'rotate-180': !isOpen,
           })}
         />
-      </div>
+      </button>
     )
   )
 }

@@ -55,7 +55,7 @@ const ChatHeaderShareButton: FC = () => {
         disabled={isLoading}
         onClick={onShareChat}
       >
-        <ShareSvg />
+        <ShareSvg aria-hidden="true" />
       </Button>
 
       <ShareChatPopup

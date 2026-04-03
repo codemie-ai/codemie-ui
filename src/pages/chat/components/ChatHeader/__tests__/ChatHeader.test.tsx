@@ -265,8 +265,7 @@ describe('ChatHeader', () => {
     'Usage details',
     'Open chat configuration',
   ]
-  const exportButtonLabel =
-    'Export conversation - Choose from multiple file formats including JSON, DOCX, and PDF'
+  const exportButtonLabel = 'Export Conversation'
 
   it('does not show chat actions when currentChat is null', () => {
     mockChatsStore.currentChat = null

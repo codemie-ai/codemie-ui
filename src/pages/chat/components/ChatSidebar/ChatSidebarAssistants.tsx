@@ -102,10 +102,11 @@ const ChatSidebarAssistants = () => {
       <div className="flex flex-col">
         {recentAssistants.slice(0, MAX_RECENT_ASSISTANTS).map((assistant) => (
           <div key={assistant.id} className="flex justify-between items-center h-9 px-1.5">
-            <div
+            <button
+              type="button"
+              aria-label={`Start new chat with ${assistant.name}`}
               onClick={() => createChat(assistant)}
-              onKeyDown={() => createChat(assistant)}
-              className="flex items-center gap-2 cursor-pointer"
+              className="flex justify-start items-center gap-2 cursor-pointer"
             >
               <Avatar
                 withTooltip
@@ -113,13 +114,10 @@ const ChatSidebarAssistants = () => {
                 iconUrl={assistant.icon_url}
                 name={assistant.name}
               />
-              <span
-                className="block w-full truncate text-text-primary text-sm font-normal"
-                title="Start a new conversation with this Assistant"
-              >
+              <span className="block w-full truncate text-text-primary text-sm font-normal">
                 {truncateName(assistant)}
               </span>
-            </div>
+            </button>
 
             <div className="flex items-center">
               <NavigationMore hideOnClickInside items={getMenuItems(assistant)} />
