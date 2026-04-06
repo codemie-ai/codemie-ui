@@ -346,7 +346,7 @@ const ImportUsersModal: FC<ImportUsersModalProps> = ({ visible, project, onHide,
             items={paginatedRows}
             columnDefinitions={PREVIEW_COLUMNS}
             customRenderColumns={previewRenderColumns}
-            className="[&_td]:py-4 [&_td:last-child]:px-2 [&_th:last-child]:px-2 [&_tr:has(.error-row)_td]:bg-red-900"
+            className="[&_td]:py-4 [&_td:last-child]:px-2 [&_th:last-child]:px-2 dark:[&_tr:has(.error-row)_td]:bg-red-900 [&_tr:has(.error-row)_td]:bg-failed-tertiary"
             embedded
           />
 
