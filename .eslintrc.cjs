@@ -61,6 +61,7 @@ module.exports = {
     'no-unused-vars': 'off',
     'no-restricted-exports': 'off',
     'no-shadow': 'off' /* enable later */,
+    'no-continue': 'off',
     'no-restricted-syntax': [
       'error',
       'ForInStatement',

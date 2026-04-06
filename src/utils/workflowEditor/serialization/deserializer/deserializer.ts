@@ -43,7 +43,7 @@ import toaster from '@/utils/toaster'
 import { addIteratorStates } from './iterators'
 import { START_NODE_ID, END_NODE_ID, TRANSFORM_CUSTOM_ACTOR_ID } from '../../constants'
 import { findEntryState, findOrphanedStates } from '../../helpers/connections'
-import { generateStateID, findDirectChildren } from '../../helpers/states'
+import { generateStateID, findDirectChildren, findChildren } from '../../helpers/states'
 import { SerializedWorkflowConfig, SerializedState, SerializedMetaState } from '../types'
 
 /** Parses YAML string into SerializedWorkflowConfig */
@@ -250,6 +250,42 @@ const getOrphanedStateIDs = (states: StateConfiguration[]): Set<string> => {
   return findOrphanedStates(states, entryState.id)
 }
 
+/**
+ * Deorphans states that are referenced from connected states.
+ * This handles cases where manual YAML modifications move states into
+ * orphaned_states but they are still referenced via next_id/ids, switch, or condition.
+ *
+ * Uses BFS from all connected states, traversing all reference types
+ * (state_id, state_ids, condition.then/otherwise, switch.cases/default).
+ */
+export const deorphanReferencedStates = (loadedConfig: WorkflowConfiguration): void => {
+  const statesMap = new Map(loadedConfig.states.map((s) => [s.id, s]))
+
+  const queue: string[] = loadedConfig.states
+    .filter((s) => s._meta?.is_connected === true)
+    .map((s) => s.id)
+
+  const visited = new Set<string>(queue)
+
+  while (queue.length > 0) {
+    const stateId = queue.shift()!
+    const state = statesMap.get(stateId)
+    if (!state) continue
+
+    for (const childId of findChildren(state)) {
+      if (!childId || visited.has(childId)) continue
+      visited.add(childId)
+
+      const child = statesMap.get(childId)
+      if (!child?._meta) continue
+      if (child?._meta?.is_connected) continue
+
+      child._meta.is_connected = true
+      queue.push(childId)
+    }
+  }
+}
+
 /** Deserializes YAML string into WorkflowConfiguration */
 export const deserialize = (yamlString: string): WorkflowConfiguration => {
   let config
@@ -289,6 +325,7 @@ export const deserialize = (yamlString: string): WorkflowConfiguration => {
 
   addIteratorStates(loadedConfig)
   cleanupMetaStateReferences(loadedConfig)
+  deorphanReferencedStates(loadedConfig)
 
   addBoundaryState(END_NODE_ID, NodeTypes.END, metaStates, loadedConfig)
 
