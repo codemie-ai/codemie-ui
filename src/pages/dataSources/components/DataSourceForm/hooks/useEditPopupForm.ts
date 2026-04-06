@@ -16,6 +16,7 @@
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useCallback, useEffect, useState } from 'react'
 import { useForm, Resolver } from 'react-hook-form'
+import { useSnapshot } from 'valtio'
 import * as Yup from 'yup'
 
 import { guardrailAssignmentsSchema } from '@/components/guardrails/GuardrailAssignmentPanel/schemas/guardrailAssignmentSchema'
@@ -29,6 +30,7 @@ import {
   SHAREPOINT_AUTH_TYPES,
 } from '@/constants/dataSources'
 import { useSearchParams } from '@/hooks/useSearchParams'
+import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { validateCronExpression } from '@/utils/cronValidator'
 import { humanize } from '@/utils/helpers'
@@ -233,6 +235,7 @@ export const useEditPopupForm = (
   isEditing?: boolean
 ) => {
   const [searchParams] = useSearchParams()
+  const { indexProviderSchemas } = useSnapshot(dataSourceStore) as typeof dataSourceStore
   const defaultQueryProject = searchParams.get('addToProject')
 
   const validationSchema = Yup.lazy((values) => {
@@ -406,6 +409,13 @@ export const useEditPopupForm = (
     if (!defaults.id) return
     resetInitFormValues()
   }, [defaults, resetInitFormValues])
+
+  useEffect(() => {
+    const providerID = defaults.provider_fields?.provider_id
+    if (!providerID) return
+    const provider = indexProviderSchemas.find((item) => item.id === providerID)
+    if (provider) setValue('indexMetadata', provider as any)
+  }, [defaults.provider_fields, indexProviderSchemas])
 
   const [childSubmitHandlers, setChildSubmitHandlers] = useState<
     Array<(values?: FormValues) => Promise<boolean> | boolean>

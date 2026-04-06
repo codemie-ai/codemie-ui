@@ -60,6 +60,13 @@ import IndexTypeField from './IndexTypeField'
 
 export const FULL_REINDEX = 'full_reindex'
 
+const shouldShowScheduling = (indexType: string, sharepointAuthType: string | null = null) =>
+  indexType !== INDEX_TYPES.FILE &&
+  indexType !== INDEX_TYPES.PROVIDER &&
+  !(
+    indexType === INDEX_TYPES.SHAREPOINT && sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
+  )
+
 interface Props {
   onClose: () => void
   index?: DataSourceDetailsResponse | null
@@ -497,27 +504,23 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
               />
             )}
 
-            {field.value !== INDEX_TYPES.FILE &&
-              !(
-                field.value === INDEX_TYPES.SHAREPOINT &&
-                sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
-              ) && (
-                <>
-                  <Divider />
-                  <Controller
-                    name="cronExpression"
-                    control={control}
-                    render={({ field: cronField, fieldState }) => (
-                      <CronScheduleInput
-                        value={cronField.value ?? undefined}
-                        onChange={cronField.onChange}
-                        error={fieldState.error?.message}
-                        hint="Set up automatic reindexing schedule for this datasource. Manual reindexing will always be available."
-                      />
-                    )}
-                  />
-                </>
-              )}
+            {shouldShowScheduling(field.value, sharepointAuthType) && (
+              <>
+                <Divider />
+                <Controller
+                  name="cronExpression"
+                  control={control}
+                  render={({ field: cronField, fieldState }) => (
+                    <CronScheduleInput
+                      value={cronField.value ?? undefined}
+                      onChange={cronField.onChange}
+                      error={fieldState.error?.message}
+                      hint="Set up automatic reindexing schedule for this datasource. Manual reindexing will always be available."
+                    />
+                  )}
+                />
+              </>
+            )}
           </>
         )}
       />

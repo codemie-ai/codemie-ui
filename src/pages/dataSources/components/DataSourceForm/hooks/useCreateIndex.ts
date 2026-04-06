@@ -418,13 +418,7 @@ export const useIndexCreation = ({
   const createOrUpdateProviderIndex = async (indexMetadata: any, values: FormValues) => {
     const { isEditMode, isReindex, hasProjectChanged } = getIndexEditContext(index, values)
 
-    const baseFields = getBaseRequestFields(values, index, hasProjectChanged)
-    const { project_space_visible, ...restFields } = baseFields
-    const payload = {
-      ...restFields,
-      projectSpaceVisible: project_space_visible,
-    }
-
+    const payload = getBaseRequestFields(values, index, hasProjectChanged)
     const providerParams = [
       ...indexMetadata.base_schema.parameters,
       ...indexMetadata.create_schema.parameters,
