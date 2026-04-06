@@ -135,6 +135,7 @@ const SkillSelector = forwardRef<PrimeMultiselect, SkillSelectorProps>(
           error={error || externalError}
           loading={loading}
           disabled={!project}
+          hasVirtualScroll
           onChange={(e) => handleChange(e.value)}
           renderOption={(option) => (
             <SkillOption option={option as SelectOption} options={options} />

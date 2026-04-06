@@ -185,6 +185,15 @@
   .p-multiselect-empty-message {
     @apply text-center text-text-quaternary py-2;
   }
+
+  .p-virtualscroller-content {
+    width: 100%;
+
+    .p-multiselect-item {
+      max-width: 100%;
+      min-width: 0;
+    }
+  }
 }
 
 .multiselect-clear {

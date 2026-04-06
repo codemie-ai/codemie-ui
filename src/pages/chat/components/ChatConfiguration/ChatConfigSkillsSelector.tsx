@@ -95,6 +95,7 @@ const ChatConfigSkillsSelector: FC = () => {
         value={selectedSkillIds}
         loading={loading}
         onChange={handleChange}
+        hasVirtualScroll
         onFilter={handleFilter}
         filterPlaceholder="Search skills..."
         optionLabel="label"

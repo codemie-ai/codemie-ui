@@ -246,6 +246,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
             optionValue="id"
             singleValue={singleValue}
             showCheckbox={!singleValue}
+            hasVirtualScroll
           />
         </div>
       </div>

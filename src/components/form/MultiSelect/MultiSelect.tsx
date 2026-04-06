@@ -39,6 +39,8 @@ import { ChipWrapper } from './ChipWrapper'
 import ptPreset from './ptPreset'
 import { useMultiSelectLogic } from './useMultiSelectLogic'
 
+import type { VirtualScrollerProps } from 'primereact/virtualscroller'
+
 const DefaultOption = ({ label }: { label: string }) => {
   const optionEl = useRef<HTMLParagraphElement>(null)
   const isTruncated = useIsTruncated(optionEl)
@@ -99,6 +101,8 @@ export type MultiSelectProps = {
   display?: 'comma' | 'chip'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   selectedItemTemplate?: ((option: any) => React.ReactNode) | null // Intentionally flexible - same reasoning as renderOption
+  virtualScrollerOptions?: VirtualScrollerProps
+  hasVirtualScroll?: boolean
 }
 
 const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
@@ -133,6 +137,8 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       max,
       display,
       selectedItemTemplate,
+      virtualScrollerOptions,
+      hasVirtualScroll = false,
     },
     ref
   ) => {
@@ -277,6 +283,11 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       )
     }, [display, selectedItemTemplate, preparedValue, onChange])
 
+    const resolvedVirtualScrollerOptions = hasVirtualScroll
+      ? { itemSize: 38 }
+      : virtualScrollerOptions
+    const resolvedFocusOnHover = !hasVirtualScroll
+
     return (
       <div className={cn('relative flex flex-col', fullWidth && 'flex-grow', className)}>
         {label && !hideLabel && (
@@ -313,6 +324,8 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           optionValue={optionValue}
           loading={loading}
           scrollHeight={scrollHeight}
+          virtualScrollerOptions={resolvedVirtualScrollerOptions}
+          focusOnHover={resolvedFocusOnHover}
           onKeyDown={handleKeyDown}
           filterPlaceholder={filterPlaceholder ?? 'Search'}
           dropdownIcon={<ChevronDownSvg />}

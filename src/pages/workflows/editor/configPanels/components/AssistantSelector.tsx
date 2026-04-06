@@ -158,6 +158,7 @@ const AssistantSelector = forwardRef<AssistantSelectorRef, AssistantSelectorProp
           onFilter={handleSearch}
           showCheckbox={false}
           singleValue
+          hasVirtualScroll
           error={displayError}
         />
 
