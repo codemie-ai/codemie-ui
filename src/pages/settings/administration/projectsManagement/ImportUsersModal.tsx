@@ -19,13 +19,13 @@ import DownloadSvg from '@/assets/icons/export-to-json.svg?react'
 import ImportSvg from '@/assets/icons/export.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
 import Button from '@/components/Button'
+import DropzoneArea from '@/components/form/DropzoneArea'
 import InfoWarning from '@/components/InfoWarning/InfoWarning'
 import Pagination from '@/components/Pagination'
 import Popup from '@/components/Popup'
 import Table from '@/components/Table'
 import Tooltip from '@/components/Tooltip'
 import { ButtonSize, ButtonType, DECIMAL_PAGINATION_OPTIONS, InfoWarningType } from '@/constants'
-import { useDragAndDrop } from '@/hooks/useDragAndDrop'
 import { projectsStore } from '@/store/projects'
 import { Project } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
@@ -51,6 +51,7 @@ const IMPORT_STEPS = { UPLOAD: 'upload', PREVIEW: 'preview' } as const
 type ImportStep = (typeof IMPORT_STEPS)[keyof typeof IMPORT_STEPS]
 
 const DEFAULT_PER_PAGE = 10
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
 const MESSAGES = {
   ONLY_CSV_ALLOWED: 'Only CSV files are allowed',
@@ -70,6 +71,17 @@ const PREVIEW_COLUMNS: ColumnDefinition[] = [
   { key: 'role', label: 'Role', type: DefinitionTypes.Custom },
   { key: 'status', label: '', type: DefinitionTypes.Custom, headClassNames: 'w-2' },
 ]
+
+const getDropzoneLabel = (
+  isValidating: boolean,
+  selectedFile: File | null,
+  isDragging: boolean
+) => {
+  if (isValidating) return 'Validating...'
+  if (selectedFile) return selectedFile.name
+  if (isDragging) return 'Drop file here'
+  return 'Upload or drop file'
+}
 
 const ImportUsersModal: FC<ImportUsersModalProps> = ({ visible, project, onHide, onSuccess }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -92,8 +104,7 @@ const ImportUsersModal: FC<ImportUsersModalProps> = ({ visible, project, onHide,
       return false
     }
 
-    const maxSize = 10 * 1024 * 1024
-    if (file.size > maxSize) {
+    if (file.size > MAX_FILE_SIZE_BYTES) {
       toaster.error(MESSAGES.FILE_TOO_LARGE)
       return false
     }
@@ -133,9 +144,6 @@ const ImportUsersModal: FC<ImportUsersModalProps> = ({ visible, project, onHide,
     },
     [validateFile, triggerValidation]
   )
-
-  const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } =
-    useDragAndDrop({ onFileDrop: handleFileDrop })
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,7 +220,7 @@ const ImportUsersModal: FC<ImportUsersModalProps> = ({ visible, project, onHide,
   const previewRenderColumns = useMemo(
     () => ({
       email: (user: PreviewRow) => (
-        <span className={user.error ? 'text-error' : ''}>{user.email}</span>
+        <span className={user.error ? 'text-text-error' : ''}>{user.email}</span>
       ),
       role: (user: PreviewRow) => (
         <span className="text-text-quaternary">{humanize(user.role)}</span>
@@ -251,51 +259,28 @@ const ImportUsersModal: FC<ImportUsersModalProps> = ({ visible, project, onHide,
             email and optionally a role.
           </p>
 
-          <div
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`relative overflow-hidden flex flex-col items-center justify-center gap-2.5 p-5 rounded-lg transition-colors ${
-              isDragging ? 'bg-surface-base-dropzone-hover' : 'bg-surface-base-dropzone'
-            }`}
+          <DropzoneArea
+            onFilesDrop={(files) => handleFileDrop(files[0])}
+            onClick={() => document.getElementById('csv-upload')?.click()}
+            disabled={isValidating}
           >
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" fill="none">
-              <rect
-                x="0"
-                y="0"
-                width="100%"
-                height="100%"
-                rx="8"
-                stroke="rgb(var(--colors-border-specific-dropzone))"
-                strokeDasharray="6 6"
-              />
-            </svg>
-            <input
-              type="file"
-              accept=".csv,text/csv,application/vnd.ms-excel"
-              onChange={handleFileChange}
-              className="hidden"
-              id="csv-upload"
-              disabled={isValidating}
-            />
-            <label
-              htmlFor="csv-upload"
-              className={`flex flex-col items-center gap-2 ${
-                isValidating ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-              }`}
-            >
-              <ImportSvg className="w-4.5 h-4.5" />
-              <span className="text-text-primary text-sm underline">
-                {(() => {
-                  if (isValidating) return 'Validating...'
-                  if (selectedFile) return selectedFile.name
-                  if (isDragging) return 'Drop file here'
-                  return 'Upload or drop file'
-                })()}
-              </span>
-            </label>
-          </div>
+            {(isDragging) => (
+              <>
+                <input
+                  type="file"
+                  accept=".csv,text/csv,application/vnd.ms-excel"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="csv-upload"
+                  disabled={isValidating}
+                />
+                <ImportSvg className="w-4.5 h-4.5" />
+                <span className="text-text-primary text-sm underline">
+                  {getDropzoneLabel(isValidating, selectedFile, isDragging)}
+                </span>
+              </>
+            )}
+          </DropzoneArea>
 
           {validationError ? (
             <InfoWarning

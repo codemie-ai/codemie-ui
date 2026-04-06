@@ -17,7 +17,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-
 // --- Helpers ---
 
 import { projectsStore } from '@/store/projects'

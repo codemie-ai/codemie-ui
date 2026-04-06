@@ -312,7 +312,7 @@ export const useEditPopupForm = (
       filesFilter: '',
       embeddingsModel: '',
       summarizationModel: '',
-      files: [{}],
+      files: [],
       csvSeparator: CSV_SEPARATORS[0].value,
       csvStartRow: 1,
       csvRowsPerDocument: 1,
@@ -361,7 +361,7 @@ export const useEditPopupForm = (
       embeddingsModel: defaults?.embeddings_model ?? '',
       summarizationModel: defaults?.summarization_model ?? '',
 
-      files: [{}],
+      files: [],
       csvSeparator: CSV_SEPARATORS[0].value,
       csvStartRow: 1,
       csvRowsPerDocument: 1,

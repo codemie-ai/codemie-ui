@@ -17,7 +17,7 @@ import { FC, useMemo } from 'react'
 import { Controller } from 'react-hook-form'
 
 import Autocomplete from '@/components/form/Autocomplete'
-import FilesListInput from '@/components/form/FilesListInput'
+import FilesDropzone from '@/components/form/FilesDropzone'
 import FormAutocomplete from '@/components/form/FormAutocomplete'
 import Input from '@/components/form/Input'
 import { CSV_SEPARATORS } from '@/constants/dataSources'
@@ -49,7 +49,7 @@ const IndexTypeFile: FC<Props> = ({
         name="files"
         control={control}
         render={({ field: filesField }) => (
-          <FilesListInput
+          <FilesDropzone
             name="files"
             onChange={filesField.onChange}
             files={filesField.value as File[]}
@@ -59,7 +59,7 @@ const IndexTypeFile: FC<Props> = ({
         )}
       />
       {csvPresent && (
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-2">
           <Controller
             name="csvSeparator"
             control={control}

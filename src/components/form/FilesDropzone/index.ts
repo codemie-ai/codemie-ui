@@ -13,6 +13,6 @@
 // limitations under the License.
 //
 
-import FilesListInput from './FilesListInput'
+import FilesDropzone from './FilesDropzone'
 
-export default FilesListInput
+export default FilesDropzone

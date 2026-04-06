@@ -15,12 +15,12 @@
 
 import React from 'react'
 
+import { useDragAndDrop } from '@/hooks/useDragAndDrop'
 import { cn } from '@/utils/utils'
 
 import ImageDropZone from './components/ImageDropZone'
 import ImageLoader from './components/ImageLoader'
 import ImagePreview from './components/ImagePreview'
-import { useDragAndDrop } from './hooks/useDragAndDrop'
 import { useFileUpload } from './hooks/useFileUpload'
 
 interface ImageUploadProps {
@@ -53,7 +53,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   } = useFileUpload({ maxSizeMB, onChange })
 
   const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } =
-    useDragAndDrop({ onFileDrop: handleFileUpload })
+    useDragAndDrop({ onFilesDrop: (files) => handleFileUpload(files[0]) })
 
   const handleRemoveImage = () => {
     onChange?.('')

@@ -16,10 +16,10 @@
 import { useState, useRef } from 'react'
 
 interface UseDragAndDropProps {
-  onFileDrop: (file: File) => void
+  onFilesDrop: (files: File[]) => void
 }
 
-export const useDragAndDrop = ({ onFileDrop }: UseDragAndDropProps) => {
+export const useDragAndDrop = ({ onFilesDrop }: UseDragAndDropProps) => {
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
 
@@ -52,9 +52,9 @@ export const useDragAndDrop = ({ onFileDrop }: UseDragAndDropProps) => {
     setIsDragging(false)
     dragCounter.current = 0
 
-    const file = e.dataTransfer.files?.[0]
-    if (file) {
-      onFileDrop(file)
+    const files = Array.from(e.dataTransfer.files ?? [])
+    if (files.length > 0) {
+      onFilesDrop(files)
     }
   }
 
