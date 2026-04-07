@@ -218,20 +218,30 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
       toolArgsIssues?.forEach((issue) => markIssueDirty(issue))
     }
 
-    const handleToolkitsChange = (newToolkits: AssistantToolkit[]) => {
-      setValue('toolkits', newToolkits, { shouldValidate: true, shouldDirty: true })
+    const resetToolArgs = () => {
       setValue('tool_args', {}, { shouldValidate: true, shouldDirty: true })
-      setArgsMode(TOOL_ARGS_MODE.FORM)
       setSchemaRequiredFields([])
       resolveToolArgsIssues()
     }
 
-    const handleMcpServersChange = (newMcpServers: MCPServerDetails[]) => {
-      setValue('mcpServers', newMcpServers, { shouldValidate: true, shouldDirty: true })
-      setValue('tool_args', {}, { shouldValidate: true, shouldDirty: true })
+    const handleToolkitsChange = (newToolkits: AssistantToolkit[]) => {
+      const toolChanged =
+        toolkits?.[0]?.toolkit !== newToolkits?.[0]?.toolkit ||
+        toolkits?.[0]?.tools?.[0]?.name !== newToolkits?.[0]?.tools?.[0]?.name
+
+      setValue('toolkits', newToolkits, { shouldValidate: true, shouldDirty: true })
+      if (toolChanged) resetToolArgs()
       setArgsMode(TOOL_ARGS_MODE.FORM)
-      setSchemaRequiredFields([])
-      resolveToolArgsIssues()
+    }
+
+    const handleMcpServersChange = (newMcpServers: MCPServerDetails[]) => {
+      const toolChanged =
+        mcpServers?.[0]?.name !== newMcpServers?.[0]?.name ||
+        mcpServers?.[0]?.tools?.[0] !== newMcpServers?.[0]?.tools?.[0]
+
+      setValue('mcpServers', newMcpServers, { shouldValidate: true, shouldDirty: true })
+      if (toolChanged) resetToolArgs()
+      setArgsMode(TOOL_ARGS_MODE.FORM)
     }
 
     const handleToolArgsChange = (value: Record<string, any>) => {

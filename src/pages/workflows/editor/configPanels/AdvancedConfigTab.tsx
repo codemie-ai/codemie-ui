@@ -72,7 +72,8 @@ const schema = yup.object().shape({
     .optional()
     .transform(transformToInteger)
     .positive('Must be a positive number')
-    .integer('Must be an integer'),
+    .integer('Must be an integer')
+    .max(5000, 'Must be at most 5000'),
   retry_policy: yup
     .object()
     .shape({
