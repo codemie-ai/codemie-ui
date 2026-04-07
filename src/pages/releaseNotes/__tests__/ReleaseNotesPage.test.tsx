@@ -27,6 +27,7 @@ interface Issue {
 
 interface Release {
   version?: string
+  date?: string
   issues: Issue[]
 }
 
@@ -36,6 +37,7 @@ const { mockAppInfoStore, mockTheme } = vi.hoisted(() => {
   const appReleases: Release[] = [
     {
       version: '1.2.0',
+      date: '2025-07-11',
       issues: [
         {
           key: 'BUG-123',
@@ -141,6 +143,24 @@ describe('ReleaseNotesPage', () => {
     const versions = screen.getAllByText(/^\d+\.\d+\.\d+$/)
     expect(versions[0]).toHaveTextContent('1.2.0')
     expect(versions[1]).toHaveTextContent('1.1.0')
+  })
+
+  describe('release date', () => {
+    it('displays formatted date when release has a date', () => {
+      render(<ReleaseNotesPage />)
+      expect(screen.getByText('July 11, 2025')).toBeInTheDocument()
+    })
+
+    it('does not render date when release has no date', () => {
+      mockAppInfoStore.appReleases = [
+        {
+          version: '1.1.0',
+          issues: [],
+        },
+      ]
+      render(<ReleaseNotesPage />)
+      expect(screen.queryByText('July 11, 2025')).not.toBeInTheDocument()
+    })
   })
 
   describe('release issues', () => {

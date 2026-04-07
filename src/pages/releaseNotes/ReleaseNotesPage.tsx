@@ -49,11 +49,22 @@ const ReleaseNotesPage: FC = () => {
         </p>
         <div>
           {appReleases.map((release) => (
-            <div key={release.version} className="mb-8">
-              <div className="text-base leading-none font-mono font-semibold text-primary mb-2">
-                {release.version}
+            <div key={release.version} className="mb-8 w-full max-w-[916px] flex flex-row gap-6">
+              <div className="w-28 shrink-0 pt-0.5">
+                <div className="text-base leading-none font-mono font-semibold text-primary">
+                  {release.version}
+                </div>
+                {release.date && (
+                  <div className="text-xs font-mono text-text-secondary mt-1">
+                    {new Date(release.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </div>
+                )}
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 flex-1 min-w-0">
                 {typeOrder.map((type) => {
                   const filteredIssues = release.issues.filter((issue) => issue.type === type)
                   return <IssueList key={type} type={type} issues={filteredIssues} />
