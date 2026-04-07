@@ -96,6 +96,7 @@ const ChatConfigSkillsSelector: FC = () => {
         loading={loading}
         onChange={handleChange}
         hasVirtualScroll
+        virtualScrollerOptions={{ itemSize: 50 }}
         onFilter={handleFilter}
         filterPlaceholder="Search skills..."
         optionLabel="label"

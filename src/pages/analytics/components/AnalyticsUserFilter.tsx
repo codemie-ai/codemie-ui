@@ -145,6 +145,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
         filterPlaceholder="Search users"
         showCheckbox
         hasVirtualScroll
+        virtualScrollerOptions={{ itemSize: 32 }}
       />
     </div>
   )

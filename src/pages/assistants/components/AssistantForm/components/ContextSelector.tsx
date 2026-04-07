@@ -293,6 +293,7 @@ const ContextSelector = forwardRef<
             errorClassName={errorClassName}
             showCheckbox={!singleValue}
             hasVirtualScroll
+            virtualScrollerOptions={{ itemSize: 34 }}
             display={display}
             selectedItemTemplate={preparedSelectedItemTemplate}
           />

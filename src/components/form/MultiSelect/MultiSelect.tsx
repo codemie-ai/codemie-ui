@@ -284,7 +284,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
     }, [display, selectedItemTemplate, preparedValue, onChange])
 
     const resolvedVirtualScrollerOptions = hasVirtualScroll
-      ? { itemSize: 38 }
+      ? { itemSize: 38, ...virtualScrollerOptions }
       : virtualScrollerOptions
     const resolvedFocusOnHover = !hasVirtualScroll
 

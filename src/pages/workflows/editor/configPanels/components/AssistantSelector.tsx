@@ -159,6 +159,7 @@ const AssistantSelector = forwardRef<AssistantSelectorRef, AssistantSelectorProp
           showCheckbox={false}
           singleValue
           hasVirtualScroll
+          virtualScrollerOptions={{ itemSize: 32 }}
           error={displayError}
         />
 
