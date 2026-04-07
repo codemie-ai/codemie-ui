@@ -419,6 +419,7 @@ export const useIndexCreation = ({
     const { isEditMode, isReindex, hasProjectChanged } = getIndexEditContext(index, values)
 
     const payload = getBaseRequestFields(values, index, hasProjectChanged)
+
     const providerParams = [
       ...indexMetadata.base_schema.parameters,
       ...indexMetadata.create_schema.parameters,
@@ -434,7 +435,7 @@ export const useIndexCreation = ({
     }
 
     return dataSourceStore.createProviderIndex(
-      indexMetadata.id,
+      indexMetadata.toolkit_id,
       indexMetadata.provider_name,
       payload
     )
