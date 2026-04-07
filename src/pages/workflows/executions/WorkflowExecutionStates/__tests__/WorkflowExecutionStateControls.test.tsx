@@ -17,8 +17,6 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { WORKFLOW_STATUSES } from '@/constants/workflows'
-
 import WorkflowExecutionStateControls from '../WorkflowExecutionStateControls'
 
 vi.hoisted(() => vi.resetModules())
@@ -61,7 +59,6 @@ describe('WorkflowExecutionStateControls', () => {
   let user: UserEvent
 
   const defaultProps = {
-    executionStatus: WORKFLOW_STATUSES.INTERRUPTED,
     workflowId: 'workflow-1',
     executionId: 'execution-1',
     stateId: 'state-1',
@@ -73,17 +70,7 @@ describe('WorkflowExecutionStateControls', () => {
     vi.clearAllMocks()
   })
 
-  it('renders nothing when execution status is not Interrupted', () => {
-    const { container } = render(
-      <WorkflowExecutionStateControls
-        {...defaultProps}
-        executionStatus={WORKFLOW_STATUSES.SUCCEEDED}
-      />
-    )
-    expect(container.firstChild).toBeNull()
-  })
-
-  it('renders control buttons when execution status is Interrupted', () => {
+  it('renders control buttons', () => {
     render(<WorkflowExecutionStateControls {...defaultProps} />)
 
     expect(screen.getByText('Cancel')).toBeInTheDocument()
@@ -185,24 +172,6 @@ describe('WorkflowExecutionStateControls', () => {
 
     const controlsDiv = container.querySelector('.custom-class')
     expect(controlsDiv).toBeInTheDocument()
-  })
-
-  it('handles different execution statuses correctly', () => {
-    const { container: containerAborted } = render(
-      <WorkflowExecutionStateControls
-        {...defaultProps}
-        executionStatus={WORKFLOW_STATUSES.ABORTED}
-      />
-    )
-    expect(containerAborted.firstChild).toBeNull()
-
-    const { container: containerFailed } = render(
-      <WorkflowExecutionStateControls
-        {...defaultProps}
-        executionStatus={WORKFLOW_STATUSES.FAILED}
-      />
-    )
-    expect(containerFailed.firstChild).toBeNull()
   })
 
   it('passes correct props to WorkflowExecutionEditOutputForm', async () => {

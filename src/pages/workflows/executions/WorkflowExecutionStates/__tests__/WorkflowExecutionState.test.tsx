@@ -81,9 +81,7 @@ describe('WorkflowExecutionState', () => {
 
   const defaultProps = {
     state: mockState,
-    executionStatus: 'Succeeded' as const,
     isExpanded: false,
-    isInterruptPoint: false,
     workflowId: 'workflow-1',
     executionId: 'execution-1',
     onExpand: vi.fn(),
@@ -178,20 +176,21 @@ describe('WorkflowExecutionState', () => {
     expect(mockWorkflowExecutionsStore.getStateThought).toHaveBeenCalledWith('thought-1')
   })
 
-  it('renders controls only when isInterruptPoint is true', () => {
-    // Controls rendered when isInterruptPoint
-    const { container: containerWithControls } = render(
-      <WorkflowExecutionState {...defaultProps} isInterruptPoint={true} />
-    )
-    expect(containerWithControls).toBeInTheDocument()
-
-    // Controls not rendered when not isInterruptPoint
+  it('renders controls only when state status is Interrupted', () => {
+    // Controls not rendered when state status is not Interrupted
     const { container: containerWithoutControls } = render(
-      <WorkflowExecutionState {...defaultProps} isInterruptPoint={false} />
+      <WorkflowExecutionState {...defaultProps} />
     )
     const buttons = containerWithoutControls.querySelectorAll('button')
     // Should only have Open button and expand/collapse button
     expect(buttons.length).toBeLessThanOrEqual(3)
+
+    // Controls rendered when state status is Interrupted
+    const interruptedState = { ...mockState, status: 'Interrupted' as const }
+    const { container: containerWithControls } = render(
+      <WorkflowExecutionState {...defaultProps} state={interruptedState} />
+    )
+    expect(containerWithControls).toBeInTheDocument()
   })
 
   it('applies correct styling classes', () => {
@@ -221,7 +220,7 @@ describe('WorkflowExecutionState', () => {
     expect(mockWorkflowExecutionsStore.getStateThought).toHaveBeenCalledWith('thought-2')
   })
 
-  it('handles different execution statuses', () => {
+  it('handles different state statuses', () => {
     const failedState = {
       ...mockState,
       status: 'Failed' as const,
@@ -238,11 +237,7 @@ describe('WorkflowExecutionState', () => {
       completed_at: null,
     }
     const { container: containerInProgress } = render(
-      <WorkflowExecutionState
-        {...defaultProps}
-        state={inProgressState}
-        executionStatus="In Progress"
-      />
+      <WorkflowExecutionState {...defaultProps} state={inProgressState} />
     )
     expect(containerInProgress).toBeInTheDocument()
   })

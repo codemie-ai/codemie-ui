@@ -30,7 +30,6 @@ import {
 } from '@/types/entity/workflow'
 
 import WorkflowExecutionStateOutputPopup from './popups/WorkflowExecutionStateOutputPopup'
-import { getLastInterruptibleStateId } from './utils'
 import WorkflowExecutionState, { WorkflowExecutionStateRef } from './WorkflowExecutionState'
 
 interface WorkflowExecutionStatesProps {
@@ -53,18 +52,7 @@ const WorkflowExecutionStates: FC<WorkflowExecutionStatesProps> = ({
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
   const stateRefs = useRef<Map<string, WorkflowExecutionStateRef>>(new Map())
 
-  const { executionStates, workflow } = useSnapshot(
-    workflowExecutionsStore
-  ) as typeof workflowExecutionsStore
-
-  const lastInterruptibleStateId = useMemo(
-    () =>
-      getLastInterruptibleStateId(
-        executionStates as WorkflowExecutionStateType[],
-        workflow?.yaml_config
-      ),
-    [executionStates, workflow?.yaml_config]
-  )
+  const { executionStates } = useSnapshot(workflowExecutionsStore) as typeof workflowExecutionsStore
 
   const onViewDetails = (stateId: string) => {
     const state = executionStates.find((item) => item.id === stateId)
@@ -210,9 +198,7 @@ const WorkflowExecutionStates: FC<WorkflowExecutionStatesProps> = ({
                   else stateRefs.current.delete(item.id)
                 }}
                 state={item}
-                executionStatus={executionStatus}
                 isExpanded={!!expandedRows[item.id]}
-                isInterruptPoint={item.id === lastInterruptibleStateId}
                 workflowId={workflowId}
                 executionId={executionId}
                 onExpand={expandRow}

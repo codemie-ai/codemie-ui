@@ -22,12 +22,10 @@ import Button from '@/components/Button'
 import StatusIndicator from '@/components/StatusIndicator'
 import { ThoughtRef } from '@/components/Thought/Thought'
 import { ButtonType } from '@/constants'
+import { WORKFLOW_STATUSES } from '@/constants/workflows'
 import { WORKFLOW_STATUS_BADGE_MAPPING } from '@/pages/workflows/constants'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
-import {
-  WorkflowExecutionStatus,
-  type WorkflowExecutionState as WorkflowExecutionStateType,
-} from '@/types/entity/workflow'
+import { type WorkflowExecutionState as WorkflowExecutionStateType } from '@/types/entity/workflow'
 import { formatDate } from '@/utils/utils'
 
 import WorkflowExecutionStateControls from './WorkflowExecutionStateControls'
@@ -35,9 +33,7 @@ import WorkflowExecutionStateThought from './WorkflowExecutionStateThought'
 
 interface WorkflowExecutionStateProps {
   state: WorkflowExecutionStateType
-  executionStatus: WorkflowExecutionStatus
   isExpanded: boolean
-  isInterruptPoint: boolean
   workflowId: string
   executionId: string
   onExpand: (stateId: string) => void
@@ -55,9 +51,7 @@ const WorkflowExecutionState = forwardRef<WorkflowExecutionStateRef, WorkflowExe
   (
     {
       state,
-      executionStatus,
       isExpanded,
-      isInterruptPoint,
       workflowId,
       executionId,
       onExpand,
@@ -110,9 +104,8 @@ const WorkflowExecutionState = forwardRef<WorkflowExecutionStateRef, WorkflowExe
                 </Button>
               </div>
 
-              {isInterruptPoint && (
+              {state.status === WORKFLOW_STATUSES.INTERRUPTED && (
                 <WorkflowExecutionStateControls
-                  executionStatus={executionStatus}
                   workflowId={workflowId}
                   executionId={executionId}
                   stateId={state.id}

@@ -22,7 +22,6 @@ import Button from '@/components/Button'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import { ButtonType } from '@/constants'
-import { WORKFLOW_STATUSES } from '@/constants/workflows'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
@@ -30,7 +29,6 @@ import { cn } from '@/utils/utils'
 import WorkflowExecutionEditOutputForm from './popups/WorkflowExecutionEditOutputForm'
 
 interface WorkflowExecutionStateControlsProps {
-  executionStatus: string
   workflowId: string
   executionId: string
   stateId: string
@@ -39,7 +37,6 @@ interface WorkflowExecutionStateControlsProps {
 }
 
 const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = ({
-  executionStatus,
   workflowId,
   executionId,
   stateId,
@@ -48,8 +45,6 @@ const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = 
 }) => {
   const [inProgress, setInProgress] = useState(false)
   const [isEditOutputPopupVisible, setIsEditOutputPopupVisible] = useState(false)
-
-  const isInterrupted = executionStatus === WORKFLOW_STATUSES.INTERRUPTED
 
   const abortWorkflow = async () => {
     await workflowExecutionsStore.abortWorkflowExecution(workflowId, executionId)
@@ -70,7 +65,6 @@ const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = 
   }
 
   if (inProgress) return <Spinner inline rootClassName={cn('pt-0 pr-2.5', className)} />
-  if (!isInterrupted) return null
 
   return (
     <>
