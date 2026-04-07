@@ -125,6 +125,7 @@ const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(
         'integration_alias',
         'trace',
         'resolve_dynamic_values_in_response',
+        'input_key',
         'mcp_server',
       ]
 
@@ -181,6 +182,7 @@ const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(
         trace: toolFormValues.trace,
         tool_result_json_pointer: toolFormValues.tool_result_json_pointer,
         resolve_dynamic_values_in_response: toolFormValues.resolve_dynamic_values_in_response,
+        input_key: toolFormValues.input_key || undefined,
       }
 
       if (mcp_server) {

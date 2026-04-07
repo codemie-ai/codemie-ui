@@ -50,6 +50,7 @@ registerFields(
     'trace',
     'integration_alias',
     'resolve_dynamic_values_in_response',
+    'input_key',
     /^tool_args\./,
     /^mcp_server\./,
   ],
@@ -76,6 +77,7 @@ export interface ToolFormValues {
   trace?: boolean
   tool_result_json_pointer?: string
   resolve_dynamic_values_in_response?: boolean
+  input_key?: string
 }
 
 export interface ToolFormRef {
@@ -123,6 +125,7 @@ const getValidationSchema = (requiredFields: string[]) => {
     trace: Yup.boolean().optional(),
     tool_result_json_pointer: Yup.string().optional(),
     resolve_dynamic_values_in_response: Yup.boolean().optional(),
+    input_key: Yup.string().optional(),
   })
 }
 
@@ -134,6 +137,7 @@ const getDefaultValues = (config?: ToolConfiguration): ToolFormValues => {
     trace: config?.trace || false,
     tool_result_json_pointer: config?.tool_result_json_pointer || '',
     resolve_dynamic_values_in_response: config?.resolve_dynamic_values_in_response || false,
+    input_key: config?.input_key || '',
   }
 }
 
@@ -367,6 +371,19 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
         />
 
         {toolField?.fieldError && <p className="text-text-error text-sm">{toolField.fieldError}</p>}
+
+        <FieldController
+          name="input_key"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Input
+              label="Input Key:"
+              placeholder="e.g. tool1_args or api_response.tool_input"
+              error={fieldState.error?.message}
+              {...field}
+            />
+          )}
+        />
 
         {getSelectedToolName() && (
           <div className="flex flex-col gap-4">

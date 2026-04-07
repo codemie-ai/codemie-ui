@@ -53,6 +53,7 @@ export interface ToolConfiguration {
   tool_result_json_pointer?: string
   resolve_dynamic_values_in_response?: boolean
   mcp_server?: MCPServerDetails
+  input_key?: string
 }
 
 export type CustomNodeConfigurationValues = Record<string, string>
