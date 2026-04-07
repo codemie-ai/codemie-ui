@@ -21,6 +21,7 @@
 export enum AnalyticsDashboard {
   insights = 'insights',
   cliInsights = 'cliInsights',
+  leaderboard = 'leaderboard',
   adoption = 'adoption',
 }
 
@@ -72,6 +73,7 @@ export enum WidgetSize {
 // ============================================================================
 
 export interface AnalyticsQueryParams {
+  [key: string]: unknown
   time_period?: TimePeriod
   start_date?: string // ISO 8601 format
   end_date?: string // ISO 8601 format
@@ -83,6 +85,10 @@ export interface PaginatedQueryParams extends AnalyticsQueryParams {
   page?: number // 0-indexed
   per_page?: number
 }
+
+export type AnalyticsRequestParams = AnalyticsQueryParams
+
+export type AnalyticsPaginatedRequestParams = PaginatedQueryParams
 
 // ============================================================================
 // Core Response Structures
@@ -226,6 +232,12 @@ export enum TabularMetricType {
   TOP_AGENTS_USAGE = 'top-agents-usage',
   TOP_WORKFLOW_USAGE = 'top-workflow-usage',
   PUBLISHED_TO_MARKETPLACE = 'published-to-marketplace',
+  LEADERBOARD_ENTRIES = 'leaderboard/entries',
+  LEADERBOARD_TIERS = 'leaderboard/tiers',
+  LEADERBOARD_SCORES = 'leaderboard/scores',
+  LEADERBOARD_DIMENSIONS = 'leaderboard/dimensions',
+  LEADERBOARD_TOP_PERFORMERS = 'leaderboard/top-performers',
+  LEADERBOARD_SNAPSHOTS = 'leaderboard/snapshots',
 }
 
 export enum OverviewMetricType {
@@ -236,6 +248,7 @@ export enum OverviewMetricType {
   CLI_INSIGHTS_TEAM_SUMMARY = 'cli-insights-team-summary',
   AI_ADOPTION_OVERVIEW = 'ai-adoption-overview',
   AI_ADOPTION_MATURITY = 'ai-adoption-maturity',
+  LEADERBOARD_SUMMARY = 'leaderboard/summary',
 }
 
 // ============================================================================
@@ -537,4 +550,170 @@ export type RatioWidgetSettings = {
   dangerThreshold: number
   warningThreshold: number
   metricType: OverviewMetricType
+}
+
+// ============================================================================
+// Leaderboard Types
+// ============================================================================
+
+export type LeaderboardView = 'current' | 'monthly' | 'quarterly'
+
+export interface LeaderboardSeason {
+  season_key: string
+  period_label: string
+  snapshot_id: string
+  period_start: string
+  period_end: string
+  total_users: number
+  completed_at: string
+}
+
+export interface LeaderboardSeasonsResponse {
+  data: LeaderboardSeason[]
+  metadata: ResponseMetadata
+}
+
+export interface LeaderboardDimensionComponent {
+  key: string
+  label: string
+  weight: number
+  raw_value: unknown
+  normalized: number
+  display_value: string
+  what?: string
+  calc?: string
+  evidence?: string
+}
+
+export interface LeaderboardDimension {
+  id: string
+  label: string
+  name: string
+  weight: number
+  score: number
+  color?: string
+  icon?: string
+  description?: string
+  rationale?: string
+  components: LeaderboardDimensionComponent[]
+}
+
+export interface LeaderboardTierInfo {
+  name: string
+  label: string
+  level: number
+  color: string
+  description: string
+}
+
+export interface LeaderboardIntentInfo {
+  id: string
+  label: string
+  emoji: string
+  color: string
+  description: string
+}
+
+export interface LeaderboardUserDetail {
+  user_id: string
+  user_name: string
+  user_email: string
+  rank: number
+  total_score: number
+  tier_name: string
+  tier_level: number
+  tier?: LeaderboardTierInfo
+  usage_intent: string
+  intent?: LeaderboardIntentInfo
+  projects: string[]
+  summary_metrics: Record<string, number>
+  dimensions: LeaderboardDimension[]
+}
+
+export interface LeaderboardUserDetailResponse {
+  data: LeaderboardUserDetail
+  metadata: ResponseMetadata
+}
+
+export interface LeaderboardEntriesParams {
+  snapshot_id?: string
+  view?: LeaderboardView
+  season_key?: string
+  tier?: string
+  project?: string
+  search?: string
+  intent?: string
+  cli_only?: boolean
+  sort_by?: string
+  sort_order?: 'asc' | 'desc'
+  page?: number
+  per_page?: number
+}
+
+export interface LeaderboardUserDetailQueryParams extends AnalyticsQueryParams {
+  snapshot_id?: string
+  view?: LeaderboardView
+  season_key?: string
+}
+
+export interface LeaderboardProjectsResponse {
+  data: { projects: string[] }
+  metadata: ResponseMetadata
+}
+
+// Framework metadata types
+
+export interface LeaderboardFrameworkComponent {
+  label: string
+  weight: number
+  what: string
+  calc: string
+  evidence?: string
+}
+
+export interface LeaderboardFrameworkDimension {
+  id: string
+  label: string
+  name: string
+  weight: number
+  color: string
+  icon: string
+  description: string
+  components: Record<string, LeaderboardFrameworkComponent>
+}
+
+export interface LeaderboardFrameworkTier {
+  name: string
+  label: string
+  level: number
+  min_score: number
+  color: string
+  description: string
+}
+
+export interface LeaderboardFrameworkIntent {
+  id: string
+  label: string
+  emoji: string
+  color: string
+  description: string
+}
+
+export interface LeaderboardFrameworkData {
+  framework: {
+    title: string
+    version: string
+    principles: { title: string; text: string }[]
+    calculation_steps: string[]
+    data_sources: { title: string; text: string }[]
+    future_overlays: string[]
+  }
+  tiers: LeaderboardFrameworkTier[]
+  intents: LeaderboardFrameworkIntent[]
+  dimensions: Record<string, LeaderboardFrameworkDimension>
+}
+
+export interface LeaderboardFrameworkResponse {
+  data: LeaderboardFrameworkData
+  metadata: ResponseMetadata
 }

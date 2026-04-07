@@ -18,7 +18,7 @@ import { useSnapshot } from 'valtio'
 
 import { analyticsStore } from '@/store/analytics'
 import {
-  type AnalyticsQueryParams,
+  type AnalyticsRequestParams,
   OverviewMetricType,
   SummariesResponse,
   WidgetSize,
@@ -29,7 +29,8 @@ import MetricsGrid from './MetricsGrid'
 
 interface Props {
   type: OverviewMetricType
-  filters?: AnalyticsQueryParams
+  filters?: AnalyticsRequestParams
+  extraParams?: AnalyticsRequestParams
   title?: string
   description?: string
   expandable?: boolean
@@ -47,6 +48,7 @@ interface Props {
 const MetricsWidget: FC<Props> = ({
   type,
   filters,
+  extraParams,
   title = 'Summary Metrics',
   description = 'High-level overview of usage and costs',
   expandable = true,
@@ -60,12 +62,12 @@ const MetricsWidget: FC<Props> = ({
 
   useEffect(() => {
     analyticsStore
-      .fetchSummaries(type, filters)
+      .fetchSummaries(type, { ...filters, ...extraParams })
       .then((result) => {
         setSummaries(result)
       })
       .catch(console.error)
-  }, [type, filters])
+  }, [type, filters, extraParams])
 
   return (
     <AnalyticsWidget

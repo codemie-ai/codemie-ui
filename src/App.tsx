@@ -63,7 +63,7 @@ const App: React.FC = () => {
           <div className="min-h-0 grow flex bg-surface-base-sidebar">
             <Gradient />
             <Navigation />
-            <div className="z-0 grow">{user && <Outlet />}</div>
+            <div className="z-0 grow min-w-0">{user && <Outlet />}</div>
           </div>
         )}
 

@@ -100,12 +100,24 @@ const TableColHeader = <T,>({
         />
       )}
 
-      <span>{column.label}</span>
-
-      {isSortableColumn && sortProps && (
-        <span className="inline-block ml-2">
-          <SortIcon order={sortProps.sort.sortOrder} sorted={isSorted} onClick={handleSortClick} />
-        </span>
+      {isSortableColumn ? (
+        <button
+          type="button"
+          className="inline-flex items-center cursor-pointer select-none bg-transparent border-none p-0 font-semibold text-inherit"
+          onClick={handleSortClick}
+          title={column.tooltip}
+        >
+          <span>{column.label}</span>
+          <span className="inline-block ml-2 pointer-events-none">
+            <SortIcon
+              order={sortProps!.sort.sortOrder}
+              sorted={isSorted}
+              onClick={handleSortClick}
+            />
+          </span>
+        </button>
+      ) : (
+        <span title={column.tooltip}>{column.label}</span>
       )}
     </th>
   )

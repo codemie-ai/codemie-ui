@@ -21,10 +21,10 @@ import { useSnapshot } from 'valtio'
 
 import { analyticsStore } from '@/store/analytics'
 import type {
+  AnalyticsPaginatedRequestParams,
   TabularMetricType,
   TabularResponse,
   MetricFormat,
-  PaginatedQueryParams,
 } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { generateChartColors } from '@/utils/chartColors'
@@ -41,7 +41,8 @@ interface DonutChartWidgetProps {
   description?: string
   valueField: string
   labelField: string
-  filters?: PaginatedQueryParams
+  filters?: AnalyticsPaginatedRequestParams
+  extraParams?: AnalyticsPaginatedRequestParams
   expandable?: boolean
   actions?: ReactNode
   colorByLabel?: (label: string, index: number) => string
@@ -62,6 +63,7 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
   valueField,
   labelField,
   filters,
+  extraParams,
   expandable,
   actions,
   colorByLabel,
@@ -81,6 +83,7 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
     const fetchData = async () => {
       const result = await analyticsStore.fetchTabularData(metricType, {
         ...filters,
+        ...extraParams,
         page: 0,
         per_page: 100,
       })
@@ -90,7 +93,7 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
     }
 
     fetchData().catch(console.error)
-  }, [dataOverride, metricType, filters])
+  }, [dataOverride, metricType, filters, extraParams])
 
   const resolvedData = dataOverride ?? data
   const labels = resolvedData?.data.rows.map((row) => getPrimitiveLabel(row[labelField])) ?? []

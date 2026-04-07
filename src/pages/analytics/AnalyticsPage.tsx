@@ -42,8 +42,11 @@ const AnalyticsPage: FC = () => {
   const router = useVueRouter()
   const { aiAdoptionConfig } = useSnapshot(analyticsStore)
   const { user } = useSnapshot(userStore)
-  const isAdoptionEnabled = user?.isAdmin ?? false
+  const isAdmin = user?.isAdmin ?? false
+  const isAdoptionEnabled = isAdmin
   const [isCustomizationEnabled] = useFeatureFlag('feature:dashboardCustomization')
+  const [isLeaderboardConfigEnabled] = useFeatureFlag('aiChampionsLeaderboard')
+  const isLeaderboardEnabled = isAdmin && isLeaderboardConfigEnabled
 
   const [searchParams] = useSearchParams()
   const { filters, handleFilterChange } = useAnalyticsFilters()
@@ -54,7 +57,8 @@ const AnalyticsPage: FC = () => {
 
   const isInsightsTab = tab === AnalyticsDashboardType.insights
   const isAdoptionTab = tab === AnalyticsDashboardType.adoption
-  const isCustomDashboard = tab && !isAdoptionTab && !isInsightsTab
+  const isLeaderboardTab = tab === AnalyticsDashboardType.leaderboard
+  const isCustomDashboard = tab && !isAdoptionTab && !isInsightsTab && !isLeaderboardTab
 
   const dashboardId = tab!
 
@@ -114,18 +118,21 @@ const AnalyticsPage: FC = () => {
   )
 
   return (
-    <div className="flex h-full">
-      <Sidebar title="Analytics" description="Monitor usage metrics and performance">
-        <AnalyticsFilters filters={filters} onFiltersChange={handleFiltersChange} />
-      </Sidebar>
+    <div className="flex h-full min-w-0">
+      {!isLeaderboardTab && (
+        <Sidebar title="Analytics" description="Monitor usage metrics and performance">
+          <AnalyticsFilters filters={filters} onFiltersChange={handleFiltersChange} />
+        </Sidebar>
+      )}
 
       <PageLayout title="Analytics Dashboard" rightContent={actions}>
-        <div className="min-h-full flex flex-col pb-24 pt-6">
+        <div className="min-h-full flex flex-col pb-24 pt-6 min-w-0">
           <AnalyticsDashboard
             activeTab={tab}
             filters={filters}
             isConfigVisible={isConfigVisible}
             isAdoptionEnabled={isAdoptionEnabled}
+            isLeaderboardEnabled={isLeaderboardEnabled}
             isCustomizationEnabled={isCustomizationEnabled}
             onHideConfig={() => setIsConfigVisible(false)}
           />

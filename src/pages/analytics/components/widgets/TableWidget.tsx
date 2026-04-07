@@ -19,9 +19,9 @@ import { useSnapshot } from 'valtio'
 import Pagination from '@/components/Pagination'
 import Table from '@/components/Table'
 import { analyticsStore } from '@/store/analytics'
-import type { TabularResponse, PaginatedQueryParams } from '@/types/analytics'
+import type { AnalyticsPaginatedRequestParams, TabularResponse } from '@/types/analytics'
 import { TabularMetricType, ColumnType, MetricFormat } from '@/types/analytics'
-import type { ColumnDefinition } from '@/types/table'
+import type { ColumnDefinition, SortState } from '@/types/table'
 import { DefinitionTypes } from '@/types/table'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { cn } from '@/utils/utils'
@@ -32,7 +32,7 @@ interface TableWidgetProps {
   metricType: TabularMetricType
   title: string
   description?: string
-  filters?: PaginatedQueryParams
+  filters?: AnalyticsPaginatedRequestParams
   refreshTrigger?: number
   onRowClick?: (row: Record<string, unknown>, rowIndex: number) => void
   expandable?: boolean
@@ -41,6 +41,7 @@ interface TableWidgetProps {
   hideWrapper?: boolean
   hidePagination?: boolean
   hiddenColumns?: string[]
+  columnOrder?: string[]
   tableStyles?: {
     className: string
     minWidth?: string
@@ -49,6 +50,11 @@ interface TableWidgetProps {
   }
   customRenderColumns?: Record<string, (item: Record<string, any>) => ReactElement>
   actions?: ReactNode
+  sort?: SortState
+  onSort?: (key: string) => void
+  sortableColumns?: string[]
+  columnLabels?: Record<string, string>
+  columnTooltips?: Record<string, string>
 }
 
 interface ProjectButtonCellProps {
@@ -90,9 +96,15 @@ const TableWidget: FC<TableWidgetProps> = ({
   hideWrapper = false,
   hidePagination = false,
   hiddenColumns = [],
+  columnOrder,
   tableStyles,
   customRenderColumns: customRenderColumnsProp,
   actions,
+  sort: sortProp,
+  onSort: onSortProp,
+  sortableColumns,
+  columnLabels,
+  columnTooltips,
 }) => {
   const { loading, loaded, error, aiAdoptionConfig } = useSnapshot(analyticsStore)
   const [data, setData] = useState<TabularResponse | null>(initialData || null)
@@ -108,7 +120,7 @@ const TableWidget: FC<TableWidgetProps> = ({
       ...filters,
       page,
       per_page: perPage,
-      config: aiAdoptionConfig?.data as any,
+      config: aiAdoptionConfig?.data,
     })
     if (result) {
       setData(result)
@@ -140,39 +152,58 @@ const TableWidget: FC<TableWidgetProps> = ({
     }
   }
 
+  // Sort columns by explicit order if provided
+  const sortColumns = <T extends { id?: string; key?: string }>(cols: T[]): T[] => {
+    if (!columnOrder || columnOrder.length === 0) return cols
+    return [...cols].sort((a, b) => {
+      const aId = (a as any).id ?? (a as any).key ?? ''
+      const bId = (b as any).id ?? (b as any).key ?? ''
+      const aIdx = columnOrder.indexOf(aId)
+      const bIdx = columnOrder.indexOf(bId)
+      // Listed columns come first in specified order; unlisted columns keep relative order at end
+      if (aIdx === -1 && bIdx === -1) return 0
+      if (aIdx === -1) return 1
+      if (bIdx === -1) return -1
+      return aIdx - bIdx
+    })
+  }
+
   // Convert analytics column definitions to table column definitions
-  const columnDefinitions: ColumnDefinition[] =
-    data?.data.columns
-      .filter((col) => !hiddenColumns.includes(col.id))
-      .map((col) => {
-        let type: DefinitionTypes
-        if (
-          col.format === MetricFormat.PERCENTAGE &&
-          col.id === 'total' &&
-          metricType === TabularMetricType.KEY_SPENDING
-        ) {
-          type = DefinitionTypes.Custom
-        } else if (customRenderColumnsProp?.[col.id]) {
-          type = DefinitionTypes.Custom
-        } else if (onRowClick && col.id === 'project') {
-          type = DefinitionTypes.Custom
-        } else {
-          type = mapColumnType(col.type)
-        }
+  const filteredColumns = sortColumns(
+    (data?.data.columns ?? []).filter((col) => !hiddenColumns.includes(col.id))
+  )
 
-        let maxLength: number | undefined
-        if (col.id === 'project') {
-          maxLength = tableStyles?.columnWidths ? undefined : 17
-        }
+  const columnDefinitions: ColumnDefinition[] = filteredColumns.map((col) => {
+    let type: DefinitionTypes
+    if (
+      col.format === MetricFormat.PERCENTAGE &&
+      col.id === 'total' &&
+      metricType === TabularMetricType.KEY_SPENDING
+    ) {
+      type = DefinitionTypes.Custom
+    } else if (customRenderColumnsProp?.[col.id]) {
+      type = DefinitionTypes.Custom
+    } else if (onRowClick && col.id === 'project') {
+      type = DefinitionTypes.Custom
+    } else {
+      type = mapColumnType(col.type)
+    }
 
-        return {
-          key: col.id,
-          label: col.label,
-          type,
-          maxLength,
-          headClassNames: 'whitespace-normal',
-        }
-      }) ?? []
+    let maxLength: number | undefined
+    if (col.id === 'project') {
+      maxLength = tableStyles?.columnWidths ? undefined : 17
+    }
+
+    return {
+      key: col.id,
+      label: columnLabels?.[col.id] ?? col.label,
+      type,
+      maxLength,
+      headClassNames: 'whitespace-normal',
+      sortable: sortableColumns?.includes(col.id),
+      tooltip: columnTooltips?.[col.id],
+    }
+  })
 
   const formatCellValue = (col: any, rawValue: any): unknown => {
     if (rawValue === null || rawValue === undefined) return '-'
@@ -193,16 +224,14 @@ const TableWidget: FC<TableWidgetProps> = ({
     data?.data.rows.map((row) => {
       const formattedRow: Record<string, unknown> = { ...row }
 
-      data.data.columns
-        .filter((col) => !hiddenColumns.includes(col.id))
-        .forEach((col) => {
-          if (customRenderColumnsProp?.[col.id]) {
-            formattedRow[col.id] = row[col.id]
-            return
-          }
+      filteredColumns.forEach((col) => {
+        if (customRenderColumnsProp?.[col.id]) {
+          formattedRow[col.id] = row[col.id]
+          return
+        }
 
-          formattedRow[col.id] = formatCellValue(col, row[col.id])
-        })
+        formattedRow[col.id] = formatCellValue(col, row[col.id])
+      })
 
       return formattedRow
     }) ?? []
@@ -294,7 +323,7 @@ const TableWidget: FC<TableWidgetProps> = ({
         }
         ${
           tableStyles.columnWidths && data
-            ? data.data.columns
+            ? filteredColumns
                 .map((col, index) => {
                   const width = tableStyles.columnWidths![col.id]
                   if (!width) return ''
@@ -305,8 +334,8 @@ const TableWidget: FC<TableWidgetProps> = ({
             min-width: ${width};
             max-width: ${width};
             box-sizing: border-box;
-            white-space: normal;
-            word-wrap: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
         `
                 })
@@ -328,19 +357,22 @@ const TableWidget: FC<TableWidgetProps> = ({
             footer={renderTotalsFooter()}
             customRenderColumns={customRenderColumns}
             tableClassName="mt-0"
+            sort={sortProp}
+            onSort={onSortProp}
           />
         </div>
-        {!hidePagination && data.pagination.total_count > parseInt(perPageOptions[0].value, 10) && (
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            setPage={handlePaginationChange}
-            perPage={perPage}
-            perPageOptions={perPageOptions}
-            responsive
-            className="mt-4 px-4 py-3 bg-transparent !bg-none"
-          />
-        )}
+        {!hidePagination &&
+          data.pagination?.total_count > parseInt(perPageOptions[0].value, 10) && (
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              setPage={handlePaginationChange}
+              perPage={perPage}
+              perPageOptions={perPageOptions}
+              responsive
+              className="mt-4 px-4 py-3 bg-transparent !bg-none"
+            />
+          )}
       </div>
     )
   }

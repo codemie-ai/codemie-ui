@@ -30,7 +30,11 @@ import { Bar } from 'react-chartjs-2'
 import { useSnapshot } from 'valtio'
 
 import { analyticsStore } from '@/store/analytics'
-import type { TabularMetricType, TabularResponse, PaginatedQueryParams } from '@/types/analytics'
+import type {
+  AnalyticsPaginatedRequestParams,
+  TabularMetricType,
+  TabularResponse,
+} from '@/types/analytics'
 import { generateChartColors } from '@/utils/chartColors'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
@@ -47,7 +51,8 @@ interface BarChartWidgetProps {
   labelField: string
   yAxisLabel: string
   yAxisInteger?: boolean
-  filters?: PaginatedQueryParams
+  filters?: AnalyticsPaginatedRequestParams
+  extraParams?: AnalyticsPaginatedRequestParams
   expandable?: boolean
   horizontal?: boolean
   actions?: ReactNode
@@ -67,6 +72,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
   yAxisLabel,
   yAxisInteger,
   filters,
+  extraParams,
   expandable,
   horizontal = false,
   actions,
@@ -81,6 +87,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
       // Fetch all records without pagination (backend returns up to 10k days)
       const result = await analyticsStore.fetchTabularData(metricType, {
         ...filters,
+        ...extraParams,
       })
       if (result) {
         setData(result)
@@ -88,7 +95,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     }
 
     fetchData().catch(console.error)
-  }, [metricType, filters])
+  }, [metricType, filters, extraParams])
 
   // Extract labels (dates) and values from data
   const labels =

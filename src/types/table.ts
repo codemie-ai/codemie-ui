@@ -42,6 +42,7 @@ export interface ColumnDefinition {
   headClassNames?: string
   shrink?: boolean
   semiBold?: boolean
+  tooltip?: string
 }
 
 export interface TableItem {

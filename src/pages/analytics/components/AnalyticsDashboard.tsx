@@ -30,6 +30,7 @@ import CLIInsightsTab from './CLIInsightsTab'
 import CustomDashboard from './CustomDashboard'
 import InfoNotice from './InfoNotice'
 import InsightsTab from './InsightsTab'
+import LeaderboardTab from './leaderboard/LeaderboardTab'
 
 interface AnalyticsDashboardProps {
   activeTab: string
@@ -37,6 +38,7 @@ interface AnalyticsDashboardProps {
   onHideConfig: () => void
   filters: AnalyticsQueryParams
   isAdoptionEnabled: boolean
+  isLeaderboardEnabled: boolean
   isCustomizationEnabled: boolean
 }
 
@@ -48,6 +50,7 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
   onHideConfig,
   filters,
   isAdoptionEnabled,
+  isLeaderboardEnabled,
   isCustomizationEnabled,
 }) => {
   const { dashboards } = useSnapshot(analyticsStore)
@@ -113,6 +116,15 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
       },
     ]
 
+    if (isLeaderboardEnabled) {
+      tabsList.push({
+        id: AnalyticsDashboard.leaderboard,
+        label: 'Leaderboard',
+        element: <LeaderboardTab />,
+        className: '[overflow-wrap:normal]',
+      })
+    }
+
     if (isAdoptionEnabled) {
       tabsList.push({
         id: AnalyticsDashboard.adoption,
@@ -133,17 +145,24 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
     }
 
     return tabsList
-  }, [dashboards, filters, isAdoptionEnabled, isCustomizationEnabled])
+  }, [dashboards, filters, isLeaderboardEnabled, isAdoptionEnabled, isCustomizationEnabled])
 
   return (
-    <div className="analytics-dashboard flex flex-col">
+    <div className="analytics-dashboard flex flex-col min-w-0">
       <InfoNotice
         message="To view your personal spendings — go to"
         linkText="Profile"
         linkTo="/settings/profile"
         className="mb-4"
       />
-      <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} isEmbedded={false} />
+      <Tabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={handleTabChange}
+        isEmbedded={false}
+        className="min-w-0"
+        tabClassName="min-w-0"
+      />
 
       <Popup
         visible={isConfigVisible}

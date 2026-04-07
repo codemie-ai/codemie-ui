@@ -21,8 +21,8 @@ import {
   CliSummaryResponse,
   TabularResponse,
   TabularMetricType,
-  AnalyticsQueryParams,
-  PaginatedQueryParams,
+  AnalyticsRequestParams,
+  AnalyticsPaginatedRequestParams,
   AiAdoptionConfigResponse,
   AiAdoptionConfig,
   AnalyticsDashboard,
@@ -33,6 +33,13 @@ import {
   AssetReusabilityDatasourcesRequest,
   AssetReusabilityDrillDownState,
   AnalyticsDashboardItem,
+  LeaderboardSeasonsResponse,
+  LeaderboardSeason,
+  LeaderboardUserDetailQueryParams,
+  LeaderboardUserDetailResponse,
+  LeaderboardView,
+  LeaderboardProjectsResponse,
+  LeaderboardFrameworkResponse,
 } from '@/types/analytics'
 import type { ErrorDetails, ErrorResponse } from '@/types/common'
 import {
@@ -102,16 +109,28 @@ interface Analytics {
   error: Record<string, ErrorDetails | null>
 
   // Methods
-  fetchSummaries: (type: string, params?: AnalyticsQueryParams) => Promise<SummariesResponse | null>
+  fetchSummaries: (
+    type: string,
+    params?: AnalyticsRequestParams
+  ) => Promise<SummariesResponse | null>
   fetchAiAdoptionOverview: (params?: {
     projects?: string[]
     config?: AiAdoptionConfig
   }) => Promise<SummariesResponse | null>
-  fetchCliSummary: (params?: AnalyticsQueryParams) => Promise<CliSummaryResponse | null>
+  fetchCliSummary: (params?: AnalyticsRequestParams) => Promise<CliSummaryResponse | null>
   fetchTabularData: (
     type: TabularMetricType,
-    params?: PaginatedQueryParams & { config?: AiAdoptionConfig }
+    params?: AnalyticsPaginatedRequestParams & { config?: AiAdoptionConfig }
   ) => Promise<TabularResponse | null>
+  fetchLeaderboardSeasons: (
+    view: Exclude<LeaderboardView, 'current'>
+  ) => Promise<LeaderboardSeason[]>
+  fetchLeaderboardUserDetail: (
+    userId: string,
+    params?: LeaderboardUserDetailQueryParams
+  ) => Promise<LeaderboardUserDetailResponse | null>
+  fetchLeaderboardProjects: () => Promise<string[]>
+  fetchLeaderboardFramework: () => Promise<LeaderboardFrameworkResponse | null>
   fetchAiAdoptionMaturity: (params?: {
     projects?: string[]
     config?: AiAdoptionConfig
@@ -238,7 +257,7 @@ export const analyticsStore = proxy<Analytics>({
    * @param params - Query parameters for filtering
    * @returns Promise with SummariesResponse or null
    */
-  async fetchSummaries(type: string, params?: AnalyticsQueryParams) {
+  async fetchSummaries(type: string, params?: AnalyticsRequestParams) {
     return fetchWithState<SummariesResponse>(
       this,
       type,
@@ -284,7 +303,7 @@ export const analyticsStore = proxy<Analytics>({
    * @param params - Query parameters for filtering
    * @returns Promise with CliSummaryResponse or null
    */
-  async fetchCliSummary(params?: AnalyticsQueryParams) {
+  async fetchCliSummary(params?: AnalyticsRequestParams) {
     const data = await fetchWithState<CliSummaryResponse>(
       this,
       'cliSummary',
@@ -311,7 +330,7 @@ export const analyticsStore = proxy<Analytics>({
    */
   async fetchTabularData(
     type: TabularMetricType,
-    params?: PaginatedQueryParams & { config?: AiAdoptionConfig }
+    params?: AnalyticsPaginatedRequestParams & { config?: AiAdoptionConfig }
   ) {
     // Extract config from params if present
     const { config, ...queryParams } = params || {}
@@ -357,6 +376,78 @@ export const analyticsStore = proxy<Analytics>({
       cleanedParams,
       `Failed to fetch ${type} data`
     )
+  },
+
+  async fetchLeaderboardProjects() {
+    const result = await fetchWithState<LeaderboardProjectsResponse>(
+      this,
+      'leaderboard-projects',
+      'v1/analytics/leaderboard/projects',
+      undefined,
+      'Failed to fetch leaderboard projects'
+    )
+    return result?.data?.projects ?? []
+  },
+
+  async fetchLeaderboardFramework() {
+    return fetchWithState<LeaderboardFrameworkResponse>(
+      this,
+      'leaderboard-framework',
+      'v1/analytics/leaderboard/framework',
+      undefined,
+      'Failed to fetch leaderboard framework'
+    )
+  },
+
+  async fetchLeaderboardSeasons(view: Exclude<LeaderboardView, 'current'>) {
+    const key = `leaderboard-seasons-${view}`
+    this.loading[key] = true
+    this.error[key] = null
+
+    try {
+      const response = await api.get('v1/analytics/leaderboard/seasons', {
+        params: { view },
+        skipErrorHandling: true,
+      })
+      const result = (await response.json()) as
+        | LeaderboardSeasonsResponse
+        | { data?: { seasons?: LeaderboardSeason[] } }
+      let seasons: LeaderboardSeason[] = []
+
+      if (Array.isArray(result?.data)) {
+        seasons = result.data
+      } else if (Array.isArray(result?.data?.seasons)) {
+        seasons = result.data.seasons
+      }
+
+      return seasons
+    } catch (error) {
+      console.error('Error fetching leaderboard seasons:', error)
+      this.error[key] = parseErrorResponse(error, 'Failed to fetch leaderboard seasons')
+      return []
+    } finally {
+      this.loading[key] = false
+    }
+  },
+
+  async fetchLeaderboardUserDetail(userId: string, params?: LeaderboardUserDetailQueryParams) {
+    const key = `leaderboard-user-${userId}`
+    this.loading[key] = true
+    this.error[key] = null
+
+    try {
+      const response = await api.get(`v1/analytics/leaderboard/user/${userId}`, {
+        params,
+        skipErrorHandling: true,
+      })
+      return (await response.json()) as LeaderboardUserDetailResponse
+    } catch (error) {
+      console.error('Failed to fetch leaderboard user detail:', error)
+      this.error[key] = parseErrorResponse(error, 'Failed to load user details.')
+      return null
+    } finally {
+      this.loading[key] = false
+    }
   },
 
   /**
