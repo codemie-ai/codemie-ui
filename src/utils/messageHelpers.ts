@@ -67,7 +67,7 @@ export const getMarkdownRenderer = (): marked.Renderer => {
 
 export const getAssistantMentions = (rawText: string): (string | null)[] => {
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = rawText
+  tempDiv.innerHTML = DOMPurify.sanitize(rawText)
 
   // Select all elements with the class 'mention'
   const mentions = tempDiv.querySelectorAll('.mention')
@@ -79,7 +79,7 @@ export const getAssistantMentions = (rawText: string): (string | null)[] => {
 
 export const getAnyMentions = (rawText: string): (string | null)[] => {
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = rawText
+  tempDiv.innerHTML = DOMPurify.sanitize(rawText)
 
   // Select all elements with the class 'mention'
   const mentions = tempDiv.querySelectorAll('.mention')

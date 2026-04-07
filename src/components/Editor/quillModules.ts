@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import DOMPurify from 'dompurify'
+
 import defaultAvatar from '@/assets/images/ai-avatar.png'
 import { Conversation } from '@/types/entity/conversation'
 import { generateAssistantAvatarDataUrl } from '@/utils/assistantAvatar'
@@ -396,7 +398,7 @@ export const getMessageTextWithMentions = (delta: ChatEditorDelta, messageText: 
 
 export const getAssistantMentions = (rawText: string) => {
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = rawText
+  tempDiv.innerHTML = DOMPurify.sanitize(rawText)
 
   // Select all elements with the class 'mention'
   const mentions = tempDiv.querySelectorAll('.mention')
@@ -409,7 +411,7 @@ export const getAssistantMentions = (rawText: string) => {
 
 export const getAnyMentions = (rawText: string) => {
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = rawText
+  tempDiv.innerHTML = DOMPurify.sanitize(rawText)
 
   // Select all elements with the class 'mention'
   const mentions = tempDiv.querySelectorAll('.mention')

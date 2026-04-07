@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import DOMPurify from 'dompurify'
 import { Parser } from 'marked'
 import { FC, useMemo } from 'react'
 
@@ -53,13 +54,13 @@ const MarkdownTokens: FC<MarkdownTokensProps> = ({ tokens = [] }) => {
 
   const getInlineProps = (token: MarkdownToken) => ({
     dangerouslySetInnerHTML: {
-      __html: Parser.parseInline([token], options),
+      __html: DOMPurify.sanitize(Parser.parseInline([token], options), { ADD_ATTR: ['target'] }),
     },
   })
 
   const getBlockProps = (token: MarkdownToken) => ({
     dangerouslySetInnerHTML: {
-      __html: Parser.parse([token], options),
+      __html: DOMPurify.sanitize(Parser.parse([token], options), { ADD_ATTR: ['target'] }),
     },
   })
 

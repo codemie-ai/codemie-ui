@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import DOMPurify from 'dompurify'
 import React, { useRef, useState, useEffect, useCallback } from 'react'
 
 import FileSvg from '@/assets/icons/file.svg?react'
@@ -260,7 +261,11 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code }) => {
       >
         <ZoomableImage>
           <div
-            dangerouslySetInnerHTML={{ __html: renderedSvg }}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(renderedSvg, {
+                USE_PROFILES: { svg: true, svgFilters: true },
+              }),
+            }}
             className="min-w-full [&>svg]:max-h-[500px] [&>svg]:min-h-[500px] [&>svg]:min-w-full [&>svg]:max-w-full"
           />
         </ZoomableImage>

@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import DOMPurify from 'dompurify'
 import { FC, KeyboardEvent, MouseEvent, useEffect, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
@@ -199,7 +200,7 @@ const ChatUserMessage: FC<ChatUserMessageProps> = ({ message, indexes, onSubmit 
           <p
             ref={messageElementRef}
             className="chat-editor chat-editor-message text-sm text-wrap break-word"
-            dangerouslySetInnerHTML={{ __html: requestRaw ?? request ?? '' }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(requestRaw ?? request ?? '') }}
           />
         )}
 

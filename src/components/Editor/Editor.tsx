@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import DOMPurify from 'dompurify'
 import { Editor as PrimeReactEditor } from 'primereact/editor'
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
 import { useSnapshot } from 'valtio'
@@ -162,7 +163,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(
         onLoad={() => {
           const quill = editorRef.current?.getQuill()
           if (quill) {
-            quill.root.innerHTML = value.messageRaw
+            quill.root.innerHTML = DOMPurify.sanitize(value.messageRaw)
             const length = quill.getLength()
             quill.setSelection(length, 0)
             quill.focus()
