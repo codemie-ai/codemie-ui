@@ -43,7 +43,9 @@ interface ProjectsStore {
   indexProjects: (
     page?: number,
     perPage?: number,
-    search?: string | undefined
+    search?: string | undefined,
+    sortBy?: string | undefined,
+    sortOrder?: string | undefined
   ) => Promise<Project[]>
   searchProjects: (
     search: string,
@@ -88,7 +90,9 @@ export const projectsStore = proxy<ProjectsStore>({
   async indexProjects(
     page = DEFAULT_PAGE,
     perPage = DEFAULT_PER_PAGE,
-    search: string | undefined = undefined
+    search: string | undefined = undefined,
+    sortBy: string | undefined = undefined,
+    sortOrder: string | undefined = undefined
   ) {
     this.loading = true
     this.error = null
@@ -99,6 +103,10 @@ export const projectsStore = proxy<ProjectsStore>({
         per_page: perPage,
       }
       if (search) params.search = search
+      if (sortBy) {
+        params.sort_by = sortBy
+        if (sortOrder) params.sort_order = sortOrder
+      }
 
       const queryParams = new URLSearchParams()
       Object.entries(params).forEach(([key, value]) => {

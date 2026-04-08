@@ -42,7 +42,7 @@ import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { Project, ProjectType } from '@/types/entity/project'
-import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import toaster from '@/utils/toaster'
 
 import ProjectModal, { ProjectFormData } from './ProjectModal'
@@ -96,7 +96,13 @@ const columnDefinitions: ColumnDefinition[] = [
     type: DefinitionTypes.Custom,
     headClassNames: 'w-[14%]',
   },
-  { key: 'created_at', label: 'Created', type: DefinitionTypes.Date, headClassNames: 'w-[12%]' },
+  {
+    key: 'created_at',
+    label: 'Created',
+    type: DefinitionTypes.Date,
+    sortable: true,
+    headClassNames: 'w-[12%]',
+  },
   {
     key: 'assignments',
     label: 'Assignments',
@@ -112,6 +118,7 @@ const ProjectsManagementFull: FC = () => {
   const { user: currentUser } = useSnapshot(userStore)
   const { projects, pagination, loading } = useSnapshot(projectsStore)
   const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<SortState>({})
   const [showModal, setShowModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
@@ -146,19 +153,56 @@ const ProjectsManagementFull: FC = () => {
     [currentUser]
   )
 
+  const handleSort = useCallback(
+    (key: string) => {
+      setSort((prev) => {
+        let newOrder: 'asc' | 'desc' | undefined = 'asc'
+        if (prev.sortKey === key) {
+          newOrder = prev.sortOrder === 'asc' ? 'desc' : undefined
+        }
+        const newSort: SortState = { sortKey: newOrder ? key : undefined, sortOrder: newOrder }
+        // Reset page synchronously so the useEffect[pagination.page] does not re-fire
+        // when indexProjects updates pagination.page to 0 in the store response.
+        projectsStore.pagination.page = 0
+        projectsStore
+          .indexProjects(
+            0,
+            pagination.perPage,
+            search || undefined,
+            newSort.sortKey,
+            newSort.sortOrder
+          )
+          .catch((error) => {
+            console.error('Failed to load projects:', error)
+          })
+        return newSort
+      })
+    },
+    [pagination.perPage, search]
+  )
+
   useEffect(() => {
     projectsStore
-      .indexProjects(pagination.page, pagination.perPage, search || undefined)
+      .indexProjects(
+        pagination.page,
+        pagination.perPage,
+        search || undefined,
+        sort.sortKey,
+        sort.sortOrder
+      )
       .catch((error) => {
         console.error('Failed to load projects:', error)
       })
   }, [pagination.page, pagination.perPage])
 
-  useDebouncedApply(search, 500, () =>
+  useDebouncedApply(search, 500, () => {
+    // Clear sort when search changes — backend ignores sort_by during search (relevance ordering),
+    // so resetting the indicator keeps the UI consistent with what the server actually returns.
+    setSort({})
     projectsStore.indexProjects(0, pagination.perPage, search || undefined).catch((error) => {
       console.error('Failed to load projects:', error)
     })
-  )
+  })
 
   const handleAddProject = useCallback(() => {
     setEditingProject(null)
@@ -186,11 +230,17 @@ const ProjectsManagementFull: FC = () => {
 
   const refreshProjects = useCallback(() => {
     projectsStore
-      .indexProjects(pagination.page, pagination.perPage, search || undefined)
+      .indexProjects(
+        pagination.page,
+        pagination.perPage,
+        search || undefined,
+        sort.sortKey,
+        sort.sortOrder
+      )
       .catch((error) => {
         console.error('Failed to refresh projects:', error)
       })
-  }, [pagination.page, pagination.perPage, search])
+  }, [pagination.page, pagination.perPage, search, sort.sortKey, sort.sortOrder])
 
   const handleModalClose = useCallback(() => {
     setShowModal(false)
@@ -240,11 +290,13 @@ const ProjectsManagementFull: FC = () => {
   const handlePageChange = useCallback(
     (page: number, newPerPage?: number) => {
       const perPage = newPerPage ?? pagination.perPage
-      projectsStore.indexProjects(page, perPage, search || undefined).catch((error) => {
-        console.error('Failed to load projects:', error)
-      })
+      projectsStore
+        .indexProjects(page, perPage, search || undefined, sort.sortKey, sort.sortOrder)
+        .catch((error) => {
+          console.error('Failed to load projects:', error)
+        })
     },
-    [pagination.perPage, search]
+    [pagination.perPage, search, sort.sortKey, sort.sortOrder]
   )
 
   const customRenderColumns = useMemo(
@@ -415,6 +467,8 @@ const ProjectsManagementFull: FC = () => {
           columnDefinitions={effectiveColumnDefinitions}
           customRenderColumns={customRenderColumns}
           loading={loading}
+          sort={sort}
+          onSort={handleSort}
           pagination={{
             page: pagination.page,
             totalPages: pagination.totalPages,
