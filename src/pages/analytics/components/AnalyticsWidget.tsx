@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, ReactNode, useState } from 'react'
+import { FC, ReactNode, useEffect, useRef, useState } from 'react'
 
 import ExpandIcon from '@/assets/icons/expand.svg?react'
 import Spinner from '@/components/Spinner'
@@ -38,6 +38,12 @@ export interface AnalyticsWidgetProps {
    * Keep true for tables, charts, and detailed visualizations.
    */
   expandable?: boolean
+  /**
+   * When true, subsequent loads show a light overlay instead of replacing content with a spinner.
+   * Use only for widgets where preserving visible data during refresh is important (e.g. leaderboard table).
+   */
+  softReload?: boolean
+  minLoadingHeight?: string
 }
 
 const AnalyticsWidget: FC<AnalyticsWidgetProps> = ({
@@ -50,20 +56,22 @@ const AnalyticsWidget: FC<AnalyticsWidgetProps> = ({
   className,
   actions,
   expandable = true,
+  softReload = false,
+  minLoadingHeight = '80px',
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
-  const renderWrapper = () => {
+  const hasLoadedOnce = useRef(false)
+  const wasLoading = useRef(false)
+  useEffect(() => {
+    if (!softReload) return
     if (loading) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <div className="flex flex-col items-center gap-3">
-            <Spinner inline className="w-8 h-8" />
-            <p className="text-sm text-text-quaternary">Loading data...</p>
-          </div>
-        </div>
-      )
+      wasLoading.current = true
+    } else if (wasLoading.current) {
+      hasLoadedOnce.current = true
     }
+  }, [loading, softReload])
 
+  const renderWrapper = () => {
     if (error) {
       return (
         <div className="flex items-center justify-center py-12">
@@ -77,7 +85,28 @@ const AnalyticsWidget: FC<AnalyticsWidgetProps> = ({
       )
     }
 
-    return renderContent ? renderContent({ isExpanded }) : children
+    const content = renderContent ? renderContent({ isExpanded }) : children
+
+    const isFirstLoad = !softReload || !hasLoadedOnce.current
+
+    return (
+      <div className="relative" style={{ minHeight: minLoadingHeight }}>
+        {loading && isFirstLoad && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-surface-base-secondary/70">
+            <div className="flex flex-col items-center gap-2">
+              <Spinner inline className="w-6 h-6" />
+              <p className="text-xs text-text-quaternary">Loading data...</p>
+            </div>
+          </div>
+        )}
+        {loading && !isFirstLoad && (
+          <div className="absolute inset-0 z-10 rounded-lg bg-surface-base-secondary/40 pointer-events-none" />
+        )}
+        <div className={cn(loading && isFirstLoad && 'opacity-0 pointer-events-none')}>
+          {content}
+        </div>
+      </div>
+    )
   }
 
   return (

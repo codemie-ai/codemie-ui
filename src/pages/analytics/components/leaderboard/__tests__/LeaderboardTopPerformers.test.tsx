@@ -57,9 +57,8 @@ describe('LeaderboardTopPerformers - dimensions parsing', () => {
     render(<LeaderboardTopPerformers />)
 
     await waitFor(() => {
-      // D1 dimension label should appear in a DimensionBar
-      expect(screen.getByText(/D1 · Core Platform Usage/)).toBeInTheDocument()
-      expect(screen.getByText(/D2 · Core Platform Creation/)).toBeInTheDocument()
+      expect(screen.getByText('D1')).toBeInTheDocument()
+      expect(screen.getByText('D2')).toBeInTheDocument()
     })
   })
 
@@ -77,8 +76,8 @@ describe('LeaderboardTopPerformers - dimensions parsing', () => {
     })
 
     // Dimension labels should NOT appear since parsing failed
-    expect(screen.queryByText(/D1 · Core Platform Usage/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/D2 · Core Platform Creation/)).not.toBeInTheDocument()
+    expect(screen.queryByText('D1')).not.toBeInTheDocument()
+    expect(screen.queryByText('D2')).not.toBeInTheDocument()
   })
 
   it('should use array dimensions directly without parsing', async () => {
@@ -95,8 +94,8 @@ describe('LeaderboardTopPerformers - dimensions parsing', () => {
     render(<LeaderboardTopPerformers />)
 
     await waitFor(() => {
-      expect(screen.getByText(/D3 · Workflow Usage/)).toBeInTheDocument()
-      expect(screen.getByText(/D4 · Workflow Creation/)).toBeInTheDocument()
+      expect(screen.getByText('D3')).toBeInTheDocument()
+      expect(screen.getByText('D4')).toBeInTheDocument()
     })
   })
 })

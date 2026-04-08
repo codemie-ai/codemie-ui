@@ -15,24 +15,32 @@
 
 import { FC } from 'react'
 
-import { TIER_CONFIG, TierName, DIMENSION_CONFIG, INTENT_CONFIG, IntentId } from './constants'
+import type { LeaderboardFrameworkDimension } from '@/types/analytics'
+
+import { TIER_COLORS, DIMENSION_COLORS, INTENT_DISPLAY, ICON_MAP } from './constants'
+
+export const resolveFrameworkDimensionIcon = (dim: LeaderboardFrameworkDimension): string => {
+  if (!dim.icon) return ''
+  const resolved = ICON_MAP[dim.icon]
+  if (!resolved && import.meta.env.DEV)
+    console.warn(`[LeaderboardFramework] Unknown icon key: "${dim.icon}"`)
+  return resolved ?? dim.icon
+}
 
 export const getTierConfig = (tierName?: string | null) => {
-  if (!tierName) return TIER_CONFIG.newcomer
-  const key = tierName.toLowerCase() as TierName
-  return TIER_CONFIG[key] ?? TIER_CONFIG.newcomer
+  const name = tierName?.toLowerCase() ?? 'newcomer'
+  const color = TIER_COLORS[name] ?? TIER_COLORS.newcomer
+  const label = name.charAt(0).toUpperCase() + name.slice(1)
+  return { color, label }
 }
 
-export const getDimensionConfig = (dimId: string) => {
-  return (
-    DIMENSION_CONFIG[dimId] ?? { label: dimId, name: dimId, color: '#6b7280', weight: 0, icon: '' }
-  )
-}
+export const getDimensionConfig = (dimId: string) => ({
+  label: dimId.toUpperCase(),
+  color: DIMENSION_COLORS[dimId] ?? '#6b7280',
+})
 
-export const getIntentConfig = (intentId: string) => {
-  const key = intentId as IntentId
-  return INTENT_CONFIG[key] ?? INTENT_CONFIG.explorer
-}
+export const getIntentConfig = (intentId: string) =>
+  INTENT_DISPLAY[intentId] ?? INTENT_DISPLAY.explorer
 
 interface TierBadgeProps {
   tierName: string

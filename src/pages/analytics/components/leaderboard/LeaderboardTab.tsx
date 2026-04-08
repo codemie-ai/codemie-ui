@@ -23,7 +23,7 @@ import type {
 import { OverviewMetricType, TabularMetricType } from '@/types/analytics'
 import type { SortState } from '@/types/table'
 
-import { DIMENSION_CONFIG, DIMENSION_TOOLTIPS, TIER_CONFIG, TierName } from './constants'
+import { DIMENSION_COLORS, DIMENSION_TOOLTIPS, TIER_COLORS } from './constants'
 import { renderIntentBadgeCell, renderScoreCell, renderTierBadgeCell } from './helpers'
 import LeaderboardControls from './LeaderboardControls'
 import LeaderboardFilters from './LeaderboardFilters'
@@ -49,18 +49,11 @@ const DEFAULT_FILTERS: LeaderboardEntriesParams = {
   sort_order: 'desc',
 }
 
-const tierColorByLabel = (label: string): string => {
-  const key = label.toLowerCase() as TierName
-  return TIER_CONFIG[key]?.color ?? '#6b7280'
-}
+const tierColorByLabel = (label: string): string => TIER_COLORS[label.toLowerCase()] ?? '#6b7280'
 
-const dimensionColorByLabel = (label: string): string => {
-  const entry = Object.values(DIMENSION_CONFIG).find(
-    (dimension) => dimension.label === label || dimension.name === label
-  )
-
-  return entry?.color ?? '#6b7280'
-}
+// colorIdField="dimension_id" ensures this receives "d1"/"d2" etc., not the full dimension name
+const dimensionColorByLabel = (label: string): string =>
+  DIMENSION_COLORS[label.toLowerCase()] ?? '#6b7280'
 
 const LeaderboardTab: FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
@@ -94,10 +87,7 @@ const LeaderboardTab: FC = () => {
     return params
   }, [extraParams, filters])
 
-  const tableKey = useMemo(
-    () => JSON.stringify({ view, seasonKey, tableFilters }),
-    [view, seasonKey, tableFilters]
-  )
+  const tableKey = useMemo(() => `${view}-${seasonKey ?? 'current'}`, [view, seasonKey])
 
   const sortState: SortState = useMemo(
     () => ({
@@ -130,8 +120,13 @@ const LeaderboardTab: FC = () => {
 
     setFilters((prev) => {
       const isSameKey = prev.sort_by === apiKey
-      const nextSortOrder = isSameKey && prev.sort_order === 'desc' ? 'asc' : 'desc'
 
+      if (isSameKey && prev.sort_order === 'asc') {
+        const { sort_by: _, sort_order: __, ...rest } = prev
+        return { ...rest, page: 0 }
+      }
+
+      const nextSortOrder = isSameKey && prev.sort_order === 'desc' ? 'asc' : 'desc'
       return { ...prev, sort_by: apiKey, sort_order: nextSortOrder, page: 0 }
     })
   }, [])
@@ -231,6 +226,7 @@ const LeaderboardTab: FC = () => {
           valueField="avg_score"
           yAxisLabel="avg_score"
           colorByLabel={dimensionColorByLabel}
+          colorIdField="dimension_id"
           extraParams={extraParams}
         />
       </section>
@@ -260,6 +256,8 @@ const LeaderboardTab: FC = () => {
           columnLabels={COLUMN_LABELS}
           columnTooltips={DIMENSION_TOOLTIPS}
           tableStyles={LEADERBOARD_TABLE_STYLES}
+          softReload
+          minLoadingHeight="500px"
         />
       </section>
 

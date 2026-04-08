@@ -21,8 +21,8 @@ import type { AnalyticsPaginatedRequestParams } from '@/types/analytics'
 import { TabularMetricType, TabularResponse } from '@/types/analytics'
 
 import AnalyticsWidget from '../AnalyticsWidget'
-import { MEDAL_ICONS, DIMENSION_CONFIG } from './constants'
-import { getTierConfig, DimensionBar } from './helpers'
+import { MEDAL_ICONS } from './constants'
+import { getTierConfig, getDimensionConfig, DimensionBar } from './helpers'
 
 interface LeaderboardTopPerformersProps {
   snapshotId?: string
@@ -121,13 +121,12 @@ const LeaderboardTopPerformers: FC<LeaderboardTopPerformersProps> = ({
                   {dimensions.map((dim) => {
                     const dimId = dim.id ?? dim.dimension_id
                     if (!dimId) return null
-                    const config = DIMENSION_CONFIG[dimId]
-                    if (!config) return null
+                    const config = getDimensionConfig(dimId)
                     const dimScore = typeof dim.score === 'number' ? dim.score : 0
                     return (
                       <DimensionBar
                         key={dimId}
-                        label={`${config.label} · ${config.name}`}
+                        label={config.label}
                         score={dimScore * 100}
                         color={config.color}
                       />

@@ -57,6 +57,8 @@ interface BarChartWidgetProps {
   horizontal?: boolean
   actions?: ReactNode
   colorByLabel?: (label: string, index: number) => string
+  /** Row field used as the color key passed to colorByLabel (defaults to labelField) */
+  colorIdField?: string
 }
 
 /**
@@ -77,6 +79,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
   horizontal = false,
   actions,
   colorByLabel,
+  colorIdField,
 }) => {
   const { loading, error } = useSnapshot(analyticsStore)
   const [data, setData] = useState<TabularResponse | null>(null)
@@ -133,12 +136,18 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
         {
           label: yAxisLabel,
           data: values,
-          backgroundColor: labels.map(
-            (label, index) => colorByLabel?.(label, index) || palette[index] || barColor
-          ),
-          borderColor: labels.map(
-            (label, index) => colorByLabel?.(label, index) || palette[index] || barColor
-          ),
+          backgroundColor: labels.map((label, index) => {
+            const colorKey = colorIdField
+              ? String(data?.data.rows[index]?.[colorIdField] ?? label)
+              : label
+            return colorByLabel?.(colorKey, index) || palette[index] || barColor
+          }),
+          borderColor: labels.map((label, index) => {
+            const colorKey = colorIdField
+              ? String(data?.data.rows[index]?.[colorIdField] ?? label)
+              : label
+            return colorByLabel?.(colorKey, index) || palette[index] || barColor
+          }),
           borderWidth: 0,
           borderRadius: 6,
           barPercentage: 0.9,

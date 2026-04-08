@@ -50,6 +50,8 @@ interface TableWidgetProps {
   }
   customRenderColumns?: Record<string, (item: Record<string, any>) => ReactElement>
   actions?: ReactNode
+  softReload?: boolean
+  minLoadingHeight?: string
   sort?: SortState
   onSort?: (key: string) => void
   sortableColumns?: string[]
@@ -100,6 +102,8 @@ const TableWidget: FC<TableWidgetProps> = ({
   tableStyles,
   customRenderColumns: customRenderColumnsProp,
   actions,
+  softReload,
+  minLoadingHeight,
   sort: sortProp,
   onSort: onSortProp,
   sortableColumns,
@@ -110,6 +114,10 @@ const TableWidget: FC<TableWidgetProps> = ({
   const [data, setData] = useState<TabularResponse | null>(initialData || null)
   const [page, setPage] = useState(0)
   const [perPage, setPerPage] = useState(10)
+
+  useEffect(() => {
+    setPage(0)
+  }, [filters])
 
   const fetchData = useCallback(async () => {
     if (initialData) return
@@ -325,8 +333,7 @@ const TableWidget: FC<TableWidgetProps> = ({
           tableStyles.columnWidths && data
             ? filteredColumns
                 .map((col, index) => {
-                  const width = tableStyles.columnWidths![col.id]
-                  if (!width) return ''
+                  const width = tableStyles.columnWidths![col.id] ?? '120px'
                   return `
           .${tableStyles.className} th:nth-child(${index + 1}),
           .${tableStyles.className} td:nth-child(${index + 1}) {
@@ -389,6 +396,8 @@ const TableWidget: FC<TableWidgetProps> = ({
       error={error[metricType]}
       expandable={expandable}
       actions={actions}
+      softReload={softReload}
+      minLoadingHeight={minLoadingHeight}
     >
       {renderTableContent()}
     </AnalyticsWidget>

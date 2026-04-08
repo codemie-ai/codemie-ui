@@ -52,7 +52,7 @@ const LeaderboardControls: FC<LeaderboardControlsProps> = ({
             className={cn(
               'px-4 py-2 text-sm font-medium transition-colors',
               view === option.value
-                ? 'bg-border-interactive text-white'
+                ? 'bg-surface-interactive-active text-text-primary'
                 : 'bg-surface-base-secondary text-text-secondary hover:bg-surface-base-tertiary'
             )}
           >

@@ -17,7 +17,7 @@ import { FC, useState } from 'react'
 
 import type { LeaderboardDimension } from '@/types/analytics'
 
-import { DIMENSION_CONFIG, ICON_MAP } from './constants'
+import { DIMENSION_COLORS, ICON_MAP } from './constants'
 
 interface LeaderboardDimensionCardProps {
   dim: LeaderboardDimension
@@ -26,9 +26,8 @@ interface LeaderboardDimensionCardProps {
 const LeaderboardDimensionCard: FC<LeaderboardDimensionCardProps> = ({ dim }) => {
   const [open, setOpen] = useState(false)
   const [showCalc, setShowCalc] = useState(false)
-  const config = DIMENSION_CONFIG[dim.id]
-  const color = dim.color ?? config?.color ?? '#6b7280'
-  const rawIcon = dim.icon ?? config?.icon ?? ''
+  const color = dim.color ?? DIMENSION_COLORS[dim.id] ?? '#6b7280'
+  const rawIcon = dim.icon ?? ''
   const icon = ICON_MAP[rawIcon] ?? rawIcon
   const scorePercent = (dim.score ?? 0) * 100
 
@@ -42,7 +41,7 @@ const LeaderboardDimensionCard: FC<LeaderboardDimensionCardProps> = ({ dim }) =>
       >
         <span className="text-base">{icon}</span>
         <span className="flex-1 text-sm font-semibold text-text-primary">
-          {dim.label ?? dim.name ?? config?.name}
+          {dim.label ?? dim.name}
         </span>
         <div className="h-2 w-32 overflow-hidden rounded-full bg-surface-base-tertiary">
           <div
@@ -69,10 +68,8 @@ const LeaderboardDimensionCard: FC<LeaderboardDimensionCardProps> = ({ dim }) =>
             </p>
           )}
 
-          {(dim.description ?? config?.description) && (
-            <p className="mb-3 text-xs leading-relaxed text-text-quaternary">
-              {dim.description ?? config?.description}
-            </p>
+          {dim.description && (
+            <p className="mb-3 text-xs leading-relaxed text-text-quaternary">{dim.description}</p>
           )}
 
           {Array.isArray(dim.components) && dim.components.length > 0 && (

@@ -69,7 +69,7 @@ const LeaderboardFilters: FC<LeaderboardFiltersProps> = ({ filters, onChange }) 
         value={searchValue}
         onChange={(e) => handleSearchChange(e.target.value)}
         leftIcon={<SearchSvg className="h-4 w-4 text-text-quaternary" />}
-        containerClass="min-w-[220px] max-w-[320px] flex-1"
+        rootClass="w-[270px] shrink-0"
       />
 
       <Select
