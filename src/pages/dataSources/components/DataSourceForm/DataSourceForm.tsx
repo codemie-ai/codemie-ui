@@ -33,6 +33,7 @@ import Textarea from '@/components/form/Textarea'
 import GuardrailAssignmentPanel from '@/components/guardrails/GuardrailAssignmentPanel/GuardrailAssignmentPanel'
 import InfoWarning from '@/components/InfoWarning'
 import ProjectSelector from '@/components/ProjectSelector'
+import Spinner from '@/components/Spinner/Spinner'
 import {
   INDEX_TYPES,
   INDEX_TYPE_SUMMARY,
@@ -61,12 +62,16 @@ import IndexTypeField from './IndexTypeField'
 
 export const FULL_REINDEX = 'full_reindex'
 
-const shouldShowScheduling = (indexType: string, sharepointAuthType: string | null = null) =>
-  indexType !== INDEX_TYPES.FILE &&
-  indexType !== INDEX_TYPES.PROVIDER &&
-  !(
-    indexType === INDEX_TYPES.SHAREPOINT && sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
+const shouldShowScheduling = (indexType: string, sharepointAuthType: string | null = null) => {
+  return (
+    indexType !== INDEX_TYPES.PROVIDER &&
+    !(
+      indexType === INDEX_TYPES.SHAREPOINT &&
+      sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
+    ) &&
+    Object.values(INDEX_TYPES).includes(indexType as IndexType)
   )
+}
 
 interface Props {
   onClose: () => void
@@ -90,6 +95,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
   const [googleDocsGuideConfig, setGoogleDocsGuideConfig] = useState<any>(null)
   const [googleDocsGuideEnabled, setGoogleDocsGuideEnabled] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(true)
   const [isProviderSchemasLoaded, setIsProviderSchemasLoaded] = useState(false)
 
   // Update parent component when isSubmitting changes
@@ -191,6 +197,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
       const { googleDocsGuideEnabled, googleDocsGuideConfig } = await checkCustomerConfig()
       setGoogleDocsGuideConfig(googleDocsGuideConfig)
       setGoogleDocsGuideEnabled(googleDocsGuideEnabled)
+      setIsInitializing(false)
     }
 
     initialize()
@@ -228,6 +235,10 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
   const csvPresent = useMemo(() => {
     return files?.some((file: any) => file.type === 'text/csv') ?? false
   }, [files])
+
+  if (isInitializing) {
+    return <Spinner inline rootClassName={cn('py-20', isPopup && 'py-4')} />
+  }
 
   return (
     <div className={cn('flex flex-col gap-4 py-10', isPopup && 'py-2')}>
