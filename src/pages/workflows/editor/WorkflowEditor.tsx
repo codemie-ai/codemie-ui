@@ -590,7 +590,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
             <ConfigPanel
               ref={configPanelRef}
               workflow={workflow}
-              yamlConfig={yamlConfig}
+              yamlConfig={serialize(editor.config)}
               visibleTabs={tabs}
               activeTab={activeTab}
               onActiveTabChange={setActiveTab}

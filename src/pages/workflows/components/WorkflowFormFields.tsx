@@ -16,9 +16,11 @@
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useForm, Controller } from 'react-hook-form'
+import { useSnapshot } from 'valtio'
 
 import VisualizeSvg from '@/assets/icons/vizualize.svg?react'
 import Button from '@/components/Button'
+import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
@@ -28,8 +30,11 @@ import Spinner from '@/components/Spinner'
 import ZoomableImage from '@/components/ZoomableImage'
 import { ButtonType } from '@/constants/index'
 import { YAML_PLACEHOLDER } from '@/constants/workflows'
+import { settingsStore } from '@/store/settings'
 import { workflowsStore } from '@/store/workflows'
 import { GuardrailEntity } from '@/types/entity/guardrail'
+import { Setting } from '@/types/entity/setting'
+import { hasUserIntegrationInYamlConfig } from '@/utils/workflows'
 
 import WorkflowConfigField from './WorkflowConfigField'
 import { WorkflowFormValuesWithYaml, workflowSchema } from './workflowSchema'
@@ -73,6 +78,7 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
       watch,
       trigger,
       getValues,
+      setValue,
     } = useForm<WorkflowFormValuesWithYaml>({
       resolver: yupResolver(workflowSchema) as any,
       mode: 'all',
@@ -88,6 +94,25 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
     })
 
     const values = watch()
+
+    const { settings, indexSettings } = useSnapshot(settingsStore)
+
+    useEffect(() => {
+      if (Object.keys(settings).length === 0) {
+        indexSettings()
+      }
+    }, [])
+
+    const isUserIntegration = hasUserIntegrationInYamlConfig(
+      values.yaml_config ?? '',
+      settings as Record<string, Setting[]>
+    )
+
+    useEffect(() => {
+      if (isUserIntegration) {
+        setValue('shared', false, { shouldDirty: false })
+      }
+    }, [isUserIntegration, setValue])
 
     useEffect(() => {
       onValidityChange?.(isValid)
@@ -159,15 +184,24 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
                   <Controller
                     name="shared"
                     control={control}
+                    disabled={isUserIntegration}
                     render={({ field }) => (
                       <Switch
                         id="shared"
                         label="Shared with Project Team"
                         value={field.value}
                         onChange={(e) => field.onChange(e.target.checked)}
+                        disabled={isUserIntegration}
+                        styledDisabled={isUserIntegration}
                       />
                     )}
                   />
+                  {isUserIntegration && (
+                    <InfoBox>
+                      Sharing is disabled because this workflow contains User-integration
+                      configuration.
+                    </InfoBox>
+                  )}
                 </div>
               </div>
             </div>

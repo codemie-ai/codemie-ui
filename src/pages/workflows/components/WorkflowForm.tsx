@@ -30,10 +30,12 @@ import { YAML_PLACEHOLDER } from '@/constants/workflows'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import WorkflowNodeEditor, { WorkflowEditorRef } from '@/pages/workflows/editor/WorkflowEditor'
 import { appInfoStore } from '@/store/appInfo'
+import { settingsStore } from '@/store/settings'
 import { userStore } from '@/store/user'
 import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
-import { isVisualEditorEnabled } from '@/utils/workflows'
+import { Setting } from '@/types/entity/setting'
+import { hasUserIntegrationInYamlConfig, isVisualEditorEnabled } from '@/utils/workflows'
 
 import WorkflowFormFields, { WorkflowFormFieldsRef } from './WorkflowFormFields'
 import { baseWorkflowSchema } from './workflowSchema'
@@ -81,6 +83,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
     ref
   ) => {
     const { configs } = useSnapshot(appInfoStore)
+    const { settings, indexSettings } = useSnapshot(settingsStore)
     const visualEditorEnabled = isVisualEditorEnabled(configs as ConfigItem[])
 
     const formFieldsRef = useRef<WorkflowFormFieldsRef>(null)
@@ -96,6 +99,18 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
       project: workflow?.project || null,
       guardrail_assignments: workflow.guardrail_assignments ?? [],
     })
+
+    useEffect(() => {
+      if (Object.keys(settings).length === 0) {
+        indexSettings()
+      }
+    }, [])
+
+    useEffect(() => {
+      if (hasUserIntegrationInYamlConfig(yamlConfig, settings as Record<string, Setting[]>)) {
+        setWorkflowFields((prev) => ({ ...prev, shared: false }))
+      }
+    }, [yamlConfig, settings])
 
     const formId = FormIDs.WORKFLOW_FORM
 

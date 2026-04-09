@@ -14,44 +14,70 @@
 //
 
 import { yupResolver } from '@hookform/resolvers/yup'
-import React, { forwardRef, useImperativeHandle } from 'react'
+import { forwardRef, useImperativeHandle, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
+import { useSnapshot } from 'valtio'
 
+import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import GuardrailAssignmentPanel from '@/components/guardrails/GuardrailAssignmentPanel/GuardrailAssignmentPanel'
 import ProjectSelector from '@/components/ProjectSelector'
 import { baseWorkflowSchema, WorkflowFormValues } from '@/pages/workflows/components/workflowSchema'
+import { settingsStore } from '@/store/settings'
 import { GuardrailEntity } from '@/types/entity/guardrail'
+import { Setting } from '@/types/entity/setting'
+import { hasUserIntegrationInYamlConfig } from '@/utils/workflows'
 
 import TabFooter from './components/TabFooter'
 
 interface GeneralConfigTabProps {
   defaultValues?: Partial<WorkflowFormValues>
+  yamlConfig?: string
   onChange?: (values: WorkflowFormValues) => void
   onUpdate?: (values: WorkflowFormValues) => void
   onClose: (skipDirtyCheck?: boolean) => void
 }
 
 const GeneralConfigTab = forwardRef(
-  ({ defaultValues = {}, onChange, onUpdate, onClose }: GeneralConfigTabProps, ref) => {
-    const { control, formState, trigger, getValues, watch, reset } = useForm<WorkflowFormValues>({
-      resolver: yupResolver(baseWorkflowSchema) as any,
-      mode: 'onChange',
-      defaultValues: {
-        name: defaultValues.name ?? '',
-        project: defaultValues.project ?? '',
-        description: defaultValues.description ?? '',
-        icon_url: defaultValues.icon_url ?? '',
-        shared: defaultValues.shared ?? false,
-        guardrail_assignments: defaultValues.guardrail_assignments ?? [],
-      },
-    })
+  ({ defaultValues = {}, yamlConfig, onChange, onUpdate, onClose }: GeneralConfigTabProps, ref) => {
+    const { settings, indexSettings } = useSnapshot(settingsStore)
+
+    useEffect(() => {
+      if (Object.keys(settings).length === 0) {
+        indexSettings()
+      }
+    }, [])
+
+    const isUserIntegration = hasUserIntegrationInYamlConfig(
+      yamlConfig ?? '',
+      settings as Record<string, Setting[]>
+    )
+
+    const { control, formState, trigger, getValues, watch, reset, setValue } =
+      useForm<WorkflowFormValues>({
+        resolver: yupResolver(baseWorkflowSchema) as any,
+        mode: 'onChange',
+        defaultValues: {
+          name: defaultValues.name ?? '',
+          project: defaultValues.project ?? '',
+          description: defaultValues.description ?? '',
+          icon_url: defaultValues.icon_url ?? '',
+          shared: defaultValues.shared ?? false,
+          guardrail_assignments: defaultValues.guardrail_assignments ?? [],
+        },
+      })
 
     const values = watch()
 
-    React.useEffect(() => {
+    useEffect(() => {
+      if (isUserIntegration) {
+        setValue('shared', false, { shouldDirty: false })
+      }
+    }, [isUserIntegration, setValue])
+
+    useEffect(() => {
       onChange?.(values)
     }, [values, onChange])
 
@@ -103,15 +129,23 @@ const GeneralConfigTab = forwardRef(
             <Controller
               name="shared"
               control={control}
+              disabled={isUserIntegration}
               render={({ field }) => (
                 <Switch
                   id="shared"
                   label="Shared with Project Team"
                   value={field.value}
                   onChange={(e) => field.onChange(e.target.checked)}
+                  disabled={isUserIntegration}
+                  styledDisabled={isUserIntegration}
                 />
               )}
             />
+            {isUserIntegration && (
+              <InfoBox>
+                Sharing is disabled because this workflow contains User-integration configuration.
+              </InfoBox>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">

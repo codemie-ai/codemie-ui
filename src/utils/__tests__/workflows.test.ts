@@ -13,14 +13,14 @@
 // limitations under the License.
 //
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 
 import { ToolkitType } from '@/constants/assistants'
 import { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
 import { AssistantTool } from '@/types/workflowEditor'
 
-import { getToolkitsFromConfiguration } from '../workflows'
+import { getToolkitsFromConfiguration, hasUserIntegrationInYamlConfig } from '../workflows'
 
 describe('getToolkitsFromConfiguration', () => {
   // Mock toolkit names (using string literals since TOOLKITS doesn't have all integration names)
@@ -326,5 +326,78 @@ describe('getToolkitsFromConfiguration', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].tools[0].settings).toBeNull()
+  })
+})
+
+describe('hasUserIntegrationInYamlConfig', () => {
+  const createUserSetting = (alias: string): Setting => ({
+    user_id: 'user-123',
+    id: `setting-${alias}`,
+    date: '2024-01-01',
+    alias,
+    credential_type: 'oauth2',
+    update_date: '2024-01-01',
+    project_name: 'test-project',
+    default: false,
+    credential_values: [{ key: 'api_key', value: 'test-key' }],
+    setting_hash: 'hash-123',
+    is_global: false,
+    setting_type: 'user',
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('should return true when top-level tools contain a user-integration alias', () => {
+    const yamlConfig = `
+tools:
+  - name: github_create_issue
+    integration_alias: github-user
+`
+    const result = hasUserIntegrationInYamlConfig(yamlConfig, {
+      github: [createUserSetting('github-user')],
+    })
+
+    expect(result).toBe(true)
+  })
+
+  it('should return true when an assistant tool has a user-integration alias', () => {
+    const yamlConfig = `
+assistants:
+  - name: my_assistant
+    tools:
+      - name: slack_send_message
+        integration_alias: slack-user
+`
+    const result = hasUserIntegrationInYamlConfig(yamlConfig, {
+      slack: [createUserSetting('slack-user')],
+    })
+
+    expect(result).toBe(true)
+  })
+
+  it('should return false when alias does not match any user-type setting', () => {
+    const yamlConfig = `
+tools:
+  - name: github_create_issue
+    integration_alias: unknown-alias
+`
+    const result = hasUserIntegrationInYamlConfig(yamlConfig, {
+      github: [createUserSetting('github-user')],
+    })
+
+    expect(result).toBe(false)
+  })
+
+  it('should return false and log error when yaml is invalid', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    const result = hasUserIntegrationInYamlConfig('key: [unclosed bracket', {
+      github: [createUserSetting('github-user')],
+    })
+
+    expect(result).toBe(false)
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to parse yaml config:', expect.any(Error))
   })
 })

@@ -341,6 +341,7 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
           <GeneralConfigTab
             ref={activeTabRef}
             defaultValues={defaultValues}
+            yamlConfig={yamlConfig}
             onUpdate={handleWorkflowUpdate}
             onClose={handleClose}
           />

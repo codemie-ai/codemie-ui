@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import yaml from 'js-yaml'
+
 import { TOOLKITS } from '@/constants/assistants'
 import { WORKFLOW_VISUAL_EDITOR_FLAG } from '@/constants/workflows'
 import { MCPServerDetails } from '@/types/entity'
@@ -20,7 +22,7 @@ import { AssistantToolkit } from '@/types/entity/assistant'
 import { ConfigItem } from '@/types/entity/configuration'
 import { Setting } from '@/types/entity/setting'
 import { AssistantTool } from '@/types/workflowEditor'
-import { isConfigItemEnabled } from '@/utils/settings'
+import { isConfigItemEnabled, SETTING_TYPE_USER } from '@/utils/settings'
 
 import { applyToolkitSettings } from './toolkit'
 
@@ -165,6 +167,58 @@ export const isVisualEditorEnabled = (configs: ConfigItem[]): boolean => {
     isConfigItemEnabled(configs, WORKFLOW_VISUAL_EDITOR_FLAG) ||
     import.meta.env.VITE_WORKFLOW_VISUAL_EDITOR_ENABLED === 'true'
   )
+}
+
+const isUserAlias = (alias: string | undefined, allSettings: Setting[]): boolean => {
+  if (!alias) return false
+  const match = allSettings.find((s) => s.alias === alias)
+  return match?.setting_type === SETTING_TYPE_USER
+}
+
+const hasUserAliasInTopLevelTools = (tools: any[], allSettings: Setting[]): boolean => {
+  return tools.some(
+    (tool) =>
+      isUserAlias(tool.integration_alias, allSettings) ||
+      isUserAlias(tool.mcp_server?.integration_alias, allSettings)
+  )
+}
+
+const hasUserAliasInAssistant = (assistant: any, allSettings: Setting[]): boolean => {
+  const toolsMatch =
+    Array.isArray(assistant.tools) &&
+    assistant.tools.some((tool: any) => isUserAlias(tool.integration_alias, allSettings))
+
+  const mcpServersMatch =
+    Array.isArray(assistant.mcp_servers) &&
+    assistant.mcp_servers.some((server: any) => isUserAlias(server.integration_alias, allSettings))
+
+  return toolsMatch || mcpServersMatch
+}
+
+export const hasUserIntegrationInYamlConfig = (
+  yamlConfig: string,
+  settings: Record<string, Setting[]>
+): boolean => {
+  try {
+    const parsed = yaml.load(yamlConfig) as any
+    const allSettings = Object.values(settings).flat()
+
+    if (Array.isArray(parsed?.tools) && hasUserAliasInTopLevelTools(parsed.tools, allSettings)) {
+      return true
+    }
+
+    if (
+      Array.isArray(parsed?.assistants) &&
+      parsed.assistants.some((assistant: any) => hasUserAliasInAssistant(assistant, allSettings))
+    ) {
+      return true
+    }
+
+    return false
+  } catch (error) {
+    console.error('Failed to parse yaml config:', error)
+    return false
+  }
 }
 
 export const normalizeToolkitSettingsForToolForm = (
