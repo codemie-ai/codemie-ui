@@ -41,6 +41,7 @@ export interface AssistantConfiguration {
   datasource_ids?: string[]
   mcp_servers?: MCPServerDetails[]
   exclude_extra_context_tools?: boolean
+  skill_ids?: string[]
   prompt_variables?: AssistantPromptVariable[]
 }
 

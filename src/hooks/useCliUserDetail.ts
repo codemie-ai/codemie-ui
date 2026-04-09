@@ -23,7 +23,6 @@ import {
 import { AnalyticsQueryParams, SummariesResponse, TabularResponse } from '@/types/analytics'
 import api from '@/utils/api'
 
-
 interface CliUserDetailState {
   meta: UserDetailMetaResponse | null
   keyMetrics: SummariesResponse | null

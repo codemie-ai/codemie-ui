@@ -232,6 +232,7 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
               })) || []
           ),
           datasource_ids: virtualAssistantValues.context.map((c) => c.id),
+          skill_ids: virtualAssistantValues.skill_ids ?? [],
         }
       } else {
         finalAssistantConfig = {

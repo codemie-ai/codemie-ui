@@ -34,6 +34,9 @@ import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import Button from '@/components/Button'
 import ExpandableTextarea from '@/components/form/ExpandableTextarea/ExpandableTextarea'
 import Input from '@/components/form/Input'
+import SkillSelector from '@/components/SkillSelector'
+import { MAX_SKILLS_PER_ASSISTANT } from '@/constants/skills'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { AssistantFormContext } from '@/pages/assistants/components/AssistantForm/AssistantForm'
 import ContextSelector from '@/pages/assistants/components/AssistantForm/components/ContextSelector'
 import LLMSelector from '@/pages/assistants/components/AssistantForm/components/LLMSelector'
@@ -59,7 +62,10 @@ import FieldController from './FieldController'
 import { useWorkflowContext } from '../../hooks/useWorkflowContext'
 import { registerFields } from '../../utils/visualEditorFieldRegistry'
 
-registerFields(['system_prompt', 'model', 'temperature', 'datasource_ids'], NodeTypes.ASSISTANT)
+registerFields(
+  ['system_prompt', 'model', 'temperature', 'datasource_ids', 'skill_ids'],
+  NodeTypes.ASSISTANT
+)
 
 export interface VirtualAssistantFormValues {
   system_prompt: string
@@ -69,6 +75,7 @@ export interface VirtualAssistantFormValues {
   toolkits: AssistantToolkit[]
   mcp_servers: MCPServerDetails[]
   context: Array<AssistantContext>
+  skill_ids: string[]
 }
 
 interface VirtualAssistantFormProps {
@@ -112,6 +119,10 @@ const validationSchema = Yup.object().shape({
       })
     )
     .default([]),
+  skill_ids: Yup.array()
+    .of(Yup.string())
+    .max(MAX_SKILLS_PER_ASSISTANT, `Maximum ${MAX_SKILLS_PER_ASSISTANT} skills allowed`)
+    .default([]),
 })
 
 const getDefaultValues = (config?: AssistantConfiguration): VirtualAssistantFormValues => ({
@@ -122,6 +133,7 @@ const getDefaultValues = (config?: AssistantConfiguration): VirtualAssistantForm
   toolkits: [],
   mcp_servers: [],
   context: [],
+  skill_ids: config?.skill_ids ?? [],
 })
 
 const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistantFormProps>(
@@ -129,6 +141,7 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
     const { availableContext, availableToolkits } = useSnapshot(assistantsStore)
     const { activeIssue } = useWorkflowContext()
     const { settings } = useSnapshot(settingsStore)
+    const [isSkillsEnabled] = useFeatureFlag('skills')
     const {
       control,
       getValues,
@@ -351,6 +364,16 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
               />
             )}
           />
+
+          {isSkillsEnabled && (
+            <FieldController
+              name="skill_ids"
+              control={control}
+              render={({ field, fieldState }) => (
+                <SkillSelector {...field} project={project} error={fieldState.error?.message} />
+              )}
+            />
+          )}
 
           <AssistantFormContext.Provider value={{ project, isChatConfig: true }}>
             <ToolsConfiguration
