@@ -74,7 +74,7 @@ const LeaderboardFilters: FC<LeaderboardFiltersProps> = ({ filters, onChange }) 
 
       <Select
         value={filters.tier ?? null}
-        onChange={(e) => onChange({ tier: (e.value as string) || undefined, page: 0 })}
+        onChangeValue={(val) => onChange({ tier: val ?? undefined, page: 0 })}
         options={TIER_FILTER_OPTIONS}
         placeholder="All Tiers"
         className="min-w-[130px]"
@@ -82,7 +82,7 @@ const LeaderboardFilters: FC<LeaderboardFiltersProps> = ({ filters, onChange }) 
 
       <Select
         value={filters.intent ?? null}
-        onChange={(e) => onChange({ intent: (e.value as string) || undefined, page: 0 })}
+        onChangeValue={(val) => onChange({ intent: val ?? undefined, page: 0 })}
         options={INTENT_FILTER_OPTIONS}
         placeholder="All Intents"
         className="min-w-[130px]"
@@ -91,7 +91,7 @@ const LeaderboardFilters: FC<LeaderboardFiltersProps> = ({ filters, onChange }) 
       {projects.length > 0 && (
         <Select
           value={filters.project ?? null}
-          onChange={(e) => onChange({ project: (e.value as string) || undefined, page: 0 })}
+          onChangeValue={(val) => onChange({ project: val ?? undefined, page: 0 })}
           options={projectOptions}
           placeholder="All Projects"
           className="min-w-[130px]"

@@ -23,11 +23,12 @@ import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { FilterOption } from '@/types/filters'
 import { cn } from '@/utils/utils'
 
-interface SelectProps {
+interface SelectProps<TValue extends string | number | null = string | number | null> {
   id?: string
   name?: string
-  value?: string | number | null
-  onChange: (e: DropdownChangeEvent) => void
+  value?: TValue
+  onChange?: (e: DropdownChangeEvent) => void
+  onChangeValue?: (value: TValue | null) => void
   options: FilterOption[]
   placeholder?: string
   className?: string
@@ -50,13 +51,25 @@ interface SelectProps {
   hint?: string
 }
 
-const Select = forwardRef<Dropdown, SelectProps>(
-  (
+// PrimeReact returns the full option object when the selected value is an empty
+// string (a known bug). This helper always returns a safe primitive.
+function extractValue(raw: unknown): string | number | null {
+  if (raw === null || raw === undefined) return null
+  if (typeof raw === 'string' || typeof raw === 'number') return raw
+  // Object leaked through — treat as cleared selection
+  return null
+}
+
+// forwardRef does not support generics natively, so we cast the result to preserve TValue inference.
+const Select = forwardRef(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  <TValue extends string | number | null = string | number | null>(
     {
       id,
       name,
       value,
       onChange,
+      onChangeValue,
       options,
       placeholder,
       className = '',
@@ -75,8 +88,8 @@ const Select = forwardRef<Dropdown, SelectProps>(
       loading,
       inputRef,
       hint,
-    },
-    ref
+    }: SelectProps<TValue>,
+    ref: Ref<Dropdown>
   ) => {
     const OptionTemplate = (option) => {
       const optionEl = useRef<HTMLParagraphElement>(null)
@@ -93,6 +106,11 @@ const Select = forwardRef<Dropdown, SelectProps>(
           {option.label}
         </p>
       )
+    }
+
+    const handleChange = (e: DropdownChangeEvent) => {
+      onChange?.(e)
+      onChangeValue?.(extractValue(e.value) as TValue | null)
     }
 
     const shouldAddValue =
@@ -119,7 +137,7 @@ const Select = forwardRef<Dropdown, SelectProps>(
             name={name}
             value={value}
             options={enhancedOptions}
-            onChange={onChange}
+            onChange={handleChange}
             disabled={disabled}
             placeholder={placeholder}
             panelFooterTemplate={panelFooterTemplate}
@@ -159,6 +177,8 @@ const Select = forwardRef<Dropdown, SelectProps>(
       </div>
     )
   }
-)
+) as <TValue extends string | number | null = string | number | null>(
+  props: SelectProps<TValue> & { ref?: Ref<Dropdown> }
+) => React.ReactElement
 
 export default Select
