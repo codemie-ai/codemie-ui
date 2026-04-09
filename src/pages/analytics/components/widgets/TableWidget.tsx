@@ -341,8 +341,8 @@ const TableWidget: FC<TableWidgetProps> = ({
             min-width: ${width};
             max-width: ${width};
             box-sizing: border-box;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            word-break: break-word;
           }
         `
                 })
