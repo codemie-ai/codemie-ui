@@ -455,7 +455,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         <form
           onSubmit={handleFormSubmit}
           className={cn(
-            'relative flex flex-col gap-y-6 p-6 pb-10',
+            'relative flex flex-col gap-y-6 p-6 pb-10 w-full',
             isChatConfig && 'pl-4 pr-2 pt-0 max-w-full'
           )}
         >

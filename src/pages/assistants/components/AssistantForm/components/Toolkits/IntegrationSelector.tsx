@@ -13,14 +13,13 @@
 // limitations under the License.
 //
 
-import { Dropdown } from 'primereact/dropdown'
-import { useRef } from 'react'
+import { useEffect, useState } from 'react'
 
-import PlusSvg from '@/assets/icons/plus.svg?react'
-import Button from '@/components/Button'
-import Select from '@/components/form/Select'
 import { Setting } from '@/types/entity/setting'
 import { cn } from '@/utils/utils'
+
+import { AutoCredentialsSwitch } from './AutoCredentialsSwitch'
+import { IntegrationSelectDropdown } from './IntegrationSelectDropdown'
 
 interface IntegrationSelectorProps {
   value?: Setting | null
@@ -35,6 +34,7 @@ interface IntegrationSelectorProps {
   tooltipPosition?: 'top' | 'bottom' | 'left' | 'right' | 'mouse'
   onChange: (value?: Setting) => void
   onAddSettingClick: () => void
+  onAutoModeChange?: (isAuto: boolean) => void
   short?: boolean
   error?: string
 }
@@ -45,72 +45,51 @@ const IntegrationSelector = ({
   addButtonLabel,
   label,
   placeholder,
-  optionTruncateThreshold = 16,
+  optionTruncateThreshold,
   className,
   selectClassName,
   buttonClassName,
   tooltipPosition,
   onChange,
   onAddSettingClick,
+  onAutoModeChange,
   short: _short,
   error,
 }: IntegrationSelectorProps) => {
-  const selectRef = useRef<Dropdown>(null)
+  const [isAutoMode, setIsAutoMode] = useState(!value)
 
-  const selectOptions = settingsDefinitions?.map((option) => ({
-    label: `${option.alias} (${option.setting_type})`,
-    value: option.id,
-  }))
+  useEffect(() => {
+    const nextAuto = !value
+    setIsAutoMode(nextAuto)
+    onAutoModeChange?.(nextAuto)
+  }, [value])
 
-  const handleClick = () => {
-    selectRef.current?.hide()
-    onAddSettingClick()
+  const handleToggle = (auto: boolean) => {
+    setIsAutoMode(auto)
+    onAutoModeChange?.(auto)
+    if (auto) onChange(undefined)
   }
 
-  const buttonLabel = addButtonLabel ?? 'Add User Integration'
+  const hasOptions = (settingsDefinitions ?? []).length > 0
 
   return (
-    <div className={cn('flex flex-col w-full', className)}>
-      {selectOptions && settingsDefinitions && settingsDefinitions.length > 0 ? (
-        <Select
-          showClear
-          ref={selectRef}
-          tooltipPosition={tooltipPosition}
-          value={settingsDefinitions.find((o) => o.id === value?.id)?.id}
-          options={selectOptions}
-          optionTruncateThreshold={optionTruncateThreshold}
-          label={label}
-          placeholder={placeholder ?? 'Default integration'}
-          rootClassName={cn('ml-auto w-[180px]', selectClassName)}
-          panelClassName={'max-w-[300px]'}
-          onChange={(e) => {
-            const value = settingsDefinitions.find((s) => s.id === e.target.value)!
-            onChange(value)
-          }}
-          error={error}
-          panelFooterTemplate={
-            <Button
-              onClick={handleClick}
-              variant="secondary"
-              className="w-full rounded-t-sm rounded-b-none border-x-0 border-t-0 border-border-specific-panel-outline hover:border-border-specific-panel-outline"
-            >
-              <PlusSvg />
-              {buttonLabel}
-            </Button>
-          }
-        />
-      ) : (
-        <>
-          <Button
-            variant="secondary"
-            onClick={handleClick}
-            className={cn('ml-auto w-[180px]', buttonClassName)}
-          >
-            <PlusSvg /> {buttonLabel}
-          </Button>
-          {error && <div className="text-failed-secondary text-sm mt-1">{error}</div>}
-        </>
-      )}
+    <div className={cn('flex flex-col gap-2 w-full', className)}>
+      {hasOptions && <AutoCredentialsSwitch isAutoMode={isAutoMode} onChange={handleToggle} />}
+      <IntegrationSelectDropdown
+        isAutoMode={isAutoMode}
+        value={value}
+        settingsDefinitions={settingsDefinitions}
+        addButtonLabel={addButtonLabel}
+        label={label}
+        placeholder={placeholder}
+        optionTruncateThreshold={optionTruncateThreshold}
+        selectClassName={selectClassName}
+        buttonClassName={buttonClassName}
+        tooltipPosition={tooltipPosition}
+        onChange={onChange}
+        onAddSettingClick={onAddSettingClick}
+        error={error}
+      />
     </div>
   )
 }

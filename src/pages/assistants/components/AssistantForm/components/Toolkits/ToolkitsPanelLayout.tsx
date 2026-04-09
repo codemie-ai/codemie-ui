@@ -112,8 +112,8 @@ const ToolkitsPanelLayout = ({
 
   return (
     <div className="w-full h-[662px] bg-surface-base-secondary rounded-lg overflow-hidden p-4">
-      <div className="relative grid grid-cols-[376px_1fr] h-full border border-border-primary rounded-2xl overflow-hidden">
-        <div className="absolute top-0 bottom-0 left-[376px] border-l border-border-structural z-10" />
+      <div className="relative grid grid-cols-[320px_1fr] h-full border border-border-primary rounded-2xl overflow-hidden">
+        <div className="absolute top-0 bottom-0 left-[320px] border-l border-border-structural z-10" />
 
         {/* Left: Toolkit list */}
         <div className="relative flex flex-col h-full bg-surface-base-primary overflow-hidden">

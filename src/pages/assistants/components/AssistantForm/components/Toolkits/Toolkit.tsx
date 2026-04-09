@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { Fragment, useContext } from 'react'
+import { Fragment, useContext, useState } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import TooltipButton from '@/components/TooltipButton'
@@ -21,7 +21,10 @@ import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowConte
 import { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
 import { getCredentialType } from '@/utils/settings'
+import { cn } from '@/utils/utils'
 
+import { AutoCredentialsSwitch } from './AutoCredentialsSwitch'
+import { IntegrationSelectDropdown } from './IntegrationSelectDropdown'
 import IntegrationSelector from './IntegrationSelector'
 import ToolkitIcon from '../../../ToolkitIcon'
 
@@ -63,14 +66,13 @@ const Toolkit = ({
   singleToolSelection = false,
   onAddSettingClick,
   searchQuery = '',
-  isChatConfig,
+  isChatConfig: _isChatConfig,
 }: ToolkitProps) => {
   const workflowContext = useContext(WorkflowContext)
 
   const selectedToolkit = selectedToolkits.find(
     (selectedToolkit) => selectedToolkit.toolkit === toolkit.toolkit
   )
-
   const isToolSelected = (tool: Tool) =>
     !!selectedToolkit?.tools.find((selectedTool) => tool.name === selectedTool.name)
 
@@ -115,6 +117,25 @@ const Toolkit = ({
     })
   }
 
+  const [toolkitAutoMode, setToolkitAutoMode] = useState(!selectedToolkit?.settings)
+
+  const [toolAutoModes, setToolAutoModes] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      toolkit.tools.map((tool) => [
+        tool.name,
+        !selectedToolkit?.tools.find((t) => t.name === tool.name)?.settings,
+      ])
+    )
+  )
+
+  const handleToolAutoModeChange = (toolName: string, isAuto: boolean) => {
+    setToolAutoModes((prev) => ({ ...prev, [toolName]: isAuto }))
+    if (isAuto) {
+      const tool = toolkit.tools.find((t) => t.name === toolName)!
+      updateToolSetting(toolkit, tool, undefined)
+    }
+  }
+
   return (
     <div className="flex flex-col">
       {/* Header */}
@@ -127,7 +148,7 @@ const Toolkit = ({
         </div>
       </div>
 
-      <div className="flex gap-6 p-6">
+      <div className="flex gap-6 p-6 w-full">
         {/* Left: tools list */}
         <div className="flex flex-col gap-4 flex-1 min-w-0">
           <h3 className="text-xs text-text-tertiary overflow-hidden overflow-ellipsis text-nowrap">
@@ -177,24 +198,30 @@ const Toolkit = ({
                 </>
               )
             }
+            const showIntegration =
+              isToolSelected(tool) && tool.settings_config && !toolkit.is_external
+            const toolValue = selectedToolkit?.tools.find((tl) => tool.name === tl.name)?.settings
+            const isAutoMode = toolAutoModes[tool.name] ?? !toolValue
+            const hasToolOptions = (settings[getCredentialType(tool.name)] ?? []).length > 0
+
             return (
-              <div key={tool.name} className="flex items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <Checkbox
-                    label={toolLabel}
-                    checked={isToolSelected(tool)}
-                    onChange={() => {
-                      toggleTool(toolkit, tool)
-                      integrationField?.onChange()
-                    }}
-                  />
-                </div>
-                {isToolSelected(tool) && tool.settings_config && !toolkit.is_external && (
-                  <div className={'shrink-0'}>
-                    <IntegrationSelector
-                      className="justify-end"
-                      short={isChatConfig}
-                      value={selectedToolkit?.tools.find((tl) => tool.name === tl.name)?.settings}
+              <div key={tool.name} className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <Checkbox
+                      label={toolLabel}
+                      checked={isToolSelected(tool)}
+                      onChange={() => {
+                        toggleTool(toolkit, tool)
+                        integrationField?.onChange()
+                      }}
+                    />
+                  </div>
+                  {showIntegration && !hasToolOptions && (
+                    <IntegrationSelectDropdown
+                      className="ml-auto"
+                      isAutoMode={isAutoMode}
+                      value={toolValue}
                       settingsDefinitions={settings[getCredentialType(tool.name)]}
                       onAddSettingClick={() => onAddSettingClick(getCredentialType(tool.name))}
                       onChange={(setting) => {
@@ -203,7 +230,26 @@ const Toolkit = ({
                       }}
                       error={integrationField?.error}
                     />
-                  </div>
+                  )}
+                </div>
+                {showIntegration && hasToolOptions && (
+                  <AutoCredentialsSwitch
+                    isAutoMode={isAutoMode}
+                    onChange={(auto) => handleToolAutoModeChange(tool.name, auto)}
+                  />
+                )}
+                {showIntegration && hasToolOptions && (
+                  <IntegrationSelectDropdown
+                    isAutoMode={isAutoMode}
+                    value={toolValue}
+                    settingsDefinitions={settings[getCredentialType(tool.name)]}
+                    onAddSettingClick={() => onAddSettingClick(getCredentialType(tool.name))}
+                    onChange={(setting) => {
+                      updateToolSetting(toolkit, tool, setting)
+                      integrationField?.onChange()
+                    }}
+                    error={integrationField?.error}
+                  />
                 )}
               </div>
             )
@@ -211,7 +257,17 @@ const Toolkit = ({
         </div>
 
         {/* Right: integration selector (always reserved to keep left column width stable) */}
-        <div className="min-w-[50px] max-w-[180px] shrink-0">
+        <div
+          className={cn(
+            'shrink-0',
+            selectedToolkit &&
+              toolkit.settings_config &&
+              !toolkit.is_external &&
+              toolkitSettingsOptions?.length
+              ? 'w-80'
+              : 'min-w-[50px] max-w-[180px]'
+          )}
+        >
           {toolkit.settings_config &&
             selectedToolkit &&
             !toolkit.is_external &&
@@ -219,7 +275,14 @@ const Toolkit = ({
               const field = getToolkitFieldData()
               return (
                 <div>
-                  <div className="flex flex-col h-[57px] justify-between">
+                  <div
+                    className={cn(
+                      'flex flex-col',
+                      toolkitSettingsOptions?.length
+                        ? cn('justify-between', toolkitAutoMode ? 'h-[50px]' : 'h-[90px]')
+                        : 'gap-2'
+                    )}
+                  >
                     <span className="font-geist-mono text-xs text-text-tertiary">
                       Integrations:
                     </span>
@@ -234,6 +297,7 @@ const Toolkit = ({
                         updateToolkitSetting(toolkit, setting)
                         field?.onChange()
                       }}
+                      onAutoModeChange={setToolkitAutoMode}
                       error={field?.error}
                     />
                   </div>
