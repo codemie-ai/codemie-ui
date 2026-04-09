@@ -16,8 +16,6 @@
 import { ComponentProps, forwardRef, useContext } from 'react'
 
 import { TextareaRef } from '@/components/form/Textarea'
-import { goBackAssistants } from '@/pages/assistants/utils/goBackAssistants'
-import { assistantsStore } from '@/store'
 import { AssistantPromptVariable } from '@/types/entity/assistant'
 import { formatDate, createdBy, SHORT_DATE_FORMAT } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
@@ -60,13 +58,12 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
     },
     ref
   ) => {
-    const { assistant, isChatConfig, isEditing, goBack } = useContext(AssistantFormContext)
+    const { assistant, isEditing } = useContext(AssistantFormContext)
 
     const {
       isExpanded,
       setIsExpanded,
       isLoading,
-      setIsLoading,
       isGenAIPopupVisible,
       setIsGenAIPopupVisible,
       isDiffModalVisible,
@@ -143,26 +140,11 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
       onChange(value2)
       setIsAiGenerated(false)
     }
-    const handleRestore = async () => {
-      if (!assistant || !selectedHistoryOption) return
-      setIsLoading(true)
-
-      try {
-        const response = await assistantsStore.updateAssistant(assistant.id, {
-          ...assistant,
-          system_prompt: selectedHistoryOption.system_prompt,
-          prompt_variables: promptVariables,
-        })
-        if (response.error) {
-          toaster.error(response.error)
-          return
-        }
-        if (isChatConfig) goBack?.()
-        else goBackAssistants()
-        toaster.info('Assistant system instructions have been restored successfully!')
-      } finally {
-        setIsLoading(false)
-      }
+    const handleRestore = () => {
+      if (!selectedHistoryOption) return
+      onChange(selectedHistoryOption.system_prompt)
+      setIsExpanded(false)
+      toaster.info('Assistant system instructions have been restored successfully!')
     }
 
     const historyOptions =
