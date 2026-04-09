@@ -32,6 +32,8 @@ import Tooltip from '@/components/Tooltip/Tooltip'
 import { ButtonType } from '@/constants'
 import {
   INDEX_TYPES,
+  INDEX_TYPE_CHUNK_SUMMARY,
+  INDEX_TYPE_SUMMARY,
   IndexType,
   REPO_INDEX_TYPE_OPTIONS,
   SHAREPOINT_AUTH_TYPES,
@@ -140,6 +142,12 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
     // Check if index_type contains 'bedrock'
     return !!dataSource?.index_type?.toLowerCase().includes('bedrock')
   }, [dataSource?.index_type, dataSource?.provider_fields])
+  const isSummarizationIndexType = useMemo(
+    () =>
+      dataSource?.index_type === INDEX_TYPE_SUMMARY ||
+      dataSource?.index_type === INDEX_TYPE_CHUNK_SUMMARY,
+    [dataSource?.index_type]
+  )
   const {
     reindexProviderIndex,
     updateKBIndex,
@@ -571,7 +579,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                   </div>
                 </div>
               )}
-              {dataSource.summarization_model && (
+              {dataSource.summarization_model && isSummarizationIndexType && (
                 <div className="flex flex-col gap-2 mt-2">
                   <p className="text-xs text-text-quaternary">Summarization model:</p>
                   <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-xs leading-5">
