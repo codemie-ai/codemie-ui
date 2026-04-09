@@ -47,6 +47,7 @@ export const INDEX_STATUSES = {
   COMPLETED: 'completed',
   FAILED: 'failed',
   IN_PROGRESS: 'in_progress',
+  QUEUED: 'queued',
 } as const
 
 interface IndexTypeOption {

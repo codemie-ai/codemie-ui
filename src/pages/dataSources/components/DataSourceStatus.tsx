@@ -27,17 +27,30 @@ interface Props {
 
 const DataSourceStatus: FC<Props> = ({ item }) => {
   const statusInfo = {
+    isQueued: item.is_queued && !item.completed && !item.error,
     isFetching: item.is_fetching && !item.error,
-    isInProgress: !item.completed && !item.error && !item.is_fetching,
+    isInProgress: !item.completed && !item.error && !item.is_fetching && !item.is_queued,
     isError: item.error,
     isCompleted: item.completed,
   }
 
   const isProviderInProgress = statusInfo.isInProgress && item.index_type === INDEX_TYPES.PROVIDER
   const isTag =
-    statusInfo.isFetching || statusInfo.isCompleted || statusInfo.isError || isProviderInProgress
+    statusInfo.isQueued ||
+    statusInfo.isFetching ||
+    statusInfo.isCompleted ||
+    statusInfo.isError ||
+    isProviderInProgress
 
   const { title, classes, dotColor } = useMemo(() => {
+    if (statusInfo.isQueued) {
+      return {
+        title: 'Queued',
+        classes: 'bg-not-started-tertiary border-not-started-secondary text-not-started-primary',
+        dotColor: 'bg-not-started-primary',
+      }
+    }
+
     if (statusInfo.isFetching) {
       return {
         title: 'Fetching',
@@ -67,7 +80,7 @@ const DataSourceStatus: FC<Props> = ({ item }) => {
       classes: 'bg-failed-tertiary border-failed-secondary text-failed-secondary',
       dotColor: 'bg-failed-secondary',
     }
-  }, [statusInfo.isFetching, statusInfo.isCompleted, statusInfo.isError])
+  }, [statusInfo.isQueued, statusInfo.isFetching, statusInfo.isCompleted, statusInfo.isError])
 
   return (
     <div className="flex items-center gap-2">

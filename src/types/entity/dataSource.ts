@@ -76,6 +76,7 @@ export interface DataSource {
   error: boolean
   completed: boolean
   is_fetching: boolean
+  is_queued: boolean
   user_abilities: Array<string>
   jira: {
     jql: string
@@ -148,6 +149,7 @@ export interface DataSourceDetailsResponse {
     oauth_tenant_id?: string
   }
   is_fetching: boolean
+  is_queued: boolean
   setting_id: string
   tokens_usage: {
     input_tokens: number
