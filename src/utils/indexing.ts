@@ -100,6 +100,8 @@ export const getIndexTypeCode = (type = ''): string => {
 }
 
 export const getIndexTypeDisplay = (type: string): string => {
+  if (type === INDEX_TYPE_SUMMARY) return 'Code (Summary)'
+  if (type === INDEX_TYPE_CHUNK_SUMMARY) return 'Code (Chunk-Summary)'
   return type.replace('knowledge_base_', '').replace('llm_routing_', '')
 }
 

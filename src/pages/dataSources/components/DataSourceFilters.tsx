@@ -21,6 +21,8 @@ import UserFilter from '@/components/UserFilter'
 import {
   INDEX_TYPES,
   INDEX_TYPE_CODE,
+  INDEX_TYPE_SUMMARY,
+  INDEX_TYPE_CHUNK_SUMMARY,
   INDEX_STATUSES,
   FILTER_INITIAL_STATE,
 } from '@/constants/dataSources'
@@ -188,13 +190,27 @@ const DataSourceFilters: React.FC<Props> = ({
 
   // Handle applying filters - update URL and localStorage
   const handleApplyFilters = (filters: Record<string, unknown>) => {
-    // Update URL with filters
-    if (userStore.user?.userId) {
-      setFilters(FILTER_ENTITY.DATASOURCES, filters)
+    const expandedFilters = { ...filters }
+
+    if (
+      Array.isArray(expandedFilters.index_type) &&
+      expandedFilters.index_type.includes(INDEX_TYPE_CODE)
+    ) {
+      expandedFilters.index_type = [
+        ...new Set([
+          ...expandedFilters.index_type.filter((t: string) => t !== INDEX_TYPE_CODE),
+          INDEX_TYPE_CODE,
+          INDEX_TYPE_SUMMARY,
+          INDEX_TYPE_CHUNK_SUMMARY,
+        ]),
+      ]
     }
 
-    // Call the original onApplyFilters function
-    onApplyFilters(filters)
+    if (userStore.user?.userId) {
+      setFilters(FILTER_ENTITY.DATASOURCES, expandedFilters)
+    }
+
+    onApplyFilters(expandedFilters)
   }
 
   const areFiltersEmpty = useMemo(() => {
