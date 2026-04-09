@@ -48,7 +48,6 @@ const Accordion = ({
       activeIndex={activeTabIndex}
       onTabChange={(e) => setActiveTabIndex(e.index)}
       className={className}
-      transitionOptions={{ unmountOnExit: false, addEndListener: () => {} }}
       pt={{
         root: () => 'border rounded-lg border-border-primary bg-surface-base-chat overflow-hidden',
       }}
