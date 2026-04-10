@@ -35,6 +35,7 @@ interface IntegrationSelectorProps {
   onChange: (value?: Setting) => void
   onAddSettingClick: () => void
   onAutoModeChange?: (isAuto: boolean) => void
+  showAutoCredentials?: boolean
   short?: boolean
   error?: string
 }
@@ -53,6 +54,7 @@ const IntegrationSelector = ({
   onChange,
   onAddSettingClick,
   onAutoModeChange,
+  showAutoCredentials = false,
   short: _short,
   error,
 }: IntegrationSelectorProps) => {
@@ -74,9 +76,11 @@ const IntegrationSelector = ({
 
   return (
     <div className={cn('flex flex-col gap-2 w-full', className)}>
-      {hasOptions && <AutoCredentialsSwitch isAutoMode={isAutoMode} onChange={handleToggle} />}
+      {hasOptions && showAutoCredentials && (
+        <AutoCredentialsSwitch isAutoMode={isAutoMode} onChange={handleToggle} />
+      )}
       <IntegrationSelectDropdown
-        isAutoMode={isAutoMode}
+        isAutoMode={showAutoCredentials && isAutoMode}
         value={value}
         settingsDefinitions={settingsDefinitions}
         addButtonLabel={addButtonLabel}

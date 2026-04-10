@@ -290,6 +290,7 @@ const Toolkit = ({
                       value={selectedToolkit.settings}
                       tooltipPosition="left"
                       settingsDefinitions={toolkitSettingsOptions}
+                      showAutoCredentials
                       onAddSettingClick={() =>
                         onAddSettingClick(getCredentialType(toolkit.toolkit))
                       }
