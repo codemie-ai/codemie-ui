@@ -48,6 +48,10 @@ const Accordion = ({
       activeIndex={activeTabIndex}
       onTabChange={(e) => setActiveTabIndex(e.index)}
       className={className}
+      transitionOptions={{
+        unmountOnExit: false,
+        timeout: 0,
+      }}
       pt={{
         root: () => 'border rounded-lg border-border-primary bg-surface-base-chat overflow-hidden',
       }}
@@ -55,7 +59,8 @@ const Accordion = ({
       <AccordionTab
         pt={{
           headerAction: () => 'hover:no-underline',
-          content: () => '!p-0 !pt-4',
+          content: () => '!p-0',
+          toggleableContent: () => '',
         }}
         header={(props) => (
           <div className="flex items-center justify-between gap-3 p-4 bg-surface-base-float group transition hover:opacity-85">
@@ -80,7 +85,16 @@ const Accordion = ({
           </div>
         )}
       >
-        {children}
+        <div
+          className={cn(
+            'grid transition-[grid-template-rows] duration-300 ease-in-out',
+            activeTabIndex === 0 ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+          )}
+        >
+          <div className='overflow-hidden'>
+            <div className='pt-4'>{children}</div>
+          </div>
+        </div>
       </AccordionTab>
     </PrimeAccordion>
   )
