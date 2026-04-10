@@ -110,8 +110,8 @@ export const getToolkitsFromConfiguration = (
           const toolData = toolsData.find((td) => td.toolName === tool.name)
           const toolCopy = { ...tool }
 
-          // If tool has an integration_alias, find the corresponding setting
-          if (toolData?.integrationAlias) {
+          // For per-tool integrations only; toolkit-level integrations are handled below
+          if (toolData?.integrationAlias && !availableToolkit.settings_config) {
             const allSettings = Object.values(settings).flat()
             const matchingSetting = allSettings.find(
               (setting) => setting.alias === toolData.integrationAlias
@@ -126,9 +126,14 @@ export const getToolkitsFromConfiguration = (
         })
 
       if (selectedTools.length > 0) {
+        const allSettings = Object.values(settings).flat()
+        const toolkitAlias = availableToolkit.settings_config
+          ? toolsData[0]?.integrationAlias
+          : undefined
         selectedToolkits.push({
           ...availableToolkit,
           tools: selectedTools,
+          settings: toolkitAlias ? allSettings.find((s) => s.alias === toolkitAlias) : undefined,
         })
       }
     }
