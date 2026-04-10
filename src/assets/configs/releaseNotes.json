@@ -1,5 +1,71 @@
 [
   {
+    "version": "2.22.0",
+    "date": "2026-04-10",
+    "issues": [
+      {
+        "title": "Personal Spending widget table wraps incorrectly for column headers and cell data",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11706",
+        "key": "EPMCDME-11706"
+      },
+      {
+        "title": "Datasources page code filter does not display Summary and Chunk-Summary datasources",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11695",
+        "key": "EPMCDME-11695"
+      },
+      {
+        "title": "Add validation for unsupported datasource types in scheduler integration trigger configuration",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11687",
+        "key": "EPMCDME-11687"
+      },
+      {
+        "title": "LLM model is missing on assistant details page after creation until Extra Configuration section is opened and saved",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11676",
+        "key": "EPMCDME-11676"
+      },
+      {
+        "title": "Summarization model is displayed for Confluence and other unsupported data sources instead of Code data source only",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11650",
+        "key": "EPMCDME-11650"
+      },
+      {
+        "title": "Project Management page lacks sorting options and has slow navigation on Administration > Projects",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11634",
+        "key": "EPMCDME-11634"
+      },
+      {
+        "title": "Error \"Datasource index type not supported: summary\" floods logs after restoring Data Sources via Codemie CDK (159,000+ occurrences)",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11579",
+        "key": "EPMCDME-11579"
+      },
+      {
+        "title": "Improve integration selection UX in Assistant creation/edit form by clarifying default integration meaning",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11209",
+        "key": "EPMCDME-11209"
+      },
+      {
+        "title": "Enable support for skills in virtual assistants within workflow execution",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11053",
+        "key": "EPMCDME-11053"
+      },
+      {
+        "title": "Add \"Get Wiki Attachment Content\" tool to retrieve and parse attached files from ADO Wiki pages",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10827",
+        "key": "EPMCDME-10827"
+      }
+    ]
+  },
+  {
     "version": "2.21.0",
     "date": "2026-04-08",
     "issues": [
