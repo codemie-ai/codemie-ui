@@ -21,6 +21,12 @@ export interface ProjectCounters {
   skills_count: number
 }
 
+export interface ProjectSpendingSummaryCompact {
+  current_spending: number
+  budget_limit: number | null
+  total_percent: number
+}
+
 export interface Project {
   id: string
   name: string
@@ -33,6 +39,7 @@ export interface Project {
   created_at?: string | null
   cost_center_id?: string | null
   cost_center_name?: string | null
+  spending?: ProjectSpendingSummaryCompact | null
 }
 
 export interface ProjectRequest {

@@ -90,7 +90,7 @@ describe('ProjectDetailsPage', () => {
     render(<ProjectDetailsPage />)
 
     await waitFor(() => {
-      expect(projectsStore.getProject).toHaveBeenCalledWith('Test Project')
+      expect(projectsStore.getProject).toHaveBeenCalledWith('Test Project', true)
     })
 
     expect(await screen.findByTestId('project-members-manager')).toHaveTextContent('Test Project')
@@ -115,6 +115,6 @@ describe('ProjectDetailsPage', () => {
     })
 
     expect(projectsStore.getProject).toHaveBeenCalledTimes(2)
-    expect(projectsStore.getProject).toHaveBeenNthCalledWith(2, 'Test Project')
+    expect(projectsStore.getProject).toHaveBeenNthCalledWith(2, 'Test Project', true)
   })
 })

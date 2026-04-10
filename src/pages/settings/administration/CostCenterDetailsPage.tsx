@@ -27,7 +27,7 @@ import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { costCentersStore } from '@/store/costCenters'
 import { CostCenterDetail } from '@/types/entity/costCenter'
 import toaster from '@/utils/toaster'
-import { formatDate } from '@/utils/utils'
+import { displayValue, formatDate } from '@/utils/utils'
 
 import CostCenterProjectsManager from './projectsManagement/CostCenterProjectsManager'
 
@@ -128,7 +128,7 @@ const CostCenterDetailsPage = () => {
               <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
                 <div className="text-xs text-text-quaternary mb-2">Description</div>
                 <div className="text-sm text-text-primary whitespace-pre-wrap">
-                  {costCenter.description || '-'}
+                  {displayValue(costCenter.description)}
                 </div>
               </div>
 
@@ -140,7 +140,7 @@ const CostCenterDetailsPage = () => {
                   </div>
                   <div>
                     <div className="text-xs text-text-quaternary mb-1">Created by</div>
-                    <div>{costCenter.created_by || '-'}</div>
+                    <div>{displayValue(costCenter.created_by)}</div>
                   </div>
                   <div className="col-span-2">
                     <div className="text-xs text-text-quaternary mb-1">Created at</div>

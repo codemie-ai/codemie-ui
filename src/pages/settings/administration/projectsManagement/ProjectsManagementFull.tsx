@@ -41,9 +41,10 @@ import NameLinkCell from '@/pages/settings/administration/components/NameLinkCel
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
-import { Project, ProjectType } from '@/types/entity/project'
+import { Project, ProjectSpendingSummaryCompact, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import toaster from '@/utils/toaster'
+import { displayValue } from '@/utils/utils'
 
 import ProjectModal, { ProjectFormData } from './ProjectModal'
 
@@ -69,6 +70,25 @@ const WARNING_MESSAGES = {
 const FEATURE_FLAG_PROJECT_CREATION = 'features:userAbilityToCreateProject'
 const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
 const COST_CENTER_COLUMN_KEY = 'cost_center_name'
+const SPEND_COLUMN_KEY = 'spend'
+
+const formatCurrency = (value: number): string =>
+  `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const renderSpendingCell = (spending: ProjectSpendingSummaryCompact | null | undefined) => {
+  if (!spending) return <span className="text-text-primary">-</span>
+
+  return (
+    <div className="flex flex-col">
+      <span className="text-text-primary text-sm">{formatCurrency(spending.current_spending)}</span>
+      {spending.budget_limit !== null && (
+        <span className="text-text-quaternary text-xs">
+          {spending.total_percent.toFixed(2)}% of limit
+        </span>
+      )}
+    </div>
+  )
+}
 
 const calculateTotalAssignments = (project: Project): number => {
   const c = project.counters
@@ -95,6 +115,12 @@ const columnDefinitions: ColumnDefinition[] = [
     label: 'Cost center',
     type: DefinitionTypes.Custom,
     headClassNames: 'w-[14%]',
+  },
+  {
+    key: SPEND_COLUMN_KEY,
+    label: 'Budget Period Spend',
+    type: DefinitionTypes.Custom,
+    headClassNames: 'w-[10%]',
   },
   {
     key: 'created_at',
@@ -130,6 +156,9 @@ const ProjectsManagementFull: FC = () => {
     FEATURE_FLAG_PROJECT_CREATION
   )
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
+
+  const shouldRequestSpending =
+    (currentUser?.isAdmin ?? false) || (currentUser?.applicationsAdmin?.length ?? 0) > 0
 
   const effectiveColumnDefinitions = useMemo(
     () =>
@@ -170,7 +199,8 @@ const ProjectsManagementFull: FC = () => {
             pagination.perPage,
             search || undefined,
             newSort.sortKey,
-            newSort.sortOrder
+            newSort.sortOrder,
+            shouldRequestSpending
           )
           .catch((error) => {
             console.error('Failed to load projects:', error)
@@ -178,7 +208,7 @@ const ProjectsManagementFull: FC = () => {
         return newSort
       })
     },
-    [pagination.perPage, search]
+    [pagination.perPage, search, shouldRequestSpending]
   )
 
   useEffect(() => {
@@ -188,20 +218,30 @@ const ProjectsManagementFull: FC = () => {
         pagination.perPage,
         search || undefined,
         sort.sortKey,
-        sort.sortOrder
+        sort.sortOrder,
+        shouldRequestSpending
       )
       .catch((error) => {
         console.error('Failed to load projects:', error)
       })
-  }, [pagination.page, pagination.perPage])
+  }, [pagination.page, pagination.perPage, shouldRequestSpending])
 
   useDebouncedApply(search, 500, () => {
     // Clear sort when search changes — backend ignores sort_by during search (relevance ordering),
     // so resetting the indicator keeps the UI consistent with what the server actually returns.
     setSort({})
-    projectsStore.indexProjects(0, pagination.perPage, search || undefined).catch((error) => {
-      console.error('Failed to load projects:', error)
-    })
+    projectsStore
+      .indexProjects(
+        0,
+        pagination.perPage,
+        search || undefined,
+        undefined,
+        undefined,
+        shouldRequestSpending
+      )
+      .catch((error) => {
+        console.error('Failed to load projects:', error)
+      })
   })
 
   const handleAddProject = useCallback(() => {
@@ -235,12 +275,20 @@ const ProjectsManagementFull: FC = () => {
         pagination.perPage,
         search || undefined,
         sort.sortKey,
-        sort.sortOrder
+        sort.sortOrder,
+        shouldRequestSpending
       )
       .catch((error) => {
         console.error('Failed to refresh projects:', error)
       })
-  }, [pagination.page, pagination.perPage, search, sort.sortKey, sort.sortOrder])
+  }, [
+    pagination.page,
+    pagination.perPage,
+    search,
+    sort.sortKey,
+    sort.sortOrder,
+    shouldRequestSpending,
+  ])
 
   const handleModalClose = useCallback(() => {
     setShowModal(false)
@@ -291,32 +339,34 @@ const ProjectsManagementFull: FC = () => {
     (page: number, newPerPage?: number) => {
       const perPage = newPerPage ?? pagination.perPage
       projectsStore
-        .indexProjects(page, perPage, search || undefined, sort.sortKey, sort.sortOrder)
+        .indexProjects(
+          page,
+          perPage,
+          search || undefined,
+          sort.sortKey,
+          sort.sortOrder,
+          shouldRequestSpending
+        )
         .catch((error) => {
           console.error('Failed to load projects:', error)
         })
     },
-    [pagination.perPage, search, sort.sortKey, sort.sortOrder]
+    [pagination.perPage, search, sort.sortKey, sort.sortOrder, shouldRequestSpending]
   )
 
   const customRenderColumns = useMemo(
     () => ({
       name: (item: Project) => {
-        const isPersonal = item.project_type === ProjectType.PERSONAL
-
         return (
-          <NameLinkCell
-            disabled={isPersonal}
-            onClick={() => handleOpenProjectDetails(item.name)}
-            tooltip={isPersonal ? 'Personal projects cannot be viewed or updated.' : undefined}
-          >
+          <NameLinkCell onClick={() => handleOpenProjectDetails(item.name)}>
             {item.name}
           </NameLinkCell>
         )
       },
       [COST_CENTER_COLUMN_KEY]: (item: Project) => (
-        <span className="text-text-primary break-all">{item.cost_center_name || '-'}</span>
+        <span className="text-text-primary break-all">{displayValue(item.cost_center_name)}</span>
       ),
+      [SPEND_COLUMN_KEY]: (item: Project) => renderSpendingCell(item.spending),
       users: (item: Project) => <span className="text-text-primary">{item.user_count ?? 0}</span>,
       assignments: (item: Project) => {
         const c = item.counters

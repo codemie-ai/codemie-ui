@@ -33,6 +33,41 @@ export interface ProjectMember {
 
 export interface ProjectDetail extends ProjectListItem {
   members: ProjectMember[]
+  spending?: ProjectSpendingSummary | null
+  spending_widget?: ProjectSpendingWidget | null
+}
+
+export interface ProjectSpendingSummary {
+  current_spending: number
+  cumulative_spend?: number | null
+  budget_reset_at: string | null
+  time_until_reset: string | null
+  budget_limit: number | null
+  total: number
+}
+
+export interface ProjectSpendingWidgetColumn {
+  id: string
+  label: string
+  type: string
+  format: string | null
+  description: string
+}
+
+export interface ProjectSpendingWidgetRow {
+  project_name: string
+  current_spending: number
+  budget_reset_at: string | null
+  time_until_reset: string | null
+  budget_limit: number | null
+  total: number
+}
+
+export interface ProjectSpendingWidget {
+  data: {
+    columns: ProjectSpendingWidgetColumn[]
+    rows: ProjectSpendingWidgetRow[]
+  }
 }
 
 export interface ProjectPayload {

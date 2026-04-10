@@ -35,6 +35,7 @@ import { PaginatedResponse } from '@/types/common'
 import { CostCenterListItem } from '@/types/entity/costCenter'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import toaster from '@/utils/toaster'
+import { displayValue } from '@/utils/utils'
 
 const columnDefinitions: ColumnDefinition[] = [
   { key: 'name', label: 'Name', type: DefinitionTypes.Custom, headClassNames: 'w-[22%]' },
@@ -152,7 +153,9 @@ const CostCentersManagementPage = () => {
         </NameLinkCell>
       ),
       description: (costCenter: CostCenterListItem) => (
-        <span className="text-text-quaternary line-clamp-2">{costCenter.description || '-'}</span>
+        <span className="text-text-quaternary line-clamp-2">
+          {displayValue(costCenter.description)}
+        </span>
       ),
       actions: (costCenter: CostCenterListItem) => {
         const menuItems: NavigationItem[] = [

@@ -25,6 +25,9 @@ import toaster from '@/utils/toaster'
 
 const FILE_KIND = 'file'
 
+export const displayValue = (value: string | null | undefined, fallback = '-'): string =>
+  value && value !== 'NULL' ? value : fallback
+
 export const DEFAULT_DATE_FORMAT = 'MM/dd/yyyy, HH:mm'
 export const SHORT_DATE_FORMAT = 'MMM dd HH:mm'
 export const HUMAN_DAY_FORMAT = 'MMM dd yyyy'

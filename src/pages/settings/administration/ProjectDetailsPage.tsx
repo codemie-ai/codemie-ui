@@ -25,11 +25,13 @@ import ProjectModal, {
   ProjectFormData,
 } from '@/pages/settings/administration/projectsManagement/ProjectModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
+import SpendingTable from '@/pages/settings/components/SpendingTable'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
+import { ProjectType } from '@/types/entity/project'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import toaster from '@/utils/toaster'
-import { formatDate } from '@/utils/utils'
+import { displayValue, formatDate } from '@/utils/utils'
 
 import ProjectMembersManager from './projectsManagement/ProjectMembersManager'
 
@@ -44,14 +46,16 @@ const ProjectDetailsPage = () => {
   const [loading, setLoading] = useState(true)
   const [isEditPopupVisible, setIsEditPopupVisible] = useState(false)
 
+  const isPersonalProject = project?.project_type === ProjectType.PERSONAL
   const canManageProject =
-    (currentUser?.isAdmin ?? false) ||
-    (currentUser?.applicationsAdmin?.includes(project?.name ?? '') ?? false)
+    !isPersonalProject &&
+    ((currentUser?.isAdmin ?? false) ||
+      (currentUser?.applicationsAdmin?.includes(project?.name ?? '') ?? false))
 
   const loadProject = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await projectsStore.getProject(projectName)
+      const data = await projectsStore.getProject(projectName, true)
       setProject(data)
     } catch (error) {
       console.error('Failed to load project:', error)
@@ -149,20 +153,12 @@ const ProjectDetailsPage = () => {
               <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
                 <div className="text-xs text-text-quaternary mb-2">Description</div>
                 <div className="text-sm text-text-primary whitespace-pre-wrap">
-                  {project.description || '-'}
+                  {displayValue(project.description)}
                 </div>
               </div>
 
               <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-xs text-text-quaternary mb-1">Type</div>
-                    <div className="capitalize">{project.project_type}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-text-quaternary mb-1">Created by</div>
-                    <div>{project.created_by || '-'}</div>
-                  </div>
                   <div>
                     <div className="text-xs text-text-quaternary mb-1">Total Users</div>
                     <div>{project.user_count}</div>
@@ -171,12 +167,20 @@ const ProjectDetailsPage = () => {
                     <div className="text-xs text-text-quaternary mb-1">Admins</div>
                     <div>{project.admin_count}</div>
                   </div>
-                  <div className="col-span-2">
-                    <div className="text-xs text-text-quaternary mb-1">Created at</div>
-                    <div>{formatDate(project.created_at)}</div>
-                  </div>
+                  {project.spending?.current_spending != null && (
+                    <div>
+                      <div className="text-xs text-text-quaternary mb-1">Budget Period Spend</div>
+                      <div>${project.spending.current_spending.toFixed(2)}</div>
+                    </div>
+                  )}
+                  {project.spending?.cumulative_spend != null && (
+                    <div>
+                      <div className="text-xs text-text-quaternary mb-1">Lifetime Spend</div>
+                      <div>${project.spending.cumulative_spend.toFixed(2)}</div>
+                    </div>
+                  )}
                   {isCostCentersEnabled && (
-                    <div className="col-span-2">
+                    <div>
                       <div className="text-xs text-text-quaternary mb-1">Cost center</div>
                       {project.cost_center_id && project.cost_center_name ? (
                         <button
@@ -191,13 +195,39 @@ const ProjectDetailsPage = () => {
                       )}
                     </div>
                   )}
+                  <div>
+                    <div className="text-xs text-text-quaternary mb-1">Type</div>
+                    <div className="capitalize">{project.project_type}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-text-quaternary mb-1">Created by</div>
+                    <div>{displayValue(project.created_by)}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-text-quaternary mb-1">Created at</div>
+                    <div>{formatDate(project.created_at)}</div>
+                  </div>
                 </div>
               </div>
             </section>
 
-            <section>
-              <ProjectMembersManager project={project} onMembersChanged={loadProject} />
-            </section>
+            {project.spending_widget && project.spending_widget.data.rows.length > 0 && (
+              <section>
+                <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
+                  <div className="text-sm font-medium text-text-primary mb-4">Project spending</div>
+                  <SpendingTable
+                    columns={project.spending_widget.data.columns}
+                    rows={project.spending_widget.data.rows as unknown as Record<string, unknown>[]}
+                  />
+                </div>
+              </section>
+            )}
+
+            {!isPersonalProject && (
+              <section>
+                <ProjectMembersManager project={project} onMembersChanged={loadProject} />
+              </section>
+            )}
           </div>
         }
       />

@@ -36,6 +36,7 @@ import { Category } from '@/types/entity/category'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import { FILTER_ENTITY, setFilters } from '@/utils/filters'
 import toaster from '@/utils/toaster'
+import { displayValue } from '@/utils/utils'
 
 import CategoryModal, { CategoryFormData } from './components/CategoryModal'
 
@@ -163,7 +164,7 @@ const CategoriesManagementPage: FC = () => {
   const customRenderColumns = useMemo(
     () => ({
       description: (item: Category) => (
-        <span className="text-text-quaternary line-clamp-2">{item.description || '-'}</span>
+        <span className="text-text-quaternary line-clamp-2">{displayValue(item.description)}</span>
       ),
       assignments: (item: Category) => {
         const projectCount = item.projectAssistantCount ?? 0

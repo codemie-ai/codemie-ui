@@ -14,6 +14,8 @@
 //
 
 import { MCPConfig } from '@/types/entity/mcp'
+import { displayValue } from '@/utils/utils'
+
 
 import MCPServerActions from '../components/MCPServerActions'
 
@@ -51,7 +53,7 @@ export const createColumnRenderers = ({
   ),
 
   description: (item: MCPConfig) => (
-    <span className="text-text-quaternary line-clamp-2">{item.description || '-'}</span>
+    <span className="text-text-quaternary line-clamp-2">{displayValue(item.description)}</span>
   ),
 
   is_public: (item: MCPConfig) => (

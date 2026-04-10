@@ -45,14 +45,15 @@ interface ProjectsStore {
     perPage?: number,
     search?: string | undefined,
     sortBy?: string | undefined,
-    sortOrder?: string | undefined
+    sortOrder?: string | undefined,
+    includeSpending?: boolean
   ) => Promise<Project[]>
   searchProjects: (
     search: string,
     page?: number,
     perPage?: number
   ) => Promise<PaginatedResponse<Project>>
-  getProject: (projectName: string) => Promise<ProjectDetail>
+  getProject: (projectName: string, includeSpending?: boolean) => Promise<ProjectDetail>
   createProject: (data: ProjectRequest) => Promise<Project>
   updateProject: (id: string, data: ProjectRequest) => Promise<Project>
   deleteProject: (id: string) => Promise<void>
@@ -92,13 +93,14 @@ export const projectsStore = proxy<ProjectsStore>({
     perPage = DEFAULT_PER_PAGE,
     search: string | undefined = undefined,
     sortBy: string | undefined = undefined,
-    sortOrder: string | undefined = undefined
+    sortOrder: string | undefined = undefined,
+    includeSpending = false
   ) {
     this.loading = true
     this.error = null
 
     try {
-      const params: Record<string, string | number> = {
+      const params: Record<string, string | number | boolean> = {
         page,
         per_page: perPage,
       }
@@ -107,6 +109,7 @@ export const projectsStore = proxy<ProjectsStore>({
         params.sort_by = sortBy
         if (sortOrder) params.sort_order = sortOrder
       }
+      if (includeSpending) params.include_spending = true
 
       const queryParams = new URLSearchParams()
       Object.entries(params).forEach(([key, value]) => {
@@ -145,12 +148,15 @@ export const projectsStore = proxy<ProjectsStore>({
     }
   },
 
-  async getProject(projectName: string) {
+  async getProject(projectName: string, includeSpending = false) {
     this.loading = true
     this.error = null
 
     try {
-      const response = await api.get(`v1/projects/${encodeURIComponent(projectName)}`)
+      const url = includeSpending
+        ? `v1/projects/${encodeURIComponent(projectName)}?include_spending=true`
+        : `v1/projects/${encodeURIComponent(projectName)}`
+      const response = await api.get(url)
       const data = await response.json()
 
       const project = {

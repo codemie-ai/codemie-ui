@@ -21,7 +21,7 @@ import {
   ChartOptions,
 } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
-import { FC, useMemo, useEffect, useState, ReactElement } from 'react'
+import { FC, useMemo, useEffect, useState } from 'react'
 import { Doughnut } from 'react-chartjs-2'
 
 import CurrencySvg from '@/assets/icons/currency.svg?react'
@@ -32,24 +32,17 @@ import {
   getStatusColor,
   getStatusColorWithOpacity,
 } from '@/pages/analytics/components/widgets/RatioWidget/utils'
-import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingProgressBar'
-import TableWidget from '@/pages/analytics/components/widgets/TableWidget'
 import { analyticsStore } from '@/store/analytics'
-import {
-  TimePeriod,
-  Metric,
-  TabularMetricType,
-  MetricFormat,
-  TabularResponse,
-} from '@/types/analytics'
+import { Metric, TabularMetricType, TabularResponse } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
 
 import InfoCard from './InfoCard'
+import SpendingTable, {
+  SPENDING_DANGER_THRESHOLD,
+  SPENDING_WARNING_THRESHOLD,
+} from './SpendingTable'
 
 ChartJS.register(ArcElement, ChartTooltip, Legend, ChartDataLabels)
-
-const SPENDING_DANGER_THRESHOLD = 75
-const SPENDING_WARNING_THRESHOLD = 50
 
 const SpendingCard: FC = () => {
   const [keySpendingData, setKeySpendingData] = useState<TabularResponse | null>(null)
@@ -214,33 +207,6 @@ const SpendingCard: FC = () => {
     )
   }
 
-  const getSpendingCustomRenderColumns = () => {
-    const customColumns: Record<
-      string,
-      (item: Record<string, string | number | boolean>) => ReactElement
-    > = {}
-
-    if (!keySpendingData) return customColumns
-
-    keySpendingData.data.columns.forEach((col) => {
-      if (col.format === MetricFormat.PERCENTAGE && col.id === 'total') {
-        customColumns[col.id] = (item: Record<string, string | number | boolean>) => {
-          const value = item[col.id]
-          const percentage: number = typeof value === 'number' ? value : 0
-          return (
-            <SpendingProgressBar
-              percentage={percentage}
-              dangerThreshold={SPENDING_DANGER_THRESHOLD}
-              warningThreshold={SPENDING_WARNING_THRESHOLD}
-            />
-          )
-        }
-      }
-    })
-
-    return Object.keys(customColumns).length > 0 ? customColumns : undefined
-  }
-
   if (rowCount !== null && rowCount > 1 && !isLoadingKeySpending) {
     return (
       <div className="bg-surface-base-chat rounded-lg p-4 border border-border-specific-panel-outline">
@@ -258,28 +224,16 @@ const SpendingCard: FC = () => {
           </div>
 
           <div className="col-span-2 mt-6">
-            <TableWidget
-              metricType={TabularMetricType.KEY_SPENDING}
-              title=""
-              filters={{ time_period: TimePeriod.LAST_30_DAYS }}
-              initialData={keySpendingData}
-              hideWrapper
-              hidePagination
+            <SpendingTable
+              columns={
+                (keySpendingData?.data.columns ?? []) as Array<{
+                  id: string
+                  label: string
+                  format?: string | null
+                }>
+              }
+              rows={keySpendingData?.data.rows ?? []}
               hiddenColumns={['budget_limit']}
-              waitForAdoptionConfig={false}
-              tableStyles={{
-                className: 'spending-table-widget',
-                minWidth: '100%',
-                cellPadding: '0.75rem',
-                columnWidths: {
-                  project_name: '228px',
-                  current_spending: '120px',
-                  budget_reset_at: '114px',
-                  time_until_reset: '132px',
-                  total: '186px',
-                },
-              }}
-              customRenderColumns={getSpendingCustomRenderColumns()}
             />
           </div>
         </div>
