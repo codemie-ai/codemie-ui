@@ -65,7 +65,7 @@ const SpendingTable: FC<SpendingTableProps> = ({ columns, rows, hiddenColumns = 
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-[12px] leading-tight">
         <thead>
           <tr className="border-b border-border-structural">
             {visibleColumns.map((col) => (
