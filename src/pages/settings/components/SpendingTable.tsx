@@ -18,6 +18,7 @@ import { FC } from 'react'
 import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingProgressBar'
 import { MetricFormat } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
+import { cn } from '@/utils/utils'
 
 export const SPENDING_DANGER_THRESHOLD = 75
 export const SPENDING_WARNING_THRESHOLD = 50
@@ -63,15 +64,23 @@ const SpendingTable: FC<SpendingTableProps> = ({ columns, rows, hiddenColumns = 
 
   if (rows.length === 0) return null
 
+  const lastColIndex = visibleColumns.length - 1
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[12px] leading-tight">
-        <thead>
-          <tr className="border-b border-border-structural">
-            {visibleColumns.map((col) => (
+      <table className="mt-0 border-separate border-spacing-0 w-full text-[12px] leading-tight">
+        <thead className="bg-surface-base-tertiary text-text-primary">
+          <tr className="font-semibold">
+            {visibleColumns.map((col, colIndex) => (
               <th
                 key={col.id}
-                className="py-2 pr-4 text-left text-xs text-text-quaternary font-normal whitespace-nowrap"
+                className={cn(
+                  'text-left px-4 py-2.5 border-border-structural border-t border-b text-nowrap text-text-quaternary',
+                  {
+                    'rounded-tl-lg border-l': colIndex === 0,
+                    'rounded-tr-lg border-r': colIndex === lastColIndex,
+                  }
+                )}
               >
                 {col.label}
               </th>
@@ -79,15 +88,31 @@ const SpendingTable: FC<SpendingTableProps> = ({ columns, rows, hiddenColumns = 
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="border-b border-border-structural last:border-0">
-              {visibleColumns.map((col) => (
-                <td key={col.id} className="py-3 pr-4 text-text-primary">
-                  {renderCell(col, row[col.id] as string | number | null)}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {rows.map((row, rowIndex) => {
+            const isLastRow = rowIndex === rows.length - 1
+            return (
+              <tr key={rowIndex}>
+                {visibleColumns.map((col, colIndex) => (
+                  <td
+                    key={col.id}
+                    className={cn(
+                      'text-text-primary px-4 py-2 text-left bg-surface-base-secondary border-b border-border-structural',
+                      {
+                        'border-l': colIndex === 0,
+                        'border-r': colIndex === lastColIndex,
+                        'rounded-bl-lg': isLastRow && colIndex === 0,
+                        'rounded-br-lg': isLastRow && colIndex === lastColIndex,
+                        'min-w-[186px]':
+                          col.format === MetricFormat.PERCENTAGE && col.id === 'total',
+                      }
+                    )}
+                  >
+                    {renderCell(col, row[col.id] as string | number | null)}
+                  </td>
+                ))}
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
