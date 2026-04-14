@@ -211,6 +211,7 @@ export const projectsStore = proxy<ProjectsStore>({
         {
           ...data,
           cost_center_id: data.cost_center_id ?? undefined,
+          budget_assignments: data.budget_assignments,
         },
         { skipErrorHandling: true }
       )
@@ -245,6 +246,7 @@ export const projectsStore = proxy<ProjectsStore>({
           description: data.description,
           cost_center_id: data.clear_cost_center ? undefined : data.cost_center_id,
           clear_cost_center: data.clear_cost_center || undefined,
+          budget_assignments: data.budget_assignments,
         },
         {
           skipErrorHandling: true,

@@ -65,6 +65,7 @@ A Helm chart for AI/Run UI
 | tolerations | list | `[]` | Node selector to be added to the AI/Run UI pods. |
 | viteApiUrl | string | `"https://codemie.%%DOMAIN%%/code-assistant-api"` | AI/Run UI API URL |
 | viteEnableAnalytics | bool | `false` | Enable analytics feature in AI/Run UI |
+| viteEnableBudgetManagement | bool | `false` | Enable budget management feature in AI/Run UI |
 | viteEnableUserManagement | bool | `false` | Enable user management feature in AI/Run UI |
 | viteEnv | string | `"prod"` | AI/Run UI ENV. Set to local for dev development |
 | viteIdpProvider | string | `"keycloak"` | Identity provider. Options: 'keycloak', 'local' |

@@ -51,6 +51,7 @@ import NewKataPage from '@/pages/katas/NewKataPage'
 import LoginSuccessPage from '@/pages/login-success/LoginSuccessPage'
 import ReleaseNotesPage from '@/pages/releaseNotes/ReleaseNotesPage'
 import AiAdoptionConfigPage from '@/pages/settings/administration/AiAdoptionConfigPage'
+import BudgetsManagementPage from '@/pages/settings/administration/BudgetsManagementPage'
 import CategoriesManagementPage from '@/pages/settings/administration/CategoriesManagementPage'
 import CostCenterDetailsPage from '@/pages/settings/administration/CostCenterDetailsPage'
 import CostCentersManagementPage from '@/pages/settings/administration/CostCentersManagementPage'
@@ -411,6 +412,11 @@ const settingsRoutes: RouteObject[] = [
     id: 'cost-centers-management-detail',
     path: '/settings/administration/cost-centers/:costCenterId',
     Component: CostCenterDetailsPage,
+  },
+  {
+    id: 'budgets-management',
+    path: '/settings/administration/budgets',
+    Component: BudgetsManagementPage,
   },
   {
     id: 'administration-users',

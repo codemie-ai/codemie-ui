@@ -13,20 +13,6 @@
 // limitations under the License.
 //
 
-export type PlatformRole = 'user' | 'platform_admin' | 'super_admin'
+import BudgetSelector from './BudgetSelector'
 
-export interface UsersManagementFilters {
-  search: string
-  projects: string[]
-  budgets: string[]
-  platform_role?: PlatformRole | null
-}
-
-export const FILTER_INITIAL_STATE: UsersManagementFilters = {
-  search: '',
-  projects: [],
-  budgets: [],
-  platform_role: null,
-}
-
-export const MAX_DISPLAYED_PROJECTS = 3
+export default BudgetSelector

@@ -22,6 +22,8 @@ viteEnv: prod
 viteEnableAnalytics: false
 # -- Enable user management feature in AI/Run UI
 viteEnableUserManagement: false
+# -- Enable budget management feature in AI/Run UI
+viteEnableBudgetManagement: false
 # -- Identity provider. Options: 'keycloak', 'local'
 viteIdpProvider: keycloak
 

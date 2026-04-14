@@ -17,6 +17,7 @@ import React, { FC, useState, useCallback, useMemo } from 'react'
 
 import CrossIcon from '@/assets/icons/cross.svg?react'
 import SearchIcon from '@/assets/icons/search.svg?react'
+import BudgetSelector from '@/components/BudgetSelector'
 import Button from '@/components/Button'
 import Input from '@/components/form/Input/Input'
 import Select from '@/components/form/Select/Select'
@@ -42,6 +43,8 @@ interface UsersManagementFiltersProps {
   hasSelection?: boolean
 }
 
+const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
+
 const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
   onFilterChange,
   filters,
@@ -66,6 +69,13 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
   const handleProjectsChange = (value: string | string[]) => {
     const projects = Array.isArray(value) ? value : [value]
     const newFilters = { ...localFilters, projects }
+    setLocalFilters(newFilters)
+    onFilterChange(newFilters)
+  }
+
+  const handleBudgetsChange = (value: string | string[]) => {
+    const budgets = Array.isArray(value) ? value : [value]
+    const newFilters = { ...localFilters, budgets }
     setLocalFilters(newFilters)
     onFilterChange(newFilters)
   }
@@ -104,6 +114,19 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
           size="small"
         />
       </div>
+
+      {isBudgetManagementEnabled && (
+        <div className="w-48">
+          <BudgetSelector
+            label="Budget"
+            fullWidth
+            multiple
+            value={localFilters.budgets ?? []}
+            onChange={handleBudgetsChange}
+            size="small"
+          />
+        </div>
+      )}
 
       <div className="w-36">
         <Select

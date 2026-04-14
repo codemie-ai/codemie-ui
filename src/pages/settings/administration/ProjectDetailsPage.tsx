@@ -21,6 +21,7 @@ import Spinner from '@/components/Spinner'
 import { ButtonSize } from '@/constants'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
+import BudgetAssignmentsEditor from '@/pages/settings/administration/components/BudgetAssignmentsEditor'
 import ProjectModal, {
   ProjectFormData,
 } from '@/pages/settings/administration/projectsManagement/ProjectModal'
@@ -36,6 +37,7 @@ import { displayValue, formatDate } from '@/utils/utils'
 import ProjectMembersManager from './projectsManagement/ProjectMembersManager'
 
 const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
+const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
 
 const ProjectDetailsPage = () => {
   const router = useVueRouter()
@@ -91,6 +93,7 @@ const ProjectDetailsPage = () => {
         description: payload.description,
         cost_center_id: payload.cost_center_id,
         clear_cost_center: payload.clear_cost_center,
+        budget_assignments: payload.budget_assignments,
       })
       toaster.info(`Project ${payload.name} updated successfully`)
       setIsEditPopupVisible(false)
@@ -167,18 +170,6 @@ const ProjectDetailsPage = () => {
                     <div className="text-xs text-text-quaternary mb-1">Admins</div>
                     <div>{project.admin_count}</div>
                   </div>
-                  {project.spending?.current_spending != null && (
-                    <div>
-                      <div className="text-xs text-text-quaternary mb-1">Budget Period Spend</div>
-                      <div>${project.spending.current_spending.toFixed(2)}</div>
-                    </div>
-                  )}
-                  {project.spending?.cumulative_spend != null && (
-                    <div>
-                      <div className="text-xs text-text-quaternary mb-1">Lifetime Spend</div>
-                      <div>${project.spending.cumulative_spend.toFixed(2)}</div>
-                    </div>
-                  )}
                   {isCostCentersEnabled && (
                     <div>
                       <div className="text-xs text-text-quaternary mb-1">Cost center</div>
@@ -209,6 +200,52 @@ const ProjectDetailsPage = () => {
                   </div>
                 </div>
               </div>
+
+              {isBudgetManagementEnabled && (project.budget_assignments?.length ?? 0) > 0 && (
+                <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
+                  <BudgetAssignmentsEditor
+                    value={project.budget_assignments}
+                    onChange={() => {}}
+                    readOnly
+                  />
+                </div>
+              )}
+
+              {project.spending && (
+                <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
+                  <div className="text-xs text-text-quaternary mb-2">Spending</div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-xs text-text-quaternary mb-1">Current spending</div>
+                      <div>${project.spending.current_spending.toFixed(2)}</div>
+                    </div>
+                    {isBudgetManagementEnabled && (
+                      <div>
+                        <div className="text-xs text-text-quaternary mb-1">Budget limit</div>
+                        <div>
+                          {project.spending.budget_limit != null
+                            ? `$${project.spending.budget_limit.toFixed(2)}`
+                            : '-'}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-xs text-text-quaternary mb-1">Usage</div>
+                      <div>{project.spending.total.toFixed(2)}%</div>
+                    </div>
+                    {isBudgetManagementEnabled && (
+                      <div>
+                        <div className="text-xs text-text-quaternary mb-1">Reset date</div>
+                        <div>{displayValue(formatDate(project.spending.budget_reset_at))}</div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-xs text-text-quaternary mb-1">Time until reset</div>
+                      <div>{displayValue(project.spending.time_until_reset)}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
 
             {project.spending_widget && project.spending_widget.data.rows.length > 0 && (

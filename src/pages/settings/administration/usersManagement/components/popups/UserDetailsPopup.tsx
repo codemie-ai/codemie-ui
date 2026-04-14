@@ -16,15 +16,18 @@
 import { FC, useEffect, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import Button from '@/components/Button'
 import DetailsCopyField from '@/components/details/DetailsCopyField'
 import DetailsProperty from '@/components/details/DetailsProperty'
 import Select from '@/components/form/Select/Select'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import { USER_TYPES } from '@/constants/user'
+import BudgetAssignmentsEditor from '@/pages/settings/administration/components/BudgetAssignmentsEditor'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
 import UserProjectsTable from '@/pages/settings/administration/usersManagement/components/UserProjectsTable'
 import { userStore } from '@/store/user'
+import { BudgetAssignment } from '@/types/entity/budget'
 import { UserListItem, UserType } from '@/types/entity/user'
 import { FilterOption } from '@/types/filters'
 
@@ -40,10 +43,16 @@ interface UserDetailsModalProps {
   onSave?: () => void
 }
 
+const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
+
 const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, onSave }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<UserListItem | null>(null)
   const [userType, setUserType] = useState<UserType>('regular')
+  const [budgetAssignments, setBudgetAssignments] = useState<BudgetAssignment[]>([])
+  const [isBudgetEditing, setIsBudgetEditing] = useState(false)
+  const [editedAssignments, setEditedAssignments] = useState<BudgetAssignment[]>([])
+  const [isSavingBudgets, setIsSavingBudgets] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const { user: currentUser } = useSnapshot(userStore)
   const isSuperAdmin = currentUser?.isAdmin ?? false
@@ -53,9 +62,13 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
     setIsLoading(true)
     try {
-      const details = await userStore.getUserById(userId)
+      const [details, budgets] = await Promise.all([
+        userStore.getUserById(userId),
+        userStore.getUserBudgets(userId),
+      ])
       setUser(details)
       setUserType(details.user_type)
+      setBudgetAssignments(budgets)
     } catch (error) {
       console.error('Failed to fetch user details:', error)
     } finally {
@@ -67,6 +80,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     if (isOpen && userId) {
       fetchUserDetails()
       setHasChanges(false)
+      setIsBudgetEditing(false)
     }
   }, [isOpen, userId])
 
@@ -86,6 +100,29 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
       setHasChanges(true)
     } catch {
       setUserType(previousType)
+    }
+  }
+
+  const handleStartBudgetEdit = () => {
+    setEditedAssignments([...budgetAssignments])
+    setIsBudgetEditing(true)
+  }
+
+  const handleCancelBudgetEdit = () => {
+    setIsBudgetEditing(false)
+    setEditedAssignments([])
+  }
+
+  const handleSaveBudgets = async () => {
+    if (!userId) return
+    setIsSavingBudgets(true)
+    try {
+      await userStore.updateUserBudgets(userId, editedAssignments)
+      setBudgetAssignments(editedAssignments)
+      setIsBudgetEditing(false)
+      setHasChanges(true)
+    } finally {
+      setIsSavingBudgets(false)
     }
   }
 
@@ -136,6 +173,46 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
             </div>
 
             <DetailsCopyField label="Email:" value={user.email} className="mb-2" />
+
+            {isBudgetManagementEnabled && (
+              <>
+                <div className="bg-border-structural h-px" />
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-text-quaternary">Budget assignments</p>
+                    {isSuperAdmin && (
+                      <div className="flex gap-2">
+                        {isBudgetEditing ? (
+                          <>
+                            <Button
+                              variant="tertiary"
+                              onClick={handleCancelBudgetEdit}
+                              disabled={isSavingBudgets}
+                            >
+                              Cancel
+                            </Button>
+                            <Button onClick={handleSaveBudgets} disabled={isSavingBudgets}>
+                              Save
+                            </Button>
+                          </>
+                        ) : (
+                          <Button variant="primary" onClick={handleStartBudgetEdit}>
+                            Edit
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <BudgetAssignmentsEditor
+                    value={isBudgetEditing ? editedAssignments : budgetAssignments}
+                    onChange={setEditedAssignments}
+                    readOnly={!isBudgetEditing}
+                    hideTitle
+                  />
+                </div>
+              </>
+            )}
 
             <div className="bg-border-structural h-px" />
 

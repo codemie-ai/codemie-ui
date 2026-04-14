@@ -22,6 +22,7 @@ export interface EnvConfig {
   VITE_SHOW_ALL_PROJECTS: string
   VITE_IS_EXTERNAL_LOGIN: string
   VITE_ENABLE_USER_MANAGEMENT: string
+  VITE_ENABLE_BUDGET_MANAGEMENT: string
   VITE_IDP_PROVIDER: string
 }
 

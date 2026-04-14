@@ -17,6 +17,7 @@ import { FC, useMemo, useCallback, useEffect, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import AssistantSvg from '@/assets/icons/assistant-alt.svg?react'
+import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import Cross18Svg from '@/assets/icons/cross.svg?react'
 import DataSourceSvg from '@/assets/icons/datasource.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
@@ -41,12 +42,14 @@ import NameLinkCell from '@/pages/settings/administration/components/NameLinkCel
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
+import { BudgetAssignment } from '@/types/entity/budget'
 import { Project, ProjectSpendingSummaryCompact, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
 import ProjectModal, { ProjectFormData } from './ProjectModal'
+import BudgetAssignmentsModal from '../components/BudgetAssignmentsModal'
 
 const TOOLTIPS = {
   ASSISTANTS: 'Project Assistants',
@@ -148,8 +151,10 @@ const ProjectsManagementFull: FC = () => {
   const [showModal, setShowModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
+  const [budgetProject, setBudgetProject] = useState<Project | null>(null)
 
   const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
+  const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
 
   // Check if project creation feature is enabled
   const [isProjectCreationForNonAdminsEnabled, isConfigLoaded] = useFeatureFlag(
@@ -162,10 +167,12 @@ const ProjectsManagementFull: FC = () => {
 
   const effectiveColumnDefinitions = useMemo(
     () =>
-      isCostCentersEnabled
-        ? columnDefinitions
-        : columnDefinitions.filter((c) => c.key !== COST_CENTER_COLUMN_KEY),
-    [isCostCentersEnabled]
+      columnDefinitions.filter(
+        (c) =>
+          (isCostCentersEnabled || c.key !== COST_CENTER_COLUMN_KEY) &&
+          (isBudgetManagementEnabled || c.key !== SPEND_COLUMN_KEY)
+      ),
+    [isCostCentersEnabled, isBudgetManagementEnabled]
   )
 
   const canManageProject = useCallback(
@@ -335,6 +342,18 @@ const ProjectsManagementFull: FC = () => {
     [editingProject, handleModalClose, refreshProjects]
   )
 
+  const handleBudgetSubmit = useCallback(
+    async (assignments: BudgetAssignment[]) => {
+      if (!budgetProject) return
+      await projectsStore.updateProject(budgetProject.id, {
+        budget_assignments: { assignments },
+      })
+      setBudgetProject(null)
+      refreshProjects()
+    },
+    [budgetProject, refreshProjects]
+  )
+
   const handlePageChange = useCallback(
     (page: number, newPerPage?: number) => {
       const perPage = newPerPage ?? pagination.perPage
@@ -418,20 +437,6 @@ const ProjectsManagementFull: FC = () => {
       },
       actions: (item: Project) => {
         const isPersonal = item.project_type === ProjectType.PERSONAL
-
-        if (isPersonal) return null
-
-        const hasCountData = item.counters !== undefined
-        const totalCount = calculateTotalAssignments(item)
-        const shouldDisableDelete = !hasCountData || totalCount > 0
-
-        let deleteTooltip: string | undefined
-        if (!hasCountData) {
-          deleteTooltip = ERROR_MESSAGES.DELETE_NO_COUNT_DATA
-        } else if (totalCount > 0) {
-          deleteTooltip = ERROR_MESSAGES.DELETE_HAS_ASSIGNMENTS
-        }
-
         const canManage = canManageProject(item)
 
         const menuItems: NavigationItem[] = []
@@ -444,23 +449,44 @@ const ProjectsManagementFull: FC = () => {
           })
         }
 
-        // Only Project Admin/Super Admin can Edit, Delete
         if (canManage) {
-          menuItems.push(
-            {
-              title: 'Edit',
-              icon: <EditSvg />,
-              onClick: () => handleEditProject(item),
-            },
-            {
+          menuItems.push({
+            title: 'Edit',
+            icon: <EditSvg />,
+            onClick: () => handleEditProject(item),
+          })
+
+          if (isBudgetManagementEnabled) {
+            menuItems.push({
+              title: 'Assign budgets',
+              icon: <ConfigureSvg />,
+              onClick: () => setBudgetProject(item),
+            })
+          }
+
+          if (!isPersonal) {
+            const hasCountData = item.counters !== undefined
+            const totalCount = calculateTotalAssignments(item)
+            const shouldDisableDelete = !hasCountData || totalCount > 0
+
+            let deleteTooltip: string | undefined
+            if (!hasCountData) {
+              deleteTooltip = ERROR_MESSAGES.DELETE_NO_COUNT_DATA
+            } else if (totalCount > 0) {
+              deleteTooltip = ERROR_MESSAGES.DELETE_HAS_ASSIGNMENTS
+            }
+
+            menuItems.push({
               title: 'Delete',
               icon: <DeleteSvg />,
               onClick: () => handleDeleteProject(item),
               disabled: shouldDisableDelete,
               tooltip: deleteTooltip,
-            }
-          )
+            })
+          }
         }
+
+        if (menuItems.length === 0) return null
 
         return (
           <div className="flex justify-end">
@@ -475,6 +501,8 @@ const ProjectsManagementFull: FC = () => {
       handleOpenProjectDetails,
       canManageProject,
       isUserManagementEnabled,
+      isBudgetManagementEnabled,
+      setBudgetProject,
     ]
   )
 
@@ -533,7 +561,18 @@ const ProjectsManagementFull: FC = () => {
           project={editingProject}
           onHide={handleModalClose}
           onSubmit={handleModalSubmit}
+          budgetsOnly={editingProject?.project_type === ProjectType.PERSONAL}
         />
+
+        {isBudgetManagementEnabled && (
+          <BudgetAssignmentsModal
+            visible={!!budgetProject}
+            header={`Assign budgets — ${budgetProject?.name ?? ''}`}
+            initialAssignments={budgetProject?.budget_assignments}
+            onHide={() => setBudgetProject(null)}
+            onSubmit={handleBudgetSubmit}
+          />
+        )}
 
         <ConfirmationModal
           visible={!!deletingProject}

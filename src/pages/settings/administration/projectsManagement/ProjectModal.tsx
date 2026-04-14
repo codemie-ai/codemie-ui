@@ -24,8 +24,10 @@ import Input from '@/components/form/Input'
 import Textarea from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+import BudgetAssignmentsEditor from '@/pages/settings/administration/components/BudgetAssignmentsEditor'
 import { costCentersStore } from '@/store/costCenters'
 import { userStore } from '@/store/user'
+import { BudgetAssignment } from '@/types/entity/budget'
 import { Project } from '@/types/entity/project'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { FilterOption } from '@/types/filters'
@@ -35,19 +37,24 @@ interface ProjectModalProps {
   project?: Project | ProjectDetail | null
   onHide: () => void
   onSubmit: (data: ProjectFormData) => Promise<void>
+  budgetsOnly?: boolean
 }
 
 export interface ProjectFormData {
   name?: string
-  description: string
+  description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
+  budget_assignments?: {
+    assignments: BudgetAssignment[]
+  }
 }
 
 interface ProjectModalFormValues {
   name: string
   description: string
   cost_center_id: string
+  budget_assignments: BudgetAssignment[]
 }
 
 const PROJECT_NAME_REGEX = /^[a-z0-9][a-z0-9_-]*$/
@@ -59,11 +66,18 @@ const validationSchema = Yup.object({
     .defined(),
   description: Yup.string().required('Description is required'),
   cost_center_id: Yup.string().default(''),
+  budget_assignments: Yup.array().default([]),
 })
 
 const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
 
-const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmit }) => {
+const ProjectModal: FC<ProjectModalProps> = ({
+  visible,
+  project,
+  onHide,
+  onSubmit,
+  budgetsOnly = false,
+}) => {
   const { user } = useSnapshot(userStore)
   const isNameDisabled = (project?.user_count ?? 0) > 0
   const isAdmin = user?.isAdmin ?? false
@@ -81,6 +95,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       name: '',
       description: '',
       cost_center_id: '',
+      budget_assignments: [],
     },
   })
 
@@ -90,12 +105,14 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
         name: project.name,
         description: project.description || '',
         cost_center_id: project.cost_center_id || '',
+        budget_assignments: project.budget_assignments || [],
       })
     } else if (visible && !project) {
       reset({
         name: '',
         description: '',
         cost_center_id: '',
+        budget_assignments: [],
       })
     }
 
@@ -105,7 +122,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
         .then(setCostCenterOptions)
         .catch(() => setCostCenterOptions([]))
     }
-  }, [visible, project, reset, isAdmin])
+  }, [visible, project, reset, isAdmin, isCostCentersEnabled])
 
   const handleCostCenterSearch = (query: string) => {
     if (!isAdmin || !isCostCentersEnabled) return
@@ -116,23 +133,34 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
   }
 
   const handleFormSubmit: SubmitHandler<ProjectModalFormValues> = async (data) => {
-    await onSubmit({
-      name: isNameDisabled ? undefined : data.name,
-      description: data.description,
-      cost_center_id: data.cost_center_id || null,
-      clear_cost_center: !!project && !data.cost_center_id,
-    })
+    if (budgetsOnly) {
+      await onSubmit({
+        budget_assignments: isAdmin ? { assignments: data.budget_assignments } : undefined,
+      })
+    } else {
+      await onSubmit({
+        name: isNameDisabled ? undefined : data.name,
+        description: data.description,
+        cost_center_id: data.cost_center_id || null,
+        clear_cost_center: !!project && !data.cost_center_id,
+        budget_assignments: isAdmin ? { assignments: data.budget_assignments } : undefined,
+      })
+    }
     reset()
   }
 
   const isEdit = !!project
   const isSubmitDisabled = isSubmitting || (isEdit && !isDirty)
 
+  let header = 'Create Project'
+  if (budgetsOnly) header = 'Budget assignments'
+  else if (isEdit) header = 'Edit Project'
+
   return (
     <Popup
       visible={visible}
       onHide={onHide}
-      header={isEdit ? 'Edit Project' : 'Create Project'}
+      header={header}
       onSubmit={handleSubmit(handleFormSubmit)}
       submitText={isEdit ? 'Save' : 'Create'}
       submitDisabled={isSubmitDisabled}
@@ -141,64 +169,78 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       withBorderBottom={false}
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-        <Controller
-          name="name"
-          control={control}
-          render={({ field }) => (
-            <span
-              data-tooltip-id="react-tooltip"
-              data-tooltip-place="bottom"
-              data-tooltip-content={
-                isNameDisabled
-                  ? 'Project name cannot be changed while users are assigned'
-                  : undefined
-              }
-            >
-              <Input
-                {...field}
-                id="name"
-                label="Name:"
-                required
-                placeholder="Project Name"
-                error={errors.name?.message}
-                disabled={isNameDisabled}
-              />
-            </span>
-          )}
-        />
-
-        <Controller
-          name="description"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              id="description"
-              label="Description:"
-              required
-              placeholder="Describe what this project is for"
-              rows={4}
-              error={errors.description?.message}
+        {!budgetsOnly && (
+          <>
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <span
+                  data-tooltip-id="react-tooltip"
+                  data-tooltip-place="bottom"
+                  data-tooltip-content={
+                    isNameDisabled
+                      ? 'Project name cannot be changed while users are assigned'
+                      : undefined
+                  }
+                >
+                  <Input
+                    {...field}
+                    id="name"
+                    label="Name:"
+                    required
+                    placeholder="Project Name"
+                    error={errors.name?.message}
+                    disabled={isNameDisabled}
+                  />
+                </span>
+              )}
             />
-          )}
-        />
 
-        {isAdmin && isCostCentersEnabled && (
+            <Controller
+              name="description"
+              control={control}
+              render={({ field }) => (
+                <Textarea
+                  {...field}
+                  id="description"
+                  label="Description:"
+                  required
+                  placeholder="Describe what this project is for"
+                  rows={4}
+                  error={errors.description?.message}
+                />
+              )}
+            />
+
+            {isAdmin && isCostCentersEnabled && (
+              <Controller
+                name="cost_center_id"
+                control={control}
+                render={({ field }) => (
+                  <Autocomplete
+                    id="cost_center_id"
+                    label="Cost center:"
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    options={costCenterOptions}
+                    placeholder="Search cost center"
+                    allowEmpty
+                    localFilter={false}
+                    onSearch={handleCostCenterSearch}
+                  />
+                )}
+              />
+            )}
+          </>
+        )}
+
+        {isAdmin && (
           <Controller
-            name="cost_center_id"
+            name="budget_assignments"
             control={control}
             render={({ field }) => (
-              <Autocomplete
-                id="cost_center_id"
-                label="Cost center:"
-                value={field.value || ''}
-                onChange={field.onChange}
-                options={costCenterOptions}
-                placeholder="Search cost center"
-                allowEmpty
-                localFilter={false}
-                onSearch={handleCostCenterSearch}
-              />
+              <BudgetAssignmentsEditor value={field.value} onChange={field.onChange} />
             )}
           />
         )}

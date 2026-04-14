@@ -15,7 +15,9 @@
 
 import { FC, useMemo, useCallback, useEffect, useRef, useState } from 'react'
 
+import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
+import RefreshSvg from '@/assets/icons/refresh.svg?react'
 import DetailsBadges from '@/components/details/DetailsBadges'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Spinner from '@/components/Spinner'
@@ -26,9 +28,12 @@ import { MAX_DISPLAYED_PROJECTS } from '@/pages/settings/administration/usersMan
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { userStore } from '@/store/user'
 import { Pagination } from '@/types/common'
+import { getBudgetCategoryLabel, BudgetAssignment } from '@/types/entity/budget'
 import { UserListItem } from '@/types/entity/user'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 
+import BudgetAssignmentsModal from './components/BudgetAssignmentsModal'
+import ResetBudgetPopup from './usersManagement/components/popups/ResetBudgetPopup'
 import UserDetailsPopup from './usersManagement/components/popups/UserDetailsPopup'
 import UsersManagementBulkActions from './usersManagement/components/UsersManagementBulkActions'
 import UsersManagementFilters from './usersManagement/components/UsersManagementFilters'
@@ -41,18 +46,28 @@ const createCustomColumn = (key: string, label: string, width: string): ColumnDe
   headClassNames: `w-[${width}]`,
 })
 
-const columnDefinitions: ColumnDefinition[] = [
+const BASE_COLUMN_DEFINITIONS: ColumnDefinition[] = [
   { key: 'select', type: DefinitionTypes.Selection },
-  { key: 'name', label: 'Name', type: DefinitionTypes.String, headClassNames: 'w-[14%]' },
-  createCustomColumn('email', 'Email', '14%'),
+  { key: 'name', label: 'Name', type: DefinitionTypes.String, headClassNames: 'w-[17%]' },
+  createCustomColumn('email', 'Email', '15%'),
   createCustomColumn('user_type', 'User Type', '8%'),
-  createCustomColumn('superadmin', 'Project Admin', '5%'),
-  createCustomColumn('is_admin', 'Super Admin', '5%'),
-  createCustomColumn('projects', 'Projects', '28%'),
+  createCustomColumn('superadmin', 'Project Admin', '3%'),
+  createCustomColumn('is_admin', 'Super Admin', '3%'),
+  createCustomColumn('projects', 'Projects', '17%'),
+  createCustomColumn('budget_assignments', 'Budgets', '25%'),
   createCustomColumn('actions', 'Actions', '5%'),
 ]
 
 const UsersManagementPage: FC = () => {
+  const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
+  const columnDefinitions = useMemo(
+    () =>
+      isBudgetManagementEnabled
+        ? BASE_COLUMN_DEFINITIONS
+        : BASE_COLUMN_DEFINITIONS.filter((c) => c.key !== 'budget_assignments'),
+    [isBudgetManagementEnabled]
+  )
+
   const { filters, handleFilterChange } = useUsersManagementFilters()
 
   const perPageRef = useRef(10)
@@ -105,6 +120,8 @@ const UsersManagementPage: FC = () => {
 
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null)
   const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false)
+  const [budgetUser, setBudgetUser] = useState<UserListItem | null>(null)
+  const [resetBudgetUser, setResetBudgetUser] = useState<UserListItem | null>(null)
 
   const handleOpenDetailsPopup = useCallback((user: UserListItem) => {
     setSelectedUser(user)
@@ -142,6 +159,25 @@ const UsersManagementPage: FC = () => {
     loadUsers(pagination.page, pagination.perPage, filters)
     clearSelection()
   }, [pagination.page, pagination.perPage, filters, loadUsers, clearSelection])
+
+  const handleOpenBudgetModal = useCallback(async (user: UserListItem) => {
+    try {
+      const assignments = await userStore.getUserBudgets(user.id)
+      setBudgetUser({ ...user, budget_assignments: assignments })
+    } catch {
+      setBudgetUser(user)
+    }
+  }, [])
+
+  const handleBudgetSubmit = useCallback(
+    async (assignments: BudgetAssignment[]) => {
+      if (!budgetUser) return
+      await userStore.updateUserBudgets(budgetUser.id, assignments)
+      setBudgetUser(null)
+      refresh()
+    },
+    [budgetUser, refresh]
+  )
 
   const refreshFromFirstPage = useCallback(() => {
     loadUsers(0, pagination.perPage, filters)
@@ -204,6 +240,19 @@ const UsersManagementPage: FC = () => {
         )
       },
 
+      budget_assignments: (item: UserListItem) => {
+        const assigned = (item.budget_assignments ?? []).filter((a) => a.budget_id !== null)
+        return (
+          <DetailsBadges
+            filled
+            items={assigned.map((a) => ({
+              value: `${getBudgetCategoryLabel(a.category)}: ${a.budget_name || a.budget_id}`,
+            }))}
+            emptyMessage="-"
+          />
+        )
+      },
+
       actions: (item: UserListItem) => {
         return (
           <NavigationMore
@@ -214,12 +263,26 @@ const UsersManagementPage: FC = () => {
                 icon: <InfoSvg />,
                 onClick: () => handleOpenDetailsPopup(item),
               },
+              ...(isBudgetManagementEnabled
+                ? [
+                    {
+                      title: 'Assign budgets',
+                      icon: <ConfigureSvg />,
+                      onClick: () => handleOpenBudgetModal(item),
+                    },
+                    {
+                      title: 'Reset budget',
+                      icon: <RefreshSvg />,
+                      onClick: () => setResetBudgetUser(item),
+                    },
+                  ]
+                : []),
             ]}
           />
         )
       },
     }),
-    [handleOpenDetailsPopup]
+    [handleOpenDetailsPopup, handleOpenBudgetModal, setResetBudgetUser]
   )
 
   return (
@@ -269,6 +332,28 @@ const UsersManagementPage: FC = () => {
             onClose={handleCloseDetailsPopup}
             onSave={refresh}
           />
+
+          {isBudgetManagementEnabled && (
+            <BudgetAssignmentsModal
+              visible={!!budgetUser}
+              header={`Assign budgets — ${budgetUser?.email ?? ''}`}
+              initialAssignments={budgetUser?.budget_assignments}
+              onHide={() => setBudgetUser(null)}
+              onSubmit={handleBudgetSubmit}
+            />
+          )}
+
+          {isBudgetManagementEnabled && (
+            <ResetBudgetPopup
+              isOpen={!!resetBudgetUser}
+              user={resetBudgetUser}
+              onClose={() => setResetBudgetUser(null)}
+              onSave={() => {
+                setResetBudgetUser(null)
+                refresh()
+              }}
+            />
+          )}
         </div>
       }
     />

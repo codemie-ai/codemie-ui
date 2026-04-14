@@ -17,13 +17,29 @@ import { FC, useMemo, useState, useCallback } from 'react'
 
 import DropdownButton from '@/components/DropdownButton/DropdownButton'
 import BulkActions from '@/components/Table/BulkActions'
+import BudgetAssignmentsModal from '@/pages/settings/administration/components/BudgetAssignmentsModal'
+import { userStore } from '@/store/user'
+import { BudgetAssignment, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
 import { UserListItem } from '@/types/entity/user'
 
 import AssignToProjectPopup from './bulkPopups/AssignToProjectPopup'
+import BulkResetBudgetsPopup from './bulkPopups/BulkResetBudgetsPopup'
 import ChangeRolePopup from './bulkPopups/ChangeRolePopup'
+import UnassignBudgetsPopup from './bulkPopups/UnassignBudgetsPopup'
 import UnassignFromProjectPopup from './bulkPopups/UnassignFromProjectPopup'
 
-type ActivePopup = 'changeRole' | 'assignToProject' | 'unassignFromProject'
+const EMPTY_BUDGET_ASSIGNMENTS: BudgetAssignment[] = BUDGET_CATEGORY_OPTIONS.map((o) => ({
+  category: o.value,
+  budget_id: null,
+}))
+
+type ActivePopup =
+  | 'changeRole'
+  | 'assignToProject'
+  | 'unassignFromProject'
+  | 'assignBudgets'
+  | 'unassignBudgets'
+  | 'resetBudgets'
 
 interface UsersManagementBulkActionsProps {
   selectedUsers: UserListItem[]
@@ -55,9 +71,18 @@ const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
       // { label: 'Change Role', onClick: () => openPopup('changeRole') },
       { label: 'Assign to Project', onClick: () => openPopup('assignToProject') },
       { label: 'Unassign from Project', onClick: () => openPopup('unassignFromProject') },
+      { label: 'Assign Budgets', onClick: () => openPopup('assignBudgets') },
+      { label: 'Unassign Budgets', onClick: () => openPopup('unassignBudgets') },
+      { label: 'Reset Budgets', onClick: () => openPopup('resetBudgets') },
     ],
     [openPopup]
   )
+
+  const handleBudgetSubmit = async (assignments: BudgetAssignment[]) => {
+    const userIds = selectedUsers.map((u) => u.id)
+    await userStore.bulkSetBudgets(userIds, assignments)
+    closePopup(true)
+  }
 
   return (
     <>
@@ -83,6 +108,28 @@ const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
         selectedUsers={selectedUsers}
         isOpen={activePopup === 'unassignFromProject'}
         onClose={closePopup}
+        onSave={() => closePopup(true)}
+      />
+
+      <BudgetAssignmentsModal
+        visible={activePopup === 'assignBudgets'}
+        header="Assign Budgets"
+        initialAssignments={EMPTY_BUDGET_ASSIGNMENTS}
+        onHide={() => closePopup()}
+        onSubmit={handleBudgetSubmit}
+      />
+
+      <UnassignBudgetsPopup
+        selectedUsers={selectedUsers}
+        isOpen={activePopup === 'unassignBudgets'}
+        onClose={() => closePopup()}
+        onSave={() => closePopup(true)}
+      />
+
+      <BulkResetBudgetsPopup
+        selectedUsers={selectedUsers}
+        isOpen={activePopup === 'resetBudgets'}
+        onClose={() => closePopup()}
         onSave={() => closePopup(true)}
       />
     </>

@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import { BudgetAssignment, BudgetAssignmentsPayload } from '@/types/entity/budget'
+
 export interface ProjectCounters {
   assistants_count: number
   workflows_count: number
@@ -40,6 +42,7 @@ export interface Project {
   cost_center_id?: string | null
   cost_center_name?: string | null
   spending?: ProjectSpendingSummaryCompact | null
+  budget_assignments?: BudgetAssignment[]
 }
 
 export interface ProjectRequest {
@@ -47,6 +50,7 @@ export interface ProjectRequest {
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
+  budget_assignments?: BudgetAssignmentsPayload
 }
 
 export enum ProjectType {

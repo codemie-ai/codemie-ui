@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import { BudgetAssignment, BudgetAssignmentsPayload } from '@/types/entity/budget'
+
 export interface UserAssignedProject {
   name: string
   is_project_admin: boolean
@@ -57,6 +59,12 @@ export interface UserListItem {
   projects: UserAssignedProject[]
   picture: string | null
   date: string | null
+  budget_assignments?: BudgetAssignment[]
+}
+
+export interface UserUpdatePayload {
+  user_type?: UserType
+  budget_assignments?: BudgetAssignmentsPayload
 }
 
 export interface PaginationInfo {

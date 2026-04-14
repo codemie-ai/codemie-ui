@@ -16,8 +16,16 @@
 import { proxy } from 'valtio'
 
 import type { AnalyticsQueryParams } from '@/types/analytics'
+import { BudgetAssignment } from '@/types/entity/budget'
 import { ProjectRole, ProjectRoleBE } from '@/types/entity/project'
-import { User, UserData, GetUsersResponse, UserListItem, UserType } from '@/types/entity/user'
+import {
+  User,
+  UserData,
+  GetUsersResponse,
+  UserListItem,
+  UserType,
+  UserUpdatePayload,
+} from '@/types/entity/user'
 import api from '@/utils/api'
 import toaster from '@/utils/toaster'
 import { formatUserOptions } from '@/utils/user'
@@ -59,6 +67,7 @@ interface UserStoreType {
     perPage?: number
     filters?: {
       projects?: string[]
+      budgets?: string[]
       search?: string
       user_type?: UserType | null
       platform_role?: ProjectRoleBE | null
@@ -66,7 +75,9 @@ interface UserStoreType {
     }
   }) => Promise<GetUsersResponse>
   getUserById: (userId: string) => Promise<UserListItem>
-  updateUser: (userId: string, data: Partial<UserListItem>) => Promise<void>
+  updateUser: (userId: string, data: UserUpdatePayload) => Promise<void>
+  getUserBudgets: (userId: string) => Promise<BudgetAssignment[]>
+  updateUserBudgets: (userId: string, assignments: BudgetAssignment[]) => Promise<void>
   addUserProjectAccess: (
     userId: string,
     projectName: string,
@@ -86,6 +97,9 @@ interface UserStoreType {
   ) => Promise<void>
   bulkAssignToProject: (userIds: string[], projectName: string, role: string) => Promise<void>
   bulkUnassignFromProject: (userIds: string[], projectName: string) => Promise<void>
+  bulkSetBudgets: (userIds: string[], assignments: BudgetAssignment[]) => Promise<void>
+  resetUserBudget: (userId: string, categories?: string[]) => Promise<void>
+  bulkResetBudgets: (userIds: string[], categories?: string[]) => Promise<void>
 }
 
 export const userStore = proxy<UserStoreType>({
@@ -379,6 +393,7 @@ export const userStore = proxy<UserStoreType>({
 
     const filtersJson: Record<string, unknown> = {}
     if (filters.projects?.length) filtersJson.projects = filters.projects
+    if (filters.budgets?.length) filtersJson.budgets = filters.budgets
     if (filters.user_type != null) filtersJson.user_type = filters.user_type
     if (filters.platform_role != null) filtersJson.platform_role = filters.platform_role
     if (filters.is_active != null) filtersJson.is_active = filters.is_active
@@ -419,6 +434,36 @@ export const userStore = proxy<UserStoreType>({
       .catch((error) => {
         console.error('Failed to update user:', error)
         toaster.error('Failed to update user')
+        throw error
+      })
+  },
+
+  getUserBudgets(userId) {
+    return api
+      .get(`v1/admin/users/${userId}/budgets`, { skipErrorHandling: true })
+      .then((r) => r.json())
+      .then((data) => data ?? [])
+      .catch((error) => {
+        console.error('Failed to fetch user budgets:', error)
+        throw error
+      })
+  },
+
+  updateUserBudgets(userId, assignments) {
+    const assignmentsMap = Object.fromEntries(assignments.map((a) => [a.category, a.budget_id]))
+    return api
+      .put(
+        `v1/admin/users/${userId}/budgets`,
+        { assignments: assignmentsMap },
+        { skipErrorHandling: true }
+      )
+      .then((r) => (r.status === 204 ? undefined : r.json()))
+      .then(() => {
+        toaster.info('User budgets updated successfully')
+      })
+      .catch((error) => {
+        console.error('Failed to update user budgets:', error)
+        toaster.error('Failed to update user budgets')
         throw error
       })
   },
@@ -541,5 +586,56 @@ export const userStore = proxy<UserStoreType>({
     )
     await response.json()
     toaster.info(`Unassigned ${userIds.length} user(s) from project successfully`)
+  },
+
+  async bulkSetBudgets(userIds, assignments) {
+    const assignmentsMap = Object.fromEntries(assignments.map((a) => [a.category, a.budget_id]))
+    try {
+      const response = await api.put(
+        'v1/admin/users/budgets/bulk',
+        { user_ids: userIds, assignments: assignmentsMap },
+        { skipErrorHandling: true }
+      )
+      if (response.status !== 204) await response.json()
+      toaster.info(`Updated budgets for ${userIds.length} user(s) successfully`)
+    } catch (error) {
+      toaster.error('Failed to update budgets for users')
+      throw error
+    }
+  },
+
+  async resetUserBudget(userId, categories) {
+    const body = categories?.length ? { categories } : {}
+    try {
+      const response = await api.post(
+        `v1/admin/users/${encodeURIComponent(userId)}/budgets/reset`,
+        body,
+        { skipErrorHandling: true }
+      )
+      if (response.status !== 204) await response.json()
+      toaster.info('Budget reset successfully')
+    } catch (error) {
+      toaster.error('Failed to reset budget')
+      throw error
+    }
+  },
+
+  async bulkResetBudgets(userIds, categories) {
+    const body = categories?.length ? { categories } : {}
+    try {
+      await Promise.all(
+        userIds.map((id) =>
+          api
+            .post(`v1/admin/users/${encodeURIComponent(id)}/budgets/reset`, body, {
+              skipErrorHandling: true,
+            })
+            .then((r) => (r.status !== 204 ? r.json() : undefined))
+        )
+      )
+      toaster.info(`Reset budgets for ${userIds.length} user(s) successfully`)
+    } catch (error) {
+      toaster.error('Failed to reset budgets for some users')
+      throw error
+    }
   },
 })

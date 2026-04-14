@@ -49,7 +49,17 @@ const knownFilterKeys = {
     'platform_role',
   ],
   boolean: ['is_global', 'shared'],
-  multiple: ['project', 'index_type', 'type', 'categories', 'roles', 'tags', 'users', 'projects'],
+  multiple: [
+    'project',
+    'index_type',
+    'type',
+    'categories',
+    'roles',
+    'tags',
+    'users',
+    'projects',
+    'budgets',
+  ],
 }
 /**
  * Get filters for a specific entity, prioritizing URL filters over storage filters

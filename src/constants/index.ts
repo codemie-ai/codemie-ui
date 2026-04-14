@@ -77,6 +77,7 @@ export enum AssistantTab {
 export enum SettingsTab {
   PROFILE = 'profile',
   ADMINISTRATION = 'administration',
+  BUDGETS_MANAGEMENT = 'budgets_management',
   COST_CENTERS_MANAGEMENT = 'cost_centers_management',
   PROJECTS_MANAGEMENT = 'projects_management',
   USERS_MANAGEMENT = 'users_management',
