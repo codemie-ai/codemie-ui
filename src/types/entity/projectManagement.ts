@@ -13,8 +13,6 @@
 // limitations under the License.
 //
 
-import { BudgetAssignment, BudgetAssignmentsPayload } from '@/types/entity/budget'
-
 export interface ProjectListItem {
   name: string
   description?: string | null
@@ -25,7 +23,6 @@ export interface ProjectListItem {
   admin_count: number
   cost_center_id?: string | null
   cost_center_name?: string | null
-  budget_assignments?: BudgetAssignment[]
 }
 
 export interface ProjectMember {
@@ -77,12 +74,10 @@ export interface ProjectPayload {
   name: string
   description: string
   cost_center_id?: string | null
-  budget_assignments?: BudgetAssignmentsPayload
 }
 
 export interface ProjectUpdatePayload {
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
-  budget_assignments?: BudgetAssignmentsPayload
 }

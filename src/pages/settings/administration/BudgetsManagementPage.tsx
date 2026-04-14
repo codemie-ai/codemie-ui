@@ -101,18 +101,18 @@ const BudgetsManagementPage: FC = () => {
   const [showModal, setShowModal] = useState(false)
 
   const loadBudgets = useCallback(
-    (page = pagination.page, perPage = pagination.perPage) => {
+    (page?: number, perPage?: number) => {
       budgetsStore
         .listBudgets({
-          page,
-          perPage,
+          page: page ?? budgetsStore.pagination.page,
+          perPage: perPage ?? budgetsStore.pagination.perPage,
           category: category || null,
         })
         .catch((error) => {
           console.error('Failed to load budgets:', error)
         })
     },
-    [category, pagination.page, pagination.perPage]
+    [category]
   )
 
   useEffect(() => {

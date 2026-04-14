@@ -17,7 +17,6 @@ import { FC, useMemo, useCallback, useEffect, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import AssistantSvg from '@/assets/icons/assistant-alt.svg?react'
-import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import Cross18Svg from '@/assets/icons/cross.svg?react'
 import DataSourceSvg from '@/assets/icons/datasource.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
@@ -42,14 +41,12 @@ import NameLinkCell from '@/pages/settings/administration/components/NameLinkCel
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
-import { BudgetAssignment } from '@/types/entity/budget'
 import { Project, ProjectSpendingSummaryCompact, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
 import ProjectModal, { ProjectFormData } from './ProjectModal'
-import BudgetAssignmentsModal from '../components/BudgetAssignmentsModal'
 
 const TOOLTIPS = {
   ASSISTANTS: 'Project Assistants',
@@ -151,7 +148,6 @@ const ProjectsManagementFull: FC = () => {
   const [showModal, setShowModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
-  const [budgetProject, setBudgetProject] = useState<Project | null>(null)
 
   const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
   const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
@@ -342,18 +338,6 @@ const ProjectsManagementFull: FC = () => {
     [editingProject, handleModalClose, refreshProjects]
   )
 
-  const handleBudgetSubmit = useCallback(
-    async (assignments: BudgetAssignment[]) => {
-      if (!budgetProject) return
-      await projectsStore.updateProject(budgetProject.id, {
-        budget_assignments: { assignments },
-      })
-      setBudgetProject(null)
-      refreshProjects()
-    },
-    [budgetProject, refreshProjects]
-  )
-
   const handlePageChange = useCallback(
     (page: number, newPerPage?: number) => {
       const perPage = newPerPage ?? pagination.perPage
@@ -456,14 +440,6 @@ const ProjectsManagementFull: FC = () => {
             onClick: () => handleEditProject(item),
           })
 
-          if (isBudgetManagementEnabled) {
-            menuItems.push({
-              title: 'Assign budgets',
-              icon: <ConfigureSvg />,
-              onClick: () => setBudgetProject(item),
-            })
-          }
-
           if (!isPersonal) {
             const hasCountData = item.counters !== undefined
             const totalCount = calculateTotalAssignments(item)
@@ -501,8 +477,6 @@ const ProjectsManagementFull: FC = () => {
       handleOpenProjectDetails,
       canManageProject,
       isUserManagementEnabled,
-      isBudgetManagementEnabled,
-      setBudgetProject,
     ]
   )
 
@@ -561,18 +535,7 @@ const ProjectsManagementFull: FC = () => {
           project={editingProject}
           onHide={handleModalClose}
           onSubmit={handleModalSubmit}
-          budgetsOnly={editingProject?.project_type === ProjectType.PERSONAL}
         />
-
-        {isBudgetManagementEnabled && (
-          <BudgetAssignmentsModal
-            visible={!!budgetProject}
-            header={`Assign budgets — ${budgetProject?.name ?? ''}`}
-            initialAssignments={budgetProject?.budget_assignments}
-            onHide={() => setBudgetProject(null)}
-            onSubmit={handleBudgetSubmit}
-          />
-        )}
 
         <ConfirmationModal
           visible={!!deletingProject}
