@@ -14,7 +14,7 @@
 //
 
 import { type MultiSelect as TMultiSelect } from 'primereact/multiselect'
-import React, { useState, useEffect, forwardRef, useContext, useRef } from 'react'
+import React, { useState, useEffect, forwardRef, useContext, useRef, useCallback } from 'react'
 import { useSnapshot } from 'valtio'
 
 import Avatar from '@/components/Avatar/Avatar'
@@ -23,6 +23,7 @@ import MultiSelect from '@/components/form/MultiSelect'
 import { AssistantIndexScope } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
+import { usePaginatedOptions, LoadListParams, LoadListResult } from '@/hooks/usePaginatedOptions'
 import { assistantsStore } from '@/store'
 import { cn } from '@/utils/utils'
 
@@ -59,7 +60,6 @@ interface AssistantSelectorProps {
   className?: string
   selectClassName?: string
   errorClassName?: string
-  initialOptions?: AssistantOption[]
   enlargedLabel?: boolean
 }
 
@@ -117,37 +117,42 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
       className,
       selectClassName,
       errorClassName,
-      initialOptions,
       enlargedLabel = false,
     },
     ref
   ) => {
-    const [options, setOptions] = useState<AssistantOption[]>([])
     const [initialValue] = useState(value)
 
     const assistantsSnapshot = useSnapshot(assistantsStore)
     const { assistant } = useContext(AssistantFormContext)
 
-    const getAssistantOptions = async (searchTerm = '') => {
-      try {
-        // This should be replaced with the actual API call from your store
-        const assistants =
-          (await assistantsSnapshot.getAssistantOptions?.(searchTerm, { project }, scope)) || []
+    const SUB_ASSISTANTS_PAGE_SIZE = 12
 
-        const formattedOptions = assistants.map((assistant) => ({
-          id: assistant.id,
-          name: assistant.name,
-          iconUrl: assistant.icon_url,
-          project: assistant.project,
-          created_by: assistant.created_by,
+    const loadList = useCallback(
+      async ({ searchTerm, page }: LoadListParams): Promise<LoadListResult<AssistantOption>> => {
+        const assistants =
+          (await assistantsSnapshot.getAssistantOptions?.(
+            searchTerm,
+            { project, page, per_page: SUB_ASSISTANTS_PAGE_SIZE },
+            scope
+          )) || []
+
+        const items = assistants.map((asst) => ({
+          id: asst.id,
+          name: asst.name,
+          iconUrl: asst.icon_url,
+          project: asst.project,
+          created_by: asst.created_by,
         }))
 
-        setOptions(formattedOptions)
-      } catch (error) {
-        console.error('Error fetching assistant options:', error)
-        setOptions([])
-      }
-    }
+        return { items, hasMore: items.length === SUB_ASSISTANTS_PAGE_SIZE }
+      },
+      [assistantsSnapshot, project, scope]
+    )
+
+    const { options, loadOptions, handleScrollBottom } = usePaginatedOptions<AssistantOption>({
+      loadList,
+    })
 
     const getMultiselectOptions = () => {
       // Include selected values that might not be in the options list
@@ -162,29 +167,10 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
     }
 
     useEffect(() => {
-      if (initialOptions) {
-        const formattedOptions = initialOptions.map((assistant) => ({
-          id: assistant.id,
-          name: assistant.name,
-          iconUrl: assistant.iconUrl,
-          project: assistant.project,
-          created_by: assistant.created_by,
-        }))
-        setOptions(formattedOptions)
-      }
-    }, [initialOptions])
-
-    useEffect(() => {
-      if (initialOptions) {
-        return
-      }
+      // Reset selected value and reload options from page 0 whenever the project changes
       resetValue()
-      getAssistantOptions()
-    }, [project]) // Run when project changes
-
-    const handleFilter = (filterValue: string) => {
-      getAssistantOptions(filterValue)
-    }
+      loadOptions()
+    }, [project])
 
     // Custom option renderer for MultiSelect
     const Option = (option: AssistantOption): React.ReactNode => {
@@ -237,7 +223,8 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
             inputClassName={selectClassName}
             errorClassName={errorClassName}
             placeholder={placeholder ?? 'Select Sub-Assistants'}
-            onFilter={handleFilter}
+            onFilter={loadOptions}
+            onScrollBottom={handleScrollBottom}
             renderOption={Option}
             error={error}
             fullWidth
@@ -246,8 +233,6 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
             optionValue="id"
             singleValue={singleValue}
             showCheckbox={!singleValue}
-            hasVirtualScroll
-            virtualScrollerOptions={{ itemSize: 48 }}
           />
         </div>
       </div>

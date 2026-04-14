@@ -126,7 +126,6 @@ const GuardrailAssignmentEntitySelector: FC<GuardrailAssignmentEntitySelectorPro
     return (
       <AssistantSelector
         hideHeader
-        initialOptions={initialOptions[entity]}
         placeholder="Select Assistant"
         value={normalizeValue(selectedValue)}
         {...sharedBaseProps}

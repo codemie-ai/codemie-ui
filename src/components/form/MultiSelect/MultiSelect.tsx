@@ -103,6 +103,7 @@ export type MultiSelectProps = {
   selectedItemTemplate?: ((option: any) => React.ReactNode) | null // Intentionally flexible - same reasoning as renderOption
   virtualScrollerOptions?: VirtualScrollerProps
   hasVirtualScroll?: boolean
+  onScrollBottom?: () => void
 }
 
 const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
@@ -139,11 +140,35 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       selectedItemTemplate,
       virtualScrollerOptions,
       hasVirtualScroll = false,
+      onScrollBottom,
     },
     ref
   ) => {
     const selectRef = React.useRef<PrimeMultiselect>(null)
     const inputWidth = useInputWidth(selectRef)
+
+    // Stores the scroll listener cleanup fn — called on panel close and unmount
+    const scrollCleanupRef = useRef<(() => void) | null>(null)
+    useEffect(() => () => scrollCleanupRef.current?.(), [])
+
+    // Attaches a near-bottom scroll listener to the dropdown panel; cleans up any previous one first
+    const attachScrollListener = useCallback(() => {
+      scrollCleanupRef.current?.()
+      scrollCleanupRef.current = null
+
+      const overlay = selectRef.current?.getOverlay()
+      const wrapper = overlay?.querySelector('[data-pc-section="wrapper"]') as HTMLElement | null
+      if (!wrapper || !onScrollBottom) return
+
+      const handler = () => {
+        if (wrapper.scrollTop + wrapper.clientHeight >= wrapper.scrollHeight - 50) {
+          onScrollBottom()
+        }
+      }
+      wrapper.addEventListener('scroll', handler)
+      // Store cleanup so it can be invoked when the panel closes or the component unmounts
+      scrollCleanupRef.current = () => wrapper.removeEventListener('scroll', handler)
+    }, [onScrollBottom])
 
     const { preparedValue, handleChange } = useMultiSelectLogic({
       value,
@@ -259,13 +284,16 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
     }, [preparedValue, isPanelOpen])
 
     const sortedOptions = useMemo(() => {
+      // When paginating (onScrollBottom), preserve server-side order — sorting would reorder appended items
+      if (onScrollBottom) return options
+
       const sorted = [...options].sort((a, b) =>
         String(a[optionLabel] ?? '').localeCompare(String(b[optionLabel] ?? ''))
       )
       const selected = sorted.filter((o) => selectedSnapshot.includes(o[optionValue] as string))
       const unselected = sorted.filter((o) => !selectedSnapshot.includes(o[optionValue] as string))
       return [...selected, ...unselected]
-    }, [options, optionLabel, optionValue, selectedSnapshot])
+    }, [options, optionLabel, optionValue, selectedSnapshot, onScrollBottom])
 
     const preparedSelectedItemTemplate = useMemo(() => {
       if (display !== 'chip') return selectedItemTemplate
@@ -307,12 +335,26 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           placeholder={placeholder}
           disabled={disabled}
           onChange={(e) => handleChange(e, selectRef)}
-          onShow={() => setIsPanelOpen(true)}
+          onShow={() => {
+            setIsPanelOpen(true)
+            if (onScrollBottom) attachScrollListener()
+          }}
           onHide={() => {
             setIsPanelOpen(false)
             setSelectedSnapshot(preparedValue)
+            // Remove the scroll listener when the panel closes
+            scrollCleanupRef.current?.()
+            scrollCleanupRef.current = null
           }}
-          onFilter={(e) => onFilter?.(e.filter)}
+          onFilter={(e) => {
+            onFilter?.(e.filter)
+            if (onScrollBottom) {
+              const wrapper = selectRef.current
+                ?.getOverlay()
+                ?.querySelector<HTMLElement>('[data-pc-section="wrapper"]')
+              if (wrapper) wrapper.scrollTop = 0
+            }
+          }}
           multiple={!singleValue}
           className={cn(className, mappedSizeClassname, inputClassName)}
           panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}

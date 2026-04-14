@@ -16,20 +16,12 @@
 import { useEffect, useState } from 'react'
 
 import { AssistantContextOption } from '@/pages/assistants/components/AssistantForm/components/ContextSelector'
-import { AssistantOption } from '@/pages/assistants/components/AssistantSelector'
 import { WorkflowSelectorOption } from '@/pages/workflows/components/WorkflowSelector'
-import { assistantsStore } from '@/store/assistants'
 import { dataSourceStore } from '@/store/dataSources'
 import { workflowsStore } from '@/store/workflows'
-import { Assistant, AssistantContext, Workflow } from '@/types/entity'
+import { AssistantContext, Workflow } from '@/types/entity'
 import { GuardrailAssignmentResponse, GuardrailEntity } from '@/types/entity/guardrail'
 import { getContextTypeLabel } from '@/utils/indexing'
-
-const mapAssistantToOption = (assistant: Assistant): AssistantOption => ({
-  id: assistant.id,
-  iconUrl: assistant.icon_url,
-  name: assistant.name,
-})
 
 const mapWorkflowToOption = (workflow: Workflow): WorkflowSelectorOption => ({
   id: workflow.id,
@@ -46,7 +38,6 @@ const mapDatasourceToOption = (
 })
 
 export type GuardrailAssignmentOptions = {
-  [GuardrailEntity.ASSISTANT]: AssistantOption[]
   [GuardrailEntity.KNOWLEDGEBASE]: AssistantContextOption[]
   [GuardrailEntity.WORKFLOW]: WorkflowSelectorOption[]
 }
@@ -58,7 +49,6 @@ export const useGuardrailAssignmentOptions = ({
   assignments: GuardrailAssignmentResponse | null
   setIsLoading: (isLoading: boolean) => void
 }): { initialOptions: GuardrailAssignmentOptions } => {
-  const [assistantOptions, setAssistantOptions] = useState<AssistantOption[]>([])
   const [dataSourceOptions, setDataSourceOptions] = useState<AssistantContextOption[]>([])
   const [workflowOptions, setWorkflowOptions] = useState<WorkflowSelectorOption[]>([])
 
@@ -67,15 +57,11 @@ export const useGuardrailAssignmentOptions = ({
       if (!assignments) return
 
       try {
-        const [allAssistants, allWorkflows, allDataSources] = await Promise.all([
-          assistantsStore.getAssistantOptions('', { project: assignments.project_name }),
+        const [allWorkflows, allDataSources] = await Promise.all([
           workflowsStore.getWorkflowOptions({ project: assignments.project_name }),
-          dataSourceStore.getDataSourceOptions({
-            project: assignments.project_name,
-          }),
+          dataSourceStore.getDataSourceOptions({ project: assignments.project_name }),
         ])
 
-        setAssistantOptions(allAssistants.map(mapAssistantToOption))
         setDataSourceOptions(allDataSources.map(mapDatasourceToOption))
         setWorkflowOptions(allWorkflows.map(mapWorkflowToOption))
       } finally {
@@ -88,7 +74,6 @@ export const useGuardrailAssignmentOptions = ({
 
   return {
     initialOptions: {
-      [GuardrailEntity.ASSISTANT]: assistantOptions,
       [GuardrailEntity.KNOWLEDGEBASE]: dataSourceOptions,
       [GuardrailEntity.WORKFLOW]: workflowOptions,
     },

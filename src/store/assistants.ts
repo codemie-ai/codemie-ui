@@ -89,7 +89,7 @@ interface AssistantsStoreType {
   getAssistantContext: (project_name: string, withID?: boolean) => Promise<AssistantContext[]>
   getAssistantOptions: (
     search?: string,
-    options?: { ids?: string[]; project?: string; per_page?: number },
+    options?: { ids?: string[]; project?: string; per_page?: number; page?: number },
     scope?: AssistantIndexScope
   ) => Promise<Assistant[]>
   getAllAssistantsOptions: (
@@ -383,7 +383,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
 
   getAssistantOptions(
     search = '',
-    { ids = [], project, per_page = 12 } = {},
+    { ids = [], project, per_page = 12, page = 0 } = {},
     scope = ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER
   ) {
     const filters = {
@@ -392,7 +392,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       ...(project ? { project } : {}),
     }
     const url =
-      `v1/assistants?per_page=${per_page}` +
+      `v1/assistants?page=${page}&per_page=${per_page}` +
       `&scope=${scope}` +
       `&filters=${encodeURIComponent(JSON.stringify(cleanObject(filters)))}` +
       `&minimal_response=true`
