@@ -15,11 +15,22 @@
 
 import isEqual from 'lodash/isEqual'
 
+import { appInfoStore } from '@/store/appInfo'
+
 import { normalizeMcpServersForComparison } from './normalizeMcpServersForComparison'
 import { normalizeToolkitsForComparison } from './normalizeToolkitsForComparison'
 
 const normalizeStringField = (value: string | null | undefined): string => {
   return value ?? ''
+}
+
+const getDefaultLlmModel = (): string | undefined => {
+  const models = appInfoStore.llmModels
+  return (models.find((m) => m.isDefault) ?? models[0])?.value
+}
+
+const normalizeLlmModelField = (value: string | null | undefined): string => {
+  return value || getDefaultLlmModel() || ''
 }
 
 /**
@@ -35,6 +46,7 @@ export const compareFormData = (initial: any, current: any) => {
     description: normalizeStringField(initial.description),
     toolkits: normalizeToolkitsForComparison(initial.toolkits || []),
     mcp_servers: normalizeMcpServersForComparison(initial.mcp_servers || []),
+    llm_model_type: normalizeLlmModelField(initial.llm_model_type),
   }
   const normalizedCurrent = {
     ...current,
@@ -42,6 +54,7 @@ export const compareFormData = (initial: any, current: any) => {
     description: normalizeStringField(current.description),
     toolkits: normalizeToolkitsForComparison(current.toolkits || []),
     mcp_servers: normalizeMcpServersForComparison(current.mcp_servers || []),
+    llm_model_type: normalizeLlmModelField(current.llm_model_type),
   }
 
   if (!initial.project || initial.project === '') {
