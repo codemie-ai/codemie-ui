@@ -67,7 +67,7 @@ const getEnterpriseAdminItems = (
     : []),
 ]
 
-export const getNavigationTabs = (isAdmin: boolean, awsSupported = false): LayoutTab[] => {
+export const getNavigationTabs = (isAdmin: boolean, awsSupported = false, isMaintainer = false): LayoutTab[] => {
   const isMcpFeatureEnabled = isMcpEnabled()
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
   const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
@@ -108,7 +108,7 @@ export const getNavigationTabs = (isAdmin: boolean, awsSupported = false): Layou
           ? getEnterpriseAdminItems(
               isMcpFeatureEnabled,
               isUserManagementEnabled,
-              budgetsManagementTab
+              isMaintainer ? budgetsManagementTab : []
             )
           : []),
       ].sort((a, b) => a.name.localeCompare(b.name))

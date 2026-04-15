@@ -63,7 +63,7 @@ const TableCell = <T,>({
   const isSelectionCell = definition.type === DefinitionTypes.Selection
 
   if (definition.type === DefinitionTypes.Date) {
-    content = <span>{formatDateTime(value[definition.key])}</span>
+    content = <span className="whitespace-nowrap">{formatDateTime(value[definition.key])}</span>
   } else if (definition.type === DefinitionTypes.User) {
     content = <span>{createdBy(value[definition.key]) || '-'}</span>
   } else if (definition.type === DefinitionTypes.Boolean) {

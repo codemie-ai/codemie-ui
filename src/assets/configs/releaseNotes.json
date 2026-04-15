@@ -1,5 +1,47 @@
 [
   {
+    "version": "2.23.0",
+    "date": "2026-04-15",
+    "issues": [
+      {
+        "title": "Edit Assistant: add lazy-loading pagination on scroll for Sub-assistants search list (load 12 more items)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10945",
+        "key": "EPMCDME-10945"
+      },
+      {
+        "title": "Assistant with sub-assistant whose name exceeds 64 characters fails with error",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8849",
+        "key": "EPMCDME-8849"
+      },
+      {
+        "title": "Add country, job title group, and level widgets to CLI dashboard based on synchronized user details",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11636",
+        "key": "EPMCDME-11636"
+      },
+      {
+        "title": "\"ExceededBudget\" error (code 400) blocks all PR/commit activity for agent, budget exceeded in update_file_diff tool, despite sufficient visible profile budget in CodeMie with GitHub integration",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11621",
+        "key": "EPMCDME-11621"
+      },
+      {
+        "title": "Implement project-spending tracking for personal projects",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11693",
+        "key": "EPMCDME-11693"
+      },
+      {
+        "title": "Unsaved Changes dialog is shown on Assistant create page when user does not make changes and clicks Back/Cancel button",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11749",
+        "key": "EPMCDME-11749"
+      }
+    ]
+  },
+  {
     "version": "2.22.0",
     "date": "2026-04-10",
     "issues": [

@@ -186,12 +186,12 @@ const BudgetsManagementPage: FC = () => {
         </div>
       ),
       budget_reset_at: (item: Budget) => (
-        <span className="text-text-primary">
+        <span className="whitespace-nowrap text-text-primary">
           {displayValue(formatDateTime(item.budget_reset_at))}
         </span>
       ),
       updated_at: (item: Budget) => (
-        <span className="text-text-primary">
+        <span className="whitespace-nowrap text-text-primary">
           {displayValue(formatDateTime(item.updated_at || item.created_at))}
         </span>
       ),
