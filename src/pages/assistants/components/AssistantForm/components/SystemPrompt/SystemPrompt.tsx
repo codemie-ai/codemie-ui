@@ -17,7 +17,7 @@ import { ComponentProps, forwardRef, useContext } from 'react'
 
 import { TextareaRef } from '@/components/form/Textarea'
 import { AssistantPromptVariable } from '@/types/entity/assistant'
-import { formatDate, createdBy, SHORT_DATE_FORMAT } from '@/utils/helpers'
+import { formatDateTime, createdBy } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { copyToClipboard } from '@/utils/utils'
 
@@ -151,9 +151,9 @@ const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
       assistant?.system_prompt_history.map((entry, index) => {
         const versionNumber = assistant.system_prompt_history.length - index
         return {
-          label: `[${String(versionNumber).padStart(2, '0')}] - ${formatDate(
+          label: `[${String(versionNumber).padStart(2, '0')}] - ${formatDateTime(
             entry.date,
-            SHORT_DATE_FORMAT
+            'short'
           )} - ${createdBy(entry.created_by)}`,
           value: entry.date,
         }

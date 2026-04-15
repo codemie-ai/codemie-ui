@@ -20,6 +20,7 @@ import contentGradientPng from '@/assets/images/content-gradient.png'
 import PageLayout from '@/components/Layouts/Layout'
 import { useTheme } from '@/hooks/useTheme'
 import { appInfoStore } from '@/store/appInfo'
+import { formatDateTime } from '@/utils/helpers'
 
 import IssueList from './components/IssueList'
 
@@ -56,11 +57,7 @@ const ReleaseNotesPage: FC = () => {
                 </div>
                 {release.date && (
                   <div className="text-xs font-mono text-text-secondary mt-1">
-                    {new Date(release.date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {formatDateTime(release.date, 'day')}
                   </div>
                 )}
               </div>

@@ -35,8 +35,9 @@ import {
   getBudgetCategoryLabel,
 } from '@/types/entity/budget'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
-import { displayValue, formatDate } from '@/utils/utils'
+import { displayValue } from '@/utils/utils'
 
 const columnDefinitions: ColumnDefinition[] = [
   {
@@ -185,11 +186,13 @@ const BudgetsManagementPage: FC = () => {
         </div>
       ),
       budget_reset_at: (item: Budget) => (
-        <span className="text-text-primary">{displayValue(formatDate(item.budget_reset_at))}</span>
+        <span className="text-text-primary">
+          {displayValue(formatDateTime(item.budget_reset_at))}
+        </span>
       ),
       updated_at: (item: Budget) => (
         <span className="text-text-primary">
-          {displayValue(formatDate(item.updated_at || item.created_at))}
+          {displayValue(formatDateTime(item.updated_at || item.created_at))}
         </span>
       ),
       actions: (item: Budget) =>

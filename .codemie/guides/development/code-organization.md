@@ -8,7 +8,8 @@
 3. [Component Size Guidelines](#component-size-guidelines)
 4. [Constants Usage](#constants-usage)
 5. [Nullish Coalescing](#nullish-coalescing)
-6. [Code Style](#code-style)
+6. [Date Formatting](#date-formatting)
+7. [Code Style](#code-style)
 
 ---
 
@@ -249,6 +250,58 @@ const positiveNumber = value || 1
 
 - **Default**: Use `??` (nullish coalescing)
 - **Special case**: Use `||` only if you explicitly want falsy behavior
+
+---
+
+## Date Formatting
+
+### Always use `formatDateTime` from `@/utils/helpers`
+
+**CRITICAL RULE**: Never use `new Date().toLocaleString()`, `toLocaleDateString()`, or `formatDate()` directly. Always use `formatDateTime`.
+
+```typescript
+import { formatDateTime } from '@/utils/helpers'
+```
+
+### Styles
+
+| Style | Example output | Use for |
+|-------|---------------|---------|
+| `'default'` (omit style) | `5/10/2026, 2:12:34 PM` | General date+time display (tables, details) |
+| `'short'` | `Apr 15, 2:12 PM` | Compact inline timestamps (chat, dropdowns) |
+| `'day'` | `April 15, 2026` | Date-only display (version headers, release notes) |
+| `'file'` | `2026-04-15_09:30:00` | Filenames and machine-readable strings |
+| `'relative'` | `2 hours ago` | Recent activity (execution history) |
+
+### Examples
+
+```typescript
+// ✅ CORRECT
+formatDateTime(item.created_at)                   // '5/10/2026, 2:12:34 PM'
+formatDateTime(message.createdAt, 'short')        // 'Apr 15, 2:12 PM'
+formatDateTime(version.updatedAt, 'day')          // 'April 15, 2026'
+formatDateTime(execution.date, 'file')            // '2026-04-15_09:30:00'
+formatDateTime(execution.date, 'relative')        // '2 hours ago'
+
+// ❌ WRONG: Never use these directly
+new Date(value).toLocaleString()
+new Date(value).toLocaleDateString('en-US', { ... })
+formatDate(value)
+formatDate(value, SHORT_DATE_FORMAT)
+parseDate(value).toRelative()
+```
+
+### Null handling
+
+`formatDateTime` returns `'-'` for falsy input — no extra null checks needed.
+
+```typescript
+// ✅ CORRECT: formatDateTime handles null/undefined
+<div>{formatDateTime(item.updated_at)}</div>
+
+// ❌ WRONG: Redundant null check
+<div>{item.updated_at ? formatDateTime(item.updated_at) : '-'}</div>
+```
 
 ---
 

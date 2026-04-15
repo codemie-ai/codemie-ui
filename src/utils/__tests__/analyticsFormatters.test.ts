@@ -17,6 +17,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MetricFormat } from '@/types/analytics'
 import { formatMetricValue, humanizeAnalyticsLabel } from '@/utils/analyticsFormatters'
+import { formatDateTime } from '@/utils/helpers'
 
 describe('analyticsFormatters', () => {
   describe('formatMetricValue', () => {
@@ -39,7 +40,7 @@ describe('analyticsFormatters', () => {
 
     it('formats timestamps with the browser locale', () => {
       expect(formatMetricValue('2026-03-24T10:20:30Z', MetricFormat.TIMESTAMP)).toBe(
-        new Date('2026-03-24T10:20:30Z').toLocaleString()
+        formatDateTime('2026-03-24T10:20:30Z')
       )
     })
 

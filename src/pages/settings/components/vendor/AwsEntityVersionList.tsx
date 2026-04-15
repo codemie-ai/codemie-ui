@@ -23,7 +23,7 @@ import OpenSvg from '@/assets/icons/open.svg?react'
 import Button from '@/components/Button'
 import Spinner from '@/components/Spinner'
 import { VendorInstallableVersion } from '@/types/entity/vendor'
-import { formatDate, HUMAN_DAY_FORMAT } from '@/utils/utils'
+import { formatDateTime } from '@/utils/helpers'
 
 interface Props {
   openInCodemieLabel?: string
@@ -73,7 +73,7 @@ const AwsEntityVersionList: FC<Props> = ({
                   )}
                   <div className="flex items-center gap-2 text-text-quaternary text-xs mt-2">
                     {version.aliasId && <div className="">Version: {version.versionId} /</div>}
-                    <div>{formatDate(version.updatedAt, HUMAN_DAY_FORMAT)}</div>
+                    <div>{formatDateTime(version.updatedAt, 'day')}</div>
                   </div>
                 </div>
 

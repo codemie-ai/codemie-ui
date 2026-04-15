@@ -26,8 +26,9 @@ import CostCenterFormPopup from '@/pages/settings/administration/components/Cost
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { costCentersStore } from '@/store/costCenters'
 import { CostCenterDetail } from '@/types/entity/costCenter'
+import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
-import { displayValue, formatDate } from '@/utils/utils'
+import { displayValue } from '@/utils/utils'
 
 import CostCenterProjectsManager from './projectsManagement/CostCenterProjectsManager'
 
@@ -144,7 +145,7 @@ const CostCenterDetailsPage = () => {
                   </div>
                   <div className="col-span-2">
                     <div className="text-xs text-text-quaternary mb-1">Created at</div>
-                    <div>{formatDate(costCenter.created_at)}</div>
+                    <div>{formatDateTime(costCenter.created_at)}</div>
                   </div>
                 </div>
               </div>

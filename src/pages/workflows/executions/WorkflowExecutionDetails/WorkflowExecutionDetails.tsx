@@ -19,7 +19,8 @@ import CopySvg from '@/assets/icons/copy.svg?react'
 import StatusBadge from '@/components/StatusBadge'
 import { WORKFLOW_STATUS_BADGE_MAPPING } from '@/pages/workflows/constants'
 import { WorkflowExecution } from '@/types/entity/workflow'
-import { copyToClipboard, createdBy, formatDate } from '@/utils/utils'
+import { formatDateTime } from '@/utils/helpers'
+import { copyToClipboard, createdBy } from '@/utils/utils'
 
 import WorkflowExecutionDetailsItem from './WorkflowExecutionDetailsItem'
 
@@ -42,8 +43,11 @@ const WorkflowExecutionDetails: FC<WorkflowExecutionDetailsProps> = ({ execution
       </WorkflowExecutionDetailsItem>
 
       <WorkflowExecutionDetailsItem label="Triggered by:" value={createdBy(execution.created_by)} />
-      <WorkflowExecutionDetailsItem label="Started:" value={formatDate(execution.date)} />
-      <WorkflowExecutionDetailsItem label="Updated:" value={formatDate(execution.update_date)} />
+      <WorkflowExecutionDetailsItem label="Started:" value={formatDateTime(execution.date)} />
+      <WorkflowExecutionDetailsItem
+        label="Updated:"
+        value={formatDateTime(execution.update_date)}
+      />
 
       <WorkflowExecutionDetailsItem label="ID:">
         <p className="inline mr-2 break-all">{execution.execution_id}</p>

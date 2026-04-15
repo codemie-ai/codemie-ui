@@ -32,6 +32,8 @@ export const DEFAULT_DATE_FORMAT = 'MM/dd/yyyy, HH:mm'
 export const SHORT_DATE_FORMAT = 'MMM dd HH:mm'
 export const FILE_DATE_FORMAT = 'yyyy-MM-dd_HH:mm:ss'
 
+export type DateStyle = 'default' | 'short' | 'day' | 'file' | 'relative'
+
 const SYSTEM_CREATED_BY = 'System'
 
 export const capitalize = (string: string): string => {
@@ -51,6 +53,32 @@ export const formatDate = (dateString?: string | null, format = DEFAULT_DATE_FOR
   const dateObj = parseDate(dateString)
 
   return dateObj.toFormat(format)
+}
+
+export const formatDateTime = (
+  dateString?: string | null,
+  style: DateStyle = 'default'
+): string => {
+  if (!dateString) return '-'
+  const dt = parseDate(dateString)
+
+  switch (style) {
+    case 'short':
+      return dt.toLocaleString({
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    case 'day':
+      return dt.toLocaleString(DateTime.DATE_FULL)
+    case 'file':
+      return dt.toFormat(FILE_DATE_FORMAT)
+    case 'relative':
+      return dt.toRelative() ?? '-'
+    default:
+      return dt.toLocaleString(DateTime.DATETIME_SHORT_WITH_SECONDS)
+  }
 }
 
 export const truncateInput = (input?: string, maxLength?: number, default_input = '-'): string => {

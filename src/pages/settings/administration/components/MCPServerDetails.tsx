@@ -22,6 +22,7 @@ import DetailsProperty from '@/components/details/DetailsProperty'
 import DetailsSidebarSection from '@/components/details/DetailsSidebar/components/DetailsSidebarSection'
 import DetailsSidebar from '@/components/details/DetailsSidebar/DetailsSidebar'
 import { MCPConfig } from '@/types/entity/mcp'
+import { formatDateTime } from '@/utils/helpers'
 
 import ServerActions from './MCPServerDetails/ServerActions'
 import ServerVariables from './MCPServerDetails/ServerVariables'
@@ -130,10 +131,8 @@ const ServerTimestampsSection: FC<{ date?: string; updateDate?: string }> = ({
 
   return (
     <DetailsSidebarSection headline="TIMESTAMPS">
-      {date && <DetailsProperty label="Created" value={new Date(date).toLocaleString()} />}
-      {updateDate && (
-        <DetailsProperty label="Updated" value={new Date(updateDate).toLocaleString()} />
-      )}
+      {date && <DetailsProperty label="Created" value={formatDateTime(date)} />}
+      {updateDate && <DetailsProperty label="Updated" value={formatDateTime(updateDate)} />}
     </DetailsSidebarSection>
   )
 }

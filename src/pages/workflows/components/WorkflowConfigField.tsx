@@ -26,7 +26,7 @@ import VersionedField, {
 import { VersionedFieldOption } from '@/components/form/VersionedField/VersionedFieldHistoryTab'
 import { ButtonType } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
-import { createdBy, formatDate, SHORT_DATE_FORMAT } from '@/utils/helpers'
+import { createdBy, formatDateTime } from '@/utils/helpers'
 import { isConfigItemEnabled, getConfigItemSettings } from '@/utils/settings'
 import { cn } from '@/utils/utils'
 
@@ -57,7 +57,7 @@ const WorkflowConfigField: React.FC<WorkflowConfigFieldProps> = ({
   const documentationUrl = getConfigItemSettings(configs, 'workflowYamlDocumentation')?.url
 
   const historyOptions: VersionedFieldOption[] = history.map((item) => {
-    let label = formatDate(item.date, SHORT_DATE_FORMAT)
+    let label = formatDateTime(item.date, 'short')
     label += ` - ${createdBy(item.created_by)}`
     return { label, value: item.yaml_config }
   })

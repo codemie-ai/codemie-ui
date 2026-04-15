@@ -23,7 +23,7 @@ import StatusBadge from '@/components/StatusBadge'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { WORKFLOW_STATUS_BADGE_MAPPING } from '@/pages/workflows/constants'
 import { WorkflowExecution } from '@/types/entity/workflow'
-import { formatDate, parseDate, truncateInput } from '@/utils/helpers'
+import { formatDateTime, parseDate, truncateInput } from '@/utils/helpers'
 import { cn } from '@/utils/utils'
 
 const TRUNCATE_THRESHOLD = 30
@@ -59,8 +59,8 @@ const WorkflowExecutionHistoryItem: React.FC<WorkflowExecutionHistoryItemProps> 
   }
 
   const executionDate = isOlderThan1Day(execution.date)
-    ? formatDate(execution.date)
-    : parseDate(execution.date).toRelative()
+    ? formatDateTime(execution.date)
+    : formatDateTime(execution.date, 'relative')
 
   const executionName = execution?.prompt?.trim()?.length
     ? execution.prompt

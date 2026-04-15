@@ -29,7 +29,7 @@ import {
   VendorInstallableVersion,
   VendorOriginType,
 } from '@/types/entity/vendor'
-import { formatDate, HUMAN_DAY_FORMAT } from '@/utils/utils'
+import { formatDateTime } from '@/utils/helpers'
 import { getInstallableVersionFromVersion } from '@/utils/vendor'
 
 import AwsGuardrailVersionDetailsPopup from './AwsGuardrailVersionDetailsPopup'
@@ -159,7 +159,7 @@ const AwsGuardrailDetails: FC<Props> = ({ settingId, entityId }) => {
           </div>
           <div className="flex items-center gap-2 text-text-quaternary text-xs mt-2 mb-4">
             <div className="">Version: {versionToUninstall?.versionId} /</div>
-            <div>{formatDate(versionToUninstall?.updatedAt, HUMAN_DAY_FORMAT)}</div>
+            <div>{formatDateTime(versionToUninstall?.updatedAt, 'day')}</div>
           </div>
 
           <InfoBox

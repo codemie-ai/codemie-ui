@@ -24,7 +24,7 @@ import VersionedField, {
 } from '@/components/form/VersionedField/VersionedField'
 import Popup from '@/components/Popup'
 import { Assistant, AssistantPromptVariable } from '@/types/entity/assistant'
-import { formatDate, createdBy, SHORT_DATE_FORMAT } from '@/utils/helpers'
+import { formatDateTime, createdBy } from '@/utils/helpers'
 import { cn } from '@/utils/utils'
 
 import SystemPromptCurrentTab from './SystemPromptCurrentTab'
@@ -161,10 +161,9 @@ export const SystemPromptExpandedModal = ({
                     historyText={selectedHistoryOption.system_prompt}
                     currentText={value}
                     previousHistoryText={previousEntry?.system_prompt}
-                    title={`${formatDate(
-                      selectedHistoryOption.date,
-                      SHORT_DATE_FORMAT
-                    )} — ${createdBy(selectedHistoryOption.created_by)}`}
+                    title={`${formatDateTime(selectedHistoryOption.date, 'short')} — ${createdBy(
+                      selectedHistoryOption.created_by
+                    )}`}
                   />
                 )
               })()}

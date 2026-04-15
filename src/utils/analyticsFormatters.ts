@@ -14,6 +14,7 @@
 //
 
 import { MetricFormat } from '@/types/analytics'
+import { formatDateTime } from '@/utils/helpers'
 
 /**
  * Format metric value based on its type and format
@@ -42,7 +43,7 @@ export const formatMetricValue = (
   }
 
   if (format === MetricFormat.TIMESTAMP) {
-    return new Date(value).toLocaleString()
+    return formatDateTime(String(value))
   }
 
   if (typeof value === 'number') {

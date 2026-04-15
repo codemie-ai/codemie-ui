@@ -20,7 +20,7 @@ import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import { awsVendorStore } from '@/store/vendor'
 import { VendorGuardrailVersionDetails, VendorOriginType } from '@/types/entity/vendor'
-import { formatDate, HUMAN_DAY_FORMAT } from '@/utils/utils'
+import { formatDateTime } from '@/utils/helpers'
 
 interface Props {
   settingId: string
@@ -72,9 +72,9 @@ const AwsGuardrailVersionDetailsPopup: FC<Props> = ({
     <Popup
       visible={visible}
       onHide={handleClose}
-      header={`Version: ${versionDetails?.version || ''} / ${formatDate(
+      header={`Version: ${versionDetails?.version || ''} / ${formatDateTime(
         versionDetails?.updatedAt,
-        HUMAN_DAY_FORMAT
+        'day'
       )}`}
       hideFooter
     >

@@ -17,7 +17,8 @@ import { classNames as cn } from 'primereact/utils'
 import React from 'react'
 
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
-import { createdBy, formatDate, truncateInput } from '@/utils/utils'
+import { formatDateTime } from '@/utils/helpers'
+import { createdBy, truncateInput } from '@/utils/utils'
 
 import { Checkbox } from '../form/Checkbox'
 
@@ -62,7 +63,7 @@ const TableCell = <T,>({
   const isSelectionCell = definition.type === DefinitionTypes.Selection
 
   if (definition.type === DefinitionTypes.Date) {
-    content = <span>{formatDate(value[definition.key])}</span>
+    content = <span>{formatDateTime(value[definition.key])}</span>
   } else if (definition.type === DefinitionTypes.User) {
     content = <span>{createdBy(value[definition.key]) || '-'}</span>
   } else if (definition.type === DefinitionTypes.Boolean) {

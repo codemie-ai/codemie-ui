@@ -27,7 +27,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
 import { ChatMessage } from '@/types/entity/conversation'
-import { formatDate, SHORT_DATE_FORMAT } from '@/utils/helpers'
+import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
@@ -186,7 +186,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
             <div className="flex gap-2 text-xs items-center text-text-quaternary">
               <ProcessingCompleteSvg />
               Processed in: {processingTime}s /{' '}
-              <span>{formatDate(message.createdAt, SHORT_DATE_FORMAT)} </span>
+              <span>{formatDateTime(message.createdAt, 'short')} </span>
             </div>
           )}
 

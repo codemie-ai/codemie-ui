@@ -24,7 +24,7 @@ import {
   VendorEntityType,
   VendorOriginType,
 } from '@/types/entity/vendor'
-import { formatDate, HUMAN_DAY_FORMAT } from '@/utils/utils'
+import { formatDateTime } from '@/utils/helpers'
 
 interface Props {
   settingId: string
@@ -79,9 +79,9 @@ const AwsAssistantVersionDetailsPopup: FC<Props> = ({
       visible={visible}
       hideFooter
       onHide={handleClose}
-      header={`Version: ${versionData?.version || ''} / ${formatDate(
+      header={`Version: ${versionData?.version || ''} / ${formatDateTime(
         versionData?.updatedAt,
-        HUMAN_DAY_FORMAT
+        'day'
       )}`}
     >
       {isLoading && (

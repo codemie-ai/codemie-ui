@@ -27,7 +27,7 @@ import {
   ExportWorkflowExecutionOptions,
 } from '@/types/entity/workflow'
 import api from '@/utils/api'
-import { formatDate, sleep, FILE_DATE_FORMAT } from '@/utils/helpers'
+import { formatDateTime, sleep } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 
 import { mapPagination } from './utils/workflowExecutions'
@@ -487,7 +487,7 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
       await api.downloadFileStream(
         url,
         'application/zip',
-        `${workflow.name}_${formatDate(execution.date, FILE_DATE_FORMAT)}.zip`
+        `${workflow.name}_${formatDateTime(execution.date, 'file')}.zip`
       )
     } catch (error) {
       console.error('Error exporting workflow execution:', error)

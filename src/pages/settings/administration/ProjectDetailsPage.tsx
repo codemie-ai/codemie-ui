@@ -30,8 +30,9 @@ import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { ProjectType } from '@/types/entity/project'
 import { ProjectDetail } from '@/types/entity/projectManagement'
+import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
-import { displayValue, formatDate } from '@/utils/utils'
+import { displayValue } from '@/utils/utils'
 
 import ProjectMembersManager from './projectsManagement/ProjectMembersManager'
 
@@ -212,7 +213,7 @@ const ProjectDetailsPage = () => {
                   </div>
                   <div>
                     <div className="text-xs text-text-quaternary mb-1">Created at</div>
-                    <div>{formatDate(project.created_at)}</div>
+                    <div>{formatDateTime(project.created_at)}</div>
                   </div>
                 </div>
               </div>

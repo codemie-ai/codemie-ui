@@ -25,7 +25,7 @@ import Tabs from '@/components/Tabs/Tabs'
 import { ButtonType } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
 import { CreatedBy } from '@/types/common'
-import { createdBy, formatDate, SHORT_DATE_FORMAT } from '@/utils/helpers'
+import { createdBy, formatDateTime } from '@/utils/helpers'
 import { isConfigItemEnabled, getConfigItemSettings } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
@@ -143,9 +143,9 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
 
     const historyOptions = history.map((item, index) => {
       const versionNumber = history.length - index
-      const label = `[${String(versionNumber).padStart(2, '0')}] - ${formatDate(
+      const label = `[${String(versionNumber).padStart(2, '0')}] - ${formatDateTime(
         item.date,
-        SHORT_DATE_FORMAT
+        'short'
       )} - ${createdBy(item.created_by)}`
       return { label, value: item.yaml_config }
     })

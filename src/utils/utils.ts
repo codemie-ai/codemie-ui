@@ -15,7 +15,6 @@
 
 import { ClassValue, clsx } from 'clsx'
 import jsYaml from 'js-yaml'
-import { DateTime } from 'luxon'
 import QuillImageDropAndPaste from 'quill-image-drop-and-paste'
 import { twMerge } from 'tailwind-merge'
 
@@ -28,10 +27,6 @@ const FILE_KIND = 'file'
 export const displayValue = (value: string | null | undefined, fallback = '-'): string =>
   value && value !== 'NULL' ? value : fallback
 
-export const DEFAULT_DATE_FORMAT = 'MM/dd/yyyy, HH:mm'
-export const SHORT_DATE_FORMAT = 'MMM dd HH:mm'
-export const HUMAN_DAY_FORMAT = 'MMM dd yyyy'
-export const FILE_DATE_FORMAT = 'yyyy-MM-dd_HH:mm:ss'
 export const SHARED = {
   NOT_SHARED: 'Not shared',
   WITH_PROJECT: 'With Project',
@@ -108,21 +103,6 @@ export const capitalize = (string) => {
 
 export const cn = (...inputs: ClassValue[]) => {
   return twMerge(clsx(inputs))
-}
-
-export const parseDate = (dateString) => {
-  const isDevMode = import.meta.env.MODE === 'development'
-  const currentZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  const serverZone = isDevMode ? currentZone : 'utc'
-
-  return DateTime.fromISO(dateString, { zone: serverZone }).setZone(currentZone)
-}
-
-export const formatDate = (dateString, format = DEFAULT_DATE_FORMAT) => {
-  if (!dateString) return '-'
-  const dateObj = parseDate(dateString)
-
-  return dateObj.toFormat(format)
 }
 
 export const truncateInput = (input: string, maxLength: number, default_input = '-') => {

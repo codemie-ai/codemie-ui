@@ -24,7 +24,10 @@ import WorkflowExecutionDetails from '../WorkflowExecutionDetails'
 vi.mock('@/utils/utils', () => ({
   copyToClipboard: vi.fn(),
   createdBy: vi.fn((user) => user ?? 'Unknown'),
-  formatDate: vi.fn((date) => date ?? 'N/A'),
+}))
+
+vi.mock('@/utils/helpers', () => ({
+  formatDateTime: vi.fn((date) => date ?? 'N/A'),
 }))
 
 vi.mock('@/components/StatusBadge', () => ({

@@ -24,7 +24,7 @@ import AwsEntityDetails from '@/pages/settings/components/vendor/AwsEntityDetail
 import AwsEntityVersionList from '@/pages/settings/components/vendor/AwsEntityVersionList'
 import { awsVendorStore } from '@/store/vendor'
 import { VendorEntityType, VendorInstallableVersion, VendorOriginType } from '@/types/entity/vendor'
-import { formatDate, HUMAN_DAY_FORMAT } from '@/utils/utils'
+import { formatDateTime } from '@/utils/helpers'
 import { getInstallableVersionFromAlias } from '@/utils/vendor'
 
 import AwsAssistantVersionDetailsPopup from './AwsAssistantVersionDetailsPopup'
@@ -136,7 +136,7 @@ const AwsAssistantDetails: FC<Props> = ({ settingId, entityId }) => {
           </h3>
           <div className="flex items-center gap-2 text-text-quaternary text-xs mt-2 mb-4">
             <div className="">Version: {versionToUninstall?.versionId} /</div>
-            <div>{formatDate(versionToUninstall?.updatedAt, HUMAN_DAY_FORMAT)}</div>
+            <div>{formatDateTime(versionToUninstall?.updatedAt, 'day')}</div>
           </div>
 
           <InfoBox

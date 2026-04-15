@@ -17,6 +17,7 @@ import { FC } from 'react'
 
 import Select from '@/components/form/Select'
 import type { LeaderboardSeason, LeaderboardView } from '@/types/analytics'
+import { formatDateTime } from '@/utils/helpers'
 import { cn } from '@/utils/utils'
 
 import { LEADERBOARD_VIEW_OPTIONS } from './constants'
@@ -82,7 +83,7 @@ const LeaderboardControls: FC<LeaderboardControlsProps> = ({
 
       {isSeasonal && selectedSeason && (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-base-tertiary px-3 py-1 text-xs text-text-secondary">
-          Archived &middot; {new Date(selectedSeason.completed_at).toLocaleDateString()}
+          Archived &middot; {formatDateTime(selectedSeason.completed_at, 'day')}
         </span>
       )}
 

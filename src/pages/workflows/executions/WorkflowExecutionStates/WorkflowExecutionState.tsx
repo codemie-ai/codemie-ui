@@ -26,7 +26,7 @@ import { WORKFLOW_STATUSES } from '@/constants/workflows'
 import { WORKFLOW_STATUS_BADGE_MAPPING } from '@/pages/workflows/constants'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
 import { type WorkflowExecutionState as WorkflowExecutionStateType } from '@/types/entity/workflow'
-import { formatDate } from '@/utils/utils'
+import { formatDateTime } from '@/utils/helpers'
 
 import WorkflowExecutionStateControls from './WorkflowExecutionStateControls'
 import WorkflowExecutionStateThought from './WorkflowExecutionStateThought'
@@ -93,8 +93,8 @@ const WorkflowExecutionState = forwardRef<WorkflowExecutionStateRef, WorkflowExe
             State name: {state.name} <br />
             Task: {state.task ?? '-'}
             <div className="mt-5">
-              Started: {formatDate(state.started_at)} <br />
-              Completed: {formatDate(state.completed_at)}
+              Started: {formatDateTime(state.started_at)} <br />
+              Completed: {formatDateTime(state.completed_at)}
             </div>
             <div className="mt-5 flex items-center justify-between">
               <div className="flex items-center">
