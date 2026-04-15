@@ -45,12 +45,14 @@ interface UsersManagementBulkActionsProps {
   selectedUsers: UserListItem[]
   onClearSelection: () => void
   refresh: () => void
+  canManageBudgets?: boolean
 }
 
 const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
   selectedUsers,
   onClearSelection,
   refresh,
+  canManageBudgets = false,
 }) => {
   const [activePopup, setActivePopup] = useState<ActivePopup | null>(null)
 
@@ -71,11 +73,15 @@ const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
       // { label: 'Change Role', onClick: () => openPopup('changeRole') },
       { label: 'Assign to Project', onClick: () => openPopup('assignToProject') },
       { label: 'Unassign from Project', onClick: () => openPopup('unassignFromProject') },
-      { label: 'Assign Budgets', onClick: () => openPopup('assignBudgets') },
-      { label: 'Unassign Budgets', onClick: () => openPopup('unassignBudgets') },
-      { label: 'Reset Budgets', onClick: () => openPopup('resetBudgets') },
+      ...(canManageBudgets
+        ? [
+            { label: 'Assign Budgets', onClick: () => openPopup('assignBudgets') },
+            { label: 'Unassign Budgets', onClick: () => openPopup('unassignBudgets') },
+            { label: 'Reset Budgets', onClick: () => openPopup('resetBudgets') },
+          ]
+        : []),
     ],
-    [openPopup]
+    [canManageBudgets, openPopup]
   )
 
   const handleBudgetSubmit = async (assignments: BudgetAssignment[]) => {
@@ -111,27 +117,33 @@ const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
         onSave={() => closePopup(true)}
       />
 
-      <BudgetAssignmentsModal
-        visible={activePopup === 'assignBudgets'}
-        header="Assign Budgets"
-        initialAssignments={EMPTY_BUDGET_ASSIGNMENTS}
-        onHide={() => closePopup()}
-        onSubmit={handleBudgetSubmit}
-      />
+      {canManageBudgets && (
+        <BudgetAssignmentsModal
+          visible={activePopup === 'assignBudgets'}
+          header="Assign Budgets"
+          initialAssignments={EMPTY_BUDGET_ASSIGNMENTS}
+          onHide={() => closePopup()}
+          onSubmit={handleBudgetSubmit}
+        />
+      )}
 
-      <UnassignBudgetsPopup
-        selectedUsers={selectedUsers}
-        isOpen={activePopup === 'unassignBudgets'}
-        onClose={() => closePopup()}
-        onSave={() => closePopup(true)}
-      />
+      {canManageBudgets && (
+        <UnassignBudgetsPopup
+          selectedUsers={selectedUsers}
+          isOpen={activePopup === 'unassignBudgets'}
+          onClose={() => closePopup()}
+          onSave={() => closePopup(true)}
+        />
+      )}
 
-      <BulkResetBudgetsPopup
-        selectedUsers={selectedUsers}
-        isOpen={activePopup === 'resetBudgets'}
-        onClose={() => closePopup()}
-        onSave={() => closePopup(true)}
-      />
+      {canManageBudgets && (
+        <BulkResetBudgetsPopup
+          selectedUsers={selectedUsers}
+          isOpen={activePopup === 'resetBudgets'}
+          onClose={() => closePopup()}
+          onSave={() => closePopup(true)}
+        />
+      )}
     </>
   )
 }

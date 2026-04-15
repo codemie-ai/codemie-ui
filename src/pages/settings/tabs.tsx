@@ -67,23 +67,28 @@ const getEnterpriseAdminItems = (
     : []),
 ]
 
-export const getNavigationTabs = (isAdmin: boolean, awsSupported = false, isMaintainer = false): LayoutTab[] => {
+export const getNavigationTabs = (
+  isAdmin: boolean,
+  awsSupported = false,
+  isMaintainer = false
+): LayoutTab[] => {
   const isMcpFeatureEnabled = isMcpEnabled()
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
   const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
   const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
   const isEnterprise = isEnterpriseEdition()
 
-  const budgetsManagementTab = isBudgetManagementEnabled
-    ? [
-        {
-          id: SettingsTab.BUDGETS_MANAGEMENT,
-          name: 'Budgets management',
-          title: 'Budgets management',
-          url: '/settings/administration/budgets',
-        },
-      ]
-    : []
+  const budgetsManagementTab =
+    isBudgetManagementEnabled && isMaintainer
+      ? [
+          {
+            id: SettingsTab.BUDGETS_MANAGEMENT,
+            name: 'Budgets management',
+            title: 'Budgets management',
+            url: '/settings/administration/budgets',
+          },
+        ]
+      : []
 
   // Build administration children and sort alphabetically
   const administrationChildren = isAdmin

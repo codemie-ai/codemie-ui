@@ -30,6 +30,7 @@ import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { userStore } from '@/store/user'
 import { Pagination } from '@/types/common'
 import { getBudgetCategoryLabel, BudgetAssignment } from '@/types/entity/budget'
+import { ProjectRoleBE } from '@/types/entity/project'
 import { UserListItem } from '@/types/entity/user'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 
@@ -61,17 +62,26 @@ const BASE_COLUMN_DEFINITIONS: ColumnDefinition[] = [
 
 const UsersManagementPage: FC = () => {
   const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
-  const columnDefinitions = useMemo(
-    () =>
-      isBudgetManagementEnabled
-        ? BASE_COLUMN_DEFINITIONS
-        : BASE_COLUMN_DEFINITIONS.filter((c) => c.key !== 'budget_assignments'),
-    [isBudgetManagementEnabled]
-  )
-
   const { user: currentUser } = useSnapshot(userStore)
   const { filters, handleFilterChange } = useUsersManagementFilters()
   const isAdmin = currentUser?.isAdmin ?? false
+  const isMaintainer = currentUser?.isMaintainer ?? false
+  const canManageBudgets = isBudgetManagementEnabled && isMaintainer
+  const effectiveFilters = useMemo(
+    () => ({
+      ...filters,
+      budgets: canManageBudgets ? filters.budgets : [],
+      platform_role: (filters.platform_role ?? null) as ProjectRoleBE | null,
+    }),
+    [canManageBudgets, filters]
+  )
+  const columnDefinitions = useMemo(
+    () =>
+      canManageBudgets
+        ? BASE_COLUMN_DEFINITIONS
+        : BASE_COLUMN_DEFINITIONS.filter((c) => c.key !== 'budget_assignments'),
+    [canManageBudgets]
+  )
 
   const perPageRef = useRef(10)
 
@@ -93,7 +103,7 @@ const UsersManagementPage: FC = () => {
       const response = await userStore.getUsers({
         page: 0,
         perPage: pagination.totalCount,
-        filters,
+        filters: effectiveFilters,
       })
       return response.data
     },
@@ -161,44 +171,49 @@ const UsersManagementPage: FC = () => {
   )
 
   const refresh = useCallback(() => {
-    loadUsers(pagination.page, pagination.perPage, filters)
+    loadUsers(pagination.page, pagination.perPage, effectiveFilters)
     clearSelection()
-  }, [pagination.page, pagination.perPage, filters, loadUsers, clearSelection])
+  }, [pagination.page, pagination.perPage, effectiveFilters, loadUsers, clearSelection])
 
-  const handleOpenBudgetModal = useCallback(async (user: UserListItem) => {
-    try {
-      const assignments = await userStore.getUserBudgets(user.id)
-      setBudgetUser({ ...user, budget_assignments: assignments })
-    } catch {
-      setBudgetUser(user)
-    }
-  }, [])
+  const handleOpenBudgetModal = useCallback(
+    async (user: UserListItem) => {
+      if (!canManageBudgets) return
+
+      try {
+        const assignments = await userStore.getUserBudgets(user.id)
+        setBudgetUser({ ...user, budget_assignments: assignments })
+      } catch {
+        setBudgetUser(user)
+      }
+    },
+    [canManageBudgets]
+  )
 
   const handleBudgetSubmit = useCallback(
     async (assignments: BudgetAssignment[]) => {
-      if (!budgetUser) return
+      if (!canManageBudgets || !budgetUser) return
       await userStore.updateUserBudgets(budgetUser.id, assignments)
       setBudgetUser(null)
       refresh()
     },
-    [budgetUser, refresh]
+    [budgetUser, canManageBudgets, refresh]
   )
 
   const refreshFromFirstPage = useCallback(() => {
-    loadUsers(0, pagination.perPage, filters)
+    loadUsers(0, pagination.perPage, effectiveFilters)
     clearSelection()
-  }, [pagination.perPage, filters, loadUsers, clearSelection])
+  }, [pagination.perPage, effectiveFilters, loadUsers, clearSelection])
 
   useEffect(() => {
-    loadUsers(0, perPageRef.current, filters)
-  }, [filters, loadUsers])
+    loadUsers(0, perPageRef.current, effectiveFilters)
+  }, [effectiveFilters, loadUsers])
 
   const handlePageChange = useCallback(
     (page: number, newPerPage?: number) => {
       const perPage = newPerPage ?? pagination.perPage
-      loadUsers(page, perPage, filters)
+      loadUsers(page, perPage, effectiveFilters)
     },
-    [pagination.perPage, loadUsers, filters]
+    [pagination.perPage, loadUsers, effectiveFilters]
   )
 
   const customRenderColumns = useMemo(
@@ -268,7 +283,7 @@ const UsersManagementPage: FC = () => {
                 icon: <InfoSvg />,
                 onClick: () => handleOpenDetailsPopup(item),
               },
-              ...(isBudgetManagementEnabled
+              ...(canManageBudgets
                 ? [
                     {
                       title: 'Assign budgets',
@@ -287,7 +302,7 @@ const UsersManagementPage: FC = () => {
         )
       },
     }),
-    [handleOpenDetailsPopup, handleOpenBudgetModal, setResetBudgetUser]
+    [canManageBudgets, handleOpenDetailsPopup, handleOpenBudgetModal, setResetBudgetUser]
   )
 
   const effectiveColumnDefinitions = useMemo(() => {
@@ -296,7 +311,7 @@ const UsersManagementPage: FC = () => {
     }
 
     return columnDefinitions.filter((column) => column.key !== 'select')
-  }, [isAdmin])
+  }, [columnDefinitions, isAdmin])
 
   return (
     <SettingsLayout
@@ -306,14 +321,16 @@ const UsersManagementPage: FC = () => {
           <div className="mt-4 flex items-end justify-between gap-4 pr-4 h-[68px]">
             <UsersManagementFilters
               onFilterChange={handleFilterChange}
-              filters={filters}
+              filters={effectiveFilters}
               hasSelection={isAdmin && selected.length > 0}
+              canManageBudgets={canManageBudgets}
             />
             {isAdmin && (
               <UsersManagementBulkActions
                 selectedUsers={selected}
                 refresh={refreshFromFirstPage}
                 onClearSelection={clearSelection}
+                canManageBudgets={canManageBudgets}
               />
             )}
           </div>
@@ -348,7 +365,7 @@ const UsersManagementPage: FC = () => {
             onSave={refresh}
           />
 
-          {isBudgetManagementEnabled && (
+          {canManageBudgets && (
             <BudgetAssignmentsModal
               visible={!!budgetUser}
               header={`Assign budgets — ${budgetUser?.email ?? ''}`}
@@ -358,7 +375,7 @@ const UsersManagementPage: FC = () => {
             />
           )}
 
-          {isBudgetManagementEnabled && (
+          {canManageBudgets && (
             <ResetBudgetPopup
               isOpen={!!resetBudgetUser}
               user={resetBudgetUser}

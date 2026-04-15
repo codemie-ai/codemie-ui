@@ -41,6 +41,7 @@ interface UsersManagementFiltersProps {
   onFilterChange: (filters: IUsersManagementFilters) => void
   filters: IUsersManagementFilters
   hasSelection?: boolean
+  canManageBudgets?: boolean
 }
 
 const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
@@ -49,6 +50,7 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
   onFilterChange,
   filters,
   hasSelection,
+  canManageBudgets = false,
 }) => {
   const [localFilters, setLocalFilters] = useState(filters)
 
@@ -115,7 +117,7 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
         />
       </div>
 
-      {isBudgetManagementEnabled && (
+      {isBudgetManagementEnabled && canManageBudgets && (
         <div className="w-48">
           <BudgetSelector
             label="Budget"

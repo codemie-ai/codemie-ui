@@ -14,6 +14,7 @@
 //
 
 import { FC, useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useSnapshot } from 'valtio'
 
 import EditSvg from '@/assets/icons/edit.svg?react'
@@ -27,6 +28,7 @@ import { ButtonSize, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import BudgetModal from '@/pages/settings/administration/components/BudgetModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { budgetsStore } from '@/store/budgets'
+import { userStore } from '@/store/user'
 import {
   BUDGET_CATEGORY_OPTIONS,
   Budget,
@@ -96,10 +98,20 @@ const formatCurrency = (value: number): string =>
   `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const BudgetsManagementPage: FC = () => {
+  const navigate = useNavigate()
+  const { user: currentUser } = useSnapshot(userStore)
   const { budgets, pagination, loading, syncing } = useSnapshot(budgetsStore)
+  const isMaintainer = currentUser?.isMaintainer ?? false
   const [category, setCategory] = useState<BudgetCategory | ''>('')
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [showModal, setShowModal] = useState(false)
+
+  useEffect(() => {
+    if (currentUser && !isMaintainer) {
+      toaster.error('Access denied. Only maintainers can manage budgets.')
+      navigate('/settings/administration')
+    }
+  }, [currentUser, isMaintainer, navigate])
 
   const loadBudgets = useCallback(
     (page?: number, perPage?: number) => {
@@ -117,8 +129,9 @@ const BudgetsManagementPage: FC = () => {
   )
 
   useEffect(() => {
+    if (!isMaintainer) return
     loadBudgets(0)
-  }, [category, loadBudgets])
+  }, [category, isMaintainer, loadBudgets])
 
   const handleCreate = useCallback(() => {
     setEditingBudget(null)
@@ -257,6 +270,10 @@ const BudgetsManagementPage: FC = () => {
       />
     </div>
   )
+
+  if (currentUser && !isMaintainer) {
+    return null
+  }
 
   return (
     <SettingsLayout

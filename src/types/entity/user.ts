@@ -67,6 +67,8 @@ export interface UserListItem {
 export interface UserUpdatePayload {
   user_type?: UserType
   budget_assignments?: BudgetAssignmentsPayload
+  is_admin?: boolean
+  is_maintainer?: boolean
 }
 
 export interface PaginationInfo {

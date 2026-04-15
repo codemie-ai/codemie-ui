@@ -60,6 +60,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   const { user: currentUser } = useSnapshot(userStore)
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
+  const canManageBudgets = isBudgetManagementEnabled && isMaintainer
   const canEditPlatformRoles = isMaintainer && currentUser?.userId !== userId
 
   const fetchUserDetails = async () => {
@@ -69,14 +70,14 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     try {
       const [details, budgets] = await Promise.all([
         userStore.getUserById(userId),
-        userStore.getUserBudgets(userId),
+        canManageBudgets ? userStore.getUserBudgets(userId) : Promise.resolve([]),
       ])
       setUser(details)
       setUserType(details.user_type)
       setBudgetAssignments(budgets)
       setRoleFlags({
         is_admin: details.is_admin,
-        is_maintainer: details.is_maintainer,
+        is_maintainer: details.is_maintainer ?? false,
       })
     } catch (error) {
       console.error('Failed to fetch user details:', error)
@@ -91,7 +92,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
       setHasChanges(false)
       setIsBudgetEditing(false)
     }
-  }, [isOpen, userId])
+  }, [canManageBudgets, isOpen, userId])
 
   const handleProjectsChange = () => {
     setHasChanges(true)
@@ -113,6 +114,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   }
 
   const handleStartBudgetEdit = () => {
+    if (!canManageBudgets) return
     setEditedAssignments([...budgetAssignments])
     setIsBudgetEditing(true)
   }
@@ -123,7 +125,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   }
 
   const handleSaveBudgets = async () => {
-    if (!userId) return
+    if (!userId || !canManageBudgets) return
     setIsSavingBudgets(true)
     try {
       await userStore.updateUserBudgets(userId, editedAssignments)
@@ -233,14 +235,14 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
             <DetailsCopyField label="Email:" value={user.email} className="mb-2" />
 
-            {isBudgetManagementEnabled && (
+            {canManageBudgets && (
               <>
                 <div className="bg-border-structural h-px" />
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-text-quaternary">Budget assignments</p>
-                    {isAdmin && (
+                    {canManageBudgets && (
                       <div className="flex gap-2">
                         {isBudgetEditing ? (
                           <>
