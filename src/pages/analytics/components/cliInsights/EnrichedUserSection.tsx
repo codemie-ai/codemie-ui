@@ -54,42 +54,46 @@ const TOP_N_OPTIONS: SelectButtonOption[] = [
   { label: 'All', value: TopNFilter.ALL },
 ]
 
+const toTopN = (v: string): TopN =>
+  v === TopNFilter.ALL
+    ? TopNFilter.ALL
+    : (Number(v) as typeof TopNFilter.TEN | typeof TopNFilter.TWENTY)
+
 const EnrichedUserSection: FC<EnrichedUserSectionProps> = ({ filters }) => {
-  const [countryMode, setCountryMode] = useState<ChartMode>(ChartMode.COUNT)
   const [jobTitleMode, setJobTitleMode] = useState<ChartMode>(ChartMode.COUNT)
   const [levelMode, setLevelMode] = useState<ChartMode>(ChartMode.COUNT)
-  const [countriesTopN, setCountriesTopN] = useState<TopN>(TopNFilter.TEN)
+  const [countryTopN, setCountryTopN] = useState<TopN>(TopNFilter.TEN)
+  const [cityTopN, setCityTopN] = useState<TopN>(TopNFilter.TEN)
 
-  const barExtraParams = useMemo(
-    () => ({ per_page: countriesTopN === TopNFilter.ALL ? 100 : (countriesTopN as number) }),
-    [countriesTopN]
+  const countryBarExtraParams = useMemo(
+    () => ({ per_page: countryTopN === TopNFilter.ALL ? 100 : (countryTopN as number) }),
+    [countryTopN]
   )
 
-  const handleCountriesTopNChange = (v: string) =>
-    setCountriesTopN(
-      v === TopNFilter.ALL
-        ? TopNFilter.ALL
-        : (Number(v) as typeof TopNFilter.TEN | typeof TopNFilter.TWENTY)
-    )
+  const cityBarExtraParams = useMemo(
+    () => ({ per_page: cityTopN === TopNFilter.ALL ? 100 : (cityTopN as number) }),
+    [cityTopN]
+  )
 
   return (
     <section>
       <h2 className="mb-4 text-xl font-semibold text-text-primary">User Enrichment</h2>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <DonutChartWidget
+        <BarChartWidget
           metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_COUNTRY}
-          title="Users by Country"
-          description="CLI users distributed by country."
+          title="Top Countries by Cost"
+          description="Highest-cost countries in the selected period."
           labelField={EnrichedScope.COUNTRY}
-          valueField={
-            countryMode === ChartMode.COUNT ? EnrichedField.USER_COUNT : EnrichedField.TOTAL_COST
-          }
+          valueField={EnrichedField.TOTAL_COST}
+          yAxisLabel={EnrichedField.TOTAL_COST}
+          horizontal
           filters={filters}
+          extraParams={countryBarExtraParams}
           actions={
             <SelectButton
-              value={countryMode}
-              options={MODE_OPTIONS}
-              onChange={(v) => setCountryMode(v as ChartMode)}
+              value={String(countryTopN)}
+              options={TOP_N_OPTIONS}
+              onChange={(v) => setCountryTopN(toTopN(v))}
             />
           }
         />
@@ -103,12 +107,12 @@ const EnrichedUserSection: FC<EnrichedUserSectionProps> = ({ filters }) => {
           yAxisLabel={EnrichedField.TOTAL_COST}
           horizontal
           filters={filters}
-          extraParams={barExtraParams}
+          extraParams={cityBarExtraParams}
           actions={
             <SelectButton
-              value={String(countriesTopN)}
+              value={String(cityTopN)}
               options={TOP_N_OPTIONS}
-              onChange={handleCountriesTopNChange}
+              onChange={(v) => setCityTopN(toTopN(v))}
             />
           }
         />

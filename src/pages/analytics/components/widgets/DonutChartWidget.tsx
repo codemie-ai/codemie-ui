@@ -130,12 +130,14 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
 
   const legendItems = useMemo(
     () =>
-      labels.map((label, i) => ({
-        label: String(label),
-        value: values[i],
-        formattedValue: formatMetricValue(values[i], valueFormat),
-        color: backgroundColors[i],
-      })),
+      labels
+        .map((label, i) => ({
+          label: String(label),
+          value: values[i],
+          formattedValue: formatMetricValue(values[i], valueFormat),
+          color: backgroundColors[i],
+        }))
+        .sort((a, b) => b.value - a.value),
     [labels, values, valueFormat, backgroundColors]
   )
 
