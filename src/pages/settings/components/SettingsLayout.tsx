@@ -42,8 +42,7 @@ const SettingsLayout: FC<Props> = ({ contentTitle, content, onBack, rightContent
     <Layout
       tabs={getNavigationTabs(
         user?.isAdmin || false,
-        isConfigItemEnabled(configs, 'vendorIntegrationAWS'),
-        user?.isMaintainer || false
+        isConfigItemEnabled(configs, 'vendorIntegrationAWS')
       )}
       content={content}
       title="Settings"

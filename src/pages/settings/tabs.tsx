@@ -67,11 +67,7 @@ const getEnterpriseAdminItems = (
     : []),
 ]
 
-export const getNavigationTabs = (
-  isAdmin: boolean,
-  awsSupported = false,
-  isMaintainer = false
-): LayoutTab[] => {
+export const getNavigationTabs = (isAdmin: boolean, awsSupported = false): LayoutTab[] => {
   const isMcpFeatureEnabled = isMcpEnabled()
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
   const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
@@ -109,7 +105,11 @@ export const getNavigationTabs = (
           url: '/settings/administration/projects',
         },
         ...(isEnterprise
-          ? getEnterpriseAdminItems(isMcpFeatureEnabled, isUserManagementEnabled, budgetsManagementTab)
+          ? getEnterpriseAdminItems(
+              isMcpFeatureEnabled,
+              isUserManagementEnabled,
+              budgetsManagementTab
+            )
           : []),
       ].sort((a, b) => a.name.localeCompare(b.name))
     : [
@@ -119,16 +119,6 @@ export const getNavigationTabs = (
           title: 'Projects management',
           url: '/settings/administration/projects',
         },
-        ...(isEnterprise && isUserManagementEnabled && isMaintainer
-          ? [
-              {
-                id: SettingsTab.USERS_MANAGEMENT,
-                name: 'Users management',
-                title: 'Users management',
-                url: '/settings/administration/users',
-              },
-            ]
-          : []),
       ]
 
   const administrationTab: LayoutTab = {
