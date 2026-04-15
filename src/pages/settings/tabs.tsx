@@ -21,7 +21,57 @@ import { SettingsTab } from '@/constants'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 import { isCostCentersEnabled, isMcpEnabled } from '@/utils/featureFlags'
 
-export const getNavigationTabs = (isAdmin: boolean, awsSupported = false): LayoutTab[] => {
+const getEnterpriseAdminItems = (
+  isMcpFeatureEnabled: boolean,
+  isUserManagementEnabled: boolean,
+  budgetsManagementTab: LayoutTab[]
+): LayoutTab[] => [
+  {
+    id: SettingsTab.AI_ADOPTION_CONFIG,
+    name: 'AI/Run Adoption Framework',
+    title: 'AI/Run Adoption Framework',
+    url: '/settings/administration/ai-adoption-config',
+  },
+  ...budgetsManagementTab,
+  {
+    id: SettingsTab.CATEGORIES_MANAGEMENT,
+    name: 'Categories management',
+    title: 'Categories management',
+    url: '/settings/administration/categories',
+  },
+  ...(isMcpFeatureEnabled
+    ? [
+        {
+          id: SettingsTab.MCP_MANAGEMENT,
+          name: 'MCPs management',
+          title: 'MCPs catalog management',
+          url: '/settings/administration/mcps',
+        },
+      ]
+    : []),
+  {
+    id: SettingsTab.PROVIDERS_MANAGEMENT,
+    name: 'Providers management',
+    title: 'Providers management',
+    url: '/settings/administration/providers',
+  },
+  ...(isUserManagementEnabled
+    ? [
+        {
+          id: SettingsTab.USERS_MANAGEMENT,
+          name: 'Users management',
+          title: 'Users management',
+          url: '/settings/administration/users',
+        },
+      ]
+    : []),
+]
+
+export const getNavigationTabs = (
+  isAdmin: boolean,
+  awsSupported = false,
+  isMaintainer = false
+): LayoutTab[] => {
   const isMcpFeatureEnabled = isMcpEnabled()
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
   const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
@@ -59,47 +109,7 @@ export const getNavigationTabs = (isAdmin: boolean, awsSupported = false): Layou
           url: '/settings/administration/projects',
         },
         ...(isEnterprise
-          ? [
-              {
-                id: SettingsTab.AI_ADOPTION_CONFIG,
-                name: 'AI/Run Adoption Framework',
-                title: 'AI/Run Adoption Framework',
-                url: '/settings/administration/ai-adoption-config',
-              },
-              ...budgetsManagementTab,
-              {
-                id: SettingsTab.CATEGORIES_MANAGEMENT,
-                name: 'Categories management',
-                title: 'Categories management',
-                url: '/settings/administration/categories',
-              },
-              ...(isMcpFeatureEnabled
-                ? [
-                    {
-                      id: SettingsTab.MCP_MANAGEMENT,
-                      name: 'MCPs management',
-                      title: 'MCPs catalog management',
-                      url: '/settings/administration/mcps',
-                    },
-                  ]
-                : []),
-              {
-                id: SettingsTab.PROVIDERS_MANAGEMENT,
-                name: 'Providers management',
-                title: 'Providers management',
-                url: '/settings/administration/providers',
-              },
-              ...(isUserManagementEnabled
-                ? [
-                    {
-                      id: SettingsTab.USERS_MANAGEMENT,
-                      name: 'Users management',
-                      title: 'Users management',
-                      url: '/settings/administration/users',
-                    },
-                  ]
-                : []),
-            ]
+          ? getEnterpriseAdminItems(isMcpFeatureEnabled, isUserManagementEnabled, budgetsManagementTab)
           : []),
       ].sort((a, b) => a.name.localeCompare(b.name))
     : [
@@ -109,6 +119,16 @@ export const getNavigationTabs = (isAdmin: boolean, awsSupported = false): Layou
           title: 'Projects management',
           url: '/settings/administration/projects',
         },
+        ...(isEnterprise && isUserManagementEnabled && isMaintainer
+          ? [
+              {
+                id: SettingsTab.USERS_MANAGEMENT,
+                name: 'Users management',
+                title: 'Users management',
+                url: '/settings/administration/users',
+              },
+            ]
+          : []),
       ]
 
   const administrationTab: LayoutTab = {

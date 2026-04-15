@@ -40,3 +40,4 @@ public/keycloakify-dev-resources
 .claude/settings.local.json
 bmad/*
 .gemini/*
+/opencode.json

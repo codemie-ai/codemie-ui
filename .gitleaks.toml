@@ -4,4 +4,5 @@ useDefault = true
 [allowlist]
 paths = [
   '''.idea/''',
+  '''opencode\.json''',
 ]

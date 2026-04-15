@@ -25,6 +25,7 @@ export interface User {
   email: string
   name?: string
   isAdmin: boolean
+  isMaintainer?: boolean
   isAuthenticated: boolean
   user_type?: string
   applications?: string[]
@@ -52,6 +53,7 @@ export interface UserListItem {
   username: string
   email: string
   is_admin: boolean
+  is_maintainer?: boolean
   is_active: boolean
   user_type: UserType
   auth_source: string

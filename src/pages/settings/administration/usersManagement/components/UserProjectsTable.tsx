@@ -34,6 +34,7 @@ import AddProjectPopup from './popups/AddProjectPopup'
 interface UserProjectsTableProps {
   user: UserListItem
   onProjectsChange?: () => void
+  canManageProjects?: boolean
 }
 
 const ROLE_OPTIONS = [
@@ -69,7 +70,11 @@ const perPageOptions = [
   { value: '20', label: '20' },
 ]
 
-const UserProjectsTable: FC<UserProjectsTableProps> = ({ user, onProjectsChange }) => {
+const UserProjectsTable: FC<UserProjectsTableProps> = ({
+  user,
+  onProjectsChange,
+  canManageProjects = true,
+}) => {
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false)
   const [projects, setProjects] = useOptimistic(user.projects)
   const [currentPage, setCurrentPage] = useState(0)
@@ -176,6 +181,15 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({ user, onProjectsChange 
       ),
       admin: (item: UserAssignedProject) => {
         const currentRole = item.is_project_admin ? ProjectRole.ADMINISTRATOR : ProjectRole.USER
+
+        if (!canManageProjects) {
+          return (
+            <span className="text-sm text-text-primary">
+              {item.is_project_admin ? 'Project Admin' : 'User'}
+            </span>
+          )
+        }
+
         return (
           <div onClick={(e) => e.stopPropagation()}>
             <Select
@@ -190,6 +204,10 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({ user, onProjectsChange 
         )
       },
       actions: (item: UserAssignedProject) => {
+        if (!canManageProjects) {
+          return <span className="text-sm text-text-quaternary">-</span>
+        }
+
         return (
           <Button variant="delete" onClick={() => handleRemoveProject(item.name)}>
             Unassign
@@ -204,10 +222,12 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({ user, onProjectsChange 
     <div>
       <div className="flex items-center justify-between">
         <p className="text-text-quaternary">Projects</p>
-        <Button variant="primary" onClick={() => setIsAddProjectOpen(true)}>
-          <PlusSvg />
-          Add Project
-        </Button>
+        {canManageProjects && (
+          <Button variant="primary" onClick={() => setIsAddProjectOpen(true)}>
+            <PlusSvg />
+            Add Project
+          </Button>
+        )}
       </div>
 
       {projects.length === 0 ? (
@@ -234,35 +254,41 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({ user, onProjectsChange 
         </div>
       )}
 
-      <AddProjectPopup
-        isOpen={isAddProjectOpen}
-        onClose={() => setIsAddProjectOpen(false)}
-        onAdd={handleAddProject}
-      />
+      {canManageProjects && (
+        <AddProjectPopup
+          isOpen={isAddProjectOpen}
+          onClose={() => setIsAddProjectOpen(false)}
+          onAdd={handleAddProject}
+        />
+      )}
 
-      <ConfirmationModal
-        visible={!!pendingRoleChange}
-        onCancel={() => setPendingRoleChange(null)}
-        header="Change User Role?"
-        message={`Are you sure you want to change the role to ${
-          pendingRoleChange?.newRole === ProjectRole.ADMINISTRATOR ? 'Project Admin' : 'User'
-        }?`}
-        confirmText="Change Role"
-        confirmButtonType={ButtonType.PRIMARY}
-        onConfirm={confirmRoleChange}
-        hideIcon
-      />
+      {canManageProjects && (
+        <ConfirmationModal
+          visible={!!pendingRoleChange}
+          onCancel={() => setPendingRoleChange(null)}
+          header="Change User Role?"
+          message={`Are you sure you want to change the role to ${
+            pendingRoleChange?.newRole === ProjectRole.ADMINISTRATOR ? 'Project Admin' : 'User'
+          }?`}
+          confirmText="Change Role"
+          confirmButtonType={ButtonType.PRIMARY}
+          onConfirm={confirmRoleChange}
+          hideIcon
+        />
+      )}
 
-      <ConfirmationModal
-        visible={!!deletingProject}
-        onCancel={() => setDeletingProject(null)}
-        header="Unassign from Project?"
-        message={`Are you sure you want to unassign this user from ${deletingProject}?`}
-        confirmText="Unassign"
-        confirmButtonType={ButtonType.DELETE}
-        onConfirm={confirmRemoveProject}
-        hideIcon
-      />
+      {canManageProjects && (
+        <ConfirmationModal
+          visible={!!deletingProject}
+          onCancel={() => setDeletingProject(null)}
+          header="Unassign from Project?"
+          message={`Are you sure you want to unassign this user from ${deletingProject}?`}
+          confirmText="Unassign"
+          confirmButtonType={ButtonType.DELETE}
+          onConfirm={confirmRemoveProject}
+          hideIcon
+        />
+      )}
     </div>
   )
 }

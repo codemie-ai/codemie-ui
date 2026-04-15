@@ -14,6 +14,7 @@
 //
 
 import { FC, useMemo, useCallback, useEffect, useRef, useState } from 'react'
+import { useSnapshot } from 'valtio'
 
 import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
@@ -68,7 +69,9 @@ const UsersManagementPage: FC = () => {
     [isBudgetManagementEnabled]
   )
 
+  const { user: currentUser } = useSnapshot(userStore)
   const { filters, handleFilterChange } = useUsersManagementFilters()
+  const isAdmin = currentUser?.isAdmin ?? false
 
   const perPageRef = useRef(10)
 
@@ -113,10 +116,12 @@ const UsersManagementPage: FC = () => {
     [onSelectAllChange]
   )
 
-  const selection = {
-    ...tableSelection,
-    onSelectAllChange: handleSelectAllChange,
-  }
+  const selection = isAdmin
+    ? {
+        ...tableSelection,
+        onSelectAllChange: handleSelectAllChange,
+      }
+    : undefined
 
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null)
   const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false)
@@ -285,6 +290,14 @@ const UsersManagementPage: FC = () => {
     [handleOpenDetailsPopup, handleOpenBudgetModal, setResetBudgetUser]
   )
 
+  const effectiveColumnDefinitions = useMemo(() => {
+    if (isAdmin) {
+      return columnDefinitions
+    }
+
+    return columnDefinitions.filter((column) => column.key !== 'select')
+  }, [isAdmin])
+
   return (
     <SettingsLayout
       contentTitle="Users management"
@@ -294,13 +307,15 @@ const UsersManagementPage: FC = () => {
             <UsersManagementFilters
               onFilterChange={handleFilterChange}
               filters={filters}
-              hasSelection={selected.length > 0}
+              hasSelection={isAdmin && selected.length > 0}
             />
-            <UsersManagementBulkActions
-              selectedUsers={selected}
-              refresh={refreshFromFirstPage}
-              onClearSelection={clearSelection}
-            />
+            {isAdmin && (
+              <UsersManagementBulkActions
+                selectedUsers={selected}
+                refresh={refreshFromFirstPage}
+                onClearSelection={clearSelection}
+              />
+            )}
           </div>
 
           <div className="relative">
@@ -309,14 +324,14 @@ const UsersManagementPage: FC = () => {
               {...selection}
               items={users || []}
               selected={selected}
-              columnDefinitions={columnDefinitions}
+              columnDefinitions={effectiveColumnDefinitions}
               customRenderColumns={customRenderColumns}
               loading={isLoading}
               pagination={pagination}
               onPaginationChange={handlePageChange}
               perPageOptions={DECIMAL_PAGINATION_OPTIONS}
             />
-            {isSelectAllLoading && (
+            {isAdmin && isSelectAllLoading && (
               <div className="absolute top-0 left-0 right-0 bottom-[80px] flex items-center justify-center bg-surface-base-primary/80 backdrop-blur-sm rounded-lg z-[60]">
                 <div className="flex flex-col items-center gap-3">
                   <Spinner inline rootClassName="min-h-0" />

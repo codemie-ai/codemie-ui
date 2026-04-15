@@ -129,10 +129,10 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
     [users]
   )
 
-  const isSuperAdmin = currentUser?.isAdmin ?? false
+  const isAdmin = currentUser?.isAdmin ?? false
   const isProjectAdmin =
-    !isSuperAdmin && (currentUser?.applicationsAdmin?.includes(project.name || '') ?? false)
-  const canManageProject = isSuperAdmin || isProjectAdmin
+    !isAdmin && (currentUser?.applicationsAdmin?.includes(project.name || '') ?? false)
+  const canManageProject = isAdmin || isProjectAdmin
   const isPersonal = project.project_type === ProjectType.PERSONAL
 
   const columnDefinitions = useMemo(

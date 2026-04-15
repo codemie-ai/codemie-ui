@@ -20,6 +20,7 @@ import Button from '@/components/Button'
 import DetailsCopyField from '@/components/details/DetailsCopyField'
 import DetailsProperty from '@/components/details/DetailsProperty'
 import Select from '@/components/form/Select/Select'
+import Switch from '@/components/form/Switch'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import { USER_TYPES } from '@/constants/user'
@@ -53,9 +54,13 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   const [isBudgetEditing, setIsBudgetEditing] = useState(false)
   const [editedAssignments, setEditedAssignments] = useState<BudgetAssignment[]>([])
   const [isSavingBudgets, setIsSavingBudgets] = useState(false)
+  const [roleFlags, setRoleFlags] = useState({ is_admin: false, is_maintainer: false })
+  const [isUpdatingRoles, setIsUpdatingRoles] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const { user: currentUser } = useSnapshot(userStore)
-  const isSuperAdmin = currentUser?.isAdmin ?? false
+  const isAdmin = currentUser?.isAdmin ?? false
+  const isMaintainer = currentUser?.isMaintainer ?? false
+  const canEditPlatformRoles = isMaintainer && currentUser?.userId !== userId
 
   const fetchUserDetails = async () => {
     if (!userId) return
@@ -69,6 +74,10 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
       setUser(details)
       setUserType(details.user_type)
       setBudgetAssignments(budgets)
+      setRoleFlags({
+        is_admin: details.is_admin,
+        is_maintainer: details.is_maintainer,
+      })
     } catch (error) {
       console.error('Failed to fetch user details:', error)
     } finally {
@@ -126,6 +135,34 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     }
   }
 
+  const handleRoleChange = async (key: 'is_admin' | 'is_maintainer', value: boolean) => {
+    if (!user || !userId || !canEditPlatformRoles || isUpdatingRoles) return
+
+    const previousFlags = roleFlags
+    const nextFlags = { ...roleFlags, [key]: value }
+
+    if (key === 'is_maintainer' && value) {
+      nextFlags.is_admin = true
+    }
+
+    if (key === 'is_admin' && !value && roleFlags.is_maintainer) {
+      return
+    }
+
+    setRoleFlags(nextFlags)
+    setIsUpdatingRoles(true)
+
+    try {
+      await userStore.updateUser(userId, nextFlags)
+      setUser({ ...user, ...nextFlags })
+      setHasChanges(true)
+    } catch {
+      setRoleFlags(previousFlags)
+    } finally {
+      setIsUpdatingRoles(false)
+    }
+  }
+
   const handleClose = () => {
     if (hasChanges && onSave) {
       onSave()
@@ -153,7 +190,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
           <div className="flex flex-col gap-4">
             <div className="flex gap-12 items-center">
-              {isSuperAdmin ? (
+              {isAdmin ? (
                 <div className="flex flex-row items-center gap-1.5">
                   <span className="text-xs text-text-primary">User Type:</span>
                   <Select
@@ -172,6 +209,28 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
               )}
             </div>
 
+            {isMaintainer && (
+              <div className="flex flex-col gap-3 rounded-lg border border-border-structural p-4">
+                <span className="text-xs font-medium text-text-primary">Platform Roles</span>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
+                  <Switch
+                    id="user-admin-role"
+                    label="Admin"
+                    value={roleFlags.is_admin}
+                    disabled={!canEditPlatformRoles || isUpdatingRoles || roleFlags.is_maintainer}
+                    onChange={(e) => handleRoleChange('is_admin', e.target.checked)}
+                  />
+                  <Switch
+                    id="user-maintainer-role"
+                    label="Maintainer"
+                    value={roleFlags.is_maintainer}
+                    disabled={!canEditPlatformRoles || isUpdatingRoles}
+                    onChange={(e) => handleRoleChange('is_maintainer', e.target.checked)}
+                  />
+                </div>
+              </div>
+            )}
+
             <DetailsCopyField label="Email:" value={user.email} className="mb-2" />
 
             {isBudgetManagementEnabled && (
@@ -181,7 +240,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-text-quaternary">Budget assignments</p>
-                    {isSuperAdmin && (
+                    {isAdmin && (
                       <div className="flex gap-2">
                         {isBudgetEditing ? (
                           <>
@@ -216,7 +275,11 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
             <div className="bg-border-structural h-px" />
 
-            <UserProjectsTable user={user} onProjectsChange={handleProjectsChange} />
+            <UserProjectsTable
+              user={user}
+              onProjectsChange={handleProjectsChange}
+              canManageProjects={isAdmin}
+            />
           </div>
         </div>
       )}
