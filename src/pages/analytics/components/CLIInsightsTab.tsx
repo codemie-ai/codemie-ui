@@ -15,12 +15,14 @@
 
 import { FC, useState } from 'react'
 
-import type { AnalyticsQueryParams } from '@/types/analytics'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { OverviewMetricType, TabularMetricType } from '@/types/analytics'
+import type { AnalyticsQueryParams } from '@/types/analytics'
 import { humanizeAnalyticsLabel } from '@/utils/analyticsFormatters'
 import { getDeterministicChartColor } from '@/utils/chartColors'
 
 import CLIInsightsUserDetailsModal from './cliInsights/CLIInsightsUserDetailsModal'
+import EnrichedUserSection from './cliInsights/EnrichedUserSection'
 import { getPrimitiveString } from './cliInsights/helpers'
 import BarChartWidget from './widgets/BarChartWidget'
 import DonutChartWidget from './widgets/DonutChartWidget'
@@ -71,6 +73,7 @@ const renderTopSpenderUserCell =
 
 const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
   const [selectedUser, setSelectedUser] = useState<SelectedCliUser | null>(null)
+  const [isUserEnrichmentEnabled] = useFeatureFlag('features:userEnrichmentEnabled')
 
   const handleTopSpenderRowClick = (item: Record<string, unknown>) => {
     setSelectedUser({
@@ -222,6 +225,8 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
           />
         </div>
       </section>
+
+      {isUserEnrichmentEnabled && <EnrichedUserSection filters={filters} />}
 
       <section>
         <TableWidget

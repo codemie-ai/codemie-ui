@@ -143,6 +143,7 @@ const AnalyticsWidget: FC<AnalyticsWidgetProps> = ({
         onHide={() => setIsExpanded(false)}
         title={title}
         description={description}
+        actions={actions}
       >
         {renderWrapper()}
       </WidgetModal>

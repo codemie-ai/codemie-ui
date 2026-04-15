@@ -35,6 +35,7 @@ import type {
   TabularMetricType,
   TabularResponse,
 } from '@/types/analytics'
+import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { generateChartColors } from '@/utils/chartColors'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
@@ -159,6 +160,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
   )
 
   const yAxisLabelValue = data?.data.columns.find((c) => c.id === yAxisLabel)?.label
+  const valueFormat = data?.data.columns.find((c) => c.id === valueField)?.format
 
   const chartOptions: ChartOptions<'bar'> = useMemo(
     () => ({
@@ -205,7 +207,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
             },
             label: (context) => {
               const value = horizontal ? context.parsed.x ?? 0 : context.parsed.y ?? 0
-              return ` ${yAxisLabelValue}: ${value.toLocaleString()}`
+              return ` ${yAxisLabelValue}: ${formatMetricValue(value, valueFormat)}`
             },
           },
         },

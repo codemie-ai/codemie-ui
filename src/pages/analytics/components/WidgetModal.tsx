@@ -22,10 +22,18 @@ interface WidgetModalProps {
   onHide: () => void
   title: string
   description?: string
+  actions?: ReactNode
   children: ReactNode
 }
 
-const WidgetModal: FC<WidgetModalProps> = ({ visible, onHide, title, description, children }) => {
+const WidgetModal: FC<WidgetModalProps> = ({
+  visible,
+  onHide,
+  title,
+  description,
+  actions,
+  children,
+}) => {
   return (
     <Popup
       visible={visible}
@@ -37,7 +45,12 @@ const WidgetModal: FC<WidgetModalProps> = ({ visible, onHide, title, description
       dismissableMask
     >
       <div className="flex flex-col h-full">
-        {description && <p className="text-sm text-text-quaternary mb-4">{description}</p>}
+        {(description || actions) && (
+          <div className="flex items-center justify-between mb-4">
+            {description && <p className="text-sm text-text-quaternary">{description}</p>}
+            {actions && <div className="ml-4 shrink-0">{actions}</div>}
+          </div>
+        )}
         <div className="flex-1">{children}</div>
       </div>
     </Popup>
