@@ -27,14 +27,15 @@ import {
   FILTER_INITIAL_STATE,
   UsersManagementFilters as IUsersManagementFilters,
 } from '@/pages/settings/administration/usersManagement/constants'
+import { ProjectRoleBE } from '@/types/entity/project'
 import { FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
 
 const PLATFORM_ROLE_OPTIONS: FilterOption[] = [
   { label: 'All', value: 'all' },
-  { label: 'User', value: 'user' },
-  { label: 'Project Admin', value: 'platform_admin' },
-  { label: 'Super Admin', value: 'super_admin' },
+  { label: 'User', value: ProjectRoleBE.USER },
+  { label: 'Project Admin', value: ProjectRoleBE.PLATFORM_ADMIN },
+  { label: 'Super Admin', value: ProjectRoleBE.SUPER_ADMIN },
 ]
 
 interface UsersManagementFiltersProps {

@@ -57,7 +57,7 @@ export enum ProjectType {
 export enum ProjectRoleBE {
   USER = 'user',
   PLATFORM_ADMIN = 'platform_admin',
-  SUPER_ADMIN = 'super_admin',
+  SUPER_ADMIN = 'admin',
 }
 
 export enum ProjectRole {

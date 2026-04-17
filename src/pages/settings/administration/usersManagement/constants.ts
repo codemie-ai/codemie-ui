@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-export type PlatformRole = 'user' | 'platform_admin' | 'super_admin'
+export type PlatformRole = 'user' | 'platform_admin' | 'admin'
 
 export interface UsersManagementFilters {
   search: string
