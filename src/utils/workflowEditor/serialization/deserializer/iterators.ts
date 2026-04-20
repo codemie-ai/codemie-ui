@@ -60,29 +60,35 @@ const createIteratorState = (iterKey: string, states: StateConfiguration[]): Sta
 /**
  * Adds iterator states for parents with iter_key.
  * Two-pass approach:
- * 1. Collect all children grouped by iter_key
- * 2. Create one iterator per iter_key and assign to children
+ * 1. Collect children grouped by iterKey + existing iterator (if any)
+ *    - No existing meta_iter_state_id on children → group by iterKey alone (same iterator)
+ *    - Different meta_iter_state_id on children → separate groups (separate iterators)
+ * 2. Create one iterator per group and assign to children
  */
 export const addIteratorStates = (loadedConfig: WorkflowConfiguration): void => {
   const { states } = loadedConfig
-  const iteratorsToChildren: Map<string, string[]> = new Map() // iterKey -> childIDS
+  const iteratorsToChildren: Map<string, { iterKey: string; childIDs: string[] }> = new Map()
 
-  // Pass 1: Collect children grouped by iter_key
+  // Pass 1: Collect children grouped by iterKey, keeping groups with different existing
+  // iterators separate to preserve intentionally distinct iterators on reload
   for (const state of states) {
     const iterKey = state.next?.iter_key
+    if (!iterKey) continue
 
-    if (iterKey) {
-      const childIDs = findDirectChildren(state.id, states)
+    const childIDs = findDirectChildren(state.id, states)
+    if (childIDs.length === 0) continue
 
-      if (childIDs.length > 0) {
-        const existing = iteratorsToChildren.get(iterKey) ?? []
-        iteratorsToChildren.set(iterKey, [...existing, ...childIDs])
-      }
-    }
+    // If children already point to a specific iterator, include it in the group key.
+    // This keeps children that belong to different iterators in separate groups.
+    const existingIteratorId = findExistingIteratorInChildren(childIDs, states)
+    const groupKey = existingIteratorId ? `${iterKey}::${existingIteratorId}` : iterKey
+
+    const existing = iteratorsToChildren.get(groupKey) ?? { iterKey, childIDs: [] }
+    iteratorsToChildren.set(groupKey, { iterKey, childIDs: [...existing.childIDs, ...childIDs] })
   }
 
-  // // Pass 2: Create iterators and assign to children
-  for (const [iterKey, childIDs] of iteratorsToChildren.entries()) {
+  // Pass 2: Create iterators and assign to children
+  for (const { iterKey, childIDs } of iteratorsToChildren.values()) {
     let iteratorID = findExistingIteratorInChildren(childIDs, states)
 
     if (!iteratorID || !states.some((s) => s.id === iteratorID)) {
@@ -99,5 +105,6 @@ export const addIteratorStates = (loadedConfig: WorkflowConfiguration): void => 
       }
     }
   }
+
   loadedConfig.states = states
 }
