@@ -79,9 +79,22 @@ export const FILE_FILTER_PLACEHOLDER = `*.py
 debug.log*
 `
 
-export const FILES_FILTER_TOOLTIP = `- Patterns (e.g., *.pdf): Include ONLY matching files
-- !Patterns (e.g., !*.tmp): EXCLUDE matching files
-- Combined (e.g., *.docx + !draft_*.docx): Include .docx files except draft_*.docx files`
+export const FILES_FILTER_TOOLTIP = `Supported formats (one entry per line):
+
+Glob patterns:
+- *.pdf — include only matching files
+- !*.tmp — exclude matching files
+- *.docx + !draft_*.docx — include .docx except drafts
+
+Folder paths (relative):
+- /Shared Documents/General/PoC/*
+- /Shared%20Documents/ai-consultant/*.docx
+
+SharePoint folder URLs (paste directly from browser):
+- https://yourcompany.sharepoint.com/:f:/r/sites/SITE/Shared%20Documents/folder?csf=1&web=1
+- https://yourcompany.sharepoint.com/:f:/r/sites/SITE/Shared%20Documents/folder/*.json
+
+You can mix all formats together.`
 
 interface CsvSeparatorOption {
   value: string

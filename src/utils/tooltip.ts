@@ -39,7 +39,7 @@ export function setupGlobalTooltip() {
         arrowColor: 'transparent',
         openEvents: { mouseover: true },
         className:
-          'z-[10000] max-w-[500px] !bg-surface-base-secondary [overflow-wrap:break-word] border border-border-structural whitespace-pre-line !text-text-primary !px-3.5 !py-1.5 leading-2 !rounded-lg !opacity-100 !transition-none',
+          'z-[10000] max-w-[500px] !bg-surface-base-secondary break-all border border-border-structural whitespace-pre-line !text-text-primary !px-3.5 !py-1.5 leading-2 !rounded-lg !opacity-100 !transition-none',
       })
     )
   }
