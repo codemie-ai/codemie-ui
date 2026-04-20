@@ -83,9 +83,9 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
     const fetchData = async () => {
       const result = await analyticsStore.fetchTabularData(metricType, {
         ...filters,
-        ...extraParams,
         page: 0,
         per_page: 100,
+        ...extraParams,
       })
       if (result) {
         setData(result)
@@ -121,7 +121,7 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
           data: values,
           backgroundColor: backgroundColors,
           borderColor: getTailwindColor('--colors-border-specific-charts-bar-border'),
-          borderWidth: 2,
+          borderWidth: 0,
         },
       ],
     }),

@@ -12,17 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 import { FC, useMemo, useState } from 'react'
 
+import Select from '@/components/form/Select'
 import SelectButton, { type SelectButtonOption } from '@/components/SelectButton/SelectButton'
 import { TabularMetricType, type AnalyticsQueryParams } from '@/types/analytics'
 
 import BarChartWidget from '../widgets/BarChartWidget'
 import DonutChartWidget from '../widgets/DonutChartWidget'
+import TableWidget from '../widgets/TableWidget'
 
 const ChartMode = { COUNT: 'count', COST: 'cost' } as const
 type ChartMode = (typeof ChartMode)[keyof typeof ChartMode]
+
+const ViewMode = { CHARTS: 'charts', TABLE: 'table' } as const
+type ViewMode = (typeof ViewMode)[keyof typeof ViewMode]
 
 const TopNFilter = { TEN: 10, TWENTY: 20, ALL: 'all' } as const
 type TopN = (typeof TopNFilter)[keyof typeof TopNFilter]
@@ -48,6 +52,11 @@ const MODE_OPTIONS: SelectButtonOption[] = [
   { label: 'Cost', value: ChartMode.COST },
 ]
 
+const VIEW_MODE_OPTIONS: SelectButtonOption[] = [
+  { label: 'Charts', value: ViewMode.CHARTS },
+  { label: 'Table', value: ViewMode.TABLE },
+]
+
 const TOP_N_OPTIONS: SelectButtonOption[] = [
   { label: 'Top 10', value: String(TopNFilter.TEN) },
   { label: 'Top 20', value: String(TopNFilter.TWENTY) },
@@ -59,100 +68,167 @@ const toTopN = (v: string): TopN =>
     ? TopNFilter.ALL
     : (Number(v) as typeof TopNFilter.TEN | typeof TopNFilter.TWENTY)
 
+const toPerPage = (topN: TopN): number => (topN === TopNFilter.ALL ? 100 : (topN as number))
+
 const EnrichedUserSection: FC<EnrichedUserSectionProps> = ({ filters }) => {
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CHARTS)
   const [jobTitleMode, setJobTitleMode] = useState<ChartMode>(ChartMode.COUNT)
   const [levelMode, setLevelMode] = useState<ChartMode>(ChartMode.COUNT)
   const [countryTopN, setCountryTopN] = useState<TopN>(TopNFilter.TEN)
   const [cityTopN, setCityTopN] = useState<TopN>(TopNFilter.TEN)
+  const [jobTitleTopN, setJobTitleTopN] = useState<TopN>(TopNFilter.TEN)
+  const [primarySkillTopN, setPrimarySkillTopN] = useState<TopN>(TopNFilter.TEN)
 
-  const countryBarExtraParams = useMemo(
-    () => ({ per_page: countryTopN === TopNFilter.ALL ? 100 : (countryTopN as number) }),
-    [countryTopN]
-  )
+  const countryBarExtraParams = useMemo(() => ({ per_page: toPerPage(countryTopN) }), [countryTopN])
 
-  const cityBarExtraParams = useMemo(
-    () => ({ per_page: cityTopN === TopNFilter.ALL ? 100 : (cityTopN as number) }),
-    [cityTopN]
+  const cityBarExtraParams = useMemo(() => ({ per_page: toPerPage(cityTopN) }), [cityTopN])
+
+  const jobTitleExtraParams = useMemo(() => ({ per_page: toPerPage(jobTitleTopN) }), [jobTitleTopN])
+
+  const primarySkillExtraParams = useMemo(
+    () => ({ per_page: toPerPage(primarySkillTopN) }),
+    [primarySkillTopN]
   )
 
   return (
     <section>
-      <h2 className="mb-4 text-xl font-semibold text-text-primary">User Enrichment</h2>
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <BarChartWidget
-          metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_COUNTRY}
-          title="Top Countries by Cost"
-          description="Highest-cost countries in the selected period."
-          labelField={EnrichedScope.COUNTRY}
-          valueField={EnrichedField.TOTAL_COST}
-          yAxisLabel={EnrichedField.TOTAL_COST}
-          horizontal
-          filters={filters}
-          extraParams={countryBarExtraParams}
-          actions={
-            <SelectButton
-              value={String(countryTopN)}
-              options={TOP_N_OPTIONS}
-              onChange={(v) => setCountryTopN(toTopN(v))}
-            />
-          }
-        />
-
-        <BarChartWidget
-          metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_CITY}
-          title="Top Cities by Cost"
-          description="Highest-cost cities in the selected period."
-          labelField={EnrichedScope.CITY}
-          valueField={EnrichedField.TOTAL_COST}
-          yAxisLabel={EnrichedField.TOTAL_COST}
-          horizontal
-          filters={filters}
-          extraParams={cityBarExtraParams}
-          actions={
-            <SelectButton
-              value={String(cityTopN)}
-              options={TOP_N_OPTIONS}
-              onChange={(v) => setCityTopN(toTopN(v))}
-            />
-          }
-        />
-
-        <DonutChartWidget
-          metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_JOB_TITLE}
-          title="Users by Job Title"
-          description="CLI users distributed by job title."
-          labelField={EnrichedScope.JOB_TITLE}
-          valueField={
-            jobTitleMode === ChartMode.COUNT ? EnrichedField.USER_COUNT : EnrichedField.TOTAL_COST
-          }
-          filters={filters}
-          actions={
-            <SelectButton
-              value={jobTitleMode}
-              options={MODE_OPTIONS}
-              onChange={(v) => setJobTitleMode(v as ChartMode)}
-            />
-          }
-        />
-
-        <DonutChartWidget
-          metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_PRIMARY_SKILL}
-          title="Users by Primary Skill"
-          description="CLI users distributed by primary skill."
-          labelField={EnrichedScope.PRIMARY_SKILL}
-          valueField={
-            levelMode === ChartMode.COUNT ? EnrichedField.USER_COUNT : EnrichedField.TOTAL_COST
-          }
-          filters={filters}
-          actions={
-            <SelectButton
-              value={levelMode}
-              options={MODE_OPTIONS}
-              onChange={(v) => setLevelMode(v as ChartMode)}
-            />
-          }
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-text-primary">User Enrichment</h2>
+        <SelectButton
+          value={viewMode}
+          options={VIEW_MODE_OPTIONS}
+          onChange={(v) => setViewMode(v as ViewMode)}
         />
       </div>
+      {viewMode === ViewMode.TABLE && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <TableWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_COUNTRY}
+            title="Top Countries by Cost"
+            description="Highest-cost countries in the selected period."
+            filters={filters}
+            waitForAdoptionConfig={false}
+          />
+          <TableWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_CITY}
+            title="Top Cities by Cost"
+            description="Highest-cost cities in the selected period."
+            filters={filters}
+            waitForAdoptionConfig={false}
+          />
+          <TableWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_JOB_TITLE}
+            title="Users by Job Title"
+            description="CLI users distributed by job title."
+            filters={filters}
+            waitForAdoptionConfig={false}
+          />
+          <TableWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_PRIMARY_SKILL}
+            title="Users by Primary Skill"
+            description="CLI users distributed by primary skill."
+            filters={filters}
+            waitForAdoptionConfig={false}
+          />
+        </div>
+      )}
+      {viewMode === ViewMode.CHARTS && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <BarChartWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_COUNTRY}
+            title="Top Countries by Cost"
+            description="Highest-cost countries in the selected period."
+            labelField={EnrichedScope.COUNTRY}
+            valueField={EnrichedField.TOTAL_COST}
+            yAxisLabel={EnrichedField.TOTAL_COST}
+            horizontal
+            filters={filters}
+            extraParams={countryBarExtraParams}
+            actions={
+              <Select
+                value={String(countryTopN)}
+                onChange={(e) => setCountryTopN(toTopN(e.value))}
+                options={TOP_N_OPTIONS}
+                className="!h-[30px]"
+              />
+            }
+          />
+
+          <BarChartWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_CITY}
+            title="Top Cities by Cost"
+            description="Highest-cost cities in the selected period."
+            labelField={EnrichedScope.CITY}
+            valueField={EnrichedField.TOTAL_COST}
+            yAxisLabel={EnrichedField.TOTAL_COST}
+            horizontal
+            filters={filters}
+            extraParams={cityBarExtraParams}
+            actions={
+              <Select
+                value={String(cityTopN)}
+                onChange={(e) => setCityTopN(toTopN(e.value))}
+                options={TOP_N_OPTIONS}
+                className="!h-[30px]"
+              />
+            }
+          />
+
+          <DonutChartWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_JOB_TITLE}
+            title="Users by Job Title"
+            description="CLI users distributed by job title."
+            labelField={EnrichedScope.JOB_TITLE}
+            valueField={
+              jobTitleMode === ChartMode.COUNT ? EnrichedField.USER_COUNT : EnrichedField.TOTAL_COST
+            }
+            filters={filters}
+            extraParams={jobTitleExtraParams}
+            actions={
+              <div className="flex flex-row gap-2 items-end">
+                <SelectButton
+                  value={jobTitleMode}
+                  options={MODE_OPTIONS}
+                  onChange={(v) => setJobTitleMode(v as ChartMode)}
+                />
+                <Select
+                  value={String(jobTitleTopN)}
+                  onChange={(e) => setJobTitleTopN(toTopN(e.value))}
+                  options={TOP_N_OPTIONS}
+                  className="!h-[30px]"
+                />
+              </div>
+            }
+          />
+
+          <DonutChartWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_PRIMARY_SKILL}
+            title="Users by Primary Skill"
+            description="CLI users distributed by primary skill."
+            labelField={EnrichedScope.PRIMARY_SKILL}
+            valueField={
+              levelMode === ChartMode.COUNT ? EnrichedField.USER_COUNT : EnrichedField.TOTAL_COST
+            }
+            filters={filters}
+            extraParams={primarySkillExtraParams}
+            actions={
+              <div className="flex flex-row gap-2 items-end">
+                <SelectButton
+                  value={levelMode}
+                  options={MODE_OPTIONS}
+                  onChange={(v) => setLevelMode(v as ChartMode)}
+                />
+                <Select
+                  value={String(primarySkillTopN)}
+                  onChange={(e) => setPrimarySkillTopN(toTopN(e.value))}
+                  options={TOP_N_OPTIONS}
+                  className="!h-[30px]"
+                />
+              </div>
+            }
+          />
+        </div>
+      )}
     </section>
   )
 }
