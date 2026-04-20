@@ -1,5 +1,35 @@
 [
   {
+    "version": "2.23.3",
+    "date": "2026-04-20",
+    "issues": [
+      {
+        "title": "User Management: filtering users by Super Admin role shows \"Failed to fetch users\" and does not return filtered results",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11797",
+        "key": "EPMCDME-11797"
+      },
+      {
+        "title": "Add Claude Opus 4.7 to preview and production CodeMie environments and enable it in premium models list",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11810",
+        "key": "EPMCDME-11810"
+      },
+      {
+        "title": "Automatically delete scheduler and webhook integrations when related entity is deleted",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11799",
+        "key": "EPMCDME-11799"
+      },
+      {
+        "title": "Add validation for unsupported datasource types in webhook integration trigger configuration",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11796",
+        "key": "EPMCDME-11796"
+      }
+    ]
+  },
+  {
     "version": "2.23.0",
     "date": "2026-04-15",
     "issues": [
