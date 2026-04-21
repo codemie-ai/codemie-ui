@@ -15,6 +15,7 @@
 | 🚨 **API Client** | API call task | Use fetch wrapper (NOT Axios) → [API Integration](#api-integration) |
 | 🚨 **State Management** | Global state task | Use Valtio stores → [State Management](#state-management) |
 | 🚨 **Code Review** | "do code review" request | Invoke skill directly → `Skill("code-reviewer")` — skill collects context itself |
+| 🚨 **Onboarding Guide** | ANY change to onboarding types, store, flows, or UI entry points | Update `.codemie/onboarding-flows/FLOW-CREATION-GUIDE.md` to reflect the change |
 
 **Emergency Recovery**: If imports fail → Check [Troubleshooting](#-troubleshooting-quick-reference)
 
@@ -35,6 +36,7 @@
 | **Styling** | CSS, styling, theming | "Style component", "Change colors" | `styling/styling-guide.md` | `styling/theme-management.md` |
 | **Routing** | Navigation, routes, links | "Add route", "Navigate to", "Create link" | `architecture/routing-patterns.md` | `patterns/state-management.md` |
 | **Workflows** | Visual workflow editor, React Flow | "Edit workflow", "Add node", "Connect states" | `development/workflow-editor-patterns.md` | `patterns/state-management.md` |
+| **Onboarding** | Onboarding flows, types, store, UI entry points | "Add onboarding flow", "Change triggers", "Add welcome step" | `.codemie/onboarding-flows/FLOW-CREATION-GUIDE.md` | `src/types/onboarding.ts` |
 | **Errors** | Error handling, validation, error states | "Handle errors", "Show error", "Validate input" | `development/error-handling-patterns.md` | `patterns/form-patterns.md` |
 | **Constants** | Extract magic values, configuration | "Remove magic numbers", "Extract constants" | `development/constants-usage.md` | `development/code-organization.md` |
 | **Custom Hooks** | Extract logic, create reusable hooks | "Create hook", "Extract logic", "Reuse code" | `patterns/custom-hooks.md` | `components/component-patterns.md` |
@@ -370,6 +372,14 @@ All guides located in `.codemie/guides/<category>/`
 
 ### Testing
 - `testing/testing-patterns.md` - Vitest + Testing Library patterns ✅
+
+### Onboarding
+- `.codemie/onboarding-flows/FLOW-CREATION-GUIDE.md` - Flow creation guide, triggers (`helpPanelPageIds`, `showOnWelcome`), step types, and content rules ✅
+- `src/types/onboarding.ts` - `OnboardingFlow`, `OnboardingFlowTriggers`, step type definitions
+- `src/store/onboarding.ts` - Flow registry, `getFlowsForPage`, `getFlowsForWelcome`
+- `src/config/onboarding/flows/` - Individual flow implementations
+
+> 🚨 **Keep the guide in sync**: Any change to `OnboardingFlow`, `OnboardingFlowTriggers`, the store's lookup methods, or UI entry points (HelpPanel, FirstTimeUserPopup) **must** be reflected in `FLOW-CREATION-GUIDE.md`.
 
 ---
 

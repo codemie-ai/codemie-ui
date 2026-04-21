@@ -96,6 +96,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
         disabled={disabled}
         data-tooltip-id="react-tooltip"
         data-tooltip-content="Select LLM model for this conversation"
+        data-onboarding="chat-llm-selector"
         className={cn(
           'flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
           'text-text-quaternary hover:text-text-primary hover:bg-surface-elevated',

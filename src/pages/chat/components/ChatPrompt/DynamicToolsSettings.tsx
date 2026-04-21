@@ -75,6 +75,7 @@ const DynamicToolsSettings: FC<DynamicToolsSettingsProps> = ({ disabled = false 
         disabled={disabled}
         data-tooltip-id="react-tooltip"
         data-tooltip-content="Configure dynamic tools for this conversation"
+        data-onboarding="chat-tools-settings"
         className={cn(
           'relative flex items-center justify-center p-1 rounded-lg transition-colors',
           'text-text-quaternary hover:text-text-primary hover:bg-surface-elevated',

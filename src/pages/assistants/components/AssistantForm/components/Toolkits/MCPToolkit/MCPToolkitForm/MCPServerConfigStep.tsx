@@ -87,7 +87,7 @@ const MCPServerConfigStep = ({
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4" data-onboarding="mcp-custom-form-fields">
         <MCPBasicFields control={control} isEditing={isEditing} />
 
         <MCPConfigSection control={control} configHasEnv={configHasEnv} setValue={setValue} />

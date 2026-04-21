@@ -117,7 +117,7 @@ const ChatHeaderDownloadConversationButton: FC = () => {
 
   return (
     <>
-      <div ref={triggerWrapperRef}>
+      <div ref={triggerWrapperRef} data-onboarding="chat-export-button">
         <Button
           type="secondary"
           aria-label="Export Conversation"

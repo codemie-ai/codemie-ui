@@ -243,7 +243,10 @@ const SpendingCard: FC = () => {
 
   if (rowCount !== null && rowCount > 1 && !isLoadingKeySpending) {
     return (
-      <div className="bg-surface-base-chat rounded-lg p-4 border border-border-specific-panel-outline">
+      <div
+        className="bg-surface-base-chat rounded-lg p-4 border border-border-specific-panel-outline"
+        data-onboarding="spending-card"
+      >
         <div className="grid grid-cols-[auto,1fr] gap-x-4">
           <div className="w-8 h-8 min-w-8 bg-surface-specific-dropdown-hover text-text-primary rounded-full flex justify-center items-center">
             <CurrencySvg className="w-[18px] h-[18px]" />
@@ -292,6 +295,7 @@ const SpendingCard: FC = () => {
       heading="Your personal spending"
       description="Shows your current spending against your budget limit. Keep an eye on this to avoid unexpected costs!"
       icon={() => <CurrencySvg className="w-[18px] h-[18px]" />}
+      data-onboarding="spending-card"
     >
       {renderContent()}
     </InfoCard>

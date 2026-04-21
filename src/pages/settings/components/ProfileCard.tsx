@@ -37,7 +37,7 @@ const ProfileCard: React.FC<{
     )
 
   return (
-    <InfoCard heading={user?.name || ''} icon={icon}>
+    <InfoCard heading={user?.name || ''} icon={icon} data-onboarding="profile-card">
       <div className="flex gap-x-1">
         <p className="text-xs text-text-quaternary">{user?.userId}</p>
         <button

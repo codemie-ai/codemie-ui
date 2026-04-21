@@ -40,6 +40,7 @@ const ConversationCard: React.FC = () => {
       heading="Conversations Management"
       description="Manage your saved conversation history across workflows and assistants."
       icon={ChatSvg}
+      data-onboarding="conversation-card"
     >
       <Button type="delete" onClick={deleteAllConversations}>
         <DeleteDangerSvg className="w-4 mr-px" />

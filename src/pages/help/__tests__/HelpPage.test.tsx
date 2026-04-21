@@ -253,9 +253,7 @@ describe('HelpPage', () => {
     it('displays Product Updates section with title, description, and Release Notes', () => {
       renderWithRouter(<HelpPage />)
       expect(screen.getByText('Product Updates')).toBeInTheDocument()
-      expect(
-        screen.getByText("Track what's new, what's improved, and what's coming next.")
-      ).toBeInTheDocument()
+      expect(screen.getByText("Track what's new, and what's improved!")).toBeInTheDocument()
       expect(screen.getByText('Release Notes')).toBeInTheDocument()
       expect(
         screen.getByText('View the latest changes, fixes, and enhancements.')

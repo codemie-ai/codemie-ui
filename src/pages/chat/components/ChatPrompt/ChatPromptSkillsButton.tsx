@@ -56,6 +56,7 @@ const ChatPromptSkillsButton: FC<ChatPromptSkillsButtonProps> = ({ disabled = fa
         onClick={handleOpenModal}
         disabled={disabled}
         data-tooltip-id="react-tooltip"
+        data-onboarding="chat-skills-button"
         data-tooltip-content={
           'Attach skills to this conversation without modifying the assistant.\n\n' +
           'Skills are invoked on demand — the model decides when to use them based on your request.\n\n' +

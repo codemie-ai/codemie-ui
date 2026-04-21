@@ -4,412 +4,287 @@ description: >
   Use this skill when the user asks to "do code review", "review my changes", "review PR",
   "check code quality", or wants AI-assisted code review. Reviews React/TypeScript code for
   quality, security, performance, and maintainability. Saves findings to a local spec file
-  at `.codemie/reviews/` (never committed), auto-fixes all issues, commits, pushes, and
-  approves (or creates) the MR — fully automated by default. Use --interactive for full
-  interactive mode with questions and discussion.
-version: 0.5.0
+  at `.codemie/reviews/` (never committed) and commits a review marker. On re-run, evaluates
+  whether previously found issues have been fixed.
+version: 0.9.0
 ---
 
-You are a Code Reviewer for the CodeMie UI codebase. You handle the **full code review workflow** end-to-end: gather context, check for existing spec, find changed files, review, save spec, fix, commit, push, and approve MR.
+You are a Code Reviewer for the CodeMie UI codebase. Your sole purpose is to **review code and report findings** — you do NOT apply fixes. On re-run you check whether previously found issues have been resolved.
 
----
-
-## Operating Modes
-
-### Default Mode (no flags)
-- **Fully automated — no questions asked, no waiting for developer input**
-- Review depth: **Quick scan (Haiku)** — critical and major issues only
-- Goal source: **Fetch from Jira via brianna agent**
-- Base branch: **main**
-- Ticket: Extract from current branch name (pattern: `EPMCDME-XXXXX`)
-- **Auto-applies ALL found fixes** (CRITICAL and MAJOR) — skips Step 7 discussion
-- After fixes: commit → push → check MR:
-  - MR exists → approve it
-  - MR does not exist → create MR via `codemie-mr` skill, then approve
-
-### Interactive Mode (`--interactive` flag)
-- Asks questions to gather context one at a time
-- Developer controls all decisions
-- Full discussion of findings before applying fixes
-- After discussion: applies agreed fixes → commit → push → MR handling (same as default)
-- Activated by: `/code-reviewer --interactive`
+Workflow: ensure MR exists → get context from MR + Jira → get MR diff → check existing spec → review → save spec → present findings → commit review marker.
 
 ---
 
-## Progress Tracking
+## Step 1: Ensure MR & Get Context
 
-**Throughout the entire workflow**, maintain a `progress.md` file at `.codemie/reviews/<TICKET>/progress.md` (same folder as `review.md`). This file is **never committed** — local only.
+**🛑 An MR must exist before review can proceed.**
 
-**Purpose**: Keeps workflow state in context. If the conversation grows long or context is lost, read `progress.md` first to know exactly where you are and what was gathered.
+Check for an MR on the current branch using two commands — `list` to find the IID and repo slug, then `view` to get the URL:
 
-### Format
-
-```markdown
-# Review Progress: <TICKET>
-
-**Started**: <ISO-8601 UTC timestamp>
-**Branch**: <branch>
-**Ticket**: <ticket>
-**Depth**: <Quick scan | Deep review>
-**Base**: <base branch>
-**Goal**: <brief goal — 1 sentence>
-
-## Workflow State
-
-| Step | Status | Notes |
-|------|--------|-------|
-| 1. Context    | ✅ done    | depth=quick, base=main, goal=... |
-| 2. Spec check | ✅ done    | no existing spec / found, case B |
-| 3. Files      | ✅ done    | 5 files: src/components/Foo.tsx, ... |
-| 4. Review     | ✅ done    | 2 critical, 1 major |
-| 5. Spec saved | ✅ done    | .codemie/reviews/EPMCDME-123/review.md |
-| 6. Findings   | ✅ done    | presented |
-| 7. Discussion | ✅ done    | all accepted / N rejected |
-| 8. Fixes      | ✅ done    | 3 files changed |
-| 9. Commit     | ✅ done    | abc1234: EPMCDME-123: Fix issues |
-| 10. MR        | ✅ done    | approved MR !42 / created MR !42 |
-```
-
-### Rules
-
-- **Create** `progress.md` at the end of Step 1 (after all context is gathered)
-- **Update** the relevant row after each step completes — use `✅ done`, `⏳ in progress`, or `⏭️ skipped`
-- **Read** `progress.md` at the start if the file already exists — this means review was started earlier, resume from the last incomplete step
-- `progress.md` lives in the same folder as `review.md` — create the folder with `mkdir -p` if needed
-- **Never commit** this file (same rule as `review.md`)
-
----
-
-## Step 1: Gather Context
-
-### If default mode (no `--interactive` flag):
-
-Extract ticket from current branch name:
 ```bash
-git branch --show-current
+# Command 1 — find MR IID, repo slug, title, and target branch
+# NOTE: glab does NOT support --json "field,field" syntax (that is gh/GitHub CLI only).
+# Plain text output is the reliable format.
+BRANCH=$(git branch --show-current)
+glab mr list --source-branch="$BRANCH" 2>/dev/null
 ```
 
-Parse ticket number from branch (pattern: `EPMCDME-XXXXX`).
+Output looks like:
+```
+!1054   epm-cdme/codemie-ui!1054   EPMCDME-10042: Onboardings capability   (main) ← (EPMCDME-10042-new)
+```
+Extract: IID from `!XXXX` at line start, repo slug from the `owner/repo` before `!XXXX` in column 2, title from column 3, target branch from `(main)`.
 
-**If no ticket found in branch name** → ask developer:
-- prompt: `Cannot extract ticket from branch name. What is the Jira ticket number? (EPMCDME-XXXXX)`
-- header: `Ticket`
+```bash
+# Command 2 — get the MR web URL (not returned reliably by list)
+glab mr view <MR_IID> --repo <REPO_SLUG> 2>/dev/null
+```
 
-Once ticket is obtained, use Task tool to fetch from Jira:
+Output includes a `url:` field. Extract `MR_URL` from it.
+
+> **Run Command 2 in parallel with Step 2 (spec check) and the Jira fetch** — all three are independent.
+
+---
+
+### Path A — MR found
+
+Extract and store: `MR_IID`, `MR_TITLE`, `MR_DESCRIPTION`, `MR_TARGET_BRANCH`, `MR_URL`.
+
+Extract the Jira ticket from the branch name:
+```bash
+git branch --show-current | grep -oE 'EPMCDME-[0-9]+'
+```
+
+If no ticket found in branch name, try extracting from `MR_TITLE` (same pattern `EPMCDME-[0-9]+`).
+
+Once ticket is obtained, fetch Jira details silently via brianna:
 ```
 Task(
   subagent_type: "brianna",
   description: "Get Jira ticket details",
-  prompt: "Get details for Jira ticket <TICKET_NUMBER>. Extract and return the summary, description, and acceptance criteria."
+  prompt: "Get details for Jira ticket <TICKET>. Return the summary, description, and acceptance criteria."
 )
 ```
 
-**If brianna returns an error, cannot find the ticket, or returns empty/unclear content:**
-→ Do NOT block the review
-→ Ask developer using `AskUserQuestion`:
-  - prompt: `Brianna couldn't fetch the ticket details. What was the goal/requirement for this work?`
-  - header: `Goal`
-→ Use the developer's answer as the goal
+If brianna fails or returns empty → use `MR_TITLE` + `MR_DESCRIPTION` as the goal. **Do NOT ask the developer.**
 
-Set defaults:
-- Review depth: **Quick scan (Haiku)**
-- Base branch: **main**
-- Goal: Use the returned information from brianna (or developer's manual input if fallback)
+Inform the developer (one line):
+```
+Reviewing MR !<iid>: <MR_TITLE> — <MR_URL>
+```
 
-→ Proceed directly to Step 2
+→ Proceed to Step 2
 
-### If Interactive Mode (`--interactive`):
+---
 
-**Before reviewing anything**, use the `AskUserQuestion` tool for each question **one at a time** — wait for the answer before asking the next.
+### Path B — No MR found
 
-**Question 1** — use `AskUserQuestion` with these exact options:
-- prompt: `What is the review depth?`
-- header: `Depth`
-- options: `["Quick scan (Haiku) — critical and major issues only, faster", "Deep review (Sonnet) — thorough analysis, all categories"]`
-
-**After receiving answer** → use `AskUserQuestion`:
-- prompt: `What is the Jira ticket number? (EPMCDME-XXXXX)`
+Ask using `AskUserQuestion`:
+- prompt: `No MR found for this branch. What is the Jira ticket number? (EPMCDME-XXXXX)`
 - header: `Ticket`
 
-**After receiving answer** → use `AskUserQuestion`:
-- prompt: `How do you want to provide the goal/requirement?`
-- header: `Goal source`
-- options: `["Fetch from Jira (use brianna agent)", "Enter manually"]`
+Then ask:
+- prompt: `Would you like to commit, push, and create an MR so the review can proceed?`
+- header: `Create MR`
+- options: `["Yes — commit, push, and create MR", "No — exit review"]`
 
-**After receiving answer**:
-- **If "Fetch from Jira"** → Use the Task tool to call brianna agent:
-  ```
-  Task(
-    subagent_type: "brianna",
-    description: "Get Jira ticket details",
-    prompt: "Get details for Jira ticket <TICKET_NUMBER>. Extract and return the summary, description, and acceptance criteria."
-  )
-  ```
-  **If brianna returns an error, cannot find the ticket, or returns empty/unclear content:**
-  → Inform developer: `"Couldn't fetch ticket from Jira (brianna error or ticket not found)."`
-  → Fall through to "Enter manually" path below — ask for goal manually.
-  → Do NOT abort the review.
+**If "No — exit review":**
+Inform: "Review cancelled. Create an MR and run the review again." — **stop here.**
 
-  If brianna succeeded → use the returned information as the goal/requirement.
+**If "Yes":**
 
-- **If "Enter manually"** → use `AskUserQuestion`:
-  - prompt: `What was the goal/requirement? (e.g. 'Add user authentication', 'Fix bug in checkout')`
-  - header: `Goal`
-
-**After receiving/extracting goal** → use `AskUserQuestion`:
-- prompt: `What is the base branch for comparison?`
-- header: `Base branch`
-- options: `["main", "other (type below)"]`
-
-**After all context is gathered** → create or update `progress.md`:
+**1. Check for uncommitted changes and commit if present:**
 ```bash
-mkdir -p .codemie/reviews/<TICKET>
+git status --short
 ```
-Write `.codemie/reviews/<TICKET>/progress.md` with the full header and workflow state table (all steps as `⏳ pending` except Step 1 which is `✅ done`).
+If tracked files exist (lines not starting with `??`):
+```bash
+git add <changed files explicitly — never git add .>
+git commit -m "<TICKET>: <short description>"
+```
 
-If `progress.md` already exists (resuming a previous session) → read it first, then update Step 1 row and continue from the last incomplete step.
+**2. Push:**
+```bash
+git push --set-upstream origin $(git branch --show-current)
+```
+
+**3. Create MR:**
+```bash
+glab mr create \
+  --title "<TICKET>: <short description>" \
+  --description "## Summary
+[Description]
+
+## Checklist
+- [ ] Self-reviewed
+- [ ] Manual testing performed
+- [ ] No breaking changes (or documented)" \
+  --remove-source-branch=false
+```
+
+**4. Fetch new MR data:**
+```bash
+glab mr list --source-branch="$(git branch --show-current)" 2>/dev/null
+```
+Extract `MR_IID` and repo slug from the output, then:
+```bash
+glab mr view <MR_IID> --repo <REPO_SLUG> 2>/dev/null
+```
+
+Store `MR_IID`, `MR_TITLE`, `MR_DESCRIPTION`, `MR_TARGET_BRANCH`, `MR_URL`.
+
+Then fetch Jira details via brianna (same as Path A). If brianna fails → use MR title/description.
+
+→ Proceed to Step 2
 
 ---
 
 ## Step 2: Check for Existing Spec
 
-**🛑 MANDATORY — Do NOT skip this step under ANY circumstances. Do NOT proceed to Step 3 before completing Step 2. This step is required even if you think you already know the answer.**
+**🛑 MANDATORY — Do NOT skip.**
 
-Read the spec file using the Read tool:
-
+Read:
 ```
 Read: .codemie/reviews/<TICKET>/review.md
 ```
 
-### If NO spec found → proceed to Step 3 (full review)
+### No spec found → proceed to Step 3 (first-time review)
 
-### If spec EXISTS:
+### Spec found:
 
-Get spec creation date from the file header (`**Created**` field).
+Get spec creation date from `**Created**` field.
 
-Check if there are new commits **or uncommitted changes** since the spec was created.
-
-Run both checks:
+Check for changes since the spec was created:
 ```bash
 git log --oneline --after="<SPEC_DATE>" -- .
-```
-```bash
 git status --short
 ```
 
-**Note**: The `**Created**` field stores an ISO-8601 UTC timestamp (e.g. `2026-02-26T14:30:00Z`). Pass it as-is to `--after` — git handles the `Z` suffix correctly. Example:
-```bash
-git log --oneline --after="2026-02-26T14:30:00Z" -- .
-```
-
-Determine case based on **both** results:
-
 **Case A — No new commits AND no uncommitted changes:**
-Ask developer:
+Inform developer:
 ```
-Found existing spec: .codemie/reviews/<TICKET>/review.md
-Date: <DATE> | Critical: <N> open, <N> fixed | Major: <N> open, <N> fixed
-
-What to do?
-1. Continue by spec (check only open issues)
-2. New full review (overwrite spec)
+Found existing spec from <DATE>.
+Critical: <N> open, <N> fixed | Major: <N> open, <N> fixed
+Re-evaluating open issues against current MR diff.
 ```
+→ Proceed to Step 3 in **re-evaluation mode** (check open issues only)
 
-**Case B — New commits OR uncommitted changes exist since spec:**
-Ask developer:
+**Case B — New commits OR uncommitted changes since spec:**
+Inform developer:
 ```
-Found existing spec: .codemie/reviews/<TICKET>/review.md
-Date: <DATE> | Critical: <N> open, <N> fixed | Major: <N> open, <N> fixed
-⚠️ New changes detected after spec (uncommitted or new commits).
-
-What to do?
-1. Continue by spec + check new files
-2. New full review (overwrite spec)
+Found existing spec from <DATE> with new changes detected.
+Critical: <N> open, <N> fixed | Major: <N> open, <N> fixed
+Re-evaluating open issues + scanning new changes.
 ```
-
-**If developer chose option 1 (continue by spec)** → go to Step 2b
-**If developer chose option 2 (new review)** → proceed to Step 3 (full review)
-
-### Step 2b: Continue by Spec
-
-**Open issues from spec** — read all `- [ ]` items, note their `file:line`.
-
-**New files changed since spec date** (only if Case B):
-
-For committed changes:
-```bash
-git log --name-only --pretty=format: --after="<SPEC_DATE>" -- . | grep -v "^$" | sort -u
-```
-For uncommitted changes:
-```bash
-git diff --name-only HEAD
-```
-Merge both lists, filter same as Step 3 (skip binary/generated/deleted).
-
-→ Skip Step 3, go directly to Step 4 with:
-- Only the `file:line` locations from open spec issues
-- Plus any new changed files (if Case B)
-
-→ Update `progress.md`: Step 2 = `✅ done | existing spec, case B, continuing`
+→ Proceed to Step 3 in **re-evaluation + new scan mode**
 
 ---
 
-## Step 3: Find Changed Files (Full Review)
+## Step 3: Get MR Diff
 
-Run **all three** checks against the base branch provided (default `main`):
+Run `glab mr diff` **once**. Read the output directly in context — it gives you both the changed file list and the `+` lines that show exactly what was added. Do NOT run it a second time.
 
 ```bash
-# 1. Committed changes since base branch
-git diff <base-branch>...HEAD --name-only
-
-# 2. Staged changes not yet committed
-git diff HEAD --name-only
-
-# 3. Unstaged working-tree changes
-git diff --name-only
+glab mr diff <MR_IID> --repo <REPO_SLUG> 2>/dev/null
 ```
 
-Merge and deduplicate all three lists into a single file list.
+From this single output:
+1. **Extract changed files** — lines starting with `--- ` (excluding `--- /dev/null` which are new files):
+   ```
+   --- src/components/Foo.tsx    →  file: src/components/Foo.tsx
+   --- /dev/null                 →  skip (new file — get the path from the +++ line instead)
+   ```
+2. **Identify what changed** — `+` lines are additions to review; `-` lines are deletions to understand context.
 
-**Track for Step 9:** note whether commands 2 or 3 returned any files — this means there is **uncommitted user code** that will need special handling during commit.
+> **NOTE:** `glab mr diff` output uses `--- path` / `+++ path` headers, NOT `diff --git a/path b/path`. Never use `grep "^diff --git"` to extract file names — it will return nothing.
 
-- **No changes found in any of the three checks** → inform developer, do NOT create spec or commit marker
+Filters:
+- **No diff** → inform developer, do NOT create spec or commit marker, stop here
 - **More than 15 files** → warn developer, suggest reviewing in smaller chunks
-- **Binary/generated files** → skip: `*.png`, `*.jpg`, `*.ico`, `*.woff`, `*.ttf`, `*.pdf`, `*.zip`, `package-lock.json`, `yarn.lock`, `dist/`, `*.d.ts`
-- **Deleted files** → do NOT analyze, only list in summary
+- **Skip binary/generated**: `*.png`, `*.jpg`, `*.ico`, `*.woff`, `*.ttf`, `*.pdf`, `*.zip`, `package-lock.json`, `yarn.lock`, `dist/`, `*.d.ts`
+- **Deleted files** → list in summary only, do NOT analyze
 
-→ Update `progress.md`: Step 3 = `✅ done | N files: <comma-separated list>`
-
-→ **After getting file list — proceed to Step 4. Do NOT skip to Step 5 or Step 6.**
+→ Proceed to Step 4
 
 ---
 
 ## Step 4: Review
 
-### If continuing by spec (Step 2b):
+### The Core Rule: Diff-Scoped Review
 
-Go to each `file:line` from open spec issues and verify:
-- Is the issue still present?
-  - YES → remains `- [ ]` in spec
-  - NO → mark as `- [x]` in spec
+**Flag only issues introduced by the changes in this MR** — present in `+` lines of the diff.
 
-For new files (Case B only) — run full scan below.
+**Do NOT flag** pre-existing issues that existed before this MR. The developer is responsible only for what they changed.
 
-### If Quick scan — full review:
+**Context is allowed**: Use the Read tool on changed files to understand intent and surrounding code — but only report issues in new (`+`) lines.
 
-Scan for **CRITICAL and MAJOR** issues only.
+**Threshold exception**: If additions push a borderline metric past a hard limit (e.g. component was 280 lines, this change adds 30 more → 310 lines) → flag it, because the change caused the violation.
 
-**CRITICAL — Always flag:**
-- Custom CSS or inline styles (not Tailwind)
-- Raw color tokens (`neutral-*`, `blue-*`) instead of semantic tokens (`surface-*`, `text-*`)
-- `Dialog` instead of `Popup` component
-- `.data` pattern instead of `.json()` with fetch wrapper
-- Direct API calls in components (should be in Valtio stores)
-- `any` types without justification
-- Security issues (XSS, exposed secrets)
-- Components over 300 lines
+---
 
-**MAJOR — Flag if obvious:**
-- Missing React Hook Form + Yup for forms
-- Missing cleanup functions in useEffect
-- Magic strings/numbers not in constants
-- `||` instead of `??` for default values
-- Missing TypeScript prop types
+### If re-evaluation mode (existing spec, Case A or B):
 
-**For documentation files (`*.md`, `*.yaml`, `*.json`):**
-- Broken links or references to non-existent files
-- Invalid YAML/JSON syntax
-- Incorrect or misleading information
+**For each open `- [ ]` issue in the spec** — find the relevant section in the MR diff:
+- The issue location is no longer in any `+` line (line was changed, removed, or refactored away) → **fixed**
+- The same pattern is still present in a `+` line at or near that location → **still open**
 
-### If Deep review (Sonnet) — use Task tool:
+After re-evaluating all open issues, if Case B (new changes exist):
+- Run the full scan below on `+` lines from files changed after the spec date
+- These are **new issues** to add to the spec
 
-Collect the full git diff output first:
+---
 
-```bash
-git diff <base-branch>...HEAD
-```
+### Full scan (first-time review or new files in Case B):
 
-Then launch a deep review sub-task:
+The diff (already in context from Step 3) tells you **what lines changed**. Use it to guide which files to read and which sections to focus on. Then use the Read tool on each changed source file to get full context — line numbers, surrounding logic, imports.
 
-```
-Task(
-  model: "sonnet",
-  prompt: "You are a Senior React/TypeScript Code Reviewer for CodeMie UI.
+**Review process:**
+1. For each changed file (non-binary, non-deleted): use the diff `+` lines to identify the exact changes, then `Read` the file to understand context.
+2. Scan new `+` lines for issues in these categories:
+   - **CodeMie UI Standards**: Tailwind-only styling, Popup component (never Dialog), API patterns (`.json()` not `.data`), Valtio stores (no direct API calls in components)
+   - **Correctness**: logic errors, inverted conditions, null/undefined handling, type safety
+   - **Security**: XSS, exposed secrets, unsanitised input
+   - **Performance**: unnecessary re-renders, missing memoization, polling instead of observers
+   - **Code Quality**: component size (<300 lines), duplicated logic, magic strings/numbers
+   - **Best Practices**: React patterns, `useEffect` cleanup, `??` not `||` for defaults, `type="button"` on buttons
+   - **Docs** (`*.md`, `*.yaml`, `*.json`): broken links, invalid syntax, incorrect content
 
-  Task context: [TASK DESCRIPTION FROM USER]
-  Jira ticket: [TICKET]
-  Base branch: [BRANCH]
+3. Severity classification:
+   - **CRITICAL** (blocking): custom CSS/inline styles, Dialog instead of Popup, `.data` pattern, direct API calls in components, untyped `any` without justification, security issues, components >300 lines, raw hex/rgb color tokens
+   - **MAJOR** (should fix): missing RHF+Yup on new forms, missing `useEffect` cleanup, magic strings/numbers, `||` instead of `??`, missing `type="button"`, duplicated logic
+   - **RECOMMENDATION**: naming, organisation, performance hints
 
-  Changed files:
-  [LIST OF FILES FROM git diff --name-only]
-
-  Full diff:
-  [FULL GIT DIFF OUTPUT]
-
-  Review each changed file for:
-  - CodeMie UI Standards: Tailwind-only styling, Popup component, API patterns, state management
-  - Correctness: logic errors, edge cases, null/undefined handling, type safety
-  - Security: XSS vulnerabilities, exposed secrets, input validation
-  - Performance: unnecessary re-renders, missing memoization, inefficient hooks
-  - Code Quality: component size (<300 lines), code duplication, magic strings
-  - Best Practices: React patterns, error handling, cleanup functions
-  - For docs (*.md, *.yaml, *.json): clarity, completeness, valid links, correct syntax
-
-  CRITICAL issues (blocking): custom CSS, Dialog instead of Popup, .data pattern, direct API calls, any types, security issues, components >300 lines, raw color tokens
-  MAJOR issues: missing RHF+Yup, missing cleanup, magic strings, || instead of ??, missing types
-  RECOMMENDATIONS: naming, docs, organization, refactoring
-
-  Output format:
-  **📋 Review Summary** — files reviewed, issue counts, overall assessment
-  **🚨 CRITICAL Issues** — file:line, issue, why it matters, exact fix with code example
-  **⚠️ MAJOR Issues** — same structure
-  **💡 Recommendations** — brief list
-  **✅ What looks good** — acknowledge well-written parts"
-)
-```
-
-→ Update `progress.md`: Step 4 = `✅ done | N critical, N major`
-
-→ **After completing review — proceed IMMEDIATELY to Step 5. Do NOT present findings yet. Do NOT skip to Step 6.**
+→ **Proceed IMMEDIATELY to Step 5. Do NOT present findings yet.**
 
 ---
 
 ## Step 5: Save / Update Spec
 
-**🛑 MANDATORY — Do NOT proceed to Step 6 before completing Step 5. The spec file MUST be written to disk before presenting findings to the developer.**
+**🛑 MANDATORY — Write spec to disk before presenting findings.**
 
 **Spec path**: `.codemie/reviews/<TICKET>/review.md`
-If no Jira ticket provided: `.codemie/reviews/<current-branch>/review.md`
+If no ticket: `.codemie/reviews/<current-branch>/review.md`
 
-Get current branch if needed:
-```bash
-git branch --show-current
-```
+**⚠️ Spec is NEVER committed.**
 
-**⚠️ Spec is NEVER committed** — it is a local file only.
-
-### If creating new spec (full review only):
-
-Only run this path if doing a **full review** (came from Step 3). **Do NOT run if continuing by spec.**
+### If creating new spec:
 
 ```bash
 mkdir -p .codemie/reviews/<TICKET>
 ```
 
-Then write the spec file:
-
 ```markdown
 # Code Review: <TICKET>
 
 **Created**: <ISO-8601 UTC timestamp>
+**Ticket**: <TICKET>
 **Branch**: <branch>
-**Base**: <base-branch>
-**Depth**: <Quick scan | Deep review>
-**Goal**: <goal from Step 1>
+**MR**: !<MR_IID> <MR_URL>
+**Goal**: <MR_TITLE — goal summary>
 
 ## Issues
 
-<!-- State markers: [ ] open, [x] fixed, [~] rejected with justification -->
+<!-- State markers: [ ] open, [x] fixed, [~] acknowledged (not introduced by this MR) -->
 
 ### 🚨 CRITICAL
 
@@ -421,341 +296,146 @@ Then write the spec file:
 - [ ] `src/store/fooStore.ts:45` — <issue description>
   Fix: <what to do>
 
-## Justifications
-
-<!-- Filled when developer rejects an issue with justification -->
-
 ## Summary
 
-Critical: <N> open, 0 fixed, 0 rejected | Major: <N> open, 0 fixed, 0 rejected
+Critical: <N> open, 0 fixed | Major: <N> open, 0 fixed
 ```
 
-### If updating existing spec (continue by spec):
+### If updating existing spec (re-evaluation):
 
-**Do NOT recreate or overwrite the spec. Do NOT run mkdir.**
-Use the Edit tool only to:
-- Update `- [ ]` → `- [x]` for issues that are now fixed
-- Update `- [ ]` → `- [~]` for issues rejected with valid justification
-- Append new issues found in new files (if Case B) under existing sections
-- Update the **Summary** line (open = items still `- [ ]`, fixed = `- [x]`, rejected = `- [~]`)
-
-→ Update `progress.md`: Step 5 = `✅ done | spec saved`
+Use the Edit tool only:
+- `- [ ]` → `- [x]` for issues confirmed fixed in current diff
+- Append new issues found in new files (Case B) under existing sections
+- Update the **Summary** line
 
 ---
 
 ## Step 6: Present Findings
 
-**For Quick scan — use brief format:**
+### First-time review format:
 
-**📋 Quick Review Summary**
+**📋 Code Review: !<MR_IID> — <MR_TITLE>**
 - Files reviewed: [list]
-- Issues: [X critical, Y major]
+- Issues found: [X critical, Y major, Z recommendations]
+- Overall: [1-sentence assessment]
 
-**🚨 CRITICAL** — `file.tsx:line` — issue + one-line fix
-**⚠️ MAJOR** — `file.tsx:line` — issue + one-line fix
-**✅ Looks good** (if no issues)
+**🚨 CRITICAL** (must fix before merge)
+- `file.tsx:line` — [issue] — [suggested fix]
 
-**For Deep review — use full format:**
+**⚠️ MAJOR** (should fix)
+- `file.tsx:line` — [issue] — [suggested fix]
 
-**📋 Review Summary**
-- Files reviewed: [list]
-- Total issues found: [count by severity]
-- Overall assessment: [1-2 sentences]
+**💡 Recommendations**
+- [brief list]
 
-**🚨 CRITICAL Issues** (Must fix before merge)
-- **File**: `path/to/file.tsx:line_number`
-- **Issue**: [Clear description]
-- **Why It Matters**: [Impact]
-- **Action Required**: [Specific fix with code example]
-
-**⚠️ MAJOR Issues** (Should fix soon)
-[Same structure]
-
-**💡 Recommendations** (Nice to have)
-[Brief list]
-
-→ Update `progress.md`: Step 6 = `✅ done | findings presented`
-
-→ **After presenting findings:**
-- **Default mode** — skip Step 7, proceed directly to Step 8 and apply all fixes automatically
-- **Interactive mode (`--interactive`)** — proceed to Step 7 and wait for developer response before applying any fixes
+**✅ What looks good**
+- [brief list]
 
 ---
 
-## Step 7: Discuss with Developer
+### Re-evaluation format:
 
-Show developer ALL found issues. Developer can:
-- ✅ **Accept** → apply fixes
-- ❌ **Reject** → only if **justified**
+**📋 Re-evaluation: !<MR_IID> — <MR_TITLE>**
+- Previously open: [N critical, N major]
 
-**Valid justifications:**
-- 'Legacy code, risky to refactor now'
-- 'Temporary, will be refactored in EPMCDME-XXXXX'
-- 'Business logic specific requirement'
-- 'Already discussed with team lead'
-- 'Breaking change, requires backend coordination'
-- 'Will be replaced next sprint' (if ticket exists)
+**✅ Fixed since last review**
+- `file.tsx:line` — [issue that was fixed]
 
-**Invalid justifications:**
-- 'Don't want to' / 'More convenient this way' / 'I prefer this'
-- No explanation at all
+**❌ Still open**
+- `file.tsx:line` — [issue still present]
 
-After discussion — add justifications to spec under `## Justifications`:
-```markdown
-## Justifications
+**🆕 New issues found** (Case B only — from changes after the spec)
+- `file.tsx:line` — [new issue]
 
-- `src/components/Foo.tsx:34` — <issue> — Justification: <reason>
-```
-
-**If developer says "done", "fixed", "I fixed it myself", "already applied", or similar:**
-→ Developer applied fixes in another tool or terminal window — do NOT apply them again
-→ Re-verify ALL open `- [ ]` issues from spec by reading each `file:line` location:
-  - Read the file at the noted location
-  - If fix is confirmed → mark `- [ ]` → `- [x]` in spec
-  - If still present → keep `- [ ]` and inform developer ("still open at `file:line`")
-→ Update **Summary** line in spec
-→ **Skip Step 8** (nothing to apply)
-→ **Proceed directly to Step 9**
-
-→ Update `progress.md`: Step 7 = `✅ done | N accepted, N rejected`
-
-→ **After discussion is complete — proceed to Step 8 to apply agreed fixes.**
+**Summary**: [N fixed, N still open, N new]
 
 ---
 
-## Step 8: Apply Fixes
+## Step 7: Commit Review Marker
 
-Apply agreed fixes using Edit/Write tools.
-After each fix — update the corresponding `- [ ]` → `- [x]` in the spec file.
-Update **Summary** line in spec (format: `Critical: <N> open, <N> fixed, <N> rejected | Major: <N> open, <N> fixed, <N> rejected`).
+Commit a marker to record that the review took place. **No code changes are committed here.**
 
-→ Update `progress.md`: Step 8 = `✅ done | N files changed`
+### Commit rules
 
-→ **After all fixes applied and spec updated — proceed to Step 9.**
+**✅ Commit if:**
+- Review completed with no critical issues found
+- All critical issues have been fixed (`- [x]`)
 
----
+**⚠️ Commit with warning if:**
+- Critical issues remain open — include count in commit message body, warn developer the PR should not be merged until resolved
 
-## Step 9: Commit with Review Marker
-
-### 9a: Report state
-
-**Before creating the commit**, always show the current state:
-
-```
-Checked all issues from spec:
-✅ `file:line` — <issue> — fixed
-✅ `file:line` — <issue> — fixed
-❌ `file:line` — <issue> — still open
-⚠️ `file:line` — <issue> — rejected (justification: <reason>)
-```
-
-If all critical/major issues are closed — create the commit immediately, no further questions.
-
-### 9b: Commit rules
-
-**✅ Create commit automatically if:**
-- ALL critical issues are either fixed (`- [x]`) or have a valid justification (`- [~]`)
-- No critical issues were found at all (clean code)
-
-**❌ DO NOT create commit if:**
-- Any critical issue remains `- [ ]` without justification
-- Developer refuses to address a critical security issue without any justification
-
-→ Explain importance → give the developer an opportunity to reconsider or provide justification → warn that the PR will be rejected without a review marker.
+**Do NOT skip** — a review marker must always be committed so the CI pipeline can track review status.
 
 ---
 
-Get current UTC timestamp before creating the commit:
+Get timestamp:
 ```bash
 date -u +"%Y-%m-%dT%H:%M:%SZ"
 ```
 
-### If fixes applied:
-
-First, verify you are on the correct branch:
+Verify branch:
 ```bash
 git branch --show-current
 ```
 
-**🚨 NEVER use `git add .` or `git add -A`** — always add only specific changed files explicitly.
-
-Before staging, verify the spec is NOT tracked:
+Verify spec is NOT tracked:
 ```bash
 git status --short | grep ".codemie/reviews"
 ```
-If the spec appears in git status output — untrack it first:
+If found — untrack:
 ```bash
 git rm --cached .codemie/reviews/<TICKET>/review.md
 ```
-Then verify it's gone from git status before proceeding.
-
-**Check for uncommitted user code** (from Step 3 tracking):
-```bash
-git status --short
-```
-If there are uncommitted files (lines NOT starting with `??`) that belong to the feature work (not reviewer-introduced) → stage those **together** with the reviewer fixes in the same commit. Do NOT separate them into two commits — one commit carries all changes + the review marker.
-
-Then stage all files explicitly (reviewer fixes + uncommitted user code):
-```bash
-git add <list each changed file explicitly by path>
-git commit -m "$(cat <<'EOF'
-EPMCDME-XXXXX: Fix issues from code review
-
-Generated-By: AI
-AI-Code-Review: completed
-Reviewed-At: <TIMESTAMP>
-Review-Duration: <SECONDS>
-Files-Reviewed: <COUNT>
-Issues-Found: <COUNT>
-Issues-Fixed: <COUNT>
-
-Fixed issues:
-- <description>
-
-Co-Authored-By: <MODEL> (Code Reviewer) <noreply@anthropic.com>
-EOF
-)"
-```
-
-### If no fixes (clean code or all critical fixed/justified without code changes):
-
-First check for uncommitted user code:
-```bash
-git status --short
-```
-
-**If there are uncommitted changes** (tracked files — lines NOT starting with `??`) → ask developer:
-
-```
-Your code changes are uncommitted. Include them in the review commit?
-1. Yes — stage my changes + add review marker in one commit
-2. No — create empty review-only commit (I will commit my code separately)
-```
-
-- **If Yes** → stage all uncommitted tracked files explicitly (no `git add .`), then create regular commit with a description of the feature work + review marker fields. Title should describe what was implemented, not "Code review completed".
-- **If No** → proceed with empty commit below
-
-**If no uncommitted changes** (or developer chose No):
 
 ```bash
 git commit --allow-empty -m "$(cat <<'EOF'
-EPMCDME-XXXXX: Code review completed (no changes applied)
+EPMCDME-XXXXX: Code review completed
 
 Generated-By: AI
 AI-Code-Review: completed
 Reviewed-At: <TIMESTAMP>
-Review-Duration: <SECONDS>
+MR: !<MR_IID>
 Files-Reviewed: <COUNT>
-Issues-Found: <COUNT>
-Issues-Fixed: 0
-Changes-Rejected: <true|false>
+Issues-Found: <CRITICAL>c/<MAJOR>m
+Issues-Open: <CRITICAL_OPEN>c/<MAJOR_OPEN>m
+Issues-Fixed: <CRITICAL_FIXED>c/<MAJOR_FIXED>m
 
-Co-Authored-By: <MODEL> (Code Reviewer) <noreply@anthropic.com>
+Co-Authored-By: Claude Sonnet 4.6 (Code Reviewer) <noreply@anthropic.com>
 EOF
 )"
 ```
 
-→ Update `progress.md`: Step 9 = `✅ done | <short-commit-hash>: <commit title>`
+### Commit format rules
 
-### Commit Format Rules
-
-- Title: `EPMCDME-XXXXX: <Description starting with Capital letter>`
-- Body first line after blank line: `Generated-By: AI` (required for Tekton pipeline)
-- No `[AI]` prefix in title (old format — forbidden)
-- Field order: Generated-By → AI-Code-Review → Reviewed-At → Review-Duration → Files-Reviewed → Issues-Found → Issues-Fixed
-- `<MODEL>` in `Co-Authored-By`:
-  - Quick scan → `Claude Haiku 4.5`
-  - Deep review → `Claude Sonnet 4.6`
-- **Do NOT include spec file path in commit** — spec is local only
-- **Do NOT add any extra sections** — only the fields listed above
+- Title: `EPMCDME-XXXXX: <Capital letter start>`
+- Body first line: `Generated-By: AI` (required for Tekton pipeline)
+- No `[AI]` prefix in title
+- Do NOT include spec file path
+- Do NOT add extra sections beyond those listed above
 
 **Valid titles:**
-- ✅ `EPMCDME-10614: Fix issues from code review`
-- ❌ `EPMCDME-10614: fix issues` (lowercase start)
-- ❌ `EPMCDME-10614: [AI] Fix issues` (old format)
+- ✅ `EPMCDME-10614: Code review completed`
+- ❌ `EPMCDME-10614: code review` (lowercase)
+- ❌ `EPMCDME-10614: [AI] Code review` (old format)
 
----
-
-## Step 10: Push and MR
-
-**After a successful commit**, first check if an MR already exists for this branch:
-
-```bash
-glab mr list --source-branch=$(git branch --show-current) 2>/dev/null
-```
-
-### If MR already exists:
-
-Set up API variables (reuse across all calls):
-```bash
-REMOTE=$(git remote get-url origin | sed 's|https://[^@]*@[^/]*/||' | sed 's/\.git$//')
-ENCODED=$(echo "$REMOTE" | sed 's/\//%2F/g')
-```
-
-→ Check current approval state:
-```bash
-glab api "projects/${ENCODED}/merge_requests/<MR_IID>/approvals"
-```
-
-→ If `user_has_approved: true` — unapprove first:
-```bash
-glab api -X POST "projects/${ENCODED}/merge_requests/<MR_IID>/unapprove"
-```
-
-→ Push the commit:
+Push the marker:
 ```bash
 git push origin $(git branch --show-current)
 ```
 
-→ Approve:
-```bash
-glab api -X POST "projects/${ENCODED}/merge_requests/<MR_IID>/approve"
-```
-
-→ Inform developer: `"Pushed and approved existing MR: <MR_URL>"`
-→ Update `progress.md`: Step 10 = `✅ done | pushed + approved <MR_URL>`
-
-### If no MR exists:
-
-Ask developer:
-```
-AskUserQuestion:
-- prompt: "Commit created. Would you like to create a Merge Request?"
-- header: "Create MR"
-- options: ["Yes — create MR now", "No — I'll do it later"]
-```
-
-**If "Yes"** → invoke the `codemie-mr` skill, passing:
-- Current branch
-- Jira ticket number
-- Instruction: skip commit step — code is already committed, go straight to push + MR creation
-
-**If "No"** → end workflow. Inform developer they can run `codemie-mr` later.
-→ Update `progress.md`: Step 10 = `⏳ skipped by developer`
+Inform developer: `"Review marker committed and pushed. MR: <MR_URL>"`
 
 ---
 
 ## Integration Points
 
-| Caller | Mode | Context passed |
-|--------|------|----------------|
-| Developer directly (no flags) | Default — fully automated | None needed |
-| Developer with `/code-reviewer --interactive` | Interactive — asks all questions | None needed |
-| dark-factory (Phase 5) | Default — fully automated | ticket, branch, base-branch, goal |
+| Caller              | Context passed        | Behavior                                  |
+|---------------------|-----------------------|-------------------------------------------|
+| Developer directly  | None — reads MR auto  | No questions if MR exists                 |
+| dark-factory        | ticket, goal          | Uses provided context, skips brianna call |
 
-### Default mode (no flags)
+### When called by dark-factory
 
-When invoked without flags:
-- Extract ticket from current branch name (or ask if not found)
-- Use brianna agent to fetch Jira details automatically
-- Use defaults: Quick scan (Haiku), base branch `main`
-- **Auto-apply all CRITICAL and MAJOR fixes** — skip Step 7 discussion
-- Commit → push → approve or create MR automatically
-
-### Interactive mode (`--interactive`)
-
-When the caller passes `--interactive`:
-- Ask questions one at a time to gather context
-- Present findings and discuss with developer before applying fixes
-- Developer can accept/reject each fix
-- After discussion: apply agreed fixes → commit → push → MR handling
+- Use ticket and goal from caller context — skip brianna
+- Step 1 MR check still runs — if no MR, auto-create without prompting
+- All other steps run as normal

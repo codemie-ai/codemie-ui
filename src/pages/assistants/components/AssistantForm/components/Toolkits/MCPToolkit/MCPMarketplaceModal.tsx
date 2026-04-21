@@ -147,13 +147,14 @@ const MCPMarketplaceModal: React.FC<MCPMarketplaceModalProps> = ({
 
           {!loading && configs.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6 mb-[80px]">
-              {configs.map((config) => (
+              {configs.map((config, index) => (
                 <MCPMarketplaceCard
                   key={config.id}
                   config={config as MCPConfig}
                   onSelect={handleSelectConfig}
                   isSelected={selectedConfig?.id === config.id}
                   isAlreadyAdded={isConfigAlreadyAdded(config as MCPConfig)}
+                  data-onboarding={index === 0 ? 'mcp-catalog-first-card' : undefined}
                 />
               ))}
             </div>

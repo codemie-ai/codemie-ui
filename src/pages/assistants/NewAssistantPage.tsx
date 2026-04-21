@@ -174,6 +174,7 @@ const NewAssistantPage = () => {
                 type="magical"
                 disabled={isLoading}
                 onClick={() => setIsGenWithAIPopupVisible(true)}
+                data-onboarding="assistant-generate-ai-btn"
               >
                 <AIGenerateSVG /> Generate with AI
               </Button>
@@ -181,7 +182,12 @@ const NewAssistantPage = () => {
             <Button type="secondary" onClick={handleBack}>
               Cancel
             </Button>
-            <Button type="primary" disabled={isLoading} onClick={() => formRef.current?.submit()}>
+            <Button
+              type="primary"
+              disabled={isLoading}
+              onClick={() => formRef.current?.submit()}
+              data-onboarding="assistant-save-btn"
+            >
               <PlusSVG /> {submitLabel}
             </Button>
           </div>

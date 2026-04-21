@@ -171,7 +171,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   }, [isEditing, newResponse])
 
   return (
-    <div className="flex gap-4 min-w-0">
+    <div className="flex gap-4 min-w-0" data-onboarding="chat-ai-message">
       <Avatar
         type={AvatarType.CHAT}
         iconUrl={message.assistant?.iconUrl}

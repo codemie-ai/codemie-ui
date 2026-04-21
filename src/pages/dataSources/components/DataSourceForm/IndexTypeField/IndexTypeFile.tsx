@@ -44,7 +44,7 @@ const IndexTypeFile: FC<Props> = ({
   )
 
   return (
-    <div className="mb-4">
+    <div className="mb-4" data-onboarding="datasource-file-fields">
       <Controller
         name="files"
         control={control}

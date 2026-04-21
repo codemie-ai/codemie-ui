@@ -73,7 +73,7 @@ const IndexTypeGit: FC<Props> = ({
   } = useIntegrationManager({ onIntegrationCreated })
 
   return (
-    <div>
+    <div data-onboarding="datasource-git-fields">
       {!index && (
         <Controller
           name="repoIndexType"

@@ -66,7 +66,10 @@ const NewUserIntegrationPage = () => {
         title="New User Integration"
         onBack={onBack}
         rightContent={
-          <div className="flex justify-end items-center gap-4 max-w-xl mx-auto">
+          <div
+            data-onboarding="integration-save-actions"
+            className="flex justify-end items-center gap-4 max-w-xl mx-auto"
+          >
             <Button type={ButtonType.SECONDARY} onClick={onBack}>
               Cancel
             </Button>

@@ -40,7 +40,7 @@ const ThemeToggle = () => {
   }
 
   return (
-    <InfoCard heading="Appearance" icon={AppearanceSvg}>
+    <InfoCard heading="Appearance" icon={AppearanceSvg} data-onboarding="theme-toggle">
       <div className="flex flex-row gap-6">
         {options.map((option, index) => (
           <button

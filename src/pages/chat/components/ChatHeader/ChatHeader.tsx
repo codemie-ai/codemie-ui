@@ -121,7 +121,7 @@ const ChatHeader: FC = () => {
       </div>
 
       {currentChat && (
-        <div className="flex gap-2 ml-auto shrink-0">
+        <div className="flex gap-2 ml-auto shrink-0" data-onboarding="chat-header-actions">
           {hasAssistant && (
             <Button
               type="secondary"

@@ -19,40 +19,10 @@ import { useSnapshot } from 'valtio'
 
 import HelpLauncher from '@/components/HelpLauncher'
 import type { HelpLink } from '@/components/HelpLauncher'
-import { HelpPageId, HELP_TOOLTIP_TEXT } from '@/constants/helpLinks'
+import { HelpPageId, HELP_TOOLTIP_TEXT, ROUTE_ID_TO_PAGE_ID } from '@/constants/helpLinks'
 import { appInfoStore } from '@/store/appInfo'
 import { helpStore } from '@/store/help'
-
-// Map route IDs to help page IDs
-const ROUTE_ID_TO_PAGE_ID: Record<string, HelpPageId> = {
-  // Assistants forms
-  'new-assistant': HelpPageId.ASSISTANTS,
-  'edit-assistant': HelpPageId.ASSISTANTS,
-  'new-assistant-from-template': HelpPageId.ASSISTANTS,
-  'clone-assistant': HelpPageId.ASSISTANTS,
-  'new-remote-assistant': HelpPageId.ASSISTANTS,
-  'edit-remote-assistant': HelpPageId.ASSISTANTS,
-
-  // Workflows forms
-  'new-workflow': HelpPageId.WORKFLOWS,
-  'edit-workflow': HelpPageId.WORKFLOWS,
-  'new-workflow-from-template': HelpPageId.WORKFLOWS,
-  'clone-workflow': HelpPageId.WORKFLOWS,
-
-  // Integrations forms
-  'new-user-integration': HelpPageId.INTEGRATIONS,
-  'edit-user-integration': HelpPageId.INTEGRATIONS,
-  'new-project-integration': HelpPageId.INTEGRATIONS,
-  'edit-project-integration': HelpPageId.INTEGRATIONS,
-
-  // Kata forms
-  'new-kata': HelpPageId.KATAS,
-  'edit-kata': HelpPageId.KATAS,
-
-  // Data Source forms
-  'edit-data-source': HelpPageId.DATASOURCES,
-  'create-data-source': HelpPageId.DATASOURCES,
-}
+import { onboardingStore } from '@/store/onboarding'
 
 interface ParsedHelpLink {
   isHelpPageItem: boolean
@@ -129,16 +99,20 @@ const HelpPanel = () => {
     return links
   }, [configs, currentPageId, activeSegment])
 
-  if (helpLinks.length === 0) {
-    return null
-  }
+  const onboardingFlows = useMemo(
+    () => (currentPageId ? onboardingStore.getFlowsForPage(currentPageId) : []),
+    [currentPageId]
+  )
 
-  const tooltipText = currentPageId ? HELP_TOOLTIP_TEXT[currentPageId] : 'Help Resources'
+  const tooltipText = currentPageId ? HELP_TOOLTIP_TEXT[currentPageId] : 'Help & Product Tour'
+
+  if (helpLinks.length === 0 && onboardingFlows.length === 0) return null
 
   return (
     <HelpLauncher
       links={helpLinks}
       tooltipText={tooltipText}
+      onboardingFlows={onboardingFlows}
       className="fixed bottom-1.5 right-6 z-50"
     />
   )

@@ -49,6 +49,7 @@ import { dataSourceStore } from '@/store/dataSources'
 import { userSettingsStore } from '@/store/userSettings'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { GuardrailEntity } from '@/types/entity/guardrail'
+import { registerIndexTypeCallback } from '@/utils/onboarding'
 import { cn } from '@/utils/utils'
 
 import Divider from './Divider'
@@ -203,6 +204,16 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
     initialize()
   }, [llmModels.length, embeddingModels.length])
 
+  useEffect(() => {
+    const cleanup = !isInitializing
+      ? registerIndexTypeCallback((type) => {
+          setValue('indexType', type)
+          clearErrors('indexType')
+        })
+      : undefined
+    return cleanup
+  }, [isInitializing, setValue, clearErrors])
+
   const projectName = getValues('projectName')
 
   const files = watch('files')
@@ -241,7 +252,10 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
   }
 
   return (
-    <div className={cn('flex flex-col gap-4 py-10', isPopup && 'py-2')}>
+    <div
+      data-onboarding="datasource-form"
+      className={cn('flex flex-col gap-4 py-10', isPopup && 'py-2')}
+    >
       {isProviderDeleted && (
         <InfoWarning message="The provider for this data source is no longer available. Editing is disabled." />
       )}
@@ -250,80 +264,82 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
       <div
         className={cn('flex flex-col gap-4', isProviderDeleted && 'pointer-events-none opacity-60')}
       >
-        <div className="flex items-center gap-4">
-          <Controller
-            name="projectName"
-            control={control}
-            render={({ field }) => (
-              <ProjectSelector
-                value={field.value ?? ''}
-                onChange={(value) =>
-                  setValue('projectName', Array.isArray(value) ? value[0] : value, {
-                    shouldDirty: false,
-                  })
-                }
-                className="w-80"
-                disabled={!!defaultProject}
-              />
-            )}
-          />
-          <div className="flex items-center mt-6">
+        <div data-onboarding="datasource-common-fields" className="flex flex-col gap-4">
+          <div className="flex items-center gap-4">
             <Controller
-              name="projectSpaceVisible"
+              name="projectName"
               control={control}
               render={({ field }) => (
-                <Switch
-                  value={field.value}
-                  id="projectSpaceVisible"
-                  onChange={field.onChange}
-                  className={
-                    field.value ? 'switch-active-gradient whitespace-nowrap' : 'whitespace-nowrap'
+                <ProjectSelector
+                  value={field.value ?? ''}
+                  onChange={(value) =>
+                    setValue('projectName', Array.isArray(value) ? value[0] : value, {
+                      shouldDirty: false,
+                    })
                   }
-                  label="Shared with project"
+                  className="w-80"
+                  disabled={!!defaultProject}
                 />
               )}
             />
+            <div className="flex items-center mt-6">
+              <Controller
+                name="projectSpaceVisible"
+                control={control}
+                render={({ field }) => (
+                  <Switch
+                    value={field.value}
+                    id="projectSpaceVisible"
+                    onChange={field.onChange}
+                    className={
+                      field.value ? 'switch-active-gradient whitespace-nowrap' : 'whitespace-nowrap'
+                    }
+                    label="Shared with project"
+                  />
+                )}
+              />
+            </div>
           </div>
+
+          <Controller
+            name="name"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Input
+                {...field}
+                label="Name:"
+                type="secondary"
+                id="name"
+                name="name"
+                error={fieldState.error?.message}
+                disabled={!!index}
+                maxLength={25}
+                minLength={4}
+                autoFocus={isPopup}
+              />
+            )}
+          />
+
+          <Controller
+            name="description"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Textarea
+                id="description"
+                name="description"
+                label="Description:"
+                className="col-span-2"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                error={fieldState.error?.message}
+                rows={4}
+              />
+            )}
+          />
+
+          <InfoBox text="Ensure a comprehensive data source description; it's utilized by our LLM for enhanced processing." />
         </div>
-
-        <Controller
-          name="name"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Input
-              {...field}
-              label="Name:"
-              type="secondary"
-              id="name"
-              name="name"
-              error={fieldState.error?.message}
-              disabled={!!index}
-              maxLength={25}
-              minLength={4}
-              autoFocus={isPopup}
-            />
-          )}
-        />
-
-        <Controller
-          name="description"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Textarea
-              id="description"
-              name="description"
-              label="Description:"
-              className="col-span-2"
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              error={fieldState.error?.message}
-              rows={4}
-            />
-          )}
-        />
-
-        <InfoBox text="Ensure a comprehensive data source description; it's utilized by our LLM for enhanced processing." />
 
         <GuardrailAssignmentPanel
           project={projectName}
@@ -336,26 +352,28 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
 
         {!index && <Divider />}
 
-        <Controller
-          name="indexType"
-          control={control}
-          render={({ field: indexTypeField }) => (
-            <Controller
-              name="indexMetadata"
-              control={control}
-              render={({ field: metadataField }) => (
-                <DataSourceTypeSelector
-                  indexType={indexTypeField.value}
-                  onIndexTypeChange={indexTypeField.onChange}
-                  indexMetadata={metadataField.value ?? {}}
-                  onIndexMetadataChange={metadataField.onChange}
-                  clearErrors={clearErrors}
-                  hidden={!!index}
-                />
-              )}
-            />
-          )}
-        />
+        <div data-onboarding="datasource-type-selector-section">
+          <Controller
+            name="indexType"
+            control={control}
+            render={({ field: indexTypeField }) => (
+              <Controller
+                name="indexMetadata"
+                control={control}
+                render={({ field: metadataField }) => (
+                  <DataSourceTypeSelector
+                    indexType={indexTypeField.value}
+                    onIndexTypeChange={indexTypeField.onChange}
+                    indexMetadata={metadataField.value ?? {}}
+                    onIndexMetadataChange={metadataField.onChange}
+                    clearErrors={clearErrors}
+                    hidden={!!index}
+                  />
+                )}
+              />
+            )}
+          />
+        </div>
 
         <Controller
           name="indexType"
@@ -538,18 +556,20 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
               {shouldShowScheduling(field.value, sharepointAuthType) && (
                 <>
                   <Divider />
-                  <Controller
-                    name="cronExpression"
-                    control={control}
-                    render={({ field: cronField, fieldState }) => (
-                      <CronScheduleInput
-                        value={cronField.value ?? undefined}
-                        onChange={cronField.onChange}
-                        error={fieldState.error?.message}
-                        hint="Set up automatic reindexing schedule for this datasource. Manual reindexing will always be available."
-                      />
-                    )}
-                  />
+                  <div data-onboarding="datasource-schedule-field">
+                    <Controller
+                      name="cronExpression"
+                      control={control}
+                      render={({ field: cronField, fieldState }) => (
+                        <CronScheduleInput
+                          value={cronField.value ?? undefined}
+                          onChange={cronField.onChange}
+                          error={fieldState.error?.message}
+                          hint="Set up automatic reindexing schedule for this datasource. Manual reindexing will always be available."
+                        />
+                      )}
+                    />
+                  </div>
                 </>
               )}
             </>

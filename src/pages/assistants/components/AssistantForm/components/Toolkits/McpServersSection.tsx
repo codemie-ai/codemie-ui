@@ -48,7 +48,7 @@ const McpServersSection = ({
   isCompactView,
 }: McpServersSectionProps) => {
   return (
-    <div ref={scrollRef}>
+    <div ref={scrollRef} data-onboarding="assistant-mcp-servers-section">
       <Accordion
         title={
           <span className="flex items-center gap-4">

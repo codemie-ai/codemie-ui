@@ -53,7 +53,7 @@ const IndexTypeXray: FC<Props> = ({
   } = useIntegrationManager({ onIntegrationCreated })
 
   return (
-    <div>
+    <div data-onboarding="datasource-xray-fields">
       <Controller
         name="jql"
         control={control}

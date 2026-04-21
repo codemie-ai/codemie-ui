@@ -68,6 +68,7 @@ const ChatPromptFileUpload: FC<ChatPromptFileUploadProps> = ({
         aria-label="Attach files"
         data-tooltip-id="react-tooltip"
         data-tooltip-content={CHAT_FILE_MULTIUPLOAD_MESSAGE}
+        data-onboarding="chat-file-upload"
         className="text-text-quaternary hover:text-text-primary hover:scale-110 transform duration-75"
       >
         <AttachmentSvg className="w-4 h-4" aria-hidden="true" />

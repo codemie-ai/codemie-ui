@@ -20,11 +20,15 @@ interface InfoCardProps {
   description?: string
   icon?: React.ElementType | React.ReactNode
   children?: React.ReactNode
+  'data-onboarding'?: string
 }
 
-const InfoCard: React.FC<InfoCardProps> = ({ heading, description, icon, children }) => {
+const InfoCard: React.FC<InfoCardProps> = ({ heading, description, icon, children, ...rest }) => {
   return (
-    <div className="bg-surface-base-chat rounded-lg p-4 border border-border-specific-panel-outline">
+    <div
+      className="bg-surface-base-chat rounded-lg p-4 border border-border-specific-panel-outline"
+      {...rest}
+    >
       <div className="grid grid-cols-[auto,1fr] gap-x-4">
         <div className="w-8 h-8 min-w-8 bg-surface-specific-dropdown-hover text-text-primary rounded-full flex justify-center items-center">
           {typeof icon === 'function' ? React.createElement(icon) : icon || null}

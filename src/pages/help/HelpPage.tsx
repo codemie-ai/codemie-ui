@@ -37,6 +37,7 @@ import { appInfoStore } from '@/store/appInfo'
 import { getConfigItemSettings, isConfigItemEnabled } from '@/utils/settings'
 
 import HelpSection from './components/HelpSection'
+import OnboardingToursSection from './components/OnboardingToursSection'
 
 export interface HelpItemType {
   name: string
@@ -96,6 +97,9 @@ const HelpPage: FC = () => {
       items: assistantItems,
     })
 
+    // Onboarding Tours section will be rendered separately
+    // (not part of the sections array since it has custom rendering)
+
     if (isCustomerConfigItemEnabled(CONFIG_FEEDBACK_ASST_KEY)) {
       addAssistantItem(shareItems, FEEDBACK_ASSISTANT_SLUG)
     }
@@ -154,7 +158,7 @@ const HelpPage: FC = () => {
 
     finalSections.push({
       title: 'Product Updates',
-      description: "Track what's new, what's improved, and what's coming next.",
+      description: "Track what's new, and what's improved!",
       items: [
         {
           name: 'Release Notes',
@@ -177,6 +181,19 @@ const HelpPage: FC = () => {
     setSections(finalSections)
   }, [helpAssistants, user, configs])
 
+  const getDataOnboardingAttribute = (title: string) => {
+    switch (title) {
+      case 'AI Help':
+        return 'help-ai-section'
+      case 'Learning Resources':
+        return 'help-learning-section'
+      case 'Product Updates':
+        return 'help-updates-section'
+      default:
+        return ''
+    }
+  }
+
   return (
     <PageLayout>
       <div className="flex flex-col gap-y-2 pt-10">
@@ -192,8 +209,13 @@ const HelpPage: FC = () => {
             title={section.title}
             description={section.description}
             items={section.items}
+            data-onboarding={getDataOnboardingAttribute(section.title)}
           />
         ))}
+      </div>
+
+      <div className="mt-4">
+        <OnboardingToursSection key="onboarding-tours" />
       </div>
     </PageLayout>
   )

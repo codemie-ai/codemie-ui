@@ -241,7 +241,9 @@ const DataSourceActions: FC<Props> = ({ item }) => {
 
   return (
     <div className="flex justify-end">
-      <NavigationMore hideOnClickInside items={menuActions}></NavigationMore>
+      <div data-onboarding="datasource-actions-menu">
+        <NavigationMore hideOnClickInside items={menuActions}></NavigationMore>
+      </div>
 
       <ConfirmationModal
         visible={isDeleteConfirmationVisible}

@@ -48,34 +48,36 @@ const ChatSidebar = () => {
       title="Chats"
       className="px-4"
       headerContent={
-        <Button variant="primary" onClick={handleCreateChat}>
+        <Button variant="primary" onClick={handleCreateChat} data-onboarding="chat-new-chat-button">
           <Plus />
           New Chat
         </Button>
       }
     >
       <div className="flex flex-col h-full">
-        <ChatSidebarAssistants />
+        <div data-onboarding="chat-sidebar-recents">
+          <ChatSidebarAssistants />
 
-        <button
-          onClick={navigateToAssistants}
-          className="text-text-accent flex items-center gap-2 text-sm mt-3 ml-1.5"
-        >
-          <ExploreSvg />
-          Explore Assistants
-        </button>
+          <button
+            onClick={navigateToAssistants}
+            className="text-text-accent flex items-center gap-2 text-sm mt-3 ml-1.5"
+          >
+            <ExploreSvg />
+            Explore Assistants
+          </button>
 
-        <div className="mt-6">
-          <ChatSidebarWorkflows />
+          <div className="mt-6">
+            <ChatSidebarWorkflows />
+          </div>
+
+          <button
+            onClick={navigateToWorkflows}
+            className="text-text-accent flex items-center gap-2 text-sm mt-3 ml-1.5"
+          >
+            <ExploreSvg />
+            Explore Workflows
+          </button>
         </div>
-
-        <button
-          onClick={navigateToWorkflows}
-          className="text-text-accent flex items-center gap-2 text-sm mt-3 ml-1.5"
-        >
-          <ExploreSvg />
-          Explore Workflows
-        </button>
 
         <div className="h-px min-h-px bg-border-primary mt-7 mb-5" />
 

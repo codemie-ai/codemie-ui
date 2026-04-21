@@ -486,64 +486,76 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             isCompactView={isChatConfig}
           />
 
-          <Accordion
-            title="Context & Data Sources"
-            description="Connect your assistant to relevant data, documents, or supporting agents."
-            defaultOpen={false}
-          >
-            <div className="px-4 pb-4 flex flex-col gap-6">
-              <Controller
-                name="context"
-                control={control}
-                render={({ field }) => (
-                  <ContextSelector
-                    {...field}
-                    isAIGenerated={aiGeneratedFieldMarkers.context}
-                    enlargedLabel
-                    display="chip"
-                  />
-                )}
-              />
-              <Controller
-                name="nestedAssistants"
-                control={control}
-                render={({ field }) => (
-                  <AssistantSelector
-                    {...field}
-                    project={project}
-                    scope={ASSISTANT_INDEX_SCOPES.PROJECT_WITH_MARKETPLACE}
-                    enlargedLabel
-                  />
-                )}
-              />
-              <GuardrailAssignmentPanel
-                project={project}
-                entityType={GuardrailEntity.ASSISTANT}
-                isEmbedded={isChatConfig}
-                control={control}
-                formState={formState}
-                trigger={trigger}
-                getValues={getValues}
-              />
-            </div>
-          </Accordion>
-
-          {isSkillsEnabled && (
+          <div data-onboarding="assistant-context-datasources-accordion">
             <Accordion
-              title="Skills"
-              description="Add specialized knowledge and expertise to your assistant."
+              title="Context & Data Sources"
+              description="Connect your assistant to relevant data, documents, or supporting agents."
               defaultOpen={false}
             >
               <div className="px-4 pb-4 flex flex-col gap-6">
-                <Controller
-                  name="skill_ids"
+                <div data-onboarding="assistant-datasource-context-field">
+                  <Controller
+                    name="context"
+                    control={control}
+                    render={({ field }) => (
+                      <ContextSelector
+                        {...field}
+                        isAIGenerated={aiGeneratedFieldMarkers.context}
+                        enlargedLabel
+                        display="chip"
+                      />
+                    )}
+                  />
+                </div>
+                <div data-onboarding="assistant-sub-assistants-field">
+                  <Controller
+                    name="nestedAssistants"
+                    control={control}
+                    render={({ field }) => (
+                      <AssistantSelector
+                        {...field}
+                        project={project}
+                        scope={ASSISTANT_INDEX_SCOPES.PROJECT_WITH_MARKETPLACE}
+                        enlargedLabel
+                      />
+                    )}
+                  />
+                </div>
+                <GuardrailAssignmentPanel
+                  project={project}
+                  entityType={GuardrailEntity.ASSISTANT}
+                  isEmbedded={isChatConfig}
                   control={control}
-                  render={({ field, fieldState }) => (
-                    <SkillSelector {...field} project={project} error={fieldState.error?.message} />
-                  )}
+                  formState={formState}
+                  trigger={trigger}
+                  getValues={getValues}
                 />
               </div>
             </Accordion>
+          </div>
+
+          {isSkillsEnabled && (
+            <div data-onboarding="assistant-skills-accordion">
+              <Accordion
+                title="Skills"
+                description="Add specialized knowledge and expertise to your assistant."
+                defaultOpen={false}
+              >
+                <div className="px-4 pb-4 flex flex-col gap-6">
+                  <Controller
+                    name="skill_ids"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <SkillSelector
+                        {...field}
+                        project={project}
+                        error={fieldState.error?.message}
+                      />
+                    )}
+                  />
+                </div>
+              </Accordion>
+            </div>
           )}
 
           {/* Smart Tools toggle temporarily hidden */}

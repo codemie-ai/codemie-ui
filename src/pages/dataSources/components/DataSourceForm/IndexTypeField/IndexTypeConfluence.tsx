@@ -54,7 +54,7 @@ const IndexTypeConfluence: FC<Props> = ({
   } = useIntegrationManager({ onIntegrationCreated })
 
   return (
-    <div>
+    <div data-onboarding="datasource-confluence-fields">
       <Controller
         name="cql"
         control={control}

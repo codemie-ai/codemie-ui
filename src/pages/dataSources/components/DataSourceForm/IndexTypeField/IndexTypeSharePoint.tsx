@@ -145,7 +145,7 @@ const IndexTypeSharePoint: FC<Props> = ({
   }, [authMethod, watch, handleSignIn])
 
   return (
-    <div>
+    <div data-onboarding="datasource-sharepoint-fields">
       <Controller
         name="siteUrl"
         control={control}

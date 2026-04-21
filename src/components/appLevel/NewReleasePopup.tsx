@@ -18,10 +18,12 @@ import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
 import Link from '@/components/Link'
+import OnboardingFlowCard from '@/components/Onboarding/OnboardingFlowCard'
 import Popup from '@/components/Popup'
 import { ButtonType } from '@/constants'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
+import { onboardingStore } from '@/store/onboarding'
 
 const NewReleasePopup: FC = () => {
   const router = useVueRouter()
@@ -29,6 +31,7 @@ const NewReleasePopup: FC = () => {
   const { appReleases } = useSnapshot(appInfoStore)
 
   const latestVersion = appReleases[0]?.version
+  const releaseFlows = latestVersion ? onboardingStore.getFlowsForRelease(latestVersion) : []
 
   useEffect(() => {
     appInfoStore.loadReleaseNotes()
@@ -49,6 +52,11 @@ const NewReleasePopup: FC = () => {
   const onNavigateToReleaseNotes = () => {
     router.push({ name: 'release-notes' })
     closePopup()
+  }
+
+  const handleStartFlow = (flowId: string) => {
+    updateViewedRelease()
+    onboardingStore.startFlow(flowId)
   }
 
   return (
@@ -80,6 +88,33 @@ const NewReleasePopup: FC = () => {
           </Link>
           !
         </div>
+
+        {releaseFlows.length > 0 && (
+          <div className="flex flex-col gap-3 mt-5 pt-4 border-t border-border-structural">
+            <div className="flex flex-col gap-1">
+              <h3 className="text-sm font-semibold text-text-primary">
+                What&apos;s New in This Release
+              </h3>
+              <p className="text-xs text-text-secondary">
+                Explore guided tours to discover the new features in this version.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {releaseFlows.map((flow) => (
+                <OnboardingFlowCard
+                  key={flow.id}
+                  flowId={flow.id}
+                  name={flow.name}
+                  description={flow.description}
+                  duration={flow.duration}
+                  emoji={flow.emoji}
+                  size="small"
+                  onStart={handleStartFlow}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-5 flex justify-center">
           <Button

@@ -17,6 +17,7 @@ import React, { useState, useRef, useCallback } from 'react'
 
 import QuestionSVG from '@/assets/icons/question.svg?react'
 import { DEFAULT_POPUP_TITLE, DEFAULT_POPUP_DESCRIPTION } from '@/constants/helpLinks'
+import type { OnboardingFlow } from '@/types/onboarding'
 import { cn } from '@/utils/utils'
 
 import HelpPopup, { HelpLink } from './HelpPopup'
@@ -26,10 +27,16 @@ const POPUP_GAP = 8
 export interface HelpLauncherProps {
   links: HelpLink[]
   tooltipText: string
+  onboardingFlows?: OnboardingFlow[]
   className?: string
 }
 
-const HelpLauncher: React.FC<HelpLauncherProps> = ({ links, tooltipText, className }) => {
+const HelpLauncher: React.FC<HelpLauncherProps> = ({
+  links,
+  tooltipText,
+  onboardingFlows,
+  className,
+}) => {
   const [isPopupVisible, setIsPopupVisible] = useState(false)
   const [isTooltipVisible, setIsTooltipVisible] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -121,6 +128,7 @@ const HelpLauncher: React.FC<HelpLauncherProps> = ({ links, tooltipText, classNa
           title={DEFAULT_POPUP_TITLE}
           description={DEFAULT_POPUP_DESCRIPTION}
           links={links}
+          onboardingFlows={onboardingFlows}
           style={getPopupPositionStyle()}
         />
       )}

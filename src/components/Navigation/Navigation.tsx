@@ -142,6 +142,7 @@ const Navigation: React.FC<NavigationProps> = () => {
         isExpanded ? 'min-w-navbar-expanded w-navbar-expanded' : 'w-navbar',
         isDark ? 'bg-gradient-to-b from-black to-black/15' : 'border-r border-border-structural'
       )}
+      data-onboarding="navigation-menu"
     >
       <div className="flex flex-col px-2">
         <NavigationLogo isExpanded={isExpanded} onClick={handleCreateChat} />

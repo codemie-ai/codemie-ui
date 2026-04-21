@@ -116,7 +116,10 @@ const ToolkitsPanelLayout = ({
         <div className="absolute top-0 bottom-0 left-[320px] border-l border-border-structural z-10" />
 
         {/* Left: Toolkit list */}
-        <div className="relative flex flex-col h-full bg-surface-base-primary overflow-hidden">
+        <div
+          className="relative flex flex-col h-full bg-surface-base-primary overflow-hidden"
+          data-onboarding="assistant-toolkits-left-panel"
+        >
           {/* Search */}
           <div className="h-[85px] flex items-center p-4 bg-surface-base-primary">
             {searchInput('w-full')}
@@ -148,7 +151,10 @@ const ToolkitsPanelLayout = ({
         </div>
 
         {/* Right: Selected toolkit content */}
-        <div className="bg-surface-base-primary h-full overflow-y-auto show-scroll">
+        <div
+          className="bg-surface-base-primary h-full overflow-y-auto show-scroll"
+          data-onboarding="assistant-toolkits-right-panel"
+        >
           {filteredToolkits[selectedIndex] ? (
             renderContent(filteredToolkits[selectedIndex])
           ) : (

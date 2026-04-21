@@ -31,6 +31,7 @@ import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
 import { CredentialComponentPosition, CredentialComponentType } from '@/types/settingsUI'
 import api from '@/utils/api'
+import { registerCredentialTypeCallback } from '@/utils/onboarding'
 import {
   getConfigItem,
   getAvailableCredentialsTypes,
@@ -246,6 +247,12 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     reset({ alias: getValues('alias'), ...getCredentialDefaults(newType) })
   }
 
+  useEffect(() => {
+    return registerCredentialTypeCallback(handleCredentialTypeChange)
+    // handleCredentialTypeChange closes over stable React state setters and form methods
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const buildWebhookURL = (value: string) => {
     const webhookId = value && value.trim() !== '' ? value : '<id>'
     return `${api.BASE_URL}/v1/webhooks/${webhookId}`
@@ -300,106 +307,114 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
           submit()
         }}
       >
-        <ProjectSelector
-          value={projectName}
-          onChange={(e: any) => {
-            const val = typeof e === 'string' ? e : e.value
-            setProjectName(val)
-          }}
-          label="Project:"
-          disabled={editing || disableProject || isGlobal}
-          adminOnly={settingType === SETTING_TYPE_PROJECT}
-        />
-
-        {CREDENTIAL_VALUES_MAPPING[credentialType] && (
-          <CredentialFields
-            control={control}
-            credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
-            buildWebhookURL={buildWebhookURL}
-            position={CredentialComponentPosition.top}
+        <div data-onboarding="integration-project-scope-fields" className="flex flex-col gap-y-6">
+          <ProjectSelector
+            value={projectName}
+            onChange={(e: any) => {
+              const val = typeof e === 'string' ? e : e.value
+              setProjectName(val)
+            }}
+            label="Project:"
+            disabled={editing || disableProject || isGlobal}
+            adminOnly={settingType === SETTING_TYPE_PROJECT}
           />
-        )}
 
-        {settingType === SETTING_TYPE_USER && (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="isGlobal"
-                value={isGlobal}
-                onChange={(e) => setIsGlobal(e.target.checked)}
-                label="Global Integration"
-              />
-            </div>
-            <InfoMessage>
-              By enabling, it will become versatile and can be applied across multiple projects
-              without being tied to any specific one.
-            </InfoMessage>
-          </div>
-        )}
-
-        <Autocomplete
-          id="credentialType"
-          value={credentialType}
-          name="credentialType"
-          placeholder="Credential Type"
-          label="Credential Type:"
-          allowEmpty={false}
-          options={credentialTypeOptions}
-          disabled={editing || disableType}
-          onChange={handleCredentialTypeChange}
-        />
-
-        <Controller
-          name="alias"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Input
-              {...field}
-              id="settingAlias"
-              name="settingAlias"
-              placeholder="Alias*"
-              label="Alias:"
-              error={fieldState.error?.message}
-              autoFocus={shouldAutofocusInput}
+          {CREDENTIAL_VALUES_MAPPING[credentialType] && (
+            <CredentialFields
+              control={control}
+              credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
+              buildWebhookURL={buildWebhookURL}
+              position={CredentialComponentPosition.top}
             />
           )}
-        />
+
+          {settingType === SETTING_TYPE_USER && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="isGlobal"
+                  value={isGlobal}
+                  onChange={(e) => setIsGlobal(e.target.checked)}
+                  label="Global Integration"
+                />
+              </div>
+              <InfoMessage>
+                By enabling, it will become versatile and can be applied across multiple projects
+                without being tied to any specific one.
+              </InfoMessage>
+            </div>
+          )}
+        </div>
+
+        <div data-onboarding="integration-credential-type-field">
+          <Autocomplete
+            id="credentialType"
+            value={credentialType}
+            name="credentialType"
+            placeholder="Credential Type"
+            label="Credential Type:"
+            allowEmpty={false}
+            options={credentialTypeOptions}
+            disabled={editing || disableType}
+            onChange={handleCredentialTypeChange}
+          />
+        </div>
+
+        <div data-onboarding="integration-alias-field">
+          <Controller
+            name="alias"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Input
+                {...field}
+                id="settingAlias"
+                name="settingAlias"
+                placeholder="Alias*"
+                label="Alias:"
+                error={fieldState.error?.message}
+                autoFocus={shouldAutofocusInput}
+              />
+            )}
+          />
+        </div>
 
         {isMessagePresent(credentialType) && getCredentialMessage(credentialType) && (
           <SettingFormMessage message={getCredentialMessage(credentialType)!} />
         )}
 
-        {CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration ? (
-          <RecordInput
-            id="manualFields"
-            value={manualCredentialValues}
-            onChange={setManualCredentialValues}
-            name="manualFields"
-            label={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.label}
-            sensitive={
-              CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.sensitive
-            }
-            addText={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.addText}
-          />
-        ) : (
-          <>
-            <div className="-mt-3 -mb-2">
-              <hr className="opacity-25 mb-6 border-border-structural" />
-              {getSettingsFieldsSectionTitle(credentialType) && (
-                <h4 className="text-sm font-medium">
-                  {getSettingsFieldsSectionTitle(credentialType)}
-                </h4>
+        <div data-onboarding="integration-credential-fields" className="flex flex-col gap-y-6">
+          {CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration ? (
+            <RecordInput
+              id="manualFields"
+              value={manualCredentialValues}
+              onChange={setManualCredentialValues}
+              name="manualFields"
+              label={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.label}
+              sensitive={
+                CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.sensitive
+              }
+              addText={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.addText}
+            />
+          ) : (
+            <>
+              <div className="-mt-3 -mb-2">
+                <hr className="opacity-25 mb-6 border-border-structural" />
+                {getSettingsFieldsSectionTitle(credentialType) && (
+                  <h4 className="text-sm font-medium">
+                    {getSettingsFieldsSectionTitle(credentialType)}
+                  </h4>
+                )}
+              </div>
+              {CREDENTIAL_VALUES_MAPPING[credentialType] && (
+                <CredentialFields
+                  control={control}
+                  credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
+                  buildWebhookURL={buildWebhookURL}
+                />
               )}
-            </div>
-            {CREDENTIAL_VALUES_MAPPING[credentialType] && (
-              <CredentialFields
-                control={control}
-                credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
-                buildWebhookURL={buildWebhookURL}
-              />
-            )}
-          </>
-        )}
+            </>
+          )}
+        </div>
 
         <InfoMessage>
           Important note: Your sensitive information is encrypted for security and displayed here in

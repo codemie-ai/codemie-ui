@@ -165,7 +165,7 @@ const ChatUserMessage: FC<ChatUserMessageProps> = ({ message, indexes, onSubmit 
   }, [message])
 
   return (
-    <div className="flex items-end flex-col gap-2">
+    <div className="flex items-end flex-col gap-2" data-onboarding="chat-user-message">
       <div className="flex flex-wrap justify-end gap-2">
         <input {...inputProps} />
         {(isEditing ? newFiles : initialFiles).map((f, i) => (

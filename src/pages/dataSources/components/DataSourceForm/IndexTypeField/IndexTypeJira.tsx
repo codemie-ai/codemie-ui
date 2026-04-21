@@ -53,7 +53,7 @@ const IndexTypeJira: FC<Props> = ({
   } = useIntegrationManager({ onIntegrationCreated })
 
   return (
-    <div>
+    <div data-onboarding="datasource-jira-fields">
       <Controller
         name="jql"
         control={control}

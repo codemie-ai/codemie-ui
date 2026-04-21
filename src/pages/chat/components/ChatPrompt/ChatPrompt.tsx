@@ -169,6 +169,7 @@ const ChatPrompt: FC = () => {
             <div
               onClick={focusEditor}
               onMouseDown={handleMouseDown}
+              data-onboarding="chat-input"
               className={cn(
                 'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated min-h-32 max-h-64',
                 !isInterrupted && 'cursor-text'

@@ -41,6 +41,7 @@ const NavigationLogo: React.FC<NavigationLogoProps> = ({ isExpanded, onClick }) 
       data-tooltip-id={!isExpanded ? 'react-tooltip' : undefined}
       data-tooltip-content={!isExpanded ? 'EPAM AI/Run' : undefined}
       data-tooltip-place="right"
+      data-onboarding="navigation-logo"
       className={cn(
         'h-12 flex grow gap-4 ml-0.5 items-center relative select-none text-nowrap cursor-pointer hover:no-underline group overflow-hidden'
       )}

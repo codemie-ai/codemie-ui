@@ -159,17 +159,19 @@ const DataSourcesPage = () => {
         <DataSourceFilters onApplyFilters={applyFilters} />
       </Sidebar>
       <PageLayout rightContent={renderHeaderActions}>
-        <Table<DataSource>
-          sort={tableProps.sort}
-          items={tableProps.items}
-          onSort={tableProps.onSort}
-          loading={tableProps.loading}
-          pagination={tableProps.pagination}
-          columnDefinitions={tableProps.columnDefinitions}
-          customRenderColumns={tableProps.customRenderColumns}
-          onPaginationChange={tableProps.onPaginationChange}
-          perPageOptions={DECIMAL_PAGINATION_OPTIONS}
-        />
+        <div data-onboarding="datasource-list-table">
+          <Table<DataSource>
+            sort={tableProps.sort}
+            items={tableProps.items}
+            onSort={tableProps.onSort}
+            loading={tableProps.loading}
+            pagination={tableProps.pagination}
+            columnDefinitions={tableProps.columnDefinitions}
+            customRenderColumns={tableProps.customRenderColumns}
+            onPaginationChange={tableProps.onPaginationChange}
+            perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+          />
+        </div>
         <Tooltip target=".target-tooltip" textStyles="text-h5" />
       </PageLayout>
     </div>

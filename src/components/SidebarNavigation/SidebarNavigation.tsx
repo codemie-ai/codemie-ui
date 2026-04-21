@@ -87,6 +87,7 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({ tabs, activeId = 
               return (
                 <li
                   key={item.id}
+                  data-onboarding={`sidebar-nav-${item.id}`}
                   className={`${isActive ? '!bg-surface-specific-dropdown-hover ' : ''}${
                     !item.children
                       ? 'hover:bg-surface-specific-dropdown-hover transition rounded-md'

@@ -54,7 +54,7 @@ const IndexTypeAzureDevOpsWiki: FC<Props> = ({
   } = useIntegrationManager({ onIntegrationCreated })
 
   return (
-    <div>
+    <div data-onboarding="datasource-azure-wiki-fields">
       <Controller
         name="wikiName"
         control={control}

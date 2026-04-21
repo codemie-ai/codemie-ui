@@ -51,6 +51,7 @@ const ChatHeaderShareButton: FC = () => {
         data-tooltip-id="react-tooltip"
         data-tooltip-content="Share Chat"
         aria-label="Share Chat"
+        data-onboarding="chat-share-button"
         className="text-xs target-tooltip"
         disabled={isLoading}
         onClick={onShareChat}

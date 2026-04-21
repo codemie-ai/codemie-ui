@@ -28,6 +28,7 @@ interface MCPMarketplaceCardProps {
   onSelect: (config: MCPConfig) => void
   isSelected: boolean
   isAlreadyAdded: boolean
+  'data-onboarding'?: string
 }
 
 const CardLogo: React.FC<{ logoUrl?: string; name: string }> = ({ logoUrl, name }) => {
@@ -127,9 +128,11 @@ const MCPMarketplaceCard: React.FC<MCPMarketplaceCardProps> = ({
   onSelect,
   isSelected,
   isAlreadyAdded,
+  'data-onboarding': dataOnboarding,
 }) => {
   return (
     <div
+      data-onboarding={dataOnboarding}
       className={cn(
         'flex flex-col bg-surface-base-secondary border border-border-structural rounded-lg p-4 transition-all',
         'hover:border-specific-interactive-outline',

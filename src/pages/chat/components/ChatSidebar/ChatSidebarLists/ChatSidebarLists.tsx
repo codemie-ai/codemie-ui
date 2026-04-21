@@ -143,21 +143,23 @@ const ChatSidebarLists = () => {
         <ChatList chatActions={chatActions} chats={defaultChats} currentChatId={currentChat?.id} />
       </ChatSidebarAccordion>
 
-      <ChatSidebarAccordion
-        title="Folders"
-        isExpanded={activeSection === 'folders'}
-        headerContentTemplate={createFolderButton}
-        onToggle={() => handleToggleSection('folders')}
-      >
-        <FolderList
-          folders={folders}
-          chatActions={chatActions}
-          foldersToChatsMap={foldersToChatsMap}
-          activeFolderIndex={activeFolderIndex}
-          currentChatId={currentChat?.id}
-          setActiveFolder={setActiveFolder}
-        />
-      </ChatSidebarAccordion>
+      <div data-onboarding="chat-sidebar-folders">
+        <ChatSidebarAccordion
+          title="Folders"
+          isExpanded={activeSection === 'folders'}
+          headerContentTemplate={createFolderButton}
+          onToggle={() => handleToggleSection('folders')}
+        >
+          <FolderList
+            folders={folders}
+            chatActions={chatActions}
+            foldersToChatsMap={foldersToChatsMap}
+            activeFolderIndex={activeFolderIndex}
+            currentChatId={currentChat?.id}
+            setActiveFolder={setActiveFolder}
+          />
+        </ChatSidebarAccordion>
+      </div>
 
       <DeleteChatPopup
         onHide={handleHidePopup}

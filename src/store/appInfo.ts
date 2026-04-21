@@ -15,7 +15,7 @@
 
 import { proxy } from 'valtio'
 
-import releaseNotes from '@/assets/configs/releaseNotes.json'
+import releaseNotes from '@/configs/releaseNotes.json'
 import { ModelOption, SpeechConfig, ConfigItem } from '@/types/entity/configuration'
 import api from '@/utils/api'
 

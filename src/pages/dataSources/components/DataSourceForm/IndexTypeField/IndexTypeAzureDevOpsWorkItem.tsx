@@ -53,7 +53,7 @@ const IndexTypeAzureDevOpsWorkItem: FC<Props> = ({
   } = useIntegrationManager({ onIntegrationCreated })
 
   return (
-    <div>
+    <div data-onboarding="datasource-azure-workitem-fields">
       <Controller
         name="wiqlQuery"
         control={control}

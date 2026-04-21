@@ -17,6 +17,7 @@ import { Dialog } from 'primereact/dialog'
 import React, { ReactNode, useEffect, useId } from 'react'
 
 import CloseSvg from '@/assets/icons/cross.svg?react'
+import gradientModal from '@/assets/images/gradient-modal.png'
 import CustomButton from '@/components/Button'
 import { ButtonType } from '@/constants'
 import { cn } from '@/utils/utils'
@@ -45,6 +46,8 @@ export interface PopupProps {
   cancelButtonType?: ButtonType
   submitButtonType?: ButtonType
   limitWidth?: boolean
+  isMagic?: boolean
+  hideHeader?: boolean
 }
 
 const Popup: React.FC<PopupProps> = ({
@@ -71,6 +74,8 @@ const Popup: React.FC<PopupProps> = ({
   footerClassName,
   cancelButtonType,
   submitButtonType,
+  isMagic = false,
+  hideHeader = false,
 }) => {
   const headerId = useId()
 
@@ -140,14 +145,15 @@ const Popup: React.FC<PopupProps> = ({
       footer={renderFooter}
       closeIcon={hideClose ? '' : <CloseSvg />}
       className={cn(
-        'rounded-lg border border-border-specific-panel-outline shadow-lg bg-surface-base-secondary h-auto max-h-[95%]',
+        'rounded-lg  shadow-lg bg-surface-base-secondary h-auto max-h-[95%]',
         isFullWidth && 'w-full max-w-[90vw] xl:max-w-6xl',
+        !isMagic && 'border border-border-specific-panel-outline',
         className,
         limitWidth && 'max-w-lg w-full'
       )}
       contentClassName={cn('px-4 pt-4 overflow-auto flex-1 overflow-y-auto', bodyClassName)}
       maskClassName={`fixed top-0 left-0 w-full h-full z-50 bg-black bg-opacity-50 ${overlayClassName}`}
-      showHeader
+      showHeader={!hideHeader}
       modal
       dismissableMask={dismissableMask}
       closeOnEscape
@@ -157,6 +163,14 @@ const Popup: React.FC<PopupProps> = ({
         root: {
           'aria-labelledby': header ? headerId : undefined,
           'aria-describedby': '',
+          ...(isMagic && {
+            style: {
+              backgroundImage: `url(${gradientModal})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            },
+          }),
         },
         header: {
           className: `px-4 py-3 flex items-center justify-between bg-transparent ${

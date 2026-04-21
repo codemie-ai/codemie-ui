@@ -19,15 +19,17 @@ import { Outlet } from 'react-router'
 import { useSnapshot } from 'valtio'
 
 import Banner from '@/components/appLevel/Banner'
+import FirstTimePagePopup from '@/components/appLevel/FirstTimePagePopup'
+import FirstTimeUserPopup from '@/components/appLevel/FirstTimeUserPopup'
 import Gradient from '@/components/appLevel/Gradient'
 import NewReleasePopup from '@/components/appLevel/NewReleasePopup'
-import OnboardingPopup from '@/components/appLevel/OnboardingPopup'
 import SessionExpiredPopup from '@/components/appLevel/SessionExpiredPopup'
 import ToastContainer from '@/components/appLevel/ToastContainer'
 import { UnsavedChangesPopup } from '@/components/appLevel/UnsavedChangesPopup'
 import FloatingKataWindow from '@/components/FloatingKataWindow'
 import { HelpPanel } from '@/components/HelpLauncher'
 import Navigation from '@/components/Navigation/Navigation'
+import { OnboardingProvider } from '@/components/Onboarding'
 import Spinner from '@/components/Spinner'
 import { primeReactPtOptions } from '@/constants/theme'
 import { useHistoryStack } from '@/hooks/appLevel/useHistoryStack'
@@ -53,31 +55,34 @@ const App: React.FC = () => {
 
   return (
     <PrimeReactProvider value={primeReactPtOptions}>
-      <UnsavedChangesProvider>
-        <Banner />
-        <ToastContainer />
+      <OnboardingProvider>
+        <UnsavedChangesProvider>
+          <Banner />
+          <ToastContainer />
 
-        {isLoadingUser ? (
-          <Spinner className="w-20 h-20" />
-        ) : (
-          <div className="min-h-0 grow flex bg-surface-base-sidebar">
-            <Gradient />
-            <Navigation />
-            <div className="z-0 grow min-w-0">{user && <Outlet />}</div>
-          </div>
-        )}
+          {isLoadingUser ? (
+            <Spinner className="w-20 h-20" />
+          ) : (
+            <div className="min-h-0 grow flex bg-surface-base-sidebar">
+              <Gradient />
+              <Navigation />
+              <div className="z-0 grow min-w-0">{user && <Outlet />}</div>
+            </div>
+          )}
 
-        {user && (
-          <>
-            <NewReleasePopup />
-            <OnboardingPopup />
-            <FloatingKataWindow />
-            <UnsavedChangesPopup />
-            <HelpPanel />
-          </>
-        )}
-        <SessionExpiredPopup />
-      </UnsavedChangesProvider>
+          {user && (
+            <>
+              <NewReleasePopup />
+              <FirstTimeUserPopup />
+              <FirstTimePagePopup />
+              <FloatingKataWindow />
+              <UnsavedChangesPopup />
+              <HelpPanel />
+            </>
+          )}
+          <SessionExpiredPopup />
+        </UnsavedChangesProvider>
+      </OnboardingProvider>
     </PrimeReactProvider>
   )
 }

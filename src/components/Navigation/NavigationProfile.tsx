@@ -14,7 +14,7 @@
 //
 
 import { OverlayPanel } from 'primereact/overlaypanel'
-import React, { FC, useRef } from 'react'
+import React, { FC, useEffect, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import SettingsSvg from '@/assets/icons/configuration.svg?react'
@@ -37,6 +37,24 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
   const { user } = useSnapshot(userStore)
   const { apiVersion } = useSnapshot(appInfoStore)
   const panelRef = useRef<OverlayPanel>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const isVisibleRef = useRef(false)
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (isVisibleRef.current && buttonRef.current) {
+        panelRef.current?.hide()
+        requestAnimationFrame(() => {
+          panelRef.current?.show(
+            { currentTarget: buttonRef.current } as unknown as React.SyntheticEvent,
+            buttonRef.current
+          )
+        })
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const VITE_APP_VERSION = (window as any)?._env_?.VITE_APP_VERSION ?? APP_VERSION
 
@@ -71,10 +89,12 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
           'flex w-full group relative cursor-pointer text-sm gap-1.5 duration-150 h-9 items-start overflow-hidden',
           'text-nowrap text-text-quaternary'
         )}
+        ref={buttonRef}
         onClick={toggle}
         data-tooltip-id={!isExpanded ? 'react-tooltip' : undefined}
         data-tooltip-content={!isExpanded ? 'Profile' : undefined}
         data-tooltip-place="right"
+        data-onboarding="profile-button"
       >
         <img
           src={avatarSrc}
@@ -94,6 +114,12 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
 
       <OverlayPanel
         ref={panelRef}
+        onShow={() => {
+          isVisibleRef.current = true
+        }}
+        onHide={() => {
+          isVisibleRef.current = false
+        }}
         className="before:hidden after:hidden"
         pt={{
           content: {
@@ -105,7 +131,7 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
           },
         }}
       >
-        <div className="flex flex-col w-[262px]">
+        <div className="flex flex-col w-[262px]" data-onboarding="profile-expand-content">
           <div className="flex items-center w-full p-4">
             <img
               src={avatarSrc}

@@ -197,6 +197,9 @@ type ThemeConfig = {
 }
 
 const themeTokens: ThemeConfig = {
+  onboarding: {
+    highlight: [c['brand']['bg-1'], c['blue']['400']],
+  },
   surface: {
     elevated: [c['neutral']['800'], c['neutral']['0']],
     interactive: {
@@ -585,6 +588,7 @@ export default {
             gradient2: 'linear-gradient(152deg, #0078C2 8.13%, #0047FF 59.98%, #8453D2 91.87%)',
             gradient3: 'linear-gradient(152deg, #0078C2 8.13%, #0047FF 59.98%, #8453D2 91.87%)',
             gradient4: 'linear-gradient(90deg, #A950DC 0%, #5B2B76 100%)',
+            gradient5: 'linear-gradient(180deg, #9E00FF 0%, #55137D 100%)',
             'gradient-switch-off': 'linear-gradient(to right, #BBB, #666)',
             'gradient-switch-on': 'linear-gradient(to right, #672C92, #547CCC)',
             'magical-button': 'linear-gradient(90deg, #672D92 0%, #5677C8 100%);',
@@ -625,6 +629,7 @@ export default {
               gradient2: 'linear-gradient(152deg, #0078C2 8.13%, #0047FF 59.98%, #8453D2 91.87%)',
               gradient3: 'linear-gradient(152deg, #0078C2 8.13%, #0047FF 59.98%, #8453D2 91.87%)',
               gradient4: 'linear-gradient(90deg, #A950DC 0%, #5B2B76 100%)',
+              gradient5: 'linear-gradient(180deg, #007AFF 0%, #144479 100%)',
               'gradient-switch-off': 'linear-gradient(to right, #fff, #fff)',
               'gradient-switch-on': 'linear-gradient(to right, #007AFF, #007AFF)',
               'purple-radial': 'radial-gradient(#007AFF)',

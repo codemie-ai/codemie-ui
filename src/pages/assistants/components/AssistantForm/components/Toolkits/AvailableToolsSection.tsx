@@ -112,64 +112,66 @@ const AvailableToolsSection = ({
 
   return (
     <>
-      <Accordion
-        title={
-          <span className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg border border-border-structural bg-border-structural/10">
-              <ToolSvg className="w-[18px] h-[18px]" />
-            </div>
-            Available Tools
-          </span>
-        }
-        description={
-          singleToolSelection ? undefined : (
-            <div className="ml-12">
-              <p className="font-geist-mono text-xs leading-normal text-text-tertiary">
-                {availableToolsDescription}
-              </p>
-            </div>
-          )
-        }
-        defaultOpen={defaultOpen}
-      >
-        {isCompactView ? (
-          <div className="flex flex-col gap-4 px-4 pb-4">
-            {/* Vertical scrollable list of toolkits */}
-            <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto show-scroll pr-2">
-              {internalToolkits.map((toolkit) => (
-                <div
-                  key={toolkit.toolkit}
-                  className="flex items-center p-3 gap-4 rounded-lg border border-transparent bg-surface-base-float"
-                >
-                  {renderHeader(toolkit)}
-                </div>
-              ))}
-            </div>
+      <div data-onboarding="assistant-available-tools-accordion">
+        <Accordion
+          title={
+            <span className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg border border-border-structural bg-border-structural/10">
+                <ToolSvg className="w-[18px] h-[18px]" />
+              </div>
+              Available Tools
+            </span>
+          }
+          description={
+            singleToolSelection ? undefined : (
+              <div className="ml-12">
+                <p className="font-geist-mono text-xs leading-normal text-text-tertiary">
+                  {availableToolsDescription}
+                </p>
+              </div>
+            )
+          }
+          defaultOpen={defaultOpen}
+        >
+          {isCompactView ? (
+            <div className="flex flex-col gap-4 px-4 pb-4">
+              {/* Vertical scrollable list of toolkits */}
+              <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto show-scroll pr-2">
+                {internalToolkits.map((toolkit) => (
+                  <div
+                    key={toolkit.toolkit}
+                    className="flex items-center p-3 gap-4 rounded-lg border border-transparent bg-surface-base-float"
+                  >
+                    {renderHeader(toolkit)}
+                  </div>
+                ))}
+              </div>
 
-            {/* Configure button - outside scroll */}
-            <Button
-              variant="secondary"
-              onClick={() => setIsModalVisible(true)}
-              className="self-center w-[212px] h-7 px-4 py-1"
-            >
-              <span className="font-geist-mono font-semibold text-xs leading-4">
-                Configure Available Tools
-              </span>
-            </Button>
-          </div>
-        ) : (
-          <ToolkitsPanelLayout
-            filteredToolkits={filteredToolkits}
-            selectedIndex={selectedIndex}
-            onSelectIndex={setSelectedIndex}
-            search={search}
-            onSearchChange={handleSearchChange}
-            renderHeader={renderHeader}
-            renderContent={renderContent}
-            compact={false}
-          />
-        )}
-      </Accordion>
+              {/* Configure button - outside scroll */}
+              <Button
+                variant="secondary"
+                onClick={() => setIsModalVisible(true)}
+                className="self-center w-[212px] h-7 px-4 py-1"
+              >
+                <span className="font-geist-mono font-semibold text-xs leading-4">
+                  Configure Available Tools
+                </span>
+              </Button>
+            </div>
+          ) : (
+            <ToolkitsPanelLayout
+              filteredToolkits={filteredToolkits}
+              selectedIndex={selectedIndex}
+              onSelectIndex={setSelectedIndex}
+              search={search}
+              onSearchChange={handleSearchChange}
+              renderHeader={renderHeader}
+              renderContent={renderContent}
+              compact={false}
+            />
+          )}
+        </Accordion>
+      </div>
 
       {/* Modal for compact view */}
       {isCompactView && (

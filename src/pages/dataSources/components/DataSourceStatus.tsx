@@ -83,7 +83,7 @@ const DataSourceStatus: FC<Props> = ({ item }) => {
   }, [statusInfo.isQueued, statusInfo.isFetching, statusInfo.isCompleted, statusInfo.isError])
 
   return (
-    <div className="flex items-center gap-2">
+    <div data-onboarding="datasource-status-badge" className="flex items-center gap-2">
       {isTag && (
         <div
           className={cn(

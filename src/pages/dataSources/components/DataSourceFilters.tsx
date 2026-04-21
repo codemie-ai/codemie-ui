@@ -218,27 +218,29 @@ const DataSourceFilters: React.FC<Props> = ({
   }, [mergedInitialValues])
 
   return (
-    <Filters
-      searchKey="name"
-      onApply={handleApplyFilters}
-      areFiltersEmpty={areFiltersEmpty}
-      searchValue={mergedInitialValues.name || ''}
-      filterDefinitions={filterDefinitions}
-      renderCustomFilter={(definition, value, updateValue) => {
-        if (definition.name === 'created_by') {
-          return (
-            <UserFilter
-              setIsChecked={setIsChecked}
-              isChecked={isChecked}
-              definition={definition}
-              value={value as string}
-              onChange={(newValue) => updateValue(newValue)}
-            />
-          )
-        }
-        return null
-      }}
-    />
+    <div data-onboarding="datasource-filters">
+      <Filters
+        searchKey="name"
+        onApply={handleApplyFilters}
+        areFiltersEmpty={areFiltersEmpty}
+        searchValue={mergedInitialValues.name || ''}
+        filterDefinitions={filterDefinitions}
+        renderCustomFilter={(definition, value, updateValue) => {
+          if (definition.name === 'created_by') {
+            return (
+              <UserFilter
+                setIsChecked={setIsChecked}
+                isChecked={isChecked}
+                definition={definition}
+                value={value as string}
+                onChange={(newValue) => updateValue(newValue)}
+              />
+            )
+          }
+          return null
+        }}
+      />
+    </div>
   )
 }
 

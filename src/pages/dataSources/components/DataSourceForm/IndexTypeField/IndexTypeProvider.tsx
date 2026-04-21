@@ -28,24 +28,26 @@ interface Props {
 
 const IndexTypeProvider: FC<Props> = ({ index, control, projectName, errors = {}, setValue }) => {
   return (
-    <Controller
-      name="indexMetadata"
-      control={control}
-      render={({ field }) => {
-        return field.value ? (
-          <IndexProviderForm
-            dataProvider={field.value}
-            projectName={projectName}
-            values={index?.provider_fields}
-            control={control}
-            errors={errors}
-            setValue={setValue}
-          />
-        ) : (
-          <div />
-        )
-      }}
-    />
+    <div data-onboarding="datasource-provider-fields">
+      <Controller
+        name="indexMetadata"
+        control={control}
+        render={({ field }) => {
+          return field.value ? (
+            <IndexProviderForm
+              dataProvider={field.value}
+              projectName={projectName}
+              values={index?.provider_fields}
+              control={control}
+              errors={errors}
+              setValue={setValue}
+            />
+          ) : (
+            <div />
+          )
+        }}
+      />
+    </div>
   )
 }
 

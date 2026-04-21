@@ -22,13 +22,14 @@ interface HelpSectionProps {
   title: string
   description?: string
   items: HelpItemType[]
+  'data-onboarding'?: string
 }
 
-const HelpSection: FC<HelpSectionProps> = ({ title, description, items }) => {
+const HelpSection: FC<HelpSectionProps> = ({ title, description, items, ...rest }) => {
   if (!items || items.length === 0) return null
 
   return (
-    <section className="flex flex-col gap-y-5">
+    <section className="flex flex-col gap-y-5" {...rest}>
       <div className="flex flex-col gap-y-1">
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-xs text-text-quaternary min-h-4">{description || ''}</p>

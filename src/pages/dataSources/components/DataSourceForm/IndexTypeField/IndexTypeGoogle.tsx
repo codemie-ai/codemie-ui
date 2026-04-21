@@ -37,7 +37,7 @@ const IndexTypeGoogle: FC<Props> = ({
   embeddingModels,
 }) => {
   return (
-    <div className="mb-4 flex flex-col gap-1">
+    <div className="mb-4 flex flex-col gap-1" data-onboarding="datasource-google-fields">
       <Controller
         name="googleDoc"
         control={control}

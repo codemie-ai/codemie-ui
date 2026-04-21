@@ -261,14 +261,16 @@ const ToolsConfiguration = ({
   if (!showWrapper) return content
 
   return (
-    <Accordion
-      title={<span className="flex items-center gap-2">Tools configuration{renderHint?.()}</span>}
-      description={description}
-      defaultOpen={true}
-      isAIGenerated={isAIGenerated}
-    >
-      {content}
-    </Accordion>
+    <div data-onboarding="assistant-tools-configuration-accordion">
+      <Accordion
+        title={<span className="flex items-center gap-2">Tools configuration{renderHint?.()}</span>}
+        description={description}
+        defaultOpen={true}
+        isAIGenerated={isAIGenerated}
+      >
+        {content}
+      </Accordion>
+    </div>
   )
 }
 

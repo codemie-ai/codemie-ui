@@ -16,6 +16,9 @@
 import React from 'react'
 
 import CloseSVG from '@/assets/icons/cross.svg?react'
+import OnboardingFlowCard from '@/components/Onboarding/OnboardingFlowCard'
+import { onboardingStore } from '@/store/onboarding'
+import type { OnboardingFlow } from '@/types/onboarding'
 import { cn } from '@/utils/utils'
 
 export interface HelpLink {
@@ -29,6 +32,7 @@ export interface HelpPopupProps {
   title?: string
   description?: string
   links: HelpLink[]
+  onboardingFlows?: OnboardingFlow[]
   style?: React.CSSProperties
 }
 
@@ -37,10 +41,16 @@ const HelpPopup: React.FC<HelpPopupProps> = ({
   title = 'Codemie Helper',
   description,
   links,
+  onboardingFlows,
   style,
 }) => {
   const handleLinkClick = (href: string) => {
     window.open(href, '_blank', 'noopener,noreferrer')
+    onClose()
+  }
+
+  const handleStartFlow = (flowId: string) => {
+    onboardingStore.startFlow(flowId)
     onClose()
   }
 
@@ -73,22 +83,49 @@ const HelpPopup: React.FC<HelpPopupProps> = ({
           <p className="text-sm font-normal leading-4 text-text-primary">{description}</p>
         )}
 
-        <div className="flex flex-col gap-3">
-          {links.map((link) => (
-            <button
-              key={link.id}
-              onClick={() => handleLinkClick(link.href)}
-              className={cn(
-                'text-left text-sm leading-4 font-normal',
-                'text-text-accent-status hover:text-text-accent-status-hover',
-                'focus:outline-none transition-all cursor-pointer'
-              )}
-              type="button"
-            >
-              {link.label}
-            </button>
-          ))}
-        </div>
+        {links.length > 0 && (
+          <div className="flex flex-col gap-3">
+            {links.map((link) => (
+              <button
+                key={link.id}
+                onClick={() => handleLinkClick(link.href)}
+                className={cn(
+                  'text-left text-sm leading-4 font-normal',
+                  'text-text-accent-status hover:text-text-accent-status-hover',
+                  'focus:outline-none transition-all cursor-pointer'
+                )}
+                type="button"
+              >
+                {link.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {onboardingFlows && onboardingFlows.length > 0 && (
+          <div
+            className={cn(
+              'flex flex-col gap-3 pt-3',
+              links.length > 0 && 'border-t border-button-temp-help-popup-border'
+            )}
+          >
+            <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
+              Guided Tours
+            </h4>
+            {onboardingFlows.map((flow) => (
+              <OnboardingFlowCard
+                key={flow.id}
+                flowId={flow.id}
+                name={flow.name}
+                description={flow.description}
+                duration={flow.duration}
+                emoji={flow.emoji}
+                size="small"
+                onStart={handleStartFlow}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </>
   )
