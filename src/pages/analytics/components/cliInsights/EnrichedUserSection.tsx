@@ -34,6 +34,7 @@ type TopN = (typeof TopNFilter)[keyof typeof TopNFilter]
 const EnrichedScope = {
   COUNTRY: 'country',
   JOB_TITLE: 'job_title',
+  JOB_TITLE_GROUP: 'job_title_group',
   PRIMARY_SKILL: 'primary_skill',
   CITY: 'city',
 } as const
@@ -73,10 +74,12 @@ const toPerPage = (topN: TopN): number => (topN === TopNFilter.ALL ? 100 : (topN
 const EnrichedUserSection: FC<EnrichedUserSectionProps> = ({ filters }) => {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CHARTS)
   const [jobTitleMode, setJobTitleMode] = useState<ChartMode>(ChartMode.COUNT)
+  const [jobTitleGroupMode, setJobTitleGroupMode] = useState<ChartMode>(ChartMode.COUNT)
   const [levelMode, setLevelMode] = useState<ChartMode>(ChartMode.COUNT)
   const [countryTopN, setCountryTopN] = useState<TopN>(TopNFilter.TEN)
   const [cityTopN, setCityTopN] = useState<TopN>(TopNFilter.TEN)
   const [jobTitleTopN, setJobTitleTopN] = useState<TopN>(TopNFilter.TEN)
+  const [jobTitleGroupTopN, setJobTitleGroupTopN] = useState<TopN>(TopNFilter.TEN)
   const [primarySkillTopN, setPrimarySkillTopN] = useState<TopN>(TopNFilter.TEN)
 
   const countryBarExtraParams = useMemo(() => ({ per_page: toPerPage(countryTopN) }), [countryTopN])
@@ -84,6 +87,11 @@ const EnrichedUserSection: FC<EnrichedUserSectionProps> = ({ filters }) => {
   const cityBarExtraParams = useMemo(() => ({ per_page: toPerPage(cityTopN) }), [cityTopN])
 
   const jobTitleExtraParams = useMemo(() => ({ per_page: toPerPage(jobTitleTopN) }), [jobTitleTopN])
+
+  const jobTitleGroupExtraParams = useMemo(
+    () => ({ per_page: toPerPage(jobTitleGroupTopN) }),
+    [jobTitleGroupTopN]
+  )
 
   const primarySkillExtraParams = useMemo(
     () => ({ per_page: toPerPage(primarySkillTopN) }),
@@ -127,6 +135,13 @@ const EnrichedUserSection: FC<EnrichedUserSectionProps> = ({ filters }) => {
             metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_PRIMARY_SKILL}
             title="Users by Primary Skill"
             description="CLI users distributed by primary skill."
+            filters={filters}
+            waitForAdoptionConfig={false}
+          />
+          <TableWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_JOB_TITLE_GROUP}
+            title="Users by Job Title Group"
+            description="CLI users distributed by job title group."
             filters={filters}
             waitForAdoptionConfig={false}
           />
@@ -221,6 +236,35 @@ const EnrichedUserSection: FC<EnrichedUserSectionProps> = ({ filters }) => {
                 <Select
                   value={String(primarySkillTopN)}
                   onChange={(e) => setPrimarySkillTopN(toTopN(e.value))}
+                  options={TOP_N_OPTIONS}
+                  className="!h-[30px]"
+                />
+              </div>
+            }
+          />
+
+          <DonutChartWidget
+            metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_JOB_TITLE_GROUP}
+            title="Users by Job Title Group"
+            description="CLI users distributed by job title group."
+            labelField={EnrichedScope.JOB_TITLE_GROUP}
+            valueField={
+              jobTitleGroupMode === ChartMode.COUNT
+                ? EnrichedField.USER_COUNT
+                : EnrichedField.TOTAL_COST
+            }
+            filters={filters}
+            extraParams={jobTitleGroupExtraParams}
+            actions={
+              <div className="flex flex-row gap-2 items-end">
+                <SelectButton
+                  value={jobTitleGroupMode}
+                  options={MODE_OPTIONS}
+                  onChange={(v) => setJobTitleGroupMode(v as ChartMode)}
+                />
+                <Select
+                  value={String(jobTitleGroupTopN)}
+                  onChange={(e) => setJobTitleGroupTopN(toTopN(e.value))}
                   options={TOP_N_OPTIONS}
                   className="!h-[30px]"
                 />

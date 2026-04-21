@@ -224,6 +224,7 @@ export enum TabularMetricType {
   CLI_INSIGHTS_BY_ENRICHED_USER_JOB_TITLE = 'cli-insights-by-enriched-user-job-title',
   CLI_INSIGHTS_BY_ENRICHED_USER_PRIMARY_SKILL = 'cli-insights-by-enriched-user-primary-skill',
   CLI_INSIGHTS_BY_ENRICHED_USER_CITY = 'cli-insights-by-enriched-user-city',
+  CLI_INSIGHTS_BY_ENRICHED_USER_JOB_TITLE_GROUP = 'cli-insights-by-enriched-user-job-title-group',
   AI_ADOPTION_USER_ENGAGEMENT = 'ai-adoption-user-engagement',
   AI_ADOPTION_ASSET_REUSABILITY = 'ai-adoption-asset-reusability',
   AI_ADOPTION_EXPERTISE_DISTRIBUTION = 'ai-adoption-expertise-distribution',
