@@ -18,17 +18,11 @@ import { useSearchParams } from 'react-router'
 
 import Tabs from '@/components/Tabs'
 import { WORKFLOW_TAB, WorkflowTab } from '@/pages/workflows/constants'
+import { Workflow } from '@/types/entity'
 
 import ViewWorkflowConfiguration from './ViewWorkflowConfiguration'
 import ViewWorkflowHeader from './ViewWorkflowHeader'
 import WorkflowExecutionsTable from './WorkflowExecutionsTable'
-
-interface Workflow {
-  id: string
-  slug: string
-  name: string
-  [key: string]: any
-}
 
 interface ViewWorkflowProps {
   workflow: Workflow

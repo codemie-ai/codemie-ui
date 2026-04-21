@@ -15,6 +15,7 @@
 
 import { proxy } from 'valtio'
 
+import { WORKFLOW_FINAL_STATUSES } from '@/constants/workflows'
 import { Pagination, PaginatedResponse } from '@/types/common'
 import { Thought } from '@/types/entity'
 import {
@@ -25,6 +26,8 @@ import {
   UpdateWorkflowExecutionOutputRequest,
   RequestWorkflowExecutionOutputChangeRequest,
   ExportWorkflowExecutionOptions,
+  WorkflowTransitionsResponse,
+  WorkflowTransition,
 } from '@/types/entity/workflow'
 import api from '@/utils/api'
 import { formatDateTime, sleep } from '@/utils/helpers'
@@ -34,8 +37,7 @@ import { mapPagination } from './utils/workflowExecutions'
 import { workflowsStore } from './workflows'
 
 const DEFAULT_PER_PAGE = 10
-const EXECUTIONS_INITIAL_LOAD = 15
-const EXECUTIONS_LOAD_MORE = 10
+const EXECUTIONS_PER_PAGE = 10
 const RESUME_EXECUTION_TIMEOUT = 2000
 
 interface WorkflowExecutionsStoreType {
@@ -47,6 +49,7 @@ interface WorkflowExecutionsStoreType {
   executionStatesThoughts: Thought[]
   executionStates: WorkflowExecutionState[]
   executionStatesPagination: Pagination
+  isExecutionStatesLoading: boolean
 
   executions: WorkflowExecution[]
   executionsPagination: Pagination
@@ -63,13 +66,21 @@ interface WorkflowExecutionsStoreType {
   ) => Promise<WorkflowExecution[]>
 
   getExecutions: (workflowId: string) => Promise<WorkflowExecution[]>
+  refreshExecutions: (workflowId: string) => Promise<WorkflowExecution[]>
   loadMoreExecutions: (workflowId: string) => Promise<void>
   removeExecution: () => void
 
   getExecutionStates: (
     workflowId: string,
     executionId: string,
-    page?: number,
+    pageOrOptions?:
+      | number
+      | {
+          page?: number
+          perPage?: number
+          ignoreErrors?: boolean
+          skipLoading?: boolean
+        },
     perPage?: number,
     ignoreErrors?: boolean
   ) => Promise<WorkflowExecutionState[]>
@@ -91,7 +102,34 @@ interface WorkflowExecutionsStoreType {
     workflowId: string,
     executionId: string,
     stateId: string
-  ) => Promise<string>
+  ) => Promise<string | null>
+
+  getExecutionTransitions: (
+    workflowId: string,
+    executionId: string,
+    options: {
+      page?: number
+      perPage?: number
+      fromState?: string
+      toState?: string
+    }
+  ) => Promise<WorkflowTransitionsResponse>
+
+  getExecutionTransitionsFromState: (
+    workflowId: string,
+    executionId: string,
+    stateId: string,
+    options: {
+      skipErrors?: boolean
+    }
+  ) => Promise<WorkflowTransition>
+
+  getExecutionTransitionsToState: (
+    workflowId: string,
+    executionId: string,
+    stateId: string,
+    options: { skipErrors?: boolean }
+  ) => Promise<WorkflowTransition>
 
   createWorkflowExecution: (
     workflowId: string,
@@ -158,6 +196,7 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
     totalPages: 0,
     totalCount: 0,
   },
+  isExecutionStatesLoading: false,
 
   async getWorkflow(workflowId) {
     try {
@@ -202,12 +241,25 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
       const { data, pagination } = result
 
       if (append) {
-        this.executions = [...this.executions, ...data]
+        // Deduplicate when appending to prevent duplicates from pagination overlap
+        // This can happen when new executions are created, causing page boundaries to shift
+        const existingIds = new Set(this.executions.map((ex) => ex.execution_id))
+        const newExecutions = data.filter((ex) => !existingIds.has(ex.execution_id))
+        this.executions = [...this.executions, ...newExecutions]
       } else {
         this.executions = data
       }
 
-      this.executionsPagination = mapPagination(pagination)
+      const mappedPagination = mapPagination(pagination)
+
+      // When appending, protect against totalCount being overwritten with stale values
+      // This can happen when new executions are created locally but the API pagination
+      // hasn't been updated yet. Use the maximum to prevent negative indexes.
+      if (append && this.executionsPagination.totalCount > mappedPagination.totalCount) {
+        mappedPagination.totalCount = this.executionsPagination.totalCount
+      }
+
+      this.executionsPagination = mappedPagination
       this.hasMoreExecutions = pagination.page < pagination.pages - 1
 
       return data
@@ -219,7 +271,112 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
 
   async getExecutions(workflowId) {
     this.hasMoreExecutions = true
-    return this.loadWorkflowExecutions(workflowId, 0, EXECUTIONS_INITIAL_LOAD)
+    return this.loadWorkflowExecutions(workflowId, 0, EXECUTIONS_PER_PAGE)
+  },
+
+  /**
+   * Refresh executions for polling without disrupting scroll state
+   * Only fetches pages that contain running executions (non-final status)
+   * @param workflowId - The workflow ID
+   * @returns Array of updated workflow executions
+   */
+  async refreshExecutions(workflowId) {
+    try {
+      // Step 1: Calculate which pages are currently loaded
+      const loadedCount = this.executions.length
+
+      if (loadedCount === 0) {
+        return []
+      }
+
+      // Step 2: Find pages that have running executions (non-final status)
+      const pagesWithRunningExecutions = new Set<number>()
+
+      // Always fetch page 0 to catch new executions
+      pagesWithRunningExecutions.add(0)
+
+      for (let i = 0; i < this.executions.length; i += 1) {
+        const execution = this.executions[i]
+
+        // Check if execution is still running (not in final status)
+        if (!WORKFLOW_FINAL_STATUSES.includes(execution.overall_status)) {
+          // Calculate which page this execution is on
+          const pageNumber = Math.floor(i / EXECUTIONS_PER_PAGE)
+          pagesWithRunningExecutions.add(pageNumber)
+        }
+      }
+
+      const pagesToFetch = Array.from(pagesWithRunningExecutions).sort((a, b) => a - b)
+
+      // Step 3: Fetch all pages in parallel
+      const fetchPromises = pagesToFetch.map(async (pageNum) => {
+        const perPage = EXECUTIONS_PER_PAGE
+
+        const response = await api.get(
+          `v1/workflows/${workflowId}/executions?page=${pageNum}&per_page=${perPage}`
+        )
+
+        if (response.status !== 200) {
+          throw new Error(`Failed to refresh page ${pageNum}`)
+        }
+
+        const result: PaginatedResponse<WorkflowExecution> = await response.json()
+        return result
+      })
+
+      const results = await Promise.all(fetchPromises)
+
+      // Step 4: Combine all fresh executions from fetched pages
+      const allFreshExecutions: WorkflowExecution[] = []
+      let latestPagination = results[0]?.pagination
+
+      for (const result of results) {
+        allFreshExecutions.push(...result.data)
+        // Keep the most up-to-date pagination metadata
+        if (result.pagination.total > latestPagination.total) {
+          latestPagination = result.pagination
+        }
+      }
+
+      // Step 5: Update existing executions in place
+      // Create a map of current executions: execution_id -> array index
+      const executionIndexMap = new Map(this.executions.map((ex, idx) => [ex.execution_id, idx]))
+
+      const newExecutions: WorkflowExecution[] = []
+
+      for (const freshExecution of allFreshExecutions) {
+        const existingIndex = executionIndexMap.get(freshExecution.execution_id)
+
+        if (existingIndex !== undefined) {
+          this.executions[existingIndex] = freshExecution
+        } else {
+          newExecutions.push(freshExecution)
+        }
+      }
+
+      // Step 6: Add new executions at the beginning
+      // New executions should only appear if we fetched page 0 and there are new ones
+      if (newExecutions.length > 0) {
+        this.executions = [...newExecutions, ...this.executions]
+        this.executionsPagination.totalCount += newExecutions.length
+      }
+
+      // Step 7: Update pagination metadata
+      this.executionsPagination = {
+        ...this.executionsPagination,
+        totalPages: latestPagination.pages,
+        totalCount: latestPagination.total,
+      }
+
+      // Update hasMoreExecutions based on total available pages vs currently loaded
+      const currentlyLoadedPages = Math.ceil(this.executions.length / EXECUTIONS_PER_PAGE)
+      this.hasMoreExecutions = currentlyLoadedPages < latestPagination.pages
+
+      return allFreshExecutions
+    } catch (error) {
+      console.error('Error refreshing workflow executions:', error)
+      throw error
+    }
   },
 
   async loadMoreExecutions(workflowId) {
@@ -231,9 +388,10 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
 
     try {
       const nextPage = this.executionsPagination.page + 1
-      await this.loadWorkflowExecutions(workflowId, nextPage, EXECUTIONS_LOAD_MORE, true)
+      await this.loadWorkflowExecutions(workflowId, nextPage, EXECUTIONS_PER_PAGE, true)
     } catch (error) {
       console.error('Error loading more workflow executions:', error)
+      this.hasMoreExecutions = false
       throw error
     } finally {
       this.isLoadingMoreExecutions = false
@@ -242,24 +400,53 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
 
   /**
    * Load paginated list of workflow execution states
+   *
+   * Supports two calling conventions for backwards compatibility:
+   * 1. New (options object): getExecutionStates(workflowId, executionId, { page, perPage, ignoreErrors, skipLoading })
+   * 2. Old (positional params): getExecutionStates(workflowId, executionId, page, perPage, ignoreErrors)
+   *
    * @param workflowId - The workflow ID
    * @param executionId - The execution ID
-   * @param page - Page number (default: 0)
-   * @param perPage - Items per page (default: 10)
-   * @param ignoreErrors - Skip automatic error handling
+   * @param pageOrOptions - Page number (old API) OR options object (new API)
+   * @param perPage - Items per page (old API)
+   * @param ignoreErrors - Skip automatic error handling (old API)
    * @returns Array of workflow execution states
    */
-  async getExecutionStates(
-    workflowId,
-    executionId,
-    page = 0,
-    perPage = DEFAULT_PER_PAGE,
-    ignoreErrors = false
-  ) {
-    try {
-      const url = `v1/workflows/${workflowId}/executions/${executionId}/states?page=${page}&per_page=${perPage}`
+  async getExecutionStates(workflowId, executionId, pageOrOptions?, perPage?, ignoreErrors?) {
+    // Handle backwards compatibility: support both old positional params and new options object
+    let page: number
+    let itemsPerPage: number
+    let skipErrors: boolean
+    let skipLoading: boolean
 
-      const response = await api.get(url, { skipErrorHandling: ignoreErrors })
+    if (typeof pageOrOptions === 'object' && pageOrOptions !== null) {
+      // New API: options object
+      page = pageOrOptions.page ?? 0
+      itemsPerPage = pageOrOptions.perPage ?? 10
+      skipErrors = pageOrOptions.ignoreErrors ?? false
+      skipLoading = pageOrOptions.skipLoading ?? false
+    } else if (pageOrOptions !== undefined || perPage !== undefined || ignoreErrors !== undefined) {
+      // Old API: positional parameters
+      page = pageOrOptions ?? 0
+      itemsPerPage = perPage ?? 10
+      skipErrors = ignoreErrors ?? false
+      skipLoading = false
+    } else {
+      // No parameters provided - use defaults
+      page = 0
+      itemsPerPage = 10
+      skipErrors = false
+      skipLoading = false
+    }
+
+    try {
+      if (!skipLoading) {
+        this.isExecutionStatesLoading = true
+      }
+
+      const url = `v1/workflows/${workflowId}/executions/${executionId}/states?page=${page}&per_page=${itemsPerPage}`
+
+      const response = await api.get(url, { skipErrorHandling: skipErrors })
       const result: PaginatedResponse<WorkflowExecutionState> = await response.json()
       const { data, pagination } = result
 
@@ -268,10 +455,14 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
 
       return data
     } catch (error) {
-      if (!ignoreErrors) {
+      if (!skipErrors) {
         console.error('Error loading workflow execution states:', error)
       }
       throw error
+    } finally {
+      if (!skipLoading) {
+        this.isExecutionStatesLoading = false
+      }
     }
   },
 
@@ -393,11 +584,120 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
       const url = `v1/workflows/${workflowId}/executions/${executionId}/states/${stateId}/output`
 
       const response = await api.get(url, { skipErrorHandling: true })
-      const data: { output: string } = await response.json()
+      const data: { output: string | null } = await response.json()
 
       return data.output
     } catch (error) {
       console.error('Error getting workflow execution state output:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Get paginated transitions for a workflow execution
+   * @param workflowId - The workflow ID
+   * @param executionId - The execution ID
+   * @param page - Page number (zero-based, default: 0)
+   * @param perPage - Items per page (default: 10, max: 100)
+   * @param fromState - Optional filter by source node name
+   * @param toState - Optional filter by target node name
+   * @returns Transitions response with data and pagination
+   */
+  async getExecutionTransitions(
+    workflowId: string,
+    executionId: string,
+    { page = 0, perPage = 10, fromState, toState }
+  ) {
+    try {
+      const params: Record<string, string | number> = {
+        page,
+        per_page: perPage,
+      }
+
+      if (fromState) params.from_state = fromState
+      if (toState) params.to_state = toState
+
+      const response = await api.get(
+        `v1/workflows/${workflowId}/executions/${executionId}/transitions`,
+        { params }
+      )
+
+      if (response.status !== 200) {
+        throw new Error('Failed to get execution transitions')
+      }
+
+      const result: WorkflowTransitionsResponse = await response.json()
+      return result
+    } catch (error) {
+      console.error('Error getting execution transitions:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Get single transition from a specific state - "What happened next?"
+   * @param workflowId - The workflow ID
+   * @param executionId - The execution ID
+   * @param stateId - The state ID to get transition from
+   * @param skipErrors - Skip automatic error handling (default: false)
+   * @returns Single transition object
+   */
+  async getExecutionTransitionsFromState(
+    workflowId: string,
+    executionId: string,
+    stateId: string,
+    { skipErrors = false }
+  ) {
+    try {
+      const response = await api.get(
+        `v1/workflows/${workflowId}/executions/${executionId}/transitions/from/${stateId}`,
+        { skipErrorHandling: skipErrors }
+      )
+
+      if (response.status !== 200) {
+        throw new Error('Failed to get execution transition from state')
+      }
+
+      const result: WorkflowTransition = await response.json()
+      return result
+    } catch (error) {
+      if (!skipErrors) {
+        console.error('Error getting execution transition from state:', error)
+      }
+      throw error
+    }
+  },
+
+  /**
+   * Get single transition to a specific state - "What led here?"
+   * @param workflowId - The workflow ID
+   * @param executionId - The execution ID
+   * @param stateId - The state ID to get transition to
+   * @param skipErrors - Skip automatic error handling (default: false)
+   * @returns Single transition object
+   */
+  async getExecutionTransitionsToState(
+    workflowId: string,
+    executionId: string,
+    stateId: string,
+    { skipErrors = false }
+  ) {
+    try {
+      const response = await api.get(
+        `v1/workflows/${workflowId}/executions/${executionId}/transitions/to/${stateId}`,
+        { skipErrorHandling: skipErrors }
+      )
+
+      if (response.status !== 200) {
+        throw new Error('Failed to get execution transition to state')
+      }
+
+      const result: WorkflowTransition = await response.json()
+      return result
+    } catch (error) {
+      if (!skipErrors) {
+        console.error('Error getting execution transition to state:', error)
+      }
       throw error
     }
   },
@@ -439,6 +739,8 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
     this.execution = execution
     this.executions.unshift(execution)
 
+    this.executionsPagination.totalCount += 1
+
     return execution
   },
 
@@ -453,12 +755,12 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
     try {
       const response = await api.put(`v1/workflows/${workflowId}/executions/${executionId}/abort`)
       await this.getExecution(workflowId, executionId)
-      await this.getExecutionStates(
-        workflowId,
-        executionId,
-        this.executionStatesPagination.page,
-        this.executionStatesPagination.perPage
-      )
+
+      // Preserve the current pagination when refreshing states after abort
+      await this.getExecutionStates(workflowId, executionId, {
+        page: this.executionStatesPagination.page,
+        perPage: this.executionStatesPagination.perPage || 10,
+      })
 
       return response
     } catch (error) {
@@ -589,6 +891,10 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
 
       this.executions = this.executions.filter((item) => item.execution_id !== executionId)
 
+      if (this.executionsPagination.totalCount > 0) {
+        this.executionsPagination.totalCount -= 1
+      }
+
       toaster.info('Execution was deleted successfully')
     } catch (error) {
       console.error('Error deleting workflow execution:', error)
@@ -597,16 +903,27 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
   },
 
   /**
-   * Clear all executions for a workflow
+   * Clear all non-chat executions for a workflow
+   * Backend doesn't delete chat executions (those with conversation_id)
+   * Frontend removes only non-chat executions from the UI
    * @param workflowId - The workflow ID
    */
   async clearWorkflowExecutions(workflowId) {
     try {
       await api.delete(`v1/workflows/${workflowId}/executions`)
+
       toaster.info('Execution history cleared')
-      this.executions = []
-      this.workflow = null
-      this.execution = null
+
+      const chatExecutions = this.executions.filter((ex) => ex.conversation_id)
+
+      this.executions = chatExecutions
+
+      if (this.execution && !this.execution.conversation_id) {
+        this.execution = null
+        this.executionStates = []
+      }
+
+      this.executionsPagination.totalCount = chatExecutions.length
     } catch (error) {
       toaster.error('Error clearing workflow executions')
       console.error('Error clearing workflow executions')

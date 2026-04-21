@@ -85,6 +85,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
     const { configs } = useSnapshot(appInfoStore)
     const { settings, indexSettings } = useSnapshot(settingsStore)
     const visualEditorEnabled = isVisualEditorEnabled(configs as ConfigItem[])
+    const isUsingVisualEditor = visualEditorEnabled && !hideConfiguration
 
     const formFieldsRef = useRef<WorkflowFormFieldsRef>(null)
     const editorRef = useRef<WorkflowEditorRef>(null)
@@ -115,8 +116,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
     const formId = FormIDs.WORKFLOW_FORM
 
     const getCurrentValues = useCallback(() => {
-      // For traditional form fields (when visual editor is disabled)
-      if (!visualEditorEnabled) {
+      if (!isUsingVisualEditor) {
         if (!formFieldsRef.current) return null
         const formValues = formFieldsRef.current.getValues()
         return {
@@ -153,7 +153,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
         yamlConfig,
         workflowFields,
       }
-    }, [yamlConfig, workflowFields, visualEditorEnabled, isEditing])
+    }, [yamlConfig, workflowFields, isUsingVisualEditor, isEditing])
 
     const { unblockTransition, blockTransition } = useUnsavedChanges({
       formId,
@@ -163,7 +163,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
 
     const validateWorkflow = useCallback(() => {
       try {
-        const values = visualEditorEnabled ? workflowFields : formFieldsRef.current?.getValues()
+        const values = isUsingVisualEditor ? workflowFields : formFieldsRef.current?.getValues()
         baseWorkflowSchema.validateSync(values, { abortEarly: false })
         return { isValid: true }
       } catch (err: any) {
@@ -173,10 +173,10 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
           errors,
         }
       }
-    }, [visualEditorEnabled, workflowFields])
+    }, [isUsingVisualEditor, workflowFields])
 
     const triggerValidation = useCallback(async () => {
-      if (visualEditorEnabled) {
+      if (isUsingVisualEditor) {
         editorRef.current?.showWorkflowConfig()
         await new Promise((resolve) => {
           setTimeout(resolve, 100)
@@ -185,11 +185,11 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
       } else if (formFieldsRef.current) {
         await formFieldsRef.current.triggerValidation()
       }
-    }, [visualEditorEnabled])
+    }, [isUsingVisualEditor])
 
     const getFormValues = useCallback(
       (newYamlConfig?, newWorkflowFields?) => {
-        if (visualEditorEnabled) {
+        if (isUsingVisualEditor) {
           return {
             ...(newWorkflowFields ?? workflowFields),
             yaml_config: newYamlConfig ?? yamlConfig,
@@ -199,7 +199,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
         }
         return formFieldsRef.current?.getValues()
       },
-      [visualEditorEnabled, workflowFields, yamlConfig, workflow?.yaml_config_history]
+      [isUsingVisualEditor, workflowFields, yamlConfig, workflow?.yaml_config_history]
     )
 
     const save = useCallback(

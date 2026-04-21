@@ -155,7 +155,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   const handleAvatarClick = () => {
     if (currentChat?.isWorkflow && message.assistant?.id) {
       // For workflow chats, navigate to workflow details page
-      router.push({ name: 'view-workflow', params: { id: message.assistant.id } })
+      router.push({ name: 'view-workflow', params: { workflowId: message.assistant.id } })
     } else if (message.assistant?.id) {
       // For regular chats, open config sidebar
       if (selectedAssistant?.id === message.assistantId) closeConfig()

@@ -38,6 +38,7 @@ export type StatusType = (typeof StatusEnum)[keyof typeof StatusEnum]
 type StatusIndicatorProps = {
   status: StatusType
   naked?: boolean
+  className?: string
 }
 
 const STATUS_ICON_MAPPING: Record<StatusType, React.FC<React.SVGProps<SVGSVGElement>>> = {
@@ -67,7 +68,7 @@ const iconColorClasses: Record<StatusType, string> = {
   [StatusEnum.Success]: 'text-success-primary',
 }
 
-const StatusIndicator: FC<StatusIndicatorProps> = ({ status, naked = false }) => {
+const StatusIndicator: FC<StatusIndicatorProps> = ({ status, naked = false, className }) => {
   const Icon = STATUS_ICON_MAPPING[status]
 
   if (naked) {
@@ -75,7 +76,8 @@ const StatusIndicator: FC<StatusIndicatorProps> = ({ status, naked = false }) =>
       <Icon
         className={cn(
           status === StatusEnum.InProgress && 'animate-spin duration-[20000ms]',
-          iconColorClasses[status]
+          iconColorClasses[status],
+          className
         )}
       />
     )
@@ -87,7 +89,8 @@ const StatusIndicator: FC<StatusIndicatorProps> = ({ status, naked = false }) =>
         'flex items-center justify-center min-w-[2rem] w-[2rem] h-[2rem]',
         'rounded-lg border-1 border-border-specific-panel-outline',
         wrapperColorClasses[status],
-        iconColorClasses[status]
+        iconColorClasses[status],
+        className
       )}
     >
       <Icon className={status === StatusEnum.InProgress ? 'animate-spin duration-[20000ms]' : ''} />

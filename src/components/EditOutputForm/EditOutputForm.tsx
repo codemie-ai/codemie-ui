@@ -15,64 +15,63 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import { FC, useEffect, useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import * as yup from 'yup'
 
 import Button from '@/components/Button'
-import Textarea from '@/components/form/Textarea'
 import Markdown from '@/components/markdown/Markdown'
+import MdEditor from '@/components/MdEditor/MdEditor'
 import Spinner from '@/components/Spinner'
+import Tabs from '@/components/Tabs'
+import { Tab } from '@/components/Tabs/Tabs'
 import { ButtonType, ButtonSize } from '@/constants'
 import toaster from '@/utils/toaster'
 
 interface EditOutputFormProps {
-  fetchOutput: () => Promise<string>
-  updateOutput: (output: string) => Promise<unknown>
+  fetchOutput: () => Promise<string | null>
+  updateOutput: (output: string) => Promise<{ message: string }>
   onCancel: () => void
   onUpdate: () => void
 }
 
 const validationSchema = yup.object({
-  request: yup.string().required('Required field'),
+  output: yup.string().required('Output cannot be blank'),
 })
 
 interface FormData {
-  request: string
+  output: string
 }
 
 const EditOutputForm: FC<EditOutputFormProps> = ({
   fetchOutput,
   updateOutput,
-  onUpdate,
   onCancel,
+  onUpdate,
 }) => {
   const [loading, setLoading] = useState(true)
-  const [originalOutput, setOriginalOutput] = useState('')
-  const [changedOutput, setChangedOutput] = useState('')
-  const [changesProposed, setChangesProposed] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const {
     control,
     handleSubmit,
+    reset,
     watch,
-    formState: { errors },
-    setValue,
+    formState: { errors, isDirty },
   } = useForm<FormData>({
+    mode: 'all',
     resolver: yupResolver(validationSchema),
     defaultValues: {
-      request: '',
+      output: '',
     },
   })
 
-  const request = watch('request')
+  const output = watch('output')
 
   useEffect(() => {
     const loadOutput = async () => {
       try {
-        const output = await fetchOutput()
-        setOriginalOutput(output)
-        setChangedOutput(output)
-        setValue('request', output)
+        const fetchedOutput = (await fetchOutput()) ?? ''
+        reset({ output: fetchedOutput })
 
         setTimeout(() => {
           setLoading(false)
@@ -84,29 +83,49 @@ const EditOutputForm: FC<EditOutputFormProps> = ({
     }
 
     loadOutput()
-  }, [fetchOutput, setValue])
+  }, [fetchOutput, reset])
 
-  const onApproveChanges = async () => {
+  const onSubmit = handleSubmit(async (data) => {
+    setSaving(true)
     try {
-      await updateOutput(changedOutput)
-
-      setChangesProposed(false)
-      toaster.info('Output updated successfully')
+      const response = await updateOutput(data.output)
+      toaster.info(response.message)
       onUpdate()
     } catch (error) {
       console.error('Error updating output:', error)
+      toaster.error('Failed to update output')
+    } finally {
+      setSaving(false)
     }
-  }
-
-  const handleApply = handleSubmit(async (data) => {
-    setChangesProposed(true)
-    setChangedOutput(data.request)
   })
 
-  const onDeclineChanges = () => {
-    setChangesProposed(false)
-    setChangedOutput(originalOutput)
-  }
+  const tabs: Tab[] = [
+    {
+      id: 'raw',
+      label: 'Raw',
+      element: (
+        <div className="flex flex-col h-full py-4">
+          <Controller
+            name="output"
+            control={control}
+            render={({ field }) => (
+              <MdEditor
+                value={field.value}
+                onChange={field.onChange}
+                className="grow rounded-xl border border-border-primary px-3 py-2 bg-surface-base-content"
+              />
+            )}
+          />
+          {errors.output && <p className="text-text-error text-sm mt-2">{errors.output.message}</p>}
+        </div>
+      ),
+    },
+    {
+      id: 'markdown',
+      label: 'Markdown',
+      element: <Markdown content={output} className="-mt-1 font-geist-mono py-4" />,
+    },
+  ]
 
   if (loading) {
     return (
@@ -116,41 +135,27 @@ const EditOutputForm: FC<EditOutputFormProps> = ({
     )
   }
 
-  if (changesProposed) {
-    return (
-      <div>
-        <Textarea rows={8} value={request} disabled />
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            size={ButtonSize.MEDIUM}
-            variant={ButtonType.SECONDARY}
-            onClick={onDeclineChanges}
-          >
-            Cancel
-          </Button>
-          <Button onClick={onApproveChanges}>Save</Button>
-        </div>
-        <div className="font-semibold mt-4 mb-2">Changed Output</div>
-        <Markdown content={changedOutput} />
-      </div>
-    )
-  }
-
   return (
-    <form>
-      <Controller
-        name="request"
-        control={control}
-        render={({ field }) => <Textarea {...field} rows={8} error={errors.request?.message} />}
+    <form className="h-full flex flex-col">
+      <Tabs
+        tabs={tabs}
+        className="min-h-0 overflow-hidden px-4 grow"
+        tabClassName="overflow-auto min-h-0"
+        headerClassName="mb-0"
       />
-      <div className="flex justify-end gap-2 mt-4">
-        <Button variant={ButtonType.SECONDARY} size={ButtonSize.MEDIUM} onClick={onCancel}>
+      <div className="flex justify-end gap-2 border-t border-border-secondary px-4 pt-4">
+        <Button
+          size={ButtonSize.MEDIUM}
+          variant={ButtonType.SECONDARY}
+          onClick={onCancel}
+          disabled={saving}
+        >
           Cancel
         </Button>
-        <Button onClick={handleApply}>Apply</Button>
+        <Button disabled={saving || !isDirty} onClick={onSubmit}>
+          Save
+        </Button>
       </div>
-      <div className="font-semibold mt-4 mb-2">Current Version</div>
-      <Markdown content={originalOutput} />
     </form>
   )
 }

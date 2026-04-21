@@ -30,7 +30,7 @@ import { workflowsStore } from '@/store/workflows'
 import { canEdit } from '@/utils/entity'
 
 import WorkflowShared from './WorkflowShared'
-import WorkflowStartExecutionPopup from '../executions/WorkflowStartExecutionPopup'
+import WorkflowStartExecutionPopup from '../details/popups/WorkflowStartExecutionPopup'
 
 interface Workflow {
   id: number | string

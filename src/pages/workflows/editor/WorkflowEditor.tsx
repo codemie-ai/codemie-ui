@@ -23,9 +23,9 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
+  useMemo,
 } from 'react'
 
 import { useEscapeKey } from '@/hooks/useEscapeKey'
@@ -33,7 +33,12 @@ import { DnDProvider } from '@/hooks/useReactFlowDnD'
 import { useTheme } from '@/hooks/useTheme'
 import useWorkflowEditor from '@/hooks/useWorkflowEditor'
 import { WorkflowFormValues } from '@/pages/workflows/components/workflowSchema'
-import { WorkflowIssue, isWorkflowAssistantToolIssue } from '@/types/entity'
+import {
+  ExtendedWorkflowExecutionState,
+  WorkflowExecutionStatus,
+  WorkflowIssue,
+  isWorkflowAssistantToolIssue,
+} from '@/types/entity'
 import { NodeType, WorkflowEdge, WorkflowNode } from '@/types/workflowEditor/base'
 import { cn } from '@/utils/utils'
 import { downloadWorkflowImage } from '@/utils/workflowEditor/helpers/export/downloadWorkflowImage'
@@ -47,9 +52,11 @@ import EditorActions from './EditorActions'
 import EditorBackground from './EditorBackground'
 import EditorControls from './EditorControls'
 import { WorkflowContext } from './hooks/useWorkflowContext'
+import { useWorkflowEditorExecution } from './hooks/useWorkflowEditorExecution'
 import useWorkflowFieldIssues from './hooks/useWorkflowFieldIssues'
 import useWorkflowIssues from './hooks/useWorkflowIssues'
 import { nodeTypeComponents } from './nodes'
+import { getEdgeStatusClass } from './nodes/common'
 import Sidebar from './Sidebar'
 import { isFieldSupported } from './utils/visualEditorFieldRegistry'
 
@@ -88,6 +95,12 @@ interface WorkflowEditorProps {
   onLoadExample?: () => void
   issues?: WorkflowIssue[] | null
   setIssues?: Dispatch<SetStateAction<WorkflowIssue[] | null>>
+  className?: string
+  withDocs?: boolean
+  executionEnabled?: boolean
+  executionStates?: ExtendedWorkflowExecutionState[]
+  executionActiveStateId?: string | null
+  executionOverallStatus?: WorkflowExecutionStatus | null
 }
 
 enum ColorMode {
@@ -139,6 +152,12 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       onLoadExample,
       issues,
       setIssues,
+      className,
+      withDocs = true,
+      executionEnabled,
+      executionStates,
+      executionActiveStateId,
+      executionOverallStatus,
     },
     ref
   ) => {
@@ -187,7 +206,19 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       [closeTabs]
     )
 
-    const editor = useWorkflowEditor(yamlConfig, onConfigurationUpdate, { handleSelectionChange })
+    const editor = useWorkflowEditor(yamlConfig, onConfigurationUpdate, {
+      handleSelectionChange,
+    })
+
+    const execution = useWorkflowEditorExecution({
+      executionEnabled,
+      executionStates,
+      executionActiveStateId,
+      overallExecutionStatus: executionOverallStatus,
+      nodes: editor.nodes,
+      edges: editor.edges,
+      configStates: editor.config.states,
+    })
 
     const [isExpanded, setIsExpanded] = useState(false)
     const handleToggleExpand = useCallback(() => {
@@ -197,6 +228,8 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
     useEffect(() => {
       if (isExpanded) {
         editor.fitView(VIEWPORT.WINDOWED)
+      } else {
+        editor.fitView(VIEWPORT.DEFAULT)
       }
     }, [isExpanded])
 
@@ -477,15 +510,51 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
     )
 
     const wrappedNodes = useMemo(() => {
-      return editor.nodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          ...nodeCallbacks,
-          hasError: nodeHasError(node),
-        },
-      }))
-    }, [editor.nodes, nodeCallbacks, nodeHasError])
+      // Use processedNodes from the new execution system which already have status applied
+      const baseNodes = execution.isEnabled ? execution.processedNodes : editor.nodes
+
+      return baseNodes.map((node) => {
+        const execStateData = execution.getNodeExecutionData(node.id)
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...nodeCallbacks,
+            // Status already applied by new execution system, but keep for backwards compat
+            status: node.data?.status ?? execStateData.status,
+            success: execStateData.iterationStats?.success,
+            failures: execStateData.iterationStats?.failures,
+            totalItems: execStateData.totalItems,
+            active: execStateData.isActive,
+            hasError: nodeHasError(node),
+            handlesStatus: execution.handlesStatusMap.get(node.id),
+          },
+        }
+      })
+    }, [
+      editor.nodes,
+      execution.processedNodes,
+      execution.isEnabled,
+      nodeCallbacks,
+      nodeHasError,
+      execution.getNodeExecutionData,
+      execution.handlesStatusMap,
+    ])
+
+    const wrappedEdges = useMemo(() => {
+      // Use processedEdges from the new execution system which already have status applied
+      const baseEdges = execution.isEnabled ? execution.processedEdges : editor.edges
+
+      return baseEdges.map((edge) => {
+        // Status already applied by new execution system
+        const edgeStatus =
+          typeof edge.data?.status === 'string'
+            ? (edge.data.status as WorkflowExecutionStatus)
+            : execution.edgesStatusMap.get(edge.id)
+        return { ...edge, className: edgeStatus ? getEdgeStatusClass(edgeStatus) : '' }
+      })
+    }, [editor.edges, execution.processedEdges, execution.isEnabled, execution.edgesStatusMap])
 
     const context = useMemo(
       () => ({
@@ -524,14 +593,19 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
           <div className="fixed inset-0 z-40 bg-black/50" onClick={handleToggleExpand} />
         )}
         <div
-          className={cn('flex flex-row overflow-hidden relative w-full', {
-            'w-full h-full': isFullscreen,
-            'h-[500px] rounded-lg border border-border-primary': !isFullscreen && !isExpanded,
-            'fixed inset-0 z-50 h-full': isExpanded,
-          })}
+          className={cn(
+            'flex flex-row overflow-hidden relative w-full',
+            {
+              'w-full h-full': isFullscreen,
+              'h-[500px] rounded-lg border border-border-primary': !isFullscreen && !isExpanded,
+              'fixed inset-0 z-50 h-full': isExpanded,
+            },
+            className
+          )}
         >
           <EditorActions
             isFullscreen={isFullscreen}
+            withDocs={withDocs}
             canUndo={editor.canUndo}
             hasValidationErrors={!!(issues && issues.length > 0)}
             onUndo={handleUndo}
@@ -545,7 +619,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
 
           <ReactFlow
             nodes={wrappedNodes}
-            edges={editor.edges}
+            edges={wrappedEdges}
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
             onNodeDrag={editor.onNodeDrag}

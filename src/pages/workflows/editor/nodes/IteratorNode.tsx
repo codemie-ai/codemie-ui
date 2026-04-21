@@ -73,6 +73,12 @@ export const IteratorNode = ({ data, selected, id }: CommonNodeProps) => {
             </div>
           )}
         </div>
+
+        {data.totalItems && (
+          <div className="text-xs absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface-base-primary px-2">
+            {data.totalItems} items total
+          </div>
+        )}
       </div>
     </div>
   )

@@ -98,3 +98,13 @@
 .token.namespace {
   opacity: 0.7;
 }
+
+.code-block-header {
+  container-type: inline-size;
+
+  @container (max-width: 18.75rem) {
+    .code-block-header-btn-label {
+      display: none;
+    }
+  }
+}

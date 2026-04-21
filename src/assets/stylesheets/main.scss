@@ -311,8 +311,30 @@ input[type="number"] {
 /* React Flow styling */
 
 .react-flow__edge-path {
-  stroke: theme("colors.border.specific.node.edge") !important;
+  stroke: theme("colors.border.specific.node.edge");
   stroke-width: 2.3 !important;
+}
+
+.xyflow-edge__edge-path {
+  &_success .react-flow__edge-path {
+    stroke: theme("colors.success.primary") !important;
+  }
+
+  &_failed .react-flow__edge-path {
+    stroke: theme("colors.failed.primary") !important;
+  }
+
+  &_in-progress .react-flow__edge-path {
+    stroke: theme("colors.in-progress.primary") !important;
+  }
+
+  &_aborted .react-flow__edge-path {
+    stroke: theme("colors.aborted.primary") !important;
+  }
+
+  &_interrupted .react-flow__edge-path {
+    stroke: theme("colors.interrupted.primary") !important;
+  }
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
@@ -340,4 +362,13 @@ input[type="number"] {
 
 .react-datepicker__day--keyboard-selected {
   background: transparent !important;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

@@ -39,6 +39,7 @@ interface CodeBlockProps {
   className?: string
   headerClassName?: string
   contentClassName?: string
+  headerActionsLast?: boolean
   headerActionsTemplate?: ReactNode
 }
 
@@ -51,6 +52,7 @@ const CodeBlock: FC<CodeBlockProps> = ({
   className,
   headerClassName,
   contentClassName,
+  headerActionsLast,
   headerActionsTemplate,
 }) => {
   const [isHtmlPopupVisible, setIsHtmlPopupVisible] = useState(false)
@@ -80,7 +82,7 @@ const CodeBlock: FC<CodeBlockProps> = ({
     >
       <div
         className={cn(
-          'flex justify-between items-center gap-x-4 gap-y-2 flex-wrap py-2 !pl-4 !pr-2 !m-0 bg-surface-base-tertiary shadow-block border border-border-specific-panel-outline rounded-t-lg',
+          'flex justify-between code-block-header items-center gap-x-4 gap-y-2 flex-wrap py-2 !pl-4 !pr-2 !m-0 bg-surface-base-tertiary shadow-block border border-border-specific-panel-outline rounded-t-lg',
           headerClassName
         )}
       >
@@ -95,11 +97,11 @@ const CodeBlock: FC<CodeBlockProps> = ({
               data-tooltip-content="Preview HTML document"
               onClick={() => setIsHtmlPopupVisible(!isHtmlPopupVisible)}
             >
-              <EyeSvg /> Preview
+              <EyeSvg /> <span className="code-block-header-btn-label">Preview</span>
             </Button>
           )}
 
-          {headerActionsTemplate}
+          {!headerActionsLast && headerActionsTemplate}
 
           <Button
             variant="secondary"
@@ -108,7 +110,7 @@ const CodeBlock: FC<CodeBlockProps> = ({
             data-tooltip-content="Copy to buffer"
             onClick={() => copyToClipboard(outputText, 'Copied to clipboard')}
           >
-            <CopySvg className="mr-0.5" /> Copy
+            <CopySvg className="mr-0.5" /> <span className="code-block-header-btn-label">Copy</span>
           </Button>
 
           <Button
@@ -119,8 +121,10 @@ const CodeBlock: FC<CodeBlockProps> = ({
             data-tooltip-content={`Download as ${displayLanguage}`}
             onClick={downloadCode}
           >
-            <DownloadSvg /> Download
+            <DownloadSvg /> <span className="code-block-header-btn-label">Download</span>
           </Button>
+
+          {headerActionsLast && headerActionsTemplate}
         </div>
       </div>
 

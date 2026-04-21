@@ -22,11 +22,11 @@ import { CommonNodeProps } from './common'
 import Handle from './NodeHandle'
 import NodeHeader from './NodeHeader'
 
-export const StartNode = ({ id, selected }: CommonNodeProps) => {
+export const StartNode = ({ id, selected, data }: CommonNodeProps) => {
   return (
-    <BaseNode selected={selected}>
+    <BaseNode selected={selected} status={data.status} active={data.active}>
       <NodeHeader type={NodeTypes.START} title={id} />
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Right} status={data.status} />
     </BaseNode>
   )
 }

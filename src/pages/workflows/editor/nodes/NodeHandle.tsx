@@ -20,11 +20,15 @@ import {
   HandleType,
 } from '@xyflow/react'
 
+import { WorkflowExecutionStatus } from '@/types/entity'
 import { cn } from '@/utils/utils'
+
+import { getStatusBorderClass } from './common'
 
 interface NodeHandleProps extends HandleProps {
   connectionCount?: number
   type: HandleType
+  status?: WorkflowExecutionStatus
 }
 
 const NodeHandle = (props: NodeHandleProps) => {
@@ -39,6 +43,7 @@ const NodeHandle = (props: NodeHandleProps) => {
         '!bg-surface-base-chat !border-1 !border-border-specific-node-border !w-[18px] !h-[18px]',
         'hover:!border-1.5 hover:!border-border-specific-node-border-focus',
         'transition-all duration-100',
+        getStatusBorderClass(props.status),
         rest.className
       )}
     />

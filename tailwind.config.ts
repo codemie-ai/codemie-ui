@@ -343,7 +343,7 @@ const themeTokens: ThemeConfig = {
         'border-focus': [c['neutral']['525'], c['blue']['400']],
         'border-iter': [c['neutral']['200'], c['neutral']['950']],
         'border-iter-focus': [c['blue']['150'], c['blue']['400']],
-        edge: [c['blue']['150'], c['blue']['400']],
+        edge: [c['neutral']['650'], c['neutral']['400']],
         'edge-selected': [c['neutral']['200'], c['neutral']['950']],
       },
       charts: {

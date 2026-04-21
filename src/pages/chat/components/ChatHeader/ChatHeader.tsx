@@ -67,7 +67,7 @@ const ChatHeader: FC = () => {
 
   const handleViewWorkflowDetails = () => {
     if (currentChat?.initialAssistantId) {
-      router.push({ name: 'view-workflow', params: { id: currentChat.initialAssistantId } })
+      router.push({ name: 'view-workflow', params: { workflowId: currentChat.initialAssistantId } })
     }
   }
 

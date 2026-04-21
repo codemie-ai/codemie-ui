@@ -41,7 +41,7 @@ const ChatSidebarWorkflows = () => {
   const { recentWorkflows } = useSnapshot(workflowsStore)
 
   const viewWorkflow = (workflow: any) => {
-    router.push({ name: 'view-workflow', params: { id: workflow.id } })
+    router.push({ name: 'view-workflow', params: { workflowId: workflow.id } })
   }
 
   const createChat = async (workflow: any) => {

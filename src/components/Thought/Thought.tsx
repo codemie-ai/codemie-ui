@@ -25,6 +25,7 @@ import ThoughtMessage from './ThoughtMessage'
 interface ThoughtProps {
   thought: ThoughtType
   isEmbedded?: boolean
+  defaultExpanded?: boolean
 }
 
 export interface ThoughtRef {
@@ -32,59 +33,61 @@ export interface ThoughtRef {
   collapse: () => void
 }
 
-const Thought = forwardRef<ThoughtRef, ThoughtProps>(({ thought, isEmbedded }, ref) => {
-  const [isExpanded, setIsExpanded] = useState(false)
+const Thought = forwardRef<ThoughtRef, ThoughtProps>(
+  ({ thought, isEmbedded, defaultExpanded = false }, ref) => {
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded)
 
-  useImperativeHandle(ref, () => ({
-    expand: () => setIsExpanded(true),
-    collapse: () => setIsExpanded(false),
-  }))
+    useImperativeHandle(ref, () => ({
+      expand: () => setIsExpanded(true),
+      collapse: () => setIsExpanded(false),
+    }))
 
-  const isInProgress = thought.in_progress
+    const isInProgress = thought.in_progress
 
-  return (
-    <div className="flex flex-col">
-      <ThoughtHeader
-        thought={thought}
-        isExpanded={isExpanded}
-        isEmbedded={isEmbedded}
-        isInProgress={isInProgress}
-        setIsExpanded={setIsExpanded}
-      />
+    return (
+      <div className="flex flex-col">
+        <ThoughtHeader
+          thought={thought}
+          isExpanded={isExpanded}
+          isEmbedded={isEmbedded}
+          isInProgress={isInProgress}
+          setIsExpanded={setIsExpanded}
+        />
 
-      {(isExpanded || isInProgress) && (
-        <div
-          className={cn(
-            'flex flex-col gap-4 p-4 border shadow-sm border-t-border-structural/50 border-border-structural bg-surface-base-primary rounded-b-lg',
-            (isExpanded || isInProgress) && 'border-t-0',
-            isEmbedded && 'bg-surface-base-secondary'
-          )}
-        >
-          {!!thought.children?.length && (
-            <div className="flex flex-col gap-2">
-              {thought.children.map((thought) => (
-                <Thought isEmbedded key={thought.id} thought={thought} />
-              ))}
-            </div>
-          )}
-
-          {thought.input_text && (
-            <div className="flex flex-col gap-2 text-sm">
-              <div className="text-text-quaternary font-medium">Input:</div>
-              <div className="bg-surface-base-secondary p-3 rounded-lg border break-words">
-                <TextBlock text={thought.input_text} />
+        {(isExpanded || isInProgress) && (
+          <div
+            className={cn(
+              'flex flex-col gap-4 p-4 border shadow-sm border-t-border-structural/50 border-border-structural bg-surface-base-primary rounded-b-lg',
+              (isExpanded || isInProgress) && 'border-t-0',
+              isEmbedded && 'bg-surface-base-secondary'
+            )}
+          >
+            {!!thought.children?.length && (
+              <div className="flex flex-col gap-2">
+                {thought.children.map((thought) => (
+                  <Thought isEmbedded key={thought.id} thought={thought} />
+                ))}
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="flex flex-col gap-2 text-sm">
-            <div className="text-text-quaternary font-medium">Result:</div>
-            <ThoughtMessage thought={thought} />
+            {thought.input_text && (
+              <div className="flex flex-col gap-2 text-sm">
+                <div className="text-text-quaternary font-medium">Input:</div>
+                <div className="bg-surface-base-secondary p-3 rounded-lg border break-words">
+                  <TextBlock text={thought.input_text} />
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2 text-sm">
+              <div className="text-text-quaternary font-medium">Result:</div>
+              <ThoughtMessage thought={thought} />
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  )
-})
+        )}
+      </div>
+    )
+  }
+)
 
 export default Thought

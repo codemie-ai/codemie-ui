@@ -31,20 +31,41 @@ export const ConditionalNode = ({ data, selected, id }: CommonNodeProps) => {
   const conditionData = getStateNext(state)?.condition
   const expression = conditionData?.expression || 'condition'
 
+  const thenStatus = data.handlesStatus?.get('then')
+  const otherwiseStatus = data.handlesStatus?.get('otherwise')
+
   return (
-    <BaseNode selected={selected} isConnected={isConnected} hasError={data.hasError}>
-      <Handle type="target" position={Position.Left} />
+    <BaseNode
+      selected={selected}
+      isConnected={isConnected}
+      hasError={data.hasError}
+      status={data.status}
+      active={data.active}
+    >
+      <Handle type="target" position={Position.Left} status={data.status} />
       <NodeHeader type={NodeTypes.CONDITIONAL} title="Conditional" />
 
       <div className="flex flex-col gap-4 mb-4">
         <div className="relative">
           <NodeField title="If" value={expression} />
-          <Handle type="source" position={Position.Right} id="then" className="!top-[36px]" />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="then"
+            className="!top-[36px]"
+            status={thenStatus}
+          />
         </div>
 
         <div className="relative">
           <NodeField title="Else" value="(default)" />
-          <Handle type="source" position={Position.Right} id="otherwise" className="!top-[36px]" />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="otherwise"
+            className="!top-[36px]"
+            status={otherwiseStatus}
+          />
         </div>
       </div>
     </BaseNode>

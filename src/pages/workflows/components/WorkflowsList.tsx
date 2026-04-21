@@ -38,7 +38,7 @@ import toaster from '@/utils/toaster'
 import { copyToClipboard } from '@/utils/utils'
 
 import WorkflowCard from './WorkflowCard'
-import WorkflowStartExecutionPopup from '../executions/WorkflowStartExecutionPopup'
+import WorkflowStartExecutionPopup from '../details/popups/WorkflowStartExecutionPopup'
 
 interface WorkflowsListProps {
   scope: string
@@ -158,7 +158,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope }) => {
   }
 
   const showWorkflow = (workflow: Workflow) => {
-    router.push({ name: 'view-workflow', params: { id: String(workflow.id) } })
+    router.push({ name: 'view-workflow', params: { workflowId: String(workflow.id) } })
   }
 
   const clone = (workflow: Workflow) => {

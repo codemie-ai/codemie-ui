@@ -35,7 +35,7 @@ import { isVisualEditorEnabled } from '@/utils/workflows'
 
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
 import WorkflowsNavigation from './components/WorkflowsNavigation'
-import WorkflowStartExecutionPopup from './executions/WorkflowStartExecutionPopup'
+import WorkflowStartExecutionPopup from './details/popups/WorkflowStartExecutionPopup'
 
 const EditWorkflowPage: React.FC = () => {
   const route = useVueRoute()

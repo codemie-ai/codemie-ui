@@ -15,8 +15,22 @@
 
 import { useLayoutEffect } from 'react'
 
-import { EDIT_WORKFLOW, NEW_WORKFLOW, NEW_WORKFLOW_FROM_TEMPLATE } from '@/constants/routes'
+import {
+  EDIT_WORKFLOW,
+  NEW_WORKFLOW,
+  NEW_WORKFLOW_FROM_TEMPLATE,
+  VIEW_WORKFLOW,
+  WOKRFLOW_EXECUTIONS,
+} from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
+
+const moveToastPages = [
+  EDIT_WORKFLOW,
+  NEW_WORKFLOW,
+  NEW_WORKFLOW_FROM_TEMPLATE,
+  VIEW_WORKFLOW,
+  WOKRFLOW_EXECUTIONS,
+]
 
 const ToastContainer: React.FC = () => {
   const { name } = useVueRouter()
@@ -25,14 +39,8 @@ const ToastContainer: React.FC = () => {
     const container = document.getElementById('toast-container')
     if (!container) return
 
-    const isWorkflowEditorPage =
-      name === EDIT_WORKFLOW || name === NEW_WORKFLOW || name === NEW_WORKFLOW_FROM_TEMPLATE
-
-    if (isWorkflowEditorPage) {
-      container.classList.add('workflow-editor-mode')
-    } else {
-      container.classList.remove('workflow-editor-mode')
-    }
+    if (moveToastPages.includes(name)) container.style.top = '100px'
+    else container.style.top = '55px'
   }, [name])
 
   return <div id="toast-container" role="region" aria-live="polite" />

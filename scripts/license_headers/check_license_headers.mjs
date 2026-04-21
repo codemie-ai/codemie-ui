@@ -750,7 +750,9 @@ function main() {
 
 // Entry point
 // Run main if this module is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+const scriptPath = fileURLToPath(import.meta.url)
+const execPath = process.argv[1] ? path.resolve(process.argv[1]) : null
+if (execPath && path.resolve(scriptPath) === execPath) {
   const exitCode = main()
   process.exit(exitCode)
 }

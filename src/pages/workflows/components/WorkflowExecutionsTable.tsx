@@ -26,12 +26,11 @@ import { DECIMAL_PAGINATION_OPTIONS, ButtonType } from '@/constants'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { WORKFLOW_STATUS_BADGE_MAPPING } from '@/pages/workflows/constants'
 import { workflowsStore } from '@/store/workflows'
-import { WorkflowExecution } from '@/types/entity/workflow'
+import { Workflow, WorkflowExecution } from '@/types/entity/workflow'
 import { DefinitionTypes } from '@/types/table'
 import toaster from '@/utils/toaster'
 import { truncateInput } from '@/utils/utils'
 
-import { Workflow } from './WorkflowCard'
 import WorkflowExecutionExportPopup from './WorkflowExecutionExportPopup'
 
 interface WorkflowExecutionsTableProps {

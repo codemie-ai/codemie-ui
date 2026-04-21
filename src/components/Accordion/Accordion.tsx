@@ -91,8 +91,8 @@ const Accordion = ({
             activeTabIndex === 0 ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
           )}
         >
-          <div className='overflow-hidden'>
-            <div className='pt-4'>{children}</div>
+          <div className="overflow-hidden">
+            <div className="pt-4">{children}</div>
           </div>
         </div>
       </AccordionTab>

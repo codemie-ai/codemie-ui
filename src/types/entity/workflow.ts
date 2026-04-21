@@ -13,8 +13,20 @@
 // limitations under the License.
 //
 
+import { NodeType } from '../workflowEditor'
+
 import type { Thought } from './conversation'
 import type { CreatedBy } from '../common'
+
+export interface WorkflowConfigHistoryItem {
+  yaml_config: string
+  date: string
+  created_by: {
+    user_id: string
+    username: string
+    name: string
+  }
+}
 
 export interface Workflow {
   id: string
@@ -24,6 +36,8 @@ export interface Workflow {
   icon_url?: string
   description?: string
   configuration?: string
+  yaml_config_history: WorkflowConfigHistoryItem[]
+  update_date: string
   [key: string]: any
 }
 
@@ -66,6 +80,10 @@ export interface WorkflowExecution {
   tokens_usage: WorkflowExecutionTokensUsage | null
 }
 
+export interface ExtendedWorkflowExecution extends WorkflowExecution {
+  index: number
+}
+
 export interface WorkflowExecutionState {
   id: string
   date: string | null
@@ -79,6 +97,18 @@ export interface WorkflowExecutionState {
   output: string | null
   error: string | null
   thoughts: Thought[]
+  preceding_state_ids: string[] | null
+  state_id: string | null
+  iteration_number?: number | null
+}
+
+export interface ExtendedWorkflowExecutionState extends WorkflowExecutionState {
+  type?: NodeType | null
+  resolvedId: string
+}
+
+export interface GroupedWorkflowExecutionState extends ExtendedWorkflowExecutionState {
+  items?: GroupedWorkflowExecutionState[]
 }
 
 export interface CreateWorkflowExecutionRequest {
@@ -99,6 +129,25 @@ export interface RequestWorkflowExecutionOutputChangeRequest {
 export interface ExportWorkflowExecutionOptions {
   output_format: string
   combined: boolean | string
+}
+
+export interface WorkflowTransition {
+  id: string
+  execution_id: string
+  from_state: string
+  to_state: string
+  workflow_context: Record<string, unknown>
+  date: string
+}
+
+export interface WorkflowTransitionsResponse {
+  data: WorkflowTransition[]
+  pagination: {
+    page: number
+    per_page: number
+    total: number
+    pages: number
+  }
 }
 
 export type WorkflowFieldPath = string

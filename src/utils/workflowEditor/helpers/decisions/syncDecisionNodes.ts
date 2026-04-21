@@ -35,9 +35,11 @@ import { getStateNext, isMetaState } from '../states'
  */
 export const findDecisionParent = (
   decisionNodeID: string,
-  config: WorkflowConfiguration
+  config: WorkflowConfiguration | StateConfiguration[]
 ): string | undefined => {
-  return config.states.find((state) => state.next?.meta_next_state_id === decisionNodeID)?.id
+  return (Array.isArray(config) ? config : config.states).find(
+    (state) => state.next?.meta_next_state_id === decisionNodeID
+  )?.id
 }
 
 /**

@@ -15,8 +15,11 @@
 
 import { NodeProps, NodeChange } from '@xyflow/react'
 
+import { WorkflowExecutionStatus } from '@/types/entity'
 import { WorkflowConfiguration, StateConfiguration } from '@/types/workflowEditor/configuration'
+import { cn } from '@/utils/utils'
 import { ConfigurationUpdate } from '@/utils/workflowEditor/actions'
+import { NodeHandlesStatus } from '@/utils/workflowEditor/helpers/executions/common'
 
 export interface CommonNodeProps extends NodeProps {
   id: string
@@ -29,5 +32,35 @@ export interface CommonNodeProps extends NodeProps {
     onNodesChange: (changes: NodeChange[]) => void
     isFullscreen?: boolean
     hasError: boolean
+    status?: WorkflowExecutionStatus
+    success?: number
+    failures?: number
+    totalItems?: number
+    active?: boolean
+    handlesStatus?: NodeHandlesStatus
   }
+}
+
+export const getStatusBorderClass = (status?: WorkflowExecutionStatus) => {
+  return cn({
+    '!border-success-primary': status === 'Succeeded',
+    '!border-failed-primary': status === 'Failed',
+    '!border-in-progress-primary': status === 'In Progress',
+    '!border-aborted-primary': status === 'Aborted',
+    '!border-interrupted-primary': status === 'Interrupted',
+  })
+}
+
+export const getEdgeStatusClass = (status?: WorkflowExecutionStatus) => {
+  if (!status) return ''
+
+  const statusMap: Record<Exclude<WorkflowExecutionStatus, 'Not Started'>, string> = {
+    Succeeded: 'xyflow-edge__edge-path_success',
+    Failed: 'xyflow-edge__edge-path_failed',
+    'In Progress': 'xyflow-edge__edge-path_in-progress',
+    Aborted: 'xyflow-edge__edge-path_aborted',
+    Interrupted: 'xyflow-edge__edge-path_interrupted',
+  }
+
+  return statusMap[status] ?? ''
 }

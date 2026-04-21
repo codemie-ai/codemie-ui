@@ -27,10 +27,18 @@ export const TransformNode = ({ data, selected, id }: CommonNodeProps) => {
   const isConnected = state?._meta?.is_connected ?? false
 
   return (
-    <BaseNode selected={selected} isConnected={isConnected} hasError={data.hasError}>
-      <Handle type="target" position={Position.Left} />
+    <BaseNode
+      selected={selected}
+      isConnected={isConnected}
+      hasError={data.hasError}
+      status={data.status}
+      success={data.success}
+      failures={data.failures}
+      active={data.active}
+    >
+      <Handle type="target" position={Position.Left} status={data.status} />
       <NodeHeader type={NodeTypes.TRANSFORM} title={id} />
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Right} status={data.status} />
     </BaseNode>
   )
 }

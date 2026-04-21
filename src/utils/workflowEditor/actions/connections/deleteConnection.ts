@@ -187,7 +187,6 @@ export const deleteConnectionAction = (
   sourceHandle: string | null | undefined,
   config: WorkflowConfiguration
 ): ActionResult => {
-  console.log('deleteConnectionAction')
   const sourceState = config.states.find((state) => state.id === sourceID)
   const targetState = config.states.find((state) => state.id === targetID)
 

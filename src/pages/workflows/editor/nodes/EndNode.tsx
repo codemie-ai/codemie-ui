@@ -22,10 +22,10 @@ import { CommonNodeProps } from './common'
 import Handle from './NodeHandle'
 import NodeHeader from './NodeHeader'
 
-export const EndNode = ({ id, selected }: CommonNodeProps) => {
+export const EndNode = ({ id, selected, data }: CommonNodeProps) => {
   return (
-    <BaseNode selected={selected}>
-      <Handle type="target" position={Position.Left} />
+    <BaseNode selected={selected} status={data.status} active={data.active}>
+      <Handle type="target" position={Position.Left} status={data.status} />
       <NodeHeader type={NodeTypes.END} title={id} />
     </BaseNode>
   )

@@ -30,6 +30,7 @@ import { PanelTabId, TAB_DATA } from './constants'
 import { useWorkflowContext } from './hooks/useWorkflowContext'
 
 interface EditorActionsProps {
+  withDocs?: boolean
   isFullscreen: boolean
   canUndo: boolean
   hasValidationErrors: boolean
@@ -48,6 +49,7 @@ const BUTTON_LABELS = {
 }
 
 const EditorActions = ({
+  withDocs,
   isFullscreen,
   canUndo,
   onUndo,
@@ -78,7 +80,7 @@ const EditorActions = ({
         </Button>
       )}
 
-      {isDocumentationEnabled && documentationUrl && (
+      {isDocumentationEnabled && documentationUrl && withDocs && (
         <a
           href={documentationUrl}
           target="_blank"

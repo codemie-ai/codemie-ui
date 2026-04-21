@@ -21,7 +21,6 @@ import RunSvg from '@/assets/icons/run-wf-small.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
-import Spinner from '@/components/Spinner'
 import { WORKFLOWS_ALL, WORKFLOWS_MY } from '@/constants/routes'
 import { history } from '@/hooks/appLevel/useHistoryStack'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
@@ -37,7 +36,7 @@ import { isVisualEditorEnabled } from '@/utils/workflows'
 
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
 import WorkflowsNavigation from './components/WorkflowsNavigation'
-import WorkflowStartExecutionPopup from './executions/WorkflowStartExecutionPopup'
+import WorkflowStartExecutionPopup from './details/popups/WorkflowStartExecutionPopup'
 import { goBackWorkflows } from './utils/goBackWorkflows'
 
 const DEFAULT_HEADLINE = 'Create Workflow'
@@ -61,7 +60,6 @@ const NewWorkflowPage: React.FC = () => {
   const formRef = useRef<WorkflowFormRef>(null)
 
   const [isCloning] = useState(!!id)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [template, setTemplate] = useState<WorkflowTemplate | null>(null)
   const [showExecutionPopup, setShowExecutionPopup] = useState(false)
@@ -149,7 +147,6 @@ const NewWorkflowPage: React.FC = () => {
   }
 
   const submit = async (values: any, shouldOpenExecution = false) => {
-    setIsSubmitting(true)
     const errorFormat = visualEditorEnabled ? ERROR_FORMAT_JSON : undefined
 
     try {
@@ -163,7 +160,6 @@ const NewWorkflowPage: React.FC = () => {
       if (shouldOpenExecution) {
         setCreatedWorkflowId(workflow.data.id)
         setShowExecutionPopup(true)
-        setIsSubmitting(false)
       } else if (isFromTemplate) {
         router.push({ name: WORKFLOWS_MY })
       } else {
@@ -172,7 +168,6 @@ const NewWorkflowPage: React.FC = () => {
     } catch (error: any) {
       if (errorFormat !== ERROR_FORMAT_JSON) {
         API.handleError({ error: error.parsedError })
-        setIsSubmitting(false)
         return
       }
 
@@ -184,8 +179,6 @@ const NewWorkflowPage: React.FC = () => {
       } else if (generalError) {
         toaster.error(generalError)
       }
-    } finally {
-      if (!shouldOpenExecution) setIsSubmitting(false)
     }
   }
 
@@ -228,8 +221,6 @@ const NewWorkflowPage: React.FC = () => {
             isEditing={false}
           />
         )}
-
-        {isSubmitting && <Spinner />}
       </PageLayout>
 
       {createdWorkflowId && (

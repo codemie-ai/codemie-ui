@@ -65,7 +65,7 @@ interface WorkflowsStore {
   setWorkflowsScope: (scope: string) => void
   clearWorkflowsFilters: () => void
   setWorkflowsPagination: (page?: number, perPage?: number) => void
-  fetchWorkflow: (id: string | number) => Promise<void>
+  fetchWorkflow: (id: string | number) => Promise<Workflow>
   getWorkflow: (id: string | number) => Promise<Workflow>
   indexWorkflowTemplates: () => Promise<void>
   getWorkflowTemplate: (slug: string) => Promise<void>
@@ -169,8 +169,9 @@ export const workflowsStore = proxy<WorkflowsStore>({
     this.currentWorkflowError = null
     try {
       const response = await api.get(`v1/workflows/id/${id}`)
-      const data = await response.json()
+      const data = (await response.json()) as Workflow
       this.currentWorkflow = data
+      return data
     } catch (error) {
       this.currentWorkflowError = error instanceof Error ? error.message : 'Failed to load workflow'
       throw error
@@ -339,6 +340,8 @@ export const workflowsStore = proxy<WorkflowsStore>({
         name: workflow.name,
         icon_url: workflow.icon_url,
         yaml_config: workflow.yaml_config,
+        update_date: workflow.update_date,
+        yaml_config_history: [],
       })
     } else {
       this.recentWorkflows.unshift({
@@ -347,6 +350,8 @@ export const workflowsStore = proxy<WorkflowsStore>({
         name: workflow.name,
         icon_url: workflow.icon_url,
         yaml_config: workflow.yaml_config,
+        update_date: workflow.update_date,
+        yaml_config_history: [],
       })
     }
 

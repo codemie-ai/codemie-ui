@@ -16,7 +16,6 @@
 import { MCPConfig } from '@/types/entity/mcp'
 import { displayValue } from '@/utils/utils'
 
-
 import MCPServerActions from '../components/MCPServerActions'
 
 interface ColumnRenderersProps {

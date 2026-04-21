@@ -68,7 +68,7 @@ const AwsWorkflowDetails: FC<Props> = ({ settingId, entityId }) => {
   }
 
   const goToCodemie = (version: VendorInstallableVersion) => {
-    router.push({ name: 'view-workflow', params: { id: version.aiRunId } })
+    router.push({ name: 'view-workflow', params: { workflowId: version.aiRunId } })
   }
 
   useEffect(() => {

@@ -72,6 +72,8 @@ export const CHAT_MESSAGE_MARK = {
 export const sanitizeMessage = (message: string) => {
   // We need to keep <br> as they are. <br> are used legitimately because \n breaks markdown parsing
   let result = message.replace(/<br>/g, '___BR_PLACEHOLDER___')
+  // Replace already encoded `<` and `>` characters with different encoding, so unsanitize won't transform them to HTML tags later
+  result = result.replace(/&lt;/g, '&#60;').replace(/&gt;/g, '&#62;')
   result = result.replace(/</g, '&lt;').replace(/>/g, '&gt;')
   result = result.replace(/___BR_PLACEHOLDER___/g, '<br>')
 

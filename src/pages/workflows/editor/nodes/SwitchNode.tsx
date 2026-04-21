@@ -37,14 +37,22 @@ export const SwitchNode = ({ id, data, selected }: CommonNodeProps) => {
   }, [cases.length, id, updateNodeInternals])
 
   return (
-    <BaseNode selected={selected} isConnected={isConnected} hasError={data.hasError}>
-      <Handle type="target" position={Position.Left} />
+    <BaseNode
+      selected={selected}
+      isConnected={isConnected}
+      hasError={data.hasError}
+      status={data.status}
+      active={data.active}
+    >
+      <Handle type="target" position={Position.Left} status={data.status} />
       <NodeHeader type={NodeTypes.SWITCH} title="Switch" />
 
       <div className="flex flex-col gap-4 mb-4">
         {cases.map((caseItem, index) => {
           const condition = caseItem.condition || `case ${index + 1}`
           const key = index
+          const handleId = `condition_${index}`
+          const handleStatus = data.handlesStatus?.get(handleId)
 
           return (
             <div key={key} className="relative">
@@ -52,8 +60,9 @@ export const SwitchNode = ({ id, data, selected }: CommonNodeProps) => {
               <Handle
                 type="source"
                 position={Position.Right}
-                id={`condition_${index}`}
+                id={handleId}
                 className="!top-[36px]"
+                status={handleStatus}
               />
             </div>
           )
@@ -66,6 +75,7 @@ export const SwitchNode = ({ id, data, selected }: CommonNodeProps) => {
             position={Position.Right}
             id="condition_default"
             className="!top-[36px]"
+            status={data.handlesStatus?.get('condition_default')}
           />
         </div>
       </div>

@@ -18,7 +18,13 @@ import { createHashRouter, redirect, RouteObject } from 'react-router'
 import SignInPage from '@/authentication/local/SignInPage'
 import SignUpPage from '@/authentication/local/SignUpPage'
 import { AssistantTab } from '@/constants'
-import { ANALYTICS, ANALYTICS_EDIT_DASHBOARD, ANALYTICS_NEW_DASHBOARD } from '@/constants/routes'
+import {
+  ANALYTICS,
+  ANALYTICS_EDIT_DASHBOARD,
+  ANALYTICS_NEW_DASHBOARD,
+  VIEW_WORKFLOW,
+  WOKRFLOW_EXECUTIONS,
+} from '@/constants/routes'
 import AnalyticsDashboardFormPage from '@/pages/analytics/AnalyticsDashboardFormPage'
 import AnalyticsPage from '@/pages/analytics/AnalyticsPage'
 import ApplicationFederationPage from '@/pages/applications/ApplicationFederationPage'
@@ -79,9 +85,8 @@ import SkillsListPage from '@/pages/skills/SkillsListPage'
 import { WORKFLOW_LIST_SCOPE } from '@/pages/workflows/constants'
 import EditWorkflowPage from '@/pages/workflows/EditWorkflowPage'
 import NewWorkflowPage from '@/pages/workflows/NewWorkflowPage'
-import ViewWorkflowPage from '@/pages/workflows/ViewWorkflowPage'
 import ViewWorkflowTemplatePage from '@/pages/workflows/ViewWorkflowTemplatePage'
-import WorkflowExecutionPage from '@/pages/workflows/WorkflowExecutionPage'
+import WorkflowDetailsPage from '@/pages/workflows/WorkflowDetailsPage'
 import WorkflowsListPage from '@/pages/workflows/WorkflowsListPage'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 
@@ -341,19 +346,19 @@ const workflowRoutes: RouteObject[] = [
     Component: EditWorkflowPage,
   },
   {
-    id: 'view-workflow',
-    path: 'workflows/:id',
-    Component: ViewWorkflowPage,
+    id: VIEW_WORKFLOW,
+    path: 'workflows/:workflowId',
+    Component: WorkflowDetailsPage,
+  },
+  {
+    id: WOKRFLOW_EXECUTIONS,
+    path: 'workflows/:workflowId/workflow-executions/:executionId',
+    Component: WorkflowDetailsPage,
   },
   {
     id: 'view-workflow-template',
     path: 'workflows/templates/:slug',
     Component: ViewWorkflowTemplatePage,
-  },
-  {
-    id: 'workflow-execution',
-    path: 'workflows/:workflowId/workflow-executions/:executionId',
-    Component: WorkflowExecutionPage,
   },
 ]
 
