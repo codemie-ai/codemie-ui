@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import DOMPurify from 'dompurify'
 import { kcSanitize } from 'keycloakify/lib/kcSanitize'
 
 import Button from '@/components/Button'
@@ -59,7 +60,9 @@ export default function Error(props: PageProps<Extract<KcContext, { pageId: 'err
         {/* Error message */}
         <div className="w-[400px]">
           <div className="mb-6 rounded-lg bg-failed-secondary/10 px-4 py-3 text-sm text-failed-secondary">
-            <div dangerouslySetInnerHTML={{ __html: kcSanitize(message.summary) }} />
+            <div
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(kcSanitize(message.summary)) }}
+            />
           </div>
 
           {/* Back to application button */}
