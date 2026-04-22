@@ -167,7 +167,7 @@ const fetchWithState = async <T>(
     })
     return (await response.json()) as T
   } catch (error) {
-    console.error(`Error fetching ${key}:`, error)
+    console.error('Error fetching:', key, error)
     store.error[key] = parseErrorResponse(error, errorMessage || `Failed to fetch ${key}`)
     return null
   } finally {
@@ -192,7 +192,7 @@ const fetchWithStatePost = async <T>(
     const response = await api.post(endpoint, body)
     return (await response.json()) as T
   } catch (error) {
-    console.error(`Error fetching ${key}:`, error)
+    console.error('Error fetching:', key, error)
     store.error[key] = parseErrorResponse(error, errorMessage || `Failed to fetch ${key}`)
     return null
   } finally {

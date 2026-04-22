@@ -90,7 +90,7 @@ const AssistantDetailsActions = ({
       else await assistantsStore.reactToAssistant(assistant.id, newReaction)
     } catch (error) {
       setReaction(originalReaction)
-      console.error(`Error toggling ${newReaction}:`, error)
+      console.error('Error toggling:', newReaction, error)
     }
   }
 

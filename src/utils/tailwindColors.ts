@@ -126,8 +126,9 @@ export const debugTailwindColors = (searchTerm?: string): void => {
     }
   })
 
-  console.log(
-    searchTerm ? `CSS custom properties containing "${searchTerm}":` : 'All CSS custom properties:',
-    properties
-  )
+  if (searchTerm) {
+    console.log('CSS custom properties containing:', searchTerm, properties)
+  } else {
+    console.log('All CSS custom properties:', properties)
+  }
 }

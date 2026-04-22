@@ -149,7 +149,7 @@ export const UserMapping: React.FC<UserMappingProps> = ({
             hasMapping: hasDefaultIntegrations,
           }
         } catch (error) {
-          console.error(`Error fetching mapping for sub-assistant ${subAssistant.id}:`, error)
+          console.error('Error fetching mapping for sub-assistant:', subAssistant.id, error)
           const initialSettings = initializeUserMappingSettings(subAssistant)
 
           const hasDefaultIntegrations =
@@ -166,7 +166,7 @@ export const UserMapping: React.FC<UserMappingProps> = ({
           }
         }
       } catch (error) {
-        console.error(`Error processing sub-assistant ${subAssistant.id}:`, error)
+        console.error('Error processing sub-assistant:', subAssistant.id, error)
         return {
           assistant: subAssistant,
           displayableToolkits: [],

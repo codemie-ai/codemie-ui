@@ -102,6 +102,6 @@ gitleaks.on('close', (code) => {
 })
 
 gitleaks.on('error', (err) => {
-  console.error(`Failed to run Gitleaks via ${engine}:`, err.message)
+  console.error('Failed to run Gitleaks via', engine, err.message)
   process.exit(1)
 })

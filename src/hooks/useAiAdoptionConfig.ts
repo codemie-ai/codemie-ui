@@ -129,7 +129,7 @@ export const useAiAdoptionConfig = (options: UseAiAdoptionConfigOptions = {}) =>
           toaster.info(`Configuration Saved<br/>${dimensionName} settings saved successfully`)
           onSaveSuccess?.()
         } catch (error) {
-          console.error(`Failed to save ${dimensionId} settings:`, error)
+          console.error('Failed to save settings:', dimensionId, error)
           toaster.error(`Save Failed<br/>Failed to save ${dimensionId} settings`)
         }
       }

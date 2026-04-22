@@ -263,7 +263,7 @@ const KataDetailView = () => {
         await katasStore.reactToKata(currentKata.id, newReaction)
       }
     } catch (error) {
-      console.error(`Error toggling ${newReaction}:`, error)
+      console.error('Error toggling:', newReaction, error)
     }
   }
 

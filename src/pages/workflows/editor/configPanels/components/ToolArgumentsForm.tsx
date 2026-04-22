@@ -70,7 +70,7 @@ const ToolArgumentsForm: React.FC<ToolArgumentsFormProps> = ({
 
         onSchemaLoaded?.(requiredFields)
       } catch (err) {
-        console.error(`Failed to fetch schema for tool "${toolName}":`, err)
+        console.error('Failed to fetch schema for tool:', toolName, err)
         setSchema(null)
         onSchemaLoaded?.([])
       } finally {

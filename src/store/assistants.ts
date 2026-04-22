@@ -528,7 +528,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
         return result
       })
       .catch((error) => {
-        console.error(`Error ${reaction}ing assistant:`, error)
+        console.error('Error with assistant reaction:', reaction, error)
         throw error
       })
   },
