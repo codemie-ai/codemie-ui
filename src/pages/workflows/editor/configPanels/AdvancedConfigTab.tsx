@@ -51,21 +51,24 @@ const schema = yup.object().shape({
     .optional()
     .transform(transformToInteger)
     .positive('Must be a positive number')
-    .integer('Must be an integer'),
+    .integer('Must be an integer')
+    .max(1000000000, 'Must be at most 1000000000'),
   messages_limit_before_summarization: yup
     .number()
     .nullable()
     .optional()
     .transform(transformToInteger)
     .positive('Must be a positive number')
-    .integer('Must be an integer'),
+    .integer('Must be an integer')
+    .max(10000, 'Must be at most 10000'),
   max_concurrency: yup
     .number()
     .nullable()
     .optional()
     .transform(transformToInteger)
     .positive('Must be a positive number')
-    .integer('Must be an integer'),
+    .integer('Must be an integer')
+    .max(100, 'Must be at most 100'),
   recursion_limit: yup
     .number()
     .nullable()
@@ -83,19 +86,22 @@ const schema = yup.object().shape({
         .optional()
         .transform(transformToInteger)
         .positive('Must be a positive number')
-        .integer('Must be an integer'),
+        .integer('Must be an integer')
+        .max(100, 'Must be at most 100'),
       initial_interval: yup
         .number()
         .nullable()
         .optional()
         .transform(transformToNumber)
-        .positive('Must be a positive number'),
+        .positive('Must be a positive number')
+        .max(3600000, 'Must be at most 3600000'),
       max_interval: yup
         .number()
         .nullable()
         .optional()
         .transform(transformToNumber)
         .positive('Must be a positive number')
+        .max(3600000, 'Must be at most 3600000')
         .when('initial_interval', (initial_interval, schema) => {
           return initial_interval[0]
             ? schema.min(
@@ -109,14 +115,15 @@ const schema = yup.object().shape({
         .nullable()
         .optional()
         .transform(transformToNumber)
-        .positive('Must be a positive number'),
+        .positive('Must be a positive number')
+        .max(10, 'Must be at most 10'),
     })
     .optional(),
 })
 
 interface AdvancedConfigTabProps {
   config: WorkflowConfiguration
-  workflow?: any
+  workflow?: Partial<WorkflowConfiguration>
   onConfigChange: (config: Partial<WorkflowConfiguration>) => void
   onClose: (skipDirtyCheck?: boolean) => void
 }
@@ -128,7 +135,7 @@ export interface AdvancedConfigTabRef {
 
 const getDefaultValues = (
   config: WorkflowConfiguration,
-  workflow?: any
+  workflow?: Partial<WorkflowConfiguration>
 ): Partial<WorkflowConfiguration> => {
   // Try to read from config first (after save, these fields are in yaml_config)
   // Fallback to workflow (on first load, these fields are in workflow but not in yaml_config yet)
@@ -149,7 +156,7 @@ const getDefaultValues = (
 
   // Only include retry_policy if it has at least one non-null value
   // This prevents React Hook Form from marking the form as dirty when retry_policy has all null values
-  const retryPolicy = config?.retry_policy || workflow?.retry_policy
+  const retryPolicy = config?.retry_policy ?? workflow?.retry_policy
   if (retryPolicy) {
     const hasAnyValue =
       retryPolicy.max_attempts != null ||
@@ -304,7 +311,7 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                   className="text-xs text-text-primary flex items-center gap-1"
                 >
                   Tokens Limit Before Summarization
-                  <TooltipButton content="Sets the token threshold that triggers summarization. Must be a positive integer." />
+                  <TooltipButton content="Sets the token threshold that triggers summarization. Must be a positive integer. Maximum: 1000000000." />
                 </label>
                 <FieldController
                   name="tokens_limit_before_summarization"
@@ -327,7 +334,7 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                   className="text-xs text-text-primary flex items-center gap-1"
                 >
                   Messages Limit Before Summarization
-                  <TooltipButton content="Sets the number of messages which triggers summarization. Must be a positive integer." />
+                  <TooltipButton content="Sets the number of messages which triggers summarization. Must be a positive integer. Maximum: 10000." />
                 </label>
                 <FieldController
                   name="messages_limit_before_summarization"
@@ -361,7 +368,7 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                     type="number"
                     label="Max Concurrency"
                     orientation="horizontal"
-                    hint="Defines how many tasks run in parallel. Must be a positive integer."
+                    hint="Defines how many tasks run in parallel. Must be a positive integer. Maximum: 100."
                     placeholder="10"
                     inputClass="w-12"
                     error={fieldState.error?.message}
@@ -405,7 +412,7 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                     type="number"
                     label="Max Attempts"
                     orientation="horizontal"
-                    hint="Upper limit of retry attempts after a failure. Must be a positive integer. Typical range: 1-10."
+                    hint="Upper limit of retry attempts after a failure. Must be a positive integer. Maximum: 100."
                     placeholder="3"
                     inputClass="w-12"
                     error={fieldState.error?.message}
@@ -423,7 +430,7 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                     type="number"
                     label="Initial Interval (sec)"
                     orientation="horizontal"
-                    hint="Time (seconds) before the first retry after a failure. Must be a positive number. Typical range: 1-60 seconds."
+                    hint="Time (seconds) before the first retry after a failure. Must be a positive number. Maximum: 3600000 seconds."
                     placeholder="1"
                     inputClass="w-12"
                     error={fieldState.error?.message}
@@ -441,7 +448,7 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                     type="number"
                     label="Max Interval (sec)"
                     orientation="horizontal"
-                    hint="Upper limit of delay between retries. Must be >= initial interval. Typical range: 10-300 seconds."
+                    hint="Upper limit of delay between retries. Must be >= initial interval. Maximum: 3600000 seconds."
                     placeholder="60"
                     inputClass="w-12"
                     error={fieldState.error?.message}
@@ -460,7 +467,7 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                     step="0.1"
                     label="Backoff Factor"
                     orientation="horizontal"
-                    hint="Multiplier to increase the interval between retries. Must be a positive number. Typical range: 1.5-3.0."
+                    hint="Multiplier to increase the interval between retries. Must be a positive number. Maximum: 10."
                     placeholder="2"
                     inputClass="w-12"
                     error={fieldState.error?.message}
