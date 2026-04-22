@@ -134,7 +134,7 @@ const Table = <T,>({
           <Spinner />
         </div>
       )}
-      <div className={cn('w-full grow', { 'overflow-scroll min-h-[300px]': !embedded })}>
+      <div className={cn('w-full grow', { 'overflow-auto min-h-[300px]': !embedded })}>
         <table
           className={cn(
             'mt-4 border-separate border-spacing-0 w-full text-[12px] leading-tight',
