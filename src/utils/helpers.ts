@@ -29,7 +29,7 @@ import { appInfoStore } from '@/store/appInfo'
 import toaster from '@/utils/toaster'
 
 export const DEFAULT_DATE_FORMAT = 'MM/dd/yyyy, HH:mm'
-export const SHORT_DATE_FORMAT = 'MMM dd HH:mm'
+export const SHORT_DATE_FORMAT = 'MMM dd, HH:mm'
 export const FILE_DATE_FORMAT = 'yyyy-MM-dd_HH:mm:ss'
 
 export type DateStyle = 'default' | 'short' | 'day' | 'file' | 'relative'
@@ -64,12 +64,7 @@ export const formatDateTime = (
 
   switch (style) {
     case 'short':
-      return dt.toLocaleString({
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      })
+      return dt.toFormat(SHORT_DATE_FORMAT)
     case 'day':
       return dt.toLocaleString(DateTime.DATE_FULL)
     case 'file':
@@ -77,7 +72,7 @@ export const formatDateTime = (
     case 'relative':
       return dt.toRelative() ?? '-'
     default:
-      return dt.toLocaleString(DateTime.DATETIME_SHORT_WITH_SECONDS)
+      return dt.toFormat(DEFAULT_DATE_FORMAT)
   }
 }
 
