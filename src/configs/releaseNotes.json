@@ -1,5 +1,71 @@
 [
   {
+    "version": "2.24.0",
+    "date": "2026-04-23",
+    "issues": [
+      {
+        "title": "Extend ADO Work Items datasource to index comments and file attachments (parity with ADO Wiki datasource)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10828",
+        "key": "EPMCDME-10828"
+      },
+      {
+        "title": "Workflow execution details: add workflow visualization with current step indicator",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10638",
+        "key": "EPMCDME-10638"
+      },
+      {
+        "title": "Develop interactive onboarding flow with contextual navigation for new and existing CodeMie users",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10042",
+        "key": "EPMCDME-10042"
+      },
+      {
+        "title": "GitHub App token expiry and private-repo 404 cause agent tool and datasource indexing to stop working after ~1 hour",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11899",
+        "key": "EPMCDME-11899"
+      },
+      {
+        "title": "Webhook invocation returns 401 Unauthorized during assistant execution; chat name reverts to initial message text",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11877",
+        "key": "EPMCDME-11877"
+      },
+      {
+        "title": "User.full_name returns username before name; fallback order must prioritize name",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11874",
+        "key": "EPMCDME-11874"
+      },
+      {
+        "title": "The workflow config modal window can be saved with values above limit in fields without error during Creation/Editing workflow",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11835",
+        "key": "EPMCDME-11835"
+      },
+      {
+        "title": "Personal spendings page uses 12h datetime format instead of standardized 24h format",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11782",
+        "key": "EPMCDME-11782"
+      },
+      {
+        "title": "Webhook usage analytics: token usage is miscalculated for webhook invocations",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11759",
+        "key": "EPMCDME-11759"
+      },
+      {
+        "title": "Workflow UI editor: assistant added to second iterator is placed into the first iterator",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11704",
+        "key": "EPMCDME-11704"
+      }
+    ]
+  },
+  {
     "version": "2.23.3",
     "date": "2026-04-20",
     "issues": [
