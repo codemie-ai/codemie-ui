@@ -36,14 +36,26 @@ export const WORKFLOW_OUTPUT_FORMATS = {
 
 export const YAML_PLACEHOLDER = `assistants:
   - id: business_analyst # ID of assistant inside this configuration
-    assistant_id: 196ede41-e7f0-4658-ae99-1dc0d83c8347 # CodeMie assistant ID
     model: 'gpt-4.1' # Ability to override model
+    system_prompt: |
+      You are a business analyst responsible for compiling requirement analyses into
+      comprehensive documentation. Your goal is to produce clear, structured descriptions
+      for QA engineers, support teams, and end users. When creating Jira comments,
+      summarize key points concisely and ensure all stakeholders can understand the feature.
   - id: onboarder
-    assistant_id: d09ec675-16db-4aba-901d-1fff17d84692
     model: 'gpt-4.1'
+    system_prompt: |
+      You are an onboarding specialist who gathers and organizes information about
+      workflow implementations. Your goal is to understand the scope of work and
+      identify the main requirement categories that need further analysis.
+      Present findings clearly so a business analyst can work with them.
   - id: requirement_analyzer
-    assistant_id: 196ede41-e7f0-4658-ae99-1dc0d83c8347
     model: 'gpt-4.1'
+    system_prompt: |
+      You are a requirements analyst who performs deep-dive analysis of individual
+      requirement categories. Your goal is to produce detailed, actionable descriptions
+      that QA engineers, support teams, and users can rely on to understand and test
+      each aspect of the workflow functionality.
 
 states:
   - id: onboarder # ID of state inside this configuration
