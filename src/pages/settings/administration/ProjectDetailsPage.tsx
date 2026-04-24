@@ -25,18 +25,20 @@ import ProjectModal, {
   ProjectFormData,
 } from '@/pages/settings/administration/projectsManagement/ProjectModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
-import SpendingTable from '@/pages/settings/components/SpendingTable'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { ProjectType } from '@/types/entity/project'
+import { ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
+import ProjectBudgetsSection from './projectsManagement/ProjectBudgetsSection'
 import ProjectMembersManager from './projectsManagement/ProjectMembersManager'
 
 const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
+const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
 
 const formatCurrency = (value: number | null | undefined) =>
   value == null ? '-' : `$${value.toFixed(2)}`
@@ -49,12 +51,17 @@ const ProjectDetailsPage = () => {
   const [project, setProject] = useState<ProjectDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditPopupVisible, setIsEditPopupVisible] = useState(false)
+  const [budgets, setBudgets] = useState<ProjectBudget[]>([])
 
   const isPersonalProject = project?.project_type === ProjectType.PERSONAL
-  const canManageProject =
-    !isPersonalProject &&
-    ((currentUser?.isAdmin ?? false) ||
-      (currentUser?.applicationsAdmin?.includes(project?.name ?? '') ?? false))
+  const isAdmin = currentUser?.isAdmin ?? false
+  const isMaintainer = currentUser?.isMaintainer ?? false
+  const isProjectAdmin = currentUser?.applicationsAdmin?.includes(project?.name ?? '') ?? false
+  const canManageProject = !isPersonalProject && (isAdmin || isProjectAdmin)
+  const canManageBudgets = isBudgetManagementEnabled && isMaintainer
+  const canViewBudgets =
+    isBudgetManagementEnabled && !isPersonalProject && (isAdmin || isMaintainer || isProjectAdmin)
+  const budgetMode = canManageBudgets ? 'manage' : 'view'
 
   const loadProject = useCallback(async () => {
     setLoading(true)
@@ -95,6 +102,7 @@ const ProjectDetailsPage = () => {
         description: payload.description,
         cost_center_id: payload.cost_center_id,
         clear_cost_center: payload.clear_cost_center,
+        project_member_budget_tracking_enabled: payload.project_member_budget_tracking_enabled,
       })
       toaster.info(`Project ${payload.name} updated successfully`)
       setIsEditPopupVisible(false)
@@ -208,6 +216,12 @@ const ProjectDetailsPage = () => {
                     <div className="capitalize">{project.project_type}</div>
                   </div>
                   <div>
+                    <div className="text-xs text-text-quaternary mb-1">Member budget tracking</div>
+                    <div>
+                      {project.project_member_budget_tracking_enabled ? 'Enabled' : 'Disabled'}
+                    </div>
+                  </div>
+                  <div>
                     <div className="text-xs text-text-quaternary mb-1">Created by</div>
                     <div>{displayValue(project.created_by)}</div>
                   </div>
@@ -219,21 +233,25 @@ const ProjectDetailsPage = () => {
               </div>
             </section>
 
-            {project.spending_widget && project.spending_widget.data.rows.length > 0 && (
+            {canViewBudgets && (
               <section>
-                <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
-                  <div className="text-sm font-medium text-text-primary mb-4">Project spending</div>
-                  <SpendingTable
-                    columns={project.spending_widget.data.columns}
-                    rows={project.spending_widget.data.rows as unknown as Record<string, unknown>[]}
-                  />
-                </div>
+                <ProjectBudgetsSection
+                  projectName={project.name}
+                  spendingRows={project.spending_widget?.data?.rows}
+                  onBudgetsChanged={canManageBudgets ? setBudgets : undefined}
+                  mode={budgetMode}
+                />
               </section>
             )}
 
             {!isPersonalProject && (
               <section>
-                <ProjectMembersManager project={project} onMembersChanged={loadProject} />
+                <ProjectMembersManager
+                  project={project}
+                  onMembersChanged={loadProject}
+                  budgets={canManageBudgets ? budgets : undefined}
+                  onBudgetsChanged={canManageBudgets ? setBudgets : undefined}
+                />
               </section>
             )}
           </div>

@@ -79,7 +79,7 @@ export const getNavigationTabs = (
   const isEnterprise = isEnterpriseEdition()
 
   const budgetsManagementTab =
-    isBudgetManagementEnabled && isMaintainer
+    isBudgetManagementEnabled && (isAdmin || isMaintainer)
       ? [
           {
             id: SettingsTab.BUDGETS_MANAGEMENT,
@@ -113,7 +113,7 @@ export const getNavigationTabs = (
           ? getEnterpriseAdminItems(
               isMcpFeatureEnabled,
               isUserManagementEnabled,
-              isMaintainer ? budgetsManagementTab : []
+              budgetsManagementTab
             )
           : []),
       ].sort((a, b) => a.name.localeCompare(b.name))

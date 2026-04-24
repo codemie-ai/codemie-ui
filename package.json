@@ -24,7 +24,8 @@
     "license-headers:check": "node scripts/license_headers/check_license_headers.mjs --check",
     "license-headers:fix": "node scripts/license_headers/check_license_headers.mjs --fix",
     "license-headers": "npm run license-headers:fix && npm run license-headers:check",
-    "secrets:check": "node scripts/validate-secrets.js"
+    "secrets:check": "node scripts/validate-secrets.js",
+    "sonar-local": "node scripts/sonar/run-local-sonar.js"
   },
   "dependencies": {
     "@dnd-kit/abstract": "0.3.0",
@@ -87,6 +88,7 @@
     "@eslint/eslintrc": "3.3.1",
     "@originjs/vite-plugin-federation": "1.4.1",
     "@rushstack/eslint-patch": "1.11.0",
+    "@sonar/scan": "^4.3.6",
     "@stylistic/eslint-plugin": "2.13.0",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.3.0",

@@ -251,6 +251,33 @@ describe('projectsStore', () => {
           description: 'Updated description',
           cost_center_id: undefined,
           clear_cost_center: undefined,
+          project_member_budget_tracking_enabled: undefined,
+        },
+        { skipErrorHandling: true }
+      )
+    })
+
+    it('passes budget tracking flag in update payload', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({
+          name: 'my-project',
+          project_member_budget_tracking_enabled: true,
+        }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateProject('my-project', {
+        project_member_budget_tracking_enabled: true,
+      })
+
+      expect(mockPatch).toHaveBeenCalledWith(
+        'v1/projects/my-project',
+        {
+          name: undefined,
+          description: undefined,
+          cost_center_id: undefined,
+          clear_cost_center: undefined,
+          project_member_budget_tracking_enabled: true,
         },
         { skipErrorHandling: true }
       )

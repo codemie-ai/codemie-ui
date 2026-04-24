@@ -13,6 +13,22 @@
 // limitations under the License.
 //
 
+import { BudgetCategory } from '@/types/entity/budget'
+
+export interface ProjectAssignedBudgetSummary {
+  budget_id: string
+  name: string
+  budget_category: BudgetCategory
+  soft_budget: number
+  max_budget: number
+  budget_duration: string
+  budget_reset_at?: string | null
+  provider_sync_status?: string | null
+  member_count: number
+  allocated_member_budget_total: number
+  current_spending?: number | null
+}
+
 export interface ProjectListItem {
   name: string
   description?: string | null
@@ -23,6 +39,8 @@ export interface ProjectListItem {
   admin_count: number
   cost_center_id?: string | null
   cost_center_name?: string | null
+  project_member_budget_tracking_enabled?: boolean
+  budgets?: ProjectAssignedBudgetSummary[] | null
 }
 
 export interface ProjectMember {
@@ -55,7 +73,7 @@ export interface ProjectSpendingWidgetColumn {
 }
 
 export interface ProjectSpendingWidgetRow {
-  project_name: string
+  budget_id: string
   current_spending: number
   budget_reset_at: string | null
   time_until_reset: string | null
@@ -80,4 +98,5 @@ export interface ProjectUpdatePayload {
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
+  project_member_budget_tracking_enabled?: boolean
 }

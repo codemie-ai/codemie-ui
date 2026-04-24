@@ -21,6 +21,7 @@ import * as Yup from 'yup'
 
 import Autocomplete from '@/components/form/Autocomplete'
 import Input from '@/components/form/Input'
+import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
@@ -42,12 +43,14 @@ export interface ProjectFormData {
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
+  project_member_budget_tracking_enabled?: boolean
 }
 
 interface ProjectModalFormValues {
   name: string
   description: string
   cost_center_id: string
+  project_member_budget_tracking_enabled: boolean
 }
 
 const PROJECT_NAME_REGEX = /^[a-z0-9][a-z0-9_-]*$/
@@ -67,6 +70,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
   const { user } = useSnapshot(userStore)
   const isNameDisabled = (project?.user_count ?? 0) > 0
   const isAdmin = user?.isAdmin ?? false
+  const isMaintainer = user?.isMaintainer ?? false
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
   const [costCenterOptions, setCostCenterOptions] = useState<FilterOption[]>([])
 
@@ -81,6 +85,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       name: '',
       description: '',
       cost_center_id: '',
+      project_member_budget_tracking_enabled: false,
     },
   })
 
@@ -90,12 +95,14 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
         name: project.name,
         description: project.description || '',
         cost_center_id: project.cost_center_id || '',
+        project_member_budget_tracking_enabled: !!project.project_member_budget_tracking_enabled,
       })
     } else if (visible && !project) {
       reset({
         name: '',
         description: '',
         cost_center_id: '',
+        project_member_budget_tracking_enabled: false,
       })
     }
 
@@ -121,6 +128,9 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       description: data.description,
       cost_center_id: data.cost_center_id || null,
       clear_cost_center: !!project && !data.cost_center_id,
+      project_member_budget_tracking_enabled: project
+        ? data.project_member_budget_tracking_enabled
+        : undefined,
     })
     reset()
   }
@@ -200,6 +210,24 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
                 allowEmpty
                 localFilter={false}
                 onSearch={handleCostCenterSearch}
+              />
+            )}
+          />
+        )}
+
+        {isEdit && isMaintainer && (
+          <Controller
+            name="project_member_budget_tracking_enabled"
+            control={control}
+            render={({ field: { value, onChange, onBlur, ref } }) => (
+              <Switch
+                id="project_member_budget_tracking_enabled"
+                label="Project member budget tracking"
+                hint="When enabled, budget enforcement tracks individual project members under the project budget."
+                value={value}
+                onBlur={onBlur}
+                ref={ref}
+                onChange={(event) => onChange((event.target as HTMLInputElement).checked)}
               />
             )}
           />

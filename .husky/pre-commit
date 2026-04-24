@@ -1,3 +1,4 @@
 npx lint-staged
 npm run license-headers:check
 npm run secrets:check
+npm run sonar-local

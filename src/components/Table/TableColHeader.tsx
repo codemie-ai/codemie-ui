@@ -82,7 +82,8 @@ const TableColHeader = <T,>({
 
   const headerClassName = cn(
     column.headClassNames,
-    'text-left px-4 py-2.5 border-border-structural border-t border-b text-nowrap',
+    'text-left px-4 py-2.5 border-border-structural border-t border-b',
+    column.headerNoWrap !== false ? 'text-nowrap' : 'whitespace-normal break-words',
     {
       'rounded-tl-lg border-l': isFirst,
       'rounded-tr-lg border-r': isLast,

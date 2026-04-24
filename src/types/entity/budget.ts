@@ -45,6 +45,7 @@ export interface BudgetAssignment {
   budget_id: string | null
   budget_name?: string | null
   max_budget?: number | null
+  current_spending?: number | null
   budget_duration?: string | null
   budget_reset_at?: string | null
 }
@@ -78,3 +79,39 @@ export const BUDGET_CATEGORY_OPTIONS: Array<{ label: string; value: BudgetCatego
 
 export const getBudgetCategoryLabel = (category: BudgetCategory): string =>
   BUDGET_CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? category
+
+/**
+ * Derives a budget_id slug from a human-readable name.
+ * Rules: lowercase → brackets stripped → spaces become dashes →
+ *        non-alphanumeric/dash/underscore removed → collapse dashes → trim edges.
+ * Example: "Dev Platform (Q1)" → "dev-platform-q1"
+ */
+export const generateBudgetId = (name: string): string =>
+  name
+    .toLowerCase()
+    .replace(/[()[\]{}]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9_-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/(^-|-$)/g, '')
+
+/** Title-cases a project name: "my-awesome_project" → "My Awesome Project" */
+export const prettifyProjectName = (name: string): string =>
+  name.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+
+/**
+ * Auto-generates a budget name for a project budget.
+ * Format: "{Prettified Project} {Category Label}"
+ * Guaranteed unique per project+category since the backend enforces one budget per slot.
+ * Example: project "my-app" + category "platform" → "My App Platform"
+ */
+export const generateProjectBudgetName = (projectName: string, category: BudgetCategory): string =>
+  `${prettifyProjectName(projectName)} ${getBudgetCategoryLabel(category)}`
+
+/**
+ * Auto-generates a budget name for a global budget.
+ * Format: "{Category Label} Budget"
+ * Example: category "cli" → "CLI Budget"
+ */
+export const generateGlobalBudgetName = (category: BudgetCategory): string =>
+  `${getBudgetCategoryLabel(category)} Budget`

@@ -16,6 +16,7 @@
 import { proxy } from 'valtio'
 
 import { PaginatedResponse, Pagination } from '@/types/common'
+import { BudgetCategory } from '@/types/entity/budget'
 import { Project, ProjectRequest } from '@/types/entity/project'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import api from '@/utils/api'
@@ -46,7 +47,12 @@ interface ProjectsStore {
     search?: string | undefined,
     sortBy?: string | undefined,
     sortOrder?: string | undefined,
-    includeSpending?: boolean
+    includeSpending?: boolean,
+    budgetParams?: {
+      includeBudgets?: boolean
+      hasAssignedBudgets?: boolean
+      budgetCategory?: BudgetCategory | null
+    }
   ) => Promise<Project[]>
   searchProjects: (
     search: string,
@@ -94,7 +100,12 @@ export const projectsStore = proxy<ProjectsStore>({
     search: string | undefined = undefined,
     sortBy: string | undefined = undefined,
     sortOrder: string | undefined = undefined,
-    includeSpending = false
+    includeSpending = false,
+    budgetParams: {
+      includeBudgets?: boolean
+      hasAssignedBudgets?: boolean
+      budgetCategory?: BudgetCategory | null
+    } = {}
   ) {
     this.loading = true
     this.error = null
@@ -110,6 +121,9 @@ export const projectsStore = proxy<ProjectsStore>({
         if (sortOrder) params.sort_order = sortOrder
       }
       if (includeSpending) params.include_spending = true
+      if (budgetParams.includeBudgets) params.include_budgets = true
+      if (budgetParams.hasAssignedBudgets) params.has_assigned_budgets = true
+      if (budgetParams.budgetCategory) params.budget_category = budgetParams.budgetCategory
 
       const queryParams = new URLSearchParams()
       Object.entries(params).forEach(([key, value]) => {
@@ -245,6 +259,7 @@ export const projectsStore = proxy<ProjectsStore>({
           description: data.description,
           cost_center_id: data.clear_cost_center ? undefined : data.cost_center_id,
           clear_cost_center: data.clear_cost_center || undefined,
+          project_member_budget_tracking_enabled: data.project_member_budget_tracking_enabled,
         },
         {
           skipErrorHandling: true,

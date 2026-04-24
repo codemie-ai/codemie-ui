@@ -101,17 +101,20 @@ const BudgetsManagementPage: FC = () => {
   const navigate = useNavigate()
   const { user: currentUser } = useSnapshot(userStore)
   const { budgets, pagination, loading, syncing } = useSnapshot(budgetsStore)
+  const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
+  const canViewBudgets = isAdmin || isMaintainer
+  const canManageBudgets = isMaintainer
   const [category, setCategory] = useState<BudgetCategory | ''>('')
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
-    if (currentUser && !isMaintainer) {
-      toaster.error('Access denied. Only maintainers can manage budgets.')
+    if (currentUser && !canViewBudgets) {
+      toaster.error('Access denied. Only admins and maintainers can view budgets.')
       navigate('/settings/administration')
     }
-  }, [currentUser, isMaintainer, navigate])
+  }, [canViewBudgets, currentUser, navigate])
 
   const loadBudgets = useCallback(
     (page?: number, perPage?: number) => {
@@ -129,9 +132,9 @@ const BudgetsManagementPage: FC = () => {
   )
 
   useEffect(() => {
-    if (!isMaintainer) return
+    if (!canViewBudgets) return
     loadBudgets(0)
-  }, [category, isMaintainer, loadBudgets])
+  }, [canViewBudgets, category, loadBudgets])
 
   const handleCreate = useCallback(() => {
     setEditingBudget(null)
@@ -221,20 +224,34 @@ const BudgetsManagementPage: FC = () => {
     [handleEdit]
   )
 
+  const visibleColumnDefinitions = useMemo(
+    () =>
+      canManageBudgets
+        ? columnDefinitions
+        : columnDefinitions.filter((columnDefinition) => columnDefinition.key !== 'actions'),
+    [canManageBudgets]
+  )
+
   const rightContent = useMemo(
-    () => (
-      <div className="flex items-center gap-2">
-        <Button onClick={handleSync} size={ButtonSize.MEDIUM} variant="tertiary" disabled={syncing}>
-          <RefreshSvg className="w-4 h-4" />
-          Sync
-        </Button>
-        <Button onClick={handleCreate} size={ButtonSize.MEDIUM}>
-          <PlusFilledSvg />
-          Create
-        </Button>
-      </div>
-    ),
-    [handleCreate, handleSync, syncing]
+    () =>
+      canManageBudgets ? (
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleSync}
+            size={ButtonSize.MEDIUM}
+            variant="tertiary"
+            disabled={syncing}
+          >
+            <RefreshSvg className="w-4 h-4" />
+            Sync
+          </Button>
+          <Button onClick={handleCreate} size={ButtonSize.MEDIUM}>
+            <PlusFilledSvg />
+            Create
+          </Button>
+        </div>
+      ) : null,
+    [canManageBudgets, handleCreate, handleSync, syncing]
   )
 
   const content = (
@@ -250,7 +267,7 @@ const BudgetsManagementPage: FC = () => {
 
       <Table
         items={budgets || []}
-        columnDefinitions={columnDefinitions}
+        columnDefinitions={visibleColumnDefinitions}
         customRenderColumns={customRenderColumns}
         loading={loading}
         pagination={{
@@ -262,16 +279,18 @@ const BudgetsManagementPage: FC = () => {
         perPageOptions={DECIMAL_PAGINATION_OPTIONS}
       />
 
-      <BudgetModal
-        visible={showModal}
-        budget={editingBudget}
-        onHide={handleModalClose}
-        onSubmit={handleModalSubmit}
-      />
+      {canManageBudgets ? (
+        <BudgetModal
+          visible={showModal}
+          budget={editingBudget}
+          onHide={handleModalClose}
+          onSubmit={handleModalSubmit}
+        />
+      ) : null}
     </div>
   )
 
-  if (currentUser && !isMaintainer) {
+  if (currentUser && !canViewBudgets) {
     return null
   }
 

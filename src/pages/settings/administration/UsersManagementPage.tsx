@@ -25,11 +25,12 @@ import Spinner from '@/components/Spinner'
 import Table from '@/components/Table'
 import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import { useTableSelection } from '@/hooks/useTableSelection'
+import BudgetSpendCell from '@/pages/settings/administration/components/BudgetSpendCell'
 import { MAX_DISPLAYED_PROJECTS } from '@/pages/settings/administration/usersManagement/constants'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { userStore } from '@/store/user'
 import { Pagination } from '@/types/common'
-import { getBudgetCategoryLabel, BudgetAssignment } from '@/types/entity/budget'
+import { BudgetAssignment } from '@/types/entity/budget'
 import { ProjectRoleBE } from '@/types/entity/project'
 import { UserListItem } from '@/types/entity/user'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
@@ -49,15 +50,15 @@ const createCustomColumn = (key: string, label: string, width: string): ColumnDe
 })
 
 const BASE_COLUMN_DEFINITIONS: ColumnDefinition[] = [
-  { key: 'select', type: DefinitionTypes.Selection },
-  { key: 'name', label: 'Name', type: DefinitionTypes.String, headClassNames: 'w-[17%]' },
-  createCustomColumn('email', 'Email', '15%'),
-  createCustomColumn('user_type', 'User Type', '8%'),
-  createCustomColumn('superadmin', 'Project Admin', '3%'),
-  createCustomColumn('is_admin', 'Super Admin', '3%'),
-  createCustomColumn('projects', 'Projects', '17%'),
-  createCustomColumn('budget_assignments', 'Budgets', '25%'),
-  createCustomColumn('actions', 'Actions', '5%'),
+  { key: 'select', type: DefinitionTypes.Selection, headClassNames: '!w-[4%]' },
+  { ...createCustomColumn('name', 'Name', '14%'), headerNoWrap: false },
+  { ...createCustomColumn('email', 'Email', '16%'), headerNoWrap: false },
+  { ...createCustomColumn('user_type', 'User Type', '7%'), headerNoWrap: false },
+  { ...createCustomColumn('superadmin', 'Project Admin', '7%') },
+  { ...createCustomColumn('is_admin', 'Super Admin', '7%') },
+  { ...createCustomColumn('projects', 'Projects', '14%'), headerNoWrap: false },
+  { ...createCustomColumn('budget_assignments', 'Budgets', '16%'), headerNoWrap: false },
+  { ...createCustomColumn('actions', 'Actions', '3%'), headerNoWrap: false },
 ]
 
 const UsersManagementPage: FC = () => {
@@ -218,11 +219,17 @@ const UsersManagementPage: FC = () => {
 
   const customRenderColumns = useMemo(
     () => ({
+      name: (item: UserListItem) => (
+        <div className="min-w-0 max-w-full text-xs font-medium break-words">
+          {item.name || item.username || '-'}
+        </div>
+      ),
+
       email: (item: UserListItem) => {
         return (
           <button
             onClick={() => handleOpenDetailsPopup(item)}
-            className="text-xs font-medium hover:opacity-75 cursor-pointer"
+            className="min-w-0 max-w-full text-xs font-medium hover:opacity-75 cursor-pointer break-all text-left"
           >
             {item.email}
           </button>
@@ -256,6 +263,8 @@ const UsersManagementPage: FC = () => {
             items={projectNames}
             emptyMessage={'-'}
             maxDisplayed={MAX_DISPLAYED_PROJECTS}
+            className="min-w-0 max-w-full"
+            badgeClassName="min-w-0 max-w-full whitespace-normal break-all text-[10px] leading-tight px-1.5 py-1"
           />
         )
       },
@@ -263,12 +272,16 @@ const UsersManagementPage: FC = () => {
       budget_assignments: (item: UserListItem) => {
         const assigned = (item.budget_assignments ?? []).filter((a) => a.budget_id !== null)
         return (
-          <DetailsBadges
-            filled
-            items={assigned.map((a) => ({
-              value: `${getBudgetCategoryLabel(a.category)}: ${a.budget_name || a.budget_id}`,
+          <BudgetSpendCell
+            items={assigned.map((assignment) => ({
+              key: `${item.id}-${assignment.category}`,
+              category: assignment.category,
+              max_budget: assignment.max_budget,
+              current_spending: assignment.current_spending,
+              tooltip: `Budget: ${assignment.budget_name || assignment.budget_id} · Duration: ${
+                assignment.budget_duration ?? '-'
+              } · Reset: ${assignment.budget_reset_at ?? '-'}`,
             }))}
-            emptyMessage="-"
           />
         )
       },
@@ -277,6 +290,8 @@ const UsersManagementPage: FC = () => {
         return (
           <NavigationMore
             hideOnClickInside
+            className="justify-end"
+            buttonClassName="ml-auto"
             items={[
               {
                 title: 'View details',
@@ -347,6 +362,7 @@ const UsersManagementPage: FC = () => {
               pagination={pagination}
               onPaginationChange={handlePageChange}
               perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+              tableClassName="table-fixed"
             />
             {isAdmin && isSelectAllLoading && (
               <div className="absolute top-0 left-0 right-0 bottom-[80px] flex items-center justify-center bg-surface-base-primary/80 backdrop-blur-sm rounded-lg z-[60]">

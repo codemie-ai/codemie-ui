@@ -40,6 +40,7 @@ export interface ColumnDefinition {
   maxLength?: number
   sortable?: boolean
   headClassNames?: string
+  headerNoWrap?: boolean
   shrink?: boolean
   semiBold?: boolean
   tooltip?: string

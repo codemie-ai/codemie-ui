@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useMemo, useCallback, useEffect, useState } from 'react'
+import { FC, useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import AssistantSvg from '@/assets/icons/assistant-alt.svg?react'
@@ -30,6 +30,7 @@ import WorkflowSvg from '@/assets/icons/workflow.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import Input from '@/components/form/Input'
+import Select from '@/components/form/Select'
 import InfoWarning from '@/components/InfoWarning'
 import NavigationMore, { NavigationItem } from '@/components/NavigationMore/NavigationMore'
 import Table from '@/components/Table'
@@ -37,11 +38,16 @@ import { ButtonSize, DECIMAL_PAGINATION_OPTIONS, ButtonType, InfoWarningType } f
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
+import BudgetSpendCell from '@/pages/settings/administration/components/BudgetSpendCell'
 import NameLinkCell from '@/pages/settings/administration/components/NameLinkCell'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
-import { Project, ProjectSpendingSummaryCompact, ProjectType } from '@/types/entity/project'
+import {
+  BudgetCategory,
+  BUDGET_CATEGORY_OPTIONS,
+} from '@/types/entity/budget'
+import { Project, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
@@ -70,25 +76,29 @@ const WARNING_MESSAGES = {
 const FEATURE_FLAG_PROJECT_CREATION = 'features:userAbilityToCreateProject'
 const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
 const COST_CENTER_COLUMN_KEY = 'cost_center_name'
-const SPEND_COLUMN_KEY = 'spend'
+const BUDGETS_COLUMN_KEY = 'budgets'
+
+const budgetAssignmentFilterOptions = [
+  { label: 'All projects', value: 'all' },
+  { label: 'With assigned budgets', value: 'assigned' },
+]
+
+const budgetCategoryFilterOptions = [
+  { label: 'All categories', value: '' },
+  ...BUDGET_CATEGORY_OPTIONS,
+]
+
+const parseBudgetAssignmentFilter = (value: unknown): 'all' | 'assigned' =>
+  value === 'assigned' ? 'assigned' : 'all'
+
+const parseBudgetCategoryFilter = (value: unknown): BudgetCategory | '' =>
+  BUDGET_CATEGORY_OPTIONS.some((option) => option.value === value) ? (value as BudgetCategory) : ''
 
 const formatCurrency = (value: number): string =>
   `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-const renderSpendingCell = (spending: ProjectSpendingSummaryCompact | null | undefined) => {
-  if (!spending) return <span className="text-text-primary">-</span>
-
-  return (
-    <div className="flex flex-col">
-      <span className="text-text-primary text-sm">{formatCurrency(spending.current_spending)}</span>
-      {spending.budget_limit !== null && (
-        <span className="text-text-quaternary text-xs">
-          {spending.total_percent.toFixed(2)}% of limit
-        </span>
-      )}
-    </div>
-  )
-}
+const formatSpend = (value: number | null | undefined): string =>
+  value == null ? '-' : formatCurrency(value)
 
 const calculateTotalAssignments = (project: Project): number => {
   const c = project.counters
@@ -108,39 +118,40 @@ const columnDefinitions: ColumnDefinition[] = [
     label: 'Name',
     type: DefinitionTypes.Custom,
     sortable: true,
-    headClassNames: 'w-[22%] min-w-[180px]',
+    headClassNames: 'w-[15%]',
   },
   {
     key: COST_CENTER_COLUMN_KEY,
     label: 'Cost center',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[14%]',
+    headClassNames: 'w-[8%]',
   },
   {
-    key: SPEND_COLUMN_KEY,
-    label: 'Budget Period Spend',
+    key: BUDGETS_COLUMN_KEY,
+    label: 'Budgets',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[10%]',
+    headClassNames: 'w-[26%]',
   },
   {
     key: 'created_at',
     label: 'Created',
     type: DefinitionTypes.Date,
     sortable: true,
-    headClassNames: 'w-[12%]',
+    headClassNames: 'w-[9%]',
   },
   {
     key: 'assignments',
     label: 'Assignments',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[26%]',
+    headClassNames: 'w-[21%]',
   },
-  { key: 'users', label: 'Users', type: DefinitionTypes.Custom, headClassNames: 'w-[10%]' },
-  { key: 'actions', label: 'Actions', type: DefinitionTypes.Custom, headClassNames: 'w-[8%]' },
+  { key: 'users', label: 'Users', type: DefinitionTypes.Custom, headClassNames: 'w-[5%]' },
+  { key: 'actions', label: 'Actions', type: DefinitionTypes.Custom, headClassNames: 'w-[6%]' },
 ]
 
 const ProjectsManagementFull: FC = () => {
   const router = useVueRouter()
+  const route = router.currentRoute.value
   const { user: currentUser } = useSnapshot(userStore)
   const { projects, pagination, loading } = useSnapshot(projectsStore)
   const [search, setSearch] = useState('')
@@ -148,6 +159,17 @@ const ProjectsManagementFull: FC = () => {
   const [showModal, setShowModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
+  const [budgetAssignmentFilter, setBudgetAssignmentFilter] = useState<'all' | 'assigned'>(() =>
+    parseBudgetAssignmentFilter(route.query.budget_assignment)
+  )
+  const [budgetCategory, setBudgetCategory] = useState<BudgetCategory | ''>(() =>
+    parseBudgetCategoryFilter(route.query.budget_category)
+  )
+  const skipPaginationReloadRef = useRef(false)
+  const previousBudgetFiltersRef = useRef({
+    budgetAssignmentFilter: 'all' as 'all' | 'assigned',
+    budgetCategory: '' as BudgetCategory | '',
+  })
 
   const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
   const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
@@ -158,15 +180,70 @@ const ProjectsManagementFull: FC = () => {
   )
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
 
-  const shouldRequestSpending =
-    (currentUser?.isAdmin ?? false) || (currentUser?.applicationsAdmin?.length ?? 0) > 0
+  const budgetQueryParams = useMemo(
+    () =>
+      isBudgetManagementEnabled
+        ? {
+            includeBudgets: true,
+            hasAssignedBudgets: budgetAssignmentFilter === 'assigned',
+            budgetCategory: budgetCategory || null,
+          }
+        : undefined,
+    [isBudgetManagementEnabled, budgetAssignmentFilter, budgetCategory]
+  )
+  const budgetQueryParamsRef = useRef(budgetQueryParams)
+
+  useEffect(() => {
+    budgetQueryParamsRef.current = budgetQueryParams
+  }, [budgetQueryParams])
+
+  useEffect(() => {
+    const nextBudgetAssignmentFilter = parseBudgetAssignmentFilter(route.query.budget_assignment)
+    const nextBudgetCategory = parseBudgetCategoryFilter(route.query.budget_category)
+
+    setBudgetAssignmentFilter((current) =>
+      current === nextBudgetAssignmentFilter ? current : nextBudgetAssignmentFilter
+    )
+    setBudgetCategory((current) => (current === nextBudgetCategory ? current : nextBudgetCategory))
+  }, [route.query.budget_assignment, route.query.budget_category])
+
+  useEffect(() => {
+    const nextQuery = { ...route.query } as Record<string, string | number | boolean>
+
+    if (budgetAssignmentFilter === 'assigned') {
+      nextQuery.budget_assignment = budgetAssignmentFilter
+    } else {
+      delete nextQuery.budget_assignment
+    }
+
+    if (budgetCategory) {
+      nextQuery.budget_category = budgetCategory
+    } else {
+      delete nextQuery.budget_category
+    }
+
+    const currentBudgetAssignment = parseBudgetAssignmentFilter(route.query.budget_assignment)
+    const currentBudgetCategory = parseBudgetCategoryFilter(route.query.budget_category)
+
+    if (
+      currentBudgetAssignment === budgetAssignmentFilter &&
+      currentBudgetCategory === budgetCategory
+    ) {
+      return
+    }
+
+    router.replace({
+      path: route.path,
+      query: nextQuery,
+    })
+  }, [budgetAssignmentFilter, budgetCategory, route.path, route.query, router])
 
   const effectiveColumnDefinitions = useMemo(
     () =>
       columnDefinitions.filter(
         (c) =>
           (isCostCentersEnabled || c.key !== COST_CENTER_COLUMN_KEY) &&
-          (isBudgetManagementEnabled || c.key !== SPEND_COLUMN_KEY)
+          (isBudgetManagementEnabled || c.key !== BUDGETS_COLUMN_KEY)
       ),
     [isCostCentersEnabled, isBudgetManagementEnabled]
   )
@@ -185,66 +262,125 @@ const ProjectsManagementFull: FC = () => {
     [currentUser]
   )
 
+  const loadProjects = useCallback(
+    (
+      page: number,
+      perPage: number,
+      nextSearch: string | undefined,
+      nextSortKey: string | undefined,
+      nextSortOrder: string | undefined,
+      nextBudgetParams = budgetQueryParamsRef.current
+    ) =>
+      projectsStore.indexProjects(
+        page,
+        perPage,
+        nextSearch,
+        nextSortKey,
+        nextSortOrder,
+        false,
+        nextBudgetParams
+      ),
+    []
+  )
+
   const handleSort = useCallback(
     (key: string) => {
-      setSort((prev) => {
-        let newOrder: 'asc' | 'desc' | undefined = 'asc'
-        if (prev.sortKey === key) {
-          newOrder = prev.sortOrder === 'asc' ? 'desc' : undefined
-        }
-        const newSort: SortState = { sortKey: newOrder ? key : undefined, sortOrder: newOrder }
-        // Reset page synchronously so the useEffect[pagination.page] does not re-fire
-        // when indexProjects updates pagination.page to 0 in the store response.
+      let newOrder: 'asc' | 'desc' | undefined = 'asc'
+      if (sort.sortKey === key) {
+        newOrder = sort.sortOrder === 'asc' ? 'desc' : undefined
+      }
+      const newSort: SortState = { sortKey: newOrder ? key : undefined, sortOrder: newOrder }
+
+      setSort(newSort)
+
+      if (projectsStore.pagination.page !== 0) {
+        skipPaginationReloadRef.current = true
         projectsStore.pagination.page = 0
-        projectsStore
-          .indexProjects(
-            0,
-            pagination.perPage,
-            search || undefined,
-            newSort.sortKey,
-            newSort.sortOrder,
-            shouldRequestSpending
-          )
-          .catch((error) => {
-            console.error('Failed to load projects:', error)
-          })
-        return newSort
+      }
+
+      loadProjects(
+        0,
+        pagination.perPage,
+        search || undefined,
+        newSort.sortKey,
+        newSort.sortOrder
+      ).catch((error) => {
+        console.error('Failed to load projects:', error)
       })
     },
-    [pagination.perPage, search, shouldRequestSpending]
+    [loadProjects, pagination.perPage, search, sort.sortKey, sort.sortOrder]
   )
 
   useEffect(() => {
-    projectsStore
-      .indexProjects(
-        pagination.page,
-        pagination.perPage,
-        search || undefined,
-        sort.sortKey,
-        sort.sortOrder,
-        shouldRequestSpending
-      )
-      .catch((error) => {
-        console.error('Failed to load projects:', error)
-      })
-  }, [pagination.page, pagination.perPage, shouldRequestSpending])
+    if (skipPaginationReloadRef.current) {
+      skipPaginationReloadRef.current = false
+      return
+    }
+
+    loadProjects(
+      pagination.page,
+      pagination.perPage,
+      search || undefined,
+      sort.sortKey,
+      sort.sortOrder
+    ).catch((error) => {
+      console.error('Failed to load projects:', error)
+    })
+  }, [loadProjects, pagination.page, pagination.perPage])
+
+  useEffect(() => {
+    if (!isBudgetManagementEnabled) return
+
+    const hasBudgetFiltersChanged =
+      previousBudgetFiltersRef.current.budgetAssignmentFilter !== budgetAssignmentFilter ||
+      previousBudgetFiltersRef.current.budgetCategory !== budgetCategory
+
+    previousBudgetFiltersRef.current = {
+      budgetAssignmentFilter,
+      budgetCategory,
+    }
+
+    if (!hasBudgetFiltersChanged) return
+
+    if (projectsStore.pagination.page !== 0) {
+      skipPaginationReloadRef.current = true
+      projectsStore.pagination.page = 0
+    }
+
+    loadProjects(
+      0,
+      pagination.perPage,
+      search || undefined,
+      sort.sortKey,
+      sort.sortOrder,
+      budgetQueryParamsRef.current
+    ).catch((error) => {
+      console.error('Failed to load projects:', error)
+    })
+  }, [
+    budgetAssignmentFilter,
+    budgetCategory,
+    isBudgetManagementEnabled,
+    loadProjects,
+    pagination.perPage,
+    search,
+    sort.sortKey,
+    sort.sortOrder,
+  ])
 
   useDebouncedApply(search, 500, () => {
     // Clear sort when search changes — backend ignores sort_by during search (relevance ordering),
     // so resetting the indicator keeps the UI consistent with what the server actually returns.
     setSort({})
-    projectsStore
-      .indexProjects(
-        0,
-        pagination.perPage,
-        search || undefined,
-        undefined,
-        undefined,
-        shouldRequestSpending
-      )
-      .catch((error) => {
+    if (projectsStore.pagination.page !== 0) {
+      skipPaginationReloadRef.current = true
+      projectsStore.pagination.page = 0
+    }
+    loadProjects(0, pagination.perPage, search || undefined, undefined, undefined).catch(
+      (error) => {
         console.error('Failed to load projects:', error)
-      })
+      }
+    )
   })
 
   const handleAddProject = useCallback(() => {
@@ -272,26 +408,16 @@ const ProjectsManagementFull: FC = () => {
   )
 
   const refreshProjects = useCallback(() => {
-    projectsStore
-      .indexProjects(
-        pagination.page,
-        pagination.perPage,
-        search || undefined,
-        sort.sortKey,
-        sort.sortOrder,
-        shouldRequestSpending
-      )
-      .catch((error) => {
-        console.error('Failed to refresh projects:', error)
-      })
-  }, [
-    pagination.page,
-    pagination.perPage,
-    search,
-    sort.sortKey,
-    sort.sortOrder,
-    shouldRequestSpending,
-  ])
+    loadProjects(
+      pagination.page,
+      pagination.perPage,
+      search || undefined,
+      sort.sortKey,
+      sort.sortOrder
+    ).catch((error) => {
+      console.error('Failed to refresh projects:', error)
+    })
+  }, [loadProjects, pagination.page, pagination.perPage, search, sort.sortKey, sort.sortOrder])
 
   const handleModalClose = useCallback(() => {
     setShowModal(false)
@@ -341,20 +467,13 @@ const ProjectsManagementFull: FC = () => {
   const handlePageChange = useCallback(
     (page: number, newPerPage?: number) => {
       const perPage = newPerPage ?? pagination.perPage
-      projectsStore
-        .indexProjects(
-          page,
-          perPage,
-          search || undefined,
-          sort.sortKey,
-          sort.sortOrder,
-          shouldRequestSpending
-        )
-        .catch((error) => {
+      loadProjects(page, perPage, search || undefined, sort.sortKey, sort.sortOrder).catch(
+        (error) => {
           console.error('Failed to load projects:', error)
-        })
+        }
+      )
     },
-    [pagination.perPage, search, sort.sortKey, sort.sortOrder, shouldRequestSpending]
+    [loadProjects, pagination.perPage, search, sort.sortKey, sort.sortOrder]
   )
 
   const customRenderColumns = useMemo(
@@ -369,13 +488,27 @@ const ProjectsManagementFull: FC = () => {
       [COST_CENTER_COLUMN_KEY]: (item: Project) => (
         <span className="text-text-primary break-all">{displayValue(item.cost_center_name)}</span>
       ),
-      [SPEND_COLUMN_KEY]: (item: Project) => renderSpendingCell(item.spending),
+      [BUDGETS_COLUMN_KEY]: (item: Project) => (
+        <BudgetSpendCell
+          items={(item.budgets ?? []).map((budget) => ({
+            key: budget.budget_id,
+            category: budget.budget_category,
+            max_budget: budget.max_budget,
+            current_spending: budget.current_spending,
+            tooltip: `Spend: ${formatSpend(budget.current_spending)} · Soft: ${formatCurrency(
+              budget.soft_budget
+            )} · Duration: ${budget.budget_duration} · Sync: ${budget.provider_sync_status ?? '-'} · Members: ${
+              budget.member_count
+            } · Allocated total: ${formatCurrency(budget.allocated_member_budget_total)}`,
+          }))}
+        />
+      ),
       users: (item: Project) => <span className="text-text-primary">{item.user_count ?? 0}</span>,
       assignments: (item: Project) => {
         const c = item.counters
 
         return (
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
             <div
               className="flex items-center border rounded-md px-2 py-1 border-border-structural w-[68px]"
               data-tooltip-id="react-tooltip"
@@ -495,7 +628,7 @@ const ProjectsManagementFull: FC = () => {
   const renderContent = () => {
     return (
       <div className="flex flex-col h-full pt-4">
-        <div className="mb-4 flex items-end gap-4">
+        <div className="mb-4 flex flex-wrap items-end gap-4">
           <div className="w-48">
             <Input
               label="Search"
@@ -513,6 +646,30 @@ const ProjectsManagementFull: FC = () => {
               </Button>
             </div>
           )}
+          {isBudgetManagementEnabled && (
+            <>
+              <div className="w-48">
+                <Select
+                  id="budget-assignment-filter"
+                  name="budget-assignment-filter"
+                  label="Budgets"
+                  value={budgetAssignmentFilter}
+                  onChangeValue={(value) => setBudgetAssignmentFilter(value ?? 'all')}
+                  options={budgetAssignmentFilterOptions}
+                />
+              </div>
+              <div className="w-48">
+                <Select
+                  id="budget-category-filter"
+                  name="budget-category-filter"
+                  label="Budget category"
+                  value={budgetCategory}
+                  onChangeValue={(value) => setBudgetCategory((value ?? '') as BudgetCategory | '')}
+                  options={budgetCategoryFilterOptions}
+                />
+              </div>
+            </>
+          )}
         </div>
         <Table
           items={projects || []}
@@ -528,6 +685,7 @@ const ProjectsManagementFull: FC = () => {
           }}
           onPaginationChange={handlePageChange}
           perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+          tableClassName="table-fixed"
         />
 
         <ProjectModal

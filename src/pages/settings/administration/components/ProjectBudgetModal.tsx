@@ -24,35 +24,50 @@ import Textarea from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
 import {
   BUDGET_CATEGORY_OPTIONS,
-  Budget,
   BudgetCategory,
-  BudgetPayload,
   generateBudgetId,
-  generateGlobalBudgetName,
+  generateProjectBudgetName,
 } from '@/types/entity/budget'
+import {
+  ProjectBudget,
+  ProjectBudgetCreatePayload,
+  ProjectBudgetUpdatePayload,
+} from '@/types/entity/projectBudget'
 
-interface BudgetModalProps {
-  visible: boolean
-  budget?: Budget | null
-  onHide: () => void
-  onSubmit: (payload: BudgetPayload) => Promise<void>
+interface ProjectBudgetModalCreateProps {
+  budget?: null
+  onSubmit: (payload: ProjectBudgetCreatePayload) => Promise<void>
 }
 
-interface BudgetFormValues {
+interface ProjectBudgetModalEditProps {
+  budget: ProjectBudget
+  onSubmit: (payload: ProjectBudgetUpdatePayload) => Promise<void>
+}
+
+type ProjectBudgetModalProps = {
+  visible: boolean
+  projectName: string
+  preselectedCategory?: BudgetCategory | null
+  assignedCategories?: BudgetCategory[]
+  onHide: () => void
+} & (ProjectBudgetModalCreateProps | ProjectBudgetModalEditProps)
+
+interface ProjectBudgetFormValues {
   name: string
   description: string
+  budget_category: BudgetCategory
+  budget_duration: string
   soft_budget: number
   max_budget: number
-  budget_duration: string
-  budget_category: BudgetCategory
 }
 
 const BUDGET_NAME_REGEX = /^[a-zA-Z0-9 ()[\]:-]+$/
+const BUDGET_DURATION_REGEX = /^\d+[dhm]$/
 
 const BUDGET_RESET_PERIOD_OPTIONS = [
-  { label: 'daily', value: '1d' },
-  { label: 'weekly', value: '7d' },
-  { label: 'monthly', value: '30d' },
+  { label: 'Daily (1d)', value: '1d' },
+  { label: 'Weekly (7d)', value: '7d' },
+  { label: 'Monthly (30d)', value: '30d' },
 ]
 
 const validationSchema = Yup.object({
@@ -64,6 +79,14 @@ const validationSchema = Yup.object({
     )
     .defined(),
   description: Yup.string().default(''),
+  budget_category: Yup.mixed<BudgetCategory>()
+    .oneOf(BUDGET_CATEGORY_OPTIONS.map((o) => o.value))
+    .required('Category is required')
+    .defined(),
+  budget_duration: Yup.string()
+    .required('Reset period is required')
+    .matches(BUDGET_DURATION_REGEX, 'Must be a number followed by d, h, or m (e.g. 30d)')
+    .defined(),
   soft_budget: Yup.number()
     .transform((value, originalValue) =>
       originalValue === '' || originalValue == null ? 0 : value
@@ -78,20 +101,17 @@ const validationSchema = Yup.object({
     .test('max-budget', 'Hard limit must be greater than or equal to soft limit', function (value) {
       return value === undefined || value >= (this.parent.soft_budget ?? 0)
     }),
-  budget_duration: Yup.string()
-    .required('Reset period is required')
-    .oneOf(
-      BUDGET_RESET_PERIOD_OPTIONS.map((o) => o.value),
-      'Please select a valid reset period'
-    )
-    .defined(),
-  budget_category: Yup.mixed<BudgetCategory>()
-    .oneOf(BUDGET_CATEGORY_OPTIONS.map((option) => option.value))
-    .required('Category is required')
-    .defined(),
 })
 
-const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }) => {
+const ProjectBudgetModal: FC<ProjectBudgetModalProps> = ({
+  visible,
+  projectName,
+  preselectedCategory,
+  assignedCategories = [],
+  onHide,
+  onSubmit,
+  budget,
+}) => {
   const isEdit = !!budget
   // Tracks the last auto-generated name so we know if the user has deviated
   const autoNameRef = useRef<string>('')
@@ -103,15 +123,15 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
     watch,
     setValue,
     formState: { errors, isDirty, isSubmitting },
-  } = useForm<BudgetFormValues>({
+  } = useForm<ProjectBudgetFormValues>({
     resolver: yupResolver(validationSchema),
     defaultValues: {
       name: '',
       description: '',
+      budget_category: preselectedCategory ?? 'platform',
+      budget_duration: '30d',
       soft_budget: 0,
       max_budget: 1,
-      budget_duration: '1d',
-      budget_category: 'platform',
     },
   })
 
@@ -124,24 +144,25 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
       reset({
         name: budget.name,
         description: budget.description ?? '',
+        budget_category: budget.budget_category,
+        budget_duration: budget.budget_duration,
         soft_budget: budget.soft_budget,
         max_budget: budget.max_budget,
-        budget_duration: budget.budget_duration,
-        budget_category: budget.budget_category,
       })
     } else {
-      const autoName = generateGlobalBudgetName('platform')
+      const category = preselectedCategory ?? 'platform'
+      const autoName = generateProjectBudgetName(projectName, category)
       autoNameRef.current = autoName
       reset({
         name: autoName,
         description: '',
+        budget_category: category,
+        budget_duration: '30d',
         soft_budget: 0,
         max_budget: 1,
-        budget_duration: '1d',
-        budget_category: 'platform',
       })
     }
-  }, [budget, isEdit, reset, visible])
+  }, [visible, preselectedCategory, projectName, budget, isEdit, reset])
 
   // In create mode: update name when category changes, unless user has edited it
   const categoryValue = watch('budget_category')
@@ -149,23 +170,41 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
 
   useEffect(() => {
     if (isEdit || !visible) return
-    const autoName = generateGlobalBudgetName(categoryValue)
+    const autoName = generateProjectBudgetName(projectName, categoryValue)
     if (nameValue === autoNameRef.current) {
       autoNameRef.current = autoName
       setValue('name', autoName, { shouldValidate: false, shouldDirty: false })
     }
-  }, [categoryValue, isEdit, visible]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [categoryValue, projectName, visible]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleFormSubmit: SubmitHandler<BudgetFormValues> = async (data) => {
-    await onSubmit({
-      budget_id: isEdit ? budget?.budget_id : generateBudgetId(data.name),
-      name: data.name,
-      description: data.description || null,
-      soft_budget: Number(data.soft_budget),
-      max_budget: Number(data.max_budget),
-      budget_duration: data.budget_duration,
-      budget_category: data.budget_category,
-    })
+  const categoryOptions = BUDGET_CATEGORY_OPTIONS.map((opt) => ({
+    ...opt,
+    disabled: assignedCategories.includes(opt.value),
+  }))
+
+  const handleFormSubmit: SubmitHandler<ProjectBudgetFormValues> = async (data) => {
+    if (isEdit) {
+      const editOnSubmit = onSubmit as (payload: ProjectBudgetUpdatePayload) => Promise<void>
+      await editOnSubmit({
+        name: data.name,
+        description: data.description || null,
+        budget_duration: data.budget_duration,
+        soft_budget: Number(data.soft_budget),
+        max_budget: Number(data.max_budget),
+      })
+    } else {
+      const createOnSubmit = onSubmit as (payload: ProjectBudgetCreatePayload) => Promise<void>
+      await createOnSubmit({
+        budget_id: generateBudgetId(data.name),
+        name: data.name,
+        description: data.description || null,
+        project_name: projectName,
+        budget_category: data.budget_category,
+        budget_duration: data.budget_duration,
+        soft_budget: Number(data.soft_budget),
+        max_budget: Number(data.max_budget),
+      })
+    }
     reset()
   }
 
@@ -173,7 +212,7 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
     <Popup
       visible={visible}
       onHide={onHide}
-      header={isEdit ? 'Edit Budget' : 'Create Budget'}
+      header={isEdit ? 'Edit Project Budget' : 'Create Project Budget'}
       onSubmit={handleSubmit(handleFormSubmit)}
       submitText={isEdit ? 'Save' : 'Create'}
       submitDisabled={isSubmitting || (isEdit && !isDirty)}
@@ -182,10 +221,10 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
       withBorderBottom={false}
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-        {isEdit && budget?.budget_id && (
+        {isEdit && (
           <div>
             <div className="text-xs text-text-quaternary mb-1">Budget ID</div>
-            <div className="text-sm text-text-primary font-mono">{budget.budget_id}</div>
+            <div className="text-xs text-text-secondary font-mono truncate">{budget.budget_id}</div>
           </div>
         )}
 
@@ -198,7 +237,7 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
               id="name"
               label="Name:"
               required
-              placeholder="Platform Default"
+              placeholder="My Project Platform"
               error={errors.name?.message}
               hint={!isEdit && nameValue ? `ID: ${generateBudgetId(nameValue) || '—'}` : undefined}
             />
@@ -230,9 +269,10 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
                 label="Category:"
                 required
                 value={field.value}
-                options={BUDGET_CATEGORY_OPTIONS}
+                options={categoryOptions}
                 onChangeValue={(value) => field.onChange(value)}
                 error={errors.budget_category?.message}
+                disabled
               />
             )}
           />
@@ -293,4 +333,4 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
   )
 }
 
-export default BudgetModal
+export default ProjectBudgetModal

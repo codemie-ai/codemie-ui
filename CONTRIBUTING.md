@@ -78,6 +78,9 @@ npm run lint
 # Run tests
 npm test
 
+# Run the shared local SonarQube check
+npm run sonar-local
+
 # Run all checks before committing
 npm run lint && npm test
 ```

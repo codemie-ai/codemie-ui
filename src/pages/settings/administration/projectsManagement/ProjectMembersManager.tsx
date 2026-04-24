@@ -32,22 +32,93 @@ import AddUserModal, {
 } from '@/pages/settings/administration/components/AddUserModal'
 import ProjectMembersBulkActions from '@/pages/settings/administration/components/projectsManagement/ProjectMembersBulkActions'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
+import { projectBudgetsStore } from '@/store/projectBudgets'
 import { userStore } from '@/store/user'
+import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
 import { ProjectRole, ProjectType } from '@/types/entity/project'
+import {
+  MemberAllocationOverridePayload,
+  ProjectBudget,
+  ProjectBudgetMemberAllocation,
+} from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { UserListItem } from '@/types/entity/user'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import toaster from '@/utils/toaster'
 
+import MemberAllocationOverrideModal from './components/MemberAllocationOverrideModal'
 import ImportUsersModal from './ImportUsersModal'
 import ProjectMembersFilters, {
   PROJECT_MEMBERS_INITIAL_FILTERS,
   ProjectMembersFiltersState,
 } from './ProjectMembersFilters'
 
+const BUDGET_CATEGORIES: BudgetCategory[] = ['platform', 'cli', 'premium_models']
+
+const formatCurrency = (value: number | null | undefined): string => {
+  if (value == null) return '-'
+  return `$${value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
+}
+
+interface UserBudgetsCellProps {
+  user: UserListItem
+  budgetAllocationLookup: Record<
+    string,
+    Record<BudgetCategory, ProjectBudgetMemberAllocation>
+  > | null
+  onOverride: (userId: string, category: BudgetCategory) => void
+}
+
+const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
+  user,
+  budgetAllocationLookup,
+  onOverride,
+}) => {
+  if (!budgetAllocationLookup) return null
+  const userAllocations = budgetAllocationLookup[user.id]
+  if (!userAllocations || !Object.keys(userAllocations).length) {
+    return <span className="text-xs text-text-quaternary">—</span>
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      {BUDGET_CATEGORIES.map((cat) => {
+        const alloc = userAllocations[cat]
+        if (!alloc) return null
+        const isFixed = alloc.allocation_mode === 'fixed'
+        return (
+          <button
+            key={cat}
+            type="button"
+            className="flex items-center gap-2 text-xs text-left w-full hover:bg-surface-specific-dropdown-hover rounded px-1 -mx-1 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation()
+              onOverride(user.id, cat)
+            }}
+            data-tooltip-id="react-tooltip"
+            data-tooltip-content="Click to override allocation"
+          >
+            <span className="text-text-quaternary w-28 shrink-0">
+              {getBudgetCategoryLabel(cat)}
+            </span>
+            <span className={isFixed ? 'text-text-warning' : 'text-text-primary'}>
+              {formatCurrency(alloc.allocated_max_budget)}
+              {isFixed && <span className="ml-1 text-text-warning">★</span>}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 interface ProjectMembersManagerProps {
   project: ProjectDetail
   onMembersChanged?: () => Promise<void> | void
+  budgets?: ProjectBudget[]
+  onBudgetsChanged?: (budgets: ProjectBudget[]) => void
 }
 
 const personalProjectTooltip = (action: string) =>
@@ -58,7 +129,7 @@ const ROLE_OPTIONS = [
   { label: 'Project Admin', value: ProjectRole.ADMINISTRATOR },
 ]
 
-const getColumnDefinitions = (canManage: boolean): ColumnDefinition[] => {
+const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnDefinition[] => {
   const columns: ColumnDefinition[] = []
 
   if (canManage) {
@@ -69,34 +140,66 @@ const getColumnDefinitions = (canManage: boolean): ColumnDefinition[] => {
     })
   }
 
+  let userColumnWidth = 'w-[52%]'
+  if (canManage && showBudgets) {
+    userColumnWidth = 'w-[24%]'
+  } else if (canManage) {
+    userColumnWidth = 'w-[42%]'
+  } else if (showBudgets) {
+    userColumnWidth = 'w-[28%]'
+  }
+
+  let roleColumnWidth = 'w-[48%]'
+  if (canManage && showBudgets) {
+    roleColumnWidth = 'w-[18%]'
+  } else if (canManage) {
+    roleColumnWidth = 'w-[28%]'
+  } else if (showBudgets) {
+    roleColumnWidth = 'w-[24%]'
+  }
+
   columns.push(
     {
       key: 'user',
       label: 'User',
       type: DefinitionTypes.Custom,
-      headClassNames: canManage ? 'w-[42%]' : 'w-[52%]',
+      headClassNames: userColumnWidth,
     },
     {
       key: 'role',
       label: 'Role',
       type: DefinitionTypes.Custom,
-      headClassNames: canManage ? 'w-[28%]' : 'w-[48%]',
+      headClassNames: roleColumnWidth,
     }
   )
+
+  if (showBudgets) {
+    columns.push({
+      key: 'budgets',
+      label: 'Budget Allocations',
+      type: DefinitionTypes.Custom,
+      headClassNames: canManage ? 'w-[42%]' : 'w-[48%]',
+    })
+  }
 
   if (canManage) {
     columns.push({
       key: 'actions',
       label: '',
       type: DefinitionTypes.Custom,
-      headClassNames: 'w-[18%]',
+      headClassNames: 'w-[12%]',
     })
   }
 
   return columns
 }
 
-const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMembersChanged }) => {
+const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
+  project,
+  onMembersChanged,
+  budgets,
+  onBudgetsChanged,
+}) => {
   const snap = useSnapshot(userStore)
   const currentUser = snap.user
 
@@ -119,6 +222,10 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
   )
   const [hasScroll, setHasScroll] = useState(false)
   const [isSelectAllLoading, setIsSelectAllLoading] = useState(false)
+  const [overrideContext, setOverrideContext] = useState<{
+    userId: string
+    category: BudgetCategory
+  } | null>(null)
 
   const tableContainerRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -135,9 +242,25 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
   const canManageProject = isAdmin || isProjectAdmin
   const isPersonal = project.project_type === ProjectType.PERSONAL
 
+  const showBudgets = !!budgets?.length
+
+  const budgetAllocationLookup = useMemo(() => {
+    if (!budgets?.length) return null
+    const lookup: Record<string, Record<BudgetCategory, ProjectBudgetMemberAllocation>> = {}
+    for (const budget of budgets) {
+      for (const alloc of budget.member_allocations) {
+        if (!lookup[alloc.user_id]) {
+          lookup[alloc.user_id] = {} as Record<BudgetCategory, ProjectBudgetMemberAllocation>
+        }
+        lookup[alloc.user_id][budget.budget_category] = alloc
+      }
+    }
+    return lookup
+  }, [budgets])
+
   const columnDefinitions = useMemo(
-    () => getColumnDefinitions(canManageProject),
-    [canManageProject]
+    () => getColumnDefinitions(canManageProject, showBudgets),
+    [canManageProject, showBudgets]
   )
 
   const perPageRef = useRef(pagination.per_page)
@@ -324,6 +447,32 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
     await onMembersChanged?.()
   }, [reloadUsers, onMembersChanged])
 
+  const refreshBudgets = useCallback(async () => {
+    if (!budgets?.length) return
+    const updated = await projectBudgetsStore.listProjectBudgets({ projectName: project.name })
+    onBudgetsChanged?.(updated)
+  }, [project.name, budgets, onBudgetsChanged])
+
+  const handleOverrideMember = useCallback(
+    async (budgetId: string, userId: string, payload: MemberAllocationOverridePayload) => {
+      await projectBudgetsStore.overrideMemberAllocation(budgetId, userId, payload)
+      toaster.info('Member allocation overridden successfully')
+      setOverrideContext(null)
+      await refreshBudgets()
+    },
+    [refreshBudgets]
+  )
+
+  const handleClearMemberOverride = useCallback(
+    async (budgetId: string, userId: string) => {
+      await projectBudgetsStore.clearMemberOverride(budgetId, userId)
+      toaster.info('Member override cleared successfully')
+      setOverrideContext(null)
+      await refreshBudgets()
+    },
+    [refreshBudgets]
+  )
+
   const getUserRole = useCallback(
     (user: UserListItem): string => {
       const userProject = user.projects?.find((p) => p.name === project.name)
@@ -373,11 +522,23 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
           </div>
         )
       },
+      budgets: (user: UserListItem) => (
+        <UserBudgetsCell
+          user={user}
+          budgetAllocationLookup={budgetAllocationLookup}
+          onOverride={(userId, category) => setOverrideContext({ userId, category })}
+        />
+      ),
       actions: (user: UserListItem) => {
         const isCreator = user.id === project.created_by
 
         return (
-          <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <div
+            role="presentation"
+            className="flex items-center justify-end gap-2"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             {!isCreator && (
               <span
                 data-tooltip-id="react-tooltip"
@@ -407,6 +568,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
       getUserRole,
       handleRoleChange,
       handleDeleteUser,
+      budgetAllocationLookup,
     ]
   )
 
@@ -545,6 +707,21 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({ project, onMemb
         onHide={() => setShowImportModal(false)}
         onSuccess={handleImportSuccess}
       />
+
+      {showBudgets && budgets && (
+        <MemberAllocationOverrideModal
+          visible={!!overrideContext}
+          userId={overrideContext?.userId ?? null}
+          budgets={budgets}
+          userAllocationsByCategory={
+            overrideContext ? budgetAllocationLookup?.[overrideContext.userId] ?? null : null
+          }
+          initialCategory={overrideContext?.category ?? null}
+          onHide={() => setOverrideContext(null)}
+          onSubmit={handleOverrideMember}
+          onClearOverride={handleClearMemberOverride}
+        />
+      )}
     </>
   )
 }

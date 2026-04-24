@@ -104,6 +104,7 @@ npm run preview      # Preview production build locally
 npm test                # Run all tests
 npm test -- --watch     # Watch mode
 npm run test:coverage   # With coverage report
+npm run sonar-local     # Run shared local SonarQube check
 ```
 
 ## Code Quality
@@ -113,6 +114,34 @@ npm run lint        # Check with ESLint
 npm run lint:fix    # Auto-fix issues
 npm run format      # Format with Prettier
 ```
+
+## Local SonarQube Scan
+
+Use this when you want a local pre-CI SonarQube check against the same remote project that SonarLint connected mode uses:
+
+```bash
+npm run sonar-local
+```
+
+This command:
+- Reads the SonarQube server URL and project key from `.sonarlint/connectedMode.json`
+- Reads the current git branch and sends it as `sonar.branch.name`
+- Generates coverage by running `npm run test:coverage`
+- Runs `sonar-scanner` and waits for the quality gate result
+- If the Sonar scan fails, prints the branch quality-gate summary, blocking hotspots, bugs/vulnerabilities, and the unresolved issue list in the same run
+
+Requirements:
+- `SONAR_TOKEN` must be set in your environment
+- `node` and `npm` must be available on your `PATH`
+- Install the scanner with `npm install -D @sonar/scan`
+- The repository must be on a named git branch, or `SONAR_BRANCH_NAME` must be set explicitly
+
+Behavior:
+- If `SONAR_TOKEN` is missing, the command prints a clear skip message and exits successfully
+- If the configured SonarQube server is unreachable, the command prints a clear skip message and exits successfully
+- Test failures, invalid Sonar credentials, and Sonar quality gate failures still fail the command after printing Sonar details
+
+This same command is also executed by the Husky pre-commit hook after the existing staged-file, license-header, and secrets checks pass.
 
 ## AI Code Review
 

@@ -27,6 +27,7 @@ coverage
 *.sw?
 
 .vite
+.scannerwork
 dist
 dist_keycloak
 .keycloakify/realm-kc-26.json

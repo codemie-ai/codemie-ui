@@ -1,0 +1,4 @@
+{
+  "sonarQubeUri": "https://sonar.core.kuberocketci.io",
+  "projectKey": "codemie-ui"
+}

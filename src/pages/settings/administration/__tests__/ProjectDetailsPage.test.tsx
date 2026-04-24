@@ -76,6 +76,7 @@ const mockProject: ProjectDetail = {
   admin_count: 1,
   cost_center_id: 'cc-1',
   cost_center_name: 'Cost Center',
+  project_member_budget_tracking_enabled: true,
   members: [],
 }
 
@@ -116,5 +117,12 @@ describe('ProjectDetailsPage', () => {
 
     expect(projectsStore.getProject).toHaveBeenCalledTimes(2)
     expect(projectsStore.getProject).toHaveBeenNthCalledWith(2, 'Test Project', true)
+  })
+
+  it('renders project member budget tracking status', async () => {
+    render(<ProjectDetailsPage />)
+
+    expect(await screen.findByText('Member budget tracking')).toBeInTheDocument()
+    expect(screen.getByText('Enabled')).toBeInTheDocument()
   })
 })

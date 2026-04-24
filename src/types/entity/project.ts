@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import { BudgetCategory } from '@/types/entity/budget'
+
 export interface ProjectCounters {
   assistants_count: number
   workflows_count: number
@@ -27,6 +29,20 @@ export interface ProjectSpendingSummaryCompact {
   total_percent: number
 }
 
+export interface ProjectAssignedBudgetSummary {
+  budget_id: string
+  name: string
+  budget_category: BudgetCategory
+  soft_budget: number
+  max_budget: number
+  budget_duration: string
+  budget_reset_at?: string | null
+  provider_sync_status?: string | null
+  member_count: number
+  allocated_member_budget_total: number
+  current_spending?: number | null
+}
+
 export interface Project {
   id: string
   name: string
@@ -39,7 +55,9 @@ export interface Project {
   created_at?: string | null
   cost_center_id?: string | null
   cost_center_name?: string | null
+  project_member_budget_tracking_enabled?: boolean
   spending?: ProjectSpendingSummaryCompact | null
+  budgets?: ProjectAssignedBudgetSummary[] | null
 }
 
 export interface ProjectRequest {
@@ -47,6 +65,7 @@ export interface ProjectRequest {
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
+  project_member_budget_tracking_enabled?: boolean
 }
 
 export enum ProjectType {
