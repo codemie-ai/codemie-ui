@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import get from 'lodash/get'
+
 import { GuardrailAssignment, GuardrailEntity } from '@/types/entity/guardrail'
 
 const getEntityHumanizedName = (entity: GuardrailEntity): string => {
@@ -44,15 +46,7 @@ export const filterPresetAssignments = (
 }
 
 export const getFieldError = (fieldPath: string, errors: any): string => {
-  const pathParts = fieldPath.split('.')
-  let error = errors
-
-  for (const part of pathParts) {
-    if (error?.[part]) error = error[part]
-    else return ''
-  }
-
-  return error?.message
+  return get(errors, fieldPath)?.message ?? ''
 }
 
 export const isPresetGuardrail = (

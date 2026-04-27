@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import get from 'lodash/get'
 import { useCallback, useEffect, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
@@ -176,15 +177,18 @@ export const useAiAdoptionConfig = (options: UseAiAdoptionConfigOptions = {}) =>
   const updateNestedValue = useCallback((path: string[], value: string) => {
     setEditingConfig((prev) => {
       if (!prev) return prev
+
       const newConfig = { ...prev }
       let current: any = newConfig
 
       for (let i = 0; i < path.length - 1; i += 1) {
+        if (get(current, path[i]) === undefined) return prev
         current[path[i]] = { ...current[path[i]] }
         current = current[path[i]]
       }
 
       const lastKey = path[path.length - 1]
+      if (get(current, lastKey) === undefined) return prev
       current[lastKey] = {
         ...current[lastKey],
         value: Number.isNaN(Number(value)) ? value : Number(value),

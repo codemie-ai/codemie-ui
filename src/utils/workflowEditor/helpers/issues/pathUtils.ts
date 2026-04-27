@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import get from 'lodash/get'
 import isEqual from 'lodash/isEqual'
 import { Primitive } from 'react-hook-form'
 
@@ -40,18 +41,11 @@ export const isPrimitive = (value: unknown): value is Primitive => {
  */
 export const getValueAtPath = (obj: object, pathStr: string): unknown => {
   const parts = pathStr
-    .replace(/\[(\d+)\]/g, '.$1') // Convert array[0] to array.0
+    .replace(/\[(\d+)\]/g, '.$1')
     .split('.')
     .filter(Boolean)
-
-  let current: any = obj
-  for (const part of parts) {
-    if (current === null || current === undefined) return undefined
-    current = current[part]
-  }
-
-  // eslint-disable-next-line consistent-return
-  return current
+  if (parts.length === 0) return obj
+  return get(obj, parts)
 }
 
 /**
