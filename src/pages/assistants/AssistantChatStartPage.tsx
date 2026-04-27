@@ -30,14 +30,19 @@ const AssistantChatStartPage: React.FC = () => {
   const { prompt } = route.query
 
   useEffect(() => {
+    let cancelled = false
+
     const startChat = async () => {
       if (!slug) return
 
       try {
         const assistant = await assistantsStore.getAssistantBySlug(slug as string)
+        if (cancelled) return
 
         if (assistant.id) {
           const chat = await chatsStore.createChat(assistant.id, assistant.name, false)
+          if (cancelled) return
+
           assistantsStore.updateRecentAssistants(assistant)
 
           router.replace({
@@ -47,13 +52,18 @@ const AssistantChatStartPage: React.FC = () => {
           })
         }
       } catch (error) {
-        console.error('Error starting chat:', error)
-        router.replace({ name: 'assistants' })
+        if (!cancelled) {
+          console.error('Error starting chat:', error)
+          router.replace({ name: 'assistants' })
+        }
       }
     }
 
     startChat()
-  }, [slug, prompt, router])
+    return () => {
+      cancelled = true
+    }
+  }, [slug, prompt]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex items-center justify-center w-full h-full">

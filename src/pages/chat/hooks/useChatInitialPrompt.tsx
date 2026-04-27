@@ -32,7 +32,7 @@ export const useChatInitialPrompt = () => {
   const queryPrompt = searchParams.get('prompt')
 
   useEffect(() => {
-    if (queryPrompt && chatId && currentChat) {
+    if (queryPrompt && chatId && currentChat && currentChat.id === chatId) {
       const assistantId = currentChat.assistantIds?.[0] ?? defaultAssistant?.id
 
       setSearchParams(new URLSearchParams(), { replace: true })

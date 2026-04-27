@@ -18,11 +18,9 @@ import React, { useEffect } from 'react'
 import { Outlet } from 'react-router'
 import { useSnapshot } from 'valtio'
 
+import AutoPopupManager from '@/components/appLevel/AutoPopupManager'
 import Banner from '@/components/appLevel/Banner'
-import FirstTimePagePopup from '@/components/appLevel/FirstTimePagePopup'
-import FirstTimeUserPopup from '@/components/appLevel/FirstTimeUserPopup'
 import Gradient from '@/components/appLevel/Gradient'
-import NewReleasePopup from '@/components/appLevel/NewReleasePopup'
 import SessionExpiredPopup from '@/components/appLevel/SessionExpiredPopup'
 import ToastContainer from '@/components/appLevel/ToastContainer'
 import { UnsavedChangesPopup } from '@/components/appLevel/UnsavedChangesPopup'
@@ -72,9 +70,7 @@ const App: React.FC = () => {
 
           {user && (
             <>
-              <NewReleasePopup />
-              <FirstTimeUserPopup />
-              <FirstTimePagePopup />
+              <AutoPopupManager />
               <FloatingKataWindow />
               <UnsavedChangesPopup />
               <HelpPanel />

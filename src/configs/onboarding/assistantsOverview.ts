@@ -15,7 +15,6 @@
 
 import { HelpPageId } from '@/constants/helpLinks'
 import { NEW_ASSISTANT } from '@/constants/routes'
-import { assistantsStore } from '@/store'
 import { OnboardingFlow } from '@/types/onboarding'
 import { isMcpEnabled, isFeatureEnabled } from '@/utils/featureFlags'
 import { collapseAccordion, expandAccordion, findOnboardingElement } from '@/utils/onboarding'
@@ -55,51 +54,20 @@ Let's open the Create Assistant form and get started!`,
       delay: 300,
     },
 
-    // Step 2a: Highlight the Generate with AI popup if it auto-opened (first-time users)
-    {
-      id: 'gen-ai-popup-intro',
-      actionType: 'Highlight',
-      condition: () => assistantsStore.loadShowNewAssistantAIPopup(),
-      title: 'Generate Assistant with AI',
-      target: () => document.querySelector('.p-dialog') as HTMLElement | null,
-      delay: 300,
-      description: `This popup appears automatically to help you get started faster.
-
-Describe your ideal assistant in plain language — for example "A code review assistant for TypeScript projects" — and AI will configure it for you: name, description, conversation starters, and system instructions.
-
-Toggle "Include tools" to also let AI pick the most relevant integrations for your use case.
-
-We'll close this dialog now and walk you through each field step by step so you can explore everything at your own pace.`,
-    },
-
-    // Tech Step 2b: Close the popup before walking through the form fields
+    // Tech Step: Close the Generate with AI popup if it auto-opened
     {
       id: 'close-gen-ai-popup',
       actionType: 'CodeExecution',
-      condition: () => assistantsStore.loadShowNewAssistantAIPopup(),
       execute: () => {
         const closeBtn = document.querySelector('.p-dialog-header-close') as HTMLElement | null
         closeBtn?.click()
       },
     },
 
-    // Step 2: Generate with AI — shown when the popup was already closed above (user saw it)
-    {
-      id: 'generate-with-ai-after-popup',
-      actionType: 'Highlight',
-      condition: () => assistantsStore.loadShowNewAssistantAIPopup(),
-      title: 'Generate with AI',
-      target: '[data-onboarding="assistant-generate-ai-btn"]',
-      description: `This button reopens the dialog we just explored. Any time you want AI to build an assistant from a plain-language description, click it — name, description, conversation starters, system instructions, and tools all generated for you in seconds.
-
-It's always available here, so you can use it on your next assistant too. For now, let's continue and explore the form fields manually.`,
-    },
-
-    // Step 2: Generate with AI — shown when the popup was not auto-opened (returning users)
+    // Step 2: Generate with AI
     {
       id: 'generate-with-ai',
       actionType: 'Highlight',
-      condition: () => !assistantsStore.loadShowNewAssistantAIPopup(),
       title: 'Generate with AI',
       target: '[data-onboarding="assistant-generate-ai-btn"]',
       description: `Not sure where to start? Click Generate with AI to describe your goal in plain language and let the platform configure the assistant for you — including its name, description, conversation starters, and system instructions.
