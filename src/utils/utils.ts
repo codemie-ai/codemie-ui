@@ -231,6 +231,13 @@ export const getToolkitFromMcpServers = (
   }
 }
 
+/**
+ * Escapes all regex special characters in a string so it can be
+ * safely interpolated into a RegExp pattern without altering the intent.
+ * Uses the standard MDN-recommended approach.
+ */
+export const escapeRegExp = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 export const getRootPath = () => {
   const { host } = window.location
   const protocol = import.meta.env.MODE === 'development' ? 'http' : 'https'

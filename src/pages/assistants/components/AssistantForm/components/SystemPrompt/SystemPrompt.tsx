@@ -19,7 +19,7 @@ import { TextareaRef } from '@/components/form/Textarea'
 import { AssistantPromptVariable } from '@/types/entity/assistant'
 import { formatDateTime, createdBy } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
-import { copyToClipboard } from '@/utils/utils'
+import { copyToClipboard, escapeRegExp } from '@/utils/utils'
 
 import ManagePromptVariablesPopup from './ManagePromptVariablesPopup'
 import SystemPromptCurrentTab from './SystemPromptCurrentTab'
@@ -41,7 +41,7 @@ interface SystemPromptProps {
 }
 
 const buildVariableRegexp = (variable: string) => {
-  return new RegExp(`{{\\s*${variable}\\s*}}`, 'g')
+  return new RegExp(`{{\\s*${escapeRegExp(variable)}\\s*}}`, 'g')
 }
 
 const SystemPrompt = forwardRef<TextareaRef, SystemPromptProps>(
