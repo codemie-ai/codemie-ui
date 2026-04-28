@@ -21,7 +21,7 @@ export const observeAndMoveStyles = (shadowRoot: ShadowRoot, appSlug: string) =>
       const cloned = el.cloneNode(true) as HTMLStyleElement
       if (cloned.getAttribute('data-styled-version')) {
         const elem = document.createElement('style')
-        elem.innerHTML = cloned.innerHTML
+        elem.textContent = cloned.textContent
         shadowRoot.append(elem)
       } else shadowRoot.prepend(cloned)
     } else if (el.nodeName === 'LINK') {
