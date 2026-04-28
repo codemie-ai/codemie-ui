@@ -5,4 +5,5 @@ useDefault = true
 paths = [
   '''.idea/''',
   '''opencode\.json''',
+  '''\.keycloakify/realm-kc-26\.json''',
 ]

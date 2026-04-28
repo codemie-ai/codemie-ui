@@ -101,10 +101,12 @@ npm run preview      # Preview production build locally
 ## Testing
 
 ```bash
-npm test                # Run all tests
-npm test -- --watch     # Watch mode
-npm run test:coverage   # With coverage report
-npm run sonar-local     # Run shared local SonarQube check
+npm test                     # Run all tests (unit + integration)
+npm run test:unit            # Unit tests only
+npm run test:integration     # Integration tests only
+npm test -- --watch          # Watch mode
+npm run test:coverage        # With coverage report
+npm run sonar-local          # Run shared local SonarQube check
 ```
 
 ## Code Quality

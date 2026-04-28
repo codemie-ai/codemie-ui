@@ -8,6 +8,8 @@
     "build:prod": "npm run typecheck && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
     "test:coverage": "vitest run --coverage",
     "preview": "vite preview",
     "format": "prettier --write src/ && npm run lint:fix",

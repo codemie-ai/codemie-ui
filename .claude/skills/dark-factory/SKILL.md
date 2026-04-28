@@ -3,7 +3,7 @@ name: dark-factory
 description: This skill should be used when the user asks to "delegate a Jira ticket to dark factory", "start working on EPMCDME ticket as a factory", "implement EPMCDME ticket",
   "begin implementation", "implement task autonomously", or wants structured technical leadership for implementing a Jira ticket.
   A valid EPMCDME-XXXXX ticket ID is REQUIRED to start. If no ticket is provided, the skill will block and ask the user to create one first.
-version: 0.3.0
+version: 0.4.0
 ---
 
 # Dark Factory: Autonomous Implementation Workflow
@@ -30,9 +30,10 @@ Phase 1 → Requirements & Jira
 Phase 2 → Complexity Assessment
 Phase 3 → Specification (Medium/Complex only)
 Phase 4 → Branch + Implementation
-Phase 5 → Code Review (auto-fix critical/major)
-Phase 6 → UI Validation (browser testing, no Jira publish)
-Phase 7 → Quality Gates + MR
+Phase 5 → Integration Tests (coverage-driven, changed files only)
+Phase 6 → Code Review (auto-fix critical/major)
+Phase 7 → UI Validation (browser testing, no Jira publish)
+Phase 8 → Quality Gates + MR
 ```
 
 ---
@@ -214,7 +215,30 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 ---
 
-## Phase 5: Code Review
+## Phase 5: Integration Tests
+
+Run the integration-tester skill in coverage-driven mode (no explicit target):
+
+```
+Skill(skill="integration-tester")
+```
+
+The skill will:
+1. Run `vitest run --coverage --changed main` — **only changed files relative to `main`**
+2. Find pages/components where Branch coverage < 70%
+3. Present a test plan and write tests incrementally (one at a time, run after each)
+
+**Key constraints:**
+- Tests target only files changed in this branch — no risk of writing tests for the entire project
+- If all changed files already have Branch ≥ 70% → skill reports this and exits — proceed to Phase 6
+- If changed files are types / constants / pure utilities with no UI → skill may find nothing to test — proceed to Phase 6
+- Anti-loop rule: max 2 fix attempts per failing test, then `it.skip` and move on
+
+**Do NOT block on integration tests.** If the skill cannot reach 70% branch coverage after one round of tests, accept the partial result and proceed. Coverage is a goal, not a gate.
+
+---
+
+## Phase 6: Code Review
 
 Invoke the code-reviewer skill in auto-fix mode:
 ```
@@ -229,7 +253,7 @@ Skill(skill="code-reviewer", args="
 
 The skill will:
 1. Check for existing spec at `.codemie/reviews/<ticket>/review.md`
-2. Review all changed files for CRITICAL and MAJOR issues
+2. Review all changed files (including new integration test files) for CRITICAL and MAJOR issues
 3. Save findings to spec (or update existing spec)
 4. Auto-fix all issues without asking for confirmation
 5. Create commit marker
@@ -241,7 +265,7 @@ npm run lint:fix
 
 ---
 
-## Phase 6: UI Validation
+## Phase 7: UI Validation
 
 Invoke the ui-tester sub-agent to verify the implemented functionality in the browser:
 ```
@@ -259,12 +283,12 @@ Task(subagent_type="ui-tester", prompt="
 
 ---
 
-## Phase 7: Quality Gates and MR
+## Phase 8: Quality Gates and MR
 
-### Step 7a: Run Quality Checks
+### Step 8a: Run Quality Checks
 
 ```bash
-# Unit tests
+# All tests (unit + integration)
 npm test
 
 # Lint
@@ -276,7 +300,7 @@ npm run build
 
 All checks must pass before creating the MR. Fix any failures.
 
-### Step 7b: Commit Final Changes
+### Step 8b: Commit Final Changes
 
 Stage and commit all remaining changes:
 ```bash
@@ -287,7 +311,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 git push
 ```
 
-### Step 7c: Create Merge Request
+### Step 8c: Create Merge Request
 
 Use the codemie-mr skill or create directly:
 ```
@@ -303,6 +327,7 @@ gh pr create --title "EPMCDME-XXXXX: [summary]" --body "$(cat <<'EOF'
 
 ## Test Plan
 - [ ] Unit tests pass
+- [ ] Integration tests pass (coverage-driven, changed files only)
 - [ ] Lint passes
 - [ ] UI validation passed (ui-tester)
 
@@ -335,7 +360,7 @@ git pull origin EPMCDME-XXXXX
 Do not create MR. Fix failing tests first, then re-run quality gates.
 
 ### UI Validation Failures
-Fix the reported issues and re-run ui-tester before proceeding to Step 7.
+Fix the reported issues and re-run ui-tester before proceeding to Phase 8.
 
 ---
 
@@ -348,6 +373,7 @@ Fix the reported issues and re-run ui-tester before proceeding to Step 7.
 ✅ Always check for duplicate/related tickets via brianna
 ✅ Create feature branch before any code changes
 ✅ Use complexity score to route: simple → direct, medium/complex → spec first
+✅ Write integration tests only for changed files — never for the whole project
 ✅ Auto-fix critical and major code review issues
 ✅ Run UI validation before MR — fix failures before continuing
 ✅ Run tests and lint before MR
@@ -361,6 +387,7 @@ Fix the reported issues and re-run ui-tester before proceeding to Step 7.
 ❌ Don't create MR with failing tests or lint errors
 ❌ Don't use solution architect for simple/bug-fix tasks
 ❌ Don't guess at complexity — use the scoring matrix
+❌ Don't block on integration test coverage — partial coverage is acceptable
 
 ---
 
@@ -380,6 +407,7 @@ Fix the reported issues and re-run ui-tester before proceeding to Step 7.
 |---------------|------|-----|
 | **brianna** | Phase 1 — ticket fetch + duplicate search | `Skill(skill="brianna", ...)` |
 | **solution-architect** | Phase 3 — Medium/Complex spec | `Task(subagent_type="solution-architect", ...)` |
-| **code-reviewer** | Phase 5 — code quality | `Skill(skill="code-reviewer", ...)` |
-| **ui-tester** | Phase 6 — browser validation | `Task(subagent_type="ui-tester", ...)` |
-| **codemie-mr** | Phase 7 — MR creation | `Skill(skill="codemie-mr", ...)` |
+| **integration-tester** | Phase 5 — integration tests for changed files | `Skill(skill="integration-tester")` |
+| **code-reviewer** | Phase 6 — code quality | `Skill(skill="code-reviewer", ...)` |
+| **ui-tester** | Phase 7 — browser validation | `Task(subagent_type="ui-tester", ...)` |
+| **codemie-mr** | Phase 8 — MR creation | `Skill(skill="codemie-mr", ...)` |

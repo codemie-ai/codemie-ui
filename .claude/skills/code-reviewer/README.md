@@ -7,7 +7,6 @@ AI-assisted code review for the CodeMie UI codebase. Reviews React/TypeScript fo
 ## How to launch
 
 ```
-@code-reviewer
 /code-reviewer
 ```
 
@@ -19,7 +18,7 @@ Or just say: **"do code review"**, **"review my changes"**, **"check code qualit
 
 | Mode | How to trigger | Behavior |
 |------|---------------|----------|
-| **Default** | `@code-reviewer` / `/code-reviewer` | Fully automated — no questions, auto-fixes all issues, commits, pushes, approves MR |
+| **Default** | `/code-reviewer` | Fully automated — no questions, auto-fixes all issues, commits, pushes, approves MR |
 | **Interactive** | `/code-reviewer --interactive` | Asks depth, ticket, goal, base branch — developer controls all decisions |
 
 ---

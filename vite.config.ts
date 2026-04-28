@@ -101,11 +101,11 @@ export default defineConfig(({ mode }) => {
           '**/*.cjs',
           '**/main.ts',
           '**/api.ts',
-          '**/setupTests.ts',
+          '**/setupTests.tsx',
+          '**/setupTests.unit.ts',
           '**/setupTests.js',
         ],
       },
-      include: ['**/__tests__/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
       sequence: {
         shuffle: {
           files: true,

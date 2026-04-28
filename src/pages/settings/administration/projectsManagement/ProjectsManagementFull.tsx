@@ -43,10 +43,7 @@ import NameLinkCell from '@/pages/settings/administration/components/NameLinkCel
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
-import {
-  BudgetCategory,
-  BUDGET_CATEGORY_OPTIONS,
-} from '@/types/entity/budget'
+import { BudgetCategory, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
 import { Project, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import toaster from '@/utils/toaster'
@@ -497,9 +494,11 @@ const ProjectsManagementFull: FC = () => {
             current_spending: budget.current_spending,
             tooltip: `Spend: ${formatSpend(budget.current_spending)} · Soft: ${formatCurrency(
               budget.soft_budget
-            )} · Duration: ${budget.budget_duration} · Sync: ${budget.provider_sync_status ?? '-'} · Members: ${
-              budget.member_count
-            } · Allocated total: ${formatCurrency(budget.allocated_member_budget_total)}`,
+            )} · Duration: ${budget.budget_duration} · Sync: ${
+              budget.provider_sync_status ?? '-'
+            } · Members: ${budget.member_count} · Allocated total: ${formatCurrency(
+              budget.allocated_member_budget_total
+            )}`,
           }))}
         />
       ),

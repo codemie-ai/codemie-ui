@@ -219,7 +219,7 @@ START
 - **Version**: 0.4.6
 - **Development Server**: `npm run dev`
 - **Build**: `npm run build`
-- **Test**: `npm test` / `npm run test-react`
+- **Test**: `npm test` (all) / `npm run test:unit` / `npm run test:integration`
 - **Branching Model**: Trunk-based development (PRs to `main`)
 - **Branch Pattern**: `EPMCDME-XX_short-description`
 - **Commit Pattern**: `EPMCDME-XX: Capital sentence` — enforced by Tekton CI (blocks pipeline on violation)
@@ -327,7 +327,9 @@ codemie-ui-next/
 | **Dev Server** | `npm run dev` | Start development server (port 5173) |
 | **Build** | `npm run build` | Production build |
 | **Preview** | `npm run preview` | Preview production build |
-| **Test** ⚠️ | `npm test` | Run all tests |
+| **Test** ⚠️ | `npm test` | Run all tests (unit + integration) |
+| **Test Unit** | `npm run test:unit` | Run only unit tests |
+| **Test Integration** | `npm run test:integration` | Run only integration tests |
 | **Test Watch** | `npm test -- --watch` | Run tests in watch mode |
 | **Lint** | `npm run lint` | Check code quality |
 | **Lint + Fix** | `npm run lint:fix` | Fix auto-fixable issues |

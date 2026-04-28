@@ -35,13 +35,16 @@ interface BudgetSpendCellProps {
 const formatCurrency = (value: number): string =>
   `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-const formatSpend = (value: number | null | undefined): string => (value == null ? '-' : formatCurrency(value))
+const formatSpend = (value: number | null | undefined): string =>
+  value == null ? '-' : formatCurrency(value)
 
-const formatBudget = (value: number | null | undefined): string => (value == null ? '-' : formatCurrency(value))
+const formatBudget = (value: number | null | undefined): string =>
+  value == null ? '-' : formatCurrency(value)
 
 const BudgetSpendCell: FC<BudgetSpendCellProps> = ({ items }) => {
   const budgets = [...(items ?? [])].sort(
-    (left, right) => BUDGET_CATEGORY_ORDER.indexOf(left.category) - BUDGET_CATEGORY_ORDER.indexOf(right.category)
+    (left, right) =>
+      BUDGET_CATEGORY_ORDER.indexOf(left.category) - BUDGET_CATEGORY_ORDER.indexOf(right.category)
   )
 
   if (budgets.length === 0) {
@@ -58,13 +61,18 @@ const BudgetSpendCell: FC<BudgetSpendCellProps> = ({ items }) => {
     : '-'
   const totalSpendRaw = trackedSpends.reduce((sum, value) => sum + value, 0)
   const totalColor =
-    trackedSpends.length > 0 ? getHardLimitSpendColor(totalSpendRaw, hasBudgetLimit ? totalBudgetRaw : null) : undefined
+    trackedSpends.length > 0
+      ? getHardLimitSpendColor(totalSpendRaw, hasBudgetLimit ? totalBudgetRaw : null)
+      : undefined
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <div className="flex items-center gap-2 text-xs text-left w-full px-1 -mx-1">
         <span className="text-text-quaternary w-28 shrink-0 break-words">Total</span>
-        <span className="whitespace-nowrap text-text-primary" style={totalColor ? { color: totalColor } : undefined}>
+        <span
+          className="whitespace-nowrap text-text-primary"
+          style={totalColor ? { color: totalColor } : undefined}
+        >
           {totalSpend} / {formatBudget(hasBudgetLimit ? totalBudgetRaw : null)}
         </span>
       </div>

@@ -548,7 +548,7 @@ const otherRoutes: RouteObject[] = [
   },
 ]
 
-export const router = createHashRouter([
+export const routes: RouteObject[] = [
   {
     id: 'root',
     path: '/',
@@ -585,6 +585,8 @@ export const router = createHashRouter([
     path: '/auth/sign-up',
     Component: SignUpPage,
   },
-])
+]
+
+export const router = createHashRouter(routes)
 
 export default router
