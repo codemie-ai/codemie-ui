@@ -39,6 +39,10 @@ function daemonRunning(engine) {
 
 function detectEngine() {
   for (const engine of ['docker', 'podman']) {
+    if (commandExists(engine) && daemonRunning(engine)) return engine
+  }
+  // Fall back to any installed engine (will fail with daemon hint)
+  for (const engine of ['docker', 'podman']) {
     if (commandExists(engine)) return engine
   }
   return null

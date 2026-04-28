@@ -42,3 +42,5 @@ public/keycloakify-dev-resources
 bmad/*
 .gemini/*
 /opencode.json
+/.playwright-mcp/
+/test-results/

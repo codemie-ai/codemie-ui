@@ -74,15 +74,17 @@ const SystemPromptGenAIPopup = ({
     const currentRequestId = requestIdRef.current
 
     setIsLoading(true)
-    const prompt = await assistantsStore.generateAssistantPromptWithAI(
-      getValues('prompt'),
-      existingPrompt
-    )
-
-    if (currentRequestId !== requestIdRef.current) return
-
-    handleHide()
-    onSuggestedPrompt(prompt.system_prompt)
+    try {
+      const prompt = await assistantsStore.generateAssistantPromptWithAI(
+        getValues('prompt'),
+        existingPrompt
+      )
+      if (currentRequestId !== requestIdRef.current) return
+      handleHide()
+      onSuggestedPrompt(prompt.system_prompt)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {

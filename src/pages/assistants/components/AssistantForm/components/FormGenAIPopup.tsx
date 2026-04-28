@@ -75,11 +75,14 @@ const FormGenAIPopup = ({ isVisible, onHide, onGenerated }: GenWithAIPopupProps)
     const currentRequestId = requestIdRef.current
 
     setIsLoading(true)
-    const data = await assistantsStore.generateAssistantWithAI(values.prompt, shouldIncludeTools)
-    if (currentRequestId !== requestIdRef.current) return
-
-    handleHide()
-    onGenerated?.(data)
+    try {
+      const data = await assistantsStore.generateAssistantWithAI(values.prompt, shouldIncludeTools)
+      if (currentRequestId !== requestIdRef.current) return
+      handleHide()
+      onGenerated?.(data)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {
