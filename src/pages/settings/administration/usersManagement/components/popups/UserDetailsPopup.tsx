@@ -27,6 +27,7 @@ import { USER_TYPES } from '@/constants/user'
 import BudgetAssignmentsEditor from '@/pages/settings/administration/components/BudgetAssignmentsEditor'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
 import UserProjectsTable from '@/pages/settings/administration/usersManagement/components/UserProjectsTable'
+import SpendingCard from '@/pages/settings/components/SpendingCard'
 import { userStore } from '@/store/user'
 import { BudgetAssignment } from '@/types/entity/budget'
 import { UserListItem, UserType } from '@/types/entity/user'
@@ -178,7 +179,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
       visible={isOpen}
       onHide={handleClose}
       header="User Details"
-      className="w-[600px]"
+      className="w-[1000px]"
     >
       {isLoading || !user ? (
         <Spinner inline rootClassName="py-32" />
@@ -274,6 +275,8 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
                 </div>
               </>
             )}
+
+            <SpendingCard userId={userId} />
 
             <div className="bg-border-structural h-px" />
 

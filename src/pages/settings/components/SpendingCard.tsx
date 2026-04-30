@@ -51,21 +51,28 @@ ChartJS.register(ArcElement, ChartTooltip, Legend, ChartDataLabels)
 const SPENDING_DANGER_THRESHOLD = 75
 const SPENDING_WARNING_THRESHOLD = 50
 
-const SpendingCard: FC = () => {
+interface SpendingCardProps {
+  userId?: string
+}
+
+const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
   const [keySpendingData, setKeySpendingData] = useState<TabularResponse | null>(null)
   const [isLoadingKeySpending, setIsLoadingKeySpending] = useState(true)
 
   useEffect(() => {
     const fetchKeySpending = async () => {
       setIsLoadingKeySpending(true)
-      const result = await analyticsStore.fetchTabularData(TabularMetricType.KEY_SPENDING, {})
+      const result = await analyticsStore.fetchTabularData(
+        TabularMetricType.KEY_SPENDING,
+        userId ? { user_id: userId } : {}
+      )
       if (result) {
         setKeySpendingData(result)
       }
       setIsLoadingKeySpending(false)
     }
     fetchKeySpending()
-  }, [])
+  }, [userId])
 
   const rowCount = keySpendingData?.data?.rows?.length ?? 0
   const shouldUseWidget = rowCount <= 1
@@ -251,12 +258,15 @@ const SpendingCard: FC = () => {
           <div className="w-8 h-8 min-w-8 bg-surface-specific-dropdown-hover text-text-primary rounded-full flex justify-center items-center">
             <CurrencySvg className="w-[18px] h-[18px]" />
           </div>
-          <h2 className="font-medium place-content-center">Your personal spending</h2>
+          <h2 className="font-medium place-content-center">
+            {userId ? 'User spending' : 'Your personal spending'}
+          </h2>
 
           <div className="col-start-2">
             <p className="text-text-quaternary text-xs mt-2">
-              Shows your current spending against your budget limit. Keep an eye on this to avoid
-              unexpected costs!
+              {userId
+                ? "Shows this user's current spending against their budget limit."
+                : 'Shows your current spending against your budget limit. Keep an eye on this to avoid unexpected costs!'}
             </p>
           </div>
 
@@ -292,8 +302,12 @@ const SpendingCard: FC = () => {
 
   return (
     <InfoCard
-      heading="Your personal spending"
-      description="Shows your current spending against your budget limit. Keep an eye on this to avoid unexpected costs!"
+      heading={userId ? 'User spending' : 'Your personal spending'}
+      description={
+        userId
+          ? "Shows this user's current spending against their budget limit."
+          : 'Shows your current spending against your budget limit. Keep an eye on this to avoid unexpected costs!'
+      }
       icon={() => <CurrencySvg className="w-[18px] h-[18px]" />}
       data-onboarding="spending-card"
     >
