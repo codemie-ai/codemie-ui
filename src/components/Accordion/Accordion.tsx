@@ -63,7 +63,7 @@ const Accordion = ({
           toggleableContent: () => '',
         }}
         header={(props) => (
-          <div className="flex items-center justify-between gap-3 p-4 bg-surface-base-float group transition hover:opacity-85">
+          <div className="flex items-center justify-between gap-3 p-4 bg-surface-base-secondary group transition hover:opacity-85 shadow-[0_1px_0_rgb(var(--colors-border-primary))]">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <h1 className="font-semibold text-text-primary">{title}</h1>

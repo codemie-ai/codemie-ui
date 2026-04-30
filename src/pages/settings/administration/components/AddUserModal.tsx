@@ -147,7 +147,7 @@ const AddUserModal: FC<AddUserModalProps> = ({ visible, onHide, onSubmit }) => {
             id="userIdentifier"
             name="userIdentifier"
             value={selectedUserId}
-            onChange={(e) => handleUserChange(e.value)}
+            onChange={(e) => handleUserChange(e.target.value)}
             options={userOptions}
             label="Select user:"
             placeholder="Click to search..."
