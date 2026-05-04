@@ -160,7 +160,8 @@ const preset: PrimeReactPTOptions['multiselect'] = {
     className: [
       // Position
       'absolute top-0 left-0',
-
+      // Sizing
+      'px-0.5',
       // Shape
       'border-0 dark:border',
       'rounded-md',
@@ -345,7 +346,7 @@ const preset: PrimeReactPTOptions['multiselect'] = {
       'max-h-[200px]',
 
       // Misc
-      'overflow-auto',
+      'overflow-auto show-scroll',
     ],
   },
   list: {

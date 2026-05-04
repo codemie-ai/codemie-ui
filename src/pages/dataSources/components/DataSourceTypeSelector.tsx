@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import orderBy from 'lodash/orderBy'
 import { useEffect, useMemo } from 'react'
 import { UseFormClearErrors } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
@@ -75,7 +76,8 @@ const DataSourceTypeSelector = ({
         label: humanize(item.name),
       })) || []
 
-    return [...baseTypes, ...providerTypes]
+    const options = [...baseTypes, ...providerTypes]
+    return orderBy(options, ['label'], ['asc'])
   }, [indexProviderSchemas])
 
   useEffect(() => {

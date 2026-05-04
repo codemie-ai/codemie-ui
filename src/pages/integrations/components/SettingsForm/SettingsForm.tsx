@@ -14,6 +14,7 @@
 //
 
 import { yupResolver } from '@hookform/resolvers/yup'
+import orderBy from 'lodash/orderBy'
 import { forwardRef, useImperativeHandle, useState, useEffect, useMemo } from 'react'
 import { useForm, Controller, useWatch } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
@@ -200,10 +201,12 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   }, [CREDENTIAL_VALUES_MAPPING, credentialType])
 
   const credentialTypeOptions = useMemo(() => {
-    return CREDENTIAL_TYPES.map((type) => ({
+    const options = CREDENTIAL_TYPES.map((type) => ({
       label: CREDENTIAL_VALUES_MAPPING[type]?.displayName || getOriginalCredentialType(type),
       value: type,
     }))
+
+    return orderBy(options, ['label'], 'asc')
   }, [CREDENTIAL_TYPES, CREDENTIAL_VALUES_MAPPING])
 
   useEffect(() => {

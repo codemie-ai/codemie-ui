@@ -47,15 +47,16 @@ const preset: PrimeReactPTOptions['autocomplete'] = {
   },
   panel: {
     className:
-      'mt-2 p-2 max-w-[400px] shadow-md bg-surface-base-secondary border rounded-lg border border-border-specific-panel-outline flex flex-col-reverse',
+      'mt-2 py-2 px-0.5 max-w-[400px] shadow-md bg-surface-base-secondary border rounded-lg border border-border-specific-panel-outline flex flex-col-reverse',
   },
   item: ({ context }: AutoCompletePassThroughMethodOptions) => ({
     className: [
-      'text-sm rounded-lg py-1.5 px-2.5 text-text-primary cursor-pointer hover:bg-surface-specific-dropdown-hover hover:text-text-accent transition',
+      'text-sm rounded-lg py-1.5 pl-2.5 mx-2 text-text-primary cursor-pointer hover:bg-surface-specific-dropdown-hover hover:text-text-accent transition',
       'overflow-hidden whitespace-nowrap truncate',
       { 'bg-white/5': context.selected },
     ],
   }),
+  list: { className: 'show-scroll max-h-[200px] overflow-auto' },
   emptyMessage: { className: 'py-1.5 leading-none text-sm text-center text-text-quaternary' },
   loadingIcon: { className: 'text-text-quaternary right-3 top-1/2 -mt-2' },
   dropdownButton: {

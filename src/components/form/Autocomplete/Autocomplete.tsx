@@ -207,7 +207,10 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
           placeholder={placeholder}
           minLength={0}
           invalid={!!error}
-          pt={{ ...ptPreset, loadingIcon: { className: isLoadingIconVisible ? '' : 'hidden' } }}
+          pt={{
+            ...ptPreset,
+            loadingIcon: { className: isLoadingIconVisible ? '' : 'hidden' },
+          }}
           emptyMessage="No results found"
           dropdownIcon={<ChevronDownSvg />}
           showEmptyMessage
