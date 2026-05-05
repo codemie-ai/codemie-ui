@@ -264,6 +264,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code }) => {
             dangerouslySetInnerHTML={{
               __html: DOMPurify.sanitize(renderedSvg, {
                 USE_PROFILES: { svg: true, svgFilters: true },
+                ADD_TAGS: ['foreignObject'],
               }),
             }}
             className="min-w-full [&>svg]:max-h-[500px] [&>svg]:min-h-[500px] [&>svg]:min-w-full [&>svg]:max-w-full"

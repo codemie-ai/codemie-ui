@@ -155,7 +155,7 @@ const ChatPrompt: FC = () => {
           onStarterClick={(text) => setPrompt({ message: text, messageRaw: sanitizeMessage(text) })}
         />
       )}
-      <div className="relative w-full">
+      <div className="relative w-full z-20">
         {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
         <div className="w-full flex flex-col px-6 scrollbar-gutter overflow-y-auto min-h-32 h-fit -translate-y-3 z-10 shrink-0">
           <div
