@@ -40,14 +40,13 @@ const AssistantChatStartPage: React.FC = () => {
         if (cancelled) return
 
         if (assistant.id) {
-          const chat = await chatsStore.createChat(assistant.id, assistant.name, false)
+          await chatsStore.startNewChat(assistant.id, assistant.name, false)
           if (cancelled) return
 
           assistantsStore.updateRecentAssistants(assistant)
 
           router.replace({
-            name: 'chats',
-            params: { id: chat.id },
+            name: 'new-chat',
             query: prompt ? { prompt } : {},
           })
         }

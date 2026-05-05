@@ -16,6 +16,7 @@
 import { proxy } from 'valtio'
 
 import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
+import { router } from '@/hooks/useVueRouter'
 import {
   Conversation,
   ChatFolder,
@@ -40,6 +41,12 @@ import { ChatExportFormat } from '../types/chats'
 
 const LAST_CHAT_ID = 'last-chat-id'
 
+interface NewChatParams {
+  assistantId: string
+  folder: string
+  isWorkflow: boolean
+}
+
 export interface ChatsStoreType {
   // State
   metrics: ChatMetrics | null
@@ -50,6 +57,8 @@ export interface ChatsStoreType {
   openedChatsHistory: Conversation[]
   abortControllers: Record<string, AbortController>
   isInitialDataFetched: boolean
+  isNewChat: boolean
+  newChatParams: NewChatParams | null
 
   // Chat management methods
   getLastChat(): string | null
@@ -59,6 +68,8 @@ export interface ChatsStoreType {
   getSharedChat(token: string): Promise<Conversation>
   setOpenChat(newChat: Conversation, saveToOpenedChatsHistory?: boolean): Conversation
   clearCurrentChat(): void
+  startNewChat(assistantId?: string, folder?: string, isWorkflow?: boolean): Promise<Conversation>
+  createChat(): Promise<Conversation>
   createChat(assistantId?: string, folder?: string, isWorkflow?: boolean): Promise<Conversation>
   pinChat(id: string): Promise<void>
   renameChat(id: string, name: string): Promise<void>
@@ -113,6 +124,8 @@ export const chatsStore = proxy<ChatsStoreType>({
   metrics: null,
   isChatsLoading: false,
   isInitialDataFetched: false,
+  isNewChat: false,
+  newChatParams: null,
   abortControllers: {},
 
   getLastChat() {
@@ -198,12 +211,40 @@ export const chatsStore = proxy<ChatsStoreType>({
     chatsStore.currentChat = null
   },
 
-  createChat: async (assistantID, folder = '', isWorkflow = false) => {
+  startNewChat: async (assistantId = '', folder = '', isWorkflow = false) => {
     const folderValue = folder === DEFAULT_CHAT_FOLDER ? '' : folder
+
+    const params = new URLSearchParams()
+    if (assistantId) params.set('initial_assistant_id', assistantId)
+    if (folderValue) params.set('folder', folderValue)
+    params.set('is_workflow', String(isWorkflow))
+
+    const templateResponse = await api.get(`v1/conversations/new?${params.toString()}`)
+    const fullChatDto = await templateResponse.json()
+
+    const newConversation = transformChatBEtoFE(fullChatDto)
+
+    newConversation.id = ''
+
+    chatsStore.isNewChat = true
+    chatsStore.newChatParams = { assistantId, folder: folderValue, isWorkflow }
+    chatsStore.currentChat = newConversation
+
+    return newConversation
+  },
+
+  createChat: async () => {
+    const params = chatsStore.newChatParams ?? {
+      assistantId: '',
+      folder: '',
+      isWorkflow: false,
+    }
+
+    const folderValue = params.folder === DEFAULT_CHAT_FOLDER ? '' : params.folder
     const response = await api.post(`v1/conversations`, {
-      initial_assistant_id: assistantID,
+      initial_assistant_id: params.assistantId,
       folder: folderValue,
-      is_workflow: isWorkflow,
+      is_workflow: params.isWorkflow,
     })
     const newChat = await response.json()
     const transformedChat = transformChatListItemDTOs([newChat])[0]
@@ -214,7 +255,15 @@ export const chatsStore = proxy<ChatsStoreType>({
       chatsStore.getChats()
     }
     chatsStore.getFolders()
-    return newChat
+
+    const fullChat = await chatsStore.getChat(newChat.id)
+
+    chatsStore.isNewChat = false
+    chatsStore.newChatParams = null
+
+    router.replace({ name: 'chats', params: { id: newChat.id } })
+
+    return fullChat
   },
 
   pinChat: async (id) => {
@@ -237,6 +286,11 @@ export const chatsStore = proxy<ChatsStoreType>({
 
   updateChat: (id, data) => {
     const chat = chatsStore.currentChat as Conversation
+
+    if (chatsStore.isNewChat) {
+      if (chat) Object.assign(chat, data)
+      return Promise.resolve(null)
+    }
 
     return api.put(`v1/conversations/${id}`, data).then((response) => {
       const chatListItem = chatsStore.chats.find((item) => item.id === id)

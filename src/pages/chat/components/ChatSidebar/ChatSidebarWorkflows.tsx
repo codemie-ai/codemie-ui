@@ -45,12 +45,9 @@ const ChatSidebarWorkflows = () => {
   }
 
   const createChat = async (workflow: any) => {
-    const chat = await chatsStore.createChat(workflow.id, workflow.name, true)
-
-    if (chat?.id) {
-      router.push({ name: 'chats', params: { id: chat.id } })
-      workflowsStore.updateRecentWorkflows(workflow)
-    }
+    await chatsStore.startNewChat(workflow.id, workflow.name, true)
+    router.push({ name: 'new-chat' })
+    workflowsStore.updateRecentWorkflows(workflow)
   }
 
   const getMenuItems = (workflow: any) => [

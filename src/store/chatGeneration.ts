@@ -139,6 +139,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       return Promise.reject(new Error('No current chat'))
     }
 
+    if (chatsStore.isNewChat) {
+      await chatsStore.createChat()
+      return chatGenerationStore.createChatGeneration(options)
+    }
+
     // For workflow chats, don't fetch assistant data
     const assistant = chat.isWorkflow
       ? chatGenerationStore._getWorkflowAsAssistant(assistantId, chat)

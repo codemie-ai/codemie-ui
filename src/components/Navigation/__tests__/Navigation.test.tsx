@@ -43,7 +43,7 @@ const {
       helpAssistants: [],
     },
     mockChatsStore: {
-      createChat: vi.fn(),
+      startNewChat: vi.fn().mockResolvedValue(undefined),
     },
     mockRouter: {
       push: vi.fn(),

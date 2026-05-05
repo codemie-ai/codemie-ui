@@ -40,11 +40,9 @@ const RunChatButton = ({
   const onStartChat = async () => {
     if (!workflow) return
 
-    const chat = await chatsStore.createChat(workflowId, workflow.name, true)
-    if (chat?.id) {
-      router.push({ name: 'chats', params: { id: chat.id } })
-      workflowsStore.updateRecentWorkflows(workflow as any)
-    }
+    await chatsStore.startNewChat(workflowId, workflow.name, true)
+    router.push({ name: 'new-chat' })
+    workflowsStore.updateRecentWorkflows(workflow as any)
   }
 
   return (

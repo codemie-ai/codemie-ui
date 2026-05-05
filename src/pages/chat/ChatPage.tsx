@@ -49,7 +49,11 @@ const ChatPage: FC = () => {
   const chatId = router.currentRoute.value.params.id as string
 
   useEffect(() => {
-    if (chatId) getChat(chatId)
+    if (chatId) {
+      getChat(chatId)
+      chatsStore.isNewChat = false
+      chatsStore.newChatParams = null
+    }
   }, [chatId])
 
   const chatConfiguration = useChatConfiguration()

@@ -39,11 +39,13 @@ const ChatHeader: FC = () => {
   const router = useVueRouter()
   const { isConfigVisible, attemptToggleConfigVisibility } = useChatContext()
   const { sidebarExpanded } = useSnapshot(appInfoStore)
-  const { currentChat, createChat, getMetrics } = useSnapshot(chatsStore) as typeof chatsStore
+  const { currentChat, getMetrics, startNewChat, isNewChat } = useSnapshot(
+    chatsStore
+  ) as typeof chatsStore
 
   const handleCreateChat = async () => {
-    const chat = await createChat('', '', false)
-    router.push({ name: 'chats', params: { id: chat.id } })
+    await startNewChat('', '', false)
+    router.push({ name: 'new-chat' })
   }
 
   const handleCreateChatWithSameAssistant = async () => {
@@ -59,8 +61,8 @@ const ChatHeader: FC = () => {
       ''
     const isWorkflow = currentChat?.isWorkflow ?? false
     const folder = currentChat?.folder ?? ''
-    const chat = await createChat(assistantId, folder, isWorkflow)
-    router.push({ name: 'chats', params: { id: chat.id } })
+    await startNewChat(assistantId, folder, isWorkflow)
+    router.push({ name: 'new-chat' })
   }
 
   const hasAssistant = !!currentChat?.initialAssistantId || !!currentChat?.assistantIds?.length
@@ -122,7 +124,7 @@ const ChatHeader: FC = () => {
 
       {currentChat && (
         <div className="flex gap-2 ml-auto shrink-0" data-onboarding="chat-header-actions">
-          {hasAssistant && (
+          {hasAssistant && !isNewChat && (
             <Button
               type="secondary"
               data-tooltip-id="react-tooltip"
@@ -134,22 +136,26 @@ const ChatHeader: FC = () => {
             </Button>
           )}
 
-          <DataOverlayButton<ChatMetrics>
-            title="Usage details"
-            subtitle="Chat totals, auto-updated"
-            data={() => getMetrics(currentChat.id)}
-            render={(data) => ({
-              'Input tokens used': data.total_input_tokens ?? 0,
-              'Output tokens used': data.total_output_tokens ?? 0,
-              'Money spent (approx)': `$${data.total_money_spent?.toFixed(4) ?? '0'}`,
-            })}
-          />
+          {!isNewChat && (
+            <>
+              <DataOverlayButton<ChatMetrics>
+                title="Usage details"
+                subtitle="Chat totals, auto-updated"
+                data={() => getMetrics(currentChat.id)}
+                render={(data) => ({
+                  'Input tokens used': data.total_input_tokens ?? 0,
+                  'Output tokens used': data.total_output_tokens ?? 0,
+                  'Money spent (approx)': `$${data.total_money_spent?.toFixed(4) ?? '0'}`,
+                })}
+              />
 
-          <ChatHeaderShareButton />
+              <ChatHeaderShareButton />
 
-          <ChatHeaderDownloadConversationButton />
+              <ChatHeaderDownloadConversationButton />
 
-          <ChatHeaderClearButton />
+              <ChatHeaderClearButton />
+            </>
+          )}
 
           <div className="mx-2 my-auto text-border-primary">|</div>
 

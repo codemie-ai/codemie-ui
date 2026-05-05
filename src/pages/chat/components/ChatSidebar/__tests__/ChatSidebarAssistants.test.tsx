@@ -36,7 +36,7 @@ const { mockAssistantsStore, mockChatsStore } = vi.hoisted(() => {
       updateRecentAssistants: vi.fn(),
     },
     mockChatsStore: {
-      createChat: vi.fn(),
+      startNewChat: vi.fn(),
     },
   }
 })
@@ -185,7 +185,7 @@ describe('ChatSidebarAssistants', () => {
     mockAssistantsStore.getRecentAssistants = vi.fn()
     mockAssistantsStore.deleteRecentAssistant = vi.fn()
     mockAssistantsStore.updateRecentAssistants = vi.fn()
-    mockChatsStore.createChat = vi.fn()
+    mockChatsStore.startNewChat = vi.fn()
     mockRouter.push = vi.fn()
   })
 
@@ -244,35 +244,31 @@ describe('ChatSidebarAssistants', () => {
     expect(screen.queryByText('Assistant 5')).not.toBeInTheDocument()
   })
 
-  it('creates chat and navigates when assistant is clicked', async () => {
-    const newChat = { id: 'chat-123', name: 'Code Helper Chat' }
-    mockChatsStore.createChat = vi.fn().mockResolvedValue(newChat)
+  it('starts new chat and navigates when assistant is clicked', async () => {
+    mockChatsStore.startNewChat = vi.fn().mockResolvedValue(undefined)
     mockAssistantsStore.recentAssistants = [mockAssistants[0]]
     render(<ChatSidebarAssistants />)
 
     await user.click(screen.getByText('Code Helper'))
 
-    expect(mockChatsStore.createChat).toHaveBeenCalledWith('assistant-1', 'Code Helper', false)
+    expect(mockChatsStore.startNewChat).toHaveBeenCalledWith('assistant-1', 'Code Helper', false)
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith({
-        name: 'chats',
-        params: { id: 'chat-123' },
-      })
+      expect(mockRouter.push).toHaveBeenCalledWith({ name: 'new-chat' })
       expect(mockAssistantsStore.updateRecentAssistants).toHaveBeenCalledWith(mockAssistants[0])
     })
   })
 
-  it('does not navigate when createChat returns no id', async () => {
-    mockChatsStore.createChat = vi.fn().mockResolvedValue({})
+  it('always navigates after startNewChat', async () => {
+    mockChatsStore.startNewChat = vi.fn().mockResolvedValue(undefined)
     mockAssistantsStore.recentAssistants = [mockAssistants[0]]
     render(<ChatSidebarAssistants />)
 
     await user.click(screen.getByText('Code Helper'))
 
     await waitFor(() => {
-      expect(mockChatsStore.createChat).toHaveBeenCalled()
+      expect(mockChatsStore.startNewChat).toHaveBeenCalled()
+      expect(mockRouter.push).toHaveBeenCalledWith({ name: 'new-chat' })
     })
-    expect(mockRouter.push).not.toHaveBeenCalled()
   })
 
   it('renders menu with all action items', () => {
@@ -339,20 +335,16 @@ describe('ChatSidebarAssistants', () => {
     })
   })
 
-  it('creates new chat when New chat menu item is clicked', async () => {
-    const newChat = { id: 'chat-456', name: 'New Chat' }
-    mockChatsStore.createChat = vi.fn().mockResolvedValue(newChat)
+  it('starts new chat when New chat menu item is clicked', async () => {
+    mockChatsStore.startNewChat = vi.fn().mockResolvedValue(undefined)
     mockAssistantsStore.recentAssistants = [mockAssistants[0]]
     render(<ChatSidebarAssistants />)
 
     await user.click(screen.getByTestId('menu-item-new-chat'))
 
-    expect(mockChatsStore.createChat).toHaveBeenCalledWith('assistant-1', 'Code Helper', false)
+    expect(mockChatsStore.startNewChat).toHaveBeenCalledWith('assistant-1', 'Code Helper', false)
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith({
-        name: 'chats',
-        params: { id: 'chat-456' },
-      })
+      expect(mockRouter.push).toHaveBeenCalledWith({ name: 'new-chat' })
     })
   })
 

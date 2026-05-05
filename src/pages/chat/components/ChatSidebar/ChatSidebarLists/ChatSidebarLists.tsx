@@ -43,10 +43,7 @@ const ChatSidebarLists = () => {
   const [activeFolder, setActiveFolder] = useState<string | null>(null)
   const [hasManuallyExpandedSection, setHasManuallyExpandedSection] = useState(false)
 
-  const defaultChats = useMemo(
-    () => chats.filter((chat) => !chat.folder || chat.isWorkflow),
-    [chats]
-  )
+  const defaultChats = useMemo(() => chats.filter((chat) => !chat.folder), [chats])
 
   const foldersToChatsMap = useMemo(() => {
     return chats.reduce((acc: Record<string, ChatListItem[]>, chat) => {
@@ -99,7 +96,7 @@ const ChatSidebarLists = () => {
       setActiveSection(currentChat.folder ? 'folders' : 'chats')
     }
     if (currentChat?.folder) setActiveFolder(currentChat.folder)
-  }, [currentChat?.id, isChatsLoading, hasManuallyExpandedSection])
+  }, [currentChat?.id, currentChat?.folder, isChatsLoading, hasManuallyExpandedSection])
 
   const chatActions = useMemo(
     () => ({

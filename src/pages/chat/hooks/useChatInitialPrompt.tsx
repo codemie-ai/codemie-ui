@@ -25,15 +25,19 @@ import { chatsStore } from '@/store/chats'
 export const useChatInitialPrompt = () => {
   const router = useVueRouter()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { currentChat } = useSnapshot(chatsStore)
+  const { currentChat, isNewChat } = useSnapshot(chatsStore)
   const { defaultAssistant } = useSnapshot(assistantsStore)
 
   const chatId = router.currentRoute.value.params.id as string | undefined
   const queryPrompt = searchParams.get('prompt')
 
   useEffect(() => {
-    if (queryPrompt && chatId && currentChat && currentChat.id === chatId) {
-      const assistantId = currentChat.assistantIds?.[0] ?? defaultAssistant?.id
+    const chatReady = isNewChat
+      ? currentChat != null
+      : chatId != null && currentChat != null && currentChat.id === chatId
+
+    if (queryPrompt && chatReady) {
+      const assistantId = currentChat!.assistantIds?.[0] ?? defaultAssistant?.id
 
       setSearchParams(new URLSearchParams(), { replace: true })
 
@@ -43,9 +47,9 @@ export const useChatInitialPrompt = () => {
           messageRaw: queryPrompt,
           files: [],
           assistantId,
-          isWorkFlow: currentChat.isWorkflow,
+          isWorkFlow: currentChat!.isWorkflow,
         })
       }
     }
-  }, [chatId, currentChat?.id, defaultAssistant, queryPrompt, setSearchParams])
+  }, [chatId, currentChat?.id, isNewChat, defaultAssistant, queryPrompt, setSearchParams])
 }

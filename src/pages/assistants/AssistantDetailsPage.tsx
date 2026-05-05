@@ -69,9 +69,9 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
   const assistantId = router.currentRoute.value.params.id as string
 
   const createChat = async (assistant) => {
-    const chat = await chatsStore.createChat(assistant.id, assistant.name, false)
+    await chatsStore.startNewChat(assistant.id, assistant.name, false)
     assistantsStore.updateRecentAssistants(assistant)
-    router.push({ name: 'chats', params: { id: chat.id } })
+    router.push({ name: 'new-chat' })
   }
 
   const handleBack = () => {

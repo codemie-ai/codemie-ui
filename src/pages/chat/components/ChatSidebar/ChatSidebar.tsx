@@ -28,11 +28,11 @@ import ChatSidebarWorkflows from './ChatSidebarWorkflows'
 
 const ChatSidebar = () => {
   const router = useVueRouter()
-  const { createChat } = useSnapshot(chatsStore)
+  const { startNewChat } = useSnapshot(chatsStore)
 
   const handleCreateChat = async () => {
-    const chat = await createChat('', '', false)
-    router.push({ name: 'chats', params: { id: chat.id } })
+    await startNewChat('', '', false)
+    router.push({ name: 'new-chat' })
   }
 
   const navigateToAssistants = () => {

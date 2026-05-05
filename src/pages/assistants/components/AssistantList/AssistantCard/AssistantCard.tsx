@@ -60,7 +60,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
 }) => {
   const router = useVueRouter()
   const { updateRecentAssistants } = useSnapshot(assistantsStore)
-  const { createChat } = useSnapshot(chatsStore)
+
   const isGlobal = assistant.is_global || false
 
   const toggleLike = async (event: React.MouseEvent) => {
@@ -92,9 +92,9 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   const handleChatClick = React.useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation()
-      const newChat = await createChat(assistant.id, assistant.name, false)
+      await chatsStore.startNewChat(assistant.id, assistant.name, false)
       updateRecentAssistants(assistant)
-      router.push({ name: 'chats', params: { id: newChat.id } })
+      router.push({ name: 'new-chat' })
     },
     [assistant]
   )

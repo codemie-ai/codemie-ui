@@ -58,12 +58,9 @@ const ChatSidebarAssistants = () => {
   }
 
   const createChat = async (assistant: Assistant) => {
-    const chat = await chatsStore.createChat(assistant.id, assistant.name, false)
-
-    if (chat?.id) {
-      router.push({ name: 'chats', params: { id: chat.id } })
-      assistantsStore.updateRecentAssistants(assistant)
-    }
+    await chatsStore.startNewChat(assistant.id, assistant.name, false)
+    assistantsStore.updateRecentAssistants(assistant)
+    router.push({ name: 'new-chat' })
   }
 
   const getMenuItems = (assistant: Assistant) => [

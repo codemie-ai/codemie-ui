@@ -94,6 +94,7 @@ import App from './App'
 
 const chatRoutes: RouteObject[] = [
   {
+    id: 'new-chat',
     path: 'chats',
     Component: Chat,
   },

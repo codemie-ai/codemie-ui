@@ -51,8 +51,8 @@ const Navigation: React.FC<NavigationProps> = () => {
   }
 
   const handleCreateChat = async () => {
-    const chat = await chatsStore.createChat('', '', false)
-    router.push({ name: 'chats', params: { id: chat.id } })
+    await chatsStore.startNewChat('', '', false)
+    router.push({ name: 'new-chat' })
   }
 
   const [isSkillsEnabled] = useFeatureFlag('skills')

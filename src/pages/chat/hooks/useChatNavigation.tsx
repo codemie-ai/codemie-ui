@@ -21,12 +21,12 @@ import { chatsStore } from '@/store/chats'
 
 export const useChatNavigation = () => {
   const router = useVueRouter()
-  const { isChatsLoading } = useSnapshot(chatsStore)
+  const { isChatsLoading, isNewChat } = useSnapshot(chatsStore)
 
   const chatId = router.currentRoute.value.params.id as string | undefined
 
   useEffect(() => {
-    if (isChatsLoading || chatId) return
+    if (isChatsLoading || chatId || isNewChat) return
 
     const determineTargetChat = (): string | null => {
       if (chatsStore.currentChat?.id) {
@@ -51,5 +51,5 @@ export const useChatNavigation = () => {
     } else if (targetChatId) {
       router.push({ name: 'chats', params: { id: targetChatId } })
     }
-  }, [chatId, isChatsLoading])
+  }, [chatId, isChatsLoading, isNewChat])
 }

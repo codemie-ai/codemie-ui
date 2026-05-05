@@ -64,9 +64,9 @@ const FolderList: FC<FolderListProps> = ({
 
     const assistantId = latestChat?.initialAssistantId ?? latestChat?.assistantIds?.[0] ?? ''
     const isWorkflow = latestChat?.isWorkflow ?? false
-    const newChat = await chatsStore.createChat(assistantId, folderName, isWorkflow)
 
-    router.push({ name: 'chats', params: { id: newChat.id } })
+    await chatsStore.startNewChat(assistantId, folderName, isWorkflow)
+    router.push({ name: 'new-chat' })
   }
 
   const getMenuItems = (folder: string): NavigationItem[] => [

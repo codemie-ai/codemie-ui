@@ -29,14 +29,14 @@ interface DeleteFolderPopupProps {
 
 const DeleteFolderPopup = ({ selectedFolder, isVisible, onHide }: DeleteFolderPopupProps) => {
   const router = useVueRouter()
-  const { chats, currentChat } = useSnapshot(chatsStore)
+  const { currentChat } = useSnapshot(chatsStore)
 
   const deleteFolder = async (deleteWithChats = false) => {
     const isActiveChatInFolder = currentChat && currentChat.folder === selectedFolder
     await chatsStore.deleteChatFolder(selectedFolder ?? '', deleteWithChats)
 
-    if (isActiveChatInFolder && chats.length > 0) {
-      router.push({ name: 'chats', params: { id: chats[0].id } })
+    if (isActiveChatInFolder && chatsStore.chats.length > 0) {
+      router.push({ name: 'chats', params: { id: chatsStore.chats[0].id } })
     }
 
     onHide()
