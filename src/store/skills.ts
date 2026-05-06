@@ -23,7 +23,10 @@ import {
   SkillAIRefineFields,
   SkillAIRefineResponse,
   SkillAssistantItem,
+  SkillBundlePreview,
   SkillCategoryDefinition,
+  SkillCompanionFile,
+  SkillCompanionFileMetadata,
   SkillCreateRequest,
   SkillsFilters,
   SkillSortBy,
@@ -55,7 +58,10 @@ interface SkillsStoreType {
   updateSkill: (id: string, data: SkillUpdateRequest) => Promise<Skill>
   deleteSkill: (id: string) => Promise<void>
   importSkill: (file: File, project: string, visibility: SkillVisibility) => Promise<Skill>
+  importSkillBundlePreview: (file: File) => Promise<SkillBundlePreview>
   exportSkill: (id: string) => Promise<Blob>
+  getSkillCompanionFiles: (id: string) => Promise<SkillCompanionFileMetadata[]>
+  getSkillCompanionFileContent: (id: string, path: string) => Promise<SkillCompanionFile>
   getSkillsForProject: (project: string, search?: string) => Promise<Skill[]>
   getSkillCategories: () => Promise<SkillCategoryDefinition[]>
   reactToSkill: (skillId: string, reaction: 'like' | 'dislike') => Promise<void>
@@ -284,6 +290,23 @@ export const skillsStore = proxy<SkillsStoreType>({
     }
   },
 
+  async importSkillBundlePreview(file: File): Promise<SkillBundlePreview> {
+    const url = 'v1/skills/import-bundle-preview'
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await api.postMultipart(url, formData)
+      return await response.json()
+    } catch (error: any) {
+      const errorMessage =
+        error?.parsedError?.message ?? error?.message ?? 'Failed to import bundle'
+      toaster.error(errorMessage)
+      throw error
+    }
+  },
+
   async exportSkill(id: string): Promise<Blob> {
     const url = `v1/skills/${id}/export`
 
@@ -292,6 +315,34 @@ export const skillsStore = proxy<SkillsStoreType>({
       return await response.blob()
     } catch (error) {
       toaster.error('Failed to export skill')
+      throw error
+    }
+  },
+
+  async getSkillCompanionFiles(id: string): Promise<SkillCompanionFileMetadata[]> {
+    const url = `v1/skills/${id}/companion-files`
+
+    try {
+      const response = await api.get(url)
+      return await response.json()
+    } catch (error: any) {
+      const errorMessage =
+        error?.parsedError?.message ?? error?.message ?? 'Failed to load bundled skill files'
+      toaster.error(errorMessage)
+      throw error
+    }
+  },
+
+  async getSkillCompanionFileContent(id: string, path: string): Promise<SkillCompanionFile> {
+    const url = `v1/skills/${id}/companion-files/content`
+
+    try {
+      const response = await api.get(url, { params: { path } })
+      return await response.json()
+    } catch (error: any) {
+      const errorMessage =
+        error?.parsedError?.message ?? error?.message ?? 'Failed to load bundled file content'
+      toaster.error(errorMessage)
       throw error
     }
   },

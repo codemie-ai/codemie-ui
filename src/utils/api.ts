@@ -188,7 +188,11 @@ class API {
 
       if (!fileName) {
         const contentDisposition = response.headers.get('content-disposition')
-        fileName = contentDisposition?.split('filename=')[1]
+        fileName = contentDisposition
+          ?.split('filename=')[1]
+          ?.split(';')[0]
+          ?.trim()
+          .replace(/^["']|["']$/g, '')
       }
 
       a.style.display = 'none'

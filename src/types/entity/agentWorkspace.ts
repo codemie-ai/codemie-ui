@@ -13,22 +13,26 @@
 // limitations under the License.
 //
 
-/**
- * Central export file for all backend entity types
- *
- * This module provides organized access to all entity types that come from the backend API.
- * Import from here instead of individual files for better maintainability.
- */
+export interface AgentWorkspace {
+  id: string
+  conversation_id: string
+  user_id: string
+  name?: string | null
+  status: string
+  date: string
+  update_date: string
+}
 
-// Main entity types
-export * from './agentWorkspace'
-export * from './assistant'
-export * from './conversation'
-export * from './mcp'
-export * from './dataSource'
-export * from './workflow'
-export * from './application'
-export * from './user'
-export * from './vendor'
-export * from './setting'
-export * from './provider'
+export interface AgentWorkspaceFile {
+  path: string
+  mime_type: string
+  checksum: string
+  size: number
+  version: number
+  update_date: string
+}
+
+export interface AgentWorkspaceFileContent extends AgentWorkspaceFile {
+  is_binary: boolean
+  content: string | null
+}

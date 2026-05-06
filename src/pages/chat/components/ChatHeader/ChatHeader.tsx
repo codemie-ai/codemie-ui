@@ -30,6 +30,7 @@ import { chatsStore } from '@/store/chats'
 import { ChatMetrics } from '@/types/entity/conversation'
 import { cn } from '@/utils/utils'
 
+import ChatHeaderBrowseFilesButton from './ChatHeaderBrowseFilesButton'
 import ChatHeaderClearButton from './ChatHeaderClearButton'
 import ChatHeaderDownloadConversationButton from './ChatHeaderDownloadConversationButton'
 import ChatHeaderShareButton from './ChatHeaderShareButton/ChatHeaderShareButton'
@@ -69,7 +70,7 @@ const ChatHeader: FC = () => {
 
   const handleViewWorkflowDetails = () => {
     if (currentChat?.initialAssistantId) {
-      router.push({ name: 'view-workflow', params: { workflowId: currentChat.initialAssistantId } })
+      router.push({ name: 'view-workflow', params: { id: currentChat.initialAssistantId } })
     }
   }
 
@@ -151,7 +152,9 @@ const ChatHeader: FC = () => {
 
               <ChatHeaderShareButton />
 
-              <ChatHeaderDownloadConversationButton />
+          <ChatHeaderDownloadConversationButton />
+
+          <ChatHeaderBrowseFilesButton />
 
               <ChatHeaderClearButton />
             </>

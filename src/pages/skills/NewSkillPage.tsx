@@ -41,7 +41,16 @@ const NewSkillPage: React.FC = () => {
   const [isGenWithAIPopupVisible, setIsGenWithAIPopupVisible] = useState(
     skillsStore.loadShowNewSkillAIPopup()
   )
-  const { form, onSubmit } = useSkillForm()
+  const {
+    form,
+    onSubmit,
+    companionFiles,
+    setCompanionFiles,
+    bundleFolders,
+    setBundleFolders,
+    isCompanionFilesLoading,
+    applyBundlePreview,
+  } = useSkillForm()
   const {
     showNewIntegration,
     selectedCredentialType,
@@ -63,13 +72,20 @@ const NewSkillPage: React.FC = () => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!file.name.endsWith('.md')) {
-      toaster.error('Please select a markdown (.md) file')
+    if (!file.name.endsWith('.md') && !file.name.endsWith('.zip')) {
+      toaster.error('Please select a markdown (.md) file or a bundle (.zip) archive')
       return
     }
 
     try {
       setImporting(true)
+
+      if (file.name.endsWith('.zip')) {
+        const bundlePreview = await skillsStore.importSkillBundlePreview(file)
+        applyBundlePreview(bundlePreview)
+        return
+      }
+
       const { name, description, content } = await parseSkillMarkdownFile(file)
 
       form.setValue('name', name, { shouldValidate: true, shouldDirty: true, shouldTouch: true })
@@ -83,6 +99,8 @@ const NewSkillPage: React.FC = () => {
         shouldDirty: true,
         shouldTouch: true,
       })
+      setCompanionFiles([])
+      setBundleFolders([])
 
       // Don't show toast - data is loaded into form, not yet created
     } catch (error: unknown) {
@@ -115,7 +133,7 @@ const NewSkillPage: React.FC = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".md"
+              accept=".md,.zip"
               onChange={handleImportFile}
               className="hidden"
             />
@@ -128,7 +146,7 @@ const NewSkillPage: React.FC = () => {
               disabled={importing}
               onClick={handleImportClick}
             >
-              {importing ? 'Importing...' : 'Import from File'}
+              {importing ? 'Importing...' : 'Import File or Bundle'}
             </Button>
             <Button
               type="magical"
@@ -150,6 +168,11 @@ const NewSkillPage: React.FC = () => {
           ref={formRef}
           form={form}
           onSubmit={onSubmit}
+          companionFiles={companionFiles}
+          bundleFolders={bundleFolders}
+          isCompanionFilesLoading={isCompanionFilesLoading}
+          onCompanionFilesChange={setCompanionFiles}
+          onBundleFoldersChange={setBundleFolders}
           onSuccess={handleSuccess}
           showNewIntegrationPopup={showNewIntegrationPopup}
         />

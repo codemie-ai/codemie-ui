@@ -24,7 +24,7 @@ import SkillForm, { SkillFormRef } from '@/pages/skills/components/SkillForm'
 import { SkillFormData, useSkillForm } from '@/pages/skills/hooks/useSkillForm'
 import { downloadSkillExample, parseSkillMarkdownFile } from '@/pages/skills/utils/skillUtils'
 import { skillsStore } from '@/store/skills'
-import { Skill, SkillCreateRequest, SkillVisibility } from '@/types/entity/skill'
+import { Skill, SkillVisibility } from '@/types/entity/skill'
 import toaster from '@/utils/toaster'
 
 interface CreateSkillPopupProps {
@@ -50,7 +50,16 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
   const onSuccessRef = useRef(onSuccess)
   onSuccessRef.current = onSuccess
 
-  const { form } = useSkillForm()
+  const {
+    form,
+    onSubmit,
+    companionFiles,
+    setCompanionFiles,
+    bundleFolders,
+    setBundleFolders,
+    isCompanionFilesLoading,
+    applyBundlePreview,
+  } = useSkillForm()
   const {
     showNewIntegration,
     selectedCredentialType,
@@ -73,6 +82,8 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
         categories: [],
         toolkits: [],
       })
+      setCompanionFiles([])
+      setBundleFolders([])
       // Increment key to force remount and wait for next tick
       setFormKey((prev) => prev + 1)
       timeoutId = setTimeout(() => setIsFormReady(true), 0)
@@ -92,6 +103,8 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
       categories: [],
       toolkits: [],
     })
+    setCompanionFiles([])
+    setBundleFolders([])
     onClose()
   }
 
@@ -102,16 +115,7 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
   const handleFormSubmit = async (data: SkillFormData): Promise<Skill> => {
     setIsSubmitting(true)
     try {
-      const createData: SkillCreateRequest = {
-        name: data.name,
-        description: data.description,
-        content: data.content,
-        project: data.project,
-        visibility: data.visibility,
-        categories: data.categories,
-        toolkits: data.toolkits,
-      }
-      const skill = await skillsStore.createSkill(createData)
+      const skill = await onSubmit(data)
       createdSkillRef.current = skill
       return skill
     } finally {
@@ -131,6 +135,8 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
       categories: [],
       toolkits: [],
     })
+    setCompanionFiles([])
+    setBundleFolders([])
     if (skill) {
       onSuccessRef.current(skill)
     }
@@ -143,13 +149,20 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!file.name.endsWith('.md')) {
-      toaster.error('Please select a markdown (.md) file')
+    if (!file.name.endsWith('.md') && !file.name.endsWith('.zip')) {
+      toaster.error('Please select a markdown (.md) file or a bundle (.zip) archive')
       return
     }
 
     try {
       setImporting(true)
+
+      if (file.name.endsWith('.zip')) {
+        const bundlePreview = await skillsStore.importSkillBundlePreview(file)
+        applyBundlePreview(bundlePreview)
+        return
+      }
+
       const { name, description, content } = await parseSkillMarkdownFile(file)
       form.setValue('name', name, { shouldValidate: true, shouldDirty: true, shouldTouch: true })
       form.setValue('description', description, {
@@ -162,6 +175,8 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
         shouldDirty: true,
         shouldTouch: true,
       })
+      setCompanionFiles([])
+      setBundleFolders([])
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to import skill file'
       toaster.error(message)
@@ -179,7 +194,7 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
           Download Example
         </Button>
         <Button variant="tertiary" size="small" disabled={importing} onClick={handleImportClick}>
-          {importing ? 'Importing...' : 'Import from File'}
+          {importing ? 'Importing...' : 'Import File or Bundle'}
         </Button>
       </div>
     </div>
@@ -199,7 +214,7 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".md"
+          accept=".md,.zip"
           onChange={handleImportFile}
           className="hidden"
         />
@@ -211,6 +226,11 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
               ref={formRef}
               form={form}
               onSubmit={handleFormSubmit}
+              companionFiles={companionFiles}
+              bundleFolders={bundleFolders}
+              isCompanionFilesLoading={isCompanionFilesLoading}
+              onCompanionFilesChange={setCompanionFiles}
+              onBundleFoldersChange={setBundleFolders}
               onSuccess={handleFormSuccess}
               showNewIntegrationPopup={showNewIntegrationPopup}
               isCompactView

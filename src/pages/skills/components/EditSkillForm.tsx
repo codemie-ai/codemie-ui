@@ -38,7 +38,15 @@ interface EditSkillFormProps {
 const EditSkillForm: React.FC<EditSkillFormProps> = ({ skill, onBack }) => {
   const router = useVueRouter()
   const formRef = useRef<SkillFormRef>(null)
-  const { form, onSubmit } = useSkillForm(skill)
+  const {
+    form,
+    onSubmit,
+    companionFiles,
+    setCompanionFiles,
+    bundleFolders,
+    setBundleFolders,
+    isCompanionFilesLoading,
+  } = useSkillForm(skill)
   const {
     showNewIntegration,
     selectedCredentialType,
@@ -86,6 +94,11 @@ const EditSkillForm: React.FC<EditSkillFormProps> = ({ skill, onBack }) => {
           ref={formRef}
           form={form}
           onSubmit={onSubmit}
+          companionFiles={companionFiles}
+          bundleFolders={bundleFolders}
+          isCompanionFilesLoading={isCompanionFilesLoading}
+          onCompanionFilesChange={setCompanionFiles}
+          onBundleFoldersChange={setBundleFolders}
           onSuccess={handleSuccess}
           showNewIntegrationPopup={showNewIntegrationPopup}
         />
