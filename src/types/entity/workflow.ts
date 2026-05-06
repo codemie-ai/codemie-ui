@@ -56,6 +56,7 @@ export type WorkflowExecutionStatus =
   | 'Failed'
   | 'Aborted'
   | 'Interrupted'
+  | 'AUTHENTICATION_REQUIRED'
 
 export interface WorkflowExecutionTokensUsage {
   input_tokens: number

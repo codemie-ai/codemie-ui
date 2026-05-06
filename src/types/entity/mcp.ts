@@ -104,6 +104,7 @@ export interface MCPServerDetails {
   name: string
   description?: string
   enabled?: boolean
+  mcp_config_id?: string | null
   config?: MCPServerConfig
   mcp_connect_url?: string
   tools_tokens_size_limit?: number

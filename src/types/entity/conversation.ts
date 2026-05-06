@@ -17,6 +17,7 @@
  * Chat entity types from backend API
  */
 import type { UserAbility } from '@/types//common'
+import type { MCPAuthGateServer } from '@/types/entity/mcpAuth'
 
 export const messageFeedbackMark = {
   correct: 'correct',
@@ -152,6 +153,7 @@ export interface ChatMessage {
   historyIndex?: number
   messageIndex?: number
   stream?: Stream | null
+  mcpAuthPromptRows?: MCPAuthGateServer[] | null
   executionId: string | null
   stateId?: string | null
 }

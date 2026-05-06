@@ -27,6 +27,7 @@ import ChatHeader from './components/ChatHeader/ChatHeader'
 import ChatHistory from './components/ChatHistory/ChatHistory'
 import ChatPrompt from './components/ChatPrompt/ChatPrompt'
 import ChatSidebar from './components/ChatSidebar/ChatSidebar'
+import { useChatAuthCallbacks } from './hooks/useChatAuthCallbacks'
 import { useChatConfiguration } from './hooks/useChatConfiguration'
 import { ChatContext, ChatContextValue } from './hooks/useChatContext'
 import { useChatInitialPrompt } from './hooks/useChatInitialPrompt'
@@ -45,16 +46,18 @@ const ChatPage: FC = () => {
   useChatInitialPrompt()
 
   const router = useVueRouter()
-  const { currentChat, getChat } = useSnapshot(chatsStore) as typeof chatsStore
+  const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
   const chatId = router.currentRoute.value.params.id as string
 
   useEffect(() => {
     if (chatId) {
-      getChat(chatId)
+      chatsStore.getChat(chatId)
       chatsStore.isNewChat = false
       chatsStore.newChatParams = null
     }
   }, [chatId])
+
+  useChatAuthCallbacks(currentChat)
 
   const chatConfiguration = useChatConfiguration()
   const chatContextValue: ChatContextValue = useMemo(

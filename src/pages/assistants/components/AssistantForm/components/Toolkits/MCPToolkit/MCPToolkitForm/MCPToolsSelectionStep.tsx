@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import RefreshIcon from '@/assets/icons/refresh.svg?react'
 import Button from '@/components/Button'
@@ -22,6 +22,8 @@ import InfoBox from '@/components/form/InfoBox/InfoBox'
 import InfoWarning from '@/components/InfoWarning/InfoWarning'
 import Spinner from '@/components/Spinner'
 import { ButtonType, InfoWarningType } from '@/constants'
+import { useMCPAuthPrompt } from '@/hooks/useMCPAuthPrompt'
+import AssistantAuthGateRow from '@/pages/chat/components/AssistantAuthGate/AssistantAuthGateRow'
 import { assistantsStore } from '@/store'
 import { Tool } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
@@ -59,10 +61,12 @@ const MCPToolsSelectionStep = ({
   const [toolsStatus, setToolsStatus] = useState<ToolsStatus>(MCP_TOOLS_STATUS.PENDING)
   const [tools, setTools] = useState<Tool[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [loginUrl, setLoginUrl] = useState<string | null>(null)
   const [useAllTools, setUseAllTools] = useState(false)
   const [initialSelectedTools, setInitialSelectedTools] = useState<Tool[]>([])
-  const focusListenerRef = useRef<(() => void) | null>(null)
+  const isRetryingRef = useRef(false)
+  const handleAuthRequiredErrorRef = useRef<(error: unknown) => Promise<boolean>>(() =>
+    Promise.resolve(false)
+  )
 
   const isToolSelected = (tool: Tool) => {
     return selectedTools.some((t) => t.name === tool.name)
@@ -110,10 +114,9 @@ const MCPToolsSelectionStep = ({
     }
   }
 
-  const fetchTools = async () => {
+  const fetchTools = useCallback(async () => {
     setToolsStatus(MCP_TOOLS_STATUS.LOADING)
     setError(null)
-    setLoginUrl(null)
 
     try {
       const toolkits = await assistantsStore.getMcpTools(mcpServer)
@@ -121,27 +124,35 @@ const MCPToolsSelectionStep = ({
       setTools(fetchedTools)
       setToolsStatus(MCP_TOOLS_STATUS.LOADED)
     } catch (err) {
+      const handled = await handleAuthRequiredErrorRef.current(err)
+      if (handled) {
+        setTools([])
+        setToolsStatus(MCP_TOOLS_STATUS.PENDING)
+        return
+      }
       console.error('Error fetching MCP tools:', err)
-      const { details, message, login_url } = (err as any).parsedError || {}
+      const { details, message } = (err as any).parsedError || {}
       setError(message ? `${message}\n${details || ''}` : 'Failed to fetch tools')
-      if (login_url) setLoginUrl(login_url)
       setTools([])
       setToolsStatus(MCP_TOOLS_STATUS.ERROR)
     }
-  }
+  }, [mcpServer])
 
-  const handleLoginClick = () => {
-    if (!loginUrl) return
-    window.open(loginUrl, '_blank', 'noopener,noreferrer')
+  const {
+    rows: authRows,
+    handleAuthRequiredError,
+    initiate,
+  } = useMCPAuthPrompt({
+    onAllAuthenticated: () => {
+      if (isRetryingRef.current) return
+      isRetryingRef.current = true
+      fetchTools().finally(() => {
+        isRetryingRef.current = false
+      })
+    },
+  })
 
-    const handleFocus = () => {
-      window.removeEventListener('focus', handleFocus)
-      focusListenerRef.current = null
-      fetchTools()
-    }
-    focusListenerRef.current = handleFocus
-    window.addEventListener('focus', handleFocus)
-  }
+  handleAuthRequiredErrorRef.current = handleAuthRequiredError
 
   useEffect(() => {
     if (mcpServer) {
@@ -149,11 +160,6 @@ const MCPToolsSelectionStep = ({
     }
     if (selectedTools.length > 0) {
       setInitialSelectedTools(selectedTools)
-    }
-    return () => {
-      if (focusListenerRef.current) {
-        window.removeEventListener('focus', focusListenerRef.current)
-      }
     }
   }, [])
 
@@ -172,7 +178,7 @@ const MCPToolsSelectionStep = ({
           <InfoWarning type={InfoWarningType.ERROR} message={error || 'Failed to fetch tools'} />
         )}
 
-        {toolsStatus === MCP_TOOLS_STATUS.PENDING && (
+        {toolsStatus === MCP_TOOLS_STATUS.PENDING && authRows.length === 0 && (
           <div className="flex flex-col items-center justify-center flex-1">
             <p className="text-text-secondary">Preparing to load tools...</p>
           </div>
@@ -243,16 +249,23 @@ const MCPToolsSelectionStep = ({
             ))}
 
             <div className="flex justify-center gap-4 px-6">
-              {loginUrl && (
-                <Button type={ButtonType.SECONDARY} onClick={handleLoginClick}>
-                  Login to MCP Server
-                </Button>
-              )}
               <Button type={ButtonType.SECONDARY} onClick={fetchTools}>
                 <RefreshIcon className="w-3.5 h-3.5" />
                 {toolsStatus === MCP_TOOLS_STATUS.ERROR ? 'Retry' : 'Reload'}
               </Button>
             </div>
+          </div>
+        )}
+
+        {authRows.length > 0 && (
+          <div className="flex flex-col gap-3">
+            {authRows.map((row) => (
+              <AssistantAuthGateRow
+                key={`${row.mcp_config_id}-${row.status}`}
+                row={row}
+                onAuthenticate={initiate}
+              />
+            ))}
           </div>
         )}
       </div>

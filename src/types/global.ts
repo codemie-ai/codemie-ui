@@ -24,6 +24,8 @@ export interface EnvConfig {
   VITE_ENABLE_USER_MANAGEMENT: string
   VITE_ENABLE_BUDGET_MANAGEMENT: string
   VITE_IDP_PROVIDER: string
+  VITE_MCP_AUTH_AUTHENTICATING_TIMEOUT_SECONDS?: string
+  VITE_MCP_AUTH_ORIGIN?: string
 }
 
 declare global {

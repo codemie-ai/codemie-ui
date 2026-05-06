@@ -14,6 +14,7 @@
 //
 
 import { ENV, HTTP_STATUS } from '@/constants'
+import { isMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
 import toaster from '@/utils/toaster'
 import { getMode, getIsLocalAuth } from '@/utils/utils'
 
@@ -132,10 +133,22 @@ class API {
 
     const response = await fetch(`${this.BASE_URL}/${url}`, requestOptions)
     if (!response.ok) {
-      toaster.error('Failed to generate answer')
       const responseValue = await response.body!.getReader().read()
       const rawResponse = new TextDecoder('utf-8').decode(responseValue.value)
-      throw JSON.parse(rawResponse)
+      let parsedResponse: unknown
+
+      try {
+        parsedResponse = JSON.parse(rawResponse)
+      } catch (error) {
+        toaster.error('Failed to generate answer')
+        throw error
+      }
+
+      if (!isMCPAuthRequiredErrorPayload(parsedResponse)) {
+        toaster.error('Failed to generate answer')
+      }
+
+      throw parsedResponse
     }
 
     const contentType = response.headers.get('Content-Type')
@@ -268,45 +281,64 @@ class API {
           if (response.ok) {
             return resolve(response)
           }
+
           if (response.status === HTTP_STATUS.UNAUTHORIZED && getIsLocalAuth()) {
-            const isUserEndpoint = url === 'v1/user'
-            const isAuthPage = window.location.hash === '#/auth/sign-in'
-
-            if (!isUserEndpoint) {
-              sessionStorage.setItem('sessionExpired', 'true')
+            let authRequiredBody: unknown = null
+            try {
+              authRequiredBody = await response.clone().json()
+            } catch {
+              // Body isn't JSON — fall through to session-expired handling below.
             }
 
-            if (!isAuthPage) {
-              window.location.hash = '#/auth/sign-in'
+            if (!isMCPAuthRequiredErrorPayload(authRequiredBody)) {
+              this.handleSessionExpired(url)
+              return reject(response) // NOSONAR - callers use instanceof Response to detect API errors
             }
-
-            return reject(response)
+            // MCP authentication_required 401: fall through so the caller receives
+            // a ResponseWithParsedError and can render the auth prompt.
           }
+
           const responseClone = response.clone() as ResponseWithParsedError
-          let errorData: ErrorBody
-          try {
-            const contentType = response.headers.get('content-type')
-            if (contentType?.includes('application/json')) {
-              errorData = await response.json()
-            } else if (contentType?.includes('text/plain')) {
-              const text = await response.text()
-              errorData = { error: { message: text } }
-            } else {
-              errorData = { error: { message: 'Unknown error' } }
-            }
-          } catch (e) {
-            errorData = { error: { message: (e as Error).message } }
-          }
+          const errorData = await this.parseErrorBody(response)
           if (!skipErrorHandling) {
             this.handleError?.(errorData)
           }
           responseClone.parsedError = errorData.error
-          return reject(responseClone)
+          return reject(responseClone) // NOSONAR - callers use instanceof Response to detect API errors
         })
         .catch((error) => {
-          reject(error)
+          reject(error instanceof Error ? error : new Error(String(error)))
         })
     })
+  }
+
+  private handleSessionExpired(url: string): void {
+    const isUserEndpoint = url === 'v1/user'
+    const isAuthPage = window.location.hash === '#/auth/sign-in'
+
+    if (!isUserEndpoint) {
+      sessionStorage.setItem('sessionExpired', 'true')
+    }
+
+    if (!isAuthPage) {
+      window.location.hash = '#/auth/sign-in'
+    }
+  }
+
+  private async parseErrorBody(response: Response): Promise<ErrorBody> {
+    try {
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('application/json')) {
+        return await response.json()
+      }
+      if (contentType?.includes('text/plain')) {
+        const text = await response.text()
+        return { error: { message: text } }
+      }
+      return { error: { message: 'Unknown error' } }
+    } catch (e) {
+      return { error: { message: (e as Error).message } }
+    }
   }
 
   /**

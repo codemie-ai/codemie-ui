@@ -19,6 +19,7 @@ export const WORKFLOW_STATUS_BADGE_MAPPING = {
   Interrupted: 'pending',
   Failed: 'error',
   Succeeded: 'success',
+  AUTHENTICATION_REQUIRED: 'warning',
   ABORTED: 'warning',
   Aborted: 'warning',
 } as const

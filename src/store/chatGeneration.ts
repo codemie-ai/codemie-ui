@@ -18,9 +18,15 @@ import { proxy, ref } from 'valtio'
 import { ChatRequest, HistoryMessage, ChatGenerationOptions } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
 import { Conversation, ChatMessage, Thought } from '@/types/entity/conversation'
+import {
+  MCPAuthGateServer,
+  MCPAuthInitiateResponse,
+  MCPAuthRecoverableStatus,
+} from '@/types/entity/mcpAuth'
 import api, { ABORT_ERROR, DEFAULT_ERROR_MESSAGE } from '@/utils/api'
 import { transformChatHistoryFEtoBE } from '@/utils/chatHelpers'
 import { fileToBase64 } from '@/utils/helpers'
+import { parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
 import Stream, { streamChunkToObject } from '@/utils/stream'
 import toaster from '@/utils/toaster'
 
@@ -33,6 +39,7 @@ const STREAMING_NOTIFICATION_INTERVAL = 5_000 // 5 seconds
 const ASSISTANT_NOT_FOUND =
   'Assistant you are trying to reach is not found. Please mention another one using @mention.'
 const EMPTY_MESSAGE = '/Empty message/'
+const DEFAULT_PROMPT_RECOVERY_STATUS: MCPAuthRecoverableStatus = 'authentication_required'
 
 interface ChatGenerationStoreType {
   chatAbortControllers: Record<string, AbortController>
@@ -53,6 +60,15 @@ interface ChatGenerationStoreType {
   resumeWorkflowExecution: () => Promise<void>
   abortWorkflowChat: (chatId: string) => Promise<void>
   updateWorkflowChatOutput: (chatId: string, output: string) => Promise<void>
+  getAuthenticatingPromptIds: (chatId: string) => string[]
+  initiatePromptAuth: (
+    chatId: string,
+    historyIndex: number,
+    messageIndex: number,
+    mcpConfigId: string
+  ) => Promise<void>
+  markPromptAuthSuccess: (chatId: string, authConfigId: string) => void
+  rollbackPromptAuthRow: (chatId: string, authConfigId: string, errorContext: string | null) => void
 
   // Private methods
   _getAssistant: (assistantId: string | undefined) => Promise<Assistant>
@@ -116,6 +132,119 @@ interface ChatGenerationStoreType {
     chat: Conversation,
     startTime: Date
   ) => Promise<void>
+}
+
+const getCurrentChatById = (chatId: string): Conversation | null => {
+  const { currentChat } = chatsStore
+
+  if (!currentChat || currentChat.id !== chatId) return null
+
+  return currentChat
+}
+
+const getPromptRecoverableStatus = (row: MCPAuthGateServer): MCPAuthRecoverableStatus =>
+  row.recoverable_status ??
+  (row.status === 'session_expired' ? 'session_expired' : DEFAULT_PROMPT_RECOVERY_STATUS)
+
+const getPromptMessage = (
+  chat: Conversation,
+  historyIndex: number,
+  messageIndex: number
+): ChatMessage | null => chat.history[historyIndex]?.[messageIndex] ?? null
+
+const getPromptRows = (message: ChatMessage | null): MCPAuthGateServer[] =>
+  message?.mcpAuthPromptRows ?? []
+
+const finishThoughts = (historyItem: ChatMessage): void => {
+  if (!historyItem.thoughts) return
+
+  historyItem.thoughts.forEach((thought, index) => {
+    thought.in_progress = false
+    historyItem.thoughts![index] = thought
+  })
+}
+
+const finalizeFailedRequest = (historyItem: ChatMessage, startTime: Date): void => {
+  historyItem.inProgress = false
+  historyItem.stream = null
+  finishThoughts(historyItem)
+
+  const endTime = new Date()
+  historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
+}
+
+const applyPromptRows = (
+  historyItem: ChatMessage,
+  promptRows: MCPAuthGateServer[],
+  startTime: Date
+): void => {
+  historyItem.response = undefined
+  historyItem.mcpAuthPromptRows = promptRows
+  finalizeFailedRequest(historyItem, startTime)
+}
+
+const updatePromptRowsAtIndexes = (
+  chat: Conversation,
+  historyIndex: number,
+  messageIndex: number,
+  updater: (rows: MCPAuthGateServer[]) => MCPAuthGateServer[] | null
+): boolean => {
+  const message = getPromptMessage(chat, historyIndex, messageIndex)
+  const rows = getPromptRows(message)
+
+  if (!message || !rows.length) return false
+
+  const nextRows = updater(rows)
+  if (!nextRows?.length) return false
+
+  message.mcpAuthPromptRows = nextRows
+  return true
+}
+
+const updateAuthenticatingPromptRow = (
+  chat: Conversation,
+  authConfigId: string,
+  updater: (row: MCPAuthGateServer) => MCPAuthGateServer
+): boolean => {
+  if (!authConfigId) return false
+
+  for (let historyIndex = chat.history.length - 1; historyIndex >= 0; historyIndex -= 1) {
+    const group = chat.history[historyIndex]
+
+    for (let messageIndex = group.length - 1; messageIndex >= 0; messageIndex -= 1) {
+      const message = group[messageIndex]
+      const rows = getPromptRows(message)
+      const targetIndex = rows.findIndex(
+        (row) => row.auth_config_id === authConfigId && row.status === 'authenticating'
+      )
+
+      if (targetIndex === -1) continue
+
+      message.mcpAuthPromptRows = rows.map((row, index) =>
+        index === targetIndex ? updater(row) : row
+      )
+
+      return true
+    }
+  }
+
+  return false
+}
+
+const getAuthenticatingPromptIdsFromChat = (chat: Conversation): string[] => {
+  const authConfigIds = new Set<string>()
+
+  chat.history.forEach((group) => {
+    group.forEach((message) => {
+      getPromptRows(message).forEach((row) => {
+        if (row.status === 'authenticating' && row.auth_config_id) {
+          authConfigIds.add(row.auth_config_id)
+        }
+      })
+    })
+  })
+
+  return [...authConfigIds]
 }
 
 export const chatGenerationStore = proxy<ChatGenerationStoreType>({
@@ -450,6 +579,69 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
   },
 
+  getAuthenticatingPromptIds(chatId) {
+    const chat = getCurrentChatById(chatId)
+    if (!chat || chat.isWorkflow) return []
+
+    return getAuthenticatingPromptIdsFromChat(chat)
+  },
+
+  async initiatePromptAuth(chatId, historyIndex, messageIndex, mcpConfigId) {
+    const chat = getCurrentChatById(chatId)
+    if (!chat || chat.isWorkflow) return
+
+    const message = getPromptMessage(chat, historyIndex, messageIndex)
+    const row = getPromptRows(message).find((item) => item.mcp_config_id === mcpConfigId)
+
+    if (!row?.initiate_url || row.status === 'authenticating') return
+
+    try {
+      const response = await api.post(row.initiate_url.replace(/^\//, ''), {
+        mcp_config_id: row.mcp_config_id,
+      })
+      const payload = (await response.json()) as MCPAuthInitiateResponse
+
+      if (!payload.auth_url) return
+
+      window.open(payload.auth_url, '_blank')
+      updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
+        rows.map((item) =>
+          item.mcp_config_id === mcpConfigId
+            ? {
+                ...item,
+                status: 'authenticating',
+                recoverable_status: getPromptRecoverableStatus(item),
+              }
+            : item
+        )
+      )
+    } catch (error) {
+      console.error('Failed to initiate conversation authentication:', error)
+    }
+  },
+
+  markPromptAuthSuccess(chatId, authConfigId) {
+    const chat = getCurrentChatById(chatId)
+    if (!chat || chat.isWorkflow) return
+
+    updateAuthenticatingPromptRow(chat, authConfigId, (row) => ({
+      ...row,
+      status: 'authenticated',
+      error_context: null,
+    }))
+  },
+
+  rollbackPromptAuthRow(chatId, authConfigId, errorContext) {
+    const chat = getCurrentChatById(chatId)
+    if (!chat || chat.isWorkflow) return
+
+    updateAuthenticatingPromptRow(chat, authConfigId, (row) => ({
+      ...row,
+      status: getPromptRecoverableStatus(row),
+      error_context: errorContext,
+    }))
+  },
+
   async _sendRequest(
     chat: Conversation,
     historyIndex: number,
@@ -477,6 +669,15 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     try {
       reader = await api.stream(endpoint, requestData, abortController, 'POST')
     } catch (error: any) {
+      const promptRows = parseMCPAuthRequiredErrorPayload(error)
+
+      // MCP auth throws { error: 'authentication_required', servers: [...] }.
+      // Bypass _handleGenerationStreamError(), which expects message/details/help fields.
+      if (promptRows?.length) {
+        applyPromptRows(historyItem, promptRows, startTime)
+        return
+      }
+
       chatGenerationStore._handleRequestError(historyItem, error, startTime)
       return
     }
@@ -516,12 +717,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   _handleRequestError(historyItem, error, startTime) {
     historyItem.response = chatGenerationStore._handleGenerationStreamError(error)
     historyItem.loginUrl = error?.error?.login_url ?? error?.login_url
-    historyItem.inProgress = false
-    historyItem.stream = null
-    chatGenerationStore._finishThoughts(historyItem)
-
-    const endTime = new Date()
-    historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
+    historyItem.mcpAuthPromptRows = null
+    finalizeFailedRequest(historyItem, startTime)
   },
 
   async _handleNonStreamResponse(reader, historyItem, chat, startTime) {
@@ -714,12 +911,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   _finishThoughts(historyItem: ChatMessage): void {
-    if (!historyItem.thoughts) return
-
-    historyItem.thoughts.forEach((thought, index) => {
-      thought.in_progress = false
-      historyItem.thoughts![index] = thought
-    })
+    finishThoughts(historyItem)
   },
 
   _handleGenerationAbort(historyItem: ChatMessage, _reader: ReadableStreamDefaultReader): any {

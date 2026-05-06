@@ -13,12 +13,14 @@
 // limitations under the License.
 //
 
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
-import Button from '@/components/Button'
 import Checker from '@/components/Checker'
-import { ButtonSize, ButtonType, CHECKER_STATUSES, CheckerStatus } from '@/constants'
+import Popup from '@/components/Popup'
+import { CHECKER_STATUSES, CheckerStatus } from '@/constants'
+import { useMCPAuthPrompt } from '@/hooks/useMCPAuthPrompt'
+import AssistantAuthGateRow from '@/pages/chat/components/AssistantAuthGate/AssistantAuthGateRow'
 import { assistantsStore } from '@/store'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import toaster from '@/utils/toaster'
@@ -31,13 +33,13 @@ interface MCPToolkitTestProps {
 const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
   const { testMCP } = useSnapshot(assistantsStore)
   const [status, setStatus] = useState<CheckerStatus>(CHECKER_STATUSES.UNDEFINED)
-  const [loginUrl, setLoginUrl] = useState<string | null>(null)
+  const isRetryingRef = useRef(false)
+  const handleAuthRequiredErrorRef = useRef<(error: unknown) => Promise<boolean>>(() =>
+    Promise.resolve(false)
+  )
 
-  const check = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    e.stopPropagation()
-    if (status === CHECKER_STATUSES.IN_PROGRESS) return
+  const runTest = useCallback(async () => {
     setStatus(CHECKER_STATUSES.IN_PROGRESS)
-    setLoginUrl(null)
 
     try {
       const response = await testMCP(mcpServer)
@@ -48,11 +50,32 @@ const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
         toaster.info('MCP Server configuration test successful')
         setStatus(CHECKER_STATUSES.SUCCESS)
       }
-    } catch (error: any) {
-      const url = error?.parsedError?.login_url
-      if (url) setLoginUrl(url)
+    } catch (error) {
+      const handled = await handleAuthRequiredErrorRef.current(error)
+      if (handled) {
+        setStatus(CHECKER_STATUSES.UNDEFINED)
+        return
+      }
       setStatus(CHECKER_STATUSES.FAILED)
     }
+  }, [mcpServer, testMCP])
+
+  const { rows, handleAuthRequiredError, initiate, clearRows } = useMCPAuthPrompt({
+    onAllAuthenticated: () => {
+      if (isRetryingRef.current) return
+      isRetryingRef.current = true
+      runTest().finally(() => {
+        isRetryingRef.current = false
+      })
+    },
+  })
+
+  handleAuthRequiredErrorRef.current = handleAuthRequiredError
+
+  const check = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.stopPropagation()
+    if (status === CHECKER_STATUSES.IN_PROGRESS) return
+    await runTest()
   }
 
   return (
@@ -66,15 +89,26 @@ const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
             : ''
         }
       />
-      {loginUrl && (
-        <Button
-          type={ButtonType.SECONDARY}
-          size={ButtonSize.SMALL}
-          onClick={() => window.open(loginUrl, '_blank', 'noopener,noreferrer')}
-        >
-          Login to MCP Server
-        </Button>
-      )}
+      <Popup
+        visible={rows.length > 0}
+        onHide={clearRows}
+        header="MCP authentication required"
+        hideFooter
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-xs text-text-secondary">
+            Complete sign-in for the MCP server below, then the integration test will re-run
+            automatically.
+          </p>
+          {rows.map((row) => (
+            <AssistantAuthGateRow
+              key={`${row.mcp_config_id}-${row.status}`}
+              row={row}
+              onAuthenticate={initiate}
+            />
+          ))}
+        </div>
+      </Popup>
     </>
   )
 }

@@ -48,6 +48,7 @@ export const getStatusBorderClass = (status?: WorkflowExecutionStatus) => {
     '!border-in-progress-primary': status === 'In Progress',
     '!border-aborted-primary': status === 'Aborted',
     '!border-interrupted-primary': status === 'Interrupted',
+    '!border-warning-main': status === 'AUTHENTICATION_REQUIRED',
   })
 }
 
@@ -60,6 +61,7 @@ export const getEdgeStatusClass = (status?: WorkflowExecutionStatus) => {
     'In Progress': 'xyflow-edge__edge-path_in-progress',
     Aborted: 'xyflow-edge__edge-path_aborted',
     Interrupted: 'xyflow-edge__edge-path_interrupted',
+    AUTHENTICATION_REQUIRED: 'xyflow-edge__edge-path_interrupted',
   }
 
   return statusMap[status] ?? ''

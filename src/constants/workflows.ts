@@ -16,10 +16,12 @@
 import { WorkflowExecutionStatus } from '@/types/entity/workflow'
 
 export const WORKFLOW_STATUSES: Record<string, WorkflowExecutionStatus> = {
+  RUNNING: 'In Progress',
   SUCCEEDED: 'Succeeded',
   INTERRUPTED: 'Interrupted',
   ABORTED: 'Aborted',
   FAILED: 'Failed',
+  AUTHENTICATION_REQUIRED: 'AUTHENTICATION_REQUIRED',
 }
 
 export const WORKFLOW_FINAL_STATUSES = [
@@ -27,6 +29,7 @@ export const WORKFLOW_FINAL_STATUSES = [
   WORKFLOW_STATUSES.ABORTED,
   WORKFLOW_STATUSES.FAILED,
   WORKFLOW_STATUSES.INTERRUPTED,
+  WORKFLOW_STATUSES.AUTHENTICATION_REQUIRED,
 ]
 
 export const WORKFLOW_OUTPUT_FORMATS = {

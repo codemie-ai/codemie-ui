@@ -44,3 +44,4 @@ bmad/*
 /opencode.json
 /.playwright-mcp/
 /test-results/
+/CLAUDE.local.md

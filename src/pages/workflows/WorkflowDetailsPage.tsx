@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
 
 import PageLayout from '@/components/Layouts/Layout'
 import ResizableSeparator from '@/components/ResizableSeparator/ResizableSeparator'
+import { useAuthCallbackListener } from '@/hooks/useAuthCallbackListener'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { goBackFromWorkflowExecutions } from '@/pages/workflows/utils/goBackWorkflows'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
@@ -46,6 +47,18 @@ const WorkflowDetailsPage = () => {
 
   const [isConfigExpanded, setIsConfigExpanded] = useState(false)
   const { execution, executionStates } = useSnapshot(workflowExecutionsStore)
+  const trackedAuthConfigIds = useMemo(() => {
+    if (execution?.overall_status !== 'AUTHENTICATION_REQUIRED' || !execution.output) return []
+
+    try {
+      const parsedOutput = JSON.parse(execution.output) as { auth_config_id?: string }
+      return parsedOutput.auth_config_id ? [parsedOutput.auth_config_id] : []
+    } catch {
+      return []
+    }
+  }, [execution?.overall_status, execution?.output])
+
+  useAuthCallbackListener({ trackedAuthConfigIds })
   const {
     panelRef,
     isDrawerExpanded,

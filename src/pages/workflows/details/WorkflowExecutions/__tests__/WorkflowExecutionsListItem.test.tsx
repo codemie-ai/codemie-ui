@@ -193,6 +193,19 @@ describe('WorkflowExecutionsListItem', () => {
     expect(screen.getByText(WORKFLOW_STATUSES.INTERRUPTED)).toBeInTheDocument()
   })
 
+  it('renders AUTHENTICATION_REQUIRED as an explicit known status', () => {
+    const authRequiredExecution = {
+      ...mockExecution,
+      overall_status: WORKFLOW_STATUSES.AUTHENTICATION_REQUIRED,
+    }
+
+    render(<WorkflowExecutionsListItem {...defaultProps} execution={authRequiredExecution} />, {
+      wrapper: Wrapper,
+    })
+
+    expect(screen.getByText(WORKFLOW_STATUSES.AUTHENTICATION_REQUIRED)).toBeInTheDocument()
+  })
+
   it('displays runtime duration', () => {
     render(<WorkflowExecutionsListItem {...defaultProps} />, { wrapper: Wrapper })
 

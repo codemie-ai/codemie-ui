@@ -136,6 +136,10 @@ glab mr approve <MR_IID>
 
 This adds the AI reviewer's +1 to the MR. If `glab mr approve` fails (e.g., self-approval not allowed on this GitLab instance), inform the user but do not treat it as a blocking error.
 
+After the MR is created, hand off to the `babysit-mr` skill to monitor it:
+- Invoke `babysit-mr` with the MR URL returned by `glab mr create`
+- It will watch for CI failures, reviewer comments, and merge conflicts, fixing them autonomously until the MR merges
+
 ## Commit Format
 
 **Enforced by Tekton CI** — invalid messages will block the pipeline.

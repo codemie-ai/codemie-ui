@@ -31,6 +31,7 @@ import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
+import ChatAiAuthPrompt from './ChatAiAuthPrompt'
 import ChatAiMessageActions from './ChatAiMessageActions'
 import ThinkingLoader from './ThinkingLoader'
 import { useChatContext } from '../../../hooks/useChatContext'
@@ -147,6 +148,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   }
 
   const isInProgress = message.inProgress
+  const hasMcpAuthPrompt = Boolean(message.mcpAuthPromptRows?.length)
 
   const processingTime = useMemo(() => {
     return message.processingTime ? message.processingTime.toFixed(2) : null
@@ -216,16 +218,27 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
 
         {!isEditing && (
           <div ref={messageElementRef}>
-            <Markdown className="mt-4" content={message.response} />
-            {message.loginUrl && (
-              <Button
-                type={ButtonType.SECONDARY}
-                size={ButtonSize.SMALL}
-                className="mt-3"
-                onClick={() => window.open(message.loginUrl!, '_blank', 'noopener,noreferrer')}
-              >
-                Login to MCP Server
-              </Button>
+            {hasMcpAuthPrompt ? (
+              <ChatAiAuthPrompt
+                chatId={currentChat?.id ?? ''}
+                historyIndex={indexes.historyIndex}
+                messageIndex={indexes.messageIndex}
+                rows={message.mcpAuthPromptRows ?? []}
+              />
+            ) : (
+              <>
+                <Markdown className="mt-4" content={message.response} />
+                {message.loginUrl && (
+                  <Button
+                    type={ButtonType.SECONDARY}
+                    size={ButtonSize.SMALL}
+                    className="mt-3"
+                    onClick={() => window.open(message.loginUrl!, '_blank', 'noopener,noreferrer')}
+                  >
+                    Login to MCP Server
+                  </Button>
+                )}
+              </>
             )}
           </div>
         )}
