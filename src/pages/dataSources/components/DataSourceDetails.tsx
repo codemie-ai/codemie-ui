@@ -106,6 +106,11 @@ const processingSummaryFields = [
     getter: getNumericValueOrNA,
   },
   {
+    field: 'failed_documents',
+    label: 'Failed Documents:',
+    getter: getNumericValueOrNA,
+  },
+  {
     field: 'total_size_kb',
     label: 'Total Size KB:',
     shouldShow: (value: number | undefined) => isNumberValue(value),

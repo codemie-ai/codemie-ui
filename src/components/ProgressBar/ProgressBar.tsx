@@ -18,7 +18,7 @@ const ProgressBar = ({ value, min = 0, max = 100 }) => {
   if (min === max) {
     percentage = max === 0 ? 0 : 100
   } else {
-    percentage = Math.floor(((value - min) / (max - min)) * 100)
+    percentage = Math.min(Math.floor(((value - min) / (max - min)) * 100), 100)
   }
   return (
     <div className="relative overflow-hidden bg-surface-base-primary rounded-[68px] w-[85px] border border-border-secondary">
