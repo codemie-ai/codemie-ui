@@ -13,12 +13,15 @@
 // limitations under the License.
 //
 
+import isArray from 'lodash/isArray'
+import isString from 'lodash/isString'
 import { type MultiSelect as MultiSelectType } from 'primereact/multiselect'
 import { Ref, useContext } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import ExpandableTextarea from '@/components/form/ExpandableTextarea/ExpandableTextarea'
 import Input from '@/components/form/Input'
+import InputArray from '@/components/form/InputArray'
 import MultiSelect from '@/components/form/MultiSelect'
 import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowContext'
 import { FIELD_TYPES, FieldType, DynamicFormFieldSchema } from '@/types/dynamicForm'
@@ -70,14 +73,21 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
     }
 
     if (fieldType === FIELD_TYPES.LIST) {
-      return Array.isArray(fieldValue) ? fieldValue : []
+      if (isArray(fieldValue)) return fieldValue
+      if (isString(fieldValue))
+        return fieldValue
+          .split(',')
+          .map((v) => v.trim())
+          .filter(Boolean)
+      return []
     }
 
     return fieldValue ?? ''
   }
 
   const renderField = (fieldName: string, fieldSchema: DynamicFormFieldSchema) => {
-    const { type, required, values } = fieldSchema
+    const { required, values } = fieldSchema
+    const type = (fieldSchema.type?.toLowerCase() ?? fieldSchema.type) as FieldType
     const fieldValue = getFieldValue(fieldName, type)
     const label = humanize(fieldName)
 
@@ -158,7 +168,17 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
             />
           )
         }
-        return null
+        return (
+          <InputArray
+            key={fieldName}
+            label={label}
+            value={fieldValue}
+            onChange={(val) => handleFieldChange(fieldName, val)}
+            error={error}
+            isAIGenerated={false}
+            ref={issueField?.ref as Ref<HTMLInputElement>}
+          />
+        )
 
       case FIELD_TYPES.TEXT:
         return (
