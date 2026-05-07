@@ -26,6 +26,8 @@ viteEnableUserManagement: false
 viteEnableBudgetManagement: false
 # -- Identity provider. Options: 'keycloak', 'local'
 viteIdpProvider: keycloak
+# -- MCP authentication origin URL
+viteMcpAuthOrigin: ""
 
 # -- Secrets with credentials to pull images from a private registry.
 imagePullSecrets: []

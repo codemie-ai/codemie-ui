@@ -69,3 +69,4 @@ A Helm chart for AI/Run UI
 | viteEnableUserManagement | bool | `false` | Enable user management feature in AI/Run UI |
 | viteEnv | string | `"prod"` | AI/Run UI ENV. Set to local for dev development |
 | viteIdpProvider | string | `"keycloak"` | Identity provider. Options: 'keycloak', 'local' |
+| viteMcpAuthOrigin | string | `""` | MCP authentication origin URL |
