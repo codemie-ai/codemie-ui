@@ -1,5 +1,113 @@
 [
   {
+    "version": "2.25.0",
+    "date": "2026-05-07",
+    "issues": [
+      {
+        "title": "Enable conversation with uploaded Email attachments in Codemie Assistant GUI",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10671",
+        "key": "EPMCDME-10671"
+      },
+      {
+        "title": "_normalize_tool_name strips spaces only — slash in sub-assistant name breaks conversation replay on Azure OpenAI",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11841",
+        "key": "EPMCDME-11841"
+      },
+      {
+        "title": "Validation blocks configuration of Virtual Assistant after selecting \"Load an example\" in workflows",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11897",
+        "key": "EPMCDME-11897"
+      },
+      {
+        "title": "Update deprecated Tavily tool for research",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12018",
+        "key": "EPMCDME-12018"
+      },
+      {
+        "title": "Agent chat fails with BadRequestError (code 400) during workflow execution across multiple models",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11803",
+        "key": "EPMCDME-11803"
+      },
+      {
+        "title": "Chat onboarding pop-up with control buttons is sometimes not shown",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11926",
+        "key": "EPMCDME-11926"
+      },
+      {
+        "title": "Admin cannot change selected user in \"Add User to Project\" modal after first selection",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11956",
+        "key": "EPMCDME-11956"
+      },
+      {
+        "title": "SharePoint datasource Processing Summary shows incorrect document counts and indexing progress bar reaches 100% prematurely",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11996",
+        "key": "EPMCDME-11996"
+      },
+      {
+        "title": "Agent fails to respond due to tool name validation (special characters or underscore) in MCP tools",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11979",
+        "key": "EPMCDME-11979"
+      },
+      {
+        "title": "Jira ticket creation via Briana/Feedback fails because current_user is populated from user.full_name instead of Jira-resolvable user identity",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11993",
+        "key": "EPMCDME-11993"
+      },
+      {
+        "title": "Do not persist empty \"New chat\" entries in Chats history panel",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10674",
+        "key": "EPMCDME-10674"
+      },
+      {
+        "title": "Sort \"Credential Types\" and \"Datasource Types\" dropdowns (and all others)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10893",
+        "key": "EPMCDME-10893"
+      },
+      {
+        "title": "\"Generate with AI\" popup remains stuck on loading (spinner spins indefinitely) after backend timeout on POST v1/assistants/generate or POST v1/assistants/prompt/generate endpoints",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11967",
+        "key": "EPMCDME-11967"
+      },
+      {
+        "title": "Workflow Execution Transition States",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10625",
+        "key": "EPMCDME-10625"
+      },
+      {
+        "title": "CLI Insights: add Users by Job Title Group widget",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11873",
+        "key": "EPMCDME-11873"
+      },
+      {
+        "title": "Create CodeMie CLI skill for asset management via CodeMie SDK",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11630",
+        "key": "EPMCDME-11630"
+      },
+      {
+        "title": "Claude Haiku 4.5 fails with \"API Error: Content block is not a text block\" when processing CSV file in codemie-claude",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11903",
+        "key": "EPMCDME-11903"
+      }
+    ]
+  },
+  {
     "version": "2.24.0",
     "date": "2026-04-23",
     "issues": [
