@@ -18,7 +18,6 @@ import React, { useRef } from 'react'
 import AIGenerateSVG from '@/assets/icons/ai-generate.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
-import Sidebar from '@/components/Sidebar'
 import { useNewIntegrationPopup } from '@/hooks/useNewIntegrationPopup'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
@@ -28,7 +27,7 @@ import { Skill } from '@/types/entity/skill'
 import toaster from '@/utils/toaster'
 
 import SkillForm, { SkillFormRef } from './SkillForm'
-import SkillsNavigation from './SkillsNavigation'
+import SkillsPageShell from './SkillsPageShell'
 
 interface EditSkillFormProps {
   skill: Skill
@@ -38,15 +37,7 @@ interface EditSkillFormProps {
 const EditSkillForm: React.FC<EditSkillFormProps> = ({ skill, onBack }) => {
   const router = useVueRouter()
   const formRef = useRef<SkillFormRef>(null)
-  const {
-    form,
-    onSubmit,
-    companionFiles,
-    setCompanionFiles,
-    bundleFolders,
-    setBundleFolders,
-    isCompanionFilesLoading,
-  } = useSkillForm(skill)
+  const { form, onSubmit } = useSkillForm(skill)
   const {
     showNewIntegration,
     selectedCredentialType,
@@ -62,15 +53,11 @@ const EditSkillForm: React.FC<EditSkillFormProps> = ({ skill, onBack }) => {
   }
 
   return (
-    <div className="flex h-full">
-      <Sidebar title="Skills" description="Browse and manage your knowledge skills">
-        <SkillsNavigation />
-      </Sidebar>
-
+    <SkillsPageShell>
       <PageLayout
         showBack
         limitWidth
-        title={`Edit Skill`}
+        title="Edit Skill"
         onBack={onBack}
         rightContent={
           <div className="flex gap-4">
@@ -94,11 +81,6 @@ const EditSkillForm: React.FC<EditSkillFormProps> = ({ skill, onBack }) => {
           ref={formRef}
           form={form}
           onSubmit={onSubmit}
-          companionFiles={companionFiles}
-          bundleFolders={bundleFolders}
-          isCompanionFilesLoading={isCompanionFilesLoading}
-          onCompanionFilesChange={setCompanionFiles}
-          onBundleFoldersChange={setBundleFolders}
           onSuccess={handleSuccess}
           showNewIntegrationPopup={showNewIntegrationPopup}
         />
@@ -111,7 +93,7 @@ const EditSkillForm: React.FC<EditSkillFormProps> = ({ skill, onBack }) => {
         onHide={hideNewIntegrationPopup}
         onSuccess={onIntegrationSuccess}
       />
-    </div>
+    </SkillsPageShell>
   )
 }
 

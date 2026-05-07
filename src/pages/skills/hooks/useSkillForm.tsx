@@ -14,7 +14,6 @@
 //
 
 import { yupResolver } from '@hookform/resolvers/yup'
-import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { skillValidationSchema } from '@/pages/skills/validation/skillValidation'
@@ -24,8 +23,6 @@ import { MCPServerDetails } from '@/types/entity/mcp'
 import {
   Skill,
   SkillCreateRequest,
-  SkillBundlePreview,
-  SkillCompanionFile,
   SkillUpdateRequest,
   SkillVisibility,
 } from '@/types/entity/skill'
@@ -42,11 +39,6 @@ export interface SkillFormData {
 }
 
 export const useSkillForm = (initialData?: Skill) => {
-  const [companionFiles, setCompanionFilesState] = useState<SkillCompanionFile[]>([])
-  const [bundleFolders, setBundleFoldersState] = useState<string[]>([])
-  const [isCompanionFilesLoading, setIsCompanionFilesLoading] = useState(false)
-  const [areCompanionFilesDirty, setAreCompanionFilesDirty] = useState(false)
-
   const form = useForm<SkillFormData>({
     resolver: yupResolver(skillValidationSchema),
     defaultValues: initialData
@@ -73,82 +65,6 @@ export const useSkillForm = (initialData?: Skill) => {
     mode: 'all',
   })
 
-  const { setValue } = form
-
-  const setCompanionFiles = useCallback((files: SkillCompanionFile[]) => {
-    setCompanionFilesState(files)
-    setAreCompanionFilesDirty(true)
-  }, [])
-
-  const setBundleFolders = useCallback((folders: string[]) => {
-    setBundleFoldersState(folders)
-  }, [])
-
-  const applyBundlePreview = useCallback(
-    (bundlePreview: SkillBundlePreview) => {
-      setValue('name', bundlePreview.name, {
-        shouldValidate: true,
-        shouldDirty: true,
-        shouldTouch: true,
-      })
-      setValue('description', bundlePreview.description, {
-        shouldValidate: true,
-        shouldDirty: true,
-        shouldTouch: true,
-      })
-      setValue('content', bundlePreview.content, {
-        shouldValidate: true,
-        shouldDirty: true,
-        shouldTouch: true,
-      })
-      setCompanionFilesState(bundlePreview.companion_files ?? [])
-      setBundleFoldersState([])
-      setAreCompanionFilesDirty(true)
-    },
-    [setValue]
-  )
-
-  useEffect(() => {
-    let isActive = true
-
-    const loadCompanionFiles = async () => {
-      if (!initialData?.id || !initialData.companion_files?.length) {
-        setCompanionFilesState([])
-        setBundleFoldersState([])
-        setAreCompanionFilesDirty(false)
-        return
-      }
-
-      try {
-        setIsCompanionFilesLoading(true)
-        const files = await Promise.all(
-          initialData.companion_files.map((file) =>
-            skillsStore.getSkillCompanionFileContent(initialData.id, file.path)
-          )
-        )
-
-        if (!isActive) return
-
-        setCompanionFilesState(files)
-        setBundleFoldersState([])
-        setAreCompanionFilesDirty(false)
-      } catch (error) {
-        if (!isActive) return
-        setCompanionFilesState([])
-      } finally {
-        if (isActive) {
-          setIsCompanionFilesLoading(false)
-        }
-      }
-    }
-
-    loadCompanionFiles()
-
-    return () => {
-      isActive = false
-    }
-  }, [initialData])
-
   const onSubmit = async (data: SkillFormData) => {
     if (initialData) {
       // Update existing skill - PUT request requires full object
@@ -163,10 +79,6 @@ export const useSkillForm = (initialData?: Skill) => {
         mcp_servers: data.mcp_servers,
       }
 
-      if (areCompanionFilesDirty) {
-        updateData.companion_files = companionFiles
-      }
-
       return skillsStore.updateSkill(initialData.id, updateData)
     }
     // Create new skill
@@ -179,7 +91,6 @@ export const useSkillForm = (initialData?: Skill) => {
       categories: data.categories,
       toolkits: data.toolkits,
       mcp_servers: data.mcp_servers,
-      ...(companionFiles.length > 0 ? { companion_files: companionFiles } : {}),
     }
 
     return skillsStore.createSkill(createData)
@@ -188,11 +99,5 @@ export const useSkillForm = (initialData?: Skill) => {
   return {
     form,
     onSubmit,
-    companionFiles,
-    setCompanionFiles,
-    bundleFolders,
-    setBundleFolders,
-    isCompanionFilesLoading,
-    applyBundlePreview,
   }
 }

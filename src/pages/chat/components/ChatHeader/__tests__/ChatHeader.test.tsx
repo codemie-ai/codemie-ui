@@ -52,26 +52,6 @@ const { mockAppInfoStore, mockChatsStore } = vi.hoisted(() => {
   }
 })
 
-const { mockAgentWorkspaceStore } = vi.hoisted(() => ({
-  mockAgentWorkspaceStore: {
-    workspace: null,
-    files: [],
-    selectedFilePath: null,
-    selectedFile: null,
-    currentConversationId: null,
-    isWorkspaceLoading: false,
-    isFilesLoading: false,
-    isPreviewLoading: false,
-    isDownloading: false,
-    error: null,
-    openForConversation: vi.fn(),
-    listFiles: vi.fn(),
-    selectFile: vi.fn(),
-    downloadSelectedFile: vi.fn(),
-    reset: vi.fn(),
-  },
-}))
-
 vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: vi.fn(() => mockRouter),
 }))
@@ -85,7 +65,6 @@ vi.mock('valtio', () => ({
   useSnapshot: vi.fn((store) => {
     if (store === mockAppInfoStore) return mockAppInfoStore
     if (store === mockChatsStore) return mockChatsStore
-    if (store === mockAgentWorkspaceStore) return mockAgentWorkspaceStore
     return store
   }),
   subscribe: vi.fn(),
@@ -97,10 +76,6 @@ vi.mock('@/store/appInfo', () => ({
 
 vi.mock('@/store/chats', () => ({
   chatsStore: mockChatsStore,
-}))
-
-vi.mock('@/store/agentWorkspace', () => ({
-  agentWorkspaceStore: mockAgentWorkspaceStore,
 }))
 
 const mockChat = {
@@ -269,7 +244,6 @@ describe('ChatHeader', () => {
     'New Chat with Same Assistant',
     'Share Chat',
     'Usage details',
-    'Browse files',
     'Open chat configuration',
   ]
   const exportButtonLabel = 'Export Conversation'

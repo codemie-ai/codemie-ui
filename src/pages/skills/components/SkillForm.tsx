@@ -36,12 +36,10 @@ import {
   SkillAIGeneratedFields,
   SkillAIRefineFields,
   SkillVisibility,
-  SkillCompanionFile,
 } from '@/types/entity/skill'
 
 import RefineSkillModal from './RefineSkillModal'
 import RefineWithAIPromptPopup from './RefineWithAIPromptPopup'
-import SkillBundleFilesSection from './SkillBundleFilesSection'
 import SkillCategories from './SkillCategories'
 import SkillInstructions from './SkillInstructions'
 
@@ -54,32 +52,13 @@ export interface SkillFormRef {
 interface SkillFormProps {
   form: UseFormReturn<SkillFormData>
   onSubmit: (data: SkillFormData) => Promise<Skill>
-  companionFiles: SkillCompanionFile[]
-  bundleFolders: string[]
-  isCompanionFilesLoading?: boolean
-  onCompanionFilesChange: (files: SkillCompanionFile[]) => void
-  onBundleFoldersChange: (folders: string[]) => void
   onSuccess?: () => void
   showNewIntegrationPopup: (project: string, credentialType: string) => void
   isCompactView?: boolean
 }
 
 const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
-  (
-    {
-      form,
-      onSubmit,
-      companionFiles,
-      bundleFolders,
-      isCompanionFilesLoading = false,
-      onCompanionFilesChange,
-      onBundleFoldersChange,
-      onSuccess,
-      showNewIntegrationPopup,
-      isCompactView = false,
-    },
-    ref
-  ) => {
+  ({ form, onSubmit, onSuccess, showNewIntegrationPopup, isCompactView = false }, ref) => {
     const { control, watch, setValue, handleSubmit, getValues } = form
 
     const descriptionValue = watch('description') ?? ''
@@ -301,19 +280,6 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
                   onBlur={field.onBlur}
                 />
               )}
-            />
-          </FormSection>
-
-          <FormSection
-            title="Bundle Files"
-            description="Attach supporting files under relative folders such as references/ or assets/. To import a whole bundle from a .zip archive, use the Import action in the page header."
-          >
-            <SkillBundleFilesSection
-              companionFiles={companionFiles}
-              folders={bundleFolders}
-              isLoading={isCompanionFilesLoading}
-              onCompanionFilesChange={onCompanionFilesChange}
-              onFoldersChange={onBundleFoldersChange}
             />
           </FormSection>
 

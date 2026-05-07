@@ -38,29 +38,6 @@ export interface SkillCategoryDefinition {
   label: string
 }
 
-export type SkillCompanionFileEncoding = 'text' | 'base64'
-
-export type SkillCompanionFileKind = 'reference' | 'asset' | 'other'
-
-export interface SkillCompanionFileMetadata {
-  path: string
-  kind?: SkillCompanionFileKind | null
-  mime_type?: string
-  encoding?: SkillCompanionFileEncoding
-  size_bytes?: number
-}
-
-export interface SkillCompanionFile extends SkillCompanionFileMetadata {
-  content: string
-}
-
-export interface SkillBundlePreview {
-  name: string
-  description: string
-  content: string
-  companion_files: SkillCompanionFile[]
-}
-
 export interface Skill {
   id: string
   name: string
@@ -84,7 +61,6 @@ export interface Skill {
   unique_dislikes_count?: number
   toolkits?: AssistantToolkit[]
   mcp_servers?: MCPServerDetails[]
-  companion_files?: SkillCompanionFileMetadata[]
 }
 
 export interface SkillCreateRequest {
@@ -96,7 +72,6 @@ export interface SkillCreateRequest {
   categories: string[]
   toolkits?: AssistantToolkit[]
   mcp_servers?: MCPServerDetails[]
-  companion_files?: SkillCompanionFile[]
 }
 
 export interface SkillUpdateRequest {
@@ -108,7 +83,6 @@ export interface SkillUpdateRequest {
   categories?: string[]
   toolkits?: AssistantToolkit[]
   mcp_servers?: MCPServerDetails[]
-  companion_files?: SkillCompanionFile[]
 }
 
 export interface SkillAssistantItem {

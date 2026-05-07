@@ -21,7 +21,6 @@
  */
 
 // Main entity types
-export * from './agentWorkspace'
 export * from './assistant'
 export * from './conversation'
 export * from './mcp'
