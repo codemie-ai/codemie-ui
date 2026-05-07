@@ -98,12 +98,6 @@
         "type": "STORY",
         "link": "https://jiraeu.epam.com/browse/EPMCDME-11630",
         "key": "EPMCDME-11630"
-      },
-      {
-        "title": "Claude Haiku 4.5 fails with \"API Error: Content block is not a text block\" when processing CSV file in codemie-claude",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-11903",
-        "key": "EPMCDME-11903"
       }
     ]
   },
