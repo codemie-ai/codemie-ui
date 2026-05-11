@@ -1,5 +1,35 @@
 [
   {
+    "version": "2.26.0",
+    "date": "2026-05-11",
+    "issues": [
+      {
+        "title": "User cannot be assigned to project due to internal server error caused by missing shared budget reference",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12108",
+        "key": "EPMCDME-12108"
+      },
+      {
+        "title": "TA Desk Code Review workflow is failing",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12106",
+        "key": "EPMCDME-12106"
+      },
+      {
+        "title": "Add search capability for chats and folders in CodeMie UI",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11633",
+        "key": "EPMCDME-11633"
+      },
+      {
+        "title": "Implement Skills Statistics API for skill event log and per-skill adoption metrics",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12089",
+        "key": "EPMCDME-12089"
+      }
+    ]
+  },
+  {
     "version": "2.25.0",
     "date": "2026-05-07",
     "issues": [
