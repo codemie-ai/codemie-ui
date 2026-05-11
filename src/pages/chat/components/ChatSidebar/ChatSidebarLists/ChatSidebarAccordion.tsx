@@ -14,6 +14,7 @@
 //
 
 import { Accordion, AccordionTab } from 'primereact/accordion'
+import { CSSTransitionProps } from 'primereact/csstransition'
 import { FC, ReactNode } from 'react'
 
 import ChevronRightIcon from '@/assets/icons/chevron-right.svg?react'
@@ -36,6 +37,7 @@ interface ChatSidebarAccordionProps {
   children: ReactNode
   headerContentTemplate?: ReactNode
   onToggle: () => void
+  transitionOptions?: CSSTransitionProps
 }
 
 const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
@@ -44,6 +46,7 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
   children,
   headerContentTemplate,
   onToggle,
+  transitionOptions,
 }) => {
   return (
     <Accordion
@@ -52,6 +55,7 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
       expandIcon={() => null}
       collapseIcon={() => null}
       pt={accordionPt}
+      transitionOptions={transitionOptions}
     >
       <AccordionTab
         pt={tabPt}

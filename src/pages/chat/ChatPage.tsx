@@ -51,7 +51,7 @@ const ChatPage: FC = () => {
 
   useEffect(() => {
     if (chatId) {
-      chatsStore.getChat(chatId)
+      chatsStore.getChat(chatId, { saveAsRecent: true })
       chatsStore.isNewChat = false
       chatsStore.newChatParams = null
     }

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useEffect, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import AddFolderSvg from '@/assets/icons/folder-add.svg?react'
@@ -32,7 +32,12 @@ import FolderList from '../FolderList/FolderList'
 type SectionName = 'chats' | 'folders'
 type PopupName = 'delete-chat' | 'folder-form' | 'move-chat'
 
-const ChatSidebarLists = () => {
+export interface ChatSidebarListsRef {
+  expandFolder: (folderName: string) => void
+  scrollToChat: (chatId: string, folderName?: string) => void
+}
+
+const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) => {
   const { chats, currentChat, chatFolders, isChatsLoading } = useSnapshot(
     chatsStore
   ) as typeof chatsStore
@@ -42,8 +47,53 @@ const ChatSidebarLists = () => {
   const [activeSection, setActiveSection] = useState<SectionName | null>(null)
   const [activeFolder, setActiveFolder] = useState<string | null>(null)
   const [hasManuallyExpandedSection, setHasManuallyExpandedSection] = useState(false)
+  const [disableAccordionAnimation, setDisableAccordionAnimation] = useState(false)
 
-  const defaultChats = useMemo(() => chats.filter((chat) => !chat.folder), [chats])
+  useImperativeHandle(ref, () => ({
+    expandFolder: (folderName: string) => {
+      setDisableAccordionAnimation(true)
+      setActiveSection('folders')
+      setActiveFolder(folderName)
+
+      setTimeout(() => {
+        const folderElement = document.querySelector(
+          `[data-folder="${folderName}"]`
+        ) as HTMLElement | null
+        if (!folderElement) {
+          setDisableAccordionAnimation(false)
+          return
+        }
+        folderElement.scrollIntoView({ behavior: 'instant', block: 'center' })
+        if (folderElement.getAttribute('data-folder-open') !== 'true') {
+          folderElement.click()
+        }
+        setDisableAccordionAnimation(false)
+      }, 50)
+    },
+    scrollToChat: (chatId: string, folderName?: string) => {
+      setDisableAccordionAnimation(true)
+
+      if (folderName) {
+        setActiveSection('folders')
+        setActiveFolder(folderName)
+      } else {
+        setActiveSection('chats')
+      }
+
+      setTimeout(() => {
+        const chatElement = document.querySelector(`[data-chat-id="${chatId}"]`)
+        if (chatElement) {
+          chatElement.scrollIntoView({ behavior: 'instant', block: 'nearest' })
+        }
+        setDisableAccordionAnimation(false)
+      }, 50)
+    },
+  }))
+
+  const defaultChats = useMemo(
+    () => chats.filter((chat) => !chat.folder || chat.isWorkflow),
+    [chats]
+  )
 
   const foldersToChatsMap = useMemo(() => {
     return chats.reduce((acc: Record<string, ChatListItem[]>, chat) => {
@@ -136,6 +186,7 @@ const ChatSidebarLists = () => {
         title="Chats"
         isExpanded={activeSection === 'chats'}
         onToggle={() => handleToggleSection('chats')}
+        transitionOptions={disableAccordionAnimation ? { timeout: 0 } : undefined}
       >
         <ChatList chatActions={chatActions} chats={defaultChats} currentChatId={currentChat?.id} />
       </ChatSidebarAccordion>
@@ -146,6 +197,7 @@ const ChatSidebarLists = () => {
           isExpanded={activeSection === 'folders'}
           headerContentTemplate={createFolderButton}
           onToggle={() => handleToggleSection('folders')}
+          transitionOptions={disableAccordionAnimation ? { timeout: 0 } : undefined}
         >
           <FolderList
             folders={folders}
@@ -178,6 +230,6 @@ const ChatSidebarLists = () => {
       />
     </div>
   )
-}
+})
 
 export default ChatSidebarLists

@@ -77,6 +77,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
 
     return (
       <li
+        data-chat-id={chat.id}
         className={cn(
           'flex items-center justify-between text-text-quaternary hover:text-text-primary transition-colors duration-150 h-9 rounded-lg',
           isActive && '!text-text-primary bg-surface-specific-dropdown-hover'

@@ -74,3 +74,23 @@ export const CHAT_MESSAGE_MARK = {
 export const CHAT_FILE_UPLOAD_MESSAGE = `Attach a file to the chat. You can upload files multiple times, and the most recent will be used as context. Use @filename to reference an already attached file. ${SUPPORTED_FILE_FORMATS_MESSAGE_CHAT} Max size: 50MB."`
 export const CHAT_FILE_MULTIUPLOAD_MESSAGE = `Attach up to 10 files to the chat (max 100MB each). You can upload files multiple times, and the most recent ones will be used as context. Use @filename to reference an already attached file. ${SUPPORTED_FILE_FORMATS_MESSAGE_CHAT}`
 export const WF_FILE_UPLOAD_MESSAGE = `Attach up to 10 files to workflow execution (max 100MB each). The files will be included in the context of each step, accessible for execution logic. ${SUPPORTED_FILE_FORMATS_MESSAGE_CHAT}`
+
+// ===== Recent Chats =====
+
+export const RECENT_CHATS_STORAGE_KEY = 'recent_chats'
+export const getRecentChatStorageKey = (userId: string) => `${userId}_${RECENT_CHATS_STORAGE_KEY}`
+export const MAX_RECENT_CHATS = 20
+
+export const TIME_PERIOD_LABELS = [
+  { label: 'Today', key: 'today' },
+  { label: 'Last 7 Days', key: 'last7Days' },
+  { label: 'Last 30 Days', key: 'last30Days' },
+  { label: 'Earlier', key: 'earlier' },
+] as const
+
+// Time periods in milliseconds
+export const TIME_PERIODS = {
+  TODAY: 24 * 60 * 60 * 1000, // 1 day
+  LAST_7_DAYS: 7 * 24 * 60 * 60 * 1000, // 7 days
+  LAST_30_DAYS: 30 * 24 * 60 * 60 * 1000, // 30 days
+} as const

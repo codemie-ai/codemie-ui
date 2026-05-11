@@ -147,7 +147,9 @@ describe('ChatPage', () => {
 
     render(<ChatPage />)
 
-    expect(mockChatsStore.getChat).toHaveBeenCalledWith('chat-1')
+    expect(mockChatsStore.getChat).toHaveBeenCalledWith('chat-1', {
+      saveAsRecent: true,
+    })
     expect(screen.getByTestId('chat-history')).toBeInTheDocument()
     expect(screen.getByTestId('chat-prompt')).toBeInTheDocument()
   })

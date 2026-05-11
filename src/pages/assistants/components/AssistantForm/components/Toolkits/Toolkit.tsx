@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { Fragment, useContext, useState } from 'react'
+import { useContext, useState } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import TooltipButton from '@/components/TooltipButton'
@@ -21,6 +21,7 @@ import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowConte
 import { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
 import { getCredentialType } from '@/utils/settings'
+import { highlightText } from '@/utils/textUtils'
 import { cn } from '@/utils/utils'
 
 import { AutoCredentialsSwitch } from './AutoCredentialsSwitch'
@@ -40,19 +41,6 @@ interface ToolkitProps {
   onAddSettingClick: (credentialType: string) => void
   searchQuery?: string
   isChatConfig?: boolean
-}
-
-const highlightText = (text: string, query: string) => {
-  if (!query) return text
-  const index = text.toLowerCase().indexOf(query.toLowerCase())
-  if (index === -1) return text
-  return (
-    <Fragment>
-      {text.slice(0, index)}
-      <span className="text-text-accent-status">{text.slice(index, index + query.length)}</span>
-      {text.slice(index + query.length)}
-    </Fragment>
-  )
 }
 
 const Toolkit = ({

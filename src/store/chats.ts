@@ -17,6 +17,7 @@ import { proxy } from 'valtio'
 
 import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
 import { router } from '@/hooks/useVueRouter'
+import { SearchResultItem , ChatExportFormat, RecentChat } from '@/types/chats'
 import {
   Conversation,
   ChatFolder,
@@ -31,13 +32,13 @@ import storage from '@/utils/storage'
 import toaster from '@/utils/toaster'
 import { getRootPath } from '@/utils/utils'
 
+import { recentChatsStore } from './recentChats'
 import { userStore } from './user'
 import {
   getChatBEMessageIndex,
   transformChatListItemDTOs,
   transformFolderListItemsDTOs,
 } from './utils/chats'
-import { ChatExportFormat } from '../types/chats'
 
 const LAST_CHAT_ID = 'last-chat-id'
 
@@ -64,8 +65,9 @@ export interface ChatsStoreType {
   getLastChat(): string | null
   getChats(): Promise<ChatListItem[]>
   findChat(id: string): ChatListItem | undefined
-  getChat(id: string): Promise<Conversation>
+  getChat(id: string, options?: { saveAsRecent?: boolean }): Promise<Conversation>
   getSharedChat(token: string): Promise<Conversation>
+  searchChats(query: string, signal?: AbortSignal): Promise<SearchResultItem[]>
   setOpenChat(newChat: Conversation, saveToOpenedChatsHistory?: boolean): Conversation
   clearCurrentChat(): void
   startNewChat(assistantId?: string, folder?: string, isWorkflow?: boolean): Promise<Conversation>
@@ -114,6 +116,10 @@ export interface ChatsStoreType {
     historyIndex: number,
     messageIndex: number
   ): Promise<void>
+
+  // ===== Recent Chats Methods =====
+  getRecentChats(): RecentChat[]
+  addRecentChat(chat: Omit<RecentChat, 'openedAt'>): void
 }
 
 export const chatsStore = proxy<ChatsStoreType>({
@@ -149,10 +155,29 @@ export const chatsStore = proxy<ChatsStoreType>({
     return chatsStore.chats.find((chat) => chat.id === id)
   },
 
-  getChat: async (id) => {
+  searchChats: async (query, signal) => {
+    const response = await api.get('v1/conversations/search', {
+      params: { query },
+      signal,
+    })
+
+    const data = await response.json()
+    return data.items.map((v: SearchResultItem) => ({ ...v, name: v.name || 'New chat' }))
+  },
+
+  getChat: async (id, options) => {
     const response = await api.get(`v1/conversations/${id}`)
     const chat = transformChatBEtoFE(await response.json())
     storage.put(userStore.user?.userId ?? '', LAST_CHAT_ID, id)
+
+    if (options?.saveAsRecent) {
+      chatsStore.addRecentChat({
+        id: chat.id,
+        name: chat.name,
+        folder: chat.folder,
+      })
+    }
+
     return chatsStore.setOpenChat(chat)
   },
 
@@ -279,8 +304,15 @@ export const chatsStore = proxy<ChatsStoreType>({
     const chat = chatsStore.findChat(id)
     if (!chat) return
 
-    await api.put(`v1/conversations/${id}`, { name }).then(() => {
-      chat.name = name
+    const trimmedName = name?.trim()
+    if (!trimmedName) {
+      toaster.error('Chat name cannot be empty')
+      return
+    }
+
+    await api.put(`v1/conversations/${id}`, { name: trimmedName }).then(() => {
+      chat.name = trimmedName
+      recentChatsStore.updateRecentChatName(id, trimmedName)
     })
   },
 
@@ -296,6 +328,11 @@ export const chatsStore = proxy<ChatsStoreType>({
       const chatListItem = chatsStore.chats.find((item) => item.id === id)
       if (chatListItem) Object.assign(chatListItem, data)
       if (chat) Object.assign(chat, data)
+
+      if (data.name) {
+        recentChatsStore.updateRecentChatName(id, data.name)
+      }
+
       return response.json()
     })
   },
@@ -320,6 +357,7 @@ export const chatsStore = proxy<ChatsStoreType>({
   deleteChat: (id) => {
     return api.delete(`v1/conversations/${id}`).then((response) => {
       chatsStore.chats = chatsStore.chats.filter((chat) => chat.id !== id)
+      recentChatsStore.removeRecentChat(id)
       return response.json()
     })
   },
@@ -395,7 +433,12 @@ export const chatsStore = proxy<ChatsStoreType>({
       .delete(
         `v1/conversations/folder/${encodeURIComponent(folder)}?remove_conversations=${deleteChats}`
       )
-      .then(() => chatsStore.getFolders())
+      .then(() => {
+        if (deleteChats) {
+          recentChatsStore.removeRecentChatsByFolder(folder)
+        }
+        return chatsStore.getFolders()
+      })
       .then(() => chatsStore.getChats())
   },
 
@@ -525,5 +568,15 @@ export const chatsStore = proxy<ChatsStoreType>({
         })
       }
     })
+  },
+
+  // ===== Recent Chats Methods =====
+
+  getRecentChats(): RecentChat[] {
+    return recentChatsStore.getRecentChats()
+  },
+
+  addRecentChat(chat: Omit<RecentChat, 'openedAt'>) {
+    recentChatsStore.addRecentChat(chat)
   },
 })

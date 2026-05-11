@@ -13,22 +13,27 @@
 // limitations under the License.
 //
 
+import { useState, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import ExploreSvg from '@/assets/icons/explore.svg?react'
 import Plus from '@/assets/icons/plus.svg?react'
+import SearchIcon from '@/assets/icons/search.svg?react'
 import Button from '@/components/Button/Button'
 import Sidebar from '@/components/Sidebar/Sidebar'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatsStore } from '@/store/chats'
 
 import ChatSidebarAssistants from './ChatSidebarAssistants'
-import ChatSidebarLists from './ChatSidebarLists/ChatSidebarLists'
+import ChatSidebarLists, { ChatSidebarListsRef } from './ChatSidebarLists/ChatSidebarLists'
 import ChatSidebarWorkflows from './ChatSidebarWorkflows'
+import ChatSearchPanel from '../ChatSearchPanel/ChatSearchPanel'
 
 const ChatSidebar = () => {
   const router = useVueRouter()
   const { startNewChat } = useSnapshot(chatsStore)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const sidebarListsRef = useRef<ChatSidebarListsRef>(null)
 
   const handleCreateChat = async () => {
     await startNewChat('', '', false)
@@ -79,9 +84,24 @@ const ChatSidebar = () => {
           </button>
         </div>
 
-        <div className="h-px min-h-px bg-border-primary mt-7 mb-5" />
+        <div className="h-px min-h-px bg-border-primary mt-7 mb-4" />
 
-        <ChatSidebarLists />
+        <Button
+          variant="tertiary"
+          onClick={() => setIsSearchOpen(true)}
+          className="mb-1 w-full flex items-center gap-2 justify-start font-normal font-sm !h-9 min-h-9"
+        >
+          <SearchIcon className="size-5" />
+          Search in Chats
+        </Button>
+
+        <ChatSearchPanel
+          open={isSearchOpen}
+          onOpenChange={setIsSearchOpen}
+          sidebarListsRef={sidebarListsRef}
+        />
+
+        <ChatSidebarLists ref={sidebarListsRef} />
       </div>
     </Sidebar>
   )

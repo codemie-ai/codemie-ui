@@ -14,3 +14,43 @@
 //
 
 export type ChatExportFormat = 'docx' | 'pdf' | 'pptx' | 'json'
+
+export interface SearchResultItem {
+  id: string // Chat ID or Folder ID
+  name: string // Chat or folder name
+  updated_at: string // ISO timestamp
+  type: 'chat' | 'folder' // Discriminator
+  folder?: string // Parent folder name (for chats only)
+}
+
+export interface SearchResults {
+  items: SearchResultItem[] // Combined chats + folders, sorted by updated_at DESC
+}
+
+export interface SearchHistoryItem {
+  value: string // The search query string
+  searchedAt: string // ISO timestamp for sorting/cleanup
+}
+
+// ===== Recent Chats =====
+
+export interface RecentChat {
+  id: string
+  name: string
+  folder?: string
+  openedAt: string
+}
+
+export type TimePeriod = 'today' | 'last7Days' | 'last30Days' | 'earlier'
+
+export interface GroupedRecentChats {
+  today: RecentChat[]
+  last7Days: RecentChat[]
+  last30Days: RecentChat[]
+  earlier: RecentChat[]
+}
+
+export interface TimePeriodLabel {
+  label: string
+  key: TimePeriod
+}
