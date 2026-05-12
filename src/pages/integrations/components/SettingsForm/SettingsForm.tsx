@@ -15,7 +15,7 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import orderBy from 'lodash/orderBy'
-import { forwardRef, useImperativeHandle, useState, useEffect, useMemo } from 'react'
+import { forwardRef, useImperativeHandle, useState, useEffect, useMemo, useRef } from 'react'
 import { useForm, Controller, useWatch } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
 import * as Yup from 'yup'
@@ -45,6 +45,7 @@ import {
   getTestableCredentialTypes,
   getSettingsFieldsSectionTitle,
   SETTING_TYPE_PROJECT,
+  generateDefaultAlias,
 } from '@/utils/settings'
 
 import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
@@ -74,6 +75,7 @@ interface SettingsFormProps {
   onCredentialValuesChange?: (values: Record<string, string>) => void
   onCredentialTypeChange?: (type: string) => void
   shouldAutofocusInput?: boolean
+  defaultAliasIdentifier?: string
 }
 
 const ALIAS_REQUIRED_ERR = 'Alias is required'
@@ -97,6 +99,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     onCredentialValuesChange,
     onCredentialTypeChange,
     shouldAutofocusInput = false,
+    defaultAliasIdentifier,
   } = props
 
   const { user } = useSnapshot(userStore)
@@ -104,6 +107,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   const [projectName, setProjectName] = useState(initialProjectName || '')
   const [isGlobal, setIsGlobal] = useState(initialIsGlobal || false)
   const [customerConfig, setCustomerConfig] = useState<any>(null)
+  const aliasManuallyEdited = useRef(false)
 
   const CREDENTIAL_TYPES = useMemo(() => {
     return getAvailableCredentialsTypes({
@@ -238,6 +242,15 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       setFormValue('alias', initialSettingAlias)
     }
   }, [initialSettingAlias, setFormValue])
+
+  const aliasIdentifier =
+    settingType === SETTING_TYPE_PROJECT ? projectName : defaultAliasIdentifier
+
+  useEffect(() => {
+    if (editing || aliasManuallyEdited.current || !aliasIdentifier) return
+    const defaultAlias = generateDefaultAlias(aliasIdentifier)
+    setFormValue('alias', defaultAlias)
+  }, [aliasIdentifier])
 
   const handleCredentialTypeChange = (newType: string) => {
     setCredentialType(newType)
@@ -376,6 +389,10 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                 label="Alias:"
                 error={fieldState.error?.message}
                 autoFocus={shouldAutofocusInput}
+                onChange={(e) => {
+                  aliasManuallyEdited.current = true
+                  field.onChange(e)
+                }}
               />
             )}
           />
