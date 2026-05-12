@@ -168,10 +168,10 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
     const userId = userStore.user?.userId
 
     if (chatId && userId) {
-      if (currentChat?.history.length) {
-        setDynamicToolsConfig(loadChatTools(userId, chatId))
-        setSelectedSkills(loadChatSkills(userId, chatId))
-      }
+      // Restore persisted tools config for this chat
+      setDynamicToolsConfig(loadChatTools(userId, chatId))
+      // Restore persisted skills for this chat
+      setSelectedSkills(loadChatSkills(userId, chatId))
     } else {
       setDynamicToolsConfig({ enableWebSearch: null, enableCodeInterpreter: null })
       setSelectedSkills([])

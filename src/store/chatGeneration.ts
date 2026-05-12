@@ -27,13 +27,11 @@ import api, { ABORT_ERROR, DEFAULT_ERROR_MESSAGE } from '@/utils/api'
 import { transformChatHistoryFEtoBE } from '@/utils/chatHelpers'
 import { fileToBase64 } from '@/utils/helpers'
 import { parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
-import storage from '@/utils/storage'
 import Stream, { streamChunkToObject } from '@/utils/stream'
 import toaster from '@/utils/toaster'
 
 import { assistantsStore } from './assistants'
 import { chatsStore } from './chats'
-import { userStore } from './user'
 import { workflowExecutionsStore } from './workflowExecutions'
 
 const STREAMING_NOTIFICATION = 'Still waiting for response, agent is thinking'
@@ -271,19 +269,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
 
     if (chatsStore.isNewChat) {
-      const pendingLlmModel = chat.llmModel
       await chatsStore.createChat()
-      const newId = chatsStore.currentChat!.id
-      const userId = userStore.user?.userId
-      if (userId) {
-        storage.put(
-          userId,
-          `chat-tools-config-${newId}`,
-          dynamicToolsConfig ?? { enableWebSearch: null, enableCodeInterpreter: null }
-        )
-        storage.put(userId, `chat-skills-${newId}`, skillIds ?? [])
-      }
-      if (pendingLlmModel) await chatsStore.updateChat(newId, { llmModel: pendingLlmModel })
       return chatGenerationStore.createChatGeneration(options)
     }
 
