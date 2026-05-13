@@ -129,53 +129,18 @@ Use AskUserQuestion tool with focused, specific questions that unblock implement
 
 ### Phase 3: Complexity Assessment
 
-**Step 5: Analyze and Report Complexity**
+MANDATORY: Before scoring, read `references/complexity-assessment-guide.md`. Follow this guide for complexity assessment.
 
-Provide a structured complexity assessment in this format:
+1. Score each of the 5 dimensions using the Complexity Assessment Template in the guide
+2. Check the Red Flags section — any match auto-elevates the score
+3. Sum scores to get the Total Score
+4. Output the result using the Assessment Output Format defined in the guide
+5. If a Jira ticket ID is provided (EPMCDME-XXXXX format), update ticket with estimated [Total Score] from complexity assessment via brianna skill:
 
-```markdown
-## Implementation Analysis: [TICKET-ID]
-
-### Complexity Rating: [Simple | Medium | Complex]
-
-### Reasoning:
-- **[Point 1]**: [Explanation of complexity factor]
-- **[Point 2]**: [Explanation of complexity factor]
-- **[Point 3]**: [Explanation of complexity factor]
-- **[Point 4]**: [Explanation of complexity factor - optional]
-
-### Clarity Assessment:
-[Clear | Partially Clear | Unclear] - [Brief explanation]
-
-### Affected Components:
-- **[Component/Page/Store/Hook 1]**: [File path] - [Nature of change]
-- **[Component/Page/Store/Hook 2]**: [File path] - [Nature of change]
-- **[Component/Page/Store/Hook 3]**: [File path] - [Nature of change]
 ```
-
-**Complexity Criteria:**
-
-**Simple:**
-- Single component affected
-- Well-defined requirements
-- Existing patterns to follow
-- No architectural decisions needed
-- Estimated 1-3 files to change
-
-**Medium:**
-- 2-3 UI areas affected (component + store, or page + form + store)
-- Clear requirements with minor gaps
-- May require some architectural decisions
-- Estimated 4-8 files to change
-- Requires coordination between layers
-
-**Complex:**
-- 4+ UI areas affected (multiple pages/stores/components)
-- Ambiguous or incomplete requirements
-- Significant architectural decisions needed
-- Estimated 9+ files to change
-- Cross-cutting concerns (routing, global state, performance)
-- New integrations, third-party libraries, or major refactoring
+Invoke Skill: brianna
+Args: "Update ticket complexity score for EPMCDME-XXXXX with [Total Score] value."
+```
 
 ### Phase 4: Recommendation
 

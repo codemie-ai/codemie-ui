@@ -334,6 +334,7 @@ Always provide assessment in this structure:
 ## Implementation Analysis: EPMCDME-XXXXX
 
 ### Complexity Rating: [Simple | Medium | Complex]
+### Total Score: [sum]/15
 
 ### Reasoning:
 - **[Dimension 1]**: [Score justification]
