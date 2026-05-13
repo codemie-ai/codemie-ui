@@ -16,9 +16,10 @@
 import { useCallback, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import Button from '@/components/Button'
 import Checker from '@/components/Checker'
 import Popup from '@/components/Popup'
-import { CHECKER_STATUSES, CheckerStatus } from '@/constants'
+import { CHECKER_STATUSES, CheckerStatus, ButtonSize, ButtonType } from '@/constants'
 import { useMCPAuthPrompt } from '@/hooks/useMCPAuthPrompt'
 import AssistantAuthGateRow from '@/pages/chat/components/AssistantAuthGate/AssistantAuthGateRow'
 import { assistantsStore } from '@/store'
@@ -33,6 +34,7 @@ interface MCPToolkitTestProps {
 const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
   const { testMCP } = useSnapshot(assistantsStore)
   const [status, setStatus] = useState<CheckerStatus>(CHECKER_STATUSES.UNDEFINED)
+  const [brokerLoginUrl, setBrokerLoginUrl] = useState<string | null>(null)
   const isRetryingRef = useRef(false)
   const handleAuthRequiredErrorRef = useRef<(error: unknown) => Promise<boolean>>(() =>
     Promise.resolve(false)
@@ -55,6 +57,14 @@ const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
       if (handled) {
         setStatus(CHECKER_STATUSES.UNDEFINED)
         return
+      }
+      if (error instanceof Response) {
+        const loginUrl = error.headers.get('x-user-mcp-auth-location')
+        if (loginUrl) {
+          setBrokerLoginUrl(loginUrl)
+          setStatus(CHECKER_STATUSES.FAILED)
+          return
+        }
       }
       setStatus(CHECKER_STATUSES.FAILED)
     }
@@ -107,6 +117,25 @@ const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
               onAuthenticate={initiate}
             />
           ))}
+        </div>
+      </Popup>
+      <Popup
+        visible={!!brokerLoginUrl}
+        onHide={() => setBrokerLoginUrl(null)}
+        header="Authentication required"
+        hideFooter
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-xs text-text-secondary">
+            Please log in to access the MCP server, then run the test again.
+          </p>
+          <Button
+            type={ButtonType.SECONDARY}
+            size={ButtonSize.SMALL}
+            onClick={() => window.open(brokerLoginUrl!, '_blank', 'noopener,noreferrer')}
+          >
+            Login to MCP Server
+          </Button>
         </div>
       </Popup>
     </>

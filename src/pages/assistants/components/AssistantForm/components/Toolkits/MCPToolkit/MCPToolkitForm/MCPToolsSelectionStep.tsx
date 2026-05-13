@@ -21,7 +21,7 @@ import { Checkbox } from '@/components/form/Checkbox'
 import InfoBox from '@/components/form/InfoBox/InfoBox'
 import InfoWarning from '@/components/InfoWarning/InfoWarning'
 import Spinner from '@/components/Spinner'
-import { ButtonType, InfoWarningType } from '@/constants'
+import { ButtonSize, ButtonType, InfoWarningType } from '@/constants'
 import { useMCPAuthPrompt } from '@/hooks/useMCPAuthPrompt'
 import AssistantAuthGateRow from '@/pages/chat/components/AssistantAuthGate/AssistantAuthGateRow'
 import { assistantsStore } from '@/store'
@@ -61,6 +61,7 @@ const MCPToolsSelectionStep = ({
   const [toolsStatus, setToolsStatus] = useState<ToolsStatus>(MCP_TOOLS_STATUS.PENDING)
   const [tools, setTools] = useState<Tool[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [brokerLoginUrl, setBrokerLoginUrl] = useState<string | null>(null)
   const [useAllTools, setUseAllTools] = useState(false)
   const [initialSelectedTools, setInitialSelectedTools] = useState<Tool[]>([])
   const isRetryingRef = useRef(false)
@@ -117,6 +118,7 @@ const MCPToolsSelectionStep = ({
   const fetchTools = useCallback(async () => {
     setToolsStatus(MCP_TOOLS_STATUS.LOADING)
     setError(null)
+    setBrokerLoginUrl(null)
 
     try {
       const toolkits = await assistantsStore.getMcpTools(mcpServer)
@@ -129,6 +131,15 @@ const MCPToolsSelectionStep = ({
         setTools([])
         setToolsStatus(MCP_TOOLS_STATUS.PENDING)
         return
+      }
+      if (err instanceof Response) {
+        const loginUrl = err.headers.get('x-user-mcp-auth-location')
+        if (loginUrl) {
+          setBrokerLoginUrl(loginUrl)
+          setTools([])
+          setToolsStatus(MCP_TOOLS_STATUS.PENDING)
+          return
+        }
       }
       console.error('Error fetching MCP tools:', err)
       const { details, message } = (err as any).parsedError || {}
@@ -178,7 +189,7 @@ const MCPToolsSelectionStep = ({
           <InfoWarning type={InfoWarningType.ERROR} message={error || 'Failed to fetch tools'} />
         )}
 
-        {toolsStatus === MCP_TOOLS_STATUS.PENDING && authRows.length === 0 && (
+        {toolsStatus === MCP_TOOLS_STATUS.PENDING && authRows.length === 0 && !brokerLoginUrl && (
           <div className="flex flex-col items-center justify-center flex-1">
             <p className="text-text-secondary">Preparing to load tools...</p>
           </div>
@@ -266,6 +277,27 @@ const MCPToolsSelectionStep = ({
                 onAuthenticate={initiate}
               />
             ))}
+          </div>
+        )}
+
+        {brokerLoginUrl && (
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-sm text-text-secondary">
+              Authentication required. Please log in to access the MCP server, then click Reload.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                type={ButtonType.SECONDARY}
+                size={ButtonSize.SMALL}
+                onClick={() => window.open(brokerLoginUrl, '_blank', 'noopener,noreferrer')}
+              >
+                Login to MCP Server
+              </Button>
+              <Button type={ButtonType.SECONDARY} size={ButtonSize.SMALL} onClick={fetchTools}>
+                <RefreshIcon className="w-3.5 h-3.5" />
+                Reload
+              </Button>
+            </div>
           </div>
         )}
       </div>

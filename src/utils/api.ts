@@ -286,12 +286,15 @@ class API {
               // Body isn't JSON — fall through to session-expired handling below.
             }
 
-            if (!isMCPAuthRequiredErrorPayload(authRequiredBody)) {
+            const isBrokerAuthRequired =
+              (authRequiredBody as Record<string, Record<string, unknown>> | null)?.error
+                ?.login_url != null
+            if (!isMCPAuthRequiredErrorPayload(authRequiredBody) && !isBrokerAuthRequired) {
               this.handleSessionExpired(url)
               return reject(response) // NOSONAR - callers use instanceof Response to detect API errors
             }
-            // MCP authentication_required 401: fall through so the caller receives
-            // a ResponseWithParsedError and can render the auth prompt.
+            // MCP authentication_required 401 or broker auth required: fall through so the
+            // caller receives a ResponseWithParsedError and can render the auth prompt.
           }
 
           const responseClone = response.clone() as ResponseWithParsedError
