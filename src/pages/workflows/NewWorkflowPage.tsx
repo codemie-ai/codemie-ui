@@ -16,7 +16,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
-import PlusIcon from '@/assets/icons/plus.svg?react'
 import RunSvg from '@/assets/icons/run-wf-small.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
@@ -200,9 +199,7 @@ const NewWorkflowPage: React.FC = () => {
             <Button type="secondary" onClick={onBack}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              <PlusIcon /> Save
-            </Button>
+            <Button onClick={handleSave}>Save</Button>
             {visualEditorEnabled && (
               <Button onClick={handleSaveAndRun}>
                 <RunSvg /> Save and Run

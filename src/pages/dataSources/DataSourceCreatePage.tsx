@@ -15,7 +15,6 @@
 
 import { FC, useMemo, useRef, useState, useEffect } from 'react'
 
-import PlusIcon from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
 import Sidebar from '@/components/Sidebar'
@@ -50,7 +49,6 @@ const DataSourceCreatePage: FC = () => {
           Cancel
         </Button>
         <Button variant="primary" disabled={isSubmitting} onClick={onSubmit}>
-          <PlusIcon />
           Save
         </Button>
       </div>

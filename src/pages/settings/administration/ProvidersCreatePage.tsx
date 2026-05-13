@@ -15,7 +15,6 @@
 
 import { useState, useCallback, useMemo } from 'react'
 
-import PlusIcon from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import { ButtonType } from '@/constants'
 import { useVueRouter } from '@/hooks/useVueRouter'
@@ -69,7 +68,7 @@ const ProvidersCreatePage = () => {
           Cancel
         </Button>
         <Button onClick={handleSubmit} variant={ButtonType.PRIMARY} disabled={isSubmitting}>
-          <PlusIcon /> Save
+          Save
         </Button>
       </div>
     ),

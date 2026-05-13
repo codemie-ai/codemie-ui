@@ -17,7 +17,6 @@ import { FC, useEffect } from 'react'
 import { useParams } from 'react-router'
 import { useSnapshot } from 'valtio'
 
-import PlusSvg from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
@@ -97,7 +96,6 @@ const AnalyticsDashboardFormPage: FC<AnalyticsDashboardFormPageProps> = ({ isEdi
         data-tooltip-id="react-tooltip"
         data-tooltip-content={isDashboardLimitReached ? DASHBOARD_LIMIT_MSG : undefined}
       >
-        <PlusSvg />
         Save
       </Button>
     </div>

@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 
-import PlusSvg from '@/assets/icons/plus.svg?react'
 import ImagePlaceholder from '@/assets/images/image-placeholder.svg?react'
 import Button from '@/components/Button'
 import { cn } from '@/utils/utils'
@@ -84,7 +83,6 @@ const ImageDropZone = ({
           disabled={disabled}
           className="font-mono text-xs font-semibold h-7 px-2 gap-2 flex-shrink-0 w-32"
         >
-          <PlusSvg className="w-[18px] h-[18px] shrink-0" />
           Upload logo
         </Button>
         {uploadError && (

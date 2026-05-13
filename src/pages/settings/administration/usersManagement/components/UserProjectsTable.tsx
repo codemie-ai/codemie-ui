@@ -15,7 +15,6 @@
 
 import { FC, useState, useMemo, useCallback, useEffect } from 'react'
 
-import PlusSvg from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import Select from '@/components/form/Select'
@@ -224,7 +223,6 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
         <p className="text-text-quaternary">Projects</p>
         {canManageProjects && (
           <Button variant="primary" onClick={() => setIsAddProjectOpen(true)}>
-            <PlusSvg />
             Add Project
           </Button>
         )}

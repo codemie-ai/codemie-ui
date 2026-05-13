@@ -19,7 +19,6 @@ import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 import { useSnapshot } from 'valtio'
 
-import PlusSVG from '@/assets/icons/plus.svg?react'
 import PublishSvg from '@/assets/icons/publish.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
@@ -211,7 +210,6 @@ const NewKataPage = () => {
               disabled={isSubmitting || isLoadingOptions}
               onClick={handleSaveAsDraft}
             >
-              <PlusSVG />
               {isSubmitting && submitActionRef.current === 'draft'
                 ? BUTTONS.SAVING
                 : BUTTONS.SAVE_DRAFT}

@@ -15,7 +15,6 @@
 
 import { useRef, useState } from 'react'
 
-import PlusIcon from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
 import Sidebar from '@/components/Sidebar'
@@ -79,7 +78,7 @@ const NewRemoteAssistantPage = () => {
               Cancel
             </Button>
             <Button disabled={loading || !isFormValid} onClick={() => formRef.current?.submit()}>
-              <PlusIcon /> Save
+              Save
             </Button>
           </div>
         }

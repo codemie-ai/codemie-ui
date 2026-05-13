@@ -16,7 +16,6 @@
 import { useEffect, useRef, useState } from 'react'
 
 import AIGenerateSVG from '@/assets/icons/ai-generate.svg?react'
-import PlusSVG from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
 import Sidebar from '@/components/Sidebar'
@@ -188,7 +187,7 @@ const NewAssistantPage = () => {
               onClick={() => formRef.current?.submit()}
               data-onboarding="assistant-save-btn"
             >
-              <PlusSVG /> {submitLabel}
+              {submitLabel}
             </Button>
           </div>
         }

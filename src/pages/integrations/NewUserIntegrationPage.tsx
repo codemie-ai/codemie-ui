@@ -16,7 +16,6 @@
 import { useState, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
-import PlusIcon from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
 import Sidebar from '@/components/Sidebar'
@@ -86,7 +85,7 @@ const NewUserIntegrationPage = () => {
                 />
               )}
             <Button type={ButtonType.PRIMARY} onClick={() => formRef.current?.submit()}>
-              <PlusIcon /> Save
+              Save
             </Button>
           </div>
         }

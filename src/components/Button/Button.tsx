@@ -13,10 +13,19 @@
 // limitations under the License.
 //
 
-import React, { ButtonHTMLAttributes, ReactNode } from 'react'
+import React, { ButtonHTMLAttributes, ReactNode, useMemo } from 'react'
 
 import { ButtonSize, ButtonType } from '@/constants'
 import { cn } from '@/utils/utils'
+
+const useIsIconOnly = (children: ReactNode): boolean => {
+  return useMemo(() => {
+    const childArray = React.Children.toArray(children)
+
+    // Check if all children are valid elements (no strings/text)
+    return childArray.length > 0 && childArray.every((child) => React.isValidElement(child))
+  }, [children])
+}
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
   type?: ButtonType | `${ButtonType}`
@@ -41,6 +50,7 @@ const Button: React.FC<ButtonProps> = ({
   ...rest
 }) => {
   const displayType = variant ?? type
+  const isIconOnly = useIsIconOnly(children)
 
   return (
     <button
@@ -52,6 +62,8 @@ const Button: React.FC<ButtonProps> = ({
         'transition whitespace-nowrap',
         'rounded-lg border',
         'button',
+        'min-w-14',
+        isIconOnly && 'min-w-0',
 
         // Type-specific styles
         {
@@ -86,8 +98,9 @@ const Button: React.FC<ButtonProps> = ({
           // Size-specific styles
           'py-0.5 px-1.5 gap-1 items-center text-xs font-semibold leading-5 tracking-tight h-6':
             size === ButtonSize.SMALL,
-          'py-0.5 px-2 gap-1.5 items-center text-xs font-semibold leading-6 tracking-tight h-7':
+          'py-0.5 px-3 has-[>svg:first-child]:pl-2 gap-1.5 items-center text-xs font-semibold leading-6 tracking-tight h-7':
             size === ButtonSize.MEDIUM,
+          'px-2': isIconOnly && size === ButtonSize.MEDIUM,
           'py-1.5 px-4 gap-2.5 items-center text-sm font-semibold leading-7 tracking-tight h-11':
             size === ButtonSize.LARGE,
 
