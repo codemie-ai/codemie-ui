@@ -27,7 +27,7 @@ interface LogoUrlInputFieldProps {
 const LogoUrlInputField = ({ value, onChange, onBlur, error, name }: LogoUrlInputFieldProps) => (
   <div className="flex flex-col gap-1">
     <Input
-      label="Or enter image URL directly:"
+      label="Or enter image URL directly"
       placeholder="https://example.com/logo.jpg"
       name={name}
       rootClass="gap-y-1.5"

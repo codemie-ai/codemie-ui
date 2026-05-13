@@ -99,7 +99,7 @@ describe('RemoteAssistantFormCard', () => {
   it('displays assistant name in read-only input', () => {
     render(<RemoteAssistantFormCard assistant={mockAssistant} />)
     expect(screen.getByDisplayValue('Test Assistant')).toBeInTheDocument()
-    expect(screen.getByText('Original Name:')).toBeInTheDocument()
+    expect(screen.getByText('Original Name')).toBeInTheDocument()
   })
 
   it('displays assistant description in read-only textarea', () => {
@@ -282,7 +282,7 @@ describe('RemoteAssistantFormCard', () => {
     render(<RemoteAssistantFormCard assistant={mockAssistant} />)
 
     // Check that sections exist
-    expect(screen.getByText('Original Name:')).toBeInTheDocument()
+    expect(screen.getByText('Original Name')).toBeInTheDocument()
     expect(screen.getAllByText(/Description/).length).toBeGreaterThan(0)
     expect(screen.getByText('Documentation:')).toBeInTheDocument()
     expect(screen.getByText('Provider Information:')).toBeInTheDocument()

@@ -65,7 +65,7 @@ const IndexTypeAzureDevOpsWiki: FC<Props> = ({
             name="wikiName"
             className="w-full"
             rootClass="mb-3"
-            label="Wiki Name (optional):"
+            label="Wiki Name (optional)"
             placeholder='e.g.: "MyProject.wiki" (leave empty for all wikis)'
             error={errors.wikiName?.message}
           />
@@ -82,7 +82,7 @@ const IndexTypeAzureDevOpsWiki: FC<Props> = ({
             name="wikiQuery"
             className="w-full"
             rootClass="mb-3"
-            label="Page Path Query (optional):"
+            label="Page Path Query (optional)"
             placeholder='e.g.: "*" for all pages, "/path/*" for specific folder'
             error={errors.wikiQuery?.message}
           />

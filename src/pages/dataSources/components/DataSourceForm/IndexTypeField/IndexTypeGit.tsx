@@ -81,7 +81,7 @@ const IndexTypeGit: FC<Props> = ({
           render={({ field: repoField }) => (
             <Autocomplete
               id="repoIndexType"
-              label="Summarization Method:"
+              label="Summarization Method"
               value={repoField.value!}
               onChange={repoField.onChange}
               options={REPO_INDEX_TYPE_OPTIONS}

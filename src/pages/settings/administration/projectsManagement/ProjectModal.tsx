@@ -169,7 +169,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
               <Input
                 {...field}
                 id="name"
-                label="Name:"
+                label="Name"
                 required
                 placeholder="Project Name"
                 error={errors.name?.message}
@@ -186,7 +186,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
             <Textarea
               {...field}
               id="description"
-              label="Description:"
+              label="Description"
               required
               placeholder="Describe what this project is for"
               rows={4}
@@ -202,7 +202,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
             render={({ field }) => (
               <Autocomplete
                 id="cost_center_id"
-                label="Cost center:"
+                label="Cost center"
                 value={field.value || ''}
                 onChange={field.onChange}
                 options={costCenterOptions}

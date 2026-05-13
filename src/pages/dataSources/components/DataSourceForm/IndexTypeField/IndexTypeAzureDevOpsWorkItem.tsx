@@ -64,7 +64,7 @@ const IndexTypeAzureDevOpsWorkItem: FC<Props> = ({
             name="wiqlQuery"
             className="w-full"
             rootClass="mb-3"
-            label="WIQL Query:"
+            label="WIQL Query"
             placeholder="e.g.: SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project"
             error={errors.wiqlQuery?.message}
           />

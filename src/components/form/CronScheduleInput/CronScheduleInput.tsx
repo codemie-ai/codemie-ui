@@ -135,7 +135,7 @@ const CronScheduleInput = forwardRef<HTMLDivElement, CronScheduleInputProps>(
         {isCustom && (
           <Input
             name="cronExpression"
-            label="Cron Expression:"
+            label="Cron Expression"
             value={customCron}
             onChange={handleCustomCronChange}
             placeholder={CRON_PLACEHOLDER}

@@ -387,7 +387,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
           control={control}
           render={({ field, fieldState }) => (
             <Input
-              label="Input Key:"
+              label="Input Key"
               placeholder="e.g. tool1_args or api_response.tool_input"
               error={fieldState.error?.message}
               {...field}
@@ -436,7 +436,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
           control={control}
           render={({ field, fieldState }) => (
             <Input
-              label="Tool Result JSON Pointer:"
+              label="Tool Result JSON Pointer"
               placeholder="path"
               error={fieldState.error?.message}
               {...field}

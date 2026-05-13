@@ -64,7 +64,7 @@ const IndexTypeConfluence: FC<Props> = ({
             id="cql"
             name="cql"
             className="w-full"
-            label="CQL Query:"
+            label="CQL Query"
             rootClass="mb-3"
             placeholder="CQL expression, e.g.: space = CODEMIE AND type = page AND ancestor = 1593803553"
             error={errors.cql?.message}

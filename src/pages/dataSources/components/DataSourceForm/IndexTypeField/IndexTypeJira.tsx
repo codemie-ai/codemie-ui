@@ -64,7 +64,7 @@ const IndexTypeJira: FC<Props> = ({
             name="jql"
             className="w-full"
             rootClass="mb-3"
-            label="JQL Query:"
+            label="JQL Query"
             placeholder='JQL expression, e.g.: project = "PROJECTKEY" AND assignee = "John Doe"'
             error={errors.jql?.message}
           />

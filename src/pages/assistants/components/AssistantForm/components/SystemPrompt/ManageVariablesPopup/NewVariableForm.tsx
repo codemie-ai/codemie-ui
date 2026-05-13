@@ -74,7 +74,7 @@ const AddVariableForm: React.FC<AddVariableFormProps> = ({
           control={control}
           render={({ field, fieldState }) => (
             <Input
-              label="Key:"
+              label="Key"
               placeholder="e.g., project_name"
               required
               error={fieldState.error?.message}

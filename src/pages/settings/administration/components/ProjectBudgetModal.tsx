@@ -235,7 +235,7 @@ const ProjectBudgetModal: FC<ProjectBudgetModalProps> = ({
             <Input
               {...field}
               id="name"
-              label="Name:"
+              label="Name"
               required
               placeholder="My Project Platform"
               error={errors.name?.message}
@@ -251,7 +251,7 @@ const ProjectBudgetModal: FC<ProjectBudgetModalProps> = ({
             <Textarea
               {...field}
               id="description"
-              label="Description:"
+              label="Description"
               placeholder="What this budget is used for"
               rows={3}
               error={errors.description?.message}
@@ -266,7 +266,7 @@ const ProjectBudgetModal: FC<ProjectBudgetModalProps> = ({
             render={({ field }) => (
               <Select
                 id="budget_category"
-                label="Category:"
+                label="Category"
                 required
                 value={field.value}
                 options={categoryOptions}
@@ -283,7 +283,7 @@ const ProjectBudgetModal: FC<ProjectBudgetModalProps> = ({
             render={({ field }) => (
               <Select
                 id="budget_duration"
-                label="Reset period:"
+                label="Reset period"
                 required
                 value={field.value}
                 options={BUDGET_RESET_PERIOD_OPTIONS}
@@ -302,7 +302,7 @@ const ProjectBudgetModal: FC<ProjectBudgetModalProps> = ({
               <Input
                 {...field}
                 id="soft_budget"
-                label="Soft limit:"
+                label="Soft limit"
                 type="number"
                 min="0"
                 step="0.01"
@@ -318,7 +318,7 @@ const ProjectBudgetModal: FC<ProjectBudgetModalProps> = ({
               <Input
                 {...field}
                 id="max_budget"
-                label="Hard limit:"
+                label="Hard limit"
                 required
                 type="number"
                 min="0"

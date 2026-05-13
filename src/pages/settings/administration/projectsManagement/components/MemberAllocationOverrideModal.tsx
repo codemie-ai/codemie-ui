@@ -188,7 +188,7 @@ const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
         {categoryOptions.length > 1 && (
           <Select
             id="budget_category"
-            label="Budget category:"
+            label="Budget category"
             required
             value={selectedCategory ?? ''}
             options={categoryOptions}
@@ -219,7 +219,7 @@ const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
               <Input
                 {...field}
                 id="max_budget"
-                label="Hard limit:"
+                label="Hard limit"
                 required
                 type="number"
                 min="0"
@@ -235,7 +235,7 @@ const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
               <Input
                 {...field}
                 id="soft_budget"
-                label="Soft limit:"
+                label="Soft limit"
                 required
                 type="number"
                 min="0"
@@ -253,7 +253,7 @@ const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
             <Textarea
               {...field}
               id="override_reason"
-              label="Override reason:"
+              label="Override reason"
               placeholder="Reason for this override (optional)"
               rows={3}
               error={errors.override_reason?.message}

@@ -120,7 +120,7 @@ const GeneralConfigTab = forwardRef(
               name="project"
               control={control}
               render={({ field }) => (
-                <ProjectSelector label="Project name:" className="grow max-w-full" {...field} />
+                <ProjectSelector label="Project name" className="grow max-w-full" {...field} />
               )}
             />
           </div>
@@ -155,7 +155,7 @@ const GeneralConfigTab = forwardRef(
               render={({ field, fieldState }) => (
                 <Input
                   id="name"
-                  label="Name:"
+                  label="Name"
                   placeholder="Name*"
                   error={fieldState.error?.message}
                   {...field}

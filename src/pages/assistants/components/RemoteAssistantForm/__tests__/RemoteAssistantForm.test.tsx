@@ -124,7 +124,7 @@ describe('RemoteAssistantForm', () => {
     it('renders all form fields', () => {
       renderWithProvider(<RemoteAssistantForm onSubmit={mockOnSubmit} />)
 
-      expect(screen.getByText('Project name:')).toBeInTheDocument()
+      expect(screen.getByText('Project name')).toBeInTheDocument()
       expect(screen.getByText('Shared with project')).toBeInTheDocument()
       expect(screen.getByText('Integration (Optional)')).toBeInTheDocument()
       expect(screen.getByText('Assistant URL')).toBeInTheDocument()

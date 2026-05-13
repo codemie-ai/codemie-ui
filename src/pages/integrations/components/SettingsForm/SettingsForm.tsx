@@ -330,7 +330,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               const val = typeof e === 'string' ? e : e.value
               setProjectName(val)
             }}
-            label="Project:"
+            label="Project"
             disabled={editing || disableProject || isGlobal}
             adminOnly={settingType === SETTING_TYPE_PROJECT}
           />
@@ -368,7 +368,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
             value={credentialType}
             name="credentialType"
             placeholder="Credential Type"
-            label="Credential Type:"
+            label="Credential Type"
             allowEmpty={false}
             options={credentialTypeOptions}
             disabled={editing || disableType}
@@ -386,7 +386,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                 id="settingAlias"
                 name="settingAlias"
                 placeholder="Alias*"
-                label="Alias:"
+                label="Alias"
                 error={fieldState.error?.message}
                 autoFocus={shouldAutofocusInput}
                 onChange={(e) => {

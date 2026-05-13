@@ -149,7 +149,7 @@ const AddUserModal: FC<AddUserModalProps> = ({ visible, onHide, onSubmit }) => {
             value={selectedUserId}
             onChange={(e) => handleUserChange(e.target.value)}
             options={userOptions}
-            label="Select user:"
+            label="User"
             placeholder="Click to search..."
             filterPlaceholder="Search for user"
             onFilter={handleUserSearch}
@@ -166,7 +166,7 @@ const AddUserModal: FC<AddUserModalProps> = ({ visible, onHide, onSubmit }) => {
               value={role}
               onChange={(e) => setRole(e.value)}
               options={ROLE_OPTIONS}
-              label="Role:"
+              label="Role"
             />
             <p className="font-mono text-xs font-normal leading-none text-text-tertiary mt-2">
               Project Admin allows managing project settings & team access.

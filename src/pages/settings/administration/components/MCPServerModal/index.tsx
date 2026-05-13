@@ -106,7 +106,7 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
                   {...field}
                   ref={firstInputRef}
                   id="name"
-                  label="Name:"
+                  label="Name"
                   required
                   placeholder="Server Name"
                   error={errors.name?.message}
@@ -121,7 +121,7 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
                 <Input
                   {...field}
                   id="icon_url"
-                  label="Icon URL:"
+                  label="Icon URL"
                   placeholder="https://example.com/icon.png"
                   error={errors.icon_url?.message}
                 />
@@ -135,7 +135,7 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
                 <MultiSelect
                   id="categories"
                   name="categories"
-                  label="Category:"
+                  label="Category"
                   value={(field.value ?? []).filter((c): c is string => Boolean(c))}
                   options={MCP_CATEGORY_OPTIONS}
                   onChange={(e: MultiSelectChangeEvent) => field.onChange(e.value)}
@@ -152,7 +152,7 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
                 <Textarea
                   {...field}
                   id="description"
-                  label="Description:"
+                  label="Description"
                   required
                   placeholder="Describe what this MCP server does"
                   rows={4}
@@ -175,7 +175,7 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
                 <Input
                   {...field}
                   id="server_home_url"
-                  label="Link to MCP documentation:"
+                  label="Link to MCP documentation"
                   required
                   placeholder="https://example.com/docs"
                   error={errors.server_home_url?.message}
@@ -190,7 +190,7 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
                 <Input
                   {...field}
                   id="source_url"
-                  label="Link to Source code:"
+                  label="Link to Source code"
                   placeholder="https://github.com/user/repo"
                   error={errors.source_url?.message}
                 />
@@ -227,7 +227,7 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
                 <Textarea
                   {...field}
                   id="serverConfig"
-                  label="Configuration JSON:"
+                  label="Configuration JSON"
                   required
                   placeholder={
                     '{\n  "command": "npx",\n  "args": ["@modelcontextprotocol/server-example"]\n}'
@@ -268,13 +268,13 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
                         value={variable.name}
                         onChange={(e) => handleVariableChange(index, 'name', e.target.value)}
                         placeholder="VARIABLE_NAME"
-                        label="Name:"
+                        label="Name"
                       />
                       <Input
                         value={variable.description || ''}
                         onChange={(e) => handleVariableChange(index, 'description', e.target.value)}
                         placeholder="Description"
-                        label="Description:"
+                        label="Description"
                       />
                       <Checkbox
                         checked={variable.required || false}

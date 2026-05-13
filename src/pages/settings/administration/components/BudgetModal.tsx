@@ -196,7 +196,7 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
             <Input
               {...field}
               id="name"
-              label="Name:"
+              label="Name"
               required
               placeholder="Platform Default"
               error={errors.name?.message}
@@ -212,7 +212,7 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
             <Textarea
               {...field}
               id="description"
-              label="Description:"
+              label="Description"
               placeholder="What this budget is used for"
               rows={3}
               error={errors.description?.message}
@@ -227,7 +227,7 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
             render={({ field }) => (
               <Select
                 id="budget_category"
-                label="Category:"
+                label="Category"
                 required
                 value={field.value}
                 options={BUDGET_CATEGORY_OPTIONS}
@@ -243,7 +243,7 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
             render={({ field }) => (
               <Select
                 id="budget_duration"
-                label="Reset period:"
+                label="Reset period"
                 required
                 value={field.value}
                 options={BUDGET_RESET_PERIOD_OPTIONS}
@@ -262,7 +262,7 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
               <Input
                 {...field}
                 id="soft_budget"
-                label="Soft limit:"
+                label="Soft limit"
                 type="number"
                 min="0"
                 step="0.01"
@@ -278,7 +278,7 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
               <Input
                 {...field}
                 id="max_budget"
-                label="Hard limit:"
+                label="Hard limit"
                 required
                 type="number"
                 min="0"

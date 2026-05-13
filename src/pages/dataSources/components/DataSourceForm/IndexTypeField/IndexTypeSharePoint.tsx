@@ -156,7 +156,7 @@ const IndexTypeSharePoint: FC<Props> = ({
             name="siteUrl"
             className="w-full"
             rootClass="mb-3"
-            label="SharePoint Site URL:"
+            label="SharePoint Site URL"
             placeholder="https://yourtenant.sharepoint.com/sites/YourSite"
             error={errors.siteUrl?.message}
           />
@@ -206,7 +206,7 @@ const IndexTypeSharePoint: FC<Props> = ({
                 name="sharepointCustomClientId"
                 className="w-full"
                 rootClass="mb-3"
-                label="Azure Application (client) ID:"
+                label="Azure Application (client) ID"
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                 error={errors.sharepointCustomClientId?.message}
               />
@@ -222,7 +222,7 @@ const IndexTypeSharePoint: FC<Props> = ({
                 name="sharepointTenantId"
                 className="w-full"
                 rootClass="mb-3"
-                label="Azure Directory (tenant) ID:"
+                label="Azure Directory (tenant) ID"
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                 error={errors.sharepointTenantId?.message}
               />

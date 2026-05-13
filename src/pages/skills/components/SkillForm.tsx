@@ -187,7 +187,7 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
                 control={control}
                 render={({ field }) => (
                   <ProjectSelector
-                    label="Project name:"
+                    label="Project name"
                     className="grow"
                     value={field.value ?? ''}
                     onChange={(value) =>
@@ -213,7 +213,7 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
                 control={control}
                 render={({ field, fieldState }) => (
                   <Input
-                    label="Name:"
+                    label="Name"
                     placeholder="my-skill-name*"
                     rightIcon={aiGeneratedFieldMarkers.name && <AIFieldSvg />}
                     error={fieldState.error?.message}
@@ -231,7 +231,7 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
               control={control}
               render={({ field, fieldState }) => (
                 <Textarea
-                  label={`Description: (${descriptionValue.length}/${MAX_DESCRIPTION_LENGTH})`}
+                  label={`Description (${descriptionValue.length}/${MAX_DESCRIPTION_LENGTH})`}
                   placeholder="Brief description of when to use this skill...*"
                   rows={3}
                   className={aiGeneratedFieldMarkers.description ? '!pr-9' : ''}

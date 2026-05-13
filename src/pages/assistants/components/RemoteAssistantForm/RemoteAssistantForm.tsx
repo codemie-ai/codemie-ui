@@ -237,7 +237,7 @@ const RemoteAssistantForm = forwardRef<RemoteAssistantFormRef, RemoteAssistantFo
               control={control}
               render={({ field }) => (
                 <ProjectSelector
-                  label="Project name:"
+                  label="Project name"
                   className={cn('grow', isChatConfig && 'w-full ')}
                   value={field.value ?? ''}
                   onChange={(value) =>

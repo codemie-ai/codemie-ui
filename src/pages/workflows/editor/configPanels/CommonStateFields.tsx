@@ -515,7 +515,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                       {...field}
                       placeholder="1"
                       type="number"
-                      label="Initial (s):"
+                      label="Initial (s)"
                       orientation="horizontal"
                       error={fieldState.error?.message}
                       onChange={(e) =>
@@ -534,7 +534,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                       {...field}
                       placeholder="2"
                       type="number"
-                      label="Backoff:"
+                      label="Backoff"
                       orientation="horizontal"
                       error={fieldState.error?.message}
                       onChange={(e) =>
@@ -553,7 +553,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                       {...field}
                       placeholder="60"
                       type="number"
-                      label="Max (s):"
+                      label="Max (s)"
                       orientation="horizontal"
                       error={fieldState.error?.message}
                       onChange={(e) =>
@@ -572,7 +572,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                       {...field}
                       placeholder="3"
                       type="number"
-                      label="Attempts:"
+                      label="Attempts"
                       orientation="horizontal"
                       error={fieldState.error?.message}
                       onChange={(e) =>

@@ -300,7 +300,7 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
               render={({ field, fieldState }) => (
                 <div className="relative">
                   <ExpandableTextarea
-                    label="System Instructions:"
+                    label="System Instructions"
                     placeholder="Enter system instructions for the assistant"
                     rows={8}
                     error={fieldState.error?.message}
@@ -327,7 +327,7 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
               control={control}
               render={({ field, fieldState }) => (
                 <LLMSelector
-                  label="LLM model:"
+                  label="LLM model"
                   placeholder="Select model"
                   className="grow max-w-sm"
                   error={fieldState.error?.message}
@@ -341,7 +341,7 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
               control={control}
               render={({ field, fieldState }) => (
                 <Input
-                  label="Temperature:"
+                  label="Temperature"
                   placeholder="0-2"
                   rootClass="w-24"
                   error={fieldState.error?.message}

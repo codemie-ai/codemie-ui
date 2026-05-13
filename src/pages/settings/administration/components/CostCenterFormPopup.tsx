@@ -122,7 +122,7 @@ const CostCenterFormPopup = ({
           render={({ field, fieldState }) => (
             <Input
               {...field}
-              label="Cost center name:"
+              label="Cost center name"
               placeholder="eng-ops123"
               error={fieldState.error?.message}
               hint={COST_CENTER_NAME_HINT}
@@ -137,7 +137,7 @@ const CostCenterFormPopup = ({
           render={({ field, fieldState }) => (
             <Textarea
               {...field}
-              label="Description:"
+              label="Description"
               placeholder="Describe how this cost center is used"
               error={fieldState.error?.message}
               rows={4}

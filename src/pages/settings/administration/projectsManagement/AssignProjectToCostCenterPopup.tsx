@@ -176,7 +176,7 @@ const AssignProjectToCostCenterPopup: FC<AssignProjectToCostCenterPopupProps> = 
           value={selectedProjects}
           onChange={(e) => handleProjectChange(e.value)}
           options={projectOptions}
-          label="Projects:"
+          label="Projects"
           placeholder={isLoadingProjects ? 'Searching projects...' : 'Type to search projects'}
           filterPlaceholder="Search projects"
           onFilter={handleProjectSearch}

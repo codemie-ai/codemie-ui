@@ -307,7 +307,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
             render={({ field, fieldState }) => (
               <Input
                 {...field}
-                label="Name:"
+                label="Name"
                 type="secondary"
                 id="name"
                 name="name"
@@ -327,7 +327,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
               <Textarea
                 id="description"
                 name="description"
-                label="Description:"
+                label="Description"
                 className="col-span-2"
                 value={field.value}
                 onChange={field.onChange}

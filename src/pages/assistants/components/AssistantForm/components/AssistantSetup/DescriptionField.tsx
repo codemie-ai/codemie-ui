@@ -34,7 +34,7 @@ const DescriptionField = ({
   name,
 }: DescriptionFieldProps) => (
   <Textarea
-    label="Description:"
+    label="Description"
     placeholder="Description*"
     rows={5}
     className="font-mono text-sm leading-relaxed py-2 px-3 h-24"

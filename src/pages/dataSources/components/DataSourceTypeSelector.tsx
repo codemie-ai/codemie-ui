@@ -112,7 +112,7 @@ const DataSourceTypeSelector = ({
   return (
     <Autocomplete
       id="indexType"
-      label="Choose Datasource Type:"
+      label="Datasource Type"
       name="Datasource Type"
       value={indexType}
       options={indexTypeOptions}

@@ -99,7 +99,7 @@ const BudgetSelector = forwardRef<PrimeMultiselect, BudgetSelectorProps>(
     return (
       <MultiSelect
         size={size}
-        label={label ?? 'Select budget:'}
+        label={label ?? 'Budget'}
         value={value ?? ''}
         options={availableBudgets}
         onChange={handleChange}

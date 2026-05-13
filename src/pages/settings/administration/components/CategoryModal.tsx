@@ -99,7 +99,7 @@ const CategoryModal: FC<CategoryModalProps> = ({ visible, category, onHide, onSu
             <Input
               {...field}
               id="name"
-              label="Name:"
+              label="Name"
               required
               placeholder="Category Name"
               error={errors.name?.message}
@@ -114,7 +114,7 @@ const CategoryModal: FC<CategoryModalProps> = ({ visible, category, onHide, onSu
             <Textarea
               {...field}
               id="description"
-              label="Description:"
+              label="Description"
               placeholder="Describe what this category is for"
               rows={4}
               error={errors.description?.message}

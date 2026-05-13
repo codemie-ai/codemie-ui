@@ -95,7 +95,7 @@ const AssistantSetupSection = ({
                   control={control}
                   render={({ field }) => (
                     <ProjectSelector
-                      label="Select project:"
+                      label="Project"
                       className="w-full"
                       value={field.value ?? ''}
                       onChange={(value) =>
@@ -136,7 +136,7 @@ const AssistantSetupSection = ({
                 control={control}
                 render={({ field, fieldState }) => (
                   <Input
-                    label="Name:"
+                    label="Name"
                     placeholder="Name*"
                     name={field.name}
                     className="w-full"
@@ -243,7 +243,7 @@ const AssistantSetupSection = ({
                   control={control}
                   render={({ field }) => (
                     <LLMSelector
-                      label="LLM model:"
+                      label="LLM model"
                       placeholder="LLM model"
                       className="w-full"
                       value={field.value ?? ''}
@@ -259,7 +259,7 @@ const AssistantSetupSection = ({
               control={control}
               render={({ field, fieldState }) => (
                 <Input
-                  label="Tools Tokens Size Limit:"
+                  label="Tools Tokens Size Limit"
                   placeholder="Enter limit"
                   className="w-full"
                   error={fieldState.error?.message}
@@ -277,7 +277,7 @@ const AssistantSetupSection = ({
                     control={control}
                     render={({ field, fieldState }) => (
                       <Input
-                        label="Temperature:"
+                        label="Temperature"
                         placeholder="0-2"
                         rootClass="w-24"
                         error={fieldState.error?.message}
@@ -290,7 +290,7 @@ const AssistantSetupSection = ({
                     control={control}
                     render={({ field, fieldState }) => (
                       <Input
-                        label="Top P:"
+                        label="Top P"
                         placeholder="0-1"
                         rootClass="w-24"
                         error={fieldState.error?.message}

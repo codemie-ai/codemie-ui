@@ -25,7 +25,7 @@ interface SlugFieldProps {
 
 const SlugField = ({ value, onChange, onBlur, error, name }: SlugFieldProps) => (
   <Input
-    label="Slug:"
+    label="Slug"
     placeholder="Unique human-readable identifier"
     name={name}
     error={error}

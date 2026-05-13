@@ -173,7 +173,7 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
                   control={control}
                   render={({ field }) => (
                     <ProjectSelector
-                      label="Project name:"
+                      label="Project name"
                       className="grow max-w-full"
                       value={field.value ?? ''}
                       onChange={(value) => field.onChange(value)}
@@ -213,7 +213,7 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
                 render={({ field, fieldState }) => (
                   <Input
                     id="name"
-                    label="Name:"
+                    label="Name"
                     placeholder="Name*"
                     error={fieldState.error?.message}
                     {...field}

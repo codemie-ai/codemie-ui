@@ -374,7 +374,7 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
                 control={control}
                 render={({ field, fieldState }) => (
                   <Input
-                    label="Limit Tool Output Tokens:"
+                    label="Limit Tool Output Tokens"
                     placeholder="Enter limit"
                     error={fieldState.error?.message}
                     {...field}

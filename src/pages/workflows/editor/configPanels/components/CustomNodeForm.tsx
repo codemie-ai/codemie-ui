@@ -228,7 +228,7 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
           control={control}
           render={({ field, fieldState }) => (
             <Input
-              label="Name:"
+              label="Name"
               placeholder="Custom node name (optional)"
               error={fieldState.error?.message}
               {...field}
@@ -292,7 +292,7 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
           control={control}
           render={({ field, fieldState }) => (
             <LLMSelector
-              label="LLM model:"
+              label="LLM model"
               placeholder="Select model (optional)"
               className="w-full"
               error={fieldState.error?.message}
@@ -306,7 +306,7 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
           control={control}
           render={({ field, fieldState }) => (
             <ExpandableTextarea
-              label="System Instructions:"
+              label="System Instructions"
               placeholder="Enter system instructions (optional)"
               rows={8}
               error={fieldState.error?.message}

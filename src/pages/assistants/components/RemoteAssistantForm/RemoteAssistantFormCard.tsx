@@ -62,13 +62,13 @@ const RemoteAssistantFormCard: FC<RemoteAssistantFormCardProps> = ({
       <Input
         readOnly
         value={assistant.name}
-        label="Original Name:"
+        label="Original Name"
         containerClass="hover:border-border-primary focus:border-border-primary"
       />
       <Textarea
         readOnly
         rows={3}
-        label="Description:"
+        label="Description"
         value={assistant.description}
         className="hover:border-border-primary focus:border-border-primary"
       />

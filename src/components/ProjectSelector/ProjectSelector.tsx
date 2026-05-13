@@ -99,7 +99,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
     return (
       <MultiSelect
         size={size}
-        label={label ?? 'Select project:'}
+        label={label ?? 'Project'}
         value={value ?? ''}
         options={availableProjects}
         onChange={handleChange}
