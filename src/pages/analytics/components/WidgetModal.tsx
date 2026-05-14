@@ -46,9 +46,9 @@ const WidgetModal: FC<WidgetModalProps> = ({
     >
       <div className="flex flex-col h-full">
         {(description || actions) && (
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-4">
             {description && <p className="text-sm text-text-quaternary">{description}</p>}
-            {actions && <div className="ml-4 shrink-0">{actions}</div>}
+            {actions && <div className="ml-auto shrink-0">{actions}</div>}
           </div>
         )}
         <div className="flex-1">{children}</div>

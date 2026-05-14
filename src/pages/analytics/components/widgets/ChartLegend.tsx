@@ -32,7 +32,7 @@ interface ChartLegendProps {
  */
 const ChartLegend: FC<ChartLegendProps> = ({ items }) => {
   return (
-    <div className="flex-1 flex flex-col min-w-0 max-w-md overflow-hidden">
+    <div className="flex-1 flex flex-col justify-center min-w-0 max-w-md overflow-hidden">
       <div className="overflow-y-auto max-h-[360px]">
         <div className="space-y-2">
           {items.map((item, index) => (

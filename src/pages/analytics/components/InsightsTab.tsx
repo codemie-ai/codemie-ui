@@ -13,8 +13,9 @@
 // limitations under the License.
 //
 
-import { FC } from 'react'
+import { FC, useMemo, useState } from 'react'
 
+import Select from '@/components/form/Select'
 import DonutChartWidget from '@/pages/analytics/components/widgets/DonutChartWidget'
 import MetricsWidget from '@/pages/analytics/components/widgets/MetricsWidget'
 import StackedBarChartWidget from '@/pages/analytics/components/widgets/StackedBarChartWidget'
@@ -22,11 +23,23 @@ import TableWidget from '@/pages/analytics/components/widgets/TableWidget'
 import { OverviewMetricType, TabularMetricType } from '@/types/analytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
+import { TopNFilter, TOP_N_OPTIONS, toTopN, toPerPage, type TopN } from './utils/topNFilter'
+
 interface InsightsTabProps {
   filters: AnalyticsQueryParams
 }
 
 const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
+  const [topLlmsTopN, setTopLlmsTopN] = useState<TopN>(TopNFilter.TEN)
+  const [topCliLlmsTopN, setTopCliLlmsTopN] = useState<TopN>(TopNFilter.TEN)
+
+  const topLlmsExtraParams = useMemo(() => ({ per_page: toPerPage(topLlmsTopN) }), [topLlmsTopN])
+
+  const topCliLlmsExtraParams = useMemo(
+    () => ({ per_page: toPerPage(topCliLlmsTopN) }),
+    [topCliLlmsTopN]
+  )
+
   return (
     <div className="flex flex-col gap-6">
       {/* ===== SUMMARY METRICS SECTION ===== */}
@@ -95,6 +108,15 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
             labelField="model_name"
             valueField="total_requests"
             filters={filters}
+            extraParams={topLlmsExtraParams}
+            actions={
+              <Select
+                value={String(topLlmsTopN)}
+                onChange={(e) => setTopLlmsTopN(toTopN(e.value))}
+                options={TOP_N_OPTIONS}
+                className="!h-8"
+              />
+            }
           />
           <DonutChartWidget
             metricType={TabularMetricType.CLI_LLMS}
@@ -102,6 +124,15 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
             labelField="model_name"
             valueField="total_requests"
             filters={filters}
+            extraParams={topCliLlmsExtraParams}
+            actions={
+              <Select
+                value={String(topCliLlmsTopN)}
+                onChange={(e) => setTopCliLlmsTopN(toTopN(e.value))}
+                options={TOP_N_OPTIONS}
+                className="!h-8"
+              />
+            }
           />
         </div>
       </section>

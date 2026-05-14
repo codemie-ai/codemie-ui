@@ -13,8 +13,9 @@
 // limitations under the License.
 //
 
-import { FC, useState } from 'react'
+import { FC, useMemo, useState } from 'react'
 
+import Select from '@/components/form/Select'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { OverviewMetricType, TabularMetricType } from '@/types/analytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
@@ -24,6 +25,7 @@ import { getDeterministicChartColor } from '@/utils/chartColors'
 import CLIInsightsUserDetailsModal from './cliInsights/CLIInsightsUserDetailsModal'
 import EnrichedUserSection from './cliInsights/EnrichedUserSection'
 import { getPrimitiveString } from './cliInsights/helpers'
+import { TopNFilter, TOP_N_OPTIONS, toTopN, toPerPage, type TopN } from './utils/topNFilter'
 import BarChartWidget from './widgets/BarChartWidget'
 import DonutChartWidget from './widgets/DonutChartWidget'
 import MetricsWidget from './widgets/MetricsWidget'
@@ -74,6 +76,9 @@ const renderTopSpenderUserCell =
 const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
   const [selectedUser, setSelectedUser] = useState<SelectedCliUser | null>(null)
   const [isUserEnrichmentEnabled] = useFeatureFlag('features:userEnrichmentEnabled')
+  const [modelsTopN, setModelsTopN] = useState<TopN>(TopNFilter.TEN)
+
+  const modelsExtraParams = useMemo(() => ({ per_page: toPerPage(modelsTopN) }), [modelsTopN])
 
   const handleTopSpenderRowClick = (item: Record<string, unknown>) => {
     setSelectedUser({
@@ -162,6 +167,15 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
             filters={filters}
             labelField="model_name"
             valueField="total_requests"
+            extraParams={modelsExtraParams}
+            actions={
+              <Select
+                value={String(modelsTopN)}
+                onChange={(e) => setModelsTopN(toTopN(e.value))}
+                options={TOP_N_OPTIONS}
+                className="!h-8"
+              />
+            }
           />
         </div>
       </section>
