@@ -38,9 +38,6 @@ import TimePeriodBadge from './TimePeriodBadge'
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
-const getIncompleteColor = () =>
-  getTailwindColor('--colors-surface-specific-charts-series-incomplete', '#6B7280')
-
 // Format ISO timestamp label as "Mar 10, 12:00"
 const formatLabel = (raw: string): string => {
   if (!raw) return raw
@@ -108,21 +105,15 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
 
   const chartData = useMemo(() => {
     const seriesColors = generateChartColors(series.length)
-    const incompleteColor = getIncompleteColor()
-    const rowCount = data?.data.rows.length ?? 0
-    const lastIndex = rowCount - 1
     return {
       labels,
       datasets: series.map((s, idx) => {
         const baseColor = seriesColors[idx % seriesColors.length]
-        const bgColors = Array.from({ length: rowCount }, (_, i) =>
-          i === lastIndex ? incompleteColor : baseColor
-        )
         return {
           label: s.label,
           data: data?.data.rows.map((row) => Number(row[s.field] ?? 0)) ?? [],
-          backgroundColor: bgColors,
-          borderColor: bgColors,
+          backgroundColor: baseColor,
+          borderColor: baseColor,
           borderWidth: 0,
           borderRadius: 2,
           barPercentage: 0.9,
