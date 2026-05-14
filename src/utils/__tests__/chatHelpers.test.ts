@@ -16,6 +16,7 @@
 import { describe, it, expect, vi } from 'vitest'
 
 import { ROLE_ASSISTANT, ROLE_USER } from '@/constants'
+import type { ChatBackend } from '@/types/entity/conversation'
 import {
   transformChatBEtoFE,
   getChatBEMessageIndex,
@@ -40,6 +41,74 @@ describe('transformChatBEtoFE', () => {
     const result = transformChatBEtoFE(chat)
 
     expect(result.id).toEqual('123')
+  })
+
+  it('maps thought in_progress:true to interrupted:true in history', () => {
+    const chat: ChatBackend = {
+      id: '1',
+      conversation_name: 'Test',
+      assistant_ids: [],
+      initial_assistant_id: '',
+      assistant_data: [],
+      history: [
+        { historyIndex: 0, message: 'user msg', date: '2024-01-01', executionId: null },
+        {
+          historyIndex: 0,
+          message: 'response',
+          date: '2024-01-01',
+          executionId: null,
+          thoughts: [{ id: 't1', message: '', in_progress: true, interrupted: false }],
+        },
+      ],
+    }
+    const result = transformChatBEtoFE(chat)
+    expect(result.history[0]![0]!.thoughts![0]!.interrupted).toBe(true)
+    expect(result.history[0]![0]!.thoughts![0]!.in_progress).toBe(false)
+  })
+
+  it('keeps thought interrupted:false when in_progress is false in history', () => {
+    const chat: ChatBackend = {
+      id: '2',
+      conversation_name: 'Test',
+      assistant_ids: [],
+      initial_assistant_id: '',
+      assistant_data: [],
+      history: [
+        { historyIndex: 0, message: 'user msg', date: '2024-01-01', executionId: null },
+        {
+          historyIndex: 0,
+          message: 'response',
+          date: '2024-01-01',
+          executionId: null,
+          thoughts: [{ id: 't1', message: 'result', in_progress: false, interrupted: false }],
+        },
+      ],
+    }
+    const result = transformChatBEtoFE(chat)
+    expect(result.history[0]![0]!.thoughts![0]!.interrupted).toBe(false)
+    expect(result.history[0]![0]!.thoughts![0]!.in_progress).toBe(false)
+  })
+
+  it('preserves explicit interrupted:true from backend regardless of in_progress', () => {
+    const chat: ChatBackend = {
+      id: '3',
+      conversation_name: 'Test',
+      assistant_ids: [],
+      initial_assistant_id: '',
+      assistant_data: [],
+      history: [
+        { historyIndex: 0, message: 'user msg', date: '2024-01-01', executionId: null },
+        {
+          historyIndex: 0,
+          message: 'response',
+          date: '2024-01-01',
+          executionId: null,
+          thoughts: [{ id: 't1', message: '', in_progress: false, interrupted: true }],
+        },
+      ],
+    }
+    const result = transformChatBEtoFE(chat)
+    expect(result.history[0]![0]!.thoughts![0]!.interrupted).toBe(true)
   })
 })
 

@@ -157,11 +157,16 @@ const getPromptMessage = (
 const getPromptRows = (message: ChatMessage | null): MCPAuthGateServer[] =>
   message?.mcpAuthPromptRows ?? []
 
+const markThoughtDone = (thought: Thought): void => {
+  thought.in_progress = false
+  thought.children?.forEach(markThoughtDone)
+}
+
 const finishThoughts = (historyItem: ChatMessage): void => {
   if (!historyItem.thoughts) return
 
   historyItem.thoughts.forEach((thought, index) => {
-    thought.in_progress = false
+    markThoughtDone(thought)
     historyItem.thoughts![index] = thought
   })
 }

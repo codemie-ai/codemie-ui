@@ -17,7 +17,7 @@ import { proxy } from 'valtio'
 
 import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
 import { router } from '@/hooks/useVueRouter'
-import { SearchResultItem , ChatExportFormat, RecentChat } from '@/types/chats'
+import { SearchResultItem, ChatExportFormat, RecentChat } from '@/types/chats'
 import {
   Conversation,
   ChatFolder,

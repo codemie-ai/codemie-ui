@@ -128,7 +128,8 @@ function transformHistoryGroup(
             output_format: thought.output_format,
             in_progress: false,
             error: thought.error ?? false,
-            interrupted: thought.interrupted ?? false,
+            // backend in_progress:true means the stream was cut (e.g. nginx timeout) — treat as interrupted
+            interrupted: (thought.interrupted ?? false) || (thought.in_progress ?? false),
             aborted: thought.aborted ?? false,
           }))
         : [],

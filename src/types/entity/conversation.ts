@@ -244,6 +244,7 @@ export interface ThoughtBackend {
   input_text?: string
   children?: any[]
   output_format?: string
+  in_progress?: boolean
   error?: boolean
   interrupted?: boolean
   aborted?: boolean

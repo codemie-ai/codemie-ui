@@ -176,6 +176,22 @@ describe('ThoughtHeader', () => {
     expect(screen.getByText('In Progress')).toBeInTheDocument()
   })
 
+  it('shows interrupted badge when thought is interrupted', () => {
+    const thought = createMockThought({ interrupted: true })
+    render(
+      <ThoughtHeader thought={thought} isInProgress={false} setIsExpanded={mockSetIsExpanded} />
+    )
+    expect(screen.getByText('Interrupted')).toBeInTheDocument()
+  })
+
+  it('shows interrupted badge even when thought has partial message', () => {
+    const thought = createMockThought({ interrupted: true, message: 'partial result' })
+    render(
+      <ThoughtHeader thought={thought} isInProgress={false} setIsExpanded={mockSetIsExpanded} />
+    )
+    expect(screen.getByText('Interrupted')).toBeInTheDocument()
+  })
+
   it('hides author icon when isEmbedded is true', () => {
     const { container } = render(
       <ThoughtHeader
