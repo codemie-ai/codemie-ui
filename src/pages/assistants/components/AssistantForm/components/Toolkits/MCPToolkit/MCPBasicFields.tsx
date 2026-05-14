@@ -24,9 +24,14 @@ import { MCPFormValues } from './formTypes'
 interface MCPBasicFieldsProps {
   control: Control<MCPFormValues>
   isEditing: boolean
+  customSetupEnabled?: boolean
 }
 
-const MCPBasicFields: React.FC<MCPBasicFieldsProps> = ({ control, isEditing }) => {
+const MCPBasicFields: React.FC<MCPBasicFieldsProps> = ({
+  control,
+  isEditing,
+  customSetupEnabled = true,
+}) => {
   return (
     <>
       <Controller
@@ -38,7 +43,7 @@ const MCPBasicFields: React.FC<MCPBasicFieldsProps> = ({ control, isEditing }) =
             placeholder="Name*"
             minLength={4}
             maxLength={50}
-            disabled={isEditing}
+            disabled={isEditing || !customSetupEnabled}
             error={fieldState.error?.message}
             {...field}
           />
@@ -53,6 +58,7 @@ const MCPBasicFields: React.FC<MCPBasicFieldsProps> = ({ control, isEditing }) =
             label="Description"
             placeholder="Description*"
             rows={2}
+            disabled={!customSetupEnabled}
             error={fieldState.error?.message}
             {...field}
           />

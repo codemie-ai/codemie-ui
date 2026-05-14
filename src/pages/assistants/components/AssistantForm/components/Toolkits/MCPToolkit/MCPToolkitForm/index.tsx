@@ -46,6 +46,7 @@ interface MCPToolkitFormProps {
   project: string
   refreshSettings: () => Promise<any>
   singleToolSelection?: boolean
+  isCatalogRef?: boolean
 }
 
 const MCPToolkitForm = ({
@@ -59,6 +60,7 @@ const MCPToolkitForm = ({
   project,
   refreshSettings,
   singleToolSelection = false,
+  isCatalogRef,
 }: MCPToolkitFormProps) => {
   const formRef = useRef<HTMLFormElement>(null)
   const [wizardStep, setWizardStep] = useState<WizardStep>(WIZARD_STEPS.CONFIGURE_SERVER)
@@ -70,6 +72,7 @@ const MCPToolkitForm = ({
   const { form, configHasEnv, isEditing } = useMCPForm({
     mcpServer,
     mcpServerNames,
+    isCatalogRef,
   })
 
   const { control, setValue, getValues, watch, handleSubmit, reset, trigger } = form
@@ -162,11 +165,16 @@ const MCPToolkitForm = ({
             triggerValidation={trigger}
             onCancel={handleHide}
             onNext={handleNext}
+            isCatalogRef={isCatalogRef}
           />
         ) : (
           <MCPToolsSelectionStep
             isEditing={isEditing}
-            mcpServer={{ ...serverConfig, settings: envVarHook.settings }}
+            mcpServer={{
+              ...serverConfig,
+              settings: envVarHook.settings,
+              ...(mcpServer?.mcp_config_id && { mcp_config_id: mcpServer.mcp_config_id }),
+            }}
             selectedTools={selectedTools}
             onToolsChange={setSelectedTools}
             onBack={handleBack}

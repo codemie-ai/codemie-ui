@@ -27,17 +27,21 @@ interface MCPEmptyStateProps {
   onBrowseMarketplace: () => void
   onAddCustom: () => void
   isCompactView?: boolean
+  customSetupEnabled?: boolean
 }
 
 const NARROW_THRESHOLD = 500
-const DESCRIPTION =
+const DESCRIPTION_OPEN =
   'Get started by installing your first MCP server from our catalog or configuring one manually.'
+const DESCRIPTION_RESTRICTED = 'Get started by installing your first MCP server from our catalog.'
 
 const MCPEmptyState: React.FC<MCPEmptyStateProps> = ({
   onBrowseMarketplace,
   onAddCustom,
   isCompactView,
+  customSetupEnabled = true,
 }) => {
+  const description = customSetupEnabled ? DESCRIPTION_OPEN : DESCRIPTION_RESTRICTED
   const observerRef = useRef<HTMLDivElement>(null)
   const [isNarrow, setIsNarrow] = useState(false)
 
@@ -94,11 +98,11 @@ const MCPEmptyState: React.FC<MCPEmptyStateProps> = ({
         >
           No MCP Servers Installed
           {isNarrow && (
-            <TooltipButton className="ml-2 mb-[3px] align-middle" content={DESCRIPTION} />
+            <TooltipButton className="ml-2 mb-[3px] align-middle" content={description} />
           )}
         </h3>
 
-        {!isNarrow && <p className="text-text-quaternary text-sm max-w-md mb-6">{DESCRIPTION}</p>}
+        {!isNarrow && <p className="text-text-quaternary text-sm max-w-md mb-6">{description}</p>}
 
         <div
           className={cn(
@@ -114,14 +118,16 @@ const MCPEmptyState: React.FC<MCPEmptyStateProps> = ({
             <TemplatesSvg className={cn(isNarrow ? 'w-3.5 h-3.5' : 'w-4 h-4')} />
             Browse Catalog
           </Button>
-          <Button
-            variant={ButtonType.SECONDARY}
-            onClick={onAddCustom}
-            className={cn(isNarrow && 'w-full')}
-          >
-            <ToolSvg className={cn(isNarrow ? 'w-3.5 h-3.5' : 'w-4 h-4')} />
-            Manual Setup
-          </Button>
+          {customSetupEnabled && (
+            <Button
+              variant={ButtonType.SECONDARY}
+              onClick={onAddCustom}
+              className={cn(isNarrow && 'w-full')}
+            >
+              <ToolSvg className={cn(isNarrow ? 'w-3.5 h-3.5' : 'w-4 h-4')} />
+              Manual Setup
+            </Button>
+          )}
         </div>
       </div>
     </div>

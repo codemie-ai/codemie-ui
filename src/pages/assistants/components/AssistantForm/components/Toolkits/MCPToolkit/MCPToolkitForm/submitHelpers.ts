@@ -67,6 +67,10 @@ export const handleFormSubmit = async ({
 
   updateMcpServer({
     ...serverConfig,
+    ...(mcpServer?.mcp_config_id && {
+      mcp_config_id: mcpServer.mcp_config_id,
+      required_env_vars: mcpServer.required_env_vars,
+    }),
     settings: finalSettings,
     enabled: isEditing ? !!mcpServer?.enabled : true,
     tools: selectedTools.map((t) => t.name),

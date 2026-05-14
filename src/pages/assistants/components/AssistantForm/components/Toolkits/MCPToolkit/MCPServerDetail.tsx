@@ -15,7 +15,9 @@
 
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
+import Button from '@/components/Button'
 import NavigationMore from '@/components/NavigationMore'
+import { ButtonType } from '@/constants'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 
@@ -26,6 +28,7 @@ interface MCPServerDetailProps {
   server: MCPServerDetails
   settingsDefinitions: Setting[]
   isSelected: boolean
+  isUnavailable?: boolean
   onUpdate: (server: MCPServerDetails) => void
   onEdit: () => void
   onDelete: () => void
@@ -36,68 +39,78 @@ const MCPServerDetail = ({
   server,
   settingsDefinitions,
   isSelected,
+  isUnavailable,
   onUpdate,
   onEdit,
   onDelete,
   showNewIntegrationPopup,
-}: MCPServerDetailProps) => (
-  <div className="flex flex-col gap-6 p-6">
-    <div className="flex flex-col gap-0">
-      <div className="flex items-center justify-between">
-        <span className="font-geist-mono font-normal text-xs leading-none text-text-primary">
-          Description
-        </span>
-        <NavigationMore
-          renderInRoot
-          alignment="end"
-          hideOnClickInside
-          items={[
-            {
-              title: 'Edit',
-              icon: <EditSvg />,
-              onClick: onEdit,
-            },
-            {
-              title: 'Delete',
-              icon: <DeleteSvg />,
-              onClick: onDelete,
-            },
-          ]}
-        >
-          <MCPToolkitTest inline mcpServer={server} />
-        </NavigationMore>
+}: MCPServerDetailProps) => {
+  const menuItems = isUnavailable
+    ? [{ title: 'Delete', icon: <DeleteSvg />, onClick: onDelete }]
+    : [
+        { title: 'Edit', icon: <EditSvg />, onClick: onEdit },
+        { title: 'Delete', icon: <DeleteSvg />, onClick: onDelete },
+      ]
+
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="font-geist-mono font-normal text-xs leading-none text-text-primary">
+            Description
+          </span>
+          {!isUnavailable && (
+            <NavigationMore renderInRoot alignment="end" hideOnClickInside items={menuItems}>
+              <MCPToolkitTest inline mcpServer={server} />
+            </NavigationMore>
+          )}
+        </div>
+        {isUnavailable ? (
+          <>
+            <p className="font-geist-mono font-normal text-sm text-text-error pr-10">
+              This MCP server is no longer available. You can safely delete it.
+            </p>
+            <div>
+              <Button variant={ButtonType.DELETE} onClick={onDelete}>
+                <DeleteSvg className="w-4 h-4" />
+                Delete
+              </Button>
+            </div>
+          </>
+        ) : (
+          server.description && (
+            <p className="font-geist-mono font-normal text-sm text-text-quaternary pr-10">
+              {server.description}
+            </p>
+          )
+        )}
       </div>
-      {server.description && (
-        <p className="font-geist-mono font-normal text-sm text-text-quaternary pr-10">
-          {server.description}
-        </p>
+
+      {!isUnavailable && server.tools && server.tools.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="font-geist-mono text-xs text-text-primary">Selected Tools:</span>
+          <p className="text-xs text-text-secondary">{server.tools.join(', ')}</p>
+        </div>
+      )}
+
+      {!isUnavailable && isSelected && (
+        <div className="flex flex-col gap-2">
+          <span className="font-geist-mono text-xs text-text-primary">Environment Variables:</span>
+          <IntegrationSelector
+            value={server.settings}
+            tooltipPosition="left"
+            settingsDefinitions={settingsDefinitions}
+            addButtonLabel="Add Environment Variables"
+            placeholder="Environment Variables"
+            onChange={(settings) => onUpdate({ ...server, settings })}
+            onAddSettingClick={showNewIntegrationPopup}
+            selectClassName={'!mr-auto ml-0 w-[280px]'}
+            buttonClassName={'mr-auto ml-0 w-[210px]'}
+          />
+        </div>
       )}
     </div>
-
-    {server.tools && server.tools.length > 0 && (
-      <div className="flex flex-col gap-2">
-        <span className="font-geist-mono text-xs text-text-primary">Selected Tools:</span>
-        <p className="text-xs text-text-secondary">{server.tools.join(', ')}</p>
-      </div>
-    )}
-
-    {isSelected && (
-      <div className="flex flex-col gap-2">
-        <span className="font-geist-mono text-xs text-text-primary">Environment Variables:</span>
-        <IntegrationSelector
-          value={server.settings}
-          tooltipPosition="left"
-          settingsDefinitions={settingsDefinitions}
-          addButtonLabel="Add Environment Variables"
-          placeholder="Environment Variables"
-          onChange={(settings) => onUpdate({ ...server, settings })}
-          onAddSettingClick={showNewIntegrationPopup}
-          selectClassName={'!mr-auto ml-0 w-[280px]'}
-          buttonClassName={'mr-auto ml-0 w-[210px]'}
-        />
-      </div>
-    )}
-  </div>
-)
+  )
+}
 
 export default MCPServerDetail

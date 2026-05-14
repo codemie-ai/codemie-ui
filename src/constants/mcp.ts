@@ -38,3 +38,6 @@ export const MCP_PAGINATION_OPTIONS = [
   { label: '50 items', value: '50' },
   { label: '100 items', value: '100' },
 ]
+
+// Config IDs
+export const MCP_CUSTOM_SERVERS_DISABLED_CONFIG_ID = 'mcpCustomServersDisabled'

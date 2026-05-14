@@ -47,6 +47,7 @@ interface MCPServerConfigStepProps {
   triggerValidation: () => Promise<boolean>
   onCancel: () => void
   onNext: () => void
+  isCatalogRef?: boolean
 }
 
 const MCPServerConfigStep = ({
@@ -70,6 +71,7 @@ const MCPServerConfigStep = ({
   triggerValidation,
   onCancel,
   onNext,
+  isCatalogRef,
 }: MCPServerConfigStepProps) => {
   const handleNext = async () => {
     const isFormValid = await triggerValidation()
@@ -88,9 +90,15 @@ const MCPServerConfigStep = ({
   return (
     <>
       <div className="flex flex-col gap-4" data-onboarding="mcp-custom-form-fields">
-        <MCPBasicFields control={control} isEditing={isEditing} />
+        <MCPBasicFields
+          control={control}
+          isEditing={isEditing}
+          customSetupEnabled={!isCatalogRef}
+        />
 
-        <MCPConfigSection control={control} configHasEnv={configHasEnv} setValue={setValue} />
+        {!isCatalogRef && (
+          <MCPConfigSection control={control} configHasEnv={configHasEnv} setValue={setValue} />
+        )}
 
         <MCPEnvVarsSection
           mcpServer={mcpServer}
@@ -106,18 +114,20 @@ const MCPServerConfigStep = ({
           showNewIntegrationPopup={showNewIntegrationPopup}
         />
 
-        <Controller
-          name="connectUrl"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Input
-              label="MCP-Connect URL (Optional)"
-              placeholder="https://"
-              error={fieldState.error?.message}
-              {...field}
-            />
-          )}
-        />
+        {!isCatalogRef && (
+          <Controller
+            name="connectUrl"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Input
+                label="MCP-Connect URL (Optional)"
+                placeholder="https://"
+                error={fieldState.error?.message}
+                {...field}
+              />
+            )}
+          />
+        )}
       </div>
       <div className="flex justify-end gap-4">
         <Button variant={ButtonType.SECONDARY} onClick={onCancel}>

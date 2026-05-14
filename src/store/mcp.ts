@@ -52,6 +52,8 @@ interface MCPStore {
   resetFilters: () => void
 }
 
+const inflightRequests = new Map<string, Promise<MCPConfig>>()
+
 export const mcpStore = proxy<MCPStore>({
   configs: [],
   pagination: {
@@ -139,20 +141,36 @@ export const mcpStore = proxy<MCPStore>({
    * @throws Error if configuration not found or API request fails
    */
   async getConfig(id: string) {
+    const existing = this.configs.find((c) => c.id === id)
+    if (existing) return existing
+
+    const inflight = inflightRequests.get(id)
+    if (inflight) return inflight
+
     this.loading = true
     this.error = null
 
-    try {
-      const response = await api.get(`v1/mcp-configs/${id}`)
-      return await response.json()
-    } catch (error: any) {
-      const contextualError = error.response?.data?.message ?? error.message
-      this.error = `Failed to fetch MCP configuration: ${contextualError}`
-      console.error('MCP Store Error (getConfig):', error)
-      throw error
-    } finally {
-      this.loading = false
-    }
+    const promise = (async () => {
+      try {
+        const response = await api.get(`v1/mcp-configs/${id}`)
+        const result = await response.json()
+        if (!this.configs.some((c) => c.id === result.id)) {
+          this.configs.push(result)
+        }
+        return result
+      } catch (error: any) {
+        const contextualError = error.response?.data?.message ?? error.message
+        this.error = `Failed to fetch MCP configuration: ${contextualError}`
+        console.error('MCP Store Error (getConfig):', error)
+        throw error
+      } finally {
+        this.loading = false
+        inflightRequests.delete(id)
+      }
+    })()
+
+    inflightRequests.set(id, promise)
+    return promise
   },
 
   /**

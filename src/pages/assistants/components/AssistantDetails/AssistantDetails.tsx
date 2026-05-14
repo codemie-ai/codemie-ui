@@ -13,7 +13,8 @@
 // limitations under the License.
 //
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSnapshot } from 'valtio'
 
 import CodeSvg from '@/assets/icons/code.svg?react'
 import ConfluenceSvg from '@/assets/icons/confluence.svg?react'
@@ -30,6 +31,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import ToolkitsViewList from '@/pages/assistants/components/ToolkitsViewList'
 import { appInfoStore } from '@/store/appInfo'
 import { dataSourceStore } from '@/store/dataSources'
+import { mcpStore } from '@/store/mcp'
 import { Assistant, AssistantToolkit, ContextType } from '@/types/entity/assistant'
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { sortToolkitsByOrder } from '@/utils/assistants'
@@ -70,6 +72,15 @@ const AssistantDetails = ({
 }: AssistantDetailsProps) => {
   const router = useVueRouter()
   const [showUserMappingSection, setShowUserMappingSection] = useState(false)
+  const snapshot = useSnapshot(mcpStore)
+
+  useEffect(() => {
+    const idsToFetch = assistant.mcp_servers
+      .filter((s) => !!s.mcp_config_id)
+      .map((s) => s.mcp_config_id as string)
+      .filter((id) => !mcpStore.configs.some((c) => c.id === id))
+    idsToFetch.forEach((id) => mcpStore.getConfig(id).catch(() => {}))
+  }, [assistant.mcp_servers])
 
   const userMappingIsSupported = !!onNewIntegration && assistant.is_global && !isTemplate
 
@@ -83,16 +94,36 @@ const AssistantDetails = ({
     }
   }, [assistant])
 
+  const unavailableConfigIds = useMemo(() => {
+    const catalogMap = new Map(snapshot.configs.map((c) => [c.id, c]))
+    return new Set(
+      assistant.mcp_servers
+        .filter((s) => {
+          if (!s.mcp_config_id) return false
+          const entry = catalogMap.get(s.mcp_config_id)
+          return !entry || !entry.is_active || !entry.is_public
+        })
+        .map((s) => s.mcp_config_id as string)
+    )
+  }, [assistant.mcp_servers, snapshot.configs])
+
   const toolkits = useMemo(() => {
     const baseToolkits: (AssistantToolkit | ReturnType<typeof getToolkitFromMcpServers>)[] =
       assistant.toolkits || []
 
     if (assistant.mcp_servers.length) {
-      return baseToolkits.concat(getToolkitFromMcpServers(assistant.mcp_servers, true))
+      const mcpToolkit = getToolkitFromMcpServers(assistant.mcp_servers, true)
+      const toolsWithAvailability = mcpToolkit.tools.map((tool) => ({
+        ...tool,
+        isUnavailable:
+          !!tool.serverConfig?.mcp_config_id &&
+          unavailableConfigIds.has(tool.serverConfig.mcp_config_id),
+      }))
+      return baseToolkits.concat({ ...mcpToolkit, tools: toolsWithAvailability })
     }
 
     return baseToolkits
-  }, [assistant.toolkits, assistant.mcp_servers])
+  }, [assistant.toolkits, assistant.mcp_servers, unavailableConfigIds])
 
   const onContextClick = async (context) => {
     const resp = await dataSourceStore.findDatasourceID(

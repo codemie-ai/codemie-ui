@@ -19,9 +19,26 @@ import { jsonValidator, commandOrUrlXorValidator, streamableHttpValidator } from
 
 interface FormSchemaParams {
   nameUniqueValidator: (value: string) => boolean
+  isCatalogRef?: boolean
 }
 
-export const createFormSchema = ({ nameUniqueValidator }: FormSchemaParams) => {
+export const createFormSchema = ({ nameUniqueValidator, isCatalogRef }: FormSchemaParams) => {
+  let configJsonSchema = Yup.string().test('format', 'Invalid JSON format', jsonValidator)
+
+  if (!isCatalogRef) {
+    configJsonSchema = configJsonSchema
+      .test(
+        'command-or-url-xor',
+        'Configuration must include exactly one of "command" or "url" (not both)',
+        commandOrUrlXorValidator
+      )
+      .test(
+        'streamable-http',
+        'When type is "streamable-http", "url" field is required',
+        streamableHttpValidator
+      )
+  }
+
   return Yup.object({
     name: Yup.string()
       .required('MCP server name is required')
@@ -38,18 +55,7 @@ export const createFormSchema = ({ nameUniqueValidator }: FormSchemaParams) => {
       .notRequired()
       .min(0, 'Tokens size cannot be less than zero')
       .max(1000000, 'Maximum tokens for tool output is 1000000'),
-    configJson: Yup.string()
-      .test('format', 'Invalid JSON format', jsonValidator)
-      .test(
-        'command-or-url-xor',
-        'Configuration must include exactly one of "command" or "url" (not both)',
-        commandOrUrlXorValidator
-      )
-      .test(
-        'streamable-http',
-        'When type is "streamable-http", "url" field is required',
-        streamableHttpValidator
-      ),
+    configJson: configJsonSchema,
     command: Yup.string().notRequired(),
     arguments: Yup.string().notRequired(),
   })

@@ -14,7 +14,7 @@
 //
 
 import { Checkbox } from '@/components/form/Checkbox'
-import { MCPServerDetails } from '@/types/entity/mcp'
+import { MCPConfig, MCPServerDetails } from '@/types/entity/mcp'
 import { cn } from '@/utils/utils'
 
 import MCPServerInfo from './MCPServerInfo'
@@ -25,6 +25,8 @@ interface MCPServerListItemProps {
   selectedIndex: number
   isSelected: boolean
   isActive?: boolean
+  isUnavailable?: boolean
+  catalogEntry?: MCPConfig
   onClick: () => void
   onToggle: () => void
 }
@@ -35,22 +37,42 @@ const MCPServerListItem = ({
   selectedIndex,
   isSelected,
   isActive,
+  isUnavailable,
+  catalogEntry,
   onClick,
   onToggle,
 }: MCPServerListItemProps) => (
   <div
     onClick={onClick}
     className={cn(
-      'flex items-center p-3 gap-3 rounded-lg cursor-pointer transition-all border min-w-0 w-full',
-      (isActive !== undefined ? isActive : selectedIndex === index)
-        ? 'bg-surface-base-float border-border-structural'
-        : 'border-transparent hover:bg-border-structural/10'
+      'flex items-center p-3 gap-3 rounded-lg border min-w-0 w-full',
+      isUnavailable
+        ? 'bg-failed-secondary/10 border-border-error cursor-pointer'
+        : cn(
+            'cursor-pointer transition-all',
+            (isActive !== undefined ? isActive : selectedIndex === index)
+              ? 'bg-surface-base-float border-border-structural'
+              : 'border-transparent hover:bg-border-structural/10'
+          )
     )}
   >
     <div onClick={(e) => e.stopPropagation()}>
-      <Checkbox checked={isSelected} onChange={onToggle} label="" />
+      <Checkbox checked={isSelected} onChange={onToggle} label="" disabled={isUnavailable} />
     </div>
-    <MCPServerInfo server={server} />
+    {isUnavailable ? (
+      <>
+        <div className="flex-shrink-0 w-8 h-8 rounded border border-border-error bg-failed-secondary/10 flex items-center justify-center text-text-error text-xs font-bold">
+          !
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="font-geist-mono font-medium text-base text-text-error truncate block">
+            {server.name || 'UNAVAILABLE'}
+          </span>
+        </div>
+      </>
+    ) : (
+      <MCPServerInfo server={server} catalogEntry={catalogEntry} />
+    )}
   </div>
 )
 

@@ -36,6 +36,7 @@ interface MCPDetailModalProps {
   showNewIntegrationPopup: () => void
   onBrowseMarketplace: () => void
   onAddCustom: () => void
+  customSetupEnabled?: boolean
 }
 
 const MCPDetailModal = ({
@@ -53,6 +54,7 @@ const MCPDetailModal = ({
   showNewIntegrationPopup,
   onBrowseMarketplace,
   onAddCustom,
+  customSetupEnabled,
 }: MCPDetailModalProps) => {
   const detailServer = mcpServers[selectedIndex]
 
@@ -88,6 +90,7 @@ const MCPDetailModal = ({
               compact
               onBrowseMarketplace={onBrowseMarketplace}
               onAddCustom={onAddCustom}
+              customSetupEnabled={customSetupEnabled}
             />
           </div>
 

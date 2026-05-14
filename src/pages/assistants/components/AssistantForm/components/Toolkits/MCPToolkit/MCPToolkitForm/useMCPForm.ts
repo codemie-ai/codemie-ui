@@ -26,6 +26,7 @@ import { formatJson } from '../validators'
 interface UseMCPFormParams {
   mcpServer?: MCPServerDetails
   mcpServerNames: string[]
+  isCatalogRef?: boolean
 }
 
 const getInitialValues = (mcpServer?: MCPServerDetails): MCPFormValues => ({
@@ -48,15 +49,15 @@ const checkConfigHasEnv = (configJson: string): boolean => {
   }
 }
 
-export const useMCPForm = ({ mcpServer, mcpServerNames }: UseMCPFormParams) => {
+export const useMCPForm = ({ mcpServer, mcpServerNames, isCatalogRef }: UseMCPFormParams) => {
   const nameUniqueValidator = (value: string) => {
     if (mcpServer) return true
     return !mcpServerNames.includes(value)
   }
 
   const formSchema = useMemo(
-    () => createFormSchema({ nameUniqueValidator }),
-    [mcpServerNames, mcpServer]
+    () => createFormSchema({ nameUniqueValidator, isCatalogRef }),
+    [mcpServerNames, mcpServer, isCatalogRef]
   )
 
   const form = useForm<MCPFormValues>({

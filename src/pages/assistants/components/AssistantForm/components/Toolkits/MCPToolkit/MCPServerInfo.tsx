@@ -17,17 +17,23 @@ import { useRef } from 'react'
 
 import MCPIconSvg from '@/assets/icons/mcp.svg?react'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
-import { MCPServerDetails } from '@/types/entity/mcp'
+import { MCPConfig, MCPServerDetails } from '@/types/entity/mcp'
 
-const MCPServerInfo = ({ server }: { server: MCPServerDetails }) => {
+interface MCPServerInfoProps {
+  server: MCPServerDetails
+  catalogEntry?: MCPConfig
+}
+
+const MCPServerInfo = ({ server, catalogEntry }: MCPServerInfoProps) => {
   const labelRef = useRef<HTMLHeadingElement>(null)
   const isTruncated = useIsTruncated(labelRef)
+  const logoUrl = catalogEntry?.logo_url ?? server.logo_url
 
   return (
     <>
       <div className="flex-shrink-0 w-8 h-8 rounded border border-border-structural bg-surface-base-secondary flex items-center justify-center overflow-hidden">
-        {server.logo_url ? (
-          <img src={server.logo_url} alt={server.name} className="w-full h-full object-cover" />
+        {logoUrl ? (
+          <img src={logoUrl} alt={server.name} className="w-full h-full object-cover" />
         ) : (
           <MCPIconSvg className="w-5 h-5 text-text-quaternary" />
         )}

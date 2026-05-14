@@ -184,6 +184,7 @@ export interface Tool {
   user_description?: string | null
   serverConfig?: MCPServerDetails
   tool: any
+  isUnavailable?: boolean
 }
 
 export interface AssistantContext {

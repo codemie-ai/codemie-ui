@@ -22,9 +22,15 @@ interface MCPActionButtonsProps {
   onBrowseMarketplace: () => void
   onAddCustom: () => void
   compact?: boolean
+  customSetupEnabled?: boolean
 }
 
-const MCPActionButtons = ({ onBrowseMarketplace, onAddCustom, compact }: MCPActionButtonsProps) => (
+const MCPActionButtons = ({
+  onBrowseMarketplace,
+  onAddCustom,
+  compact,
+  customSetupEnabled = true,
+}: MCPActionButtonsProps) => (
   <div
     className={cn(
       'flex gap-2 p-4 border-t border-border-structural bg-surface-base-primary',
@@ -34,9 +40,11 @@ const MCPActionButtons = ({ onBrowseMarketplace, onAddCustom, compact }: MCPActi
     <Button variant="primary" className="flex-1" onClick={onBrowseMarketplace}>
       <TemplatesSvg className="w-4 h-4" /> Browse Catalog
     </Button>
-    <Button variant="secondary" className="flex-1" onClick={onAddCustom}>
-      <ToolSvg className="w-4 h-4" /> Manual Setup
-    </Button>
+    {customSetupEnabled && (
+      <Button variant="secondary" className="flex-1" onClick={onAddCustom}>
+        <ToolSvg className="w-4 h-4" /> Manual Setup
+      </Button>
+    )}
   </div>
 )
 
