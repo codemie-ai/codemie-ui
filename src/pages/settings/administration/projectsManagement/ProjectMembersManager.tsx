@@ -224,6 +224,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   const [isSelectAllLoading, setIsSelectAllLoading] = useState(false)
   const [overrideContext, setOverrideContext] = useState<{
     userId: string
+    userName: string | null
     category: BudgetCategory
   } | null>(null)
 
@@ -526,7 +527,9 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         <UserBudgetsCell
           user={user}
           budgetAllocationLookup={budgetAllocationLookup}
-          onOverride={(userId, category) => setOverrideContext({ userId, category })}
+          onOverride={(userId, category) =>
+            setOverrideContext({ userId, userName: user.name, category })
+          }
         />
       ),
       actions: (user: UserListItem) => {
@@ -712,6 +715,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         <MemberAllocationOverrideModal
           visible={!!overrideContext}
           userId={overrideContext?.userId ?? null}
+          userName={overrideContext?.userName ?? null}
           budgets={budgets}
           userAllocationsByCategory={
             overrideContext ? budgetAllocationLookup?.[overrideContext.userId] ?? null : null

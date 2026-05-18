@@ -34,6 +34,7 @@ import {
 interface MemberAllocationOverrideModalProps {
   visible: boolean
   userId: string | null
+  userName: string | null
   budgets: ProjectBudget[]
   userAllocationsByCategory: Record<string, ProjectBudgetMemberAllocation> | null
   initialCategory?: BudgetCategory | null
@@ -70,6 +71,7 @@ const validationSchema = Yup.object({
 const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
   visible,
   userId,
+  userName,
   budgets,
   userAllocationsByCategory,
   initialCategory,
@@ -179,7 +181,7 @@ const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
     <Popup
       visible={visible}
       onHide={onHide}
-      header={`Budget Override — ${userId ?? ''}`}
+      header={`Budget Override — ${userName || userId || ''}`}
       footerContent={footerContent}
       limitWidth
       withBorderBottom={false}
