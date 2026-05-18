@@ -29,7 +29,7 @@ interface Props {
 
 const SharePointContentTypesSection: FC<Props> = ({ control }) => (
   <div className="mb-4">
-    <p className="mb-2 text-xs text-text-tertiary">Content Types to Index:</p>
+    <p className="mb-2 text-xs text-text-tertiary">Content Types to Index</p>
 
     <Controller
       name="includePages"

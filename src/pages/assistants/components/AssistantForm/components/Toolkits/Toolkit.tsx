@@ -140,7 +140,7 @@ const Toolkit = ({
         {/* Left: tools list */}
         <div className="flex flex-col gap-4 flex-1 min-w-0">
           <h3 className="text-xs text-text-tertiary overflow-hidden overflow-ellipsis text-nowrap">
-            Features to use:
+            Features to use
           </h3>
           {!singleToolSelection && (
             <>
@@ -271,9 +271,7 @@ const Toolkit = ({
                         : 'gap-2'
                     )}
                   >
-                    <span className="font-geist-mono text-xs text-text-tertiary">
-                      Integrations:
-                    </span>
+                    <span className="font-geist-mono text-xs text-text-tertiary">Integrations</span>
                     <IntegrationSelector
                       value={selectedToolkit.settings}
                       tooltipPosition="left"

@@ -84,7 +84,7 @@ const IndexTypeConfluence: FC<Props> = ({
         onOpenIntegrationPopup={openIntegrationPopup}
         onIntegrationSuccess={handleIntegrationSuccess}
         onIntegrationCancel={handleIntegrationCancel}
-        integrationLabel="Select integration for Confluence:"
+        integrationLabel="Integration for Confluence"
         integrationPlaceholder="Integration for Confluence"
       />
 

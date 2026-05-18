@@ -82,7 +82,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
     <div className="category-selector">
       {!hideHeader && (
         <div className="mb-2">
-          <h3 className="text-base font-medium text-text-quaternary">Select Categories</h3>
+          <h3 className="text-base font-medium text-text-quaternary">Categories</h3>
           {hint && <p className="text-sm text-text-quaternary mt-1">{hint}</p>}
         </div>
       )}

@@ -106,7 +106,7 @@ const MarketplaceCategories = forwardRef<PrimeMultiselect, MarketplaceCategories
           scrollHeight="215px"
           onFilter={() => {}}
           label={isAIGenerated ? undefined : 'Categories'}
-          placeholder="Select categories"
+          placeholder="Categories"
           options={categoryOptions}
           value={value ?? []}
           error={error}

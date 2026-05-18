@@ -208,7 +208,7 @@ const IndexTypeGit: FC<Props> = ({
           onOpenIntegrationPopup={openIntegrationPopup}
           onIntegrationSuccess={handleIntegrationSuccess}
           onIntegrationCancel={handleIntegrationCancel}
-          integrationLabel="Select integration for Git:"
+          integrationLabel="Integration for Git"
           integrationPlaceholder="Integration for Git"
         />
       </div>

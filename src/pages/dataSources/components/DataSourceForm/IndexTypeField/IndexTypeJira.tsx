@@ -83,7 +83,7 @@ const IndexTypeJira: FC<Props> = ({
         onOpenIntegrationPopup={openIntegrationPopup}
         onIntegrationSuccess={handleIntegrationSuccess}
         onIntegrationCancel={handleIntegrationCancel}
-        integrationLabel="Select integration for Jira:"
+        integrationLabel="Integration for Jira"
         integrationPlaceholder="Integration for Jira"
       />
 

@@ -188,7 +188,7 @@ const IndexTypeSharePoint: FC<Props> = ({
           onOpenIntegrationPopup={openIntegrationPopup}
           onIntegrationSuccess={handleIntegrationSuccess}
           onIntegrationCancel={handleIntegrationCancel}
-          integrationLabel="Select integration for SharePoint:"
+          integrationLabel="Integration for SharePoint"
           integrationPlaceholder="Integration for SharePoint"
           credentialType="sharepoint"
         />

@@ -91,8 +91,8 @@ const SkillCategories = forwardRef<PrimeMultiselect, SkillCategoriesProps>(
           showCheckbox
           ref={ref}
           scrollHeight="215px"
-          label={isAIGenerated ? undefined : 'Categories:'}
-          placeholder="Select categories"
+          label={isAIGenerated ? undefined : 'Categories'}
+          placeholder="Categories"
           options={categoryOptions}
           value={controlledValue}
           error={displayError}

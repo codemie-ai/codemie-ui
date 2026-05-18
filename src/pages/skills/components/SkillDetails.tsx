@@ -93,7 +93,7 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
         <div className="flex flex-col gap-6 grow min-w-0 max-view-details-bp:order-2">
           {/* About section */}
           <div>
-            <h5 className="font-bold text-sm">About Skill:</h5>
+            <h5 className="font-bold text-sm">About Skill</h5>
             <p className="mt-2.5 text-sm text-text-tertiary break-words whitespace-pre-wrap">
               {skill.description}
             </p>
@@ -121,7 +121,7 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
             <DetailsProperty label="Project" value={skill.project} />
             <DetailsProperty label="Visibility" value={getVisibilityLabel(skill.visibility)} />
             <DetailsCopyField
-              label="SKILL ID:"
+              label="SKILL ID"
               value={skill.id}
               className="mt-2 font-semibold"
               notification="Skill ID copied to clipboard"
@@ -130,7 +130,7 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
 
           <DetailsSidebarSection headline="ACCESS LINKS">
             <DetailsCopyField
-              label="Link to skill details:"
+              label="Link to skill details"
               value={skillDetailsLink}
               notification="Link to skill copied to clipboard"
             />

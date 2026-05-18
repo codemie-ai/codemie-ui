@@ -83,7 +83,7 @@ const IndexTypeAzureDevOpsWorkItem: FC<Props> = ({
         onOpenIntegrationPopup={openIntegrationPopup}
         onIntegrationSuccess={handleIntegrationSuccess}
         onIntegrationCancel={handleIntegrationCancel}
-        integrationLabel="Select integration for Azure DevOps Work Items:"
+        integrationLabel="Integration for Azure DevOps Work Items"
         integrationPlaceholder="Integration for Azure DevOps Work Items"
         credentialType="azuredevops"
       />

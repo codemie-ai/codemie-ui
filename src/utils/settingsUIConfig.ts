@@ -179,7 +179,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
         shouldShow: isGithubAppAuth,
         message: {
           type: 'info',
-          title: 'GitHub App Setup:',
+          title: 'GitHub App Setup',
           message:
             'To use GitHub App authentication, you need to create a GitHub App and install it in your organization or repository',
           link: {
@@ -238,7 +238,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     testable: true,
     message: {
       type: 'warn',
-      title: 'EPAM users only:',
+      title: 'EPAM users only',
       message: 'you need to log on to kb.epam.com web app first if you use it as an URL',
       link: {
         url: 'https://kb.epam.com/',
@@ -597,7 +597,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     displayName: 'MCP',
     serverEnum: 'MCP',
     fieldsManualConfiguration: {
-      label: 'Environment Variables:',
+      label: 'Environment Variables',
       sensitive: true,
       addText: 'Add Environment Variable',
     },
@@ -695,7 +695,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
     fields: {
       webhook_id: {
-        placeholder: 'Webhook ID: Unique identifier of the webhook, e.g. "webhook-qwerty"',
+        placeholder: 'Webhook ID',
         note: 'A webhook identifier is a unique ID for each webhook created in an application, allowing external apps like GitHub/GitLab to receive events. ',
       },
       is_enabled: {

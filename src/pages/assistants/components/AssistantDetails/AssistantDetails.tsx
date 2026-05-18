@@ -207,7 +207,7 @@ const AssistantDetails = ({
               value={getSharedValue(assistant.is_global, assistant.shared)}
             />
             <DetailsCopyField
-              label="ASSISTANT ID:"
+              label="ASSISTANT ID"
               value={assistant.id}
               className="mt-2 font-semibold"
               notification="Assistant ID copied to clipboard"
@@ -224,7 +224,7 @@ const AssistantDetails = ({
             ) : (
               <>
                 <DetailsCopyField
-                  label="Link to assistant details:"
+                  label="Link to assistant details"
                   value={assistantDetailsLink}
                   notification="Link to assistant copied to clipboard"
                 />
@@ -251,7 +251,7 @@ const AssistantDetails = ({
           <DetailsSidebarSection headline="CONFIGURATION">
             {llmModelLabel && (
               <div className="flex flex-col gap-2">
-                <p className="text-sm text-text-quaternary">LLM model:</p>
+                <p className="text-sm text-text-quaternary">LLM model</p>
                 <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-sm leading-5">
                   {llmModelLabel}
                 </div>
@@ -260,7 +260,7 @@ const AssistantDetails = ({
 
             {isNumberValue(assistant.temperature) && (
               <div className="flex flex-row items-center gap-2">
-                <p className="text-sm text-text-quaternary">Temperature:</p>
+                <p className="text-sm text-text-quaternary">Temperature</p>
                 <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-sm leading-5">
                   {assistant.temperature}
                 </div>
@@ -269,7 +269,7 @@ const AssistantDetails = ({
 
             {isNumberValue(assistant.top_p) && (
               <div className="flex flex-row items-center gap-2">
-                <p className="text-sm text-text-quaternary">Top P:</p>
+                <p className="text-sm text-text-quaternary">Top P</p>
                 <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-sm leading-5">
                   {assistant.top_p}
                 </div>

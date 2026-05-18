@@ -106,7 +106,7 @@ const IndexTypeAzureDevOpsWiki: FC<Props> = ({
         onOpenIntegrationPopup={openIntegrationPopup}
         onIntegrationSuccess={handleIntegrationSuccess}
         onIntegrationCancel={handleIntegrationCancel}
-        integrationLabel="Select integration for Azure DevOps Wiki:"
+        integrationLabel="Integration for Azure DevOps Wiki"
         integrationPlaceholder="Integration for Azure DevOps Wiki"
         credentialType="azuredevops"
       />

@@ -95,7 +95,7 @@ const MCPServerDetail = ({
 
       {!isUnavailable && isSelected && (
         <div className="flex flex-col gap-2">
-          <span className="font-geist-mono text-xs text-text-primary">Environment Variables:</span>
+          <span className="font-geist-mono text-xs text-text-primary">Environment Variables</span>
           <IntegrationSelector
             value={server.settings}
             tooltipPosition="left"

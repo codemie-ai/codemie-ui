@@ -578,7 +578,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
             <DetailsSidebarSection headline="CONFIGURATION">
               {dataSource.embeddings_model && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-xs text-text-quaternary">Embeddings model:</p>
+                  <p className="text-xs text-text-quaternary">Embeddings model</p>
                   <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-xs leading-5">
                     {appInfoStore.findEmbeddingLabel(dataSource.embeddings_model)}
                   </div>
@@ -586,7 +586,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
               )}
               {dataSource.summarization_model && isSummarizationIndexType && (
                 <div className="flex flex-col gap-2 mt-2">
-                  <p className="text-xs text-text-quaternary">Summarization model:</p>
+                  <p className="text-xs text-text-quaternary">Summarization model</p>
                   <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-xs leading-5">
                     {appInfoStore.findLLMLabel(dataSource.summarization_model)}
                   </div>
@@ -604,14 +604,14 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                 <DetailsSidebarSection headline="Reindex Type">
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-2">
-                      <p className="text-xs text-text-tertiary">Schedule:</p>
+                      <p className="text-xs text-text-tertiary">Schedule</p>
                       <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-xs leading-5">
                         {description}
                       </div>
                     </div>
                     {isCustom && (
                       <div className="flex flex-col gap-2">
-                        <p className="text-xs text-text-tertiary">Cron expression:</p>
+                        <p className="text-xs text-text-tertiary">Cron expression</p>
                         <code className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-xs leading-5 font-mono text-text-primary">
                           {dataSource.cron_expression}
                         </code>

@@ -83,7 +83,7 @@ const IndexTypeXray: FC<Props> = ({
         onOpenIntegrationPopup={openIntegrationPopup}
         onIntegrationSuccess={handleIntegrationSuccess}
         onIntegrationCancel={handleIntegrationCancel}
-        integrationLabel="Select integration for X-ray:"
+        integrationLabel="Integration for X-ray"
         integrationPlaceholder="Integration for X-ray"
         credentialType="xray"
       />
