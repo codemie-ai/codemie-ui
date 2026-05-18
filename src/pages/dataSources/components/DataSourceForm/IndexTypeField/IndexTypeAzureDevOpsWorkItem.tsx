@@ -64,9 +64,10 @@ const IndexTypeAzureDevOpsWorkItem: FC<Props> = ({
             name="wiqlQuery"
             className="w-full"
             rootClass="mb-3"
-            label="WIQL Query"
+            label="WIQL Query (Optional)"
             placeholder="e.g.: SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project"
             error={errors.wiqlQuery?.message}
+            hint="When left empty, all work items in your project will be indexed. To narrow down results, enter a custom WIQL query."
           />
         )}
       />

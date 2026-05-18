@@ -178,12 +178,7 @@ const baseValidationSchema = Yup.object({
 
   wikiName: Yup.string().optional(),
 
-  wiqlQuery: Yup.string().when('indexType', {
-    is: INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM,
-    then: (schema) =>
-      schema.required('WIQL Query is required').min(1, 'WIQL Query is required').trim(),
-    otherwise: (schema) => schema.optional(),
-  }),
+  wiqlQuery: Yup.string().optional(),
 
   setting_id: Yup.string().when(['indexType', 'sharepointAuthType'], {
     is: (indexType, sharepointAuthType) => {

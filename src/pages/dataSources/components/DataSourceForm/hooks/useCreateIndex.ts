@@ -346,7 +346,7 @@ export const useIndexCreation = ({
       request.project_name,
       request.project_space_visible,
       request.description,
-      request.wiql_query!,
+      request.wiql_query ?? '',
       request.setting_id as string,
       request.embedding_model as string | undefined,
       request.guardrail_assignments,
