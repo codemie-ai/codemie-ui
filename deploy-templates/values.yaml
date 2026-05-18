@@ -18,8 +18,6 @@ image:
 viteApiUrl: https://codemie.%%DOMAIN%%/code-assistant-api
 # -- AI/Run UI ENV. Set to local for dev development
 viteEnv: prod
-# -- Enable analytics feature in AI/Run UI
-viteEnableAnalytics: false
 # -- Enable user management feature in AI/Run UI
 viteEnableUserManagement: false
 # -- Enable budget management feature in AI/Run UI
