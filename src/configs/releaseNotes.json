@@ -1,5 +1,95 @@
 [
   {
+    "version": "2.27.0",
+    "date": "2026-05-18",
+    "issues": [
+      {
+        "title": "Update \"Top LLMs\" and \"Top CLI LLMs\" widgets on Insights tab and \"Models\" widget on CLI Insights tab with Top 10 / Top 20 / All selection",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12238",
+        "key": "EPMCDME-12238"
+      },
+      {
+        "title": "Cannot retrieve data from <datasource type> error when user attempts reindex from context menu",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12223",
+        "key": "EPMCDME-12223"
+      },
+      {
+        "title": "Analytics: Users dropdown shows dashes before user names, making values unreadable",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12137",
+        "key": "EPMCDME-12137"
+      },
+      {
+        "title": "MCP server configuration test fails in CodeMie agent when adding OneHub/OneHub Expertise MCP servers",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12135",
+        "key": "EPMCDME-12135"
+      },
+      {
+        "title": "Enable email_analyzis_tool to Accept .eml URLs and Optional Base64 Content",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12109",
+        "key": "EPMCDME-12109"
+      },
+      {
+        "title": "New tool \"Create comments\" for Azure DevOps Work Items",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12100",
+        "key": "EPMCDME-12100"
+      },
+      {
+        "title": "Implement Restricted Access Mode for MCP Servers, Enforcing Catalog Reference and Runtime Validation",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12085",
+        "key": "EPMCDME-12085"
+      },
+      {
+        "title": "Confluence data source: Monthly auto reindex (1st day at 00:00) is not executed despite scheduler configuration",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12034",
+        "key": "EPMCDME-12034"
+      },
+      {
+        "title": "Workflow Editor: \"Send email\" action saves \"Recipient Emails\" as string instead of array, causing execution failures",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12017",
+        "key": "EPMCDME-12017"
+      },
+      {
+        "title": "Local skill is not used when the same skill is installed both locally and globally",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11925",
+        "key": "EPMCDME-11925"
+      },
+      {
+        "title": "Workflow steps execute out of defined order causing workflow failure ('String_to_object' before 'Read_previous_report_from_git')",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11908",
+        "key": "EPMCDME-11908"
+      },
+      {
+        "title": "Automatic generation of Aliases for Integrations",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11743",
+        "key": "EPMCDME-11743"
+      },
+      {
+        "title": "Add personal spending widget to user details modal for selected user",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11686",
+        "key": "EPMCDME-11686"
+      },
+      {
+        "title": "Consistent labels without verbs and semicolons",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10901",
+        "key": "EPMCDME-10901"
+      }
+    ]
+  },
+  {
     "version": "2.26.0",
     "date": "2026-05-11",
     "issues": [
