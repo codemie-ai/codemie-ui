@@ -20,6 +20,7 @@ import CloseSvg from '@/assets/icons/cross.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import PlaySvg from '@/assets/icons/play.svg?react'
 import Button from '@/components/Button'
+import Textarea from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
 import { ButtonType } from '@/constants'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
@@ -170,8 +171,8 @@ const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = 
         submitDisabled={!continueMessage.trim()}
         className="w-full max-w-lg"
       >
-        <textarea
-          className="w-full h-32 resize-none rounded-lg border border-border-structural bg-surface-base-float p-3 text-sm text-text-primary placeholder:text-text-quaternary focus:outline-none focus:border-border-accent"
+        <Textarea
+          className="w-full h-32 resize-none mb-4"
           placeholder="Type a message for the next step..."
           value={continueMessage}
           onChange={(e) => setContinueMessage(e.target.value)}
