@@ -127,6 +127,7 @@ describe('WorkflowHeader', () => {
     interruptedStateId: null,
     isResuming: false,
     resume: vi.fn(),
+    resumeWithMessage: vi.fn(),
     refreshOutput: vi.fn(),
   }
 

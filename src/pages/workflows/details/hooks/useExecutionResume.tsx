@@ -16,6 +16,7 @@
 import { useCallback, useState } from 'react'
 
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
+import toaster from '@/utils/toaster'
 
 interface UseExecutionResumeParams {
   workflowId: string | null
@@ -25,6 +26,7 @@ interface UseExecutionResumeParams {
 type UseExecutionResumeReturn = {
   isResuming: boolean
   resume: () => void
+  resumeWithMessage: (message: string) => void
   refreshOutputKey: number
   refreshOutput: () => void
 }
@@ -43,15 +45,31 @@ const useExecutionResume = ({
     try {
       await workflowExecutionsStore.resumeWorkflowExecution(workflowId, executionId)
     } catch (error) {
-      console.log(error)
+      toaster.error('Failed to resume workflow execution')
     } finally {
       setIsResuming(false)
     }
   }, [workflowId, executionId])
 
+  const resumeWithMessage = useCallback(
+    async (message: string) => {
+      if (!executionId || !workflowId) return
+
+      setIsResuming(true)
+      try {
+        await workflowExecutionsStore.resumeWorkflowExecution(workflowId, executionId, message)
+      } catch (error) {
+        toaster.error('Failed to resume workflow execution')
+      } finally {
+        setIsResuming(false)
+      }
+    },
+    [workflowId, executionId]
+  )
+
   const refreshOutput = useCallback(() => setOutputRefreshKey((prev) => prev + 1), [])
 
-  return { isResuming, resume, refreshOutputKey, refreshOutput }
+  return { isResuming, resume, resumeWithMessage, refreshOutputKey, refreshOutput }
 }
 
 export default useExecutionResume

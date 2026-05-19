@@ -15,6 +15,7 @@
 
 import { proxy, ref } from 'valtio'
 
+import { ROLE_USER } from '@/constants'
 import { ChatRequest, HistoryMessage, ChatGenerationOptions } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
 import { Conversation, ChatMessage, Thought } from '@/types/entity/conversation'
@@ -59,7 +60,7 @@ interface ChatGenerationStoreType {
   deleteChatMessage: (chatId: string, historyIndex: number) => Promise<void>
 
   stopChatGeneration: (chatId: string) => void
-  resumeWorkflowExecution: () => Promise<void>
+  resumeWorkflowExecution: (userInput?: string) => Promise<void>
   abortWorkflowChat: (chatId: string) => Promise<void>
   updateWorkflowChatOutput: (chatId: string, output: string) => Promise<void>
   getAuthenticatingPromptIds: (chatId: string) => string[]
@@ -120,7 +121,7 @@ interface ChatGenerationStoreType {
     chat: Conversation,
     entityId: string,
     data: ChatRequest
-  ) => { endpoint: string; requestData?: any }
+  ) => { endpoint: string; requestData?: any; method?: string }
   _handleRequestError: (historyItem: ChatMessage, error: any, startTime: Date) => void
   _handleNonStreamResponse: (
     reader: Response,
@@ -395,7 +396,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     assistant: Assistant
   ): ChatMessage {
     return {
-      role: 'User',
+      role: ROLE_USER,
       request: message,
       requestRaw: messageRaw,
       createdAt: new Date().toISOString(),
@@ -523,23 +524,48 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
   },
 
-  async resumeWorkflowExecution() {
+  async resumeWorkflowExecution(userInput?: string) {
     const chat = chatsStore.currentChat
     if (!chat) return Promise.resolve()
 
-    const historyIndex = chat.history.length - 1
-    const messageIndex = chat.history[historyIndex].length - 1
+    chat.isInterrupted = false
 
-    chat.history[historyIndex][messageIndex].thoughts?.forEach((thought) => {
+    const lastHistoryIndex = chat.history.length - 1
+    const lastMessageIndex = chat.history[lastHistoryIndex].length - 1
+    const lastHistoryItem = chat.history[lastHistoryIndex][lastMessageIndex]
+
+    lastHistoryItem.thoughts?.forEach((thought) => {
       if (thought.interrupted) thought.interrupted = false
     })
+
+    const lastMessage = chat.history.at(-1)?.at(-1)
 
     const data: ChatRequest = {
       conversationId: chat.id,
       resumeExecution: true,
+      workflowId: lastMessage?.assistantId ?? undefined,
+      executionId: lastMessage?.executionId ?? undefined,
+      ...(userInput ? { resumeExecutionInput: userInput } : {}),
     } as ChatRequest
 
-    return chatGenerationStore._sendRequest(chat, historyIndex, messageIndex, data)
+    if (userInput) {
+      const newHistoryItem: ChatMessage = {
+        role: ROLE_USER,
+        request: userInput,
+        requestRaw: userInput,
+        createdAt: new Date().toISOString(),
+        inProgress: true,
+        assistantId: lastHistoryItem.assistantId,
+        assistant: lastHistoryItem.assistant,
+        executionId: null,
+      }
+      chat.history.push([newHistoryItem])
+      const newHistoryIndex = chat.history.length - 1
+      return chatGenerationStore._sendRequest(chat, newHistoryIndex, 0, data)
+    }
+
+    lastHistoryItem.inProgress = true
+    return chatGenerationStore._sendRequest(chat, lastHistoryIndex, lastMessageIndex, data)
   },
 
   async abortWorkflowChat(chatId) {
@@ -670,7 +696,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const historyItem = chat.history[historyIndex][messageIndex]
     const entityId = historyItem.assistantId ?? (chat as any).assistantID
 
-    const { endpoint, requestData } = chatGenerationStore._prepareRequestData(chat, entityId, data)
+    const { endpoint, requestData, method } = chatGenerationStore._prepareRequestData(
+      chat,
+      entityId,
+      data
+    )
 
     const abortController = ref(new AbortController())
     const startTime = new Date()
@@ -686,7 +716,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     let reader: ReadableStreamDefaultReader | Response
 
     try {
-      reader = await api.stream(endpoint, requestData, abortController, 'POST')
+      reader = await api.stream(endpoint, requestData, abortController, method ?? 'POST')
     } catch (error: any) {
       const promptRows = parseMCPAuthRequiredErrorPayload(error)
 
@@ -718,7 +748,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
     if (data.resumeExecution) {
       return {
-        endpoint: `v1/conversations/${data.conversationId}/resume`,
+        endpoint: `v1/workflows/${data.workflowId}/executions/${data.executionId}/resume?stream=true`,
+        requestData: data.resumeExecutionInput
+          ? { user_input: data.resumeExecutionInput }
+          : undefined,
+        method: 'PUT',
       }
     }
 

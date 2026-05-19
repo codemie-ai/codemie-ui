@@ -145,7 +145,11 @@ interface WorkflowExecutionsStoreType {
     options: ExportWorkflowExecutionOptions
   ) => Promise<void>
 
-  resumeWorkflowExecution: (workflowId: string, executionId: string) => Promise<Response>
+  resumeWorkflowExecution: (
+    workflowId: string,
+    executionId: string,
+    userInput?: string
+  ) => Promise<Response>
 
   updateWorkflowExecutionStateOutput: (
     workflowId: string,
@@ -804,9 +808,13 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
    * @param executionId - The execution ID
    * @returns API response
    */
-  async resumeWorkflowExecution(workflowId, executionId) {
+  async resumeWorkflowExecution(workflowId, executionId, userInput?: string) {
     try {
-      const response = await api.put(`v1/workflows/${workflowId}/executions/${executionId}/resume`)
+      const body = userInput ? { user_input: userInput } : undefined
+      const response = await api.put(
+        `v1/workflows/${workflowId}/executions/${executionId}/resume`,
+        body
+      )
 
       // Changed: Added comment to explain the sleep
       // Wait for backend to process resume request before refreshing

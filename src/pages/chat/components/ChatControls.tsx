@@ -14,11 +14,9 @@
 //
 
 import { FC, useState } from 'react'
-import { useSnapshot } from 'valtio'
 
 import CloseSvg from '@/assets/icons/cross.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
-import PlaySvg from '@/assets/icons/play.svg?react'
 import Button from '@/components/Button'
 import Popup from '@/components/Popup'
 import { ButtonType } from '@/constants'
@@ -33,8 +31,6 @@ interface ChatControlsProps {
 }
 
 const ChatControls: FC<ChatControlsProps> = ({ chatId }) => {
-  const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
-  const [inProgress, setInProgress] = useState(false)
   const [isPopupVisible, setPopupVisible] = useState(false)
 
   const handleAbort = async () => {
@@ -42,23 +38,11 @@ const ChatControls: FC<ChatControlsProps> = ({ chatId }) => {
     toaster.info('Chat execution aborted')
   }
 
-  const handleResume = async () => {
-    if (!currentChat) return
-
-    setInProgress(true)
-    await chatGenerationStore.resumeWorkflowExecution()
-    setInProgress(false)
-  }
-
   const closeEditOutputPopup = () => setPopupVisible(false)
 
   const handleUpdate = () => {
     chatsStore.getChat(chatId)
     closeEditOutputPopup()
-  }
-
-  if (inProgress) {
-    return <></>
   }
 
   return (
@@ -76,19 +60,15 @@ const ChatControls: FC<ChatControlsProps> = ({ chatId }) => {
             setPopupVisible(true)
           }}
         >
-          <EditSvg /> Edit
-        </Button>
-
-        <Button variant={ButtonType.PRIMARY} onClick={handleResume}>
-          <PlaySvg /> Continue
+          <EditSvg /> Edit Output
         </Button>
       </div>
 
       <Popup
         hideFooter
         header="Edit Output"
-        className="w-full max-w-2xl"
-        bodyClassName="pb-4"
+        className="w-full max-w-2xl h-[600px]"
+        bodyClassName="pb-4 flex flex-col"
         visible={isPopupVisible}
         onHide={closeEditOutputPopup}
       >

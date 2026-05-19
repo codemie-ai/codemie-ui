@@ -13,8 +13,9 @@
 // limitations under the License.
 //
 
-import { FC, useState } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 
+import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
 import CloseSvg from '@/assets/icons/cross.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import PlaySvg from '@/assets/icons/play.svg?react'
@@ -39,9 +40,31 @@ const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = 
   className,
   small,
 }) => {
-  const { workflowId, executionId, isResuming, executionStatus, resume, refreshOutput } =
-    useExecutionsContext()
+  const {
+    workflowId,
+    executionId,
+    isResuming,
+    executionStatus,
+    resume,
+    resumeWithMessage,
+    refreshOutput,
+  } = useExecutionsContext()
   const [isEditOutputPopupVisible, setIsEditOutputPopupVisible] = useState(false)
+  const [isContinueDropdownOpen, setIsContinueDropdownOpen] = useState(false)
+  const [isContinueWithMessagePopupVisible, setIsContinueWithMessagePopupVisible] = useState(false)
+  const [continueMessage, setContinueMessage] = useState('')
+  const continueDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isContinueDropdownOpen) return () => {}
+    const handleClickOutside = (e: MouseEvent) => {
+      if (continueDropdownRef.current && !continueDropdownRef.current.contains(e.target as Node)) {
+        setIsContinueDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isContinueDropdownOpen])
 
   const abortWorkflow = async () => {
     if (!workflowId || !executionId) return
@@ -51,6 +74,21 @@ const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = 
 
   const resumeWorkflow = async () => {
     resume()
+  }
+
+  const openContinueWithMessagePopup = () => {
+    setIsContinueDropdownOpen(false)
+    setIsContinueWithMessagePopupVisible(true)
+  }
+
+  const closeContinueWithMessagePopup = () => {
+    setIsContinueWithMessagePopupVisible(false)
+    setContinueMessage('')
+  }
+
+  const handleContinueWithMessage = () => {
+    resumeWithMessage(continueMessage.trim())
+    closeContinueWithMessagePopup()
   }
 
   const closeEditOutputPopup = () => setIsEditOutputPopupVisible(false)
@@ -90,16 +128,56 @@ const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = 
           {!small && 'Edit'}
         </Button>
 
-        <Button
-          variant={ButtonType.PRIMARY}
-          onClick={resumeWorkflow}
-          disabled={disabled}
-          className={buttonClassname}
-        >
-          <PlaySvg className={iconClassname} />
-          {!small && 'Continue'}
-        </Button>
+        <div ref={continueDropdownRef} className="relative flex">
+          <Button
+            variant={ButtonType.PRIMARY}
+            onClick={resumeWorkflow}
+            disabled={disabled}
+            className={cn(buttonClassname, 'rounded-r-none')}
+          >
+            <PlaySvg className={iconClassname} />
+            {!small && 'Continue'}
+          </Button>
+          <span className="self-stretch w-px bg-white/20" />
+          <Button
+            variant={ButtonType.PRIMARY}
+            disabled={disabled}
+            className={cn(buttonClassname, 'rounded-l-none px-2')}
+            onClick={() => setIsContinueDropdownOpen((prev) => !prev)}
+            aria-label="Continue options"
+          >
+            <ChevronDownSvg className="size-3.5" />
+          </Button>
+          {isContinueDropdownOpen && (
+            <div className="absolute top-full right-0 mt-1 z-10 bg-surface-base-secondary py-1 rounded-md shadow-md px-1 min-w-max">
+              <button
+                className="flex w-full text-left text-sm px-2 py-2 rounded-md hover:bg-surface-specific-dropdown-hover hover:text-text-accent"
+                onClick={openContinueWithMessagePopup}
+              >
+                Continue with message
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      <Popup
+        header="Continue with message"
+        visible={isContinueWithMessagePopupVisible}
+        onHide={closeContinueWithMessagePopup}
+        onSubmit={handleContinueWithMessage}
+        submitText="Continue"
+        submitDisabled={!continueMessage.trim()}
+        className="w-full max-w-lg"
+      >
+        <textarea
+          className="w-full h-32 resize-none rounded-lg border border-border-structural bg-surface-base-float p-3 text-sm text-text-primary placeholder:text-text-quaternary focus:outline-none focus:border-border-accent"
+          placeholder="Type a message for the next step..."
+          value={continueMessage}
+          onChange={(e) => setContinueMessage(e.target.value)}
+          autoFocus
+        />
+      </Popup>
 
       {workflowId && executionId && stateId && (
         <Popup

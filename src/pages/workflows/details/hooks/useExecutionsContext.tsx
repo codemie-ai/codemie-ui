@@ -24,6 +24,7 @@ export interface ExecutionContextValue {
   interruptedStateId: string | null
   isResuming: boolean
   resume: () => void
+  resumeWithMessage: (message: string) => void
   refreshOutput: () => void
 }
 

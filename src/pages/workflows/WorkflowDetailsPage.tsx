@@ -96,15 +96,17 @@ const WorkflowDetailsPage = () => {
       : null
   }, [extendedStates, execution])
 
-  const { isResuming, resume, refreshOutputKey, refreshOutput } = useExecutionResume({
-    workflowId,
-    executionId,
-  })
+  const { isResuming, resume, resumeWithMessage, refreshOutputKey, refreshOutput } =
+    useExecutionResume({
+      workflowId,
+      executionId,
+    })
 
   const ctx: ExecutionContextValue = useMemo(
     () => ({
       isResuming,
       resume,
+      resumeWithMessage,
       refreshOutput,
       workflowId,
       executionId,
@@ -115,6 +117,7 @@ const WorkflowDetailsPage = () => {
       execution?.overall_status,
       isResuming,
       resume,
+      resumeWithMessage,
       refreshOutput,
       workflowId,
       executionId,

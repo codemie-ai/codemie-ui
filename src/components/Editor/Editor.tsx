@@ -127,6 +127,13 @@ const Editor = forwardRef<EditorRef, EditorProps>(
 
     useEffect(() => {
       const quill = editorRef.current?.getQuill()
+      if (quill && placeholder !== undefined) {
+        quill.root.setAttribute('data-placeholder', placeholder)
+      }
+    }, [placeholder])
+
+    useEffect(() => {
+      const quill = editorRef.current?.getQuill()
       if (quill && value.messageRaw === '') {
         const currentContent = quill.root.innerHTML
         if (currentContent.trim() !== '') {

@@ -76,7 +76,9 @@ export interface ChatRequest {
   enable_web_search?: boolean | null
   enable_code_interpreter?: boolean | null
   resumeExecution?: boolean
+  resumeExecutionInput?: string
   executionId?: string
+  workflowId?: string
 }
 
 export interface ChatRequestInput {

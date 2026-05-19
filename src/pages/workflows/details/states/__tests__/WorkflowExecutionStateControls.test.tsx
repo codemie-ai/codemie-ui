@@ -92,6 +92,7 @@ describe('WorkflowExecutionStateControls', () => {
     interruptedStateId: null,
     isResuming: false,
     resume: vi.fn(),
+    resumeWithMessage: vi.fn(),
     refreshOutput: vi.fn(),
   }
 
@@ -159,7 +160,7 @@ describe('WorkflowExecutionStateControls', () => {
     // Buttons should be disabled while resuming
     expect(screen.getByText('Abort')).toBeDisabled()
     expect(screen.getByText('Edit')).toBeDisabled()
-    expect(screen.getByText('Continue')).toBeDisabled()
+    expect(screen.getByText('Continue').closest('button')).toBeDisabled()
   })
 
   it('opens Edit Output popup when Edit is clicked', async () => {
@@ -220,7 +221,7 @@ describe('WorkflowExecutionStateControls', () => {
 
     expect(screen.getByText('Abort')).toBeDisabled()
     expect(screen.getByText('Edit')).toBeDisabled()
-    expect(screen.getByText('Continue')).toBeDisabled()
+    expect(screen.getByText('Continue').closest('button')).toBeDisabled()
   })
 
   it('passes correct props to WorkflowExecutionEditOutputForm', async () => {

@@ -15,9 +15,9 @@
 
 import './ChatPrompt.scss'
 import { FC, MouseEvent, useEffect, useRef, useState } from 'react'
-import { twJoin } from 'tailwind-merge'
 import { useSnapshot } from 'valtio'
 
+import PlaySvg from '@/assets/icons/play.svg?react'
 import StopSvg from '@/assets/icons/stop.svg?react'
 import Button from '@/components/Button'
 import Editor, { EditorRef } from '@/components/Editor/Editor'
@@ -45,6 +45,30 @@ import DynamicToolsSettings from './DynamicToolsSettings'
 import { useChatContext } from '../../hooks/useChatContext'
 import { useFilePaste } from '../../hooks/useFilePaste'
 import ChatControls from '../ChatControls'
+
+const PROMPT_MODES = {
+  DEFAULT: 'default',
+  WORKFLOW: 'workflow',
+  WORKFLOW_INTERRUPTED: 'workflow_interrupted',
+} as const
+
+type PromptMode = (typeof PROMPT_MODES)[keyof typeof PROMPT_MODES]
+
+const PLACEHOLDERS: Record<PromptMode, string> = {
+  [PROMPT_MODES.DEFAULT]: "Ask anything or add an assistant with '@'",
+  [PROMPT_MODES.WORKFLOW]: 'Ask anything',
+  [PROMPT_MODES.WORKFLOW_INTERRUPTED]: 'Leave empty or type a message for the next step',
+}
+
+const SUBMIT_LABELS: Record<PromptMode, React.ReactNode> = {
+  [PROMPT_MODES.DEFAULT]: 'Send',
+  [PROMPT_MODES.WORKFLOW]: 'Send',
+  [PROMPT_MODES.WORKFLOW_INTERRUPTED]: (
+    <>
+      <PlaySvg /> Continue
+    </>
+  ),
+}
 
 const ChatPrompt: FC = () => {
   const editorRef = useRef<EditorRef>(null)
@@ -77,17 +101,30 @@ const ChatPrompt: FC = () => {
   const isInProgress = currentChat?.history.at(-1)?.at(-1)?.inProgress
   const isInterrupted = currentChat?.isInterrupted
 
+  let promptMode: PromptMode = PROMPT_MODES.DEFAULT
+  if (isInterrupted) promptMode = PROMPT_MODES.WORKFLOW_INTERRUPTED
+  else if (currentChat?.isWorkflow) promptMode = PROMPT_MODES.WORKFLOW
+
+  const placeholder = PLACEHOLDERS[promptMode]
+  const submitLabel = SUBMIT_LABELS[promptMode]
+
   const canSubmit = (() => {
+    if (isInterrupted) return !isInProgress
     const hasFiles = !!files.length
     const hasPrompt = prompt.message.length > 0
-
-    return (
-      (hasPrompt || hasFiles) && !fileUpload.hasActiveUploads && !isInProgress && !isInterrupted
-    )
+    return (hasPrompt || hasFiles) && !fileUpload.hasActiveUploads && !isInProgress
   })()
 
   const handleSubmit = () => {
     if (!canSubmit) return
+
+    if (isInterrupted) {
+      const userInput = prompt.message.trim() || undefined
+      setPrompt({ message: '', messageRaw: '' })
+      chatGenerationStore.resumeWorkflowExecution(userInput)
+      return
+    }
+
     let { message } = prompt
     const { messageRaw } = prompt
 
@@ -136,14 +173,13 @@ const ChatPrompt: FC = () => {
   }
 
   const focusEditor = (e: MouseEvent<HTMLDivElement>) => {
-    if (isInterrupted) return
     if (e.target === e.currentTarget) editorRef.current?.focus()
   }
 
   const isVoiceRecorderVisible = !!userData?.stt_support && !isInProgress && !isInterrupted
 
   useEffect(() => {
-    if (!isInterrupted) editorRef.current?.focus()
+    editorRef.current?.focus()
   }, [currentChat?.id])
 
   const hasChatHistory = !!currentChat?.history.length
@@ -159,11 +195,13 @@ const ChatPrompt: FC = () => {
         {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
         <div className="w-full flex flex-col px-6 scrollbar-gutter overflow-y-auto min-h-32 h-fit -translate-y-3 z-10 shrink-0">
           <div
-            className={twJoin(
-              'p-px rounded-xl border-gradient promp-shadow w-full max-w-5xl mx-auto prompt-border-gradient min-h-fit',
-              isEditorFocused && 'prompt-border-gradient-focused',
-              isInProgress && 'prompt-border-gradient-in-progress',
-              isInterrupted && 'opacity-60 pointer-events-none'
+            className={cn(
+              'box-content p-px rounded-xl w-full max-w-5xl mx-auto min-h-fit',
+              !isInterrupted && 'border-gradient promp-shadow prompt-border-gradient',
+              !isInterrupted && isEditorFocused && 'prompt-border-gradient-focused',
+              !isInterrupted && isInProgress && 'prompt-border-gradient-in-progress',
+              isInterrupted && 'bg-interrupted-primary',
+              isInProgress && 'opacity-60 pointer-events-none'
             )}
           >
             <div
@@ -171,8 +209,7 @@ const ChatPrompt: FC = () => {
               onMouseDown={handleMouseDown}
               data-onboarding="chat-input"
               className={cn(
-                'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated min-h-32 max-h-64',
-                !isInterrupted && 'cursor-text'
+                'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated min-h-32 max-h-64 cursor-text'
               )}
             >
               <Editor
@@ -181,15 +218,11 @@ const ChatPrompt: FC = () => {
                 withMentions={!currentChat?.isWorkflow}
                 onChange={setPrompt}
                 onAddFiles={fileUpload.addFiles}
-                disabled={isInterrupted}
+                disabled={!!isInProgress}
                 onSubmit={handleSubmit}
                 onFocusChange={setIsEditorFocused}
                 onEditorLoad={setupPasteHandler}
-                placeholder={
-                  currentChat?.isWorkflow
-                    ? 'Ask anything'
-                    : "Ask anything or add an assistant with '@'"
-                }
+                placeholder={placeholder}
               />
 
               <div
@@ -198,7 +231,7 @@ const ChatPrompt: FC = () => {
                 className="flex justify-between items-center pl-2"
               >
                 <div className="flex items-center gap-2">
-                  <ChatPromptFileUpload {...fileUpload} files={files} />
+                  {!isInterrupted && <ChatPromptFileUpload {...fileUpload} files={files} />}
                   {!currentChat?.isWorkflow && !isSharedPage && (
                     <>
                       <DynamicToolsSettings disabled={!!isInProgress} />
@@ -230,7 +263,7 @@ const ChatPrompt: FC = () => {
                       size={ButtonSize.LARGE}
                       className="select-none"
                     >
-                      Send
+                      {submitLabel}
                     </Button>
                   )}
                 </div>
