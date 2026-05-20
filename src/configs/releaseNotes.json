@@ -1,5 +1,83 @@
 [
   {
+    "version": "2.28.0",
+    "date": "2025-05-20",
+    "issues": [
+      {
+        "title": "Platform datasource indexing fails with `AttributeError: 'CreatedByUser' object has no attribute 'email'` during processing context setup",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12359",
+        "key": "EPMCDME-12359"
+      },
+      {
+        "title": "Add Gemini 3.5 Flash model to CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12354",
+        "key": "EPMCDME-12354"
+      },
+      {
+        "title": "TA Desk Bug Verification workflow fails with \"IndexError: list index out of range\"",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12344",
+        "key": "EPMCDME-12344"
+      },
+      {
+        "title": "User search in Analytics fails on prod with asyncpg InterfaceError when retrieving large users list",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12338",
+        "key": "EPMCDME-12338"
+      },
+      {
+        "title": "Workflow editor does not persist empty description after clearing existing value",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12335",
+        "key": "EPMCDME-12335"
+      },
+      {
+        "title": "Confluence data source: Monthly auto reindex (1st day at 00:00) is not executed despite scheduler configuration",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12034",
+        "key": "EPMCDME-12034"
+      },
+      {
+        "title": "Parallel tool calls can overload backend, show completed state while still running, and eventually fail by timeout",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12012",
+        "key": "EPMCDME-12012"
+      },
+      {
+        "title": "On Budget Override popup user Id is displayed instead of First- Last Name",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11960",
+        "key": "EPMCDME-11960"
+      },
+      {
+        "title": "Make 'WIQL Query' attribute optional when creating new Azure DevOps Datasource",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11910",
+        "key": "EPMCDME-11910"
+      },
+      {
+        "title": "Support Streaming Resume for Workflow Executions (`PUT /resume` endpoint) in CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11341",
+        "key": "EPMCDME-11341"
+      },
+      {
+        "title": "Tool Usage table is empty on Analytics page when project filter is applied",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10067",
+        "key": "EPMCDME-10067"
+      },
+      {
+        "title": "Ability to set a hint or guidance text for the workflow prompt input field",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8248",
+        "key": "EPMCDME-8248"
+      }
+    ]
+  },
+  {
     "version": "2.27.0",
     "date": "2026-05-18",
     "issues": [
@@ -44,12 +122,6 @@
         "type": "STORY",
         "link": "https://jiraeu.epam.com/browse/EPMCDME-12085",
         "key": "EPMCDME-12085"
-      },
-      {
-        "title": "Confluence data source: Monthly auto reindex (1st day at 00:00) is not executed despite scheduler configuration",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-12034",
-        "key": "EPMCDME-12034"
       },
       {
         "title": "Workflow Editor: \"Send email\" action saves \"Recipient Emails\" as string instead of array, causing execution failures",
