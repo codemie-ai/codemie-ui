@@ -26,7 +26,7 @@ A Helm chart for AI/Run UI
 | image.repository | string | `""` | Repository to use for the AI/Run UI. |
 | image.tag | string | `""` | Overrides the image tag whose default is the chart appVersion. |
 | imagePullSecrets | list | `[]` | Secrets with credentials to pull images from a private registry. |
-| ingress.annotations | object | `{"nginx.ingress.kubernetes.io/auth-response-headers":"X-Auth-Request-Access-Token,Authorization","nginx.ingress.kubernetes.io/auth-signin":"https://$host/oauth2/start?rd=$escaped_request_uri","nginx.ingress.kubernetes.io/auth-url":"http://oauth2-proxy.oauth2-proxy.svc.cluster.local:80/oauth2/auth","nginx.ingress.kubernetes.io/proxy-buffer-size":"64k","nginx.ingress.kubernetes.io/rewrite-target":"/$1"}` | Additional ingress annotations |
+| ingress.annotations | object | `{"nginx.ingress.kubernetes.io/proxy-buffer-size":"64k","nginx.ingress.kubernetes.io/rewrite-target":"/$1"}` | Additional ingress annotations |
 | ingress.enabled | bool | `true` | Enable an ingress resource for the AI/Run UI |
 | ingress.host | string | `"codemie.%%DOMAIN%%"` | AI/Run UI hostname |
 | ingress.ingressClassName | string | `"nginx"` | Defines which ingress controller will implement the resource |
