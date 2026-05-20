@@ -34,6 +34,8 @@ vi.mock('@/utils/api', async (importOriginal) => {
       patch: vi.fn().mockResolvedValue({ status: 200, json: () => Promise.resolve(null) }),
       handleError: mod.default.handleError,
     },
+    parseContentDispositionFilename: mod.parseContentDispositionFilename,
+    sanitizeFileName: mod.sanitizeFileName,
   }
 })
 

@@ -21,6 +21,42 @@ import { getMode, getIsLocalAuth } from '@/utils/utils'
 export const ABORT_ERROR = 'AbortError'
 export const DEFAULT_ERROR_MESSAGE = 'Oops! Something went wrong'
 
+export function parseContentDispositionFilename(header: string | null): string | undefined {
+  let result: string | undefined
+
+  if (header) {
+    const rfc5987Match = header.match(/filename\*=(?:UTF-8''|utf-8'')([^;]+)/i)
+    if (rfc5987Match) {
+      try {
+        result = decodeURIComponent(rfc5987Match[1].trim())
+      } catch {
+        // fall through to plain filename
+      }
+    }
+
+    if (!result) {
+      const plainMatch = header.match(/filename="?([^";]+)"?/i)
+      if (plainMatch) {
+        result = plainMatch[1].trim()
+      }
+    }
+  }
+
+  return result
+}
+
+export function sanitizeFileName(name: string | undefined): string | undefined {
+  /* eslint-disable no-control-regex */
+  const result = name
+    ? name
+        .replace(/[\x00-\x1f\x7f/\\]/g, '_')
+        .replace(/^[.\s]+/, '')
+        .trim()
+    : ''
+  /* eslint-enable no-control-regex */
+  return result || undefined
+}
+
 const DEV_USER_ID = 'dev-codemie-user'
 
 interface RequestOptions extends RequestInit {
@@ -201,7 +237,7 @@ class API {
 
       if (!fileName) {
         const contentDisposition = response.headers.get('content-disposition')
-        fileName = contentDisposition?.split('filename=')[1]
+        fileName = sanitizeFileName(parseContentDispositionFilename(contentDisposition))
       }
 
       a.style.display = 'none'

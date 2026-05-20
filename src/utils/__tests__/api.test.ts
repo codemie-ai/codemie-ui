@@ -15,7 +15,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import api from '@/utils/api'
+import api, { parseContentDispositionFilename, sanitizeFileName } from '@/utils/api'
 import toaster from '@/utils/toaster'
 
 describe('handleError', () => {
@@ -49,5 +49,109 @@ describe('handleError', () => {
     api.handleError({} as any)
 
     expect(toaster.error).toHaveBeenCalledWith('Oops! Something went wrong')
+  })
+})
+
+describe('parseContentDispositionFilename', () => {
+  it('should return undefined when header is null', () => {
+    expect(parseContentDispositionFilename(null)).toBeUndefined()
+  })
+
+  it('should return undefined when header is an empty string', () => {
+    expect(parseContentDispositionFilename('')).toBeUndefined()
+  })
+
+  it('should return undefined when header has no filename', () => {
+    expect(parseContentDispositionFilename('attachment')).toBeUndefined()
+  })
+
+  it('should parse a quoted plain filename', () => {
+    expect(parseContentDispositionFilename('attachment; filename="report.pdf"')).toBe('report.pdf')
+  })
+
+  it('should parse an unquoted plain filename', () => {
+    expect(parseContentDispositionFilename('attachment; filename=report.pdf')).toBe('report.pdf')
+  })
+
+  it('should decode an RFC 5987 UTF-8 encoded filename (uppercase UTF-8)', () => {
+    expect(
+      parseContentDispositionFilename("attachment; filename*=UTF-8''%D0%B7%D0%B2%D1%96%D1%82.pdf")
+    ).toBe('звіт.pdf')
+  })
+
+  it('should decode an RFC 5987 filename with lowercase utf-8 prefix', () => {
+    expect(parseContentDispositionFilename("attachment; filename*=utf-8''My%20Report.pdf")).toBe(
+      'My Report.pdf'
+    )
+  })
+
+  it('should prefer RFC 5987 over plain filename when both are present', () => {
+    expect(
+      parseContentDispositionFilename(
+        'attachment; filename="fallback.pdf"; filename*=UTF-8\'\'%D0%B7%D0%B2%D1%96%D1%82.pdf'
+      )
+    ).toBe('звіт.pdf')
+  })
+
+  it('should fall back to plain filename when RFC 5987 percent-encoding is invalid', () => {
+    expect(
+      parseContentDispositionFilename(
+        'attachment; filename*=UTF-8\'\'%GG.pdf; filename="fallback.pdf"'
+      )
+    ).toBe('fallback.pdf')
+  })
+})
+
+describe('sanitizeFileName', () => {
+  it('should return undefined when name is undefined', () => {
+    expect(sanitizeFileName(undefined)).toBeUndefined()
+  })
+
+  it('should return undefined when name is an empty string', () => {
+    expect(sanitizeFileName('')).toBeUndefined()
+  })
+
+  it('should leave a safe filename unchanged', () => {
+    expect(sanitizeFileName('report.pdf')).toBe('report.pdf')
+  })
+
+  it('should preserve Cyrillic characters', () => {
+    expect(sanitizeFileName('звіт_2024.pdf')).toBe('звіт_2024.pdf')
+  })
+
+  it('should preserve spaces and parentheses', () => {
+    expect(sanitizeFileName('My Report (Q3).pdf')).toBe('My Report (Q3).pdf')
+  })
+
+  it('should replace forward slashes with underscores', () => {
+    // Each '/' → '_'; then the leading dots are stripped by the second replace,
+    // giving '_.._.._etc_passwd'
+    expect(sanitizeFileName('../../../etc/passwd')).toBe('_.._.._etc_passwd')
+  })
+
+  it('should replace backslashes with underscores', () => {
+    expect(sanitizeFileName('file\\name.pdf')).toBe('file_name.pdf')
+  })
+
+  it('should replace null bytes with underscores', () => {
+    expect(sanitizeFileName('file\x00name.pdf')).toBe('file_name.pdf')
+  })
+
+  it('should replace control characters with underscores', () => {
+    expect(sanitizeFileName('file\x1fname.pdf')).toBe('file_name.pdf')
+  })
+
+  it('should strip a leading dot', () => {
+    expect(sanitizeFileName('.hidden')).toBe('hidden')
+  })
+
+  it('should strip leading spaces', () => {
+    expect(sanitizeFileName('   spaces.pdf')).toBe('spaces.pdf')
+  })
+
+  it('should return undefined when the name becomes empty after sanitization', () => {
+    // Leading dots stripped by the second replace, trailing spaces stripped by trim()
+    // — the result is an empty string which coerces to undefined via || undefined
+    expect(sanitizeFileName('.   ')).toBeUndefined()
   })
 })
