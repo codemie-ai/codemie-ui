@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 
 import { SKILL_FILTER_INITIAL_STATE } from '@/constants/skills'
 import { SkillsFilters } from '@/types/entity/skill'
@@ -35,7 +35,14 @@ export const useSkillsFilters = ({ scope }: UseSkillsFiltersProps) => {
     return getFilters<SkillsFilters>(getFilterKey())
   }, [getFilterKey])
 
-  const [filterState, setFilterState] = useState(getSavedFilters())
+  const [prevScope, setPrevScope] = useState(scope)
+  const [filterState, setFilterState] = useState(getSavedFilters)
+
+  // Render-phase reset: avoids a stale render cycle that would fire a duplicate API request
+  if (prevScope !== scope) {
+    setPrevScope(scope)
+    setFilterState(getSavedFilters())
+  }
 
   // Merge saved filters with initial state to ensure all keys exist
   const filters = useMemo(() => {
@@ -48,12 +55,6 @@ export const useSkillsFilters = ({ scope }: UseSkillsFiltersProps) => {
       return acc
     }, {} as SkillsFilters)
   }, [filterState])
-
-  // React to scope changes - reload filters when scope changes
-  useEffect(() => {
-    const newFilters = getSavedFilters()
-    setFilterState(newFilters)
-  }, [scope, getSavedFilters])
 
   // Handle filter changes
   const handleFilterChange = useCallback(
