@@ -26,6 +26,7 @@ export const baseWorkflowSchema = Yup.object()
     name: Yup.string().required('Name is required'),
     project: Yup.string().nullable(),
     description: Yup.string(),
+    start_hint: Yup.string().nullable().transform((value) => (value === '' ? null : value)),
     icon_url: Yup.string()
       .url('Icon URL must be a valid URL')
       .nullable()
@@ -45,6 +46,7 @@ export interface WorkflowFormValues extends GuardrailAssignmentsSchema {
   name: string
   project?: string | null
   description?: string
+  start_hint?: string | null
   icon_url?: string | null
   shared?: boolean
 }

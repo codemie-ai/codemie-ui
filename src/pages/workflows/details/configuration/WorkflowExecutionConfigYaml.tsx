@@ -108,6 +108,7 @@ const WorkflowExecutionConfigYaml: FC<WorkflowExecutionConfigYamlProps> = ({
         workflowId={workflow.id}
         initialPrompt={execution.prompt}
         initialFiles={initialFiles}
+        startHint={workflow.start_hint}
         isVisible={isRunPopupVisible}
         onStart={closePopups}
         onHide={() => setIsRunPopupVisible(false)}

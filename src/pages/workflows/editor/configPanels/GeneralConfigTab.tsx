@@ -63,6 +63,7 @@ const GeneralConfigTab = forwardRef(
           name: defaultValues.name ?? '',
           project: defaultValues.project ?? '',
           description: defaultValues.description ?? '',
+          start_hint: defaultValues.start_hint ?? '',
           icon_url: defaultValues.icon_url ?? '',
           shared: defaultValues.shared ?? false,
           guardrail_assignments: defaultValues.guardrail_assignments ?? [],
@@ -176,6 +177,24 @@ const GeneralConfigTab = forwardRef(
                   rows={4}
                   error={fieldState.error?.message}
                   {...field}
+                />
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Controller
+              name="start_hint"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Textarea
+                  id="start_hint"
+                  placeholder="Optional hint shown to users when starting a new execution"
+                  label="Start Hint"
+                  rows={3}
+                  error={fieldState.error?.message}
+                  {...field}
+                  value={field.value ?? ''}
                 />
               )}
             />

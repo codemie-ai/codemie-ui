@@ -143,6 +143,7 @@ const ViewWorkflowHeader: React.FC<ViewWorkflowHeaderProps> = ({
         isVisible={showExecutionPopup}
         onHide={() => setShowExecutionPopup(false)}
         workflowId={String(workflow.id)}
+        startHint={workflow.start_hint}
       />
     </>
   )

@@ -225,6 +225,7 @@ const NewWorkflowPage: React.FC = () => {
           isVisible={showExecutionPopup}
           onHide={() => setShowExecutionPopup(false)}
           workflowId={createdWorkflowId}
+          startHint={formRef.current?.getFormValues()?.start_hint}
         />
       )}
     </div>

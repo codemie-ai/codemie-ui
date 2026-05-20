@@ -23,6 +23,7 @@ import WorkflowStartExecutionPopup from '../details/popups/WorkflowStartExecutio
 
 interface RunWorkflowButtonProps {
   workflowId: string
+  startHint?: string | null
   variant?: ButtonType
   className?: string
   replaceRoute?: boolean
@@ -30,6 +31,7 @@ interface RunWorkflowButtonProps {
 
 const RunWorkflowButton = ({
   workflowId,
+  startHint,
   variant = ButtonType.PRIMARY,
   className,
   replaceRoute,
@@ -47,6 +49,7 @@ const RunWorkflowButton = ({
         isVisible={showExecutionPopup}
         onHide={() => setShowExecutionPopup(false)}
         workflowId={workflowId}
+        startHint={startHint}
         replaceRoute={replaceRoute}
       />
     </>

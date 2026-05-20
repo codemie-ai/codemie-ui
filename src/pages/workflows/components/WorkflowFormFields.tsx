@@ -85,6 +85,7 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
       defaultValues: {
         name: workflow?.name || '',
         description: workflow?.description || '',
+        start_hint: workflow?.start_hint || '',
         yaml_config: workflow?.yaml_config ?? YAML_PLACEHOLDER,
         icon_url: workflow?.icon_url || '',
         shared: workflow?.shared ?? false,
@@ -234,6 +235,24 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
                     rows={4}
                     error={fieldState.error?.message}
                     {...field}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Controller
+                name="start_hint"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Textarea
+                    id="start_hint"
+                    placeholder="Optional hint shown to users when starting a new execution"
+                    label="Start Hint"
+                    rows={3}
+                    error={fieldState.error?.message}
+                    {...field}
+                    value={field.value ?? ''}
                   />
                 )}
               />

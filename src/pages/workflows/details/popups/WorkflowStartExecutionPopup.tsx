@@ -34,6 +34,7 @@ interface WorkflowStartExecutionPopupProps {
   workflowId: string
   initialPrompt?: string | null
   initialFiles?: string[] | null
+  startHint?: string | null
   isVisible: boolean
   onHide: () => void
   onStart?: () => void
@@ -44,6 +45,7 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
   workflowId,
   initialPrompt,
   initialFiles,
+  startHint,
   isVisible,
   onHide,
   onStart,
@@ -149,6 +151,16 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
           </div>
 
           <input {...inputProps} />
+
+          {startHint && (
+            <div
+              className="flex items-start gap-2 mt-2 p-3 bg-surface-base-secondary border border-border-structural rounded-lg text-sm text-text-secondary"
+              role="note"
+              aria-label="Start hint"
+            >
+              <span className="whitespace-pre-wrap">{startHint}</span>
+            </div>
+          )}
 
           {files.length > 0 && (
             <div className="flex flex-wrap gap-2">

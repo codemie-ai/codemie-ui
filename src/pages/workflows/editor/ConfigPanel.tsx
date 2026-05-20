@@ -153,6 +153,9 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
     const [showUnsavedChangesConfirmation, setShowUnsavedChangesConfirmation] = useState(false)
     const [pendingTabSwitch, setPendingTabSwitch] = useState<PanelTabId | null>(null)
     const activeTabRef = useRef<ConfigTab>(null)
+    // Dedicated ref for GeneralConfigTab so its values are always accessible
+    // regardless of which tab is currently active
+    const generalConfigTabRef = useRef<ConfigTab>(null)
 
     // Global unsaved changes tracking - unblock/block navigation during save
     const { unblockTransition, blockTransition } = useUnsavedChanges({
@@ -310,44 +313,72 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
         triggerGeneralConfigValidation: triggerValidation,
         isDirty: () => activeTabRef.current?.isDirty?.() ?? false,
         showUnsavedChangesDialog: () => setShowUnsavedChangesConfirmation(true),
-        save: async () => (await activeTabRef.current?.save()) ?? null,
-        getWorkflowFields: () => {
-          if (activeTab === TAB_DATA.CONFIGURATION.ID) {
-            return activeTabRef.current?.getValues?.() ?? null
+        save: async () => {
+          // If the active tab is not the Configuration tab but the general config
+          // has unsaved changes, flush them first so start_hint and other fields
+          // are propagated to the parent before the overall workflow save.
+          if (
+            activeTab !== TAB_DATA.CONFIGURATION.ID &&
+            generalConfigTabRef.current?.isDirty?.()
+          ) {
+            await generalConfigTabRef.current?.save()
           }
-
-          return null
+          return (await activeTabRef.current?.save()) ?? null
+        },
+        getWorkflowFields: () => {
+          // Always read from the dedicated GeneralConfigTab ref so the latest
+          // field values (including start_hint) are returned even when another
+          // tab is currently active.
+          return generalConfigTabRef.current?.getValues?.() ?? null
         },
       }),
       [triggerValidation, activeTab]
     )
 
-    const renderGeneralConfigTab = useCallback((): PanelTab => {
-      const defaultValues = workflow
-        ? {
-            name: workflow.name ?? '',
-            project: workflow.project ?? '',
-            description: workflow.description ?? '',
-            icon_url: workflow.icon_url ?? '',
-            shared: workflow.shared ?? false,
-            guardrail_assignments: workflow.guardrail_assignments ?? [],
-          }
-        : undefined
+    const generalConfigDefaultValues = useMemo(
+      () =>
+        workflow
+          ? {
+              name: workflow.name ?? '',
+              project: workflow.project ?? '',
+              description: workflow.description ?? '',
+              start_hint: workflow.start_hint ?? '',
+              icon_url: workflow.icon_url ?? '',
+              shared: workflow.shared ?? false,
+              guardrail_assignments: workflow.guardrail_assignments ?? [],
+            }
+          : undefined,
+      [workflow]
+    )
 
+    // Whether the Configuration tab is currently the active tab
+    const isConfigTabActive = activeTab === TAB_DATA.CONFIGURATION.ID
+    // Determine if we're in a workflow-editing context where GeneralConfigTab
+    // should be kept mounted for flushing unsaved changes
+    const isWorkflowEditContext =
+      visibleTabs.includes(TAB_DATA.CONFIGURATION.ID) ||
+      visibleTabs.includes(TAB_DATA.YAML.ID)
+
+    const renderGeneralConfigTab = useCallback((): PanelTab => {
       return {
         id: TAB_DATA.CONFIGURATION.ID,
         label: TAB_DATA.CONFIGURATION.LABEL,
         element: (
           <GeneralConfigTab
-            ref={activeTabRef}
-            defaultValues={defaultValues}
-            yamlConfig={yamlConfig}
-            onUpdate={handleWorkflowUpdate}
-            onClose={handleClose}
-          />
+              ref={(node: ConfigTab | null) => {
+                // Assign to both refs: activeTabRef (active-tab operations) and
+                // generalConfigTabRef (always-available access to config fields)
+                activeTabRef.current = node
+                generalConfigTabRef.current = node
+              }}
+              defaultValues={generalConfigDefaultValues}
+              yamlConfig={yamlConfig}
+              onUpdate={handleWorkflowUpdate}
+              onClose={handleClose}
+            />
         ),
       }
-    }, [workflow, handleWorkflowUpdate, handleClose])
+    }, [generalConfigDefaultValues, yamlConfig, handleWorkflowUpdate, handleClose])
 
     const renderAdvancedConfigTab = useCallback((): PanelTab => {
       return {
@@ -584,6 +615,22 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
             </div>
           </div>
         </div>
+
+        {/* Always mount GeneralConfigTab so generalConfigTabRef stays populated
+            even when Configuration is not the active/visible tab */}
+        {!isConfigTabActive && isWorkflowEditContext && (
+          <div className="hidden">
+            <GeneralConfigTab
+              ref={(node: ConfigTab | null) => {
+                generalConfigTabRef.current = node
+              }}
+              defaultValues={generalConfigDefaultValues}
+              yamlConfig={yamlConfig}
+              onUpdate={handleWorkflowUpdate}
+              onClose={handleClose}
+            />
+          </div>
+        )}
 
         <UnsavedChangesConfirmation
           visible={showUnsavedChangesConfirmation}

@@ -275,6 +275,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope }) => {
         isVisible={showCreateWorkflowPopup}
         onHide={() => setShowCreateWorkflowPopup(false)}
         workflowId={String(selectedWorkflow?.id)}
+        startHint={selectedWorkflow?.start_hint}
       />
     </>
   )

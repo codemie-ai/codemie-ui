@@ -95,6 +95,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
     const [workflowFields, setWorkflowFields] = useState({
       name: workflow?.name || '',
       description: workflow?.description || '',
+      start_hint: workflow?.start_hint || '',
       icon_url: workflow?.icon_url || '',
       shared: workflow?.shared ?? false,
       project: workflow?.project || null,
@@ -124,6 +125,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
           workflowFields: {
             name: formValues?.name || '',
             description: formValues?.description || '',
+            start_hint: formValues?.start_hint || '',
             icon_url: formValues?.icon_url || '',
             shared: formValues?.shared ?? false,
             project: formValues?.project || null,
@@ -140,6 +142,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
           workflowFields: {
             name: '',
             description: '',
+            start_hint: '',
             icon_url: '',
             shared: false,
             project: workflowFields.project,

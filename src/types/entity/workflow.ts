@@ -35,6 +35,7 @@ export interface Workflow {
   yaml_config?: string
   icon_url?: string
   description?: string
+  start_hint?: string | null
   configuration?: string
   yaml_config_history: WorkflowConfigHistoryItem[]
   update_date: string

@@ -75,6 +75,7 @@ const EditWorkflowPage: React.FC = () => {
       toaster.info('Workflow has been updated successfully!')
 
       if (shouldOpenExecution) {
+        await workflowsStore.fetchWorkflow(id)
         setShowExecutionPopup(true)
       } else {
         goBackWorkflows({ name: WOKRFLOW_EXECUTIONS, params: { id } })
@@ -191,6 +192,7 @@ const EditWorkflowPage: React.FC = () => {
         isVisible={showExecutionPopup}
         onHide={() => setShowExecutionPopup(false)}
         workflowId={id}
+        startHint={currentWorkflow?.start_hint}
       />
     </div>
   )
