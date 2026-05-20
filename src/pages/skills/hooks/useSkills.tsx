@@ -20,11 +20,11 @@ import { skillsStore } from '@/store/skills'
 import { Pagination } from '@/types/common'
 import { Skill, SkillsFilters } from '@/types/entity/skill'
 
-export const useSkills = (filters?: SkillsFilters, page?: number) => {
+export const useSkills = (filters?: SkillsFilters, page?: number, perPage?: number) => {
   const [skills, setSkills] = useState<Skill[]>([])
   const [pagination, setPagination] = useState<Pagination>({
     page: 0,
-    perPage: SKILLS_PER_PAGE,
+    perPage: perPage ?? SKILLS_PER_PAGE,
     totalPages: 0,
     totalCount: 0,
   })
@@ -34,6 +34,7 @@ export const useSkills = (filters?: SkillsFilters, page?: number) => {
   // Stringify filters to avoid infinite loop from object reference changes
   const filtersKey = useMemo(() => JSON.stringify(filters || {}), [filters])
   const pageNum = page ?? 0
+  const perPageNum = perPage ?? SKILLS_PER_PAGE
 
   const loadSkills = useCallback(async () => {
     // Parse filters from the key to avoid stale closure
@@ -42,7 +43,7 @@ export const useSkills = (filters?: SkillsFilters, page?: number) => {
     setError(null)
 
     try {
-      const result = await skillsStore.indexSkills(currentFilters, pageNum, SKILLS_PER_PAGE)
+      const result = await skillsStore.indexSkills(currentFilters, pageNum, perPageNum)
 
       // Update local state with results
       setSkills(result || [])
@@ -59,7 +60,7 @@ export const useSkills = (filters?: SkillsFilters, page?: number) => {
     } finally {
       setLoading(false)
     }
-  }, [filtersKey, pageNum])
+  }, [filtersKey, pageNum, perPageNum])
 
   useEffect(() => {
     loadSkills()

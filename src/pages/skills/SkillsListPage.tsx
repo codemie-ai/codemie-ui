@@ -23,7 +23,7 @@ import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
 import { ButtonSize } from '@/constants'
 import { NEW_SKILL, SKILL_DETAILS } from '@/constants/routes'
-import { SKILL_INDEX_SCOPES } from '@/constants/skills'
+import { SKILL_INDEX_SCOPES, SKILLS_PER_PAGE } from '@/constants/skills'
 import { useSidebarOffsetClass } from '@/hooks/useSidebarOffsetClass'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { useSkills } from '@/pages/skills/hooks/useSkills'
@@ -50,6 +50,7 @@ interface SkillsListPageProps {
 const SkillsListPage: React.FC<SkillsListPageProps> = ({ tab = SkillTab.PROJECT }) => {
   const router = useVueRouter()
   const [currentPage, setCurrentPage] = useState(0)
+  const [currentPerPage, setCurrentPerPage] = useState(SKILLS_PER_PAGE)
 
   const activeScope = SCOPE_BY_TAB[tab] ?? SKILL_INDEX_SCOPES.PROJECT
 
@@ -75,7 +76,11 @@ const SkillsListPage: React.FC<SkillsListPageProps> = ({ tab = SkillTab.PROJECT 
     return baseFilters
   }, [filters, activeScope, tab])
 
-  const { skills, loading, pagination, refresh } = useSkills(activeFilters, currentPage)
+  const { skills, loading, pagination, refresh } = useSkills(
+    activeFilters,
+    currentPage,
+    currentPerPage
+  )
 
   const handleViewSkill = (skill: Skill) => {
     router.push({ name: SKILL_DETAILS, params: { id: skill.id } })
@@ -103,13 +108,17 @@ const SkillsListPage: React.FC<SkillsListPageProps> = ({ tab = SkillTab.PROJECT 
     [handleFilterChange]
   )
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = (page: number, perPage?: number) => {
     setCurrentPage(page)
+    if (perPage !== undefined) {
+      setCurrentPerPage(perPage)
+    }
   }
 
-  // Reset page when tab changes
+  // Reset page and perPage when tab changes
   useEffect(() => {
     setCurrentPage(0)
+    setCurrentPerPage(SKILLS_PER_PAGE)
   }, [tab])
 
   const headerActions = React.useMemo(
@@ -154,7 +163,7 @@ const SkillsListPage: React.FC<SkillsListPageProps> = ({ tab = SkillTab.PROJECT 
               isMarketplace={tab === SkillTab.MARKETPLACE}
             />
 
-            {skills.length > 0 && pagination.totalPages > 1 && (
+            {skills.length > 0 && (
               <Pagination
                 className={cn(
                   'z-10 mt-6 fixed bottom-0 right-0 bg-surface-base-primary duration-150 px-6 pt-5 pb-3.5',
