@@ -73,7 +73,7 @@ const FirstTimeWelcomeContent: FC = () => {
 
   const assistants = [
     {
-      label: 'AI/Run Feedback:',
+      label: 'AI/Run FAQ:',
       slug: ONBOARDING_ASSISTANT_SLUG,
       isEnabled: true,
       description: 'Guides you through initial setup and familiarisation.',
