@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import { saveAs } from 'file-saver'
+
 import { ENV, HTTP_STATUS } from '@/constants'
 import { isMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
 import toaster from '@/utils/toaster'
@@ -232,21 +234,13 @@ class API {
       })
 
       const blob = await new Response(stream).blob()
-      const fileUrl = URL.createObjectURL(blob)
-      const a = document.createElement('a')
 
       if (!fileName) {
         const contentDisposition = response.headers.get('content-disposition')
         fileName = sanitizeFileName(parseContentDispositionFilename(contentDisposition))
       }
 
-      a.style.display = 'none'
-      a.href = fileUrl
-      a.download = fileName ?? 'download'
-      document.body.appendChild(a)
-      a.click()
-      URL.revokeObjectURL(fileUrl)
-      document.body.removeChild(a)
+      saveAs(blob, fileName ?? 'download')
 
       return true
     } catch (error) {

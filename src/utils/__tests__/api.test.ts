@@ -13,10 +13,14 @@
 // limitations under the License.
 //
 
-import { describe, it, expect } from 'vitest'
+import * as fileSaver from 'file-saver'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
 
 import api, { parseContentDispositionFilename, sanitizeFileName } from '@/utils/api'
 import toaster from '@/utils/toaster'
+
+vi.mock('file-saver', () => ({ saveAs: vi.fn() }))
 
 describe('handleError', () => {
   it('should correctly handle an error response', () => {
@@ -153,5 +157,78 @@ describe('sanitizeFileName', () => {
     // Leading dots stripped by the second replace, trailing spaces stripped by trim()
     // — the result is an empty string which coerces to undefined via || undefined
     expect(sanitizeFileName('.   ')).toBeUndefined()
+  })
+})
+
+describe('downloadFileStream', () => {
+  const mockBlob = new Blob(['content'], { type: 'application/octet-stream' })
+
+  const mockFetchResponse = (blob: Blob, headers: Record<string, string> = {}) => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([1, 2, 3]))
+        controller.close()
+      },
+    })
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: stream,
+      headers: { get: (key: string) => headers[key] ?? null },
+    })
+    vi.spyOn(global, 'Response').mockImplementation(
+      () => ({ blob: () => Promise.resolve(blob) } as any)
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('calls saveAs with the provided fileName', async () => {
+    mockFetchResponse(mockBlob)
+    const saveAsSpy = vi.spyOn(fileSaver, 'saveAs')
+
+    await api.downloadFileStream('v1/files/123', undefined, 'report.pdf')
+
+    expect(saveAsSpy).toHaveBeenCalledWith(mockBlob, 'report.pdf')
+  })
+
+  it('calls saveAs with filename from content-disposition when no fileName provided', async () => {
+    mockFetchResponse(mockBlob, { 'content-disposition': 'attachment; filename="export.csv"' })
+    const saveAsSpy = vi.spyOn(fileSaver, 'saveAs')
+
+    await api.downloadFileStream('v1/files/123')
+
+    expect(saveAsSpy).toHaveBeenCalledWith(mockBlob, 'export.csv')
+  })
+
+  it('calls saveAs with default name when no fileName and no content-disposition', async () => {
+    mockFetchResponse(mockBlob)
+    const saveAsSpy = vi.spyOn(fileSaver, 'saveAs')
+
+    await api.downloadFileStream('v1/files/123')
+
+    expect(saveAsSpy).toHaveBeenCalledWith(mockBlob, 'download')
+  })
+
+  it('does not call saveAs when response is not ok', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: { message: 'Not found' } }),
+    })
+    const saveAsSpy = vi.spyOn(fileSaver, 'saveAs')
+
+    await api.downloadFileStream('v1/files/123')
+
+    expect(saveAsSpy).not.toHaveBeenCalled()
+  })
+
+  it('never calls document.body.appendChild', async () => {
+    mockFetchResponse(mockBlob)
+    const appendChildSpy = vi.spyOn(document.body, 'appendChild')
+
+    await api.downloadFileStream('v1/files/123', undefined, 'file.pdf')
+
+    expect(appendChildSpy).not.toHaveBeenCalled()
   })
 })

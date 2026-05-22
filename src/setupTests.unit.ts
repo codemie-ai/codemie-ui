@@ -33,6 +33,7 @@ vi.mock('@/utils/api', async (importOriginal) => {
       delete: vi.fn().mockResolvedValue({ status: 200, json: () => Promise.resolve(null) }),
       patch: vi.fn().mockResolvedValue({ status: 200, json: () => Promise.resolve(null) }),
       handleError: mod.default.handleError,
+      downloadFileStream: mod.default.downloadFileStream.bind(mod.default),
     },
     parseContentDispositionFilename: mod.parseContentDispositionFilename,
     sanitizeFileName: mod.sanitizeFileName,
