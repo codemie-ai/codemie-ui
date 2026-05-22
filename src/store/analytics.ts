@@ -97,6 +97,10 @@ const parseErrorResponse = (error: unknown, fallbackMessage: string): ErrorDetai
 }
 
 interface Analytics {
+  // Request lifecycle management
+  abortControllers: Map<string, AbortController>
+  generations: Map<string, number>
+
   // State
   overview: SummariesResponse | null
   cliSummary: CliSummaryResponse | null
@@ -144,63 +148,164 @@ interface Analytics {
   updateDashboard: (id: string, dashboard: Omit<AnalyticsDashboardItem, 'id'>) => Promise<void>
   isDashboardLimitReached: () => boolean
   clearState: () => void
+  startRequest: (type: string) => AbortSignal
+}
+
+/**
+ * Helper function to start a new request for a specific metric type
+ * - Cancels any existing request for this type
+ * - Increments generation counter
+ * - Creates new AbortController
+ * - Sets loading state
+ * @param type - The metric type identifier
+ * @param store - The analytics store instance
+ * @returns AbortSignal to pass to fetch
+ */
+const startRequest = (type: string, store: Analytics): AbortSignal => {
+  // Cancel previous request if exists
+  const existingController = store.abortControllers.get(type)
+  if (existingController) {
+    existingController.abort()
+  }
+
+  const currentGen = store.generations.get(type) ?? 0
+  const newGen = currentGen + 1
+  store.generations.set(type, newGen)
+
+  const controller = new AbortController()
+  store.abortControllers.set(type, controller)
+  store.loading[type] = true
+
+  return controller.signal
 }
 
 /**
  * Common helper to handle GET API calls with loading/error state management
+ * @param withCancellation - If true, uses AbortController + generation tracking to prevent stale data
  */
 const fetchWithState = async <T>(
   store: Analytics,
   key: string,
   endpoint: string,
   params?: any,
-  errorMessage?: string
+  errorMessage?: string,
+  options?: { withCancellation?: boolean }
 ): Promise<T | null> => {
-  store.loading[key] = true
-  store.error[key] = null
+  let signal: AbortSignal | undefined
+  let requestGeneration: number | undefined
+
+  if (options?.withCancellation) {
+    signal = startRequest(key, store)
+    requestGeneration = store.generations.get(key)
+    store.error[key] = null
+  } else {
+    store.loading[key] = true
+    store.error[key] = null
+  }
 
   try {
     const response = await api.get(endpoint, {
       params,
       queryParamArrayHandling: 'compact',
       skipErrorHandling: true,
+      signal,
     })
-    return (await response.json()) as T
-  } catch (error) {
+
+    // requestGeneration === store.generations.get(key) means the current request is still ongoing
+
+    // Stale response
+    if (options?.withCancellation && requestGeneration !== store.generations.get(key)) {
+      return null
+    }
+
+    const data = (await response.json()) as T
+
+    if (!options?.withCancellation || requestGeneration === store.generations.get(key)) {
+      store.loading[key] = false
+    }
+
+    return data
+  } catch (error: any) {
+    // AbortError is expected when request is cancelled
+    if (error?.name === 'AbortError') return null
+
     console.error('Error fetching:', key, error)
     store.error[key] = parseErrorResponse(error, errorMessage || `Failed to fetch ${key}`)
+
+    if (!options?.withCancellation || requestGeneration === store.generations.get(key)) {
+      store.loading[key] = false
+    }
+
     return null
-  } finally {
-    store.loading[key] = false
   }
 }
 
 /**
  * Common helper to handle POST API calls with loading/error state management
+ * @param withCancellation - If true, uses AbortController + generation tracking to prevent stale data
  */
 const fetchWithStatePost = async <T>(
   store: Analytics,
   key: string,
   endpoint: string,
   body?: any,
-  errorMessage?: string
+  errorMessage?: string,
+  options?: { withCancellation?: boolean }
 ): Promise<T | null> => {
-  store.loading[key] = true
-  store.error[key] = null
+  let signal: AbortSignal | undefined
+  let requestGeneration: number | undefined
+
+  if (options?.withCancellation) {
+    signal = startRequest(key, store)
+    requestGeneration = store.generations.get(key)!
+    store.error[key] = null
+  } else {
+    store.loading[key] = true
+    store.error[key] = null
+  }
 
   try {
-    const response = await api.post(endpoint, body)
-    return (await response.json()) as T
-  } catch (error) {
+    const response = await api.post(endpoint, body, {
+      skipErrorHandling: true,
+      signal,
+    })
+
+    // requestGeneration === store.generations.get(key) means the current request is still ongoing
+
+    // Stale response
+    if (options?.withCancellation && requestGeneration !== store.generations.get(key)) {
+      return null
+    }
+
+    const data = (await response.json()) as T
+
+    if (!options?.withCancellation || requestGeneration === store.generations.get(key)) {
+      store.loading[key] = false
+    }
+
+    return data
+  } catch (error: any) {
+    // AbortError is expected when request is cancelled
+    if (error?.name === 'AbortError') {
+      return null
+    }
+
     console.error('Error fetching:', key, error)
     store.error[key] = parseErrorResponse(error, errorMessage || `Failed to fetch ${key}`)
+
+    if (!options?.withCancellation || requestGeneration === store.generations.get(key)) {
+      store.loading[key] = false
+    }
+
     return null
-  } finally {
-    store.loading[key] = false
   }
 }
 
 export const analyticsStore = proxy<Analytics>({
+  // Request lifecycle management
+  abortControllers: new Map<string, AbortController>(),
+  generations: new Map<string, number>(),
+
   // State initialization
   overview: null,
   cliSummary: null,
@@ -263,7 +368,8 @@ export const analyticsStore = proxy<Analytics>({
       type,
       `v1/analytics/${type}`,
       params,
-      `Failed to fetch ${type}`
+      `Failed to fetch ${type}`,
+      { withCancellation: true }
     )
   },
 
@@ -292,7 +398,8 @@ export const analyticsStore = proxy<Analytics>({
         ...cleanedParams,
         config: config || undefined,
       },
-      'Failed to fetch AI adoption overview'
+      'Failed to fetch AI adoption overview',
+      { withCancellation: true }
     )
     this.overview = data
     return data
@@ -309,7 +416,8 @@ export const analyticsStore = proxy<Analytics>({
       'cliSummary',
       'v1/analytics/cli-summary',
       params,
-      'Failed to fetch CLI summary'
+      'Failed to fetch CLI summary',
+      { withCancellation: true }
     )
     this.cliSummary = data
     return data
@@ -350,10 +458,10 @@ export const analyticsStore = proxy<Analytics>({
 
     // For AI adoption dimension tables, always use POST
     const isAiAdoptionDimension =
-      type === 'ai-adoption-user-engagement' ||
-      type === 'ai-adoption-asset-reusability' ||
-      type === 'ai-adoption-expertise-distribution' ||
-      type === 'ai-adoption-feature-adoption'
+      type === TabularMetricType.AI_ADOPTION_USER_ENGAGEMENT ||
+      type === TabularMetricType.AI_ADOPTION_ASSET_REUSABILITY ||
+      type === TabularMetricType.AI_ADOPTION_EXPERTISE_DISTRIBUTION ||
+      type === TabularMetricType.AI_ADOPTION_FEATURE_ADOPTION
 
     if (isAiAdoptionDimension) {
       return fetchWithStatePost<TabularResponse>(
@@ -364,7 +472,8 @@ export const analyticsStore = proxy<Analytics>({
           ...cleanedParams,
           config: config || undefined,
         },
-        `Failed to fetch ${type} data`
+        `Failed to fetch ${type} data`,
+        { withCancellation: true }
       )
     }
 
@@ -374,7 +483,8 @@ export const analyticsStore = proxy<Analytics>({
       type,
       `v1/analytics/${type}`,
       cleanedParams,
-      `Failed to fetch ${type} data`
+      `Failed to fetch ${type} data`,
+      { withCancellation: true }
     )
   },
 
@@ -476,7 +586,8 @@ export const analyticsStore = proxy<Analytics>({
         ...cleanedParams,
         config: config || undefined,
       },
-      'Failed to fetch AI adoption maturity'
+      'Failed to fetch AI adoption maturity',
+      { withCancellation: true }
     )
   },
 
@@ -647,6 +758,14 @@ export const analyticsStore = proxy<Analytics>({
 
   isDashboardLimitReached() {
     return this.dashboards.length >= MAX_DASHBOARDS_LIMIT
+  },
+
+  /**
+   * Start a new request for a specific metric type
+   * Delegates to the startRequest module-level helper
+   */
+  startRequest(type: string): AbortSignal {
+    return startRequest(type, this)
   },
 
   /**

@@ -301,6 +301,7 @@ class API {
         body: JSON.stringify(body),
         redirect: 'manual',
         ...(getIsLocalAuth() && { credentials: 'include' }),
+        signal: options?.signal,
       }
 
       fetch(fullUrl, requestOptions)

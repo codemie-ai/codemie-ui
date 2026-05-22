@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useCallback, useEffect, useState, ReactElement, ReactNode } from 'react'
+import { FC, useCallback, useEffect, useRef, useState, ReactElement, ReactNode } from 'react'
 import { useSnapshot } from 'valtio'
 
 import Pagination from '@/components/Pagination'
@@ -114,6 +114,7 @@ const TableWidget: FC<TableWidgetProps> = ({
   const [data, setData] = useState<TabularResponse | null>(initialData || null)
   const [page, setPage] = useState(0)
   const [perPage, setPerPage] = useState(10)
+  const fetchGenerationRef = useRef(0)
 
   useEffect(() => {
     setPage(0)
@@ -124,13 +125,16 @@ const TableWidget: FC<TableWidgetProps> = ({
 
     if (!loaded['ai-adoption-config'] && waitForAdoptionConfig) return
 
+    fetchGenerationRef.current += 1
+    const generation = fetchGenerationRef.current
+
     const result = await analyticsStore.fetchTabularData(metricType, {
       ...filters,
       page,
       per_page: perPage,
       config: aiAdoptionConfig?.data,
     })
-    if (result) {
+    if (result && generation === fetchGenerationRef.current) {
       setData(result)
     }
   }, [
