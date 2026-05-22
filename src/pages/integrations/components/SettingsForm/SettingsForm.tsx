@@ -40,7 +40,6 @@ import {
   getOriginalCredentialType,
   convertCredsToKeyValue,
   SETTING_TYPE_USER,
-  getDefaultUrl,
   getCredentialMessage,
   getTestableCredentialTypes,
   getSettingsFieldsSectionTitle,
@@ -138,13 +137,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   })
 
   const getCredentialDefaults = (credentialType: string) => {
-    const defaultUrl = getDefaultUrl(credentialType)
     const config = CREDENTIAL_VALUES_MAPPING[credentialType]
     const defaults: Record<string, any> = {}
-
-    if (defaultUrl) {
-      defaults.url = defaultUrl
-    }
 
     if (config?.fields) {
       Object.entries(config.fields).forEach(([fieldName, fieldConfig]) => {
