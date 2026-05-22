@@ -341,6 +341,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
               buildWebhookURL={buildWebhookURL}
               position={CredentialComponentPosition.top}
+              editing={editing}
             />
           )}
 
@@ -430,6 +431,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                   control={control}
                   credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
                   buildWebhookURL={buildWebhookURL}
+                  editing={editing}
                 />
               )}
             </>

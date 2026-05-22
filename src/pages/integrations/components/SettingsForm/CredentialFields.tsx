@@ -13,10 +13,11 @@
 // limitations under the License.
 //
 
-import React from 'react'
-import { Control, Controller, useWatch } from 'react-hook-form'
+import React, { useState } from 'react'
+import { Control, Controller, useWatch, useFormState } from 'react-hook-form'
 
 import ExternalSvg from '@/assets/icons/external.svg?react'
+import PasswordToggleButton from '@/authentication/components/PasswordToggleButton'
 import Autocomplete from '@/components/form/Autocomplete'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
@@ -36,6 +37,7 @@ interface CredentialFieldsProps {
   credentialFields: Record<string, CredentialFieldConfig>
   buildWebhookURL?: (value: string) => string
   position?: CredentialComponentPosition
+  editing?: boolean
 }
 
 const CredentialFields: React.FC<CredentialFieldsProps> = ({
@@ -43,8 +45,18 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
   credentialFields,
   buildWebhookURL,
   position = CredentialComponentPosition.fieldsSection,
+  editing = false,
 }) => {
   const formValues = useWatch({ control })
+  const formState = useFormState({ control })
+  const [passwordVisibility, setPasswordVisibility] = useState<Record<string, boolean>>({})
+
+  const togglePasswordVisibility = (fieldName: string) => {
+    setPasswordVisibility((prev) => ({
+      ...prev,
+      [fieldName]: !prev[fieldName],
+    }))
+  }
 
   const getPlaceholder = (placeholder: any) => {
     if (typeof placeholder === 'function') {
@@ -115,9 +127,11 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
                       placeholder={getPlaceholder(placeholder)}
                       label={getLabel(label ?? placeholder)}
                       sensitive={sensitive}
+                      showPassword={passwordVisibility[name] || false}
                       onChange={(e) => field.onChange(e.target.value)}
                       labelContent={
-                        help && (
+                        help &&
+                        !sensitive && (
                           <Link
                             url={help}
                             label="Need help?"
@@ -129,7 +143,15 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
                           </Link>
                         )
                       }
-                    />
+                    >
+                      {sensitive && (!editing || formState.dirtyFields[name]) && (
+                        <PasswordToggleButton
+                          showPassword={passwordVisibility[name] || false}
+                          onToggle={() => togglePasswordVisibility(name)}
+                          className="right-3"
+                        />
+                      )}
+                    </Input>
                   )}
 
                   {note && buildWebhookURL && (

@@ -32,6 +32,7 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value'
   errorClassName?: string
   disabled?: boolean
   sensitive?: boolean
+  showPassword?: boolean
   value?: string | number | readonly string[] | null
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
@@ -62,6 +63,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       errorClassName,
       disabled,
       sensitive,
+      showPassword,
       value,
       onChange,
       required,
@@ -75,6 +77,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       labelContent,
       orientation,
       keyfilter,
+      type,
       ...rest
     },
     ref
@@ -83,6 +86,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       if (keyfilter) e.target.value = e.target.value.replace(keyfilter, '')
       onChange?.(e)
     }
+
+    const getInputType = () => {
+      if (sensitive) return showPassword ? 'text' : 'password'
+      return type || 'text'
+    }
+
+    const inputType = getInputType()
+
     return (
       <label
         htmlFor={id}
@@ -146,6 +157,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 id={id}
                 ref={ref}
                 name={name}
+                type={inputType}
                 value={value ?? ''}
                 onChange={handleChange}
                 autoComplete={sensitive ? 'off' : undefined}
