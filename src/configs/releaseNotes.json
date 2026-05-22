@@ -1,5 +1,65 @@
 [
   {
+    "version": "2.29.0",
+    "date": "2026-05-22",
+    "issues": [
+      {
+        "title": "\"Navigation & Core Features Tour\" pop-up incorrectly refers to \"AI/Run Feedback assistant\" instead of \"AI/Run FAQ\" (link is correct)",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12381",
+        "key": "EPMCDME-12381"
+      },
+      {
+        "title": "[Skills] Marketplace tab issue when changing \"Show\" value for pagination",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12362",
+        "key": "EPMCDME-12362"
+      },
+      {
+        "title": "[Skills] Duplicate request on tab switch with stale filters",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12351",
+        "key": "EPMCDME-12351"
+      },
+      {
+        "title": "Clicking on AWS Knowledge base datasource on Assistant details page leads to \"Datasource not found\" error",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12218",
+        "key": "EPMCDME-12218"
+      },
+      {
+        "title": "Password Masking Not Implemented for Sensitive Credential Fields on Integration Configuration Pages",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12214",
+        "key": "EPMCDME-12214"
+      },
+      {
+        "title": "Analytics: duplicated user is displayed in Platform Activity Power Users table",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12136",
+        "key": "EPMCDME-12136"
+      },
+      {
+        "title": "Support Claude Desktop 3P through CodeMie proxy as a first-class claude-desktop client with telemetry, sync, diagnostics, and user guidance",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12008",
+        "key": "EPMCDME-12008"
+      },
+      {
+        "title": "Broken markdown formatting for SummarizeConversationCommandNode on workflow executions",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11887",
+        "key": "EPMCDME-11887"
+      },
+      {
+        "title": "Integration Page: Jira URL Field Prepopulated Instead of Displaying Placeholder",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8909",
+        "key": "EPMCDME-8909"
+      }
+    ]
+  },
+  {
     "version": "2.28.0",
     "date": "2025-05-20",
     "issues": [
