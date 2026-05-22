@@ -17,45 +17,58 @@ import React from 'react'
 import { useParams } from 'react-router'
 
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
+import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { useSkillDetails } from '@/pages/skills/hooks/useSkillDetails'
 import { goBackSkills } from '@/pages/skills/utils/goBackSkills'
 
 import EditSkillForm from './components/EditSkillForm'
-import SkillsPageShell from './components/SkillsPageShell'
+import SkillsNavigation from './components/SkillsNavigation'
 
 const EditSkillPage: React.FC = () => {
   const router = useVueRouter()
   const { id } = useParams<{ id: string }>()
-  const { skill, loading } = useSkillDetails(id!)
+  const { skill, loading, error } = useSkillDetails(id!)
 
   const handleBack = () => {
     goBackSkills(router)
   }
 
-  if (!loading && skill) {
-    return <EditSkillForm skill={skill} onBack={handleBack} />
-  }
-
-  return (
-    <SkillsPageShell>
-      <PageLayout>
-        {loading ? (
+  if (loading) {
+    return (
+      <div className="flex h-full">
+        <Sidebar title="Skills" description="Browse and manage your knowledge skills">
+          <SkillsNavigation />
+        </Sidebar>
+        <PageLayout>
           <div className="flex justify-center items-center h-full">
             <Spinner />
           </div>
-        ) : (
+        </PageLayout>
+      </div>
+    )
+  }
+
+  if (error || !skill) {
+    return (
+      <div className="flex h-full">
+        <Sidebar title="Skills" description="Browse and manage your knowledge skills">
+          <SkillsNavigation />
+        </Sidebar>
+        <PageLayout>
           <div className="flex flex-col items-center justify-center h-full">
             <h2 className="text-xl font-semibold text-text-primary mb-2">Skill not found</h2>
             <p className="text-sm text-text-secondary">
               The skill you&apos;re looking for doesn&apos;t exist or was deleted.
             </p>
           </div>
-        )}
-      </PageLayout>
-    </SkillsPageShell>
-  )
+        </PageLayout>
+      </div>
+    )
+  }
+
+  return <EditSkillForm skill={skill} onBack={handleBack} />
 }
 
 export default EditSkillPage

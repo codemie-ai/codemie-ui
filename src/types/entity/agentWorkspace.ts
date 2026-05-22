@@ -13,19 +13,26 @@
 // limitations under the License.
 //
 
-import React from 'react'
+export interface AgentWorkspace {
+  id: string
+  conversation_id: string
+  user_id: string
+  name?: string | null
+  status: string
+  date: string
+  update_date: string
+}
 
-import Sidebar from '@/components/Sidebar'
+export interface AgentWorkspaceFile {
+  path: string
+  mime_type: string
+  checksum: string
+  size: number
+  version: number
+  update_date: string
+}
 
-import SkillsNavigation from './SkillsNavigation'
-
-const SkillsPageShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex h-full">
-    <Sidebar title="Skills" description="Browse and manage your knowledge skills">
-      <SkillsNavigation />
-    </Sidebar>
-    {children}
-  </div>
-)
-
-export default SkillsPageShell
+export interface AgentWorkspaceFileContent extends AgentWorkspaceFile {
+  is_binary: boolean
+  content: string | null
+}

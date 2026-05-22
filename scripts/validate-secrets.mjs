@@ -5,13 +5,13 @@
  * Works on Windows, macOS, and Linux.
  *
  * Usage:
- *   node scripts/validate-secrets.js    # scan working directory
+ *   node scripts/validate-secrets.mjs    # scan working directory
  */
 
-import { spawn, execSync } from 'child_process'
+import { spawn, spawnSync } from 'child_process'
 import { existsSync } from 'fs'
 import { platform } from 'os'
-import { resolve } from 'path'
+import { delimiter, resolve } from 'path'
 
 const GITLEAKS_IMAGE = 'ghcr.io/gitleaks/gitleaks:v8.30.1'
 const isWindows = platform() === 'win32'
@@ -19,29 +19,49 @@ const projectPath = resolve(process.cwd())
 const configPath = resolve(projectPath, '.gitleaks.toml')
 const hasConfig = existsSync(configPath)
 
-function commandExists(cmd) {
-  try {
-    execSync(isWindows ? `where ${cmd}` : `which ${cmd}`, { stdio: 'ignore' })
-    return true
-  } catch {
-    return false
+function ensureKnownEnginePaths() {
+  if (isWindows) return
+
+  const pathEntries = (process.env.PATH ?? '').split(delimiter).filter(Boolean)
+  const candidatePaths = [
+    '/opt/podman/bin',
+    '/opt/homebrew/bin',
+    '/usr/local/bin',
+    '/Applications/Docker.app/Contents/Resources/bin',
+  ]
+
+  for (const candidatePath of candidatePaths) {
+    if (existsSync(candidatePath) && !pathEntries.includes(candidatePath)) {
+      pathEntries.push(candidatePath)
+    }
   }
+
+  process.env.PATH = pathEntries.join(delimiter)
+}
+
+function commandExists(cmd) {
+  const command = isWindows ? 'where' : 'which'
+  const result = spawnSync(command, [cmd], {
+    stdio: 'ignore',
+    shell: false,
+  })
+
+  return result.status === 0
 }
 
 function daemonRunning(engine) {
-  try {
-    execSync(`${engine} info`, { stdio: 'ignore' })
-    return true
-  } catch {
-    return false
-  }
+  const result = spawnSync(engine, ['info'], {
+    stdio: 'ignore',
+    shell: false,
+  })
+
+  return result.status === 0
 }
 
 function detectEngine() {
   for (const engine of ['docker', 'podman']) {
     if (commandExists(engine) && daemonRunning(engine)) return engine
   }
-  // Fall back to any installed engine (will fail with daemon hint)
   for (const engine of ['docker', 'podman']) {
     if (commandExists(engine)) return engine
   }
@@ -58,6 +78,8 @@ function hintForStoppedDaemon(engine) {
   }
   return 'Start your container engine to enable secrets detection locally'
 }
+
+ensureKnownEnginePaths()
 
 const engine = detectEngine()
 
