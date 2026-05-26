@@ -22,7 +22,7 @@ import { MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 
 import IntegrationSelector from '../IntegrationSelector'
-import MCPToolkitTest from './MCPToolkitTest'
+import { MCPToolkitTestProvider, MCPToolkitTestTrigger } from './MCPToolkitTest'
 
 interface MCPServerDetailProps {
   server: MCPServerDetails
@@ -60,9 +60,11 @@ const MCPServerDetail = ({
             Description
           </span>
           {!isUnavailable && (
-            <NavigationMore renderInRoot alignment="end" hideOnClickInside items={menuItems}>
-              <MCPToolkitTest inline mcpServer={server} />
-            </NavigationMore>
+            <MCPToolkitTestProvider mcpServer={server}>
+              <NavigationMore renderInRoot alignment="end" hideOnClickInside items={menuItems}>
+                <MCPToolkitTestTrigger inline />
+              </NavigationMore>
+            </MCPToolkitTestProvider>
           )}
         </div>
         {isUnavailable ? (

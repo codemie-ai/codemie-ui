@@ -153,6 +153,8 @@ const MCPToolsSelectionStep = ({
     rows: authRows,
     handleAuthRequiredError,
     initiate,
+    continue: continueAuth,
+    cancel: cancelAuth,
   } = useMCPAuthPrompt({
     onAllAuthenticated: () => {
       if (isRetryingRef.current) return
@@ -275,6 +277,8 @@ const MCPToolsSelectionStep = ({
                 key={`${row.mcp_config_id}-${row.status}`}
                 row={row}
                 onAuthenticate={initiate}
+                onContinue={continueAuth}
+                onCancel={cancelAuth}
               />
             ))}
           </div>

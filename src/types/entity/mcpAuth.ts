@@ -27,6 +27,12 @@ export type MCPAuthRecoverableStatus = Extract<
   'authentication_required' | 'session_expired'
 >
 
+export interface MCPAuthPendingInitiate {
+  auth_url: string
+  redirect_uri_hostname: string
+  localhost_warning: boolean
+}
+
 export interface MCPAuthGateServer {
   mcp_config_id: string
   mcp_config_name: string
@@ -38,6 +44,7 @@ export interface MCPAuthGateServer {
   error_context?: string | null
   initiate_url?: string | null
   recoverable_status?: MCPAuthRecoverableStatus | null
+  pending_initiate?: MCPAuthPendingInitiate | null
 }
 
 export interface MCPAuthStatusResponse extends MCPAuthGateServer {

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useCallback, useRef, useState } from 'react'
+import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
@@ -26,12 +26,19 @@ import { assistantsStore } from '@/store'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import toaster from '@/utils/toaster'
 
-interface MCPToolkitTestProps {
-  inline?: boolean
-  mcpServer: MCPServerDetails
+interface MCPToolkitTestContextValue {
+  status: CheckerStatus
+  onCheck: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => Promise<void>
 }
 
-const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
+const MCPToolkitTestContext = createContext<MCPToolkitTestContextValue | null>(null)
+
+interface MCPToolkitTestProviderProps {
+  mcpServer: MCPServerDetails
+  children: ReactNode
+}
+
+const MCPToolkitTestProvider = ({ mcpServer, children }: MCPToolkitTestProviderProps) => {
   const { testMCP } = useSnapshot(assistantsStore)
   const [status, setStatus] = useState<CheckerStatus>(CHECKER_STATUSES.UNDEFINED)
   const [brokerLoginUrl, setBrokerLoginUrl] = useState<string | null>(null)
@@ -70,7 +77,14 @@ const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
     }
   }, [mcpServer, testMCP])
 
-  const { rows, handleAuthRequiredError, initiate, clearRows } = useMCPAuthPrompt({
+  const {
+    rows,
+    handleAuthRequiredError,
+    initiate,
+    continue: continueAuth,
+    cancel: cancelAuth,
+    clearRows,
+  } = useMCPAuthPrompt({
     onAllAuthenticated: () => {
       if (isRetryingRef.current) return
       isRetryingRef.current = true
@@ -82,23 +96,20 @@ const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
 
   handleAuthRequiredErrorRef.current = handleAuthRequiredError
 
-  const check = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    e.stopPropagation()
-    if (status === CHECKER_STATUSES.IN_PROGRESS) return
-    await runTest()
-  }
+  const check = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+      e.stopPropagation()
+      if (status === CHECKER_STATUSES.IN_PROGRESS) return
+      await runTest()
+    },
+    [status, runTest]
+  )
+
+  const contextValue = useMemo(() => ({ status, onCheck: check }), [status, check])
 
   return (
-    <>
-      <Checker
-        status={status}
-        onCheck={check}
-        classNames={
-          inline
-            ? 'border-none flex items-center justify-start gap-4 px-1 h-[34px] text-text-primary hover:bg-surface-specific-dropdown-hover hover:text-text-accent'
-            : ''
-        }
-      />
+    <MCPToolkitTestContext.Provider value={contextValue}>
+      {children}
       <Popup
         visible={rows.length > 0}
         onHide={clearRows}
@@ -115,6 +126,8 @@ const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
               key={`${row.mcp_config_id}-${row.status}`}
               row={row}
               onAuthenticate={initiate}
+              onContinue={continueAuth}
+              onCancel={cancelAuth}
             />
           ))}
         </div>
@@ -138,8 +151,42 @@ const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => {
           </Button>
         </div>
       </Popup>
-    </>
+    </MCPToolkitTestContext.Provider>
   )
 }
 
+interface MCPToolkitTestTriggerProps {
+  inline?: boolean
+}
+
+const MCPToolkitTestTrigger = ({ inline }: MCPToolkitTestTriggerProps) => {
+  const ctx = useContext(MCPToolkitTestContext)
+  if (!ctx) {
+    throw new Error('MCPToolkitTestTrigger must be used within MCPToolkitTestProvider')
+  }
+  return (
+    <Checker
+      status={ctx.status}
+      onCheck={ctx.onCheck}
+      classNames={
+        inline
+          ? 'border-none flex items-center justify-start gap-4 px-1 h-[34px] text-text-primary hover:bg-surface-specific-dropdown-hover hover:text-text-accent'
+          : ''
+      }
+    />
+  )
+}
+
+interface MCPToolkitTestProps {
+  inline?: boolean
+  mcpServer: MCPServerDetails
+}
+
+const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => (
+  <MCPToolkitTestProvider mcpServer={mcpServer}>
+    <MCPToolkitTestTrigger inline={inline} />
+  </MCPToolkitTestProvider>
+)
+
+export { MCPToolkitTestProvider, MCPToolkitTestTrigger }
 export default MCPToolkitTest

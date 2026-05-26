@@ -22,6 +22,12 @@ import {
 import { MCPAuthGateServer, MCPAuthInitiateResponse } from '@/types/entity/mcpAuth'
 import api from '@/utils/api'
 import { parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
+import {
+  getPendingInitiate,
+  getRecoverableAuthStatus,
+  MISSING_REDIRECT_HOSTNAME_MESSAGE,
+  POPUP_BLOCKED_AUTH_MESSAGE,
+} from '@/utils/mcpAuthInitiate'
 import toaster from '@/utils/toaster'
 
 interface UseMCPAuthPromptOptions {
@@ -32,6 +38,8 @@ interface UseMCPAuthPromptResult {
   rows: MCPAuthGateServer[]
   handleAuthRequiredError: (error: unknown) => Promise<boolean>
   initiate: (mcpConfigId: string) => Promise<void>
+  continue: (mcpConfigId: string) => void
+  cancel: (mcpConfigId: string) => void
   clearRows: () => void
 }
 
@@ -74,7 +82,7 @@ export const useMCPAuthPrompt = ({
   const initiate = useCallback(
     async (mcpConfigId: string) => {
       const row = rows.find((item) => item.mcp_config_id === mcpConfigId)
-      if (!row?.initiate_url || row.status === 'authenticating') return
+      if (!row?.initiate_url || row.status === 'authenticating' || row.pending_initiate) return
 
       try {
         const response = await api.post(row.initiate_url.replace(/^\//, ''), {
@@ -84,9 +92,40 @@ export const useMCPAuthPrompt = ({
 
         if (!payload.auth_url) return
 
+        if (row.auth_type === 'oauth2') {
+          const pendingInitiate = getPendingInitiate(payload)
+
+          if (!pendingInitiate) {
+            toaster.error(MISSING_REDIRECT_HOSTNAME_MESSAGE)
+            setRows((current) =>
+              updateRow(current, mcpConfigId, (item) => ({
+                ...item,
+                pending_initiate: null,
+                error_context: MISSING_REDIRECT_HOSTNAME_MESSAGE,
+                recoverable_status: getRecoverableAuthStatus(item),
+              }))
+            )
+            return
+          }
+
+          setRows((current) =>
+            updateRow(current, mcpConfigId, (item) => ({
+              ...item,
+              pending_initiate: pendingInitiate,
+              error_context: null,
+              recoverable_status: getRecoverableAuthStatus(item),
+            }))
+          )
+          return
+        }
+
         window.open(payload.auth_url, '_blank')
         setRows((current) =>
-          updateRow(current, mcpConfigId, (item) => ({ ...item, status: 'authenticating' }))
+          updateRow(current, mcpConfigId, (item) => ({
+            ...item,
+            status: 'authenticating',
+            recoverable_status: getRecoverableAuthStatus(item),
+          }))
         )
       } catch (error) {
         console.error('Failed to initiate MCP authentication:', error)
@@ -95,6 +134,49 @@ export const useMCPAuthPrompt = ({
     },
     [rows]
   )
+
+  const continueAuth = useCallback(
+    (mcpConfigId: string) => {
+      const pendingInitiate = rows.find(
+        (row) => row.mcp_config_id === mcpConfigId
+      )?.pending_initiate
+      if (!pendingInitiate) return
+
+      const popup = window.open(pendingInitiate.auth_url, '_blank')
+
+      setRows((current) =>
+        updateRow(current, mcpConfigId, (row) => {
+          if (!row.pending_initiate) return row
+
+          if (popup === null) {
+            return {
+              ...row,
+              error_context: POPUP_BLOCKED_AUTH_MESSAGE,
+              recoverable_status: getRecoverableAuthStatus(row),
+            }
+          }
+
+          return {
+            ...row,
+            status: 'authenticating',
+            pending_initiate: null,
+            error_context: null,
+            recoverable_status: getRecoverableAuthStatus(row),
+          }
+        })
+      )
+    },
+    [rows]
+  )
+
+  const cancel = useCallback((mcpConfigId: string) => {
+    setRows((current) =>
+      updateRow(current, mcpConfigId, (row) => ({
+        ...row,
+        pending_initiate: null,
+      }))
+    )
+  }, [])
 
   const clearRows = useCallback(() => setRows([]), [])
 
@@ -129,7 +211,7 @@ export const useMCPAuthPrompt = ({
     setRows((current) =>
       updateRowByAuthConfigId(current, authConfigId, (row) => ({
         ...row,
-        status: 'authentication_required',
+        status: getRecoverableAuthStatus(row),
         error_context: errorCode ?? null,
       }))
     )
@@ -139,7 +221,7 @@ export const useMCPAuthPrompt = ({
     setRows((current) =>
       updateRowByAuthConfigId(current, authConfigId, (row) => ({
         ...row,
-        status: 'authentication_required',
+        status: getRecoverableAuthStatus(row),
         error_context: AUTH_CALLBACK_TIMEOUT_MESSAGE,
       }))
     )
@@ -147,5 +229,5 @@ export const useMCPAuthPrompt = ({
 
   useAuthCallbackListener({ trackedAuthConfigIds, onSuccess, onError, onTimeout })
 
-  return { rows, handleAuthRequiredError, initiate, clearRows }
+  return { rows, handleAuthRequiredError, initiate, continue: continueAuth, cancel, clearRows }
 }

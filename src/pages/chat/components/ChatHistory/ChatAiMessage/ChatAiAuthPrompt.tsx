@@ -72,6 +72,12 @@ const ChatAiAuthPrompt: FC<ChatAiAuthPromptProps> = ({
           onAuthenticate={(mcpConfigId) =>
             chatGenerationStore.initiatePromptAuth(chatId, historyIndex, messageIndex, mcpConfigId)
           }
+          onContinue={(mcpConfigId) =>
+            chatGenerationStore.continuePromptAuth(chatId, historyIndex, messageIndex, mcpConfigId)
+          }
+          onCancel={(mcpConfigId) =>
+            chatGenerationStore.cancelPromptAuth(chatId, historyIndex, messageIndex, mcpConfigId)
+          }
         />
       ))}
     </div>

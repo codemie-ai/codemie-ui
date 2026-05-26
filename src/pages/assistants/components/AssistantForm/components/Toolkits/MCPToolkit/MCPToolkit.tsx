@@ -45,12 +45,6 @@ interface MCPToolkitProps {
   isCompactView?: boolean
 }
 
-const sanitizeForCatalogRef = (server: MCPServerDetails): MCPServerDetails => {
-  if (!server.mcp_config_id) return server
-  const { config, command, arguments: args, mcp_connect_url, ...rest } = server
-  return rest
-}
-
 const MCPToolkit = ({
   settingsDefinitions,
   mcpServers,
@@ -124,19 +118,18 @@ const MCPToolkit = ({
   }
 
   const updateMcpServer = (mcpServer: MCPServerDetails) => {
-    const sanitized = sanitizeForCatalogRef(mcpServer)
-    const existingMcpServer = mcpServers.find((ms) => ms.name === sanitized.name)
+    const existingMcpServer = mcpServers.find((ms) => ms.name === mcpServer.name)
 
     if (existingMcpServer) {
       onMcpServersChange(
         mcpServers.map((ms) =>
-          ms.name === sanitized.name ? { ...ms, ...sanitized, settings: sanitized.settings } : ms
+          ms.name === mcpServer.name ? { ...ms, ...mcpServer, settings: mcpServer.settings } : ms
         )
       )
     } else if (singleToolSelection) {
-      onMcpServersChange([sanitized])
+      onMcpServersChange([mcpServer])
     } else {
-      onMcpServersChange([...mcpServers, sanitized])
+      onMcpServersChange([...mcpServers, mcpServer])
     }
 
     handleHidePopup()
@@ -168,6 +161,7 @@ const MCPToolkit = ({
         name: config.name,
         description: config.description,
         enabled: true,
+        mcp_config_id: config.id,
         config: config.config,
         required_env_vars: config.required_env_vars,
         isFromMarketplace: true,
@@ -219,7 +213,7 @@ const MCPToolkit = ({
           project={project}
           refreshSettings={refreshSettings}
           singleToolSelection={singleToolSelection}
-          isCatalogRef={!!selectedMcpServer?.mcp_config_id}
+          isCatalogRef={isRestricted && !!selectedMcpServer?.mcp_config_id}
         />
       </>
     )
@@ -347,7 +341,7 @@ const MCPToolkit = ({
         project={project}
         refreshSettings={refreshSettings}
         singleToolSelection={singleToolSelection}
-        isCatalogRef={!!selectedMcpServer?.mcp_config_id}
+        isCatalogRef={isRestricted && !!selectedMcpServer?.mcp_config_id}
       />
 
       <ConfirmationModal

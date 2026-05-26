@@ -277,7 +277,7 @@ describe('chatGenerationStore', () => {
     expect(chatGenerationStore.getAuthenticatingPromptIds('chat-1')).toEqual(['auth-1', 'auth-3'])
   })
 
-  it('initiates prompt auth only for the targeted row and keeps other rows unchanged', async () => {
+  it('stores OAuth2 redirect metadata for confirmation without opening the browser', async () => {
     const historyItem = createHistoryItem({
       mcpAuthPromptRows: [
         createPromptRow({
@@ -297,7 +297,11 @@ describe('chatGenerationStore', () => {
     const chat = createChat(historyItem)
     mockChatsStore.currentChat = chat
     mockPost.mockResolvedValueOnce({
-      json: async () => ({ auth_url: 'https://idp.example.com/start' }),
+      json: async () => ({
+        auth_url: 'https://idp.example.com/start',
+        redirect_uri_hostname: 'localhost:8080',
+        localhost_warning: true,
+      }),
     })
 
     const { chatGenerationStore } = await import('@/store/chatGeneration')
@@ -306,18 +310,151 @@ describe('chatGenerationStore', () => {
     expect(mockPost).toHaveBeenCalledWith('v1/mcp-auth/oauth2/initiate', {
       mcp_config_id: 'mcp-1',
     })
-    expect(window.open).toHaveBeenCalledWith('https://idp.example.com/start', '_blank')
+    expect(window.open).not.toHaveBeenCalled()
     expect(historyItem.mcpAuthPromptRows).toEqual([
       expect.objectContaining({
         mcp_config_id: 'mcp-1',
-        status: 'authenticating',
+        status: 'session_expired',
         recoverable_status: 'session_expired',
+        pending_initiate: {
+          auth_url: 'https://idp.example.com/start',
+          redirect_uri_hostname: 'localhost:8080',
+          localhost_warning: true,
+        },
       }),
       expect.objectContaining({
         mcp_config_id: 'mcp-2',
         status: 'authentication_required',
       }),
     ])
+    expect(chatGenerationStore.getAuthenticatingPromptIds('chat-1')).toEqual([])
+  })
+
+  it('fails OAuth2 prompt auth closed when redirect hostname metadata is missing', async () => {
+    const historyItem = createHistoryItem({
+      mcpAuthPromptRows: [createPromptRow()],
+    })
+    mockChatsStore.currentChat = createChat(historyItem)
+    mockPost.mockResolvedValueOnce({
+      json: async () => ({ auth_url: 'https://idp.example.com/start' }),
+    })
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    await chatGenerationStore.initiatePromptAuth('chat-1', 0, 0, 'mcp-1')
+
+    expect(window.open).not.toHaveBeenCalled()
+    expect(mockToasterError).toHaveBeenCalledWith(
+      'Authentication response did not include a redirect URI hostname. Retry authentication.'
+    )
+    expect(historyItem.mcpAuthPromptRows?.[0]).toEqual(
+      expect.objectContaining({
+        status: 'authentication_required',
+        pending_initiate: null,
+        error_context:
+          'Authentication response did not include a redirect URI hostname. Retry authentication.',
+      })
+    )
+  })
+
+  it('keeps SAML prompt auth on the immediate-open path', async () => {
+    const historyItem = createHistoryItem({
+      mcpAuthPromptRows: [
+        createPromptRow({
+          auth_type: 'saml',
+          initiate_url: '/v1/mcp-auth/saml/initiate',
+          recoverable_status: 'session_expired',
+          status: 'session_expired',
+        }),
+      ],
+    })
+    mockChatsStore.currentChat = createChat(historyItem)
+    mockPost.mockResolvedValueOnce({
+      json: async () => ({ auth_url: 'https://idp.example.com/saml/start' }),
+    })
+    vi.mocked(window.open).mockReturnValue(window)
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    await chatGenerationStore.initiatePromptAuth('chat-1', 0, 0, 'mcp-1')
+
+    expect(window.open).toHaveBeenCalledWith('https://idp.example.com/saml/start', '_blank')
+    expect(historyItem.mcpAuthPromptRows?.[0]).toEqual(
+      expect.objectContaining({
+        status: 'authenticating',
+        recoverable_status: 'session_expired',
+      })
+    )
+    expect(historyItem.mcpAuthPromptRows?.[0].pending_initiate).toBeUndefined()
+  })
+
+  it('continues pending OAuth2 prompt auth and handles popup blockers without losing metadata', async () => {
+    const historyItem = createHistoryItem({
+      mcpAuthPromptRows: [
+        createPromptRow({
+          pending_initiate: {
+            auth_url: 'https://idp.example.com/start',
+            redirect_uri_hostname: 'api.example.com:9443',
+            localhost_warning: false,
+          },
+        }),
+      ],
+    })
+    mockChatsStore.currentChat = createChat(historyItem)
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    await chatGenerationStore.continuePromptAuth('chat-1', 0, 0, 'mcp-1')
+
+    expect(window.open).toHaveBeenCalledWith('https://idp.example.com/start', '_blank')
+    expect(historyItem.mcpAuthPromptRows?.[0]).toEqual(
+      expect.objectContaining({
+        status: 'authentication_required',
+        pending_initiate: {
+          auth_url: 'https://idp.example.com/start',
+          redirect_uri_hostname: 'api.example.com:9443',
+          localhost_warning: false,
+        },
+        error_context: 'Browser blocked the sign-in window. Allow popups and try again.',
+      })
+    )
+
+    vi.mocked(window.open).mockReturnValue(window)
+    await chatGenerationStore.continuePromptAuth('chat-1', 0, 0, 'mcp-1')
+
+    expect(historyItem.mcpAuthPromptRows?.[0]).toEqual(
+      expect.objectContaining({
+        status: 'authenticating',
+        pending_initiate: null,
+        recoverable_status: 'authentication_required',
+        error_context: null,
+      })
+    )
+  })
+
+  it('cancels pending OAuth2 prompt auth without changing the recoverable row status', async () => {
+    const historyItem = createHistoryItem({
+      mcpAuthPromptRows: [
+        createPromptRow({
+          status: 'session_expired',
+          recoverable_status: 'session_expired',
+          pending_initiate: {
+            auth_url: 'https://idp.example.com/start',
+            redirect_uri_hostname: 'localhost',
+            localhost_warning: true,
+          },
+        }),
+      ],
+    })
+    mockChatsStore.currentChat = createChat(historyItem)
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    chatGenerationStore.cancelPromptAuth('chat-1', 0, 0, 'mcp-1')
+
+    expect(historyItem.mcpAuthPromptRows?.[0]).toEqual(
+      expect.objectContaining({
+        status: 'session_expired',
+        recoverable_status: 'session_expired',
+        pending_initiate: null,
+      })
+    )
   })
 
   it('marks only the targeted authenticating prompt row as authenticated on callback success', async () => {

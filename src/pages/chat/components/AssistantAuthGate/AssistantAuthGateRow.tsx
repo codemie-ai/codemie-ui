@@ -26,6 +26,8 @@ import { cn } from '@/utils/utils'
 interface AssistantAuthGateRowProps {
   row: MCPAuthGateServer
   onAuthenticate: (mcpConfigId: string) => void
+  onContinue: (mcpConfigId: string) => void
+  onCancel: (mcpConfigId: string) => void
 }
 
 const ROW_STYLES: Record<MCPAuthGateStatus, string> = {
@@ -71,10 +73,18 @@ const getInfoWarningProps = (
   }
 }
 
-const AssistantAuthGateRow: React.FC<AssistantAuthGateRowProps> = ({ row, onAuthenticate }) => {
+const AssistantAuthGateRow: React.FC<AssistantAuthGateRowProps> = ({
+  row,
+  onAuthenticate,
+  onContinue,
+  onCancel,
+}) => {
   if (!isRenderableStatus(row.status)) return null
 
   const infoWarning = getInfoWarningProps(row)
+  const hasPendingInitiate =
+    Boolean(row.pending_initiate) &&
+    (row.status === 'authentication_required' || row.status === 'session_expired')
 
   return (
     <div className={cn('flex flex-col gap-3 rounded-xl border p-4', ROW_STYLES[row.status])}>
@@ -90,34 +100,63 @@ const AssistantAuthGateRow: React.FC<AssistantAuthGateRowProps> = ({ row, onAuth
           {row.status === 'session_expired' && row.error_context && (
             <div className="mt-2 text-xs text-text-secondary">{row.error_context}</div>
           )}
+          {hasPendingInitiate && (
+            <div className="mt-2 flex flex-col gap-1 text-xs text-text-secondary">
+              <div>Redirect URI: {row.pending_initiate!.redirect_uri_hostname}</div>
+              {row.pending_initiate!.localhost_warning && (
+                <div>This auth flow will redirect to your local machine</div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-start gap-2 md:items-end">
           <StatusBadge {...STATUS_BADGES[row.status]} />
 
-          {row.status === 'authentication_required' && (
-            <Button
-              type={ButtonType.PRIMARY}
-              size={ButtonSize.SMALL}
-              disabled={!row.initiate_url}
-              onClick={() => onAuthenticate(row.mcp_config_id)}
-            >
-              Authenticate
-            </Button>
+          {hasPendingInitiate ? (
+            <div className="flex flex-wrap justify-start gap-2 md:justify-end">
+              <Button
+                type={ButtonType.PRIMARY}
+                size={ButtonSize.SMALL}
+                onClick={() => onContinue(row.mcp_config_id)}
+              >
+                Continue
+              </Button>
+              <Button
+                type={ButtonType.SECONDARY}
+                size={ButtonSize.SMALL}
+                onClick={() => onCancel(row.mcp_config_id)}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <>
+              {row.status === 'authentication_required' && (
+                <Button
+                  type={ButtonType.PRIMARY}
+                  size={ButtonSize.SMALL}
+                  disabled={!row.initiate_url}
+                  onClick={() => onAuthenticate(row.mcp_config_id)}
+                >
+                  Authenticate
+                </Button>
+              )}
+
+              {row.status === 'session_expired' && (
+                <Button
+                  type={ButtonType.SECONDARY}
+                  size={ButtonSize.SMALL}
+                  disabled={!row.initiate_url}
+                  onClick={() => onAuthenticate(row.mcp_config_id)}
+                >
+                  Re-authenticate
+                </Button>
+              )}
+            </>
           )}
 
-          {row.status === 'session_expired' && (
-            <Button
-              type={ButtonType.SECONDARY}
-              size={ButtonSize.SMALL}
-              disabled={!row.initiate_url}
-              onClick={() => onAuthenticate(row.mcp_config_id)}
-            >
-              Re-authenticate
-            </Button>
-          )}
-
-          {row.status === 'authenticating' && (
+          {row.status === 'authenticating' && !hasPendingInitiate && (
             <div className="flex items-center gap-2 text-xs text-text-secondary">
               <Spinner inline className="h-4 w-4" rootClassName="min-h-0 pt-0" />
               <span>Waiting for browser sign-in</span>

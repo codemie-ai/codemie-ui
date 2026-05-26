@@ -160,7 +160,11 @@ const MCPToolkitForm = ({
             onSettingsChange={envVarHook.setSettings}
             onManualEnvVarValuesChange={envVarHook.setManualEnvVarValues}
             showNewIntegrationPopup={showNewIntegrationPopup}
-            serverConfig={{ ...serverConfig, settings: envVarHook.settings }}
+            serverConfig={{
+              ...serverConfig,
+              settings: envVarHook.settings,
+              ...(mcpServer?.mcp_config_id && { mcp_config_id: mcpServer.mcp_config_id }),
+            }}
             validateManualEnvVars={envVarHook.validateManualEnvVars}
             triggerValidation={trigger}
             onCancel={handleHide}

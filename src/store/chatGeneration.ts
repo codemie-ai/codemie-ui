@@ -28,6 +28,12 @@ import api, { ABORT_ERROR, DEFAULT_ERROR_MESSAGE } from '@/utils/api'
 import { transformChatHistoryFEtoBE } from '@/utils/chatHelpers'
 import { fileToBase64 } from '@/utils/helpers'
 import { parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
+import {
+  getPendingInitiate,
+  getRecoverableAuthStatus,
+  MISSING_REDIRECT_HOSTNAME_MESSAGE,
+  POPUP_BLOCKED_AUTH_MESSAGE,
+} from '@/utils/mcpAuthInitiate'
 import storage from '@/utils/storage'
 import Stream, { streamChunkToObject } from '@/utils/stream'
 import toaster from '@/utils/toaster'
@@ -42,7 +48,6 @@ const STREAMING_NOTIFICATION_INTERVAL = 5_000 // 5 seconds
 const ASSISTANT_NOT_FOUND =
   'Assistant you are trying to reach is not found. Please mention another one using @mention.'
 const EMPTY_MESSAGE = '/Empty message/'
-const DEFAULT_PROMPT_RECOVERY_STATUS: MCPAuthRecoverableStatus = 'authentication_required'
 
 interface ChatGenerationStoreType {
   chatAbortControllers: Record<string, AbortController>
@@ -70,6 +75,18 @@ interface ChatGenerationStoreType {
     messageIndex: number,
     mcpConfigId: string
   ) => Promise<void>
+  continuePromptAuth: (
+    chatId: string,
+    historyIndex: number,
+    messageIndex: number,
+    mcpConfigId: string
+  ) => Promise<void>
+  cancelPromptAuth: (
+    chatId: string,
+    historyIndex: number,
+    messageIndex: number,
+    mcpConfigId: string
+  ) => void
   markPromptAuthSuccess: (chatId: string, authConfigId: string) => void
   rollbackPromptAuthRow: (chatId: string, authConfigId: string, errorContext: string | null) => void
 
@@ -146,8 +163,7 @@ const getCurrentChatById = (chatId: string): Conversation | null => {
 }
 
 const getPromptRecoverableStatus = (row: MCPAuthGateServer): MCPAuthRecoverableStatus =>
-  row.recoverable_status ??
-  (row.status === 'session_expired' ? 'session_expired' : DEFAULT_PROMPT_RECOVERY_STATUS)
+  getRecoverableAuthStatus(row)
 
 const getPromptMessage = (
   chat: Conversation,
@@ -638,7 +654,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const message = getPromptMessage(chat, historyIndex, messageIndex)
     const row = getPromptRows(message).find((item) => item.mcp_config_id === mcpConfigId)
 
-    if (!row?.initiate_url || row.status === 'authenticating') return
+    if (!row?.initiate_url || row.status === 'authenticating' || row.pending_initiate) return
 
     try {
       const response = await api.post(row.initiate_url.replace(/^\//, ''), {
@@ -647,6 +663,41 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       const payload = (await response.json()) as MCPAuthInitiateResponse
 
       if (!payload.auth_url) return
+
+      if (row.auth_type === 'oauth2') {
+        const pendingInitiate = getPendingInitiate(payload)
+
+        if (!pendingInitiate) {
+          toaster.error(MISSING_REDIRECT_HOSTNAME_MESSAGE)
+          updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
+            rows.map((item) =>
+              item.mcp_config_id === mcpConfigId
+                ? {
+                    ...item,
+                    pending_initiate: null,
+                    error_context: MISSING_REDIRECT_HOSTNAME_MESSAGE,
+                    recoverable_status: getPromptRecoverableStatus(item),
+                  }
+                : item
+            )
+          )
+          return
+        }
+
+        updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
+          rows.map((item) =>
+            item.mcp_config_id === mcpConfigId
+              ? {
+                  ...item,
+                  pending_initiate: pendingInitiate,
+                  error_context: null,
+                  recoverable_status: getPromptRecoverableStatus(item),
+                }
+              : item
+          )
+        )
+        return
+      }
 
       window.open(payload.auth_url, '_blank')
       updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
@@ -663,6 +714,51 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     } catch (error) {
       console.error('Failed to initiate conversation authentication:', error)
     }
+  },
+
+  async continuePromptAuth(chatId, historyIndex, messageIndex, mcpConfigId) {
+    const chat = getCurrentChatById(chatId)
+    if (!chat || chat.isWorkflow) return
+
+    updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
+      rows.map((item) => {
+        if (item.mcp_config_id !== mcpConfigId || !item.pending_initiate) return item
+
+        const popup = window.open(item.pending_initiate.auth_url, '_blank')
+
+        if (popup === null) {
+          return {
+            ...item,
+            error_context: POPUP_BLOCKED_AUTH_MESSAGE,
+            recoverable_status: getPromptRecoverableStatus(item),
+          }
+        }
+
+        return {
+          ...item,
+          status: 'authenticating',
+          pending_initiate: null,
+          error_context: null,
+          recoverable_status: getPromptRecoverableStatus(item),
+        }
+      })
+    )
+  },
+
+  cancelPromptAuth(chatId, historyIndex, messageIndex, mcpConfigId) {
+    const chat = getCurrentChatById(chatId)
+    if (!chat || chat.isWorkflow) return
+
+    updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
+      rows.map((item) =>
+        item.mcp_config_id === mcpConfigId
+          ? {
+              ...item,
+              pending_initiate: null,
+            }
+          : item
+      )
+    )
   },
 
   markPromptAuthSuccess(chatId, authConfigId) {

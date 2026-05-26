@@ -14,6 +14,7 @@
 //
 
 import { render, screen } from '@testing-library/react'
+import { ReactNode } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 
 import { MCPServerDetails } from '@/types/entity/mcp'
@@ -32,7 +33,11 @@ vi.mock('@/components/NavigationMore', () => ({
     </div>
   ),
 }))
-vi.mock('../MCPToolkitTest', () => ({ default: () => <button>Test Connection</button> }))
+vi.mock('../MCPToolkitTest', () => ({
+  default: () => <button>Test Connection</button>,
+  MCPToolkitTestProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  MCPToolkitTestTrigger: () => <button>Test Connection</button>,
+}))
 vi.mock('../IntegrationSelector', () => ({
   default: () => <div data-testid="integration-selector" />,
 }))

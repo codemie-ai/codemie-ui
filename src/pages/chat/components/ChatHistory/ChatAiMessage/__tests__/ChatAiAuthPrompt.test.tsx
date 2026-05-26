@@ -23,8 +23,16 @@ import type { MCPAuthGateServer } from '@/types/entity/mcpAuth'
 import ChatAiAuthPrompt from '../ChatAiAuthPrompt'
 import ChatAiMessage from '../ChatAiMessage'
 
-const { mockInitiatePromptAuth, mockEditChatGeneration, mockChatsStore } = vi.hoisted(() => ({
+const {
+  mockInitiatePromptAuth,
+  mockContinuePromptAuth,
+  mockCancelPromptAuth,
+  mockEditChatGeneration,
+  mockChatsStore,
+} = vi.hoisted(() => ({
   mockInitiatePromptAuth: vi.fn(),
+  mockContinuePromptAuth: vi.fn(),
+  mockCancelPromptAuth: vi.fn(),
   mockEditChatGeneration: vi.fn(),
   mockChatsStore: {
     currentChat: {
@@ -41,6 +49,8 @@ vi.mock('valtio', () => ({
 vi.mock('@/store/chatGeneration', () => ({
   chatGenerationStore: {
     initiatePromptAuth: (...args: unknown[]) => mockInitiatePromptAuth(...args),
+    continuePromptAuth: (...args: unknown[]) => mockContinuePromptAuth(...args),
+    cancelPromptAuth: (...args: unknown[]) => mockCancelPromptAuth(...args),
     editChatGeneration: (...args: unknown[]) => mockEditChatGeneration(...args),
   },
 }))
@@ -221,6 +231,36 @@ describe('ChatAiAuthPrompt', () => {
       )
     ).toBeInTheDocument()
     expect(screen.queryByTestId('chat-ai-auth-prompt')).not.toBeInTheDocument()
+  })
+
+  it('wires OAuth2 pending Continue and Cancel actions through the chat generation store', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ChatAiAuthPrompt
+        chatId="chat-1"
+        historyIndex={2}
+        messageIndex={0}
+        rows={[
+          createPromptRow({
+            pending_initiate: {
+              auth_url: 'https://idp.example.com/start',
+              redirect_uri_hostname: 'api.example.com:9443',
+              localhost_warning: false,
+            },
+          }),
+        ]}
+      />
+    )
+
+    expect(screen.getByText('Redirect URI: api.example.com:9443')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(mockInitiatePromptAuth).not.toHaveBeenCalled()
+    expect(mockContinuePromptAuth).toHaveBeenCalledWith('chat-1', 2, 0, 'mcp-1')
+    expect(mockCancelPromptAuth).toHaveBeenCalledWith('chat-1', 2, 0, 'mcp-1')
   })
 
   it('replaces Markdown with ChatAiAuthPrompt when prompt rows exist on the message', () => {
