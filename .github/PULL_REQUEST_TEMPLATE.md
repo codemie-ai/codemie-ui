@@ -1,14 +1,36 @@
 ## Summary
 
-Brief overview of what this PR does and why.
+[2-4 sentences: what problem was solved and how]
+
+## Type of change
+
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactor
+- [ ] Security fix
+- [ ] Breaking change
 
 ## Changes
 
-List of major changes to highlight. Do not list all, just the important ones. Do not include code snippets.
+| File | What changed |
+|---|---|
+| `path/to/file.ts` | [what changed] |
 
-## Impact
+## Spec
 
-Optional: Show before/after examples for user-facing changes.
+[Link to spec document or N/A]
+
+## QA Guide
+
+[Step-by-step how to test, or link to QA guide]
+
+## Screenshots
+
+[Screenshots if UI changes, or N/A]
+
+## E2E Test Harness
+
+[Screenshots of running and successfully completed `smoke-ui` e2e tests in the test harness, or N/A]
 
 ## Checklist
 
