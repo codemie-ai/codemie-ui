@@ -16,6 +16,7 @@
 import * as Yup from 'yup'
 
 import { User } from '@/types/entity'
+import { ConfigItem } from '@/types/entity/configuration'
 
 export enum CredentialComponentType {
   input = 'input',
@@ -36,6 +37,7 @@ export type GetCredentialsMappingParams = {
   user: User | null
   project?: string
   checkIfAdminOfAnyProject?: boolean
+  customerConfig?: readonly ConfigItem[]
 }
 
 export type CredentialFieldConfig = {
@@ -95,6 +97,7 @@ export type CredentialTypeConfig = {
   message?: CredentialMessage
   fieldsSectionTitle?: string // Defaults to 'Authentication'
   fieldsManualConfiguration?: FieldsManualConfiguration // If present, use RecordInput instead of CredentialFields
+  personalFeatureFlag?: string
 }
 
 export type CredentialUIMap = Record<string, CredentialTypeConfig>

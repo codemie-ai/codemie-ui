@@ -113,16 +113,18 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       settingType,
       user,
       project: projectName,
+      customerConfig,
     })
-  }, [settingType, user, projectName])
+  }, [settingType, user, projectName, customerConfig])
 
   const CREDENTIAL_VALUES_MAPPING = useMemo(() => {
     return getCredentialUIMapping({
       settingType,
       user,
       project: projectName,
+      customerConfig,
     })
-  }, [settingType, user, projectName])
+  }, [settingType, user, projectName, customerConfig])
 
   const [credentialType, setCredentialType] = useState(
     initialCredentialType?.toLowerCase() ?? CREDENTIAL_TYPES[0]
@@ -171,6 +173,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     }
 
     const config = CREDENTIAL_VALUES_MAPPING[credentialType]
+    if (!config) return Yup.object(schema)
+
     Object.entries(config.fields).forEach(([key, fieldConfig]) => {
       if (fieldConfig.type === CredentialComponentType.message) return
 
@@ -256,6 +260,14 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
 
     reset({ alias: getValues('alias'), ...getCredentialDefaults(newType) })
   }
+
+  useEffect(() => {
+    if (!CREDENTIAL_TYPES.includes(credentialType) && CREDENTIAL_TYPES.length > 0) {
+      handleCredentialTypeChange(CREDENTIAL_TYPES[0])
+    }
+    // handleCredentialTypeChange intentionally uses current form state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [CREDENTIAL_TYPES, credentialType])
 
   useEffect(() => {
     return registerCredentialTypeCallback(handleCredentialTypeChange)

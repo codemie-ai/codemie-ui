@@ -69,6 +69,14 @@ export type MultiSelectOptionType = Record<
   string | undefined | { label: string; value: string | number | boolean }
 >
 
+const getTextValue = (
+  value: string | undefined | { label: string; value: string | number | boolean }
+) => {
+  if (typeof value === 'string') return value
+  if (value === undefined) return ''
+  return value.label
+}
+
 export type MultiSelectProps = {
   label?: string
   value?: string[] | string | object | MultiSelectOptionType[]
@@ -219,42 +227,6 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       [MultiSelectSize.MEDIUM]: 'h-[44px] py-[5px]',
     }[size]
 
-    const preparedPreset = useMemo<MultiSelectPassThroughOptions>(() => {
-      const labelClassName =
-        display === 'chip' ? 'flex flex-wrap gap-2 text-text-unfocused' : 'text-text-unfocused'
-      const errorBorderClass = error ? '!border-failed-secondary' : ''
-
-      if (!showCheckbox) {
-        return {
-          ...ptPreset!,
-          label: {
-            className: labelClassName,
-          },
-          checkboxContainer: {
-            className: '!hidden',
-          },
-          root: {
-            className: errorBorderClass,
-          },
-        }
-      }
-      return {
-        ...ptPreset!,
-        checkbox: {
-          ...ptPreset?.checkbox,
-          root: {
-            className: 'mr-2',
-          },
-        },
-        label: {
-          className: labelClassName,
-        },
-        root: {
-          className: errorBorderClass,
-        },
-      }
-    }, [showCheckbox, display, error])
-
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !disabled) {
         const root = selectRef.current
@@ -294,6 +266,64 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       const unselected = sorted.filter((o) => !selectedSnapshot.includes(o[optionValue] as string))
       return [...selected, ...unselected]
     }, [options, optionLabel, optionValue, selectedSnapshot, onScrollBottom])
+
+    const hiddenInputValue = useMemo(() => {
+      if (preparedValue.length === 0) return ''
+
+      return preparedValue
+        .map((selected) => {
+          const selectedValue =
+            typeof selected === 'object' && selected !== null
+              ? selected[optionValue]
+              : selected
+          const selectedOption = options.find((option) => option[optionValue] === selectedValue)
+          return getTextValue(selectedOption?.[optionLabel]) || getTextValue(selectedValue)
+        })
+        .filter(Boolean)
+        .join(', ')
+    }, [preparedValue, options, optionLabel, optionValue])
+
+    const preparedPreset = useMemo<MultiSelectPassThroughOptions>(() => {
+      const labelClassName =
+        display === 'chip' ? 'flex flex-wrap gap-2 text-text-unfocused' : 'text-text-unfocused'
+      const errorBorderClass = error ? '!border-failed-secondary' : ''
+      const basePreset = {
+        ...ptPreset!,
+        input: {
+          value: hiddenInputValue,
+        },
+      }
+
+      if (!showCheckbox) {
+        return {
+          ...basePreset,
+          label: {
+            className: labelClassName,
+          },
+          checkboxContainer: {
+            className: '!hidden',
+          },
+          root: {
+            className: errorBorderClass,
+          },
+        }
+      }
+      return {
+        ...basePreset,
+        checkbox: {
+          ...ptPreset?.checkbox,
+          root: {
+            className: 'mr-2',
+          },
+        },
+        label: {
+          className: labelClassName,
+        },
+        root: {
+          className: errorBorderClass,
+        },
+      }
+    }, [showCheckbox, display, error, hiddenInputValue])
 
     const preparedSelectedItemTemplate = useMemo(() => {
       if (display !== 'chip') return selectedItemTemplate
@@ -376,12 +406,14 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           selectedItemTemplate={preparedSelectedItemTemplate ?? undefined}
         >
           {preparedValue.length > 0 && !singleValue && (
-            <div
-              className="absolute right-[34px] top-1/2 -translate-y-1/2 cursor-pointer text-text-secondary hover:text-text-accent-hover"
+            <button
+              type="button"
+              aria-label="Clear selected options"
+              className="absolute right-[34px] top-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0 text-text-secondary hover:text-text-accent-hover"
               onClick={(e) => onChange({ ...e, value: [] } as unknown as MultiSelectChangeEvent)}
             >
               <XMarkSvg className="w-[20px] h-[20px]" />
-            </div>
+            </button>
           )}
         </PrimeMultiselect>
         {error && (

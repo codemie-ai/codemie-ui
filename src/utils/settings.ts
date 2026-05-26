@@ -47,6 +47,7 @@ export const getCredentialUIMapping = ({
   user,
   project,
   checkIfAdminOfAnyProject = false,
+  customerConfig,
 }: GetCredentialsMappingParams): CredentialUIMap => {
   const isProjectAdmin = isUserProjectAdmin(user, project, checkIfAdminOfAnyProject)
   const isEnterprise = isEnterpriseEdition()
@@ -58,8 +59,16 @@ export const getCredentialUIMapping = ({
     const accessType = config.accessType ?? CREDENTIAL_DEFAULTS.accessType
     const roleRestriction = config.roleRestrictionType ?? CREDENTIAL_DEFAULTS.roleRestrictionType
     const enterpriseOnly = config.enterpriseOnly ?? false
+    const personalFeatureAllowsUserCredential =
+      settingType === SETTING_TYPE_USER &&
+      roleRestriction === CredentialRoleRestriction.ADMIN_ONLY &&
+      isConfigItemEnabled(customerConfig ?? [], config.personalFeatureFlag ?? '')
 
-    if (roleRestriction === CredentialRoleRestriction.ADMIN_ONLY && !isProjectAdmin) {
+    if (
+      roleRestriction === CredentialRoleRestriction.ADMIN_ONLY &&
+      !isProjectAdmin &&
+      !personalFeatureAllowsUserCredential
+    ) {
       return
     }
 

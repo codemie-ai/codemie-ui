@@ -16,11 +16,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import {
+  getAvailableCredentialsTypes,
   getSettingCredsURL,
   getOriginalCredentialType,
   convertCredsToKeyValue,
   getCredentialType,
+  SETTING_TYPE_PROJECT,
+  SETTING_TYPE_USER,
 } from '@/utils/settings'
+
+vi.mock('@/utils/enterpriseEdition', () => ({
+  isEnterpriseEdition: () => true,
+}))
 
 describe('getSettingCredsURL', () => {
   beforeEach(() => {
@@ -113,5 +120,81 @@ describe('getCredentialType', () => {
 
   it('returns lowercase type for unrecognized tools', () => {
     expect(getCredentialType('CustomTool')).toBe('customtool')
+  })
+})
+
+describe('getAvailableCredentialsTypes LiteLLM filtering', () => {
+  const regularUser = {
+    isAdmin: false,
+    applicationsAdmin: [],
+    applications: ['demo'],
+  } as any
+
+  const adminUser = {
+    isAdmin: true,
+    applicationsAdmin: [],
+    applications: ['demo'],
+  } as any
+
+  const enabledConfig = [
+    { id: 'features:personalLiteLLMIntegrations', settings: { enabled: true } },
+  ]
+
+  const disabledConfig = [
+    { id: 'features:personalLiteLLMIntegrations', settings: { enabled: false } },
+  ]
+
+  it('hides LiteLLM from regular user settings when personal feature is disabled', () => {
+    expect(
+      getAvailableCredentialsTypes({
+        settingType: SETTING_TYPE_USER,
+        user: regularUser,
+        project: 'demo',
+        customerConfig: disabledConfig,
+      })
+    ).not.toContain('litellm')
+  })
+
+  it('shows LiteLLM in regular user settings when personal feature is enabled', () => {
+    expect(
+      getAvailableCredentialsTypes({
+        settingType: SETTING_TYPE_USER,
+        user: regularUser,
+        project: 'demo',
+        customerConfig: enabledConfig,
+      })
+    ).toContain('litellm')
+  })
+
+  it('keeps LiteLLM hidden from regular project settings when personal feature is enabled', () => {
+    expect(
+      getAvailableCredentialsTypes({
+        settingType: SETTING_TYPE_PROJECT,
+        user: regularUser,
+        project: 'demo',
+        customerConfig: enabledConfig,
+      })
+    ).not.toContain('litellm')
+  })
+
+  it('keeps LiteLLM visible for admins when personal feature is disabled', () => {
+    expect(
+      getAvailableCredentialsTypes({
+        settingType: SETTING_TYPE_USER,
+        user: adminUser,
+        project: 'demo',
+        customerConfig: disabledConfig,
+      })
+    ).toContain('litellm')
+  })
+
+  it('hides personal LiteLLM while customer config is not loaded', () => {
+    expect(
+      getAvailableCredentialsTypes({
+        settingType: SETTING_TYPE_USER,
+        user: regularUser,
+        project: 'demo',
+      })
+    ).not.toContain('litellm')
   })
 })
