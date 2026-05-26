@@ -44,7 +44,7 @@
 | **Accessibility** | ARIA, keyboard nav, screen readers | "Make accessible", "Add ARIA", "Keyboard support" | `patterns/accessibility-patterns.md` | `components/component-patterns.md` |
 | **Performance** | Optimization, memoization, lazy loading | "Optimize", "Speed up", "Reduce re-renders" | `development/performance-patterns.md` | `patterns/custom-hooks.md` |
 | **Testing** | Write tests, fix tests | "Test component", "Write test", "Fix failing test" | `testing/testing-patterns.md` | `components/component-patterns.md` |
-| **Code Review** | AI code review with verifiable commit markers | "Do code review", "Review my changes", "Run code reviewer" | `.claude/agents/code-reviewer.md` | N/A |
+| **Code Review** | AI code review with verifiable commit markers | "Do code review", "Review my changes", "Run code reviewer" | `.claude/skills/code-reviewer/SKILL.md` | N/A |
 
 **Guide Path**: All guides in `.codemie/guides/<category>/` (Code Review: `.claude/skills/code-reviewer/SKILL.md`)
 
@@ -244,7 +244,7 @@ START
 - **Form Handling**: React Hook Form 7.x + Yup
 - **Testing**: Vitest + React Testing Library
 - **HTTP Client**: Custom fetch wrapper (not Axios)
-- **Routing**: React Router 6.x
+- **Routing**: React Router 7.x
 
 ### Module Federation
 - **Plugin**: `@originjs/vite-plugin-federation`
@@ -263,7 +263,7 @@ The project has successfully migrated from Vue.js to React. All components, page
 
 ### Current Architecture
 - **All Components**: React functional components with TypeScript
-- **All Pages**: React-based routing with React Router 6.x
+- **All Pages**: React-based routing with React Router 7.x
 - **State Management**: Valtio for global state
 - **Form Handling**: React Hook Form + Yup validation
 - **Styling**: Tailwind CSS exclusively
@@ -283,6 +283,7 @@ codemie-ui-next/
 │   │   ├── testing/               # Testing guides
 │   │   └── architecture/          # Architecture guides
 │   ├── reviews/                   # 🔒 Local code review specs (gitignored)
+│   ├── specs/                     # ✒️ Feature specs — output of solution-architect + dark-factory (gitignored)
 │   └── virtual_assistants/        # AI assistant definitions (.yaml)
 ├── src/
 │   ├── components/               # ⭐ Global React components
@@ -463,6 +464,41 @@ All guides located in `.codemie/guides/<category>/`
 | State management | Read `state-management.md` | Valtio store usage |
 | Modal implementation | Read `modal-patterns.md` | Using Popup component |
 | API integration | Read `api-integration.md` | Using `.json()` on response |
+
+---
+
+## 🏭 AI-RUN GUIDE TREE
+
+Factory-generated guides under `.ai-run/guides/`. Loaded by SDLC Factory agents.
+
+<!-- ai-run-init:guide-imports start -->
+| Category | Guide Path | Purpose |
+|---|---|---|
+| Architecture | `.ai-run/guides/architecture/architecture.md` | Layered SPA structure, data flow, module federation, design patterns |
+| Routing | `.ai-run/guides/architecture/routing-patterns.md` | React Router v7 navigation, params, protected routes |
+| Components | `.ai-run/guides/components/component-patterns.md` | React component structure, props typing, event handling |
+| Reusable Components | `.ai-run/guides/components/reusable-components.md` | Shared component catalog with import paths |
+| Component Organization | `.ai-run/guides/components/component-organization.md` | File placement, 300-line limit, extraction strategy |
+| Modal Patterns | `.ai-run/guides/patterns/modal-patterns.md` | Popup component usage — never use Dialog directly |
+| Form Patterns | `.ai-run/guides/patterns/form-patterns.md` | React Hook Form + Yup validation |
+| State Management | `.ai-run/guides/patterns/state-management.md` | Valtio stores — Component → Store → API law |
+| Custom Hooks | `.ai-run/guides/patterns/custom-hooks.md` | Hook extraction, cleanup rules, debounce pattern |
+| Accessibility | `.ai-run/guides/patterns/accessibility-patterns.md` | ARIA, keyboard nav, focus management |
+| Styling | `.ai-run/guides/styling/styling-guide.md` | Tailwind-only rule, cn() utility, token system |
+| Theme Management | `.ai-run/guides/styling/theme-management.md` | Theme tokens, dark/light mode |
+| API Integration | `.ai-run/guides/development/api-integration.md` | Fetch wrapper usage, .json() rule, no Axios |
+| Code Organization | `.ai-run/guides/development/code-organization.md` | Naming, imports, single quotes, nullish coalescing |
+| Constants | `.ai-run/guides/development/constants-usage.md` | Magic value extraction, enum vs const |
+| Workflow Editor | `.ai-run/guides/development/workflow-editor-patterns.md` | React Flow / @xyflow/react patterns |
+| Error Handling | `.ai-run/guides/development/error-handling-patterns.md` | Error boundaries, store errors, toasts |
+| Performance | `.ai-run/guides/development/performance-patterns.md` | Memoization rules, Valtio snapshot optimization |
+| Refactoring | `.ai-run/guides/development/refactoring-patterns.md` | 300-line limit, sub-component extraction |
+| Testing | `.ai-run/guides/testing/testing-patterns.md` | Vitest unit + integration, AAA, vi.mock rules |
+| Onboarding | `.ai-run/guides/onboarding/flow-creation-guide.md` | OnboardingFlow type, triggers, step types, registration |
+| Git Workflow | `.ai-run/guides/standards/git-workflow.md` | Branch/commit format, squash merge, pre-commit hooks |
+| Quality Gates | `.ai-run/guides/quality-gates.md` | lint → typecheck → test:unit → test:integration |
+| Project Settings | `.ai-run/guides/project.md` | Ticket prefix EPMCDME, Jira adapter, MR target branch |
+<!-- ai-run-init:guide-imports end -->
 
 ---
 
