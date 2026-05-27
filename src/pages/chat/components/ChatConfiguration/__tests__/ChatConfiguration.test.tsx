@@ -56,7 +56,9 @@ const {
         { label: 'GPT-4', value: 'gpt-4', isDefault: true },
         { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
       ],
+      imageGenerationModels: [{ label: 'GPT Image 1', value: 'gpt-image-1', isDefault: true }],
       getLLMModels: vi.fn(),
+      getImageGenerationModels: vi.fn(),
     },
     mockUserStore: {
       user: {
@@ -119,6 +121,8 @@ const mockChat: Conversation = {
   id: 'chat-123',
   name: 'Test Chat',
   llmModel: 'gpt-4',
+  enableImageGeneration: false,
+  imageGenerationModel: null,
   isGroup: false,
   assistantData: [],
 } as unknown as Conversation
@@ -167,6 +171,7 @@ describe('ChatConfiguration', () => {
     expect(aside).toHaveClass('w-96')
     expect(screen.getByText('General')).toBeInTheDocument()
     expect(screen.getByText('LLM Model')).toBeInTheDocument()
+    expect(screen.getByText('Image generation')).toBeInTheDocument()
   })
 
   it('switches from general view to assistant form with loading state', async () => {

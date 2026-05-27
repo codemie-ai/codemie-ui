@@ -29,6 +29,7 @@ import * as Yup from 'yup'
 
 import Accordion from '@/components/Accordion'
 import Button from '@/components/Button'
+import Switch from '@/components/form/Switch'
 import GuardrailAssignmentPanel from '@/components/guardrails/GuardrailAssignmentPanel/GuardrailAssignmentPanel'
 import { guardrailAssignmentsSchema } from '@/components/guardrails/GuardrailAssignmentPanel/schemas/guardrailAssignmentSchema'
 import SkillSelector from '@/components/SkillSelector'
@@ -61,6 +62,7 @@ import { cn } from '@/utils/utils'
 
 import { compareFormData } from '../../utils/compareFormData'
 import AssistantSelector from '../AssistantSelector'
+import LLMSelector from './components/LLMSelector'
 import RefineAssistantModal from '../RefineAssistantModal/RefineAssistantModal'
 import { AssistantSetupSection } from './components/AssistantSetup'
 import { isBackendFileUrl } from './components/AssistantSetup/utils/getFileNameFromUrl'
@@ -110,6 +112,8 @@ const formSchema = Yup.object()
         return /^https?:\/\/.+/.test(value)
       }),
     llm_model_type: Yup.string(),
+    enable_image_generation: Yup.boolean().default(false),
+    image_generation_model: Yup.string().nullable().optional(),
     categories: Yup.array().of(Yup.string().required()),
     conversation_starters: Yup.array()
       .of(Yup.string().max(200, 'Each starter must be at most 200 characters long').default(''))
@@ -232,6 +236,8 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           shared: assistant?.shared ?? false,
           is_global: assistant?.is_global ?? false,
           llm_model_type: assistant?.llm_model_type ?? '',
+          enable_image_generation: assistant?.enable_image_generation ?? false,
+          image_generation_model: assistant?.image_generation_model ?? '',
           slug: assistant?.slug?.length ? assistant.slug : getSlugFromName(assistant?.name),
           temperature: assistant?.temperature ?? undefined,
           top_p: assistant?.top_p ?? undefined,
@@ -256,6 +262,11 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         mcp_servers: mcpServers,
         conversation_starters: values.conversation_starters?.filter(Boolean) ?? [],
       }
+
+      preparedValues.enable_image_generation = !!values.enable_image_generation
+      preparedValues.image_generation_model = values.enable_image_generation
+        ? values.image_generation_model || null
+        : null
 
       preparedValues.is_react = !!assistant?.is_react
       preparedValues.slug ??= getSlugFromName(preparedValues.name)
@@ -529,6 +540,65 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
                   formState={formState}
                   trigger={trigger}
                   getValues={getValues}
+                />
+              </div>
+            </Accordion>
+          </div>
+
+          <div data-onboarding="assistant-image-generation-accordion">
+            <Accordion
+              title="Image generation"
+              description="Enable optional image generation for this assistant."
+              defaultOpen={false}
+            >
+              <div className="px-4 pb-4 flex flex-col gap-6">
+                <Controller
+                  name="enable_image_generation"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      label="Enable image generation"
+                      labelClassName="font-mono text-sm leading-6"
+                      value={!!field.value}
+                      onChange={(e) => {
+                        const isEnabled = e.target.checked
+                        setValue('enable_image_generation', isEnabled, { shouldDirty: false })
+                        if (!isEnabled) {
+                          setValue('image_generation_model', '', { shouldDirty: false })
+                        }
+                      }}
+                    />
+                  )}
+                />
+
+                <Controller
+                  name="enable_image_generation"
+                  control={control}
+                  render={({ field: enableField }) =>
+                    enableField.value ? (
+                      <Controller
+                        name="image_generation_model"
+                        control={control}
+                        render={({ field }) => (
+                          <LLMSelector
+                            label="Image generation model:"
+                            placeholder="Use system default"
+                            className="w-full"
+                            value={field.value ?? ''}
+                            modelType="imageGeneration"
+                            allowEmpty
+                            onChange={(value) =>
+                              setValue('image_generation_model', value, {
+                                shouldDirty: false,
+                              })
+                            }
+                          />
+                        )}
+                      />
+                    ) : (
+                      <></>
+                    )
+                  }
                 />
               </div>
             </Accordion>

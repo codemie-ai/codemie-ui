@@ -24,6 +24,10 @@ const normalizeStringField = (value: string | null | undefined): string => {
   return value ?? ''
 }
 
+const normalizeBooleanField = (value: boolean | null | undefined): boolean => {
+  return value ?? false
+}
+
 const getDefaultLlmModel = (): string | undefined => {
   const models = appInfoStore.llmModels
   return (models.find((m) => m.isDefault) ?? models[0])?.value
@@ -44,6 +48,8 @@ export const compareFormData = (initial: any, current: any) => {
     ...initial,
     icon_url: normalizeStringField(initial.icon_url),
     description: normalizeStringField(initial.description),
+    enable_image_generation: normalizeBooleanField(initial.enable_image_generation),
+    image_generation_model: normalizeStringField(initial.image_generation_model),
     toolkits: normalizeToolkitsForComparison(initial.toolkits || []),
     mcp_servers: normalizeMcpServersForComparison(initial.mcp_servers || []),
     llm_model_type: normalizeLlmModelField(initial.llm_model_type),
@@ -52,6 +58,8 @@ export const compareFormData = (initial: any, current: any) => {
     ...current,
     icon_url: normalizeStringField(current.icon_url),
     description: normalizeStringField(current.description),
+    enable_image_generation: normalizeBooleanField(current.enable_image_generation),
+    image_generation_model: normalizeStringField(current.image_generation_model),
     toolkits: normalizeToolkitsForComparison(current.toolkits || []),
     mcp_servers: normalizeMcpServersForComparison(current.mcp_servers || []),
     llm_model_type: normalizeLlmModelField(current.llm_model_type),

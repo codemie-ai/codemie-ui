@@ -28,6 +28,10 @@ export function transformAssistantToCreateDTO(assistant: Assistant): CreateAssis
     context: assistant.context, // Type casting as the structure should match
     icon_url: assistant.icon_url,
     llm_model_type: assistant.llm_model_type,
+    enable_image_generation: assistant.enable_image_generation ?? false,
+    image_generation_model: assistant.enable_image_generation
+      ? assistant.image_generation_model || null
+      : null,
     // Filter out MCP toolkit as it's handled separately
     toolkits: assistant.toolkits
       ?.filter((tk) => tk.toolkit !== 'MCP')

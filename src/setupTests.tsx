@@ -146,6 +146,7 @@ const parseQueryParams = (url: string): Record<string, string> => {
 // Simple, stable endpoints — safe to keep as global defaults.
 const globalDefaults: Record<string, () => unknown> = {
   'v1/llm_models': () => [],
+  'v1/llm_models/image_generation': () => [],
   'v1/embeddings_models': () => [],
   'v1/config': () => [],
   'v1/assistants/user': () => [],

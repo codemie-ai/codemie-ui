@@ -40,6 +40,28 @@ import {
   transformFolderListItemsDTOs,
 } from './utils/chats'
 
+const mapConversationUpdatePayload = (data: Partial<Conversation>) => {
+  const payload: Record<string, unknown> = {}
+
+  Object.entries(data).forEach(([key, value]) => {
+    switch (key) {
+      case 'llmModel':
+        payload.llm_model = value
+        break
+      case 'enableImageGeneration':
+        payload.enable_image_generation = value
+        break
+      case 'imageGenerationModel':
+        payload.image_generation_model = value
+        break
+      default:
+        payload[key] = value
+    }
+  })
+
+  return payload
+}
+
 const LAST_CHAT_ID = 'last-chat-id'
 
 interface NewChatParams {
@@ -324,17 +346,19 @@ export const chatsStore = proxy<ChatsStoreType>({
       return Promise.resolve(null)
     }
 
-    return api.put(`v1/conversations/${id}`, data).then((response) => {
-      const chatListItem = chatsStore.chats.find((item) => item.id === id)
-      if (chatListItem) Object.assign(chatListItem, data)
-      if (chat) Object.assign(chat, data)
+    return api
+      .put(`v1/conversations/${id}`, mapConversationUpdatePayload(data))
+      .then((response) => {
+        const chatListItem = chatsStore.chats.find((item) => item.id === id)
+        if (chatListItem) Object.assign(chatListItem, data)
+        if (chat) Object.assign(chat, data)
 
-      if (data.name) {
-        recentChatsStore.updateRecentChatName(id, data.name)
-      }
+        if (data.name) {
+          recentChatsStore.updateRecentChatName(id, data.name)
+        }
 
-      return response.json()
-    })
+        return response.json()
+      })
   },
 
   updateChatWithAssistantData: (assistant) => {

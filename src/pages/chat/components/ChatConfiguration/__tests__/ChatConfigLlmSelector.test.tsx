@@ -34,7 +34,9 @@ const { mockChatsStore, mockAppInfoStore } = vi.hoisted(() => {
         { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
         { label: 'Claude-2', value: 'claude-2', isDefault: false },
       ],
+      imageGenerationModels: [{ label: 'GPT Image 1', value: 'gpt-image-1', isDefault: true }],
       getLLMModels: vi.fn(),
+      getImageGenerationModels: vi.fn(),
     },
   }
 })
@@ -79,6 +81,7 @@ describe('ChatConfigLlmSelector', () => {
     mockChatsStore.currentChat = mockChat
     mockChatsStore.updateChat = vi.fn()
     mockAppInfoStore.getLLMModels = vi.fn()
+    mockAppInfoStore.getImageGenerationModels = vi.fn()
   })
 
   it('does not render when currentChat is null', () => {

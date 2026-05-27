@@ -87,6 +87,8 @@ const NewAssistantPage = () => {
     return {
       shared: false,
       llm_model_type: '',
+      enable_image_generation: false,
+      image_generation_model: '',
       system_prompt: '',
       description: '',
       ...assistant,

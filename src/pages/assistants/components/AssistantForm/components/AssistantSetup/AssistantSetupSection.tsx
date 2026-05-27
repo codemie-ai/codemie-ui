@@ -236,7 +236,6 @@ const AssistantSetupSection = ({
             <div
               className={cn('px-4 pb-4 flex gap-6', isCompactView ? 'flex-col' : 'flex-row gap-16')}
             >
-              {/* Column 1 */}
               <div className={cn('flex flex-col gap-6', !isCompactView && 'w-72')}>
                 <Controller
                   name="llm_model_type"
@@ -269,7 +268,6 @@ const AssistantSetupSection = ({
             /> */}
               </div>
 
-              {/* Column 2 */}
               <div className={cn('flex flex-col gap-6', !isCompactView && 'flex-1')}>
                 <div className="flex gap-8">
                   <Controller

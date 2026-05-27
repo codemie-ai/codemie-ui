@@ -173,6 +173,8 @@ export interface Conversation {
   id: string
   name?: string
   llmModel?: string | null
+  enableImageGeneration?: boolean | null
+  imageGenerationModel?: string | null
   folder?: string
   pinned?: boolean
   isWorkflow?: boolean
@@ -268,6 +270,8 @@ export interface ChatBackend {
   id: string
   conversation_name: string
   llm_model?: string
+  enable_image_generation?: boolean | null
+  image_generation_model?: string | null
   folder?: string
   pinned?: boolean
   assistant_ids?: string[]

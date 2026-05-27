@@ -71,6 +71,8 @@ export interface Assistant {
   type?: AssistantType
   conversation_starters?: string[]
   llm_model_type: string
+  enable_image_generation?: boolean | null
+  image_generation_model?: string | null
   is_liked?: boolean
   is_disliked?: boolean
   is_react?: boolean
@@ -396,6 +398,8 @@ export interface CreateAssistantDto {
   context?: AssistantContext[]
   icon_url?: string
   llm_model_type?: string
+  enable_image_generation?: boolean | null
+  image_generation_model?: string | null
   toolkits?: ToolKitDetails[]
   conversation_starters?: string[]
   shared?: boolean

@@ -19,6 +19,7 @@ import { cn } from '@/utils/utils'
 
 import ChatConfigAssistantForm from './ChatConfigAssistants/ChatConfigAssistantForm'
 import ChatConfigAssistants from './ChatConfigAssistants/ChatConfigAssistants'
+import ChatConfigImageGeneration from './ChatConfigImageGeneration'
 import ChatConfigLlmSelector from './ChatConfigLlmSelector'
 import ChatConfigSkillsSelector from './ChatConfigSkillsSelector'
 import { useChatContext } from '../../hooks/useChatContext'
@@ -46,6 +47,7 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
               <h3 className="font-semibold mb-3">General</h3>
               <ChatConfigLlmSelector />
               <ChatConfigSkillsSelector />
+              <ChatConfigImageGeneration />
               <ChatConfigAssistants />
             </div>
           )}

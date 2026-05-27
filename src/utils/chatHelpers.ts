@@ -26,6 +26,8 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
     id: chatBE.id,
     name: chatBE.conversation_name,
     llmModel: chatBE.llm_model,
+    enableImageGeneration: chatBE.enable_image_generation,
+    imageGenerationModel: chatBE.image_generation_model,
     isWorkflow: chatBE.is_workflow_conversation ?? chatBE.is_workflow ?? false,
     isInterrupted: chatBE.history.some((item) => item.thoughts?.some((t) => t.interrupted)),
     isGroup: true,

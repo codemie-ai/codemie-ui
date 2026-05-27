@@ -39,6 +39,7 @@ export interface AppInfoStoreType {
   appReleases: any[]
   viewedAppReleaseVersion: string
   llmModels: ModelOption[]
+  imageGenerationModels: ModelOption[]
   embeddingModels: ModelOption[]
   speechConfig: SpeechConfig
   navigationExpanded: boolean
@@ -52,6 +53,7 @@ export interface AppInfoStoreType {
   isOnboardingCompleted: () => boolean
   completeOnboarding: () => void
   getLLMModels: () => Promise<ModelOption[]>
+  getImageGenerationModels: () => Promise<ModelOption[]>
   getEmbeddingsModels: () => Promise<ModelOption[]>
   findLLMLabel: (value: string) => string
   findEmbeddingLabel: (value: string) => string
@@ -93,6 +95,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   appReleases: [],
   viewedAppReleaseVersion: '',
   llmModels: [],
+  imageGenerationModels: [],
   embeddingModels: [],
   speechConfig: {},
 
@@ -159,15 +162,32 @@ export const appInfoStore = proxy<AppInfoStoreType>({
     }
   },
 
+  async getImageGenerationModels() {
+    try {
+      const response = await api.get('v1/llm_models/image_generation')
+      const data = await response.json()
+
+      appInfoStore.imageGenerationModels = data.map((model: any) => ({
+        value: model.base_name,
+        label: model.label,
+        isDefault: model.default,
+      }))
+      return appInfoStore.imageGenerationModels
+    } catch (error) {
+      console.error('Failed to fetch image generation models:', error)
+      return []
+    }
+  },
+
   async getEmbeddingsModels() {
     try {
       const response = await api.get('v1/embeddings_models')
       const data = await response.json()
-      this.embeddingModels = data.map((model: any) => ({
+      appInfoStore.embeddingModels = data.map((model: any) => ({
         value: model.base_name,
         label: model.label,
       }))
-      return this.embeddingModels
+      return appInfoStore.embeddingModels
     } catch (error) {
       console.error('Failed to fetch embedding models:', error)
       return []

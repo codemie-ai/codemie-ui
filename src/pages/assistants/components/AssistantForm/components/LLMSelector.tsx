@@ -31,6 +31,7 @@ interface LLMSelectorProps {
   error?: string
   defaultOptionLabelPrefix?: string
   allowEmpty?: boolean
+  modelType?: 'llm' | 'imageGeneration'
   onChange: (value: string) => void
 }
 
@@ -47,14 +48,19 @@ const LLMSelector = forwardRef<
       onChange,
       allowEmpty,
       defaultOptionLabelPrefix = 'Default',
+      modelType = 'llm',
       hint,
       error,
     },
     ref
   ) => {
-    const { llmModels, getLLMModels } = useSnapshot(appInfoStore)
+    const { llmModels, imageGenerationModels, getLLMModels, getImageGenerationModels } =
+      useSnapshot(appInfoStore)
     const [invalidModel, setInvalidModel] = useState<string | null>(null)
     const selectRef = useRef<PrimeMultiSelect>(null)
+
+    const models = modelType === 'imageGeneration' ? imageGenerationModels : llmModels
+    const loadModels = modelType === 'imageGeneration' ? getImageGenerationModels : getLLMModels
 
     useImperativeHandle(
       ref,
@@ -68,40 +74,51 @@ const LLMSelector = forwardRef<
     )
 
     const defaultLlmModel = useMemo(() => {
-      const defaultModel = llmModels.find((model) => model.isDefault)
-      const fallbackModel = llmModels[0]
+      const defaultModel = models.find((model) => model.isDefault)
+      const fallbackModel = models[0]
       return defaultModel ?? fallbackModel ?? {}
-    }, [llmModels])
+    }, [models])
 
     const options = useMemo(
       () => [
-        ...(allowEmpty ? [{ label: placeholder, value: null }] : []),
-        {
-          label: `${defaultOptionLabelPrefix}: ${defaultLlmModel?.label}`,
-          value: defaultLlmModel?.value,
-        },
-        ...llmModels.map(({ label, value }) => ({ label, value })),
+        ...(allowEmpty ? [{ label: placeholder, value: '' }] : []),
+        ...(!allowEmpty
+          ? [
+              {
+                label: `${defaultOptionLabelPrefix}: ${defaultLlmModel?.label}`,
+                value: defaultLlmModel?.value,
+              },
+            ]
+          : []),
+        ...models.map(({ label, value }) => ({ label, value })),
       ],
-      [llmModels]
+      [
+        allowEmpty,
+        defaultLlmModel?.label,
+        defaultLlmModel?.value,
+        defaultOptionLabelPrefix,
+        models,
+        placeholder,
+      ]
     )
 
     useEffect(() => {
-      getLLMModels()
-    }, [])
+      loadModels()
+    }, [loadModels])
 
     useEffect(() => {
       if (value) {
-        const isValidModel = llmModels.some((model) => model.value === value)
-        if (!isValidModel) onChange(defaultLlmModel?.value)
+        const isValidModel = models.some((model) => model.value === value)
+        if (!isValidModel) onChange(allowEmpty ? '' : defaultLlmModel?.value)
         setInvalidModel(isValidModel ? null : value)
       } else if (!allowEmpty) {
         onChange(defaultLlmModel?.value)
       }
-    }, [defaultLlmModel?.value])
+    }, [allowEmpty, defaultLlmModel?.value, models, onChange, value])
 
     useEffect(() => {
       if (invalidModel && value !== defaultLlmModel?.value) setInvalidModel(null)
-    }, [value])
+    }, [defaultLlmModel?.value, invalidModel, value])
 
     return (
       <div className="flex flex-col gap-2 grow max-w-sm">
@@ -114,7 +131,7 @@ const LLMSelector = forwardRef<
           className={className}
           value={value}
           options={options}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value ?? '')}
           onFilter={() => {}}
           ref={selectRef}
         />
