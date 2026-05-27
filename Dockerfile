@@ -13,11 +13,7 @@
 # limitations under the License.
 #
 
-# TODO: Revert to dhi.io/nginx:1.28-alpine3.23 once base image ships with zlib >= 1.3.2-r0
-# Remediation for CVE-2026-22184 (zlib@1.3.1 bundled in base image)
-FROM dhi.io/nginx:1.28-alpine3.23-dev
-
-RUN apk add --no-cache zlib=1.3.2-r0
+FROM dhi.io/nginx:1.30-alpine3.23-dev
 
 COPY /dist /usr/share/nginx/html
 
