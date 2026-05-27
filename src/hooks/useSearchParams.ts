@@ -23,58 +23,50 @@ type SetURLSearchParams = (
 type UseSearchParamsReturn = [URLSearchParams, SetURLSearchParams, () => void]
 
 export const useSearchParams = (): UseSearchParamsReturn => {
-  // Initialize with current URL parameters on component mount
   const [searchParams, setSearchParamsState] = useState<URLSearchParams>(
-    () => new URLSearchParams(getQueryStringFromHash())
+    () => new URLSearchParams(window.location.search)
   )
 
   const setSearchParams: SetURLSearchParams = useCallback((newSearchParams, options) => {
     const newSearchString = newSearchParams.toString()
-    const fullNewHash = updateHashWithQuery(newSearchString ? `?${newSearchString}` : '')
+    const newUrl = `${window.location.pathname}${newSearchString ? `?${newSearchString}` : ''}${
+      window.location.hash
+    }`
 
     if (options?.replace) {
-      window.history.replaceState({}, '', fullNewHash)
+      window.history.replaceState({}, '', newUrl)
     } else {
-      window.history.pushState({}, '', fullNewHash)
+      window.history.pushState({}, '', newUrl)
     }
     setSearchParamsState(newSearchParams)
 
-    // Store the search params in sessionStorage for persistence across page refreshes
+    const { pathname } = window.location
     if (newSearchString) {
       try {
-        const currentPath = window.location.hash.split('?')[0]
-        sessionStorage.setItem(`filters:${currentPath}`, newSearchString)
+        sessionStorage.setItem(`filters:${pathname}`, newSearchString)
       } catch (error) {
         console.error('Error storing filters in sessionStorage:', error)
       }
     } else {
-      // If search params are empty, remove from sessionStorage
       try {
-        const currentPath = window.location.hash.split('?')[0]
-        sessionStorage.removeItem(`filters:${currentPath}`)
+        sessionStorage.removeItem(`filters:${pathname}`)
       } catch (error) {
         console.error('Error removing filters from sessionStorage:', error)
       }
     }
   }, [])
 
-  // Handle hash change and page refresh
   useEffect(() => {
-    const handleHashChange = () => {
-      // When hash changes, update the search params state
-      const queryString = getQueryStringFromHash()
-      setSearchParamsState(new URLSearchParams(queryString))
+    const handlePopState = () => {
+      setSearchParamsState(new URLSearchParams(window.location.search))
     }
 
-    // Handle page refresh - restore filters from sessionStorage if no query params in URL
-    const currentQueryString = getQueryStringFromHash()
-    if (!currentQueryString) {
+    if (!window.location.search) {
       try {
-        const currentPath = window.location.hash.split('?')[0]
-        const storedFilters = sessionStorage.getItem(`filters:${currentPath}`)
+        const { pathname } = window.location
+        const storedFilters = sessionStorage.getItem(`filters:${pathname}`)
 
         if (storedFilters) {
-          // Restore filters from sessionStorage
           const restoredParams = new URLSearchParams(storedFilters)
           setSearchParams(restoredParams, { replace: true })
         }
@@ -83,54 +75,24 @@ export const useSearchParams = (): UseSearchParamsReturn => {
       }
     }
 
-    window.addEventListener('hashchange', handleHashChange)
+    window.addEventListener('popstate', handlePopState)
     return () => {
-      window.removeEventListener('hashchange', handleHashChange)
+      window.removeEventListener('popstate', handlePopState)
     }
   }, [setSearchParams])
 
-  // Function to clear all filter parameters from URL and sessionStorage
   const clearParams = useCallback(() => {
     try {
-      // Get the current hash without query parameters
-      const { hash } = window.location
-      const questionMarkIndex = hash.indexOf('?')
-      const basePathInHash = questionMarkIndex !== -1 ? hash.substring(0, questionMarkIndex) : hash
+      const newUrl = `${window.location.pathname}${window.location.hash}`
+      window.history.replaceState({}, '', newUrl)
 
-      // Update the URL without query parameters
-      window.history.replaceState({}, '', basePathInHash)
+      sessionStorage.removeItem(`filters:${window.location.pathname}`)
 
-      // Clear from sessionStorage
-      const currentPath = basePathInHash
-      sessionStorage.removeItem(`filters:${currentPath}`)
-
-      // Update the state
       setSearchParamsState(new URLSearchParams())
     } catch (error) {
       console.error('Error clearing URL parameters:', error)
     }
-  }, [setSearchParams])
+  }, [])
 
   return [searchParams, setSearchParams, clearParams]
-}
-
-const getQueryStringFromHash = (): string => {
-  const { hash } = window.location
-  const questionMarkIndex = hash.indexOf('?')
-  if (questionMarkIndex !== -1) {
-    return hash.substring(questionMarkIndex)
-  }
-  return ''
-}
-
-const updateHashWithQuery = (newSearchString: string): string => {
-  const { hash } = window.location
-  const questionMarkIndex = hash.indexOf('?')
-
-  let basePathInHash = hash
-  if (questionMarkIndex !== -1) {
-    basePathInHash = hash.substring(0, questionMarkIndex)
-  }
-
-  return `${basePathInHash}${newSearchString ?? ''}`
 }

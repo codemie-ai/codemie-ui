@@ -180,8 +180,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
                   <p className="text-sm font-medium text-text-primary mb-3">
                     Password must contain:
                   </p>
-                  <ul className="space-y-2" role="list">
-                    <li className="flex items-center gap-2" role="listitem">
+                  <ul className="space-y-2">
+                    <li className="flex items-center gap-2">
                       {passwordValidation.hasNumber ? (
                         <CheckSvg
                           className="w-4 h-4 text-success-primary flex-shrink-0"
@@ -197,7 +197,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
                         {PASSWORD_REQUIREMENT_LABELS.NUMBER}
                       </span>
                     </li>
-                    <li className="flex items-center gap-2" role="listitem">
+                    <li className="flex items-center gap-2">
                       {passwordValidation.hasUppercase ? (
                         <CheckSvg
                           className="w-4 h-4 text-success-primary flex-shrink-0"
@@ -213,7 +213,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
                         {PASSWORD_REQUIREMENT_LABELS.UPPERCASE}
                       </span>
                     </li>
-                    <li className="flex items-center gap-2" role="listitem">
+                    <li className="flex items-center gap-2">
                       {passwordValidation.hasLowercase ? (
                         <CheckSvg
                           className="w-4 h-4 text-success-primary flex-shrink-0"
@@ -229,7 +229,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
                         {PASSWORD_REQUIREMENT_LABELS.LOWERCASE}
                       </span>
                     </li>
-                    <li className="flex items-center gap-2" role="listitem">
+                    <li className="flex items-center gap-2">
                       {passwordValidation.hasMinLength ? (
                         <CheckSvg
                           className="w-4 h-4 text-success-primary flex-shrink-0"

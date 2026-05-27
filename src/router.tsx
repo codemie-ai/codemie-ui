@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { createHashRouter, redirect, RouteObject } from 'react-router'
+import { createBrowserRouter, redirect, RouteObject } from 'react-router'
 
 import SignInPage from '@/authentication/local/SignInPage'
 import SignUpPage from '@/authentication/local/SignUpPage'
@@ -588,6 +588,6 @@ export const routes: RouteObject[] = [
   },
 ]
 
-export const router = createHashRouter(routes)
+export const router = createBrowserRouter(routes, { basename: import.meta.env.BASE_URL })
 
 export default router

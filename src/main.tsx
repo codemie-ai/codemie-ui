@@ -19,15 +19,17 @@ import 'quill-mention/autoregister'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router/dom'
 
+import { redirectHashRoutes } from '@/utils/redirectHashRoutes'
 import { themeService } from '@/utils/themeService'
 import { setupGlobalTooltip } from '@/utils/tooltip'
 import { monkeyPatchQuill, removeTextFormattingOnCopy } from '@/utils/utils'
 
-import { router } from './router'
-
 import './assets/stylesheets/main.scss'
 import './assets/stylesheets/vue_components.scss'
 
+import { router } from './router'
+
+redirectHashRoutes()
 monkeyPatchQuill()
 Quill.register('modules/imageDropAndPaste', QuillImageDropAndPaste)
 

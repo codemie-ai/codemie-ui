@@ -66,7 +66,7 @@ const QuickActions: React.FC = () => {
     <div className="quick-actions absolute bottom-2 right-2 flex flex-col gap-2">
       {!collapsed && (
         <a
-          href={`/#/assistants/${ONBOARDING_ASSISTANT_SLUG}/start`}
+          href={`/assistants/${ONBOARDING_ASSISTANT_SLUG}/start`}
           className="action action-faq rounded-full w-[42px] h-[42px] flex flex-col justify-center items-center bg-white shadow-md text-text-accent-hover border-text-accent-hover border-2 opacity-80 duration-150 cursor-pointer hover:opacity-100 hover:scale-105"
         >
           <QuestionCircleSVG />
@@ -75,7 +75,7 @@ const QuickActions: React.FC = () => {
 
       {!collapsed && isFeedbackAssistantQuickActionEnabled && (
         <a
-          href={`/#/assistants/${FEEDBACK_ASSISTANT_SLUG}/start`}
+          href={`/assistants/${FEEDBACK_ASSISTANT_SLUG}/start`}
           className="action action-feedback rounded-full w-[42px] h-[42px] flex flex-col justify-center items-center bg-white shadow-md text-text-accent-hover border-text-accent-hover border-2 opacity-80 duration-150 cursor-pointer hover:opacity-100 hover:scale-105"
         >
           <ChatBubblesSVG className="w-[30px] h-[30px]" />

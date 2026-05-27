@@ -33,7 +33,7 @@ interface ChatConfigAssistantCardProps {
 
 const ChatConfigAssistantCard: FC<ChatConfigAssistantCardProps> = ({ assistant }) => {
   const { openConfigForm } = useChatContext()
-  const link = `${getRootPath()}/#/assistants/${assistant.id}`
+  const link = `${getRootPath()}/assistants/${assistant.id}`
 
   const renderCopyButton = (label: string, value: string) => (
     <button

@@ -114,11 +114,10 @@ export const getFilters = <T extends object>(entityKey: string): T => {
  */
 export const getFiltersFromUrl = (): Record<string, unknown> => {
   try {
-    const { hash } = window.location
-    const questionMarkIndex = hash.indexOf('?')
-    if (questionMarkIndex === -1) return {}
+    const { search } = window.location
+    if (!search) return {}
 
-    const searchParams = new URLSearchParams(hash.substring(questionMarkIndex))
+    const searchParams = new URLSearchParams(search)
 
     return Object.entries(knownFilterKeys).reduce<Record<string, unknown>>(
       (filters, [type, keys]) => {
@@ -173,14 +172,12 @@ export const setFilters = <T extends object>(entityKey: string, filters: T): voi
  */
 export const updateUrlWithFilters = <T extends object>(filters: T): void => {
   try {
-    const { hash } = window.location
-    const questionMarkIndex = hash.indexOf('?')
-
+    const { search } = window.location
     const searchParams = new URLSearchParams()
 
     // Always preserve tab from current URL
-    if (questionMarkIndex !== -1) {
-      const currentParams = new URLSearchParams(hash.substring(questionMarkIndex + 1))
+    if (search) {
+      const currentParams = new URLSearchParams(search)
       const tab = currentParams.get('tab')
       if (tab) searchParams.set('tab', tab)
     }
@@ -232,13 +229,11 @@ const PRESERVED_PARAMS = ['tab']
 
 export const clearUrlFilters = (): void => {
   try {
-    const { hash } = window.location
-    const questionMarkIndex = hash.indexOf('?')
+    const { pathname, search, hash } = window.location
 
-    if (questionMarkIndex === -1) return
+    if (!search) return
 
-    const basePathInHash = hash.substring(0, questionMarkIndex)
-    const existingParams = new URLSearchParams(hash.substring(questionMarkIndex + 1))
+    const existingParams = new URLSearchParams(search)
     const preservedParams = new URLSearchParams()
 
     // Preserve specified parameters
@@ -250,9 +245,9 @@ export const clearUrlFilters = (): void => {
     })
 
     const preservedString = preservedParams.toString()
-    const newHash = preservedString ? `${basePathInHash}?${preservedString}` : basePathInHash
+    const newUrl = `${pathname}${preservedString ? `?${preservedString}` : ''}${hash}`
 
-    window.history.replaceState({}, '', newHash)
+    window.history.replaceState({}, '', newUrl)
   } catch (error) {
     console.error('Error clearing URL filters:', error)
   }

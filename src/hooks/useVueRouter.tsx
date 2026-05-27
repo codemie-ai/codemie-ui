@@ -143,7 +143,7 @@ const resolve: RouterResolve = ({ name, path, query = {}, params = {} }) => {
   })
 
   return {
-    href: `${getRootPath()}/#${pathname[0] === '/' ? pathname : `/${pathname}`}`,
+    href: `${getRootPath()}${pathname[0] === '/' ? pathname : `/${pathname}`}`,
     fullPath: pathname,
     path: pathname,
     searchParamsString,
@@ -207,3 +207,8 @@ const useReactRouter = (): RouterState => {
 }
 
 export const router: RouterActions = routerActions
+
+export const getCurrentLocation = (): { pathname: string; search: string } => {
+  const { pathname, search } = hashRouter.state.location
+  return { pathname, search: search ?? '' }
+}

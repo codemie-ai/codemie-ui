@@ -142,7 +142,7 @@ const AssetReusabilityDrillDownModal: FC = () => {
       const assistantName = item.assistant_name as string
       return (
         <a
-          href={`/#/assistants/${assistantId}`}
+          href={`/assistants/${assistantId}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-text-link hover:text-text-link-hover hover:underline"
@@ -157,7 +157,7 @@ const AssetReusabilityDrillDownModal: FC = () => {
       const workflowName = item.workflow_name as string
       return (
         <a
-          href={`/#/workflows/${workflowId}`}
+          href={`/workflows/${workflowId}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-text-link hover:text-text-link-hover hover:underline"
@@ -172,7 +172,7 @@ const AssetReusabilityDrillDownModal: FC = () => {
       const datasourceName = item.datasource_name as string
       return (
         <a
-          href={`/#/data-sources/${datasourceId}`}
+          href={`/data-sources/${datasourceId}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-text-link hover:text-text-link-hover hover:underline"

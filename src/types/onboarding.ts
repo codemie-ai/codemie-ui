@@ -145,6 +145,9 @@ export interface OnboardingFlow {
   steps: OnboardingStep[]
   onStart?: () => void | Promise<void>
   onComplete?: () => void | Promise<void>
+  // When true, navigates back to the URL where the flow was started after completion.
+  // Use for flows that navigate the user away from their original page.
+  restoreUrlOnComplete?: boolean
 }
 
 // Element position for spotlight calculation

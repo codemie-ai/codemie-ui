@@ -40,7 +40,7 @@ const ViewWorkflowTemplateInfo: React.FC<ViewWorkflowTemplateInfoProps> = ({ tem
   const { isDark } = useTheme()
 
   const workflowTemplateLink = useMemo(
-    () => `${getRootPath()}/#/workflows/templates/${encodeURIComponent(template.slug)}`,
+    () => `${getRootPath()}/workflows/templates/${encodeURIComponent(template.slug)}`,
     [template.slug]
   )
 

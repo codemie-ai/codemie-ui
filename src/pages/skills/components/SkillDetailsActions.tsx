@@ -90,7 +90,7 @@ const SkillDetailsActions = ({
   }
 
   const getSkillLink = () => {
-    return `${getRootPath()}/#/skills/${skill.id}`
+    return `${getRootPath()}/skills/${skill.id}`
   }
 
   // Actions for the 3-dots menu

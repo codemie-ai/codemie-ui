@@ -45,7 +45,7 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
   const [showAssistantsModal, setShowAssistantsModal] = useState(false)
 
   const skillDetailsLink = useMemo(() => {
-    return `${getRootPath()}/#/skills/${skill.id}`
+    return `${getRootPath()}/skills/${skill.id}`
   }, [skill.id])
 
   const displayToolkits = useMemo(() => {

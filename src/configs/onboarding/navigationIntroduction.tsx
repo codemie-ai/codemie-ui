@@ -29,6 +29,7 @@ export const navigationIntroductionFlow: OnboardingFlow = {
   emoji: '🧭',
   duration: '5-6 min',
   triggers: { showOnWelcome: true, releaseVersions: ['2.16.0'] },
+  restoreUrlOnComplete: true,
   onComplete: () => appInfoStore.completeOnboarding(),
   steps: [
     // Step 1: Welcome

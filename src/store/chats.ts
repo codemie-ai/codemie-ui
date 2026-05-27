@@ -396,7 +396,7 @@ export const chatsStore = proxy<ChatsStoreType>({
     try {
       const response = await api.post('v1/share/conversations', { chat_id: chatId })
       const data = await response.json()
-      return `${getRootPath()}/#/share/conversations/${data.token}`
+      return `${getRootPath()}/share/conversations/${data.token}`
     } catch (error) {
       toaster.error('Failed to share chat. Please try again later.')
       console.error('Failed to share chat:', error)

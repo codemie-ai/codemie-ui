@@ -85,7 +85,7 @@ const AssistantDetails = ({
   const userMappingIsSupported = !!onNewIntegration && assistant.is_global && !isTemplate
 
   const { assistantDetailsLink, assistantChatLink, assistantTemplateLink } = useMemo(() => {
-    const baseUrl = `${getRootPath()}/#/assistants`
+    const baseUrl = `${getRootPath()}/assistants`
 
     return {
       assistantDetailsLink: getAssistantLink(assistant.id),

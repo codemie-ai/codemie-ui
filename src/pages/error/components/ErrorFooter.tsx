@@ -33,10 +33,10 @@ const ErrorFooter: FC = () => {
         <a href="/" className={linkClassName}>
           Home
         </a>
-        <a href="/#/help" className={linkClassName}>
+        <a href="/help" className={linkClassName}>
           Help Center
         </a>
-        <a href={`/#/assistants/${ONBOARDING_ASSISTANT_SLUG}/start`} className={linkClassName}>
+        <a href={`/assistants/${ONBOARDING_ASSISTANT_SLUG}/start`} className={linkClassName}>
           FAQ
         </a>
       </nav>

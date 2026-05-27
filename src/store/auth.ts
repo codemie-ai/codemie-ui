@@ -83,7 +83,7 @@ export const authStore = proxy<AuthStore>({
       await api.post('v1/local-auth/logout')
       userStore.user = null
       userStore.userData = null
-      window.location.hash = '#/auth/sign-in'
+      window.location.assign('/auth/sign-in')
       return
     }
 

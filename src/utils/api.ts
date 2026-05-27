@@ -344,14 +344,14 @@ class API {
 
   private handleSessionExpired(url: string): void {
     const isUserEndpoint = url === 'v1/user'
-    const isAuthPage = window.location.hash === '#/auth/sign-in'
+    const isAuthPage = window.location.pathname === '/auth/sign-in'
 
     if (!isUserEndpoint) {
       sessionStorage.setItem('sessionExpired', 'true')
     }
 
     if (!isAuthPage) {
-      window.location.hash = '#/auth/sign-in'
+      window.location.assign('/auth/sign-in')
     }
   }
 

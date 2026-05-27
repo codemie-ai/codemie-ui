@@ -68,7 +68,7 @@ const SkillActions: React.FC<SkillActionsProps> = ({
   const canDelete = canDeleteEntity(skill)
 
   const getSkillLink = () => {
-    return `${getRootPath()}/#/skills/${skill.id}`
+    return `${getRootPath()}/skills/${skill.id}`
   }
 
   const handleEdit = () => {

@@ -34,7 +34,7 @@ const SkillSelectorListItem: React.FC<SkillSelectorListItemProps> = ({
   const handleOpenDetails = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    window.open(`${getRootPath()}/#/skills/${skill.id}`, '_blank')
+    window.open(`${getRootPath()}/skills/${skill.id}`, '_blank')
   }
 
   return (

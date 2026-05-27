@@ -109,7 +109,7 @@ const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded 
       {assistantItems.map((assistant) => (
         <a
           key={assistant.id}
-          href={assistant.link ? `/#${assistant.link}` : ''}
+          href={assistant.link ?? ''}
           role="link"
           aria-label={assistant.name}
           aria-describedby={assistant.description ? `assistant-desc-${assistant.id}` : undefined}

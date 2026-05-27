@@ -62,7 +62,7 @@ const SkillAssistantsModal: React.FC<SkillAssistantsModalProps> = ({
   }, [visible, skillId])
 
   const handleAssistantClick = (assistant: SkillAssistantItem) => {
-    const url = `${getRootPath()}/#/assistants/${assistant.id}`
+    const url = `${getRootPath()}/assistants/${assistant.id}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 

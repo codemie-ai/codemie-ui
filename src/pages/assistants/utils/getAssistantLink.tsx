@@ -16,4 +16,4 @@
 import { getRootPath } from '@/utils/utils'
 
 export const getAssistantLink = (id: string) =>
-  `${getRootPath()}/#/assistants/${encodeURIComponent(id)}`
+  `${getRootPath()}/assistants/${encodeURIComponent(id)}`

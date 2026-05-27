@@ -136,7 +136,7 @@ const KatasPage = ({ category = KatasCategory.ALL_KATAS }: KatasPageProps) => {
   useEffect(() => {
     return () => {
       // Only clear if we're actually navigating away from katas routes
-      const currentPath = window.location.hash
+      const currentPath = window.location.pathname
       if (!currentPath.includes('/katas')) {
         clearUrlFilters()
       }

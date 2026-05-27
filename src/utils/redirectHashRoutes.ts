@@ -13,13 +13,12 @@
 // limitations under the License.
 //
 
-import { WorkflowTab } from '@/pages/workflows/constants'
-import { getRootPath } from '@/utils/utils'
+export const redirectHashRoutes = () => {
+  const { hash } = window.location
+  if (!hash.startsWith('#/')) return
 
-export const getWorkflowLink = (id: string, tab?: WorkflowTab) => {
-  const baseUrl = `${getRootPath()}/workflows/${id}`
-  if (tab) {
-    return `${baseUrl}?tab=${tab}`
-  }
-  return baseUrl
+  const [hashPath, hashQuery] = hash.slice(2).split('?')
+  const base = window.location.pathname.replace(/\/$/, '')
+  const search = hashQuery ? `?${hashQuery}` : window.location.search
+  window.location.replace(`${base}/${hashPath}${search}`)
 }

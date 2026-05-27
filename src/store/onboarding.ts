@@ -24,7 +24,7 @@ import {
   dataSourceListFlow,
 } from '@/configs/onboarding'
 import { HelpPageId } from '@/constants/helpLinks'
-import { router } from '@/hooks/useVueRouter'
+import { router, getCurrentLocation } from '@/hooks/useVueRouter'
 import {
   OnboardingFlow,
   OnboardingStep,
@@ -55,6 +55,7 @@ export interface OnboardingStoreType {
   activeSteps: OnboardingStep[]
   currentStepIndex: number
   isActive: boolean
+  entryUrl: string | null
 
   startFlow: (flowId: string) => Promise<void>
   stopFlow: () => void
@@ -86,6 +87,7 @@ export const onboardingStore = proxy<OnboardingStoreType>({
   activeSteps: [],
   currentStepIndex: 0,
   isActive: false,
+  entryUrl: null,
 
   async startFlow(flowId: string) {
     const flow = flows.find((f) => f.id === flowId) ?? null
@@ -93,6 +95,9 @@ export const onboardingStore = proxy<OnboardingStoreType>({
       console.error(`Onboarding flow "${flowId}" not found`)
       return
     }
+
+    const { pathname, search } = getCurrentLocation()
+    this.entryUrl = pathname + search
 
     // Evaluate all conditions upfront — only allowed steps participate in the flow
     const conditionResults = await Promise.all(
@@ -141,6 +146,7 @@ export const onboardingStore = proxy<OnboardingStoreType>({
     this.activeFlowId = null
     this.activeSteps = []
     this.currentStepIndex = 0
+    this.entryUrl = null
   },
 
   async nextStep() {
@@ -227,11 +233,15 @@ export const onboardingStore = proxy<OnboardingStoreType>({
 
   skipFlow() {
     const flow = this.getCurrentFlow()
+    const savedEntryUrl = this.entryUrl
+
     this.stopFlow()
 
     if (flow) {
       flow.onComplete?.()
     }
+
+    maybeRestoreEntryUrl(flow, savedEntryUrl)
   },
 
   completeFlow() {
@@ -239,6 +249,7 @@ export const onboardingStore = proxy<OnboardingStoreType>({
     if (!flowId) return
 
     const flow = this.getCurrentFlow()
+    const savedEntryUrl = this.entryUrl
 
     this.stopFlow()
 
@@ -252,6 +263,8 @@ export const onboardingStore = proxy<OnboardingStoreType>({
     }
 
     flow?.onComplete?.()
+
+    maybeRestoreEntryUrl(flow, savedEntryUrl)
   },
 
   isFlowCompleted(flowId: string): boolean {
@@ -341,6 +354,21 @@ export const onboardingStore = proxy<OnboardingStoreType>({
     return target()
   },
 })
+
+// Navigates back to the URL captured at flow start, but only when:
+// - the flow opts in via restoreUrlOnComplete
+// - the entry URL differs from the app root (i.e. the user arrived via a callback URL)
+// - the current URL has changed since the flow started
+function maybeRestoreEntryUrl(flow: OnboardingFlow | null, savedEntryUrl: string | null): void {
+  const rootPath = import.meta.env.BASE_URL ?? '/'
+  if (!flow?.restoreUrlOnComplete || !savedEntryUrl || savedEntryUrl === rootPath) return
+
+  const { pathname, search } = getCurrentLocation()
+  const currentUrl = pathname + search
+  if (savedEntryUrl !== currentUrl) {
+    router.push(savedEntryUrl)
+  }
+}
 
 // Executes a single technical step (Navigation or CodeExecution), including its delay.
 // Extracted to keep startFlow / nextStep below the cognitive-complexity limit.

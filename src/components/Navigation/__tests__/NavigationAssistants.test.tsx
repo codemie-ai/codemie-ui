@@ -160,7 +160,7 @@ describe('NavigationAssistants', () => {
     const { container } = render(<NavigationAssistants isExpanded={false} />)
     const link = container.querySelector('a')
 
-    expect(link).toHaveAttribute('href', '/#/assistants/onboarding/start')
+    expect(link).toHaveAttribute('href', '/assistants/onboarding/start')
     expect(mockRouter.resolve).toHaveBeenCalledWith({
       name: 'start-assistant-chat',
       params: { slug: 'onboarding' },

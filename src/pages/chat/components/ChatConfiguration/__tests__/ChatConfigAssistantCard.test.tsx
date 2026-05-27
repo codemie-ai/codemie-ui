@@ -83,9 +83,9 @@ describe('ChatConfigAssistantCard', () => {
     render(<ChatConfigAssistantCard assistant={mockAssistant} />)
     const link = screen.getByRole('link')
     expect(link).toBeInTheDocument()
-    expect(link).toHaveAttribute('href', 'http://localhost:3000/#/assistants/assistant-123')
+    expect(link).toHaveAttribute('href', 'http://localhost:3000/assistants/assistant-123')
     expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveTextContent('http://localhost:3000/#/assistants/assistant-123')
+    expect(link).toHaveTextContent('http://localhost:3000/assistants/assistant-123')
   })
 
   it('renders ID copy button with correct title', () => {
@@ -119,7 +119,7 @@ describe('ChatConfigAssistantCard', () => {
     await user.click(copyLinkButton)
 
     expect(copyToClipboard).toHaveBeenCalledWith(
-      'http://localhost:3000/#/assistants/assistant-123',
+      'http://localhost:3000/assistants/assistant-123',
       'Assistant Link copied to clipboard'
     )
   })
