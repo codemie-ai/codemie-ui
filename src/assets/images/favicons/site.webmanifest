@@ -1,16 +1,20 @@
 {
-  "name": "",
-  "short_name": "",
+  "name": "EPAM AI/Run CodeMie",
+  "short_name": "CodeMie",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     {
-      "src": "/src/assets/images/favicons/android-chrome-192x192.png",
+      "src": "/assets/android-chrome-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/src/assets/images/favicons/android-chrome-512x512.png",
+      "src": "/assets/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "theme_color": "#FFFFFF",
