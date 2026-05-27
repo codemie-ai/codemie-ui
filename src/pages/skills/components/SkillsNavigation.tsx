@@ -17,12 +17,15 @@ import React from 'react'
 
 import MarketplaceSvg from '@/assets/icons/explore.svg?react'
 import SkillsIcon from '@/assets/icons/lightning.svg?react'
+import StarFilledSvg from '@/assets/icons/star-filled.svg?react'
 import SidebarNavigation from '@/components/SidebarNavigation'
+import { useFavoritesEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 
 export enum SkillTab {
   PROJECT = 'project',
   MARKETPLACE = 'marketplace',
+  FAVORITES = 'favorites',
 }
 
 interface SkillsNavigationProps {
@@ -31,10 +34,11 @@ interface SkillsNavigationProps {
 
 const SkillsNavigation: React.FC<SkillsNavigationProps> = ({ activeTabID }) => {
   const router = useVueRouter()
+  const [isFavoritesEnabled] = useFavoritesEnabled()
   const NONE_TAB = 'none'
 
-  const NavigationTabs = React.useMemo(
-    () => [
+  const NavigationTabs = React.useMemo(() => {
+    const tabs = [
       {
         id: SkillTab.PROJECT,
         name: 'Project Skills',
@@ -49,9 +53,18 @@ const SkillsNavigation: React.FC<SkillsNavigationProps> = ({ activeTabID }) => {
         icon: <MarketplaceSvg />,
         url: router.resolve({ name: 'skills-marketplace' }).path,
       },
-    ],
-    [router]
-  )
+    ]
+    if (isFavoritesEnabled) {
+      tabs.push({
+        id: SkillTab.FAVORITES,
+        name: 'Favorites',
+        section: 'Browse',
+        icon: <StarFilledSvg />,
+        url: router.resolve({ name: 'skills-favorites' }).path,
+      })
+    }
+    return tabs
+  }, [router, isFavoritesEnabled])
 
   return <SidebarNavigation activeId={activeTabID ?? NONE_TAB} tabs={NavigationTabs} />
 }

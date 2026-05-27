@@ -19,7 +19,11 @@ import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CREATED_BY } from '@/constants'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
-import { INITIAL_WORKFLOWS_FILTERS, WorkflowListScope } from '@/pages/workflows/constants'
+import {
+  INITIAL_WORKFLOWS_FILTERS,
+  WORKFLOW_LIST_SCOPE,
+  WorkflowListScope,
+} from '@/pages/workflows/constants'
 import { userStore } from '@/store/user'
 import { workflowsStore } from '@/store/workflows'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
@@ -36,9 +40,10 @@ interface WorkflowsFilters {
 
 interface WorkflowsFiltersProps {
   scope: WorkflowListScope
+  onApply?: (filters: Record<string, unknown>) => void
 }
 
-const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope }) => {
+const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) => {
   const router = useVueRouter()
   const route = useVueRoute()
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
@@ -90,22 +95,25 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope }) => {
 
   useEffect(() => {
     loadProjectOptions('')
-    // Only load created by options on "All Workflows" page
-    if (scope === 'all') {
+    if (scope === WORKFLOW_LIST_SCOPE.ALL || scope === WORKFLOW_LIST_SCOPE.FAVORITES) {
       loadCreatedByOptions()
     }
   }, [loadProjectOptions, loadCreatedByOptions, scope])
 
   useEffect(() => {
-    workflowsStore.setWorkflowsFilters(initialFilterValues)
-  }, [initialFilterValues])
+    if (!onApply) {
+      workflowsStore.setWorkflowsFilters(initialFilterValues)
+    }
+  }, [initialFilterValues, onApply])
 
   useEffect(() => {
-    const page = route.query.page ? Number(route.query.page) - 1 : 0
-    const perPage = route.query.perPage ? Number(route.query.perPage) : undefined
-    workflowsStore.setWorkflowsPagination(page, perPage)
-    workflowsStore.setWorkflowsFilters(initialFilterValues)
-  }, [])
+    if (!onApply) {
+      const page = route.query.page ? Number(route.query.page) - 1 : 0
+      const perPage = route.query.perPage ? Number(route.query.perPage) : undefined
+      workflowsStore.setWorkflowsPagination(page, perPage)
+      workflowsStore.setWorkflowsFilters(initialFilterValues)
+    }
+  }, [onApply])
 
   const statusOptions: FilterOption[] = [
     { label: 'All', value: '' },
@@ -167,6 +175,12 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope }) => {
   const handleApply = useCallback(
     async (filters: Record<string, unknown>) => {
       const cleanFilters = makeCleanObject(filters)
+
+      if (onApply) {
+        onApply(cleanFilters)
+        return
+      }
+
       const newQuery = { ...route.query }
       delete newQuery.name
       delete newQuery.project
@@ -188,7 +202,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope }) => {
       setFilters<WorkflowsFilters>(`${FILTER_ENTITY.WORKFLOWS}.${scope}`, filters)
       workflowsStore.indexWorkflows()
     },
-    [router, route, scope]
+    [router, route, scope, onApply]
   )
 
   const areFiltersEmpty = useMemo(() => {

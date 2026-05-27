@@ -45,7 +45,6 @@ export const useSkills = (filters?: SkillsFilters, page?: number, perPage?: numb
     try {
       const result = await skillsStore.indexSkills(currentFilters, pageNum, perPageNum)
 
-      // Update local state with results
       setSkills(result || [])
       setPagination({
         page: skillsStore.skillsPagination.page,
@@ -56,7 +55,6 @@ export const useSkills = (filters?: SkillsFilters, page?: number, perPage?: numb
     } catch (err) {
       console.error('[useSkills] Error loading skills:', err)
       setError(err instanceof Error ? err : new Error('Failed to load skills'))
-      setSkills([])
     } finally {
       setLoading(false)
     }

@@ -31,6 +31,7 @@ export interface CardProps {
   avatar: React.ReactNode
   actions?: React.ReactNode
   status?: React.ReactNode
+  topRight?: React.ReactNode
   onClick: (e) => void
   id: string
 }
@@ -43,6 +44,7 @@ const Card: React.FC<CardProps> = ({
   avatar,
   actions = null,
   status = null,
+  topRight = null,
   id,
   onClick,
 }) => {
@@ -68,6 +70,7 @@ const Card: React.FC<CardProps> = ({
           <div className="rounded-xl absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition duration-300 overflow-hidden">
             {isDark ? <CardGradientSvg /> : <WhiteCardGradientSvg />}
           </div>
+          {topRight && <div className="absolute top-2 right-2 z-10 flex gap-1">{topRight}</div>}
         </div>
 
         <div className="body h-card flex flex-col justify-between p-4">
@@ -75,7 +78,12 @@ const Card: React.FC<CardProps> = ({
             {avatar}
             <div className="flex flex-row items-center gap-3 basis-full overflow-hidden">
               <div className="flex flex-col flex-1 min-w-0">
-                <h3 className="w-full text-base font-semibold mb-0 flex justify-between gap-2">
+                <h3
+                  className={classNames(
+                    'w-full text-base font-semibold mb-0 flex justify-between gap-2',
+                    topRight && 'pr-14'
+                  )}
+                >
                   <div
                     ref={titleEl}
                     data-pr-tooltip={isTitleTruncated ? title : ''}

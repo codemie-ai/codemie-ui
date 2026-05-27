@@ -17,9 +17,11 @@ import React from 'react'
 
 import AssistantsSvg from '@/assets/icons/assistant.svg?react'
 import MarketplaceSvg from '@/assets/icons/explore.svg?react'
+import StarFilledSvg from '@/assets/icons/star-filled.svg?react'
 import TemplatesSvg from '@/assets/icons/templates.svg?react'
 import SidebarNavigation from '@/components/SidebarNavigation'
 import { AssistantTab } from '@/constants'
+import { useFavoritesEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 
 interface AssistantsNavigationProps {
@@ -28,9 +30,10 @@ interface AssistantsNavigationProps {
 
 const AssistantsNavigation = ({ activeTabID }: AssistantsNavigationProps) => {
   const router = useVueRouter()
+  const [isFavoritesEnabled] = useFavoritesEnabled()
   const NONE_TAB = 'none'
-  const NavigationTabs = React.useMemo(
-    () => [
+  const NavigationTabs = React.useMemo(() => {
+    const tabs = [
       {
         id: AssistantTab.ALL,
         name: 'Project Assistants',
@@ -52,9 +55,18 @@ const AssistantsNavigation = ({ activeTabID }: AssistantsNavigationProps) => {
         icon: <TemplatesSvg />,
         url: router.resolve({ name: 'assistants-templates' }).path,
       },
-    ],
-    []
-  )
+    ]
+    if (isFavoritesEnabled) {
+      tabs.push({
+        id: AssistantTab.FAVORITES,
+        name: 'Favorites',
+        section: 'Categories',
+        icon: <StarFilledSvg />,
+        url: router.resolve({ name: 'assistants-favorites' }).path,
+      })
+    }
+    return tabs
+  }, [router, isFavoritesEnabled])
 
   return <SidebarNavigation activeId={activeTabID ?? NONE_TAB} tabs={NavigationTabs} />
 }

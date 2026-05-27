@@ -33,11 +33,15 @@ interface SkillsFiltersProps {
   activeScope: string
 }
 
-// For Project Skills tab: exclude Public (Public goes to Marketplace)
 const VISIBILITY_OPTIONS: FilterOption[] = [
   { label: 'All', value: null },
   { label: 'Private', value: SkillVisibility.PRIVATE },
   { label: 'Project', value: SkillVisibility.PROJECT },
+]
+
+const VISIBILITY_OPTIONS_WITH_PUBLIC: FilterOption[] = [
+  ...VISIBILITY_OPTIONS,
+  { label: 'Public', value: SkillVisibility.PUBLIC },
 ]
 
 const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
@@ -141,7 +145,10 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
           label: 'Visibility',
           type: FilterDefinitionType.RadioGroup,
           value: filters.visibility ?? null,
-          options: VISIBILITY_OPTIONS,
+          options:
+            activeScope === SKILL_INDEX_SCOPES.FAVORITES
+              ? VISIBILITY_OPTIONS_WITH_PUBLIC
+              : VISIBILITY_OPTIONS,
           config: {
             defaultValue: null,
           },

@@ -36,6 +36,7 @@ import {
 import api from '@/utils/api'
 import toaster from '@/utils/toaster'
 
+import { preferencesStore } from './preferences'
 import { extractArrayFromResponse } from './utils/parseApiResponse'
 
 const SHOW_NEW_SKILL_AI_POPUP = 'codemie-new-skill-ai-popup'
@@ -64,8 +65,11 @@ interface SkillsStoreType {
   getSkillCompanionFileContent: (id: string, path: string) => Promise<SkillCompanionFile>
   getSkillsForProject: (project: string, search?: string) => Promise<Skill[]>
   getSkillCategories: () => Promise<SkillCategoryDefinition[]>
-  reactToSkill: (skillId: string, reaction: 'like' | 'dislike') => Promise<void>
-  removeReaction: (skillId: string) => Promise<void>
+  reactToSkill: (
+    skillId: string,
+    reaction: 'like' | 'dislike'
+  ) => Promise<{ reaction: string; like_count?: number; dislike_count?: number }>
+  removeReaction: (skillId: string) => Promise<{ like_count?: number; dislike_count?: number }>
   publishToMarketplace: (skillId: string, categories?: string[]) => Promise<void>
   unpublishFromMarketplace: (skillId: string) => Promise<void>
   getUserReactions: () => Promise<
@@ -138,7 +142,11 @@ export const skillsStore = proxy<SkillsStoreType>({
         resultObj.pagination ?? resultObj.meta ?? resultObj.data?.pagination ?? resultObj
 
       // Update store
-      skillsStore.skills = skills
+      const favoriteSkillIds = new Set(preferencesStore.preferences?.favorites?.skills ?? [])
+      skillsStore.skills = skills.map((skill) => ({
+        ...skill,
+        is_favorited: favoriteSkillIds.has(skill.id),
+      }))
       skillsStore.skillsPagination = {
         page: pagination.page ?? pagination.current_page ?? _page,
         perPage: pagination.per_page ?? pagination.perPage ?? _perPage,
@@ -397,7 +405,10 @@ export const skillsStore = proxy<SkillsStoreType>({
     }
   },
 
-  async reactToSkill(skillId: string, reaction: 'like' | 'dislike'): Promise<void> {
+  async reactToSkill(
+    skillId: string,
+    reaction: 'like' | 'dislike'
+  ): Promise<{ reaction: string; likeCount: number; dislikeCount: number }> {
     const url = `v1/skills/${skillId}/reactions`
 
     try {
@@ -411,8 +422,12 @@ export const skillsStore = proxy<SkillsStoreType>({
             ...skill,
             is_liked: result.reaction === 'like',
             is_disliked: result.reaction === 'dislike',
-            unique_likes_count: result.likeCount,
-            unique_dislikes_count: result.dislikeCount,
+            unique_likes_count:
+              result.like_count !== undefined ? result.like_count : skill.unique_likes_count,
+            unique_dislikes_count:
+              result.dislike_count !== undefined
+                ? result.dislike_count
+                : skill.unique_dislikes_count,
           }
         }
         return skill
@@ -424,24 +439,32 @@ export const skillsStore = proxy<SkillsStoreType>({
           ...skillsStore.selectedSkill,
           is_liked: result.reaction === 'like',
           is_disliked: result.reaction === 'dislike',
-          unique_likes_count: result.likeCount,
-          unique_dislikes_count: result.dislikeCount,
+          unique_likes_count:
+            result.like_count !== undefined
+              ? result.like_count
+              : skillsStore.selectedSkill.unique_likes_count,
+          unique_dislikes_count:
+            result.dislike_count !== undefined
+              ? result.dislike_count
+              : skillsStore.selectedSkill.unique_dislikes_count,
         }
       }
+
+      return result
     } catch (error) {
       toaster.error('Failed to react to skill')
       throw error
     }
   },
 
-  async removeReaction(skillId: string): Promise<void> {
+  async removeReaction(skillId: string): Promise<{ like_count?: number; dislike_count?: number }> {
     const url = `v1/skills/${skillId}/reactions`
 
     try {
       const response = await api.delete(url)
 
       // DELETE may return 204 No Content — guard the json parse
-      let result: { likeCount?: number; dislikeCount?: number } = {}
+      let result: { like_count?: number; dislike_count?: number } = {}
       try {
         result = await response.json()
       } catch {
@@ -455,8 +478,12 @@ export const skillsStore = proxy<SkillsStoreType>({
             ...skill,
             is_liked: false,
             is_disliked: false,
-            unique_likes_count: result.likeCount ?? 0,
-            unique_dislikes_count: result.dislikeCount ?? 0,
+            unique_likes_count:
+              result.like_count !== undefined ? result.like_count : skill.unique_likes_count,
+            unique_dislikes_count:
+              result.dislike_count !== undefined
+                ? result.dislike_count
+                : skill.unique_dislikes_count,
           }
         }
         return skill
@@ -468,10 +495,18 @@ export const skillsStore = proxy<SkillsStoreType>({
           ...skillsStore.selectedSkill,
           is_liked: false,
           is_disliked: false,
-          unique_likes_count: result.likeCount ?? 0,
-          unique_dislikes_count: result.dislikeCount ?? 0,
+          unique_likes_count:
+            result.like_count !== undefined
+              ? result.like_count
+              : skillsStore.selectedSkill.unique_likes_count,
+          unique_dislikes_count:
+            result.dislike_count !== undefined
+              ? result.dislike_count
+              : skillsStore.selectedSkill.unique_dislikes_count,
         }
       }
+
+      return result
     } catch (error) {
       toaster.error('Failed to remove reaction')
       throw error

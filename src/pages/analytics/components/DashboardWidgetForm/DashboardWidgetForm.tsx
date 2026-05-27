@@ -161,7 +161,6 @@ const DashboardWidgetForm: FC<DashboardWidgetFormProps> = ({
   const isChartWidget = checkIsChartWidget(widgetType as WidgetType)
   const isBarChart = widgetType === WidgetType.BAR
   const isRatioWidget = widgetType === WidgetType.RATIO
-  // const isOverviewWidget = widgetType === WidgetType.OVERVIEW
 
   const {
     numericColumns,
@@ -171,11 +170,8 @@ const DashboardWidgetForm: FC<DashboardWidgetFormProps> = ({
     isChartWidget && !isOverviewMetric ? (metricType as TabularMetricType) : null
   )
 
-  const {
-    // metrics: overviewMetrics,
-    numericMetrics: overviewNumericMetrics,
-    loading: overviewMetricsLoading,
-  } = useOverviewMetrics(isOverviewMetric ? (metricType as OverviewMetricType) : null)
+  const { numericMetrics: overviewNumericMetrics, loading: overviewMetricsLoading } =
+    useOverviewMetrics(isOverviewMetric ? (metricType as OverviewMetricType) : null)
 
   const handleFormSubmit = async (data: AnalyticsWidgetFormSchema) => {
     onSubmit(data)
@@ -433,33 +429,6 @@ const DashboardWidgetForm: FC<DashboardWidgetFormProps> = ({
               )}
             />
           )}
-
-          {/* Overview widget-specific settings */}
-          {/* {isOverviewWidget && (
-          <Controller
-            name="selectedMetrics"
-            control={control}
-            render={({ field }) => (
-              <MultiSelect
-                required
-                showCheckbox
-                label="Select Metrics to Display"
-                placeholder="Choose metrics"
-                loading={overviewMetricsLoading}
-                disabled={overviewMetricsLoading}
-                error={errors.selectedMetrics?.message}
-                value={overviewMetrics.filter((m) => field.value?.includes(m.id)).map((m) => m.id)}
-                onChange={(e) => {
-                  field.onChange(e.value)
-                }}
-                options={overviewMetrics.map((metric) => ({
-                  label: metric.label,
-                  value: metric.id,
-                }))}
-              />
-            )}
-          />
-        )} */}
 
           {/* Ratio widget-specific settings */}
           {isRatioWidget && (

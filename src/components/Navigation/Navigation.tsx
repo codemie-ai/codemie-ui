@@ -17,7 +17,12 @@ import React, { useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
 import { ANALYTICS } from '@/constants/routes'
-import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+import {
+  useFeatureFlag,
+  useFavoritesEnabled,
+  useFavoritesPageEnabled,
+  usePinnedAssistantsEnabled,
+} from '@/hooks/useFeatureFlags'
 import { useTheme } from '@/hooks/useTheme'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
@@ -27,9 +32,9 @@ import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 import { cn } from '@/utils/utils'
 
 import { IconType } from './constants'
-import NavigationAssistants from './NavigationAssistants'
 import NavigationExpandButton from './NavigationExpandButton'
 import NavigationLogo from './NavigationLogo'
+import NavigationPinnedSection from './NavigationPinnedSection/NavigationPinnedSection'
 import NavigationProfile from './NavigationProfile'
 import { NavigationLinkItem } from './NavigationSection/NavigationLink'
 import NavigationSection from './NavigationSection/NavigationSection'
@@ -56,6 +61,9 @@ const Navigation: React.FC<NavigationProps> = () => {
   }
 
   const [isSkillsEnabled] = useFeatureFlag('skills')
+  const [isFavoritesEnabled] = useFavoritesEnabled()
+  const [isFavoritesPageEnabled] = useFavoritesPageEnabled()
+  const [isPinnedAssistantsEnabled] = usePinnedAssistantsEnabled()
 
   const upperItems = useMemo(() => {
     const items: NavigationLinkItem[] = [
@@ -129,6 +137,20 @@ const Navigation: React.FC<NavigationProps> = () => {
     return items
   }, [router])
 
+  const favoritesItems: NavigationLinkItem[] = useMemo(
+    () =>
+      isFavoritesEnabled && isFavoritesPageEnabled
+        ? [
+            {
+              label: 'Favorites',
+              icon: IconType.FAVORITES,
+              route: router.resolve({ path: '/favorites' }).fullPath,
+            },
+          ]
+        : [],
+    [router, isFavoritesEnabled, isFavoritesPageEnabled]
+  )
+
   const lowerItems: NavigationLinkItem[] = [
     { label: 'Help', icon: IconType.INFO, route: router.resolve({ name: 'help' }).fullPath },
   ]
@@ -136,7 +158,7 @@ const Navigation: React.FC<NavigationProps> = () => {
   return (
     <header
       className={cn(
-        'flex flex-col justify-between h-full',
+        'flex flex-col h-full',
         'relative px-2 pt-6 pb-4 transition-width duration-200 ease-in-out',
         'will-change-[width] transform-gpu',
         isExpanded ? 'min-w-navbar-expanded w-navbar-expanded' : 'w-navbar',
@@ -149,12 +171,18 @@ const Navigation: React.FC<NavigationProps> = () => {
         <NavigationSection items={upperItems} className="mt-4" />
         <div className="h-px my-4 bg-border-primary mx-2" />
         <NavigationSection items={upperSecondaryItems} />
+        {((isFavoritesEnabled && isFavoritesPageEnabled) || isPinnedAssistantsEnabled) && (
+          <div className="h-px my-4 bg-border-primary mx-2" />
+        )}
+        <NavigationSection items={favoritesItems} />
       </div>
 
-      <div className="flex flex-col gap-3">
-        <nav className="flex flex-col gap-2 px-2" aria-label="bottom-nav-links">
-          <NavigationAssistants isExpanded={isExpanded} />
-          <div className="mt-4 mb-2 h-px bg-white/20 mx-2" />
+      <div className="flex-1 min-h-0 flex flex-col gap-3">
+        <nav className="flex flex-col flex-1 min-h-0 gap-2 px-2" aria-label="bottom-nav-links">
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <NavigationPinnedSection />
+          </div>
+          <div className="mb-2 h-px bg-white/20 mx-2" />
           <NavigationSection isBottomSection items={lowerItems} />
         </nav>
 

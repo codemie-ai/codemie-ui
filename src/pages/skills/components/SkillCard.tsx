@@ -21,9 +21,13 @@ import ThumbUpFilledSvg from '@/assets/icons/thumb-up-filled.svg?react'
 import ThumbUpSvg from '@/assets/icons/thumb-up.svg?react'
 import Button from '@/components/Button'
 import Card from '@/components/Card'
+import FavoriteButton from '@/components/FavoriteButton/FavoriteButton'
+import RemoveFavoriteConfirmPopup from '@/components/FavoriteButton/RemoveFavoriteConfirmPopup'
 import Tooltip from '@/components/Tooltip'
+import { useFavoritesEnabled } from '@/hooks/useFeatureFlags'
+import { favoritesStore } from '@/store/favorites'
 import { skillsStore } from '@/store/skills'
-import { Skill } from '@/types/entity/skill'
+import { Skill, SkillVisibility } from '@/types/entity/skill'
 
 import AttachToAssistantsModal from './AttachToAssistantsModal'
 import SkillActions from './SkillActions'
@@ -44,6 +48,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
   reloadSkills,
   isMarketplace = false,
 }) => {
+  const [isFavoritesEnabled] = useFavoritesEnabled()
   // Get author name from created_by field (matches assistant structure)
   const authorName = skill.created_by?.name ?? skill.created_by?.username ?? 'Unknown'
   const likesCount = skill.unique_likes_count ?? 0
@@ -55,11 +60,12 @@ const SkillCard: React.FC<SkillCardProps> = ({
     event.stopPropagation()
     try {
       if (isLiked) {
-        await skillsStore.removeReaction(skill.id)
+        const result = await skillsStore.removeReaction(skill.id)
+        favoritesStore.patchSkillReaction(skill.id, false, false, result)
       } else {
-        await skillsStore.reactToSkill(skill.id, 'like')
+        const result = await skillsStore.reactToSkill(skill.id, 'like')
+        favoritesStore.patchSkillReaction(skill.id, true, false, result)
       }
-      reloadSkills?.()
     } catch (error) {
       console.error('Error toggling like:', error)
     }
@@ -69,11 +75,12 @@ const SkillCard: React.FC<SkillCardProps> = ({
     event.stopPropagation()
     try {
       if (isDisliked) {
-        await skillsStore.removeReaction(skill.id)
+        const result = await skillsStore.removeReaction(skill.id)
+        favoritesStore.patchSkillReaction(skill.id, false, false, result)
       } else {
-        await skillsStore.reactToSkill(skill.id, 'dislike')
+        const result = await skillsStore.reactToSkill(skill.id, 'dislike')
+        favoritesStore.patchSkillReaction(skill.id, false, true, result)
       }
-      reloadSkills?.()
     } catch (error) {
       console.error('Error toggling dislike:', error)
     }
@@ -84,6 +91,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
   }, [skill.id])
 
   const [isAttachModalVisible, setIsAttachModalVisible] = useState(false)
+  const [showRemoveFavorite, setShowRemoveFavorite] = useState(false)
 
   const handleAttachClick = (event: React.MouseEvent) => {
     event.stopPropagation()
@@ -94,7 +102,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
     return (
       <>
         <Tooltip target={'.' + tooltipClass} position="left" showDelay={100} />
-        {isMarketplace && (
+        {(isMarketplace || skill.visibility === SkillVisibility.PUBLIC) && (
           <div className="flex h-full pl-4 gap-1 items-center justify-center">
             <Button
               type="tertiary"
@@ -143,7 +151,6 @@ const SkillCard: React.FC<SkillCardProps> = ({
           </Button>
         </div>
         <div
-          role="presentation"
           className="flex pl-2 items-center"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -184,6 +191,36 @@ const SkillCard: React.FC<SkillCardProps> = ({
         avatar={renderAvatar()}
         actions={renderActions()}
         status={renderStatus()}
+        topRight={
+          isFavoritesEnabled ? (
+            <div
+              role="none"
+              className="flex gap-0.5"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <FavoriteButton
+                isFavorited={skill.is_favorited ?? false}
+                onToggle={() =>
+                  skill.is_favorited
+                    ? setShowRemoveFavorite(true)
+                    : favoritesStore.addFavorite('skill', skill.id)
+                }
+              />
+            </div>
+          ) : null
+        }
+      />
+
+      <RemoveFavoriteConfirmPopup
+        visible={showRemoveFavorite}
+        entityName={skill.name}
+        onCancel={() => setShowRemoveFavorite(false)}
+        onConfirm={async () => {
+          await favoritesStore.removeFavorite('skill', skill.id)
+          setShowRemoveFavorite(false)
+          reloadSkills?.()
+        }}
       />
 
       <AttachToAssistantsModal

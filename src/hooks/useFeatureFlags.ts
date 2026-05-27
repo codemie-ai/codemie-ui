@@ -98,3 +98,15 @@ export const useFeatureFlag = (featureName: string): FeatureFlagResult => {
 export const useMcpEnabled = (): FeatureFlagResult => {
   return useFeatureFlag('mcpConnect')
 }
+
+export const useFavoritesEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag('features:favorites')
+}
+
+export const usePinnedAssistantsEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag('features:pinnedAssistants')
+}
+
+export const useFavoritesPageEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag('features:favoritesPage')
+}

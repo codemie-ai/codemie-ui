@@ -67,3 +67,24 @@ export const isMcpEnabled = (): boolean => {
 export const isCostCentersEnabled = (): boolean => {
   return isFeatureEnabled('features:costCenters')
 }
+
+/**
+ * Check if Favorites feature is enabled (non-reactive utility)
+ */
+export const isFavoritesEnabled = (): boolean => {
+  return isFeatureEnabled('features:favorites')
+}
+
+/**
+ * Check if Pinned Assistants feature is enabled (non-reactive utility)
+ */
+export const isPinnedAssistantsEnabled = (): boolean => {
+  return isFeatureEnabled('features:pinnedAssistants')
+}
+
+/**
+ * Check if Favorites page is enabled (non-reactive utility)
+ */
+export const isFavoritesPageEnabled = (): boolean => {
+  return isFeatureEnabled('features:favoritesPage')
+}

@@ -30,6 +30,7 @@ interface AssistantsListProps {
   reloadAssistants: () => void
   isTemplate?: boolean
   loading?: boolean
+  assistants?: Assistant[]
 }
 
 const AssistantsList: React.FC<AssistantsListProps> = ({
@@ -37,11 +38,22 @@ const AssistantsList: React.FC<AssistantsListProps> = ({
   reloadAssistants,
   isTemplate,
   loading,
+  assistants: assistantsProp,
 }) => {
   const router = useVueRouter()
   const { user } = useSnapshot(userStore) as typeof userStore
-  const { assistants = [], assistantTemplates, pagination } = useAssistants(isTemplate)
-  const totalCount = isTemplate ? assistantTemplates?.length : pagination?.totalCount
+  const {
+    assistants: fetchedAssistants = [],
+    assistantTemplates,
+    pagination,
+  } = useAssistants(isTemplate)
+  const assistants = assistantsProp ?? fetchedAssistants
+  const getTotalCount = () => {
+    if (assistantsProp) return assistantsProp.length
+    if (isTemplate) return assistantTemplates?.length
+    return pagination?.totalCount
+  }
+  const totalCount = getTotalCount()
 
   const showAssistant = (assistant) => {
     if (isTemplate) {

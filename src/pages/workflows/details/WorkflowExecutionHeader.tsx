@@ -95,7 +95,11 @@ const WorkflowExecutionHeader: React.FC<WorkflowExecutionHeaderProps> = ({
           </Button>
         )}
         <RunChatButton workflowId={String(workflow.id)} />
-        <RunWorkflowButton workflowId={String(workflow.id)} startHint={workflow.start_hint} replaceRoute={!execution} />
+        <RunWorkflowButton
+          workflowId={String(workflow.id)}
+          startHint={workflow.start_hint}
+          replaceRoute={!execution}
+        />
       </div>
 
       <WorkflowExecutionInfoPopup

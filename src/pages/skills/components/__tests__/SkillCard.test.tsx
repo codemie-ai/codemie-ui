@@ -140,7 +140,11 @@ describe('SkillCard', () => {
   })
 
   it('calls reactToSkill when like button is clicked', async () => {
-    vi.mocked(skillsStore.reactToSkill).mockResolvedValue()
+    vi.mocked(skillsStore.reactToSkill).mockResolvedValue({
+      reaction: 'like',
+      like_count: 1,
+      dislike_count: 0,
+    })
 
     const { container } = render(
       <SkillCard
@@ -158,7 +162,6 @@ describe('SkillCard', () => {
 
     await waitFor(() => {
       expect(skillsStore.reactToSkill).toHaveBeenCalledWith('skill-123', 'like')
-      expect(mockReloadSkills).toHaveBeenCalled()
     })
   })
 
@@ -168,7 +171,7 @@ describe('SkillCard', () => {
       is_liked: true,
     }
 
-    vi.mocked(skillsStore.removeReaction).mockResolvedValue()
+    vi.mocked(skillsStore.removeReaction).mockResolvedValue({ like_count: 0, dislike_count: 0 })
 
     const { container } = render(
       <SkillCard
@@ -185,12 +188,15 @@ describe('SkillCard', () => {
 
     await waitFor(() => {
       expect(skillsStore.removeReaction).toHaveBeenCalledWith('skill-123')
-      expect(mockReloadSkills).toHaveBeenCalled()
     })
   })
 
   it('calls reactToSkill when dislike button is clicked', async () => {
-    vi.mocked(skillsStore.reactToSkill).mockResolvedValue()
+    vi.mocked(skillsStore.reactToSkill).mockResolvedValue({
+      reaction: 'dislike',
+      like_count: 0,
+      dislike_count: 1,
+    })
 
     const { container } = render(
       <SkillCard
@@ -207,7 +213,6 @@ describe('SkillCard', () => {
 
     await waitFor(() => {
       expect(skillsStore.reactToSkill).toHaveBeenCalledWith('skill-123', 'dislike')
-      expect(mockReloadSkills).toHaveBeenCalled()
     })
   })
 
@@ -217,7 +222,7 @@ describe('SkillCard', () => {
       is_disliked: true,
     }
 
-    vi.mocked(skillsStore.removeReaction).mockResolvedValue()
+    vi.mocked(skillsStore.removeReaction).mockResolvedValue({ like_count: 0, dislike_count: 0 })
 
     const { container } = render(
       <SkillCard
@@ -234,7 +239,6 @@ describe('SkillCard', () => {
 
     await waitFor(() => {
       expect(skillsStore.removeReaction).toHaveBeenCalledWith('skill-123')
-      expect(mockReloadSkills).toHaveBeenCalled()
     })
   })
 

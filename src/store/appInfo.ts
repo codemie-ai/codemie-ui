@@ -26,6 +26,10 @@ const NAVIGATION_EXPANDED_KEY = 'codemie-navigation-expanded'
 const SIDEBAR_EXPANDED_KEY = 'codemie-sidebar-expanded'
 const DATASOURCE_PER_PAGE_KEY = 'codemie-datasource-per-page'
 
+const getStoredNavigationExpanded = () => localStorage.getItem(NAVIGATION_EXPANDED_KEY) === 'true'
+const getStoredSidebarExpanded = () =>
+  (localStorage.getItem(SIDEBAR_EXPANDED_KEY) ?? 'true') === 'true'
+
 const APP_VERSION = '0.0.1'
 
 export interface AppInfoStoreType {
@@ -70,8 +74,8 @@ export interface AppInfoStoreType {
 export const appInfoStore = proxy<AppInfoStoreType>({
   configs: [],
   isConfigFetched: false,
-  navigationExpanded: false,
-  sidebarExpanded: true,
+  navigationExpanded: getStoredNavigationExpanded(),
+  sidebarExpanded: getStoredSidebarExpanded(),
 
   async fetchCustomerConfig() {
     if (this.isConfigFetched) {

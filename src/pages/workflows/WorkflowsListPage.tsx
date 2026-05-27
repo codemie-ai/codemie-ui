@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import PlusIcon from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
@@ -31,26 +31,37 @@ import WorkflowTemplates from './components/WorkflowTemplates'
 
 interface WorkflowsListPageProps {
   scope: WorkflowListScope
+  isFavorites?: boolean
 }
 
-const WorkflowsListPage: React.FC<WorkflowsListPageProps> = ({ scope }) => {
+const WorkflowsListPage: React.FC<WorkflowsListPageProps> = ({ scope, isFavorites = false }) => {
   const router = useVueRouter()
+  const [workflowFilters, setWorkflowFilters] = useState<Record<string, unknown>>({})
 
   useEffect(() => {
-    workflowsStore.clearWorkflowsFilters()
-  }, [scope])
+    if (!isFavorites) {
+      workflowsStore.clearWorkflowsFilters()
+    }
+  }, [scope, isFavorites])
 
   const createWorkflow = () => {
     router.push({ name: 'new-workflow' })
   }
 
-  const shouldShowFilters = scope === WORKFLOW_LIST_SCOPE.ALL || scope === WORKFLOW_LIST_SCOPE.MY
+  const shouldShowFilters =
+    isFavorites || scope === WORKFLOW_LIST_SCOPE.ALL || scope === WORKFLOW_LIST_SCOPE.MY
 
   return (
     <div className="flex h-full">
       <Sidebar title="Workflows" description="Browse and run available AI-powered workflows">
         <WorkflowsNavigation />
-        {shouldShowFilters && <WorkflowsFilters key={scope} scope={scope} />}
+        {shouldShowFilters && (
+          <WorkflowsFilters
+            key={isFavorites ? WORKFLOW_LIST_SCOPE.FAVORITES : scope}
+            scope={isFavorites ? WORKFLOW_LIST_SCOPE.FAVORITES : scope}
+            onApply={isFavorites ? setWorkflowFilters : undefined}
+          />
+        )}
       </Sidebar>
       <PageLayout
         rightContent={
@@ -61,9 +72,20 @@ const WorkflowsListPage: React.FC<WorkflowsListPageProps> = ({ scope }) => {
         }
       >
         <div className="min-h-full flex flex-col pb-24 pt-6">
-          {scope === WORKFLOW_LIST_SCOPE.ALL && <WorkflowsList key={scope} scope={scope} />}
-          {scope === WORKFLOW_LIST_SCOPE.MY && <WorkflowsList key={scope} scope={scope} />}
-          {scope === WORKFLOW_LIST_SCOPE.TEMPLATES && <WorkflowTemplates key={scope} />}
+          {isFavorites && (
+            <WorkflowsList
+              key={WORKFLOW_LIST_SCOPE.FAVORITES}
+              scope={WORKFLOW_LIST_SCOPE.FAVORITES}
+              filters={workflowFilters}
+            />
+          )}
+          {!isFavorites && (
+            <>
+              {scope === WORKFLOW_LIST_SCOPE.ALL && <WorkflowsList key={scope} scope={scope} />}
+              {scope === WORKFLOW_LIST_SCOPE.MY && <WorkflowsList key={scope} scope={scope} />}
+              {scope === WORKFLOW_LIST_SCOPE.TEMPLATES && <WorkflowTemplates key={scope} />}
+            </>
+          )}
         </div>
       </PageLayout>
     </div>

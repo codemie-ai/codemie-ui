@@ -19,6 +19,7 @@ import { HTTP_STATUS } from '@/constants'
 import { assistantsStore, chatsStore, userStore } from '@/store'
 import { appInfoStore } from '@/store/appInfo'
 import { applicationsStore } from '@/store/applications'
+import { preferencesStore } from '@/store/preferences'
 import { skillsStore } from '@/store/skills'
 
 const useInitialDataFetch = () => {
@@ -30,6 +31,8 @@ const useInitialDataFetch = () => {
         if (error instanceof Response && error.status === HTTP_STATUS.UNAUTHORIZED) return
         throw error
       }
+      await preferencesStore.fetchPreferences(userStore.user!.userId)
+      await assistantsStore.fetchPinnedAssistants()
       chatsStore.getFolders()
       chatsStore.getChats()
 
@@ -48,8 +51,6 @@ const useInitialDataFetch = () => {
 
       assistantsStore.getAssistantCategories()
       skillsStore.getSkillCategories()
-      assistantsStore.getDefaultAssistant()
-      assistantsStore.getHelpAssistants()
       assistantsStore.getDefaultAssistant()
       assistantsStore.getHelpAssistants()
     }

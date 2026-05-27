@@ -84,6 +84,7 @@ export interface Skill {
   unique_dislikes_count?: number
   toolkits?: AssistantToolkit[]
   mcp_servers?: MCPServerDetails[]
+  is_favorited?: boolean
   companion_files?: SkillCompanionFileMetadata[]
 }
 

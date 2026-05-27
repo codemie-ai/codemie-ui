@@ -16,18 +16,23 @@
 import React from 'react'
 
 import ExploreSvg from '@/assets/icons/explore.svg?react'
+import StarFilledSvg from '@/assets/icons/star-filled.svg?react'
 import TemplatesSvg from '@/assets/icons/templates.svg?react'
 import WorkflowSvg from '@/assets/icons/workflow.svg?react'
 import SidebarNavigation from '@/components/SidebarNavigation'
 import { WORKFLOWS_ALL, WORKFLOWS_MY, WORKFLOWS_TEMPLATES } from '@/constants/routes'
+import { useFavoritesEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
+
+const WORKFLOWS_FAVORITES = 'workflows-favorites'
 
 const WorkflowsNavigation: React.FC = () => {
   const router = useVueRouter()
   const route = useVueRoute()
+  const [isFavoritesEnabled] = useFavoritesEnabled()
 
-  const navigationTabs = React.useMemo(
-    () => [
+  const navigationTabs = React.useMemo(() => {
+    const tabs = [
       {
         id: WORKFLOWS_MY,
         name: 'My Workflows',
@@ -49,9 +54,18 @@ const WorkflowsNavigation: React.FC = () => {
         section: 'Categories',
         url: router.resolve({ name: WORKFLOWS_TEMPLATES }).path,
       },
-    ],
-    []
-  )
+    ]
+    if (isFavoritesEnabled) {
+      tabs.push({
+        id: WORKFLOWS_FAVORITES,
+        name: 'Favorites',
+        icon: <StarFilledSvg />,
+        section: 'Categories',
+        url: router.resolve({ name: WORKFLOWS_FAVORITES }).path,
+      })
+    }
+    return tabs
+  }, [router, isFavoritesEnabled])
 
   const activeId = (route.name as string) || WORKFLOWS_MY
 

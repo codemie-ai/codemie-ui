@@ -44,6 +44,7 @@ import DataSourceDetailsPage from '@/pages/dataSources/DataSourceDetailsPage'
 import DataSourceEditPage from '@/pages/dataSources/DataSourceEditPage'
 import DataSourcesPage from '@/pages/dataSources/DataSourcesPage'
 import ErrorPage from '@/pages/error/ErrorPage'
+import FavoritesPage from '@/pages/favorites/FavoritesPage'
 import HelpPage from '@/pages/help/HelpPage'
 import EditProjectIntegrationPage from '@/pages/integrations/EditProjectIntegrationPage'
 import EditUserIntegrationPage from '@/pages/integrations/EditUserIntegrationPage'
@@ -181,6 +182,11 @@ const assistantRoutes: RouteObject[] = [
     path: 'assistants/:slug/start',
     Component: AssistantChatStartPage,
   },
+  {
+    id: 'assistants-favorites',
+    path: 'assistants/favorites',
+    element: <AssistantsListPage tab={AssistantTab.FAVORITES} />,
+  },
 ]
 
 const skillRoutes: RouteObject[] = [
@@ -198,6 +204,11 @@ const skillRoutes: RouteObject[] = [
     id: 'skills-marketplace',
     path: 'skills/marketplace',
     element: <SkillsListPage tab={SkillTab.MARKETPLACE} />,
+  },
+  {
+    id: 'skills-favorites',
+    path: 'skills/favorites',
+    element: <SkillsListPage tab={SkillTab.FAVORITES} />,
   },
   {
     id: 'new-skill',
@@ -325,6 +336,11 @@ const workflowRoutes: RouteObject[] = [
     id: 'workflows-templates',
     path: 'workflows/templates',
     element: <WorkflowsListPage scope={WORKFLOW_LIST_SCOPE.TEMPLATES} />,
+  },
+  {
+    id: 'workflows-favorites',
+    path: 'workflows/favorites',
+    element: <WorkflowsListPage scope={WORKFLOW_LIST_SCOPE.MY} isFavorites />,
   },
   {
     id: 'new-workflow',
@@ -549,6 +565,29 @@ const otherRoutes: RouteObject[] = [
   },
 ]
 
+const favoritesRoutes: RouteObject[] = [
+  {
+    id: 'favorites',
+    path: 'favorites',
+    element: <FavoritesPage filter="all" />,
+  },
+  {
+    id: 'favorites-assistants',
+    path: 'favorites/assistants',
+    element: <FavoritesPage filter="assistant" />,
+  },
+  {
+    id: 'favorites-workflows',
+    path: 'favorites/workflows',
+    element: <FavoritesPage filter="workflow" />,
+  },
+  {
+    id: 'favorites-skills',
+    path: 'favorites/skills',
+    element: <FavoritesPage filter="skill" />,
+  },
+]
+
 export const routes: RouteObject[] = [
   {
     id: 'root',
@@ -559,6 +598,7 @@ export const routes: RouteObject[] = [
       ...chatRoutes,
       ...assistantRoutes,
       ...skillRoutes,
+      ...favoritesRoutes,
       ...integrationRoutes,
       ...dataSourceRoutes,
       ...katasRoutes,

@@ -72,6 +72,7 @@ export enum AssistantTab {
   USER = 'user',
   TEMPLATES = 'templates',
   MARKETPLACE = 'marketplace',
+  FAVORITES = 'favorites',
 }
 
 export enum SettingsTab {

@@ -39,6 +39,7 @@ export interface Workflow {
   configuration?: string
   yaml_config_history: WorkflowConfigHistoryItem[]
   update_date: string
+  is_favorited?: boolean
   [key: string]: any
 }
 

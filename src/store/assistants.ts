@@ -39,13 +39,16 @@ import {
   CreateAssistantDto,
   AssistantCreateResponse,
 } from '@/types/entity/assistant'
+import { FavoriteItem } from '@/types/entity/favorites'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import api from '@/utils/api'
 import { FILTER_ENTITY, setFilters } from '@/utils/filters'
 import { cleanObject } from '@/utils/helpers'
 import storage from '@/utils/storage'
+import toaster from '@/utils/toaster'
 
 import { appInfoStore } from './appInfo'
+import { preferencesStore } from './preferences'
 import { userStore } from './user'
 import { transformAssistantToCreateDTO } from './utils/assistants'
 
@@ -61,6 +64,7 @@ interface AssistantsStoreType {
   availableToolkits: AssistantToolkit[]
   availableContext: AssistantContext[]
   helpAssistants: any[]
+  helpAssistantsFetched: boolean
   defaultAssistant: Assistant | null
   showNewAssistantAIPopup: boolean
   indexAssistants: (
@@ -149,12 +153,18 @@ interface AssistantsStoreType {
   createRemoteAssistant: (data: any) => Promise<any>
   updateRemoteAssistant: (id: string, data: any) => Promise<any>
   exportAssistant: (id: string, envVariables?: Record<string, string>) => Promise<Blob>
+
+  pinnedAssistants: FavoriteItem[]
+  fetchPinnedAssistants: () => Promise<void>
+  pinAssistant: (id: string) => Promise<void>
+  unpinAssistant: (id: string) => Promise<void>
 }
 
 export const MAX_RECENT_ASSISTANTS = 3
 
 export const assistantsStore = proxy<AssistantsStoreType>({
   assistants: [],
+  pinnedAssistants: [],
   assistantTemplates: [],
   assistantsPagination: {
     page: 0,
@@ -166,6 +176,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
   availableContext: [],
   recentAssistants: [],
   helpAssistants: [],
+  helpAssistantsFetched: false,
   defaultAssistant: null,
   showEditRemoteAssistantModal: false,
   assistantToEdit: null,
@@ -202,10 +213,16 @@ export const assistantsStore = proxy<AssistantsStoreType>({
         if (saveFilters) {
           setFilters(`${FILTER_ENTITY.ASSISTANTS}.${scope}`, filters)
         }
+        const pinnedIds = preferencesStore.preferences?.pinned_assistants ?? []
+        const favoriteAssistantIds = new Set(
+          preferencesStore.preferences?.favorites?.assistants ?? []
+        )
         assistantsStore.assistants = assistantsStore.assistants.map((assistant) => {
           return {
             ...assistant,
             is_global: scope === ASSISTANT_INDEX_SCOPES.MARKETPLACE ? true : assistant.is_global,
+            is_pinned: pinnedIds.includes(assistant.id),
+            is_favorited: favoriteAssistantIds.has(assistant.id),
           }
         })
         assistantsStore.updateAssistantsWithLikedStatus().catch((error) => {
@@ -310,11 +327,16 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       .get(`v1/assistants/id/${id}`, { skipErrorHandling })
       .then((response) => response.json() as unknown as Assistant)
 
+    const pinnedIds = preferencesStore.preferences?.pinned_assistants ?? []
+    const favoriteIds = new Set(preferencesStore.preferences?.favorites?.assistants ?? [])
+
     // Return full nested assistants data including toolkits and mcp_servers
     // This allows SubAssistantUserMapping to configure integrations without additional API calls
     return {
       ...assistant,
       nestedAssistants: assistant.nested_assistants,
+      is_pinned: pinnedIds.includes(assistant.id),
+      is_favorited: favoriteIds.has(assistant.id),
     }
   },
 
@@ -653,6 +675,14 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       const response = await api.put(`v1/assistants/${id}`, assistantData)
       const data = await response.json()
       assistantsStore.updateRecentAssistant(id, values)
+      assistantsStore.assistants = assistantsStore.assistants.map((a) =>
+        a.id === id ? { ...a, name: values.name, icon_url: values.icon_url ?? a.icon_url } : a
+      )
+      const pinned = assistantsStore.pinnedAssistants.find((p) => p.id === id)
+      if (pinned) {
+        pinned.name = values.name
+        pinned.icon_url = values.icon_url ?? pinned.icon_url
+      }
       return data
     } catch (error: any) {
       return {
@@ -744,6 +774,8 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       assistantsStore.helpAssistants = json.data
     } catch (error) {
       console.error('Failed to fetch help assistants:', error)
+    } finally {
+      assistantsStore.helpAssistantsFetched = true
     }
   },
 
@@ -804,5 +836,68 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       }
       return Promise.reject(new Error('Failed to export assistant'))
     })
+  },
+
+  async fetchPinnedAssistants() {
+    const pinnedIds = (preferencesStore.preferences?.pinned_assistants ?? []).filter(Boolean)
+    if (pinnedIds.length === 0) {
+      assistantsStore.pinnedAssistants = []
+      return
+    }
+    const cached = assistantsStore.assistants.filter((a) => pinnedIds.includes(a.id))
+    if (cached.length === pinnedIds.length) {
+      assistantsStore.pinnedAssistants = cached.map((a) => ({ ...a, icon_url: a.icon_url ?? '' }))
+      return
+    }
+    try {
+      const results = await Promise.all(
+        pinnedIds.map((id) =>
+          api
+            .get(`v1/assistants/id/${id}`, { skipErrorHandling: true })
+            .then((r) => r.json())
+            .catch(() => null)
+        )
+      )
+      assistantsStore.pinnedAssistants = results
+        .filter(Boolean)
+        .map((a) => ({ ...a!, icon_url: a!.icon_url ?? '', is_pinned: true }))
+    } catch (error) {
+      console.error('[fetchPinnedAssistants] failed to load pinned assistants:', error)
+    }
+  },
+
+  async pinAssistant(id: string) {
+    const { userId } = userStore.user!
+    const current = (preferencesStore.preferences?.pinned_assistants ?? []).filter(Boolean)
+    if (current.includes(id)) return
+    await preferencesStore.putPreferences(userId, {
+      pinned_assistants: [...current, id],
+    })
+    const found = assistantsStore.assistants.find((a) => a.id === id)
+    assistantsStore.assistants = assistantsStore.assistants.map((a) =>
+      a.id === id ? { ...a, is_pinned: true } : a
+    )
+    if (found && !assistantsStore.pinnedAssistants.find((p) => p.id === id)) {
+      assistantsStore.pinnedAssistants = [
+        ...assistantsStore.pinnedAssistants,
+        { ...found, icon_url: found.icon_url ?? '', is_pinned: true },
+      ]
+    } else if (!found) {
+      await assistantsStore.fetchPinnedAssistants()
+    }
+    const name = found?.name ?? assistantsStore.pinnedAssistants.find((p) => p.id === id)?.name
+    toaster.success(`Added to sidebar<br>${name} is now available in your sidebar shortcuts.`)
+  },
+
+  async unpinAssistant(id: string) {
+    const { userId } = userStore.user!
+    const current = (preferencesStore.preferences?.pinned_assistants ?? []).filter(Boolean)
+    await preferencesStore.putPreferences(userId, {
+      pinned_assistants: current.filter((x) => x !== id),
+    })
+    assistantsStore.pinnedAssistants = assistantsStore.pinnedAssistants.filter((p) => p.id !== id)
+    assistantsStore.assistants = assistantsStore.assistants.map((a) =>
+      a.id === id ? { ...a, is_pinned: false } : a
+    )
   },
 })

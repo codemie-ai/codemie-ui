@@ -193,17 +193,6 @@ i.bi {
   -webkit-text-stroke: 0.5px colors.$black;
 }
 
-// Animate Vue transitions
-.v-enter-active,
-.v-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.v-enter-from,
-.v-leave-to {
-  opacity: 0;
-}
-
 // Content container
 .page-container {
   @apply overflow-y-auto bg-surface-base-primary text-text-primary w-full flex flex-col mt-[70px] p-0 px-[5px];

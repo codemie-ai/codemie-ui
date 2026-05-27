@@ -41,6 +41,9 @@ const {
     },
     mockAssistantsStore: {
       helpAssistants: [],
+      helpAssistantsFetched: true,
+      pinnedAssistants: [],
+      fetchPinnedAssistants: vi.fn().mockResolvedValue(undefined),
     },
     mockChatsStore: {
       startNewChat: vi.fn().mockResolvedValue(undefined),

@@ -62,6 +62,12 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: 'log
 
   const hasSocialProviders = kcContext.social?.providers && kcContext.social.providers.length > 0
 
+  const loginFormClassName = hasSocialProviders
+    ? `overflow-hidden transition-all duration-300 ${
+        showMoreOptions ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+      }`
+    : ''
+
   return (
     <Template {...props} headerNode={null} displayMessage={false}>
       <div className="flex flex-col items-center">
@@ -109,15 +115,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: 'log
           )}
 
           {/* Login form - collapsible when SSO is available */}
-          <div
-            className={
-              hasSocialProviders
-                ? `overflow-hidden transition-all duration-300 ${
-                    showMoreOptions ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
-                  }`
-                : ''
-            }
-          >
+          <div className={loginFormClassName}>
             <form
               action={url.loginAction}
               method="post"

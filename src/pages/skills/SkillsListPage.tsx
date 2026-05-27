@@ -14,6 +14,7 @@
 //
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import { useSnapshot } from 'valtio'
 
 import PlusIcon from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
@@ -29,6 +30,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import { useSkills } from '@/pages/skills/hooks/useSkills'
 import { useSkillsFilters } from '@/pages/skills/hooks/useSkillsFilters'
 import { downloadSkillAsMarkdown } from '@/pages/skills/utils/skillUtils'
+import { favoritesStore } from '@/store/favorites'
 import { skillsStore } from '@/store/skills'
 import { Skill, SkillsFilters, SkillVisibility } from '@/types/entity/skill'
 import { cn } from '@/utils/utils'
@@ -41,6 +43,7 @@ import SkillsNavigation, { SkillTab } from './components/SkillsNavigation'
 const SCOPE_BY_TAB = {
   [SkillTab.PROJECT]: SKILL_INDEX_SCOPES.PROJECT,
   [SkillTab.MARKETPLACE]: SKILL_INDEX_SCOPES.MARKETPLACE,
+  [SkillTab.FAVORITES]: SKILL_INDEX_SCOPES.FAVORITES,
 } as const
 
 interface SkillsListPageProps {
@@ -81,6 +84,18 @@ const SkillsListPage: React.FC<SkillsListPageProps> = ({ tab = SkillTab.PROJECT 
     currentPage,
     currentPerPage
   )
+  const {
+    skills: favoriteSkills,
+    loading: favoritesLoading,
+    skillsPagination,
+  } = useSnapshot(favoritesStore)
+  const [favoriteSkillsPerPage, setFavoriteSkillsPerPage] = useState(12)
+
+  useEffect(() => {
+    if (tab === SkillTab.FAVORITES) {
+      favoritesStore.fetchFavoriteSkills(activeFilters, currentPage, favoriteSkillsPerPage)
+    }
+  }, [tab, currentPage, favoriteSkillsPerPage, JSON.stringify(filters)])
 
   const handleViewSkill = (skill: Skill) => {
     router.push({ name: SKILL_DETAILS, params: { id: skill.id } })
@@ -111,15 +126,20 @@ const SkillsListPage: React.FC<SkillsListPageProps> = ({ tab = SkillTab.PROJECT 
   const handlePageChange = (page: number, perPage?: number) => {
     setCurrentPage(page)
     if (perPage !== undefined) {
-      setCurrentPerPage(perPage)
+      if (isFavorites) setFavoriteSkillsPerPage(perPage)
+      else setCurrentPerPage(perPage)
     }
   }
 
   // Reset page and perPage when tab changes
   useEffect(() => {
     setCurrentPage(0)
+    setFavoriteSkillsPerPage(12)
     setCurrentPerPage(SKILLS_PER_PAGE)
   }, [tab])
+
+  const isFavorites = tab === SkillTab.FAVORITES
+  const isLoading = isFavorites ? favoritesLoading : loading
 
   const headerActions = React.useMemo(
     () => (
@@ -148,33 +168,60 @@ const SkillsListPage: React.FC<SkillsListPageProps> = ({ tab = SkillTab.PROJECT 
       </Sidebar>
 
       <PageLayout rightContent={headerActions}>
-        {loading && skills.length === 0 ? (
+        {isLoading && skills.length === 0 ? (
           <div className="flex justify-center items-center h-64">
             <Spinner />
           </div>
         ) : (
           <>
             <SkillsGrid
-              skills={skills}
-              totalCount={pagination.totalCount}
+              skills={isFavorites ? (favoriteSkills as unknown as Skill[]) : skills}
+              totalCount={isFavorites ? skillsPagination.totalCount : pagination.totalCount}
               onViewSkill={handleViewSkill}
               onExportSkill={handleExportSkill}
-              reloadSkills={refresh}
+              reloadSkills={
+                isFavorites
+                  ? () => {
+                      favoritesStore
+                        .fetchFavoriteSkills(activeFilters, currentPage, favoriteSkillsPerPage)
+                        .then(() => {
+                          const { totalPages } = favoritesStore.skillsPagination
+                          if (currentPage > 0 && currentPage >= totalPages) {
+                            setCurrentPage(Math.max(0, totalPages - 1))
+                          }
+                        })
+                    }
+                  : refresh
+              }
               isMarketplace={tab === SkillTab.MARKETPLACE}
             />
 
-            {skills.length > 0 && (
-              <Pagination
-                className={cn(
-                  'z-10 mt-6 fixed bottom-0 right-0 bg-surface-base-primary duration-150 px-6 pt-5 pb-3.5',
-                  paginationOffset
+            {isFavorites
+              ? !!favoriteSkills.length && (
+                  <Pagination
+                    className={cn(
+                      'z-10 mt-6 fixed bottom-0 right-0 bg-surface-base-primary duration-150 px-6 pt-5 pb-3.5',
+                      paginationOffset
+                    )}
+                    currentPage={currentPage}
+                    totalPages={skillsPagination.totalPages}
+                    setPage={handlePageChange}
+                    perPage={skillsPagination.perPage}
+                  />
+                )
+              : skills.length > 0 &&
+                pagination.totalPages > 1 && (
+                  <Pagination
+                    className={cn(
+                      'z-10 mt-6 fixed bottom-0 right-0 bg-surface-base-primary duration-150 px-6 pt-5 pb-3.5',
+                      paginationOffset
+                    )}
+                    currentPage={currentPage}
+                    totalPages={pagination.totalPages}
+                    setPage={handlePageChange}
+                    perPage={pagination.perPage}
+                  />
                 )}
-                currentPage={currentPage}
-                totalPages={pagination.totalPages}
-                setPage={handlePageChange}
-                perPage={pagination.perPage}
-              />
-            )}
           </>
         )}
       </PageLayout>

@@ -14,7 +14,7 @@
 //
 
 import { classNames } from 'primereact/utils'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import ChatSvg from '@/assets/icons/chat-new-filled.svg?react'
@@ -25,12 +25,18 @@ import ThumbUpSvg from '@/assets/icons/thumb-up.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import Button from '@/components/Button'
 import Card from '@/components/Card'
+import FavoriteButton from '@/components/FavoriteButton/FavoriteButton'
+import RemoveFavoriteConfirmPopup from '@/components/FavoriteButton/RemoveFavoriteConfirmPopup'
+import PinAssistantButton from '@/components/PinAssistantButton/PinAssistantButton'
+import UnpinAssistantConfirmPopup from '@/components/PinAssistantButton/UnpinAssistantConfirmPopup'
 import Tooltip from '@/components/Tooltip'
 import { AssistantType } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
+import { useFavoritesEnabled, usePinnedAssistantsEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
+import { favoritesStore } from '@/store/favorites'
 import { Assistant } from '@/types/entity/assistant'
 import { createdBy } from '@/utils/helpers'
 
@@ -46,6 +52,7 @@ interface AssistantCardProps {
   description?: string
   name?: string
   onViewAssistant: (assistant: Assistant) => void
+  reloadAssistants?: () => void
 }
 
 const AssistantCard: React.FC<AssistantCardProps> = ({
@@ -57,9 +64,14 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   description,
   name,
   onViewAssistant,
+  reloadAssistants,
 }) => {
   const router = useVueRouter()
+  const [isFavoritesEnabled] = useFavoritesEnabled()
+  const [isPinnedAssistantsEnabled] = usePinnedAssistantsEnabled()
   const { updateRecentAssistants } = useSnapshot(assistantsStore)
+  const [showRemoveFavorite, setShowRemoveFavorite] = useState(false)
+  const [showUnpinConfirm, setShowUnpinConfirm] = useState(false)
 
   const isGlobal = assistant.is_global || false
 
@@ -67,9 +79,11 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
     event.stopPropagation()
     try {
       if (assistant.is_liked) {
-        await assistantsStore.removeReaction(assistant.id)
+        const result = await assistantsStore.removeReaction(assistant.id)
+        favoritesStore.patchAssistantReaction(assistant.id, false, false, result)
       } else {
-        await assistantsStore.reactToAssistant(assistant.id, 'like')
+        const result = await assistantsStore.reactToAssistant(assistant.id, 'like')
+        favoritesStore.patchAssistantReaction(assistant.id, true, false, result)
       }
     } catch (error) {
       console.error('Error toggling like:', error)
@@ -80,9 +94,11 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
     event.stopPropagation()
     try {
       if (assistant.is_disliked) {
-        await assistantsStore.removeReaction(assistant.id)
+        const result = await assistantsStore.removeReaction(assistant.id)
+        favoritesStore.patchAssistantReaction(assistant.id, false, false, result)
       } else {
-        await assistantsStore.reactToAssistant(assistant.id, 'dislike')
+        const result = await assistantsStore.reactToAssistant(assistant.id, 'dislike')
+        favoritesStore.patchAssistantReaction(assistant.id, false, true, result)
       }
     } catch (error) {
       console.error('Error toggling dislike:', error)
@@ -98,6 +114,21 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
     },
     [assistant]
   )
+
+  const handlePinToggle = async () => {
+    if (assistant.is_pinned) {
+      setShowUnpinConfirm(true)
+    } else {
+      await assistantsStore.pinAssistant(assistant.id)
+      favoritesStore.patchAssistantPinned(assistant.id, true)
+    }
+  }
+
+  const handleUnpinConfirm = async () => {
+    await assistantsStore.unpinAssistant(assistant.id)
+    favoritesStore.patchAssistantPinned(assistant.id, false)
+    setShowUnpinConfirm(false)
+  }
 
   const handleNavigationClick = (event) => {
     event.stopPropagation()
@@ -194,7 +225,11 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
             </Button>
           </div>
         )}
-        <div onClick={handleNavigationClick} className="flex pl-2 items-center">
+        <div
+          onClick={handleNavigationClick}
+          onKeyDown={handleNavigationClick}
+          className="flex pl-2 items-center"
+        >
           {navigation}
         </div>
       </>
@@ -229,17 +264,61 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   }, [assistant.type])
 
   return (
-    <Card
-      label={label}
-      id={assistant.id || assistant.slug}
-      title={name || assistant.name}
-      onClick={() => onViewAssistant(assistant)}
-      subtitle={'by ' + createdBy(assistant.created_by)}
-      description={description || assistant.description}
-      avatar={renderAvatar()}
-      actions={renderActions()}
-      status={renderStatus()}
-    />
+    <>
+      <Card
+        label={label}
+        id={assistant.id || assistant.slug}
+        title={name || assistant.name}
+        onClick={() => onViewAssistant(assistant)}
+        subtitle={'by ' + createdBy(assistant.created_by)}
+        description={description || assistant.description}
+        avatar={renderAvatar()}
+        actions={renderActions()}
+        status={renderStatus()}
+        topRight={
+          !isTemplate ? (
+            <div
+              className="flex gap-0.5"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              {isPinnedAssistantsEnabled && (
+                <PinAssistantButton
+                  isPinned={assistant.is_pinned ?? false}
+                  onToggle={handlePinToggle}
+                />
+              )}
+              {isFavoritesEnabled && (
+                <FavoriteButton
+                  isFavorited={assistant.is_favorited ?? false}
+                  onToggle={() =>
+                    assistant.is_favorited
+                      ? setShowRemoveFavorite(true)
+                      : favoritesStore.addFavorite('assistant', assistant.id)
+                  }
+                />
+              )}
+            </div>
+          ) : null
+        }
+      />
+      <RemoveFavoriteConfirmPopup
+        visible={showRemoveFavorite}
+        entityName={assistant.name}
+        onCancel={() => setShowRemoveFavorite(false)}
+        onConfirm={async () => {
+          await favoritesStore.removeFavorite('assistant', assistant.id)
+          setShowRemoveFavorite(false)
+          reloadAssistants?.()
+        }}
+      />
+      <UnpinAssistantConfirmPopup
+        visible={showUnpinConfirm}
+        entityName={assistant.name}
+        onCancel={() => setShowUnpinConfirm(false)}
+        onConfirm={handleUnpinConfirm}
+      />
+    </>
   )
 }
 

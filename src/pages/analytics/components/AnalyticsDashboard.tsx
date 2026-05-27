@@ -42,8 +42,6 @@ interface AnalyticsDashboardProps {
   isCustomizationEnabled: boolean
 }
 
-type TabId = string
-
 const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
   activeTab,
   isConfigVisible,
@@ -96,7 +94,7 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
     }
   }, [filters, activeTab, aiAdoptionConfig])
 
-  const handleTabChange = (tabId: TabId) => {
+  const handleTabChange = (tabId: string) => {
     setSearchParams({ tab: tabId })
   }
 

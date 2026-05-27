@@ -179,7 +179,7 @@ const Popup: React.FC<PopupProps> = ({
         },
         headerIcons: { className: cn('self-auto', hideClose && 'hidden') },
         mask: { className: '!z-50' },
-        content: { className: 'border-none p-0 text-sm' },
+        content: { className: 'border-none p-0 text-sm', tabIndex: -1 },
         footer: {
           className: cn(
             `px-4 py-4 flex items-center justify-end gap-4 sticky bg-surface-base-secondary bottom-0 rounded-b-md bg-transparent ${

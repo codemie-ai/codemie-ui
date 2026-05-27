@@ -317,10 +317,7 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
           // If the active tab is not the Configuration tab but the general config
           // has unsaved changes, flush them first so start_hint and other fields
           // are propagated to the parent before the overall workflow save.
-          if (
-            activeTab !== TAB_DATA.CONFIGURATION.ID &&
-            generalConfigTabRef.current?.isDirty?.()
-          ) {
+          if (activeTab !== TAB_DATA.CONFIGURATION.ID && generalConfigTabRef.current?.isDirty?.()) {
             await generalConfigTabRef.current?.save()
           }
           return (await activeTabRef.current?.save()) ?? null
@@ -356,8 +353,7 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
     // Determine if we're in a workflow-editing context where GeneralConfigTab
     // should be kept mounted for flushing unsaved changes
     const isWorkflowEditContext =
-      visibleTabs.includes(TAB_DATA.CONFIGURATION.ID) ||
-      visibleTabs.includes(TAB_DATA.YAML.ID)
+      visibleTabs.includes(TAB_DATA.CONFIGURATION.ID) || visibleTabs.includes(TAB_DATA.YAML.ID)
 
     const renderGeneralConfigTab = useCallback((): PanelTab => {
       return {
@@ -365,17 +361,17 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
         label: TAB_DATA.CONFIGURATION.LABEL,
         element: (
           <GeneralConfigTab
-              ref={(node: ConfigTab | null) => {
-                // Assign to both refs: activeTabRef (active-tab operations) and
-                // generalConfigTabRef (always-available access to config fields)
-                activeTabRef.current = node
-                generalConfigTabRef.current = node
-              }}
-              defaultValues={generalConfigDefaultValues}
-              yamlConfig={yamlConfig}
-              onUpdate={handleWorkflowUpdate}
-              onClose={handleClose}
-            />
+            ref={(node: ConfigTab | null) => {
+              // Assign to both refs: activeTabRef (active-tab operations) and
+              // generalConfigTabRef (always-available access to config fields)
+              activeTabRef.current = node
+              generalConfigTabRef.current = node
+            }}
+            defaultValues={generalConfigDefaultValues}
+            yamlConfig={yamlConfig}
+            onUpdate={handleWorkflowUpdate}
+            onClose={handleClose}
+          />
         ),
       }
     }, [generalConfigDefaultValues, yamlConfig, handleWorkflowUpdate, handleClose])

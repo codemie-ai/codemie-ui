@@ -28,6 +28,8 @@ import Spinner from '@/components/Spinner'
 import { ButtonType } from '@/constants'
 import { useSidebarOffsetClass } from '@/hooks/useSidebarOffsetClass'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
+import { WORKFLOW_LIST_SCOPE } from '@/pages/workflows/constants'
+import { useFavoriteWorkflows } from '@/pages/workflows/hooks/useFavoriteWorkflows'
 import { getWorkflowLink } from '@/pages/workflows/utils/getWorkflowLink'
 import { chatsStore } from '@/store/chats'
 import { userStore } from '@/store/user'
@@ -37,11 +39,12 @@ import { pluralize } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { copyToClipboard } from '@/utils/utils'
 
-import WorkflowCard from './WorkflowCard'
+import WorkflowCard, { Workflow as WorkflowCardType } from './WorkflowCard'
 import WorkflowStartExecutionPopup from '../details/popups/WorkflowStartExecutionPopup'
 
 interface WorkflowsListProps {
   scope: string
+  filters?: Record<string, unknown>
 }
 
 interface Workflow {
@@ -62,7 +65,7 @@ interface Workflow {
 
 const REFRESH_TIMEOUT = 1000
 
-const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope }) => {
+const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) => {
   const router = useVueRouter()
   const route = useVueRoute()
   const sidebarOffsetClass = useSidebarOffsetClass()
@@ -70,17 +73,37 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope }) => {
   const { workflows, workflowsLoading, workflowsPagination } = useSnapshot(workflowsStore)
   const { user } = useSnapshot(userStore)
 
+  const isFavorites = scope === WORKFLOW_LIST_SCOPE.FAVORITES
+
+  const {
+    favoriteWorkflows,
+    favoritesLoading,
+    workflowsPagination: favoritesPagination,
+    favoritesPage,
+    handleRefresh,
+    handleFavoritesPageChange,
+  } = useFavoriteWorkflows(isFavorites, filters)
+
+  const activeWorkflows = isFavorites
+    ? (favoriteWorkflows as unknown as WorkflowCardType[])
+    : (workflows as WorkflowCardType[])
+  const activeLoading = isFavorites ? favoritesLoading : workflowsLoading
+  const activePagination = isFavorites ? favoritesPagination : workflowsPagination
+
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] = useState(false)
   const [workflowToDelete, setWorkflowToDelete] = useState<Workflow | null>(null)
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
   const [showCreateWorkflowPopup, setShowCreateWorkflowPopup] = useState(false)
 
   useEffect(() => {
-    workflowsStore.setWorkflowsScope(scope)
-    workflowsStore.indexWorkflows()
-  }, [scope])
+    if (!isFavorites) {
+      workflowsStore.setWorkflowsScope(scope)
+      workflowsStore.indexWorkflows()
+    }
+  }, [scope, isFavorites])
 
   useEffect(() => {
+    if (isFavorites) return
     const checkQueryWorkflow = async () => {
       const workflowId = route.query.workflow as string | undefined
       if (workflowId) {
@@ -91,7 +114,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope }) => {
       }
     }
     checkQueryWorkflow()
-  }, [route.query])
+  }, [route.query, isFavorites])
 
   const setPage = async (page = 0, perPage = 12) => {
     workflowsStore.setWorkflowsPagination(page, perPage)
@@ -208,7 +231,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope }) => {
     return actions
   }
 
-  if (!workflowsLoading && !workflows?.length) {
+  if (!activeLoading && !activeWorkflows?.length) {
     return (
       <div className="flex justify-center m-40">
         <h2>No workflows found.</h2>
@@ -216,47 +239,50 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope }) => {
     )
   }
 
-  if (workflowsLoading) {
+  if (activeLoading) {
     return <Spinner inline rootClassName="my-auto" />
   }
 
   return (
     <>
       <section>
-        {workflowsPagination.totalCount > 0 && (
+        {activePagination.totalCount > 0 && (
           <div className="flex-row px-1 w-full text-xs text-quaternary font-semibold mb-4">
-            {workflowsPagination.totalCount}{' '}
-            {pluralize(workflowsPagination.totalCount, 'workflow').toUpperCase()}
+            {activePagination.totalCount}{' '}
+            {pluralize(activePagination.totalCount, 'workflow').toUpperCase()}
           </div>
         )}
         <div className="min-w-80 grid auto-rows-min grid-cols-1 card-grid-2:grid-cols-2 card-grid-3:grid-cols-3 gap-2.5 justify-items-cente">
-          {workflows.map((workflow) => (
+          {activeWorkflows.map((workflow) => (
             <WorkflowCard
               key={workflow.id}
               workflow={workflow}
-              onCreateWorkflowChat={createWorkflowChat}
-              onStartChat={startChat}
+              onCreateWorkflowChat={!isFavorites ? createWorkflowChat : undefined}
+              onStartChat={!isFavorites ? startChat : undefined}
               onViewWorkflow={showWorkflow}
               navigationSlot={
-                <NavigationMore
-                  hideOnClickInside
-                  renderInRoot
-                  items={navigationActions(workflow)}
-                />
+                !isFavorites ? (
+                  <NavigationMore
+                    hideOnClickInside
+                    renderInRoot
+                    items={navigationActions(workflow)}
+                  />
+                ) : undefined
               }
+              reloadWorkflows={isFavorites ? handleRefresh : undefined}
             />
           ))}
         </div>
       </section>
 
-      {workflows.length > 0 && !workflowsLoading && (
+      {activeWorkflows.length > 0 && !activeLoading && (
         <section>
           <Pagination
             className={`z-[10] fixed bottom-0 right-0 transition-all duration-150 bg-surface-base-primary px-6 pt-[20px] pb-[14px] left-0 ${sidebarOffsetClass}`}
-            currentPage={workflowsPagination.page}
-            totalPages={workflowsPagination.totalPages}
-            perPage={workflowsPagination.perPage}
-            setPage={setPage}
+            currentPage={isFavorites ? favoritesPage : activePagination.page}
+            totalPages={activePagination.totalPages}
+            perPage={activePagination.perPage}
+            setPage={isFavorites ? handleFavoritesPageChange : setPage}
           />
         </section>
       )}

@@ -28,6 +28,7 @@ export const WORKFLOW_LIST_SCOPE = {
   ALL: 'all',
   MY: 'my',
   TEMPLATES: 'templates',
+  FAVORITES: 'favorites',
 } as const
 
 export type WorkflowListScope = (typeof WORKFLOW_LIST_SCOPE)[keyof typeof WORKFLOW_LIST_SCOPE]

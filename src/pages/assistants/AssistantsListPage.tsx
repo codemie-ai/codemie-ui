@@ -48,22 +48,24 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
     [AssistantTab.ALL]: ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER,
     [AssistantTab.MARKETPLACE]: ASSISTANT_INDEX_SCOPES.MARKETPLACE,
     [AssistantTab.TEMPLATES]: ASSISTANT_INDEX_SCOPES.NONE,
+    [AssistantTab.FAVORITES]: ASSISTANT_INDEX_SCOPES.FAVORITES,
   }
   const appInfo = useSnapshot(appInfoStore)
   const currentTabId = tab || AssistantTab.ALL
   const activeScope = scopeByTab[currentTabId] || ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER
   const isTemplate = currentTabId === AssistantTab.TEMPLATES
-  const { assistants, loading } = useAssistants(false)
+  const isFavorites = currentTabId === AssistantTab.FAVORITES
   const { loadAssistants: loadTemplates, loading: loadingTemplates } = useAssistants(true)
   const { filters, handleFilterChange } = useAssistantFilters({ scope: activeScope })
 
   const [showExportPopup, setShowExportPopup] = useState(false)
   const [selectedAssistant, setSelectedAssistant] = useState<Assistant | null>(null)
 
-  const { loadAssistantsList, currentPage, perPage, totalPages } = useAssistantsList({
-    scope: activeScope,
-    filterValues: filters,
-  })
+  const { loadAssistantsList, currentPage, perPage, totalPages, assistants, loading } =
+    useAssistantsList({
+      scope: activeScope,
+      filterValues: filters,
+    })
 
   const isInitialMountRef = useRef(true)
 
@@ -129,7 +131,11 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
     }
   }, [JSON.stringify(filters), isTemplate])
 
-  const isLoading = isTemplate ? loadingTemplates : loading
+  const getLoading = () => {
+    if (isTemplate) return loadingTemplates
+    return loading
+  }
+  const isLoading = getLoading()
   const paginationOffset = useSidebarOffsetClass()
 
   return (
@@ -151,6 +157,7 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
           isTemplate={isTemplate}
           reloadAssistants={reloadAssistants}
           exportAssistant={handleExportAssistant}
+          assistants={isFavorites ? assistants : undefined}
         />
         {!!assistants.length && !isTemplate && (
           <Pagination

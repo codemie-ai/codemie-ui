@@ -142,8 +142,10 @@ const resolve: RouterResolve = ({ name, path, query = {}, params = {} }) => {
     pathname: generatePath(unresolvedPathname, params),
   })
 
+  const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`
+
   return {
-    href: `${getRootPath()}${pathname[0] === '/' ? pathname : `/${pathname}`}`,
+    href: `${getRootPath()}${normalizedPathname}`,
     fullPath: pathname,
     path: pathname,
     searchParamsString,

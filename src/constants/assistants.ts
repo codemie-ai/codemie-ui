@@ -57,6 +57,7 @@ export const ASSISTANT_INDEX_SCOPES = {
   MARKETPLACE: 'marketplace',
   NONE: 'none',
   ALL: 'all',
+  FAVORITES: 'favorites',
 }
 
 export type AssistantIndexScope =

@@ -32,6 +32,7 @@ export enum FILTER_ENTITY {
   PROJECT_SETTINGS = 'project_settings',
   ANALYTICS = 'analytics',
   USERS_MANAGEMENT = 'users_management',
+  FAVORITES = 'favorites',
 }
 
 const knownFilterKeys = {

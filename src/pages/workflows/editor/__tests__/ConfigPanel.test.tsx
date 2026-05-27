@@ -282,14 +282,11 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
     it('returns true when active tab (YAML) is dirty', () => {
       mockYamlDirty = true
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          visibleTabs: [TAB_DATA.YAML.ID],
-          activeTab: TAB_DATA.YAML.ID,
-          yamlConfig: 'states: []',
-        }
-      )
+      renderConfigPanel(ref, {
+        visibleTabs: [TAB_DATA.YAML.ID],
+        activeTab: TAB_DATA.YAML.ID,
+        yamlConfig: 'states: []',
+      })
 
       expect(ref.current?.isDirty()).toBe(true)
     })
@@ -313,13 +310,10 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
   describe('save — unstashed changes flushing', () => {
     it('calls save on the active tab when on Configuration tab', async () => {
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          activeTab: TAB_DATA.CONFIGURATION.ID,
-          visibleTabs: [TAB_DATA.CONFIGURATION.ID],
-        }
-      )
+      renderConfigPanel(ref, {
+        activeTab: TAB_DATA.CONFIGURATION.ID,
+        visibleTabs: [TAB_DATA.CONFIGURATION.ID],
+      })
 
       let result: boolean | null = null
       await act(async () => {
@@ -335,14 +329,11 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
       // The save() method should flush generalConfigTab first, then save the active (YAML) tab.
       mockGeneralConfigDirty = true
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          activeTab: TAB_DATA.YAML.ID,
-          visibleTabs: [TAB_DATA.YAML.ID],
-          yamlConfig: 'states: []',
-        }
-      )
+      renderConfigPanel(ref, {
+        activeTab: TAB_DATA.YAML.ID,
+        visibleTabs: [TAB_DATA.YAML.ID],
+        yamlConfig: 'states: []',
+      })
 
       let result: boolean | null = null
       await act(async () => {
@@ -361,14 +352,11 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
       // The save() method should NOT flush generalConfigTab, only the active tab.
       mockGeneralConfigDirty = false
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          activeTab: TAB_DATA.YAML.ID,
-          visibleTabs: [TAB_DATA.YAML.ID],
-          yamlConfig: 'states: []',
-        }
-      )
+      renderConfigPanel(ref, {
+        activeTab: TAB_DATA.YAML.ID,
+        visibleTabs: [TAB_DATA.YAML.ID],
+        yamlConfig: 'states: []',
+      })
 
       let result: boolean | null = null
       await act(async () => {
@@ -385,13 +373,10 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
     it('flushes generalConfigTab when active tab is Advanced and general config has unsaved changes', async () => {
       mockGeneralConfigDirty = true
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          activeTab: TAB_DATA.ADVANCED.ID,
-          visibleTabs: [TAB_DATA.CONFIGURATION.ID],
-        }
-      )
+      renderConfigPanel(ref, {
+        activeTab: TAB_DATA.ADVANCED.ID,
+        visibleTabs: [TAB_DATA.CONFIGURATION.ID],
+      })
 
       await act(async () => {
         await ref.current!.save()
@@ -404,14 +389,11 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
     it('returns null when activeTabRef.save() is not available', async () => {
       // If no tab is rendered (no active tab element), save should return null
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          activeTab: TAB_DATA.ISSUES.ID,
-          visibleTabs: [TAB_DATA.ISSUES.ID],
-          showIssuesPanel: true,
-        }
-      )
+      renderConfigPanel(ref, {
+        activeTab: TAB_DATA.ISSUES.ID,
+        visibleTabs: [TAB_DATA.ISSUES.ID],
+        showIssuesPanel: true,
+      })
 
       let result: boolean | null = null
       await act(async () => {
@@ -426,13 +408,10 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
   describe('getWorkflowFields', () => {
     it('returns values from generalConfigTabRef when on Configuration tab', () => {
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          activeTab: TAB_DATA.CONFIGURATION.ID,
-          visibleTabs: [TAB_DATA.CONFIGURATION.ID],
-        }
-      )
+      renderConfigPanel(ref, {
+        activeTab: TAB_DATA.CONFIGURATION.ID,
+        visibleTabs: [TAB_DATA.CONFIGURATION.ID],
+      })
 
       const fields = ref.current?.getWorkflowFields()
 
@@ -453,14 +432,11 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
       }
 
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          activeTab: TAB_DATA.YAML.ID,
-          visibleTabs: [TAB_DATA.YAML.ID],
-          yamlConfig: 'states: []',
-        }
-      )
+      renderConfigPanel(ref, {
+        activeTab: TAB_DATA.YAML.ID,
+        visibleTabs: [TAB_DATA.YAML.ID],
+        yamlConfig: 'states: []',
+      })
 
       const fields = ref.current?.getWorkflowFields()
 
@@ -471,14 +447,11 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
     it('returns null when generalConfigTabRef is not initialized', () => {
       // When the Issues tab is the only visible tab, generalConfigTabRef won't be set
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          activeTab: TAB_DATA.ISSUES.ID,
-          visibleTabs: [TAB_DATA.ISSUES.ID],
-          showIssuesPanel: true,
-        }
-      )
+      renderConfigPanel(ref, {
+        activeTab: TAB_DATA.ISSUES.ID,
+        visibleTabs: [TAB_DATA.ISSUES.ID],
+        showIssuesPanel: true,
+      })
 
       const fields = ref.current?.getWorkflowFields()
 
@@ -490,15 +463,12 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
     it('switches to Configuration tab and triggers validation', async () => {
       const onActiveTabChange = vi.fn()
       const ref = createRef<ConfigPanelRef>()
-      renderConfigPanel(
-        ref,
-        {
-          activeTab: TAB_DATA.YAML.ID,
-          visibleTabs: [TAB_DATA.YAML.ID],
-          yamlConfig: 'states: []',
-          onActiveTabChange,
-        }
-      )
+      renderConfigPanel(ref, {
+        activeTab: TAB_DATA.YAML.ID,
+        visibleTabs: [TAB_DATA.YAML.ID],
+        yamlConfig: 'states: []',
+        onActiveTabChange,
+      })
 
       await act(async () => {
         await ref.current!.triggerGeneralConfigValidation()

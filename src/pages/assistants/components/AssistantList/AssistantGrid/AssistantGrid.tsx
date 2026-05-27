@@ -89,6 +89,7 @@ const AssistantGrid: React.FC<AssistantGridProps> = ({
               isOwned={isOwned}
               name={name}
               isTemplate={isTemplate}
+              reloadAssistants={reloadAssistants}
               navigation={
                 !isTemplate && (
                   <AssistantActions

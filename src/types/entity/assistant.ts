@@ -109,6 +109,8 @@ export interface Assistant {
 
   // Skills
   skills?: Skill[]
+  is_favorited?: boolean
+  is_pinned?: boolean
 }
 
 export interface AgentCardCapabilities {

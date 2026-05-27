@@ -14,7 +14,7 @@
 //
 
 import { classNames } from 'primereact/utils'
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useState } from 'react'
 
 import ChatSvg from '@/assets/icons/chat-new-filled.svg?react'
 import PlusIcon from '@/assets/icons/plus.svg?react'
@@ -23,14 +23,24 @@ import CardGradientSvg from '@/assets/images/card-gradient.svg?raw' // eslint-di
 import WhiteCardGradientSvg from '@/assets/images/white-card-gradient.svg?raw' // eslint-disable-line
 import Avatar from '@/components/Avatar/Avatar'
 import Button from '@/components/Button'
+import FavoriteButton from '@/components/FavoriteButton/FavoriteButton'
+import RemoveFavoriteConfirmPopup from '@/components/FavoriteButton/RemoveFavoriteConfirmPopup'
 import Tooltip from '@/components/Tooltip'
 import { AvatarType } from '@/constants/avatar'
+import { CHATS, VIEW_WORKFLOW } from '@/constants/routes'
+import { useFavoritesEnabled } from '@/hooks/useFeatureFlags'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { useTheme } from '@/hooks/useTheme'
+import { useVueRouter } from '@/hooks/useVueRouter'
+import { chatsStore } from '@/store/chats'
+import { favoritesStore } from '@/store/favorites'
+import { workflowsStore } from '@/store/workflows'
 import { cn } from '@/utils/utils'
 
+import WorkflowActions from './WorkflowActions'
 import WorkflowShared from './WorkflowShared'
 import { WorkflowTemplate } from './WorkflowTemplates'
+import WorkflowStartExecutionPopup from '../details/popups/WorkflowStartExecutionPopup'
 
 export interface Workflow {
   id: string
@@ -38,6 +48,7 @@ export interface Workflow {
   name: string
   description?: string
   icon_url?: string
+  is_favorited?: boolean
   created_by?: {
     name?: string
     username?: string
@@ -57,6 +68,7 @@ interface WorkflowCardProps {
   onCreateFromWorkflowTemplate?: (workflow: WorkflowTemplate) => void
   onViewWorkflow?: (workflow: Workflow) => void
   navigationSlot?: React.ReactNode
+  reloadWorkflows?: () => void
 }
 
 const SYSTEM_CREATED_BY = 'System'
@@ -82,9 +94,14 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
   onCreateFromWorkflowTemplate,
   onViewWorkflow,
   navigationSlot,
+  reloadWorkflows,
 }) => {
   // Hooks must be called before any early returns
+  const router = useVueRouter()
+  const [isFavoritesEnabled] = useFavoritesEnabled()
   const { isDark } = useTheme()
+  const [showRemoveFavorite, setShowRemoveFavorite] = useState(false)
+  const [showExecutionPopup, setShowExecutionPopup] = useState(false)
   const nameRef = useRef<HTMLDivElement>(null)
   const authorRef = useRef<HTMLDivElement>(null)
   const descriptionRef = useRef<HTMLParagraphElement>(null)
@@ -105,8 +122,10 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
   const handleCardClick = () => {
     if (isTemplate) {
       onViewWorkflowTemplate?.(workflow)
+    } else if (onViewWorkflow) {
+      onViewWorkflow(workflow)
     } else {
-      onViewWorkflow?.(workflow)
+      router.push({ name: VIEW_WORKFLOW, params: { workflowId: String(workflow.id) } })
     }
   }
 
@@ -115,15 +134,25 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
     e.preventDefault()
     if (isTemplate) {
       onCreateFromWorkflowTemplate?.(workflow)
+    } else if (onCreateWorkflowChat) {
+      onCreateWorkflowChat(workflow)
     } else {
-      onCreateWorkflowChat?.(workflow)
+      setShowExecutionPopup(true)
     }
   }
 
-  const handleChatClick = (e: React.MouseEvent) => {
+  const handleChatClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    onStartChat?.(workflow)
+    if (onStartChat) {
+      onStartChat(workflow)
+    } else {
+      const chat = await chatsStore.createChat(String(workflow.id), workflow.name, true)
+      if (chat?.id) {
+        router.push({ name: CHATS, params: { id: chat.id } })
+        workflowsStore.updateRecentWorkflows(workflow as any)
+      }
+    }
   }
 
   const gradientSvg = isDark ? CardGradientSvg : WhiteCardGradientSvg
@@ -144,6 +173,22 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
             className="rounded-xl absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition duration-300 overflow-hidden"
             dangerouslySetInnerHTML={{ __html: gradientSvg }}
           />
+          {isFavoritesEnabled && (
+            <div
+              className="absolute top-2 right-2 z-10"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <FavoriteButton
+                isFavorited={workflow.is_favorited ?? false}
+                onToggle={() =>
+                  workflow.is_favorited
+                    ? setShowRemoveFavorite(true)
+                    : favoritesStore.addFavorite('workflow', workflow.id)
+                }
+              />
+            </div>
+          )}
         </div>
 
         <div className="body h-card flex flex-col justify-between p-4">
@@ -200,18 +245,16 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
               </Button>
             ) : (
               <>
-                {onStartChat && (
-                  <Button
-                    type="action"
-                    size="medium"
-                    onClick={handleChatClick}
-                    className={tooltipClass}
-                    data-pr-tooltip="Start Chat"
-                    aria-label="Start Chat"
-                  >
-                    <ChatSvg className="text-text-accent" />
-                  </Button>
-                )}
+                <Button
+                  type="action"
+                  size="medium"
+                  onClick={handleChatClick}
+                  className={tooltipClass}
+                  data-pr-tooltip="Start Chat"
+                  aria-label="Start Chat"
+                >
+                  <ChatSvg className="text-text-accent" />
+                </Button>
                 <Button
                   type="action"
                   size="medium"
@@ -225,7 +268,20 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
               </>
             )}
 
-            {navigationSlot && <div onClick={(e) => e.stopPropagation()}>{navigationSlot}</div>}
+            <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+              {navigationSlot ?? (
+                <WorkflowActions
+                  workflow={workflow}
+                  onView={() =>
+                    router.push({
+                      name: VIEW_WORKFLOW,
+                      params: { workflowId: String(workflow.id) },
+                    })
+                  }
+                  reloadWorkflows={reloadWorkflows}
+                />
+              )}
+            </div>
 
             <div className="flex flex-row ml-auto items-center text-xs gap-3">
               <WorkflowShared workflow={workflow} />
@@ -233,6 +289,23 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
           </div>
         </div>
       </div>
+      <RemoveFavoriteConfirmPopup
+        visible={showRemoveFavorite}
+        entityName={workflow.name}
+        onCancel={() => setShowRemoveFavorite(false)}
+        onConfirm={async () => {
+          await favoritesStore.removeFavorite('workflow', workflow.id)
+          setShowRemoveFavorite(false)
+          reloadWorkflows?.()
+        }}
+      />
+      {showExecutionPopup && (
+        <WorkflowStartExecutionPopup
+          isVisible={showExecutionPopup}
+          workflowId={String(workflow.id)}
+          onHide={() => setShowExecutionPopup(false)}
+        />
+      )}
     </>
   )
 }

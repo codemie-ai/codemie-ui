@@ -84,8 +84,10 @@ const Avatar: React.FC<AvatarProps> = ({
           type="button"
           onClick={onClick}
           aria-label={tooltip}
-          data-tooltip-id="react-tooltip"
-          data-tooltip-content={tooltip}
+          {...(withTooltip && {
+            'data-tooltip-id': 'react-tooltip',
+            'data-tooltip-content': tooltip,
+          })}
           className={classNames}
         >
           <img
@@ -98,8 +100,10 @@ const Avatar: React.FC<AvatarProps> = ({
         <img
           src={icon}
           alt={tooltip}
-          data-tooltip-id="react-tooltip"
-          data-tooltip-content={tooltip}
+          {...(withTooltip && {
+            'data-tooltip-id': 'react-tooltip',
+            'data-tooltip-content': tooltip,
+          })}
           className={classNames}
         />
       )}

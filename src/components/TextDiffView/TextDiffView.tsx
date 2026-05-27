@@ -124,16 +124,19 @@ const TextDiffView: React.FC<TextDiffViewProps> = ({
     const diffInfo = wordDiffMap.get(lineIndex)
     if (!diffInfo) return null
 
+    let charOffset = 0
     return diffInfo.wordDiff
       .filter((chunk) => (isRemoved ? !chunk.added : !chunk.removed))
-      .map((chunk, i) => {
+      .map((chunk) => {
+        const key = `${lineIndex}-${charOffset}`
+        charOffset += chunk.value.length
         const isHighlighted = (isRemoved && chunk.removed) || (!isRemoved && chunk.added)
         const highlightClass = isRemoved
           ? 'bg-surface-specific-diff-highlight-remove'
           : 'bg-surface-specific-diff-highlight-add'
 
         return (
-          <span key={i} className={isHighlighted ? `font-semibold ${highlightClass}` : ''}>
+          <span key={key} className={isHighlighted ? `font-semibold ${highlightClass}` : ''}>
             {chunk.value}
           </span>
         )

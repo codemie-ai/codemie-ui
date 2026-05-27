@@ -15,6 +15,7 @@
 
 import { useCallback } from 'react'
 
+import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import { useAssistants } from '@/pages/assistants/hooks/useAssistants'
 
@@ -28,9 +29,11 @@ interface UseAssistantsListProps {
 export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProps) => {
   const router = useVueRouter()
   const route = useVueRoute()
-  const { loadAssistants, pagination } = useAssistants(false)
+  const { loadAssistants, pagination, assistants, loading } = useAssistants(false)
 
   const { perPage, totalPages } = pagination
+
+  const isFavoritesScope = scope === ASSISTANT_INDEX_SCOPES.FAVORITES
 
   // Get page and perPage from URL query params (only used on initial load)
   const getPageFromURL = useCallback(() => {
@@ -85,7 +88,7 @@ export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProp
       let pageToLoad: number
       let perPageToLoad: number
 
-      if (shouldLoadFromURL) {
+      if (shouldLoadFromURL && !isFavoritesScope) {
         const fromURL = getPageFromURL()
         pageToLoad = fromURL.page
         perPageToLoad = fromURL.perPage
@@ -95,7 +98,6 @@ export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProp
       }
 
       try {
-        // Load assistants
         await loadAssistants({
           scope,
           page: pageToLoad,
@@ -104,13 +106,14 @@ export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProp
           minimalResponse: true,
         })
 
-        // Update URL after successful load (always in one place)
-        updateURL(pageToLoad, perPageToLoad)
+        if (!isFavoritesScope) {
+          updateURL(pageToLoad, perPageToLoad)
+        }
       } catch (error) {
         console.error('Error loading assistants:', error)
       }
     },
-    [scope, filterValues, perPage, loadAssistants, updateURL, getPageFromURL]
+    [scope, filterValues, perPage, loadAssistants, updateURL, getPageFromURL, isFavoritesScope]
   )
 
   return {
@@ -118,5 +121,7 @@ export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProp
     currentPage: pagination.page,
     perPage,
     totalPages,
+    assistants,
+    loading,
   }
 }

@@ -17,6 +17,7 @@ export const SKILL_INDEX_SCOPES = {
   PROJECT: 'project',
   MARKETPLACE: 'marketplace',
   PROJECT_WITH_MARKETPLACE: 'project_with_marketplace',
+  FAVORITES: 'favorites',
 } as const
 
 export const SKILL_FILTER_INITIAL_STATE = {

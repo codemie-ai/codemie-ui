@@ -18,11 +18,17 @@ import { useSnapshot } from 'valtio'
 
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { assistantsStore } from '@/store/assistants'
+import { favoritesStore } from '@/store/favorites'
+import { FavoritesFilters } from '@/types/entity/favorites'
 
 export const useAssistants = (isTemplate?: boolean) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentScope, setCurrentScope] = useState('')
   const snap = useSnapshot(assistantsStore) as typeof assistantsStore
+  const favSnap = useSnapshot(favoritesStore)
+
+  const isFavoritesScope = currentScope === ASSISTANT_INDEX_SCOPES.FAVORITES
 
   const loadAssistants = async ({
     scope = ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER,
@@ -34,9 +40,24 @@ export const useAssistants = (isTemplate?: boolean) => {
   }) => {
     setLoading(true)
     setError(null)
+    setCurrentScope(scope)
 
     try {
-      if (isTemplate) {
+      if (scope === ASSISTANT_INDEX_SCOPES.FAVORITES) {
+        await favoritesStore.fetchFavoriteAssistants(
+          filters as Partial<FavoritesFilters>,
+          page,
+          perPage
+        )
+        const { totalPages } = favoritesStore.assistantsPagination
+        if (page > 0 && page >= totalPages) {
+          await favoritesStore.fetchFavoriteAssistants(
+            filters as Partial<FavoritesFilters>,
+            Math.max(0, totalPages - 1),
+            perPage
+          )
+        }
+      } else if (isTemplate) {
         await assistantsStore.loadAssistantTemplates()
       } else {
         await assistantsStore.indexAssistants(
@@ -56,10 +77,12 @@ export const useAssistants = (isTemplate?: boolean) => {
   }
 
   return {
-    assistants: snap.assistants,
+    assistants: isFavoritesScope
+      ? (favSnap.assistants as unknown as typeof snap.assistants)
+      : snap.assistants,
     assistantTemplates: snap.assistantTemplates,
-    pagination: snap.assistantsPagination,
-    loading,
+    pagination: isFavoritesScope ? favSnap.assistantsPagination : snap.assistantsPagination,
+    loading: isFavoritesScope ? favSnap.loading : loading,
     error,
     loadAssistants,
     assistantsStore,
