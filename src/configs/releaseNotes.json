@@ -1,5 +1,29 @@
 [
   {
+    "version": "2.30.0",
+    "date": "2026-05-27",
+    "issues": [
+      {
+        "title": "Datasource unavailability or empty search results are not surfaced to the LLM, causing silent degraded assistant responses",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12384",
+        "key": "EPMCDME-12384"
+      },
+      {
+        "title": "Stuck datasource sync process after cloning Git repository – unable to terminate, repeated recreation, and unexpected charges",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12122",
+        "key": "EPMCDME-12122"
+      },
+      {
+        "title": "Enable propagation of context HTTP X-* headers to Data Source Provider (DSP) tool calls for consistency with MCP tools",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12070",
+        "key": "EPMCDME-12070"
+      }
+    ]
+  },
+  {
     "version": "2.29.0",
     "date": "2026-05-22",
     "issues": [
