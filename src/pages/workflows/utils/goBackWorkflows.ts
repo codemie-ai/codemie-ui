@@ -15,17 +15,40 @@
 
 import {
   CHATS,
-  WORKFLOWS_ALL,
-  WORKFLOWS_MY,
-  WORKFLOWS_TEMPLATES,
+  EDIT_WORKFLOW,
+  NEW_WORKFLOW,
   VIEW_WORKFLOW,
   VIEW_WORKFLOW_TEMPLATE,
   WOKRFLOW_EXECUTIONS,
-  EDIT_WORKFLOW,
+  WORKFLOWS_ALL,
+  WORKFLOWS_MY,
+  WORKFLOWS_TEMPLATES,
 } from '@/constants/routes'
 import { history } from '@/hooks/appLevel/useHistoryStack'
 import { RouteOptions, RouterState } from '@/hooks/useVueRouter'
 import { navigateBack } from '@/utils/helpers'
+
+// Walks history backward and returns the first entry that is NOT a VIEW_WORKFLOW,
+// WOKRFLOW_EXECUTIONS, or EDIT_WORKFLOW for the given workflowId.
+// Used to skip routes that would trigger an auto-redirect back into the same workflow.
+const findFirstNonWorkflowRoute = (workflowId: string) => {
+  const { currentIndex } = history
+
+  for (let i = currentIndex - 1; i >= 0; i -= 1) {
+    const historyRoute = history.stack[i]
+
+    const isSameWorkflowRoute =
+      ((historyRoute?.name === VIEW_WORKFLOW || historyRoute?.name === WOKRFLOW_EXECUTIONS) &&
+        historyRoute?.params?.workflowId === workflowId) ||
+      (historyRoute?.name === EDIT_WORKFLOW && historyRoute?.params?.id === workflowId)
+
+    if (!isSameWorkflowRoute && historyRoute?.name) {
+      return historyRoute
+    }
+  }
+
+  return null
+}
 
 export const goBackWorkflows = (
   defaultPath: string | (Partial<RouteOptions> & { name: string }) = WORKFLOWS_ALL
@@ -41,6 +64,18 @@ export const goBackWorkflows = (
   )
 }
 
+export const goBackFromWorkflowEdit = ({ workflowId }: { workflowId: string }) => {
+  const safeRoute = findFirstNonWorkflowRoute(workflowId)
+
+  if (safeRoute?.name === NEW_WORKFLOW) {
+    // Came from create→execute flow: skip the execution page to avoid a back-loop
+    goBackWorkflows()
+    return
+  }
+
+  goBackWorkflows({ name: WOKRFLOW_EXECUTIONS, params: { id: workflowId } })
+}
+
 export const goBackFromWorkflowExecutions = ({
   route,
   executionId,
@@ -50,10 +85,9 @@ export const goBackFromWorkflowExecutions = ({
   executionId: string | null
   route: RouterState
 }) => {
-  const { currentIndex } = history
-  const prevRoute = history.stack[currentIndex - 1]
+  const prevRoute = history.stack[history.currentIndex - 1]
 
-  // Case 1: Navigating between different workflows (parent/child relationship)
+  // Navigating between different workflows (parent/child relationship)
   if (
     (prevRoute?.name === VIEW_WORKFLOW || prevRoute?.name === WOKRFLOW_EXECUTIONS) &&
     prevRoute?.params?.workflowId &&
@@ -63,28 +97,23 @@ export const goBackFromWorkflowExecutions = ({
     return
   }
 
-  // Case 2: When on an execution, find the first history entry that is NOT
-  // a VIEW_WORKFLOW, WOKRFLOW_EXECUTIONS or EDIT_WORKFLOW with the same workflowId
-  // This prevents navigating back to routes that would trigger auto-redirect
   if (executionId) {
-    for (let i = currentIndex - 1; i >= 0; i -= 1) {
-      const historyRoute = history.stack[i]
+    const safeRoute = findFirstNonWorkflowRoute(workflowId)
 
-      // Skip routes that are the same workflow (would cause redirect loop)
-      const isSameWorkflowRoute =
-        ((historyRoute?.name === VIEW_WORKFLOW || historyRoute?.name === WOKRFLOW_EXECUTIONS) &&
-          historyRoute?.params?.workflowId === workflowId) ||
-        (historyRoute.name === EDIT_WORKFLOW && historyRoute.params.id === workflowId)
+    if (safeRoute?.name === NEW_WORKFLOW) {
+      // Came from create→execute flow: go to edit, not back to the empty create form
+      route.push({ name: EDIT_WORKFLOW, params: { id: workflowId } })
+      return
+    }
 
-      if (!isSameWorkflowRoute && historyRoute?.name) {
-        const { name, params, query } = historyRoute
-        route.push({ name, params, query })
-        return
-      }
+    if (safeRoute) {
+      const { name, params, query } = safeRoute
+      route.push({ name, params, query })
+      return
     }
 
     // If no safe route found in history, fall back to workflows list
-    route.push({ name: 'workflows-all' })
+    route.push({ name: WORKFLOWS_ALL })
     return
   }
 

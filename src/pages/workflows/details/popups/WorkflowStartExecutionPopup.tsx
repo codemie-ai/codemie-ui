@@ -22,6 +22,7 @@ import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import { WF_FILE_UPLOAD_MESSAGE } from '@/constants/chats'
 import { FormIDs } from '@/constants/formIds'
+import { EDIT_WORKFLOW, NEW_WORKFLOW } from '@/constants/routes'
 import { useFileUpload, FileMetadata, createFileMetadata } from '@/hooks/useFileUpload'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import { useVueRouter } from '@/hooks/useVueRouter'
@@ -91,6 +92,12 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
       )
 
       unblockTransition()
+      
+      // Replace /workflows/new with /workflows/{id}/edit in browser history so that
+      // browser-back from the execution page leads to edit, not the empty create form
+      if (router.name === NEW_WORKFLOW) {
+        router.replace({ name: EDIT_WORKFLOW, params: { id: execution.workflow_id } })
+      }
 
       router[replaceRoute ? 'replace' : 'push']({
         name: 'workflow-execution',

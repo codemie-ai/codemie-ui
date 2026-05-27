@@ -21,9 +21,8 @@ import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
-import { WOKRFLOW_EXECUTIONS } from '@/constants/routes'
 import { useVueRoute } from '@/hooks/useVueRouter'
-import { goBackWorkflows } from '@/pages/workflows/utils/goBackWorkflows'
+import { goBackFromWorkflowEdit } from '@/pages/workflows/utils/goBackWorkflows'
 import { appInfoStore } from '@/store/appInfo'
 import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
 import { WorkflowIssue } from '@/types/entity'
@@ -78,7 +77,7 @@ const EditWorkflowPage: React.FC = () => {
         await workflowsStore.fetchWorkflow(id)
         setShowExecutionPopup(true)
       } else {
-        goBackWorkflows({ name: WOKRFLOW_EXECUTIONS, params: { id } })
+        goBackFromWorkflowEdit({ workflowId: id })
       }
     } catch (error: any) {
       if (errorFormat !== ERROR_FORMAT_JSON) {
@@ -124,7 +123,7 @@ const EditWorkflowPage: React.FC = () => {
   }
 
   const onBack = () => {
-    goBackWorkflows({ name: WOKRFLOW_EXECUTIONS, params: { id } })
+    goBackFromWorkflowEdit({ workflowId: id })
   }
 
   return (
