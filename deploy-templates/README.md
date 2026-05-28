@@ -60,7 +60,8 @@ A Helm chart for AI/Run UI
 | service.port | int | `8080` | AI/Run UI service port |
 | service.type | string | `"ClusterIP"` | AI/Run UI service type |
 | serviceAccount.annotations | object | `{}` | Annotations applied to created service account |
-| serviceAccount.create | bool | `false` | Specifies whether a service account should be created |
+| serviceAccount.automountServiceAccountToken | bool | `false` | Automount API credentials for the service account |
+| serviceAccount.create | bool | `true` | Specifies whether a service account should be created |
 | serviceAccount.name | string | `""` | Service account name for AI/Run UI pod If not set and create is true, a name is generated using the fullname template |
 | tolerations | list | `[]` | Node selector to be added to the AI/Run UI pods. |
 | viteApiUrl | string | `"https://codemie.%%DOMAIN%%/code-assistant-api"` | AI/Run UI API URL |

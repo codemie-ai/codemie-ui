@@ -34,12 +34,14 @@ fullnameOverride: ""
 
 serviceAccount:
   # -- Specifies whether a service account should be created
-  create: false
+  create: true
   # -- Annotations applied to created service account
   annotations: {}
   # -- Service account name for AI/Run UI pod
   # If not set and create is true, a name is generated using the fullname template
   name: ""
+  # -- Automount API credentials for the service account
+  automountServiceAccountToken: false
 
 # -- Annotations to be added to AI/Run UI pods.
 podAnnotations: {}
