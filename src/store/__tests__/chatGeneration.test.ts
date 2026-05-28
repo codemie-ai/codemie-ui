@@ -17,6 +17,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChatRequest } from '@/types/chatGeneration'
 import type { Conversation, ChatMessage } from '@/types/entity/conversation'
+import { ThoughtAuthorType } from '@/types/entity/conversation'
 import type { MCPAuthGateServer } from '@/types/entity/mcpAuth'
 
 const mockStream = vi.fn()
@@ -547,6 +548,46 @@ describe('chatGenerationStore', () => {
         mcp_config_id: 'mcp-2',
         status: 'authentication_required',
         error_context: "Authentication didn't complete. Click to try again.",
+      }),
+    ])
+  })
+
+  it('merges handoff metadata from later thought updates for the same thought id', async () => {
+    const historyItem = createHistoryItem({
+      thoughts: [
+        {
+          id: 'thought-1',
+          author_name: 'Subagent',
+          author_type: ThoughtAuthorType.Tool,
+          message: '',
+          in_progress: true,
+        },
+      ],
+    })
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+    chatGenerationStore._handleThought(historyItem, {
+      id: 'thought-1',
+      input_text: 'Investigate the failing handoff path',
+      output_format: 'markdown',
+      in_progress: true,
+    })
+
+    chatGenerationStore._handleThought(historyItem, {
+      id: 'thought-1',
+      message: 'Completed handoff execution.',
+      in_progress: false,
+    })
+
+    expect(historyItem.thoughts).toEqual([
+      expect.objectContaining({
+        id: 'thought-1',
+        author_name: 'Subagent',
+        input_text: 'Investigate the failing handoff path',
+        message: 'Completed handoff execution.',
+        output_format: 'markdown',
+        in_progress: false,
       }),
     ])
   })

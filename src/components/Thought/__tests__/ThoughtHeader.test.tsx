@@ -17,7 +17,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { Thought, ThoughtAuthorType } from '@/types/entity/conversation'
+import { ChatBackend, Thought, ThoughtAuthorType } from '@/types/entity/conversation'
+import { transformChatBEtoFE } from '@/utils/chatHelpers'
 
 import ThoughtHeader from '../ThoughtHeader'
 
@@ -55,6 +56,50 @@ describe('ThoughtHeader', () => {
     const thought = createMockThought({ author_name: undefined, tool_name: 'custom_tool' })
     render(<ThoughtHeader thought={thought} setIsExpanded={mockSetIsExpanded} />)
     expect(screen.getByText('custom_tool')).toBeInTheDocument()
+  })
+
+  it('displays tool_name for transformed backend thoughts when author_name is undefined', () => {
+    const chat: ChatBackend = {
+      id: 'chat-1',
+      conversation_name: 'Test Chat',
+      assistant_ids: ['assistant-1'],
+      initial_assistant_id: 'assistant-1',
+      assistant_data: [],
+      history: [
+        {
+          historyIndex: 0,
+          message: 'User prompt',
+          messageRaw: 'User prompt',
+          date: '2026-05-12T10:00:00.000Z',
+          fileNames: [],
+          executionId: null,
+        },
+        {
+          historyIndex: 0,
+          message: 'Assistant response',
+          date: '2026-05-12T10:00:01.000Z',
+          assistantId: 'assistant-1',
+          executionId: null,
+          thoughts: [
+            {
+              id: 'thought-1',
+              author_name: undefined,
+              tool_name: 'some_tool',
+              author_type: ThoughtAuthorType.Tool,
+              message: 'Completed handoff',
+            },
+          ],
+        },
+      ],
+    }
+
+    const transformedThought = transformChatBEtoFE(chat).history[0]?.[0]?.thoughts?.[0]
+
+    expect(transformedThought).toBeDefined()
+
+    render(<ThoughtHeader thought={transformedThought!} setIsExpanded={mockSetIsExpanded} />)
+
+    expect(screen.getByText('some_tool')).toBeInTheDocument()
   })
 
   it('displays "Tool" as fallback when neither author_name nor tool_name is provided', () => {

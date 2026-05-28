@@ -110,6 +110,55 @@ describe('transformChatBEtoFE', () => {
     const result = transformChatBEtoFE(chat)
     expect(result.history[0]![0]!.thoughts![0]!.interrupted).toBe(true)
   })
+
+  it('preserves author_name and input_text for backend thoughts', () => {
+    const chat = {
+      id: '123',
+      conversation_name: 'Test Chat',
+      assistant_ids: ['assistant-1'],
+      initial_assistant_id: 'assistant-1',
+      assistant_data: [],
+      history: [
+        {
+          historyIndex: 0,
+          message: 'User prompt',
+          messageRaw: 'User prompt',
+          date: '2026-05-12T10:00:00.000Z',
+          fileNames: [],
+        },
+        {
+          historyIndex: 0,
+          message: 'Assistant response',
+          date: '2026-05-12T10:00:01.000Z',
+          assistantId: 'assistant-1',
+          thoughts: [
+            {
+              id: 'thought-1',
+              author_name: 'Research Subagent',
+              tool_name: 'delegate_task',
+              author_type: 'Tool',
+              message: 'Completed handoff',
+              input_text: 'Investigate the flaky endpoint behavior',
+              output_format: 'markdown',
+            },
+          ],
+          executionId: null,
+        },
+      ],
+    }
+
+    const result = transformChatBEtoFE(chat as any)
+
+    expect(result.history[0][0].thoughts).toEqual([
+      expect.objectContaining({
+        id: 'thought-1',
+        author_name: 'Research Subagent',
+        tool_name: 'delegate_task',
+        input_text: 'Investigate the flaky endpoint behavior',
+        message: 'Completed handoff',
+      }),
+    ])
+  })
 })
 
 describe('getChatBEMessageIndex', () => {

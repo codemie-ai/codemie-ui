@@ -1006,11 +1006,19 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
     if (existingThought) {
       existingThought.message += thought.message ?? ''
+      existingThought.input_text = thought.input_text ?? existingThought.input_text
+      existingThought.author_name = thought.author_name ?? existingThought.author_name
+      existingThought.tool_name = thought.tool_name ?? existingThought.tool_name
+      existingThought.author_type = thought.author_type ?? existingThought.author_type
+      existingThought.output_format = thought.output_format ?? existingThought.output_format
+      existingThought.parent_id = thought.parent_id ?? existingThought.parent_id
       existingThought.children = thought.children?.length
         ? thought.children
         : existingThought.children
       existingThought.in_progress = thought.in_progress ?? existingThought.in_progress
       existingThought.error = thought.error ?? existingThought.error
+      existingThought.interrupted = thought.interrupted ?? existingThought.interrupted
+      existingThought.aborted = thought.aborted ?? existingThought.aborted
     } else {
       let existingParentThought = historyItem.thoughts.find((item) => {
         return item.id === thought.parent_id

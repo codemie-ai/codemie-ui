@@ -122,7 +122,8 @@ function transformHistoryGroup(
       thoughts: assistantItem.thoughts
         ? assistantItem.thoughts.map((thought) => ({
             id: thought.id,
-            author_name: thought.tool_name ?? thought.author_name,
+            author_name: thought.author_name,
+            tool_name: thought.tool_name,
             author_type: thought.author_type ?? 'Tool',
             message: thought.message,
             input_text: thought.input_text,
