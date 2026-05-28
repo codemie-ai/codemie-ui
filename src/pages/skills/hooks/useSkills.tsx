@@ -14,14 +14,15 @@
 //
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useSnapshot } from 'valtio'
 
 import { SKILLS_PER_PAGE } from '@/constants/skills'
 import { skillsStore } from '@/store/skills'
 import { Pagination } from '@/types/common'
-import { Skill, SkillsFilters } from '@/types/entity/skill'
+import { SkillsFilters } from '@/types/entity/skill'
 
 export const useSkills = (filters?: SkillsFilters, page?: number, perPage?: number) => {
-  const [skills, setSkills] = useState<Skill[]>([])
+  const snap = useSnapshot(skillsStore) as typeof skillsStore
   const [pagination, setPagination] = useState<Pagination>({
     page: 0,
     perPage: perPage ?? SKILLS_PER_PAGE,
@@ -43,9 +44,7 @@ export const useSkills = (filters?: SkillsFilters, page?: number, perPage?: numb
     setError(null)
 
     try {
-      const result = await skillsStore.indexSkills(currentFilters, pageNum, perPageNum)
-
-      setSkills(result || [])
+      await skillsStore.indexSkills(currentFilters, pageNum, perPageNum)
       setPagination({
         page: skillsStore.skillsPagination.page,
         perPage: skillsStore.skillsPagination.perPage,
@@ -65,7 +64,7 @@ export const useSkills = (filters?: SkillsFilters, page?: number, perPage?: numb
   }, [loadSkills])
 
   return {
-    skills,
+    skills: snap.skills,
     loading,
     error,
     pagination,
