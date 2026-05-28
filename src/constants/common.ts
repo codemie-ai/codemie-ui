@@ -44,8 +44,7 @@ export const CONFIG_USER_SURVEY_KEY = 'userSurvey'
 export const CONFIG_LIKE_FORM_KEY = 'likeForm'
 
 const SUPPORTED_IMAGE_FORMATS = 'JPEG, PNG, JPG, GIF'
-export const SUPPORTED_FILE_FORMATS_MESSAGE_BASE =
-  'Supported formats: PPTX, DOCX, XLSX, PDF, CSV (others as plain text).'
+export const SUPPORTED_FILE_FORMATS_MESSAGE_BASE = `Supported formats: PPTX, DOCX, XLSX, PDF, CSV, ${SUPPORTED_IMAGE_FORMATS} (others as plain text).`
 export const SUPPORTED_FILE_FORMATS_MESSAGE_CHAT = `Supported formats: PPTX, DOCX, XLSX, PDF, CSV, ${SUPPORTED_IMAGE_FORMATS} (others as plain text).`
 
 export const ADDITIONAL_USER_MATERIALS = {
