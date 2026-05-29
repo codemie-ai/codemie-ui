@@ -180,7 +180,7 @@ Tip: You can also paste files directly into the input field.`,
 
 Available tools (when enabled by your admin):
 - Web Search: lets the assistant search the web for up-to-date information
-- Code Interpreter: lets the assistant write and run Python code for data analysis and calculations
+- Code Executor: lets the assistant write and run code for data analysis and calculations
 
 The badge on the icon shows how many tools are currently active.
 

@@ -29,7 +29,7 @@ interface DynamicToolsSettingsProps {
 
 const WEB_SEARCH_DESCRIPTION =
   'Enable web search capabilities including Google Search, Tavily Search, and Web Scraper'
-const CODE_INTERPRETER_DESCRIPTION = 'Enable Python code execution and data analysis capabilities'
+const CODE_EXECUTOR_DESCRIPTION = 'Enable code execution capabilities for this conversation'
 
 const DynamicToolsSettings: FC<DynamicToolsSettingsProps> = ({ disabled = false }) => {
   const overlayRef = useRef<OverlayPanel>(null)
@@ -108,10 +108,10 @@ const DynamicToolsSettings: FC<DynamicToolsSettingsProps> = ({ disabled = false 
 
           {isCodeInterpreterEnabled && (
             <Switch
-              label="Code Interpreter"
+              label="Code Executor"
               value={dynamicToolsConfig.enableCodeInterpreter ?? false}
               onChange={handleCodeInterpreterChange}
-              hint={CODE_INTERPRETER_DESCRIPTION}
+              hint={CODE_EXECUTOR_DESCRIPTION}
             />
           )}
         </div>
