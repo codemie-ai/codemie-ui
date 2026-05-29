@@ -21,6 +21,7 @@ import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { SKILL_INDEX_SCOPES } from '@/constants/skills'
+import { useVueRouter } from '@/hooks/useVueRouter'
 import AssistantActions from '@/pages/assistants/AssistantActions/AssistantActions'
 import AssistantCard from '@/pages/assistants/components/AssistantList/AssistantCard'
 import AssistantFilters from '@/pages/assistants/components/AssistantList/AssistantFilters'
@@ -31,7 +32,9 @@ import { useSkillsFilters } from '@/pages/skills/hooks/useSkillsFilters'
 import WorkflowCard, { Workflow } from '@/pages/workflows/components/WorkflowCard'
 import WorkflowsFilters from '@/pages/workflows/components/WorkflowsFilters'
 import { WORKFLOW_LIST_SCOPE } from '@/pages/workflows/constants'
+import { chatsStore } from '@/store/chats'
 import { favoritesStore } from '@/store/favorites'
+import { workflowsStore } from '@/store/workflows'
 import { Assistant } from '@/types/entity/assistant'
 import { FavoriteFilter, FavoriteItem, FavoritesFilters } from '@/types/entity/favorites'
 import { Skill } from '@/types/entity/skill'
@@ -52,6 +55,13 @@ const SECTION_TITLE_CLASS = 'flex-row px-1 w-full text-xs text-quaternary font-s
 
 const FavoritesPage: React.FC<FavoritesPageProps> = ({ filter }) => {
   const { favorites, assistants, skills, workflows, loading } = useSnapshot(favoritesStore)
+  const router = useVueRouter()
+
+  const startChat = async (workflow: Workflow) => {
+    await chatsStore.startNewChat(String(workflow.id), workflow.name, true)
+    router.push({ name: 'new-chat' })
+    workflowsStore.updateRecentWorkflows(workflow as any)
+  }
 
   const { handleViewAssistant, handleViewSkill, handleExportSkill } = useFavoritesNavigation()
 
@@ -143,6 +153,7 @@ const FavoritesPage: React.FC<FavoritesPageProps> = ({ filter }) => {
         <WorkflowCard
           key={item.id}
           workflow={item as unknown as Workflow}
+          onStartChat={startChat}
           reloadWorkflows={handleRefresh}
         />
       ))}

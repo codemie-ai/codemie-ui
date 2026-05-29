@@ -127,10 +127,10 @@ const NavigationPinnedSection: React.FC = () => {
   }, [helpAssistants, isGeneratedAvatarsEnabled])
 
   const handlePinnedItemClick = useCallback(async (a: (typeof pinnedAssistants)[number]) => {
-    const chat = await chatsStore.createChat(a.id, a.name, false)
+    await chatsStore.startNewChat(a.id, a.name, false)
     assistantsStore.updateRecentAssistants(a)
-    window.location.hash = `#/chats/${chat.id}`
-  }, [])
+    router.push({ name: 'new-chat' })
+  }, [router])
 
   const pinnedItems = useMemo(
     (): NavSectionItem[] =>

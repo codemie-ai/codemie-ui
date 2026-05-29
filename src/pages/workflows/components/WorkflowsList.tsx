@@ -258,7 +258,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
               key={workflow.id}
               workflow={workflow}
               onCreateWorkflowChat={!isFavorites ? createWorkflowChat : undefined}
-              onStartChat={!isFavorites ? startChat : undefined}
+              onStartChat={startChat}
               onViewWorkflow={showWorkflow}
               navigationSlot={
                 !isFavorites ? (
