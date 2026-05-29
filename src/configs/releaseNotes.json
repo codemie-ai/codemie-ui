@@ -1,5 +1,119 @@
 [
   {
+    "version": "2.31.0",
+    "date": "2026-05-29",
+    "issues": [
+      {
+        "title": "Add Claude Opus 4.8 to CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12537",
+        "key": "EPMCDME-12537"
+      },
+      {
+        "title": "Project assistant GitLab diff tool usage is counted in personal spending instead of project budget",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12483",
+        "key": "EPMCDME-12483"
+      },
+      {
+        "title": "401 Error persists when using 'Login to MCP server' button for EPAM Delivery Central MCP Server via catalog",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12442",
+        "key": "EPMCDME-12442"
+      },
+      {
+        "title": "Search Code Repo tool fails with Pydantic validation error when `keywords_list` is passed as string instead of list",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12392",
+        "key": "EPMCDME-12392"
+      },
+      {
+        "title": "Zabbix MCP tool wrapper fails on all read queries due to output argument conflict",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12390",
+        "key": "EPMCDME-12390"
+      },
+      {
+        "title": "Jira integration: Custom external jira url is shortened to domain after saving",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12365",
+        "key": "EPMCDME-12365"
+      },
+      {
+        "title": "FAQ Assistant fails with \"'list' object has no attribute 'metadata'\" error when calling Search KB",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12254",
+        "key": "EPMCDME-12254"
+      },
+      {
+        "title": "Show handoff message to subassistant",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12217",
+        "key": "EPMCDME-12217"
+      },
+      {
+        "title": "Fix subagent state management - it should have clean context",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12215",
+        "key": "EPMCDME-12215"
+      },
+      {
+        "title": "After saving and executing a new workflow, going back from workflow execution screen opens initial Create Workflow screen without saved changes",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12150",
+        "key": "EPMCDME-12150"
+      },
+      {
+        "title": "Enhanced image generator: enable/disable toggle and custom aspect ratio support for assistant's image generation",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12133",
+        "key": "EPMCDME-12133"
+      },
+      {
+        "title": "Direct assistant links do not open target assistant for new CodeMie users after onboarding",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12090",
+        "key": "EPMCDME-12090"
+      },
+      {
+        "title": "Agent workspace and skill companion files to support complex skills in Codemie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12046",
+        "key": "EPMCDME-12046"
+      },
+      {
+        "title": "Enable Indexation of Image Files (JPEG, PNG, JPG, GIF) in File Data Sources",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12000",
+        "key": "EPMCDME-12000"
+      },
+      {
+        "title": "Integration Validation and Interoperability Testing",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11685",
+        "key": "EPMCDME-11685"
+      },
+      {
+        "title": "Workflow validation on Save: no issue is reported when config contains assistant with missing integration",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11250",
+        "key": "EPMCDME-11250"
+      },
+      {
+        "title": "Introduce an Observability Abstraction Layer in CodeMie: Pluggable Support for Phoenix and Langfuse Backends",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11212",
+        "key": "EPMCDME-11212"
+      },
+      {
+        "title": "Favorites and Pinned Assistants",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11041",
+        "key": "EPMCDME-11041"
+      }
+    ]
+  },
+  {
     "version": "2.30.0",
     "date": "2026-05-27",
     "issues": [
