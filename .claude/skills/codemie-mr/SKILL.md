@@ -12,7 +12,7 @@ description: >-
 
 ### 1. Check Current State
 
-Always start by checking git status:
+Always start by checking git status and ensuring the screenshot drop folder exists:
 
 ```bash
 # Current branch
@@ -23,6 +23,9 @@ git status --short
 
 # Existing MR for current branch
 glab mr list --source-branch=$(git branch --show-current) 2>/dev/null || echo "No MR"
+
+# Ensure screenshot drop folder exists (gitignored, never committed)
+mkdir -p .mr-screenshots
 ```
 
 ### 1b. Check for Code Review Spec
@@ -45,6 +48,25 @@ If spec is found → extract for MR description:
 - **Clean**: if no issues were found at all
 
 Keep this data — it will be injected into the MR description in Step 4.
+
+### 1c. Check for MR/PR Description Template
+
+Look for a description template in this order (stop at first match):
+
+1. `.github/PULL_REQUEST_TEMPLATE.md`
+2. `.gitlab/merge_request_templates/Default.md`
+3. `PULL_REQUEST_TEMPLATE.md` (repo root)
+
+```
+Read: .github/PULL_REQUEST_TEMPLATE.md
+# if not found:
+Read: .gitlab/merge_request_templates/Default.md
+# if not found:
+Read: PULL_REQUEST_TEMPLATE.md
+```
+
+- **Template found** → store its content. In Step 4, fill in every section of the template with real content based on the actual changes. Do not leave any placeholder text (e.g. `[2-4 sentences: ...]`) in the final MR description.
+- **No template found** → proceed with the existing custom description format in Step 4.
 
 ### 2. Validate Jira Ticket (Required for Commits)
 
@@ -99,7 +121,20 @@ Title rules:
 - Max ~70 characters
 - Describe the feature/fix, not the process ("Add SharePoint datasource support", not "Implement EPMCDME-123")
 
-Build the description — always include **Summary** and **Changes**. If a code review spec was found in Step 1b, include the **Code Review** section:
+Build the description using one of two paths:
+
+**Path A — Template found in Step 1c:**
+
+Fill in every section of the template with real content. Rules:
+- Replace every placeholder (e.g. `[2-4 sentences: what problem was solved and how]`) with actual text.
+- Tick the correct checkboxes in "Type of change" based on what was implemented.
+- Fill the "Changes" table with real file paths and what changed.
+- For "Spec" — link to spec doc if it exists (e.g. `docs/superpowers/specs/`), otherwise `N/A`.
+- For "Screenshots" and "E2E Test Harness" — `N/A` if no UI changes.
+- If a code review spec was found in Step 1b, append a `## Code Review` section after the last template section (see below).
+- Leave no placeholder text in the final description.
+
+**Path B — No template found:**
 
 ```bash
 glab mr create \
@@ -111,15 +146,6 @@ glab mr create \
 - [Key change 1]
 - [Key change 2]
 
-## Code Review
-<!-- Include ONLY if review spec was found in Step 1b -->
-AI code review completed (AI-Code-Review marker in commit history).
-- Issues found: <N critical, N major> / No issues found (clean)
-- Issues fixed: <N> / N/A
-- Issues rejected: <N with justification> / N/A
-
-:white_check_mark: Reviewed and approved by AI Code Reviewer
-
 ## Checklist
 - [ ] Self-reviewed
 - [ ] Manual testing performed
@@ -127,18 +153,94 @@ AI code review completed (AI-Code-Review marker in commit history).
 - [ ] No breaking changes (or documented)"
 ```
 
-**If no review spec was found** → omit the `## Code Review` section entirely from the description.
+**Code Review section (both paths — only if review spec found in Step 1b):**
 
-After MR is created, immediately approve it using the MR IID returned by `glab mr create`:
-```bash
-glab mr approve <MR_IID>
+```
+## Code Review
+AI code review completed (AI-Code-Review marker in commit history).
+- Issues found: <N critical, N major> / No issues found (clean)
+- Issues fixed: <N> / N/A
+- Issues rejected: <N with justification> / N/A
+
+:white_check_mark: Reviewed and approved by AI Code Reviewer
 ```
 
-This adds the AI reviewer's +1 to the MR. If `glab mr approve` fails (e.g., self-approval not allowed on this GitLab instance), inform the user but do not treat it as a blocking error.
+**If no review spec was found** → omit the `## Code Review` section entirely.
 
-After the MR is created, hand off to the `babysit-mr` skill to monitor it:
-- Invoke `babysit-mr` with the MR URL returned by `glab mr create`
-- It will watch for CI failures, reviewer comments, and merge conflicts, fixing them autonomously until the MR merges
+#### Screenshot gate (runs after `glab mr create`, before approve)
+
+> **Skip condition**: If no UI changes were made and the Screenshots field was set to `N/A` in the MR description, skip the screenshot gate entirely and proceed to the approve step.
+
+1. Extract the ticket number from the current branch name (pattern `EPMCDME-\d+`).
+
+2. Tell the user:
+```
+MR created: <url>
+
+Run `npm run test-harness`, then drop the screenshot into `.mr-screenshots/`.
+The MR will not proceed until the screenshot is there.
+```
+
+3. Capture the MR IID for use in later steps:
+```bash
+MR_IID=$(glab mr view --source-branch=$(git branch --show-current) --output json | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['iid'])")
+```
+
+4. Poll for the screenshot — wait until at least one file appears in `.mr-screenshots/`:
+```bash
+until ls .mr-screenshots/* 2>/dev/null | head -1 | grep -q .; do sleep 3; done; echo "Screenshot detected: $(ls .mr-screenshots/* | head -1)"
+```
+Use the Monitor tool for this so the user can continue working while waiting.
+
+5. When a file is detected:
+   - Take the first file found: `SCREENSHOT=$(ls .mr-screenshots/* | head -1)`
+   - Determine the extension from the original file (`.png`, `.jpg`, `.gif`, etc.)
+   - Rename it to `<TICKET>-test-harness.<ext>` inside the same folder:
+   ```bash
+   EXT="${SCREENSHOT##*.}"
+   TICKET=$(git branch --show-current | grep -oE 'EPMCDME-[0-9]+')
+   NEW_NAME=".mr-screenshots/${TICKET}-test-harness.${EXT}"
+   mv "$SCREENSHOT" "$NEW_NAME"
+   ```
+
+6. Upload to GitLab and get the markdown link:
+```bash
+PROJECT_PATH=$(git remote get-url origin | sed 's|.*gitbud.epam.com[:/]||;s|\.git$||' | python3 -c "import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip(), safe=''))")
+UPLOAD_RESPONSE=$(glab api "projects/${PROJECT_PATH}/uploads" --method POST -F "file=@${NEW_NAME}")
+MARKDOWN_LINK=$(echo "$UPLOAD_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['markdown'])")
+```
+
+7. Update the MR description — replace the `Screenshots` section placeholder with the actual image:
+```bash
+# Read current description, replace the Screenshots placeholder line
+CURRENT_DESC=$(glab mr view $MR_IID --output json | python3 -c "import sys,json; print(json.load(sys.stdin)['description'])")
+NEW_DESC=$(echo "$CURRENT_DESC" | sed "s|^\\[Screenshots.*\\]$|${MARKDOWN_LINK}|")
+glab mr update $MR_IID --description "$NEW_DESC"
+```
+
+8. Confirm to user: `Screenshot uploaded and added to MR. ✓`
+
+After MR is created, approve it using this flow:
+
+```bash
+# Extract current user and project path into separate variables first
+CURRENT_USER=$(glab api user | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])")
+PROJECT_PATH_ENC=$(git remote get-url origin | sed 's|.*gitbud.epam.com[:/]||;s|\.git$||' | python3 -c "import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip(), safe=''))")
+
+# Check if already approved by current user
+APPROVED=$(glab api "projects/${PROJECT_PATH_ENC}/merge_requests/${MR_IID}/approvals" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print(any(a['user']['username'] == '$CURRENT_USER' for a in d.get('approved_by', [])))")
+
+# If already approved — revoke first
+if [ "$APPROVED" = "True" ]; then
+  glab mr revoke-approval $MR_IID 2>/dev/null
+fi
+
+# Approve
+glab mr approve $MR_IID
+```
+
+Inform: `MR !<MR_IID> approved. ✓ <MR_URL>`
 
 ## Commit Format
 

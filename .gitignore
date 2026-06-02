@@ -45,3 +45,4 @@ bmad/*
 /.playwright-mcp/
 /test-results/
 /CLAUDE.local.md
+/.mr-screenshots/

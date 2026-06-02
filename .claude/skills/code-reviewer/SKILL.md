@@ -430,47 +430,16 @@ EOF
 
 ## Step 9: Push + Approve MR
 
-### If MR_IID = "TBD" (no MR existed before review)
+**Delegate entirely to the `codemie-mr` skill** — do not duplicate MR creation logic here.
 
-Push and create MR now (after fixes are already committed):
-```bash
-git push --set-upstream origin $(git branch --show-current)
-glab mr create \
-  --title "<TICKET>: <short description>" \
-  --description "## Summary
-[Description]
+Invoke `Skill("codemie-mr")`. It will:
+- Push the branch
+- Read the MR description template (checks `.github/PULL_REQUEST_TEMPLATE.md`, `.gitlab/merge_request_templates/Default.md`, and `PULL_REQUEST_TEMPLATE.md` in that order) and fill it in
+- Create the MR (or update if one already exists)
+- Run the screenshot gate (wait for `.mr-screenshots/` drop)
+- Approve the MR
 
-## Checklist
-- [ ] Self-reviewed
-- [ ] Manual testing performed
-- [ ] No breaking changes (or documented)" \
-  --remove-source-branch=false
-```
-Extract new `MR_IID` and `MR_URL`. Update `review.md` and `progress.md` with real values (replace "TBD").
-
-### If MR already existed
-
-Check approval state:
-```bash
-glab api "projects/<REPO_SLUG_ENCODED>/merge_requests/<MR_IID>/approvals" 2>/dev/null
-```
-(`<REPO_SLUG_ENCODED>` = repo slug with `/` replaced by `%2F`, e.g. `epm-cdme%2Fcodemie-ui`)
-
-Parse `"user_has_approved"` from JSON. If `true` → revoke first:
-```bash
-glab mr revoke <MR_IID> --repo <REPO_SLUG> 2>/dev/null
-```
-
-Push:
-```bash
-git push origin $(git branch --show-current)
-```
-
-### Approve MR (both paths)
-
-```bash
-glab mr approve <MR_IID> --repo <REPO_SLUG> 2>/dev/null
-```
+After `codemie-mr` completes, extract `MR_IID` and `MR_URL` from its output and update `review.md` and `progress.md` with the real values (replace "TBD" if needed).
 
 Inform developer: `"Review complete. MR: <MR_URL>"`
 
