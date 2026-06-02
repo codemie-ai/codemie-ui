@@ -17,6 +17,7 @@
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.tsx,.ts --ignore-path .gitignore",
     "lint:fix": "npm run lint -- --fix",
     "all:fix": "npm run format && npm run lint:fix",
+    "test-harness": "uvx codemie-test-harness --sanity-ui",
     "check:pre-commit": "npm run typecheck && npm run lint",
     "prepare": "husky",
     "build:keycloak": "VITE_ENTRY=keycloakify npm run build:prod && npx keycloakify build",
@@ -30,7 +31,7 @@
     "sonar-local": "node scripts/sonar/run-local-sonar.js"
   },
   "dependencies": {
-    "@dnd-kit/abstract": "0.3.0",
+    "@dnd-kit/abstract": "0.3.2",
     "@dnd-kit/helpers": "0.3.0",
     "@dnd-kit/react": "0.3.0",
     "@floating-ui/react": "0.27.16",
