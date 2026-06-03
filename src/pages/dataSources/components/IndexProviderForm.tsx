@@ -21,6 +21,7 @@ import Autocomplete from '@/components/form/Autocomplete'
 import Input from '@/components/form/Input'
 import MultiSelect from '@/components/form/MultiSelect'
 import Switch from '@/components/form/Switch'
+import Textarea from '@/components/form/Textarea'
 import { MASKED_VALUE } from '@/constants/settings'
 import { DataProvider, DataProviderField } from '@/types/entity/dataSource'
 import { humanize } from '@/utils/helpers'
@@ -151,7 +152,7 @@ const IndexProviderForm: React.FC<Props> = ({
                     label={field.title ?? humanize(field.name)}
                     placeholder={field.example ?? humanize(field.name)}
                     hint={field.description}
-                    type={isSensitive(field.name) ? 'password' : ''}
+                    type={isSensitive(field.name) ? 'password' : 'text'}
                     required={field.required}
                   />
                 )}
@@ -232,6 +233,30 @@ const IndexProviderForm: React.FC<Props> = ({
                       </div>
                     )}
                   </div>
+                )}
+              />
+            </div>
+          )
+        }
+
+        if (field.parameter_type === PROVIDER_FIELD_TYPES.TEXT) {
+          return (
+            <div key={`${index}-${field.name}`} className="mt-3">
+              <Controller
+                name={field.name}
+                control={control}
+                render={({ field: controllerField }) => (
+                  <Textarea
+                    id={field.name}
+                    {...controllerField}
+                    name={field.name}
+                    error={errors[field.name]?.message as string}
+                    label={field.title ?? humanize(field.name)}
+                    placeholder={field.example ?? humanize(field.name)}
+                    hint={field.description}
+                    required={field.required}
+                    rows={4}
+                  />
                 )}
               />
             </div>

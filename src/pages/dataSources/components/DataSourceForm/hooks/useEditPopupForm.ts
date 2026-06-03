@@ -250,7 +250,8 @@ export const useEditPopupForm = (
 
         if (
           PROVIDER_STRINGISH_TYPES.includes(field.parameter_type) ||
-          field.parameter_type === PROVIDER_FIELD_TYPES.LIST
+          field.parameter_type === PROVIDER_FIELD_TYPES.LIST ||
+          field.parameter_type === PROVIDER_FIELD_TYPES.TEXT
         ) {
           fieldSchema = Yup.string()
         }

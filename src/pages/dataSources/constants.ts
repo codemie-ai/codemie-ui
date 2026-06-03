@@ -24,6 +24,7 @@ export const PROVIDER_FIELD_TYPES = {
   URL: 'URL',
   LIST: 'List',
   MULTISELECT: 'Multiselect',
+  TEXT: 'Text',
 } as const
 
 export const PROVIDER_STRINGISH_TYPES: Array<
