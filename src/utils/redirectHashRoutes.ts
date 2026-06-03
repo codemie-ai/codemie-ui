@@ -20,5 +20,7 @@ export const redirectHashRoutes = () => {
   const [hashPath, hashQuery] = hash.slice(2).split('?')
   const base = window.location.pathname.replace(/\/$/, '')
   const search = hashQuery ? `?${hashQuery}` : window.location.search
-  window.location.replace(`${base}/${hashPath}${search}`)
+  // Strip leading slashes/backslashes to prevent protocol-relative open redirect (CWE-601)
+  const safePath = hashPath.replace(/^[/\\]+/, '')
+  window.location.replace(`${base}/${safePath}${search}`)
 }

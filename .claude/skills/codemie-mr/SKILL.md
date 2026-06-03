@@ -80,6 +80,21 @@ Read: PULL_REQUEST_TEMPLATE.md
 
 ### 3. Handle Based on User Request
 
+> **Uncommitted changes check** (run before executing any of the three paths below):
+> ```bash
+> DIRTY=$(git status --short | grep -v '^\?\?')
+> ```
+> If `DIRTY` is non-empty → ask user via `AskUserQuestion`:
+> - prompt: `"There are uncommitted changes:\n<list files>\nCommit them before proceeding?"` | header: `Uncommitted files` | options: `["Yes — commit them", "No — push/create MR without them"]`
+>
+> If "Yes" → stage and commit the listed files using the Jira ticket from Step 2:
+> ```bash
+> TICKET=$(git branch --show-current | grep -oE 'EPMCDME-[0-9]+')
+> git add <files from DIRTY>
+> git commit -m "${TICKET}: Update <short description of changes>"
+> ```
+> Then continue with the requested action.
+
 **"commit changes"** → Commit only (requires Jira ticket):
 ```bash
 git add .
@@ -102,8 +117,29 @@ git push --set-upstream origin $(git branch --show-current)
 #### If MR already exists:
 ```bash
 git push --set-upstream origin $(git branch --show-current)
-# Inform: "Changes pushed to existing MR: <url>"
 ```
+
+After push:
+
+Capture the MR IID for the update steps:
+```bash
+MR_IID=$(glab mr list --source-branch="$(git branch --show-current)" --output json | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['iid'])")
+```
+
+1. If a review spec was found in Step 1b → update the `## Code Review` section in the existing MR description:
+   - Read current MR description via `glab mr view $MR_IID --output json`
+   - If description already contains `## Code Review` → replace that section with fresh data from the spec
+   - If description does not contain `## Code Review` → append it at the end
+   - Update via `glab mr update $MR_IID --description "..."`
+
+2. Run the screenshot gate (same logic as new MR path) — check UI_CHANGED, ask for a fresh screenshot if UI files were modified. Previous screenshot in `.mr-screenshots/` is stale — warn the user and delete it first:
+   - Inform: `"⚠️ Re-push detected — clearing stale screenshot from .mr-screenshots/. A fresh one will be required."`
+   ```bash
+   [ -n "$(ls .mr-screenshots/ 2>/dev/null)" ] && rm -f .mr-screenshots/*
+   ```
+   Then run the gate normally so the new screenshot replaces the old one in the MR description.
+
+Inform: `"Changes pushed to existing MR: <url>"`
 
 #### If no MR exists:
 ```bash
@@ -167,9 +203,19 @@ AI code review completed (AI-Code-Review marker in commit history).
 
 **If no review spec was found** → omit the `## Code Review` section entirely.
 
-#### Screenshot gate (runs after `glab mr create`, before approve)
+#### Screenshot gate (runs after `glab mr create`)
 
-> **Skip condition**: If no UI changes were made and the Screenshots field was set to `N/A` in the MR description, skip the screenshot gate entirely and proceed to the approve step.
+**REQUIRED — always run this bash command before deciding whether to show the gate. Never infer from file names or commit messages:**
+
+```bash
+UI_CHANGED=$(
+  { git diff main...HEAD --name-only; git diff --cached --name-only; git diff --name-only; } \
+  | grep -E '\.(tsx|jsx|js|css|scss)$' | head -1
+)
+echo "UI_CHANGED: ${UI_CHANGED:-<empty>}"
+```
+
+Only if the output is `UI_CHANGED: <empty>` → skip the screenshot gate and inform `MR created: <MR_URL>`. Otherwise proceed with the gate.
 
 1. Extract the ticket number from the current branch name (pattern `EPMCDME-\d+`).
 
@@ -206,41 +252,23 @@ Use the Monitor tool for this so the user can continue working while waiting.
 6. Upload to GitLab and get the markdown link:
 ```bash
 PROJECT_PATH=$(git remote get-url origin | sed 's|.*gitbud.epam.com[:/]||;s|\.git$||' | python3 -c "import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip(), safe=''))")
-UPLOAD_RESPONSE=$(glab api "projects/${PROJECT_PATH}/uploads" --method POST -F "file=@${NEW_NAME}")
+TOKEN=$(cat "$HOME/Library/Application Support/glab-cli/config.yml" 2>/dev/null | grep -A5 'gitbud' | grep 'token:' | awk '{print $2}')
+if [ -z "$TOKEN" ]; then echo "ERROR: GitLab token not found in glab config — upload aborted"; exit 1; fi
+UPLOAD_RESPONSE=$(curl -s --request POST "https://gitbud.epam.com/api/v4/projects/${PROJECT_PATH}/uploads" \
+  --header "PRIVATE-TOKEN: ${TOKEN}" \
+  --form "file=@${NEW_NAME}")
 MARKDOWN_LINK=$(echo "$UPLOAD_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['markdown'])")
 ```
 
-7. Update the MR description — replace the `Screenshots` section placeholder with the actual image:
+7. Update the MR description — replace the `E2E Test Harness` section placeholder with the actual image:
 ```bash
-# Read current description, replace the Screenshots placeholder line
+# Read current description, replace the E2E Test Harness placeholder line
 CURRENT_DESC=$(glab mr view $MR_IID --output json | python3 -c "import sys,json; print(json.load(sys.stdin)['description'])")
-NEW_DESC=$(echo "$CURRENT_DESC" | sed "s|^\\[Screenshots.*\\]$|${MARKDOWN_LINK}|")
+NEW_DESC=$(echo "$CURRENT_DESC" | sed "s|^\\[Screenshots of running.*\\]$|${MARKDOWN_LINK}|")
 glab mr update $MR_IID --description "$NEW_DESC"
 ```
 
-8. Confirm to user: `Screenshot uploaded and added to MR. ✓`
-
-After MR is created, approve it using this flow:
-
-```bash
-# Extract current user and project path into separate variables first
-CURRENT_USER=$(glab api user | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])")
-PROJECT_PATH_ENC=$(git remote get-url origin | sed 's|.*gitbud.epam.com[:/]||;s|\.git$||' | python3 -c "import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip(), safe=''))")
-
-# Check if already approved by current user
-APPROVED=$(glab api "projects/${PROJECT_PATH_ENC}/merge_requests/${MR_IID}/approvals" \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print(any(a['user']['username'] == '$CURRENT_USER' for a in d.get('approved_by', [])))")
-
-# If already approved — revoke first
-if [ "$APPROVED" = "True" ]; then
-  glab mr revoke-approval $MR_IID 2>/dev/null
-fi
-
-# Approve
-glab mr approve $MR_IID
-```
-
-Inform: `MR !<MR_IID> approved. ✓ <MR_URL>`
+8. Confirm to user: `Screenshot uploaded and added to MR. ✓ MR: <MR_URL>`
 
 ## Commit Format
 

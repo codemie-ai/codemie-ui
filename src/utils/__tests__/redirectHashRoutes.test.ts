@@ -116,4 +116,52 @@ describe('redirectHashRoutes', () => {
     // Assert
     expect(mockReplace).toHaveBeenCalledWith('/assistants?token=abc')
   })
+
+  it('should sanitize triple-slash hash to same-origin path at root', () => {
+    // Arrange
+    stubLocation({ hash: '#///evil.com', pathname: '/', search: '' })
+
+    // Act
+    redirectHashRoutes()
+
+    // Assert
+    expect(mockReplace).toHaveBeenCalledOnce()
+    expect(mockReplace).toHaveBeenCalledWith('/evil.com')
+  })
+
+  it('should sanitize triple-slash hash to same-origin path in sub-path deployment', () => {
+    // Arrange
+    stubLocation({ hash: '#///evil.com', pathname: '/codemie/', search: '' })
+
+    // Act
+    redirectHashRoutes()
+
+    // Assert
+    expect(mockReplace).toHaveBeenCalledOnce()
+    expect(mockReplace).toHaveBeenCalledWith('/codemie/evil.com')
+  })
+
+  it('should sanitize double-slash hash to same-origin path', () => {
+    // Arrange
+    stubLocation({ hash: '#//evil.com', pathname: '/', search: '' })
+
+    // Act
+    redirectHashRoutes()
+
+    // Assert
+    expect(mockReplace).toHaveBeenCalledOnce()
+    expect(mockReplace).toHaveBeenCalledWith('/evil.com')
+  })
+
+  it('should sanitize backslash hash variant to same-origin path', () => {
+    // Arrange
+    stubLocation({ hash: '#/\\evil.com', pathname: '/', search: '' })
+
+    // Act
+    redirectHashRoutes()
+
+    // Assert
+    expect(mockReplace).toHaveBeenCalledOnce()
+    expect(mockReplace).toHaveBeenCalledWith('/evil.com')
+  })
 })
