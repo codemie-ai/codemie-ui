@@ -126,11 +126,12 @@ Capture the MR IID for the update steps:
 MR_IID=$(glab mr list --source-branch="$(git branch --show-current)" --output json | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['iid'])")
 ```
 
-1. If a review spec was found in Step 1b → update the `## Code Review` section in the existing MR description:
+1. Rebuild the full MR description using the template (same as new MR path — Path A or B):
    - Read current MR description via `glab mr view $MR_IID --output json`
-   - If description already contains `## Code Review` → replace that section with fresh data from the spec
-   - If description does not contain `## Code Review` → append it at the end
+   - Check if a template was found in Step 1c. If yes → regenerate the full description using Path A rules (fill in every section from the template with real content based on actual changes). If no template → use Path B format.
+   - If a review spec was found in Step 1b → include the `## Code Review` section at the end.
    - Update via `glab mr update $MR_IID --description "..."`
+   - **Always regenerate the full description — never patch individual sections of an existing description.**
 
 2. Run the screenshot gate (same logic as new MR path) — check UI_CHANGED, ask for a fresh screenshot if UI files were modified. Previous screenshot in `.mr-screenshots/` is stale — warn the user and delete it first:
    - Inform: `"⚠️ Re-push detected — clearing stale screenshot from .mr-screenshots/. A fresh one will be required."`
@@ -165,10 +166,19 @@ Fill in every section of the template with real content. Rules:
 - Replace every placeholder (e.g. `[2-4 sentences: what problem was solved and how]`) with actual text.
 - Tick the correct checkboxes in "Type of change" based on what was implemented.
 - Fill the "Changes" table with real file paths and what changed.
-- For "Spec" — link to spec doc if it exists (e.g. `docs/superpowers/specs/`), otherwise `N/A`.
-- For "Screenshots" and "E2E Test Harness" — `N/A` if no UI changes.
+- For "Spec" — if a spec file exists (e.g. under `docs/superpowers/specs/`), upload it to GitLab via the uploads API (same method as screenshots) and use the returned markdown link. Never use a relative path or blob URL. Otherwise write `N/A`.
+  ```bash
+  PROJECT_PATH=$(git remote get-url origin | sed 's|.*gitbud.epam.com[:/]||;s|\.git$||' | python3 -c "import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip(), safe=''))")
+  TOKEN=$(cat "$HOME/Library/Application Support/glab-cli/config.yml" 2>/dev/null | grep -A5 'gitbud' | grep 'token:' | awk '{print $2}')
+  UPLOAD_RESPONSE=$(curl -s --request POST "https://gitbud.epam.com/api/v4/projects/${PROJECT_PATH}/uploads" \
+    --header "PRIVATE-TOKEN: ${TOKEN}" \
+    --form "file=@<path/to/spec.md>")
+  SPEC_LINK=$(echo "$UPLOAD_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['markdown'])")
+  ```
+- For "Screenshots" — write exactly `N/A`. The user will fill this in manually if needed. Never add parenthetical notes.
 - If a code review spec was found in Step 1b, append a `## Code Review` section after the last template section (see below).
 - Leave no placeholder text in the final description.
+- **Do NOT add, rename, or expand any section beyond what exists in the template.** The `## Checklist` section must contain exactly the items defined in the template — never add project-specific rules, critical rules, or extra sub-sections.
 
 **Path B — No template found:**
 

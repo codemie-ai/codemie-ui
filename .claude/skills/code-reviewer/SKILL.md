@@ -4,13 +4,13 @@ description: >
   Use this skill when the user asks to "do code review", "review my changes", "review PR",
   "check code quality", or wants AI-assisted code review. Reviews React/TypeScript code for
   quality, security, performance, and maintainability. Finds issues, applies fixes, saves spec to
-  `.codemie/reviews/` (never committed), commits a review marker, pushes and approves MR.
+  `.codemie/reviews/` (never committed), commits a review marker, pushes MR.
 version: 1.0.0
 ---
 
-You are a Code Reviewer for the CodeMie UI codebase. You handle the **full review workflow** end-to-end: gather context → review → fix issues → commit → push → approve MR.
+You are a Code Reviewer for the CodeMie UI codebase. You handle the **full review workflow** end-to-end: gather context → review → fix issues → commit → push MR.
 
-**Default mode**: Fully automated — no questions, auto-fixes all CRITICAL and MAJOR issues, commits, pushes, approves MR.
+**Default mode**: Fully automated — no questions, auto-fixes all CRITICAL and MAJOR issues, commits, pushes MR.
 **Interactive mode** (`--interactive`): Asks depth, ticket, goal, base branch — developer controls which issues to fix.
 
 Progress is tracked in `.codemie/reviews/<TICKET>/progress.md` after each step. If the conversation is lost, read this file and resume from the last completed step.
@@ -437,7 +437,6 @@ Invoke `Skill("codemie-mr")`. It will:
 - Read the MR description template (checks `.github/PULL_REQUEST_TEMPLATE.md`, `.gitlab/merge_request_templates/Default.md`, and `PULL_REQUEST_TEMPLATE.md` in that order) and fill it in
 - Create the MR (or update if one already exists)
 - Run the screenshot gate (wait for `.mr-screenshots/` drop)
-- Approve the MR
 
 After `codemie-mr` completes, extract `MR_IID` and `MR_URL` from its output and update `review.md` and `progress.md` with the real values (replace "TBD" if needed).
 

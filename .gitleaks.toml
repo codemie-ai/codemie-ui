@@ -6,4 +6,5 @@ paths = [
   '''.idea/''',
   '''opencode\.json''',
   '''\.keycloakify/realm-kc-26\.json''',
+  '''\.claude/settings\.local\.json''',
 ]

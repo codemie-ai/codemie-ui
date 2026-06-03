@@ -47,7 +47,8 @@ interface UserStoreType {
   loadAssistantsUsers: (params?: { scope?: string }) => Promise<User[]>
   loadSkillsUsers: () => Promise<User[]>
   getAnalyticsUsers: (
-    filters?: AnalyticsQueryParams
+    filters?: AnalyticsQueryParams,
+    signal?: AbortSignal
   ) => Promise<Array<{ label: string; value: string }>>
   loadWorkflowsUsers: () => Promise<User[]>
   loadProjectSettingsUsers: () => Promise<User[]>
@@ -202,12 +203,13 @@ export const userStore = proxy<UserStoreType>({
       })
   },
 
-  getAnalyticsUsers(filters?: AnalyticsQueryParams) {
+  getAnalyticsUsers(filters?: AnalyticsQueryParams, signal?: AbortSignal) {
     return api
       .get('v1/analytics/users', {
         params: filters,
         queryParamArrayHandling: 'compact',
         skipErrorHandling: true,
+        signal,
       })
       .then((response) => response.json())
       .then((data) => {

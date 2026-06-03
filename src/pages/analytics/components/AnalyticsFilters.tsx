@@ -22,6 +22,7 @@ import FilterAccordionItem from '@/components/FilterAccordionItem'
 import DatePicker from '@/components/form/DatePicker'
 import Select from '@/components/form/Select'
 import ProjectSelector from '@/components/ProjectSelector'
+import { useAbortController } from '@/hooks/useAbortController'
 import { userStore } from '@/store/user'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
@@ -40,6 +41,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   const [localFilters, setLocalFilters] = useState<AnalyticsQueryParams>(filters)
   const onFiltersChangeRef = useRef(onFiltersChange)
+  const { execute } = useAbortController()
 
   useEffect(() => {
     onFiltersChangeRef.current = onFiltersChange
@@ -72,11 +74,25 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
     debouncedFiltersChange(newFilters)
   }
 
+  const userListFilters = useMemo(() => {
+    const { users: _users, ...rest } = localFilters
+    return rest
+  }, [
+    localFilters.time_period,
+    localFilters.start_date,
+    localFilters.end_date,
+    localFilters.projects,
+  ])
+
   const loadUsers = useCallback(async () => {
     setIsLoadingUsers(true)
     try {
-      const { users: _users, ...filtersWithoutUsers } = localFilters
-      const options = await userStore.getAnalyticsUsers(filtersWithoutUsers)
+      const options = await execute<Array<{ label: string; value: string }>>((signal) =>
+        userStore.getAnalyticsUsers(userListFilters, signal)
+      )
+
+      if (options === null) return
+
       setUserOptions(options)
     } catch (error) {
       console.error('Error loading users:', error)
@@ -84,7 +100,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
     } finally {
       setIsLoadingUsers(false)
     }
-  }, [localFilters])
+  }, [userListFilters, execute])
 
   useEffect(() => {
     loadUsers().catch(console.error)
@@ -150,7 +166,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
           Filters
         </span>
         {hasNonDefaultFilters && (
-          <Button variant="tertiary" className="ml-auto gap-[5px]" onClick={handleClearFilters}>
+          <Button variant="tertiary" className="ml-auto gap-1.5" onClick={handleClearFilters}>
             <CrossIcon className="w-3.5 h-3.5" /> Clear all
           </Button>
         )}
