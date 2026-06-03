@@ -45,12 +45,12 @@ const HelpItem: FC<HelpItemType> = ({
       target={isExternal ? '_blank' : ''}
       className="flex justify-between p-4 items-center border border-border-specific-panel-outline rounded-lg bg-surface-base-chat hover:bg-opacity-30 transition cursor-pointer hover:no-underline"
     >
-      <div className="flex items-center gap-x-5">
+      <div className="flex items-center gap-x-5 flex-1 min-w-0">
         <div className="border flex justify-center items-center rounded-full size-8 min-w-8 min-h-8 overflow-hidden border-border-specific-icon-outline bg-surface-interactive-active">
           {iconUrl && <img src={iconUrl} alt={name} />}
           {!iconUrl && (Icon ? <Icon /> : <img src={DefaultIconPng} alt={name} />)}
         </div>
-        <div className="flex flex-col pr-2">
+        <div className="flex flex-col pr-2 min-w-0">
           <h3 className="font-medium">{name}</h3>
           <p
             ref={descriptionRef}
@@ -65,13 +65,13 @@ const HelpItem: FC<HelpItemType> = ({
       </div>
       {isExternal ? (
         <a href={link} target="_blank" rel="noreferrer" className="hover:no-underline">
-          <Button variant={ButtonType.SECONDARY}>
+          <Button variant={ButtonType.SECONDARY} className="shrink-0">
             <ExternalSvg />
             {finalButtonText}
           </Button>
         </a>
       ) : (
-        <Button variant={ButtonType.SECONDARY}>
+        <Button variant={ButtonType.SECONDARY} className="shrink-0">
           {type === 'chat' ? <ChatNewFilledSvg /> : <ExternalSvg />}
           {finalButtonText}
         </Button>
