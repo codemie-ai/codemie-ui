@@ -25,6 +25,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
+import { Assistant } from '@/types/entity/assistant'
 import { generateAssistantAvatarDataUrl } from '@/utils/assistantAvatar'
 import { cn } from '@/utils/utils'
 
@@ -82,6 +83,15 @@ const NavigationPinnedSection: React.FC = () => {
     return () => observer.disconnect()
   }, [navigationExpanded])
 
+  const handleAssistantClick = useCallback(
+    async (a: { id: string; name: string }) => {
+      await chatsStore.startNewChat(a.id, a.name, false)
+      assistantsStore.updateRecentAssistants(a as unknown as Assistant)
+      router.push({ name: 'new-chat' })
+    },
+    [router]
+  )
+
   const staticItems = useMemo((): NavSectionItem[] => {
     const items: NavSectionItem[] = []
 
@@ -96,11 +106,7 @@ const NavigationPinnedSection: React.FC = () => {
           onboarding.icon_url ||
           (isGeneratedAvatarsEnabled ? generateAssistantAvatarDataUrl(name) : DefaultIconPng),
         isDeletable: false,
-        onClick: () =>
-          router.push({
-            name: 'start-assistant-chat',
-            params: { slug: onboarding.slug },
-          }),
+        onClick: () => handleAssistantClick({ id: onboarding.id, name }),
       })
     }
 
@@ -115,22 +121,12 @@ const NavigationPinnedSection: React.FC = () => {
           chatbot.icon_url ||
           (isGeneratedAvatarsEnabled ? generateAssistantAvatarDataUrl(name) : DefaultIconPng),
         isDeletable: false,
-        onClick: () =>
-          router.push({
-            name: 'start-assistant-chat',
-            params: { slug: chatbot.slug },
-          }),
+        onClick: () => handleAssistantClick({ id: chatbot.id, name }),
       })
     }
 
     return items
-  }, [helpAssistants, isGeneratedAvatarsEnabled])
-
-  const handlePinnedItemClick = useCallback(async (a: (typeof pinnedAssistants)[number]) => {
-    await chatsStore.startNewChat(a.id, a.name, false)
-    assistantsStore.updateRecentAssistants(a)
-    router.push({ name: 'new-chat' })
-  }, [router])
+  }, [helpAssistants, isGeneratedAvatarsEnabled, handleAssistantClick])
 
   const pinnedItems = useMemo(
     (): NavSectionItem[] =>
@@ -140,9 +136,9 @@ const NavigationPinnedSection: React.FC = () => {
         description: a.description,
         icon_url: a.icon_url,
         isDeletable: true,
-        onClick: () => handlePinnedItemClick(a),
+        onClick: () => handleAssistantClick(a),
       })),
-    [pinnedAssistants, handlePinnedItemClick]
+    [pinnedAssistants, handleAssistantClick]
   )
 
   const allItems = useMemo(
