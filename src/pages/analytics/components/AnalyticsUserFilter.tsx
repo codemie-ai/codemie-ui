@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useState, useEffect } from 'react'
+import { FC, useState, useEffect, useRef } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import MultiSelect from '@/components/form/MultiSelect'
@@ -29,21 +29,18 @@ interface AnalyticsUserFilterProps {
   isLoadingOptions: boolean
 }
 
-const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
-  value,
-  onChange,
-  userOptions,
-  isLoadingOptions,
-}) => {
-  const [isChecked, setIsChecked] = useState(false)
+const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({ value, onChange, userOptions }) => {
+  const [meChecked, setMeChecked] = useState(false)
   const currentUser = userStore.user
   const [currentUserId, setCurrentUserId] = useState<string>('')
-  const [previousUsers, setPreviousUsers] = useState<string[]>([])
+
+  const prevCurrentUserIdRef = useRef<string>('')
 
   // Find current user ID from available options
   useEffect(() => {
     if (!currentUser || userOptions.length === 0) {
       setCurrentUserId('')
+      prevCurrentUserIdRef.current = ''
       return
     }
 
@@ -58,54 +55,67 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
     })
 
     if (matchingOption) {
-      setCurrentUserId(matchingOption.value)
+      const newUserId = matchingOption.value
+      const prevUserId = prevCurrentUserIdRef.current
+      setCurrentUserId(newUserId)
+      prevCurrentUserIdRef.current = newUserId
+
+      // Only add user if Me is checked AND user just became available (was not available before)
+      if (meChecked && !value.includes(newUserId) && !prevUserId) {
+        onChange([...value, newUserId])
+      }
     } else {
       setCurrentUserId('')
+      prevCurrentUserIdRef.current = ''
     }
-  }, [currentUser, userOptions])
+  }, [currentUser, userOptions, meChecked, value, onChange])
 
-  // Update checkbox state based on current selection
-  // Checkbox is checked only when current user is the sole selection
+  // Initialize checkbox state from incoming value (only on mount or when currentUserId first becomes available)
+  const hasInitializedRef = useRef(false)
   useEffect(() => {
-    if (currentUserId && value) {
-      setIsChecked(value.length === 1 && value.includes(currentUserId))
+    if (currentUserId && value && !hasInitializedRef.current) {
+      setMeChecked(value.includes(currentUserId))
+      hasInitializedRef.current = true
     }
-  }, [value, currentUserId])
+  }, [currentUserId, value])
 
-  // Filter out users that are no longer in the available options
+  const availableUserIds = new Set(userOptions.map((option) => option.value))
+  const prevValueRef = useRef<string[]>(value)
   useEffect(() => {
-    // Wait for options to finish loading before validating
-    if (isLoadingOptions || !value.length) return
+    const valueChanged = prevValueRef.current !== value
+    prevValueRef.current = value
 
-    const availableUserIds = new Set(userOptions.map((option) => option.value))
-    const validUserIds = value.filter((userId) => availableUserIds.has(userId))
-
-    // Update the value if some users are no longer available
-    if (validUserIds.length !== value.length) {
-      onChange(validUserIds)
+    if (
+      valueChanged &&
+      meChecked &&
+      currentUserId &&
+      availableUserIds.has(currentUserId) &&
+      !value.includes(currentUserId)
+    ) {
+      setMeChecked(false)
     }
-  }, [userOptions, value, onChange, isLoadingOptions])
+  }, [value, currentUserId, meChecked, userOptions])
 
   const toggleCurrentUser = (checked: boolean) => {
-    setIsChecked(checked)
+    setMeChecked(checked)
 
     if (checked) {
-      // Save previous selection before replacing with only current user
-      if (value.length > 0) {
-        setPreviousUsers(value)
+      // Only add current user if they exist in options (have data)
+      if (currentUserId && !value.includes(currentUserId)) {
+        onChange([...value, currentUserId])
       }
-      // Replace selection with only current user
-      onChange([currentUserId])
-    } else {
-      // Restore previous selection or clear
-      onChange(previousUsers.length > 0 ? previousUsers : [])
-      setPreviousUsers([])
+    } else if (currentUserId) {
+      // Remove current user from selection
+      onChange(value.filter((id) => id !== currentUserId))
     }
   }
 
   const handleUsersChange = (e: MultiSelectChangeEvent) => {
     onChange(e.value)
   }
+
+  // Filter value to only include users that exist in userOptions (for display)
+  const displayValue = value.filter((userId) => availableUserIds.has(userId))
 
   return (
     <div>
@@ -119,9 +129,10 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
                 ? 'Analytics data selected with current filters values contain no data for current user.'
                 : undefined
             }
+            data-tooltip-class-name="break-keep"
           >
             <Checkbox
-              checked={isChecked}
+              checked={meChecked}
               onChange={toggleCurrentUser}
               label="Me"
               disabled={!currentUserId}
@@ -136,7 +147,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
       </div>
       <MultiSelect
         id="users"
-        value={value ?? []}
+        value={displayValue}
         options={userOptions}
         onChange={handleUsersChange}
         placeholder="Users"
