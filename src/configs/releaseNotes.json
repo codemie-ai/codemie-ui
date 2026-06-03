@@ -1,5 +1,35 @@
 [
   {
+    "version": "2.32.0",
+    "date": "2026-06-03",
+    "issues": [
+      {
+        "title": "Chat Now button styles are broken on Help page",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12608",
+        "key": "EPMCDME-12608"
+      },
+      {
+        "title": "Pinned assistants are not clickable in the left-side menu when the sidebar is expanded",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12593",
+        "key": "EPMCDME-12593"
+      },
+      {
+        "title": "Workflow start via chat interface fails with Internal Server Error when attaching Word document – AttributeError: 'UserEntity' has no attribute 'id'",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12395",
+        "key": "EPMCDME-12395"
+      },
+      {
+        "title": "Search Code Repo tool fails with Pydantic validation error when `keywords_list` is passed as string instead of list",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12392",
+        "key": "EPMCDME-12392"
+      }
+    ]
+  },
+  {
     "version": "2.31.0",
     "date": "2026-05-29",
     "issues": [
