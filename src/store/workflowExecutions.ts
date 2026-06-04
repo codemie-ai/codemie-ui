@@ -148,7 +148,8 @@ interface WorkflowExecutionsStoreType {
   resumeWorkflowExecution: (
     workflowId: string,
     executionId: string,
-    userInput?: string
+    userInput?: string,
+    fileNames?: string[]
   ) => Promise<Response>
 
   updateWorkflowExecutionStateOutput: (
@@ -808,9 +809,15 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
    * @param executionId - The execution ID
    * @returns API response
    */
-  async resumeWorkflowExecution(workflowId, executionId, userInput?: string) {
+  async resumeWorkflowExecution(workflowId, executionId, userInput?: string, fileNames?: string[]) {
     try {
-      const body = userInput ? { user_input: userInput } : undefined
+      const body =
+        userInput || fileNames?.length
+          ? {
+              ...(userInput ? { user_input: userInput } : {}),
+              ...(fileNames?.length ? { file_names: fileNames } : {}),
+            }
+          : undefined
       const response = await api.put(
         `v1/workflows/${workflowId}/executions/${executionId}/resume`,
         body

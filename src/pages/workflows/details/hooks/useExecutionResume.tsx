@@ -26,7 +26,7 @@ interface UseExecutionResumeParams {
 type UseExecutionResumeReturn = {
   isResuming: boolean
   resume: () => void
-  resumeWithMessage: (message: string) => void
+  resumeWithMessage: (message: string | undefined, fileNames: string[]) => void
   refreshOutputKey: number
   refreshOutput: () => void
 }
@@ -52,12 +52,12 @@ const useExecutionResume = ({
   }, [workflowId, executionId])
 
   const resumeWithMessage = useCallback(
-    async (message: string) => {
+    async (message: string | undefined, fileNames: string[]) => {
       if (!executionId || !workflowId) return
 
       setIsResuming(true)
       try {
-        await workflowExecutionsStore.resumeWorkflowExecution(workflowId, executionId, message)
+        await workflowExecutionsStore.resumeWorkflowExecution(workflowId, executionId, message, fileNames)
       } catch (error) {
         toaster.error('Failed to resume workflow execution')
       } finally {

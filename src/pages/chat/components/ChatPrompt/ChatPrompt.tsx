@@ -109,7 +109,7 @@ const ChatPrompt: FC = () => {
   const submitLabel = SUBMIT_LABELS[promptMode]
 
   const canSubmit = (() => {
-    if (isInterrupted) return !isInProgress
+    if (isInterrupted) return !isInProgress && !fileUpload.hasActiveUploads
     const hasFiles = !!files.length
     const hasPrompt = prompt.message.length > 0
     return (hasPrompt || hasFiles) && !fileUpload.hasActiveUploads && !isInProgress
@@ -120,8 +120,10 @@ const ChatPrompt: FC = () => {
 
     if (isInterrupted) {
       const userInput = prompt.message.trim() || undefined
+      const fileNames = files.flatMap((f) => (f.fileId ? [f.fileId] : []))
       setPrompt({ message: '', messageRaw: '' })
-      chatGenerationStore.resumeWorkflowExecution(userInput)
+      setFiles([])
+      chatGenerationStore.resumeWorkflowExecution(userInput, fileNames)
       return
     }
 
@@ -231,7 +233,7 @@ const ChatPrompt: FC = () => {
                 className="flex justify-between items-center pl-2"
               >
                 <div className="flex items-center gap-2">
-                  {!isInterrupted && <ChatPromptFileUpload {...fileUpload} files={files} />}
+                  <ChatPromptFileUpload {...fileUpload} files={files} />
                   {!currentChat?.isWorkflow && !isSharedPage && (
                     <>
                       <DynamicToolsSettings disabled={!!isInProgress} />

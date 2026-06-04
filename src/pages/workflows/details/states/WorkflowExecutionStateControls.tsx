@@ -20,13 +20,13 @@ import CloseSvg from '@/assets/icons/cross.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import PlaySvg from '@/assets/icons/play.svg?react'
 import Button from '@/components/Button'
-import Textarea from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
 import { ButtonType } from '@/constants'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
+import ContinueWithInputPopup from './ContinueWithInputPopup'
 import WorkflowExecutionEditOutputForm from './WorkflowExecutionEditOutputForm'
 import useExecutionsContext from '../hooks/useExecutionsContext'
 
@@ -53,7 +53,6 @@ const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = 
   const [isEditOutputPopupVisible, setIsEditOutputPopupVisible] = useState(false)
   const [isContinueDropdownOpen, setIsContinueDropdownOpen] = useState(false)
   const [isContinueWithMessagePopupVisible, setIsContinueWithMessagePopupVisible] = useState(false)
-  const [continueMessage, setContinueMessage] = useState('')
   const continueDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -84,12 +83,6 @@ const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = 
 
   const closeContinueWithMessagePopup = () => {
     setIsContinueWithMessagePopupVisible(false)
-    setContinueMessage('')
-  }
-
-  const handleContinueWithMessage = () => {
-    resumeWithMessage(continueMessage.trim())
-    closeContinueWithMessagePopup()
   }
 
   const closeEditOutputPopup = () => setIsEditOutputPopupVisible(false)
@@ -162,23 +155,20 @@ const WorkflowExecutionStateControls: FC<WorkflowExecutionStateControlsProps> = 
         </div>
       </div>
 
-      <Popup
-        header="Continue with message"
-        visible={isContinueWithMessagePopupVisible}
-        onHide={closeContinueWithMessagePopup}
-        onSubmit={handleContinueWithMessage}
-        submitText="Continue"
-        submitDisabled={!continueMessage.trim()}
-        className="w-full max-w-lg"
-      >
-        <Textarea
-          className="w-full h-32 resize-none mb-4"
-          placeholder="Type a message for the next step..."
-          value={continueMessage}
-          onChange={(e) => setContinueMessage(e.target.value)}
-          autoFocus
+      {workflowId && executionId && stateId && (
+        <ContinueWithInputPopup
+          visible={isContinueWithMessagePopupVisible}
+          stateId={stateId}
+          workflowId={workflowId}
+          executionId={executionId}
+          onHide={closeContinueWithMessagePopup}
+          onContinue={(message, fileNames) => {
+            resumeWithMessage(message, fileNames)
+            closeContinueWithMessagePopup()
+          }}
+          isSubmitting={isResuming}
         />
-      </Popup>
+      )}
 
       {workflowId && executionId && stateId && (
         <Popup

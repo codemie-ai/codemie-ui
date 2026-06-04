@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "source": "heuristic",
+  "score": 24,
+  "routing": "brainstorming",
+  "signals": {
+    "affected_file_estimate": 12,
+    "keyword_signals": {
+      "security": false,
+      "auth": false,
+      "migration": false,
+      "breaking": false,
+      "provider": false,
+      "integration": false,
+      "refactor": false
+    },
+    "goal_word_count": 32,
+    "trigger_rule": "affected_file_estimate >= 7"
+  },
+  "rationale": "File upload integration touches existing upload components (ChatPromptFileUpload, useFileUpload hook), workflow execution/interrupt state, and chat prompt in two modes (chat + usual). Estimated 12+ files affected across components, hooks, store, and workflow pages."
+}

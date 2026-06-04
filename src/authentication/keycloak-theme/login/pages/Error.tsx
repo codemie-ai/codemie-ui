@@ -22,7 +22,9 @@ import type { I18n } from '../i18n'
 import type { KcContext } from '../KcContext'
 import type { PageProps } from 'keycloakify/login/pages/PageProps'
 
-export default function Error(props: PageProps<Extract<KcContext, { pageId: 'error.ftl' }>, I18n>) {
+export default function Error(
+  props: Readonly<PageProps<Extract<KcContext, { pageId: 'error.ftl' }>, I18n>>
+) {
   const { kcContext, i18n, Template } = props
   const { message, client, skipLink } = kcContext
 

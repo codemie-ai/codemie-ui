@@ -33,6 +33,7 @@ import { FileMetadata, UseFileUploadReturn } from '@/hooks/useFileUpload'
 
 type ChatPromptFileUploadProps = UseFileUploadReturn & {
   files: FileMetadata[]
+  tooltipContent?: string
 }
 
 const ChatPromptFileUpload: FC<ChatPromptFileUploadProps> = ({
@@ -40,6 +41,7 @@ const ChatPromptFileUpload: FC<ChatPromptFileUploadProps> = ({
   inputProps,
   removeFile,
   openFilePicker,
+  tooltipContent = CHAT_FILE_MULTIUPLOAD_MESSAGE,
 }) => {
   const displayedFiles = files.slice(0, 2)
   const [isOpen, setIsOpen] = useState(false)
@@ -67,7 +69,7 @@ const ChatPromptFileUpload: FC<ChatPromptFileUploadProps> = ({
         onClick={openFilePicker}
         aria-label="Attach files"
         data-tooltip-id="react-tooltip"
-        data-tooltip-content={CHAT_FILE_MULTIUPLOAD_MESSAGE}
+        data-tooltip-content={tooltipContent}
         data-onboarding="chat-file-upload"
         className="text-text-quaternary hover:text-text-primary hover:scale-110 transform duration-75"
       >
@@ -103,7 +105,7 @@ const ChatPromptFileUpload: FC<ChatPromptFileUploadProps> = ({
                   ref={refs.setFloating}
                   style={floatingStyles}
                   {...getFloatingProps()}
-                  className="flex flex-col-reverse gap-1 bg-surface-base-secondary border border-border-structural rounded-lg shadow-lg p-2"
+                  className="flex flex-col-reverse gap-1 bg-surface-base-secondary border border-border-structural rounded-lg shadow-lg p-2 z-[1200]"
                 >
                   {files.slice(2).map((file, index) => (
                     <File

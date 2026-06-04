@@ -24,7 +24,7 @@ export interface ExecutionContextValue {
   interruptedStateId: string | null
   isResuming: boolean
   resume: () => void
-  resumeWithMessage: (message: string) => void
+  resumeWithMessage: (message: string | undefined, fileNames: string[]) => void
   refreshOutput: () => void
 }
 

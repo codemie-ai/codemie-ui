@@ -25,7 +25,7 @@ export default function LogoutSessionsCheckbox({
   checked,
   onChange,
   label,
-}: LogoutSessionsCheckboxProps) {
+}: Readonly<LogoutSessionsCheckboxProps>) {
   return (
     <div className="flex items-center gap-2">
       <input

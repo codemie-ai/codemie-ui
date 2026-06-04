@@ -33,7 +33,7 @@ export default function FormActionButtons({
   submitLabel,
   cancelAriaLabel,
   submitAriaLabel,
-}: FormActionButtonsProps) {
+}: Readonly<FormActionButtonsProps>) {
   const handleCancel = () => {
     const form = document.createElement('form')
     form.method = 'post'

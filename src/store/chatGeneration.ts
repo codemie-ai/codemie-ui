@@ -66,7 +66,7 @@ interface ChatGenerationStoreType {
   deleteChatMessage: (chatId: string, historyIndex: number) => Promise<void>
 
   stopChatGeneration: (chatId: string) => void
-  resumeWorkflowExecution: (userInput?: string) => Promise<void>
+  resumeWorkflowExecution: (userInput?: string, fileNames?: string[]) => Promise<void>
   abortWorkflowChat: (chatId: string) => Promise<void>
   updateWorkflowChatOutput: (chatId: string, output: string) => Promise<{ message: string } | void>
   getAuthenticatingPromptIds: (chatId: string) => string[]
@@ -541,7 +541,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
   },
 
-  async resumeWorkflowExecution(userInput?: string) {
+  async resumeWorkflowExecution(userInput?: string, fileNames?: string[]) {
     const chat = chatsStore.currentChat
     if (!chat) return Promise.resolve()
 
@@ -563,6 +563,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       workflowId: lastMessage?.assistantId ?? undefined,
       executionId: lastMessage?.executionId ?? undefined,
       ...(userInput ? { resumeExecutionInput: userInput } : {}),
+      ...(fileNames?.length ? { resumeExecutionFileNames: fileNames } : {}),
     } as ChatRequest
 
     if (userInput) {
@@ -575,12 +576,14 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         assistantId: lastHistoryItem.assistantId,
         assistant: lastHistoryItem.assistant,
         executionId: null,
+        ...(fileNames?.length ? { fileNames } : {}),
       }
       chat.history.push([newHistoryItem])
       const newHistoryIndex = chat.history.length - 1
       return chatGenerationStore._sendRequest(chat, newHistoryIndex, 0, data)
     }
 
+    if (fileNames?.length) lastHistoryItem.fileNames = fileNames
     lastHistoryItem.inProgress = true
     return chatGenerationStore._sendRequest(chat, lastHistoryIndex, lastMessageIndex, data)
   },
@@ -847,11 +850,18 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
 
     if (data.resumeExecution) {
+      const hasInput = !!data.resumeExecutionInput
+      const hasFiles = !!data.resumeExecutionFileNames?.length
+      const requestData =
+        hasInput || hasFiles
+          ? {
+              ...(hasInput ? { user_input: data.resumeExecutionInput } : {}),
+              ...(hasFiles ? { file_names: data.resumeExecutionFileNames } : {}),
+            }
+          : undefined
       return {
         endpoint: `v1/workflows/${data.workflowId}/executions/${data.executionId}/resume?stream=true`,
-        requestData: data.resumeExecutionInput
-          ? { user_input: data.resumeExecutionInput }
-          : undefined,
+        requestData,
         method: 'PUT',
       }
     }

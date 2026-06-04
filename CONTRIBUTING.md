@@ -99,6 +99,99 @@ npm run lint && npm test
 
 See [CLAUDE.md](./CLAUDE.md) for the comprehensive development guide.
 
+## AI-Assisted Development
+
+This project supports AI-assisted development via the [SDLC Factory](https://gitbud.epam.com/epm-cdme/codemie-public-skills) plugin for Claude Code. Three workflows are available depending on task size and how much control you want to keep.
+
+### Prerequisites
+
+```bash
+# Install required plugins once (in any Claude Code session)
+/plugin marketplace add obra/superpowers
+/plugin install superpowers
+/plugin marketplace add https://gitbud.epam.com/epm-cdme/codemie-public-skills.git
+/plugin install sdlc-factory@sdlc-factory
+```
+
+### Option 1 — `sdlc-task` (small tasks, XS/S/M)
+
+Best for: single-file changes, focused refactors, small features you have already classified as small.
+Claude completes all steps inline without stopping — spec → plan → TDD → code review → QA gates.
+
+```
+/sdlc-task EPMCDME-1234
+/sdlc-task "add email validation to the signup form"
+```
+
+When Claude finishes, create the MR:
+
+```
+/mr-creator
+```
+
+Typical duration: 5–15 minutes.
+
+### Option 2 — `sdlc-start` (larger tasks, you stay in control)
+
+Best for: production work, brownfield changes, anything where you want to approve each step.
+Claude stops at every gate and asks for your confirmation — requirements → spec → plan → code → QA.
+
+```
+/sdlc-start EPMCDME-1234
+/sdlc-start "add SAML SSO provider with admin onboarding flow"
+```
+
+When Claude reports "branch ready", create the MR:
+
+```
+/mr-creator
+```
+
+### Option 3 — `sdlc-autonomous` (larger tasks, minimal interruptions)
+
+Best for: well-scoped tickets and greenfield work where you want low-touch automation.
+AI stand-in agents resolve gates on your behalf. You are only prompted if an agent finds a security issue, a breaking change, or is not confident in a decision.
+
+```
+/sdlc-autonomous EPMCDME-1234
+/sdlc-autonomous "refactor the logger to use structured fields"
+```
+
+When Claude reports "branch ready", create the MR:
+
+```
+/mr-creator
+```
+
+### Which option to choose
+
+| Situation | Use |
+|-----------|-----|
+| Small, clearly scoped change (1–3 files) | `sdlc-task` |
+| Larger feature, want to review each step | `sdlc-start` |
+| Larger feature, want minimal interruptions | `sdlc-autonomous` |
+| First time using SDLC Factory in this repo | Run `/knowledge-foundation` first, then `sdlc-start` |
+
+### Keeping things up to date
+
+**Plugin updates** — when a new version of sdlc-factory ships:
+```
+/plugin update sdlc-factory@sdlc-factory
+```
+Restart your Claude Code session afterwards.
+
+**Guide updates** — after significant structural changes to the codebase (new store, architecture refactor, new library that affects patterns). Run in the project directory before merging:
+```
+/knowledge-harvester
+```
+Not needed for regular feature work.
+
+### First-time setup for this repository
+
+The `.ai-run/guides/` foundation is already in place. If you clone the repo fresh, no additional setup is required — just install the plugins above and start with `sdlc-start` or `sdlc-task`.
+
+---
+
 ## Reporting Issues
 
 Please use the [issue tracker](../../issues) to report bugs or request features. Include:

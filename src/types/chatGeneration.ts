@@ -77,6 +77,7 @@ export interface ChatRequest {
   enable_code_interpreter?: boolean | null
   resumeExecution?: boolean
   resumeExecutionInput?: string
+  resumeExecutionFileNames?: string[]
   executionId?: string
   workflowId?: string
 }
