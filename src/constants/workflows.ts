@@ -106,3 +106,5 @@ states:
 `
 
 export const WORKFLOW_VISUAL_EDITOR_FLAG = 'visualWorkflowEditor'
+
+export const WORKFLOW_STATE_EVENT_INTERRUPTED = 'state_interrupted'

@@ -29,7 +29,7 @@ import toaster from '@/utils/toaster'
 
 interface EditOutputFormProps {
   fetchOutput: () => Promise<string | null>
-  updateOutput: (output: string) => Promise<{ message: string }>
+  updateOutput: (output: string) => Promise<{ message: string } | void>
   onCancel: () => void
   onUpdate: () => void
 }
@@ -89,7 +89,7 @@ const EditOutputForm: FC<EditOutputFormProps> = ({
     setSaving(true)
     try {
       const response = await updateOutput(data.output)
-      toaster.info(response.message)
+      if (response?.message) toaster.info(response.message)
       onUpdate()
     } catch (error) {
       console.error('Error updating output:', error)

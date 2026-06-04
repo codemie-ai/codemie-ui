@@ -21,7 +21,6 @@ import Button from '@/components/Button'
 import Popup from '@/components/Popup'
 import { ButtonType } from '@/constants'
 import { chatGenerationStore } from '@/store/chatGeneration'
-import { chatsStore } from '@/store/chats'
 import toaster from '@/utils/toaster'
 
 import ChatEditOutputForm from './ChatEditOutputForm'
@@ -41,7 +40,6 @@ const ChatControls: FC<ChatControlsProps> = ({ chatId }) => {
   const closeEditOutputPopup = () => setPopupVisible(false)
 
   const handleUpdate = () => {
-    chatsStore.getChat(chatId)
     closeEditOutputPopup()
   }
 

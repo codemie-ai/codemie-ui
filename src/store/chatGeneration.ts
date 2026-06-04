@@ -16,6 +16,7 @@
 import { proxy, ref } from 'valtio'
 
 import { ROLE_USER } from '@/constants'
+import { WORKFLOW_STATE_EVENT_INTERRUPTED, WORKFLOW_STATUSES } from '@/constants/workflows'
 import { ChatRequest, HistoryMessage, ChatGenerationOptions } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
 import { Conversation, ChatMessage, Thought } from '@/types/entity/conversation'
@@ -67,7 +68,7 @@ interface ChatGenerationStoreType {
   stopChatGeneration: (chatId: string) => void
   resumeWorkflowExecution: (userInput?: string) => Promise<void>
   abortWorkflowChat: (chatId: string) => Promise<void>
-  updateWorkflowChatOutput: (chatId: string, output: string) => Promise<void>
+  updateWorkflowChatOutput: (chatId: string, output: string) => Promise<{ message: string } | void>
   getAuthenticatingPromptIds: (chatId: string) => string[]
   initiatePromptAuth: (
     chatId: string,
@@ -608,33 +609,36 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
   },
 
-  async updateWorkflowChatOutput(chatId, output) {
+  async updateWorkflowChatOutput(_chatId, output) {
+    const chat = chatsStore.currentChat
+    if (!chat) throw new Error('No current chat')
+
+    const lastMessage = chat.history.at(-1)?.at(-1)
+    const workflowId = lastMessage?.assistantId
+    const executionId = lastMessage?.executionId
+
+    if (!workflowId || !executionId || !lastMessage) {
+      throw new Error('No active execution found for this message')
+    }
+
     try {
-      const chat = chatsStore.currentChat
-      if (!chat) return
-
-      const lastMessage = chat.history.at(-1)?.at(-1)
-      const workflowId = lastMessage?.assistantId
-      const executionId = lastMessage?.executionId
-
-      if (!workflowId || !executionId) return
-
-      const interruptedThought = lastMessage?.thoughts?.find((t: any) => t.interrupted)
-      if (!interruptedThought) return
-
       const states = await workflowExecutionsStore.getExecutionStates(workflowId, executionId)
-      const stateId = states?.find((s) => s.name === interruptedThought.author_name)?.id
-      if (!stateId) return
+      const interruptedState = states?.find((s) => s.status === WORKFLOW_STATUSES.INTERRUPTED)
+      if (!interruptedState) {
+        throw new Error('No interrupted state found')
+      }
 
-      await workflowExecutionsStore.updateWorkflowExecutionStateOutput(
+      const result = await workflowExecutionsStore.updateWorkflowExecutionStateOutput(
         workflowId,
         executionId,
-        stateId,
+        interruptedState.id,
         output
       )
-      await chatsStore.getChat(chatId)
+
+      lastMessage.response = output
+
+      return result
     } catch (error) {
-      toaster.error('Failed to update chat output')
       console.error('Failed to update chat output:', error)
       throw error
     }
@@ -899,13 +903,22 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       historyItem.response = response.generated
       historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
       historyItem.debug = response.debug
+    } else if (response?.capturedStreamText) {
+      historyItem.response = response.capturedStreamText
+      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
     }
 
     historyItem.inProgress = false
     historyItem.stream = null
     chatGenerationStore._finishThoughts(historyItem)
 
-    if (chat.isWorkflow) chatsStore.refreshWorkflowExecutionIds(chat.id).catch(console.error)
+    if (chat.isWorkflow) {
+      if (response?.workflow_execution_id) {
+        historyItem.executionId = response.workflow_execution_id
+      }
+      await chatsStore.refreshWorkflowExecutionIds(chat.id).catch(console.error)
+      chat.isInterrupted = response?.workflow_state?.event_type === WORKFLOW_STATE_EVENT_INTERRUPTED
+    }
   },
 
   async _handleGenerationStream(
@@ -989,9 +1002,14 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         historyItem.stream?.push(chunk.generated_chunk ?? '')
 
         if (chunk.last) {
+          const streamRef = historyItem.stream as Stream | null
+          const capturedStreamText = (streamRef?.stream ?? '') + (streamRef?.streamBuffer ?? '')
           historyItem.stream?.finish()
           historyItem.inProgress = false
-          return { finalChunk: chunk, incompleteChunk: null }
+          return {
+            finalChunk: capturedStreamText ? { ...chunk, capturedStreamText } : chunk,
+            incompleteChunk: null,
+          }
         }
       }
     }

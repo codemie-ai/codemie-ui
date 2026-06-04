@@ -221,7 +221,9 @@ export const chatsStore = proxy<ChatsStoreType>({
         const conversation = existingChat.history[historyIndex]
         if (conversation && conversation[messageIndex]) {
           conversation[messageIndex].executionId = message.executionId
-          conversation[messageIndex].thoughts = message.thoughts
+          if (message.thoughts?.length) {
+            conversation[messageIndex].thoughts = message.thoughts
+          }
         }
       })
     })
