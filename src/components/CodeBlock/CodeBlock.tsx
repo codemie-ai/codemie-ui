@@ -19,11 +19,13 @@ import { FC, ReactNode, useEffect, useMemo, useState } from 'react'
 
 import CopySvg from '@/assets/icons/copy.svg?react'
 import DownloadSvg from '@/assets/icons/download.svg?react'
+import ExpandSvg from '@/assets/icons/expand.svg?react'
 import EyeSvg from '@/assets/icons/view.svg?react'
 import toaster from '@/utils/toaster'
 
 import { cn, copyToClipboard } from '../../utils/utils'
 import Button from '../Button'
+import CodeBlockExpandPopup from './CodeBlockExpandPopup'
 import { downloadCodeAsFile, FileExtension } from './fileExtensions'
 import HtmlPreviewPopup from './HtmlPreviewPopup'
 import { unSanitizeMessage } from '../markdown/Markdown.utils'
@@ -41,6 +43,8 @@ interface CodeBlockProps {
   contentClassName?: string
   headerActionsLast?: boolean
   headerActionsTemplate?: ReactNode
+  expandable?: boolean
+  expandTitle?: string
 }
 
 const CodeBlock: FC<CodeBlockProps> = ({
@@ -54,8 +58,11 @@ const CodeBlock: FC<CodeBlockProps> = ({
   contentClassName,
   headerActionsLast,
   headerActionsTemplate,
+  expandable,
+  expandTitle,
 }) => {
   const [isHtmlPopupVisible, setIsHtmlPopupVisible] = useState(false)
+  const [isExpandPopupVisible, setIsExpandPopupVisible] = useState(false)
 
   const isHTML = useMemo(() => language === 'html' || HTML_REGEX.exec(text), [language, text])
 
@@ -83,12 +90,26 @@ const CodeBlock: FC<CodeBlockProps> = ({
       <div
         className={cn(
           'flex justify-between code-block-header items-center gap-x-4 gap-y-2 flex-wrap py-2 !pl-4 !pr-2 !m-0 bg-surface-base-tertiary shadow-block border border-border-specific-panel-outline rounded-t-lg',
+          expandable && 'code-block-header--has-expand',
           headerClassName
         )}
       >
         <p className="text-sm">{title ?? language.toLowerCase()}</p>
 
         <div className="flex flex-wrap gap-2">
+          {expandable && (
+            <Button
+              variant="secondary"
+              className="!px-2"
+              aria-label="Expand"
+              data-tooltip-id="react-tooltip"
+              data-tooltip-content="Expand"
+              onClick={() => setIsExpandPopupVisible(true)}
+            >
+              <ExpandSvg /> <span className="code-block-header-btn-label">Expand</span>
+            </Button>
+          )}
+
           {isHTML && (
             <Button
               variant="secondary"
@@ -142,6 +163,18 @@ const CodeBlock: FC<CodeBlockProps> = ({
         isVisible={isHtmlPopupVisible}
         onHide={() => setIsHtmlPopupVisible(!isHtmlPopupVisible)}
       />
+
+      {expandable && (
+        <CodeBlockExpandPopup
+          isVisible={isExpandPopupVisible}
+          onHide={() => setIsExpandPopupVisible(false)}
+          header={expandTitle}
+          title={title}
+          language={language}
+          text={text}
+          downloadFilename={downloadFilename}
+        />
+      )}
     </div>
   )
 }

@@ -107,4 +107,12 @@
       display: none;
     }
   }
+
+  &--has-expand {
+    @container (max-width: 22.5rem) {
+      .code-block-header-btn-label {
+        display: none;
+      }
+    }
+  }
 }

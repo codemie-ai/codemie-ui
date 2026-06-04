@@ -65,9 +65,7 @@ const WorkflowExecutionConfiguration: FC<WorkflowExecutionConfigurationProps> = 
                 workflow={workflow}
                 onConfigureClick={() => setIsEditFormVisible(true)}
               />
-              {execution && (
-                <WorkflowExecutionConfigYaml workflow={workflow} execution={execution} />
-              )}
+              {execution && <WorkflowExecutionConfigYaml workflow={workflow} />}
             </div>
           )}
         </div>

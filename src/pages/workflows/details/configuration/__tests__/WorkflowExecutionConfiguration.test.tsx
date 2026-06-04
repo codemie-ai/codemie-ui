@@ -91,10 +91,9 @@ vi.mock('../WorkflowExecutionConfigDetails', () => ({
 }))
 
 vi.mock('../WorkflowExecutionConfigYaml', () => ({
-  default: ({ workflow, execution }: any) => (
+  default: ({ workflow }: any) => (
     <div data-testid="config-yaml">
       <div data-testid="yaml-workflow-id">{workflow.id}</div>
-      <div data-testid="yaml-execution-id">{execution.execution_id}</div>
       <button>Edit</button>
     </div>
   ),
@@ -210,7 +209,6 @@ describe('WorkflowExecutionConfiguration', () => {
 
     expect(screen.getByTestId('config-yaml')).toBeInTheDocument()
     expect(screen.getByTestId('yaml-workflow-id')).toHaveTextContent('workflow-123')
-    expect(screen.getByTestId('yaml-execution-id')).toHaveTextContent('exec-456')
   })
 
   it('does not render WorkflowExecutionConfigYaml when execution is null', () => {
