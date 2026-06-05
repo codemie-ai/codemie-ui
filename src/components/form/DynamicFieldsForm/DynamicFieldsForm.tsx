@@ -24,7 +24,12 @@ import Input from '@/components/form/Input'
 import InputArray from '@/components/form/InputArray'
 import MultiSelect from '@/components/form/MultiSelect'
 import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowContext'
-import { FIELD_TYPES, FieldType, DynamicFormFieldSchema } from '@/types/dynamicForm'
+import {
+  FIELD_TYPES,
+  FieldType,
+  DynamicFormFieldSchema,
+  CODE_FIELD_NAME,
+} from '@/types/dynamicForm'
 import { humanize } from '@/utils/helpers'
 
 import { TextareaRef } from '../Textarea'
@@ -96,7 +101,10 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
 
     const error = errors[fieldName] || issueField?.fieldError
 
-    switch (type) {
+    const effectiveType =
+      type === FIELD_TYPES.STRING && fieldName === CODE_FIELD_NAME ? FIELD_TYPES.TEXT : type
+
+    switch (effectiveType) {
       case FIELD_TYPES.BOOLEAN:
         return (
           <Checkbox

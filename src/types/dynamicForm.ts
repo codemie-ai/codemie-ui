@@ -28,6 +28,8 @@ export const FIELD_TYPES = {
 
 export type FieldType = (typeof FIELD_TYPES)[keyof typeof FIELD_TYPES]
 
+export const CODE_FIELD_NAME = 'code'
+
 export interface DynamicFormFieldSchema {
   type: FieldType
   required: boolean
