@@ -9,7 +9,7 @@
 |---|---|---|
 | `src/components/` | medium-high | Most reusable components have unit tests |
 | `src/pages/assistants/` | medium | 29 unit tests; no integration tests |
-| `src/pages/chat/` | medium | 21 unit tests; no integration tests |
+| `src/pages/chat/` | medium | 23 unit tests (+2 ChatPrompt stop-generation, EPMCDME-12677); no integration tests |
 | `src/pages/workflows/` | medium | 26 unit tests (node rendering); no integration tests |
 | `src/pages/analytics/` | medium | 11 unit tests (form state hooks); no integration tests |
 | `src/pages/settings/` | low-medium | 6 unit tests; 2 integration tests (Providers pages) |

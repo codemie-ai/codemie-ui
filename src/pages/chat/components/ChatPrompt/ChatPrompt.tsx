@@ -97,7 +97,7 @@ const ChatPrompt: FC = () => {
     onFilePaste: fileUpload.addFiles,
   })
 
-  const isInProgress = currentChat?.history.at(-1)?.at(-1)?.inProgress
+  const isInProgress = currentChat?.history.flat().some((m) => m.inProgress)
   const isInterrupted = currentChat?.isInterrupted
 
   let promptMode: PromptMode = PROMPT_MODES.DEFAULT

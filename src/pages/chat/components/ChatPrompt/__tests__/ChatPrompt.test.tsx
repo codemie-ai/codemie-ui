@@ -14,7 +14,7 @@
 //
 
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import ChatPrompt from '../ChatPrompt'
 
@@ -89,6 +89,63 @@ describe('ChatPrompt', () => {
 
       expect(mockChatGenerationStore.stopChatGeneration).toHaveBeenCalledOnce()
       expect(mockChatGenerationStore.stopChatGeneration).toHaveBeenCalledWith('chat-1')
+    })
+  })
+
+  describe('stop button hidden when history is empty', () => {
+    beforeEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+    })
+
+    afterEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [[{ inProgress: true }]],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+    })
+
+    it('does not show stop generation button when history is empty', () => {
+      render(<ChatPrompt />)
+
+      expect(screen.queryByRole('button', { name: /stop generation/i })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('stop button visible when only a non-last history group is in-progress', () => {
+    beforeEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [[{ inProgress: true }], [{ inProgress: false }], [{ inProgress: false }]],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+    })
+
+    afterEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [[{ inProgress: true }]],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+    })
+
+    it('shows stop generation button when inProgress is on the first group, not the last', () => {
+      render(<ChatPrompt />)
+
+      expect(screen.getByRole('button', { name: /stop generation/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /send/i })).not.toBeInTheDocument()
     })
   })
 })
