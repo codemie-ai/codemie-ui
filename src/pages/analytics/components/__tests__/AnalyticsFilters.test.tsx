@@ -22,14 +22,32 @@ import { TimePeriod } from '@/types/analytics'
 import { DEFAULT_FILTERS } from '../../constants'
 import AnalyticsFilters from '../AnalyticsFilters'
 
-vi.mock('@/store/user', () => ({
-  userStore: {
+const { mockStore } = vi.hoisted(() => ({
+  mockStore: {
+    user: null as { isAdmin: boolean } | null,
     getAnalyticsUsers: vi.fn(),
   },
 }))
 
+vi.mock('@/store/user', () => ({ userStore: mockStore }))
+
 vi.mock('@/components/ProjectSelector', () => ({
   default: () => <div data-testid="project-selector">ProjectSelector</div>,
+}))
+
+vi.mock('valtio', () => ({
+  proxy: (obj: unknown) => obj,
+  useSnapshot: vi.fn((store: unknown) => store),
+  subscribe: vi.fn(),
+}))
+
+let capturedOnSearchChange: ((term: string) => void) | undefined
+
+vi.mock('../AnalyticsUserFilter', () => ({
+  default: ({ onSearchChange }: { onSearchChange?: (term: string) => void }) => {
+    capturedOnSearchChange = onSearchChange
+    return <div data-testid="user-filter" />
+  },
 }))
 
 describe('AnalyticsFilters - Race Condition Fix', () => {
@@ -39,6 +57,7 @@ describe('AnalyticsFilters - Race Condition Fix', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockStore.user = null
   })
 
   afterEach(() => {
@@ -165,5 +184,96 @@ describe('AnalyticsFilters - Race Condition Fix', () => {
       'Error loading users:',
       expect.any(DOMException)
     )
+  })
+})
+
+describe('AnalyticsFilters - Admin Server-Side Search', () => {
+  const mockOnFiltersChange = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    capturedOnSearchChange = undefined
+    mockStore.user = { isAdmin: true }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(window as any)._env_ = { VITE_ENABLE_USER_MANAGEMENT: 'true' }
+    vi.mocked(userStore.getAnalyticsUsers).mockResolvedValue([])
+  })
+
+  afterEach(() => {
+    mockStore.user = null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (window as any)._env_
+    vi.useRealTimers()
+  })
+
+  it('should not call API on initial render when admin (empty list until search)', async () => {
+    render(<AnalyticsFilters filters={DEFAULT_FILTERS} onFiltersChange={mockOnFiltersChange} />)
+
+    await waitFor(() => {
+      expect(capturedOnSearchChange).toBeDefined()
+    })
+
+    expect(vi.mocked(userStore.getAnalyticsUsers)).not.toHaveBeenCalled()
+  })
+
+  it('should pass search term to getAnalyticsUsers when admin types 2+ chars', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+
+    render(<AnalyticsFilters filters={DEFAULT_FILTERS} onFiltersChange={mockOnFiltersChange} />)
+
+    await waitFor(() => {
+      expect(capturedOnSearchChange).toBeDefined()
+    })
+
+    capturedOnSearchChange!('ab')
+
+    await vi.advanceTimersByTimeAsync(600)
+
+    await waitFor(() => {
+      expect(vi.mocked(userStore.getAnalyticsUsers)).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'ab' }),
+        expect.anything()
+      )
+    })
+  })
+
+  it('should not call API when admin types less than 2 chars', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+
+    render(<AnalyticsFilters filters={DEFAULT_FILTERS} onFiltersChange={mockOnFiltersChange} />)
+
+    await waitFor(() => {
+      expect(capturedOnSearchChange).toBeDefined()
+    })
+
+    capturedOnSearchChange!('a')
+
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(vi.mocked(userStore.getAnalyticsUsers)).not.toHaveBeenCalled()
+  })
+
+  it('should clear user options and not call API when admin clears the search', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+
+    render(<AnalyticsFilters filters={DEFAULT_FILTERS} onFiltersChange={mockOnFiltersChange} />)
+
+    await waitFor(() => {
+      expect(capturedOnSearchChange).toBeDefined()
+    })
+
+    // Search first
+    capturedOnSearchChange!('ab')
+    await vi.advanceTimersByTimeAsync(600)
+    await waitFor(() => expect(vi.mocked(userStore.getAnalyticsUsers)).toHaveBeenCalledTimes(1))
+
+    vi.mocked(userStore.getAnalyticsUsers).mockClear()
+
+    // Clear search
+    capturedOnSearchChange!('')
+    await vi.advanceTimersByTimeAsync(600)
+
+    // loadUsers should be called immediately on empty, but it returns early (no API call)
+    expect(vi.mocked(userStore.getAnalyticsUsers)).not.toHaveBeenCalled()
   })
 })

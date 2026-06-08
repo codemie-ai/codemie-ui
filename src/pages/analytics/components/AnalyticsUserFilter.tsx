@@ -26,10 +26,18 @@ interface AnalyticsUserFilterProps {
   value: string[]
   onChange: (value: string[]) => void
   userOptions: Array<{ label: string; value: string }>
-  isLoadingOptions: boolean
+  isLoadingOptions?: boolean
+  isAdmin?: boolean
+  onSearchChange?: (term: string) => void
 }
 
-const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({ value, onChange, userOptions }) => {
+const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
+  value,
+  onChange,
+  userOptions,
+  isAdmin = false,
+  onSearchChange = () => {},
+}) => {
   const [meChecked, setMeChecked] = useState(false)
   const currentUser = userStore.user
   const [currentUserId, setCurrentUserId] = useState<string>('')
@@ -152,7 +160,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({ value, onChange, us
         onChange={handleUsersChange}
         placeholder="Users"
         fullWidth
-        onFilter={() => {}}
+        onFilter={isAdmin ? onSearchChange : () => {}}
         filterPlaceholder="Search users"
         showCheckbox
         hasVirtualScroll

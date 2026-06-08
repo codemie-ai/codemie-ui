@@ -15,6 +15,7 @@
 
 import { debounce } from 'lodash'
 import { FC, useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useSnapshot } from 'valtio'
 
 import CrossIcon from '@/assets/icons/cross.svg?react'
 import Button from '@/components/Button'
@@ -23,6 +24,7 @@ import DatePicker from '@/components/form/DatePicker'
 import Select from '@/components/form/Select'
 import ProjectSelector from '@/components/ProjectSelector'
 import { useAbortController } from '@/hooks/useAbortController'
+import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { userStore } from '@/store/user'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
@@ -37,9 +39,15 @@ interface AnalyticsFiltersProps {
 }
 
 const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange }) => {
+  const { user } = useSnapshot(userStore)
+  const isAdmin = user?.isAdmin ?? false
+  const isAdminSearch = isAdmin && window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
   const [userOptions, setUserOptions] = useState<Array<{ label: string; value: string }>>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   const [localFilters, setLocalFilters] = useState<AnalyticsQueryParams>(filters)
+  const [userSearchTerm, setUserSearchTerm] = useState('')
+  const userSearchTermRef = useRef('')
+  const loadUsersRef = useRef<() => Promise<void>>(() => Promise.resolve())
   const onFiltersChangeRef = useRef(onFiltersChange)
   const { execute } = useAbortController()
 
@@ -85,10 +93,20 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
   ])
 
   const loadUsers = useCallback(async () => {
+    if (isAdminSearch && !userSearchTermRef.current) {
+      setUserOptions([])
+      setIsLoadingUsers(false)
+      return
+    }
     setIsLoadingUsers(true)
     try {
       const options = await execute<Array<{ label: string; value: string }>>((signal) =>
-        userStore.getAnalyticsUsers(userListFilters, signal)
+        userStore.getAnalyticsUsers(
+          isAdminSearch
+            ? { ...userListFilters, search: userSearchTermRef.current }
+            : userListFilters,
+          signal
+        )
       )
 
       if (options === null) return
@@ -100,11 +118,31 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
     } finally {
       setIsLoadingUsers(false)
     }
-  }, [userListFilters, execute])
+  }, [userListFilters, execute, isAdminSearch])
+
+  useEffect(() => {
+    loadUsersRef.current = loadUsers
+  }, [loadUsers])
 
   useEffect(() => {
     loadUsers().catch(console.error)
   }, [loadUsers])
+
+  const handleSearchChange = useCallback((term: string) => {
+    userSearchTermRef.current = term
+    setUserSearchTerm(term)
+    if (term === '') {
+      loadUsersRef.current().catch(console.error)
+    }
+  }, [])
+
+  const debouncedLoadUsers = useCallback(() => {
+    if (userSearchTermRef.current.length >= 2) {
+      loadUsersRef.current().catch(console.error)
+    }
+  }, [])
+
+  useDebouncedApply(userSearchTerm, 500, debouncedLoadUsers)
 
   const handleTimePeriodChange = (e: DropdownChangeEvent) => {
     updateFilters({
@@ -227,6 +265,8 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
             onChange={handleUsersChange}
             userOptions={userOptions}
             isLoadingOptions={isLoadingUsers}
+            isAdmin={isAdminSearch}
+            onSearchChange={handleSearchChange}
           />
         </FilterAccordionItem>
       </div>
