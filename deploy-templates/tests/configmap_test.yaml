@@ -1,0 +1,108 @@
+suite: configmap tests
+templates:
+  - templates/configmap.yaml
+tests:
+  - it: should render VITE_API_URL with viteApiUrl value
+    set:
+      viteApiUrl: https://test.example.com/api
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_API_URL: "https://test\.example\.com/api"'
+
+  - it: should render VITE_ENV with viteEnv value
+    set:
+      viteEnv: staging
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_ENV: "staging"'
+
+  - it: should render VITE_APP_VERSION with image.tag value
+    set:
+      image:
+        tag: 1.2.3
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_APP_VERSION: "1\.2\.3"'
+
+  - it: should render VITE_ENABLE_USER_MANAGEMENT with viteEnableUserManagement value
+    set:
+      viteEnableUserManagement: true
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_ENABLE_USER_MANAGEMENT: "true"'
+
+  - it: should render VITE_ENABLE_BUDGET_MANAGEMENT with viteEnableBudgetManagement value
+    set:
+      viteEnableBudgetManagement: true
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_ENABLE_BUDGET_MANAGEMENT: "true"'
+
+  - it: should render VITE_IDP_PROVIDER with viteIdpProvider value
+    set:
+      viteIdpProvider: local
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_IDP_PROVIDER: "local"'
+
+  - it: should not render VITE_BANNER_MESSAGE when viteBannerMessage is not set
+    asserts:
+      - notMatchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_BANNER_MESSAGE'
+
+  - it: should render VITE_BANNER_MESSAGE when viteBannerMessage is set
+    set:
+      viteBannerMessage: "hello"
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_BANNER_MESSAGE: "hello"'
+
+  - it: should not render VITE_MCP_AUTH_ORIGIN when viteMcpAuthOrigin is not set
+    asserts:
+      - notMatchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_MCP_AUTH_ORIGIN'
+
+  - it: should render VITE_MCP_AUTH_ORIGIN when viteMcpAuthOrigin is set
+    set:
+      viteMcpAuthOrigin: "https://auth.example.com"
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_MCP_AUTH_ORIGIN: "https://auth\.example\.com"'
+
+  - it: should not render extraConfig keys when extraConfig is empty
+    asserts:
+      - notMatchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_TEST'
+
+  - it: should render single extraConfig entry
+    set:
+      extraConfig:
+        VITE_TEST_FLAG: "true"
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_TEST_FLAG: "true"'
+
+  - it: should render multiple extraConfig
+    set:
+      extraConfig:
+        VITE_FOO: "bar"
+        VITE_BAZ: "qux"
+    asserts:
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_FOO: "bar"'
+      - matchRegex:
+          path: data["config.js"]
+          pattern: 'VITE_BAZ: "qux"'

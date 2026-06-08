@@ -20,4 +20,7 @@ data:
       {{- if .Values.viteMcpAuthOrigin }}
       VITE_MCP_AUTH_ORIGIN: "{{ .Values.viteMcpAuthOrigin }}",
       {{- end }}
+      {{- range $key, $val := .Values.extraConfig }}
+      {{ $key }}: "{{ $val }}",
+      {{- end }}
     };

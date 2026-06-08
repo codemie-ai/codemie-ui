@@ -141,3 +141,7 @@ tolerations: []
 
 # -- Assign affinity rules to the deployment.
 affinity: {}
+
+# -- Extra config keys injected into window._env_ via ConfigMap.
+# Keys should follow the VITE_ naming convention.
+extraConfig: {}

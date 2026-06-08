@@ -21,6 +21,7 @@ A Helm chart for AI/Run UI
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Assign affinity rules to the deployment. |
+| extraConfig | object | `{}` | Extra config keys injected into window._env_ via ConfigMap. Keys should follow the VITE_ naming convention. |
 | fullnameOverride | string | `""` |  |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the AI/Run UI. |
 | image.repository | string | `""` | Repository to use for the AI/Run UI. |
