@@ -45,15 +45,22 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
   const [userOptions, setUserOptions] = useState<Array<{ label: string; value: string }>>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   const [localFilters, setLocalFilters] = useState<AnalyticsQueryParams>(filters)
+  const hasSelectedProjects = (localFilters.projects?.length ?? 0) > 0
+  const isAdminPgSearch = isAdminSearch && !hasSelectedProjects
   const [userSearchTerm, setUserSearchTerm] = useState('')
   const userSearchTermRef = useRef('')
   const loadUsersRef = useRef<() => Promise<void>>(() => Promise.resolve())
+  const currentUserRef = useRef(user)
   const onFiltersChangeRef = useRef(onFiltersChange)
   const { execute } = useAbortController()
 
   useEffect(() => {
     onFiltersChangeRef.current = onFiltersChange
   }, [onFiltersChange])
+
+  useEffect(() => {
+    currentUserRef.current = user
+  }, [user])
 
   const debouncedFiltersChange = useMemo(
     () =>
@@ -93,18 +100,22 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
   ])
 
   const loadUsers = useCallback(async () => {
-    if (isAdminSearch && !userSearchTermRef.current) {
+    const searchTerm = userSearchTermRef.current
+    const seedTerm =
+      currentUserRef.current?.email ??
+      currentUserRef.current?.name ??
+      currentUserRef.current?.username
+    if (isAdminPgSearch && !searchTerm && !seedTerm) {
       setUserOptions([])
       setIsLoadingUsers(false)
       return
     }
     setIsLoadingUsers(true)
     try {
+      const effectiveTerm = isAdminPgSearch && !searchTerm ? seedTerm : searchTerm
       const options = await execute<Array<{ label: string; value: string }>>((signal) =>
         userStore.getAnalyticsUsers(
-          isAdminSearch
-            ? { ...userListFilters, search: userSearchTermRef.current }
-            : userListFilters,
+          isAdminPgSearch ? { ...userListFilters, search: effectiveTerm } : userListFilters,
           signal
         )
       )
@@ -118,7 +129,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
     } finally {
       setIsLoadingUsers(false)
     }
-  }, [userListFilters, execute, isAdminSearch])
+  }, [userListFilters, execute, isAdminPgSearch])
 
   useEffect(() => {
     loadUsersRef.current = loadUsers
@@ -127,6 +138,11 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
   useEffect(() => {
     loadUsers().catch(console.error)
   }, [loadUsers])
+
+  useEffect(() => {
+    userSearchTermRef.current = ''
+    setUserSearchTerm('')
+  }, [hasSelectedProjects])
 
   const handleSearchChange = useCallback((term: string) => {
     userSearchTermRef.current = term
@@ -164,6 +180,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
     updateFilters({
       ...localFilters,
       projects: Array.isArray(value) ? value : [value],
+      users: [],
     })
   }
 
@@ -265,7 +282,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
             onChange={handleUsersChange}
             userOptions={userOptions}
             isLoadingOptions={isLoadingUsers}
-            isAdmin={isAdminSearch}
+            isAdmin={isAdminPgSearch}
             onSearchChange={handleSearchChange}
           />
         </FilterAccordionItem>

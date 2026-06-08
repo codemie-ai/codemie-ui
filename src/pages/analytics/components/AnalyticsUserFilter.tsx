@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useState, useEffect, useRef } from 'react'
+import { FC, useState, useEffect, useRef, useMemo } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import MultiSelect from '@/components/form/MultiSelect'
@@ -43,14 +43,18 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   const [currentUserId, setCurrentUserId] = useState<string>('')
 
   const prevCurrentUserIdRef = useRef<string>('')
+  const currentUserOptionRef = useRef<{ label: string; value: string } | null>(null)
 
   // Find current user ID from available options
   useEffect(() => {
-    if (!currentUser || userOptions.length === 0) {
+    if (!currentUser) {
       setCurrentUserId('')
       prevCurrentUserIdRef.current = ''
+      currentUserOptionRef.current = null
       return
     }
+
+    if (userOptions.length === 0) return
 
     // Try to match user by checking if any option value matches user properties
     const matchingOption = userOptions.find((option) => {
@@ -65,6 +69,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
     if (matchingOption) {
       const newUserId = matchingOption.value
       const prevUserId = prevCurrentUserIdRef.current
+      currentUserOptionRef.current = matchingOption
       setCurrentUserId(newUserId)
       prevCurrentUserIdRef.current = newUserId
 
@@ -72,10 +77,9 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
       if (meChecked && !value.includes(newUserId) && !prevUserId) {
         onChange([...value, newUserId])
       }
-    } else {
-      setCurrentUserId('')
-      prevCurrentUserIdRef.current = ''
     }
+    // Do not clear currentUserId when user isn't in current search results —
+    // once identified, the Me checkbox should stay enabled across searches.
   }, [currentUser, userOptions, meChecked, value, onChange])
 
   // Initialize checkbox state from incoming value (only on mount or when currentUserId first becomes available)
@@ -104,16 +108,51 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
     }
   }, [value, currentUserId, meChecked, userOptions])
 
+  // Accumulate option objects for selected users so they persist across search changes
+  const [stickyOptions, setStickyOptions] = useState<Map<string, { label: string; value: string }>>(
+    new Map()
+  )
+
+  useEffect(() => {
+    setStickyOptions((prev) => {
+      const next = new Map(prev)
+      userOptions.forEach((opt) => {
+        if (value.includes(opt.value)) next.set(opt.value, opt)
+      })
+      for (const id of next.keys()) {
+        if (!value.includes(id)) next.delete(id)
+      }
+      return next
+    })
+  }, [userOptions, value])
+
+  const mergedOptions = useMemo(() => {
+    const currentIds = new Set(userOptions.map((o) => o.value))
+    const extras = [...stickyOptions.values()].filter((o) => !currentIds.has(o.value))
+    return extras.length === 0 ? userOptions : [...userOptions, ...extras]
+  }, [userOptions, stickyOptions])
+
+  // Only show IDs that have a known option — prevents null labels for users
+  // whose options haven't been loaded in this session yet.
+  const displayValue = useMemo(() => {
+    const knownIds = new Set(mergedOptions.map((o) => o.value))
+    return value.filter((id) => knownIds.has(id))
+  }, [value, mergedOptions])
+
   const toggleCurrentUser = (checked: boolean) => {
     setMeChecked(checked)
 
     if (checked) {
-      // Only add current user if they exist in options (have data)
       if (currentUserId && !value.includes(currentUserId)) {
+        // Ensure the current user's option is in the sticky cache so it
+        // renders with a label even when they're not in the current search results.
+        const opt = currentUserOptionRef.current
+        if (opt) {
+          setStickyOptions((prev) => new Map(prev).set(currentUserId, opt))
+        }
         onChange([...value, currentUserId])
       }
     } else if (currentUserId) {
-      // Remove current user from selection
       onChange(value.filter((id) => id !== currentUserId))
     }
   }
@@ -121,9 +160,6 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   const handleUsersChange = (e: MultiSelectChangeEvent) => {
     onChange(e.value)
   }
-
-  // Filter value to only include users that exist in userOptions (for display)
-  const displayValue = value.filter((userId) => availableUserIds.has(userId))
 
   return (
     <div>
@@ -156,7 +192,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
       <MultiSelect
         id="users"
         value={displayValue}
-        options={userOptions}
+        options={mergedOptions}
         onChange={handleUsersChange}
         placeholder="Users"
         fullWidth

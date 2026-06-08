@@ -72,11 +72,12 @@ describe('AnalyticsUserFilter', () => {
       />
     )
 
-    // Bug: Me checkbox gets unchecked because validation effect removes user-123
-    // Expected: Me checkbox should stay checked but become disabled
+    // Once the current user has been identified, the Me checkbox stays
+    // checked AND enabled even when the user is absent from the current
+    // search results, so the user can still toggle it off.
     await waitFor(() => {
       expect(meCheckbox).toBeChecked()
-      expect(meCheckbox).toBeDisabled()
+      expect(meCheckbox).not.toBeDisabled()
     })
   })
 
@@ -126,7 +127,7 @@ describe('AnalyticsUserFilter', () => {
     expect(mockOnChange).toHaveBeenCalledWith(['user-456'])
   })
 
-  it('should re-enable Me checkbox when currentUserId returns to options', async () => {
+  it('should keep Me checkbox enabled across userOptions refresh cycles once identified', async () => {
     const options = [
       { label: 'Test User', value: 'user-123' },
       { label: 'Other User', value: 'user-456' },
@@ -157,7 +158,7 @@ describe('AnalyticsUserFilter', () => {
 
     await waitFor(() => {
       expect(meCheckbox).toBeChecked()
-      expect(meCheckbox).toBeDisabled()
+      expect(meCheckbox).not.toBeDisabled()
     })
 
     // Simulate removing project filter - current user returns
