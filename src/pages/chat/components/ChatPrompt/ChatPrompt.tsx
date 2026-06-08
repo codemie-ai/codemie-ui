@@ -213,7 +213,7 @@ const ChatPrompt: FC = () => {
                 'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated min-h-32 max-h-64 cursor-text'
               )}
             >
-              <div className={cn(isInProgress && 'opacity-60')}>
+              <div className={cn('flex flex-col grow min-h-0', isInProgress && 'opacity-60')}>
                 <Editor
                   ref={editorRef}
                   value={prompt}
