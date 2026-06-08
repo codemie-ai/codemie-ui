@@ -1,0 +1,121 @@
+// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+.terms-document {
+  width: 100%;
+  min-width: 0;
+  max-width: min(760px, 100%);
+
+  &__hero::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 4px;
+    content: "";
+    background: linear-gradient(90deg, #9e00ff 0%, #ec56ff 48%, #3974f6 100%);
+  }
+
+  &__hero-glow {
+    position: absolute;
+    right: -80px;
+    bottom: -100px;
+    width: 220px;
+    height: 220px;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(158, 0, 255, 0.22) 0, rgba(158, 0, 255, 0) 62%),
+      radial-gradient(circle, rgba(57, 116, 246, 0.18) 0, rgba(57, 116, 246, 0) 58%);
+    filter: blur(2px);
+  }
+
+  &__sections {
+    @apply flex flex-col gap-3;
+  }
+
+  &__section {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  &__markdown {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+
+    > *:first-child {
+      @apply mt-0;
+    }
+
+    > *:last-child {
+      @apply mb-0;
+    }
+
+    h2 {
+      @apply relative mt-0 mb-3 pl-4 text-base font-semibold leading-6 text-text-primary sm:text-lg sm:leading-7;
+
+      &::before {
+        position: absolute;
+        top: 0.25rem;
+        left: 0;
+        width: 3px;
+        height: 1.25rem;
+        content: "";
+        background: linear-gradient(180deg, #ec56ff 0%, #3974f6 100%);
+        border-radius: 9999px;
+      }
+
+      &:first-child {
+        @apply mt-0;
+      }
+    }
+
+    h3 {
+      @apply mt-5 mb-2 text-base font-semibold leading-6 text-text-primary;
+    }
+
+    p {
+      @apply mb-3 text-sm leading-6 text-text-primary;
+    }
+
+    ul,
+    ol {
+      @apply my-3 space-y-1.5 pl-6;
+    }
+
+    li {
+      @apply pl-1 text-sm leading-6 text-text-primary;
+    }
+
+    a {
+      @apply font-medium underline underline-offset-4;
+    }
+
+    blockquote {
+      @apply my-6 rounded-r-lg border-l-4 border-border-specific-panel-outline bg-surface-base-chat py-3 pr-4;
+    }
+
+    code:not(pre code) {
+      @apply rounded-md bg-surface-base-chat px-1.5 py-0.5 text-sm;
+    }
+
+    table {
+      @apply my-6 w-full table-auto overflow-hidden rounded-lg border border-border-structural text-sm;
+    }
+
+    th,
+    td {
+      @apply border-border-structural px-4 py-3 align-top;
+    }
+  }
+}

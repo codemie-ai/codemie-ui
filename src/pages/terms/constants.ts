@@ -11,31 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-export interface ConfigItem {
-  id: string
-  settings: {
-    enabled: boolean
-    availableForExternal?: boolean
-    description?: string
-    created_by?: string
-    icon_url?: string
-    type?: string
-    name?: string
-    url?: string
-    slug?: string
-    maxProjects?: number
-    content?: string
-  }
-}
-
-export interface ModelOption {
-  value: string
-  label: string
-  isDefault: boolean
-}
-
-export interface SpeechConfig {
-  [key: string]: any
-}
+export const TERMS_AND_CONDITIONS_CONFIG_ID = 'termsAndConditions'
+export const TERMS_AND_CONDITIONS_ROUTE = '/terms-and-conditions'

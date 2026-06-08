@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -125,6 +125,7 @@ describe('Navigation', () => {
         katas: '/katas',
         analytics: '/analytics',
         help: '/help',
+        'terms-and-conditions': '/terms-and-conditions',
       }
       return { fullPath: routes[path ?? name] ?? '/' }
     })
@@ -190,5 +191,12 @@ describe('Navigation', () => {
 
     expect(header).toBeInTheDocument()
     expect(header?.classList.contains('w-navbar')).toBe(true)
+  })
+
+  it('does not render Terms and Conditions in the sidebar', () => {
+    renderWithRouter(<Navigation />)
+
+    expect(screen.queryByRole('link', { name: 'Terms and Conditions' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Help' })).toBeInTheDocument()
   })
 })

@@ -43,6 +43,7 @@ const HelpItem: FC<HelpItemType> = ({
     <Link
       to={link}
       target={isExternal ? '_blank' : ''}
+      rel={isExternal ? 'noreferrer' : undefined}
       className="flex justify-between p-4 items-center border border-border-specific-panel-outline rounded-lg bg-surface-base-chat hover:bg-opacity-30 transition cursor-pointer hover:no-underline"
     >
       <div className="flex items-center gap-x-5 flex-1 min-w-0">
@@ -63,19 +64,10 @@ const HelpItem: FC<HelpItemType> = ({
           </p>
         </div>
       </div>
-      {isExternal ? (
-        <a href={link} target="_blank" rel="noreferrer" className="hover:no-underline">
-          <Button variant={ButtonType.SECONDARY} className="shrink-0">
-            <ExternalSvg />
-            {finalButtonText}
-          </Button>
-        </a>
-      ) : (
-        <Button variant={ButtonType.SECONDARY} className="shrink-0">
-          {type === 'chat' ? <ChatNewFilledSvg /> : <ExternalSvg />}
-          {finalButtonText}
-        </Button>
-      )}
+      <Button variant={ButtonType.SECONDARY} className="shrink-0">
+        {type === 'chat' && !isExternal ? <ChatNewFilledSvg /> : <ExternalSvg />}
+        {finalButtonText}
+      </Button>
     </Link>
   )
 }

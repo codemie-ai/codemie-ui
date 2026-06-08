@@ -18,6 +18,8 @@ export interface EnvConfig {
   VITE_API_URL: string
   VITE_APP_VERSION: string
   VITE_BANNER_MESSAGE: string
+  VITE_BANNER_LINK_LABEL?: string
+  VITE_BANNER_LINK_ROUTE?: string
   VITE_CAN_SWITCH_DESIGN: string
   VITE_SHOW_ALL_PROJECTS: string
   VITE_IS_EXTERNAL_LOGIN: string

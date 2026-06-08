@@ -32,6 +32,8 @@ import {
   ADDITIONAL_USER_MATERIALS,
   CONFIG_USER_SURVEY_KEY,
 } from '@/constants/common'
+import { TERMS_AND_CONDITIONS_ROUTE } from '@/pages/terms/constants'
+import { useTermsAndConditions } from '@/pages/terms/hooks/useTermsAndConditions'
 import { userStore, assistantsStore } from '@/store'
 import { appInfoStore } from '@/store/appInfo'
 import { getConfigItemSettings, isConfigItemEnabled } from '@/utils/settings'
@@ -60,6 +62,7 @@ const HelpPage: FC = () => {
   const { user } = useSnapshot(userStore)
   const { helpAssistants } = useSnapshot(assistantsStore)
   const { configs } = useSnapshot(appInfoStore) as typeof appInfoStore
+  const { isLoaded: isTermsLoaded, isEnabled: isTermsEnabled } = useTermsAndConditions()
 
   const [sections, setSections] = useState<HelpSectionType[]>([])
 
@@ -156,6 +159,26 @@ const HelpPage: FC = () => {
       items: learningResourcesItems,
     })
 
+    const policyItems: HelpItemType[] = []
+
+    if (isTermsLoaded && isTermsEnabled) {
+      policyItems.push({
+        name: 'Terms and Conditions',
+        description:
+          'Review the current platform terms, usage expectations, external exploration limits, data handling guidance, and AI-generated content responsibilities.',
+        type: 'link',
+        icon: PaperSvg,
+        link: TERMS_AND_CONDITIONS_ROUTE,
+        buttonText: 'Review Terms',
+      })
+    }
+
+    finalSections.push({
+      title: 'Platform Policies',
+      description: 'Understand the rules and responsibilities for using CodeMie.',
+      items: policyItems,
+    })
+
     finalSections.push({
       title: 'Product Updates',
       description: "Track what's new, and what's improved!",
@@ -179,7 +202,7 @@ const HelpPage: FC = () => {
     }
 
     setSections(finalSections)
-  }, [helpAssistants, user, configs])
+  }, [helpAssistants, user, configs, isTermsLoaded, isTermsEnabled])
 
   const getDataOnboardingAttribute = (title: string) => {
     switch (title) {
@@ -189,6 +212,8 @@ const HelpPage: FC = () => {
         return 'help-learning-section'
       case 'Product Updates':
         return 'help-updates-section'
+      case 'Platform Policies':
+        return 'help-policies-section'
       default:
         return ''
     }

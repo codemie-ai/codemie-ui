@@ -26,6 +26,7 @@ import AnalyticsSvg from '@/assets/icons/diagram-duotone.svg?react'
 import InfoSvg from '@/assets/icons/info-menu.svg?react'
 import IntegrationSvg from '@/assets/icons/integration.svg?react'
 import SkillSvg from '@/assets/icons/lightning-duotone.svg?react'
+import PaperSvg from '@/assets/icons/paper.svg?react'
 import StarFilledSvg from '@/assets/icons/star-filled.svg?react'
 import WorkflowSvg from '@/assets/icons/workflow.svg?react'
 import { appInfoStore } from '@/store/appInfo'
@@ -45,6 +46,7 @@ const iconComponents = {
   [IconType.KATA]: KataSvg,
   [IconType.ANALYTICS]: AnalyticsSvg,
   [IconType.FAVORITES]: StarFilledSvg,
+  [IconType.DOCUMENT]: PaperSvg,
 }
 
 export interface NavigationLinkItem {

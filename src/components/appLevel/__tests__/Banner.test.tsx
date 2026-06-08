@@ -13,10 +13,18 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import Banner from '../Banner'
+
+const renderWithRouter = () =>
+  render(
+    <MemoryRouter>
+      <Banner />
+    </MemoryRouter>
+  )
 
 describe('Banner', () => {
   let localStorageMock: { [key: string]: string }
@@ -173,6 +181,82 @@ describe('Banner', () => {
       rerender(<Banner />)
 
       expect(screen.getByText(message2)).toBeInTheDocument()
+    })
+  })
+
+  describe('optional internal link', () => {
+    it('renders an internal link when label and route are configured', () => {
+      ;(window as any)._env_ = {
+        VITE_BANNER_MESSAGE: 'Terms have been updated.',
+        VITE_BANNER_LINK_LABEL: 'Review Terms and Conditions',
+        VITE_BANNER_LINK_ROUTE: '/terms-and-conditions',
+      }
+
+      renderWithRouter()
+
+      expect(screen.getByRole('link', { name: 'Review Terms and Conditions' })).toHaveAttribute(
+        'href',
+        '/terms-and-conditions'
+      )
+    })
+
+    it.each([
+      {
+        VITE_BANNER_LINK_LABEL: 'Review Terms and Conditions',
+        VITE_BANNER_LINK_ROUTE: '',
+      },
+      {
+        VITE_BANNER_LINK_LABEL: '',
+        VITE_BANNER_LINK_ROUTE: '/terms-and-conditions',
+      },
+    ])('omits the link when optional configuration is incomplete', (linkConfig) => {
+      ;(window as any)._env_ = {
+        VITE_BANNER_MESSAGE: 'Terms have been updated.',
+        ...linkConfig,
+      }
+
+      renderWithRouter()
+
+      expect(screen.queryByRole('link')).not.toBeInTheDocument()
+      expect(screen.getByText('Terms have been updated.')).toBeInTheDocument()
+    })
+
+    it('preserves multiline message text when a link is configured', () => {
+      const message = 'Terms have been updated.\nPlease review the changes.'
+      ;(window as any)._env_ = {
+        VITE_BANNER_MESSAGE: message,
+        VITE_BANNER_LINK_LABEL: 'Review Terms and Conditions',
+        VITE_BANNER_LINK_ROUTE: '/terms-and-conditions',
+      }
+
+      const { container } = renderWithRouter()
+
+      expect(container.querySelector('.p-message-detail')?.textContent).toContain(message)
+      expect(screen.getByRole('link', { name: 'Review Terms and Conditions' })).toBeInTheDocument()
+    })
+
+    it('uses only the message to determine the dismissal storage key', () => {
+      const message = 'Terms have been updated.'
+      ;(window as any)._env_ = {
+        VITE_BANNER_MESSAGE: message,
+        VITE_BANNER_LINK_LABEL: 'Review Terms and Conditions',
+        VITE_BANNER_LINK_ROUTE: '/terms-and-conditions',
+      }
+
+      const { container } = renderWithRouter()
+      const closeButton = container.querySelector('button[aria-label="Close"]')
+      fireEvent.click(closeButton!)
+
+      const hash = (str: string): string => {
+        let value = 0
+        for (let i = 0; i < str.length; i += 1) {
+          value = value * 32 - value + str.charCodeAt(i)
+          value = Math.trunc(value)
+        }
+        return Math.abs(value).toString(36)
+      }
+
+      expect(localStorage.setItem).toHaveBeenCalledWith(`bannerShown-${hash(message)}`, 'true')
     })
   })
 })

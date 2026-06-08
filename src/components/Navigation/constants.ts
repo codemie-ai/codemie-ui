@@ -25,4 +25,5 @@ export enum IconType {
   KATA = 'kata',
   ANALYTICS = 'analytics',
   FAVORITES = 'favorites',
+  DOCUMENT = 'document',
 }

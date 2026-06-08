@@ -83,6 +83,7 @@ import EditSkillPage from '@/pages/skills/EditSkillPage'
 import NewSkillPage from '@/pages/skills/NewSkillPage'
 import SkillDetailsPage from '@/pages/skills/SkillDetailsPage'
 import SkillsListPage from '@/pages/skills/SkillsListPage'
+import TermsAndConditionsPage from '@/pages/terms/TermsAndConditionsPage'
 import { WORKFLOW_LIST_SCOPE } from '@/pages/workflows/constants'
 import EditWorkflowPage from '@/pages/workflows/EditWorkflowPage'
 import NewWorkflowPage from '@/pages/workflows/NewWorkflowPage'
@@ -562,6 +563,11 @@ const otherRoutes: RouteObject[] = [
     id: 'help',
     path: 'help',
     Component: HelpPage,
+  },
+  {
+    id: 'terms-and-conditions',
+    path: 'terms-and-conditions',
+    Component: TermsAndConditionsPage,
   },
 ]
 

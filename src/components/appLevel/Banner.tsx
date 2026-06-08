@@ -15,6 +15,7 @@
 
 import { Messages } from 'primereact/messages'
 import { FC, useEffect, useRef } from 'react'
+import { Link } from 'react-router'
 
 const hash = (str: string): string => {
   let hash = 0
@@ -28,23 +29,35 @@ const hash = (str: string): string => {
 
 const Banner: FC = () => {
   const messages = useRef<Messages>(null)
-  const bannerMessage = (window as any)?._env_?.VITE_BANNER_MESSAGE ?? ''
+  const bannerMessage = window._env_?.VITE_BANNER_MESSAGE ?? ''
+  const bannerLinkLabel = window._env_?.VITE_BANNER_LINK_LABEL ?? ''
+  const bannerLinkRoute = window._env_?.VITE_BANNER_LINK_ROUTE ?? ''
 
   useEffect(() => {
     if (bannerMessage && messages.current) {
       const storageKey = 'bannerShown-' + hash(bannerMessage)
       const isMessageClosed = localStorage.getItem(storageKey)
       if (isMessageClosed !== 'true') {
+        const hasBannerLink = Boolean(bannerLinkLabel && bannerLinkRoute)
         messages.current.show({
           id: bannerMessage,
           sticky: true,
           severity: 'info',
-          detail: bannerMessage,
+          detail: hasBannerLink ? (
+            <span>
+              <span className="whitespace-pre-line">{bannerMessage}</span>{' '}
+              <Link className="font-semibold underline" to={bannerLinkRoute}>
+                {bannerLinkLabel}
+              </Link>
+            </span>
+          ) : (
+            bannerMessage
+          ),
           closable: true,
         })
       }
     }
-  }, [bannerMessage])
+  }, [bannerLinkLabel, bannerLinkRoute, bannerMessage])
 
   const handleRemove = () => {
     const storageKey = 'bannerShown-' + hash(bannerMessage)

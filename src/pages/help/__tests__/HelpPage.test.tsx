@@ -51,7 +51,7 @@ const { mockUserStore, mockAssistantsStore, mockAppInfoStore } = vi.hoisted(() =
     },
   ]
 
-  const configs = [
+  const configs: any[] = [
     {
       id: 'feedbackAssistant',
       settings: { enabled: true },
@@ -94,6 +94,7 @@ const { mockUserStore, mockAssistantsStore, mockAppInfoStore } = vi.hoisted(() =
     },
     mockAppInfoStore: {
       configs,
+      isConfigFetched: true,
     },
   }
 })
@@ -239,7 +240,6 @@ describe('HelpPage', () => {
     })
 
     it('does not display Learning Resources section when all resources are disabled', () => {
-      // @ts-expect-error: i dont know
       mockAppInfoStore.configs = initialConfigs.map((c) => ({
         ...c,
         settings: { ...c.settings, enabled: false },
@@ -261,6 +261,43 @@ describe('HelpPage', () => {
     })
   })
 
+  describe('Platform Policies section', () => {
+    it('displays Terms and Conditions in Help Center when enabled', () => {
+      mockAppInfoStore.configs = [
+        ...initialConfigs,
+        {
+          id: 'termsAndConditions',
+          settings: {
+            enabled: true,
+            availableForExternal: false,
+            name: 'Terms and Conditions',
+            content: '## Terms',
+          },
+        },
+      ]
+
+      renderWithRouter(<HelpPage />)
+
+      expect(screen.getByText('Platform Policies')).toBeInTheDocument()
+      expect(
+        screen.getByText('Understand the rules and responsibilities for using CodeMie.')
+      ).toBeInTheDocument()
+      expect(screen.getByText('Terms and Conditions')).toBeInTheDocument()
+      expect(screen.getByText('Review Terms')).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /Terms and Conditions/ })).toHaveAttribute(
+        'href',
+        '/terms-and-conditions'
+      )
+    })
+
+    it('hides Platform Policies when Terms and Conditions is disabled', () => {
+      renderWithRouter(<HelpPage />)
+
+      expect(screen.queryByText('Platform Policies')).not.toBeInTheDocument()
+      expect(screen.queryByText('Terms and Conditions')).not.toBeInTheDocument()
+    })
+  })
+
   describe('sections layout', () => {
     it('renders all sections in order', () => {
       renderWithRouter(<HelpPage />)
@@ -274,7 +311,6 @@ describe('HelpPage', () => {
       const { rerender } = renderWithRouter(<HelpPage />)
       expect(screen.getByText('User Guide')).toBeInTheDocument()
 
-      // @ts-expect-error: ...
       mockAppInfoStore.configs = initialConfigs.map((c) =>
         c.id === 'userGuide' ? { ...c, settings: { ...c.settings, enabled: false } } : c
       )

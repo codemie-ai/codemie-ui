@@ -152,7 +152,11 @@ const Navigation: React.FC<NavigationProps> = () => {
   )
 
   const lowerItems: NavigationLinkItem[] = [
-    { label: 'Help', icon: IconType.INFO, route: router.resolve({ name: 'help' }).fullPath },
+    {
+      label: 'Help',
+      icon: IconType.INFO,
+      route: router.resolve({ name: 'help' }).fullPath,
+    },
   ]
 
   return (
