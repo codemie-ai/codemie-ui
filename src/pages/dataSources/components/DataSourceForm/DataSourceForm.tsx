@@ -40,6 +40,7 @@ import {
   INDEX_TYPE_CHUNK_SUMMARY,
   IndexType,
   SHAREPOINT_AUTH_TYPES,
+  blockedReindexingIndexTypes,
 } from '@/constants/dataSources'
 import { FormIDs } from '@/constants/formIds'
 import { useActiveHelpSegment } from '@/hooks/useActiveHelpSegment'
@@ -63,9 +64,9 @@ import IndexTypeField from './IndexTypeField'
 
 export const FULL_REINDEX = 'full_reindex'
 
-const shouldShowScheduling = (indexType: string, sharepointAuthType: string | null = null) => {
+const shouldShowScheduling = (indexType: IndexType, sharepointAuthType: string | null = null) => {
   return (
-    indexType !== INDEX_TYPES.PROVIDER &&
+    !blockedReindexingIndexTypes.has(indexType) &&
     !(
       indexType === INDEX_TYPES.SHAREPOINT &&
       sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
@@ -81,6 +82,7 @@ interface Props {
   defaultProject?: string
   isPopup?: boolean
   isEditing?: boolean
+  disabled?: boolean
 }
 
 export interface DataSourceFormRef {
@@ -90,7 +92,7 @@ export interface DataSourceFormRef {
 }
 
 const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
-  const { index, onClose, onSubmittingChange, defaultProject, isPopup, isEditing } = props
+  const { index, onClose, onSubmittingChange, defaultProject, isPopup, isEditing, disabled } = props
   const { llmModels, embeddingModels } = useSnapshot(appInfoStore) as typeof appInfoStore
 
   const [googleDocsGuideConfig, setGoogleDocsGuideConfig] = useState<any>(null)
@@ -262,7 +264,10 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
       <HealthCheckMessage result={healthCheckResult} />
 
       <div
-        className={cn('flex flex-col gap-4', isProviderDeleted && 'pointer-events-none opacity-60')}
+        className={cn(
+          'flex flex-col gap-4',
+          (isProviderDeleted || disabled) && 'pointer-events-none opacity-60'
+        )}
       >
         <div data-onboarding="datasource-common-fields" className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
@@ -415,7 +420,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                   }}
                 />
               )}
-              {!index && field.value === INDEX_TYPES.FILE && (
+              {field.value === INDEX_TYPES.FILE && (
                 <IndexTypeField.File
                   {...{
                     errors,
@@ -553,7 +558,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                 />
               )}
 
-              {shouldShowScheduling(field.value, sharepointAuthType) && (
+              {shouldShowScheduling(field.value as IndexType, sharepointAuthType) && (
                 <>
                   <Divider />
                   <div data-onboarding="datasource-schedule-field">
@@ -584,6 +589,8 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
 const MemoizedDataSourceForm = memo(DataSourceForm, (prevProps, nextProps) => {
   if (prevProps.index?.id !== nextProps.index?.id) return false
   if (prevProps.onSubmittingChange !== nextProps.onSubmittingChange) return false
+  if (prevProps.disabled !== nextProps.disabled) return false
+
   return true
 })
 

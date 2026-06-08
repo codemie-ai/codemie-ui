@@ -33,6 +33,11 @@ export const INDEX_TYPES = {
   BEDROCK: 'bedrock',
 } as const
 
+export const blockedReindexingIndexTypes = new Set<IndexType>([
+  INDEX_TYPES.FILE,
+  INDEX_TYPES.PROVIDER,
+])
+
 export type IndexType = (typeof INDEX_TYPES)[keyof typeof INDEX_TYPES]
 
 export const SHAREPOINT_AUTH_TYPES = {

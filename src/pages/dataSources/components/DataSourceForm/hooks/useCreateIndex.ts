@@ -182,29 +182,36 @@ export const useIndexCreation = ({
   const createOrUpdateFilesIndex = async (values: FormValues) => {
     const { isEditMode, isReindex, hasProjectChanged } = getIndexEditContext(index, values)
 
-    const request = {
-      ...getBaseRequestFields(values, index, hasProjectChanged),
-      files: values.files,
-      csv_separator: values.csvSeparator,
-      csv_start_row: values.csvStartRow,
-      csv_rows_per_document: values.csvRowsPerDocument,
-    }
-
     if (isEditMode) {
-      return dataSourceStore.updateKBIndex(INDEX_TYPES.FILE, request, isReindex)
+      return dataSourceStore.updateKBIndexFiles({
+        name: index!.repo_name,
+        project_name: hasProjectChanged ? index!.project_name : values.projectName,
+        project_space_visible: values.projectSpaceVisible,
+        description: values.description,
+        uploadedFiles: values.uploadedFiles as string[],
+        files: values.files as File[],
+        fullReindex: isReindex,
+        csv_separator: values.csvSeparator,
+        csv_start_row: values.csvStartRow,
+        csv_rows_per_document: values.csvRowsPerDocument,
+        embedding_model: values.embeddingsModel ?? undefined,
+        guardrail_assignments: values.guardrail_assignments,
+        new_project_name: hasProjectChanged ? values.projectName : undefined,
+        cron_expression: undefined,
+      })
     }
 
     return dataSourceStore.createKBIndexFiles(
-      request.name,
-      request.project_name,
-      request.project_space_visible,
-      request.description,
-      request.files ?? [],
-      request.csv_separator,
-      request.csv_start_row,
-      request.csv_rows_per_document,
-      request.embedding_model as string | undefined,
-      request.guardrail_assignments
+      values.name,
+      values.projectName,
+      values.projectSpaceVisible,
+      values.description,
+      values.files as File[],
+      values.csvSeparator,
+      values.csvStartRow,
+      values.csvRowsPerDocument,
+      values.embeddingsModel ?? undefined,
+      values.guardrail_assignments
     )
   }
 

@@ -14,13 +14,14 @@
 //
 
 import { FC, useMemo } from 'react'
-import { Controller } from 'react-hook-form'
+import { Controller, useController } from 'react-hook-form'
 
 import Autocomplete from '@/components/form/Autocomplete'
 import FilesDropzone from '@/components/form/FilesDropzone'
 import FormAutocomplete from '@/components/form/FormAutocomplete'
 import Input from '@/components/form/Input'
 import { CSV_SEPARATORS } from '@/constants/dataSources'
+import { cn } from '@/utils/utils'
 
 interface Props {
   control
@@ -29,6 +30,7 @@ interface Props {
   register
   embeddingModels
   isSubmitted?: boolean
+  disabled?: boolean
 }
 
 const IndexTypeFile: FC<Props> = ({
@@ -37,14 +39,20 @@ const IndexTypeFile: FC<Props> = ({
   errors,
   embeddingModels,
   isSubmitted = false,
+  disabled = false,
 }) => {
   const fileListErrors = useMemo(
     () => (Array.isArray(errors.files) ? errors.files : [errors.files]),
     [errors.files]
   )
 
+  const { field: uploadedFilesField } = useController({ name: 'uploadedFiles', control })
+
   return (
-    <div className="mb-4" data-onboarding="datasource-file-fields">
+    <div
+      className={cn('mb-4', disabled && 'pointer-events-none opacity-60')}
+      data-onboarding="datasource-file-fields"
+    >
       <Controller
         name="files"
         control={control}
@@ -55,6 +63,14 @@ const IndexTypeFile: FC<Props> = ({
             files={filesField.value as File[]}
             errors={fileListErrors}
             showErrors={isSubmitted}
+            uploadedFiles={uploadedFilesField.value as string[]}
+            onUploadedFileRemove={(name: string, itemIndex: number) => {
+              uploadedFilesField.onChange(
+                (uploadedFilesField.value as string[]).filter(
+                  (uploadedFileName, index) => uploadedFileName !== name || index !== itemIndex
+                )
+              )
+            }}
           />
         )}
       />

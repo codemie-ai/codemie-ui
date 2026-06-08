@@ -118,6 +118,8 @@ const DataSourceActions: FC<Props> = ({ item }) => {
     await deleteIndex(item.id, item.repo_name)
   }, [item.id, item.repo_name])
 
+  const isIndexing = useMemo(() => !item.completed && !item.error, [item.completed, item.error])
+
   const canIncrementalReindexItem = useMemo(() => canIncrementalReindex(item), [item])
   const canFullReindexItem = useMemo(() => canFullReindex(item), [item])
   const canResumeIndexingItem = useMemo(
@@ -181,6 +183,7 @@ const DataSourceActions: FC<Props> = ({ item }) => {
       title: 'Edit',
       icon: <EditSvg />,
       hidden: !canEdit(item),
+      disabled: isIndexing,
       onClick: () => router.push(`/data-sources/${item.id}/edit`),
     },
     {
@@ -221,6 +224,7 @@ const DataSourceActions: FC<Props> = ({ item }) => {
       title: 'Delete',
       icon: <DeleteSvg />,
       hidden: !canDelete(item),
+      disabled: isIndexing,
       onClick: showDeleteConfirmation,
     },
   ]

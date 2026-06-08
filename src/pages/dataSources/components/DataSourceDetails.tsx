@@ -51,7 +51,7 @@ import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { getCronDescription } from '@/utils/cronValidator'
-import { humanize, isNumberValue } from '@/utils/helpers'
+import { formatDateTime, humanize, isNumberValue } from '@/utils/helpers'
 import { getIndexTypeCode } from '@/utils/indexing'
 
 import DataSourceDetailsProvider from './DataSourceDetails/DetaSourceDetailsProvider'
@@ -138,6 +138,29 @@ const styles = {
   col: 'flex flex-col',
 }
 
+type DataListItem = {
+  id: string
+  displayValue: string
+}
+
+const DataList: React.FC<{ items: DataListItem[]; emptyText?: string }> = ({
+  items,
+  emptyText = 'None',
+}) => {
+  if (!items.length) {
+    return <div className={styles.textScroll}>{emptyText}</div>
+  }
+  return (
+    <ul className="bg-surface-base-secondary border border-border-specific-panel-outline rounded-lg px-6 py-3 mt-4 max-h-56 overflow-y-auto show-scroll">
+      {items.map((item) => (
+        <li key={item.id} className={styles.propertyValue + ' break-words mb-1 list-disc'}>
+          {item.displayValue}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => {
   const indexType = useMemo(
     () => getIndexTypeCode(dataSource?.index_type),
@@ -168,6 +191,25 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
     [dataSource]
   )
   const showFullReindexButton = useMemo(() => canFullReindex(dataSource), [dataSource])
+
+  const processedFilesData = useMemo<DataListItem[]>(
+    () =>
+      (dataSource.processed_files || []).flatMap((file: string, idx: number) =>
+        file.includes('\n')
+          ? file.split('\n').map((line, i) => ({ id: `${idx}-${i}`, displayValue: line }))
+          : [{ id: String(idx), displayValue: file }]
+      ),
+    [dataSource.processed_files]
+  )
+
+  const uploadedFilesData = useMemo<DataListItem[]>(
+    () =>
+      (dataSource.uploaded_files || []).map((file: string, idx: number) => ({
+        id: String(idx),
+        displayValue: file,
+      })),
+    [dataSource.uploaded_files]
+  )
 
   const processingSummary = useMemo(() => {
     const processing_info = dataSource?.processing_info || {}
@@ -246,33 +288,11 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
     }
 
     if (activeTabId === TabsId.data) {
-      return dataSource.processed_files?.length ? (
-        <ul className="bg-surface-base-secondary border border-border-specific-panel-outline rounded-lg px-6 py-3 mt-4 max-h-56 overflow-y-auto show-scroll">
-          {dataSource.processed_files.flatMap((file: string, idx: number) => {
-            if (file.includes('\n')) {
-              return file.split('\n').map((line, i) => (
-                <li
-                  key={idx + '-' + i}
-                  className={styles.propertyValue + ' break-words mb-1 list-disc'}
-                >
-                  {line}
-                </li>
-              ))
-            }
-            return (
-              <li key={idx} className={styles.propertyValue + ' break-words mb-1 list-disc'}>
-                {file}
-              </li>
-            )
-          })}
-        </ul>
-      ) : (
-        <div className={styles.textScroll}>None</div>
-      )
+      return <DataList items={processedFilesData} emptyText="None" />
     }
 
     return <div />
-  }, [tabs, activeTabId, processingSummary, dataSource])
+  }, [tabs, activeTabId, processingSummary, dataSource, processedFilesData])
 
   const showFullReindexConfirmation = () => {
     if (isSharePointMicrosoftAuth(dataSource)) {
@@ -351,6 +371,17 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                 </span>
               )}
             </div>
+            {dataSource.updated_by && (
+              <div className="flex gap-4 text-xs text-text-quaternary">
+                <p>Updated by {dataSource.updated_by.name || 'N/A'}</p>
+                {dataSource.update_date && (
+                  <>
+                    <span>|</span>
+                    <p>{formatDateTime(dataSource.update_date)}</p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -507,7 +538,9 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
           {indexType && !SECTIONS_DISABLED.processingSummary.includes(indexType) && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <h5 className={styles.sectionTitle.replace('mb-3', '')}>Processing Summary</h5>
+                <h5 className={styles.sectionTitle.replace('mb-3', '')}>
+                  Latest Processing Summary
+                </h5>
                 {isBedrock && (
                   <span
                     data-pr-tooltip="This data presents in Bedrock and cannot be easily calculated here"
@@ -561,6 +594,13 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
             {tabs.length === 1 && <h5 className="font-bold text-xs mb-2">{tabs[0].label}</h5>}
             {renderActiveTab}
           </div>
+
+          {indexType === INDEX_TYPES.FILE && uploadedFilesData.length > 0 && (
+            <div>
+              <h5 className={styles.sectionTitle}>All Uploaded Files</h5>
+              <DataList items={uploadedFilesData} />
+            </div>
+          )}
         </div>
 
         <DetailsSidebar classNames="max-view-details-bp:order-1 max-view-details-bp:min-w-full">

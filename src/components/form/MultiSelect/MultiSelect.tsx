@@ -273,9 +273,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       return preparedValue
         .map((selected) => {
           const selectedValue =
-            typeof selected === 'object' && selected !== null
-              ? selected[optionValue]
-              : selected
+            typeof selected === 'object' && selected !== null ? selected[optionValue] : selected
           const selectedOption = options.find((option) => option[optionValue] === selectedValue)
           return getTextValue(selectedOption?.[optionLabel]) || getTextValue(selectedValue)
         })

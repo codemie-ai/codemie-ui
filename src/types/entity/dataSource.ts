@@ -121,11 +121,13 @@ export interface DataSourceDetailsResponse {
   complete_state: number
   current__chunks_state: number
   processed_files: Array<any>
+  uploaded_files: string[]
   error: boolean
   completed: boolean
   text: string
   full_name: string
   created_by: CreatedBy
+  updated_by?: CreatedBy
   project_space_visible: boolean
   docs_generation: boolean
   branch: string

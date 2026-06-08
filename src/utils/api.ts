@@ -16,6 +16,7 @@
 import { saveAs } from 'file-saver'
 
 import { ENV, HTTP_STATUS } from '@/constants'
+import { HttpError } from '@/utils/handleMultipartError'
 import { isMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
 import toaster from '@/utils/toaster'
 import { getMode, getIsLocalAuth } from '@/utils/utils'
@@ -134,14 +135,39 @@ class API {
       fetch(`${this.BASE_URL}/${url}`, requestOptions)
         .then((response) => {
           if (!response.ok) {
-            response.json().then(this.handleError)
-            reject(response)
+            reject(new HttpError(response))
           } else {
             resolve(response)
           }
         })
         .catch((error) => {
-          reject(error)
+          reject(error instanceof Error ? error : new Error(String(error)))
+        })
+    })
+  }
+
+  putMultipart(url: string, body: FormData): Promise<Response> {
+    const requestOptions: RequestInit = {
+      method: 'PUT',
+      headers: {
+        ...this.authHeaders(),
+      },
+      body,
+      redirect: 'manual',
+      ...(getIsLocalAuth() && { credentials: 'include' as RequestCredentials }),
+    }
+
+    return new Promise((resolve, reject) => {
+      fetch(`${this.BASE_URL}/${url}`, requestOptions)
+        .then((response) => {
+          if (!response.ok) {
+            reject(new HttpError(response))
+          } else {
+            resolve(response)
+          }
+        })
+        .catch((error) => {
+          reject(error instanceof Error ? error : new Error(String(error)))
         })
     })
   }

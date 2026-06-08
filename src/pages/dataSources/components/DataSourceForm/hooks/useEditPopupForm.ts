@@ -145,6 +145,11 @@ const baseValidationSchema = Yup.object({
             .test('file-size', FILE_SIZE_ERR, fileSizeValidator)
         ),
   }),
+  uploadedFiles: Yup.array().when(['indexType'], {
+    is: (indexType) => indexType === INDEX_TYPES.FILE,
+    then: (schema) => schema.of(Yup.string().required()).nullable(),
+    otherwise: (schema) => schema.notRequired(),
+  }),
 
   csvSeparator: Yup.string().when(['indexType', 'files', 'isEditing'], {
     is: (indexType, files, isEditing) =>
@@ -221,7 +226,27 @@ const baseValidationSchema = Yup.object({
     }),
 }).shape(guardrailAssignmentsSchema)
 
-const editingSchema = baseValidationSchema.omit(['files', 'name'])
+export const editingSchema = baseValidationSchema.omit(['name']).shape({
+  files: Yup.array().when(['indexType'], {
+    is: (indexType) => indexType === INDEX_TYPES.FILE,
+    then: (schema) =>
+      schema.of(Yup.mixed<File>().test('file-size', FILE_SIZE_ERR, fileSizeValidator)),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  uploadedFiles: Yup.array().when(['indexType'], {
+    is: (indexType: string) => indexType === INDEX_TYPES.FILE,
+    then: (schema) =>
+      schema
+        .of(Yup.string().required())
+        .nullable()
+        .test('min-one-file', 'At least one file is required', function (uploadedFiles) {
+          const files = this.parent.files as File[] | undefined
+          const totalFiles = (uploadedFiles?.length ?? 0) + (files?.length ?? 0)
+          return totalFiles >= 1
+        }),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+})
 
 export type FormValues = Yup.InferType<typeof baseValidationSchema>
 
@@ -311,6 +336,7 @@ export const useEditPopupForm = (
       filesFilter: '',
       embeddingsModel: '',
       summarizationModel: '',
+      uploadedFiles: defaults?.uploaded_files ?? [],
       files: [],
       csvSeparator: CSV_SEPARATORS[0].value,
       csvStartRow: 1,
@@ -361,6 +387,7 @@ export const useEditPopupForm = (
       summarizationModel: defaults?.summarization_model ?? '',
 
       files: [],
+      uploadedFiles: defaults?.uploaded_files ?? [],
       csvSeparator: CSV_SEPARATORS[0].value,
       csvStartRow: 1,
       csvRowsPerDocument: 1,

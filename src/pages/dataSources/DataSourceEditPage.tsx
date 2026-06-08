@@ -45,6 +45,11 @@ const DataSourceEditPage: FC = () => {
   const [loading, setLoading] = useState(true)
   const [canFullIndex, setCanFullIndex] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const isIndexing = useMemo(
+    () => !!dataSource && !dataSource.completed && !dataSource.error,
+    [dataSource]
+  )
   const formRef = useRef<DataSourceFormRef>(null)
 
   const { getIndexDetails } = useSnapshot(dataSourceStore) as typeof dataSourceStore
@@ -98,24 +103,24 @@ const DataSourceEditPage: FC = () => {
     }
   }
 
-  const renderHeaderActions = useMemo(
-    () => (
+  const renderHeaderActions = useMemo(() => {
+    const isButtonDisabled = isSubmitting || isIndexing
+    return (
       <div className="flex gap-x-4">
         <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
-        <Button variant="primary" disabled={isSubmitting} onClick={onSubmit}>
+        <Button variant="primary" disabled={isButtonDisabled} onClick={onSubmit}>
           Save
         </Button>
         {canFullIndex && (
-          <Button variant="primary" disabled={isSubmitting} onClick={onSubmitReindex}>
+          <Button variant="primary" disabled={isButtonDisabled} onClick={onSubmitReindex}>
             Save & Reindex
           </Button>
         )}
       </div>
-    ),
-    [handleClose, isSubmitting, onSubmit, onSubmitReindex]
-  )
+    )
+  }, [handleClose, isSubmitting, isIndexing, onSubmit, onSubmitReindex])
 
   return (
     <div className="flex h-full">
@@ -144,6 +149,7 @@ const DataSourceEditPage: FC = () => {
             onClose={handleClose}
             ref={formRef}
             onSubmittingChange={setIsSubmitting}
+            disabled={isIndexing}
           />
         )}
       </PageLayout>

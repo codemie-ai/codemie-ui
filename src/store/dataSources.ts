@@ -24,10 +24,28 @@ import {
 } from '@/types/entity/dataSource'
 import { EntityGuardrailAssignment } from '@/types/entity/guardrail'
 import api from '@/utils/api'
+import { handleMultipartError } from '@/utils/handleMultipartError'
 import { getIndexTypeCode } from '@/utils/indexing'
 import toaster from '@/utils/toaster'
 
 import { makeCleanObject } from '../utils/utils'
+
+interface UpdateKBIndexFilesOptions {
+  name: string
+  project_name: string
+  project_space_visible: boolean
+  description: string
+  uploadedFiles: string[]
+  files: File[]
+  fullReindex?: boolean
+  csv_separator?: string
+  csv_start_row?: number
+  csv_rows_per_document?: number
+  embedding_model?: string
+  guardrail_assignments?: EntityGuardrailAssignment[]
+  new_project_name?: string
+  cron_expression?: string
+}
 
 interface CreateSharePointIndexOptions {
   name: string
@@ -483,16 +501,62 @@ export const dataSourceStore = proxy({
       }
       toaster.info(data.message)
       return data
-    } catch (err: any) {
-      const data = await err.json()
-      if (data.detail) {
-        if (Array.isArray(data.detail)) {
-          data.detail.forEach((d: any) => toaster.error(d.msg))
-        } else {
-          toaster.error(data.detail)
-        }
+    } catch (err: unknown) {
+      return handleMultipartError(err, 'Failed to create file data source')
+    }
+  },
+
+  async updateKBIndexFiles(options: UpdateKBIndexFilesOptions) {
+    const {
+      name,
+      project_name,
+      project_space_visible,
+      description,
+      uploadedFiles,
+      files,
+      fullReindex,
+      csv_separator,
+      csv_start_row,
+      csv_rows_per_document,
+      embedding_model,
+      guardrail_assignments,
+      new_project_name,
+      cron_expression,
+    } = options
+    const params: Record<string, any> = {
+      name,
+      project_name,
+      project_space_visible,
+      description,
+      full_reindex: fullReindex ?? false,
+    }
+    if (new_project_name) params.new_project_name = new_project_name
+    if (csv_separator) params.csv_separator = csv_separator
+    if (csv_start_row != null) params.csv_start_row = csv_start_row
+    if (csv_rows_per_document != null) params.csv_rows_per_document = csv_rows_per_document
+    if (embedding_model) params.embedding_model = embedding_model
+    if (cron_expression) params.cron_expression = cron_expression
+    params.uploaded_files = JSON.stringify(uploadedFiles)
+    if (guardrail_assignments) params.guardrail_assignments = JSON.stringify(guardrail_assignments)
+
+    const queryParams = new URLSearchParams(params)
+    const formData = new FormData()
+    files.forEach((file) => formData.append('files', file))
+
+    try {
+      const response = await api.putMultipart(
+        `v1/index/knowledge_base/file?${queryParams}`,
+        formData
+      )
+      const data = await response.json()
+      if (data.error || data.detail) {
+        toaster.error(data.detail || data.error)
+        return data
       }
-      return { error: data.detail }
+      toaster.info(data.message)
+      return data
+    } catch (err: unknown) {
+      return handleMultipartError(err, 'Failed to update file data source')
     }
   },
 

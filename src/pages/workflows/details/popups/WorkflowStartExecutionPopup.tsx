@@ -92,7 +92,7 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
       )
 
       unblockTransition()
-      
+
       // Replace /workflows/new with /workflows/{id}/edit in browser history so that
       // browser-back from the execution page leads to edit, not the empty create form
       if (router.name === NEW_WORKFLOW) {
