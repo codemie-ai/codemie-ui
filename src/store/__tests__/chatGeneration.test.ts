@@ -15,6 +15,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { GENERATION_CANCELLED_MESSAGE } from '@/constants/chats'
 import type { ChatRequest } from '@/types/chatGeneration'
 import type { Conversation, ChatMessage } from '@/types/entity/conversation'
 import { ThoughtAuthorType } from '@/types/entity/conversation'
@@ -590,5 +591,28 @@ describe('chatGenerationStore', () => {
         in_progress: false,
       }),
     ])
+  })
+
+  describe('stopChatGeneration', () => {
+    it('calls abort() and shows error toast when a controller is registered for the chat', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const mockAbort = vi.fn()
+      chatGenerationStore.chatAbortControllers['chat-1'] = {
+        abort: mockAbort,
+      } as unknown as AbortController
+
+      chatGenerationStore.stopChatGeneration('chat-1')
+
+      expect(mockAbort).toHaveBeenCalledOnce()
+      expect(mockToasterError).toHaveBeenCalledWith(GENERATION_CANCELLED_MESSAGE)
+    })
+
+    it('does nothing when no controller is registered for the chat', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+      chatGenerationStore.stopChatGeneration('chat-unknown')
+
+      expect(mockToasterError).not.toHaveBeenCalled()
+    })
   })
 })

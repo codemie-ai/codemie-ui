@@ -71,6 +71,8 @@ export const CHAT_MESSAGE_MARK = {
   WRONG: 'wrong',
 } as const
 
+export const GENERATION_CANCELLED_MESSAGE = 'Completion generation has been cancelled'
+
 export const CHAT_FILE_UPLOAD_MESSAGE = `Attach a file to the chat. You can upload files multiple times, and the most recent will be used as context. Use @filename to reference an already attached file. ${SUPPORTED_FILE_FORMATS_MESSAGE_CHAT} Max size: 50MB."`
 export const CHAT_FILE_MULTIUPLOAD_MESSAGE = `Attach up to 10 files to the chat (max 100MB each). You can upload files multiple times, and the most recent ones will be used as context. Use @filename to reference an already attached file. ${SUPPORTED_FILE_FORMATS_MESSAGE_CHAT}`
 export const WF_FILE_UPLOAD_MESSAGE = `Attach up to 10 files to workflow execution (max 100MB each). The files will be included in the context of each step, accessible for execution logic. ${SUPPORTED_FILE_FORMATS_MESSAGE_CHAT}`

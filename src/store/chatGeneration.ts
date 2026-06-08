@@ -16,6 +16,7 @@
 import { proxy, ref } from 'valtio'
 
 import { ROLE_USER } from '@/constants'
+import { GENERATION_CANCELLED_MESSAGE } from '@/constants/chats'
 import { WORKFLOW_STATE_EVENT_INTERRUPTED, WORKFLOW_STATUSES } from '@/constants/workflows'
 import { ChatRequest, HistoryMessage, ChatGenerationOptions } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
@@ -537,7 +538,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const controller = chatGenerationStore.chatAbortControllers[chatId]
     if (controller) {
       controller.abort()
-      toaster.error('Completion generation has been cancelled')
+      toaster.error(GENERATION_CANCELLED_MESSAGE)
     }
   },
 

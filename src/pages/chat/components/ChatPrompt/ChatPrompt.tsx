@@ -76,7 +76,6 @@ const ChatPrompt: FC = () => {
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
   const { userData } = useSnapshot(userStore)
   const { defaultAssistant } = useSnapshot(assistantsStore)
-  const { stopChatGeneration } = useSnapshot(chatGenerationStore)
   const { selectedSkills, isSharedPage, dynamicToolsConfig } = useChatContext()
 
   const [isEditorFocused, setIsEditorFocused] = useState(false)
@@ -166,7 +165,7 @@ const ChatPrompt: FC = () => {
 
   const handleStopGeneration = () => {
     if (currentChat) {
-      stopChatGeneration(currentChat.id)
+      chatGenerationStore.stopChatGeneration(currentChat.id)
     }
   }
 
@@ -203,7 +202,7 @@ const ChatPrompt: FC = () => {
               !isInterrupted && isEditorFocused && 'prompt-border-gradient-focused',
               !isInterrupted && isInProgress && 'prompt-border-gradient-in-progress',
               isInterrupted && 'bg-interrupted-primary',
-              isInProgress && 'opacity-60 pointer-events-none'
+              isInProgress && 'pointer-events-none'
             )}
           >
             <div
@@ -214,25 +213,27 @@ const ChatPrompt: FC = () => {
                 'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated min-h-32 max-h-64 cursor-text'
               )}
             >
-              <Editor
-                ref={editorRef}
-                value={prompt}
-                withMentions={!currentChat?.isWorkflow}
-                onChange={setPrompt}
-                onAddFiles={fileUpload.addFiles}
-                disabled={!!isInProgress}
-                onSubmit={handleSubmit}
-                onFocusChange={setIsEditorFocused}
-                onEditorLoad={setupPasteHandler}
-                placeholder={placeholder}
-              />
+              <div className={cn(isInProgress && 'opacity-60')}>
+                <Editor
+                  ref={editorRef}
+                  value={prompt}
+                  withMentions={!currentChat?.isWorkflow}
+                  onChange={setPrompt}
+                  onAddFiles={fileUpload.addFiles}
+                  disabled={!!isInProgress}
+                  onSubmit={handleSubmit}
+                  onFocusChange={setIsEditorFocused}
+                  onEditorLoad={setupPasteHandler}
+                  placeholder={placeholder}
+                />
+              </div>
 
               <div
                 onClick={focusEditor}
                 onMouseDown={handleMouseDown}
                 className="flex justify-between items-center pl-2"
               >
-                <div className="flex items-center gap-2">
+                <div className={cn('flex items-center gap-2', isInProgress && 'opacity-60')}>
                   <ChatPromptFileUpload {...fileUpload} files={files} />
                   {!currentChat?.isWorkflow && !isSharedPage && (
                     <>
@@ -243,7 +244,9 @@ const ChatPrompt: FC = () => {
                   )}
                 </div>
 
-                <div className="flex items-center ml-auto">
+                <div
+                  className={cn('flex items-center ml-auto', isInProgress && 'pointer-events-auto')}
+                >
                   {isVoiceRecorderVisible && (
                     <ChatPromptVoiceRecorder
                       onTextReady={(text) => setPrompt({ message: text, messageRaw: text })}
@@ -255,7 +258,11 @@ const ChatPrompt: FC = () => {
                   )}
 
                   {isInProgress ? (
-                    <Button size={ButtonSize.LARGE} onClick={handleStopGeneration}>
+                    <Button
+                      aria-label="Stop generation"
+                      size={ButtonSize.LARGE}
+                      onClick={handleStopGeneration}
+                    >
                       <StopSvg className={cn(isDark && 'text-white')} />
                     </Button>
                   ) : (
