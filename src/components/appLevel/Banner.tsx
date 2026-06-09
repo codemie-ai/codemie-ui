@@ -73,7 +73,7 @@ const Banner: FC = () => {
         icon: { className: '!hidden' },
         summary: { className: '!hidden' },
         detail: { className: 'grow text-center text-white' },
-        button: { className: 'shrink-0' },
+        button: { className: 'shrink-0 !text-white' },
         wrapper: {
           className:
             'bg-gradient4 w-full min-h-12 flex items-center justify-between gap-3 text-sm py-2 px-3 whitespace-pre-line',
