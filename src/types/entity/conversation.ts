@@ -254,7 +254,7 @@ export interface ThoughtBackend {
 
 export interface HistoryItemBackend {
   historyIndex: number
-  message: string
+  message: string | null
   messageRaw?: string
   date: string
   fileNames?: string[]

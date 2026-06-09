@@ -114,7 +114,7 @@ function transformHistoryGroup(
     const assistant =
       assistantData?.find((assistant) => assistant.assistant_id === assistantItem.assistantId) ?? {}
     return {
-      request: userItem.message,
+      request: userItem.message ?? '',
       requestRaw: userItem.messageRaw,
       response: assistantItem.message,
       createdAt: userItem.date,
