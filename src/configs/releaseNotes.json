@@ -1,5 +1,83 @@
 [
   {
+    "version": "2.33.0",
+    "date": "2026-06-09",
+    "issues": [
+      {
+        "title": "API request fails with `Invalid request format` when conversation payload contains null message/text content causing `NoneType` `.strip()` exception",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12700",
+        "key": "EPMCDME-12700"
+      },
+      {
+        "title": "Stop generation button is missing when user clicks Resend on the first user message in a chat with multiple user messages",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12677",
+        "key": "EPMCDME-12677"
+      },
+      {
+        "title": "Terms and Conditions",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12668",
+        "key": "EPMCDME-12668"
+      },
+      {
+        "title": "Stop generation button is not working on the chat screen",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12641",
+        "key": "EPMCDME-12641"
+      },
+      {
+        "title": "Workflow configuration page: \"Code\" field for Code Executor tool is displayed as text field instead of text area",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12635",
+        "key": "EPMCDME-12635"
+      },
+      {
+        "title": "Make RFC 8707 resource indicator optional for admin-configured MCP OAuth2 authentication",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12598",
+        "key": "EPMCDME-12598"
+      },
+      {
+        "title": "Workflow Chat: \"Edit Output\" popup is empty in interrupt_before flow until page refresh",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12527",
+        "key": "EPMCDME-12527"
+      },
+      {
+        "title": "Workflow Chat: interrupt_before flow breaks response after Continue and next user message",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12526",
+        "key": "EPMCDME-12526"
+      },
+      {
+        "title": "Enable file upload in user input during human-in-the-loop workflow interruption in chat and usual execution modes",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12393",
+        "key": "EPMCDME-12393"
+      },
+      {
+        "title": "Create an End-to-End SDLC Demo Kata for Setup of Complete PDLC Using CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12134",
+        "key": "EPMCDME-12134"
+      },
+      {
+        "title": "Radar MCP cannot use get_entity_fields",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12020",
+        "key": "EPMCDME-12020"
+      },
+      {
+        "title": "Update Files in Datasource with Type=Files",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11745",
+        "key": "EPMCDME-11745"
+      }
+    ]
+  },
+  {
     "version": "2.32.0",
     "date": "2026-06-03",
     "issues": [
