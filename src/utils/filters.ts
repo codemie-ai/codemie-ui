@@ -33,9 +33,16 @@ export enum FILTER_ENTITY {
   ANALYTICS = 'analytics',
   USERS_MANAGEMENT = 'users_management',
   FAVORITES = 'favorites',
+  PROJECTS = 'projects',
 }
 
-const knownFilterKeys = {
+export type FilterKeys = {
+  simple: string[]
+  boolean: string[]
+  multiple: string[]
+}
+
+const knownFilterKeys: FilterKeys = {
   simple: [
     'search',
     'name',
@@ -65,9 +72,14 @@ const knownFilterKeys = {
 /**
  * Get filters for a specific entity, prioritizing URL filters over storage filters
  * @param entityKey - Entity key (e.g. 'assistants')
+ * @param filterKeys - URL parameter schema for this entity. Each hook passes its own keys so
+ *   the global `knownFilterKeys` list is not polluted. Defaults to `knownFilterKeys`.
  * @returns Combined filters from URL and localStorage
  */
-export const getFilters = <T extends object>(entityKey: string): T => {
+export const getFilters = <T extends object>(
+  entityKey: string,
+  filterKeys: FilterKeys = knownFilterKeys
+): T => {
   if (!entityKey) {
     throw new Error('Entity key is required for filter operations')
   }
@@ -76,7 +88,7 @@ export const getFilters = <T extends object>(entityKey: string): T => {
   if (!userId) return {} as T
 
   // Get filters from URL and storage
-  const urlFilters = getFiltersFromUrl()
+  const urlFilters = getFiltersFromUrl(filterKeys)
   const key = `${FILTERS_PREFIX}_${entityKey}`
   const storageFilters = storage.getObject<T>(userId, key)
 
@@ -84,7 +96,7 @@ export const getFilters = <T extends object>(entityKey: string): T => {
   const result = {}
 
   // Process all filter keys by type
-  Object.entries(knownFilterKeys).forEach(([_type, keys]) => {
+  Object.entries(filterKeys).forEach(([_type, keys]) => {
     keys.forEach((key) => {
       // Check if URL filter exists for this key
       const urlValue = urlFilters[key]
@@ -111,35 +123,33 @@ export const getFilters = <T extends object>(entityKey: string): T => {
 
 /**
  * Extract filters from URL query parameters
+ * @param keys - URL parameter schema to parse. Defaults to `knownFilterKeys`.
  * @returns Filters object from URL or empty object if not found
  */
-export const getFiltersFromUrl = (): Record<string, unknown> => {
+export const getFiltersFromUrl = (keys: FilterKeys = knownFilterKeys): Record<string, unknown> => {
   try {
     const { search } = window.location
     if (!search) return {}
 
     const searchParams = new URLSearchParams(search)
 
-    return Object.entries(knownFilterKeys).reduce<Record<string, unknown>>(
-      (filters, [type, keys]) => {
-        keys.forEach((key) => {
-          const values = type === 'multiple' ? searchParams.getAll(key) : searchParams.get(key)
+    return Object.entries(keys).reduce<Record<string, unknown>>((filters, [type, keys]) => {
+      keys.forEach((key) => {
+        const values = type === 'multiple' ? searchParams.getAll(key) : searchParams.get(key)
 
-          if (type === 'simple' && values) {
-            filters[key] = values
-          } else if (type === 'boolean' && values === 'true') {
-            filters[key] = true
-          } else if (type === 'boolean' && values === 'false') {
-            filters[key] = false
-          } else if (type === 'multiple' && Array.isArray(values) && values.length > 0) {
-            filters[key] = values
-          }
-        })
+        if (type === 'simple' && values) {
+          filters[key] = values
+        } else if (type === 'boolean' && values === 'true') {
+          filters[key] = true
+        } else if (type === 'boolean' && values === 'false') {
+          filters[key] = false
+        } else if (type === 'multiple' && Array.isArray(values) && values.length > 0) {
+          filters[key] = values
+        }
+      })
 
-        return filters
-      },
-      {}
-    )
+      return filters
+    }, {})
   } catch (error) {
     console.error('Error parsing URL filters:', error)
     return {}

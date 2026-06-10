@@ -49,6 +49,7 @@ import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
+import { useProjectsFilters } from './hooks/useProjectsFilters'
 import ProjectModal, { ProjectFormData } from './ProjectModal'
 
 const TOOLTIPS = {
@@ -84,12 +85,6 @@ const budgetCategoryFilterOptions = [
   { label: 'All categories', value: '' },
   ...BUDGET_CATEGORY_OPTIONS,
 ]
-
-const parseBudgetAssignmentFilter = (value: unknown): 'all' | 'assigned' =>
-  value === 'assigned' ? 'assigned' : 'all'
-
-const parseBudgetCategoryFilter = (value: unknown): BudgetCategory | '' =>
-  BUDGET_CATEGORY_OPTIONS.some((option) => option.value === value) ? (value as BudgetCategory) : ''
 
 const formatCurrency = (value: number): string =>
   `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -148,20 +143,20 @@ const columnDefinitions: ColumnDefinition[] = [
 
 const ProjectsManagementFull: FC = () => {
   const router = useVueRouter()
-  const route = router.currentRoute.value
   const { user: currentUser } = useSnapshot(userStore)
   const { projects, pagination, loading } = useSnapshot(projectsStore)
-  const [search, setSearch] = useState('')
+  const {
+    search,
+    budgetAssignmentFilter,
+    budgetCategory,
+    setSearch,
+    setBudgetAssignmentFilter,
+    setBudgetCategory,
+  } = useProjectsFilters()
   const [sort, setSort] = useState<SortState>({})
   const [showModal, setShowModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
-  const [budgetAssignmentFilter, setBudgetAssignmentFilter] = useState<'all' | 'assigned'>(() =>
-    parseBudgetAssignmentFilter(route.query.budget_assignment)
-  )
-  const [budgetCategory, setBudgetCategory] = useState<BudgetCategory | ''>(() =>
-    parseBudgetCategoryFilter(route.query.budget_category)
-  )
   const skipPaginationReloadRef = useRef(false)
   const previousBudgetFiltersRef = useRef({
     budgetAssignmentFilter: 'all' as 'all' | 'assigned',
@@ -193,47 +188,6 @@ const ProjectsManagementFull: FC = () => {
   useEffect(() => {
     budgetQueryParamsRef.current = budgetQueryParams
   }, [budgetQueryParams])
-
-  useEffect(() => {
-    const nextBudgetAssignmentFilter = parseBudgetAssignmentFilter(route.query.budget_assignment)
-    const nextBudgetCategory = parseBudgetCategoryFilter(route.query.budget_category)
-
-    setBudgetAssignmentFilter((current) =>
-      current === nextBudgetAssignmentFilter ? current : nextBudgetAssignmentFilter
-    )
-    setBudgetCategory((current) => (current === nextBudgetCategory ? current : nextBudgetCategory))
-  }, [route.query.budget_assignment, route.query.budget_category])
-
-  useEffect(() => {
-    const nextQuery = { ...route.query } as Record<string, string | number | boolean>
-
-    if (budgetAssignmentFilter === 'assigned') {
-      nextQuery.budget_assignment = budgetAssignmentFilter
-    } else {
-      delete nextQuery.budget_assignment
-    }
-
-    if (budgetCategory) {
-      nextQuery.budget_category = budgetCategory
-    } else {
-      delete nextQuery.budget_category
-    }
-
-    const currentBudgetAssignment = parseBudgetAssignmentFilter(route.query.budget_assignment)
-    const currentBudgetCategory = parseBudgetCategoryFilter(route.query.budget_category)
-
-    if (
-      currentBudgetAssignment === budgetAssignmentFilter &&
-      currentBudgetCategory === budgetCategory
-    ) {
-      return
-    }
-
-    router.replace({
-      path: route.path,
-      query: nextQuery,
-    })
-  }, [budgetAssignmentFilter, budgetCategory, route.path, route.query, router])
 
   const effectiveColumnDefinitions = useMemo(
     () =>
