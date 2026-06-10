@@ -18,9 +18,14 @@ export const redirectHashRoutes = () => {
   if (!hash.startsWith('#/')) return
 
   const [hashPath, hashQuery] = hash.slice(2).split('?')
-  const base = window.location.pathname.replace(/\/$/, '')
+  // Strip protocol-relative sequences from pathname to prevent open redirect (CWE-601)
+  // Remove //domain or /\domain patterns but preserve any legitimate sub-path after
+  let { pathname } = window.location
+  pathname = pathname.replace(/^\/\/+[^/]*/, '') // Strip //domain or ///domain
+  pathname = pathname.replace(/^\/\\[^/]*/, '') // Strip /\domain
+  const base = pathname.replace(/\/$/, '')
   const search = hashQuery ? `?${hashQuery}` : window.location.search
-  // Strip leading slashes/backslashes to prevent protocol-relative open redirect (CWE-601)
+  // Strip leading slashes/backslashes from hash path
   const safePath = hashPath.replace(/^[/\\]+/, '')
   window.location.replace(`${base}/${safePath}${search}`)
 }

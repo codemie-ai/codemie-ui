@@ -164,4 +164,64 @@ describe('redirectHashRoutes', () => {
     expect(mockReplace).toHaveBeenCalledOnce()
     expect(mockReplace).toHaveBeenCalledWith('/evil.com')
   })
+
+  it('should sanitize protocol-relative pathname at root', () => {
+    // Arrange
+    stubLocation({ hash: '#/page', pathname: '//evil.com', search: '' })
+
+    // Act
+    redirectHashRoutes()
+
+    // Assert
+    expect(mockReplace).toHaveBeenCalledOnce()
+    expect(mockReplace).toHaveBeenCalledWith('/page')
+  })
+
+  it('should sanitize protocol-relative pathname with sub-path', () => {
+    // Arrange
+    stubLocation({ hash: '#/page', pathname: '//evil.com/codemie', search: '' })
+
+    // Act
+    redirectHashRoutes()
+
+    // Assert
+    expect(mockReplace).toHaveBeenCalledOnce()
+    expect(mockReplace).toHaveBeenCalledWith('/codemie/page')
+  })
+
+  it('should sanitize triple-slash pathname', () => {
+    // Arrange
+    stubLocation({ hash: '#/page', pathname: '///evil.com', search: '' })
+
+    // Act
+    redirectHashRoutes()
+
+    // Assert
+    expect(mockReplace).toHaveBeenCalledOnce()
+    expect(mockReplace).toHaveBeenCalledWith('/page')
+  })
+
+  it('should sanitize backslash pathname variant', () => {
+    // Arrange
+    stubLocation({ hash: '#/page', pathname: '/\\evil.com', search: '' })
+
+    // Act
+    redirectHashRoutes()
+
+    // Assert
+    expect(mockReplace).toHaveBeenCalledOnce()
+    expect(mockReplace).toHaveBeenCalledWith('/page')
+  })
+
+  it('should preserve legitimate sub-path deployment behavior', () => {
+    // Arrange
+    stubLocation({ hash: '#/assistants', pathname: '/codemie/', search: '' })
+
+    // Act
+    redirectHashRoutes()
+
+    // Assert
+    expect(mockReplace).toHaveBeenCalledOnce()
+    expect(mockReplace).toHaveBeenCalledWith('/codemie/assistants')
+  })
 })
