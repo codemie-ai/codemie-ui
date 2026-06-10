@@ -14,6 +14,7 @@
 //
 
 import { ROLE_ASSISTANT, ROLE_USER } from '@/constants'
+import { getChatImportSource } from '@/constants/chatImportSources'
 import type {
   ChatBackend,
   Conversation,
@@ -48,6 +49,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
 
   transformedChat.history = groupAndTransformHistory(chatBE.history, {
     assistantData: chatBE.assistant_data,
+    folder: chatBE.folder,
   })
 
   return transformedChat
@@ -88,7 +90,7 @@ export const transformWorkflowExecutionHistoryBEtoFE = (
 
 function groupAndTransformHistory(
   history: HistoryItemBackend[],
-  { assistantData = [] }: { assistantData?: AssistantDataBackend[] }
+  { assistantData = [], folder }: { assistantData?: AssistantDataBackend[]; folder?: string }
 ): any[][] {
   const groupedHistory = history.reduce((acc: Record<number, HistoryItemBackend[]>, item) => {
     if (!Number.isInteger(item.historyIndex)) {
@@ -100,14 +102,17 @@ function groupAndTransformHistory(
   }, {})
 
   return Object.values(groupedHistory).map((group) =>
-    transformHistoryGroup(group, { assistantData })
+    transformHistoryGroup(group, { assistantData, folder })
   )
 }
 
 function transformHistoryGroup(
   group: HistoryItemBackend[],
-  { assistantData }: { assistantData?: AssistantDataBackend[] }
+  { assistantData, folder }: { assistantData?: AssistantDataBackend[]; folder?: string }
 ): any[] {
+  // Imported chats (e.g. Claude Desktop) reference an assistant that isn't in the
+  // workspace, so fall back to the import source's name and icon instead of "?".
+  const importSource = getChatImportSource(folder)
   return Array.from({ length: group.length / 2 }, (_, i) => {
     const userItem = group[2 * i]
     const assistantItem = group[2 * i + 1]
@@ -140,8 +145,8 @@ function transformHistoryGroup(
       assistant: assistant
         ? {
             id: (assistant as any).assistant_id ?? assistantItem.assistantId ?? '',
-            name: (assistant as any).assistant_name ?? '',
-            iconUrl: (assistant as any).assistant_icon ?? '',
+            name: (assistant as any).assistant_name || importSource?.name || '',
+            iconUrl: (assistant as any).assistant_icon || importSource?.iconUrl || '',
             context: ((assistant as any).context ?? []).map((context: any) => context.name),
             tools: ((assistant as any).tools ?? []).map((tool: any) => tool.name),
           }

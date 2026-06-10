@@ -27,6 +27,10 @@ interface ChatHistoryGroupProps {
 
 const ChatHistoryGroup: FC<ChatHistoryGroupProps> = ({ group, historyIndex }) => {
   const [activeMessageIndex, setActiveMessageIndex] = useState(group.length - 1)
+
+  // Defensive: never render an empty group (would show a phantom "?" message).
+  if (!group.length) return null
+
   const activeMessage = group[activeMessageIndex] ?? {}
 
   return (
