@@ -318,7 +318,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                 name="name"
                 error={fieldState.error?.message}
                 disabled={!!index}
-                maxLength={25}
+                maxLength={50}
                 minLength={4}
                 autoFocus={isPopup}
               />

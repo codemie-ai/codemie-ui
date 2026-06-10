@@ -56,7 +56,7 @@ const baseValidationSchema = Yup.object({
       message: INDEX_ERROR_MSGS.containsSpecialChars,
       excludeEmptyString: true,
     })
-    .max(25)
+    .max(50)
     .min(4),
   description: Yup.string().required(DESCRIPTION_REQUIRED_ERR).max(500),
   projectSpaceVisible: Yup.boolean().required(),
