@@ -21,6 +21,19 @@ import '@testing-library/jest-dom'
 
 import { requestRegistry, navigate as navigateMock } from './test-utils/_mock-state'
 
+// ─── Disable CSS parsing in jsdom ────────────────────────────────────────────
+
+// jsdom doesn't support modern CSS features like @layer, @container, etc.
+// This causes errors when PrimeReact injects its CSS. Mock the textContent setter
+// on style elements to suppress CSS parsing errors.
+const originalConsoleError = console.error
+const jsDomCssError = 'Error: Could not parse CSS stylesheet'
+console.error = (...params) => {
+  if (!params.find((p) => p.toString().includes(jsDomCssError))) {
+    originalConsoleError(...params)
+  }
+}
+
 // ─── Browser globals ──────────────────────────────────────────────────────────
 
 const localStorageMock = (() => {
@@ -93,9 +106,9 @@ vi.mock('@/pages/settings/components/SettingsLayout', () => ({
   ),
 }))
 
-vi.mock('@/hooks/useVueRouter', () => ({
-  useVueRouter: vi.fn().mockReturnValue({ push: vi.fn(), params: {} }),
-}))
+vi.mock('@/hooks/useVueRouter', () => {
+  return import('@/hooks/__mocks__/useVueRouter')
+})
 
 vi.mock('@/utils/toaster', () => ({
   default: {
@@ -155,9 +168,33 @@ const globalDefaults: Record<string, () => unknown> = {
     { id: 2, name: 'Development', description: 'Development and coding assistants' },
     { id: 3, name: 'Research', description: 'Research and analysis tools' },
   ],
-  'v1/user': () => ({ applications: [] }),
+  'v1/user': () => ({
+    user_id: 'test-user-id',
+    email: 'test@example.com',
+    name: 'Test User',
+    username: 'testuser',
+    is_admin: false,
+    is_maintainer: false,
+    user_type: 'INTERNAL',
+    applications: [],
+  }),
+  'v1/user/data': () => ({}),
+  'v1/info': () => ({ version: '0.0.0' }),
   'v1/settings/user/available': () => [],
   'v1/conversations/folders/list': () => [],
+  'v1/conversations': () => ({ data: [], pagination: { total: 0, page: 0, per_page: 20 } }),
+  'v1/customer-config': () => ({}),
+  'v1/skills/categories': () => [],
+  'v1/assistants/default': () => null,
+  'v1/assistants/help': () => [],
+  'v1/applications': () => [],
+  'v1/settings/user/preferences': () => ({
+    navigation_expanded: true,
+    sidebar_expanded: true,
+    pinned_assistants: [],
+    favorites: { assistants: [], skills: [] },
+  }),
+  'v1/user/reactions': () => ({ items: [] }),
 }
 
 const parseRequestBody = async (input: RequestInfo | URL, init?: RequestInit): Promise<unknown> => {
@@ -235,9 +272,26 @@ vi.mock('react-router', async (importOriginal) => {
 
 // ─── Test lifecycle ───────────────────────────────────────────────────────────
 
-afterEach(() => {
+afterEach(async () => {
   requestRegistry.clear()
   navigateMock.mockClear()
   fetchMock.mockClear()
   cleanup()
+
+  // Reset appInfoStore to prevent config cache pollution between tests
+  // Only reset for real stores, not mocked ones (which may have test-specific configs)
+  try {
+    const { appInfoStore } = await import('./store/appInfo')
+    // Check if this is a real valtio proxy, not a mock object
+    if (
+      appInfoStore &&
+      typeof appInfoStore === 'object' &&
+      typeof appInfoStore.fetchCustomerConfig === 'function'
+    ) {
+      appInfoStore.configs = []
+      appInfoStore.isConfigFetched = false
+    }
+  } catch {
+    // Store or dependencies are mocked, skip reset
+  }
 })

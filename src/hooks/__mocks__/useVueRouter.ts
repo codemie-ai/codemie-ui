@@ -11,27 +11,72 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 import { vi } from 'vitest'
 
-export const mockRouter = {
-  push: vi.fn(),
-  replace: vi.fn(),
-  back: vi.fn(),
-  forward: vi.fn(),
-  go: vi.fn(),
-  currentRoute: { path: '/', name: null, params: {}, query: {}, hash: '' },
-  resolve: vi.fn(),
-  hasRoute: vi.fn(),
-  getRoutes: vi.fn(),
-  isActive: vi.fn().mockReturnValue(false),
-  setQuery: vi.fn(),
-  updateQuery: vi.fn(),
+// Minimal types for mocking (tests don't need exact type safety)
+export type ParamsType = Record<string, any>
+export type QueryType = Record<string, any>
+export interface RouteOptions {
+  path: string
+  name: string
+  params: ParamsType
+  query: QueryType
+  hash: string
+}
+export type RouterPush = (options: any) => void
+export interface RouterState extends RouteOptions {
+  back: () => void
+  push: RouterPush
+  replace: RouterPush
+  resolve: (options: any) => {
+    href: string
+    path: string
+    fullPath: string
+    searchParamsString: string
+  }
+  currentRoute: { value: RouteOptions }
 }
 
-export const initVueRouter = vi.fn()
+// Minimal utility stubs (tests rarely use these directly)
+export const parseSearchParams = (sp: URLSearchParams): QueryType => Object.fromEntries(sp)
+export const createSearchParamsString = (q: QueryType): string =>
+  new URLSearchParams(q as any).toString()
 
-const useVueRouter = vi.fn().mockReturnValue(mockRouter)
+// Mock implementations for functions that need real module access
+export const findRouteObject = vi.fn()
+export const findParentRouteObject = vi.fn()
 
-export default useVueRouter
+// Default mock router state
+export const mockRouterState = {
+  path: '/',
+  name: '',
+  params: {},
+  query: {},
+  hash: '',
+  push: vi.fn() as ReturnType<typeof vi.fn> & RouterPush,
+  replace: vi.fn() as ReturnType<typeof vi.fn> & RouterPush,
+  back: vi.fn(),
+  resolve: vi.fn(({ path, name }: any) => ({
+    href: path || `/${name || ''}`,
+    path: path || `/${name || ''}`,
+    fullPath: path || `/${name || ''}`,
+    searchParamsString: '',
+  })),
+  currentRoute: {
+    value: {
+      path: '/',
+      name: '',
+      params: {},
+      query: {},
+      hash: '',
+    },
+  },
+} as const satisfies Partial<RouterState>
+
+// Hook mocks
+export const useVueRoute = vi.fn(() => mockRouterState)
+export const useVueRouter = vi.fn(() => mockRouterState)
+
+// Alias for tests that import mockRouter instead of mockRouterState
+export const mockRouter = mockRouterState
