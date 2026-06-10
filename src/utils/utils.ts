@@ -282,3 +282,10 @@ export const decodeFileName = (fileName: string) => {
 
   return { mimeType: result[0], user: result[1], originalFileName: result[2] }
 }
+
+export const sanitizeHtmlId = (str: string): string => {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') // Replace invalid chars with hyphens
+    .replace(/(^-)|(-$)/g, '') // Trim leading/trailing hyphens
+}

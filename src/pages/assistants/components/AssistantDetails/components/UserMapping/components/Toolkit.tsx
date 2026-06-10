@@ -17,6 +17,7 @@ import { classNames as cn } from 'primereact/utils'
 import React from 'react'
 
 import Hint from '@/components/Hint'
+import { sanitizeHtmlId } from '@/utils/utils'
 
 import { IntegrationSelector } from './IntegrationSelector'
 import ToolkitIcon from '../../../../ToolkitIcon'
@@ -92,7 +93,7 @@ export const Toolkit: React.FC<ToolkitProps> = ({
                   {tool.label || tool.name}
                   {(toolkitToolsDescriptions?.[tool.name] || tool.user_description) && (
                     <Hint
-                      id={tool.name}
+                      id={sanitizeHtmlId(tool.name)}
                       showDelay={0}
                       position="right"
                       hint={toolkitToolsDescriptions?.[tool.name] || tool.user_description}
