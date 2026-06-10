@@ -62,7 +62,7 @@ const MCPToolkit = ({
   const [isDeletePopupVisible, setIsDeletePopupVisible] = useState(false)
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false)
 
-  const snapshot = useSnapshot(mcpStore)
+  const mcpSnapshot = useSnapshot(mcpStore)
   const appInfoSnapshot = useSnapshot(appInfoStore)
   const isRestricted = appInfoSnapshot.configs.some(
     (c) => c.id === MCP_CUSTOM_SERVERS_DISABLED_CONFIG_ID && c.settings.enabled === true
@@ -76,14 +76,22 @@ const MCPToolkit = ({
     const idsToFetch = mcpServers
       .filter((s) => !!s.mcp_config_id)
       .map((s) => s.mcp_config_id as string)
-      .filter((id) => !mcpStore.configs.some((c) => c.id === id))
+      .filter((id) => !mcpStore.getCachedConfig(id))
     idsToFetch.forEach((id) => mcpStore.getConfig(id).catch(() => {}))
   }, [mcpServers])
 
-  const catalogMap = useMemo(
-    () => new Map(snapshot.configs.map((c) => [c.id, c])),
-    [snapshot.configs]
-  )
+  const catalogMap = useMemo(() => {
+    const map = new Map<string, MCPConfig>()
+    mcpServers.forEach((server) => {
+      if (server.mcp_config_id) {
+        const cached = mcpStore.getCachedConfig(server.mcp_config_id)
+        if (cached) {
+          map.set(server.mcp_config_id, cached)
+        }
+      }
+    })
+    return map
+  }, [mcpServers, mcpSnapshot.configs])
 
   const unavailableIds = useMemo(() => {
     return mcpServers

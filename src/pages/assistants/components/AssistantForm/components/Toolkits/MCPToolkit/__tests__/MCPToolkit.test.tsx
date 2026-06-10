@@ -31,7 +31,7 @@ vi.mock('valtio', async (importOriginal) => {
   }
 })
 vi.mock('@/store/mcp', () => ({
-  mcpStore: { configs: [], getConfig: vi.fn() },
+  mcpStore: { configs: [], getConfig: vi.fn(), getCachedConfig: vi.fn() },
 }))
 vi.mock('@/store/appInfo', () => ({
   appInfoStore: { configs: [] },
@@ -71,6 +71,8 @@ beforeEach(() => {
   })
   vi.mocked(mcpStore.getConfig).mockClear()
   vi.mocked(mcpStore.getConfig).mockResolvedValue({} as any)
+  vi.mocked(mcpStore.getCachedConfig).mockClear()
+  vi.mocked(mcpStore.getCachedConfig).mockReturnValue(undefined)
 })
 
 describe('MCPToolkit', () => {
@@ -89,14 +91,12 @@ describe('MCPToolkit', () => {
   })
 
   it('does not show warning banner when all servers are available', () => {
-    const mcpSnapshotWithConfig = {
-      ...defaultSnapshot,
-      configs: [{ id: 'cfg-1', is_active: true, is_public: true, name: 'GitHub MCP' }],
-    }
-    mockUseSnapshot.mockImplementation((store: any) => {
-      if (store === appInfoStore) return appInfoDefaultSnapshot
-      return mcpSnapshotWithConfig
-    })
+    vi.mocked(mcpStore.getCachedConfig).mockReturnValue({
+      id: 'cfg-1',
+      is_active: true,
+      is_public: true,
+      name: 'GitHub MCP',
+    } as any)
     render(<MCPToolkit {...defaultProps} mcpServers={[baseServer]} />)
     expect(
       screen.queryByText(
@@ -117,20 +117,14 @@ describe('MCPToolkit', () => {
     expect(mcpStore.getConfig).not.toHaveBeenCalled()
   })
 
-  it('does not call getConfig when config is already in store', () => {
-    const mcpSnapshotWithConfig = {
-      ...defaultSnapshot,
-      configs: [{ id: 'cfg-1', is_active: true, is_public: true, name: 'GitHub MCP' }],
-    }
-    mockUseSnapshot.mockImplementation((store: any) => {
-      if (store === appInfoStore) return appInfoDefaultSnapshot
-      return mcpSnapshotWithConfig
-    })
-    ;(mcpStore as any).configs = [
-      { id: 'cfg-1', is_active: true, is_public: true, name: 'GitHub MCP' },
-    ]
+  it('does not call getConfig when config is already in cache', () => {
+    vi.mocked(mcpStore.getCachedConfig).mockReturnValue({
+      id: 'cfg-1',
+      is_active: true,
+      is_public: true,
+      name: 'GitHub MCP',
+    } as any)
     render(<MCPToolkit {...defaultProps} mcpServers={[baseServer]} />)
     expect(mcpStore.getConfig).not.toHaveBeenCalled()
-    ;(mcpStore as any).configs = []
   })
 })

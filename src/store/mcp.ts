@@ -40,6 +40,10 @@ interface MCPStore {
   indexConfigs: (filters?: MCPFilters, page?: number, perPage?: number) => Promise<MCPConfig[]>
   /** Fetch single MCP configuration by ID */
   getConfig: (id: string) => Promise<MCPConfig>
+  /** Get config from catalog cache by ID */
+  getCachedConfig: (id: string) => MCPConfig | undefined
+  /** Clear catalog cache (for testing) */
+  clearCache: () => void
   /** Create new MCP configuration */
   createConfig: (data: MCPConfigRequest) => Promise<MCPConfig>
   /** Update existing MCP configuration */
@@ -53,6 +57,7 @@ interface MCPStore {
 }
 
 const inflightRequests = new Map<string, Promise<MCPConfig>>()
+const catalogCache = new Map<string, MCPConfig>()
 
 export const mcpStore = proxy<MCPStore>({
   configs: [],
@@ -113,7 +118,10 @@ export const mcpStore = proxy<MCPStore>({
 
       console.log('[MCP Store] Received response:', data)
 
-      this.configs = data.configs ?? []
+      const incomingConfigs = data.configs ?? []
+      incomingConfigs.forEach((config) => catalogCache.set(config.id, config))
+      this.configs = incomingConfigs
+
       this.pagination = {
         page: data.page ?? 0,
         perPage: data.per_page ?? 20,
@@ -154,6 +162,7 @@ export const mcpStore = proxy<MCPStore>({
       try {
         const response = await api.get(`v1/mcp-configs/${id}`)
         const result = await response.json()
+        catalogCache.set(result.id, result)
         if (!this.configs.some((c) => c.id === result.id)) {
           this.configs.push(result)
         }
@@ -237,6 +246,8 @@ export const mcpStore = proxy<MCPStore>({
       const response = await api.put(`v1/mcp-configs/${id}`, data)
       const result = await response.json()
 
+      catalogCache.set(result.id, result)
+
       // Update in the list
       const index = this.configs.findIndex((config) => config.id === id)
       if (index !== -1) {
@@ -273,6 +284,8 @@ export const mcpStore = proxy<MCPStore>({
     try {
       await api.delete(`v1/mcp-configs/${id}`)
 
+      catalogCache.delete(id)
+
       // Remove from the list
       this.configs = this.configs.filter((config) => config.id !== id)
       this.pagination.totalCount -= 1
@@ -284,6 +297,25 @@ export const mcpStore = proxy<MCPStore>({
     } finally {
       this.loading = false
     }
+  },
+
+  /**
+   * Get config from catalog cache by ID
+   * Used by MCPToolkit to check availability of servers already added to assistant
+   *
+   * @param id - The unique identifier of the MCP configuration
+   * @returns The cached configuration or undefined if not found
+   */
+  getCachedConfig(id: string) {
+    return catalogCache.get(id)
+  },
+
+  /**
+   * Clear catalog cache
+   * Used by tests to reset cache state between test runs
+   */
+  clearCache() {
+    catalogCache.clear()
   },
 
   /**
