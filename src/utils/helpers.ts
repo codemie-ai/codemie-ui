@@ -99,6 +99,11 @@ export const humanize = (string: string): string => {
     return 'X-ray'
   }
 
+  // Special case for google to display as Google Docs
+  if (string.toLowerCase() === 'google') {
+    return 'Google Docs'
+  }
+
   // Special case for sharepoint to display as SharePoint
   if (string.toLowerCase() === 'sharepoint') {
     return 'SharePoint'
