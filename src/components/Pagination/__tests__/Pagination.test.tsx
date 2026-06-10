@@ -104,7 +104,7 @@ describe('Pagination', () => {
       />
     )
 
-    const paginationContainer = screen.getByText('1').closest('div')?.parentElement?.parentElement
+    const paginationContainer = screen.getByRole('navigation').parentElement
     expect(paginationContainer).toHaveClass(customClassName)
   })
 

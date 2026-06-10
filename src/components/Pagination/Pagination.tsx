@@ -14,7 +14,7 @@
 //
 
 import { DropdownChangeEvent } from 'primereact/dropdown'
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useId } from 'react'
 
 import ChevronLeftSvg from '@/assets/icons/chevron-left.svg?react'
 import ChevronRightSvg from '@/assets/icons/chevron-right.svg?react'
@@ -44,6 +44,7 @@ const Pagination: React.FC<PaginationProps> = ({
   responsive = false,
 }) => {
   const { isDark } = useTheme()
+  const labelId = useId()
   const [currentPerPage, setCurrentPerPage] = useState<number | undefined>(perPage)
   const [span, setSpan] = useState<number>(7)
 
@@ -105,85 +106,90 @@ const Pagination: React.FC<PaginationProps> = ({
       }}
     >
       {pageNumbers.length > 1 && (
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="text-text-quaternary text-h5 flex-shrink-0">Page: </div>
-          <div className="flex gap-[4px] items-stretch h-[32px]">
+        <nav aria-labelledby={labelId} className="flex items-center gap-2 flex-shrink-0">
+          <div id={labelId} className="text-text-quaternary text-h5 flex-shrink-0">
+            Page:
+          </div>
+          <ul className="flex list-none gap-[4px] items-stretch h-[32px]">
             {currentPage !== 0 && (
-              <button
-                type="button"
-                aria-label="Previous page"
-                className={buttonClasses()}
-                onClick={() => setPage(currentPage - 1, currentPerPage)}
-              >
-                <ChevronLeftSvg aria-hidden="true" />
-              </button>
+              <li className="flex">
+                <button
+                  type="button"
+                  aria-label="Previous page"
+                  className={buttonClasses()}
+                  onClick={() => setPage(currentPage - 1, currentPerPage)}
+                >
+                  <ChevronLeftSvg aria-hidden="true" />
+                </button>
+              </li>
             )}
 
             {!hasFirstPage && (
-              <button
-                type="button"
-                aria-label="Page 1"
-                className={buttonClasses()}
-                onClick={() => setPage(0, currentPerPage)}
-              >
-                1
-              </button>
+              <li className="flex">
+                <button
+                  type="button"
+                  aria-label="Page 1"
+                  className={buttonClasses()}
+                  onClick={() => setPage(0, currentPerPage)}
+                >
+                  1
+                </button>
+              </li>
             )}
 
             {showFirstPageSpread && (
-              <span
-                aria-hidden="true"
-                className="text-text-primary text-h5 select-none leading-[32px]"
-              >
-                ...
-              </span>
+              <li aria-hidden="true">
+                <span className="text-text-primary text-h5 select-none leading-[32px]">...</span>
+              </li>
             )}
 
             {pageNumbers.map((page) => (
-              <button
-                key={page}
-                type="button"
-                aria-label={`Page ${page + 1}`}
-                aria-current={isActivePage(page) ? 'page' : undefined}
-                className={buttonClasses(isActivePage(page))}
-                onClick={() => setPage(page, currentPerPage)}
-              >
-                {page + 1}
-              </button>
+              <li key={page} className="flex">
+                <button
+                  type="button"
+                  aria-label={`Page ${page + 1}`}
+                  aria-current={isActivePage(page) ? 'page' : undefined}
+                  className={buttonClasses(isActivePage(page))}
+                  onClick={() => setPage(page, currentPerPage)}
+                >
+                  {page + 1}
+                </button>
+              </li>
             ))}
 
             {showLastPageSpread && (
-              <span
-                aria-hidden="true"
-                className="text-text-primary text-h5 select-none leading-[32px]"
-              >
-                ...
-              </span>
+              <li aria-hidden="true">
+                <span className="text-text-primary text-h5 select-none leading-[32px]">...</span>
+              </li>
             )}
 
             {!hasLastPage && (
-              <button
-                type="button"
-                aria-label={`Page ${totalPages}`}
-                className={buttonClasses()}
-                onClick={() => setPage(totalPages - 1, currentPerPage)}
-              >
-                {totalPages}
-              </button>
+              <li className="flex">
+                <button
+                  type="button"
+                  aria-label={`Page ${totalPages}`}
+                  className={buttonClasses()}
+                  onClick={() => setPage(totalPages - 1, currentPerPage)}
+                >
+                  {totalPages}
+                </button>
+              </li>
             )}
 
             {currentPage !== totalPages - 1 && (
-              <button
-                type="button"
-                aria-label="Next page"
-                className={buttonClasses()}
-                onClick={() => setPage(currentPage + 1, currentPerPage)}
-              >
-                <ChevronRightSvg aria-hidden="true" />
-              </button>
+              <li className="flex">
+                <button
+                  type="button"
+                  aria-label="Next page"
+                  className={buttonClasses()}
+                  onClick={() => setPage(currentPage + 1, currentPerPage)}
+                >
+                  <ChevronRightSvg aria-hidden="true" />
+                </button>
+              </li>
             )}
-          </div>
-        </div>
+          </ul>
+        </nav>
       )}
 
       {perPage && (
