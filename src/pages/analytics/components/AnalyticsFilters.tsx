@@ -180,7 +180,6 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
     updateFilters({
       ...localFilters,
       projects: Array.isArray(value) ? value : [value],
-      users: [],
     })
   }
 

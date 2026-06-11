@@ -31,8 +31,13 @@ const { mockStore } = vi.hoisted(() => ({
 
 vi.mock('@/store/user', () => ({ userStore: mockStore }))
 
+let capturedProjectsOnChange: ((value: string | string[]) => void) | undefined
+
 vi.mock('@/components/ProjectSelector', () => ({
-  default: () => <div data-testid="project-selector">ProjectSelector</div>,
+  default: ({ onChange }: { onChange?: (value: string | string[]) => void }) => {
+    capturedProjectsOnChange = onChange
+    return <div data-testid="project-selector">ProjectSelector</div>
+  },
 }))
 
 vi.mock('valtio', () => ({
@@ -251,6 +256,34 @@ describe('AnalyticsFilters - Admin Server-Side Search', () => {
     await vi.advanceTimersByTimeAsync(600)
 
     expect(vi.mocked(userStore.getAnalyticsUsers)).not.toHaveBeenCalled()
+  })
+
+  it('should preserve selected users when admin changes project selection (EPMCDME-12721)', async () => {
+    capturedProjectsOnChange = undefined
+
+    render(
+      <AnalyticsFilters
+        filters={{ ...DEFAULT_FILTERS, users: ['user-123'] }}
+        onFiltersChange={mockOnFiltersChange}
+      />
+    )
+
+    await waitFor(() => {
+      expect(capturedProjectsOnChange).toBeDefined()
+    })
+
+    mockOnFiltersChange.mockClear()
+
+    capturedProjectsOnChange!(['proj-1'])
+
+    await waitFor(() => {
+      expect(mockOnFiltersChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projects: ['proj-1'],
+          users: ['user-123'],
+        })
+      )
+    })
   })
 
   it('should clear user options and not call API when admin clears the search', async () => {
