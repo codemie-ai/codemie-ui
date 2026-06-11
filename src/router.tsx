@@ -344,6 +344,11 @@ const workflowRoutes: RouteObject[] = [
     element: <WorkflowsListPage scope={WORKFLOW_LIST_SCOPE.MY} isFavorites />,
   },
   {
+    id: 'workflows-marketplace',
+    path: 'workflows/marketplace',
+    element: <WorkflowsListPage scope={WORKFLOW_LIST_SCOPE.MARKETPLACE} />,
+  },
+  {
     id: 'new-workflow',
     path: 'workflows/new',
     Component: NewWorkflowPage,

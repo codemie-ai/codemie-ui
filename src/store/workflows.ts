@@ -26,6 +26,7 @@ import {
   WorkflowTemplate,
   WorkflowExecution,
   CreateWorkflowExecutionRequest,
+  WorkflowPublishValidationResponse,
 } from '@/types/entity/workflow'
 import { CustomNodeSchemaResponse } from '@/types/workflowEditor/configuration'
 import api from '@/utils/api'
@@ -97,6 +98,18 @@ interface WorkflowsStore {
   updateRecentWorkflows: (workflow: Workflow) => void
   deleteRecentWorkflow: (id: string) => void
   getCustomNodeSchema: (customNodeId: string) => Promise<CustomNodeSchemaResponse | null>
+  validateWorkflowForMarketplace: (
+    id: string,
+    signal?: AbortSignal
+  ) => Promise<{
+    data?: WorkflowPublishValidationResponse
+    error?: { message?: string; details?: string }
+  }>
+  publishWorkflowToMarketplace: (
+    id: string,
+    categories: string[]
+  ) => Promise<{ error?: { message?: string; details?: string } }>
+  unpublishWorkflowFromMarketplace: (id: string) => Promise<void>
 }
 
 export const workflowsStore = proxy<WorkflowsStore>({
@@ -125,8 +138,10 @@ export const workflowsStore = proxy<WorkflowsStore>({
     this.workflowsLoading = true
     const filterString = encodeURIComponent(JSON.stringify(makeCleanObject(this.workflowsFilters)))
     const isUserScope = this.workflowsScope === WORKFLOW_LIST_SCOPE.MY
+    const isMarketplaceScope = this.workflowsScope === WORKFLOW_LIST_SCOPE.MARKETPLACE
 
-    const url = `v1/workflows?filter_by_user=${isUserScope}&page=${page}&per_page=${perPage}&filters=${filterString}`
+    const baseUrl = `v1/workflows?filter_by_user=${isUserScope}&page=${page}&per_page=${perPage}&filters=${filterString}`
+    const url = isMarketplaceScope ? `${baseUrl}&scope=marketplace` : baseUrl
 
     try {
       const response = await api.get(url).then((res) => res.json())
@@ -380,5 +395,46 @@ export const workflowsStore = proxy<WorkflowsStore>({
       skipErrorHandling: true,
     })
     return response.json()
+  },
+
+  validateWorkflowForMarketplace(
+    id: string,
+    signal?: AbortSignal
+  ): Promise<{
+    data?: WorkflowPublishValidationResponse
+    error?: { message?: string; details?: string }
+  }> {
+    return api
+      .post(`v1/workflows/${id}/marketplace/publish/validate`, undefined, {
+        skipErrorHandling: true,
+        signal,
+      })
+      .then((response) => response.json())
+      .then((data) => ({ data }))
+      .catch((errorResponse: { parsedError?: { message?: string; details?: string } }) => {
+        if (errorResponse.parsedError) {
+          return { error: errorResponse.parsedError }
+        }
+        throw errorResponse
+      })
+  },
+
+  publishWorkflowToMarketplace(
+    id: string,
+    categories: string[]
+  ): Promise<{ error?: { message?: string; details?: string } }> {
+    return api
+      .post(`v1/workflows/${id}/marketplace/publish`, { categories }, { skipErrorHandling: true })
+      .then((response) => response.json())
+      .catch((errorResponse: { parsedError?: { message?: string; details?: string } }) => {
+        if (errorResponse.parsedError) {
+          return { error: errorResponse.parsedError }
+        }
+        throw errorResponse
+      })
+  },
+
+  unpublishWorkflowFromMarketplace(id: string): Promise<void> {
+    return api.post(`v1/workflows/${id}/marketplace/unpublish`).then(() => undefined)
   },
 })

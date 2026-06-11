@@ -38,6 +38,7 @@ import { workflowsStore } from '@/store/workflows'
 import { cn } from '@/utils/utils'
 
 import WorkflowActions from './WorkflowActions'
+import WorkflowMarketplace from './WorkflowMarketplace'
 import WorkflowShared from './WorkflowShared'
 import { WorkflowTemplate } from './WorkflowTemplates'
 import WorkflowStartExecutionPopup from '../details/popups/WorkflowStartExecutionPopup'
@@ -56,6 +57,9 @@ export interface Workflow {
     id?: string
   }
   shared?: boolean
+  is_global?: boolean
+  categories?: string[]
+  unique_users_count?: number
   [key: string]: any
 }
 
@@ -284,7 +288,11 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
             </div>
 
             <div className="flex flex-row ml-auto items-center text-xs gap-3">
-              <WorkflowShared workflow={workflow} />
+              {workflow.is_global ? (
+                <WorkflowMarketplace uniqueUsersCount={workflow.unique_users_count} />
+              ) : (
+                <WorkflowShared workflow={workflow} />
+              )}
             </div>
           </div>
         </div>

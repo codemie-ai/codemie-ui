@@ -26,21 +26,26 @@ export interface InlineCredential {
   label?: string
   mcp_server?: string | null
   env_vars?: string[] | null
+  integration_alias?: string | null
 }
 
 interface InlineCredentialsContentProps {
   credentials: InlineCredential[]
   message?: string
+  showMcpEnvVarsWarning?: boolean
 }
 
 export const InlineCredentialsContent: React.FC<InlineCredentialsContentProps> = ({
   credentials,
   message = 'This assistant contains inline credentials that will be used by users.',
+  showMcpEnvVarsWarning = false,
 }) => {
   const formatCredentialType = (credentialType?: string) => {
     if (!credentialType) return 'Unknown'
     return startCase(camelCase(credentialType))
   }
+
+  const hasMcpEnvVars = credentials.some((c) => c.mcp_server && c.env_vars && c.env_vars.length > 0)
 
   if (!credentials.length) return null
 
@@ -54,6 +59,14 @@ export const InlineCredentialsContent: React.FC<InlineCredentialsContentProps> =
           type={InfoWarningType.WARNING}
           message="Inline credentials will not be visible to other users, but will be used for integration purposes."
         />
+        {showMcpEnvVarsWarning && hasMcpEnvVars && (
+          <div className="mt-2">
+            <InfoWarning
+              type={InfoWarningType.ERROR}
+              message="MCP server environment variables will be visible to other users."
+            />
+          </div>
+        )}
         <div className="credentials-list mt-4 border border-border-tertiary rounded-md overflow-hidden">
           {credentials.map((credential, index) => (
             <div
@@ -61,9 +74,16 @@ export const InlineCredentialsContent: React.FC<InlineCredentialsContentProps> =
               className="credential-item p-3 border-b border-border-tertiary last:border-0 flex flex-col"
             >
               <div className="credential-header flex justify-between items-center">
-                <span className="credential-type font-medium flex items-center">
-                  {formatCredentialType(credential.credential_type)}
-                </span>
+                <div className="flex flex-col">
+                  <span className="credential-type font-medium flex items-center">
+                    {formatCredentialType(credential.credential_type)}
+                  </span>
+                  {credential.integration_alias && (
+                    <span className="text-xs text-text-quaternary mt-0.5">
+                      {credential.integration_alias}
+                    </span>
+                  )}
+                </div>
                 {(() => {
                   if (credential.toolkit) {
                     return (

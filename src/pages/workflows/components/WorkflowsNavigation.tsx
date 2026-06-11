@@ -16,11 +16,17 @@
 import React from 'react'
 
 import ExploreSvg from '@/assets/icons/explore.svg?react'
+import MarketplaceSvg from '@/assets/icons/publish.svg?react'
 import StarFilledSvg from '@/assets/icons/star-filled.svg?react'
 import TemplatesSvg from '@/assets/icons/templates.svg?react'
 import WorkflowSvg from '@/assets/icons/workflow.svg?react'
 import SidebarNavigation from '@/components/SidebarNavigation'
-import { WORKFLOWS_ALL, WORKFLOWS_MY, WORKFLOWS_TEMPLATES } from '@/constants/routes'
+import {
+  WORKFLOWS_ALL,
+  WORKFLOWS_MARKETPLACE,
+  WORKFLOWS_MY,
+  WORKFLOWS_TEMPLATES,
+} from '@/constants/routes'
 import { useFavoritesEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 
@@ -46,6 +52,13 @@ const WorkflowsNavigation: React.FC = () => {
         icon: <ExploreSvg />,
         section: 'Categories',
         url: router.resolve({ name: WORKFLOWS_ALL }).path,
+      },
+      {
+        id: WORKFLOWS_MARKETPLACE,
+        name: 'Marketplace',
+        icon: <MarketplaceSvg />,
+        section: 'Categories',
+        url: router.resolve({ name: WORKFLOWS_MARKETPLACE }).path,
       },
       {
         id: WORKFLOWS_TEMPLATES,

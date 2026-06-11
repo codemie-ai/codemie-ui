@@ -14,6 +14,7 @@
 //
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import { useSnapshot } from 'valtio'
 
 import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
@@ -24,6 +25,7 @@ import {
   WORKFLOW_LIST_SCOPE,
   WorkflowListScope,
 } from '@/pages/workflows/constants'
+import { assistantsStore } from '@/store'
 import { userStore } from '@/store/user'
 import { workflowsStore } from '@/store/workflows'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
@@ -36,6 +38,7 @@ interface WorkflowsFilters {
   project?: string[]
   shared?: string
   created_by?: string
+  categories?: string[]
 }
 
 interface WorkflowsFiltersProps {
@@ -46,9 +49,15 @@ interface WorkflowsFiltersProps {
 const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) => {
   const router = useVueRouter()
   const route = useVueRoute()
+  const { assistantCategories } = useSnapshot(assistantsStore)
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [isCreatedByMeChecked, setIsCreatedByMeChecked] = useState(false)
+
+  const categoriesOptions = useMemo<FilterOption[]>(
+    () => assistantCategories.map((c) => ({ label: c.name, value: c.id })),
+    [assistantCategories]
+  )
 
   const initialFilterValues = (() => {
     const {
@@ -56,6 +65,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       project = INITIAL_WORKFLOWS_FILTERS.project,
       shared = INITIAL_WORKFLOWS_FILTERS.shared,
       created_by = INITIAL_WORKFLOWS_FILTERS.created_by,
+      categories = INITIAL_WORKFLOWS_FILTERS.categories,
     } = getFilters<WorkflowsFilters>(`${FILTER_ENTITY.WORKFLOWS}.${scope}`)
 
     return {
@@ -63,6 +73,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       project: Array.isArray(project) ? project : [project],
       shared: shared === '' ? '' : String(shared),
       created_by: created_by || '',
+      categories: Array.isArray(categories) ? categories : [],
     }
   })()
 
@@ -79,9 +90,11 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
     }
   }, [])
 
-  const loadCreatedByOptions = useCallback(async () => {
+  const loadCreatedByOptions = useCallback(async (marketplaceScope = false) => {
     try {
-      const users = await userStore.loadWorkflowsUsers()
+      const users = await userStore.loadWorkflowsUsers(
+        marketplaceScope ? { scope: 'marketplace' } : {}
+      )
       const options = users.map((user: any) => ({
         label: createdBy(user),
         value: user.name,
@@ -94,9 +107,14 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   }, [])
 
   useEffect(() => {
-    loadProjectOptions('')
-    if (scope === WORKFLOW_LIST_SCOPE.ALL || scope === WORKFLOW_LIST_SCOPE.FAVORITES) {
-      loadCreatedByOptions()
+    if (scope === 'marketplace') {
+      assistantsStore.getAssistantCategories()
+      loadCreatedByOptions(true)
+    } else {
+      loadProjectOptions('')
+      if (scope === WORKFLOW_LIST_SCOPE.ALL || scope === WORKFLOW_LIST_SCOPE.FAVORITES) {
+        loadCreatedByOptions()
+      }
     }
   }, [loadProjectOptions, loadCreatedByOptions, scope])
 
@@ -124,6 +142,16 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   const filterDefinitions = useMemo<FilterDefinition[]>(
     () =>
       [
+        {
+          name: 'categories',
+          label: 'Categories',
+          type: FilterDefinitionType.Multiselect,
+          value: initialFilterValues.categories || [],
+          options: categoriesOptions,
+          config: {
+            maxSelectedLabels: 3,
+          },
+        },
         {
           name: 'project',
           label: 'Project',
@@ -155,16 +183,27 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
           },
         },
       ].filter((definition) => {
-        // Hide "Created By" filter on "My Workflows" page since it already filters by current user
+        if (scope === 'marketplace') {
+          return (
+            definition.name === 'categories' ||
+            definition.name === 'name' ||
+            definition.name === CREATED_BY
+          )
+        }
+        if (definition.name === 'categories') {
+          return false
+        }
         if (scope === 'my' && definition.name === CREATED_BY) {
           return false
         }
         return true
       }),
     [
+      initialFilterValues.categories,
       initialFilterValues.project,
       initialFilterValues.created_by,
       initialFilterValues.shared,
+      categoriesOptions,
       projectOptions,
       createdByOptions,
       loadProjectOptions,
@@ -186,6 +225,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       delete newQuery.project
       delete newQuery.shared
       delete newQuery.created_by
+      delete newQuery.categories
 
       router.push({
         path: route.path,
@@ -210,7 +250,8 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       !initialFilterValues.name &&
       (!initialFilterValues.project || initialFilterValues.project.length === 0) &&
       initialFilterValues.shared === '' &&
-      !initialFilterValues.created_by
+      !initialFilterValues.created_by &&
+      (!initialFilterValues.categories || initialFilterValues.categories.length === 0)
     )
   }, [initialFilterValues])
 

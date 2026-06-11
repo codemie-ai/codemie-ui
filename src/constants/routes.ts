@@ -35,6 +35,7 @@ export const WOKRFLOW_EXECUTIONS = 'workflow-execution'
 export const WORKFLOWS_ALL = 'workflows-all'
 export const WORKFLOWS_MY = 'workflows-my'
 export const WORKFLOWS_TEMPLATES = 'workflows-templates'
+export const WORKFLOWS_MARKETPLACE = 'workflows-marketplace'
 
 export const APPLICATIONS = 'applications'
 export const APPLICATION = 'application'

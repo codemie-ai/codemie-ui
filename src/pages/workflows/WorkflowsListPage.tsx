@@ -49,7 +49,10 @@ const WorkflowsListPage: React.FC<WorkflowsListPageProps> = ({ scope, isFavorite
   }
 
   const shouldShowFilters =
-    isFavorites || scope === WORKFLOW_LIST_SCOPE.ALL || scope === WORKFLOW_LIST_SCOPE.MY
+    isFavorites ||
+    scope === WORKFLOW_LIST_SCOPE.ALL ||
+    scope === WORKFLOW_LIST_SCOPE.MY ||
+    scope === WORKFLOW_LIST_SCOPE.MARKETPLACE
 
   return (
     <div className="flex h-full">
@@ -84,6 +87,9 @@ const WorkflowsListPage: React.FC<WorkflowsListPageProps> = ({ scope, isFavorite
               {scope === WORKFLOW_LIST_SCOPE.ALL && <WorkflowsList key={scope} scope={scope} />}
               {scope === WORKFLOW_LIST_SCOPE.MY && <WorkflowsList key={scope} scope={scope} />}
               {scope === WORKFLOW_LIST_SCOPE.TEMPLATES && <WorkflowTemplates key={scope} />}
+              {scope === WORKFLOW_LIST_SCOPE.MARKETPLACE && (
+                <WorkflowsList key={scope} scope={scope} />
+              )}
             </>
           )}
         </div>

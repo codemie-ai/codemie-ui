@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSnapshot } from 'valtio'
 
 import CopyLinkIcon from '@/assets/icons/copy-link.svg?react'
@@ -21,6 +21,8 @@ import CloneIcon from '@/assets/icons/copy.svg?react'
 import DeleteIcon from '@/assets/icons/delete.svg?react'
 import IconEdit from '@/assets/icons/edit.svg?react'
 import InfoIcon from '@/assets/icons/info.svg?react'
+import PublishSvg from '@/assets/icons/publish.svg?react'
+import UnpublishSvg from '@/assets/icons/unpublish.svg?react'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import NavigationMore from '@/components/NavigationMore'
 import Pagination from '@/components/Pagination'
@@ -39,6 +41,7 @@ import { pluralize } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { copyToClipboard } from '@/utils/utils'
 
+import PublishWorkflowToMarketplaceModal from './PublishWorkflowToMarketplaceModal'
 import WorkflowCard, { Workflow as WorkflowCardType } from './WorkflowCard'
 import WorkflowStartExecutionPopup from '../details/popups/WorkflowStartExecutionPopup'
 
@@ -71,7 +74,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
   const sidebarOffsetClass = useSidebarOffsetClass()
 
   const { workflows, workflowsLoading, workflowsPagination } = useSnapshot(workflowsStore)
-  const { user } = useSnapshot(userStore)
+  useSnapshot(userStore)
 
   const isFavorites = scope === WORKFLOW_LIST_SCOPE.FAVORITES
 
@@ -94,6 +97,10 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
   const [workflowToDelete, setWorkflowToDelete] = useState<Workflow | null>(null)
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
   const [showCreateWorkflowPopup, setShowCreateWorkflowPopup] = useState(false)
+  const [workflowToPublish, setWorkflowToPublish] = useState<Workflow | null>(null)
+  const [workflowToUnpublish, setWorkflowToUnpublish] = useState<Workflow | null>(null)
+
+  const handlePublishModalClose = useCallback(() => setWorkflowToPublish(null), [])
 
   useEffect(() => {
     if (!isFavorites) {
@@ -174,8 +181,17 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
     setIsConfirmationModalVisible(false)
   }
 
-  const canClone = (workflow: Workflow) => {
-    return !workflow.is_global || user?.isAdmin
+  const confirmUnpublish = async () => {
+    if (workflowToUnpublish) {
+      try {
+        await workflowsStore.unpublishWorkflowFromMarketplace(String(workflowToUnpublish.id))
+        toaster.info('Workflow has been removed from the marketplace.')
+        refreshWorkflows()
+      } catch {
+        toaster.error('Failed to remove workflow from marketplace')
+      }
+    }
+    setWorkflowToUnpublish(null)
   }
 
   const showWorkflow = (workflow: Workflow) => {
@@ -210,15 +226,27 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
         icon: <IconEdit />,
         onClick: () => edit(workflow),
       })
+
+      if (workflow.is_global) {
+        actions.push({
+          title: 'Remove from Marketplace',
+          icon: <UnpublishSvg />,
+          onClick: () => setWorkflowToUnpublish(workflow),
+        })
+      } else {
+        actions.push({
+          title: 'Publish to Marketplace',
+          icon: <PublishSvg />,
+          onClick: () => setWorkflowToPublish(workflow),
+        })
+      }
     }
 
-    if (canClone(workflow)) {
-      actions.push({
-        title: 'Clone',
-        icon: <CloneIcon />,
-        onClick: () => clone(workflow),
-      })
-    }
+    actions.push({
+      title: 'Clone',
+      icon: <CloneIcon />,
+      onClick: () => clone(workflow),
+    })
 
     if (canDelete(workflow)) {
       actions.push({
@@ -297,12 +325,33 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
         onCancel={cancelDelete}
       />
 
+      <ConfirmationModal
+        visible={workflowToUnpublish !== null}
+        header="Remove from Marketplace?"
+        message="This will remove your workflow from the marketplace. It will still be available in your personal workflows."
+        confirmButtonType={ButtonType.DELETE}
+        onConfirm={confirmUnpublish}
+        onCancel={() => setWorkflowToUnpublish(null)}
+      />
+
       <WorkflowStartExecutionPopup
         isVisible={showCreateWorkflowPopup}
         onHide={() => setShowCreateWorkflowPopup(false)}
         workflowId={String(selectedWorkflow?.id)}
         startHint={selectedWorkflow?.start_hint}
       />
+
+      {workflowToPublish && (
+        <PublishWorkflowToMarketplaceModal
+          workflowId={String(workflowToPublish.id)}
+          open={true}
+          onClose={handlePublishModalClose}
+          onSuccess={() => {
+            setWorkflowToPublish(null)
+            refreshWorkflows()
+          }}
+        />
+      )}
     </>
   )
 }

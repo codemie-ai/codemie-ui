@@ -29,6 +29,7 @@ export const WORKFLOW_LIST_SCOPE = {
   MY: 'my',
   TEMPLATES: 'templates',
   FAVORITES: 'favorites',
+  MARKETPLACE: 'marketplace',
 } as const
 
 export type WorkflowListScope = (typeof WORKFLOW_LIST_SCOPE)[keyof typeof WORKFLOW_LIST_SCOPE]
@@ -45,6 +46,7 @@ export const INITIAL_WORKFLOWS_FILTERS = {
   project: [],
   shared: '',
   created_by: '',
+  categories: [] as string[],
 }
 
 export const INITIAL_WORKFLOWS_PAGINATION = {

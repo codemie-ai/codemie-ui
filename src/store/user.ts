@@ -50,7 +50,7 @@ interface UserStoreType {
     filters?: AnalyticsQueryParams,
     signal?: AbortSignal
   ) => Promise<Array<{ label: string; value: string }>>
-  loadWorkflowsUsers: () => Promise<User[]>
+  loadWorkflowsUsers: (params?: { scope?: string }) => Promise<User[]>
   loadProjectSettingsUsers: () => Promise<User[]>
   searchUsers: (query: string, perPage?: number) => Promise<UserListItem[]>
   assignUserToProject: (projectName: string, userId: string, role: string) => Promise<void>
@@ -218,9 +218,12 @@ export const userStore = proxy<UserStoreType>({
       })
   },
 
-  loadWorkflowsUsers() {
+  loadWorkflowsUsers(params = {}) {
+    const scope = (params as { scope?: string }).scope || ''
+    const queryParams = scope ? `?scope=${scope}` : ''
+
     return api
-      .get('v1/workflows/users')
+      .get(`v1/workflows/users${queryParams}`)
       .then((response) => response.json())
       .then((data) => data.sort((a, b) => a.name.localeCompare(b.name)))
       .catch(() => {

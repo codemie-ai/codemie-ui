@@ -40,6 +40,8 @@ export interface Workflow {
   yaml_config_history: WorkflowConfigHistoryItem[]
   update_date: string
   is_favorited?: boolean
+  is_global?: boolean
+  unique_users_count?: number
   [key: string]: any
 }
 
@@ -199,4 +201,16 @@ export function isWorkflowAssistantMcpIssue(
   issue: WorkflowIssue
 ): issue is WorkflowAssistantMcpIssue {
   return 'meta' in issue && issue.meta && 'mcpName' in issue.meta
+}
+
+export interface WorkflowInlineCredential {
+  credential_type?: string
+  toolkit?: string | null
+  label?: string
+  mcp_server?: string | null
+  env_vars?: string[] | null
+}
+
+export interface WorkflowPublishValidationResponse {
+  inline_credentials?: WorkflowInlineCredential[]
 }
