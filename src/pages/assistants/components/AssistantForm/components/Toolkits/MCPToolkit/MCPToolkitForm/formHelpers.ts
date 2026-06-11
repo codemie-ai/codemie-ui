@@ -23,7 +23,10 @@ export const buildServerConfig = (values: any): MCPServerDetails => {
   const mcpServer: MCPServerDetails = {
     name: values.name,
     description: values.description,
-    mcp_connect_url: values.connectUrl,
+  }
+
+  if (values.connectUrl) {
+    mcpServer.mcp_connect_url = values.connectUrl
   }
 
   const config: MCPServerConfig = parseConfigJson(values.configJson)
