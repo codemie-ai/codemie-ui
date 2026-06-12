@@ -1,5 +1,77 @@
 [
   {
+    "version": "2.34.0",
+    "date": "2026-06-12",
+    "issues": [
+      {
+        "title": "Cannot add MCP from catalog to Assistant when mcpCustomServersDisabled flag is enabled",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12744",
+        "key": "EPMCDME-12744"
+      },
+      {
+        "title": "SharePoint integration fails to process 6 out of 39 DOCX documents; system lacks error logs or detailed diagnostics for failed files",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12735",
+        "key": "EPMCDME-12735"
+      },
+      {
+        "title": "Claude Desktop imported chat is displayed incorrectly in CodeMie frontend after sync via CodeMie proxy",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12729",
+        "key": "EPMCDME-12729"
+      },
+      {
+        "title": "Persist filters on administration projects page when navigating to project detail and back",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12703",
+        "key": "EPMCDME-12703"
+      },
+      {
+        "title": "AWS integration: session token is not removed after editing integration and deleting the token value",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12699",
+        "key": "EPMCDME-12699"
+      },
+      {
+        "title": "Valid EPAM MCPs are incorrectly displayed as \"This MCP server is no longer available\" after adding several new EPAM MCPs",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12640",
+        "key": "EPMCDME-12640"
+      },
+      {
+        "title": "Agent Details Page Error: \"Issue Page\" Displayed After Adding MCP – EPAM Matching Score Agent",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12628",
+        "key": "EPMCDME-12628"
+      },
+      {
+        "title": "Claude Desktop conversations are not fully displayed in CodeMie chat",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12487",
+        "key": "EPMCDME-12487"
+      },
+      {
+        "title": "Workflow Marketplace: Platform-Wide Workflow Publishing, Discovery & Usage Tracking",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12312",
+        "key": "EPMCDME-12312"
+      },
+      {
+        "title": "Rename \"Google\" Datasource to \"Google Doc\" to avoid confusion with Google Search",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12099",
+        "key": "EPMCDME-12099"
+      },
+      {
+        "title": "Allow long Datasource names (more than 25 characters)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12094",
+        "key": "EPMCDME-12094"
+      }
+    ]
+  },
+  {
     "version": "2.33.0",
     "date": "2026-06-09",
     "issues": [
