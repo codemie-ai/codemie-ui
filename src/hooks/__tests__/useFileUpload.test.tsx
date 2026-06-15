@@ -17,8 +17,9 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 
 import { filesStore } from '@/store/files'
+import { decodeFileName } from '@/utils/utils'
 
-import { FileMetadata, useFileUpload, FileUploadError } from '../useFileUpload'
+import { FileMetadata, useFileUpload, FileUploadError, createFileMetadata } from '../useFileUpload'
 
 vi.hoisted(() => vi.resetModules())
 
@@ -519,5 +520,24 @@ describe('useFileUpload', () => {
         }),
       ])
     })
+  })
+})
+
+describe('createFileMetadata', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // Imported Claude Desktop chats carry plain file names that aren't a base64
+  // backend reference, so decodeFileName throws - it must not crash the chat.
+  it('falls back to the raw name when decodeFileName throws instead of crashing', () => {
+    ;(decodeFileName as Mock).mockImplementationOnce(() => {
+      throw new Error('not base64')
+    })
+
+    const meta = createFileMetadata('Homework_Business_v1.docx')
+
+    expect(meta.fileName).toBe('Homework_Business_v1.docx')
+    expect(meta.fileId).toBe('Homework_Business_v1.docx')
   })
 })

@@ -65,7 +65,16 @@ export const createFileMetadata = (fileInput: File | string): FileMetadata => {
     }
   }
 
-  const fileData = decodeFileName(fileInput)
+  // decodeFileName throws on values that aren't a base64-encoded backend file
+  // reference (e.g. plain names from imported Claude Desktop chats). Catch it and
+  // fall back to the raw value so the chip shows the name instead of crashing the
+  // whole chat.
+  let fileData: ReturnType<typeof decodeFileName>
+  try {
+    fileData = decodeFileName(fileInput)
+  } catch {
+    fileData = { mimeType: '', user: '', originalFileName: fileInput }
+  }
   return {
     fileId: fileInput,
     fileName: fileData.originalFileName,
