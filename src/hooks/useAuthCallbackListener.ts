@@ -131,6 +131,9 @@ export const useAuthCallbackListener = ({
     const previousTrackedIds = trackedIdsRef.current
 
     const onIdTimeout = (authConfigId: string) => {
+      console.warn(`[mcp-auth] Timed out waiting for auth callback after ${resolvedTimeoutMs}ms`, {
+        authConfigId,
+      })
       delete timeoutsRef.current[authConfigId]
       setAuthFlows((current) => ({
         ...current,
@@ -163,6 +166,9 @@ export const useAuthCallbackListener = ({
     nextTrackedIds.forEach((authConfigId) => {
       if (previousTrackedIds.has(authConfigId)) return
 
+      console.info(`[mcp-auth] Awaiting auth callback (timeout ${resolvedTimeoutMs}ms)`, {
+        authConfigId,
+      })
       const timeoutHandle = setTimeout(() => onIdTimeout(authConfigId), resolvedTimeoutMs)
 
       timeoutsRef.current[authConfigId] = timeoutHandle
@@ -181,9 +187,30 @@ export const useAuthCallbackListener = ({
     const apiOrigin = getApiOrigin()
 
     const handleMessage = (event: MessageEvent) => {
-      if (!apiOrigin || event.origin !== apiOrigin) return
+      // Inspect the message shape before the origin so unrelated cross-origin messages
+      // are never logged; the origin is still verified before any state change below.
       if (!isAuthCallbackMessage(event.data)) return
-      if (!trackedIdsRef.current.has(event.data.auth_config_id)) return
+      if (!apiOrigin || event.origin !== apiOrigin) {
+        console.warn('[mcp-auth] Ignoring auth callback from unexpected origin', {
+          origin: event.origin,
+          expected: apiOrigin,
+          authConfigId: event.data.auth_config_id,
+        })
+        return
+      }
+      if (!trackedIdsRef.current.has(event.data.auth_config_id)) {
+        console.warn('[mcp-auth] Ignoring auth callback for untracked auth_config_id', {
+          authConfigId: event.data.auth_config_id,
+          tracked: Array.from(trackedIdsRef.current),
+        })
+        return
+      }
+
+      console.info('[mcp-auth] Received auth callback', {
+        status: event.data.status,
+        authConfigId: event.data.auth_config_id,
+        error: event.data.error,
+      })
 
       const timeoutHandle = timeoutsRef.current[event.data.auth_config_id]
       if (timeoutHandle) {
