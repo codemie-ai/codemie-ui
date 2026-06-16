@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import DOMPurify from 'dompurify'
 import Toastify from 'toastify-js'
 import 'toastify-js/src/toastify.css'
 
@@ -77,7 +78,11 @@ const prepareText = (text: string): string => {
   if (!header) header = ''
   if (!content) content = ''
 
-  return `<h2 class="codemie-toast-header">${header}</h2><p class="codemie-toast-content">${content}</p>`
+  const allowedTags = { ALLOWED_TAGS: ['br', 'i', 'b', 'em', 'strong'] }
+  return `<h2 class="codemie-toast-header">${DOMPurify.sanitize(
+    header,
+    allowedTags
+  )}</h2><p class="codemie-toast-content">${DOMPurify.sanitize(content, allowedTags)}</p>`
 }
 
 interface Toaster {
