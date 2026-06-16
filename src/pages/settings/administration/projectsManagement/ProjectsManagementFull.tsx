@@ -16,17 +16,12 @@
 import { FC, useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
-import AssistantSvg from '@/assets/icons/assistant-alt.svg?react'
 import Cross18Svg from '@/assets/icons/cross.svg?react'
-import DataSourceSvg from '@/assets/icons/datasource.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
-import IntegrationSvg from '@/assets/icons/integration.svg?react'
-import SkillsSvg from '@/assets/icons/lightning.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import SearchIcon from '@/assets/icons/search.svg?react'
 import ViewSvg from '@/assets/icons/view.svg?react'
-import WorkflowSvg from '@/assets/icons/workflow.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import Input from '@/components/form/Input'
@@ -51,14 +46,7 @@ import { displayValue } from '@/utils/utils'
 
 import { useProjectsFilters } from './hooks/useProjectsFilters'
 import ProjectModal, { ProjectFormData } from './ProjectModal'
-
-const TOOLTIPS = {
-  ASSISTANTS: 'Project Assistants',
-  WORKFLOWS: 'Workflows',
-  INTEGRATIONS: 'Integrations',
-  DATA_SOURCES: 'Data Sources',
-  SKILLS: 'Skills',
-}
+import ProjectResourceCounters from './ProjectResourceCounters'
 
 const ERROR_MESSAGES = {
   DELETE_NO_COUNT_DATA: 'Cannot delete project: assignment count data unavailable',
@@ -457,54 +445,7 @@ const ProjectsManagementFull: FC = () => {
         />
       ),
       users: (item: Project) => <span className="text-text-primary">{item.user_count ?? 0}</span>,
-      assignments: (item: Project) => {
-        const c = item.counters
-
-        return (
-          <div className="flex flex-wrap gap-2 items-center">
-            <div
-              className="flex items-center border rounded-md px-2 py-1 border-border-structural w-[68px]"
-              data-tooltip-id="react-tooltip"
-              data-tooltip-content={TOOLTIPS.ASSISTANTS}
-            >
-              <AssistantSvg className="w-5 h-5" />
-              <span className="ml-2">{c?.assistants_count ?? 0}</span>
-            </div>
-            <div
-              className="flex items-center border rounded-md px-2 py-1 border-border-structural w-[68px]"
-              data-tooltip-id="react-tooltip"
-              data-tooltip-content={TOOLTIPS.WORKFLOWS}
-            >
-              <WorkflowSvg className="w-5 h-5" />
-              <span className="ml-2">{c?.workflows_count ?? 0}</span>
-            </div>
-            <div
-              className="flex items-center border rounded-md px-2 py-1 border-border-structural w-[68px]"
-              data-tooltip-id="react-tooltip"
-              data-tooltip-content={TOOLTIPS.INTEGRATIONS}
-            >
-              <IntegrationSvg className="w-5 h-5" />
-              <span className="ml-2">{c?.integrations_count ?? 0}</span>
-            </div>
-            <div
-              className="flex items-center border rounded-md px-2 py-1 border-border-structural w-[68px]"
-              data-tooltip-id="react-tooltip"
-              data-tooltip-content={TOOLTIPS.DATA_SOURCES}
-            >
-              <DataSourceSvg className="w-5 h-5" />
-              <span className="ml-2">{c?.datasources_count ?? 0}</span>
-            </div>
-            <div
-              className="flex items-center border rounded-md px-2 py-1 border-border-structural w-[68px]"
-              data-tooltip-id="react-tooltip"
-              data-tooltip-content={TOOLTIPS.SKILLS}
-            >
-              <SkillsSvg className="w-5 h-5" />
-              <span className="ml-2">{c?.skills_count ?? 0}</span>
-            </div>
-          </div>
-        )
-      },
+      assignments: (item: Project) => <ProjectResourceCounters project={item} />,
       actions: (item: Project) => {
         const isPersonal = item.project_type === ProjectType.PERSONAL
         const canManage = canManageProject(item)
