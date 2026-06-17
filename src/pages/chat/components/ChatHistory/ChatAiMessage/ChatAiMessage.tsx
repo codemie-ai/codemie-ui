@@ -187,7 +187,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
           {!isInProgress && (
             <div className="flex gap-2 text-xs items-center text-text-quaternary">
               <ProcessingCompleteSvg />
-              Processed in: {processingTime}s /{' '}
+              {processingTime && <>Processed in: {processingTime}s /{' '}</>}
               <span>{formatDateTime(message.createdAt, 'short')} </span>
             </div>
           )}

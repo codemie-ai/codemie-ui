@@ -73,6 +73,7 @@ export const createFileMetadata = (fileInput: File | string): FileMetadata => {
   try {
     fileData = decodeFileName(fileInput)
   } catch {
+    console.log('decodeFileName failed for input, falling back to raw value:', fileInput)
     fileData = { mimeType: '', user: '', originalFileName: fileInput }
   }
   return {
