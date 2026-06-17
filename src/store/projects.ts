@@ -259,7 +259,7 @@ export const projectsStore = proxy<ProjectsStore>({
           description: data.description,
           cost_center_id: data.clear_cost_center ? undefined : data.cost_center_id,
           clear_cost_center: data.clear_cost_center || undefined,
-          project_member_budget_tracking_enabled: data.project_member_budget_tracking_enabled,
+          enforce_member_spend_limits: data.enforce_member_spend_limits,
         },
         {
           skipErrorHandling: true,

@@ -43,14 +43,14 @@ export interface ProjectFormData {
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
-  project_member_budget_tracking_enabled?: boolean
+  enforce_member_spend_limits?: boolean
 }
 
 interface ProjectModalFormValues {
   name: string
   description: string
   cost_center_id: string
-  project_member_budget_tracking_enabled: boolean
+  enforce_member_spend_limits: boolean
 }
 
 const PROJECT_NAME_REGEX = /^[a-z0-9][a-z0-9_-]*$/
@@ -85,7 +85,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       name: '',
       description: '',
       cost_center_id: '',
-      project_member_budget_tracking_enabled: false,
+      enforce_member_spend_limits: false,
     },
   })
 
@@ -95,24 +95,26 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
         name: project.name,
         description: project.description || '',
         cost_center_id: project.cost_center_id || '',
-        project_member_budget_tracking_enabled: !!project.project_member_budget_tracking_enabled,
+        enforce_member_spend_limits: !!project.enforce_member_spend_limits,
       })
     } else if (visible && !project) {
       reset({
         name: '',
         description: '',
         cost_center_id: '',
-        project_member_budget_tracking_enabled: false,
+        enforce_member_spend_limits: false,
       })
     }
+  }, [visible, project, reset])
 
+  useEffect(() => {
     if (visible && isAdmin && isCostCentersEnabled) {
       costCentersStore
         .getCostCenterOptions()
         .then(setCostCenterOptions)
         .catch(() => setCostCenterOptions([]))
     }
-  }, [visible, project, reset, isAdmin, isCostCentersEnabled])
+  }, [visible, isAdmin, isCostCentersEnabled])
 
   const handleCostCenterSearch = (query: string) => {
     if (!isAdmin || !isCostCentersEnabled) return
@@ -128,9 +130,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       description: data.description,
       cost_center_id: data.cost_center_id || null,
       clear_cost_center: !!project && !data.cost_center_id,
-      project_member_budget_tracking_enabled: project
-        ? data.project_member_budget_tracking_enabled
-        : undefined,
+      enforce_member_spend_limits: project ? data.enforce_member_spend_limits : undefined,
     })
     reset()
   }
@@ -217,13 +217,13 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
 
         {isEdit && isMaintainer && (
           <Controller
-            name="project_member_budget_tracking_enabled"
+            name="enforce_member_spend_limits"
             control={control}
             render={({ field: { value, onChange, onBlur, ref } }) => (
               <Switch
-                id="project_member_budget_tracking_enabled"
-                label="Project member budget tracking"
-                hint="When enabled, budget enforcement tracks individual project members under the project budget."
+                id="enforce_member_spend_limits"
+                label="Enforce member spend limits"
+                hint="Disabled: track each member's spend against the project budget (no individual cap enforced). Enabled: enforce each member's configured allocation limit."
                 value={value}
                 onBlur={onBlur}
                 ref={ref}

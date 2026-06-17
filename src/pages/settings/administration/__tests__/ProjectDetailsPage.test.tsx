@@ -76,7 +76,7 @@ const mockProject: ProjectDetail = {
   admin_count: 1,
   cost_center_id: 'cc-1',
   cost_center_name: 'Cost Center',
-  project_member_budget_tracking_enabled: true,
+  enforce_member_spend_limits: true,
   members: [],
 }
 
@@ -122,7 +122,7 @@ describe('ProjectDetailsPage', () => {
   it('renders project member budget tracking status', async () => {
     render(<ProjectDetailsPage />)
 
-    expect(await screen.findByText('Member budget tracking')).toBeInTheDocument()
+    expect(await screen.findByText('Enforce member spend limits')).toBeInTheDocument()
     expect(screen.getByText('Enabled')).toBeInTheDocument()
   })
 })

@@ -55,7 +55,7 @@ export interface Project {
   created_at?: string | null
   cost_center_id?: string | null
   cost_center_name?: string | null
-  project_member_budget_tracking_enabled?: boolean
+  enforce_member_spend_limits?: boolean
   spending?: ProjectSpendingSummaryCompact | null
   budgets?: ProjectAssignedBudgetSummary[] | null
 }
@@ -65,7 +65,7 @@ export interface ProjectRequest {
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
-  project_member_budget_tracking_enabled?: boolean
+  enforce_member_spend_limits?: boolean
 }
 
 export enum ProjectType {

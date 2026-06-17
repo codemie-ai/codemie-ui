@@ -102,7 +102,7 @@ const ProjectDetailsPage = () => {
         description: payload.description,
         cost_center_id: payload.cost_center_id,
         clear_cost_center: payload.clear_cost_center,
-        project_member_budget_tracking_enabled: payload.project_member_budget_tracking_enabled,
+        enforce_member_spend_limits: payload.enforce_member_spend_limits,
       })
       toaster.info(`Project ${payload.name} updated successfully`)
       setIsEditPopupVisible(false)
@@ -216,10 +216,10 @@ const ProjectDetailsPage = () => {
                     <div className="capitalize">{project.project_type}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-text-quaternary mb-1">Member budget tracking</div>
-                    <div>
-                      {project.project_member_budget_tracking_enabled ? 'Enabled' : 'Disabled'}
+                    <div className="text-xs text-text-quaternary mb-1">
+                      Enforce member spend limits
                     </div>
+                    <div>{project.enforce_member_spend_limits ? 'Enabled' : 'Disabled'}</div>
                   </div>
                   <div>
                     <div className="text-xs text-text-quaternary mb-1">Created by</div>

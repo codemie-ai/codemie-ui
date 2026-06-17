@@ -39,7 +39,7 @@ export interface ProjectListItem {
   admin_count: number
   cost_center_id?: string | null
   cost_center_name?: string | null
-  project_member_budget_tracking_enabled?: boolean
+  enforce_member_spend_limits?: boolean
   budgets?: ProjectAssignedBudgetSummary[] | null
 }
 
@@ -98,5 +98,5 @@ export interface ProjectUpdatePayload {
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
-  project_member_budget_tracking_enabled?: boolean
+  enforce_member_spend_limits?: boolean
 }

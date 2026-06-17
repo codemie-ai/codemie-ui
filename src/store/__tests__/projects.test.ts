@@ -251,7 +251,7 @@ describe('projectsStore', () => {
           description: 'Updated description',
           cost_center_id: undefined,
           clear_cost_center: undefined,
-          project_member_budget_tracking_enabled: undefined,
+          enforce_member_spend_limits: undefined,
         },
         { skipErrorHandling: true }
       )
@@ -261,13 +261,13 @@ describe('projectsStore', () => {
       mockPatch.mockResolvedValue({
         json: async () => ({
           name: 'my-project',
-          project_member_budget_tracking_enabled: true,
+          enforce_member_spend_limits: true,
         }),
       })
 
       const { projectsStore } = await import('@/store/projects')
       await projectsStore.updateProject('my-project', {
-        project_member_budget_tracking_enabled: true,
+        enforce_member_spend_limits: true,
       })
 
       expect(mockPatch).toHaveBeenCalledWith(
@@ -277,7 +277,7 @@ describe('projectsStore', () => {
           description: undefined,
           cost_center_id: undefined,
           clear_cost_center: undefined,
-          project_member_budget_tracking_enabled: true,
+          enforce_member_spend_limits: true,
         },
         { skipErrorHandling: true }
       )
