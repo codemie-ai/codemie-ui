@@ -19,21 +19,33 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import AnalyticsUserFilter from '../AnalyticsUserFilter'
 
-vi.mock('@/store/user', () => ({
-  userStore: {
+const { mockUserStore } = vi.hoisted(() => ({
+  mockUserStore: {
     user: {
       userId: 'user-123',
       username: 'testuser',
       name: 'Test User',
+      isAdmin: false,
+      isMaintainer: false,
     },
   },
 }))
+
+vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
 
 describe('AnalyticsUserFilter', () => {
   const mockOnChange = vi.fn()
 
   beforeEach(() => {
     mockOnChange.mockClear()
+    // Reset to admin user for existing tests (checkbox should be visible)
+    mockUserStore.user = {
+      userId: 'user-123',
+      username: 'testuser',
+      name: 'Test User',
+      isAdmin: true,
+      isMaintainer: false,
+    }
   })
 
   it('should preserve Me checkbox when userOptions refresh without current user', async () => {
@@ -49,6 +61,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={initialOptions}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -69,6 +82,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={optionsWithoutCurrentUser}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -94,6 +108,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={options}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -117,6 +132,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={options}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -139,6 +155,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={options}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -153,6 +170,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={[{ label: 'Other User', value: 'user-456' }]}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -168,6 +186,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={options}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -190,6 +209,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={options}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -205,6 +225,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={options}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -217,6 +238,7 @@ describe('AnalyticsUserFilter', () => {
         onChange={mockOnChange}
         userOptions={options}
         isLoadingOptions={false}
+        showMeCheckbox={true}
       />
     )
 
@@ -228,5 +250,89 @@ describe('AnalyticsUserFilter', () => {
 
     // Should NOT re-add current user
     expect(mockOnChange).not.toHaveBeenCalled()
+  })
+
+  it('should show Me checkbox when user is admin', () => {
+    mockUserStore.user = {
+      userId: 'user-123',
+      username: 'adminuser',
+      name: 'Admin User',
+      isAdmin: true,
+      isMaintainer: false,
+    }
+
+    const options = [
+      { label: 'Admin User', value: 'user-123' },
+      { label: 'Other User', value: 'user-456' },
+    ]
+
+    render(
+      <AnalyticsUserFilter
+        value={[]}
+        onChange={mockOnChange}
+        userOptions={options}
+        isLoadingOptions={false}
+        showMeCheckbox={true}
+      />
+    )
+
+    const meCheckbox = screen.getByLabelText('Me')
+    expect(meCheckbox).toBeInTheDocument()
+  })
+
+  it('should show Me checkbox when user is maintainer', () => {
+    mockUserStore.user = {
+      userId: 'user-123',
+      username: 'maintaineruser',
+      name: 'Maintainer User',
+      isAdmin: false,
+      isMaintainer: true,
+    }
+
+    const options = [
+      { label: 'Maintainer User', value: 'user-123' },
+      { label: 'Other User', value: 'user-456' },
+    ]
+
+    render(
+      <AnalyticsUserFilter
+        value={[]}
+        onChange={mockOnChange}
+        userOptions={options}
+        isLoadingOptions={false}
+        showMeCheckbox={true}
+      />
+    )
+
+    const meCheckbox = screen.getByLabelText('Me')
+    expect(meCheckbox).toBeInTheDocument()
+  })
+
+  it('should hide Me checkbox when user is neither admin nor maintainer', () => {
+    mockUserStore.user = {
+      userId: 'user-123',
+      username: 'regularuser',
+      name: 'Regular User',
+      isAdmin: false,
+      isMaintainer: false,
+    }
+
+    const options = [
+      { label: 'Regular User', value: 'user-123' },
+      { label: 'Other User', value: 'user-456' },
+    ]
+
+    render(
+      <AnalyticsUserFilter
+        value={[]}
+        onChange={mockOnChange}
+        userOptions={options}
+        isLoadingOptions={false}
+        showMeCheckbox={false}
+      />
+    )
+
+    const meCheckbox = screen.queryByLabelText('Me')
+    expect(meCheckbox).not.toBeInTheDocument()
   })
 })

@@ -28,6 +28,7 @@ interface AnalyticsUserFilterProps {
   userOptions: Array<{ label: string; value: string }>
   isLoadingOptions?: boolean
   isAdmin?: boolean
+  showMeCheckbox?: boolean
   onSearchChange?: (term: string) => void
 }
 
@@ -36,6 +37,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   onChange,
   userOptions,
   isAdmin = false,
+  showMeCheckbox = false,
   onSearchChange = () => {},
 }) => {
   const [meChecked, setMeChecked] = useState(false)
@@ -166,23 +168,25 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
       <div className="mb-2 ml-1">
         <div className="flex items-center space-x-2">
           <span className="text-xs text-text-tertiary">Users</span>
-          <div
-            data-tooltip-id="react-tooltip"
-            data-tooltip-content={
-              !currentUserId
-                ? 'Analytics data selected with current filters values contain no data for current user.'
-                : undefined
-            }
-            data-tooltip-class-name="break-keep"
-          >
-            <Checkbox
-              checked={meChecked}
-              onChange={toggleCurrentUser}
-              label="Me"
-              disabled={!currentUserId}
-              rootClassName="gap-x-0 mr-2"
-            />
-          </div>
+          {showMeCheckbox && (
+            <div
+              data-tooltip-id="react-tooltip"
+              data-tooltip-content={
+                !currentUserId
+                  ? 'Analytics data selected with current filters values contain no data for current user.'
+                  : undefined
+              }
+              data-tooltip-class-name="break-keep"
+            >
+              <Checkbox
+                checked={meChecked}
+                onChange={toggleCurrentUser}
+                label="Me"
+                disabled={!currentUserId}
+                rootClassName="gap-x-0 mr-2"
+              />
+            </div>
+          )}
           <Hint
             hint="Options for this dropdown are displayed based on the data available in the current dashboard (including filtering). Sometimes multiple names or other identifiers can be traced to the same user. In those cases identifiers will be merged into one option and additional ones will be shown in parentheses."
             id="analytics-user-filter-hint"

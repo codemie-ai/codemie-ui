@@ -41,6 +41,8 @@ interface AnalyticsFiltersProps {
 const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange }) => {
   const { user } = useSnapshot(userStore)
   const isAdmin = user?.isAdmin ?? false
+  const isMaintainer = user?.isMaintainer ?? false
+  const showMeCheckbox = isAdmin || isMaintainer
   const isAdminSearch = isAdmin && window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
   const [userOptions, setUserOptions] = useState<Array<{ label: string; value: string }>>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
@@ -282,6 +284,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
             userOptions={userOptions}
             isLoadingOptions={isLoadingUsers}
             isAdmin={isAdminPgSearch}
+            showMeCheckbox={showMeCheckbox}
             onSearchChange={handleSearchChange}
           />
         </FilterAccordionItem>
