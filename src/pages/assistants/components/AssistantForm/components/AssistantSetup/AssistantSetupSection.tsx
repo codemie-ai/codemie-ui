@@ -252,20 +252,19 @@ const AssistantSetupSection = ({
                     />
                   )}
                 />
-                {/* TODO: Uncomment when Tools Tokens Size Limit is implemented on the backend */}
-                {/* <Controller
-              name="tools_tokens_size_limit"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Input
-                  label="Tools Tokens Size Limit"
-                  placeholder="Enter limit"
-                  className="w-full"
-                  error={fieldState.error?.message}
-                  {...field}
+                <Controller
+                  name="tools_tokens_size_limit"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Input
+                      label="Tools Tokens Size Limit"
+                      placeholder="30000"
+                      className="w-full"
+                      error={fieldState.error?.message}
+                      {...field}
+                    />
+                  )}
                 />
-              )}
-            /> */}
               </div>
 
               <div className={cn('flex flex-col gap-6', !isCompactView && 'flex-1')}>
