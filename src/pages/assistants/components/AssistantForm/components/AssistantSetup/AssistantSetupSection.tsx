@@ -257,7 +257,7 @@ const AssistantSetupSection = ({
                   control={control}
                   render={({ field, fieldState }) => (
                     <Input
-                      label="Tools Tokens Size Limit"
+                      label="Limit Tool Output Tokens"
                       placeholder="30000"
                       className="w-full"
                       error={fieldState.error?.message}

@@ -71,7 +71,7 @@ const MCPBasicFields: React.FC<MCPBasicFieldsProps> = ({
         render={({ field, fieldState }) => (
           <div className="flex flex-col gap-2">
             <Input
-              label="Tools Tokens Size Limit"
+              label="Limit Tool Output Tokens"
               placeholder="30000"
               min={0}
               type="number"

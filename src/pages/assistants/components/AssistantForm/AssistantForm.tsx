@@ -132,10 +132,10 @@ const formSchema = Yup.object()
       .transform((value, originalValue) => (originalValue === '' ? undefined : value))
       .typeError('Top P must be a number'),
     tools_tokens_size_limit: Yup.number()
-      .integer('Tools Tokens Size Limit must be an integer')
-      .positive('Tools Tokens Size Limit must be a positive number')
+      .integer('Limit Tool Output Tokens must be an integer')
+      .positive('Limit Tool Output Tokens must be a positive number')
       .transform((value, originalValue) => (originalValue === '' ? undefined : value))
-      .typeError('Tools Tokens Size Limit must be a number'),
+      .typeError('Limit Tool Output Tokens must be a number'),
     context: Yup.array().of(
       Yup.object().shape({ name: Yup.string().required(), context_type: Yup.string().required() })
     ),
