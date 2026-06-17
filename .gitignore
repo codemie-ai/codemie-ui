@@ -16,8 +16,6 @@ coverage
 /cypress/videos/
 /cypress/screenshots/
 
-docs/superpowers
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -35,16 +33,24 @@ dist_keycloak
 .keycloakify/realm-kc-26.json
 public/keycloakify-dev-resources
 .vscode
+/test-results/
+
+# AI
+.ai-run/sdlc-factory/
+.ai-run/runs/
+.agents/memory/sdlc/daily/
+docs/superpowers/runs/
+docs/superpowers/tasks/*/.state.json
+.superpowers
 .codemie/claude-templates
 .codemie/virtual_assistants
 .codemie/claude.extension.json
 .codemie/reviews
 .codemie/specs
 .claude/settings.local.json
+/CLAUDE.local.md
 bmad/*
 .gemini/*
 /opencode.json
 /.playwright-mcp/
-/test-results/
-/CLAUDE.local.md
 /.mr-screenshots/

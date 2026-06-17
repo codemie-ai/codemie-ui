@@ -1,9 +1,0 @@
-{
-  "schema": 1,
-  "slug": "favorites-workflow-start-chat-fix",
-  "branch": "main",
-  "phase": "maintenance",
-  "started_at": "2026-05-29T19:30:00Z",
-  "completed_at": "2026-05-29T20:15:00Z",
-  "last_sync_commit": "8753bd511fe56e31212948191a1c21749cdcd5cf"
-}
