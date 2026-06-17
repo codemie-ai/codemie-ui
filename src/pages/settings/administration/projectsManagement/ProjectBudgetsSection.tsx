@@ -13,19 +13,14 @@
 // limitations under the License.
 //
 
-import { FC, ReactNode, useCallback, useEffect, useState } from 'react'
+import { FC, useCallback, useEffect, useState } from 'react'
 
 import ConfirmationModal from '@/components/ConfirmationModal'
 import Spinner from '@/components/Spinner'
-import { ButtonType } from '@/constants'
-import ProjectBudgetModal from '@/pages/settings/administration/components/ProjectBudgetModal'
+import UnifiedProjectBudgetModal from '@/pages/settings/administration/components/UnifiedProjectBudgetModal'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { BudgetCategory } from '@/types/entity/budget'
-import {
-  ProjectBudget,
-  ProjectBudgetCreatePayload,
-  ProjectBudgetUpdatePayload,
-} from '@/types/entity/projectBudget'
+import { ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
 import toaster from '@/utils/toaster'
 
@@ -50,18 +45,23 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
   const [budgets, setBudgets] = useState<ProjectBudget[]>([])
   const [loading, setLoading] = useState(false)
 
-  const [modalVisible, setModalVisible] = useState(false)
-  const [editingBudget, setEditingBudget] = useState<ProjectBudget | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<BudgetCategory | null>(null)
+  const [unifiedModalVisible, setUnifiedModalVisible] = useState(false)
 
-  const [deletingBudget, setDeletingBudget] = useState<ProjectBudget | null>(null)
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
+  const [planActionRunning, setPlanActionRunning] = useState(false)
+  const [planConfirmAction, setPlanConfirmAction] = useState<'reset' | 'rebalance' | null>(null)
 
   const loadBudgets = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await projectBudgetsStore.listProjectBudgets({ projectName })
+      const [data, plans] = await Promise.all([
+        projectBudgetsStore.listProjectBudgets({ projectName }),
+        projectBudgetsStore.listProjectBudgetPlans(projectName),
+      ])
       setBudgets(data)
       onBudgetsChanged?.(data)
+      const activePlan = plans.find((p) => !p.deleted_at)
+      setCurrentPlanId(activePlan?.plan_id ?? null)
     } catch {
       // error already handled by store (toaster)
     } finally {
@@ -73,105 +73,35 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     loadBudgets()
   }, [loadBudgets])
 
-  const handleAddBudget = useCallback(
-    (category: BudgetCategory) => {
-      if (!isManageMode) return
-      setEditingBudget(null)
-      setSelectedCategory(category)
-      setModalVisible(true)
-    },
-    [isManageMode]
-  )
-
-  const handleEdit = useCallback(
-    (budget: ProjectBudget) => {
-      if (!isManageMode) return
-      setEditingBudget(budget)
-      setSelectedCategory(null)
-      setModalVisible(true)
-    },
-    [isManageMode]
-  )
-
-  const handleModalHide = useCallback(() => {
-    setModalVisible(false)
-    setEditingBudget(null)
-    setSelectedCategory(null)
-  }, [])
-
-  const handleCreateSubmit = useCallback(
-    async (payload: ProjectBudgetCreatePayload) => {
-      await projectBudgetsStore.createProjectBudget(payload)
-      toaster.info('Project budget created successfully')
-      setModalVisible(false)
-      setSelectedCategory(null)
-      await loadBudgets()
-    },
-    [loadBudgets]
-  )
-
-  const handleEditSubmit = useCallback(
-    async (payload: ProjectBudgetUpdatePayload) => {
-      if (!editingBudget) return
-      await projectBudgetsStore.updateProjectBudget(editingBudget.budget_id, payload)
-      toaster.info('Project budget updated successfully')
-      setModalVisible(false)
-      setEditingBudget(null)
-      await loadBudgets()
-    },
-    [editingBudget, loadBudgets]
-  )
-
-  const handleReset = useCallback(
-    async (budget: ProjectBudget) => {
-      try {
-        await projectBudgetsStore.resetProjectBudget(budget.budget_id)
-        toaster.info('Project budget reset successfully')
-        await loadBudgets()
-      } catch {
-        // error already handled by store
-      }
-    },
-    [loadBudgets]
-  )
-
-  const handleSync = useCallback(
-    async (budget: ProjectBudget) => {
-      try {
-        await projectBudgetsStore.resetProjectBudget(budget.budget_id)
-        toaster.info('Project budget synced successfully')
-        await loadBudgets()
-      } catch {
-        // error already handled by store
-      }
-    },
-    [loadBudgets]
-  )
-
-  const handleRebalance = useCallback(
-    async (budget: ProjectBudget) => {
-      try {
-        await projectBudgetsStore.rebalanceProjectBudget(budget.budget_id)
-        toaster.info('Member allocations rebalanced successfully')
-        await loadBudgets()
-      } catch {
-        // error already handled by store
-      }
-    },
-    [loadBudgets]
-  )
-
-  const handleDeleteConfirm = useCallback(async () => {
-    if (!deletingBudget) return
+  const handlePlanReset = useCallback(async () => {
+    if (!currentPlanId) return
+    setPlanActionRunning(true)
     try {
-      await projectBudgetsStore.deleteProjectBudget(deletingBudget.budget_id)
-      toaster.info('Project budget deleted successfully')
-      setDeletingBudget(null)
+      await projectBudgetsStore.resetProjectBudgetPlan(currentPlanId)
+      toaster.info('Project budget plan reset')
       await loadBudgets()
     } catch {
       // error already handled by store
+    } finally {
+      setPlanActionRunning(false)
+      setPlanConfirmAction(null)
     }
-  }, [deletingBudget, loadBudgets])
+  }, [currentPlanId, loadBudgets])
+
+  const handlePlanRebalance = useCallback(async () => {
+    if (!currentPlanId) return
+    setPlanActionRunning(true)
+    try {
+      await projectBudgetsStore.rebalanceProjectBudgetPlan(currentPlanId)
+      toaster.info('Member allocations rebalanced')
+      await loadBudgets()
+    } catch {
+      // error already handled by store
+    } finally {
+      setPlanActionRunning(false)
+      setPlanConfirmAction(null)
+    }
+  }, [currentPlanId, loadBudgets])
 
   const spendingByBudgetId = (spendingRows ?? []).reduce<Record<string, ProjectSpendingWidgetRow>>(
     (acc, row) => {
@@ -189,38 +119,39 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     { platform: null, cli: null, premium_models: null }
   )
 
-  const assignedCategories = BUDGET_CATEGORIES.filter(
-    (category) => budgetByCategory[category] !== null
-  )
-
-  let budgetModal: ReactNode = null
-  if (isManageMode && editingBudget) {
-    budgetModal = (
-      <ProjectBudgetModal
-        visible={modalVisible}
-        projectName={projectName}
-        budget={editingBudget}
-        onHide={handleModalHide}
-        onSubmit={handleEditSubmit}
-      />
-    )
-  } else if (isManageMode) {
-    budgetModal = (
-      <ProjectBudgetModal
-        visible={modalVisible}
-        projectName={projectName}
-        preselectedCategory={selectedCategory}
-        assignedCategories={assignedCategories}
-        onHide={handleModalHide}
-        onSubmit={handleCreateSubmit}
-      />
-    )
-  }
-
   return (
     <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
-      <div className="mb-4">
+      <div className="flex items-center justify-between mb-4">
         <div className="text-sm font-medium text-text-primary">Budgets</div>
+        {isManageMode && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={!currentPlanId || planActionRunning}
+              onClick={() => setPlanConfirmAction('reset')}
+              title={currentPlanId ? 'Reset spend counters' : 'Save a plan first'}
+              className="text-xs text-text-quaternary border border-border-structural rounded px-2.5 py-1 hover:bg-surface-base-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              disabled={!currentPlanId || planActionRunning}
+              onClick={() => setPlanConfirmAction('rebalance')}
+              title={currentPlanId ? 'Rebalance member allocations' : 'Save a plan first'}
+              className="text-xs text-text-quaternary border border-border-structural rounded px-2.5 py-1 hover:bg-surface-base-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Rebalance
+            </button>
+            <button
+              type="button"
+              onClick={() => setUnifiedModalVisible(true)}
+              className="text-xs text-text-quaternary border border-border-structural rounded px-2.5 py-1 hover:bg-surface-base-primary transition-colors"
+            >
+              Manage Budget
+            </button>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -236,14 +167,9 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
                 <ProjectBudgetCard
                   key={category}
                   variant="assigned"
-                  mode={mode}
+                  mode="view"
                   budget={budget}
                   spendingRow={spendingByBudgetId[budget.budget_id] ?? null}
-                  onEdit={handleEdit}
-                  onReset={handleReset}
-                  onDelete={setDeletingBudget}
-                  onSync={handleSync}
-                  onRebalance={handleRebalance}
                 />
               )
             }
@@ -251,29 +177,43 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
               <ProjectBudgetCard
                 key={category}
                 variant="empty"
-                mode={mode}
+                mode="view"
                 category={category}
-                onAddBudget={handleAddBudget}
               />
             )
           })}
         </div>
       )}
 
-      {budgetModal}
+      <UnifiedProjectBudgetModal
+        visible={unifiedModalVisible}
+        onHide={() => setUnifiedModalVisible(false)}
+        projectName={projectName}
+        onSaved={loadBudgets}
+      />
 
-      {isManageMode ? (
-        <ConfirmationModal
-          visible={!!deletingBudget}
-          header="Delete Project Budget?"
-          message={`Are you sure you want to delete "${deletingBudget?.name}"? This will permanently remove the budget and all member assignments.`}
-          confirmText="Delete"
-          confirmButtonType={ButtonType.DELETE}
-          onCancel={() => setDeletingBudget(null)}
-          onConfirm={handleDeleteConfirm}
-          limitWidth
-        />
-      ) : null}
+      {isManageMode && (
+        <>
+          <ConfirmationModal
+            visible={planConfirmAction === 'reset'}
+            header="Reset Project Budget Plan?"
+            message="Resets spend counters and reset window for every category in this plan. Continue?"
+            confirmText="Reset"
+            onConfirm={handlePlanReset}
+            onCancel={() => setPlanConfirmAction(null)}
+            limitWidth
+          />
+          <ConfirmationModal
+            visible={planConfirmAction === 'rebalance'}
+            header="Rebalance Project Budget Plan?"
+            message="Recalculates member allocations across every category in this plan. Continue?"
+            confirmText="Rebalance"
+            onConfirm={handlePlanRebalance}
+            onCancel={() => setPlanConfirmAction(null)}
+            limitWidth
+          />
+        </>
+      )}
     </div>
   )
 }
