@@ -109,6 +109,23 @@ Detailed project guidance lives under `.ai-run/guides/`, which is the source of 
 | User asks for git work without a required work item | Ask for the missing work item before committing. |
 | Existing host-specific skills disagree with `.ai-run/guides/` | Follow `.ai-run/guides/` unless the user explicitly selects the host-specific workflow. |
 
+## AI Skills
+
+Local `.claude/skills/` and `.claude/agents/` have been migrated to [codemie-public-skills](https://gitbud.epam.com/epm-cdme/codemie-public-skills). Install with:
+
+```bash
+# Standalone code reviewer (self-review before submitting MR)
+codemie skills add https://gitbud.epam.com/epm-cdme/codemie-public-skills.git \
+  --skill code-reviewer
+
+# Full SDLC factory (feature development, MR creation, QA — includes refactor-cleaner, unit-tester, integration-tester)
+codemie skills add https://gitbud.epam.com/epm-cdme/codemie-public-skills.git \
+  --package sdlc-factory
+```
+
+The `code-reviewer` skill reads `CLAUDE.md` and `.ai-run/guides/` to understand project-specific conventions automatically.
+`refactor-cleaner`, `unit-tester`, and `integration-tester` are included in `sdlc-factory` — no separate install needed.
+
 ## Source Evidence Priority
 
 | Evidence type | Priority |
