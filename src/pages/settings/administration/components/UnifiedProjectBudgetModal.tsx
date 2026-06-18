@@ -18,6 +18,7 @@ import { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState 
 import { Controller, SubmitHandler, useForm } from 'react-hook-form'
 import * as Yup from 'yup'
 
+import Button from '@/components/Button'
 import Input from '@/components/form/Input'
 import Select from '@/components/form/Select/Select'
 import Textarea from '@/components/form/Textarea/Textarea'
@@ -39,9 +40,9 @@ const CATEGORY_LABELS: Record<BudgetCategory, string> = {
 }
 
 const CATEGORY_DOT_CLASS: Record<BudgetCategory, string> = {
-  platform: 'bg-indigo-600',
-  cli: 'bg-sky-700',
-  premium_models: 'bg-violet-600',
+  platform: 'bg-surface-specific-charts-blue',
+  cli: 'bg-surface-specific-charts-cyan',
+  premium_models: 'bg-surface-specific-charts-purple',
 }
 
 const DURATION_OPTIONS = [
@@ -75,7 +76,7 @@ const schema = Yup.object({
     .typeError('Must be a number')
     .positive('Must be greater than 0')
     .required('Total budget is required'),
-  description: Yup.string().trim().required('Description is required').defined(),
+  description: Yup.string().trim().required('Description is required'),
 })
 
 type BudgetAmountInputProps = {
@@ -93,23 +94,19 @@ const BudgetAmountInput: FC<BudgetAmountInputProps> = ({
 }) => {
   const [draft, setDraft] = useState<string>(() => String(Math.round(value)))
   const focusedRef = useRef(false)
+  const userTypingRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const justSyncedWhileFocusedRef = useRef(false)
 
-  // Sync the draft from the canonical value whenever it changes.
-  // value only changes due to external action (slider drag, total
-  // change, another input's commit) — never from this input mid-typing.
-  // Syncing unconditionally ensures slider drags overwrite a stale draft
-  // even when the user typed but hasn't blurred yet, and still gives
-  // freshly Tabbed-into fields the latest cascade-scaled value.
   useEffect(() => {
+    // Don't overwrite what the user is actively typing. Only sync from
+    // external changes (slider drag, total change) when the user hasn't
+    // started editing this field since last focus.
+    if (focusedRef.current && userTypingRef.current) return
     setDraft(String(Math.round(value)))
     if (focusedRef.current) justSyncedWhileFocusedRef.current = true
   }, [value])
 
-  // When the draft updates as a side effect of a focused-not-typed sync,
-  // the controlled input swap wipes the browser's text selection. Re-select
-  // immediately so the user keeps the "ready-to-type" visual cue.
   useLayoutEffect(() => {
     if (!justSyncedWhileFocusedRef.current) return
     justSyncedWhileFocusedRef.current = false
@@ -125,29 +122,23 @@ const BudgetAmountInput: FC<BudgetAmountInputProps> = ({
       value={draft}
       onFocus={(e) => {
         focusedRef.current = true
-        // Defer select() to a macrotask so it runs after any pending React
-        // commit triggered by the prior input's onBlur cascade. By then the
-        // layout effect above has already re-selected; this is a defensive
-        // no-op for the simple case where no commits are pending.
+        userTypingRef.current = false
         const el = e.currentTarget
         setTimeout(() => {
           if (focusedRef.current && document.activeElement === el) el.select()
         }, 0)
       }}
       onChange={(e) => {
+        userTypingRef.current = true
         setDraft(e.target.value)
       }}
       onBlur={() => {
         focusedRef.current = false
+        userTypingRef.current = false
         const n = Number(draft)
         if (Number.isFinite(n) && n >= 0) {
           onCommit(n)
         }
-        // Sync draft to the current canonical value. When onCommit produces a
-        // state change, useEffect([value]) will override this with the
-        // post-commit canonical on the next render. When onCommit produces no
-        // change (e.g. typed value was below the floor and value was already
-        // at the floor), useEffect never fires — this keeps draft accurate.
         setDraft(String(Math.round(value)))
       }}
       onKeyDown={(e) => {
@@ -164,6 +155,7 @@ export interface UnifiedProjectBudgetModalProps {
   onHide: () => void
   projectName: string
   onSaved?: () => void
+  forceCreate?: boolean
 }
 
 const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
@@ -171,6 +163,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   onHide,
   projectName,
   onSaved,
+  forceCreate = false,
 }) => {
   const [pcts, setPcts] = useState<PctMap>({ ...DEFAULT_PCTS })
   const [softs, setSofts] = useState<PctMap>({ ...ZERO_PCTS })
@@ -271,7 +264,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     setSofts({ ...ZERO_PCTS })
     setExistingPlan(null)
     reset({ name: '', budget_duration: '30d', total_budget: 1000, description: '' })
-    if (!projectName) return
+    if (!projectName || forceCreate) return
     projectBudgetsStore
       .listProjectBudgetPlans(projectName)
       .then((plans) => {
@@ -287,7 +280,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       .catch(() => {
         /* error already toasted by store */
       })
-  }, [visible, projectName, populateFromPlan, reset])
+  }, [visible, projectName, forceCreate, populateFromPlan, reset])
 
   useEffect(() => {
     const nextHards: PctMap = {
@@ -336,12 +329,9 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     interactionInitRef.current = null
   }, [])
 
-  const onSliderChange = useCallback(
-    (next: PctMap) => {
-      setPcts(next)
-    },
-    []
-  )
+  const onSliderChange = useCallback((next: PctMap) => {
+    setPcts(next)
+  }, [])
 
   const onHardInputChange = useCallback(
     (cat: BudgetCategory, val: number) => {
@@ -355,14 +345,14 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       setPcts((prev) => {
         const next = { ...prev }
         if (cat === 'platform') {
-          next.platform = clamp(requestedPct, PLATFORM_MIN_PCT, 100 - prev.premium_models)
-          next.cli = Math.max(0, 100 - next.platform - prev.premium_models)
+          next.platform = round2(clamp(requestedPct, PLATFORM_MIN_PCT, 100 - prev.premium_models))
+          next.cli = round2(Math.max(0, 100 - next.platform - prev.premium_models))
         } else if (cat === 'cli') {
-          next.cli = clamp(requestedPct, 0, 100 - prev.platform)
-          next.premium_models = Math.max(0, 100 - prev.platform - next.cli)
+          next.cli = round2(clamp(requestedPct, 0, 100 - prev.platform))
+          next.premium_models = round2(Math.max(0, 100 - prev.platform - next.cli))
         } else {
-          next.premium_models = clamp(requestedPct, 0, 100 - prev.platform)
-          next.cli = Math.max(0, 100 - prev.platform - next.premium_models)
+          next.premium_models = round2(clamp(requestedPct, 0, 100 - prev.platform))
+          next.cli = round2(Math.max(0, 100 - prev.platform - next.premium_models))
         }
         return next
       })
@@ -387,8 +377,11 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     try {
       const categories: Record<BudgetCategory, { pct: number; soft_budget: number }> = {
         platform: { pct: round2(pcts.platform), soft_budget: Math.round(softs.platform) },
-        cli:      { pct: round2(pcts.cli),      soft_budget: Math.round(softs.cli) },
-        premium_models: { pct: round2(pcts.premium_models), soft_budget: Math.round(softs.premium_models) },
+        cli: { pct: round2(pcts.cli), soft_budget: Math.round(softs.cli) },
+        premium_models: {
+          pct: round2(pcts.premium_models),
+          soft_budget: Math.round(softs.premium_models),
+        },
       }
 
       if (existingPlan) {
@@ -425,20 +418,9 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   const onTotalBlur = useCallback(() => releaseInteraction(), [releaseInteraction])
 
   const headerContent = (
-    <div className="flex items-center justify-between w-full gap-3">
-      <h4 className="text-base font-semibold m-0">
-        {existingPlan ? 'Update Budget' : 'Create Budget'}
-      </h4>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={handleDefaultDistribution}
-          className="text-xs text-text-quaternary border border-border-structural rounded px-2.5 py-1 hover:bg-surface-base-primary transition-colors whitespace-nowrap"
-        >
-          Default 30/60/10
-        </button>
-      </div>
-    </div>
+    <h4 className="text-base font-semibold m-0">
+      {existingPlan ? 'Update Budget' : 'Create Budget'}
+    </h4>
   )
 
   return (
@@ -453,155 +435,155 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       limitWidth
       withBorderBottom={false}
     >
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Controller
-              name="name"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  id="name"
-                  label="Name"
-                  required
-                  placeholder="Budget plan name"
-                  error={errors.name?.message}
-                />
-              )}
-            />
-            <Controller
-              name="budget_duration"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  id="budget_duration"
-                  label="Reset Period"
-                  required
-                  value={field.value}
-                  options={DURATION_OPTIONS}
-                  onChangeValue={(value) => field.onChange(value)}
-                  error={errors.budget_duration?.message}
-                />
-              )}
-            />
-          </div>
-
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
           <Controller
-            name="description"
-            control={control}
-            render={({ field }) => (
-              <Textarea
-                {...field}
-                id="description"
-                label="Description"
-                required
-                placeholder="What this budget plan is used for"
-                error={errors.description?.message}
-                rows={3}
-              />
-            )}
-          />
-
-          <Controller
-            name="total_budget"
+            name="name"
             control={control}
             render={({ field }) => (
               <Input
                 {...field}
-                id="total_budget"
-                label="Total Budget ($)"
+                id="name"
+                label="Name"
                 required
-                type="number"
-                min="0"
-                step="any"
-                onFocus={onTotalFocus}
-                onBlur={() => {
-                  field.onBlur()
-                  onTotalBlur()
-                }}
-                error={errors.total_budget?.message}
+                placeholder="Budget name"
+                error={errors.name?.message}
               />
             )}
           />
+          <Controller
+            name="budget_duration"
+            control={control}
+            render={({ field }) => (
+              <Select
+                id="budget_duration"
+                label="Reset Period"
+                required
+                value={field.value}
+                options={DURATION_OPTIONS}
+                onChangeValue={(value) => field.onChange(value)}
+                error={errors.budget_duration?.message}
+              />
+            )}
+          />
+        </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-text-quaternary uppercase tracking-wide">
-                Distribution
-              </span>
-            </div>
-            <UnifiedBudgetDragBar
-              pcts={pcts}
-              totalBudget={totalBudget}
-              platformMinPct={PLATFORM_MIN_PCT}
-              onChange={onSliderChange}
-              onDragStart={captureInteractionStart}
-              onDragEnd={releaseInteraction}
+        <Controller
+          name="description"
+          control={control}
+          render={({ field }) => (
+            <Textarea
+              {...field}
+              id="description"
+              label="Description"
+              required
+              placeholder="What this budget is used for"
+              error={errors.description?.message}
+              rows={3}
             />
-            {platformPctError && (
-              <p className="text-xs text-failed-secondary mt-2">
-                Platform allocation must be greater than 0%
-              </p>
-            )}
-            {sumPctError && (
-              <p className="text-xs text-failed-secondary mt-2">
-                Distribution must sum to 100% (currently {Math.round(pcts.platform + pcts.cli + pcts.premium_models)}%)
-              </p>
-            )}
-          </div>
+          )}
+        />
 
-          <div className="grid grid-cols-3 gap-x-3 gap-y-2 bg-surface-base-primary border border-border-structural rounded-lg p-3">
-            {CATS.map((cat) => (
-              <div key={`hdr-${cat}`} className="flex items-center gap-2">
-                <span
-                  className={cn('w-2 h-2 rounded-full flex-shrink-0', CATEGORY_DOT_CLASS[cat])}
-                />
-                <span className="text-sm text-text-primary truncate">
-                  {CATEGORY_LABELS[cat]}
-                </span>
-              </div>
-            ))}
-            {CATS.map((cat) => (
-              <div key={`hard-${cat}`} className="flex flex-col gap-1">
-                <span className="text-xs text-text-quaternary">Hard Limit ($)</span>
-                <BudgetAmountInput
-                  value={hardVals[cat]}
-                  onCommit={(n) => onHardInputChange(cat, n)}
-                  ariaLabel={`${CATEGORY_LABELS[cat]} hard limit`}
-                  className={cn(
-                    'bg-surface-base-secondary border border-border-structural rounded',
-                    'px-2 py-1 text-sm text-text-primary outline-none w-full transition-colors',
-                    'focus:border-border-accent',
-                    '[appearance:textfield]',
-                    '[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
-                  )}
-                />
-              </div>
-            ))}
-            {CATS.map((cat) => (
-              <div key={`soft-${cat}`} className="flex flex-col gap-1">
-                <span className="text-xs text-text-quaternary">Soft Limit ($)</span>
-                <BudgetAmountInput
-                  value={softs[cat]}
-                  onCommit={(n) => onSoftInputChange(cat, n)}
-                  ariaLabel={`${CATEGORY_LABELS[cat]} soft limit`}
-                  className={cn(
-                    'bg-surface-base-secondary border rounded',
-                    'px-2 py-1 text-sm outline-none w-full transition-colors',
-                    '[appearance:textfield]',
-                    '[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
-                    softErrors[cat]
-                      ? 'border-failed-secondary text-failed-secondary focus:border-failed-secondary'
-                      : 'border-border-structural text-text-primary focus:border-border-accent'
-                  )}
-                />
-                {softErrors[cat] && (
-                  <span className="text-xs text-failed-secondary">Exceeds hard limit</span>
-                )}
-              </div>
-            ))}
+        <Controller
+          name="total_budget"
+          control={control}
+          render={({ field }) => (
+            <Input
+              {...field}
+              id="total_budget"
+              label="Total Budget ($)"
+              required
+              type="number"
+              min="0"
+              step="any"
+              onFocus={onTotalFocus}
+              onBlur={() => {
+                field.onBlur()
+                onTotalBlur()
+              }}
+              error={errors.total_budget?.message}
+            />
+          )}
+        />
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-text-quaternary uppercase tracking-wide">
+              Distribution
+            </span>
+            <Button type="secondary" onClick={handleDefaultDistribution}>
+              Default 30/60/10
+            </Button>
           </div>
-        </form>
+          <UnifiedBudgetDragBar
+            pcts={pcts}
+            totalBudget={totalBudget}
+            platformMinPct={PLATFORM_MIN_PCT}
+            onChange={onSliderChange}
+            onDragStart={captureInteractionStart}
+            onDragEnd={releaseInteraction}
+          />
+          {platformPctError && (
+            <p className="text-xs text-failed-secondary mt-2">
+              Platform allocation must be greater than 0%
+            </p>
+          )}
+          {sumPctError && (
+            <p className="text-xs text-failed-secondary mt-2">
+              Distribution must sum to 100% (currently{' '}
+              {Math.round(pcts.platform + pcts.cli + pcts.premium_models)}%)
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-x-3 gap-y-2 bg-surface-base-primary border border-border-structural rounded-lg p-3">
+          {CATS.map((cat) => (
+            <div key={`hdr-${cat}`} className="flex items-center gap-2">
+              <span className={cn('w-2 h-2 rounded-full flex-shrink-0', CATEGORY_DOT_CLASS[cat])} />
+              <span className="text-sm text-text-primary truncate">{CATEGORY_LABELS[cat]}</span>
+            </div>
+          ))}
+          {CATS.map((cat) => (
+            <div key={`hard-${cat}`} className="flex flex-col gap-1">
+              <span className="text-xs text-text-quaternary">Hard Limit ($)</span>
+              <BudgetAmountInput
+                value={hardVals[cat]}
+                onCommit={(n) => onHardInputChange(cat, n)}
+                ariaLabel={`${CATEGORY_LABELS[cat]} hard limit`}
+                className={cn(
+                  'bg-surface-base-secondary border border-border-structural rounded',
+                  'px-2 py-1 text-sm text-text-primary outline-none w-full transition-colors',
+                  'focus:border-border-accent',
+                  '[appearance:textfield]',
+                  '[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                )}
+              />
+            </div>
+          ))}
+          {CATS.map((cat) => (
+            <div key={`soft-${cat}`} className="flex flex-col gap-1">
+              <span className="text-xs text-text-quaternary">Soft Limit ($)</span>
+              <BudgetAmountInput
+                value={softs[cat]}
+                onCommit={(n) => onSoftInputChange(cat, n)}
+                ariaLabel={`${CATEGORY_LABELS[cat]} soft limit`}
+                className={cn(
+                  'bg-surface-base-secondary border rounded',
+                  'px-2 py-1 text-sm outline-none w-full transition-colors',
+                  '[appearance:textfield]',
+                  '[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
+                  softErrors[cat]
+                    ? 'border-failed-secondary text-failed-secondary focus:border-failed-secondary'
+                    : 'border-border-structural text-text-primary focus:border-border-accent'
+                )}
+              />
+              {softErrors[cat] && (
+                <span className="text-xs text-failed-secondary">Exceeds hard limit</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </form>
     </Popup>
   )
 }

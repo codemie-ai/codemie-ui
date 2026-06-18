@@ -13,15 +13,7 @@
 // limitations under the License.
 //
 
-import {
-  FC,
-  RefObject,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react'
+import { FC, RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { BudgetCategory } from '@/types/entity/budget'
 import { cn } from '@/utils/utils'
@@ -42,11 +34,10 @@ const clamp = (v: number, lo: number, hi: number): number => Math.min(Math.max(v
 const SNAP_ENTER_ZONE = 0.2
 const SNAP_EXIT_ZONE = 0.4
 const SLOW_VELOCITY_PCT_PER_MS = 0.05
+const BORDER_WIDTH = 1
 
 type LabelVariant = 'full' | 'short' | 'none'
 
-// Worst-case label text per category. If "Name 100%" fits unwrapped in the
-// segment, every smaller percent fits (wrapped, with room to spare).
 const FULL_LABEL_SAMPLE: Record<BudgetCategory, string> = {
   platform: 'Platform 100%',
   cli: 'CLI 100%',
@@ -73,10 +64,7 @@ const pickMagneticDollarStep = (total: number): number => {
 }
 const pickFineDollarStep = (total: number): number => pickMagneticDollarStep(total) / 10
 
-const formatPctLabel = (v: number): string => {
-  const r = Math.round(v * 10) / 10
-  return r === Math.round(r) ? `${Math.round(r)}%` : `${r.toFixed(1)}%`
-}
+const formatPctLabel = (v: number): string => `${Math.round(v)}%`
 
 const computeSnap = (
   rawPct: number,
@@ -112,8 +100,8 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
   const lastMouseXRef = useRef<number | null>(null)
   const lastTsRef = useRef<number | null>(null)
   const lastSnapPctRef = useRef<number | null>(null)
+  const dragStartRef = useRef<{ clickPct: number; handlePct: number } | null>(null)
 
-  // Live segment widths, populated by a ResizeObserver on the colored bands.
   const platformBandRef = useRef<HTMLDivElement>(null)
   const cliBandRef = useRef<HTMLDivElement>(null)
   const premiumBandRef = useRef<HTMLDivElement>(null)
@@ -123,9 +111,6 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
     premium_models: 0,
   })
 
-  // Intrinsic widths of label text, measured off-screen. Seeded with sensible
-  // px estimates so labels render on first paint; refined live by
-  // ResizeObserver so they self-correct when fonts load or theme changes.
   const platformFullRef = useRef<HTMLSpanElement>(null)
   const cliFullRef = useRef<HTMLSpanElement>(null)
   const premiumFullRef = useRef<HTMLSpanElement>(null)
@@ -137,90 +122,63 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
   })
   const [shortLabelWidth, setShortLabelWidth] = useState(28)
 
+  // Single ResizeObserver covers both segment bands and off-screen label measurers.
   useLayoutEffect(() => {
-    const bands: Array<[BudgetCategory, RefObject<HTMLDivElement | null>]> = [
+    const bandRefs: Array<[BudgetCategory, RefObject<HTMLDivElement | null>]> = [
       ['platform', platformBandRef],
       ['cli', cliBandRef],
       ['premium_models', premiumBandRef],
     ]
-    // Initial synchronous measurement so the first paint already has correct
-    // segment widths — ResizeObserver fires asynchronously and would leave a
-    // blank-label frame otherwise.
-    const initial: Record<BudgetCategory, number> = {
-      platform: platformBandRef.current?.getBoundingClientRect().width ?? 0,
-      cli: cliBandRef.current?.getBoundingClientRect().width ?? 0,
-      premium_models: premiumBandRef.current?.getBoundingClientRect().width ?? 0,
-    }
-    setSegWidths(initial)
-    const obs = new ResizeObserver((entries) => {
-      setSegWidths((prev) => {
-        let changed = false
-        const next = { ...prev }
-        for (const e of entries) {
-          for (const [cat, ref] of bands) {
-            if (e.target === ref.current) {
-              const w = e.contentRect.width
-              if (w !== next[cat]) {
-                next[cat] = w
-                changed = true
-              }
-            }
-          }
-        }
-        return changed ? next : prev
-      })
-    })
-    for (const [, ref] of bands) {
-      if (ref.current) obs.observe(ref.current)
-    }
-    return () => obs.disconnect()
-  }, [])
-
-  useLayoutEffect(() => {
     const fullRefs: Array<[BudgetCategory, RefObject<HTMLSpanElement | null>]> = [
       ['platform', platformFullRef],
       ['cli', cliFullRef],
       ['premium_models', premiumFullRef],
     ]
-    const initialFull: Record<BudgetCategory, number> = {
+
+    setSegWidths({
+      platform: platformBandRef.current?.getBoundingClientRect().width ?? 0,
+      cli: cliBandRef.current?.getBoundingClientRect().width ?? 0,
+      premium_models: premiumBandRef.current?.getBoundingClientRect().width ?? 0,
+    })
+    setFullLabelWidths({
       platform: platformFullRef.current?.getBoundingClientRect().width ?? 78,
       cli: cliFullRef.current?.getBoundingClientRect().width ?? 50,
       premium_models: premiumFullRef.current?.getBoundingClientRect().width ?? 72,
-    }
-    const initialShort = shortLabelRef.current?.getBoundingClientRect().width ?? 28
-    setFullLabelWidths(initialFull)
-    setShortLabelWidth(initialShort)
+    })
+    setShortLabelWidth(shortLabelRef.current?.getBoundingClientRect().width ?? 28)
+
     const obs = new ResizeObserver((entries) => {
-      for (const e of entries) {
-        if (e.target === shortLabelRef.current) {
-          setShortLabelWidth((prev) => {
-            const w = e.contentRect.width
-            return w === prev ? prev : w
-          })
+      for (const entry of entries) {
+        const w = entry.contentRect.width
+        for (const [cat, ref] of bandRefs) {
+          if (entry.target === ref.current) {
+            setSegWidths((prev) => (w === prev[cat] ? prev : { ...prev, [cat]: w }))
+          }
+        }
+        if (entry.target === shortLabelRef.current) {
+          setShortLabelWidth((prev) => (w === prev ? prev : w))
           continue
         }
         for (const [cat, ref] of fullRefs) {
-          if (e.target === ref.current) {
-            setFullLabelWidths((prev) => {
-              const w = e.contentRect.width
-              return w === prev[cat] ? prev : { ...prev, [cat]: w }
-            })
+          if (entry.target === ref.current) {
+            setFullLabelWidths((prev) => (w === prev[cat] ? prev : { ...prev, [cat]: w }))
           }
         }
       }
     })
-    for (const [, ref] of fullRefs) {
+
+    const allRefs: Array<RefObject<Element | null>> = [
+      ...bandRefs.map(([, r]) => r as RefObject<Element | null>),
+      ...fullRefs.map(([, r]) => r as RefObject<Element | null>),
+      shortLabelRef as RefObject<Element | null>,
+    ]
+    for (const ref of allRefs) {
       if (ref.current) obs.observe(ref.current)
     }
-    if (shortLabelRef.current) obs.observe(shortLabelRef.current)
     return () => obs.disconnect()
   }, [])
 
-  const platformVariant = pickVariant(
-    segWidths.platform,
-    fullLabelWidths.platform,
-    shortLabelWidth
-  )
+  const platformVariant = pickVariant(segWidths.platform, fullLabelWidths.platform, shortLabelWidth)
   const cliVariant = pickVariant(segWidths.cli, fullLabelWidths.cli, shortLabelWidth)
   const premiumVariant = pickVariant(
     segWidths.premium_models,
@@ -228,91 +186,96 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
     shortLabelWidth
   )
 
-  // h1 is the platform/cli boundary, h2 is the cli/premium boundary
-  const h1Left = pcts.platform
-  const h2Left = pcts.platform + pcts.cli
-
-  const handleMouseDown = useCallback(
-    (handle: 1 | 2) => (e: React.MouseEvent) => {
-      e.preventDefault()
+  const startDrag = useCallback(
+    (handle: 1 | 2, clientX: number) => {
+      const host = hostRef.current
+      if (host) {
+        const rect = host.getBoundingClientRect()
+        const clickPct =
+          ((clientX - rect.left - BORDER_WIDTH) / (rect.width - 2 * BORDER_WIDTH)) * 100
+        const { current } = pctsRef
+        const handlePct = handle === 1 ? current.platform : current.platform + current.cli
+        dragStartRef.current = { clickPct, handlePct }
+      }
       lastMouseXRef.current = null
       lastTsRef.current = null
       lastSnapPctRef.current = null
       setDragging(handle)
+      document.body.style.cursor = 'col-resize'
       onDragStart?.()
     },
     [onDragStart]
   )
 
-  // Keyboard control: arrow keys nudge by 1%, Shift+arrow by 5%, Home/End jump to bounds.
-  const handleKeyDown = useCallback(
-    (handle: 1 | 2) => (e: React.KeyboardEvent) => {
-      const step = e.shiftKey ? 5 : 1
-      let delta = 0
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') delta = -step
-      else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') delta = step
-      else if (e.key === 'Home') delta = -100
-      else if (e.key === 'End') delta = 100
-      else return
+  // Pick the nearest handle to the click/touch point and start dragging it.
+  // This lets the user interact with the whole bar, not just the handle pills.
+  const pickHandle = useCallback((clientX: number): 1 | 2 => {
+    const host = hostRef.current
+    if (!host) return 1
+    const rect = host.getBoundingClientRect()
+    const pct = ((clientX - rect.left - BORDER_WIDTH) / (rect.width - 2 * BORDER_WIDTH)) * 100
+    const { current } = pctsRef
+    const h1 = current.platform
+    const h2 = current.platform + current.cli
+    const d1 = Math.abs(pct - h1)
+    const d2 = Math.abs(pct - h2)
+    if (d1 !== d2) return d1 < d2 ? 1 : 2
+    // Handles overlap (CLI=0): pick by position — left of boundary → h1, right → h2
+    return pct <= h1 ? 1 : 2
+  }, [])
+
+  const handleBarMouseDown = useCallback(
+    (e: React.MouseEvent) => {
       e.preventDefault()
-      const { current } = pctsRef
-      if (handle === 1) {
-        const newPlatform = clamp(
-          current.platform + delta,
-          platformMinPct,
-          100 - current.premium_models
-        )
-        const newCli = Math.max(0, 100 - newPlatform - current.premium_models)
-        onChange({
-          platform: newPlatform,
-          cli: newCli,
-          premium_models: current.premium_models,
-        })
-      } else {
-        const boundary = clamp(current.platform + current.cli + delta, current.platform, 100)
-        const newCli = Math.max(0, boundary - current.platform)
-        const newPremium = Math.max(0, 100 - current.platform - newCli)
-        onChange({
-          platform: current.platform,
-          cli: newCli,
-          premium_models: newPremium,
-        })
-      }
+      startDrag(pickHandle(e.clientX), e.clientX)
     },
-    [platformMinPct, onChange]
+    [startDrag, pickHandle]
+  )
+
+  const handleBarTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.touches[0]
+      if (!touch) return
+      e.preventDefault()
+      startDrag(pickHandle(touch.clientX), touch.clientX)
+    },
+    [startDrag, pickHandle]
   )
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
+    // Shared move logic for both mouse and touch.
+    // Compensates for the 1px border so drag coordinates match band boundaries.
+    const processDragMove = (clientX: number, timeStamp: number) => {
       const handle = draggingRef.current
       if (!handle) return
       const host = hostRef.current
       if (!host) return
       const rect = host.getBoundingClientRect()
+      const innerLeft = rect.left + BORDER_WIDTH
+      const innerWidth = rect.width - 2 * BORDER_WIDTH
       const safeTotal = totalBudget > 0 ? totalBudget : 1
       const magneticPctStep = (pickMagneticDollarStep(safeTotal) / safeTotal) * 100
       const finePctStep = (pickFineDollarStep(safeTotal) / safeTotal) * 100
-      const rawPctRaw = ((e.clientX - rect.left) / rect.width) * 100
-      // Quantize to the fine-dollar grid so every slider position is a round
-      // dollar amount. The magnetic snap (computeSnap) operates on top.
+      const absPct = ((clientX - innerLeft) / innerWidth) * 100
+      // Delta-based: move handle relative to where the drag started so clicking
+      // anywhere on the bar doesn't jump the boundary to the click position.
+      const ds = dragStartRef.current
+      const rawPctRaw = ds !== null ? ds.handlePct + (absPct - ds.clickPct) : absPct
       const rawPct = Math.round(rawPctRaw / finePctStep) * finePctStep
-      const ts = e.timeStamp
       const lastX = lastMouseXRef.current
       const lastTs = lastTsRef.current
       let velocityPctPerMs = 0
-      if (lastX !== null && lastTs !== null && ts > lastTs) {
-        velocityPctPerMs = (Math.abs(e.clientX - lastX) / rect.width) * 100 / (ts - lastTs)
+      if (lastX !== null && lastTs !== null && timeStamp > lastTs) {
+        velocityPctPerMs = ((Math.abs(clientX - lastX) / innerWidth) * 100) / (timeStamp - lastTs)
       }
-      lastMouseXRef.current = e.clientX
-      lastTsRef.current = ts
+      lastMouseXRef.current = clientX
+      lastTsRef.current = timeStamp
       const snap = computeSnap(rawPct, velocityPctPerMs, lastSnapPctRef.current, magneticPctStep)
       lastSnapPctRef.current = snap.held
-      const snappedPct = snap.pct
-      const pct = clamp(snappedPct, 0, 100)
+      const pct = clamp(snap.pct, 0, 100)
       const { current } = pctsRef
 
       if (handle === 1) {
-        // Move platform/cli boundary; premium stays fixed
         const newPlatform = clamp(pct, platformMinPct, 100 - current.premium_models)
         const newCli = Math.max(0, 100 - newPlatform - current.premium_models)
         onChange({
@@ -321,7 +284,6 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
           premium_models: current.premium_models,
         })
       } else {
-        // Move cli/premium boundary; platform stays fixed
         const boundary = clamp(pct, current.platform, 100)
         const newCli = Math.max(0, boundary - current.platform)
         const newPremium = Math.max(0, 100 - current.platform - newCli)
@@ -333,18 +295,33 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
       }
     }
 
-    const onUp = () => {
+    const onMove = (e: MouseEvent) => processDragMove(e.clientX, e.timeStamp)
+
+    const onTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0]
+      if (!touch) return
+      e.preventDefault()
+      processDragMove(touch.clientX, e.timeStamp)
+    }
+
+    const stopDrag = () => {
       if (draggingRef.current) {
         setDragging(0)
+        dragStartRef.current = null
+        document.body.style.cursor = ''
         onDragEnd?.()
       }
     }
 
     window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+    window.addEventListener('mouseup', stopDrag)
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
+    window.addEventListener('touchend', stopDrag)
     return () => {
       window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('mouseup', stopDrag)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', stopDrag)
     }
   }, [platformMinPct, totalBudget, onChange, onDragEnd])
 
@@ -352,14 +329,17 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
     <div
       ref={hostRef}
       className={cn(
-        'relative h-12 rounded-md select-none',
-        'border border-border-structural overflow-hidden'
+        'relative h-12 rounded-md select-none touch-none cursor-col-resize',
+        'border border-border-structural'
       )}
+      onMouseDown={handleBarMouseDown}
+      onTouchStart={handleBarTouchStart}
     >
-      <div className="flex h-full">
+      {/* Band layer in its own overflow-hidden wrapper so handles aren't clipped at edges */}
+      <div className="absolute inset-0 flex overflow-hidden rounded-md">
         <div
           ref={platformBandRef}
-          className="flex items-center justify-center bg-indigo-600 text-white overflow-hidden"
+          className="flex items-center justify-center bg-surface-specific-charts-blue text-white overflow-hidden"
           style={{ flex: pcts.platform > 0 ? pcts.platform : 0.001 }}
         >
           {platformVariant === 'full' && (
@@ -373,7 +353,7 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
         </div>
         <div
           ref={cliBandRef}
-          className="flex items-center justify-center bg-sky-700 text-white overflow-hidden"
+          className="flex items-center justify-center bg-surface-specific-charts-cyan text-white overflow-hidden"
           style={{ flex: pcts.cli > 0 ? pcts.cli : 0.001 }}
         >
           {cliVariant === 'full' && (
@@ -387,7 +367,7 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
         </div>
         <div
           ref={premiumBandRef}
-          className="flex items-center justify-center bg-violet-600 text-white overflow-hidden"
+          className="flex items-center justify-center bg-surface-specific-charts-purple text-white overflow-hidden"
           style={{ flex: pcts.premium_models > 0 ? pcts.premium_models : 0.001 }}
         >
           {premiumVariant === 'full' && (
@@ -403,10 +383,10 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
         </div>
       </div>
 
-      {/* Off-screen measurers: provide truth-driven label widths for variant gating. */}
+      {/* Off-screen measurers: fixed so they never affect layout or get clipped */}
       <div
         aria-hidden
-        className="absolute -left-[9999px] top-0 invisible pointer-events-none whitespace-nowrap"
+        className="fixed -left-[9999px] top-0 invisible pointer-events-none whitespace-nowrap"
       >
         <span ref={platformFullRef} className="inline-block text-xs font-semibold px-1.5">
           {FULL_LABEL_SAMPLE.platform}
@@ -420,46 +400,6 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
         <span ref={shortLabelRef} className="inline-block text-xs font-semibold px-1.5">
           {SHORT_LABEL_SAMPLE}
         </span>
-      </div>
-
-      <div
-        data-handle="1"
-        role="slider"
-        tabIndex={0}
-        aria-label="Platform vs CLI allocation"
-        aria-valuemin={platformMinPct}
-        aria-valuemax={100 - pcts.premium_models}
-        aria-valuenow={Math.round(h1Left)}
-        aria-valuetext={`${Math.round(h1Left)}%`}
-        onMouseDown={handleMouseDown(1)}
-        onKeyDown={handleKeyDown(1)}
-        className={cn(
-          'absolute top-0 h-full w-4 -translate-x-1/2 flex items-center justify-center cursor-col-resize z-10',
-          dragging === 1 && 'z-20'
-        )}
-        style={{ left: `${h1Left}%` }}
-      >
-        <div className="w-1 h-7 rounded bg-text-primary shadow-md" />
-      </div>
-
-      <div
-        data-handle="2"
-        role="slider"
-        tabIndex={0}
-        aria-label="CLI vs Premium Models allocation"
-        aria-valuemin={pcts.platform}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(h2Left)}
-        aria-valuetext={`${Math.round(h2Left)}%`}
-        onMouseDown={handleMouseDown(2)}
-        onKeyDown={handleKeyDown(2)}
-        className={cn(
-          'absolute top-0 h-full w-4 -translate-x-1/2 flex items-center justify-center cursor-col-resize z-10',
-          dragging === 2 && 'z-20'
-        )}
-        style={{ left: `${h2Left}%` }}
-      >
-        <div className="w-1 h-7 rounded bg-text-primary shadow-md" />
       </div>
     </div>
   )

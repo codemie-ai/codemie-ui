@@ -13,9 +13,10 @@
 // limitations under the License.
 //
 
-import { FC, useCallback, useEffect, useState } from 'react'
+import { FC, useCallback, useEffect, useMemo, useState } from 'react'
 
 import ConfirmationModal from '@/components/ConfirmationModal'
+import DropdownButton from '@/components/DropdownButton/DropdownButton'
 import Spinner from '@/components/Spinner'
 import UnifiedProjectBudgetModal from '@/pages/settings/administration/components/UnifiedProjectBudgetModal'
 import { projectBudgetsStore } from '@/store/projectBudgets'
@@ -49,7 +50,9 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
 
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
   const [planActionRunning, setPlanActionRunning] = useState(false)
-  const [planConfirmAction, setPlanConfirmAction] = useState<'reset' | 'rebalance' | null>(null)
+  const [planConfirmAction, setPlanConfirmAction] = useState<
+    'reset' | 'rebalance' | 'delete' | null
+  >(null)
 
   const loadBudgets = useCallback(async () => {
     setLoading(true)
@@ -88,6 +91,21 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     }
   }, [currentPlanId, loadBudgets])
 
+  const handleDelete = useCallback(async () => {
+    if (!currentPlanId) return
+    setPlanActionRunning(true)
+    try {
+      await projectBudgetsStore.deleteProjectBudgetPlan(currentPlanId)
+      toaster.info('Project budget plan deleted')
+      await loadBudgets()
+    } catch {
+      // error already handled by store
+    } finally {
+      setPlanActionRunning(false)
+      setPlanConfirmAction(null)
+    }
+  }, [currentPlanId, loadBudgets])
+
   const handlePlanRebalance = useCallback(async () => {
     if (!currentPlanId) return
     setPlanActionRunning(true)
@@ -102,6 +120,25 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
       setPlanConfirmAction(null)
     }
   }, [currentPlanId, loadBudgets])
+
+  const manageItems = useMemo(
+    () => [
+      {
+        label: budgets.length > 0 ? 'Edit Budget' : 'Create Budget',
+        onClick: () => setUnifiedModalVisible(true),
+      },
+      ...(currentPlanId
+        ? [
+            { label: 'Reset', onClick: () => setPlanConfirmAction('reset' as const) },
+            { label: 'Rebalance', onClick: () => setPlanConfirmAction('rebalance' as const) },
+          ]
+        : []),
+      ...(budgets.length > 0
+        ? [{ label: 'Delete', onClick: () => setPlanConfirmAction('delete' as const) }]
+        : []),
+    ],
+    [currentPlanId, budgets.length]
+  )
 
   const spendingByBudgetId = (spendingRows ?? []).reduce<Record<string, ProjectSpendingWidgetRow>>(
     (acc, row) => {
@@ -124,33 +161,12 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm font-medium text-text-primary">Budgets</div>
         {isManageMode && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={!currentPlanId || planActionRunning}
-              onClick={() => setPlanConfirmAction('reset')}
-              title={currentPlanId ? 'Reset spend counters' : 'Save a plan first'}
-              className="text-xs text-text-quaternary border border-border-structural rounded px-2.5 py-1 hover:bg-surface-base-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Reset
-            </button>
-            <button
-              type="button"
-              disabled={!currentPlanId || planActionRunning}
-              onClick={() => setPlanConfirmAction('rebalance')}
-              title={currentPlanId ? 'Rebalance member allocations' : 'Save a plan first'}
-              className="text-xs text-text-quaternary border border-border-structural rounded px-2.5 py-1 hover:bg-surface-base-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Rebalance
-            </button>
-            <button
-              type="button"
-              onClick={() => setUnifiedModalVisible(true)}
-              className="text-xs text-text-quaternary border border-border-structural rounded px-2.5 py-1 hover:bg-surface-base-primary transition-colors"
-            >
-              Manage Budget
-            </button>
-          </div>
+          <DropdownButton
+            label={budgets.length > 0 ? 'Manage Budget' : 'Create Budget'}
+            size="medium"
+            items={manageItems}
+            disabled={planActionRunning}
+          />
         )}
       </div>
 
@@ -174,12 +190,7 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
               )
             }
             return (
-              <ProjectBudgetCard
-                key={category}
-                variant="empty"
-                mode="view"
-                category={category}
-              />
+              <ProjectBudgetCard key={category} variant="empty" mode="view" category={category} />
             )
           })}
         </div>
@@ -190,6 +201,7 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
         onHide={() => setUnifiedModalVisible(false)}
         projectName={projectName}
         onSaved={loadBudgets}
+        forceCreate={budgets.length === 0}
       />
 
       {isManageMode && (
@@ -209,6 +221,15 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
             message="Recalculates member allocations across every category in this plan. Continue?"
             confirmText="Rebalance"
             onConfirm={handlePlanRebalance}
+            onCancel={() => setPlanConfirmAction(null)}
+            limitWidth
+          />
+          <ConfirmationModal
+            visible={planConfirmAction === 'delete'}
+            header="Delete Project Budgets?"
+            message="All budget categories for this project will be permanently deleted. Continue?"
+            confirmText="Delete"
+            onConfirm={handleDelete}
             onCancel={() => setPlanConfirmAction(null)}
             limitWidth
           />

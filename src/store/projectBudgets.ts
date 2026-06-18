@@ -68,6 +68,7 @@ interface ProjectBudgetsStore {
   ) => Promise<ProjectBudgetPlan>
   resetProjectBudgetPlan: (planId: string) => Promise<ProjectBudgetPlan>
   rebalanceProjectBudgetPlan: (planId: string) => Promise<ProjectBudgetPlan>
+  deleteProjectBudgetPlan: (planId: string) => Promise<void>
 }
 
 const DEFAULT_PAGE = 0
@@ -354,11 +355,9 @@ export const projectBudgetsStore = proxy<ProjectBudgetsStore>({
     this.error = null
 
     try {
-      const response = await api.post(
-        `v1/admin/project-budget-plans/${planId}/reset`,
-        undefined,
-        { skipErrorHandling: true }
-      )
+      const response = await api.post(`v1/admin/project-budget-plans/${planId}/reset`, undefined, {
+        skipErrorHandling: true,
+      })
       return (await response.json()) as ProjectBudgetPlan
     } catch (error: any) {
       const msg =
@@ -385,6 +384,25 @@ export const projectBudgetsStore = proxy<ProjectBudgetsStore>({
     } catch (error: any) {
       const msg =
         error?.parsedError?.message ?? error?.message ?? 'Failed to rebalance project budget plan'
+      this.error = msg
+      toaster.error(msg)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async deleteProjectBudgetPlan(planId: string) {
+    this.loading = true
+    this.error = null
+
+    try {
+      await api.delete(`v1/admin/project-budget-plans/${planId}`, {
+        skipErrorHandling: true,
+      })
+    } catch (error: any) {
+      const msg =
+        error?.parsedError?.message ?? error?.message ?? 'Failed to delete project budget plan'
       this.error = msg
       toaster.error(msg)
       throw error
