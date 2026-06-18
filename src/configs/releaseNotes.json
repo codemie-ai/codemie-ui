@@ -1,5 +1,71 @@
 [
   {
+    "version": "2.35.0",
+    "date": "2026-06-18",
+    "issues": [
+      {
+        "title": "MCP discovered-flow OAuth2 stale TMS credential permanently wedges re-authentication and returns 400 \"No discovered OAuth2 flow is available for this MCP configuration and session\"",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12888",
+        "key": "EPMCDME-12888"
+      },
+      {
+        "title": "Scheduler integration for SWAT Problems Tracker unreliable: missed daily executions despite cron configuration",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12780",
+        "key": "EPMCDME-12780"
+      },
+      {
+        "title": "Make project resource counter badges clickable navigation links",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12726",
+        "key": "EPMCDME-12726"
+      },
+      {
+        "title": "Project Member Spend Tracking - Passive tracking and optional enforcement per project member",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12411",
+        "key": "EPMCDME-12411"
+      },
+      {
+        "title": "Unified Budget Creation Dialog with Category Distribution",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12410",
+        "key": "EPMCDME-12410"
+      },
+      {
+        "title": "Workflow start via chat interface fails with Internal Server Error when attaching Word document – AttributeError: 'UserEntity' has no attribute 'id'",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12395",
+        "key": "EPMCDME-12395"
+      },
+      {
+        "title": "Scraper timeout is shown as success instead of failure",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12339",
+        "key": "EPMCDME-12339"
+      },
+      {
+        "title": "Add \"Tools Tokens Size Limit\" setting to Assistant configuration (empty by default)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10968",
+        "key": "EPMCDME-10968"
+      },
+      {
+        "title": "Workflow output logs show only one tool call when Claude Sonnet 4.6 makes parallel tool invocations",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10921",
+        "key": "EPMCDME-10921"
+      },
+      {
+        "title": "PUT /v1/application/{app_name}/index/{repo_name} fails with NOT NULL constraint violation on repositories table when updating code datasource with partial field data",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-9639",
+        "key": "EPMCDME-9639"
+      }
+    ]
+  },
+  {
     "version": "2.34.0",
     "date": "2026-06-12",
     "issues": [
