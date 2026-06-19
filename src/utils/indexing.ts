@@ -99,10 +99,10 @@ export const getContextTypeLabel = (indexType: string): ContextType => {
   return ContextType.KNOWLEDGE_BASE
 }
 
-export const getIndexTypeCode = (type = ''): string => {
-  if (type === INDEX_TYPES.SVN) return INDEX_TYPES.SVN
-  if (isGitIndex(type)) return INDEX_TYPES.GIT
-  return type.replace('knowledge_base_', '').replace('llm_routing_', '')
+export const getIndexTypeCode = (type?: string, vcsType?: string): string => {
+  if (vcsType === INDEX_TYPES.SVN || type === INDEX_TYPES.SVN) return INDEX_TYPES.SVN
+  if (type && isGitIndex(type)) return INDEX_TYPES.GIT
+  return (type ?? '').replace('knowledge_base_', '').replace('llm_routing_', '')
 }
 
 export const getIndexTypeDisplay = (type: string): string => {

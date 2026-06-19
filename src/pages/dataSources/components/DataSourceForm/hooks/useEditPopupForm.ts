@@ -375,7 +375,7 @@ export const useEditPopupForm = (
       name: defaults?.repo_name ?? '',
       description: defaults?.description ?? '',
       projectSpaceVisible: defaults?.project_space_visible ?? true,
-      indexType: getIndexTypeCode(defaults?.index_type) ?? INDEX_TYPES.GIT,
+      indexType: getIndexTypeCode(defaults?.index_type, defaults?.vcs_type) ?? INDEX_TYPES.GIT,
       reindexOnEdit: '',
       isEditing: true,
 
