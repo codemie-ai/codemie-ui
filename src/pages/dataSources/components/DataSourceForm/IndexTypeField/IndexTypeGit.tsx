@@ -22,15 +22,11 @@ import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
-import TooltipButton from '@/components/TooltipButton'
-import { REPO_INDEX_TYPE_OPTIONS, FILE_FILTER_PLACEHOLDER } from '@/constants/dataSources'
+import { REPO_INDEX_TYPE_OPTIONS } from '@/constants/dataSources'
 
+import FilesFilterField from './shared/FilesFilterField'
 import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
-
-const FILES_FILTER_TOOLTIP = `- Patterns (e.g., *.py): Include ONLY matching files
-- !Patterns (e.g., !*.nupkg): EXCLUDE matching files
-- Combined (e.g., *.py + !test_*.py): Include .py files except test_*.py files`
 
 interface Props {
   value
@@ -133,35 +129,8 @@ const IndexTypeGit: FC<Props> = ({
       ></InfoBox>
 
       <div className="form-wrapper">
-        <Controller
-          name="filesFilter"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              id="filesFilter"
-              name="filesFilter"
-              label="Files Filter"
-              rows={4}
-              value={field.value}
-              onBlur={field.onBlur}
-              error={errors.filesFilter?.message}
-              placeholder={FILE_FILTER_PLACEHOLDER}
-              onChange={(e) => field.onChange(e.target.value)}
-            />
-          )}
-        />
+        <FilesFilterField control={control} errors={errors} />
 
-        <div className="flex items-start text-text-secondary text-xs my-3">
-          <TooltipButton
-            content={FILES_FILTER_TOOLTIP}
-            iconClassName="w-[18px] h-[18px]"
-            wrapperClassName="mr-2 mt-0.5"
-          />
-          <span className="mt-0.5">
-            Specify file extensions or names to include in indexing. Leaving empty will index all
-            files.
-          </span>
-        </div>
         <div className="grid grid-cols-2 gap-3 mt-3">
           <div className="flex flex-col gap-2">
             <FormAutocomplete

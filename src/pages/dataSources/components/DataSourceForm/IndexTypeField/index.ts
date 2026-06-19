@@ -22,10 +22,12 @@ import Google from './IndexTypeGoogle'
 import Jira from './IndexTypeJira'
 import Provider from './IndexTypeProvider'
 import SharePoint from './IndexTypeSharePoint'
+import Svn from './IndexTypeSvn'
 import Xray from './IndexTypeXray'
 
 const IndexTypeField = {
   Git,
+  Svn,
   Google,
   File,
   Confluence,

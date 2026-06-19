@@ -27,6 +27,7 @@ const DataSourceTypeIcon: FC<{ type: string; classNames?: string }> = ({ type, c
   const Icon =
     {
       [INDEX_TYPES.GIT]: IconCode,
+      [INDEX_TYPES.SVN]: IconCode,
       [INDEX_TYPES.FILE]: IconFile,
       [INDEX_TYPES.JIRA]: IconJira,
       [INDEX_TYPES.GOOGLE]: IconGoogle,

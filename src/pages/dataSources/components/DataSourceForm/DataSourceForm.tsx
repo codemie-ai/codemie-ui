@@ -408,6 +408,26 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                   }}
                 />
               )}
+              {field.value === INDEX_TYPES.SVN && (
+                <IndexTypeField.Svn
+                  {...{
+                    control,
+                    embeddingModels,
+                    errors,
+                    filteredSettings,
+                    index,
+                    projectName,
+                    register,
+                    value: field.value,
+                    hasNoSettings: hasNoSettings(field.value),
+                    isDropdownShown: isDropdownShown(field.value),
+                    onIntegrationCreated: () => {
+                      userSettingsStore.resetIsSettingsIndexed()
+                      userSettingsStore.indexSettings()
+                    },
+                  }}
+                />
+              )}
               {!index && field.value === INDEX_TYPES.GOOGLE && (
                 <IndexTypeField.Google
                   {...{

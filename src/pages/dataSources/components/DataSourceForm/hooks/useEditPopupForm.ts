@@ -65,11 +65,11 @@ const baseValidationSchema = Yup.object({
   // TODO: add validation regex from BE error response
   // ^https?:\\/\\/[A-Za-z0-9][A-Za-z0-9\\-\\.]*[A-Za-z0-9]\\.[A-Za-z]{2,}(?:\\/.*)?$
   repoLink: Yup.string().when('indexType', {
-    is: INDEX_TYPES.GIT,
+    is: (indexType) => indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN,
     then: (schema) => schema.required('Repo Link is required'),
   }),
   branch: Yup.string().when('indexType', {
-    is: INDEX_TYPES.GIT,
+    is: (indexType) => indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN,
     then: (schema) => schema.required('Branch is required'),
   }),
 

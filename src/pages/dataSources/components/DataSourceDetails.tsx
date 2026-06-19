@@ -162,10 +162,10 @@ const DataList: React.FC<{ items: DataListItem[]; emptyText?: string }> = ({
 }
 
 const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => {
-  const indexType = useMemo(
-    () => getIndexTypeCode(dataSource?.index_type),
-    [dataSource?.index_type]
-  ) as IndexType
+  const indexType = useMemo(() => {
+    if (dataSource?.vcs_type === INDEX_TYPES.SVN) return INDEX_TYPES.SVN
+    return getIndexTypeCode(dataSource?.index_type)
+  }, [dataSource?.index_type, dataSource?.vcs_type]) as IndexType
   const isBedrock = useMemo(() => {
     // Check if index_type contains 'bedrock'
     return !!dataSource?.index_type?.toLowerCase().includes('bedrock')
@@ -226,7 +226,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
     if (processingSummary.unique_extensions?.length) {
       tabsList.push({ id: TabsId.extension, label: 'Unique Extensions' })
     }
-    if (indexType === INDEX_TYPES.GIT) {
+    if (indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN) {
       tabsList.push({ id: TabsId.files, label: 'Files Filter' })
     }
     if (indexType === INDEX_TYPES.SHAREPOINT && dataSource.sharepoint?.files_filter) {
@@ -435,6 +435,26 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                     </div>
                     <div className={styles.row}>
                       <span className={styles.propertyLabel}>Branch:</span>
+                      <span className={styles.propertyValue}>{dataSource.branch || 'N/A'}</span>
+                    </div>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>Embeddings Model:</span>
+                      <span className={styles.propertyValue}>
+                        {appInfoStore.findEmbeddingLabel(dataSource.embeddings_model)}
+                      </span>
+                    </div>
+                  </>
+                )}
+                {indexType === INDEX_TYPES.SVN && (
+                  <>
+                    <div className={styles.col}>
+                      <span className={styles.propertyLabel}>Repository URL:</span>
+                      <span className={styles.propertyValue + ' w-full'}>
+                        <DetailsCopyField value={dataSource.link} label="" />
+                      </span>
+                    </div>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>Branch / Path:</span>
                       <span className={styles.propertyValue}>{dataSource.branch || 'N/A'}</span>
                     </div>
                     <div className={styles.row}>

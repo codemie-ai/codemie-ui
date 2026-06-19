@@ -103,6 +103,7 @@ export interface DataSource {
     oauth_tenant_id?: string
   }
   cron_expression?: string | null
+  vcs_type?: string
 }
 
 export interface DataSourceDetailsResponse {
@@ -162,6 +163,7 @@ export interface DataSourceDetailsResponse {
   provider_fields: any
   guardrail_assignments: EntityGuardrailAssignment[]
   cron_expression?: string | null
+  vcs_type?: string
 }
 
 export type DatasetResponse = PaginatedResponse<DataSource>

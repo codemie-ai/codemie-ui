@@ -72,14 +72,21 @@ export const isPlatformIndex = (info: IndexInfo): boolean => {
   return info.index_type?.startsWith('platform_') ?? false
 }
 
-export const isCodeIndex = (type: string): boolean => {
+export const isGitIndex = (type: string): boolean => {
   return [INDEX_TYPES.GIT, INDEX_TYPE_SUMMARY, INDEX_TYPE_CHUNK_SUMMARY, INDEX_TYPE_CODE].includes(
     type
   )
 }
 
+export const isCodeIndex = (type: string): boolean => isGitIndex(type) || type === INDEX_TYPES.SVN
+
 export const getContextTypeLabel = (indexType: string): ContextType => {
-  const codeIndexTypes = [INDEX_TYPE_CODE, INDEX_TYPE_SUMMARY, INDEX_TYPE_CHUNK_SUMMARY]
+  const codeIndexTypes = [
+    INDEX_TYPE_CODE,
+    INDEX_TYPE_SUMMARY,
+    INDEX_TYPE_CHUNK_SUMMARY,
+    INDEX_TYPES.SVN,
+  ]
 
   if (codeIndexTypes.includes(indexType)) {
     return ContextType.CODE
@@ -93,9 +100,8 @@ export const getContextTypeLabel = (indexType: string): ContextType => {
 }
 
 export const getIndexTypeCode = (type = ''): string => {
-  if (isCodeIndex(type)) {
-    return INDEX_TYPES.GIT
-  }
+  if (type === INDEX_TYPES.SVN) return INDEX_TYPES.SVN
+  if (isGitIndex(type)) return INDEX_TYPES.GIT
   return type.replace('knowledge_base_', '').replace('llm_routing_', '')
 }
 
@@ -106,7 +112,8 @@ export const getIndexTypeDisplay = (type: string): string => {
 }
 
 export const getFullIndexType = (type: string): string => {
-  if (isCodeIndex(type)) return INDEX_TYPES.GIT
+  if (type === INDEX_TYPES.SVN) return INDEX_TYPES.SVN
+  if (isGitIndex(type)) return INDEX_TYPES.GIT
   if (type === INDEX_TYPES.PROVIDER) return type
   if (type === INDEX_TYPES.GOOGLE) return 'llm_routing_google'
 

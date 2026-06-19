@@ -283,6 +283,8 @@ export const dataSourceStore = proxy({
       wikiQuery?: string | null
       wikiName?: string | null
       wiqlQuery?: string | null
+      svn_repo_url?: string | null
+      svn_branch?: string | null
     } = {}
   ) {
     try {
@@ -295,6 +297,8 @@ export const dataSourceStore = proxy({
         ...(options.wikiQuery != null && { wiki_query: options.wikiQuery }),
         ...(options.wikiName != null && { wiki_name: options.wikiName }),
         ...(options.wiqlQuery != null && { wiql_query: options.wiqlQuery }),
+        ...(options.svn_repo_url != null && { svn_repo_url: options.svn_repo_url }),
+        ...(options.svn_branch != null && { svn_branch: options.svn_branch }),
       }
       const response = await api.post('v1/index/health', requestData)
       return response.json()
@@ -303,6 +307,29 @@ export const dataSourceStore = proxy({
       toaster.error(data.detail)
       return []
     }
+  },
+
+  createApplicationSvnIndex(projectName: string, index: any) {
+    const updatedRequest = {
+      ...index,
+      name: index.name.toLowerCase(),
+    }
+    return handleIndexResponse(api.post(`v1/application/${projectName}/index/svn`, updatedRequest))
+  },
+
+  updateApplicationSvnIndex(
+    projectName: string,
+    repoName: string,
+    fullReindex = false,
+    index: any = {},
+    skipIndex = false
+  ) {
+    return handleIndexResponse(
+      api.put(
+        `v1/application/${projectName}/index/svn/${repoName}?full_reindex=${fullReindex}&skip_reindex=${skipIndex}`,
+        index
+      )
+    )
   },
 
   createKBIndexConfluence(indexConfig: any) {

@@ -21,6 +21,7 @@ export const INDEX_TYPE_CHUNK_SUMMARY = 'chunk-summary'
 
 export const INDEX_TYPES = {
   GIT: 'git',
+  SVN: 'svn',
   CONFLUENCE: 'confluence',
   JIRA: 'jira',
   XRAY: 'xray',

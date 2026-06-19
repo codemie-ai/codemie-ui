@@ -16,7 +16,12 @@
 import { useState } from 'react'
 import { UseFormSetError } from 'react-hook-form'
 
-import { INDEX_TYPES, IndexType, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
+import {
+  INDEX_TYPE_CODE,
+  INDEX_TYPES,
+  IndexType,
+  SHAREPOINT_AUTH_TYPES,
+} from '@/constants/dataSources'
 import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 
@@ -81,6 +86,7 @@ export const useIndexCreation = ({
           [INDEX_TYPES.CONFLUENCE]: { cql: data.cql },
           [INDEX_TYPES.AZURE_DEVOPS_WIKI]: { wikiQuery: data.wikiQuery, wikiName: data.wikiName },
           [INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM]: { wiqlQuery: data.wiqlQuery },
+          [INDEX_TYPES.SVN]: { svn_repo_url: data.repoLink, svn_branch: data.branch },
         }[data.indexType] ?? {}
 
       const response = await dataSourceStore.healthCheckDatasource(
@@ -131,6 +137,8 @@ export const useIndexCreation = ({
             return createOrUpdateAzureDevOpsWorkItemIndex(values)
           case INDEX_TYPES.SHAREPOINT:
             return createOrUpdateSharePointIndex(values)
+          case INDEX_TYPES.SVN:
+            return createOrUpdateSvnIndex(values)
           default:
             return createOrUpdateProviderIndex(values.indexMetadata, values)
         }
@@ -420,6 +428,38 @@ export const useIndexCreation = ({
           ? values.sharepointTenantId ?? undefined
           : undefined,
     })
+  }
+
+  const createOrUpdateSvnIndex = async (values: FormValues) => {
+    const { isEditMode, isReindex, hasProjectChanged } = getIndexEditContext(index, values)
+
+    const request = {
+      branch: values.branch,
+      description: values.description,
+      filesFilter: values.filesFilter,
+      embeddingsModel: values.embeddingsModel,
+      indexType: INDEX_TYPE_CODE,
+      link: values.repoLink,
+      name: values.name.toLowerCase(),
+      projectSpaceVisible: values.projectSpaceVisible,
+      setting_id: values.setting_id,
+      guardrail_assignments: values.guardrail_assignments,
+      cron_expression: values.cronExpression,
+      ...(hasProjectChanged && { new_project_name: values.projectName }),
+    }
+
+    if (isEditMode && index) {
+      const projectName = hasProjectChanged ? index.project_name : values.projectName
+      return dataSourceStore.updateApplicationSvnIndex(
+        projectName,
+        request.name,
+        isReindex,
+        request,
+        !values.reindexOnEdit
+      )
+    }
+
+    return dataSourceStore.createApplicationSvnIndex(values.projectName, request)
   }
 
   const createOrUpdateProviderIndex = async (indexMetadata: any, values: FormValues) => {

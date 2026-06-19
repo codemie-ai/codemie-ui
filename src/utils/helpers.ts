@@ -109,6 +109,11 @@ export const humanize = (string: string): string => {
     return 'SharePoint'
   }
 
+  // Special case for svn to display as SVN
+  if (string.toLowerCase() === 'svn') {
+    return 'SVN'
+  }
+
   const words = string.split('_')
 
   return words
