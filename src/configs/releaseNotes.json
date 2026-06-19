@@ -28,10 +28,10 @@
         "key": "EPMCDME-12411"
       },
       {
-        "title": "Unified Budget Creation Dialog with Category Distribution",
+        "title": "SVN Datasource",
         "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-12410",
-        "key": "EPMCDME-12410"
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12261",
+        "key": "EPMCDME-12261"
       },
       {
         "title": "Workflow start via chat interface fails with Internal Server Error when attaching Word document – AttributeError: 'UserEntity' has no attribute 'id'",
