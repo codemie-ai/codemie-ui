@@ -25,12 +25,6 @@ import {
   ProjectBudgetMemberAllocation,
   ProjectBudgetUpdatePayload,
 } from '@/types/entity/projectBudget'
-import {
-  ProjectBudgetPlan,
-  ProjectBudgetPlanCreatePayload,
-  ProjectBudgetPlanListResponse,
-  ProjectBudgetPlanUpdatePayload,
-} from '@/types/entity/projectBudgetPlan'
 import api from '@/utils/api'
 import toaster from '@/utils/toaster'
 
@@ -59,16 +53,6 @@ interface ProjectBudgetsStore {
     payload: MemberAllocationOverridePayload
   ) => Promise<ProjectBudgetMemberAllocation>
   clearMemberOverride: (budgetId: string, userId: string) => Promise<void>
-  listProjectBudgetPlans: (projectName: string) => Promise<ProjectBudgetPlan[]>
-  getProjectBudgetPlan: (planId: string) => Promise<ProjectBudgetPlan>
-  createProjectBudgetPlan: (payload: ProjectBudgetPlanCreatePayload) => Promise<ProjectBudgetPlan>
-  updateProjectBudgetPlan: (
-    planId: string,
-    payload: ProjectBudgetPlanUpdatePayload
-  ) => Promise<ProjectBudgetPlan>
-  resetProjectBudgetPlan: (planId: string) => Promise<ProjectBudgetPlan>
-  rebalanceProjectBudgetPlan: (planId: string) => Promise<ProjectBudgetPlan>
-  deleteProjectBudgetPlan: (planId: string) => Promise<void>
 }
 
 const DEFAULT_PAGE = 0
@@ -260,149 +244,6 @@ export const projectBudgetsStore = proxy<ProjectBudgetsStore>({
       })
     } catch (error: any) {
       const msg = error?.parsedError?.message ?? error?.message ?? 'Failed to clear member override'
-      this.error = msg
-      toaster.error(msg)
-      throw error
-    } finally {
-      this.loading = false
-    }
-  },
-
-  async listProjectBudgetPlans(projectName: string) {
-    this.loading = true
-    this.error = null
-
-    try {
-      const response = await api.get('v1/admin/project-budget-plans', {
-        params: { project_name: projectName },
-        skipErrorHandling: true,
-      })
-      const data = (await response.json()) as ProjectBudgetPlanListResponse
-      return data.items ?? []
-    } catch (error: any) {
-      const msg =
-        error?.parsedError?.message ?? error?.message ?? 'Failed to load project budget plans'
-      this.error = msg
-      toaster.error(msg)
-      throw error
-    } finally {
-      this.loading = false
-    }
-  },
-
-  async getProjectBudgetPlan(planId: string) {
-    this.loading = true
-    this.error = null
-
-    try {
-      const response = await api.get(`v1/admin/project-budget-plans/${planId}`, {
-        skipErrorHandling: true,
-      })
-      return (await response.json()) as ProjectBudgetPlan
-    } catch (error: any) {
-      const msg =
-        error?.parsedError?.message ?? error?.message ?? 'Failed to load project budget plan'
-      this.error = msg
-      toaster.error(msg)
-      throw error
-    } finally {
-      this.loading = false
-    }
-  },
-
-  async createProjectBudgetPlan(payload: ProjectBudgetPlanCreatePayload) {
-    this.loading = true
-    this.error = null
-
-    try {
-      const response = await api.post('v1/admin/project-budget-plans', payload, {
-        skipErrorHandling: true,
-      })
-      return (await response.json()) as ProjectBudgetPlan
-    } catch (error: any) {
-      const msg =
-        error?.parsedError?.message ?? error?.message ?? 'Failed to create project budget plan'
-      this.error = msg
-      toaster.error(msg)
-      throw error
-    } finally {
-      this.loading = false
-    }
-  },
-
-  async updateProjectBudgetPlan(planId: string, payload: ProjectBudgetPlanUpdatePayload) {
-    this.loading = true
-    this.error = null
-
-    try {
-      const response = await api.put(`v1/admin/project-budget-plans/${planId}`, payload, {
-        skipErrorHandling: true,
-      })
-      return (await response.json()) as ProjectBudgetPlan
-    } catch (error: any) {
-      const msg =
-        error?.parsedError?.message ?? error?.message ?? 'Failed to update project budget plan'
-      this.error = msg
-      toaster.error(msg)
-      throw error
-    } finally {
-      this.loading = false
-    }
-  },
-
-  async resetProjectBudgetPlan(planId: string) {
-    this.loading = true
-    this.error = null
-
-    try {
-      const response = await api.post(`v1/admin/project-budget-plans/${planId}/reset`, undefined, {
-        skipErrorHandling: true,
-      })
-      return (await response.json()) as ProjectBudgetPlan
-    } catch (error: any) {
-      const msg =
-        error?.parsedError?.message ?? error?.message ?? 'Failed to reset project budget plan'
-      this.error = msg
-      toaster.error(msg)
-      throw error
-    } finally {
-      this.loading = false
-    }
-  },
-
-  async rebalanceProjectBudgetPlan(planId: string) {
-    this.loading = true
-    this.error = null
-
-    try {
-      const response = await api.post(
-        `v1/admin/project-budget-plans/${planId}/rebalance`,
-        undefined,
-        { skipErrorHandling: true }
-      )
-      return (await response.json()) as ProjectBudgetPlan
-    } catch (error: any) {
-      const msg =
-        error?.parsedError?.message ?? error?.message ?? 'Failed to rebalance project budget plan'
-      this.error = msg
-      toaster.error(msg)
-      throw error
-    } finally {
-      this.loading = false
-    }
-  },
-
-  async deleteProjectBudgetPlan(planId: string) {
-    this.loading = true
-    this.error = null
-
-    try {
-      await api.delete(`v1/admin/project-budget-plans/${planId}`, {
-        skipErrorHandling: true,
-      })
-    } catch (error: any) {
-      const msg =
-        error?.parsedError?.message ?? error?.message ?? 'Failed to delete project budget plan'
       this.error = msg
       toaster.error(msg)
       throw error
