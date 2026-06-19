@@ -15,8 +15,14 @@
 
 import { FC, RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
+import { useTheme } from '@/hooks/useTheme'
 import { BudgetCategory } from '@/types/entity/budget'
 import { cn } from '@/utils/utils'
+
+const BAND_COLORS = {
+  dark: { platform: '#5991D7', cli: '#59BCD7', premium: '#B57ADD' },
+  light: { platform: '#3E82D7', cli: '#31ACCE', premium: '#B984D8' },
+}
 
 export type PctMap = Record<BudgetCategory, number>
 
@@ -91,6 +97,8 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
   onDragStart,
   onDragEnd,
 }) => {
+  const { isDark } = useTheme()
+  const colors = isDark ? BAND_COLORS.dark : BAND_COLORS.light
   const hostRef = useRef<HTMLDivElement>(null)
   const [dragging, setDragging] = useState<0 | 1 | 2>(0)
   const pctsRef = useRef(pcts)
@@ -339,8 +347,12 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
       <div className="absolute inset-0 flex overflow-hidden rounded-md">
         <div
           ref={platformBandRef}
-          className="flex items-center justify-center bg-surface-specific-charts-blue text-white overflow-hidden"
-          style={{ flex: pcts.platform > 0 ? pcts.platform : 0.001 }}
+          className="flex items-center justify-center text-white overflow-hidden"
+          style={{
+            flex: pcts.platform > 0 ? pcts.platform : 0.001,
+            backgroundColor: colors.platform,
+            boxShadow: 'inset -3px 0 0 #FFFFFF',
+          }}
         >
           {platformVariant === 'full' && (
             <span className="text-xs font-semibold px-1.5 text-center break-words">
@@ -353,8 +365,12 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
         </div>
         <div
           ref={cliBandRef}
-          className="flex items-center justify-center bg-surface-specific-charts-cyan text-white overflow-hidden"
-          style={{ flex: pcts.cli > 0 ? pcts.cli : 0.001 }}
+          className="flex items-center justify-center text-white overflow-hidden"
+          style={{
+            flex: pcts.cli > 0 ? pcts.cli : 0.001,
+            backgroundColor: colors.cli,
+            boxShadow: 'inset -3px 0 0 #FFFFFF',
+          }}
         >
           {cliVariant === 'full' && (
             <span className="text-xs font-semibold px-1.5 text-center break-words">
@@ -367,8 +383,11 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
         </div>
         <div
           ref={premiumBandRef}
-          className="flex items-center justify-center bg-surface-specific-charts-purple text-white overflow-hidden"
-          style={{ flex: pcts.premium_models > 0 ? pcts.premium_models : 0.001 }}
+          className="flex items-center justify-center text-white overflow-hidden"
+          style={{
+            flex: pcts.premium_models > 0 ? pcts.premium_models : 0.001,
+            backgroundColor: colors.premium,
+          }}
         >
           {premiumVariant === 'full' && (
             <span className="text-xs font-semibold px-1.5 text-center break-words">

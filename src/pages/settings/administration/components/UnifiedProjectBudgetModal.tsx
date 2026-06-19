@@ -512,7 +512,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
               Distribution
             </span>
             <Button type="secondary" onClick={handleDefaultDistribution}>
-              Default 30/60/10
+              Reset to Default
             </Button>
           </div>
           <UnifiedBudgetDragBar
