@@ -19,6 +19,7 @@ import FormAutocomplete from '@/components/form/FormAutocomplete'
 import Input from '@/components/form/Input'
 import RadioGroup from '@/components/form/RadioGroup/RadioGroup'
 import { SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useTheme } from '@/hooks/useTheme'
 
 import { FormValues } from '../hooks/useEditPopupForm'
@@ -92,6 +93,7 @@ const IndexTypeSharePoint: FC<Props> = ({
   } = useIntegrationManager({ onIntegrationCreated })
 
   const { isDark } = useTheme()
+  const [isCodeMieOAuthEnabled] = useFeatureFlag('features:sharepointCodeMieOAuth')
 
   const isEditing = watch('isEditing')
   const storedAuthType = watch('sharepointAuthType') ?? INTEGRATION
@@ -137,6 +139,10 @@ const IndexTypeSharePoint: FC<Props> = ({
 
   const isMicrosoftAuth = authMethod === OAUTH_CODEMIE || authMethod === OAUTH_CUSTOM
 
+  const visibleAuthMethodOptions = AUTH_METHOD_OPTIONS.filter(
+    (opt) => opt.value !== OAUTH_CODEMIE || isCodeMieOAuthEnabled
+  )
+
   const handleMicrosoftSignIn = useCallback(() => {
     const customClientId =
       authMethod === OAUTH_CUSTOM ? watch('sharepointCustomClientId') ?? '' : undefined
@@ -169,7 +175,7 @@ const IndexTypeSharePoint: FC<Props> = ({
         <p className="mb-2 text-xs text-text-tertiary">Authentication Method:</p>
         <RadioGroup
           name="sharepointAuthMethod"
-          options={AUTH_METHOD_OPTIONS}
+          options={visibleAuthMethodOptions}
           value={authMethod}
           onChange={(v) => handleAuthMethodChange(String(v))}
         />
