@@ -18,6 +18,8 @@ import React, { useCallback } from 'react'
 import { Controller, Control } from 'react-hook-form'
 
 import Textarea from '@/components/form/Textarea'
+import InfoWarning from '@/components/InfoWarning'
+import { InfoWarningType } from '@/constants'
 import { MCP_CONFIG_SAMPLE } from '@/constants/assistants'
 
 import { MCPFormValues } from './formTypes'
@@ -39,7 +41,10 @@ interface MCPConfigSectionProps {
   setValue: (name: keyof MCPFormValues, value: any) => void
 }
 
-const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({ control, configHasEnv, setValue }) => {
+const ENV_SENSITIVE_WARNING =
+  'Sensitive configuration must be provided through the MCP Integration or using the "Add Environment Variables" button.\nOnly insensitive data should be placed in the "env" section of MCP Config.'
+
+const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({ control, setValue }) => {
   const debouncedFormatJson = useCallback(
     debounce((value: string) => formatJson(value, setValue), 1000),
     [setValue]
@@ -78,13 +83,7 @@ const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({ control, configHasE
         <div className="text-xs text-text-quaternary">
           Must include at least &rdquo;command&rdquo; or &rdquo;url&rdquo; field.
         </div>
-        {configHasEnv && (
-          <div className="text-failed-secondary">
-            When using the &rdquo;env&rdquo; key in the configuration, ensure that it does not
-            contain any sensitive information or secrets. For secret values, it is recommended to
-            use &rdquo;Integrations&rdquo; instead.
-          </div>
-        )}
+        <InfoWarning type={InfoWarningType.ERROR} message={ENV_SENSITIVE_WARNING} />
       </div>
     </div>
   )

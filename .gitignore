@@ -54,3 +54,5 @@ bmad/*
 /opencode.json
 /.playwright-mcp/
 /.mr-screenshots/
+/.env_local
+/.codegraph/

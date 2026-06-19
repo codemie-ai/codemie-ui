@@ -56,16 +56,14 @@ describe('MCPConfigSection', () => {
     expect(screen.queryByRole('group')).not.toBeInTheDocument()
   })
 
-  it('shows env warning when configHasEnv is true', () => {
-    render(<Wrapper configHasEnv={true} />)
-    expect(screen.getByText(/When using the.*env.*key in the configuration/i)).toBeInTheDocument()
+  it('always shows the sensitive env warning regardless of configHasEnv', () => {
+    render(<Wrapper configHasEnv={false} />)
+    expect(screen.getByText(/sensitive.*configuration.*must be provided/i)).toBeInTheDocument()
   })
 
-  it('does not show env warning when configHasEnv is false', () => {
-    render(<Wrapper configHasEnv={false} />)
-    expect(
-      screen.queryByText(/When using the.*env.*key in the configuration/i)
-    ).not.toBeInTheDocument()
+  it('shows the sensitive env warning when configHasEnv is true', () => {
+    render(<Wrapper configHasEnv={true} />)
+    expect(screen.getByText(/sensitive.*configuration.*must be provided/i)).toBeInTheDocument()
   })
 
   it('shows hint about required command or url field', () => {
