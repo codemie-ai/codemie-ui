@@ -30,6 +30,7 @@ interface PublishWorkflowToMarketplaceModalProps {
   open: boolean
   onClose: () => void
   onSuccess: () => void
+  categories?: string[]
 }
 
 const PublishWorkflowToMarketplaceModal: React.FC<PublishWorkflowToMarketplaceModalProps> = ({
@@ -37,8 +38,9 @@ const PublishWorkflowToMarketplaceModal: React.FC<PublishWorkflowToMarketplaceMo
   open,
   onClose,
   onSuccess,
+  categories,
 }) => {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(categories ?? [])
   const [categoriesError, setCategoriesError] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [isValidating, setIsValidating] = useState<boolean>(false)
@@ -76,7 +78,10 @@ const PublishWorkflowToMarketplaceModal: React.FC<PublishWorkflowToMarketplaceMo
   }, [validate])
 
   useEffect(() => {
-    if (open) return
+    if (open) {
+      setSelectedCategories(categories ?? [])
+      return
+    }
     setSelectedCategories([])
     setCategoriesError('')
     setIsLoading(false)

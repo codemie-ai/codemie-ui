@@ -34,6 +34,7 @@ export interface FavoriteItem {
   unique_likes_count?: number
   unique_dislikes_count?: number
   user_abilities?: string[]
+  categories?: string[]
 }
 
 export interface UserPreferences {

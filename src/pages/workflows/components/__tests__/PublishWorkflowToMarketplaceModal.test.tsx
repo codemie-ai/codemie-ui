@@ -172,4 +172,22 @@ describe('PublishWorkflowToMarketplaceModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(defaultProps.onClose).toHaveBeenCalled()
   })
+
+  it('pre-populates categories from the categories prop when opening for re-publish', async () => {
+    const preSelectedCategories = ['cat-1', 'cat-2']
+
+    render(
+      <PublishWorkflowToMarketplaceModal {...defaultProps} categories={preSelectedCategories} />
+    )
+
+    await waitFor(() => screen.getByText('Category Selector'))
+
+    // Verify publish works without clicking "Select Category" first
+    // (proves pre-population — no need to select manually)
+    fireEvent.click(screen.getByRole('button', { name: /publish/i }))
+
+    await waitFor(() => {
+      expect(mockPublish).toHaveBeenCalledWith('wf-1', preSelectedCategories)
+    })
+  })
 })

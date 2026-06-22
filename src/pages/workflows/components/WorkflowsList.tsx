@@ -352,6 +352,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
             setWorkflowToPublish(null)
             refreshWorkflows()
           }}
+          categories={workflowToPublish.categories}
         />
       )}
     </>

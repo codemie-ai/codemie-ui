@@ -172,6 +172,7 @@ const WorkflowActions: React.FC<WorkflowActionsProps> = ({ workflow, onView, rel
           setShowPublishModal(false)
           reloadWorkflows?.()
         }}
+        categories={workflow.categories}
       />
       <ConfirmationModal
         visible={showUnpublishConfirm}
