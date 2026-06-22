@@ -13,27 +13,74 @@
 // limitations under the License.
 //
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import WorkflowActions from '../WorkflowActions'
 
 import type { Workflow } from '../WorkflowCard'
 
+const mockPush = vi.fn()
+
+vi.mock('@/hooks/useVueRouter', () => ({
+  useVueRouter: vi.fn(() => ({ push: mockPush })),
+}))
+
 vi.mock('@/store/workflows', () => ({
   workflowsStore: {
-    deleteWorkflow: vi.fn(),
-    unpublishWorkflowFromMarketplace: vi.fn(),
+    unpublishWorkflowFromMarketplace: vi.fn().mockResolvedValue(undefined),
+    deleteWorkflow: vi.fn().mockResolvedValue(undefined),
   },
 }))
+
+vi.mock('@/utils/toaster', () => ({
+  default: { info: vi.fn(), error: vi.fn() },
+}))
+
+vi.mock('@/utils/utils', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as object),
+    copyToClipboard: vi.fn(),
+  }
+})
 
 vi.mock('../PublishWorkflowToMarketplaceModal', () => ({
   default: () => null,
 }))
 
-vi.mock('@/components/ConfirmationModal', () => ({
-  default: () => null,
+vi.mock('../utils/getWorkflowLink', () => ({
+  getWorkflowLink: vi.fn(() => 'https://test/workflow/1'),
 }))
+
+vi.mock('@/components/NavigationMore', () => ({
+  default: ({ items }: any) => (
+    <>
+      <button aria-label="more options">More options</button>
+      <div data-testid="navigation-more">
+        {items.map((item: any) => (
+          <button
+            key={item.title}
+            role="menuitem"
+            aria-label={item.title}
+            onClick={item.onClick}
+            data-testid={`menu-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+          >
+            {item.title}
+          </button>
+        ))}
+      </div>
+    </>
+  ),
+}))
+
+vi.mock('@/assets/icons/copy-link.svg?react', () => ({ default: () => <svg /> }))
+vi.mock('@/assets/icons/copy.svg?react', () => ({ default: () => <svg /> }))
+vi.mock('@/assets/icons/delete.svg?react', () => ({ default: () => <svg /> }))
+vi.mock('@/assets/icons/edit.svg?react', () => ({ default: () => <svg /> }))
+vi.mock('@/assets/icons/info.svg?react', () => ({ default: () => <svg /> }))
+vi.mock('@/assets/icons/publish.svg?react', () => ({ default: () => <svg /> }))
+vi.mock('@/assets/icons/unpublish.svg?react', () => ({ default: () => <svg /> }))
 
 const makeWorkflow = (overrides: Partial<Workflow> = {}): Workflow => ({
   id: '1',
@@ -50,6 +97,12 @@ function openMenu() {
 
 function getMenuItemLabels(): string[] {
   return screen.getAllByRole('menuitem').map((el) => el.getAttribute('aria-label') ?? '')
+}
+
+const globalWorkflow = {
+  id: 1,
+  is_global: true,
+  user_abilities: ['read', 'write', 'delete'],
 }
 
 describe('WorkflowActions menu ordering', () => {
@@ -100,5 +153,28 @@ describe('WorkflowActions menu ordering', () => {
     const labels = getMenuItemLabels()
     expect(labels).not.toContain('Publish to Marketplace')
     expect(labels).not.toContain('Remove from Marketplace')
+  })
+})
+
+describe('WorkflowActions — unpublish confirmation modal', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows "Unpublish" button label in the unpublish confirmation modal', () => {
+    render(<WorkflowActions workflow={globalWorkflow as any} />)
+
+    fireEvent.click(screen.getByTestId('menu-item-remove-from-marketplace'))
+
+    expect(screen.getByRole('button', { name: 'Unpublish' })).toBeInTheDocument()
+  })
+
+  it('shows "Delete" button label in the delete confirmation modal (regression guard)', () => {
+    render(<WorkflowActions workflow={globalWorkflow as any} />)
+
+    fireEvent.click(screen.getByTestId('menu-item-delete'))
+
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 })

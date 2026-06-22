@@ -178,8 +178,8 @@ const WorkflowActions: React.FC<WorkflowActionsProps> = ({ workflow, onView, rel
         visible={showUnpublishConfirm}
         header="Remove from Marketplace?"
         message="This will remove your workflow from the marketplace. It will still be available in your personal workflows."
-        confirmButtonIcon={<UnpublishSvg />}
-        confirmText={unpublishing ? 'Removing...' : 'Remove'}
+        confirmButtonType={ButtonType.DELETE}
+        confirmText={unpublishing ? 'Unpublishing...' : 'Unpublish'}
         onConfirm={handleUnpublish}
         onCancel={() => setShowUnpublishConfirm(false)}
       />

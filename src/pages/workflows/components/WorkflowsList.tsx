@@ -332,6 +332,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
         header="Remove from Marketplace?"
         message="This will remove your workflow from the marketplace. It will still be available in your personal workflows."
         confirmButtonType={ButtonType.DELETE}
+        confirmText="Unpublish"
         onConfirm={confirmUnpublish}
         onCancel={() => setWorkflowToUnpublish(null)}
       />
