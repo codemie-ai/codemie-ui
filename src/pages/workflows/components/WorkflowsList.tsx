@@ -226,20 +226,6 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
         icon: <IconEdit />,
         onClick: () => edit(workflow),
       })
-
-      if (workflow.is_global) {
-        actions.push({
-          title: 'Remove from Marketplace',
-          icon: <UnpublishSvg />,
-          onClick: () => setWorkflowToUnpublish(workflow),
-        })
-      } else {
-        actions.push({
-          title: 'Publish to Marketplace',
-          icon: <PublishSvg />,
-          onClick: () => setWorkflowToPublish(workflow),
-        })
-      }
     }
 
     actions.push({
@@ -254,6 +240,22 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
         icon: <DeleteIcon />,
         onClick: () => promptDelete(workflow),
       })
+    }
+
+    if (canEdit(workflow)) {
+      if (workflow.is_global) {
+        actions.push({
+          title: 'Remove from Marketplace',
+          icon: <UnpublishSvg />,
+          onClick: () => setWorkflowToUnpublish(workflow),
+        })
+      } else {
+        actions.push({
+          title: 'Publish to Marketplace',
+          icon: <PublishSvg />,
+          onClick: () => setWorkflowToPublish(workflow),
+        })
+      }
     }
 
     return actions

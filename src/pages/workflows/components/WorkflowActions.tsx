@@ -116,21 +116,6 @@ const WorkflowActions: React.FC<WorkflowActionsProps> = ({ workflow, onView, rel
             icon: <IconEdit />,
             onClick: handleEdit,
           },
-          ...(workflow.is_global
-            ? [
-                {
-                  title: 'Remove from Marketplace',
-                  icon: <UnpublishSvg />,
-                  onClick: () => setShowUnpublishConfirm(true),
-                },
-              ]
-            : [
-                {
-                  title: 'Publish to Marketplace',
-                  icon: <PublishSvg />,
-                  onClick: () => setShowPublishModal(true),
-                },
-              ]),
         ]
       : []),
     {
@@ -145,6 +130,21 @@ const WorkflowActions: React.FC<WorkflowActionsProps> = ({ workflow, onView, rel
             icon: <DeleteIcon />,
             onClick: () => setShowDeleteConfirm(true),
           },
+        ]
+      : []),
+    ...(canEdit(workflow)
+      ? [
+          workflow.is_global
+            ? {
+                title: 'Remove from Marketplace',
+                icon: <UnpublishSvg />,
+                onClick: () => setShowUnpublishConfirm(true),
+              }
+            : {
+                title: 'Publish to Marketplace',
+                icon: <PublishSvg />,
+                onClick: () => setShowPublishModal(true),
+              },
         ]
       : []),
   ]
