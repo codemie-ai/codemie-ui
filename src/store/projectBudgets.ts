@@ -25,6 +25,12 @@ import {
   ProjectBudgetMemberAllocation,
   ProjectBudgetUpdatePayload,
 } from '@/types/entity/projectBudget'
+import {
+  ProjectBudgetGroup,
+  ProjectBudgetGroupCreatePayload,
+  ProjectBudgetGroupListResponse,
+  ProjectBudgetGroupUpdatePayload,
+} from '@/types/entity/projectBudgetGroup'
 import api from '@/utils/api'
 import toaster from '@/utils/toaster'
 
@@ -53,6 +59,18 @@ interface ProjectBudgetsStore {
     payload: MemberAllocationOverridePayload
   ) => Promise<ProjectBudgetMemberAllocation>
   clearMemberOverride: (budgetId: string, userId: string) => Promise<void>
+  listProjectBudgetGroups: (projectName: string) => Promise<ProjectBudgetGroup[]>
+  getProjectBudgetGroup: (groupId: string) => Promise<ProjectBudgetGroup>
+  createProjectBudgetGroup: (
+    payload: ProjectBudgetGroupCreatePayload
+  ) => Promise<ProjectBudgetGroup>
+  updateProjectBudgetGroup: (
+    groupId: string,
+    payload: ProjectBudgetGroupUpdatePayload
+  ) => Promise<ProjectBudgetGroup>
+  resetProjectBudgetGroup: (groupId: string) => Promise<ProjectBudgetGroup>
+  rebalanceProjectBudgetGroup: (groupId: string) => Promise<ProjectBudgetGroup>
+  deleteProjectBudgetGroup: (groupId: string) => Promise<void>
 }
 
 const DEFAULT_PAGE = 0
@@ -244,6 +262,147 @@ export const projectBudgetsStore = proxy<ProjectBudgetsStore>({
       })
     } catch (error: any) {
       const msg = error?.parsedError?.message ?? error?.message ?? 'Failed to clear member override'
+      this.error = msg
+      toaster.error(msg)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async listProjectBudgetGroups(projectName: string) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const response = await api.get('v1/admin/project-budget-groups', {
+        params: { project_name: projectName },
+        skipErrorHandling: true,
+      })
+      const data = (await response.json()) as ProjectBudgetGroupListResponse
+      return data.items ?? []
+    } catch (error: any) {
+      const msg = error?.parsedError?.message ?? error?.message ?? 'Failed to load project budgets'
+      this.error = msg
+      toaster.error(msg)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async getProjectBudgetGroup(groupId: string) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const response = await api.get(`v1/admin/project-budget-groups/${groupId}`, {
+        skipErrorHandling: true,
+      })
+      return (await response.json()) as ProjectBudgetGroup
+    } catch (error: any) {
+      const msg = error?.parsedError?.message ?? error?.message ?? 'Failed to load project budget'
+      this.error = msg
+      toaster.error(msg)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async createProjectBudgetGroup(payload: ProjectBudgetGroupCreatePayload) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const response = await api.post('v1/admin/project-budget-groups', payload, {
+        skipErrorHandling: true,
+      })
+      return (await response.json()) as ProjectBudgetGroup
+    } catch (error: any) {
+      const msg = error?.parsedError?.message ?? error?.message ?? 'Failed to create project budget'
+      this.error = msg
+      toaster.error(msg)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async updateProjectBudgetGroup(groupId: string, payload: ProjectBudgetGroupUpdatePayload) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const response = await api.put(`v1/admin/project-budget-groups/${groupId}`, payload, {
+        skipErrorHandling: true,
+      })
+      return (await response.json()) as ProjectBudgetGroup
+    } catch (error: any) {
+      const msg = error?.parsedError?.message ?? error?.message ?? 'Failed to update project budget'
+      this.error = msg
+      toaster.error(msg)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async resetProjectBudgetGroup(groupId: string) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const response = await api.post(
+        `v1/admin/project-budget-groups/${groupId}/reset`,
+        undefined,
+        {
+          skipErrorHandling: true,
+        }
+      )
+      return (await response.json()) as ProjectBudgetGroup
+    } catch (error: any) {
+      const msg = error?.parsedError?.message ?? error?.message ?? 'Failed to reset project budget'
+      this.error = msg
+      toaster.error(msg)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async rebalanceProjectBudgetGroup(groupId: string) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const response = await api.post(
+        `v1/admin/project-budget-groups/${groupId}/rebalance`,
+        undefined,
+        { skipErrorHandling: true }
+      )
+      return (await response.json()) as ProjectBudgetGroup
+    } catch (error: any) {
+      const msg =
+        error?.parsedError?.message ?? error?.message ?? 'Failed to rebalance project budget'
+      this.error = msg
+      toaster.error(msg)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async deleteProjectBudgetGroup(groupId: string) {
+    this.loading = true
+    this.error = null
+
+    try {
+      await api.delete(`v1/admin/project-budget-groups/${groupId}`, {
+        skipErrorHandling: true,
+      })
+    } catch (error: any) {
+      const msg = error?.parsedError?.message ?? error?.message ?? 'Failed to delete project budget'
       this.error = msg
       toaster.error(msg)
       throw error

@@ -13,19 +13,15 @@
 // limitations under the License.
 //
 
-import { FC, ReactNode, useCallback, useEffect, useState } from 'react'
+import { FC, useCallback, useEffect, useMemo, useState } from 'react'
 
 import ConfirmationModal from '@/components/ConfirmationModal'
+import DropdownButton from '@/components/DropdownButton/DropdownButton'
 import Spinner from '@/components/Spinner'
-import { ButtonType } from '@/constants'
-import ProjectBudgetModal from '@/pages/settings/administration/components/ProjectBudgetModal'
+import UnifiedProjectBudgetModal from '@/pages/settings/administration/components/UnifiedProjectBudgetModal'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { BudgetCategory } from '@/types/entity/budget'
-import {
-  ProjectBudget,
-  ProjectBudgetCreatePayload,
-  ProjectBudgetUpdatePayload,
-} from '@/types/entity/projectBudget'
+import { ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
 import toaster from '@/utils/toaster'
 
@@ -50,18 +46,25 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
   const [budgets, setBudgets] = useState<ProjectBudget[]>([])
   const [loading, setLoading] = useState(false)
 
-  const [modalVisible, setModalVisible] = useState(false)
-  const [editingBudget, setEditingBudget] = useState<ProjectBudget | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<BudgetCategory | null>(null)
+  const [unifiedModalVisible, setUnifiedModalVisible] = useState(false)
 
-  const [deletingBudget, setDeletingBudget] = useState<ProjectBudget | null>(null)
+  const [currentGroupId, setCurrentGroupId] = useState<string | null>(null)
+  const [groupActionRunning, setGroupActionRunning] = useState(false)
+  const [groupConfirmAction, setGroupConfirmAction] = useState<
+    'reset' | 'rebalance' | 'delete' | null
+  >(null)
 
   const loadBudgets = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await projectBudgetsStore.listProjectBudgets({ projectName })
+      const [data, plans] = await Promise.all([
+        projectBudgetsStore.listProjectBudgets({ projectName }),
+        projectBudgetsStore.listProjectBudgetGroups(projectName),
+      ])
       setBudgets(data)
       onBudgetsChanged?.(data)
+      const activeGroup = plans.find((p) => !p.deleted_at)
+      setCurrentGroupId(activeGroup?.group_id ?? null)
     } catch {
       // error already handled by store (toaster)
     } finally {
@@ -73,105 +76,69 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     loadBudgets()
   }, [loadBudgets])
 
-  const handleAddBudget = useCallback(
-    (category: BudgetCategory) => {
-      if (!isManageMode) return
-      setEditingBudget(null)
-      setSelectedCategory(category)
-      setModalVisible(true)
-    },
-    [isManageMode]
-  )
-
-  const handleEdit = useCallback(
-    (budget: ProjectBudget) => {
-      if (!isManageMode) return
-      setEditingBudget(budget)
-      setSelectedCategory(null)
-      setModalVisible(true)
-    },
-    [isManageMode]
-  )
-
-  const handleModalHide = useCallback(() => {
-    setModalVisible(false)
-    setEditingBudget(null)
-    setSelectedCategory(null)
-  }, [])
-
-  const handleCreateSubmit = useCallback(
-    async (payload: ProjectBudgetCreatePayload) => {
-      await projectBudgetsStore.createProjectBudget(payload)
-      toaster.info('Project budget created successfully')
-      setModalVisible(false)
-      setSelectedCategory(null)
-      await loadBudgets()
-    },
-    [loadBudgets]
-  )
-
-  const handleEditSubmit = useCallback(
-    async (payload: ProjectBudgetUpdatePayload) => {
-      if (!editingBudget) return
-      await projectBudgetsStore.updateProjectBudget(editingBudget.budget_id, payload)
-      toaster.info('Project budget updated successfully')
-      setModalVisible(false)
-      setEditingBudget(null)
-      await loadBudgets()
-    },
-    [editingBudget, loadBudgets]
-  )
-
-  const handleReset = useCallback(
-    async (budget: ProjectBudget) => {
-      try {
-        await projectBudgetsStore.resetProjectBudget(budget.budget_id)
-        toaster.info('Project budget reset successfully')
-        await loadBudgets()
-      } catch {
-        // error already handled by store
-      }
-    },
-    [loadBudgets]
-  )
-
-  const handleSync = useCallback(
-    async (budget: ProjectBudget) => {
-      try {
-        await projectBudgetsStore.resetProjectBudget(budget.budget_id)
-        toaster.info('Project budget synced successfully')
-        await loadBudgets()
-      } catch {
-        // error already handled by store
-      }
-    },
-    [loadBudgets]
-  )
-
-  const handleRebalance = useCallback(
-    async (budget: ProjectBudget) => {
-      try {
-        await projectBudgetsStore.rebalanceProjectBudget(budget.budget_id)
-        toaster.info('Member allocations rebalanced successfully')
-        await loadBudgets()
-      } catch {
-        // error already handled by store
-      }
-    },
-    [loadBudgets]
-  )
-
-  const handleDeleteConfirm = useCallback(async () => {
-    if (!deletingBudget) return
+  const handleGroupReset = useCallback(async () => {
+    if (!currentGroupId) return
+    setGroupActionRunning(true)
     try {
-      await projectBudgetsStore.deleteProjectBudget(deletingBudget.budget_id)
-      toaster.info('Project budget deleted successfully')
-      setDeletingBudget(null)
+      await projectBudgetsStore.resetProjectBudgetGroup(currentGroupId)
+      toaster.info('Project budget reset')
       await loadBudgets()
     } catch {
       // error already handled by store
+    } finally {
+      setGroupActionRunning(false)
+      setGroupConfirmAction(null)
     }
-  }, [deletingBudget, loadBudgets])
+  }, [currentGroupId, loadBudgets])
+
+  const handleDelete = useCallback(async () => {
+    if (!currentGroupId) return
+    setGroupActionRunning(true)
+    try {
+      await projectBudgetsStore.deleteProjectBudgetGroup(currentGroupId)
+      toaster.info('Project budget deleted')
+      await loadBudgets()
+    } catch {
+      // error already handled by store
+    } finally {
+      setGroupActionRunning(false)
+      setGroupConfirmAction(null)
+    }
+  }, [currentGroupId, loadBudgets])
+
+  const handleGroupRebalance = useCallback(async () => {
+    if (!currentGroupId) return
+    setGroupActionRunning(true)
+    try {
+      await projectBudgetsStore.rebalanceProjectBudgetGroup(currentGroupId)
+      toaster.info('Member allocations rebalanced')
+      await loadBudgets()
+    } catch {
+      // error already handled by store
+    } finally {
+      setGroupActionRunning(false)
+      setGroupConfirmAction(null)
+    }
+  }, [currentGroupId, loadBudgets])
+
+  const manageItems = useMemo(
+    () => [
+      {
+        label: budgets.length > 0 ? 'Edit Budget' : 'Create Budget',
+        onClick: () => setUnifiedModalVisible(true),
+      },
+      ...(currentGroupId
+        ? [
+            { label: 'Reset', onClick: () => setGroupConfirmAction('reset' as const) },
+            { label: 'Rebalance', onClick: () => setGroupConfirmAction('rebalance' as const) },
+          ]
+        : []),
+      ...(budgets.length > 0
+        ? [{ label: 'Delete', onClick: () => setGroupConfirmAction('delete' as const) }]
+        : []),
+    ],
+    [currentGroupId, budgets.length]
+  )
 
   const spendingByBudgetId = (spendingRows ?? []).reduce<Record<string, ProjectSpendingWidgetRow>>(
     (acc, row) => {
@@ -189,38 +156,18 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     { platform: null, cli: null, premium_models: null }
   )
 
-  const assignedCategories = BUDGET_CATEGORIES.filter(
-    (category) => budgetByCategory[category] !== null
-  )
-
-  let budgetModal: ReactNode = null
-  if (isManageMode && editingBudget) {
-    budgetModal = (
-      <ProjectBudgetModal
-        visible={modalVisible}
-        projectName={projectName}
-        budget={editingBudget}
-        onHide={handleModalHide}
-        onSubmit={handleEditSubmit}
-      />
-    )
-  } else if (isManageMode) {
-    budgetModal = (
-      <ProjectBudgetModal
-        visible={modalVisible}
-        projectName={projectName}
-        preselectedCategory={selectedCategory}
-        assignedCategories={assignedCategories}
-        onHide={handleModalHide}
-        onSubmit={handleCreateSubmit}
-      />
-    )
-  }
-
   return (
     <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
-      <div className="mb-4">
+      <div className="flex items-center justify-between mb-4">
         <div className="text-sm font-medium text-text-primary">Budgets</div>
+        {isManageMode && (
+          <DropdownButton
+            label={budgets.length > 0 ? 'Manage Budget' : 'Create Budget'}
+            size="medium"
+            items={manageItems}
+            disabled={groupActionRunning}
+          />
+        )}
       </div>
 
       {loading ? (
@@ -236,44 +183,58 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
                 <ProjectBudgetCard
                   key={category}
                   variant="assigned"
-                  mode={mode}
+                  mode="view"
                   budget={budget}
                   spendingRow={spendingByBudgetId[budget.budget_id] ?? null}
-                  onEdit={handleEdit}
-                  onReset={handleReset}
-                  onDelete={setDeletingBudget}
-                  onSync={handleSync}
-                  onRebalance={handleRebalance}
                 />
               )
             }
             return (
-              <ProjectBudgetCard
-                key={category}
-                variant="empty"
-                mode={mode}
-                category={category}
-                onAddBudget={handleAddBudget}
-              />
+              <ProjectBudgetCard key={category} variant="empty" mode="view" category={category} />
             )
           })}
         </div>
       )}
 
-      {budgetModal}
+      <UnifiedProjectBudgetModal
+        visible={unifiedModalVisible}
+        onHide={() => setUnifiedModalVisible(false)}
+        projectName={projectName}
+        onSaved={loadBudgets}
+        forceCreate={budgets.length === 0}
+      />
 
-      {isManageMode ? (
-        <ConfirmationModal
-          visible={!!deletingBudget}
-          header="Delete Project Budget?"
-          message={`Are you sure you want to delete "${deletingBudget?.name}"? This will permanently remove the budget and all member assignments.`}
-          confirmText="Delete"
-          confirmButtonType={ButtonType.DELETE}
-          onCancel={() => setDeletingBudget(null)}
-          onConfirm={handleDeleteConfirm}
-          limitWidth
-        />
-      ) : null}
+      {isManageMode && (
+        <>
+          <ConfirmationModal
+            visible={groupConfirmAction === 'reset'}
+            header="Reset Project Budget?"
+            message="Resets spend counters and reset window for every category. Continue?"
+            confirmText="Reset"
+            onConfirm={handleGroupReset}
+            onCancel={() => setGroupConfirmAction(null)}
+            limitWidth
+          />
+          <ConfirmationModal
+            visible={groupConfirmAction === 'rebalance'}
+            header="Rebalance Project Budget?"
+            message="Recalculates member allocations across every category. Continue?"
+            confirmText="Rebalance"
+            onConfirm={handleGroupRebalance}
+            onCancel={() => setGroupConfirmAction(null)}
+            limitWidth
+          />
+          <ConfirmationModal
+            visible={groupConfirmAction === 'delete'}
+            header="Delete Project Budgets?"
+            message="All budget categories for this project will be permanently deleted. Continue?"
+            confirmText="Delete"
+            onConfirm={handleDelete}
+            onCancel={() => setGroupConfirmAction(null)}
+            limitWidth
+          />
+        </>
+      )}
     </div>
   )
 }
