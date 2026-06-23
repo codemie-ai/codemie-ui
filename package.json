@@ -52,6 +52,8 @@
     "chartjs-plugin-datalabels": "2.2.0",
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
+    "cron-parser": "^5.6.0",
+    "cronstrue": "^3.21.0",
     "dagre": "0.8.5",
     "diff": "8.0.2",
     "dompurify": "3.2.5",

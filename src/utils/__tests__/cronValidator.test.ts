@@ -13,13 +13,14 @@
 // limitations under the License.
 //
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import {
   isValidCronExpression,
   isMoreFrequentThanHourly,
   validateCronExpression,
   getCronDescription,
+  getNextCronRun,
 } from '@/utils/cronValidator'
 
 describe('isValidCronExpression', () => {
@@ -304,12 +305,127 @@ describe('getCronDescription', () => {
   })
 
   describe('unknown valid expressions', () => {
-    it('should return "Custom schedule" for a valid but unrecognised expression', () => {
-      expect(getCronDescription('5 4 * * 1')).toBe('Custom schedule')
+    it('should return a human-readable description for a valid but unrecognised expression', () => {
+      expect(getCronDescription('5 4 * * 1')).toBe('At 04:05 AM, only on Monday')
     })
 
-    it('should return "Custom schedule" for "0 3 * * 1-5"', () => {
-      expect(getCronDescription('0 3 * * 1-5')).toBe('Custom schedule')
+    it('should return a human-readable description for "0 3 * * 1-5"', () => {
+      expect(getCronDescription('0 3 * * 1-5')).toBe('At 03:00 AM, Monday through Friday')
+    })
+  })
+})
+
+// Fixed point: Tuesday 2026-05-26 10:30 local time
+// May 26 = Tuesday (day 2); May 31 = Sunday; June 1 = Monday
+describe('getNextCronRun', () => {
+  const FIXED_NOW = new Date(2026, 4, 26, 10, 30, 0, 0)
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(FIXED_NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  describe('invalid inputs', () => {
+    it('should return null for an empty string', () => {
+      expect(getNextCronRun('')).toBeNull()
+    })
+
+    it('should return null for null', () => {
+      expect(getNextCronRun(null as unknown as string)).toBeNull()
+    })
+
+    it('should return null for non-cron text', () => {
+      expect(getNextCronRun('not a cron')).toBeNull()
+    })
+
+    it('should return null for a 4-field expression', () => {
+      expect(getNextCronRun('0 0 * *')).toBeNull()
+    })
+
+    it('should return null for an out-of-range minute', () => {
+      expect(getNextCronRun('60 * * * *')).toBeNull()
+    })
+  })
+
+  describe('known preset expressions', () => {
+    it('"0 * * * *" (every hour) — returns 11:00 same day', () => {
+      const result = getNextCronRun('0 * * * *')
+      expect(result).not.toBeNull()
+      expect(result!.getDate()).toBe(26)
+      expect(result!.getHours()).toBe(11)
+      expect(result!.getMinutes()).toBe(0)
+    })
+
+    it('"0 0 * * *" (daily at midnight) — returns midnight the next day', () => {
+      const result = getNextCronRun('0 0 * * *')
+      expect(result).not.toBeNull()
+      expect(result!.getDate()).toBe(27)
+      expect(result!.getHours()).toBe(0)
+      expect(result!.getMinutes()).toBe(0)
+    })
+
+    it('"0 0 * * 0" (weekly Sunday midnight) — returns May 31', () => {
+      const result = getNextCronRun('0 0 * * 0')
+      expect(result).not.toBeNull()
+      expect(result!.getDay()).toBe(0)
+      expect(result!.getDate()).toBe(31)
+      expect(result!.getHours()).toBe(0)
+    })
+
+    it('"0 0 1 * *" (monthly on the 1st) — returns June 1', () => {
+      const result = getNextCronRun('0 0 1 * *')
+      expect(result).not.toBeNull()
+      expect(result!.getMonth()).toBe(5)
+      expect(result!.getDate()).toBe(1)
+      expect(result!.getHours()).toBe(0)
+    })
+  })
+
+  describe('custom expressions', () => {
+    it('"5 4 * * 1" (Monday 04:05) — returns next Monday June 1', () => {
+      const result = getNextCronRun('5 4 * * 1')
+      expect(result).not.toBeNull()
+      expect(result!.getDay()).toBe(1)
+      expect(result!.getMonth()).toBe(5)
+      expect(result!.getDate()).toBe(1)
+      expect(result!.getHours()).toBe(4)
+      expect(result!.getMinutes()).toBe(5)
+    })
+
+    it('"0 3 * * 1-5" (weekdays 03:00) — returns Wednesday May 27 (Tuesday 10:30 already past 3 AM)', () => {
+      const result = getNextCronRun('0 3 * * 1-5')
+      expect(result).not.toBeNull()
+      expect(result!.getDate()).toBe(27)
+      expect(result!.getHours()).toBe(3)
+      expect(result!.getMinutes()).toBe(0)
+    })
+
+    it('"0 11 * * 2" (Tuesday 11:00) — returns same day at 11:00 (before that hour)', () => {
+      const result = getNextCronRun('0 11 * * 2')
+      expect(result).not.toBeNull()
+      expect(result!.getDate()).toBe(26)
+      expect(result!.getHours()).toBe(11)
+    })
+
+    it('"0 3 15 * *" (15th of month 03:00) — returns June 15 when current date is May 26', () => {
+      const result = getNextCronRun('0 3 15 * *')
+      expect(result).not.toBeNull()
+      expect(result!.getMonth()).toBe(5)
+      expect(result!.getDate()).toBe(15)
+      expect(result!.getHours()).toBe(3)
+    })
+
+    it('result is always strictly after the current time', () => {
+      const expressions = ['0 * * * *', '0 0 * * *', '0 0 * * 0', '0 0 1 * *', '5 4 * * 1']
+      expressions.forEach((expr) => {
+        const result = getNextCronRun(expr)
+        expect(result).not.toBeNull()
+        expect(result!.getTime()).toBeGreaterThan(FIXED_NOW.getTime())
+      })
     })
   })
 })

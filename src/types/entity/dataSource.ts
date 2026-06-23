@@ -164,6 +164,7 @@ export interface DataSourceDetailsResponse {
   guardrail_assignments: EntityGuardrailAssignment[]
   cron_expression?: string | null
   vcs_type?: string
+  last_reindex_triggered_at?: string | null
 }
 
 export type DatasetResponse = PaginatedResponse<DataSource>

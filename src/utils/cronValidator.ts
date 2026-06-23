@@ -13,6 +13,9 @@
 // limitations under the License.
 //
 
+import { CronExpressionParser } from 'cron-parser'
+import cronstrue from 'cronstrue'
+
 /**
  * Validates a cron expression format
  *
@@ -144,6 +147,20 @@ export const validateCronExpression = (cronExpression: string): string | undefin
 }
 
 /**
+ * Calculates the next scheduled run time for a cron expression
+ * @param cronExpression - Standard 5-field cron expression
+ * @returns Date of next run, or null if expression is invalid
+ */
+export const getNextCronRun = (cronExpression: string): Date | null => {
+  if (!cronExpression || !isValidCronExpression(cronExpression)) return null
+  try {
+    return CronExpressionParser.parse(cronExpression.trim()).next().toDate()
+  } catch {
+    return null
+  }
+}
+
+/**
  * Gets a human-readable description of a cron expression
  * Returns the preset label if it matches a known preset, otherwise returns "Custom schedule"
  *
@@ -171,5 +188,5 @@ export const getCronDescription = (cronExpression: string): string => {
     '0 2 * * *': 'Every day at 2:00 AM',
   }
 
-  return presetDescriptions[cronExpression.trim()] || 'Custom schedule'
+  return presetDescriptions[cronExpression.trim()] ?? cronstrue.toString(cronExpression.trim())
 }

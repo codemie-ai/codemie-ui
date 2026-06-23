@@ -34,6 +34,7 @@ import { DataSource } from '@/types/entity/dataSource'
 import { canDelete, canEdit } from '@/utils/entity'
 import { copyToClipboard } from '@/utils/helpers'
 
+import DataSourceDeleteModal from './DataSourceDeleteModal'
 import SharePointReindexAuthPopup from './SharePointReindexAuthPopup'
 import {
   canFullReindex,
@@ -58,22 +59,15 @@ const DataSourceActions: FC<Props> = ({ item }) => {
     resumeKBIndex,
     reindexProviderIndex,
     resumeApplicationIndex,
-    deleteIndex,
     updateKBIndex,
     reIndexKBIndex,
     updateApplicationIndex,
     reindexMarketplace,
-    showAssistantsWithGivenContext,
   } = useSnapshot(dataSourceStore) as typeof dataSourceStore
 
-  const [isDeleteConfirmationVisible, setIsDeleteConfirmationVisible] = useState(false)
+  const [isDeleteVisible, setIsDeleteVisible] = useState(false)
   const [isReindexConfirmationVisible, setIsReindexConfirmationVisible] = useState(false)
   const [isResumeConfirmationVisible, setIsResumeConfirmationVisible] = useState(false)
-  // TODO: update type placement after type response for showAssistantsWithGivenContext()
-  const [datasourceAssistants, setDatasourceAssistants] = useState<
-    { id: string; name: string; created_by: { name?: string } }[]
-  >([])
-
   const [spOauthVisible, setSpOauthVisible] = useState(false)
 
   const handleSpOauthSuccess = useCallback(
@@ -102,21 +96,6 @@ const DataSourceActions: FC<Props> = ({ item }) => {
     },
     [item, updateKBIndex]
   )
-
-  const getDatasourceAssistants = useCallback(async () => {
-    const result = await showAssistantsWithGivenContext(item.id)
-    setDatasourceAssistants(result || [])
-  }, [item.id])
-
-  const showDeleteConfirmation = useCallback(async () => {
-    await getDatasourceAssistants()
-    setIsDeleteConfirmationVisible(true)
-  }, [getDatasourceAssistants])
-
-  const confirmDelete = useCallback(async () => {
-    setIsDeleteConfirmationVisible(false)
-    await deleteIndex(item.id, item.repo_name)
-  }, [item.id, item.repo_name])
 
   const canIncrementalReindexItem = useMemo(() => canIncrementalReindex(item), [item])
   const canFullReindexItem = useMemo(() => canFullReindex(item), [item])
@@ -221,7 +200,7 @@ const DataSourceActions: FC<Props> = ({ item }) => {
       title: 'Delete',
       icon: <DeleteSvg />,
       hidden: !canDelete(item),
-      onClick: showDeleteConfirmation,
+      onClick: () => setIsDeleteVisible(true),
     },
   ]
 
@@ -245,35 +224,11 @@ const DataSourceActions: FC<Props> = ({ item }) => {
         <NavigationMore hideOnClickInside items={menuActions}></NavigationMore>
       </div>
 
-      <ConfirmationModal
-        visible={isDeleteConfirmationVisible}
-        onCancel={() => setIsDeleteConfirmationVisible(false)}
-        header="Delete Data Source?"
-        message="Are you sure you want to delete this data source?"
-        confirmText="Delete"
-        confirmButtonType={ButtonType.DELETE}
-        confirmButtonIcon={<DeleteSvg className="w-4 mr-px" />}
-        onConfirm={confirmDelete}
-      >
-        {datasourceAssistants && datasourceAssistants.length > 0 && (
-          <div>
-            <div className="mb-1">
-              <p>Given data source used in assistants:</p>
-            </div>
-            <ul className="list-disc ml-5">
-              {datasourceAssistants.map((assistant) => (
-                <li key={assistant.id}>
-                  <div>
-                    <strong>Name: </strong> {assistant.name}
-                    <br />
-                    <strong>Created by:</strong> {assistant.created_by?.name || 'N/A'}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </ConfirmationModal>
+      <DataSourceDeleteModal
+        item={item}
+        visible={isDeleteVisible}
+        onHide={() => setIsDeleteVisible(false)}
+      />
 
       <ConfirmationModal
         visible={isReindexConfirmationVisible}

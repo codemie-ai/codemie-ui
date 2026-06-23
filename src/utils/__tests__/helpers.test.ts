@@ -13,9 +13,9 @@
 // limitations under the License.
 //
 
-import { vi, describe, it, expect, afterAll } from 'vitest'
+import { vi, describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest'
 
-import { decodeFileName, getRootPath } from '@/utils/helpers'
+import { decodeFileName, getRootPath, formatScheduleDate } from '@/utils/helpers'
 
 describe('decodeFileName', () => {
   it('should return an empty array if input is not base64 encoded', () => {
@@ -95,5 +95,111 @@ describe('getRootPath', () => {
 
   afterAll(() => {
     vi.unstubAllEnvs()
+  })
+})
+
+// Fixed: 2026-05-26 10:30 local time
+describe('formatScheduleDate', () => {
+  const FIXED_NOW = new Date(2026, 4, 26, 10, 30, 0, 0)
+  const mins = (n: number) => new Date(FIXED_NOW.getTime() + n * 60_000)
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(FIXED_NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  describe('falsy inputs', () => {
+    it('returns "—" for null', () => {
+      expect(formatScheduleDate(null)).toBe('—')
+    })
+
+    it('returns "—" for undefined', () => {
+      expect(formatScheduleDate(undefined)).toBe('—')
+    })
+  })
+
+  describe('relative label — past', () => {
+    it('returns "just now" when date equals now', () => {
+      expect(formatScheduleDate(mins(0))).toContain('just now')
+    })
+
+    it('returns "X min ago" for 30 minutes in the past', () => {
+      expect(formatScheduleDate(mins(-30))).toContain('30 min ago')
+    })
+
+    it('returns "X min ago" at 59 minutes — just before the hours boundary', () => {
+      expect(formatScheduleDate(mins(-59))).toContain('59 min ago')
+    })
+
+    it('returns "Xh ago" at exactly 60 minutes — hours boundary', () => {
+      expect(formatScheduleDate(mins(-1 * 60))).toContain('1h ago')
+    })
+
+    it('returns "Xh ago" for 2 hours in the past', () => {
+      expect(formatScheduleDate(mins(-2 * 60))).toContain('2h ago')
+    })
+
+    it('returns "Xh ago" at 47 hours — last whole value below 48h boundary', () => {
+      expect(formatScheduleDate(mins(-47 * 60))).toContain('47h ago')
+    })
+
+    it('returns "X days ago" at exactly 48 hours — crosses into days branch', () => {
+      expect(formatScheduleDate(mins(-48 * 60))).toContain('2 days ago')
+    })
+
+    it('returns "X days ago" for 5 days in the past', () => {
+      expect(formatScheduleDate(mins(-5 * 24 * 60))).toContain('5 days ago')
+    })
+  })
+
+  describe('relative label — future', () => {
+    it('returns "in X min" for 30 minutes ahead', () => {
+      expect(formatScheduleDate(mins(30))).toContain('in 30 min')
+    })
+
+    it('returns "in X min" at 59 minutes — just before the hours boundary', () => {
+      expect(formatScheduleDate(mins(59))).toContain('in 59 min')
+    })
+
+    it('returns "in 1 hour" for exactly 60 minutes ahead', () => {
+      expect(formatScheduleDate(mins(1 * 60))).toContain('in 1 hour')
+    })
+
+    it('returns "in X hours" for 6 hours ahead', () => {
+      expect(formatScheduleDate(mins(6 * 60))).toContain('in 6 hours')
+    })
+
+    it('returns "in X hours" at 47 hours — last whole value below 48h boundary', () => {
+      expect(formatScheduleDate(mins(47 * 60))).toContain('in 47 hours')
+    })
+
+    it('returns "in X days" at exactly 48 hours — crosses into days branch', () => {
+      expect(formatScheduleDate(mins(48 * 60))).toContain('in 2 days')
+    })
+
+    it('returns "in X days" at 48 hours + 3 minutes', () => {
+      expect(formatScheduleDate(mins(48 * 60 + 3))).toContain('in 2 days')
+    })
+
+    it('returns "in X days" for 3 days ahead', () => {
+      expect(formatScheduleDate(mins(3 * 24 * 60))).toContain('in 3 days')
+    })
+  })
+
+  describe('date format', () => {
+    it('formats date as "MMM dd, HH:mm"', () => {
+      // 2 hours before FIXED_NOW = 08:30 on May 26
+      const result = formatScheduleDate(mins(-120))
+      expect(result).toMatch(/^May 26, 08:30/)
+    })
+
+    it('wraps relative label in parentheses', () => {
+      const result = formatScheduleDate(mins(-120))
+      expect(result).toMatch(/\(.+\)$/)
+    })
   })
 })

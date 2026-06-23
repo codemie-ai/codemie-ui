@@ -55,6 +55,24 @@ export const formatDate = (dateString?: string | null, format = DEFAULT_DATE_FOR
   return dateObj.toFormat(format)
 }
 
+const getRelativeLabel = (absMinutes: number, isFuture: boolean): string => {
+  if (absMinutes < 1) return 'just now'
+  if (absMinutes < 60) return isFuture ? `in ${absMinutes} min` : `${absMinutes} min ago`
+  const hours = Math.round(absMinutes / 60)
+  if (hours < 48)
+    return isFuture ? `in ${hours} ${hours === 1 ? 'hour' : 'hours'}` : `${hours}h ago`
+  const days = Math.round(hours / 24)
+  return isFuture ? `in ${days} ${days === 1 ? 'day' : 'days'}` : `${days} days ago`
+}
+
+export const formatScheduleDate = (date: Date | string | null | undefined): string => {
+  if (!date) return '—'
+  const dt = date instanceof Date ? DateTime.fromJSDate(date) : parseDate(date as string)
+  const totalMinutes = Math.round((dt.toMillis() - DateTime.now().toMillis()) / 60000)
+  const relative = getRelativeLabel(Math.abs(totalMinutes), totalMinutes > 0)
+  return `${dt.toFormat(SHORT_DATE_FORMAT)} (${relative})`
+}
+
 export const formatDateTime = (
   dateString?: string | null,
   style: DateStyle = 'default'

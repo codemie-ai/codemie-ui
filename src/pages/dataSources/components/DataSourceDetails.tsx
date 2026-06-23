@@ -13,9 +13,11 @@
 // limitations under the License.
 //
 
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import DeleteSvg from '@/assets/icons/delete.svg?react'
+import EditSvg from '@/assets/icons/edit.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
 import ReindexSvg from '@/assets/icons/reindex.svg?react'
 import SharedNoIcon from '@/assets/icons/shared-no.svg?react'
@@ -38,6 +40,8 @@ import {
   REPO_INDEX_TYPE_OPTIONS,
   SHAREPOINT_AUTH_TYPES,
 } from '@/constants/dataSources'
+import { DATASOURCES } from '@/constants/routes'
+import { useVueRouter } from '@/hooks/useVueRouter'
 import DataSourceTypeIcon from '@/pages/dataSources/components/DataSourceTypeIcon'
 import {
   canFullReindex,
@@ -50,10 +54,12 @@ import { appInfoStore } from '@/store/appInfo'
 import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { GuardrailEntity } from '@/types/entity/guardrail'
-import { getCronDescription } from '@/utils/cronValidator'
-import { formatDateTime, humanize, isNumberValue } from '@/utils/helpers'
+import { getCronDescription, getNextCronRun } from '@/utils/cronValidator'
+import { canDelete, canEdit } from '@/utils/entity'
+import { formatDateTime, formatScheduleDate, humanize, isNumberValue } from '@/utils/helpers'
 import { getIndexTypeCode } from '@/utils/indexing'
 
+import DataSourceDeleteModal from './DataSourceDeleteModal'
 import DataSourceDetailsProvider from './DataSourceDetails/DetaSourceDetailsProvider'
 import SharePointReindexAuthPopup from './SharePointReindexAuthPopup'
 
@@ -162,10 +168,12 @@ const DataList: React.FC<{ items: DataListItem[]; emptyText?: string }> = ({
 }
 
 const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => {
+  const router = useVueRouter()
   const indexType = useMemo(() => {
     if (dataSource?.vcs_type === INDEX_TYPES.SVN) return INDEX_TYPES.SVN
     return getIndexTypeCode(dataSource?.index_type)
   }, [dataSource?.index_type, dataSource?.vcs_type]) as IndexType
+
   const isBedrock = useMemo(() => {
     // Check if index_type contains 'bedrock'
     return !!dataSource?.index_type?.toLowerCase().includes('bedrock')
@@ -186,12 +194,30 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
 
   const [isReindexConfirmationVisible, setIsReindexConfirmationVisible] = useState(false)
   const [spReindexVisible, setSpReindexVisible] = useState(false)
+  const [isDeleteVisible, setIsDeleteVisible] = useState(false)
+
+  const showEditButton = useMemo(() => canEdit(dataSource), [dataSource])
+  const showDeleteButton = useMemo(() => canDelete(dataSource), [dataSource])
+
   const showIncrementalReindexButton = useMemo(
     () => canIncrementalReindex(dataSource),
     [dataSource]
   )
   const showFullReindexButton = useMemo(() => canFullReindex(dataSource), [dataSource])
 
+  const cronDescription = useMemo(
+    () => (dataSource.cron_expression ? getCronDescription(dataSource.cron_expression) : null),
+    [dataSource]
+  )
+  const isCustomSchedule = useMemo(() => cronDescription === 'Custom schedule', [cronDescription])
+  const nextRun = useMemo(
+    () => (dataSource.cron_expression ? getNextCronRun(dataSource.cron_expression) : null),
+    [dataSource]
+  )
+
+  const handleEdit = useCallback(() => {
+    router.push(`/data-sources/${dataSource.id}/edit`)
+  }, [router, dataSource.id])
   const processedFilesData = useMemo<DataListItem[]>(
     () =>
       (dataSource.processed_files || []).flatMap((file: string, idx: number) =>
@@ -385,8 +411,23 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
           </div>
         </div>
 
-        {(showFullReindexButton || showIncrementalReindexButton) && (
+        {(showDeleteButton ||
+          showEditButton ||
+          showFullReindexButton ||
+          showIncrementalReindexButton) && (
           <div className="flex gap-2 my-3">
+            {showDeleteButton && (
+              <Button size="small" variant="secondary" onClick={() => setIsDeleteVisible(true)}>
+                <DeleteSvg />
+                Delete
+              </Button>
+            )}
+            {showEditButton && (
+              <Button size="small" variant="secondary" onClick={handleEdit}>
+                <EditSvg />
+                Edit
+              </Button>
+            )}
             {showIncrementalReindexButton && (
               <Button size="small" variant="secondary" onClick={confirmIncrementalReindex}>
                 <ReindexSvg />
@@ -655,33 +696,6 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
             </DetailsSidebarSection>
           )}
 
-          {dataSource.cron_expression &&
-            (() => {
-              const description = getCronDescription(dataSource.cron_expression)
-              const isCustom = description === 'Custom schedule'
-
-              return (
-                <DetailsSidebarSection headline="Reindex Type">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-2">
-                      <p className="text-xs text-text-tertiary">Schedule</p>
-                      <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-xs leading-5">
-                        {description}
-                      </div>
-                    </div>
-                    {isCustom && (
-                      <div className="flex flex-col gap-2">
-                        <p className="text-xs text-text-tertiary">Cron expression</p>
-                        <code className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-xs leading-5 font-mono text-text-primary">
-                          {dataSource.cron_expression}
-                        </code>
-                      </div>
-                    )}
-                  </div>
-                </DetailsSidebarSection>
-              )
-            })()}
-
           {dataSource.tokens_usage && (
             <DetailsSidebarSection headline="USAGE DETAILS">
               <div className="flex flex-row items-center gap-2">
@@ -707,6 +721,41 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
             </DetailsSidebarSection>
           )}
 
+          <DetailsSidebarSection headline="SCHEDULER">
+            <div className="flex flex-col gap-3">
+              {dataSource.last_reindex_triggered_at && (
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs text-text-quaternary">Last indexed</p>
+                  <p className="text-xs">
+                    {formatScheduleDate(dataSource.last_reindex_triggered_at)}
+                  </p>
+                </div>
+              )}
+              {!dataSource.cron_expression ? (
+                <p className="text-xs text-text-quaternary">Manual indexing only</p>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs text-text-quaternary">Next scheduled run</p>
+                    <p className="text-xs">{formatScheduleDate(nextRun)}</p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs text-text-quaternary">Schedule</p>
+                    <p className="text-xs">{cronDescription}</p>
+                  </div>
+                  {isCustomSchedule && (
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs text-text-quaternary">Cron expression</p>
+                      <code className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-xs leading-5 font-mono text-text-primary">
+                        {dataSource.cron_expression}
+                      </code>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </DetailsSidebarSection>
+
           {dataSource.project_name && (
             <GuardrailAssignmentsDetails
               project={dataSource.project_name}
@@ -719,6 +768,12 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
       </div>
 
       <Tooltip target=".target-tooltip" />
+      <DataSourceDeleteModal
+        item={dataSource}
+        visible={isDeleteVisible}
+        onHide={() => setIsDeleteVisible(false)}
+        onDeleted={() => router.push(`/${DATASOURCES}`)}
+      />
       <ConfirmationModal
         visible={isReindexConfirmationVisible}
         onCancel={() => setIsReindexConfirmationVisible(false)}

@@ -48,6 +48,23 @@ export interface AssistantPromptVariable {
   _meta?: AssistantPromptVariableMeta
 }
 
+export interface AssistantListResponse {
+  id: string
+  name: string
+  slug?: string
+  type?: AssistantType
+  description: string
+  icon_url?: string
+  created_by?: CreatedBy
+  user_abilities?: string[]
+  unique_users_count?: number
+  unique_likes_count?: number
+  unique_dislikes_count?: number
+  categories?: string[]
+  is_global?: boolean
+  shared?: boolean
+}
+
 export interface Assistant {
   id: string
   name: string

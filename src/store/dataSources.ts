@@ -15,6 +15,7 @@
 
 import { proxy } from 'valtio'
 
+import { AssistantListResponse } from '@/types/entity/assistant'
 import {
   DataProvider,
   DatasetResponse,
@@ -623,7 +624,7 @@ export const dataSourceStore = proxy({
     }
   },
 
-  async showAssistantsWithGivenContext(id: string) {
+  async showAssistantsWithGivenContext(id: string): Promise<AssistantListResponse[]> {
     try {
       const response = await api.get(`v1/index/${id}/assistants`)
       if (response.status !== 200) throw Error('Failed to fetch data')
