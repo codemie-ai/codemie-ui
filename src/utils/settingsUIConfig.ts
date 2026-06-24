@@ -612,6 +612,36 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
       },
     },
   },
+  xwiki: {
+    displayName: 'xWiki',
+    serverEnum: 'XWiki',
+    defaultUrl: 'https://wiki.example.com',
+    testable: false,
+    fields: {
+      url: {
+        placeholder: 'URL, e.g. https://wiki.example.com',
+        validation: Yup.string().required('URL is required').url('Value must be a valid URL'),
+      },
+      use_bearer: {
+        placeholder: 'Use Bearer Token Authentication',
+        type: CredentialComponentType.switch,
+      },
+      username: {
+        placeholder: 'Username',
+        shouldShow: (values) => !values.use_bearer,
+        validation: Yup.string().when('use_bearer', {
+          is: (value) => !value,
+          then: (schema) => schema.required('Username is required for Basic Auth'),
+          otherwise: (schema) => schema.notRequired(),
+        }),
+      },
+      token: {
+        placeholder: (values) => (values.use_bearer ? 'Bearer Token' : 'API Token'),
+        sensitive: true,
+        validation: Yup.string().required('Token is required'),
+      },
+    },
+  },
   sharepoint: {
     defaultUrl: 'https://yourtenant.sharepoint.com',
     testable: false,

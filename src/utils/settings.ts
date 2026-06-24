@@ -172,6 +172,7 @@ export const getCredentialType = (name: string): string => {
   const type = name.toLowerCase()
   if (name === 'generic_jira_tool') return 'jira'
   if (name === 'generic_confluence_tool') return 'confluence'
+  if (type.includes('xwiki')) return 'xwiki'
   if (type.includes('xray')) return 'xray'
   if (name === 'github' || name === 'gitlab') return 'git'
   if (name === 'azure_devops_git' || type.includes('azure devops')) return 'azuredevops'

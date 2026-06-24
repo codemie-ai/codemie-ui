@@ -94,6 +94,11 @@ describe('getCredentialType', () => {
     expect(getCredentialType('generic_confluence_tool')).toBe('confluence')
   })
 
+  it('returns xwiki for tools starting with xwiki', () => {
+    expect(getCredentialType('xwiki_list_wikis')).toBe('xwiki')
+    expect(getCredentialType('xwiki_get_page')).toBe('xwiki')
+  })
+
   it('returns xray for tools containing xray (case-insensitive)', () => {
     expect(getCredentialType('xray_test_tool')).toBe('xray')
     expect(getCredentialType('generic_xray_tool')).toBe('xray')
