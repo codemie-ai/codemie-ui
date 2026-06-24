@@ -161,6 +161,12 @@ export const getNavigationTabs = (
       title: 'AWS Integration',
       url: '/settings/aws/guardrails',
     },
+    {
+      id: SettingsTab.AWS_AGENTCORE_RUNTIMES,
+      name: 'AgentCore Runtimes',
+      title: 'AWS Integration',
+      url: '/settings/aws/agentcore-runtimes',
+    },
   ].sort((a, b) => a.name.localeCompare(b.name))
 
   return [

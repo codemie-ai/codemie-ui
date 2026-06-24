@@ -15,6 +15,13 @@
 
 import { VendorAlias, VendorInstallableVersion, VendorVersion } from '@/types/entity/vendor'
 
+export const toQueryString = (params?: Record<string, string>): string => {
+  if (!params) return ''
+  return Object.entries(params)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join('&')
+}
+
 export const getInstallableVersionFromAlias = (alias: VendorAlias): VendorInstallableVersion => {
   return {
     versionId: alias.version,

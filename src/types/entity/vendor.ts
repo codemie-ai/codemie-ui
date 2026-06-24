@@ -22,6 +22,80 @@ export enum VendorEntityType {
   workflows = 'workflows',
   knowledgebases = 'knowledgebases',
   guardrails = 'guardrails',
+  agentcoreRuntimes = 'agentcore-runtimes',
+  agentcoreEndpoints = 'agentcore-runtime-endpoints',
+}
+
+export interface VendorAgentCoreRuntime {
+  id: string
+  name: string
+  status: string
+  description: string
+  version: string
+  updatedAt: string
+}
+
+export enum AgentCoreEndpointStatus {
+  PREPARED = 'PREPARED',
+  NOT_PREPARED = 'NOT_PREPARED',
+  VERSION_DRIFT = 'VERSION_DRIFT',
+  DELETED_ON_AWS = 'DELETED_ON_AWS',
+}
+
+export interface VendorAgentCoreEndpoint {
+  id: string
+  name: string
+  status: AgentCoreEndpointStatus
+  description: string
+  liveVersion?: string
+  targetVersion?: string | null
+  createdAt?: string
+  updatedAt?: string
+  aiRunId?: string
+  configurationJson?: string
+  assistantName?: string
+  assistantDescription?: string
+}
+
+export interface VendorAgentCoreEndpointDetails extends VendorAgentCoreEndpoint {
+  agentRuntimeEndpointArn?: string
+  agentRuntimeArn?: string
+  failureReason?: string | null
+}
+
+export interface AgentCoreEndpointConfigurationJsonReasoning {
+  text_path: string
+  active_path?: string
+  name_path?: string
+  args_path?: string
+  thoughts_path?: string
+}
+
+export interface AgentCoreEndpointConfigurationJsonHistory {
+  history_path: string
+  role_path?: string
+  message_path?: string
+  user_role?: string
+  assistant_role?: string
+}
+
+export interface AgentCoreEndpointConfigurationJson {
+  request?: {
+    message_path?: string
+    history?: AgentCoreEndpointConfigurationJsonHistory
+    extra_payload?: Record<string, unknown>
+  }
+  response: {
+    streaming: boolean
+    body?: {
+      text_path: string
+      reasoning?: AgentCoreEndpointConfigurationJsonReasoning
+    }
+    chunk?: {
+      text_path: string
+      reasoning?: AgentCoreEndpointConfigurationJsonReasoning
+    }
+  }
 }
 
 export interface VendorEntity {

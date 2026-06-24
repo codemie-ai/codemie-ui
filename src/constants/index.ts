@@ -91,6 +91,7 @@ export enum SettingsTab {
   AWS_WORKFLOWS = 'aws_workflows',
   AWS_DATA_SOURCES = 'aws_data_sources',
   AWS_GUARDRAILS = 'aws_guardrails',
+  AWS_AGENTCORE_RUNTIMES = 'aws_agentcore_runtimes',
 }
 
 export enum ButtonSize {

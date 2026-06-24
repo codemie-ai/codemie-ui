@@ -40,6 +40,7 @@ export enum AssistantType {
   A2A = 'A2A',
   REMOTE = 'remote',
   BEDROCK = 'bedrock_agent',
+  BEDROCK_AGENTCORE_RUNTIME = 'bedrock_agentcore_runtime',
 }
 
 export const ASSISTANT_INDEX_SCOPES = {

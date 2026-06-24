@@ -25,6 +25,7 @@ import Button from '@/components/Button'
 import DataOverlayButton from '@/components/DataOverlayButton/DataOverlayButton'
 import { AvatarType } from '@/constants/avatar'
 import { useVueRouter } from '@/hooks/useVueRouter'
+import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { appInfoStore } from '@/store/appInfo'
 import { chatsStore } from '@/store/chats'
 import { ChatMetrics } from '@/types/entity/conversation'
@@ -43,6 +44,7 @@ const ChatHeader: FC = () => {
   const { currentChat, getMetrics, startNewChat, isNewChat } = useSnapshot(
     chatsStore
   ) as typeof chatsStore
+  const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
 
   const handleCreateChat = async () => {
     await startNewChat('', '', false)
@@ -139,22 +141,24 @@ const ChatHeader: FC = () => {
 
           {!isNewChat && (
             <>
-              <DataOverlayButton<ChatMetrics>
-                title="Usage details"
-                subtitle="Chat totals, auto-updated"
-                data={() => getMetrics(currentChat.id)}
-                render={(data) => ({
-                  'Input tokens used': data.total_input_tokens ?? 0,
-                  'Output tokens used': data.total_output_tokens ?? 0,
-                  'Money spent (approx)': `$${data.total_money_spent?.toFixed(4) ?? '0'}`,
-                })}
-              />
+              {assistantFeatures.usageDetails && (
+                <DataOverlayButton<ChatMetrics>
+                  title="Usage details"
+                  subtitle="Chat totals, auto-updated"
+                  data={() => getMetrics(currentChat.id)}
+                  render={(data) => ({
+                    'Input tokens used': data.total_input_tokens ?? 0,
+                    'Output tokens used': data.total_output_tokens ?? 0,
+                    'Money spent (approx)': `$${data.total_money_spent?.toFixed(4) ?? '0'}`,
+                  })}
+                />
+              )}
 
               <ChatHeaderShareButton />
 
               <ChatHeaderDownloadConversationButton />
 
-              <ChatHeaderBrowseFilesButton />
+              {assistantFeatures.workspace && <ChatHeaderBrowseFilesButton />}
 
               <ChatHeaderClearButton />
             </>

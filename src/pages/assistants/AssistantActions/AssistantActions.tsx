@@ -26,6 +26,7 @@ import UnpublishSvg from '@/assets/icons/unpublish.svg?react'
 import { ButtonType } from '@/constants'
 import { AssistantType } from '@/constants/assistants'
 import { useVueRouter } from '@/hooks/useVueRouter'
+import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { assistantsStore } from '@/store'
 import { Assistant } from '@/types/entity/assistant'
 import { canDelete, canEdit } from '@/utils/entity'
@@ -59,7 +60,9 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
     useState(false)
 
   const isRemoteAssistant = assistant.type === AssistantType.A2A
-  const canClone = assistant.type !== AssistantType.A2A && assistant.type !== AssistantType.BEDROCK
+  const { clone: canClone } = useAssistantFeatures([
+    { id: assistant.id, name: assistant.name, type: assistant.type },
+  ])
 
   const handleEdit = () => {
     if (isRemoteAssistant) {

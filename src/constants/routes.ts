@@ -56,3 +56,13 @@ export const SKILLS_ALL = 'skills'
 export const NEW_SKILL = 'new-skill'
 export const SKILL_DETAILS = 'skill-details'
 export const EDIT_SKILL = 'edit-skill'
+
+export const SETTINGS_AWS_AGENTCORE_RUNTIMES = 'aws-agentcore-runtimes-settings'
+export const SETTINGS_AWS_AGENTCORE_RUNTIMES_LIST = 'aws-agentcore-runtimes-settings-detail'
+export const SETTINGS_AWS_AGENTCORE_RUNTIMES_RUNTIME = 'aws-agentcore-runtimes-settings-runtime'
+
+export const SETTINGS_AWS_AGENTCORE_RUNTIMES_PATH = '/settings/aws/agentcore-runtimes'
+export const SETTINGS_AWS_AGENTCORE_RUNTIMES_LIST_PATH =
+  '/settings/aws/agentcore-runtimes/:settingId'
+export const SETTINGS_AWS_AGENTCORE_RUNTIMES_RUNTIME_PATH =
+  '/settings/aws/agentcore-runtimes/:settingId/:runtimeId'

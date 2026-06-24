@@ -18,20 +18,26 @@
  * Renders details of an AWS vendor entity including name, ID, and description
  * Uses granular loading states to show loading indicator only when fetching this specific entity
  */
-import { FC, useEffect, useState, useMemo } from 'react'
+import { FC, ReactNode, useEffect, useState, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
 import vendorEntityUrl from '@/assets/images/aws/aws-entity.png'
 import Spinner from '@/components/Spinner'
 import { awsVendorStore } from '@/store/vendor'
-import { VendorEntity, VendorEntityType, VendorOriginType } from '@/types/entity/vendor'
+import {
+  VendorAgentCoreRuntime,
+  VendorEntity,
+  VendorEntityType,
+  VendorOriginType,
+} from '@/types/entity/vendor'
 
 interface Props {
   originType?: VendorOriginType
   entityType?: VendorEntityType
   settingId?: string
   entityId?: string
-  entityDetails?: VendorEntity | null
+  entityDetails?: VendorEntity | VendorAgentCoreRuntime | null
+  additionalInfo?: ReactNode
 }
 
 const AwsEntityDetails: FC<Props> = ({
@@ -40,6 +46,7 @@ const AwsEntityDetails: FC<Props> = ({
   settingId,
   entityId,
   entityDetails: propEntityDetails,
+  additionalInfo,
 }) => {
   const [internalEntityDetails, setInternalEntityDetails] = useState<VendorEntity | null>(null)
   const { loading } = useSnapshot(awsVendorStore)
@@ -86,12 +93,13 @@ const AwsEntityDetails: FC<Props> = ({
         <div className="flex flex-row justify-between">
           <div>
             <h3 className="text-base font-medium mb-1">{entity.name}</h3>
-            <div className="flex items-center gap-2 text-xs mb-3">
+            <div className="flex flex-col gap-2 text-xs mb-3">
               {entity.id && (
-                <div className="border border-border-structural rounded-xl px-2">
-                  Id: {entity.id}
+                <div className="border border-border-structural rounded-xl px-2 py-1.5">
+                  ID: {entity.id}
                 </div>
               )}
+              {additionalInfo}
             </div>
           </div>
         </div>

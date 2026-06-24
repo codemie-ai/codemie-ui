@@ -43,6 +43,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
         conversationStarters: data.conversation_starters,
         context: data.context?.map((context) => context.name),
         tools: data.tools?.map((tool) => tool.name),
+        type: data.assistant_type,
       })) ?? [],
     history: [], // We'll populate this shortly
   }

@@ -30,6 +30,10 @@ import { sanitizeMessage } from '@/components/markdown/Markdown.utils'
 import { ButtonSize } from '@/constants'
 import { FileMetadata, useFileUpload } from '@/hooks/useFileUpload'
 import { useTheme } from '@/hooks/useTheme'
+import ChatControls from '@/pages/chat/components/ChatControls'
+import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
+import { useChatContext } from '@/pages/chat/hooks/useChatContext'
+import { useFilePaste } from '@/pages/chat/hooks/useFilePaste'
 import { assistantsStore, userStore } from '@/store'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
@@ -42,9 +46,6 @@ import ChatPromptSkillsButton from './ChatPromptSkillsButton'
 import ChatPromptStarters from './ChatPromptStarters'
 import ChatPromptVoiceRecorder from './ChatPromptVoiceRecorder'
 import DynamicToolsSettings from './DynamicToolsSettings'
-import { useChatContext } from '../../hooks/useChatContext'
-import { useFilePaste } from '../../hooks/useFilePaste'
-import ChatControls from '../ChatControls'
 
 const PROMPT_MODES = {
   DEFAULT: 'default',
@@ -98,6 +99,7 @@ const ChatPrompt: FC = () => {
   })
 
   const isInProgress = currentChat?.history.flat().some((m) => m.inProgress)
+  const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
   const isInterrupted = currentChat?.isInterrupted
 
   let promptMode: PromptMode = PROMPT_MODES.DEFAULT
@@ -234,12 +236,20 @@ const ChatPrompt: FC = () => {
                 className="flex justify-between items-center pl-2"
               >
                 <div className={cn('flex items-center gap-2', isInProgress && 'opacity-60')}>
-                  <ChatPromptFileUpload {...fileUpload} files={files} />
+                  {assistantFeatures.fileAttachment && (
+                    <ChatPromptFileUpload {...fileUpload} files={files} />
+                  )}
                   {!currentChat?.isWorkflow && !isSharedPage && (
                     <>
-                      <DynamicToolsSettings disabled={!!isInProgress} />
-                      <ChatPromptLlmSelector disabled={!!isInProgress} />
-                      <ChatPromptSkillsButton disabled={!!isInProgress} />
+                      {assistantFeatures.tools && (
+                        <DynamicToolsSettings disabled={!!isInProgress} />
+                      )}
+                      {assistantFeatures.modelSelector && (
+                        <ChatPromptLlmSelector disabled={!!isInProgress} />
+                      )}
+                      {assistantFeatures.skills && (
+                        <ChatPromptSkillsButton disabled={!!isInProgress} />
+                      )}
                     </>
                   )}
                 </div>

@@ -1,0 +1,27 @@
+{
+  "run_id": "20260528-2121-EPMCDME-12240_agentcore",
+  "mode": "hitl",
+  "started_at": "2026-05-28T21:21:00Z",
+  "task_input": "Implement configuration_json structured form for AgentCore runtime import. Replace the plain text input with a structured form that has 2 modes (streaming disabled / streaming enabled).",
+  "branch": "EPMCDME-12240_agentcore",
+  "work_item": {
+    "canonical_path": null,
+    "run_mirror": "docs/superpowers/runs/20260528-2121-EPMCDME-12240_agentcore/work-item.md",
+    "event_ledger": "docs/superpowers/runs/20260528-2121-EPMCDME-12240_agentcore/work-item-events.jsonl"
+  },
+  "current_phase": 0,
+  "status": "running",
+  "escalate_on": ["security", "breaking-change"],
+  "phases": {
+    "0": {"status": "running", "started_at": "2026-05-28T21:21:00Z"},
+    "1": {"status": "pending"},
+    "2": {"status": "pending"},
+    "3": {"status": "pending"},
+    "4": {"status": "pending"},
+    "5": {"status": "pending"},
+    "6": {"status": "pending"},
+    "7": {"status": "pending"},
+    "8": {"status": "pending"},
+    "9": {"status": "pending"}
+  }
+}

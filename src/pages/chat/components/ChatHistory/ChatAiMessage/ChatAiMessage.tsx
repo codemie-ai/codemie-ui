@@ -227,7 +227,10 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
               />
             ) : (
               <>
-                <Markdown className="mt-4" content={message.response} />
+                <Markdown
+                  className="mt-4"
+                  content={message.stream?.getStream() ?? message.response}
+                />
                 {message.loginUrl && (
                   <Button
                     type={ButtonType.SECONDARY}

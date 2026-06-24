@@ -20,6 +20,8 @@ import {
   VendorAgentVersionDetails,
   VendorGuardrailVersionDetails,
   VendorAlias,
+  VendorAgentCoreEndpoint,
+  VendorAgentCoreEndpointDetails,
   VendorEntity,
   VendorEntityType,
   VendorOriginType,
@@ -28,6 +30,7 @@ import {
 } from '@/types/entity/vendor'
 import api from '@/utils/api'
 import toaster from '@/utils/toaster'
+import { toQueryString } from '@/utils/vendor'
 
 import { LoadMorePagination, Pagination } from '../types/common'
 
@@ -46,6 +49,9 @@ interface VendorStoreType {
   vendorAliases: VendorAlias[]
   vendorAliasesPagination: LoadMorePagination
 
+  agentCoreEndpoints: VendorAgentCoreEndpoint[]
+  agentCoreEndpointsPagination: LoadMorePagination
+
   loading: {
     entities: boolean
     settings: boolean
@@ -55,13 +61,15 @@ interface VendorStoreType {
     install: boolean
     uninstall: boolean
     versionDetails: boolean
+    agentCoreEndpoints: boolean
   }
 
   getVendorEntities: (
     originType: VendorOriginType,
     entityType: VendorEntityType,
     settingId: string,
-    loadMore?: boolean
+    loadMore?: boolean,
+    extraParams?: Record<string, string>
   ) => Promise<void>
 
   getVendorSettings: (
@@ -103,13 +111,15 @@ interface VendorStoreType {
       version?: string
       agentAliasId?: string
       flowAliasId?: string
-    }
+    },
+    extraParams?: Record<string, unknown>
   ) => Promise<void>
 
   uninstallVendorEntity: (
     originType: VendorOriginType,
     entityType: VendorEntityType,
-    aiRunId: string
+    id: string,
+    extraParams?: Record<string, string>
   ) => Promise<void>
 
   getVendorAgentVersionDetails: (
@@ -132,6 +142,25 @@ interface VendorStoreType {
     settingId: string,
     entityId: string
   ) => Promise<VendorKnowledgeBaseEntityDetails>
+
+  getAgentCoreEndpoints: (settingId: string, runtimeId: string, loadMore?: boolean) => Promise<void>
+
+  getAgentCoreEndpointDetails: (
+    settingId: string,
+    runtimeId: string,
+    endpointName: string
+  ) => Promise<VendorAgentCoreEndpointDetails>
+
+  importAgentCoreEndpoint: (
+    settingId: string,
+    runtimeId: string,
+    endpointName: string,
+    configurationJson: string,
+    assistantName?: string,
+    assistantDescription?: string
+  ) => Promise<void>
+
+  deleteAgentCoreEndpoint: (aiRunId: string) => Promise<void>
 }
 
 export const awsVendorStore = proxy<VendorStoreType>({
@@ -139,6 +168,7 @@ export const awsVendorStore = proxy<VendorStoreType>({
   vendorSettings: [],
   vendorVersions: [],
   vendorAliases: [],
+  agentCoreEndpoints: [],
   loading: {
     entities: false,
     settings: false,
@@ -148,6 +178,7 @@ export const awsVendorStore = proxy<VendorStoreType>({
     install: false,
     uninstall: false,
     versionDetails: false,
+    agentCoreEndpoints: false,
   },
   vendorEntitiesPagination: {
     nextToken: null,
@@ -167,28 +198,38 @@ export const awsVendorStore = proxy<VendorStoreType>({
     totalPages: 0,
     totalCount: 0,
   },
-
+  agentCoreEndpointsPagination: {
+    nextToken: null,
+    perPage: 12,
+  },
   async getVendorEntities(
     originType: VendorOriginType,
     entityType: VendorEntityType,
     settingId: string,
-    loadMore = false
+    loadMore?: boolean,
+    extraParams?: Record<string, string>
   ) {
     awsVendorStore.loading.entities = true
+    if (!loadMore) {
+      awsVendorStore.vendorEntities = []
+    }
     try {
       const nextTokenParam =
-        loadMore && this.vendorEntitiesPagination.nextToken
+        (loadMore ?? false) && this.vendorEntitiesPagination.nextToken
           ? `&next_token=${this.vendorEntitiesPagination.nextToken}`
           : ''
-      const url = `v1/vendors/${originType}/${entityType}?setting_id=${settingId}&per_page=${this.vendorEntitiesPagination.perPage}${nextTokenParam}`
+      const extraParamsStr = extraParams ? `&${toQueryString(extraParams)}` : ''
+      const url = `v1/vendors/${originType}/${entityType}?setting_id=${settingId}&per_page=${this.vendorEntitiesPagination.perPage}${nextTokenParam}${extraParamsStr}`
       const response = await api.get(url)
       const result = await response.json()
       const { data, pagination } = result
 
-      awsVendorStore.vendorEntities = loadMore ? [...awsVendorStore.vendorEntities, ...data] : data
+      awsVendorStore.vendorEntities = loadMore
+        ? [...awsVendorStore.vendorEntities, ...(data ?? [])]
+        : data ?? []
       awsVendorStore.vendorEntitiesPagination = {
         perPage: awsVendorStore.vendorEntitiesPagination.perPage,
-        nextToken: pagination.next_token,
+        nextToken: pagination?.next_token ?? null,
       }
     } catch (error) {
       console.error('Error fetching vendor entities:', error)
@@ -206,7 +247,8 @@ export const awsVendorStore = proxy<VendorStoreType>({
       version?: string
       agentAliasId?: string
       flowAliasId?: string
-    }
+    },
+    extraParams?: Record<string, unknown>
   ) {
     awsVendorStore.loading.install = true
     try {
@@ -218,6 +260,7 @@ export const awsVendorStore = proxy<VendorStoreType>({
           version: entity.version,
           flowAliasId: entity.flowAliasId,
           setting_id: entity.settingId,
+          ...extraParams,
         },
       ])
       toaster.info('Entity installed successfully')
@@ -233,11 +276,13 @@ export const awsVendorStore = proxy<VendorStoreType>({
   async uninstallVendorEntity(
     originType: VendorOriginType,
     entityType: VendorEntityType,
-    aiRunId: string
+    id: string,
+    extraParams?: Record<string, string>
   ) {
     awsVendorStore.loading.uninstall = true
     try {
-      const url = `v1/vendors/${originType}/${entityType}/${aiRunId}`
+      let url = `v1/vendors/${originType}/${entityType}/${id}`
+      if (extraParams) url += `?${toQueryString(extraParams)}`
       const response = await api.delete(url)
       toaster.info('Entity uninstalled successfully')
       return response.json()
@@ -409,6 +454,89 @@ export const awsVendorStore = proxy<VendorStoreType>({
       throw error
     } finally {
       awsVendorStore.loading.versionDetails = false
+    }
+  },
+
+  async getAgentCoreEndpoints(settingId: string, runtimeId: string, loadMore = false) {
+    awsVendorStore.loading.agentCoreEndpoints = true
+    try {
+      const nextTokenParam =
+        loadMore && this.agentCoreEndpointsPagination.nextToken
+          ? `&next_token=${this.agentCoreEndpointsPagination.nextToken}`
+          : ''
+      const url = `v1/vendors/aws/agentcore-runtimes/${runtimeId}/endpoints?setting_id=${settingId}&per_page=${this.agentCoreEndpointsPagination.perPage}${nextTokenParam}`
+      const response = await api.get(url)
+      const { data, pagination } = await response.json()
+      awsVendorStore.agentCoreEndpoints = loadMore
+        ? [...awsVendorStore.agentCoreEndpoints, ...(data ?? [])]
+        : data ?? []
+      awsVendorStore.agentCoreEndpointsPagination = {
+        perPage: awsVendorStore.agentCoreEndpointsPagination.perPage,
+        nextToken: pagination?.next_token ?? null,
+      }
+    } catch (error) {
+      console.error('Error fetching AgentCore endpoints:', error)
+    } finally {
+      awsVendorStore.loading.agentCoreEndpoints = false
+    }
+  },
+
+  async getAgentCoreEndpointDetails(settingId: string, runtimeId: string, endpointName: string) {
+    try {
+      const url = `v1/vendors/aws/agentcore-runtimes/${runtimeId}/${endpointName}?setting_id=${settingId}`
+      const response = await api.get(url)
+      return await response.json()
+    } catch (error) {
+      console.error('Error fetching AgentCore endpoint details:', error)
+      throw error
+    }
+  },
+
+  async importAgentCoreEndpoint(
+    settingId: string,
+    runtimeId: string,
+    endpointName: string,
+    configurationJson: string,
+    assistantName?: string,
+    assistantDescription?: string
+  ) {
+    awsVendorStore.loading.install = true
+    try {
+      const response = await api.post('v1/vendors/aws/agentcore-runtimes', [
+        {
+          setting_id: settingId,
+          id: runtimeId,
+          agentcoreRuntimeEndpointName: endpointName,
+          configuration_json: configurationJson,
+          ...(assistantName ? { assistant_name: assistantName } : {}),
+          ...(assistantDescription ? { assistant_description: assistantDescription } : {}),
+        },
+      ])
+      const { summary } = await response.json()
+      const result = summary?.[0]
+      if (result?.error) {
+        throw new Error(result.error.message ?? 'Import failed')
+      }
+      toaster.info('Endpoint imported successfully')
+    } catch (error) {
+      console.error('Error importing AgentCore endpoint:', error)
+      throw error
+    } finally {
+      awsVendorStore.loading.install = false
+    }
+  },
+
+  async deleteAgentCoreEndpoint(aiRunId: string) {
+    awsVendorStore.loading.uninstall = true
+    try {
+      const response = await api.delete(`v1/vendors/aws/agentcore-runtimes/${aiRunId}`)
+      toaster.info('Endpoint deleted successfully')
+      await response.json()
+    } catch (error) {
+      console.error('Error deleting AgentCore endpoint:', error)
+      throw error
+    } finally {
+      awsVendorStore.loading.uninstall = false
     }
   },
 })

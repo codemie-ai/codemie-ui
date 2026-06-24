@@ -506,6 +506,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         conversationStarters: assistant.conversation_starters,
         context: assistant.context?.map((context) => context.name),
         tools: assistant.tools?.map((tool) => tool.name),
+        type: assistant.type,
       })
     } else {
       chat.assistantIds = chat.assistantIds.filter((id) => id !== assistant.id)

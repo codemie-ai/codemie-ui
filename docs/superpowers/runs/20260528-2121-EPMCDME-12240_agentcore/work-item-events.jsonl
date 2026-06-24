@@ -1,0 +1,1 @@
+{"schema":1,"ts":"2026-05-28T21:21:00Z","event":"work_item.created","run_id":"20260528-2121-EPMCDME-12240_agentcore","phase":1,"actor":"sdlc-pipeline","summary":"Run-local work item created from raw_input for EPMCDME-12240","artifacts":["docs/superpowers/runs/20260528-2121-EPMCDME-12240_agentcore/work-item.md"],"data":{"ticket":"EPMCDME-12240","branch":"EPMCDME-12240_agentcore"}}

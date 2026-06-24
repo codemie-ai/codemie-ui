@@ -21,11 +21,12 @@
 import React, { FC, useEffect, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
-import ChevronRightSvg from '@/assets/icons/chevron-right.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
+import ViewSvg from '@/assets/icons/view.svg?react'
 import vendorDataSourceUrl from '@/assets/images/aws/aws-datasource.png'
 import vendorEntityUrl from '@/assets/images/aws/aws-entity.png'
 import Button from '@/components/Button'
+import Card from '@/components/Card'
 import Spinner from '@/components/Spinner'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { awsVendorStore } from '@/store/vendor'
@@ -36,7 +37,9 @@ interface Props {
   entityType: VendorEntityType
   settingId: string
   renderActions?: (entity: VendorEntity, entityType: VendorEntityType) => React.ReactNode
+  renderEntityMeta?: (entity: VendorEntity) => React.ReactNode
   actionsFullColumn?: boolean
+  onEntityClick?: (entity: VendorEntity) => void
 }
 
 const AwsEntityList: FC<Props> = ({
@@ -44,12 +47,12 @@ const AwsEntityList: FC<Props> = ({
   entityType,
   settingId,
   renderActions,
-  actionsFullColumn,
+  renderEntityMeta,
+  onEntityClick,
 }) => {
   const { vendorEntities, vendorEntitiesPagination, loading } = useSnapshot(awsVendorStore)
   const router = useVueRouter()
 
-  // Use the specific loading state for entities
   const isLoading = loading.entities
 
   const entityLogoUrl = useMemo(() => {
@@ -63,6 +66,12 @@ const AwsEntityList: FC<Props> = ({
     awsVendorStore.getVendorEntities(originType, entityType, settingId, true)
   }
 
+  const getEntityClickHandler = (entity: VendorEntity) => {
+    if (onEntityClick) return () => onEntityClick(entity)
+    if (entity.status === 'PREPARED') return () => goToEntityDetails(entity)
+    return () => {}
+  }
+
   const goToEntityDetails = (entity: VendorEntity) => {
     router.push({
       path: router.currentRoute.value.path + '/' + entity.id,
@@ -74,8 +83,8 @@ const AwsEntityList: FC<Props> = ({
       <div className="flex gap-4 items-start">
         {entity.status === 'PREPARED' && (
           <Button type="secondary" onClick={() => goToEntityDetails(entity)}>
-            More Info
-            <ChevronRightSvg />
+            <ViewSvg />
+            View
           </Button>
         )}
         {entity.status !== 'PREPARED' && (
@@ -93,52 +102,36 @@ const AwsEntityList: FC<Props> = ({
   }, [originType, entityType, settingId])
 
   return (
-    <div className="pt-4">
+    <div className="py-4">
       {!isLoading && vendorEntities.length === 0 && (
         <div className="text-center py-4">No entities found</div>
       )}
       <div className="grid gap-4 grid-cols-2">
         {vendorEntities.length > 0 &&
           vendorEntities.map((entity) => (
-            <div
+            <Card
               key={entity.id}
-              className="border border-border-structural rounded-md p-4 shadow-sm flex items-start justify-between gap-4"
-            >
-              <img
-                src={entityLogoUrl}
-                alt="vendor entity graphic"
-                className="w-[72px] h-[72px] rounded-full"
-              />
-
-              <div className="flex-1">
-                <div className="flex flex-row justify-between">
-                  <div>
-                    <h3 className="text-base font-medium mb-1">{entity.name}</h3>
-                    <div className="flex items-center gap-2 text-xs mb-3">
-                      {entity.id && (
-                        <div className="border border-border-structural rounded-xl px-2">
-                          Id: {entity.id}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {!actionsFullColumn &&
-                    (renderActions
-                      ? renderActions(entity, entityType)
-                      : renderDefaultActions(entity))}
-                </div>
-
-                <p className="text-xs text-text-quaternary mb-2">{entity.description}</p>
-              </div>
-
-              {actionsFullColumn &&
-                (renderActions ? renderActions(entity, entityType) : renderDefaultActions(entity))}
-            </div>
+              id={entity.id}
+              title={entity.name}
+              subtitle={entity.id ? `ID: ${entity.id}` : undefined}
+              description={entity.description || ''}
+              avatar={
+                <img
+                  src={entityLogoUrl}
+                  alt="vendor entity graphic"
+                  className="w-[72px] h-[72px] rounded-full self-center"
+                />
+              }
+              status={renderEntityMeta?.(entity)}
+              actions={
+                renderActions ? renderActions(entity, entityType) : renderDefaultActions(entity)
+              }
+              onClick={getEntityClickHandler(entity)}
+            />
           ))}
       </div>
 
-      {isLoading && <Spinner inline />}
+      {isLoading && vendorEntities.length === 0 && <Spinner inline />}
 
       {!isLoading && vendorEntities.length > 0 && vendorEntitiesPagination.nextToken && (
         <div className="mt-4 w-full flex justify-center">

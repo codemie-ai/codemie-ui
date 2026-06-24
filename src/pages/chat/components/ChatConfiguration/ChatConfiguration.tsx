@@ -14,7 +14,11 @@
 //
 
 import { FC } from 'react'
+import { useSnapshot } from 'valtio'
 
+import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
+import { useChatContext } from '@/pages/chat/hooks/useChatContext'
+import { chatsStore } from '@/store/chats'
 import { cn } from '@/utils/utils'
 
 import ChatConfigAssistantForm from './ChatConfigAssistants/ChatConfigAssistantForm'
@@ -22,7 +26,6 @@ import ChatConfigAssistants from './ChatConfigAssistants/ChatConfigAssistants'
 import ChatConfigImageGeneration from './ChatConfigImageGeneration'
 import ChatConfigLlmSelector from './ChatConfigLlmSelector'
 import ChatConfigSkillsSelector from './ChatConfigSkillsSelector'
-import { useChatContext } from '../../hooks/useChatContext'
 
 interface ChatConfigurationProps {
   showNewIntegrationPopup: (project: string, credentialType: string) => void
@@ -30,6 +33,8 @@ interface ChatConfigurationProps {
 
 const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup }) => {
   const { isConfigVisible, isConfigFormVisible } = useChatContext()
+  const { currentChat } = useSnapshot(chatsStore)
+  const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
 
   return (
     <aside
@@ -44,10 +49,14 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
             <ChatConfigAssistantForm showNewIntegrationPopup={showNewIntegrationPopup} />
           ) : (
             <div className="py-7 px-4 overflow-y-auto">
-              <h3 className="font-semibold mb-3">General</h3>
-              <ChatConfigLlmSelector />
-              <ChatConfigSkillsSelector />
-              <ChatConfigImageGeneration />
+              {(assistantFeatures.modelSelector || assistantFeatures.skills) && (
+                <>
+                  <h3 className="font-semibold mb-3">General</h3>
+                  {assistantFeatures.modelSelector && <ChatConfigLlmSelector />}
+                  {assistantFeatures.skills && <ChatConfigSkillsSelector />}
+                  {assistantFeatures.modelSelector && <ChatConfigImageGeneration />}
+                </>
+              )}
               <ChatConfigAssistants />
             </div>
           )}

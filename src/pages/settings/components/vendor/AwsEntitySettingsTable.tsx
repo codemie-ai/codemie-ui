@@ -16,6 +16,7 @@
 import { FC, ReactNode, useEffect, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
+import AlertSvg from '@/assets/icons/alert.svg?react'
 import AssistantSvg from '@/assets/icons/assistant-alt.svg?react'
 import AwsSvg from '@/assets/icons/aws.svg?react'
 import CogSvg from '@/assets/icons/cog.svg?react'
@@ -44,6 +45,7 @@ interface UIConfig {
     plural: string
     single: string
     icon: ReactNode
+    tableLabel?: string
   }
 }
 
@@ -68,6 +70,12 @@ const ENTITY_UI_CONFIG: UIConfig = {
     single: 'guardrail',
     icon: <GuardrailSvg />,
   },
+  [VendorEntityType.agentcoreRuntimes]: {
+    plural: 'runtimes',
+    single: 'runtime',
+    icon: <AwsSvg />,
+    tableLabel: 'Runtimes',
+  },
 }
 
 const VendorEntitiesTableCell = ({
@@ -84,7 +92,7 @@ const VendorEntitiesTableCell = ({
         <div className="flex items-center gap-1.5 text-failed-secondary">
           <span>Connection Error</span>
           <span
-            data-pr-tooltip={item.error}
+            data-pr-tooltip={item.invalid && item.error}
             data-pr-position="right"
             className="target-tooltip cursor-pointer"
           >
@@ -120,7 +128,7 @@ const VendorEntitiesTableCell = ({
     <div className="flex gap-4 items-center">
       {item.entities.slice(0, 3).map((name: string) => (
         <div
-          className="flex items-center border rounded-md px-2 border-border-structural"
+          className="flex items-center border rounded-md px-2 py-1.5 border-border-structural"
           key={name}
         >
           {ENTITY_UI_CONFIG[type].icon}
@@ -132,6 +140,7 @@ const VendorEntitiesTableCell = ({
           ...
         </span>
       )}
+      {item.invalid && <AlertSvg className="w-4.5 h-4.5 text-text-error shrink-0" />}
     </div>
   )
 }
@@ -158,13 +167,14 @@ const AwsEntitySettingsTable: FC<Props> = ({ originType, entityType }) => {
     },
     {
       key: 'status',
-      label: 'Bedrock ' + ENTITY_UI_CONFIG[entityType].plural,
+      label:
+        ENTITY_UI_CONFIG[entityType].tableLabel ?? 'Bedrock ' + ENTITY_UI_CONFIG[entityType].plural,
       sortable: false,
       type: DefinitionTypes.Custom,
     },
     {
       key: 'setting_name',
-      label: 'Integrations',
+      label: 'Integration',
       sortable: false,
       type: DefinitionTypes.String,
     },

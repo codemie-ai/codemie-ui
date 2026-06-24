@@ -76,6 +76,9 @@ import {
   AwsWorkflowsPage,
   AwsDataSourcesPage,
   AwsGuardrailsPage,
+  AwsAgentCoreRuntimesSettingsPage,
+  AwsAgentCoreRuntimesListPage,
+  AwsAgentCoreRuntimeDetailPage,
 } from '@/pages/settings/aws'
 import ProfilePage from '@/pages/settings/ProfilePage'
 import { SkillTab } from '@/pages/skills/components/SkillsNavigation'
@@ -533,6 +536,21 @@ const awsSettingsRoutes: RouteObject[] = [
   {
     path: 'settings/aws/guardrails/:settingId/:guardrailId',
     Component: AwsGuardrailsPage,
+  },
+  {
+    id: 'aws-agentcore-runtimes-settings',
+    path: 'settings/aws/agentcore-runtimes',
+    Component: AwsAgentCoreRuntimesSettingsPage,
+  },
+  {
+    id: 'aws-agentcore-runtimes-settings-detail',
+    path: 'settings/aws/agentcore-runtimes/:settingId',
+    Component: AwsAgentCoreRuntimesListPage,
+  },
+  {
+    id: 'aws-agentcore-runtimes-settings-runtime',
+    path: 'settings/aws/agentcore-runtimes/:settingId/:runtimeId',
+    Component: AwsAgentCoreRuntimeDetailPage,
   },
 ]
 

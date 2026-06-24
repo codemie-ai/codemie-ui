@@ -48,3 +48,16 @@ export const tryParseJsonObjectOrArray = (text: string): JsonValue | null => {
     return null
   }
 }
+
+/**
+ * Safely parses JSON string and validates it's a plain object (not an array or primitive)
+ * Returns null if parsing fails or result is not a plain object
+ */
+export const tryParseJsonObject = (text: string): Record<string, unknown> | null => {
+  try {
+    const parsed = JSON.parse(text)
+    return isPlainObject(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}

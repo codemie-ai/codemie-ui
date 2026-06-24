@@ -167,6 +167,7 @@ export interface AssistantData {
   conversationStarters?: string[]
   context?: string[]
   tools?: string[]
+  type?: string
 }
 
 export interface Conversation {
