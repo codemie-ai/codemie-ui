@@ -21,6 +21,7 @@ import RadioGroup from '@/components/form/RadioGroup/RadioGroup'
 import { SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useTheme } from '@/hooks/useTheme'
+import { OAuthStatus } from '@/types/entity/dataSource'
 
 import { FormValues } from '../hooks/useEditPopupForm'
 import { useSharePointOAuth } from '../hooks/useSharePointOAuth'
@@ -28,6 +29,7 @@ import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
 import SharePointContentTypesSection from './SharePointContentTypesSection'
 import SharePointMicrosoftSignIn from './SharePointMicrosoftSignIn'
+import SharePointDeviceCodeInstructions from '../../SharePointDeviceCodeInstructions'
 
 interface SettingOption {
   id: string
@@ -111,6 +113,7 @@ const IndexTypeSharePoint: FC<Props> = ({
     projectName,
     setValue,
     initialAuthType: isEditing ? storedAuthType : INTEGRATION,
+    authType: authMethod,
   })
 
   // Sync authMethod when editing an existing datasource (storedAuthType populated from defaults).
@@ -238,15 +241,20 @@ const IndexTypeSharePoint: FC<Props> = ({
       )}
 
       {isMicrosoftAuth && (
-        <SharePointMicrosoftSignIn
-          oauthStatus={oauthStatus}
-          oauthUsername={oauthUsername}
-          oauthError={oauthError}
-          deviceCode={deviceCode}
-          onSignIn={handleMicrosoftSignIn}
-          isDark={isDark}
-          validationError={errors.sharepointAccessToken?.message}
-        />
+        <>
+          <SharePointMicrosoftSignIn
+            oauthStatus={oauthStatus}
+            oauthUsername={oauthUsername}
+            oauthError={oauthError}
+            onSignIn={handleMicrosoftSignIn}
+            isDark={isDark}
+            validationError={errors.sharepointAccessToken?.message}
+            hideWaitingMessage={authMethod === OAUTH_CUSTOM && oauthStatus === OAuthStatus.WAITING}
+          />
+          {authMethod === OAUTH_CUSTOM && oauthStatus === OAuthStatus.WAITING && deviceCode && (
+            <SharePointDeviceCodeInstructions deviceCode={deviceCode} />
+          )}
+        </>
       )}
 
       <FormAutocomplete

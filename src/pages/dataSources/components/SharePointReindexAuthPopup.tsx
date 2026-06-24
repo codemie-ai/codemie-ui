@@ -38,20 +38,46 @@ interface Props {
   onSuccess: (accessToken: string) => void
 }
 
-const SharePointReindexAuthPopup: FC<Props> = ({ item, visible, onHide, onSuccess }) => {
-  const [status, setStatus] = useState<OAuthStatus>('idle')
-  const [deviceCode, setDeviceCode] = useState<DeviceCodeState | null>(null)
-  const [error, setError] = useState('')
+const POLL_INTERVAL_MS = 2000
 
+const getSharePointOAuthCredentials = (
+  item: SharePointItemData,
+  authType: string | undefined
+): { clientId: string | undefined; tenantId: string | undefined } => {
+  const isCustom = authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
+  return {
+    clientId: isCustom ? item.sharepoint?.oauth_client_id || undefined : undefined,
+    tenantId: isCustom ? item.sharepoint?.oauth_tenant_id || undefined : undefined,
+  }
+}
+
+const SharePointReindexAuthPopup: FC<Props> = ({ item, visible, onHide, onSuccess }) => {
+  const [status, setStatus] = useState<OAuthStatus>(OAuthStatus.IDLE)
+  const [error, setError] = useState('')
+  const [deviceCode, setDeviceCode] = useState<DeviceCodeState | null>(null)
+
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pollAliasRef = useRef<string>('')
+  const popupRef = useRef<Window | null>(null)
+
+  const authType = item.sharepoint?.auth_type
+  const isDeviceCodeFlow = authType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
 
   const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
     if (pollTimerRef.current) {
       clearTimeout(pollTimerRef.current)
       pollTimerRef.current = null
     }
+    if (popupRef.current && !popupRef.current.closed) {
+      popupRef.current.close()
+    }
+    popupRef.current = null
   }, [])
 
   const handleClose = useCallback(() => {
@@ -71,27 +97,25 @@ const SharePointReindexAuthPopup: FC<Props> = ({ item, visible, onHide, onSucces
     [stopPolling]
   )
 
-  const startAuth = useCallback(async () => {
-    const customClientId =
-      item.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-        ? item.sharepoint?.oauth_client_id || undefined
-        : undefined
-    const customTenantId =
-      item.sharepoint?.auth_type === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM
-        ? item.sharepoint?.oauth_tenant_id || undefined
-        : undefined
+  const { clientId: customClientId, tenantId: customTenantId } = getSharePointOAuthCredentials(
+    item,
+    authType
+  )
 
+  const startDeviceCodeAuth = useCallback(async () => {
     stopPolling()
-    setStatus('idle')
+    setStatus(OAuthStatus.IDLE)
     setError('')
     setDeviceCode(null)
 
-    const alias = `sharepoint-reindex-${Date.now()}`
+    const alias = `sharepoint-reindex-dc-${Date.now()}`
     pollAliasRef.current = alias
 
     try {
-      const data = await dataSourceStore.initiateSharePointOAuth(customClientId, customTenantId)
-
+      const data = await dataSourceStore.initiateSharePointDeviceCode(
+        customClientId,
+        customTenantId
+      )
       const dc: DeviceCodeState = {
         userCode: data.user_code,
         verificationUri: data.verification_uri,
@@ -99,49 +123,108 @@ const SharePointReindexAuthPopup: FC<Props> = ({ item, visible, onHide, onSucces
         interval: data.interval ?? 5,
         message: data.message ?? '',
       }
-
       setDeviceCode(dc)
-      setStatus('waiting')
+      setStatus(OAuthStatus.WAITING)
 
-      const pollAttempt = async (currentInterval: number) => {
+      const attempt = async () => {
         if (pollAliasRef.current !== alias) return
         try {
-          const pollData = await dataSourceStore.pollSharePointOAuth(
+          const result = await dataSourceStore.pollSharePointDeviceCode(
             dc.deviceCode,
             customClientId,
             customTenantId
           )
-
-          if (pollData.status === 'success') {
+          if (result.status === OAuthStatus.SUCCESS) {
             stopPolling()
-            setStatus('success')
-            onSuccess(pollData.access_token ?? '')
+            setStatus(OAuthStatus.SUCCESS)
+            onSuccess(result.access_token ?? '')
+            closeTimerRef.current = setTimeout(onHide, 1500)
+            return
+          }
+          if (result.status === OAuthStatus.ERROR) {
+            stopPolling()
+            setStatus(OAuthStatus.ERROR)
+            setError(result.message ?? 'Authentication failed or expired.')
+            return
+          }
+          const nextInterval = result.slow_down ? dc.interval + 5 : dc.interval
+          pollTimerRef.current = setTimeout(attempt, nextInterval * 1000)
+        } catch {
+          stopPolling()
+          setStatus(OAuthStatus.ERROR)
+          setError('Polling failed. Please try again.')
+        }
+      }
+      pollTimerRef.current = setTimeout(attempt, dc.interval * 1000)
+    } catch {
+      setStatus(OAuthStatus.ERROR)
+      setError('Failed to initiate authentication. Please try again.')
+    }
+  }, [customClientId, customTenantId, stopPolling, onSuccess, onHide])
+
+  const startPKCEAuth = useCallback(async () => {
+    stopPolling()
+    setStatus(OAuthStatus.IDLE)
+    setError('')
+    setDeviceCode(null)
+
+    const alias = `sharepoint-reindex-pkce-${Date.now()}`
+    pollAliasRef.current = alias
+
+    const { clientId: pkceClientId, tenantId: pkceTenantId } = getSharePointOAuthCredentials(
+      item,
+      authType
+    )
+
+    try {
+      const data = await dataSourceStore.initiateSharePointOAuth(pkceClientId, pkceTenantId)
+
+      const popup = window.open(data.auth_url, '_blank', 'width=600,height=700')
+      popupRef.current = popup
+      setStatus(OAuthStatus.WAITING)
+
+      pollIntervalRef.current = setInterval(async () => {
+        if (pollAliasRef.current !== alias) return
+
+        if (popupRef.current?.closed) {
+          stopPolling()
+          setStatus(OAuthStatus.ERROR)
+          setError('Sign-in window was closed. Click Sign in to try again.')
+          return
+        }
+
+        try {
+          const result = await dataSourceStore.getSharePointOAuthStatus(data.state)
+
+          if (result.status === OAuthStatus.SUCCESS) {
+            stopPolling()
+            setStatus(OAuthStatus.SUCCESS)
+            onSuccess(result.access_token ?? '')
             closeTimerRef.current = setTimeout(onHide, 1500)
             return
           }
 
-          if (pollData.status === 'error') {
+          if (result.status === OAuthStatus.ERROR) {
             stopPolling()
-            setStatus('error')
-            setError(pollData.message ?? 'Authentication failed or expired')
-            return
+            setStatus(OAuthStatus.ERROR)
+            setError(result.message ?? 'Authentication failed.')
           }
 
-          const nextInterval = pollData.slow_down ? currentInterval + 5 : currentInterval
-          pollTimerRef.current = setTimeout(() => pollAttempt(nextInterval), nextInterval * 1000)
+          // pending — keep polling
         } catch {
           stopPolling()
-          setStatus('error')
+          setStatus(OAuthStatus.ERROR)
           setError('Polling failed. Please try again.')
         }
-      }
-
-      pollTimerRef.current = setTimeout(() => pollAttempt(dc.interval), dc.interval * 1000)
+      }, POLL_INTERVAL_MS)
     } catch {
-      setStatus('error')
+      setStatus(OAuthStatus.ERROR)
       setError('Failed to initiate authentication. Please try again.')
     }
-  }, [item, stopPolling, onSuccess, onHide])
+  }, [authType, item, stopPolling, onSuccess, onHide])
+
+  const startAuth = isDeviceCodeFlow ? startDeviceCodeAuth : startPKCEAuth
+  const retryAuth = isDeviceCodeFlow ? startDeviceCodeAuth : startPKCEAuth
 
   // Start auth flow each time the popup opens
   useEffect(() => {
@@ -165,26 +248,34 @@ const SharePointReindexAuthPopup: FC<Props> = ({ item, visible, onHide, onSucces
       }
     >
       <div className="flex flex-col gap-3 p-1">
-        {status === 'success' && (
+        {status === OAuthStatus.SUCCESS && (
           <p className="text-sm text-text-success">Authentication successful. Starting reindex…</p>
         )}
 
-        {status === 'waiting' && deviceCode && (
-          <div className="flex flex-col gap-2 text-sm">
-            <SharePointDeviceCodeInstructions deviceCode={deviceCode} />
-          </div>
+        {status === OAuthStatus.WAITING && !isDeviceCodeFlow && (
+          <p className="text-sm text-text-secondary">
+            Sign-in window opened — complete authentication in the browser.
+          </p>
         )}
 
-        {status === 'error' && (
+        {status === OAuthStatus.WAITING && isDeviceCodeFlow && deviceCode && (
+          <SharePointDeviceCodeInstructions deviceCode={deviceCode} />
+        )}
+
+        {status === OAuthStatus.WAITING && isDeviceCodeFlow && !deviceCode && (
+          <p className="text-sm text-text-secondary">Initiating Microsoft sign-in…</p>
+        )}
+
+        {status === OAuthStatus.ERROR && (
           <div className="flex flex-col gap-2">
             <p className="text-sm text-text-error">{error}</p>
-            <Button type="primary" size={ButtonSize.SMALL} onClick={startAuth} className="w-fit">
+            <Button type="primary" size={ButtonSize.SMALL} onClick={retryAuth} className="w-fit">
               Try Again
             </Button>
           </div>
         )}
 
-        {status === 'idle' && (
+        {status === OAuthStatus.IDLE && (
           <p className="text-sm text-text-secondary">Initiating Microsoft sign-in…</p>
         )}
       </div>

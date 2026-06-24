@@ -20,8 +20,10 @@ import {
   DataProvider,
   DatasetResponse,
   DataSourceDetailsResponse,
+  SharePointDeviceCodeInitiateResponse,
+  SharePointDeviceCodePollResponse,
   SharePointOAuthInitiateResponse,
-  SharePointOAuthPollResponse,
+  SharePointOAuthStatusResponse,
 } from '@/types/entity/dataSource'
 import { EntityGuardrailAssignment } from '@/types/entity/guardrail'
 import api from '@/utils/api'
@@ -448,25 +450,45 @@ export const dataSourceStore = proxy({
   },
 
   async initiateSharePointOAuth(
-    client_id?: string,
-    tenant_id?: string
+    clientId?: string,
+    tenantId?: string
   ): Promise<SharePointOAuthInitiateResponse> {
     const body: Record<string, string> = {}
-    if (client_id) body.client_id = client_id
-    if (tenant_id) body.tenant_id = tenant_id
+    if (clientId) body.client_id = clientId
+    if (tenantId) body.tenant_id = tenantId
     const response = await api.post('v1/sharepoint/oauth/initiate', body)
     return response.json()
   },
 
-  async pollSharePointOAuth(
-    device_code: string,
-    client_id?: string,
-    tenant_id?: string
-  ): Promise<SharePointOAuthPollResponse> {
-    const body: Record<string, string> = { device_code }
-    if (client_id) body.client_id = client_id
-    if (tenant_id) body.tenant_id = tenant_id
-    const response = await api.post('v1/sharepoint/oauth/poll', body, { skipErrorHandling: true })
+  async getSharePointOAuthStatus(state: string): Promise<SharePointOAuthStatusResponse> {
+    const response = await api.get(`v1/sharepoint/oauth/status/${state}`, {
+      skipErrorHandling: true,
+    })
+    return response.json()
+  },
+
+  async initiateSharePointDeviceCode(
+    clientId?: string,
+    tenantId?: string
+  ): Promise<SharePointDeviceCodeInitiateResponse> {
+    const body: Record<string, string> = {}
+    if (clientId) body.client_id = clientId
+    if (tenantId) body.tenant_id = tenantId
+    const response = await api.post('v1/sharepoint/oauth/device/initiate', body)
+    return response.json()
+  },
+
+  async pollSharePointDeviceCode(
+    deviceCode: string,
+    clientId?: string,
+    tenantId?: string
+  ): Promise<SharePointDeviceCodePollResponse> {
+    const body: Record<string, string> = { device_code: deviceCode }
+    if (clientId) body.client_id = clientId
+    if (tenantId) body.tenant_id = tenantId
+    const response = await api.post('v1/sharepoint/oauth/device/poll', body, {
+      skipErrorHandling: true,
+    })
     return response.json()
   },
 

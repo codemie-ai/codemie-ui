@@ -16,31 +16,29 @@ import { FC } from 'react'
 
 import Button from '@/components/Button'
 import { ButtonSize } from '@/constants'
-import { DeviceCodeState, OAuthStatus } from '@/types/entity/dataSource'
-
-import SharePointDeviceCodeInstructions from '../../SharePointDeviceCodeInstructions'
+import { OAuthStatus } from '@/types/entity/dataSource'
 
 interface Props {
   oauthStatus: OAuthStatus
   oauthUsername: string
   oauthError: string
-  deviceCode: DeviceCodeState | null
   onSignIn: () => void
   isDark: boolean
   validationError?: string
+  hideWaitingMessage?: boolean
 }
 
 const SharePointMicrosoftSignIn: FC<Props> = ({
   oauthStatus,
   oauthUsername,
   oauthError,
-  deviceCode,
   onSignIn,
   isDark,
   validationError,
+  hideWaitingMessage = false,
 }) => (
   <div className="mb-4 flex flex-col gap-2">
-    {oauthStatus === 'success' ? (
+    {oauthStatus === OAuthStatus.SUCCESS ? (
       <>
         <p className="text-xs text-text-success">
           {oauthUsername ? (
@@ -66,19 +64,23 @@ const SharePointMicrosoftSignIn: FC<Props> = ({
           type={isDark ? 'primary' : 'secondary'}
           size={ButtonSize.SMALL}
           onClick={onSignIn}
-          disabled={oauthStatus === 'waiting'}
+          disabled={oauthStatus === OAuthStatus.WAITING}
           className="py-4 px-10 w-fit"
         >
-          {oauthStatus === 'waiting' ? 'Waiting for sign-in...' : 'Sign in with Microsoft'}
+          {oauthStatus === OAuthStatus.WAITING
+            ? 'Waiting for sign-in...'
+            : 'Sign in with Microsoft'}
         </Button>
 
-        {oauthStatus === 'waiting' && deviceCode && (
-          <div className="rounded border border-border-primary bg-surface-secondary p-3 text-xs">
-            <SharePointDeviceCodeInstructions deviceCode={deviceCode} />
-          </div>
+        {oauthStatus === OAuthStatus.WAITING && !hideWaitingMessage && (
+          <p className="text-xs text-text-secondary">
+            Sign-in window opened — complete authentication in the browser.
+          </p>
         )}
 
-        {oauthStatus === 'error' && <p className="text-sm text-failed-secondary">{oauthError}</p>}
+        {oauthStatus === OAuthStatus.ERROR && (
+          <p className="text-sm text-failed-secondary">{oauthError}</p>
+        )}
 
         {validationError && <p className="text-sm text-failed-secondary">{validationError}</p>}
       </>

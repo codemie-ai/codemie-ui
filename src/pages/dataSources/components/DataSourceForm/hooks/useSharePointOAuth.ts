@@ -26,6 +26,7 @@ interface UseSharePointOAuthProps {
   projectName?: string
   setValue: UseFormSetValue<FormValues>
   initialAuthType?: string
+  authType?: string
 }
 
 export interface UseSharePointOAuthReturn {
@@ -39,37 +40,52 @@ export interface UseSharePointOAuthReturn {
   initForEditMode: (authType: string) => void
 }
 
+const POLL_INTERVAL_MS = 2000
+
 export const useSharePointOAuth = ({
   projectName: _projectName,
   setValue,
   initialAuthType = SHAREPOINT_AUTH_TYPES.INTEGRATION,
+  authType,
 }: UseSharePointOAuthProps): UseSharePointOAuthReturn => {
   const initialStatus: OAuthStatus =
-    initialAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION ? 'success' : 'idle'
+    initialAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION ? OAuthStatus.SUCCESS : OAuthStatus.IDLE
 
   const [oauthStatus, setOauthStatus] = useState<OAuthStatus>(initialStatus)
   const [oauthUsername, setOauthUsername] = useState('')
   const [oauthError, setOauthError] = useState('')
   const [deviceCode, setDeviceCode] = useState<DeviceCodeState | null>(null)
 
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pollAliasRef = useRef<string>('')
+  const popupRef = useRef<Window | null>(null)
   const currentMethodRef = useRef<string>(initialAuthType)
   const savedStatusRef = useRef<Record<string, OAuthStatus>>(
-    initialAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION ? { [initialAuthType]: 'success' } : {}
+    initialAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION
+      ? { [initialAuthType]: OAuthStatus.SUCCESS }
+      : {}
   )
   const savedUsernameRef = useRef<Record<string, string>>({})
 
   const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
     if (pollTimerRef.current) {
       clearTimeout(pollTimerRef.current)
       pollTimerRef.current = null
     }
+    if (popupRef.current && !popupRef.current.closed) {
+      popupRef.current.close()
+    }
+    popupRef.current = null
   }, [])
 
   useEffect(() => () => stopPolling(), [stopPolling])
 
-  const pollForToken = useCallback(
+  const pollDeviceCode = useCallback(
     (
       dc: DeviceCodeState,
       alias: string,
@@ -79,60 +95,45 @@ export const useSharePointOAuth = ({
     ) => {
       const attempt = async () => {
         if (pollAliasRef.current !== alias) return
-
         try {
-          const data = await dataSourceStore.pollSharePointOAuth(
+          const data = await dataSourceStore.pollSharePointDeviceCode(
             dc.deviceCode,
             customClientId,
             tenantId
           )
-
-          if (data.status === 'success') {
+          if (data.status === OAuthStatus.SUCCESS) {
             stopPolling()
             const username = data.username ?? ''
-            setOauthStatus('success')
+            setOauthStatus(OAuthStatus.SUCCESS)
             setOauthUsername(username)
             setValue('sharepointAccessToken', data.access_token ?? '')
-            savedStatusRef.current[currentMethodRef.current] = 'success'
+            savedStatusRef.current[currentMethodRef.current] = OAuthStatus.SUCCESS
             savedUsernameRef.current[currentMethodRef.current] = username
             return
           }
-
-          if (data.status === 'error') {
+          if (data.status === OAuthStatus.ERROR) {
             stopPolling()
-            setOauthStatus('error')
-            setOauthError(data.message ?? 'Authentication failed or expired')
+            setOauthStatus(OAuthStatus.ERROR)
+            setOauthError(data.message ?? 'Authentication failed or expired.')
             return
           }
-
-          // pending or slow_down — keep polling
           const nextInterval = data.slow_down ? intervalSecs + 5 : intervalSecs
           pollTimerRef.current = setTimeout(attempt, nextInterval * 1000)
         } catch {
           stopPolling()
-          setOauthStatus('error')
+          setOauthStatus(OAuthStatus.ERROR)
           setOauthError('Polling failed. Please try again.')
         }
       }
-
       pollTimerRef.current = setTimeout(attempt, intervalSecs * 1000)
     },
     [setValue, stopPolling]
   )
 
-  const handleSignIn = useCallback(
-    async (customClientId?: string, tenantId?: string) => {
-      stopPolling()
-      setOauthStatus('idle')
-      setOauthError('')
-      setDeviceCode(null)
-
-      const alias = `sharepoint-oauth-${Date.now()}`
-      pollAliasRef.current = alias
-
+  const handleCustomSignIn = useCallback(
+    async (customClientId?: string, tenantId?: string, alias?: string) => {
       try {
-        const data = await dataSourceStore.initiateSharePointOAuth(customClientId, tenantId)
-
+        const data = await dataSourceStore.initiateSharePointDeviceCode(customClientId, tenantId)
         const dc: DeviceCodeState = {
           userCode: data.user_code,
           verificationUri: data.verification_uri,
@@ -140,16 +141,88 @@ export const useSharePointOAuth = ({
           interval: data.interval ?? 5,
           message: data.message ?? '',
         }
-
         setDeviceCode(dc)
-        setOauthStatus('waiting')
-        pollForToken(dc, alias, dc.interval, customClientId, tenantId)
+        setOauthStatus(OAuthStatus.WAITING)
+        pollDeviceCode(dc, alias ?? '', dc.interval, customClientId, tenantId)
       } catch {
-        setOauthStatus('error')
+        setOauthStatus(OAuthStatus.ERROR)
         setOauthError('Failed to initiate authentication. Please try again.')
       }
     },
-    [pollForToken, stopPolling]
+    [pollDeviceCode]
+  )
+
+  const handleCodemieSignIn = useCallback(
+    async (customClientId?: string, tenantId?: string, alias?: string) => {
+      try {
+        const data = await dataSourceStore.initiateSharePointOAuth(customClientId, tenantId)
+
+        const popup = window.open(data.auth_url, '_blank', 'width=600,height=700')
+        popupRef.current = popup
+        setOauthStatus(OAuthStatus.WAITING)
+
+        pollIntervalRef.current = setInterval(async () => {
+          if (pollAliasRef.current !== alias) return
+
+          try {
+            const result = await dataSourceStore.getSharePointOAuthStatus(data.state)
+
+            if (result.status === OAuthStatus.SUCCESS) {
+              stopPolling()
+              const username = result.username ?? ''
+              setOauthStatus(OAuthStatus.SUCCESS)
+              setOauthUsername(username)
+              setValue('sharepointAccessToken', result.access_token ?? '')
+              savedStatusRef.current[currentMethodRef.current] = OAuthStatus.SUCCESS
+              savedUsernameRef.current[currentMethodRef.current] = username
+              return
+            }
+
+            if (result.status === OAuthStatus.ERROR) {
+              stopPolling()
+              setOauthStatus(OAuthStatus.ERROR)
+              setOauthError(result.message ?? 'Authentication failed.')
+              return
+            }
+
+            // pending — error only if popup was closed without completing
+            if (popupRef.current?.closed) {
+              stopPolling()
+              setOauthStatus(OAuthStatus.ERROR)
+              setOauthError('Sign-in window was closed. Click Sign in to try again.')
+            }
+          } catch {
+            stopPolling()
+            setOauthStatus(OAuthStatus.ERROR)
+            setOauthError('Polling failed. Please try again.')
+          }
+        }, POLL_INTERVAL_MS)
+      } catch {
+        setOauthStatus(OAuthStatus.ERROR)
+        setOauthError('Failed to initiate authentication. Please try again.')
+      }
+    },
+    [setValue, stopPolling]
+  )
+
+  const handleSignIn = useCallback(
+    async (customClientId?: string, tenantId?: string) => {
+      stopPolling()
+      setOauthStatus(OAuthStatus.IDLE)
+      setOauthError('')
+      setDeviceCode(null)
+
+      const alias = `sharepoint-oauth-${Date.now()}`
+      pollAliasRef.current = alias
+
+      const currentAuthType = authType ?? currentMethodRef.current
+
+      if (currentAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM) {
+        return handleCustomSignIn(customClientId, tenantId, alias)
+      }
+      return handleCodemieSignIn(customClientId, tenantId, alias)
+    },
+    [authType, handleCustomSignIn, handleCodemieSignIn, stopPolling]
   )
 
   const onAuthMethodChange = useCallback(
@@ -161,7 +234,7 @@ export const useSharePointOAuth = ({
       setOauthError('')
       setDeviceCode(null)
       setValue('sharepointAccessToken', '')
-      setOauthStatus(savedStatusRef.current[incomingMethod] ?? 'idle')
+      setOauthStatus(savedStatusRef.current[incomingMethod] ?? OAuthStatus.IDLE)
       setOauthUsername(savedUsernameRef.current[incomingMethod] ?? '')
     },
     [oauthStatus, oauthUsername, stopPolling, setValue]
@@ -170,8 +243,8 @@ export const useSharePointOAuth = ({
   const initForEditMode = useCallback((authType: string) => {
     currentMethodRef.current = authType
     if (authType !== SHAREPOINT_AUTH_TYPES.INTEGRATION) {
-      setOauthStatus('success')
-      savedStatusRef.current[authType] = 'success'
+      setOauthStatus(OAuthStatus.SUCCESS)
+      savedStatusRef.current[authType] = OAuthStatus.SUCCESS
       savedUsernameRef.current[authType] ??= ''
     }
   }, [])

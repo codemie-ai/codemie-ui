@@ -19,22 +19,23 @@ import type { CreatedBy, PaginatedResponse } from '@/types/common'
 
 import { EntityGuardrailAssignment } from './guardrail'
 
-export type OAuthStatus = 'idle' | 'waiting' | 'success' | 'error'
-
-export interface SharePointOAuthInitiateResponse {
-  user_code: string
-  verification_uri: string
-  device_code: string
-  interval?: number
-  message?: string
+export enum OAuthStatus {
+  IDLE = 'idle',
+  WAITING = 'waiting',
+  SUCCESS = 'success',
+  ERROR = 'error',
 }
 
-export interface SharePointOAuthPollResponse {
-  status: 'success' | 'error' | 'pending'
+export interface SharePointOAuthInitiateResponse {
+  auth_url: string
+  state: string
+}
+
+export interface SharePointOAuthStatusResponse {
+  status: 'pending' | 'success' | 'error'
   access_token?: string
   username?: string
   message?: string
-  slow_down?: boolean
 }
 
 export interface DeviceCodeState {
@@ -43,6 +44,22 @@ export interface DeviceCodeState {
   deviceCode: string
   interval: number
   message: string
+}
+
+export interface SharePointDeviceCodeInitiateResponse {
+  user_code: string
+  verification_uri: string
+  device_code: string
+  interval?: number
+  message?: string
+}
+
+export interface SharePointDeviceCodePollResponse {
+  status: 'pending' | 'success' | 'error'
+  access_token?: string
+  username?: string
+  message?: string
+  slow_down?: boolean
 }
 
 // Schedule types
