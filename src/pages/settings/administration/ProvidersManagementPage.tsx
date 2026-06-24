@@ -13,15 +13,18 @@
 // limitations under the License.
 //
 
-import { useEffect, useMemo, useCallback } from 'react'
+import { useEffect, useMemo, useCallback, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import DownloadCloudSvg from '@/assets/icons/download-cloud.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import Button from '@/components/Button'
 import Table from '@/components/Table'
-import { ButtonSize } from '@/constants'
+import { ButtonSize, ButtonType } from '@/constants'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
+import { dataSourceStore } from '@/store/dataSources'
 import { providersStore } from '@/store/providers'
 import { Provider } from '@/types/entity/provider'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
@@ -40,6 +43,8 @@ const columnDefinitions: ColumnDefinition[] = [
 const ProvidersManagementPage = () => {
   const { providers, loading } = useSnapshot(providersStore) as typeof providersStore
   const router = useVueRouter()
+  const [importing, setImporting] = useState(false)
+  const [importFeatureEnabled] = useFeatureFlag('features:providersDatasourceImport')
 
   useEffect(() => {
     providersStore.indexProviders().catch((error) => {
@@ -50,6 +55,17 @@ const ProvidersManagementPage = () => {
   const handleAddProvider = useCallback(() => {
     router.push({ name: 'providers-create' })
   }, [router])
+
+  const handleImport = useCallback(async () => {
+    setImporting(true)
+    try {
+      await dataSourceStore.importProviderDatasources()
+    } catch {
+      // Error toast is shown by the API layer.
+    } finally {
+      setImporting(false)
+    }
+  }, [])
 
   const handleViewDetails = useCallback(
     (provider: Provider) => {
@@ -91,12 +107,25 @@ const ProvidersManagementPage = () => {
 
   const renderHeaderActions = useMemo(
     () => (
-      <Button onClick={handleAddProvider} size={ButtonSize.MEDIUM}>
-        <PlusFilledSvg />
-        Add Provider
-      </Button>
+      <div className="flex items-center gap-3">
+        {importFeatureEnabled && (
+          <Button
+            type={ButtonType.SECONDARY}
+            onClick={handleImport}
+            size={ButtonSize.MEDIUM}
+            isLoading={importing}
+          >
+            <DownloadCloudSvg />
+            Import Datasources
+          </Button>
+        )}
+        <Button onClick={handleAddProvider} size={ButtonSize.MEDIUM}>
+          <PlusFilledSvg />
+          Add Provider
+        </Button>
+      </div>
     ),
-    [handleAddProvider]
+    [handleAddProvider, handleImport, importing, importFeatureEnabled]
   )
 
   const renderContent = () => {

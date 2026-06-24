@@ -611,6 +611,30 @@ export const dataSourceStore = proxy({
     )
   },
 
+  async importProviderDatasources() {
+    // Errors are surfaced by the API layer (standard error object → toaster); only the
+    // success summary needs custom toasts here.
+    const response = await api.post('v1/index/provider/datasources/import')
+    const data = await response.json()
+
+    const imported = data.total_imported ?? 0
+    const skipped = data.total_skipped ?? 0
+    if (imported > 0) {
+      toaster.info(
+        `Imported ${imported} datasource(s) from ${data.providers?.length ?? 0} provider(s)` +
+          (skipped ? ` (${skipped} already present)` : '')
+      )
+    } else {
+      toaster.info(`No new datasources to import (${skipped} already present)`)
+    }
+
+    if (data.errors?.length) {
+      toaster.error(`${data.errors.length} item(s) failed to import. Check server logs.`)
+    }
+
+    return data
+  },
+
   async deleteIndex(id: string, name: string) {
     try {
       const response = await api.delete(`v1/index/${id}`)
