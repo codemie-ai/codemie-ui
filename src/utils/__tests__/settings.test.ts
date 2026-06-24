@@ -13,14 +13,16 @@
 // limitations under the License.
 //
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+import { INDEX_TYPES } from '@/constants/dataSources'
 import {
   getAvailableCredentialsTypes,
   getSettingCredsURL,
   getOriginalCredentialType,
   convertCredsToKeyValue,
   getCredentialType,
+  generateDefaultAlias,
   SETTING_TYPE_PROJECT,
   SETTING_TYPE_USER,
 } from '@/utils/settings'
@@ -201,5 +203,59 @@ describe('getAvailableCredentialsTypes LiteLLM filtering', () => {
         project: 'demo',
       })
     ).not.toContain('litellm')
+  })
+})
+
+describe('generateDefaultAlias', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-05-31T16:45:00'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('builds alias as {type}-{YYYY-MM-DD_HH-MM}', () => {
+    expect(generateDefaultAlias('jira')).toBe('jira-2026-05-31_16-45')
+  })
+
+  it('lowercases the type and collapses non-alphanumeric runs to a single dash', () => {
+    expect(generateDefaultAlias('GitHub Cloud')).toBe('github-cloud-2026-05-31_16-45')
+  })
+
+  it('trims leading and trailing dashes from the type', () => {
+    expect(generateDefaultAlias('--jira--')).toBe('jira-2026-05-31_16-45')
+  })
+
+  it('returns empty string when type is missing', () => {
+    expect(generateDefaultAlias('')).toBe('')
+  })
+
+  it('returns empty string when slugified type becomes empty', () => {
+    expect(generateDefaultAlias('@@@')).toBe('')
+  })
+
+  it('reflects the current datetime in the suffix', () => {
+    vi.setSystemTime(new Date('2027-01-09T08:08:00'))
+    expect(generateDefaultAlias('git')).toBe('git-2027-01-09_08-08')
+  })
+
+  it('converts underscores in INDEX_TYPES.AZURE_DEVOPS_WIKI to dashes', () => {
+    expect(generateDefaultAlias(INDEX_TYPES.AZURE_DEVOPS_WIKI)).toBe(
+      'azure-devops-wiki-2026-05-31_16-45'
+    )
+  })
+
+  it('converts underscores in INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM to dashes', () => {
+    expect(generateDefaultAlias(INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM)).toBe(
+      'azure-devops-work-item-2026-05-31_16-45'
+    )
+  })
+
+  it('passes through simple INDEX_TYPES values unchanged', () => {
+    expect(generateDefaultAlias(INDEX_TYPES.CONFLUENCE)).toBe('confluence-2026-05-31_16-45')
+    expect(generateDefaultAlias(INDEX_TYPES.SHAREPOINT)).toBe('sharepoint-2026-05-31_16-45')
+    expect(generateDefaultAlias(INDEX_TYPES.FILE)).toBe('file-2026-05-31_16-45')
   })
 })

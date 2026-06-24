@@ -74,7 +74,6 @@ interface SettingsFormProps {
   onCredentialValuesChange?: (values: Record<string, string>) => void
   onCredentialTypeChange?: (type: string) => void
   shouldAutofocusInput?: boolean
-  defaultAliasIdentifier?: string
 }
 
 const ALIAS_REQUIRED_ERR = 'Alias is required'
@@ -98,7 +97,6 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     onCredentialValuesChange,
     onCredentialTypeChange,
     shouldAutofocusInput = false,
-    defaultAliasIdentifier,
   } = props
 
   const { user } = useSnapshot(userStore)
@@ -241,14 +239,11 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     }
   }, [initialSettingAlias, setFormValue])
 
-  const aliasIdentifier =
-    settingType === SETTING_TYPE_PROJECT ? projectName : defaultAliasIdentifier
-
   useEffect(() => {
-    if (editing || aliasManuallyEdited.current || !aliasIdentifier) return
-    const defaultAlias = generateDefaultAlias(aliasIdentifier)
-    setFormValue('alias', defaultAlias)
-  }, [aliasIdentifier])
+    if (editing || aliasManuallyEdited.current || !credentialType) return
+    const defaultAlias = generateDefaultAlias(credentialType)
+    if (defaultAlias) setFormValue('alias', defaultAlias)
+  }, [credentialType])
 
   const handleCredentialTypeChange = (newType: string) => {
     setCredentialType(newType)

@@ -186,25 +186,21 @@ export const getSettingsFieldsSectionTitle = (credentialType: string): string =>
   return credConfig?.fieldsSectionTitle ?? CREDENTIAL_DEFAULTS.fieldsSectionTitle
 }
 
-const ALIAS_RANDOM_CHARS_LENGTH = 4
-const ALIAS_PREFIX = 'INT'
 const ALIAS_SEPARATOR = '-'
-const ALIAS_RANDOM_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
-const ALIAS_DATE_FORMAT = 'yyyy-MM-dd hh:mm:ss'
+const ALIAS_DATE_FORMAT = 'yyyy-MM-dd_HH-mm'
 
-const generateRandomSuffix = (length: number): string => {
-  const bytes = new Uint8Array(length)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes)
-    .map((byte) => ALIAS_RANDOM_CHARS[byte % ALIAS_RANDOM_CHARS.length])
-    .join('')
-}
+const slugifyType = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ALIAS_SEPARATOR)
+    .replace(/^-/, '')
+    .replace(/-$/, '')
 
-// Pattern: INT-{identifier}-{4 random chars} - {yyyy-MM-dd hh:mm:ss}, e.g. INT-userId-abcd - 2026-05-12 10:47:31
-export const generateDefaultAlias = (identifier: string): string => {
-  if (!identifier) return ''
-  const randomSuffix = generateRandomSuffix(ALIAS_RANDOM_CHARS_LENGTH)
-  const alias = [ALIAS_PREFIX, identifier, randomSuffix].join(ALIAS_SEPARATOR)
-  const currentDateTime = formatDate(new Date().toISOString(), ALIAS_DATE_FORMAT)
-  return `${alias} - ${currentDateTime}`
+// Pattern: {type}-{YYYY-MM-DD_HH-MM}, e.g. jira-2026-05-31_08-08
+export const generateDefaultAlias = (type: string): string => {
+  if (!type) return ''
+  const typeSlug = slugifyType(type)
+  if (!typeSlug) return ''
+  const dateSuffix = formatDate(new Date().toISOString(), ALIAS_DATE_FORMAT)
+  return [typeSlug, dateSuffix].join(ALIAS_SEPARATOR)
 }

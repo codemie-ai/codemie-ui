@@ -18,6 +18,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   forwardRef,
   useImperativeHandle,
@@ -51,6 +52,7 @@ import { userSettingsStore } from '@/store/userSettings'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { registerIndexTypeCallback } from '@/utils/onboarding'
+import { generateDefaultAlias } from '@/utils/settings'
 import { cn } from '@/utils/utils'
 
 import Divider from './Divider'
@@ -100,6 +102,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isInitializing, setIsInitializing] = useState(true)
   const [isProviderSchemasLoaded, setIsProviderSchemasLoaded] = useState(false)
+  const nameManuallyEdited = useRef(false)
 
   // Update parent component when isSubmitting changes
   useEffect(() => {
@@ -221,6 +224,12 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
   const files = watch('files')
   const repoIndexType = watch('repoIndexType')
   const indexType = watch('indexType') as IndexType
+
+  useEffect(() => {
+    if (isEditing || nameManuallyEdited.current || !indexType) return
+    const defaultName = generateDefaultAlias(indexType)
+    if (defaultName) setValue('name', defaultName)
+  }, [indexType])
   const indexMetadata = watch('indexMetadata')
   const sharepointAuthType = watch('sharepointAuthType')
 
@@ -321,6 +330,10 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                 maxLength={50}
                 minLength={4}
                 autoFocus={isPopup}
+                onChange={(e) => {
+                  nameManuallyEdited.current = true
+                  field.onChange(e)
+                }}
               />
             )}
           />

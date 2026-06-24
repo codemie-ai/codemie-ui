@@ -14,7 +14,6 @@
 //
 
 import { useState, useRef } from 'react'
-import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
@@ -22,7 +21,6 @@ import Sidebar from '@/components/Sidebar'
 import { ButtonType } from '@/constants'
 import { INTEGRATIONS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
-import { userStore } from '@/store/user'
 import { userSettingsStore } from '@/store/userSettings'
 import { navigateBack } from '@/utils/helpers'
 import { getTestableCredentialTypes } from '@/utils/settings'
@@ -38,8 +36,6 @@ const NewUserIntegrationPage = () => {
     currentRoute: { value: route },
   } = router
   const { query } = route
-
-  const { user } = useSnapshot(userStore)
 
   const formRef = useRef<SettingsFormRef>(null)
   const [credentialType, setCredentialType] = useState('')
@@ -98,7 +94,6 @@ const NewUserIntegrationPage = () => {
           hideActions={true}
           onCredentialValuesChange={setCredentialValues}
           onCredentialTypeChange={(type: string) => setCredentialType(type)}
-          defaultAliasIdentifier={user?.userId}
         />
       </PageLayout>
     </div>
