@@ -23,6 +23,7 @@ import Input from '@/components/form/Input'
 import Select from '@/components/form/Select/Select'
 import Textarea from '@/components/form/Textarea/Textarea'
 import Popup from '@/components/Popup'
+import Spinner from '@/components/Spinner/Spinner'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { BudgetCategory } from '@/types/entity/budget'
 import { CategoryBudgetSpec, ProjectBudgetGroup } from '@/types/entity/projectBudgetGroup'
@@ -41,7 +42,6 @@ const DURATION_OPTIONS = [
 
 const DEFAULT_PCTS: PctMap = { platform: 30, cli: 60, premium_models: 10 }
 const ZERO_PCTS: PctMap = { platform: 0, cli: 0, premium_models: 0 }
-const PLATFORM_MIN_PCT = 1
 
 const roundToStep = (v: number, step: number) => Math.round(v / step) * step
 const pickSoftStep = (v: number): number => {
@@ -86,6 +86,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   const [softs, setSofts] = useState<PctMap>({ ...ZERO_PCTS })
   const [existingGroup, setExistingGroup] = useState<ProjectBudgetGroup | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [dataLoading, setDataLoading] = useState(false)
 
   // Snapshot of soft/hard amounts captured at the start of an interaction
   // (drag, typed change, button press) so soft scaling stays exact.
@@ -116,8 +117,6 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     })
     return result
   }, [totalBudget, pcts])
-
-  const platformPctError = pcts.platform <= 0
 
   const softErrors = useMemo<Record<BudgetCategory, boolean>>(
     () => ({
@@ -182,6 +181,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     setExistingGroup(null)
     reset({ name: '', budget_duration: '30d', total_budget: 1000, description: '' })
     if (!projectName || forceCreate) return
+    setDataLoading(true)
     projectBudgetsStore
       .listProjectBudgetGroups(projectName)
       .then((plans) => {
@@ -196,6 +196,9 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       })
       .catch(() => {
         /* error already toasted by store */
+      })
+      .finally(() => {
+        setDataLoading(false)
       })
   }, [visible, projectName, forceCreate, populateFromGroup, reset])
 
@@ -262,7 +265,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       setPcts((prev) => {
         const next = { ...prev }
         if (cat === 'platform') {
-          next.platform = round2(clamp(requestedPct, PLATFORM_MIN_PCT, 100 - prev.premium_models))
+          next.platform = round2(clamp(requestedPct, 0, 100 - prev.premium_models))
           next.cli = round2(Math.max(0, 100 - next.platform - prev.premium_models))
         } else if (cat === 'cli') {
           next.cli = round2(clamp(requestedPct, 0, 100 - prev.platform))
@@ -334,9 +337,10 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   const onTotalFocus = useCallback(() => captureInteractionStart(), [captureInteractionStart])
   const onTotalBlur = useCallback(() => releaseInteraction(), [releaseInteraction])
 
+  const isEditMode = !forceCreate
   const headerContent = (
     <h4 className="text-base font-semibold m-0">
-      {existingGroup ? 'Update Budget' : 'Create Budget'}
+      {isEditMode ? 'Update Budget' : 'Create Budget'}
     </h4>
   )
 
@@ -346,121 +350,120 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       onHide={onHide}
       headerContent={headerContent}
       onSubmit={handleSubmit(onFormSubmit)}
-      submitText={existingGroup ? 'Update Budget' : 'Create Budget'}
-      submitDisabled={submitting || hasSoftError || platformPctError || sumPctError}
+      submitText={isEditMode ? 'Update Budget' : 'Create Budget'}
+      submitDisabled={submitting || dataLoading || hasSoftError || sumPctError}
       cancelText="Cancel"
       limitWidth
       withBorderBottom={false}
     >
-      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+      {dataLoading ? (
+        <Spinner inline rootClassName="py-12" />
+      ) : (
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  id="name"
+                  label="Name"
+                  required
+                  placeholder="Budget name"
+                  error={errors.name?.message}
+                />
+              )}
+            />
+            <Controller
+              name="budget_duration"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  id="budget_duration"
+                  label="Reset Period"
+                  required
+                  value={field.value}
+                  options={DURATION_OPTIONS}
+                  onChangeValue={(value) => field.onChange(value)}
+                  error={errors.budget_duration?.message}
+                />
+              )}
+            />
+          </div>
+
           <Controller
-            name="name"
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <Textarea
+                {...field}
+                id="description"
+                label="Description"
+                required
+                placeholder="What this budget is used for"
+                error={errors.description?.message}
+                rows={3}
+              />
+            )}
+          />
+
+          <Controller
+            name="total_budget"
             control={control}
             render={({ field }) => (
               <Input
                 {...field}
-                id="name"
-                label="Name"
+                id="total_budget"
+                label="Total Budget ($)"
                 required
-                placeholder="Budget name"
-                error={errors.name?.message}
+                type="number"
+                min="0"
+                step="any"
+                onFocus={onTotalFocus}
+                onBlur={() => {
+                  field.onBlur()
+                  onTotalBlur()
+                }}
+                error={errors.total_budget?.message}
               />
             )}
           />
-          <Controller
-            name="budget_duration"
-            control={control}
-            render={({ field }) => (
-              <Select
-                id="budget_duration"
-                label="Reset Period"
-                required
-                value={field.value}
-                options={DURATION_OPTIONS}
-                onChangeValue={(value) => field.onChange(value)}
-                error={errors.budget_duration?.message}
-              />
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-text-quaternary uppercase tracking-wide">
+                Distribution
+              </span>
+              <Button type="secondary" onClick={handleDefaultDistribution}>
+                Reset to Default
+              </Button>
+            </div>
+            <UnifiedBudgetDragBar
+              pcts={pcts}
+              totalBudget={totalBudget}
+              platformMinPct={0}
+              onChange={onSliderChange}
+              onDragStart={captureInteractionStart}
+              onDragEnd={releaseInteraction}
+            />
+            {sumPctError && (
+              <p className="text-xs text-failed-secondary mt-2">
+                Distribution must sum to 100% (currently{' '}
+                {Math.round(pcts.platform + pcts.cli + pcts.premium_models)}%)
+              </p>
             )}
-          />
-        </div>
-
-        <Controller
-          name="description"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              id="description"
-              label="Description"
-              required
-              placeholder="What this budget is used for"
-              error={errors.description?.message}
-              rows={3}
-            />
-          )}
-        />
-
-        <Controller
-          name="total_budget"
-          control={control}
-          render={({ field }) => (
-            <Input
-              {...field}
-              id="total_budget"
-              label="Total Budget ($)"
-              required
-              type="number"
-              min="0"
-              step="any"
-              onFocus={onTotalFocus}
-              onBlur={() => {
-                field.onBlur()
-                onTotalBlur()
-              }}
-              error={errors.total_budget?.message}
-            />
-          )}
-        />
-
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-text-quaternary uppercase tracking-wide">
-              Distribution
-            </span>
-            <Button type="secondary" onClick={handleDefaultDistribution}>
-              Reset to Default
-            </Button>
           </div>
-          <UnifiedBudgetDragBar
-            pcts={pcts}
-            totalBudget={totalBudget}
-            platformMinPct={PLATFORM_MIN_PCT}
-            onChange={onSliderChange}
-            onDragStart={captureInteractionStart}
-            onDragEnd={releaseInteraction}
-          />
-          {platformPctError && (
-            <p className="text-xs text-failed-secondary mt-2">
-              Platform allocation must be greater than 0%
-            </p>
-          )}
-          {sumPctError && (
-            <p className="text-xs text-failed-secondary mt-2">
-              Distribution must sum to 100% (currently{' '}
-              {Math.round(pcts.platform + pcts.cli + pcts.premium_models)}%)
-            </p>
-          )}
-        </div>
 
-        <BudgetCategoryTable
-          hardVals={hardVals}
-          softs={softs}
-          softErrors={softErrors}
-          onHardInputChange={onHardInputChange}
-          onSoftInputChange={onSoftInputChange}
-        />
-      </form>
+          <BudgetCategoryTable
+            hardVals={hardVals}
+            softs={softs}
+            softErrors={softErrors}
+            onHardInputChange={onHardInputChange}
+            onSoftInputChange={onSoftInputChange}
+          />
+        </form>
+      )}
     </Popup>
   )
 }
