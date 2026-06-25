@@ -20,7 +20,7 @@ import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
 import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
-import { DATASOURCES } from '@/constants/routes'
+import { DATASOURCE_DETAILS, DATASOURCES } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
@@ -83,7 +83,7 @@ const DataSourceEditPage: FC = () => {
   }, [id, getIndexDetails])
 
   const handleClose = () => {
-    navigateBack(DATASOURCES)
+    navigateBack(DATASOURCE_DETAILS, DATASOURCES)
   }
 
   const onSubmit = () => {

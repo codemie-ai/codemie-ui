@@ -42,6 +42,7 @@ export const APPLICATION = 'application'
 export const INTEGRATIONS = 'integrations'
 
 export const DATASOURCES = 'data-sources'
+export const DATASOURCE_DETAILS = 'data-source-details'
 
 export const ANALYTICS = 'analytics'
 export const ANALYTICS_NEW_DASHBOARD = 'analytics-new-dashboard'
