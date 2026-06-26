@@ -37,11 +37,6 @@ const GIT_AUTH_TYPE = {
   GITHUB_APP: 'github_app',
 }
 
-const SVN_AUTH_TYPE = {
-  BASIC: 'basic',
-  SSH_KEY: 'ssh_key',
-}
-
 const SQL_DIALECT = {
   POSTGRES: 'postgres',
   MYSQL: 'mysql',
@@ -65,8 +60,7 @@ const isApiKeyAuth = (values) => values.auth_type === AUTH_TYPE.API_KEY
 const isAwsSignature = (values) => values.auth_type === AUTH_TYPE.AWS_SIGNATURE
 const isPatGitAuth = (values) => values.auth_type === GIT_AUTH_TYPE.PAT
 const isGithubAppAuth = (values) => values.auth_type === GIT_AUTH_TYPE.GITHUB_APP
-const isSvnBasicAuth = (values) => !values.auth_type || values.auth_type === SVN_AUTH_TYPE.BASIC
-const isSvnSshAuth = (values) => values.auth_type === SVN_AUTH_TYPE.SSH_KEY
+
 const isGenericSQLDIalect = (values) =>
   [SQL_DIALECT.POSTGRES, SQL_DIALECT.MYSQL, SQL_DIALECT.MSSQL].includes(values.dialect as string)
 const isInfluxDBDialect = (values) => values.dialect === SQL_DIALECT.INFLUXDB
@@ -242,39 +236,15 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   svn: {
-    defaultUrl: 'https://svn.example.com/repos/myproject',
     displayName: 'SVN',
     serverEnum: 'SVN',
     fields: {
-      url: { placeholder: 'SVN repository URL, e.g. https://svn.example.com/repos/myproject' },
-      auth_type: {
-        placeholder: 'Authentication Type',
-        type: CredentialComponentType.select,
-        options: [
-          { value: 'basic', label: 'Username & Password' },
-          { value: 'ssh_key', label: 'SSH Key' },
-        ],
-        defaultValue: 'basic',
-      },
       username: {
         placeholder: 'Username',
-        shouldShow: isSvnBasicAuth,
       },
       password: {
         placeholder: 'Password',
         sensitive: true,
-        shouldShow: isSvnBasicAuth,
-      },
-      ssh_key: {
-        placeholder: 'SSH Private Key (PEM format)',
-        type: CredentialComponentType.textarea,
-        sensitive: true,
-        shouldShow: isSvnSshAuth,
-      },
-      ssh_passphrase: {
-        placeholder: 'SSH Key Passphrase (optional)',
-        sensitive: true,
-        shouldShow: isSvnSshAuth,
       },
     },
   },

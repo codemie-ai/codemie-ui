@@ -75,30 +75,31 @@ const DataSourceFilters: React.FC<Props> = ({
   const [projectOptions, setProjectOptions] = useState<{ label: string; value: string }[]>([])
 
   const indexTypeOptions = useMemo(() => {
-    return Object.keys(INDEX_TYPES).map((key) => {
-      if (INDEX_TYPES[key] === INDEX_TYPES.GIT) {
-        return {
-          label: humanize(INDEX_TYPE_CODE),
-          value: INDEX_TYPE_CODE,
+    return Object.keys(INDEX_TYPES)
+      .map((key) => {
+        if (INDEX_TYPES[key] === INDEX_TYPES.GIT || INDEX_TYPES[key] === INDEX_TYPES.SVN) {
+          return {
+            label: humanize(INDEX_TYPE_CODE),
+            value: INDEX_TYPE_CODE,
+          }
         }
-      }
-      const option = {
-        label: humanize(INDEX_TYPES[key]),
-        value: getFullIndexType(INDEX_TYPES[key]),
-      }
+        const option = {
+          label: humanize(INDEX_TYPES[key]),
+          value: getFullIndexType(INDEX_TYPES[key]),
+        }
 
-      // Add NEW badge for X-ray, Azure DevOps Work Item, SharePoint, and SVN types
-      if (
-        INDEX_TYPES[key] === INDEX_TYPES.XRAY ||
-        INDEX_TYPES[key] === INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM ||
-        INDEX_TYPES[key] === INDEX_TYPES.SHAREPOINT ||
-        INDEX_TYPES[key] === INDEX_TYPES.SVN
-      ) {
-        return { ...option, badge: 'NEW' }
-      }
+        // Add NEW badge for X-ray, Azure DevOps Work Item, SharePoint types
+        if (
+          INDEX_TYPES[key] === INDEX_TYPES.XRAY ||
+          INDEX_TYPES[key] === INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM ||
+          INDEX_TYPES[key] === INDEX_TYPES.SHAREPOINT
+        ) {
+          return { ...option, badge: 'NEW' }
+        }
 
-      return option
-    })
+        return option
+      })
+      .filter((opt, i, arr) => arr.findIndex((o) => o.value === opt.value) === i)
   }, [])
 
   const statusOptions = useMemo(() => {
