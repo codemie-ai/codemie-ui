@@ -1,5 +1,107 @@
 [
   {
+  "version": "2.36.0",
+  "date": "2026-06-25",
+  "issues": [
+      {
+        "title": "Add EPAM MCP Learn to CodeMie MCP Servers catalog",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13141",
+        "key": "EPMCDME-13141"
+      },
+      {
+        "title": "GitHub MCP Server fails to load because github-mcp-server command is rejected for stdio transport",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13044",
+        "key": "EPMCDME-13044"
+      },
+      {
+        "title": "Member budget allocations display stale split values after disabling enforce_member_spend_limits",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12959",
+        "key": "EPMCDME-12959"
+      },
+      {
+        "title": "Add admin-only import of AICE-created datasources to Providers management",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12919",
+        "key": "EPMCDME-12919"
+      },
+      {
+        "title": "Replace SharePoint Device Code Flow with Authorization Code + PKCE",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12912",
+        "key": "EPMCDME-12912"
+      },
+      {
+        "title": "Workflow Marketplace: selected categories are cleared after unpublish and republish",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12905",
+        "key": "EPMCDME-12905"
+      },
+      {
+        "title": "Workflows Marketplace: confirmation modal shows \"Delete\" instead of \"Unpublish\" when removing workflow from Marketplace",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12903",
+        "key": "EPMCDME-12903"
+      },
+      {
+        "title": "Workflows: \"Publish to Marketplace\", \"Remove from Marketplace\" actions should be the last items in the 3-dots menu (consistent with Assistants)",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12902",
+        "key": "EPMCDME-12902"
+      },
+      {
+        "title": "Unified Budget Creation Dialog with Category Distribution",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12410",
+        "key": "EPMCDME-12410"
+      },
+      {
+        "title": "Datasource View: add action buttons and scheduler details",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12097",
+        "key": "EPMCDME-12097"
+      },
+      {
+        "title": "Basic set of Tools to work with xWiki",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11912",
+        "key": "EPMCDME-11912"
+      },
+      {
+        "title": "Automatic generation of Aliases for Integrations",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11743",
+        "key": "EPMCDME-11743"
+      },
+      {
+        "title": "Usage details become 0 when workflow run is cancelled and status changes to Aborted",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10993",
+        "key": "EPMCDME-10993"
+      },
+    {
+        "title": "Clearing member budget override does not update LiteLLM enforcement value",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12961",
+        "key": "EPMCDME-12961"
+      },
+      {
+        "title": "Data sources index screen: remove non-working SVN filter because it is covered by code filter",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13172",
+        "key": "EPMCDME-13172"
+      },
+      {
+        "title": "SSH integration type creation screen: remove repository URL field because it is not needed",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13173",
+        "key": "EPMCDME-13173"
+      }
+    ]
+  },
+  {
     "version": "2.35.0",
     "date": "2026-06-18",
     "issues": [
