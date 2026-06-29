@@ -38,6 +38,7 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
 
   return (
     <aside
+      id="chat-configuration-panel"
       className={cn(
         'flex flex-col shrink-0 h-full overflow-x-hidden bg-surface-base-sidebar shadow-surface-base-sidebar border-l border-border-specific-panel-outline transition-all duration-150 ease-in-out',
         isConfigVisible ? 'w-96 max-w-96' : 'w-0'

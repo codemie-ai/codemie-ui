@@ -270,7 +270,7 @@ describe('ChatHeader', () => {
     'Share Chat',
     'Usage details',
     'Browse files',
-    'Open chat configuration',
+    'Chat configuration',
   ]
   const exportButtonLabel = 'Export Conversation'
 

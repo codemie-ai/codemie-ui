@@ -178,7 +178,9 @@ const ChatHeader: FC = () => {
           ) : (
             <Button
               variant="secondary"
-              aria-label="Open chat configuration"
+              aria-label="Chat configuration"
+              aria-expanded={isConfigVisible}
+              aria-controls="chat-configuration-panel"
               onClick={attemptToggleConfigVisibility}
             >
               <SidebarSvg

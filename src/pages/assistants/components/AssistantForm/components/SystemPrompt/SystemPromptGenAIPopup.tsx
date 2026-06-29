@@ -44,6 +44,7 @@ const SystemPromptGenAIPopup = ({
 }: SystemPromptGenAIPopupProps) => {
   const textareaRef = useRef<TextareaRef>(null)
   const requestIdRef = useRef(0)
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
 
@@ -64,10 +65,17 @@ const SystemPromptGenAIPopup = ({
   const handleHide = () => {
     requestIdRef.current += 1
     onHide()
-    setTimeout(() => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
+    hideTimeoutRef.current = setTimeout(() => {
       setIsLoading(false)
     }, 500)
   }
+
+  useEffect(() => {
+    return () => {
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
+    }
+  }, [])
 
   const onFormSubmit = async () => {
     requestIdRef.current += 1
