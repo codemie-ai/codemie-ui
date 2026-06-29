@@ -21,10 +21,14 @@ import { MASKED_VALUE } from '@/constants/settings'
 import Button from '../../Button'
 import TooltipButton from '../../TooltipButton'
 import Input from '../Input'
+import RecordItemBadgeView, { type RecordItemBadge } from './RecordItemBadge'
 
-interface RecordItem {
+export type { RecordItemBadge } from './RecordItemBadge'
+
+export interface RecordItem {
   key: string
   value: string
+  badge?: RecordItemBadge
 }
 
 interface RecordInputProps {
@@ -102,7 +106,7 @@ const RecordInput: React.FC<RecordInputProps> = ({
           <div className="text-sm">Key</div>
           <div className="text-sm">Value</div>
           <div></div>
-          {value?.map(({ key, value: itemValue }, index) => (
+          {value?.map(({ key, value: itemValue, badge }, index) => (
             <React.Fragment key={index}>
               <div
                 title={
@@ -119,6 +123,7 @@ const RecordInput: React.FC<RecordInputProps> = ({
                   placeholder="Key"
                   onChange={(e) => updateKey(e.target.value, index)}
                 />
+                <RecordItemBadgeView value={badge} />
               </div>
               <Input
                 id={`${id}-value-${index}`}
@@ -132,7 +137,7 @@ const RecordInput: React.FC<RecordInputProps> = ({
               />
               <Button
                 type="secondary"
-                className="!h-full"
+                className="self-start aspect-square"
                 onClick={() => removeItem(key)}
                 disabled={disabled}
               >

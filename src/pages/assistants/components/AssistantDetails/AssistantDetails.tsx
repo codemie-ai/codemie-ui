@@ -27,6 +27,7 @@ import InfoWarning from '@/components/InfoWarning'
 import { InfoWarningType } from '@/constants'
 import { TOOLKIT_ORDER_KEYS } from '@/constants/assistants'
 import { SKILL_DETAILS } from '@/constants/routes'
+import { useRequestHedgingEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import ToolkitsViewList from '@/pages/assistants/components/ToolkitsViewList'
 import { appInfoStore } from '@/store/appInfo'
@@ -42,6 +43,7 @@ import AssistantDetailsActions from './components/AssistantDetailsActions'
 import AssistantDetailsProfile from './components/AssistantDetailsProfile'
 import AssistantPromptVariables from './components/AssistantPromptVariables'
 import ConversationStarters from './components/ConversationStarters'
+import RequestHedgingDetails from './components/RequestHedgingDetails'
 import SidebarSubassistants from './components/sidebar_details/SidebarSubassistants'
 import SidebarTags from './components/sidebar_details/SidebarTags'
 import SystemInstructions from './components/SystemInstructions'
@@ -73,6 +75,7 @@ const AssistantDetails = ({
   const router = useVueRouter()
   const [showUserMappingSection, setShowUserMappingSection] = useState(false)
   const snapshot = useSnapshot(mcpStore)
+  const [isRequestHedgingEnabled] = useRequestHedgingEnabled()
 
   useEffect(() => {
     const idsToFetch = assistant.mcp_servers
@@ -307,6 +310,12 @@ const AssistantDetails = ({
               entityId={assistant.id}
               guardrailAssignments={assistant.guardrail_assignments ?? []}
             />
+          )}
+
+          {isRequestHedgingEnabled && assistant.hedging_config && (
+            <DetailsSidebarSection headline="REQUEST HEDGING" itemsWrapperClassName="gap-2 -mt-2">
+              <RequestHedgingDetails hedgingConfig={assistant.hedging_config} />
+            </DetailsSidebarSection>
           )}
         </DetailsSidebar>
       </div>

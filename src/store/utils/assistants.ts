@@ -68,6 +68,7 @@ export function transformAssistantToCreateDTO(assistant: Assistant): CreateAssis
     categories: assistant.categories,
     prompt_variables: assistant.prompt_variables,
     smart_tool_selection_enabled: assistant.smart_tool_selection_enabled,
+    hedging_config: assistant.hedging_config ?? null,
     guardrail_assignments: assistant.guardrail_assignments,
     skill_ids: skillIds,
     // agent_card: assistant.agent_cards

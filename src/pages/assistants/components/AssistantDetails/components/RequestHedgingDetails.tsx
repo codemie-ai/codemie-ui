@@ -13,31 +13,22 @@
 // limitations under the License.
 //
 
-export interface ProviderToolArgSchema {
-  type?: string | null
-  required?: boolean
-  description?: string | null
-  enum?: string[] | null
-  title?: string | null
-  example?: string | null
+import DetailsProperty from '@/components/details/DetailsProperty'
+import { HedgingConfig } from '@/types/entity/assistant'
+
+interface RequestHedgingDetailsProps {
+  hedgingConfig: HedgingConfig
 }
 
-export interface ProviderTool {
-  name: string
-  sync_invocation_supported?: boolean
-  args_schema?: Record<string, ProviderToolArgSchema>
-  [key: string]: any
+const RequestHedgingDetails = ({ hedgingConfig }: RequestHedgingDetailsProps) => {
+  const toolName = hedgingConfig.provider_tool?.tool_name ?? hedgingConfig.tool?.name ?? undefined
+
+  return (
+    <>
+      <DetailsProperty label="Enabled" value="Yes" />
+      <DetailsProperty label="Tool" value={toolName} />
+    </>
+  )
 }
 
-export interface ProviderToolkit {
-  name: string
-  provided_tools: ProviderTool[]
-  [key: string]: any
-}
-
-export interface Provider {
-  id: string
-  name: string
-  provided_toolkits?: ProviderToolkit[]
-  [key: string]: any
-}
+export default RequestHedgingDetails

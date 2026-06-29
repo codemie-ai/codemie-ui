@@ -37,14 +37,15 @@ import { SYSTEM_PROMPT_VARIABLES } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { FormIDs } from '@/constants/formIds'
 import { MAX_SKILLS_PER_ASSISTANT } from '@/constants/skills'
-import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+import { useFeatureFlag, useRequestHedgingEnabled } from '@/hooks/useFeatureFlags'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import MissingIntegrationsModal from '@/pages/assistants/components/MissingIntegrationsModal'
 import {
   useMissingIntegrationsModal,
   SubmitResponse,
 } from '@/pages/assistants/hooks/useMissingIntegrationsModal'
-import { userStore } from '@/store'
+import { assistantsStore, userStore } from '@/store'
+import { providersStore } from '@/store/providers'
 import {
   Assistant,
   AssistantAIGeneratedFields,
@@ -53,9 +54,11 @@ import {
   AssistantCategory,
   AssistantToolkit,
   AssistantContext,
+  ContextType,
 } from '@/types/entity/assistant'
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { MCPServerDetails } from '@/types/entity/mcp'
+import { Provider } from '@/types/entity/provider'
 import { SETTING_TYPE_USER } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
@@ -67,6 +70,7 @@ import RefineAssistantModal from '../RefineAssistantModal/RefineAssistantModal'
 import { AssistantSetupSection } from './components/AssistantSetup'
 import { isBackendFileUrl } from './components/AssistantSetup/utils/getFileNameFromUrl'
 import ContextSelector from './components/ContextSelector'
+import HedgingConfigField from './components/HedgingConfig'
 import RefineWithAIPromptPopup from './components/RefineWithAIPromptPopup'
 import ToolsConfiguration from './components/Toolkits/ToolsConfiguration'
 import { useRefineAIRecommendations } from './hooks/useRefineAIRecommendations'
@@ -144,6 +148,27 @@ const formSchema = Yup.object()
     mcp_servers: Yup.array().of(Yup.object()),
     prompt_variables: Yup.array().default([]),
     smart_tool_selection_enabled: Yup.boolean().default(false),
+    hedging_config: Yup.object({
+      tool: Yup.object({
+        name: Yup.string(),
+      })
+        .nullable()
+        .optional(),
+      provider_tool: Yup.object({
+        provider_name: Yup.string(),
+        toolkit_name: Yup.string(),
+        tool_name: Yup.string(),
+        datasource_name: Yup.string().nullable().optional(),
+        result_condition: Yup.string().nullable().optional(),
+      })
+        .nullable()
+        .optional(),
+      timeout_ms: Yup.number().min(1, 'Must be at least 1').default(200),
+      input_mapping: Yup.object().default({}),
+      output_field: Yup.string().nullable().optional(),
+    })
+      .nullable()
+      .default(null),
     skill_ids: Yup.array()
       .of(Yup.string())
       .max(MAX_SKILLS_PER_ASSISTANT, `Maximum ${MAX_SKILLS_PER_ASSISTANT} skills allowed`)
@@ -182,9 +207,12 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     { isEditing, isChatConfig, assistant, onSubmit, onSuccess, onCancel, showNewIntegrationPopup },
     ref
   ) => {
+    const [isRequestHedgingEnabled] = useRequestHedgingEnabled()
     const [toolkits, setToolkits] = useState<AssistantToolkit[]>(assistant?.toolkits ?? [])
-
     const [mcpServers, setMcpServers] = useState<MCPServerDetails[]>(assistant?.mcp_servers ?? [])
+    const [hedgeableToolkits, setHedgeableToolkits] = useState<AssistantToolkit[]>([])
+    const [providers, setProviders] = useState<Provider[]>([])
+    const [providerDatasources, setProviderDatasources] = useState<AssistantContext[]>([])
     const [showRefinePromptPopup, setShowRefinePromptPopup] = useState(false)
     const [showRefineModal, setShowRefineModal] = useState(false)
     const [refineFields, setRefineFields] = useState<AssistantAIRefineFields>({})
@@ -217,7 +245,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       return categories.map((cat) => {
         if (typeof cat === 'string') return cat
         if (typeof cat === 'object' && cat.id) return cat.id
-        return String(cat)
+        return ''
       })
     }
 
@@ -247,6 +275,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           nestedAssistants: assistant?.nestedAssistants ?? [],
           prompt_variables: assistant?.prompt_variables ?? [],
           smart_tool_selection_enabled: assistant?.smart_tool_selection_enabled ?? false,
+          hedging_config: assistant?.hedging_config ?? null,
           guardrail_assignments: assistant?.guardrail_assignments ?? [],
           skill_ids: assistant?.skills?.map((s) => s.id) ?? [],
         },
@@ -448,6 +477,29 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       addAIGeneratedFields,
       handleRefineWithAI,
     }))
+
+    useEffect(() => {
+      if (isRequestHedgingEnabled) {
+        assistantsStore
+          .getHedgeableToolkits()
+          .then(setHedgeableToolkits)
+          .catch(() => {})
+      }
+      providersStore
+        .indexProviders()
+        .then(setProviders)
+        .catch(() => {})
+    }, [isRequestHedgingEnabled])
+
+    useEffect(() => {
+      if (!isRequestHedgingEnabled || !project) return
+      assistantsStore
+        .getAssistantContext(project)
+        .then((ctx) =>
+          setProviderDatasources(ctx.filter((c) => c.context_type === ContextType.PROVIDER))
+        )
+        .catch(() => {})
+    }, [isRequestHedgingEnabled, project])
 
     useEffect(() => {
       if (hasUserSettings) {
@@ -656,6 +708,35 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             showNewIntegrationPopup={showNewIntegrationPopup}
             isAIGenerated={aiGeneratedFieldMarkers.toolkits}
           />
+
+          {isRequestHedgingEnabled && (
+            <div>
+              <Accordion
+                title="Request Hedging"
+                description="Race a fast-path tool in parallel with the agent pipeline for accelerated responses."
+                defaultOpen={false}
+              >
+                <div className="px-4 pb-4 flex flex-col gap-4">
+                  <Controller
+                    name="hedging_config"
+                    control={control}
+                    render={({ field }) => (
+                      <HedgingConfigField
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        hedgeableToolkits={hedgeableToolkits}
+                        providers={providers}
+                        providerDatasources={providerDatasources}
+                        toolError={(errors.hedging_config as any)?.tool?.name?.message}
+                        timeoutError={(errors.hedging_config as any)?.timeout_ms?.message}
+                      />
+                    )}
+                  />
+                </div>
+              </Accordion>
+            </div>
+          )}
         </form>
 
         <RefineWithAIPromptPopup

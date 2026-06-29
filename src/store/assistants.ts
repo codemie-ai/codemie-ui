@@ -62,6 +62,7 @@ interface AssistantsStoreType {
   assistantsPagination: Pagination
   recentAssistants: Assistant[]
   availableToolkits: AssistantToolkit[]
+  hedgeableToolkits: AssistantToolkit[]
   availableContext: AssistantContext[]
   helpAssistants: any[]
   helpAssistantsFetched: boolean
@@ -87,6 +88,7 @@ interface AssistantsStoreType {
   getAssistantBySlug: (slug: string, skipErrorHandling?: boolean) => Promise<Assistant>
   doesAssistantBySlugExist: (slug: string) => Promise<boolean>
   getAssistantToolkits: () => Promise<AssistantToolkit[]>
+  getHedgeableToolkits: () => Promise<AssistantToolkit[]>
   getToolSchema: (toolName: string, settingId?: string) => Promise<any>
   getPluginTools: (pluginSettingId?: string) => Promise<AssistantToolkit[]>
   getMcpTools: (mcpServer: MCPServerDetails) => Promise<AssistantToolkit[]>
@@ -173,6 +175,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     totalCount: 0,
   },
   availableToolkits: [],
+  hedgeableToolkits: [],
   availableContext: [],
   recentAssistants: [],
   helpAssistants: [],
@@ -359,6 +362,14 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     const toolkits = await api.get('v1/assistants/tools').then((response) => response.json())
 
     assistantsStore.availableToolkits = toolkits
+    return toolkits
+  },
+
+  async getHedgeableToolkits() {
+    const toolkits = await api
+      .get('v1/assistants/hedgeable_tools')
+      .then((response) => response.json())
+    assistantsStore.hedgeableToolkits = toolkits
     return toolkits
   },
 

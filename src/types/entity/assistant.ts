@@ -23,6 +23,26 @@ import type { MCPServerDetails } from './mcp'
 import type { Setting } from './setting'
 import type { Skill } from './skill'
 
+export interface HedgingToolDetails {
+  name: string
+}
+
+export interface HedgingProviderToolDetails {
+  provider_name: string
+  toolkit_name: string
+  tool_name: string
+  datasource_name?: string | null
+  result_condition?: string | null
+}
+
+export interface HedgingConfig {
+  tool?: HedgingToolDetails | null
+  provider_tool?: HedgingProviderToolDetails | null
+  timeout_ms: number
+  input_mapping?: Record<string, string>
+  output_field?: string | null
+}
+
 // Agent mode enum
 export enum AgentMode {
   GENERAL = 'general',
@@ -109,6 +129,7 @@ export interface Assistant {
   categories?: AssistantCategory[]
   prompt_variables?: AssistantPromptVariable[]
   smart_tool_selection_enabled?: boolean
+  hedging_config?: HedgingConfig | null
   system_prompt_history: {
     date: string
     system_prompt: string
@@ -436,6 +457,7 @@ export interface CreateAssistantDto {
   agent_card?: AgentCard
   categories?: AssistantCategory[]
   smart_tool_selection_enabled?: boolean
+  hedging_config?: HedgingConfig | null
   prompt_variables?: AssistantPromptVariable[]
   guardrail_assignments: EntityGuardrailAssignment[]
   skip_integration_validation?: boolean

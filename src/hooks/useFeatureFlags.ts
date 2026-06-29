@@ -110,3 +110,7 @@ export const usePinnedAssistantsEnabled = (): FeatureFlagResult => {
 export const useFavoritesPageEnabled = (): FeatureFlagResult => {
   return useFeatureFlag('features:favoritesPage')
 }
+
+export const useRequestHedgingEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag('features:requestHedging')
+}

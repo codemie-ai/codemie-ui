@@ -88,3 +88,10 @@ export const isPinnedAssistantsEnabled = (): boolean => {
 export const isFavoritesPageEnabled = (): boolean => {
   return isFeatureEnabled('features:favoritesPage')
 }
+
+/**
+ * Check if Request Hedging feature is enabled (non-reactive utility)
+ */
+export const isRequestHedgingEnabled = (): boolean => {
+  return isFeatureEnabled('features:requestHedging')
+}

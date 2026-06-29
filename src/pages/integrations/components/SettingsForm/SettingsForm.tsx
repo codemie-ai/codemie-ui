@@ -173,7 +173,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     const config = CREDENTIAL_VALUES_MAPPING[credentialType]
     if (!config) return Yup.object(schema)
 
-    Object.entries(config.fields).forEach(([key, fieldConfig]) => {
+    Object.entries(config?.fields ?? {}).forEach(([key, fieldConfig]) => {
       if (fieldConfig.type === CredentialComponentType.message) return
 
       schema[key] = fieldConfig.validation || Yup.string().nullable().optional()
