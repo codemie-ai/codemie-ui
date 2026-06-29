@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Cross-platform secrets detection using Gitleaks.
- * Supports Docker and Podman (including Colima, OrbStack, Podman Machine).
+ * Supports Docker, Podman (including Colima, OrbStack, Podman Machine), and Apple Containers.
  * Works on Windows, macOS, and Linux.
  *
  * Usage:
@@ -39,29 +39,35 @@ function ensureKnownEnginePaths() {
   process.env.PATH = pathEntries.join(delimiter)
 }
 
-function commandExists(cmd) {
+function resolveCommand(cmd) {
   const command = isWindows ? 'where' : 'which'
-  const result = spawnSync(command, [cmd], {
-    stdio: 'ignore',
-    shell: false,
-  })
+  const result = spawnSync(command, [cmd], { stdio: 'pipe', shell: false })
+  if (result.status !== 0) return null
+  return result.stdout.toString().trim().split('\n')[0].trim()
+}
 
-  return result.status === 0
+function commandExists(cmd) {
+  return resolveCommand(cmd) !== null
 }
 
 function daemonRunning(engine) {
-  const result = spawnSync(engine, ['info'], {
-    stdio: 'ignore',
-    shell: false,
-  })
+  const bin = resolveCommand(engine)
+  if (!bin) return false
+  return spawnSync(bin, ['info'], { stdio: 'ignore', shell: false }).status === 0
+}
 
-  return result.status === 0
+function appleContainersRunning() {
+  if (platform() !== 'darwin') return false
+  const bin = resolveCommand('container')
+  if (!bin) return false
+  return spawnSync(bin, ['system', 'status'], { stdio: 'ignore', shell: false }).status === 0
 }
 
 function detectEngine() {
   for (const engine of ['docker', 'podman']) {
     if (commandExists(engine) && daemonRunning(engine)) return engine
   }
+  if (appleContainersRunning()) return 'container'
   for (const engine of ['docker', 'podman']) {
     if (commandExists(engine)) return engine
   }
@@ -84,13 +90,16 @@ ensureKnownEnginePaths()
 const engine = detectEngine()
 
 if (!engine) {
-  console.log('No container engine found (docker/podman) - skipping secrets detection')
-  console.log('Install Docker or Podman to enable local secrets scanning')
+  console.log('No container engine found - skipping secrets detection')
+  console.log('Install Docker, Podman, or Apple Containers to enable local secrets scanning')
   process.exit(1)
 }
 
-if (!daemonRunning(engine)) {
-  const engineLabel = engine.charAt(0).toUpperCase() + engine.slice(1)
+const engineBin = resolveCommand(engine)
+const engineRunning = engine === 'container' ? appleContainersRunning() : daemonRunning(engine)
+if (!engineRunning || !engineBin) {
+  const engineLabel =
+    engine === 'container' ? 'Apple Containers' : engine.charAt(0).toUpperCase() + engine.slice(1)
   console.error(`${engineLabel} daemon is not running`)
   console.error(hintForStoppedDaemon(engine))
   process.exit(1)
@@ -115,7 +124,7 @@ args.push('/workspace')
 
 console.log('Checking for secrets with Gitleaks...')
 
-const gitleaks = spawn(engine, args, {
+const gitleaks = spawn(engineBin, args, {
   stdio: 'inherit',
   shell: isWindows,
 })
