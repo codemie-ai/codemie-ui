@@ -45,7 +45,6 @@ export const INDEX_ERROR_MSGS = {
 export const SYSTEM_PROMPT_VARIABLES = ['current_user', 'date'] as const
 
 export const TEXT_EMBEDDING_ADA = 'ada'
-export const GPT_3_5_TURBO = 'gpt-35-turbo'
 
 export const MIN_TOP_K = 1
 export const MAX_TOP_K = 20

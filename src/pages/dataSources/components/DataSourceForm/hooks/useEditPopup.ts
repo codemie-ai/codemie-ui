@@ -17,7 +17,7 @@ import { useCallback, useMemo, useEffect } from 'react'
 import { UseFormGetValues, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
 
-import { TEXT_EMBEDDING_ADA, GPT_3_5_TURBO } from '@/constants'
+import { TEXT_EMBEDDING_ADA } from '@/constants'
 import { INDEX_TYPES, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
 import { appInfoStore } from '@/store/appInfo'
 import { userSettingsStore } from '@/store/userSettings'
@@ -82,9 +82,7 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
   const getDefaultSummarizationModel = (prevOption: string): string | undefined => {
     if (prevOption?.trim()) return prevOption
     const { llmModels } = appInfoStore
-    return (
-      llmModels.find((model) => model.value.includes(GPT_3_5_TURBO))?.value || llmModels[0]?.value
-    )
+    return llmModels.find((model) => model.isDefault)?.value ?? llmModels[0]?.value
   }
 
   const hasNoSettings = (indexType) => {
