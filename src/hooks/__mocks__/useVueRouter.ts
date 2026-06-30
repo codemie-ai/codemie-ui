@@ -72,13 +72,12 @@ export const mockRouterState = {
       hash: '',
     },
   },
-} as const satisfies Partial<RouterState>
+} satisfies Partial<RouterState>
 
 // Hook mocks
 export const useVueRoute = vi.fn(() => mockRouterState)
 export const useVueRouter = vi.fn(() => mockRouterState)
 
-export const { replace } = mockRouterState
 export const { push } = mockRouterState
 
 // Alias for tests that import mockRouter instead of mockRouterState
@@ -87,3 +86,7 @@ export const mockRouter = mockRouterState
 // Named export matching production `import { router } from '@/hooks/useVueRouter'`
 // used by navigateBack() in utils/helpers.ts
 export const router = mockRouterState
+
+// Named export matching production `import { replace } from '@/hooks/useVueRouter'`
+// used by updateUrlWithFilters() in utils/filters.ts
+export const replace = vi.fn() as ReturnType<typeof vi.fn> & RouterPush

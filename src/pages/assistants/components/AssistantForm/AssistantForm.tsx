@@ -14,6 +14,7 @@
 //
 
 import { yupResolver } from '@hookform/resolvers/yup'
+import isString from 'lodash/isString'
 import uniq from 'lodash/uniq'
 import {
   createContext,
@@ -83,7 +84,7 @@ const systemPromptVariablesValidator = (value, { parent, createError }) => {
     ...SYSTEM_PROMPT_VARIABLES,
     ...(parent.prompt_variables?.map((item) => item.key) || []),
   ]
-  const variables = [...value.matchAll(PROMPT_VARIABLE_RE).map((match) => match[1].trim())]
+  const variables = [...value.matchAll(PROMPT_VARIABLE_RE)].map((match) => match[1].trim())
 
   const undefinedVariables = variables.filter((variable) => !availableVariables.includes(variable))
 
@@ -241,11 +242,12 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     const getCategoryIds = (categories?: AssistantCategory[]): string[] => {
       if (!categories || !Array.isArray(categories)) return []
 
-      return categories.map((cat) => {
-        if (typeof cat === 'string') return cat
-        if (typeof cat === 'object' && cat.id) return cat.id
-        return ''
-      })
+      return categories
+        .map((cat) => {
+          if (isString(cat)) return cat
+          return cat?.id
+        })
+        .filter((id): id is string => id != null)
     }
 
     const { control, formState, watch, handleSubmit, setValue, getValues, trigger } =
