@@ -39,6 +39,7 @@ import {
   transformChatListItemDTOs,
   transformFolderListItemsDTOs,
 } from './utils/chats'
+import { workflowExecutionsStore } from './workflowExecutions'
 
 const mapConversationUpdatePayload = (data: Partial<Conversation>) => {
   const payload: Record<string, unknown> = {}
@@ -384,6 +385,7 @@ export const chatsStore = proxy<ChatsStoreType>({
     return api.delete(`v1/conversations/${id}`).then((response) => {
       chatsStore.chats = chatsStore.chats.filter((chat) => chat.id !== id)
       recentChatsStore.removeRecentChat(id)
+      workflowExecutionsStore.removeExecutionsByConversationId(id)
       return response.json()
     })
   },
@@ -408,6 +410,7 @@ export const chatsStore = proxy<ChatsStoreType>({
 
   clearChatHistory: async (chatID) => {
     await api.delete(`v1/conversations/${chatID}/history`).then((response) => response.json())
+    workflowExecutionsStore.removeExecutionsByConversationId(chatID)
     const chat = await chatsStore.getChat(chatID)
     chatsStore.updateChatListItem(chat)
   },
@@ -418,6 +421,7 @@ export const chatsStore = proxy<ChatsStoreType>({
     chatsStore.chatFolders = []
     chatsStore.currentChat = null
     chatsStore.openedChatsHistory = []
+    workflowExecutionsStore.removeAllChatLinkedExecutions()
     toaster.info('All conversations have been successfully deleted.')
   },
 

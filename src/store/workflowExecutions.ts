@@ -170,6 +170,10 @@ interface WorkflowExecutionsStoreType {
 
   clearWorkflowExecutions: (workflowId: string) => Promise<void>
 
+  removeExecutionsByConversationId: (conversationId: string) => void
+
+  removeAllChatLinkedExecutions: () => void
+
   updateExecutionList: () => void
 
   setExecutionStatesPagination: (newPagination: Partial<Pagination>) => void
@@ -943,6 +947,52 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
       toaster.error('Error clearing workflow executions')
       console.error('Error clearing workflow executions')
       throw error
+    }
+  },
+
+  /**
+   * Remove all executions linked to a specific conversation from the in-memory store.
+   * Called after deleteChat / clearChatHistory resolves so the Execution History list
+   * stays consistent with server-side state (backend cascade-deletes the rows).
+   * No API call is made — this is purely local bookkeeping, mirroring deleteWorkflowExecution.
+   * @param conversationId - The conversation/chat id whose linked executions should be removed
+   */
+  removeExecutionsByConversationId(conversationId) {
+    if (!conversationId) return
+    const before = this.executions.length
+    this.executions = this.executions.filter((e) => e.conversation_id !== conversationId)
+    const removed = before - this.executions.length
+    if (removed > 0) {
+      this.executionsPagination.totalCount = Math.max(
+        0,
+        this.executionsPagination.totalCount - removed
+      )
+    }
+    if (this.execution?.conversation_id === conversationId) {
+      this.execution = null
+    }
+  },
+
+  /**
+   * Remove all chat-linked executions from the in-memory store.
+   * Called after deleteAllConversations resolves so the Execution History list stays
+   * consistent with server-side state (backend cascade-deletes chat-linked rows on
+   * delete_by_user). Standalone executions (empty conversation_id) are intentionally
+   * preserved — the server still has them.
+   * No API call is made — this is purely local bookkeeping.
+   */
+  removeAllChatLinkedExecutions() {
+    const before = this.executions.length
+    this.executions = this.executions.filter((e) => !e.conversation_id)
+    const removed = before - this.executions.length
+    if (removed > 0) {
+      this.executionsPagination.totalCount = Math.max(
+        0,
+        this.executionsPagination.totalCount - removed
+      )
+    }
+    if (this.execution?.conversation_id) {
+      this.execution = null
     }
   },
 
