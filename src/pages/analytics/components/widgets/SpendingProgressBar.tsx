@@ -61,7 +61,7 @@ const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
         className="text-sm font-semibold leading-none whitespace-nowrap w-12 text-right"
         style={{ color: barColor }}
       >
-        {percentage.toFixed(1)}%
+        {normalizedPercentage.toFixed(1)}%
       </span>
     </div>
   )

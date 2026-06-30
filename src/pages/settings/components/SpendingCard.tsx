@@ -103,7 +103,8 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
   const percentage = useMemo(() => {
     if (keySpendingData && rowCount === 1) {
       const row = keySpendingData.data.rows[0]
-      return typeof row.total === 'number' ? row.total : 0
+      const rawPercentage = Math.min(typeof row.total === 'number' ? row.total : 0, 100)
+      return rawPercentage
     }
     return 0
   }, [keySpendingData, rowCount])
