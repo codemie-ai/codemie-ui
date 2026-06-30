@@ -35,6 +35,10 @@ export default defineWorkspace([
       exclude: [...configDefaults.exclude, '**/__tests__/**/*.integration.test.*'],
       setupFiles: ['./src/setupTests', './src/setupTests.unit'],
     },
+    server: {
+      ws: false,
+      hmr: false,
+    },
   },
   {
     extends: './vite.config.ts',
@@ -43,6 +47,10 @@ export default defineWorkspace([
       environment: 'jsdom',
       include: ['**/__tests__/**/*.integration.test.?(c|m)[jt]s?(x)'],
       setupFiles: ['./src/setupTests'],
+    },
+    server: {
+      ws: false,
+      hmr: false,
     },
   },
 ])

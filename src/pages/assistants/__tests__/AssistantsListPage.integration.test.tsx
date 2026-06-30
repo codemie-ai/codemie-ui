@@ -15,7 +15,7 @@
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { renderPage, mockAPI } from '@/test-utils/integration'
@@ -348,6 +348,9 @@ describe('AssistantsListPage - Integration', () => {
     })
 
     it('shows modal close after delete error', async () => {
+      // Suppress expected error log from ActionConfirmationModal
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
       mockAPI('GET', 'v1/config', [])
       mockAPI('GET', 'v1/assistants', {
         data: [createAssistantFixture({ user_abilities: ['read', 'write', 'delete'] })],
@@ -386,6 +389,8 @@ describe('AssistantsListPage - Integration', () => {
       await waitFor(() => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
       })
+
+      consoleErrorSpy.mockRestore()
     })
 
     it('navigates to edit page when edit action clicked', async () => {

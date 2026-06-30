@@ -56,6 +56,7 @@ const WorkflowExecutionsListItem: React.FC<WorkflowExecutionsListItemProps> = ({
 
   return (
     <div
+      aria-current={isActive ? 'page' : undefined}
       className={cn(
         'relative w-full hover:bg-surface-specific-dropdown-hover rounded-xl cursor-pointer transition text-text-quaternary hover:text-text-primary',
         isActive && 'bg-surface-specific-dropdown-hover/60 text-text-primary'

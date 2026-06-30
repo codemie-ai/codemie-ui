@@ -64,6 +64,8 @@ const Drawer = ({
           {header}
           <Button
             variant="tertiary"
+            aria-label="Toggle drawer"
+            aria-expanded={expanded}
             onClick={() => {
               onExpandedChange(!expanded)
             }}
@@ -74,6 +76,7 @@ const Drawer = ({
       </div>
 
       <div
+        aria-hidden={!expanded ? true : undefined}
         className={cn('h-full flex overflow-hidden min-h-0 pr-4 pl-6', !expanded && 'opacity-0')}
       >
         {children}

@@ -32,6 +32,7 @@ const useInitialDataFetch = () => {
         throw error
       }
       await preferencesStore.fetchPreferences(userStore.user!.userId)
+
       await assistantsStore.fetchPinnedAssistants()
       chatsStore.getFolders()
       chatsStore.getChats()

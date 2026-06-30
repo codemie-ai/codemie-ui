@@ -21,17 +21,35 @@ import '@testing-library/jest-dom'
 
 import { requestRegistry, navigate as navigateMock } from './test-utils/_mock-state'
 
-// ─── Disable CSS parsing in jsdom ────────────────────────────────────────────
+// ─── Console filtering for cleaner test output ───────────────────────────────
 
-// jsdom doesn't support modern CSS features like @layer, @container, etc.
-// This causes errors when PrimeReact injects its CSS. Mock the textContent setter
-// on style elements to suppress CSS parsing errors.
+// Suppress expected errors/warnings that don't indicate test failures.
 const originalConsoleError = console.error
-const jsDomCssError = 'Error: Could not parse CSS stylesheet'
+const originalConsoleWarn = console.warn
+
+const suppressedErrors = [
+  'Error: Could not parse CSS stylesheet', // jsdom doesn't support modern CSS
+  'inside a test was not wrapped in act(...)', // PrimeReact internal updates
+  'quill Cannot', // Quill editor warnings in jsdom (no real DOM)
+  'quill:toolbar',
+]
+
+const suppressedWarnings = ['quill']
+
 console.error = (...params) => {
-  if (!params.find((p) => p.toString().includes(jsDomCssError))) {
-    originalConsoleError(...params)
+  const message = params.join(' ')
+  if (suppressedErrors.some((err) => message.includes(err))) {
+    return
   }
+  originalConsoleError(...params)
+}
+
+console.warn = (...params) => {
+  const message = params.join(' ')
+  if (suppressedWarnings.some((warn) => message.includes(warn))) {
+    return
+  }
+  originalConsoleWarn(...params)
 }
 
 // ─── Browser globals ──────────────────────────────────────────────────────────
@@ -70,6 +88,10 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
+// JSDOM doesn't implement URL.createObjectURL — needed for file-saver (saveAs) in download flows
+global.URL.createObjectURL = vi.fn()
+global.URL.revokeObjectURL = vi.fn()
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
@@ -83,6 +105,9 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: vi.fn(),
   })),
 })
+
+// file-saver creates a blob URL anchor and calls click() — JSDOM can't navigate non-hash URLs
+vi.mock('file-saver', () => ({ saveAs: vi.fn() }))
 
 // ─── Shared mocks (safe for both unit and integration tests) ──────────────────
 
@@ -162,6 +187,7 @@ const globalDefaults: Record<string, () => unknown> = {
   'v1/llm_models/image_generation': () => [],
   'v1/embeddings_models': () => [],
   'v1/config': () => [],
+  'v1/assistants': () => ({ data: [], pagination: { total: 0, page: 0, per_page: 20 } }),
   'v1/assistants/user': () => [],
   'v1/assistants/categories': () => [
     { id: 1, name: 'Productivity', description: 'Tools to boost productivity' },
@@ -186,13 +212,14 @@ const globalDefaults: Record<string, () => unknown> = {
   'v1/customer-config': () => ({}),
   'v1/skills/categories': () => [],
   'v1/assistants/default': () => null,
-  'v1/assistants/help': () => [],
+  'v1/assistants/help': () => ({ data: [] }),
   'v1/applications': () => [],
-  'v1/settings/user/preferences': () => ({
+  'v1/preferences/test-user-id': () => ({
+    user_id: 'test-user-id',
     navigation_expanded: true,
     sidebar_expanded: true,
     pinned_assistants: [],
-    favorites: { assistants: [], skills: [] },
+    favorites: { assistants: [], skills: [], workflows: [] },
   }),
   'v1/user/reactions': () => ({ items: [] }),
 }

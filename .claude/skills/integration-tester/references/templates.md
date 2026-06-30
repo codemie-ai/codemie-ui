@@ -1,5 +1,25 @@
 # Integration Test Structure Template
 
+## Fixture Factory Pattern
+
+Always type fixture overrides with `Partial<EntityType>` — never `Record<string, any>`:
+
+```typescript
+import type { MyEntity } from '@/types/entity/my-entity'
+
+const createMyEntityFixture = (overrides: Partial<MyEntity> = {}): MyEntity => ({
+  id: 'entity-1',
+  name: 'Test Entity',
+  status: 'Active',
+  // ...all required fields with sensible defaults
+  ...overrides,
+})
+```
+
+**Why**: `Partial<EntityType>` gives IDE completion on override keys and catches typos at compile time. `Record<string, any>` silently accepts invalid keys.
+
+---
+
 ## Standard Flow Test
 
 ```typescript
@@ -317,6 +337,71 @@ describe('[ComponentName] - Open Modal and Confirm', () => {
     await waitFor(() => {
       expect(screen.queryByText('Provider 1')).not.toBeInTheDocument()
     })
+  })
+})
+```
+
+---
+
+## Context Menu Test
+
+```typescript
+import { clickMenuOption } from '@/test-utils/component-interactions'
+
+describe('[ComponentName] - Context Menu Actions', () => {
+  const user = userEvent.setup()
+  
+  it('opens context menu and triggers action', async () => {
+    // SETUP
+    mockAPI('GET', 'v1/items', [
+      { id: 'item-1', name: 'Test Item' }
+    ])
+    mockAPI('POST', 'v1/items/item-1/duplicate', {
+      id: 'item-2', name: 'Test Item (Copy)'
+    })
+    
+    // RENDER
+    renderPage('/items')
+    
+    // Wait for item to load
+    await waitFor(() => {
+      expect(screen.getByText('Test Item')).toBeInTheDocument()
+    })
+    
+    // EXECUTE: Open menu and click option
+    await clickMenuOption('More options', 'Duplicate', user)
+    
+    // VERIFY: API called
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('v1/items/item-1/duplicate'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    })
+    
+    // VERIFY: New item appears
+    await waitFor(() => {
+      expect(screen.getByText('Test Item (Copy)')).toBeInTheDocument()
+    })
+  })
+  
+  it('opens context menu with custom timeout', async () => {
+    // SETUP
+    mockAPI('GET', 'v1/items', [{ id: 'item-1', name: 'Test Item' }])
+    
+    // RENDER
+    renderPage('/items')
+    
+    // EXECUTE: With custom timeout
+    await clickMenuOption('Actions', 'Edit', user, { timeout: 5000 })
+    
+    // VERIFY: Navigation to edit page
+    expect(mockRouterState.push).toHaveBeenCalledWith(
+      expect.objectContaining({ 
+        name: 'edit-item',
+        params: { id: 'item-1' }
+      })
+    )
   })
 })
 ```

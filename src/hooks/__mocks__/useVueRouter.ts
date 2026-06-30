@@ -78,6 +78,9 @@ export const mockRouterState = {
 export const useVueRoute = vi.fn(() => mockRouterState)
 export const useVueRouter = vi.fn(() => mockRouterState)
 
+export const { replace } = mockRouterState
+export const { push } = mockRouterState
+
 // Alias for tests that import mockRouter instead of mockRouterState
 export const mockRouter = mockRouterState
 

@@ -1,6 +1,6 @@
 # Subagent Discovery Prompt Template
 
-**When to use**: Large scope tasks (full pages, 5+ components) in Step 1.1 of the workflow.
+**When to use**: Large scope tasks (full pages, 5+ components) in Step 1b of the workflow.
 
 **How to use**: Copy this entire template and fill in the placeholders marked with `[...]`.
 
@@ -33,6 +33,153 @@ For EACH component (including already-read ones):
 - Find ALL: useEffect with API/store calls, router.push/replace, navigate()
 - Find ALL: Conditional rendering: {flag && <Element>}, isEnabled(), can*(), feature flags
 - Find ALL: State mutations: store.field = value, setState, localStorage.setItem
+
+**Phase 2a: Extract ALL Display Elements (NOT JUST INTERACTIONS)**
+
+**CRITICAL**: Tests must verify not just that actions work, but that DATA IS SHOWN. Most bugs are display bugs.
+
+For EACH component that RENDERS data (cards, lists, tables, detail views, forms):
+
+1. **Identify the data source**:
+   - Props passed in: `interface CardProps { workflow: Workflow }`
+   - Store fields: `workflowsStore.workflows[0].name`
+   - API response: `GET /workflows → { name, description, created_at, ... }`
+
+2. **Find the JSX template** that renders each field:
+   - Look for `{workflow.name}`, `{item.description}`, `{formatDate(created_at)}`
+   - Look for conditional display: `{description && <Text>{description}</Text>}`
+   - Look for badges/chips: `{is_global && <Badge>MARKETPLACE</Badge>}`
+
+3. **Document EVERY field that gets displayed**:
+   - Field name from data model
+   - Where it appears in UI (card title, subtitle, badge, meta text, tooltip)
+   - Conditional display logic (shown only if field exists, or based on ability/flag)
+   - Format/transform (date formatted, number with commas, text truncated)
+   - CSS/styling that affects visibility (hidden class, opacity, display:none)
+
+4. **Create a flow for each displayed field**:
+
+```
+Flow X: [Entity] Card Displays [Field Name]
+- Priority: Medium (display bugs are common)
+- Preconditions: Card rendered with [entity].[field] = 'expected value'
+- Trigger: Component mount (no user interaction needed)
+- Assertions: expect(screen.getByText('expected value')).toBeInTheDocument()
+- Error Path: If field is null/undefined → either not rendered, or shows placeholder
+```
+
+**Example - WorkflowCard Component:**
+
+After reading WorkflowCard.tsx, you find it displays:
+- `workflow.name` (always shown - card title)
+- `workflow.description` (shown if exists - card subtitle)  
+- `workflow.created_at` (formatted as "2 days ago" - card footer)
+- `workflow.is_global ? 'MARKETPLACE' : null` (badge if true)
+- `workflow.user_abilities` (shown as badges: 'CAN EDIT', 'CAN DELETE')
+
+Then create flows:
+- Flow X: Workflow card displays workflow name
+- Flow X+1: Workflow card displays description when present
+- Flow X+2: Workflow card does NOT display description when null
+- Flow X+3: Workflow card displays created date in relative format
+- Flow X+4: Workflow card shows MARKETPLACE badge for global workflows
+- Flow X+5: Workflow card does NOT show MARKETPLACE badge for private workflows
+- Flow X+6: Workflow card shows ability badges based on user_abilities array
+
+**Why this matters:**
+- A card that loads data but doesn't display the description is a BUG
+- A badge that should appear based on a flag but doesn't is a BUG
+- These are NOT covered by interaction tests (click, submit, navigate)
+
+**This adds 5-15 flows per page** but catches the most common bugs.
+
+---
+
+**Phase 2b: Deep Dive on Complex Components (CRITICAL)**
+
+Some component patterns require special analysis beyond basic handler discovery. Recognize these patterns and apply the corresponding deep dive:
+
+#### Pattern 1: Configurable Filter/Search Components
+
+**How to recognize**: Component accepts a configuration prop (e.g., `fields`, `filtersConfig`, `schema`) that defines what filter fields to render.
+
+**Examples**: Any component that renders multiple filter inputs dynamically based on configuration.
+
+**When found**:
+
+1. **Trace the filter configuration**:
+   - Find the prop that defines filter fields (common names: `fields`, `filtersConfig`, `schema`, `config`)
+   - Read the PARENT component to see what configuration is passed
+   - This reveals the COMPLETE set of filters available
+
+2. **Enumerate ALL filter fields**:
+   - For each field in the config, document:
+     - Field name (API param name)
+     - Field type (text input, select dropdown, multi-select, date picker, custom component)
+     - Options source (if select/multi-select): static array, API call, store
+   - Check for custom filter components (pattern: component prop or render function in config)
+
+3. **Document each filter's complete flow**:
+   - User interaction: type, select, click
+   - Debounce timing: grep for `debounce(` or `useDebouncedValue` 
+   - State update pattern: local state → apply callback
+   - Apply trigger: immediate, debounced, or button-based
+   - API call: query params format, encoding
+   - URL sync: does filter state persist in URL query params?
+
+4. **Document filter combinations**:
+   - Multi-filter support (AND/OR logic)
+   - Clear mechanism (button, individual clears)
+   - Reset behavior (on tab/scope change)
+
+#### Pattern 2: Form Modal/Dialog Components
+
+**How to recognize**: Component renders a dialog/modal with form inputs and submission.
+
+**Examples**: Any modal that collects user input and submits to API.
+
+**When found**:
+
+1. **Trace ALL submission paths**:
+   - **Success path**: Fill form → submit → API success → modal closes → success toast/navigation
+   - **Validation path**: Missing required field → validation error shown → modal stays open
+   - **API error path**: Submit → API error (4xx/5xx) → error message shown → modal stays open
+
+2. **Document ALL ways to close**:
+   - Close button (X in corner)
+   - Cancel button
+   - Backdrop/overlay click (if enabled)
+   - Escape key (if enabled)
+   - After successful submission
+
+3. **Document modal state management**:
+   - Opening trigger (button click, state change, URL param)
+   - State persistence (form data retained on close/reopen, or reset)
+   - Loading states (validation spinner, submission loading, async data fetch)
+
+#### Pattern 3: Multi-Selection Components
+
+**How to recognize**: Component allows selecting multiple items (checkboxes, chips, tag picker).
+
+**Examples**: Any component with selection state for multiple items.
+
+**When found**:
+
+1. **Document selection states**:
+   - Empty state (none selected): validation error, disabled state, or allowed
+   - Single selection: valid state
+   - Multiple selections: valid (check for max limit)
+   - Bulk actions: select all, clear all (if present)
+
+2. **Trace API contract**:
+   - Read the submission handler to see actual payload format
+   - Common formats: array of IDs, comma-separated, array of objects
+   - Don't assume - verify in code
+
+3. **Document UI feedback**:
+   - Selection display (chips, badges, list)
+   - Count indicators
+   - Overflow handling (truncation, "and N more")
 
 **Phase 2b: Trace Component Hierarchies (for menus/modals/nested interactions)**
 
@@ -95,6 +242,130 @@ For each handler, extract details needed to write tests WITHOUT re-reading files
 6. **Error Paths**:
    - Same detail level: mock error response, expected toast, state unchanged
 
+---
+
+**Phase 3.5: Quality Check - Complete vs Incomplete Flows**
+
+Before writing Phase 4 report, review your flows against these examples:
+
+#### ❌ INCOMPLETE Flow (Don't do this)
+```
+Flow 5: Search Filter
+- User types in search box
+- API called with search param
+- Results update
+```
+
+**Problems**:
+- What's the exact selector for the search box? (`getByRole('textbox')`? `getByPlaceholderText('Search')`?)
+- What's the actual API endpoint? (`v1/workflows`? something else?)
+- What's the query param name? (`search=`? `name=`? `filters=`?)
+- Is there debounce? How long?
+- How do you assert "results update"? (specific text? count? empty state?)
+- What about error case? (no results? API failure?)
+
+**This flow is NOT test-ready. The main agent will have to re-read files to fill gaps.**
+
+#### ✅ COMPLETE Flow (Do this)
+```
+Flow 5: Search Filter Applied
+- **Priority**: High
+- **Preconditions**:
+  - `WorkflowsFilters` component rendered (scope="all")
+  - Mock: `mockAPI('GET', 'v1/workflows', { data: [{id: '1', name: 'Matching Workflow', ...}], pagination: {...} })`
+- **Trigger**:
+  - `getByPlaceholText('Search')` → text input in Filters component
+  - Type: "test"
+  - Debounce: 1000ms (found in `Filters.tsx:189` → `debounce(applyFilters, 1000)`)
+- **Data Path**:
+  1. `handleInputChange('name', 'test')` → `setFilters({ ...filters, name: 'test' })`
+  2. After 1000ms debounce: `onApply({ name: 'test' })` → `WorkflowsFilters.handleApply()`
+  3. `workflowsStore.setWorkflowsFilters({ name: 'test' })`
+  4. `workflowsStore.indexWorkflows()` → `GET v1/workflows?filter_by_user=false&page=0&per_page=12&filters=%7B%22name%22%3A%22test%22%7D`
+     (filters param is URL-encoded JSON: `{"name":"test"}`)
+  5. `router.push({ path: '/workflows/all', query: { page: '1', name: 'test' } })`
+- **Assertions**:
+  - Wait for debounce: `await new Promise(r => setTimeout(r, 1100))`
+  - API called: `expect(fetch).toHaveBeenCalledWith(expect.stringContaining('filters=%7B%22name%22%3A%22test%22%7D'), ...)`
+  - URL updated: `expect(mockRouterState.push).toHaveBeenCalledWith(expect.objectContaining({ query: { name: 'test', page: '1' } }))`
+  - Results rendered: `expect(screen.getByText('Matching Workflow')).toBeInTheDocument()`
+- **Error Path** (no results):
+  - Mock: `mockAPI('GET', 'v1/workflows', { data: [], pagination: { total: 0 } })`
+  - Assertion: `expect(screen.getByText('No workflows found.')).toBeInTheDocument()`
+```
+
+**Why this is complete**:
+- ✅ Exact selectors (getByPlaceholderText)
+- ✅ Exact API endpoint and query params (including URL encoding)
+- ✅ Debounce timing with file reference
+- ✅ Complete data path (every step from input to API to UI)
+- ✅ Copy-paste-ready assertions (including debounce wait)
+- ✅ Error path documented
+- ✅ Main agent can write test without re-reading components
+
+#### ❌ INCOMPLETE Modal Flow
+```
+Flow 12: Publish Modal
+- Click "Publish to Marketplace"
+- Modal opens
+- Select category
+- Submit
+```
+
+**Problems**:
+- What's the exact button selector?
+- How does modal open? (immediate? validation call first?)
+- How to select category? (checkbox? dropdown? aria-label?)
+- What if no category selected? (validation?)
+- What API is called on submit?
+- What's the success outcome? (modal closes? toast? navigation?)
+
+#### ✅ COMPLETE Modal Flow
+```
+Flow 12: Publish Workflow Through Modal
+- **Priority**: Medium
+- **Preconditions**:
+  - Workflow card rendered with `id: '42'`, `is_global: false`
+  - Validation mock: `mockAPI('POST', 'v1/workflows/42/marketplace/publish/validate', { inline_credentials: [] })`
+  - Categories mock: `assistantsStore.assistantCategories = [{id: 'cat-1', name: 'AI Tools'}, {id: 'cat-2', name: 'Data'}]`
+  - Publish mock: `mockAPI('POST', 'v1/workflows/42/marketplace/publish', {})`
+- **Trigger**:
+  1. `getByRole('button', { name: 'More options' })` → opens NavigationMore menu
+  2. `getByRole('menuitem', { name: 'Publish to Marketplace' })` → triggers modal
+- **Data Path**:
+  1. Menu click → `setWorkflowToPublish(workflow)` in WorkflowsList
+  2. Modal opens: `PublishWorkflowToMarketplaceModal` with `open=true`
+  3. Auto-validation: `POST v1/workflows/42/marketplace/publish/validate` (on mount)
+  4. User selects category: `getByRole('checkbox', { name: 'AI Tools' })` → click
+  5. Submit: `getByRole('button', { name: 'Publish' })` within dialog → click
+  6. `handlePublish()` → `workflowsStore.publishWorkflowToMarketplace('42', ['cat-1'])`
+  7. `POST v1/workflows/42/marketplace/publish` with body `{ categories: ['cat-1'] }`
+  8. Success: `toaster.info('Workflow has been published to marketplace successfully!')`
+  9. Modal closes: `setWorkflowToPublish(null)`
+  10. Refresh: `workflowsStore.indexWorkflows()`
+- **Assertions**:
+  - Modal opens: `expect(screen.getByRole('dialog')).toBeInTheDocument()`
+  - Validation text shown: `expect(screen.getByText('Validating your workflow configuration...')).toBeInTheDocument()`
+  - After validation: Publish button enabled
+  - After submit:
+    - API called: `expect(fetch).toHaveBeenCalledWith(expect.stringContaining('marketplace/publish'), expect.objectContaining({ method: 'POST', body: expect.stringContaining('cat-1') }))`
+    - Toast shown: `expect(screen.getByText('Workflow has been published to marketplace successfully!')).toBeInTheDocument()`
+    - Modal closed: `await waitFor(() => { expect(screen.queryByRole('dialog')).not.toBeInTheDocument() })`
+- **Error Paths**:
+  1. **No category selected**:
+     - Click Publish without selecting category
+     - Validation error: `expect(screen.getByText('Please select at least one category')).toBeInTheDocument()`
+     - Modal stays open
+  2. **API error (422)**:
+     - Mock: `mockAPI('POST', 'v1/workflows/42/marketplace/publish', { message: 'Workflow contains invalid credentials' }, 422)`
+     - Error toast: `expect(screen.getByText('Workflow contains invalid credentials')).toBeInTheDocument()`
+     - Modal stays open
+```
+
+**Review your flows**: Do they match the COMPLETE examples? If any flow looks like the INCOMPLETE examples, go back and add the missing details.
+
+---
+
 **Phase 4: Report Structure (TEST-READY FORMAT)**
 
 ## Components Read (with line counts)
@@ -132,7 +403,51 @@ For each handler, extract details needed to write tests WITHOUT re-reading files
 - Confidence I found 90%+: [Yes/No with reasoning]
 - If No: [What areas need more investigation]
 
-**Quality bar**: Every flow includes copy-paste-ready test code snippets. No abstractions.`
+**Quality bar**: Every flow includes copy-paste-ready test code snippets. No abstractions.
+
+---
+
+## Summary for User Review
+
+**CRITICAL: Generate this summary at the END of your report. The main agent will present it to the user.**
+
+After writing the full test plan, create a concise summary:
+
+\`\`\`
+Test Plan Summary for [ComponentName]:
+
+📊 Coverage:
+- Total flows discovered: X
+- Priority breakdown:
+  - High: Y flows (critical user paths, primary actions)
+  - Medium: Z flows (secondary features, conditional flows)
+  - Low: W flows (edge cases, rarely-used features)
+
+🎯 Key flows covered:
+1. [Most important flow 1 - one line description]
+2. [Most important flow 2 - one line description]
+3. [Most important flow 3 - one line description]
+4. [Most important flow 4 - one line description]
+5. [Most important flow 5 - one line description]
+
+📁 Subsystems:
+- [Subsystem 1]: X flows
+  - [Flow 1 brief description]
+  - [Flow 2 brief description]
+  - ...
+- [Subsystem 2]: Y flows
+  - [Flow 1 brief description]
+  - [Flow 2 brief description]
+  - ...
+
+⚠️ Known complexity/limitations (if any):
+- [Note anything that might be tricky or require special attention]
+- [Note any flows intentionally excluded and why]
+
+Full plan: .codemie/integration-test-plan-[ComponentName].md
+\`\`\`
+
+**This summary will be shown to the user for review approval.**`
 })
 ```
 

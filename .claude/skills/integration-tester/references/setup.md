@@ -417,6 +417,71 @@ await waitFor(() => {
 
 ---
 
+## Component Interaction Utilities
+
+Location: `src/test-utils/component-interactions/`
+
+Reusable helpers for interacting with PrimeReact components in integration tests.
+
+### Available Utilities
+
+#### Menu Interactions
+
+```typescript
+import { clickMenuOption } from '@/test-utils/component-interactions'
+
+// Opens a context menu and clicks a menu item
+const user = userEvent.setup()
+await clickMenuOption('More options', 'Delete', user)
+
+// With custom timeout
+await clickMenuOption('Actions', 'Edit', user, { timeout: 5000 })
+```
+
+**When to use**: Testing context menus, action menus, dropdown menus (NavigationMore, card actions, etc.)
+
+#### MultiSelect Interactions
+
+```typescript
+import { selectMultiSelectOptions } from '@/test-utils/component-interactions'
+
+// Select multiple options from a MultiSelect dropdown
+const user = userEvent.setup()
+await selectMultiSelectOptions('Categories', ['Coding', 'Testing'], { user })
+
+// Keep dropdown open after selection
+await selectMultiSelectOptions('Tags', ['tag1'], { user, closeAfter: false })
+```
+
+**When to use**: Testing MultiSelect components (filter dropdowns, tag selectors, etc.)
+
+#### Select (Dropdown) Interactions
+
+```typescript
+import { selectDropdownOption, getSelectedDropdownValue } from '@/test-utils/component-interactions'
+
+// Select single option from dropdown
+const user = userEvent.setup()
+await selectDropdownOption('Project', 'Project 1', { user })
+
+// Get current selected value
+const value = await getSelectedDropdownValue('Project')
+expect(value).toBe('Project 1')
+```
+
+**When to use**: Testing single-select dropdowns (project filters, status selectors, etc.)
+
+### Creating New Utilities
+
+When you find repeated interaction patterns:
+
+1. Create new file in `src/test-utils/component-interactions/`
+2. Export utilities from `index.ts`
+3. Add JSDoc with examples
+4. Document here in setup.md
+
+---
+
 ## mockRouterState
 
 Location: `src/hooks/__mocks__/useVueRouter.ts`
@@ -690,3 +755,79 @@ it('opens edit modal and saves changes', async () => {
   })
 })
 ```
+
+
+---
+
+# Common Pitfalls
+
+**When to read**: Step 5 (during investigation), or when elements/behaviors don't work as expected.
+
+These are technical gotchas that commonly trip up integration test writing:
+
+## Discovery & Scope
+
+- **Large pages need discovery**. ≥5 components or ≥3 hooks → use the subagent. Pattern files teach structure, not flows.
+
+## Test Patterns
+
+- **Existing tests = infrastructure truth**. ALWAYS read one first - copy its fixture, patterns, what it doesn't test.
+- **Copy patterns, don't invent**. This project has specific test conventions - follow them.
+
+## Store & State
+
+- **Never initialize stores directly**. Direct store mutations in beforeEach get overwritten. Use `mockAPI` instead - renderPage triggers initialization.
+- **API response structure matters**. Store parsing expects specific field names. Trace `.then(result => result.field)` in store method to find required fields.
+
+## Routing
+
+- **Routes come from router config**. Don't guess paths - read the actual router file.
+
+- **Direct `router` import is not the hook mock.** Some utilities (e.g. `navigateBack` in `@/utils/helpers`) import `router` directly — `import { router } from '@/hooks/useVueRouter'` — rather than calling `useVueRouter()`. The mock exports the hook but by default does NOT export `router`, so it is `undefined` at runtime. Symptom: calling a Back/navigate handler crashes with `TypeError: Cannot read properties of undefined (reading 'push')`. Fix: add `export const router = mockRouterState` to `src/hooks/__mocks__/useVueRouter.ts`. Do NOT work around this by mocking the utility (e.g. `vi.mock('.../goBackWorkflows', ...)`): that suppresses `mockRouterState.push` entirely and turns a navigation assertion into a function-call assertion.
+
+## Fixtures
+
+- **Missing fixture fields break rendering**. Copy fixture from existing tests or read entity type for ALL required fields.
+- **Feature flags gate rendering**. No config mock = no button. Grep `isVisible`, `useFeatureFlag`, or config checks when elements missing.
+- **User abilities gate menu items**. Actions need appropriate permissions in fixture. Grep `can*` methods, ability checks in component.
+
+## Component Hierarchy
+
+- **Button aria-labels are in deepest component**. Trace hierarchy from page to final component. Intermediate components don't define the actual label.
+
+## Behavior Assumptions
+
+- **Confirmations aren't always symmetric**. Some actions confirm, some don't. Don't assume - read actual handler implementation.
+- **Toast testing is flaky**. Existing tests skip toast verification - follow their pattern unless toast is PRIMARY feedback.
+
+## Testing Non-Visible State (Selection, Active, Toggle)
+
+If a behavior (active selection, collapse state, current item) has no visible text change, don't write an API-only assertion — it has no integration value. Instead:
+1. Check if the component already carries a semantic a11y attribute (`aria-current`, `aria-selected`, `aria-expanded`)
+2. If not, add one to the production component (e.g., `aria-current="page"` on the active list item) and assert it
+
+```typescript
+// ✅ Testable: production component has aria-current="page" when isActive
+expect(document.querySelector('[aria-current="page"]')).toBeInTheDocument()
+
+// ❌ Untestable: no visible change → API-only assertion is noise
+expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('...'), expect.anything())
+```
+
+Adding a11y attributes to make behavior testable is always the right fix — it improves accessibility too.
+
+## jsdom CSS Visibility Limitation
+
+`toBeVisible()` does NOT respect CSS-only hiding (opacity, transform, visibility via class toggle). In jsdom, `opacity: 0` elements still report as visible.
+
+For collapse/expand and toggle states, assert semantic attributes instead:
+```typescript
+// ✅ Reliable
+expect(toggleButton).toHaveAttribute('aria-expanded', 'false')
+expect(contentDiv).toHaveAttribute('aria-hidden', 'true')
+
+// ❌ Unreliable in jsdom
+expect(contentElement).not.toBeVisible()
+```
+
+Add `aria-expanded` to the toggle button and `aria-hidden` to the content container in production code. Assert those attributes in tests.
