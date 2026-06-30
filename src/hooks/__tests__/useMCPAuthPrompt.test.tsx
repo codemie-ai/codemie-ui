@@ -241,4 +241,75 @@ describe('useMCPAuthPrompt', () => {
     )
     expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual([])
   })
+
+  it('logs the opened auth tab origin and popup-blocked state on continue', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+
+    await act(async () => {
+      await result.current.handleAuthRequiredError(authRequiredResponse([oauth2Server]))
+    })
+    mockPost.mockResolvedValueOnce({
+      json: async () => ({
+        auth_url: 'https://idp.example.com/start',
+        redirect_uri_hostname: 'api.example.com',
+        localhost_warning: false,
+      }),
+    })
+    await act(async () => {
+      await result.current.initiate('mcp-1')
+    })
+
+    // window.open returns null (default mock) -> popup blocked
+    await act(async () => {
+      result.current.continue('mcp-1')
+    })
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[mcp-auth] opened auth tab',
+      expect.objectContaining({
+        authUrlOrigin: 'https://idp.example.com',
+        windowOrigin: expect.any(String),
+        popupBlocked: true,
+      })
+    )
+
+    infoSpy.mockRestore()
+  })
+
+  it('logs the opened auth tab on SAML immediate open with popupBlocked false', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    vi.mocked(window.open).mockReturnValue(window)
+    const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+
+    await act(async () => {
+      await result.current.handleAuthRequiredError(
+        authRequiredResponse([
+          {
+            ...oauth2Server,
+            auth_type: 'saml',
+            initiate_url: '/v1/mcp-auth/saml/initiate',
+            status: 'session_expired',
+          },
+        ])
+      )
+    })
+    mockPost.mockResolvedValueOnce({
+      json: async () => ({ auth_url: 'https://idp.example.com/saml/start' }),
+    })
+
+    await act(async () => {
+      await result.current.initiate('mcp-1')
+    })
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[mcp-auth] opened auth tab',
+      expect.objectContaining({
+        authUrlOrigin: 'https://idp.example.com',
+        popupBlocked: false,
+      })
+    )
+
+    infoSpy.mockRestore()
+  })
 })

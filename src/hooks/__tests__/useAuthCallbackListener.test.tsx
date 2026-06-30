@@ -240,4 +240,46 @@ describe('useAuthCallbackListener', () => {
 
     expect(onTimeout).not.toHaveBeenCalled()
   })
+
+  it('logs listener origin context on setup', () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+
+    renderHook(() => useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'] }))
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[mcp-auth] listener ready',
+      expect.objectContaining({
+        apiOrigin: 'https://api.example.com',
+        windowOrigin: expect.any(String),
+      })
+    )
+
+    infoSpy.mockRestore()
+  })
+
+  it('logs observed mcp_auth_callback messages even when dropped for a bad origin', () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+
+    renderHook(() => useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'] }))
+
+    act(() => {
+      dispatchMessage('https://evil.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[mcp-auth] message observed',
+      expect.objectContaining({
+        origin: 'https://evil.example.com',
+        expectedApiOrigin: 'https://api.example.com',
+        authConfigId: 'auth-1',
+        tracked: true,
+      })
+    )
+
+    infoSpy.mockRestore()
+  })
 })

@@ -56,6 +56,14 @@ const updateRowByAuthConfigId = (
 ): MCPAuthGateServer[] =>
   rows.map((row) => (row.auth_config_id === authConfigId ? mutate(row) : row))
 
+const safeOrigin = (url: string): string | null => {
+  try {
+    return new URL(url).origin
+  } catch {
+    return null
+  }
+}
+
 export const useMCPAuthPrompt = ({
   onAllAuthenticated,
 }: UseMCPAuthPromptOptions): UseMCPAuthPromptResult => {
@@ -119,7 +127,12 @@ export const useMCPAuthPrompt = ({
           return
         }
 
-        window.open(payload.auth_url, '_blank')
+        const popup = window.open(payload.auth_url, '_blank')
+        console.info('[mcp-auth] opened auth tab', {
+          authUrlOrigin: safeOrigin(payload.auth_url),
+          windowOrigin: window.location.origin,
+          popupBlocked: popup === null,
+        })
         setRows((current) =>
           updateRow(current, mcpConfigId, (item) => ({
             ...item,
@@ -143,6 +156,11 @@ export const useMCPAuthPrompt = ({
       if (!pendingInitiate) return
 
       const popup = window.open(pendingInitiate.auth_url, '_blank')
+      console.info('[mcp-auth] opened auth tab', {
+        authUrlOrigin: safeOrigin(pendingInitiate.auth_url),
+        windowOrigin: window.location.origin,
+        popupBlocked: popup === null,
+      })
 
       setRows((current) =>
         updateRow(current, mcpConfigId, (row) => {

@@ -186,7 +186,29 @@ export const useAuthCallbackListener = ({
   useEffect(() => {
     const apiOrigin = getApiOrigin()
 
+    console.info('[mcp-auth] listener ready', {
+      apiOrigin,
+      windowOrigin: window.location.origin,
+    })
+
     const handleMessage = (event: MessageEvent) => {
+      // Diagnostics: surface any message that claims to be an auth callback, even if
+      // it is later dropped (bad shape, unexpected origin, or untracked id), so a lost
+      // postMessage is visible. Unrelated (non-callback) messages are still never logged.
+      const observed = event.data as Partial<AuthCallbackMessage> | undefined
+      if (observed?.type === AUTH_CALLBACK_EVENT_TYPE) {
+        console.info('[mcp-auth] message observed', {
+          origin: event.origin,
+          expectedApiOrigin: apiOrigin,
+          status: observed.status,
+          authConfigId: observed.auth_config_id,
+          shapeValid: isAuthCallbackMessage(event.data),
+          tracked: observed.auth_config_id
+            ? trackedIdsRef.current.has(observed.auth_config_id)
+            : false,
+        })
+      }
+
       // Inspect the message shape before the origin so unrelated cross-origin messages
       // are never logged; the origin is still verified before any state change below.
       if (!isAuthCallbackMessage(event.data)) return
