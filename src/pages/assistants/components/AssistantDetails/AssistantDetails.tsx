@@ -91,7 +91,7 @@ const AssistantDetails = ({
     const baseUrl = `${getRootPath()}/assistants`
 
     return {
-      assistantDetailsLink: getAssistantLink(assistant.id),
+      assistantDetailsLink: getAssistantLink(assistant),
       assistantChatLink: `${baseUrl}/${encodeURIComponent(assistant.slug || '')}/start`,
       assistantTemplateLink: `${baseUrl}/templates/${encodeURIComponent(assistant.slug || '')}`,
     }

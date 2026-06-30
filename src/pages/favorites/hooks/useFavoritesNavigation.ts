@@ -15,8 +15,9 @@
 
 import { useCallback } from 'react'
 
-import { ASSISTANT_DETAILS, SKILL_DETAILS } from '@/constants/routes'
+import { SKILL_DETAILS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
+import { getAssistantRoute } from '@/pages/assistants/utils/getAssistantLink'
 import { downloadSkillAsMarkdown } from '@/pages/skills/utils/skillUtils'
 import { skillsStore } from '@/store/skills'
 import { Assistant } from '@/types/entity/assistant'
@@ -27,7 +28,7 @@ export const useFavoritesNavigation = () => {
 
   const handleViewAssistant = useCallback(
     (assistant: Assistant) => {
-      router.push({ name: ASSISTANT_DETAILS, params: { id: assistant.id } })
+      router.push(getAssistantRoute(assistant))
     },
     [router]
   )

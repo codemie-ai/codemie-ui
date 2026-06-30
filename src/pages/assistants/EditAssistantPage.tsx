@@ -50,7 +50,7 @@ const EditAssistantPage = () => {
     currentRoute: { value: route },
   } = router
 
-  const { id } = route.params
+  const { id, slug, projectName } = route.params
 
   const formRef = useRef<AssistantFormRef>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -65,22 +65,31 @@ const EditAssistantPage = () => {
   }
 
   const handleSubmit = async (values, skipValidation = false) => {
-    return assistantsStore.updateAssistant(id as string, values, skipValidation)
+    const assistantId = (id as string) || assistant?.id
+    if (!assistantId) {
+      // Assistant didn't resolve (e.g. failed to load) — surface an error instead of
+      // resolving silently, which would make the user think the save succeeded.
+      toaster.error('Assistant is not loaded — cannot save. Please reload and try again.')
+      throw new Error('Cannot update assistant: id is missing')
+    }
+    return assistantsStore.updateAssistant(assistantId, values, skipValidation)
   }
 
   useEffect(() => {
     const fetchAssistantData = async () => {
       setIsLoading(true)
       try {
-        const assistant = await assistantsStore.getAssistant(id as string)
-        setAssistant(assistant)
+        const loaded = id
+          ? await assistantsStore.getAssistant(id as string)
+          : await assistantsStore.getAssistantBySlug(slug as string, false, projectName as string)
+        setAssistant(loaded)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchAssistantData()
-  }, [id])
+  }, [id, slug, projectName])
 
   return (
     <div className="flex h-full">

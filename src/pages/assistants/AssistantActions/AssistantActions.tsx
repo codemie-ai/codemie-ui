@@ -35,7 +35,7 @@ import { copyToClipboard } from '@/utils/utils'
 import ActionConfirmationModal from './components/ActionConfirmationModal'
 import AssistantMenu, { ActionItem } from './components/AssistantMenu'
 import PublishToMarketplaceModal from './components/PublishToMarketplaceModal'
-import { getAssistantLink } from '../utils/getAssistantLink'
+import { getAssistantEditRoute, getAssistantLink } from '../utils/getAssistantLink'
 
 interface AssistantActionsProps {
   assistant: Assistant
@@ -68,7 +68,7 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
     if (isRemoteAssistant) {
       router.push({ name: 'edit-remote-assistant', params: { id: assistant.id } })
     } else {
-      router.push({ name: 'edit-assistant', params: { id: assistant.id } })
+      router.push(getAssistantEditRoute(assistant))
     }
   }
 
@@ -92,7 +92,7 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
       icon: <CopyLinkSvg />,
       isVisible: true,
       onClick: () =>
-        copyToClipboard(getAssistantLink(assistant.id), 'Link to assistant copied to clipboard'),
+        copyToClipboard(getAssistantLink(assistant), 'Link to assistant copied to clipboard'),
     },
     {
       id: 'edit',

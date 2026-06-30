@@ -67,6 +67,8 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
   const [isLoading, setIsLoading] = useState(true)
   const [assistant, setAssistant] = useState<Assistant | null>(null)
   const assistantId = router.currentRoute.value.params.id as string
+  const slug = router.currentRoute.value.params.slug as string
+  const projectName = router.currentRoute.value.params.projectName as string
 
   const createChat = async (assistant) => {
     await chatsStore.startNewChat(assistant.id, assistant.name, false)
@@ -113,6 +115,9 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
           ? await assistantsStore.getAssistantTemplateBySlug(assistantId)
           : await assistantsStore.getAssistant(assistantId)
         setAssistant(assistantData)
+      } else if (slug) {
+        const assistantData = await assistantsStore.getAssistantBySlug(slug, false, projectName)
+        setAssistant(assistantData)
       }
     } catch (error) {
       console.error('Error loading assistant:', error)
@@ -124,7 +129,7 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
 
   useEffect(() => {
     loadAssistant()
-  }, [assistantId])
+  }, [assistantId, slug, projectName])
 
   return (
     <div className="flex h-full">

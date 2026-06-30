@@ -151,6 +151,22 @@ const AssistantSetupSection = ({
                   />
                 )}
               />
+
+              {/* Slug powers the human-readable assistant URL (/{project}/assistants/{slug}).
+                  Placed next to Name: it auto-fills from Name until edited manually. */}
+              <Controller
+                name="slug"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <SlugField
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    error={fieldState.error?.message}
+                    name={field.name}
+                  />
+                )}
+              />
             </div>
           </div>
 
@@ -292,21 +308,6 @@ const AssistantSetupSection = ({
                         rootClass="w-24"
                         error={fieldState.error?.message}
                         {...field}
-                      />
-                    )}
-                  />
-                </div>
-                <div className="max-w-80">
-                  <Controller
-                    name="slug"
-                    control={control}
-                    render={({ field, fieldState }) => (
-                      <SlugField
-                        value={field.value ?? ''}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        error={fieldState.error?.message}
-                        name={field.name}
                       />
                     )}
                   />

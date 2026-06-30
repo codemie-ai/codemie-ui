@@ -181,6 +181,19 @@ const assistantRoutes: RouteObject[] = [
     path: 'assistants/remote/:id/edit',
     Component: EditRemoteAssistantPage,
   },
+  // Human-readable routes, alongside the GUID routes above (both work). Least-specific under
+  // /assistants, so the static routes rank higher; getAssistantLink.tsx skips readable links
+  // for reserved project/slug values that would otherwise be shadowed.
+  {
+    id: 'assistant-by-slug',
+    path: 'assistants/:projectName/:slug',
+    Component: AssistantDetailsPage,
+  },
+  {
+    id: 'edit-assistant-by-slug',
+    path: 'assistants/:projectName/:slug/edit',
+    Component: EditAssistantPage,
+  },
   {
     id: 'start-assistant-chat',
     path: 'assistants/:slug/start',

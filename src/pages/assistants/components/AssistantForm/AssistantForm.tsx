@@ -229,15 +229,14 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       }
     )
 
-    const getSlugFromName = (name = '') => {
-      return (
-        name
-          // @ts-expect-error: Property 'replaceAll' does not exist on type 'string'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2021' or later.ts(2550)
-          .replaceAll(/\b\s+\b/g, '-')
-          .replace(/[^a-zA-Z0-9-]/g, '')
-          .toLowerCase()
-      )
-    }
+    // Mirror of the backend slugify (codemie.core.utils.slugify) so UI and server agree.
+    const getSlugFromName = (name = '') =>
+      name
+        .toLowerCase()
+        .replace(/[\s_]+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/(?:^-)|(?:-$)/g, '')
 
     const getCategoryIds = (categories?: AssistantCategory[]): string[] => {
       if (!categories || !Array.isArray(categories)) return []

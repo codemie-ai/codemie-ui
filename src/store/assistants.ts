@@ -85,7 +85,11 @@ interface AssistantsStoreType {
   getDefaultAssistant: () => Promise<void>
   loadAssistantTemplates: () => Promise<void>
   getAssistant: (id: string, skipErrorHandling?: boolean) => Promise<Assistant>
-  getAssistantBySlug: (slug: string, skipErrorHandling?: boolean) => Promise<Assistant>
+  getAssistantBySlug: (
+    slug: string,
+    skipErrorHandling?: boolean,
+    project?: string
+  ) => Promise<Assistant>
   doesAssistantBySlugExist: (slug: string) => Promise<boolean>
   getAssistantToolkits: () => Promise<AssistantToolkit[]>
   getHedgeableToolkits: () => Promise<AssistantToolkit[]>
@@ -343,9 +347,13 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     }
   },
 
-  async getAssistantBySlug(slug, skipErrorHandling = false) {
+  async getAssistantBySlug(slug, skipErrorHandling, project?: string) {
+    // Pass project so the slug resolves per-project; without it the backend uses the first match.
+    const query = project ? `?project=${encodeURIComponent(project)}` : ''
     return api
-      .get(`v1/assistants/slug/${encodeURIComponent(slug)}`, { skipErrorHandling })
+      .get(`v1/assistants/slug/${encodeURIComponent(slug)}${query}`, {
+        skipErrorHandling: !!skipErrorHandling,
+      })
       .then((response) => response.json() as unknown as Assistant)
   },
 

@@ -21,6 +21,9 @@ export interface FavoriteItem {
   icon_url: string
   name: string
   description: string
+  // For human-readable /assistants/{project}/{slug} links (assistant favorites).
+  slug?: string
+  project?: string
   type?: string
   is_global?: boolean | null
   shared?: boolean | null

@@ -157,10 +157,9 @@ describe('AssistantDetailsPage - Integration', () => {
 
       await user.click(screen.getByRole('button', { name: 'Edit' }))
 
-      expect(mockRouterState.push).toHaveBeenCalledWith({
-        name: 'edit-assistant',
-        params: { id: 'asst-123' },
-      })
+      // EPMCDME-10841: with a project+slug, Edit navigates via the human-readable URL
+      // (a string path) instead of the GUID route { name: 'edit-assistant', params: { id } }.
+      expect(mockRouterState.push).toHaveBeenCalledWith('/assistants/test-proj/test-assistant/edit')
     })
 
     it('navigates to create from template when Create Assistant clicked', async () => {

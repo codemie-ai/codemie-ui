@@ -24,6 +24,9 @@ export const ASSISTANTS_MARKETPLACE = 'assistants-marketplace'
 export const ASSISTANTS_FAVORITES = 'assistants-favorites'
 export const ASSISTANT_DETAILS = 'assistant'
 export const ASSISTANT_TEMPLATE_DETAILS = 'assistant-template'
+// Human-readable URL routes: /assistants/{project}/{slug}[/edit]
+export const ASSISTANT_BY_SLUG = 'assistant-by-slug'
+export const EDIT_ASSISTANT_BY_SLUG = 'edit-assistant-by-slug'
 
 export const NEW_WORKFLOW = 'new-workflow'
 export const NEW_WORKFLOW_FROM_TEMPLATE = 'new-workflow-from-template'

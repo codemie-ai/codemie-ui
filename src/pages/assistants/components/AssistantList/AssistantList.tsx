@@ -17,13 +17,14 @@ import React from 'react'
 import { useSnapshot } from 'valtio'
 
 import Spinner from '@/components/Spinner'
-import { ASSISTANT_DETAILS, ASSISTANT_TEMPLATE_DETAILS } from '@/constants/routes'
+import { ASSISTANT_TEMPLATE_DETAILS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { useAssistants } from '@/pages/assistants/hooks/useAssistants'
 import { userStore } from '@/store'
 import { Assistant } from '@/types/entity/assistant'
 
 import AssistantGrid from './AssistantGrid/AssistantGrid'
+import { getAssistantRoute } from '../../utils/getAssistantLink'
 
 interface AssistantsListProps {
   exportAssistant?: (assistant: Assistant) => void
@@ -59,7 +60,7 @@ const AssistantsList: React.FC<AssistantsListProps> = ({
     if (isTemplate) {
       router.push({ name: ASSISTANT_TEMPLATE_DETAILS, params: { id: assistant.slug } })
     } else {
-      router.push({ name: ASSISTANT_DETAILS, params: { id: assistant.id } })
+      router.push(getAssistantRoute(assistant))
     }
   }
 

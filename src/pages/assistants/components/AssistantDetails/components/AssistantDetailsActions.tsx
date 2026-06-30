@@ -35,6 +35,7 @@ import { canEdit } from '@/utils/entity'
 import { cn } from '@/utils/utils'
 
 import AssistantActions from '../../../AssistantActions/AssistantActions'
+import { getAssistantEditRoute } from '../../../utils/getAssistantLink'
 
 interface AssistantDetailsActionsProps {
   isTemplate?: boolean
@@ -68,7 +69,7 @@ const AssistantDetailsActions = ({
     if (isRemoteAssistant) {
       router.push({ name: 'edit-remote-assistant', params: { id: assistant.id } })
     } else {
-      router.push({ name: 'edit-assistant', params: { id: assistant.id } })
+      router.push(getAssistantEditRoute(assistant))
     }
   }
 
