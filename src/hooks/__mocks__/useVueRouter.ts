@@ -80,3 +80,7 @@ export const useVueRouter = vi.fn(() => mockRouterState)
 
 // Alias for tests that import mockRouter instead of mockRouterState
 export const mockRouter = mockRouterState
+
+// Named export matching production `import { router } from '@/hooks/useVueRouter'`
+// used by navigateBack() in utils/helpers.ts
+export const router = mockRouterState

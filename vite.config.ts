@@ -92,7 +92,7 @@ export default defineConfig(({ mode }) => {
       globals: true,
       coverage: {
         provider: 'istanbul',
-        reporter: ['text', 'lcov'],
+        reporter: ['text', 'lcov', 'html'],
         exclude: [
           ...coverageConfigDefaults.exclude,
           '**/__tests__/**',

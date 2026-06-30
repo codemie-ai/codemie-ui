@@ -140,6 +140,7 @@ const AssistantDetailsActions = ({
             {isReactionsVisible && (
               <div className="h-7 flex items-center bg-surface-base-secondary relative border border-border-quaternary rounded-lg text-text-accent">
                 <button
+                  aria-label={reaction === AssistantReaction.LIKE ? 'Remove like' : 'Like'}
                   className="px-3 transition opacity-80 hover:opacity-100"
                   onClick={(e) => handleReactionToggle(e, AssistantReaction.LIKE)}
                 >
@@ -151,6 +152,7 @@ const AssistantDetailsActions = ({
                 </button>
                 <div className="h-3 w-px bg-text-quaternary" />
                 <button
+                  aria-label={reaction === AssistantReaction.DISLIKE ? 'Remove dislike' : 'Dislike'}
                   className="px-3 transition opacity-80 hover:opacity-100"
                   onClick={(e) => handleReactionToggle(e, AssistantReaction.DISLIKE)}
                 >
