@@ -205,7 +205,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
         },
       ].filter((definition) => {
         if (scope === WORKFLOW_LIST_SCOPE.TEMPLATES) {
-          return definition.name === CREATED_BY
+          return false
         }
         if (scope === 'marketplace') {
           return definition.name === 'categories' || definition.name === CREATED_BY

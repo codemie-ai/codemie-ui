@@ -95,38 +95,4 @@ describe('WorkflowTemplates', () => {
     render(<WorkflowTemplates />)
     expect(screen.getByText(/no templates found/i)).toBeInTheDocument()
   })
-
-  it('filters templates by created_by name', async () => {
-    const { workflowsStore } = await import('@/store/workflows')
-    ;(workflowsStore as any).workflowTemplates = [
-      makeTemplate({ id: '1', name: 'Alpha', created_by: { name: 'Alice', username: 'alice' } }),
-      makeTemplate({
-        id: '2',
-        slug: 'beta',
-        name: 'Beta',
-        created_by: { name: 'Bob', username: 'bob' },
-      }),
-    ]
-    ;(workflowsStore as any).workflowsFilters = { created_by: 'Alice' }
-    render(<WorkflowTemplates />)
-    expect(screen.getAllByTestId('workflow-card')).toHaveLength(1)
-    expect(screen.getByText('Alpha')).toBeInTheDocument()
-  })
-
-  it('filters templates by created_by username', async () => {
-    const { workflowsStore } = await import('@/store/workflows')
-    ;(workflowsStore as any).workflowTemplates = [
-      makeTemplate({ id: '1', name: 'Alpha', created_by: { name: 'Alice', username: 'alice' } }),
-      makeTemplate({
-        id: '2',
-        slug: 'beta',
-        name: 'Beta',
-        created_by: { name: 'Bob', username: 'bob' },
-      }),
-    ]
-    ;(workflowsStore as any).workflowsFilters = { created_by: 'bob' }
-    render(<WorkflowTemplates />)
-    expect(screen.getAllByTestId('workflow-card')).toHaveLength(1)
-    expect(screen.getByText('Beta')).toBeInTheDocument()
-  })
 })

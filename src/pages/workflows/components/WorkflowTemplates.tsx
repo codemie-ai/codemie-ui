@@ -53,13 +53,6 @@ const WorkflowTemplates: React.FC = () => {
       ) {
         return false
       }
-      if (
-        workflowsFilters.created_by &&
-        template.created_by?.name !== workflowsFilters.created_by &&
-        template.created_by?.username !== workflowsFilters.created_by
-      ) {
-        return false
-      }
       return true
     })
   }, [workflowTemplates, workflowsFilters])

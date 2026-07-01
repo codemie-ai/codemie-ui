@@ -171,10 +171,10 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
           },
         },
       ].filter((definition) => {
-        if (
-          activeScope === ASSISTANT_INDEX_SCOPES.MARKETPLACE ||
-          activeScope === ASSISTANT_INDEX_SCOPES.TEMPLATES
-        ) {
+        if (activeScope === ASSISTANT_INDEX_SCOPES.TEMPLATES) {
+          return false
+        }
+        if (activeScope === ASSISTANT_INDEX_SCOPES.MARKETPLACE) {
           return definition.name === CREATED_BY || definition.name === CATEGORIES
         }
         return definition
@@ -217,13 +217,10 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
 
   useEffect(() => {
     const loadData = async () => {
-      if (
-        activeScope === ASSISTANT_INDEX_SCOPES.MARKETPLACE ||
-        activeScope === ASSISTANT_INDEX_SCOPES.TEMPLATES
-      ) {
+      if (activeScope === ASSISTANT_INDEX_SCOPES.MARKETPLACE) {
         assistantsStore.getAssistantCategories()
         await loadCreatedByOptions()
-      } else {
+      } else if (activeScope !== ASSISTANT_INDEX_SCOPES.TEMPLATES) {
         await loadProjectOptions('')
         await loadCreatedByOptions()
       }
