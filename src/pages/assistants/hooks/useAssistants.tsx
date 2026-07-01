@@ -21,7 +21,7 @@ import { assistantsStore } from '@/store/assistants'
 import { favoritesStore } from '@/store/favorites'
 import { FavoritesFilters } from '@/types/entity/favorites'
 
-export const useAssistants = (isTemplate?: boolean) => {
+export const useAssistants = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentScope, setCurrentScope] = useState('')
@@ -57,8 +57,6 @@ export const useAssistants = (isTemplate?: boolean) => {
             perPage
           )
         }
-      } else if (isTemplate) {
-        await assistantsStore.loadAssistantTemplates()
       } else {
         await assistantsStore.indexAssistants(
           scope,

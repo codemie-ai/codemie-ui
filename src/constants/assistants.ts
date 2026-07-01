@@ -56,6 +56,7 @@ export const ASSISTANT_INDEX_SCOPES = {
   PROJECT_WITH_MARKETPLACE: 'project_with_marketplace',
   VISIBLE_TO_USER: 'visible_to_user',
   MARKETPLACE: 'marketplace',
+  TEMPLATES: 'templates',
   NONE: 'none',
   ALL: 'all',
   FAVORITES: 'favorites',

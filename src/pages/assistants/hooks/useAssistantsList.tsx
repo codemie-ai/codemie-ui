@@ -29,7 +29,7 @@ interface UseAssistantsListProps {
 export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProps) => {
   const router = useVueRouter()
   const route = useVueRoute()
-  const { loadAssistants, pagination, assistants, loading } = useAssistants(false)
+  const { loadAssistants, pagination, assistants, loading } = useAssistants()
 
   const { perPage, totalPages } = pagination
 

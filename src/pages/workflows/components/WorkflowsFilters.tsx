@@ -50,6 +50,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   const router = useVueRouter()
   const route = useVueRoute()
   const { assistantCategories } = useSnapshot(assistantsStore)
+  const { workflowTemplates } = useSnapshot(workflowsStore)
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [isCreatedByMeChecked, setIsCreatedByMeChecked] = useState(false)
@@ -107,7 +108,11 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   }, [])
 
   useEffect(() => {
-    if (scope === 'marketplace') {
+    if (scope === WORKFLOW_LIST_SCOPE.TEMPLATES) {
+      if (!workflowsStore.workflowsTemplatesLoaded && !workflowsStore.workflowsTemplatesLoading) {
+        workflowsStore.indexWorkflowTemplates()
+      }
+    } else if (scope === 'marketplace') {
       assistantsStore.getAssistantCategories()
       loadCreatedByOptions(true)
     } else {
@@ -117,6 +122,22 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       }
     }
   }, [loadProjectOptions, loadCreatedByOptions, scope])
+
+  useEffect(() => {
+    if (scope !== WORKFLOW_LIST_SCOPE.TEMPLATES) return
+    const seen = new Map<string, FilterOption>()
+    for (const t of workflowTemplates) {
+      const author = (t as any).created_by
+      if (author?.name && !seen.has(author.name)) {
+        seen.set(author.name, {
+          label: createdBy(author),
+          value: author.name,
+          id: author.username ?? '',
+        })
+      }
+    }
+    setCreatedByOptions(Array.from(seen.values()))
+  }, [workflowTemplates, scope])
 
   useEffect(() => {
     if (!onApply) {
@@ -183,12 +204,11 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
           },
         },
       ].filter((definition) => {
+        if (scope === WORKFLOW_LIST_SCOPE.TEMPLATES) {
+          return definition.name === CREATED_BY
+        }
         if (scope === 'marketplace') {
-          return (
-            definition.name === 'categories' ||
-            definition.name === 'name' ||
-            definition.name === CREATED_BY
-          )
+          return definition.name === 'categories' || definition.name === CREATED_BY
         }
         if (definition.name === 'categories') {
           return false
@@ -236,11 +256,14 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
         },
       })
 
-      const perPage = route.query.perPage ? Number(route.query.perPage) : undefined
-      workflowsStore.setWorkflowsPagination(0, perPage)
       workflowsStore.setWorkflowsFilters(filters)
       setFilters<WorkflowsFilters>(`${FILTER_ENTITY.WORKFLOWS}.${scope}`, filters)
-      workflowsStore.indexWorkflows()
+
+      if (scope !== WORKFLOW_LIST_SCOPE.TEMPLATES) {
+        const perPage = route.query.perPage ? Number(route.query.perPage) : undefined
+        workflowsStore.setWorkflowsPagination(0, perPage)
+        workflowsStore.indexWorkflows()
+      }
     },
     [router, route, scope, onApply]
   )

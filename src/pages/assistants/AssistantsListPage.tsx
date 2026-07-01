@@ -47,7 +47,7 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
   const scopeByTab = {
     [AssistantTab.ALL]: ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER,
     [AssistantTab.MARKETPLACE]: ASSISTANT_INDEX_SCOPES.MARKETPLACE,
-    [AssistantTab.TEMPLATES]: ASSISTANT_INDEX_SCOPES.NONE,
+    [AssistantTab.TEMPLATES]: ASSISTANT_INDEX_SCOPES.TEMPLATES,
     [AssistantTab.FAVORITES]: ASSISTANT_INDEX_SCOPES.FAVORITES,
   }
   const appInfo = useSnapshot(appInfoStore)
@@ -55,7 +55,7 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
   const activeScope = scopeByTab[currentTabId] || ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER
   const isTemplate = currentTabId === AssistantTab.TEMPLATES
   const isFavorites = currentTabId === AssistantTab.FAVORITES
-  const { loadAssistants: loadTemplates, loading: loadingTemplates } = useAssistants(true)
+  const { loadAssistants: loadTemplates, loading: loadingTemplates } = useAssistants()
   const { filters, handleFilterChange } = useAssistantFilters({ scope: activeScope })
 
   const [showExportPopup, setShowExportPopup] = useState(false)
@@ -119,7 +119,7 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
 
   useEffect(() => {
     if (isTemplate) {
-      loadTemplates({})
+      loadTemplates({ scope: activeScope, filters, perPage: 1000 })
     } else {
       const isInitialLoad = isInitialMountRef.current
 

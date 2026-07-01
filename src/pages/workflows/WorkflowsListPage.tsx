@@ -52,7 +52,8 @@ const WorkflowsListPage: React.FC<WorkflowsListPageProps> = ({ scope, isFavorite
     isFavorites ||
     scope === WORKFLOW_LIST_SCOPE.ALL ||
     scope === WORKFLOW_LIST_SCOPE.MY ||
-    scope === WORKFLOW_LIST_SCOPE.MARKETPLACE
+    scope === WORKFLOW_LIST_SCOPE.MARKETPLACE ||
+    scope === WORKFLOW_LIST_SCOPE.TEMPLATES
 
   return (
     <div className="flex h-full">

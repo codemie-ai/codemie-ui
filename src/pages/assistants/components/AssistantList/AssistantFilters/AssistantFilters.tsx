@@ -88,7 +88,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   const loadCreatedByOptions = useCallback(async () => {
     try {
       const users = await userStore.loadAssistantsUsers({
-        scope: ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER,
+        scope: activeScope,
       })
       const options = users.map((user: any) => ({
         label: createdBy(user),
@@ -167,7 +167,10 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
           },
         },
       ].filter((definition) => {
-        if (activeScope === ASSISTANT_INDEX_SCOPES.MARKETPLACE) {
+        if (
+          activeScope === ASSISTANT_INDEX_SCOPES.MARKETPLACE ||
+          activeScope === ASSISTANT_INDEX_SCOPES.TEMPLATES
+        ) {
           return definition.name === CREATED_BY || definition.name === CATEGORIES
         }
         return definition
@@ -210,11 +213,19 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
 
   useEffect(() => {
     const loadData = async () => {
-      await loadProjectOptions('')
-      await loadCreatedByOptions()
+      if (
+        activeScope === ASSISTANT_INDEX_SCOPES.MARKETPLACE ||
+        activeScope === ASSISTANT_INDEX_SCOPES.TEMPLATES
+      ) {
+        assistantsStore.getAssistantCategories()
+        await loadCreatedByOptions()
+      } else {
+        await loadProjectOptions('')
+        await loadCreatedByOptions()
+      }
     }
     loadData()
-  }, [loadProjectOptions, loadCreatedByOptions])
+  }, [activeScope, loadProjectOptions, loadCreatedByOptions])
 
   return (
     <Filters

@@ -210,13 +210,17 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     return api.get(url).then((response) => {
       return response.json().then((result) => {
         const { data, pagination } = result
-        assistantsStore.assistants = data
         assistantsStore.assistantsPagination = {
           page: pagination.page,
           perPage: pagination.per_page,
           totalPages: pagination.pages,
           totalCount: pagination.total,
         }
+        if (scope === ASSISTANT_INDEX_SCOPES.TEMPLATES) {
+          assistantsStore.assistantTemplates = data as unknown as AssistantTemplate[]
+          return data
+        }
+        assistantsStore.assistants = data
         if (saveFilters) {
           setFilters(`${FILTER_ENTITY.ASSISTANTS}.${scope}`, filters)
         }
@@ -235,7 +239,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
         assistantsStore.updateAssistantsWithLikedStatus().catch((error) => {
           console.error('Error updating likes for assistants:', error)
         })
-        return data
+        return assistantsStore.assistants
       })
     })
   },

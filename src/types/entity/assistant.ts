@@ -198,7 +198,8 @@ export interface AssistantTemplate {
   top_p?: number
   frequency_penalty?: number
   presence_penalty?: number
-  category?: string
+  categories?: AssistantCategory[]
+  created_by?: { name?: string; username?: string; id?: string } | null
   tags?: string[]
   version?: string
 }

@@ -53,6 +53,7 @@ interface WorkflowsStore {
   workflowsFilters: WorkflowsFilters
   workflowsLoading: boolean
   workflowsTemplatesLoading: boolean
+  workflowsTemplatesLoaded: boolean
   workflowTemplates: WorkflowTemplate[]
   workflowTemplate: WorkflowTemplate | null
   workflowTemplateLoading: boolean
@@ -119,6 +120,7 @@ export const workflowsStore = proxy<WorkflowsStore>({
   workflowsFilters: { ...INITIAL_WORKFLOWS_FILTERS },
   workflowsLoading: true,
   workflowsTemplatesLoading: true,
+  workflowsTemplatesLoaded: false,
   workflowTemplates: [],
   workflowTemplate: null,
   workflowTemplateLoading: false,
@@ -206,12 +208,13 @@ export const workflowsStore = proxy<WorkflowsStore>({
     return response.json()
   },
 
-  async indexWorkflowTemplates() {
+  async indexWorkflowTemplates(this: WorkflowsStore) {
     this.workflowsTemplatesLoading = true
     try {
       const response = await api.get('v1/workflows/prebuilt')
       const data = await response.json()
       this.workflowTemplates = data
+      this.workflowsTemplatesLoaded = true
     } finally {
       this.workflowsTemplatesLoading = false
     }

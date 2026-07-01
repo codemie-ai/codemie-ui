@@ -43,15 +43,11 @@ const AssistantsList: React.FC<AssistantsListProps> = ({
 }) => {
   const router = useVueRouter()
   const { user } = useSnapshot(userStore) as typeof userStore
-  const {
-    assistants: fetchedAssistants = [],
-    assistantTemplates,
-    pagination,
-  } = useAssistants(isTemplate)
+  const { assistants: fetchedAssistants = [], assistantTemplates, pagination } = useAssistants()
   const assistants = assistantsProp ?? fetchedAssistants
+
   const getTotalCount = () => {
     if (assistantsProp) return assistantsProp.length
-    if (isTemplate) return assistantTemplates?.length
     return pagination?.totalCount
   }
   const totalCount = getTotalCount()
