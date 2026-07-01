@@ -87,8 +87,12 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
 
   const loadCreatedByOptions = useCallback(async () => {
     try {
+      const scopeForUsers =
+        activeScope === ASSISTANT_INDEX_SCOPES.FAVORITES
+          ? ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER
+          : activeScope
       const users = await userStore.loadAssistantsUsers({
-        scope: activeScope,
+        scope: scopeForUsers,
       })
       const options = users.map((user: any) => ({
         label: createdBy(user),
