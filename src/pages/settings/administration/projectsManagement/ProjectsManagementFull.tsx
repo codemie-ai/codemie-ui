@@ -550,6 +550,7 @@ const ProjectsManagementFull: FC = () => {
                   value={budgetAssignmentFilter}
                   onChangeValue={(value) => setBudgetAssignmentFilter(value ?? 'all')}
                   options={budgetAssignmentFilterOptions}
+                  appendTo={document.body}
                 />
               </div>
               <div className="w-48">
@@ -560,6 +561,7 @@ const ProjectsManagementFull: FC = () => {
                   value={budgetCategory}
                   onChangeValue={(value) => setBudgetCategory((value ?? '') as BudgetCategory | '')}
                   options={budgetCategoryFilterOptions}
+                  appendTo={document.body}
                 />
               </div>
             </>
