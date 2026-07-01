@@ -212,7 +212,7 @@ const Table = <T,>({
         <Pagination
           {...paginationProps}
           className={cn(
-            'fixed bottom-0 right-0 bg-surface-base-primary max-w-full px-6 pt-[20px] pb-[14px] transition-all duration-150',
+            'fixed bottom-0 right-0 bg-surface-base-primary max-w-full px-6 pt-[20px] pb-[14px] transition-all duration-150 z-40',
             paginationOffset
           )}
         />

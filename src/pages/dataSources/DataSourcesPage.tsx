@@ -24,6 +24,7 @@ import Table from '@/components/Table'
 import { TableProps } from '@/components/Table/Table'
 import Tooltip from '@/components/Tooltip'
 import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
+import { useAbortController } from '@/hooks/useAbortController'
 import { useTableFilters } from '@/hooks/useTableFilters'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import {
@@ -45,6 +46,7 @@ const REFRESH_TIMEOUT = 5000
 const DataSourcesPage = () => {
   const { push } = useVueRouter()
   const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { execute } = useAbortController()
 
   const { indexStatuses, indexStatusesPagination, getIndexesStatuses, loading } = useSnapshot(
     dataSourceStore
@@ -62,20 +64,25 @@ const DataSourcesPage = () => {
         clearTimeout(fetchTimeoutRef.current)
       }
 
-      await getIndexesStatuses(
-        pagination.page,
-        activeFilters,
-        pagination.perPage,
-        sort.sortKey,
-        sort.sortOrder,
-        isRefresh
+      const result = await execute((signal) =>
+        getIndexesStatuses({
+          page: pagination.page,
+          filters: activeFilters,
+          perPage: pagination.perPage,
+          sortKey: sort.sortKey,
+          sortOrder: sort.sortOrder,
+          isRefresh,
+          signal,
+        })
       )
+
+      if (result === null) return
 
       fetchTimeoutRef.current = setTimeout(() => {
         getStatuses(true)
       }, REFRESH_TIMEOUT)
     },
-    [pagination, sort, getIndexesStatuses]
+    [pagination, sort, getIndexesStatuses, execute]
   )
 
   const handleOpenCreatePage = useCallback(() => {

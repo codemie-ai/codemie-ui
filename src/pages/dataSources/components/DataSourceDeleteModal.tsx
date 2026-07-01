@@ -43,7 +43,6 @@ const DataSourceDeleteModal: FC<DataSourceDeleteModalProps> = ({
 
   useEffect(() => {
     const controller = new AbortController()
-    console.log('DataSourceDeleteModal useEffect triggered with visible:', visible)
     if (visible) {
       showAssistantsWithGivenContext(item.id).then((result) => {
         if (!controller.signal.aborted) {

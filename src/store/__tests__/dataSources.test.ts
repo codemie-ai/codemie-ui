@@ -16,6 +16,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { dataSourceStore } from '@/store/dataSources'
+import api from '@/utils/api'
 import { HttpError } from '@/utils/handleMultipartError'
 
 const mockPutMultipart = vi.fn()
@@ -225,5 +226,96 @@ describe('dataSourceStore.updateKBIndexFiles', () => {
     })
 
     expect(mockToasterError).toHaveBeenCalledWith('Failed to update file datasource')
+  })
+})
+
+describe('dataSourceStore.getIndexesStatuses', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    dataSourceStore.loading = false
+    dataSourceStore.indexStatuses = []
+    dataSourceStore.indexStatusesPagination = {
+      page: 0,
+      perPage: 10,
+      totalPages: 0,
+      totalCount: 0,
+    }
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('should throw AbortError on abort', async () => {
+    const abortError = new DOMException('The operation was aborted', 'AbortError')
+    vi.spyOn(api, 'get').mockRejectedValue(abortError)
+
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(
+      dataSourceStore.getIndexesStatuses({
+        page: 0,
+        filters: {},
+        perPage: 10,
+        sortKey: 'date',
+        sortOrder: 'desc',
+        isRefresh: false,
+        signal: controller.signal,
+      })
+    ).rejects.toMatchObject({
+      name: 'AbortError',
+      message: 'The operation was aborted',
+    })
+  })
+
+  it('should pass signal to api.get when provided', async () => {
+    const mockResponse = {
+      status: 200,
+      json: async () => ({
+        data: [{ id: '1', repo_name: 'test' }],
+        pagination: { page: 0, per_page: 10, pages: 1, total: 1 },
+      }),
+    }
+    const getSpy = vi.spyOn(api, 'get').mockResolvedValue(mockResponse as any)
+
+    const controller = new AbortController()
+    await dataSourceStore.getIndexesStatuses({
+      page: 0,
+      filters: {},
+      perPage: 10,
+      sortKey: 'date',
+      sortOrder: 'desc',
+      isRefresh: false,
+      signal: controller.signal,
+    })
+
+    expect(getSpy).toHaveBeenCalledWith(
+      expect.stringContaining('v1/index?page=0'),
+      expect.objectContaining({ signal: controller.signal })
+    )
+  })
+
+  it('should work without signal parameter (backward compatibility)', async () => {
+    const mockResponse = {
+      status: 200,
+      json: async () => ({
+        data: [{ id: '1', repo_name: 'test' }],
+        pagination: { page: 0, per_page: 10, pages: 1, total: 1 },
+      }),
+    }
+    vi.spyOn(api, 'get').mockResolvedValue(mockResponse as any)
+
+    await dataSourceStore.getIndexesStatuses({
+      page: 0,
+      filters: {},
+      perPage: 10,
+      sortKey: 'date',
+      sortOrder: 'desc',
+      isRefresh: false,
+    })
+
+    expect(dataSourceStore.indexStatuses).toHaveLength(1)
+    expect(dataSourceStore.loading).toBe(false)
   })
 })

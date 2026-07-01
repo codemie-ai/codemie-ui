@@ -134,16 +134,30 @@ export const dataSourceStore = proxy({
   indexProviderSchemas: [] as DataProvider[],
 
   async getIndexesStatuses(
-    page: number | null | undefined = 0,
-    filters = {},
-    perPage: number | null | undefined = 10,
-    sortKey: string | null | undefined = DEFAULT_SORT_KEY,
-    sortOrder: string | null | undefined = DEFAULT_SORT_ORDER,
-    isRefresh: boolean = false
+    options: {
+      page?: number | null
+      filters?: object
+      perPage?: number | null
+      sortKey?: string | null
+      sortOrder?: string | null
+      isRefresh?: boolean
+      signal?: AbortSignal
+    } = {}
   ) {
+    const {
+      page = 0,
+      filters = {},
+      perPage = DEFAULT_PER_PAGE,
+      sortKey = DEFAULT_SORT_KEY,
+      sortOrder = DEFAULT_SORT_ORDER,
+      isRefresh = false,
+      signal,
+    } = options
+
     if (!isRefresh) {
       dataSourceStore.loading = true
     }
+
     const filterParams = makeCleanObject(filters) as {
       start_date: string
       end_date: string
@@ -167,9 +181,10 @@ export const dataSourceStore = proxy({
       `&sort_key=${sortKey}` +
       `&sort_order=${sortOrder}`
 
-    const response = await api.get(statusLink)
+    const response = await api.get(statusLink, { signal })
     if (response.status !== 200) throw Error()
     const result = await response.json()
+
     const { data, pagination } = result as DatasetResponse
 
     dataSourceStore.indexStatuses = data
