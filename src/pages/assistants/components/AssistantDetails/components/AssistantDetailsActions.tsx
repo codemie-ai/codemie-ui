@@ -185,7 +185,7 @@ const AssistantDetailsActions = ({
                   onToggle={() =>
                     isFavorited
                       ? setShowRemoveFavorite(true)
-                      : (favoritesStore.addFavorite('assistant', assistant.id),
+                      : (favoritesStore.addFavorite('assistant', assistant.id, assistant.name),
                         setIsFavorited(true))
                   }
                 />

@@ -1140,15 +1140,15 @@ describe('NewAssistantPage - Integration', () => {
 
     it('shows validation error for invalid logo URL on blur', async () => {
       renderPage('/assistants/new')
+      mockAPI('GET', 'v1/user', userWithProject)
 
       await waitFor(() => {
         expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+        expect(screen.getByText('test-project')).toBeInTheDocument()
       })
 
-      await user.type(
-        screen.getByPlaceholderText('https://example.com/logo.jpg'),
-        'not-a-valid-url'
-      )
+      const logoInput = await screen.findByPlaceholderText('https://example.com/logo.jpg')
+      await user.type(logoInput, 'not-a-valid-url')
       await user.click(screen.getByPlaceholderText('Name*'))
 
       await waitFor(() => {

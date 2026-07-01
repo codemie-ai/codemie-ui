@@ -13,7 +13,14 @@
 // limitations under the License.
 //
 
-export type ResourceType = 'assistant' | 'workflow' | 'skill'
+export const ResourceType = {
+  ASSISTANT: 'assistant',
+  WORKFLOW: 'workflow',
+  SKILL: 'skill',
+} as const
+
+export type ResourceType = (typeof ResourceType)[keyof typeof ResourceType]
+
 export type FavoriteFilter = 'all' | ResourceType
 
 export interface FavoriteItem {

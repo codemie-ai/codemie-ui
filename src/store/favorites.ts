@@ -108,7 +108,11 @@ interface FavoritesStoreType {
     isDisliked: boolean,
     result?: { like_count?: number; dislike_count?: number }
   ) => void
-  addFavorite: (resourceType: ResourceType, resourceId: string) => Promise<void>
+  addFavorite: (
+    resourceType: ResourceType,
+    resourceId: string,
+    resourceName?: string
+  ) => Promise<void>
   removeFavorite: (resourceType: ResourceType, resourceId: string) => Promise<void>
 }
 
@@ -257,7 +261,7 @@ export const favoritesStore = proxy<FavoritesStoreType>({
     }
   },
 
-  async addFavorite(resourceType: ResourceType, resourceId: string) {
+  async addFavorite(resourceType: ResourceType, resourceId: string, resourceName?: string) {
     const { userId } = userStore.user!
     const current = preferencesStore.preferences?.favorites ?? { ...EMPTY_FAVORITES }
     const key: FavoritesListKey = `${resourceType}s` as FavoritesListKey
@@ -269,11 +273,12 @@ export const favoritesStore = proxy<FavoritesStoreType>({
       return
     }
     setFavoritedInStore(resourceType, resourceId, true)
-    let found: { name?: string } | undefined
-    if (resourceType === 'assistant')
-      found = assistantsStore.assistants.find((a) => a.id === resourceId)
-    else if (resourceType === 'skill') found = skillsStore.skills.find((s) => s.id === resourceId)
-    else found = workflowsStore.workflows.find((w) => w.id === resourceId)
+    const lookup = {
+      [ResourceType.ASSISTANT]: () => assistantsStore.assistants.find((a) => a.id === resourceId),
+      [ResourceType.SKILL]: () => skillsStore.skills.find((s) => s.id === resourceId),
+      [ResourceType.WORKFLOW]: () => workflowsStore.workflows.find((w) => w.id === resourceId),
+    }
+    const found = resourceName ? { name: resourceName } : lookup[resourceType]?.()
     toaster.success(`Added to favorites<br>${found?.name} has been added to your favorites`)
   },
 
