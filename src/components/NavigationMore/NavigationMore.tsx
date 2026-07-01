@@ -112,7 +112,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
                 type="button"
                 role="menuitem"
                 className={cn(
-                  'flex items-center gap-4 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:text-text-quaternary',
+                  'flex items-center gap-4 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed',
                   !item.disabled &&
                     'hover:bg-surface-specific-dropdown-hover hover:text-text-accent',
                   'focus:outline-none focus:ring-2 focus:ring-primary-500'
