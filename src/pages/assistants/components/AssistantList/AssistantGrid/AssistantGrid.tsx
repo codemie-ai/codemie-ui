@@ -54,11 +54,9 @@ const AssistantGrid: React.FC<AssistantGridProps> = ({
 
   if (assistantList.length === 0) {
     return (
-      <>
-        <div className="flex justify-center m-40">
-          <h2>No assistants found.</h2>
-        </div>
-      </>
+      <div className="flex justify-center m-40">
+        <h2>{isTemplate ? 'No templates found.' : 'No assistants found.'}</h2>
+      </div>
     )
   }
 
