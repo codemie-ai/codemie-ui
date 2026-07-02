@@ -30,12 +30,12 @@ interface SidebarNavigationProps {
 const SidebarNavigation: React.FC<SidebarNavigationProps> = ({ tabs, activeId = tabs[0]?.id }) => {
   const router = useVueRouter()
   const handleNavigation = (item: { id: string; url?: string }) => {
+    clearUrlFilters()
+
     if (item.url) {
       router.push(item.url)
       return
     }
-
-    clearUrlFilters()
 
     router.push({
       query: { ...router.currentRoute.value.query, tab: item.id },

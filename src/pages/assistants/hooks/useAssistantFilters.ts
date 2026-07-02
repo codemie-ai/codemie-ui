@@ -14,9 +14,11 @@
 //
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSnapshot } from 'valtio'
 
 import { FILTER_INITIAL_STATE } from '@/constants/assistants'
-import { FILTER_ENTITY, getFilters, setFilters } from '@/utils/filters'
+import { userStore } from '@/store/user'
+import { FILTER_ENTITY, getFilters, setFilters, updateUrlWithFilters } from '@/utils/filters'
 import { cleanObject } from '@/utils/helpers'
 
 interface UseAssistantFiltersProps {
@@ -45,6 +47,16 @@ export const useAssistantFilters = ({ scope }: UseAssistantFiltersProps) => {
 
   const [filterState, setFilterState] = useState(getSavedFilters())
 
+  // When scope changes, synchronously reset filterState to the new scope's saved filters.
+  // This prevents the parent's load-effect from firing once with the previous scope's stale
+  // state before the async useEffect below gets a chance to correct it (race condition where
+  // the wrong API call could resolve last and overwrite the correct results).
+  const [prevScope, setPrevScope] = useState(scope)
+  if (prevScope !== scope) {
+    setPrevScope(scope)
+    setFilterState(getSavedFilters())
+  }
+
   // Merge saved filters with initial state to ensure all keys exist
   const filters = useMemo(() => {
     const result = Object.keys(FILTER_INITIAL_STATE).reduce((result, key) => {
@@ -57,13 +69,22 @@ export const useAssistantFilters = ({ scope }: UseAssistantFiltersProps) => {
     }, {} as AssistantFilters)
     result[scope] = null
     return result
-  }, [filterState])
+  }, [filterState, scope])
 
-  // React to scope changes - reload filters when scope changes
+  // Re-read filters from storage once userId becomes available (handles initial page load
+  // where userStore.user is null at mount time and getFilters returns {} as a result).
+  // Also syncs the URL to reflect the restored filters so that ?search=value reappears
+  // after navigating away and back (clearUrlFilters strips it on navigation, so we restore it here).
+  const { user } = useSnapshot(userStore)
   useEffect(() => {
-    const newFilters = getSavedFilters()
-    setFilterState(newFilters)
-  }, [scope, getSavedFilters])
+    if (user?.userId) {
+      const saved = getSavedFilters()
+      setFilterState(saved)
+      if (Object.keys(saved).length > 0) {
+        updateUrlWithFilters(saved)
+      }
+    }
+  }, [user?.userId, getSavedFilters])
 
   // Handle filter changes
   const handleFilterChange = useCallback(

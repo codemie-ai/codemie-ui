@@ -216,6 +216,10 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     minimal_response = false,
     saveFilters = false
   ): Promise<Assistant[]> {
+    if (scope === ASSISTANT_INDEX_SCOPES.TEMPLATES) {
+      assistantsStore.assistantTemplates = []
+    }
+
     const url =
       `v1/assistants?page=${page}` +
       `&per_page=${per_page}` +

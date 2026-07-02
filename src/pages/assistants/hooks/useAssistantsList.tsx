@@ -18,6 +18,7 @@ import { useCallback } from 'react'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import { useAssistants } from '@/pages/assistants/hooks/useAssistants'
+import { router as hashRouter } from '@/router'
 
 const DEFAULT_PER_PAGE = 12
 
@@ -83,6 +84,7 @@ export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProp
   const loadAssistantsList = useCallback(
     async (options: { page?: number; perPage?: number } = {}, shouldLoadFromURL = false) => {
       const { page, perPage: newPerPage } = options
+      const pathAtCallTime = hashRouter.state.location.pathname
 
       // Determine which page and perPage to load
       let pageToLoad: number
@@ -106,7 +108,8 @@ export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProp
           minimalResponse: true,
         })
 
-        if (!isFavoritesScope) {
+        // Skip URL update if the user navigated away during the API call
+        if (!isFavoritesScope && hashRouter.state.location.pathname === pathAtCallTime) {
           updateURL(pageToLoad, perPageToLoad)
         }
       } catch (error) {

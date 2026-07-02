@@ -15,6 +15,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { assistantsStore, normalizeAssistant } from '@/store/assistants'
 import { Assistant } from '@/types/entity/assistant'
 
@@ -109,6 +110,56 @@ describe('assistantsStore', () => {
       // preserves the rest of the raw payload
       expect(result.id).toBe('a-1')
       expect(result.name).toBe('Root')
+    })
+  })
+
+  describe('indexAssistants', () => {
+    const mockPagination = { page: 0, per_page: 12, pages: 1, total: 2 }
+    const mockTemplates = [
+      { id: 't-1', name: 'Template One' },
+      { id: 't-2', name: 'Template Two' },
+    ]
+
+    it('clears assistantTemplates before fetching templates scope', async () => {
+      assistantsStore.assistantTemplates = [{ id: 'stale', name: 'Stale' }] as any
+
+      let snapshotDuringFetch: unknown[] | undefined
+      mockGet.mockImplementation(() => {
+        snapshotDuringFetch = [...assistantsStore.assistantTemplates]
+        return Promise.resolve({
+          json: () => Promise.resolve({ data: mockTemplates, pagination: mockPagination }),
+        })
+      })
+
+      await assistantsStore.indexAssistants(ASSISTANT_INDEX_SCOPES.TEMPLATES)
+
+      expect(snapshotDuringFetch).toEqual([])
+    })
+
+    it('sets assistantTemplates to API response after fetch', async () => {
+      mockGet.mockResolvedValue({
+        json: () => Promise.resolve({ data: mockTemplates, pagination: mockPagination }),
+      })
+
+      await assistantsStore.indexAssistants(ASSISTANT_INDEX_SCOPES.TEMPLATES)
+
+      expect(assistantsStore.assistantTemplates).toEqual(mockTemplates)
+    })
+
+    it('does not clear assistantTemplates for non-templates scope', async () => {
+      assistantsStore.assistantTemplates = [{ id: 'kept', name: 'Kept' }] as any
+
+      mockGet.mockResolvedValue({
+        json: () =>
+          Promise.resolve({
+            data: [],
+            pagination: mockPagination,
+          }),
+      })
+
+      await assistantsStore.indexAssistants(ASSISTANT_INDEX_SCOPES.ALL ?? 'all')
+
+      expect(assistantsStore.assistantTemplates).toEqual([{ id: 'kept', name: 'Kept' }])
     })
   })
 
