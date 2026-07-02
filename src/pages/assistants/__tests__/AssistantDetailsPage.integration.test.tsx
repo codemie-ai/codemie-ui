@@ -15,12 +15,31 @@
 
 import { screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
+import { findRouteObject, mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { history } from '@/hooks/appLevel/useHistoryStack'
+import { router as hashRouter, routes } from '@/router'
 import { userSettingsStore } from '@/store/userSettings'
 import { renderPage, mockAPI } from '@/test-utils/integration'
+
+type AppRoute = (typeof routes)[number]
+
+// Resolve real route objects (mirrors production findRouteObject) so navigateBack's
+// history-less fallback matches against the real /assistants route shapes.
+const resolveRealRoute = (routeId: string): AppRoute | undefined => {
+  const stack: AppRoute[] = [...routes]
+  let found: AppRoute | undefined
+  while (stack.length > 0 && !found) {
+    const route = stack.pop()!
+    if (route.id === routeId) {
+      found = route
+    } else if (route.children?.length) {
+      stack.push(...route.children)
+    }
+  }
+  return found
+}
 
 describe('AssistantDetailsPage - Integration', () => {
   const user = userEvent.setup()
@@ -157,7 +176,7 @@ describe('AssistantDetailsPage - Integration', () => {
 
       await user.click(screen.getByRole('button', { name: 'Edit' }))
 
-      // EPMCDME-10841: with a project+slug, Edit navigates via the human-readable URL
+      // With a project+slug, Edit navigates via the human-readable URL
       // (a string path) instead of the GUID route { name: 'edit-assistant', params: { id } }.
       expect(mockRouterState.push).toHaveBeenCalledWith('/assistants/test-proj/test-assistant/edit')
     })
@@ -349,6 +368,17 @@ describe('AssistantDetailsPage - Integration', () => {
   })
 
   describe('Navigation (Back Button)', () => {
+    const spyOnNavigate = () => vi.spyOn(hashRouter, 'navigate')
+    let navigateSpy: ReturnType<typeof spyOnNavigate> | undefined
+
+    afterEach(() => {
+      // Reset here (not inline at the end of a test) so a failing assertion can't leak the
+      // findRouteObject mock or the navigate spy into neighbouring tests.
+      navigateSpy?.mockRestore()
+      navigateSpy = undefined
+      findRouteObject.mockReset()
+    })
+
     it('calls router.back() when previous route is a different assistant-details page', async () => {
       // renderPage triggers useHistoryStack.updateStack() on mount, pushing one entry.
       // Set only the parent entry so after mount: stack=[parent, current], currentIndex=1,
@@ -384,6 +414,36 @@ describe('AssistantDetailsPage - Integration', () => {
 
       await user.click(screen.getByRole('button', { name: 'Back' }))
 
+      expect(mockRouterState.back).not.toHaveBeenCalled()
+    })
+
+    it('redirects to the assistants list in one click when opened via a human-readable slug URL without history', async () => {
+      // A details page opened directly via /assistants/{project}/{slug} has no
+      // history, so Back falls back to the parent route. It must land on the list in one click
+      // and must NOT resolve /assistants/{project} (a broken GUID URL that toasts an error).
+      findRouteObject.mockImplementation(resolveRealRoute)
+      // Drive the real hash router onto the slug route so navigateBack reads the correct current
+      // route, then spy on navigate (after the setup navigation so it isn't counted).
+      await hashRouter.navigate('/assistants/test-proj/test-assistant')
+      navigateSpy = spyOnNavigate()
+
+      const routeValue = mockRouterState.currentRoute.value as { params: Record<string, string> }
+      routeValue.params = { projectName: 'test-proj', slug: 'test-assistant' }
+
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants/slug/test-assistant', createAssistantFixture())
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/test-proj/test-assistant')
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Back' }))
+
+      expect(navigateSpy).toHaveBeenCalledWith('/assistants')
+      expect(navigateSpy).not.toHaveBeenCalledWith('/assistants/test-proj')
       expect(mockRouterState.back).not.toHaveBeenCalled()
     })
   })

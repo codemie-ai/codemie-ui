@@ -313,19 +313,28 @@ export const navigateBack = async (...allowedRoutesArgs: AllowedRoute[]): Promis
 
   // If no history found, try to navigate to parent route by path parameters
   const currentRoute = hashRouter.state.matches.at(-1)
+  const currentParams = currentRoute?.params ?? {}
 
   // @ts-expect-error: Property 'toReversed' does not exist on type 'string[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.ts(2550)
   for (const allowedRouteName of allowedRouteNames.toReversed()) {
     const allowedRouteObject = findRouteObject(allowedRouteName)
     if (allowedRouteObject) {
-      // Check if currente route is a sub path of the route object
-      const path = matchPath(
+      // Check if current route is a sub path of the route object
+      const match = matchPath(
         { path: allowedRouteObject.path!, end: false },
         currentRoute?.pathname ?? ''
-      )?.pathname
+      )
 
-      if (path && path !== currentRoute?.pathname) {
-        hashRouter.navigate(path)
+      // Skip sibling routes that only match by capturing a segment into a param the current
+      // route does not own (e.g. /assistants/:id prefix-matches /assistants/:projectName/:slug
+      // by treating {projectName} as :id). Navigating there would resolve a different page and
+      // fail to load. A genuine ancestor's captured params must also belong to the current route.
+      const isAncestor =
+        match !== null &&
+        Object.entries(match.params).every(([key, value]) => currentParams[key] === value)
+
+      if (isAncestor && match.pathname && match.pathname !== currentRoute?.pathname) {
+        hashRouter.navigate(match.pathname)
         return
       }
     }
