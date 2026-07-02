@@ -168,6 +168,22 @@ interface AssistantsStoreType {
 
 export const MAX_RECENT_ASSISTANTS = 3
 
+// Normalizes a raw assistant API response into the domain model:
+// maps snake_case nested_assistants to camelCase nestedAssistants and derives
+// the current user's pinned/favorited flags from preferences. Both the id- and
+// slug-based fetch paths run through this so their returned model stays identical.
+export function normalizeAssistant(raw: Assistant): Assistant {
+  const pinnedIds = preferencesStore.preferences?.pinned_assistants ?? []
+  const favoriteIds = new Set(preferencesStore.preferences?.favorites?.assistants ?? [])
+
+  return {
+    ...raw,
+    nestedAssistants: raw.nested_assistants,
+    is_pinned: pinnedIds.includes(raw.id),
+    is_favorited: favoriteIds.has(raw.id),
+  }
+}
+
 export const assistantsStore = proxy<AssistantsStoreType>({
   assistants: [],
   pinnedAssistants: [],
@@ -338,27 +354,23 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       .get(`v1/assistants/id/${id}`, { skipErrorHandling })
       .then((response) => response.json() as unknown as Assistant)
 
-    const pinnedIds = preferencesStore.preferences?.pinned_assistants ?? []
-    const favoriteIds = new Set(preferencesStore.preferences?.favorites?.assistants ?? [])
-
     // Return full nested assistants data including toolkits and mcp_servers
     // This allows SubAssistantUserMapping to configure integrations without additional API calls
-    return {
-      ...assistant,
-      nestedAssistants: assistant.nested_assistants,
-      is_pinned: pinnedIds.includes(assistant.id),
-      is_favorited: favoriteIds.has(assistant.id),
-    }
+    return normalizeAssistant(assistant)
   },
 
   async getAssistantBySlug(slug, skipErrorHandling, project?: string) {
     // Pass project so the slug resolves per-project; without it the backend uses the first match.
     const query = project ? `?project=${encodeURIComponent(project)}` : ''
-    return api
+    const assistant = await api
       .get(`v1/assistants/slug/${encodeURIComponent(slug)}${query}`, {
         skipErrorHandling: !!skipErrorHandling,
       })
       .then((response) => response.json() as unknown as Assistant)
+
+    // Keep the mapping symmetric with getAssistant so the slug-based Edit route
+    // initializes the same fields (e.g. nestedAssistants for the sub-assistant selector).
+    return normalizeAssistant(assistant)
   },
 
   async doesAssistantBySlugExist(slug: string) {

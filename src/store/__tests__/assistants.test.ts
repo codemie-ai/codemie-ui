@@ -15,7 +15,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { assistantsStore } from '@/store/assistants'
+import { assistantsStore, normalizeAssistant } from '@/store/assistants'
+import { Assistant } from '@/types/entity/assistant'
 
 const mockGet = vi.fn()
 
@@ -52,6 +53,63 @@ describe('assistantsStore', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  describe('getAssistantBySlug', () => {
+    it('maps nested_assistants to nestedAssistants for the slug-based Edit route', async () => {
+      const nested = [{ id: 'sub-1', name: 'Sub Assistant' }]
+      mockGet.mockResolvedValue({
+        json: async () => ({ id: 'a-1', name: 'Root', nested_assistants: nested }),
+      })
+
+      const result = await assistantsStore.getAssistantBySlug('root-slug', false, 'demo')
+
+      expect(mockGet).toHaveBeenCalledWith('v1/assistants/slug/root-slug?project=demo', {
+        skipErrorHandling: false,
+      })
+      expect(result.nestedAssistants).toEqual(nested)
+    })
+
+    it('defaults is_pinned and is_favorited when no preferences exist', async () => {
+      mockGet.mockResolvedValue({
+        json: async () => ({ id: 'a-1', name: 'Root', nested_assistants: [] }),
+      })
+
+      const result = await assistantsStore.getAssistantBySlug('root-slug', false)
+
+      expect(result.is_pinned).toBe(false)
+      expect(result.is_favorited).toBe(false)
+    })
+  })
+
+  describe('getAssistant', () => {
+    it('maps nested_assistants to nestedAssistants for the id-based Edit route', async () => {
+      const nested = [{ id: 'sub-1', name: 'Sub Assistant' }]
+      mockGet.mockResolvedValue({
+        json: async () => ({ id: 'a-1', name: 'Root', nested_assistants: nested }),
+      })
+
+      const result = await assistantsStore.getAssistant('a-1')
+
+      expect(mockGet).toHaveBeenCalledWith('v1/assistants/id/a-1', { skipErrorHandling: false })
+      expect(result.nestedAssistants).toEqual(nested)
+    })
+  })
+
+  describe('normalizeAssistant', () => {
+    it('maps nested_assistants to nestedAssistants and defaults flags without preferences', () => {
+      const nested = [{ id: 'sub-1', name: 'Sub Assistant' }]
+      const raw = { id: 'a-1', name: 'Root', nested_assistants: nested } as unknown as Assistant
+
+      const result = normalizeAssistant(raw)
+
+      expect(result.nestedAssistants).toEqual(nested)
+      expect(result.is_pinned).toBe(false)
+      expect(result.is_favorited).toBe(false)
+      // preserves the rest of the raw payload
+      expect(result.id).toBe('a-1')
+      expect(result.name).toBe('Root')
+    })
   })
 
   describe('getHedgeableToolkits', () => {
