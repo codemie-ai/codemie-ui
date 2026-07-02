@@ -1,5 +1,95 @@
 [
   {
+    "version": "2.37.0",
+    "date": "2026-07-02",
+    "issues": [
+      {
+        "title": "Add Sonnet 5 model to production and preview CodeMie environments",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13252",
+        "key": "EPMCDME-13252"
+      },
+      {
+        "title": "Code Executor attaches temporary files to the conversation instead of only the created Python script",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13144",
+        "key": "EPMCDME-13144"
+      },
+      {
+        "title": "Assistant favorites toast shows \"undefined\" instead of assistant name after adding to favorites",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13106",
+        "key": "EPMCDME-13106"
+      },
+      {
+        "title": "File Data Source creation intermittently fails with child process pool termination error",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13075",
+        "key": "EPMCDME-13075"
+      },
+      {
+        "title": "Budgets dropdown menu appears behind the projects table's header in Projects management page",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12943",
+        "key": "EPMCDME-12943"
+      },
+      {
+        "title": "Pagination Instability and Page Reload Loop in Data Source List",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12889",
+        "key": "EPMCDME-12889"
+      },
+      {
+        "title": "Add filters to Workflows and Assistants Templates pages",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12736",
+        "key": "EPMCDME-12736"
+      },
+      {
+        "title": "Subassistant incorrectly uses host's \"Enable image generation\" flag instead of its own",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12569",
+        "key": "EPMCDME-12569"
+      },
+      {
+        "title": "Workflow run from chat remains visible in Workflow Execution History after the related chat is deleted or cleared",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12448",
+        "key": "EPMCDME-12448"
+      },
+      {
+        "title": "Default LLM model for Chatbot and FAQ assistants is not set to 5.2",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12049",
+        "key": "EPMCDME-12049"
+      },
+      {
+        "title": "On Project Management page in project's 3-dot menu disabled Delete item looks enabled in Light theme",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11691",
+        "key": "EPMCDME-11691"
+      },
+      {
+        "title": "Human-readable URLs for Assistants",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10841",
+        "key": "EPMCDME-10841"
+      },
+      {
+        "title": "File datasource 'Skipped documents' field always shows 0",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-9371",
+        "key": "EPMCDME-9371"
+      },
+      {
+        "title": "New tool to read Azure DevOps Work Item Attachments",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12477",
+        "key": "EPMCDME-12477"
+      }
+    ]
+  },
+  {
   "version": "2.36.0",
   "date": "2026-06-25",
   "issues": [
