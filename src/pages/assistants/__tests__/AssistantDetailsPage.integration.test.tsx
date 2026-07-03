@@ -206,6 +206,137 @@ describe('AssistantDetailsPage - Integration', () => {
     })
   })
 
+  describe('Sub Assistants Navigation', () => {
+    it('navigates to a sub-assistant via the human-readable URL when its card is clicked', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({
+          nested_assistants: [
+            {
+              id: 'sub-guid-1',
+              name: 'Nested Assistant',
+              slug: 'nested-slug',
+              project: 'nested-proj',
+              is_global: false,
+              icon_url: '',
+            },
+          ],
+        })
+      )
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      const card = await screen.findByText('Nested Assistant')
+      await user.click(card)
+
+      // Same human-readable format as search/list entry points, not the GUID URL.
+      expect(mockRouterState.push).toHaveBeenCalledWith('/assistants/nested-proj/nested-slug')
+    })
+
+    it('falls back to the GUID route when a sub-assistant has no slug/project', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({
+          // Nested-assistant entries are raw objects (not built via createAssistantFixture),
+          // so slug/project are genuinely absent here and getAssistantRoute must take the
+          // GUID-fallback branch rather than emitting a readable string path.
+          nested_assistants: [
+            {
+              id: 'sub-guid-2',
+              name: 'Legacy Nested Assistant',
+              slug: undefined,
+              project: undefined,
+              is_global: false,
+              icon_url: '',
+            },
+          ],
+        })
+      )
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      const card = await screen.findByText('Legacy Nested Assistant')
+      await user.click(card)
+
+      expect(mockRouterState.push).toHaveBeenCalledWith({
+        name: 'assistant',
+        params: { id: 'sub-guid-2' },
+      })
+      // Guard the fallback branch: no readable string path (`/assistants/...`) is pushed.
+      expect(mockRouterState.push).not.toHaveBeenCalledWith(expect.any(String))
+    })
+
+    it('falls back to the GUID route when a sub-assistant has slug but no project', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({
+          nested_assistants: [
+            {
+              id: 'sub-guid-3',
+              name: 'Slug Only Nested Assistant',
+              slug: 'slug-only',
+              project: undefined,
+              is_global: false,
+              icon_url: '',
+            },
+          ],
+        })
+      )
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      const card = await screen.findByText('Slug Only Nested Assistant')
+      await user.click(card)
+
+      expect(mockRouterState.push).toHaveBeenCalledWith({
+        name: 'assistant',
+        params: { id: 'sub-guid-3' },
+      })
+      expect(mockRouterState.push).not.toHaveBeenCalledWith(expect.any(String))
+    })
+
+    it('falls back to the GUID route when a sub-assistant has project but no slug', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({
+          nested_assistants: [
+            {
+              id: 'sub-guid-4',
+              name: 'Project Only Nested Assistant',
+              slug: undefined,
+              project: 'project-only',
+              is_global: false,
+              icon_url: '',
+            },
+          ],
+        })
+      )
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      const card = await screen.findByText('Project Only Nested Assistant')
+      await user.click(card)
+
+      expect(mockRouterState.push).toHaveBeenCalledWith({
+        name: 'assistant',
+        params: { id: 'sub-guid-4' },
+      })
+      expect(mockRouterState.push).not.toHaveBeenCalledWith(expect.any(String))
+    })
+  })
+
   describe('Context Menu Actions', () => {
     it('clones assistant when Clone action clicked', async () => {
       mockAPI('GET', 'v1/config', [])

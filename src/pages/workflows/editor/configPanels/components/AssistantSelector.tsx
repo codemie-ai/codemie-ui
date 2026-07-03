@@ -21,8 +21,7 @@ import { useState, useEffect, forwardRef, useRef, useImperativeHandle } from 're
 import ExternalSvg from '@/assets/icons/external.svg?react'
 import Button from '@/components/Button'
 import MultiSelect from '@/components/form/MultiSelect'
-import { ASSISTANT_DETAILS } from '@/constants/routes'
-import { router } from '@/hooks/useVueRouter'
+import { getAssistantLink } from '@/pages/assistants/utils/getAssistantLink'
 import { assistantsStore } from '@/store/assistants'
 import { Assistant } from '@/types/entity/assistant'
 import { AssistantConfiguration } from '@/types/workflowEditor/configuration'
@@ -50,12 +49,9 @@ const AssistantSelector = forwardRef<AssistantSelectorRef, AssistantSelectorProp
     const multiSelectRef = useRef<MultiSelectType>(null)
 
     const handleViewAssistant = () => {
-      const route = router.resolve({
-        name: ASSISTANT_DETAILS,
-        params: { id: assistantConfig?.assistant_id },
-      })
+      if (!selectedAssistant) return
 
-      window.open(route.href, '_blank')
+      window.open(getAssistantLink(selectedAssistant), '_blank')
     }
 
     const handleChange = (e: MultiSelectChangeEvent) => {
@@ -164,7 +160,12 @@ const AssistantSelector = forwardRef<AssistantSelectorRef, AssistantSelectorProp
         />
 
         {assistantConfig?.assistant_id && !displayError && (
-          <Button type="secondary" onClick={handleViewAssistant} className="mt-2">
+          <Button
+            type="secondary"
+            onClick={handleViewAssistant}
+            className="mt-2"
+            disabled={!selectedAssistant}
+          >
             <ExternalSvg />
             View Assistant
           </Button>

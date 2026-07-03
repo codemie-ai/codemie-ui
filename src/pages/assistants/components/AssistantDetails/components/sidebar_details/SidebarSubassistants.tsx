@@ -17,8 +17,8 @@ import DiagramSvg from '@/assets/icons/diagram.svg?react'
 import NotSharedSvg from '@/assets/icons/shared-no.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import { AvatarType } from '@/constants/avatar'
-import { ASSISTANT_DETAILS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
+import { getAssistantRoute } from '@/pages/assistants/utils/getAssistantLink'
 import { Assistant } from '@/types/entity/assistant'
 import { cn } from '@/utils/utils'
 
@@ -29,8 +29,8 @@ interface SidebarSubassistantsProps {
 const SidebarSubassistants = ({ assistants }: SidebarSubassistantsProps) => {
   const router = useVueRouter()
 
-  const handleNavigationSubassistent = (subAssistantId: string) => {
-    router.push({ name: ASSISTANT_DETAILS, params: { id: subAssistantId } })
+  const handleNavigationSubassistent = (subAssistant: Assistant) => {
+    router.push(getAssistantRoute(subAssistant))
   }
 
   const getAssistantStatus = (assistant: Assistant) => {
@@ -62,7 +62,7 @@ const SidebarSubassistants = ({ assistants }: SidebarSubassistantsProps) => {
           <button
             key={subAssistant.id}
             type="button"
-            onClick={() => handleNavigationSubassistent(subAssistant.id)}
+            onClick={() => handleNavigationSubassistent(subAssistant)}
             className={cn(
               'flex items-center gap-2 cursor-pointer p-2 -mx-2 rounded-lg w-full text-left',
               'hover:bg-surface-elevated transition-colors',
