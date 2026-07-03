@@ -104,7 +104,7 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
 
         <div
           className={cn(
-            'grow text-left text-text-specific-navigation-label rounded-lg mr-2 px-1.5 py-2 transition-all duration-200 ease-in-out transform-gpu group-hover:bg-white/15',
+            'grow text-left text-text-specific-bottom-navigation-label rounded-lg mr-2 px-1.5 py-2 transition-all duration-200 ease-in-out transform-gpu group-hover:bg-surface-specific-bottom-navigation-label',
             isExpanded ? 'opacity-100' : 'opacity-0'
           )}
         >

@@ -63,8 +63,10 @@ export const MARKDOWN_ENABLED_AUTHORS: readonly string[] = [
   'Browser Take Screenshot',
 ]
 export const THEME_KEY = 'app-theme'
+export const APPEARANCE_KEY = 'app-appearance'
 export const DARK_THEME_KEY = 'codemieDark'
 export const LIGHT_THEME_KEY = 'codemieLight'
+export const CUSTOM_THEME_KEY = 'codemieCustom'
 
 export enum AssistantTab {
   ALL = 'all',

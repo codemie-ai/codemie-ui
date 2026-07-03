@@ -31,62 +31,88 @@ interface StandaloneLayoutProps {
 }
 
 const StandaloneLayout: React.FC<StandaloneLayoutProps> = ({ children, headerContent }) => {
-  const { isDark, setTheme } = useTheme()
+  const { appearance, isDark, setTheme } = useTheme()
 
   const toggleTheme = () => {
     setTheme(isDark ? LIGHT_THEME_KEY : DARK_THEME_KEY)
+  }
+
+  const isCustomAppearance = Boolean(appearance)
+
+  const customLogo =
+    appearance?.logoMode === 'custom' ? appearance.rectangularLogo || appearance.squareLogo : ''
+
+  const showGradients = appearance ? appearance.gradients : true
+
+  const renderLogo = () => {
+    if (customLogo) {
+      return (
+        <img
+          src={customLogo}
+          className="h-full w-full object-contain"
+          alt="EPAM AI/Run Codemie logo"
+        />
+      )
+    }
+
+    if (isDark) return <LogoFullDarkSvg />
+
+    return <LogoFullLightSvg />
   }
 
   return (
     <div className="relative min-h-screen bg-surface-base-primary overflow-hidden">
       <div id="toast-container" role="region" aria-live="polite" />
 
-      {/* Top-left gradient */}
-      <img
-        src={leftGradientImg}
-        alt=""
-        className="absolute pointer-events-none"
-        style={{ top: '0', left: '-5vw', width: '40vw', opacity: 0.5 }}
-      />
+      {showGradients && (
+        <>
+          {/* Top-left gradient */}
+          <img
+            src={leftGradientImg}
+            alt=""
+            className="absolute pointer-events-none"
+            style={{ top: '0', left: '-5vw', width: '40vw', opacity: 0.5 }}
+          />
 
-      {/* Top-right gradient */}
-      <img
-        src={rightGradientImg}
-        alt=""
-        className="absolute pointer-events-none"
-        style={{ top: '-1vh', right: '-1vw', width: '50vw', opacity: 0.5 }}
-      />
+          {/* Top-right gradient */}
+          <img
+            src={rightGradientImg}
+            alt=""
+            className="absolute pointer-events-none"
+            style={{ top: '-1vh', right: '-1vw', width: '50vw', opacity: 0.5 }}
+          />
 
-      {/* Bottom gradient */}
-      <img
-        src={bottomGradientImg}
-        alt=""
-        className="absolute pointer-events-none"
-        style={{
-          bottom: '10vh',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '35vw',
-          opacity: 0.5,
-        }}
-      />
+          {/* Bottom gradient */}
+          <img
+            src={bottomGradientImg}
+            alt=""
+            className="absolute pointer-events-none"
+            style={{
+              bottom: '10vh',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '35vw',
+              opacity: 0.5,
+            }}
+          />
+        </>
+      )}
 
-      {/* Theme toggle */}
-      <button
-        type="button"
-        onClick={toggleTheme}
-        className="absolute right-8 top-8 z-30 flex h-8 w-8 items-center justify-center rounded-full text-text-quaternary transition-colors hover:bg-text-primary/10 hover:text-text-primary"
-        aria-label="Toggle theme"
-      >
-        {isDark ? <MoonSvg className="h-5 w-5" /> : <SunSvg className="h-5 w-5" />}
-      </button>
+      {!isCustomAppearance && (
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="absolute right-8 top-8 z-30 flex h-8 w-8 items-center justify-center rounded-full text-text-quaternary transition-colors hover:bg-text-primary/10 hover:text-text-primary"
+          aria-label="Toggle theme"
+        >
+          {isDark ? <MoonSvg className="h-5 w-5" /> : <SunSvg className="h-5 w-5" />}
+        </button>
+      )}
 
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 pt-20">
         {/* Logo */}
-        <div className="absolute left-[112px] top-[80px] h-[48px] w-[192px]">
-          {isDark ? <LogoFullDarkSvg /> : <LogoFullLightSvg />}
-        </div>
+        <div className="absolute left-[112px] top-[80px] h-[48px] w-[192px]">{renderLogo()}</div>
 
         {/* Header content (e.g., Sign In/Sign Up buttons) */}
         <div className="ml-auto">{headerContent}</div>

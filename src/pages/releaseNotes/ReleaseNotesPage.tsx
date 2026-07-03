@@ -26,7 +26,8 @@ import IssueList from './components/IssueList'
 
 const ReleaseNotesPage: FC = () => {
   const { appReleases } = useSnapshot(appInfoStore)
-  const { isDark } = useTheme()
+  const { isDark, appearance } = useTheme()
+  const isContentGradientEnabled = appearance?.gradients ?? true
 
   useEffect(() => {
     if (appReleases[0]?.version) {
@@ -40,7 +41,10 @@ const ReleaseNotesPage: FC = () => {
     <PageLayout>
       <div
         className="pt-10 z-10 pb-8 w-full min-h-screen overflow-auto bg-contain bg-no-repeat bg-bottom"
-        style={{ backgroundImage: !isDark ? `url(${contentGradientPng})` : 'none' }}
+        style={{
+          backgroundImage:
+            !isDark && isContentGradientEnabled ? `url(${contentGradientPng})` : 'none',
+        }}
       >
         <h1 className="text-2xl leading-none font-semibold font-mono text-text-primary mb-1">
           What&apos;s New

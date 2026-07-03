@@ -61,7 +61,7 @@ const SidebarToggle = () => {
         className={classNames(
           'bg-curve absolute left-0 top-[calc(50%-100px)] flex',
           'items-center justify-center cursor-pointer bg-surface-base-primary-border',
-          'w-[24px] h-[128px] select-none bg-text-primary/10 hover:bg-text-primary/15',
+          'w-[24px] h-[128px] select-none bg-surface-specific-sidebar-toggle hover:bg-text-primary/15',
           'transition-all duration-150 z-10',
           sidebarOffsetClass
         )}

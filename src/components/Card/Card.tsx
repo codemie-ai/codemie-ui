@@ -50,7 +50,7 @@ const Card: React.FC<CardProps> = ({
 }) => {
   const titleEl = useRef<HTMLParagraphElement>(null)
   const descriptionEl = useRef<HTMLParagraphElement>(null)
-  const { isDark } = useTheme()
+  const { isDark, appearance } = useTheme()
 
   const isTitleTruncated = useIsTruncated(titleEl)
   const isDescriptionTruncated = useIsTruncated(descriptionEl)
@@ -58,6 +58,8 @@ const Card: React.FC<CardProps> = ({
   const tooltipClass = useMemo(() => {
     return 'tooltip-target-' + id
   }, [id])
+
+  const isCardGradientEnabled = appearance?.gradients ?? true
 
   return (
     <>
@@ -67,9 +69,11 @@ const Card: React.FC<CardProps> = ({
         className="h-card rounded-xl flex flex-col w-full bg-surface-specific-card border-border-structural border-1 cursor-pointer transition group"
       >
         <div className="relative">
-          <div className="rounded-xl absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition duration-300 overflow-hidden">
-            {isDark ? <CardGradientSvg /> : <WhiteCardGradientSvg />}
-          </div>
+          {isCardGradientEnabled && (
+            <div className="rounded-xl absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition duration-300 overflow-hidden">
+              {isDark ? <CardGradientSvg /> : <WhiteCardGradientSvg />}
+            </div>
+          )}
           {topRight && <div className="absolute top-2 right-2 z-10 flex gap-1">{topRight}</div>}
         </div>
 

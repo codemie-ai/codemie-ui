@@ -261,8 +261,8 @@ describe('NavigationLink', () => {
       const item = { label: 'Chat', icon: IconType.CHAT, route: '/chat' }
       renderWithRouter(<NavigationLink item={item} />)
       const link = screen.getByRole('link')
-      expect(link).toHaveClass('bg-surface-interactive-hover')
-      expect(link).toHaveClass('text-text-accent')
+      expect(link).toHaveClass('bg-surface-specific-navigation-link')
+      expect(link).toHaveClass('text-text-specific-navigation-link-hover')
     })
 
     it('does not apply active styles when on start-assistant-chat route', () => {

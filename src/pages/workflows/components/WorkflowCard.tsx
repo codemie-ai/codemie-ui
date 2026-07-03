@@ -103,7 +103,8 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
   // Hooks must be called before any early returns
   const router = useVueRouter()
   const [isFavoritesEnabled] = useFavoritesEnabled()
-  const { isDark } = useTheme()
+  const { isDark, appearance } = useTheme()
+  const isCardGradientEnabled = appearance?.gradients ?? true
   const [showRemoveFavorite, setShowRemoveFavorite] = useState(false)
   const [showExecutionPopup, setShowExecutionPopup] = useState(false)
   const nameRef = useRef<HTMLDivElement>(null)
@@ -173,10 +174,12 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
         onClick={handleCardClick}
       >
         <div className="relative">
-          <div
-            className="rounded-xl absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition duration-300 overflow-hidden"
-            dangerouslySetInnerHTML={{ __html: gradientSvg }}
-          />
+          {isCardGradientEnabled && (
+            <div
+              className="rounded-xl absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition duration-300 overflow-hidden"
+              dangerouslySetInnerHTML={{ __html: gradientSvg }}
+            />
+          )}
           {isFavoritesEnabled && (
             <div
               className="absolute top-2 right-2 z-10"

@@ -16,6 +16,7 @@
 import { ReactNode, useState } from 'react'
 import { subscribe } from 'valtio'
 
+import { useTheme } from '@/hooks/useTheme'
 import { appInfoStore } from '@/store/appInfo'
 import { cn } from '@/utils/utils'
 
@@ -31,19 +32,25 @@ interface SidebarProps {
 
 const Sidebar = ({ title, description, children, headerContent, className }: SidebarProps) => {
   const [isVisible, setIsVisible] = useState<boolean>(appInfoStore.sidebarExpanded)
+  const { appearance } = useTheme()
 
   subscribe(appInfoStore, () => {
     setIsVisible(appInfoStore.sidebarExpanded)
   })
 
+  const showGradient = appearance?.gradients ?? true
+
   return (
     <aside
       className={cn(
-        'flex flex-col border-r bg-sidebar-gradient border-border-specific-sidebar min-h-full',
+        'flex flex-col border-r min-h-full',
+        showGradient && 'bg-sidebar-gradient',
         'transition-all ease-in-out duration-150 overflow-x-hidden shrink-0',
         {
           'w-sidebar max-w-sidebar': isVisible,
           'w-0': !isVisible,
+          'border-border-specific-sidebar': !appearance,
+          'border-border-structural': Boolean(appearance),
         }
       )}
     >

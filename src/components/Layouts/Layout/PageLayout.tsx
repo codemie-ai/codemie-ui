@@ -47,7 +47,10 @@ const PageLayout = ({
   centerTitle = false,
   isLoading,
 }: LayoutProps) => {
-  const { isDark } = useTheme()
+  const { isDark, appearance } = useTheme()
+
+  const isContentGradientEnabled = appearance?.gradients ?? true
+  const isPageHeaderElevated = appearance?.pageHeaderElevated ?? false
 
   const handleBack = () => {
     if (onBack) {
@@ -60,11 +63,18 @@ const PageLayout = ({
   return (
     <main
       className="flex w-full h-full min-w-0 bg-surface-base-primary bg-contain bg-no-repeat bg-bottom"
-      style={{ backgroundImage: !isDark ? `url(${contentGradient})` : 'none' }}
+      style={{
+        backgroundImage: !isDark && isContentGradientEnabled ? `url(${contentGradient})` : 'none',
+      }}
     >
       <div className="flex flex-col flex-1 min-w-0">
         {(title || onBack || rightContent || renderHeader) && (
-          <div className="min-h-layout-header h-layout-header border-b border-border-specific-panel-outline p-3 px-6 flex items-center justify-between">
+          <div
+            className={cn(
+              'min-h-layout-header h-layout-header border-b border-border-specific-panel-outline p-3 px-6 flex items-center justify-between',
+              isPageHeaderElevated ? 'bg-surface-specific-page-header' : ''
+            )}
+          >
             {renderHeader || (
               <>
                 <div className="flex items-center gap-6 flex-1">

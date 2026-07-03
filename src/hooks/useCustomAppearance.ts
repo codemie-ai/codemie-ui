@@ -15,27 +15,32 @@
 
 import { useEffect, useState } from 'react'
 
-import { CUSTOM_THEME_KEY, DARK_THEME_KEY } from '@/constants'
+import type { CustomAppearance } from '@/utils/themeService'
 import { themeService } from '@/utils/themeService'
 
-export const useTheme = () => {
-  const [theme, setTheme] = useState(themeService.getTheme())
+const setAppearance = (partial: Partial<CustomAppearance>) => themeService.setAppearance(partial)
+const selectPreset = (name: string) => themeService.selectPreset(name)
+const resetActivePreset = () => themeService.resetActivePreset()
+const importPreset = (preset: unknown) => themeService.importPreset(preset)
+
+export const useCustomAppearance = () => {
+  const [presets, setPresets] = useState(themeService.getPresets())
   const [activePreset, setActivePreset] = useState(themeService.getActivePreset())
 
   useEffect(() => {
-    return themeService.subscribe((newTheme, newActivePreset) => {
-      setTheme(newTheme)
+    return themeService.subscribe((_newTheme, newActivePreset) => {
       setActivePreset(newActivePreset)
+      setPresets([...themeService.getPresets()])
     })
   }, [])
 
   return {
-    theme,
-    setTheme: (newTheme: string) => themeService.setTheme(newTheme),
-    appearance: theme === CUSTOM_THEME_KEY ? activePreset.values : null,
-    isDark:
-      theme === CUSTOM_THEME_KEY
-        ? activePreset.values.baseTheme === DARK_THEME_KEY
-        : theme === DARK_THEME_KEY,
+    presets,
+    activePreset,
+    appearance: activePreset.values,
+    setAppearance,
+    selectPreset,
+    resetActivePreset,
+    importPreset,
   }
 }

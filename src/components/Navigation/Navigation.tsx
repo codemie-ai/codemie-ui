@@ -45,8 +45,11 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = () => {
   const router = useVueRouter()
-  const { isDark } = useTheme()
+  const { isDark, appearance } = useTheme()
   const { navigationExpanded } = useSnapshot(appInfoStore)
+
+  const showGradient = appearance?.gradients ?? true
+  const showBorder = appearance?.navigationBorder ?? !isDark
   const { applications } = useSnapshot(applicationsStore)
 
   const isExpanded = navigationExpanded
@@ -159,6 +162,11 @@ const Navigation: React.FC<NavigationProps> = () => {
     },
   ]
 
+  let backgroundClass = 'bg-surface-base-navigation'
+  if (showGradient) {
+    backgroundClass = isDark ? 'bg-gradient-to-b from-black to-black/15' : ''
+  }
+
   return (
     <header
       className={cn(
@@ -166,7 +174,8 @@ const Navigation: React.FC<NavigationProps> = () => {
         'relative px-2 pt-6 pb-4 transition-width duration-200 ease-in-out',
         'will-change-[width] transform-gpu',
         isExpanded ? 'min-w-navbar-expanded w-navbar-expanded' : 'w-navbar',
-        isDark ? 'bg-gradient-to-b from-black to-black/15' : 'border-r border-border-structural'
+        backgroundClass,
+        showBorder && 'border-r border-border-structural'
       )}
       data-onboarding="navigation-menu"
     >
@@ -186,7 +195,7 @@ const Navigation: React.FC<NavigationProps> = () => {
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             <NavigationPinnedSection />
           </div>
-          <div className="mb-2 h-px bg-white/20 mx-2" />
+          <div className={cn('mb-2 h-px mx-2', appearance ? 'bg-border-primary' : 'bg-white/20')} />
           <NavigationSection isBottomSection items={lowerItems} />
         </nav>
 

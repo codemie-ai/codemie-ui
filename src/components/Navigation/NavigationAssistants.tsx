@@ -110,7 +110,6 @@ const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded 
         <a
           key={assistant.id}
           href={assistant.link ?? ''}
-          role="link"
           aria-label={assistant.name}
           aria-describedby={assistant.description ? `assistant-desc-${assistant.id}` : undefined}
           data-tooltip-id="react-tooltip"
@@ -119,8 +118,8 @@ const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded 
           onClick={(e) => handleClick(e, assistant.link)}
           className={cn(
             'flex flex-row gap-4 items-center cursor-pointer rounded-lg max-w-[196px] overflow-hidden',
-            'px-2 py-1.5 transition hover:no-underline hover:bg-white/15',
-            'text-text-specific-navigation-label'
+            'px-2 py-1.5 transition hover:no-underline hover:bg-surface-specific-bottom-navigation-label',
+            'text-text-specific-bottom-navigation-label'
           )}
         >
           <img

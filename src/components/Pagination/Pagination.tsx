@@ -43,7 +43,8 @@ const Pagination: React.FC<PaginationProps> = ({
   perPageOptions,
   responsive = false,
 }) => {
-  const { isDark } = useTheme()
+  const { isDark, appearance } = useTheme()
+  const isContentGradientEnabled = appearance?.gradients ?? true
   const labelId = useId()
   const [currentPerPage, setCurrentPerPage] = useState<number | undefined>(perPage)
   const [span, setSpan] = useState<number>(7)
@@ -102,7 +103,7 @@ const Pagination: React.FC<PaginationProps> = ({
         className
       )}
       style={{
-        backgroundImage: !isDark ? `url(${contentGradient})` : 'none',
+        backgroundImage: !isDark && isContentGradientEnabled ? `url(${contentGradient})` : 'none',
       }}
     >
       {pageNumbers.length > 1 && (

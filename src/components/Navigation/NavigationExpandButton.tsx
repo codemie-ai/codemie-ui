@@ -31,7 +31,7 @@ const NavigationExpandButton: FC<NavigationExpandButtonProps> = ({ onClick }) =>
     <button
       type="button"
       className={cn(
-        'rounded-lg duration-100 mx-2 flex items-center text-text-specific-navigation-label gap-6 hover:bg-white/20',
+        'rounded-lg duration-100 mx-2 flex items-center text-text-specific-bottom-navigation-label gap-6 hover:bg-surface-specific-bottom-navigation-label',
         'px-[11px] h-9 select-none text-sm text-nowrap'
       )}
       onClick={onClick}
@@ -40,7 +40,7 @@ const NavigationExpandButton: FC<NavigationExpandButtonProps> = ({ onClick }) =>
       data-tooltip-place="right"
     >
       <SidebarSvg
-        className={cn('min-w-4 transition-transform text-text-inverse', {
+        className={cn('min-w-4 transition-transform', {
           'rotate-180': !navigationExpanded,
         })}
       />

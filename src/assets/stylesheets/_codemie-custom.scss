@@ -1,0 +1,29 @@
+// Overrides applied only when custom appearance is active (.codemieCustom on <html>).
+.codemieCustom {
+  // --font-family-body is set by the custom appearance engine (font rules).
+  // Falls back to GeistMono when custom appearance is not active.
+  body {
+    font-family: var(--font-family-body, "GeistMono", monospace);
+  }
+
+  // Logo theming: overrides SVG presentation attributes.
+  // rgb() wrapper required because CSS vars store space-separated RGB channel triplets.
+
+  .svg-text-logo {
+    fill: rgb(var(--colors-text-primary));
+  }
+
+  .svg-text-logo-accent {
+    fill: rgb(var(--colors-text-accent));
+  }
+
+  .svg-logo-navigation {
+    .svg-text-logo {
+      fill: rgb(var(--colors-text-specific-navigation-link));
+    }
+
+    .svg-text-logo-accent {
+      fill: rgb(var(--colors-text-specific-navigation-link-hover));
+    }
+  }
+}

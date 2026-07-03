@@ -20,6 +20,7 @@ import LogoDarkSvg from '@/assets/images/logo-dark.svg?react'
 import LogoLightSvg from '@/assets/images/logo-light.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import { AvatarType } from '@/constants/avatar'
+import { useTheme } from '@/hooks/useTheme'
 import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
 
@@ -31,6 +32,7 @@ const ChatPromptStarters: FC<ChatPromptStartersProps> = ({ onStarterClick }) => 
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
   const { assistants } = useSnapshot(assistantsStore) as typeof assistantsStore
   const [description, setDescription] = useState<string | null>(null)
+  const { appearance } = useTheme()
 
   const lastAssistant = currentChat?.assistantData.find(
     ({ id }) => id === currentChat.assistantIds[0]
@@ -62,6 +64,21 @@ const ChatPromptStarters: FC<ChatPromptStartersProps> = ({ onStarterClick }) => 
     ? 'Your assistants are here to help with anything you need'
     : 'Ask anything or type @ and choose assistant from the list'
 
+  const customLogo =
+    appearance?.logoMode === 'custom' ? appearance.rectangularLogo || appearance.squareLogo : null
+
+  const renderLogo = () => {
+    if (customLogo) {
+      return <img src={customLogo} className="h-10 max-w-[140px] object-contain" alt="logo" />
+    }
+    return (
+      <>
+        <LogoDarkSvg className="max-w-[56px] h-10 codemieLight:hidden" />
+        <LogoLightSvg className="max-w-[56px] h-10 codemieDark:hidden" />
+      </>
+    )
+  }
+
   return (
     <div className="flex justify-center py-8 grow w-full overflow-y-auto">
       <div className="flex flex-col items-center text-center my-auto px-12">
@@ -72,10 +89,7 @@ const ChatPromptStarters: FC<ChatPromptStartersProps> = ({ onStarterClick }) => 
             type={AvatarType.MEDIUM}
           />
         ) : (
-          <>
-            <LogoDarkSvg className="max-w-[56px] h-10 codemieLight:hidden" />
-            <LogoLightSvg className="max-w-[56px] h-10 codemieDark:hidden" />
-          </>
+          renderLogo()
         )}
 
         {lastAssistant ? (

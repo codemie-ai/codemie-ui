@@ -33,16 +33,20 @@ import { primeReactPtOptions } from '@/constants/theme'
 import { useHistoryStack } from '@/hooks/appLevel/useHistoryStack'
 import useInitialDataFetch from '@/hooks/appLevel/useInitialDataFetch'
 import usePrismThemeToggle from '@/hooks/appLevel/usePrismThemeToggle'
+import { useTheme } from '@/hooks/useTheme'
 import { UnsavedChangesProvider } from '@/hooks/useUnsavedChangesWarning'
 import { floatingKataStore } from '@/store/floatingKata'
 import { userStore } from '@/store/user'
 
 const App: React.FC = () => {
   const { user, isLoadingUser } = useSnapshot(userStore)
+  const { appearance } = useTheme()
 
   useHistoryStack()
   usePrismThemeToggle()
   useInitialDataFetch()
+
+  const showGradient = appearance?.gradients ?? true
 
   // Load floating kata state from localStorage after user is loaded
   useEffect(() => {
@@ -62,7 +66,7 @@ const App: React.FC = () => {
             <Spinner className="w-20 h-20" />
           ) : (
             <div className="min-h-0 grow flex bg-surface-base-sidebar">
-              <Gradient />
+              {showGradient && <Gradient />}
               <Navigation />
               <div className="z-0 grow min-w-0">{user && <Outlet />}</div>
             </div>

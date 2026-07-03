@@ -145,6 +145,7 @@ const c = {
     a0: '#FFFFFF00',
     a6: '#FFFFFF0F',
     a10: '#FFFFFF1A',
+    a15: '#FFFFFF26',
     a20: '#FFFFFF33',
     a30: '#FFFFFF4D',
     a40: '#FFFFFF66',
@@ -297,6 +298,11 @@ const themeTokens: ThemeConfig = {
         secondary: [c['neutral']['925'], c['blue']['50']],
       },
       'toggle-button-hover': [c['neutral']['725'], c['full-transparent']],
+      'bottom-navigation-label': [c['white']['a15'], c['white']['a15']],
+      'navigation-badge': [c['purple']['accent-1'], c['purple']['accent-1']],
+      'navigation-link': [c['neutral']['875'], c['blue']['50']],
+      'sidebar-toggle': [c['neutral']['725'], c['neutral']['90']],
+      'page-header': [c['neutral']['900'], c['neutral']['0']],
     },
   },
   border: {
@@ -373,7 +379,12 @@ const themeTokens: ThemeConfig = {
     error: [c['red']['500'], c['red']['500']],
     'error-hover': [c['red']['650'], c['red']['650']],
     specific: {
-      'navigation-label': [c['neutral']['200'], c['neutral']['0']],
+      'bottom-navigation-label': [c['neutral']['200'], c['neutral']['0']],
+      'navigation-badge': [c['neutral']['0'], c['neutral']['0']],
+      'navigation-link': [c['neutral']['200'], c['neutral']['775']],
+      'navigation-link-hover': [c['neutral']['50'], c['blue']['400']],
+      'navigation-icon': [c['neutral']['0'], c['neutral']['775']],
+      'navigation-icon-hover': [c['neutral']['50'], c['blue']['400']],
       'node-note-text': c['neutral']['775'],
       input: {
         prefix: [c['neutral']['725'], c['neutral']['75']],

@@ -76,22 +76,26 @@ const NavigationLink: FC<NavigationLinkProps> = ({ item, isBottomSection }) => {
       data-tooltip-content={!navigationExpanded ? item.label : undefined}
       data-tooltip-place="right"
       className={cn(
-        'flex grow rounded-lg cursor-pointer group transition-colors duration-100 px-[0.688rem] hover:bg-surface-interactive-hover bg-opacity-75 h-9',
-        'items-center text-left text-nowrap justify-start text-text-tertiary text-sm hover:no-underline',
+        'flex grow rounded-lg cursor-pointer group transition-colors duration-100 px-[0.688rem] hover:bg-surface-specific-navigation-link h-9',
+        'items-center text-left text-nowrap justify-start text-text-specific-navigation-link text-sm hover:no-underline',
         'select-none group relative',
         'gap-4',
-        isActiveRoute && 'bg-surface-interactive-hover text-text-accent',
+        isActiveRoute &&
+          'bg-surface-specific-navigation-link text-text-specific-navigation-link-hover',
         isBottomSection
-          ? 'text-text-specific-navigation-label hover:bg-white/15 gap-5'
-          : 'hover:text-text-accent',
-        isBottomSection && isActiveRoute && 'bg-white/15'
+          ? 'text-text-specific-bottom-navigation-label hover:bg-surface-specific-bottom-navigation-label gap-5'
+          : 'hover:text-text-specific-navigation-link-hover',
+        isBottomSection && isActiveRoute && 'bg-surface-specific-bottom-navigation-label'
       )}
     >
       {Icon && (
         <div
           className={cn(
-            'min-w-4.5 flex-shrink-0 transition-colors duration-100 group-hover:text-text-accent',
-            isActiveRoute ? 'text-text-accent' : 'text-text-primary'
+            'min-w-4.5 flex-shrink-0 transition-colors duration-100',
+            isBottomSection
+              ? ''
+              : 'group-hover:text-text-specific-navigation-icon-hover text-text-specific-navigation-icon',
+            !isBottomSection && isActiveRoute ? 'text-text-specific-navigation-icon-hover' : ''
           )}
         >
           <Icon />
@@ -110,7 +114,7 @@ const NavigationLink: FC<NavigationLinkProps> = ({ item, isBottomSection }) => {
       {item.badge && (
         <span
           className={cn(
-            'absolute left-[128px] px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-accent-1 text-white leading-none',
+            'absolute right-[5px] px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-specific-navigation-badge text-text-specific-navigation-badge leading-none',
             'transition-opacity duration-200 ease-in-out transform-gpu',
             navigationExpanded ? 'opacity-100' : 'opacity-0'
           )}

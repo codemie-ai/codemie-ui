@@ -26,11 +26,36 @@ interface NavigationLogoProps {
 }
 
 const NavigationLogo: React.FC<NavigationLogoProps> = ({ isExpanded, onClick }) => {
-  const { isDark } = useTheme()
+  const { appearance, isDark } = useTheme()
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
     onClick()
+  }
+
+  const getCustomLogo = () => {
+    if (!appearance || appearance.logoMode !== 'custom') return ''
+    if (isExpanded) return appearance.rectangularLogo || appearance.squareLogo
+
+    return appearance.squareLogo || appearance.rectangularLogo
+  }
+
+  const renderLogo = () => {
+    const customLogo = getCustomLogo()
+
+    if (customLogo) {
+      return (
+        <img
+          src={customLogo}
+          className={cn('h-[40px] object-contain', isExpanded ? 'w-[156px]' : 'w-[39px]')}
+          alt="EPAM AI/Run Codemie logo"
+        />
+      )
+    }
+
+    if (isDark) return <LogoFullDarkSvg className="svg-logo-navigation h-[40px] w-[156px]" />
+
+    return <LogoFullLightSvg className="svg-logo-navigation h-[40px] w-[156px]" />
   }
 
   return (
@@ -52,11 +77,7 @@ const NavigationLogo: React.FC<NavigationLogoProps> = ({ isExpanded, onClick }) 
           isExpanded ? 'w-[156px]' : 'w-[39px]'
         )}
       >
-        {isDark ? (
-          <LogoFullDarkSvg className="h-[40px] w-[156px]" />
-        ) : (
-          <LogoFullLightSvg className="h-[40px] w-[156px]" />
-        )}
+        {renderLogo()}
       </div>
     </a>
   )
