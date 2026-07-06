@@ -28,6 +28,10 @@ const normalizeBooleanField = (value: boolean | null | undefined): boolean => {
   return value ?? false
 }
 
+const normalizeStringArrayField = (value: string[] | null | undefined): string[] => {
+  return Array.isArray(value) ? value : []
+}
+
 const getDefaultLlmModel = (): string | undefined => {
   const models = appInfoStore.llmModels
   return (models.find((m) => m.isDefault) ?? models[0])?.value
@@ -53,6 +57,7 @@ export const compareFormData = (initial: any, current: any) => {
     toolkits: normalizeToolkitsForComparison(initial.toolkits || []),
     mcp_servers: normalizeMcpServersForComparison(initial.mcp_servers || []),
     llm_model_type: normalizeLlmModelField(initial.llm_model_type),
+    enabled_builtin_subagents: normalizeStringArrayField(initial.enabled_builtin_subagents),
   }
   const normalizedCurrent = {
     ...current,
@@ -63,6 +68,7 @@ export const compareFormData = (initial: any, current: any) => {
     toolkits: normalizeToolkitsForComparison(current.toolkits || []),
     mcp_servers: normalizeMcpServersForComparison(current.mcp_servers || []),
     llm_model_type: normalizeLlmModelField(current.llm_model_type),
+    enabled_builtin_subagents: normalizeStringArrayField(current.enabled_builtin_subagents),
   }
 
   if (!initial.project || initial.project === '') {

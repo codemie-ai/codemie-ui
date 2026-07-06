@@ -24,6 +24,11 @@ import TooltipButton from '../TooltipButton'
 
 type Props = {
   label?: ReactNode
+  /**
+   * Tooltip icon rendered next to the label (use for contextual help specific
+   * to the label itself, not for the whole control).
+   */
+  labelHint?: string
   name?: string
   id?: string
   hint?: string
@@ -40,6 +45,7 @@ export const Checkbox = forwardRef<HTMLInputElement, Props>(
   (
     {
       label,
+      labelHint,
       name,
       id,
       hint,
@@ -89,15 +95,18 @@ export const Checkbox = forwardRef<HTMLInputElement, Props>(
               inputRef={ref}
             />
             {!!label && (
-              <label
-                htmlFor={idKey}
-                className={cn('text-sm ml-2 transition', {
-                  'cursor-pointer hover:text-border-accent': !disabled && checked,
-                  'cursor-not-allowed': disabled,
-                })}
-              >
-                {label}
-              </label>
+              <div className="flex items-center gap-x-1">
+                <label
+                  htmlFor={idKey}
+                  className={cn('text-sm ml-2 transition', {
+                    'cursor-pointer hover:text-border-accent': !disabled && checked,
+                    'cursor-not-allowed': disabled,
+                  })}
+                >
+                  {label}
+                </label>
+                {labelHint && <TooltipButton className="ml-1" content={labelHint} />}
+              </div>
             )}
           </div>
           {hint && <TooltipButton content={hint} />}

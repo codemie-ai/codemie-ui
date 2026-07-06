@@ -71,6 +71,9 @@ export function transformAssistantToCreateDTO(assistant: Assistant): CreateAssis
     hedging_config: assistant.hedging_config ?? null,
     guardrail_assignments: assistant.guardrail_assignments,
     skill_ids: skillIds,
+
+    // Built-in subagents
+    enabled_builtin_subagents: assistant.enabled_builtin_subagents ?? [],
     // agent_card: assistant.agent_cards
   }
 }

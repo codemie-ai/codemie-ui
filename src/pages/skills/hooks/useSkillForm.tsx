@@ -39,6 +39,7 @@ export interface SkillFormData {
   categories: string[]
   toolkits: AssistantToolkit[]
   mcp_servers: MCPServerDetails[]
+  enabled_builtin_subagents: string[]
 }
 
 export const useSkillForm = (initialData?: Skill) => {
@@ -59,6 +60,7 @@ export const useSkillForm = (initialData?: Skill) => {
           categories: initialData.categories,
           toolkits: initialData.toolkits ?? [],
           mcp_servers: initialData.mcp_servers ?? [],
+          enabled_builtin_subagents: initialData.enabled_builtin_subagents ?? [],
         }
       : {
           name: '',
@@ -69,6 +71,7 @@ export const useSkillForm = (initialData?: Skill) => {
           categories: [],
           toolkits: [],
           mcp_servers: [],
+          enabled_builtin_subagents: [],
         },
     mode: 'all',
   })
@@ -161,6 +164,7 @@ export const useSkillForm = (initialData?: Skill) => {
         categories: data.categories,
         toolkits: data.toolkits,
         mcp_servers: data.mcp_servers,
+        enabled_builtin_subagents: data.enabled_builtin_subagents ?? [],
       }
 
       if (areCompanionFilesDirty) {
@@ -179,6 +183,7 @@ export const useSkillForm = (initialData?: Skill) => {
       categories: data.categories,
       toolkits: data.toolkits,
       mcp_servers: data.mcp_servers,
+      enabled_builtin_subagents: data.enabled_builtin_subagents ?? [],
       ...(companionFiles.length > 0 ? { companion_files: companionFiles } : {}),
     }
 

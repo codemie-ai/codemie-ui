@@ -86,6 +86,9 @@ export interface Skill {
   mcp_servers?: MCPServerDetails[]
   is_favorited?: boolean
   companion_files?: SkillCompanionFileMetadata[]
+
+  // Built-in subagents
+  enabled_builtin_subagents?: string[]
 }
 
 export interface SkillCreateRequest {
@@ -98,6 +101,9 @@ export interface SkillCreateRequest {
   toolkits?: AssistantToolkit[]
   mcp_servers?: MCPServerDetails[]
   companion_files?: SkillCompanionFile[]
+
+  // Built-in subagents
+  enabled_builtin_subagents?: string[]
 }
 
 export interface SkillUpdateRequest {
@@ -110,6 +116,9 @@ export interface SkillUpdateRequest {
   toolkits?: AssistantToolkit[]
   mcp_servers?: MCPServerDetails[]
   companion_files?: SkillCompanionFile[]
+
+  // Built-in subagents
+  enabled_builtin_subagents?: string[]
 }
 
 export interface SkillAssistantItem {

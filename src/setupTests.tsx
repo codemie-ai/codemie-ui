@@ -194,6 +194,9 @@ const globalDefaults: Record<string, () => unknown> = {
     { id: 2, name: 'Development', description: 'Development and coding assistants' },
     { id: 3, name: 'Research', description: 'Research and analysis tools' },
   ],
+  'v1/assistants/builtin_subagents': () => [
+    { id: 'GENERAL_PURPOSE_SUBAGENT', display_name: 'General Purpose' },
+  ],
   'v1/user': () => ({
     user_id: 'test-user-id',
     email: 'test@example.com',

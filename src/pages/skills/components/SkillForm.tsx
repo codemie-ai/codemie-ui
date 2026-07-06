@@ -13,14 +13,24 @@
 // limitations under the License.
 //
 
-import { ChangeEvent, forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react'
+import {
+  ChangeEvent,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from 'react'
 import { Controller, UseFormReturn } from 'react-hook-form'
+import { useSnapshot } from 'valtio'
 
 import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import ProjectSelector from '@/components/ProjectSelector'
+import BuiltinSubagentToggle from '@/components/subagents/BuiltinSubagentToggle'
 import TooltipButton from '@/components/TooltipButton'
 import { MAX_DESCRIPTION_LENGTH } from '@/constants/skills'
 import { AssistantFormContext } from '@/pages/assistants/components/AssistantForm/AssistantForm'
@@ -28,6 +38,7 @@ import FormSection from '@/pages/assistants/components/AssistantForm/components/
 import ToolsConfiguration from '@/pages/assistants/components/AssistantForm/components/Toolkits/ToolsConfiguration'
 import { useRefineSkillRecommendations } from '@/pages/skills/hooks/useRefineSkillRecommendations'
 import { SkillFormData } from '@/pages/skills/hooks/useSkillForm'
+import { assistantsStore } from '@/store/assistants'
 import { AssistantToolkit } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import {
@@ -82,11 +93,19 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
   ) => {
     const { control, watch, setValue, handleSubmit, getValues } = form
 
+    const { builtinSubagentsCatalog, getBuiltinSubagentsCatalog } = useSnapshot(assistantsStore)
+
     const descriptionValue = watch('description') ?? ''
     const visibility = watch('visibility')
     const toolkits = watch('toolkits') ?? []
     const mcpServers = watch('mcp_servers') ?? []
     const project = watch('project') ?? ''
+
+    // Load built-in subagents catalog once
+    useEffect(() => {
+      getBuiltinSubagentsCatalog?.()
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const [showRefinePromptPopup, setShowRefinePromptPopup] = useState(false)
     const [showRefineModal, setShowRefineModal] = useState(false)
@@ -314,6 +333,25 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
               isLoading={isCompanionFilesLoading}
               onCompanionFilesChange={onCompanionFilesChange}
               onFoldersChange={onBundleFoldersChange}
+            />
+          </FormSection>
+
+          <FormSection title="Subagents">
+            <Controller
+              name="enabled_builtin_subagents"
+              control={control}
+              render={({ field }) => (
+                <BuiltinSubagentToggle
+                  catalog={builtinSubagentsCatalog ?? []}
+                  value={field.value ?? []}
+                  onChange={(next) =>
+                    setValue('enabled_builtin_subagents', next, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                />
+              )}
             />
           </FormSection>
 

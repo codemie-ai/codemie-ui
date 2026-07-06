@@ -64,6 +64,10 @@ interface AssistantsStoreType {
   availableToolkits: AssistantToolkit[]
   hedgeableToolkits: AssistantToolkit[]
   availableContext: AssistantContext[]
+
+  builtinSubagentsCatalog: Array<{ id: string; display_name: string }>
+  builtinSubagentsCatalogLoaded: boolean
+  getBuiltinSubagentsCatalog: () => Promise<Array<{ id: string; display_name: string }>>
   helpAssistants: any[]
   helpAssistantsFetched: boolean
   defaultAssistant: Assistant | null
@@ -197,6 +201,8 @@ export const assistantsStore = proxy<AssistantsStoreType>({
   availableToolkits: [],
   hedgeableToolkits: [],
   availableContext: [],
+  builtinSubagentsCatalog: [],
+  builtinSubagentsCatalogLoaded: false,
   recentAssistants: [],
   helpAssistants: [],
   helpAssistantsFetched: false,
@@ -438,6 +444,28 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       return contextOptions
     } catch {
       assistantsStore.availableContext = []
+      return []
+    }
+  },
+
+  async getBuiltinSubagentsCatalog() {
+    // Simple cache: avoid re-fetching if already loaded
+    if (assistantsStore.builtinSubagentsCatalogLoaded) {
+      return assistantsStore.builtinSubagentsCatalog
+    }
+
+    try {
+      const result = await api
+        .get('v1/assistants/builtin_subagents', { skipErrorHandling: true })
+        .then((response) => response.json())
+
+      const catalog = Array.isArray(result) ? result : []
+      assistantsStore.builtinSubagentsCatalog = catalog
+      assistantsStore.builtinSubagentsCatalogLoaded = true
+      return catalog
+    } catch {
+      assistantsStore.builtinSubagentsCatalog = []
+      assistantsStore.builtinSubagentsCatalogLoaded = true
       return []
     }
   },

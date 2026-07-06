@@ -35,6 +35,7 @@ export interface AssistantOption {
   iconUrl?: string
   icon_url?: string // Support snake_case from API
   project?: string
+  is_builtin_subagent?: boolean
   created_by?: {
     id: string
     name?: string
@@ -61,7 +62,14 @@ interface AssistantSelectorProps {
   selectClassName?: string
   errorClassName?: string
   enlargedLabel?: boolean
+
+  // Allows injecting extra "virtual" assistant options (e.g. built-in subagents)
+  // directly into the dropdown list. These will be placed at the top.
+  extraOptionsTop?: AssistantOption[]
 }
+
+const BUILTIN_SUBAGENT_META =
+  'inherits data sources, skills and tools, but uses built-in system prompt'
 
 // Extracted AssistantOption component to comply with Rules of Hooks
 const AssistantOptionComponent: React.FC<{ option: AssistantOption }> = ({ option }) => {
@@ -69,7 +77,9 @@ const AssistantOptionComponent: React.FC<{ option: AssistantOption }> = ({ optio
   const isTruncated = useIsTruncated(optionEl)
 
   const createdByName = option.created_by?.name ?? option.created_by?.username ?? ''
-  const hasMetadata = option.project || createdByName
+  const metadata = option.is_builtin_subagent
+    ? BUILTIN_SUBAGENT_META
+    : [option.project, createdByName ? `by ${createdByName}` : ''].filter(Boolean).join(' • ')
 
   return (
     <div className="flex items-center gap-2 w-full overflow-hidden">
@@ -87,13 +97,7 @@ const AssistantOptionComponent: React.FC<{ option: AssistantOption }> = ({ optio
         >
           {option.name}
         </p>
-        {hasMetadata && (
-          <p className="text-xs text-text-tertiary truncate">
-            {option.project && <span>{option.project}</span>}
-            {option.project && createdByName && <span> • </span>}
-            {createdByName && <span>by {createdByName}</span>}
-          </p>
-        )}
+        {!!metadata && <p className="text-xs text-text-tertiary truncate">{metadata}</p>}
       </div>
     </div>
   )
@@ -118,6 +122,8 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
       selectClassName,
       errorClassName,
       enlargedLabel = false,
+
+      extraOptionsTop = [],
     },
     ref
   ) => {
@@ -155,11 +161,28 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
     })
 
     const getMultiselectOptions = () => {
+      // De-dupe by id while preserving order:
+      // extraOptionsTop → loaded options → hidden selected options.
+      const seen = new Set<string>()
+
+      const addUnique = (items: AssistantOption[]) => {
+        const result: AssistantOption[] = []
+        for (const item of items) {
+          if (!item?.id || seen.has(item.id)) continue
+          seen.add(item.id)
+          result.push(item)
+        }
+        return result
+      }
+
       // Include selected values that might not be in the options list
       const hiddenOptions = value.filter(
         (selectedItem) => !options.find((option) => option.id === selectedItem.id)
       )
-      return [...options, ...hiddenOptions].filter((option) => option.id !== assistant?.id)
+
+      return addUnique([...extraOptionsTop, ...options, ...hiddenOptions]).filter(
+        (option) => option.id !== assistant?.id
+      )
     }
 
     const resetValue = () => {
@@ -187,6 +210,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
           iconUrl: option?.iconUrl || '',
           project: option?.project,
           created_by: option?.created_by,
+          is_builtin_subagent: option?.is_builtin_subagent,
         }
       })
 
@@ -210,31 +234,29 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
             </InfoBox>
           </>
         )}
-        <div className="flex gap-2">
-          <MultiSelect
-            ref={ref}
-            key={project}
-            disabled={disabled}
-            value={preparedValue}
-            onChange={handleChange}
-            options={getMultiselectOptions()}
-            label=""
-            className="max-w-full"
-            inputClassName={selectClassName}
-            errorClassName={errorClassName}
-            placeholder={placeholder ?? 'Select Sub-Assistants'}
-            onFilter={loadOptions}
-            onScrollBottom={handleScrollBottom}
-            renderOption={Option}
-            error={error}
-            fullWidth
-            size="medium"
-            optionLabel="name"
-            optionValue="id"
-            singleValue={singleValue}
-            showCheckbox={!singleValue}
-          />
-        </div>
+        <MultiSelect
+          ref={ref}
+          key={project}
+          disabled={disabled}
+          value={preparedValue}
+          onChange={handleChange}
+          options={getMultiselectOptions()}
+          label=""
+          className="flex-1 max-w-full"
+          inputClassName={selectClassName}
+          errorClassName={errorClassName}
+          placeholder={placeholder ?? 'Select Sub-Assistants'}
+          onFilter={loadOptions}
+          onScrollBottom={handleScrollBottom}
+          renderOption={Option}
+          error={error}
+          fullWidth
+          size="medium"
+          optionLabel="name"
+          optionValue="id"
+          singleValue={singleValue}
+          showCheckbox={!singleValue}
+        />
       </div>
     )
   }

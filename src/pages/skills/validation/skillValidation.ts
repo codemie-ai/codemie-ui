@@ -69,4 +69,6 @@ export const skillValidationSchema = Yup.object().shape({
   toolkits: Yup.array().of(Yup.mixed<AssistantToolkit>().required()).default([]),
 
   mcp_servers: Yup.array().of(Yup.mixed<MCPServerDetails>().required()).default([]),
+
+  enabled_builtin_subagents: Yup.array().of(Yup.string().required()).default([]),
 })

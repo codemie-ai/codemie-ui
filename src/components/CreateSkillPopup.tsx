@@ -81,6 +81,8 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
         visibility: SkillVisibility.PRIVATE,
         categories: [],
         toolkits: [],
+        mcp_servers: [],
+        enabled_builtin_subagents: [],
       })
       setCompanionFiles([])
       setBundleFolders([])
@@ -102,6 +104,8 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
       visibility: SkillVisibility.PRIVATE,
       categories: [],
       toolkits: [],
+      mcp_servers: [],
+      enabled_builtin_subagents: [],
     })
     setCompanionFiles([])
     setBundleFolders([])
@@ -134,6 +138,8 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
       visibility: SkillVisibility.PRIVATE,
       categories: [],
       toolkits: [],
+      mcp_servers: [],
+      enabled_builtin_subagents: [],
     })
     setCompanionFiles([])
     setBundleFolders([])

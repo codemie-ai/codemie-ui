@@ -149,6 +149,9 @@ export interface Assistant {
   skills?: Skill[]
   is_favorited?: boolean
   is_pinned?: boolean
+
+  // Built-in subagents
+  enabled_builtin_subagents?: string[]
 }
 
 export interface AgentCardCapabilities {
@@ -463,6 +466,9 @@ export interface CreateAssistantDto {
   guardrail_assignments: EntityGuardrailAssignment[]
   skip_integration_validation?: boolean
   skill_ids?: string[]
+
+  // Built-in subagents
+  enabled_builtin_subagents?: string[]
 }
 
 // Tool schema types

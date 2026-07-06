@@ -26,6 +26,7 @@ import {
   useState,
 } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { useSnapshot } from 'valtio'
 import * as Yup from 'yup'
 
 import Accordion from '@/components/Accordion'
@@ -174,6 +175,8 @@ const formSchema = Yup.object()
       .of(Yup.string())
       .max(MAX_SKILLS_PER_ASSISTANT, `Maximum ${MAX_SKILLS_PER_ASSISTANT} skills allowed`)
       .default([]),
+
+    enabled_builtin_subagents: Yup.array().of(Yup.string()).default([]),
   })
   .shape(guardrailAssignmentsSchema)
 
@@ -209,6 +212,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     ref
   ) => {
     const [isRequestHedgingEnabled] = useRequestHedgingEnabled()
+    const { builtinSubagentsCatalog, getBuiltinSubagentsCatalog } = useSnapshot(assistantsStore)
     const [toolkits, setToolkits] = useState<AssistantToolkit[]>(assistant?.toolkits ?? [])
     const [mcpServers, setMcpServers] = useState<MCPServerDetails[]>(assistant?.mcp_servers ?? [])
     const [hedgeableToolkits, setHedgeableToolkits] = useState<AssistantToolkit[]>([])
@@ -229,6 +233,12 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         context: false,
       }
     )
+
+    useEffect(() => {
+      // Load catalog once so built-in subagents can be shown in the dropdown
+      getBuiltinSubagentsCatalog?.()
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     // Mirror of the backend slugify (codemie.core.utils.slugify) so UI and server agree.
     const getSlugFromName = (name = '') =>
@@ -279,6 +289,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           hedging_config: assistant?.hedging_config ?? null,
           guardrail_assignments: assistant?.guardrail_assignments ?? [],
           skill_ids: assistant?.skills?.map((s) => s.id) ?? [],
+          enabled_builtin_subagents: assistant?.enabled_builtin_subagents ?? [],
         },
       })
     const { errors } = formState
@@ -404,6 +415,18 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
 
     const project = watch('project')
     const promptVariables = watch('prompt_variables')
+    const enabledBuiltinSubagents = watch('enabled_builtin_subagents') as string[]
+
+    const builtinSubagentOptions = useMemo(() => {
+      // For now backend provides a catalog but assistant configuration stores ids.
+      // Show built-ins as "virtual" assistants at the top of the selector list.
+      return (builtinSubagentsCatalog ?? []).map((item) => ({
+        id: item.id,
+        name: item.display_name,
+        iconUrl: '',
+        is_builtin_subagent: true,
+      }))
+    }, [builtinSubagentsCatalog])
 
     const handleCancel = useCallback(() => {
       if (onCancel) {
@@ -573,18 +596,58 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
                   />
                 </div>
                 <div data-onboarding="assistant-sub-assistants-field">
-                  <Controller
-                    name="nestedAssistants"
-                    control={control}
-                    render={({ field }) => (
-                      <AssistantSelector
-                        {...field}
-                        project={project}
-                        scope={ASSISTANT_INDEX_SCOPES.PROJECT_WITH_MARKETPLACE}
-                        enlargedLabel
-                      />
-                    )}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <Controller
+                      name="nestedAssistants"
+                      control={control}
+                      render={({ field }) => (
+                        <AssistantSelector
+                          {...field}
+                          project={project}
+                          scope={ASSISTANT_INDEX_SCOPES.PROJECT_WITH_MARKETPLACE}
+                          enlargedLabel
+                          extraOptionsTop={builtinSubagentOptions}
+                          onChange={(next) => {
+                            // Split selection into:
+                            // - regular assistants (nestedAssistants)
+                            // - built-in subagents (enabled_builtin_subagents)
+                            // Important: builtinSubagentOptions may still be loading; in that case,
+                            // preserve the "old approach" by also treating currently enabled ids
+                            // (and any option flagged as built-in) as built-ins.
+                            const builtinIds = new Set([
+                              ...builtinSubagentOptions.map((o) => o.id),
+                              ...(enabledBuiltinSubagents ?? []),
+                            ])
+                            const isBuiltin = (o: any) =>
+                              !!o?.is_builtin_subagent || builtinIds.has(o.id)
+
+                            const selectedBuiltinIds = next.filter(isBuiltin).map((o) => o.id)
+                            const selectedAssistants = next.filter((o) => !isBuiltin(o))
+
+                            field.onChange(selectedAssistants)
+                            setValue('enabled_builtin_subagents', selectedBuiltinIds, {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            })
+                          }}
+                          value={[
+                            ...(field.value ?? []),
+                            ...(enabledBuiltinSubagents ?? []).map((id) => {
+                              const found = builtinSubagentOptions.find((o) => o.id === id)
+                              return (
+                                found ?? {
+                                  id,
+                                  name: id,
+                                  iconUrl: '',
+                                  is_builtin_subagent: true,
+                                }
+                              )
+                            }),
+                          ]}
+                        />
+                      )}
+                    />
+                  </div>
                 </div>
                 <GuardrailAssignmentPanel
                   project={project}
