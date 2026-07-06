@@ -40,7 +40,7 @@ const PinnedRow: React.FC<PinnedRowProps> = ({ item, onDelete }) => {
         type="button"
         className={cn(
           'flex w-full items-center gap-2 px-2 py-1.5 rounded-lg h-9 text-left cursor-pointer',
-          'hover:bg-white/15 transition-colors text-text-specific-navigation-label',
+          'hover:bg-white/15 transition-colors text-text-specific-navigation-link',
           'focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-white/60',
           item.isDeletable && 'pr-7'
         )}

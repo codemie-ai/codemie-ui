@@ -17,10 +17,13 @@
 // AppearanceInputs and returns a partial CSS-var overrides map. The engine
 // folds all rule outputs into a single map.
 
+import { DARK_THEME_KEY } from '@/constants'
+
 import {
   blendColors,
   deriveAlternateOklchLightness,
   deriveContrastGray,
+  deriveThemedOklchLightness,
   hexToRgbValue,
   isDarkColor,
 } from './colorUtils'
@@ -42,9 +45,7 @@ const NAV_FADE_L_THRESHOLD = 0.5
 const NAV_FADE_L_AMOUNT = 0.08
 const ACTION_BTN_HOVER_L_THRESHOLD = 0.9
 const ACTION_BTN_HOVER_L_AMOUNT = 0.05
-const IN_PROGRESS_BORDER_L_THRESHOLD = 0.5
 const IN_PROGRESS_BORDER_L_AMOUNT = 0.15
-const IN_PROGRESS_BG_L_THRESHOLD = 0.5
 const IN_PROGRESS_BG_L_AMOUNT = 0.45
 
 // sRGB pre-blend alpha for bottom navigation label
@@ -196,23 +197,19 @@ export const RULES: Rule[] = [
     },
   },
   {
-    apply: (inputs) => ({
-      '--colors-in-progress-primary': hexToRgbValue(inputs.accentColor),
-      '--colors-in-progress-secondary': hexToRgbValue(
-        deriveAlternateOklchLightness(
-          inputs.accentColor,
-          IN_PROGRESS_BORDER_L_THRESHOLD,
-          IN_PROGRESS_BORDER_L_AMOUNT
-        )
-      ),
-      '--colors-in-progress-tertiary': hexToRgbValue(
-        deriveAlternateOklchLightness(
-          inputs.accentColor,
-          IN_PROGRESS_BG_L_THRESHOLD,
-          IN_PROGRESS_BG_L_AMOUNT
-        )
-      ),
-    }),
+    apply: (inputs) => {
+      const isDarkBase = inputs.baseTheme === DARK_THEME_KEY
+
+      return {
+        '--colors-in-progress-primary': hexToRgbValue(inputs.accentColor),
+        '--colors-in-progress-secondary': hexToRgbValue(
+          deriveThemedOklchLightness(inputs.accentColor, isDarkBase, IN_PROGRESS_BORDER_L_AMOUNT)
+        ),
+        '--colors-in-progress-tertiary': hexToRgbValue(
+          deriveThemedOklchLightness(inputs.accentColor, isDarkBase, IN_PROGRESS_BG_L_AMOUNT)
+        ),
+      }
+    },
   },
 
   // §3 — Opacity-blend rules (sRGB pre-blend; tailwindcss-themer consumes vars as

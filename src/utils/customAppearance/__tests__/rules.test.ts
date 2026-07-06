@@ -13,7 +13,10 @@
 // limitations under the License.
 //
 
+import { converter } from 'culori'
 import { describe, it, expect } from 'vitest'
+
+import { DARK_THEME_KEY, LIGHT_THEME_KEY } from '@/constants'
 
 import { runRules } from '../engine'
 import { DEFAULT_PRESET } from '../presets'
@@ -24,6 +27,13 @@ const inputs = (overrides: Partial<AppearanceInputs> = {}): AppearanceInputs => 
   ...DEFAULT_PRESET.values,
   ...overrides,
 })
+
+const toOklch = converter('oklch')
+const lightnessOf = (rgbChannels: string): number => {
+  const [r, g, b] = rgbChannels.split(' ').map(Number)
+
+  return toOklch({ mode: 'rgb', r: r / 255, g: g / 255, b: b / 255 })?.l ?? 0
+}
 
 describe('rules', () => {
   describe('runRules (engine)', () => {
@@ -153,6 +163,29 @@ describe('rules', () => {
       expect(result['--colors-in-progress-tertiary']).not.toBe(
         result['--colors-in-progress-primary']
       )
+    })
+
+    it.each([
+      ['#525252'], // dark gray, L≈0.44
+      ['#B4637A'], // Rosé Pine Dawn rose, L≈0.60 — lighter than the 0.5 midpoint
+      ['#02ADE6'], // Custom 3 sky blue, L≈0.70 — well above the 0.5 midpoint
+    ])('on a light base theme, badge background stays lighter than the accent for %s', (hex) => {
+      const result = runRules(inputs({ baseTheme: LIGHT_THEME_KEY, accentColor: hex }))
+      const primaryL = lightnessOf(result['--colors-in-progress-primary'] as string)
+      const tertiaryL = lightnessOf(result['--colors-in-progress-tertiary'] as string)
+
+      expect(tertiaryL).toBeGreaterThan(primaryL)
+    })
+
+    it.each([
+      ['#A3A3A3'], // light gray, L≈0.72
+      ['#BD93F9'], // Dracula lavender, L≈0.74
+    ])('on a dark base theme, badge background stays darker than the accent for %s', (hex) => {
+      const result = runRules(inputs({ baseTheme: DARK_THEME_KEY, accentColor: hex }))
+      const primaryL = lightnessOf(result['--colors-in-progress-primary'] as string)
+      const tertiaryL = lightnessOf(result['--colors-in-progress-tertiary'] as string)
+
+      expect(tertiaryL).toBeLessThan(primaryL)
     })
   })
 })

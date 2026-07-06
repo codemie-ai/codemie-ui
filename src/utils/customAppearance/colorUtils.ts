@@ -55,6 +55,21 @@ export const deriveAlternateOklchLightness = (
   return oklchToHex(newL, c, h)
 }
 
+// Darkens if isDarkBase, lightens otherwise, by amount in oklch lightness.
+// Direction is driven by the surface's theme rather than the color's own
+// lightness, so a vivid accent lighter than the 0.5 midpoint on a light theme
+// (or darker than it on a dark theme) doesn't flip toward the wrong shade.
+export const deriveThemedOklchLightness = (
+  hex: string,
+  isDarkBase: boolean,
+  amount: number
+): string => {
+  const [l, c, h] = hexToOklch(hex)
+  const newL = isDarkBase ? Math.max(0, l - amount) : Math.min(1, l + amount)
+
+  return oklchToHex(newL, c, h)
+}
+
 export const isDarkColor = (hex: string): boolean => {
   const [L] = hexToOklch(hex)
 
