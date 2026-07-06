@@ -145,9 +145,9 @@ describe('rules', () => {
       ['#2D6A4F'], // Sage Forest — dark green, L≈0.42
       ['#BD93F9'], // Dracula — light lavender, L≈0.75
       ['#006494'], // Navy Gold — dark blue, L≈0.41
-      ['#0F069F'], // ASML — very dark blue, L≈0.23
-      ['#52519A'], // ING — dark purple, L≈0.39
-      ['#02ADE6'], // Albert Heijn — sky blue, L≈0.67
+      ['#0F069F'], // Custom 1 — very dark blue, L≈0.23
+      ['#52519A'], // Custom 2 — dark purple, L≈0.39
+      ['#02ADE6'], // Custom 3 — sky blue, L≈0.67
     ])('tertiary differs from primary for accent %s', (hex) => {
       const result = runRules(inputs({ accentColor: hex }))
       expect(result['--colors-in-progress-tertiary']).not.toBe(

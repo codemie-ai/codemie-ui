@@ -208,8 +208,8 @@ const navyGoldDarkNavValues: PresetValues = {
   squareLogo: '',
 }
 
-// ASML-like — deep blue navigation with orange gradient accent, light blue-grey content.
-const asmlValues: PresetValues = {
+// Deep blue navigation with orange gradient accent, light blue-grey content.
+const custom1Values: PresetValues = {
   baseTheme: LIGHT_THEME_KEY,
   accentColor: '#0F069F',
   dropdownHoverBackground: '#E6F3FB',
@@ -237,8 +237,8 @@ const asmlValues: PresetValues = {
   squareLogo: '',
 }
 
-// ING-like — bold orange accent on clean white, light navigation.
-const ingValues: PresetValues = {
+// Bold orange accent on clean white, light navigation.
+const custom2Values: PresetValues = {
   baseTheme: LIGHT_THEME_KEY,
   accentColor: '#52519A',
   dropdownHoverBackground: '#FFF0E8',
@@ -266,8 +266,8 @@ const ingValues: PresetValues = {
   squareLogo: '',
 }
 
-// Albert Heijn-like — signature sky-blue accent on a fresh white/light-blue palette.
-const albertHeijnValues: PresetValues = {
+// Signature sky-blue accent on a fresh white/light-blue palette.
+const custom3Values: PresetValues = {
   baseTheme: LIGHT_THEME_KEY,
   accentColor: '#02ADE6',
   dropdownHoverBackground: '#F3F6F8',
@@ -430,18 +430,18 @@ export const PRESETS: BuiltinPreset[] = [
   },
   {
     type: 'builtin',
-    name: 'ASML - Brand Like',
-    values: asmlValues,
+    name: 'Custom 1 - Brand Like',
+    values: custom1Values,
   },
   {
     type: 'builtin',
-    name: 'ING - Brand Like',
-    values: ingValues,
+    name: 'Custom 2 - Brand Like',
+    values: custom2Values,
   },
   {
     type: 'builtin',
-    name: 'Albert Heijn - Brand Like',
-    values: albertHeijnValues,
+    name: 'Custom 3 - Brand Like',
+    values: custom3Values,
   },
 ]
 
