@@ -42,6 +42,10 @@ const NAV_FADE_L_THRESHOLD = 0.5
 const NAV_FADE_L_AMOUNT = 0.08
 const ACTION_BTN_HOVER_L_THRESHOLD = 0.9
 const ACTION_BTN_HOVER_L_AMOUNT = 0.05
+const IN_PROGRESS_BORDER_L_THRESHOLD = 0.5
+const IN_PROGRESS_BORDER_L_AMOUNT = 0.15
+const IN_PROGRESS_BG_L_THRESHOLD = 0.5
+const IN_PROGRESS_BG_L_AMOUNT = 0.45
 
 // sRGB pre-blend alpha for bottom navigation label
 const BOTTOM_NAV_LABEL_ALPHA = 0.8
@@ -74,9 +78,6 @@ export const RULES: Rule[] = [
     '--colors-border-quaternary',
     '--colors-border-specific-button-secondary-hover',
     '--colors-icon-accent',
-    '--colors-in-progress-primary',
-    '--colors-in-progress-secondary',
-    '--colors-in-progress-tertiary',
     '--colors-text-accent',
     '--colors-text-accent-status',
     '--colors-text-heading',
@@ -193,6 +194,25 @@ export const RULES: Rule[] = [
         ),
       }
     },
+  },
+  {
+    apply: (inputs) => ({
+      '--colors-in-progress-primary': hexToRgbValue(inputs.accentColor),
+      '--colors-in-progress-secondary': hexToRgbValue(
+        deriveAlternateOklchLightness(
+          inputs.accentColor,
+          IN_PROGRESS_BORDER_L_THRESHOLD,
+          IN_PROGRESS_BORDER_L_AMOUNT
+        )
+      ),
+      '--colors-in-progress-tertiary': hexToRgbValue(
+        deriveAlternateOklchLightness(
+          inputs.accentColor,
+          IN_PROGRESS_BG_L_THRESHOLD,
+          IN_PROGRESS_BG_L_AMOUNT
+        )
+      ),
+    }),
   },
 
   // §3 — Opacity-blend rules (sRGB pre-blend; tailwindcss-themer consumes vars as

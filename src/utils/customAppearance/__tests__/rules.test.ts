@@ -125,4 +125,34 @@ describe('rules', () => {
       expect(result['--colors-border-specific-primary-button-from']).toBe('119 136 153')
     })
   })
+
+  describe('derive.inProgressGroup', () => {
+    it('generates distinct values for primary, secondary, and tertiary', () => {
+      const result = runRules(inputs({ accentColor: '#52519A' }))
+      const primary = result['--colors-in-progress-primary']
+      const secondary = result['--colors-in-progress-secondary']
+      const tertiary = result['--colors-in-progress-tertiary']
+
+      expect(primary).not.toBe(secondary)
+      expect(primary).not.toBe(tertiary)
+      expect(secondary).not.toBe(tertiary)
+    })
+
+    it.each([
+      ['#525252'], // Clean White — dark gray, L≈0.44
+      ['#A3A3A3'], // Clean Black — light gray, L≈0.68
+      ['#B4637A'], // Rosé Pine Dawn — rose, L≈0.55
+      ['#2D6A4F'], // Sage Forest — dark green, L≈0.42
+      ['#BD93F9'], // Dracula — light lavender, L≈0.75
+      ['#006494'], // Navy Gold — dark blue, L≈0.41
+      ['#0F069F'], // ASML — very dark blue, L≈0.23
+      ['#52519A'], // ING — dark purple, L≈0.39
+      ['#02ADE6'], // Albert Heijn — sky blue, L≈0.67
+    ])('tertiary differs from primary for accent %s', (hex) => {
+      const result = runRules(inputs({ accentColor: hex }))
+      expect(result['--colors-in-progress-tertiary']).not.toBe(
+        result['--colors-in-progress-primary']
+      )
+    })
+  })
 })

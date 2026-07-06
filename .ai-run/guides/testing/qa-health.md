@@ -1,6 +1,6 @@
 # QA Health
 
-**Last assessed**: 2026-06-08
+**Last assessed**: 2026-07-06
 **Coverage**: qualitative: medium — ~90 unit test files cover components and utilities well; store layer and page-level integration tests are sparse
 
 ## Coverage Summary
@@ -60,8 +60,8 @@ Modules with zero or low coverage that carry business logic:
 
 Most recently modified test files (from git log):
 
-1. `src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx`
-2. `src/store/__tests__/chatGeneration.test.ts`
-3. `src/pages/analytics/components/__tests__/AnalyticsFilters.test.tsx`
-4. `src/pages/workflows/details/states/__tests__/ContinueWithInputPopup.test.tsx`
-5. `src/authentication/local/__tests__/SignInPage.integration.test.tsx`
+1. `src/utils/customAppearance/__tests__/rules.test.ts` — EPMCDME-13249: new `derive.inProgressGroup` suite (distinct-values + 9 parameterised accent cases)
+2. `src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx`
+3. `src/store/__tests__/chatGeneration.test.ts`
+4. `src/pages/analytics/components/__tests__/AnalyticsFilters.test.tsx`
+5. `src/pages/workflows/details/states/__tests__/ContinueWithInputPopup.test.tsx`
