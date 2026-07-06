@@ -17,3 +17,5 @@ export enum IntegrationOption {
   USER = 'User',
   PROJECT = 'Project',
 }
+
+export const GOOGLE_OAUTH_CREDENTIAL_TYPE = 'googleoauth'

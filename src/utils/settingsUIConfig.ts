@@ -15,6 +15,7 @@
 
 import * as Yup from 'yup'
 
+import { GOOGLE_OAUTH_CREDENTIAL_TYPE } from '@/constants/integration'
 import { MCP_SETTINGS_TYPE } from '@/constants/settings'
 import {
   CredentialAccessType,
@@ -781,5 +782,11 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
       },
       resource_id: { placeholder: 'Resource ID' },
     },
+  },
+  [GOOGLE_OAUTH_CREDENTIAL_TYPE]: {
+    displayName: 'Google OAuth',
+    serverEnum: 'GoogleOAuth',
+    accessType: CredentialAccessType.USER_ONLY,
+    fields: {},
   },
 }

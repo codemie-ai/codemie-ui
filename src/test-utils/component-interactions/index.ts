@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+export * from './autocomplete'
 export * from './helpers'
 export * from './menu'
 export * from './multi-select'

@@ -63,7 +63,6 @@ export const getCredentialUIMapping = ({
       settingType === SETTING_TYPE_USER &&
       roleRestriction === CredentialRoleRestriction.ADMIN_ONLY &&
       isConfigItemEnabled(customerConfig ?? [], config.personalFeatureFlag ?? '')
-
     if (
       roleRestriction === CredentialRoleRestriction.ADMIN_ONLY &&
       !isProjectAdmin &&

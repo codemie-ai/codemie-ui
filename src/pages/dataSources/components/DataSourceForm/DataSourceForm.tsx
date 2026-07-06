@@ -445,11 +445,18 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                 <IndexTypeField.Google
                   {...{
                     errors,
-                    register,
                     control,
                     googleDocsGuideConfig,
                     googleDocsGuideEnabled,
                     embeddingModels,
+                    projectName,
+                    hasNoSettings,
+                    isDropdownShown,
+                    filteredSettings,
+                    onIntegrationCreated: () => {
+                      userSettingsStore.resetIsSettingsIndexed()
+                      userSettingsStore.indexSettings()
+                    },
                   }}
                 />
               )}

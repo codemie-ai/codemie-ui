@@ -515,7 +515,8 @@ export const dataSourceStore = proxy({
     googleDoc: any,
     embedding_model?: string,
     guardrail_assignments?: EntityGuardrailAssignment[],
-    cron_expression?: string
+    cron_expression?: string,
+    setting_id?: string
   ) {
     return handleIndexResponse(
       api.post('v1/index/knowledge_base/google', {
@@ -527,6 +528,7 @@ export const dataSourceStore = proxy({
         embedding_model,
         guardrail_assignments,
         cron_expression,
+        setting_id,
       })
     )
   },

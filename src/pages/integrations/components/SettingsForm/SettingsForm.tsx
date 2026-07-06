@@ -27,6 +27,7 @@ import RecordInput from '@/components/form/RecordInput/RecordInput'
 import Switch from '@/components/form/Switch'
 import InfoMessage from '@/components/Message/Message'
 import ProjectSelector from '@/components/ProjectSelector'
+import { GOOGLE_OAUTH_CREDENTIAL_TYPE } from '@/constants/integration'
 import { useActiveHelpSegment } from '@/hooks/useActiveHelpSegment'
 import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
@@ -47,9 +48,11 @@ import {
   generateDefaultAlias,
 } from '@/utils/settings'
 
+
 import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
 import TestIntegration from '../TestIntegration'
 import CredentialFields from './CredentialFields'
+import GoogleOAuthField from './GoogleOAuthField'
 
 export interface SettingsFormRef {
   submit: () => void
@@ -170,6 +173,13 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       alias: Yup.string().required(ALIAS_REQUIRED_ERR),
     }
 
+    if (credentialType === GOOGLE_OAUTH_CREDENTIAL_TYPE) {
+      if (!editing) {
+        schema.oauth_state = Yup.string().required('Please sign in with Google before saving')
+      }
+      return Yup.object(schema)
+    }
+
     const config = CREDENTIAL_VALUES_MAPPING[credentialType]
     if (!config) return Yup.object(schema)
 
@@ -180,7 +190,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     })
 
     return Yup.object(schema)
-  }, [CREDENTIAL_VALUES_MAPPING, credentialType])
+  }, [CREDENTIAL_VALUES_MAPPING, credentialType, editing])
 
   const {
     control,
@@ -188,6 +198,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     getValues,
     trigger,
     reset,
+    formState: { errors },
   } = useForm({
     mode: 'onChange',
     resolver: yupResolver(formSchema),
@@ -297,10 +308,15 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       return
     }
 
+    const isGoogleOAuth = credentialType === GOOGLE_OAUTH_CREDENTIAL_TYPE
+
     const hasManualConfig = CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration
-    const credential_values = hasManualConfig
-      ? manualCredentialValues.filter((item) => item.key && item.value)
-      : convertCredsToKeyValue(getValues()).filter(({ value }) => value !== undefined)
+    let credential_values: { key: string; value: unknown }[] = []
+    if (!isGoogleOAuth) {
+      credential_values = hasManualConfig
+        ? manualCredentialValues.filter((item) => item.key && item.value)
+        : convertCredsToKeyValue(getValues()).filter(({ value }) => value !== undefined)
+    }
 
     onSubmit({
       project_name: projectName,
@@ -308,6 +324,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       credential_type: getOriginalCredentialType(credentialType),
       credential_values,
       is_global: isGlobal,
+      ...(isGoogleOAuth && { oauth_state: getValues('oauth_state') || undefined }),
     })
   }
 
@@ -404,40 +421,51 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
           <SettingFormMessage message={getCredentialMessage(credentialType)!} />
         )}
 
-        <div data-onboarding="integration-credential-fields" className="flex flex-col gap-y-6">
-          {CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration ? (
-            <RecordInput
-              id="manualFields"
-              value={manualCredentialValues}
-              onChange={setManualCredentialValues}
-              name="manualFields"
-              label={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.label}
-              sensitive={
-                CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.sensitive
-              }
-              addText={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.addText}
-            />
-          ) : (
-            <>
-              <div className="-mt-3 -mb-2">
-                <hr className="opacity-25 mb-6 border-border-structural" />
-                {getSettingsFieldsSectionTitle(credentialType) && (
-                  <h4 className="text-sm font-medium">
-                    {getSettingsFieldsSectionTitle(credentialType)}
-                  </h4>
+        {credentialType === GOOGLE_OAUTH_CREDENTIAL_TYPE ? (
+          <GoogleOAuthField
+            setValue={setFormValue}
+            editing={editing}
+            formError={errors.oauth_state?.message as string | undefined}
+            initialUserEmail={initialCredentialValues?.email as string | undefined}
+          />
+        ) : (
+          <div data-onboarding="integration-credential-fields" className="flex flex-col gap-y-6">
+            {CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration ? (
+              <RecordInput
+                id="manualFields"
+                value={manualCredentialValues}
+                onChange={setManualCredentialValues}
+                name="manualFields"
+                label={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.label}
+                sensitive={
+                  CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.sensitive
+                }
+                addText={
+                  CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.addText
+                }
+              />
+            ) : (
+              <>
+                <div className="-mt-3 -mb-2">
+                  <hr className="opacity-25 mb-6 border-border-structural" />
+                  {getSettingsFieldsSectionTitle(credentialType) && (
+                    <h4 className="text-sm font-medium">
+                      {getSettingsFieldsSectionTitle(credentialType)}
+                    </h4>
+                  )}
+                </div>
+                {CREDENTIAL_VALUES_MAPPING[credentialType] && (
+                  <CredentialFields
+                    control={control}
+                    credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
+                    buildWebhookURL={buildWebhookURL}
+                    editing={editing}
+                  />
                 )}
-              </div>
-              {CREDENTIAL_VALUES_MAPPING[credentialType] && (
-                <CredentialFields
-                  control={control}
-                  credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
-                  buildWebhookURL={buildWebhookURL}
-                  editing={editing}
-                />
-              )}
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
 
         <InfoMessage>
           Important note: Your sensitive information is encrypted for security and displayed here in

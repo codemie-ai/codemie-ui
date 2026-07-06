@@ -229,6 +229,7 @@ export const useIndexCreation = ({
     const request = {
       ...getBaseRequestFields(values, index, hasProjectChanged),
       googleDoc: values.googleDoc,
+      setting_id: values.setting_id || undefined,
     }
 
     if (isEditMode) {
@@ -243,7 +244,8 @@ export const useIndexCreation = ({
       request.googleDoc as string,
       request.embedding_model as string | undefined,
       request.guardrail_assignments,
-      request.cron_expression ?? undefined
+      request.cron_expression ?? undefined,
+      request.setting_id
     )
   }
 

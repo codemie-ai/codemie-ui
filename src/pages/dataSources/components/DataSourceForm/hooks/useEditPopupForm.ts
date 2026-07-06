@@ -197,6 +197,7 @@ const baseValidationSchema = Yup.object({
         INDEX_TYPES.GIT,
         INDEX_TYPES.AZURE_DEVOPS_WIKI,
         INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM,
+        INDEX_TYPES.GOOGLE,
       ].includes(indexType)
     },
     then: (schema) => schema.required('Integration is required for this data source type'),

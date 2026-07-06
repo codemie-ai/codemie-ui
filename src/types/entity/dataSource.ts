@@ -26,17 +26,31 @@ export enum OAuthStatus {
   ERROR = 'error',
 }
 
-export interface SharePointOAuthInitiateResponse {
+export enum OAuthProvider {
+  GOOGLE = 'Google',
+  MICROSOFT = 'Microsoft',
+}
+
+export interface OAuthInitiateResponse {
   auth_url: string
   state: string
 }
 
-export interface SharePointOAuthStatusResponse {
+export interface OAuthStatusResponse {
   status: 'pending' | 'success' | 'error'
-  access_token?: string
-  username?: string
   message?: string
 }
+
+export interface GoogleOAuthStatusResponse extends OAuthStatusResponse {
+  email?: string
+}
+
+export interface SharePointOAuthStatusResponse extends OAuthStatusResponse {
+  access_token?: string
+  username?: string
+}
+
+export type SharePointOAuthInitiateResponse = OAuthInitiateResponse
 
 export interface DeviceCodeState {
   userCode: string

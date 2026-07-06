@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
 
 import { TEXT_EMBEDDING_ADA } from '@/constants'
 import { INDEX_TYPES, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
+import { GOOGLE_OAUTH_CREDENTIAL_TYPE } from '@/constants/integration'
 import { appInfoStore } from '@/store/appInfo'
 import { userSettingsStore } from '@/store/userSettings'
 import { getConfigItemSettings, isConfigItemEnabled } from '@/utils/settings'
@@ -56,6 +57,7 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
       [INDEX_TYPES.AZURE_DEVOPS_WIKI]: getSettingOptions('azuredevops'),
       [INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM]: getSettingOptions('azuredevops'),
       [INDEX_TYPES.SHAREPOINT]: getSettingOptions('sharepoint'),
+      [INDEX_TYPES.GOOGLE]: getSettingOptions(GOOGLE_OAUTH_CREDENTIAL_TYPE),
     }),
     [getSettingOptions]
   )
@@ -103,7 +105,9 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
       return
     }
 
-    const newSettingOptions = getSettingOptions(indexType)
+    const credentialKeyForType =
+      indexType === INDEX_TYPES.GOOGLE ? GOOGLE_OAUTH_CREDENTIAL_TYPE : indexType
+    const newSettingOptions = getSettingOptions(credentialKeyForType)
 
     if (newSettingOptions.length === 1) {
       if (
@@ -114,7 +118,8 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
         indexType === INDEX_TYPES.SVN ||
         indexType === INDEX_TYPES.AZURE_DEVOPS_WIKI ||
         indexType === INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM ||
-        indexType === INDEX_TYPES.SHAREPOINT
+        indexType === INDEX_TYPES.SHAREPOINT ||
+        indexType === INDEX_TYPES.GOOGLE
       ) {
         setValue('setting_id', newSettingOptions[0].id)
       }

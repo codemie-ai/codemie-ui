@@ -16,6 +16,7 @@
 import { proxy } from 'valtio'
 
 import { Pagination } from '@/types/common'
+import { GoogleOAuthStatusResponse, OAuthInitiateResponse } from '@/types/entity/dataSource'
 import { UserSetting } from '@/types/entity/setting'
 import api from '@/utils/api'
 
@@ -48,6 +49,8 @@ interface UserSettingsStoreType {
   deleteUserSetting: (id: string) => Promise<UserSetting>
   testSetting: (type: string, setting_id?: string, values?: Record<string, unknown>) => Promise<any>
   resetIsSettingsIndexed: () => void
+  initiateGoogleDocsOAuth: () => Promise<OAuthInitiateResponse>
+  getGoogleDocsOAuthStatus: (state: string) => Promise<GoogleOAuthStatusResponse>
 }
 
 export const userSettingsStore = proxy<UserSettingsStoreType>({
@@ -165,5 +168,20 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
   },
   resetIsSettingsIndexed() {
     userSettingsStore.isSettingsIndexed = false
+  },
+
+  async initiateGoogleDocsOAuth(): Promise<OAuthInitiateResponse> {
+    const response = await api.post('v1/google-oauth/initiate', {})
+    return response.json()
+  },
+
+  async getGoogleDocsOAuthStatus(state: string): Promise<GoogleOAuthStatusResponse> {
+    const response = await api.get(`v1/google-oauth/status/${state}`, {
+      skipErrorHandling: true,
+    })
+    if (!response.ok) {
+      return { status: 'error', message: 'Authorization session expired. Please try again.' }
+    }
+    return response.json()
   },
 })
