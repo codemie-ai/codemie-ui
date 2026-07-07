@@ -71,7 +71,9 @@ interface WorkflowsStore {
   setWorkflowsPagination: (page?: number, perPage?: number) => void
   fetchWorkflow: (id: string | number) => Promise<Workflow>
   getWorkflow: (id: string | number) => Promise<Workflow>
-  indexWorkflowTemplates: () => Promise<void>
+  workflowTemplatesPagination: Pagination
+  indexWorkflowTemplates: (page?: number, perPage?: number) => Promise<void>
+
   getWorkflowTemplate: (slug: string) => Promise<void>
   getWorkflowTemplateBySlug: (slug: string) => Promise<WorkflowTemplate>
   getWorkflowOptions: (params?: { search?: string; project?: string }) => Promise<Workflow>
@@ -113,6 +115,8 @@ interface WorkflowsStore {
   unpublishWorkflowFromMarketplace: (id: string) => Promise<void>
 }
 
+let workflowTemplatesAbortController: AbortController | null = null
+
 export const workflowsStore = proxy<WorkflowsStore>({
   workflows: [],
   workflowsScope: WORKFLOW_LIST_SCOPE.ALL,
@@ -122,6 +126,7 @@ export const workflowsStore = proxy<WorkflowsStore>({
   workflowsTemplatesLoading: true,
   workflowsTemplatesLoaded: false,
   workflowTemplates: [],
+  workflowTemplatesPagination: { page: 0, perPage: 12, totalPages: 0, totalCount: 0 },
   workflowTemplate: null,
   workflowTemplateLoading: false,
   currentWorkflow: null,
@@ -208,15 +213,40 @@ export const workflowsStore = proxy<WorkflowsStore>({
     return response.json()
   },
 
-  async indexWorkflowTemplates(this: WorkflowsStore) {
+  async indexWorkflowTemplates(
+    this: WorkflowsStore,
+    page = this.workflowTemplatesPagination.page,
+    perPage = this.workflowTemplatesPagination.perPage
+  ) {
+    workflowTemplatesAbortController?.abort()
+    workflowTemplatesAbortController = new AbortController()
+    const { signal } = workflowTemplatesAbortController
+
     this.workflowsTemplatesLoading = true
     try {
-      const response = await api.get('v1/workflows/prebuilt')
-      const data = await response.json()
-      this.workflowTemplates = data
+      const response = await api.get(`v1/workflows/prebuilt?page=${page}&per_page=${perPage}`, {
+        signal,
+      })
+      const json = await response.json()
+      const isLegacyArray = Array.isArray(json)
+      const data = isLegacyArray ? json : json.data ?? []
+      const pagination = isLegacyArray ? null : json.pagination
+      this.workflowTemplates = isLegacyArray
+        ? data.slice(page * perPage, (page + 1) * perPage)
+        : data
+      this.workflowTemplatesPagination = {
+        page: pagination?.page ?? page,
+        perPage: pagination?.per_page ?? perPage,
+        totalPages: pagination?.pages ?? (perPage > 0 ? Math.ceil(data.length / perPage) : 1),
+        totalCount: pagination?.total ?? data.length,
+      }
       this.workflowsTemplatesLoaded = true
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') throw error
     } finally {
-      this.workflowsTemplatesLoading = false
+      if (!signal.aborted) {
+        this.workflowsTemplatesLoading = false
+      }
     }
   },
 

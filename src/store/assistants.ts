@@ -59,6 +59,7 @@ interface AssistantsStoreType {
   assistants: Assistant[]
   assistantCategories: AssistantCategory[]
   assistantTemplates: AssistantTemplate[]
+  assistantTemplatesLoading: boolean
   assistantsPagination: Pagination
   recentAssistants: Assistant[]
   availableToolkits: AssistantToolkit[]
@@ -87,7 +88,8 @@ interface AssistantsStoreType {
   getRecentAssistants: () => Promise<void | any[]>
   getHelpAssistants: () => Promise<void>
   getDefaultAssistant: () => Promise<void>
-  loadAssistantTemplates: () => Promise<void>
+  assistantTemplatesPagination: Pagination
+  loadAssistantTemplates: (page?: number, perPage?: number) => Promise<void>
   getAssistant: (id: string, skipErrorHandling?: boolean) => Promise<Assistant>
   getAssistantBySlug: (
     slug: string,
@@ -172,10 +174,6 @@ interface AssistantsStoreType {
 
 export const MAX_RECENT_ASSISTANTS = 3
 
-// Normalizes a raw assistant API response into the domain model:
-// maps snake_case nested_assistants to camelCase nestedAssistants and derives
-// the current user's pinned/favorited flags from preferences. Both the id- and
-// slug-based fetch paths run through this so their returned model stays identical.
 export function normalizeAssistant(raw: Assistant): Assistant {
   const pinnedIds = preferencesStore.preferences?.pinned_assistants ?? []
   const favoriteIds = new Set(preferencesStore.preferences?.favorites?.assistants ?? [])
@@ -188,10 +186,14 @@ export function normalizeAssistant(raw: Assistant): Assistant {
   }
 }
 
+let assistantTemplatesAbortController: AbortController | null = null
+
 export const assistantsStore = proxy<AssistantsStoreType>({
   assistants: [],
   pinnedAssistants: [],
   assistantTemplates: [],
+  assistantTemplatesLoading: false,
+  assistantTemplatesPagination: { page: 0, perPage: 12, totalPages: 0, totalCount: 0 },
   assistantsPagination: {
     page: 0,
     perPage: 12,
@@ -270,13 +272,39 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     })
   },
 
-  loadAssistantTemplates() {
-    return api
-      .get('v1/assistants/prebuilt')
-      .then((response) => response.json())
-      .then((response) => {
-        assistantsStore.assistantTemplates = response
+  async loadAssistantTemplates(
+    page = assistantsStore.assistantTemplatesPagination.page,
+    perPage = assistantsStore.assistantTemplatesPagination.perPage
+  ) {
+    assistantTemplatesAbortController?.abort()
+    assistantTemplatesAbortController = new AbortController()
+    const { signal } = assistantTemplatesAbortController
+
+    assistantsStore.assistantTemplatesLoading = true
+    try {
+      const response = await api.get(`v1/assistants/prebuilt?page=${page}&per_page=${perPage}`, {
+        signal,
       })
+      const json = await response.json()
+      const isLegacyArray = Array.isArray(json)
+      const data = isLegacyArray ? json : json.data ?? []
+      const pagination = isLegacyArray ? null : json.pagination
+      assistantsStore.assistantTemplates = isLegacyArray
+        ? data.slice(page * perPage, (page + 1) * perPage)
+        : data
+      assistantsStore.assistantTemplatesPagination = {
+        page: pagination?.page ?? page,
+        perPage: pagination?.per_page ?? perPage,
+        totalPages: pagination?.pages ?? (perPage > 0 ? Math.ceil(data.length / perPage) : 1),
+        totalCount: pagination?.total ?? data.length,
+      }
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') throw error
+    } finally {
+      if (!signal.aborted) {
+        assistantsStore.assistantTemplatesLoading = false
+      }
+    }
   },
 
   deleteAssistant(id) {

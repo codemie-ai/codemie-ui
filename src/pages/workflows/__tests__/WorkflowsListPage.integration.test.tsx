@@ -1292,6 +1292,14 @@ describe('WorkflowsListPage - Integration', () => {
   })
 
   describe('Templates', () => {
+    beforeEach(() => {
+      ;(mockRouterState as any).path = '/workflows/templates'
+    })
+
+    afterEach(() => {
+      ;(mockRouterState as any).path = '/'
+    })
+
     it('loads and displays templates list', async () => {
       mockAPI('GET', 'v1/workflows/prebuilt', [
         {

@@ -14,7 +14,7 @@
 //
 
 import { classNames as cn } from 'primereact/utils'
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import PlusIcon from '@/assets/icons/plus.svg?react'
@@ -26,24 +26,28 @@ import { AssistantTab, ButtonSize } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { NEW_ASSISTANT, NEW_REMOTE_ASSISTANT } from '@/constants/routes'
 import { useSidebarOffsetClass } from '@/hooks/useSidebarOffsetClass'
-import { useVueRouter } from '@/hooks/useVueRouter'
+import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import AssistantsList from '@/pages/assistants/components/AssistantList'
 import AssistantFilters from '@/pages/assistants/components/AssistantList/AssistantFilters'
 import AssistantsNavigation from '@/pages/assistants/components/AssistantsNavigation'
 import ExportAssistantPopup from '@/pages/assistants/components/ExportAssistantPopup'
 import { useAssistantFilters } from '@/pages/assistants/hooks/useAssistantFilters'
-import { useAssistants } from '@/pages/assistants/hooks/useAssistants'
 import { useAssistantsList } from '@/pages/assistants/hooks/useAssistantsList'
 import { appInfoStore } from '@/store/appInfo'
+import { assistantsStore } from '@/store/assistants'
 import { Assistant } from '@/types/entity/assistant'
 import { isConfigItemEnabled } from '@/utils/settings'
+import toaster from '@/utils/toaster'
 
 interface AssistantsListPageProps {
   tab: AssistantTab
 }
 
+const DEFAULT_TEMPLATES_PER_PAGE = 12
+
 const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
   const router = useVueRouter()
+  const route = useVueRoute()
   const scopeByTab = {
     [AssistantTab.ALL]: ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER,
     [AssistantTab.MARKETPLACE]: ASSISTANT_INDEX_SCOPES.MARKETPLACE,
@@ -55,7 +59,6 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
   const activeScope = scopeByTab[currentTabId] || ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER
   const isTemplate = currentTabId === AssistantTab.TEMPLATES
   const isFavorites = currentTabId === AssistantTab.FAVORITES
-  const { loadAssistants: loadTemplates, loading: loadingTemplates } = useAssistants()
   const { filters, handleFilterChange } = useAssistantFilters({ scope: activeScope })
 
   const [showExportPopup, setShowExportPopup] = useState(false)
@@ -66,6 +69,9 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
       scope: activeScope,
       filterValues: filters,
     })
+
+  const { assistantTemplatesPagination: templatesPagination, assistantTemplatesLoading } =
+    useSnapshot(assistantsStore)
 
   const isInitialMountRef = useRef(true)
 
@@ -103,6 +109,47 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
     loadAssistantsList({ page, perPage }, false)
   }
 
+  const getTemplatesPageFromURL = useCallback(() => {
+    const pageFromQuery = route.query.page
+    const perPageFromQuery = route.query.per_page
+
+    let pageToLoad = 0
+    if (pageFromQuery && typeof pageFromQuery === 'string') {
+      const parsed = parseInt(pageFromQuery, 10)
+      pageToLoad = !Number.isNaN(parsed) && parsed >= 1 ? parsed - 1 : 0
+    }
+
+    let perPageToLoad = DEFAULT_TEMPLATES_PER_PAGE
+    if (perPageFromQuery && typeof perPageFromQuery === 'string') {
+      const parsed = parseInt(perPageFromQuery, 10)
+      perPageToLoad = !Number.isNaN(parsed) && parsed > 0 ? parsed : DEFAULT_TEMPLATES_PER_PAGE
+    }
+
+    return { page: pageToLoad, perPage: perPageToLoad }
+  }, [route.query.page, route.query.per_page])
+
+  const updateTemplatesURL = useCallback(
+    (backendPage: number, currentPerPage: number) => {
+      const { page: _, per_page: __, ...restQuery } = router.currentRoute.value.query
+      const newQuery = { ...restQuery } as Record<string, string>
+      if (backendPage > 0) newQuery.page = (backendPage + 1).toString()
+      if (currentPerPage !== DEFAULT_TEMPLATES_PER_PAGE)
+        newQuery.per_page = currentPerPage.toString()
+      router.replace({ query: newQuery })
+    },
+    [router]
+  )
+
+  const handleTemplatesPageChange = async (page: number, perPage?: number) => {
+    const currentPerPage = perPage ?? templatesPagination.perPage
+    try {
+      await assistantsStore.loadAssistantTemplates(page, currentPerPage)
+      updateTemplatesURL(page, currentPerPage)
+    } catch {
+      toaster.error('Failed to load assistant templates')
+    }
+  }
+
   const handleExportAssistant = (assistant: Assistant) => {
     setSelectedAssistant(assistant)
     setShowExportPopup(true)
@@ -119,7 +166,10 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
 
   useEffect(() => {
     if (isTemplate) {
-      loadTemplates({ scope: activeScope, filters, perPage: 1000 })
+      const { page, perPage } = getTemplatesPageFromURL()
+      assistantsStore.loadAssistantTemplates(page, perPage).catch(() => {
+        toaster.error('Failed to load assistant templates')
+      })
     } else {
       const isInitialLoad = isInitialMountRef.current
 
@@ -132,7 +182,7 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
   }, [JSON.stringify(filters), isTemplate])
 
   const getLoading = () => {
-    if (isTemplate) return loadingTemplates
+    if (isTemplate) return assistantTemplatesLoading
     return loading
   }
   const isLoading = getLoading()
@@ -169,6 +219,18 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
             totalPages={totalPages}
             setPage={handlePageChange}
             perPage={perPage}
+          />
+        )}
+        {isTemplate && (
+          <Pagination
+            className={cn(
+              'z-[10] mt-6 fixed bottom-0 right-0 bg-surface-base-primary duration-150 px-6 pt-[20px] pb-[14px]',
+              paginationOffset
+            )}
+            currentPage={templatesPagination.page}
+            totalPages={templatesPagination.totalPages}
+            setPage={handleTemplatesPageChange}
+            perPage={templatesPagination.perPage}
           />
         )}
       </PageLayout>

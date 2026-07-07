@@ -159,28 +159,21 @@ describe('AssistantsListPage - Integration', () => {
 
     it('navigates to templates tab and loads prebuilt assistants', async () => {
       mockAPI('GET', 'v1/config', [])
-      mockAPI('GET', 'v1/assistants', {
+      mockAPI('GET', 'v1/assistants/prebuilt', {
         data: [
           createAssistantFixture({
             id: 'template-1',
             name: 'Template Assistant',
           }),
         ],
-        pagination: { page: 0, per_page: 1000, pages: 1, total: 1 },
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
       })
 
       renderPage('/assistants/templates')
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining('v1/assistants'),
-          expect.anything()
-        )
-      })
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining('scope=templates'),
+          expect.stringContaining('v1/assistants/prebuilt'),
           expect.anything()
         )
       })

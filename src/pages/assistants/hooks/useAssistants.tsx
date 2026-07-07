@@ -21,7 +21,7 @@ import { assistantsStore } from '@/store/assistants'
 import { favoritesStore } from '@/store/favorites'
 import { FavoritesFilters } from '@/types/entity/favorites'
 
-export const useAssistants = () => {
+export const useAssistants = (isTemplate?: boolean) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentScope, setCurrentScope] = useState('')
@@ -57,6 +57,8 @@ export const useAssistants = () => {
             perPage
           )
         }
+      } else if (isTemplate) {
+        await assistantsStore.loadAssistantTemplates(page, perPage)
       } else {
         await assistantsStore.indexAssistants(
           scope,
@@ -79,6 +81,7 @@ export const useAssistants = () => {
       ? (favSnap.assistants as unknown as typeof snap.assistants)
       : snap.assistants,
     assistantTemplates: snap.assistantTemplates,
+    assistantTemplatesPagination: snap.assistantTemplatesPagination,
     pagination: isFavoritesScope ? favSnap.assistantsPagination : snap.assistantsPagination,
     loading: isFavoritesScope ? favSnap.loading : loading,
     error,

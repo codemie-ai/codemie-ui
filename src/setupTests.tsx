@@ -135,6 +135,10 @@ vi.mock('@/hooks/useVueRouter', () => {
   return import('@/hooks/__mocks__/useVueRouter')
 })
 
+vi.mock('@/components/Navigation/NavigationPinnedSection/NavigationPinnedSection', () => ({
+  default: () => null,
+}))
+
 vi.mock('@/utils/toaster', () => ({
   default: {
     error: vi.fn(),
@@ -187,7 +191,6 @@ const globalDefaults: Record<string, () => unknown> = {
   'v1/llm_models/image_generation': () => [],
   'v1/embeddings_models': () => [],
   'v1/config': () => [],
-  'v1/assistants': () => ({ data: [], pagination: { total: 0, page: 0, per_page: 20 } }),
   'v1/assistants/user': () => [],
   'v1/assistants/categories': () => [
     { id: 1, name: 'Productivity', description: 'Tools to boost productivity' },
@@ -214,6 +217,7 @@ const globalDefaults: Record<string, () => unknown> = {
   'v1/conversations': () => ({ data: [], pagination: { total: 0, page: 0, per_page: 20 } }),
   'v1/customer-config': () => ({}),
   'v1/skills/categories': () => [],
+  'v1/assistants': () => ({ data: [], pagination: { total: 0, page: 0, per_page: 12, pages: 0 } }),
   'v1/assistants/default': () => null,
   'v1/assistants/help': () => ({ data: [] }),
   'v1/applications': () => [],

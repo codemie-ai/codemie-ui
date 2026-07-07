@@ -26,7 +26,7 @@ vi.mock('@/store/workflows', () => ({
   workflowsStore: {
     workflowTemplates: [],
     workflowsTemplatesLoading: false,
-    workflowsFilters: {},
+    workflowTemplatesPagination: { page: 0, perPage: 12, totalPages: 0, totalCount: 0 },
     indexWorkflowTemplates: vi.fn().mockResolvedValue(undefined),
   },
 }))
@@ -50,7 +50,12 @@ describe('WorkflowTemplates', () => {
     const { workflowsStore } = await import('@/store/workflows')
     ;(workflowsStore as any).workflowTemplates = []
     ;(workflowsStore as any).workflowsTemplatesLoading = false
-    ;(workflowsStore as any).workflowsFilters = {}
+    ;(workflowsStore as any).workflowTemplatesPagination = {
+      page: 0,
+      perPage: 12,
+      totalPages: 0,
+      totalCount: 0,
+    }
   })
 
   it('shows spinner while loading', async () => {
@@ -65,34 +70,15 @@ describe('WorkflowTemplates', () => {
     expect(screen.getByText(/no templates found/i)).toBeInTheDocument()
   })
 
-  it('renders all templates when no filters applied', async () => {
+  it('renders all templates', async () => {
     const { workflowsStore } = await import('@/store/workflows')
     ;(workflowsStore as any).workflowTemplates = [
       makeTemplate({ id: '1', name: 'Alpha' }),
       makeTemplate({ id: '2', slug: 'beta', name: 'Beta' }),
     ]
+    ;(workflowsStore as any).workflowTemplatesPagination.totalCount = 2
     render(<WorkflowTemplates />)
     expect(screen.getAllByTestId('workflow-card')).toHaveLength(2)
     expect(screen.getByText('2 TEMPLATES')).toBeInTheDocument()
-  })
-
-  it('filters templates by name', async () => {
-    const { workflowsStore } = await import('@/store/workflows')
-    ;(workflowsStore as any).workflowTemplates = [
-      makeTemplate({ id: '1', name: 'Data Pipeline' }),
-      makeTemplate({ id: '2', slug: 'code-review', name: 'Code Review' }),
-    ]
-    ;(workflowsStore as any).workflowsFilters = { name: 'data' }
-    render(<WorkflowTemplates />)
-    expect(screen.getAllByTestId('workflow-card')).toHaveLength(1)
-    expect(screen.getByText('Data Pipeline')).toBeInTheDocument()
-  })
-
-  it('shows empty state when name filter matches nothing', async () => {
-    const { workflowsStore } = await import('@/store/workflows')
-    ;(workflowsStore as any).workflowTemplates = [makeTemplate({ name: 'Data Pipeline' })]
-    ;(workflowsStore as any).workflowsFilters = { name: 'xyz' }
-    render(<WorkflowTemplates />)
-    expect(screen.getByText(/no templates found/i)).toBeInTheDocument()
   })
 })
