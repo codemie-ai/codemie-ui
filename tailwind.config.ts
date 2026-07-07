@@ -130,8 +130,12 @@ const c = {
     '150': '#FFB2B8',
     '300': '#F0524F',
     '400': '#FF4242',
+    '420': '#FF4450',
     '450': '#FE3B4C',
     '500': '#F9303C',
+    '520': '#FA323E',
+    '580': '#E52530',
+    '645': '#D11D28',
     '650': '#D92F40',
     '675': '#6E282D',
     '750': '#3D2A29',
@@ -450,6 +454,10 @@ const themeTokens: ThemeConfig = {
     primary: [c['red']['300'], c['red']['450']],
     secondary: [c['red']['450'], c['red']['450']],
     tertiary: [c['red']['1000'], c['red']['50']],
+    delete: {
+      default: [c['red']['520'], c['red']['580']],
+      hover: [c['red']['420'], c['red']['645']],
+    },
   },
   aborted: {
     primary: [c['yellow']['500'], c['yellow']['500']],

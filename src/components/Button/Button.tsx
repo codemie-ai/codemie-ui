@@ -84,7 +84,7 @@ const Button: React.FC<ButtonProps> = ({
             displayType === ButtonType.SECONDARY,
 
           // Delete type
-          'border-failed-secondary text-failed-secondary bg-failed-secondary/10 hover:bg-failed-secondary/15 hover:border-border-error-hover':
+          'border-failed-delete-default text-failed-delete-default bg-failed-delete-default/10 hover:bg-failed-delete-hover/10 hover:text-failed-delete-hover hover:border-failed-delete-hover':
             displayType === ButtonType.DELETE,
 
           // Tertiary type

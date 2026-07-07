@@ -337,6 +337,8 @@ describe('AssistantDetailsPage - Integration', () => {
     })
   })
 
+
+
   describe('Context Menu Actions', () => {
     it('clones assistant when Clone action clicked', async () => {
       mockAPI('GET', 'v1/config', [])
@@ -509,6 +511,8 @@ describe('AssistantDetailsPage - Integration', () => {
       navigateSpy = undefined
       findRouteObject.mockReset()
     })
+
+
 
     it('calls router.back() when previous route is a different assistant-details page', async () => {
       // renderPage triggers useHistoryStack.updateStack() on mount, pushing one entry.
