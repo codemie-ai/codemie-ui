@@ -29,7 +29,7 @@ interface ToolkitProps {
   userMappingSettings: UserMappingSettings
   settingsOptions: Record<string, UserSetting[]>
   toolsDescriptions: Record<string, Record<string, string | undefined>>
-  onUpdate: (itemKey: string, value: UserSetting | null) => void
+  onUpdate: (itemKey: string, settingId: string | null, setting: UserSetting | null) => void
   onAdd: (payload: { itemKey: string; settingType: string; originalToolName: string }) => void
 }
 

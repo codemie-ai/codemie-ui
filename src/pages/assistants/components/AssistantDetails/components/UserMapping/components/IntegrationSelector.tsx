@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import Button from '@/components/Button'
 import Select from '@/components/form/Select'
+import { MCP_SETTINGS_TYPE_LABEL } from '@/constants/settings'
 import { userStore } from '@/store'
 import { User } from '@/types/entity/user'
 import { isUserProjectAdmin } from '@/utils/user'
@@ -34,7 +35,7 @@ interface IntegrationSelectorProps {
   credentialType: string
   originalToolName: string
   options: UserSetting[]
-  onUpdate: (itemKey: string, value: UserSetting | null) => void
+  onUpdate: (itemKey: string, settingId: string | null, setting: UserSetting | null) => void
   onAdd: (payload: { itemKey: string; settingType: string; originalToolName: string }) => void
 }
 
@@ -50,9 +51,10 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
   onAdd,
 }) => {
   const { user } = useSnapshot(userStore)
+  const isMcpSlot = credentialType === MCP_SETTINGS_TYPE_LABEL
   const handleAddClick = () => onAdd({ settingType: credentialType, originalToolName, itemKey })
 
-  if (options.length === 0) {
+  if (options.length === 0 && !isMcpSlot) {
     return (
       <Button variant="secondary" onClick={handleAddClick}>
         <PlusFilledSvg className="size-3.5" />
@@ -70,7 +72,26 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
     return { label, value: option.id }
   })
 
-  const selectedOption = selectOptions.find((opt) => opt.value === settingId) || null
+  // MCP slots expose two states: DEFAULT (empty value -> base config) and EXPLICIT INTEGRATION
+  // (a real integration). Regular tool slots keep the single "None" option (empty value).
+  const leadingOptions = isMcpSlot
+    ? [{ label: 'Default integration', value: '' }]
+    : [{ label: 'None', value: '' }]
+
+  const allOptions = [...leadingOptions, ...selectOptions]
+  const selectedValue = settingId ?? ''
+  const selectedOption = allOptions.find((opt) => opt.value === selectedValue) || null
+
+  const handleChange = (value: string | null) => {
+    // Always a primitive here: Select's onChangeValue runs extractValue, which returns null for the
+    // empty-string "Default" option (a known PrimeReact bug where it otherwise yields the whole option
+    // object). null => DEFAULT (saved as '' -> base config), a real id => explicit integration.
+    const newSettingId = value || null
+    const setting = newSettingId
+      ? options.find((option) => option.id === newSettingId) || null
+      : null
+    onUpdate(itemKey, newSettingId, setting)
+  }
 
   return (
     <div className={cn('flex items-start flex-col', className)}>
@@ -79,7 +100,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
         placeholder="Default integration"
         value={selectedOption?.value}
         optionTruncateThreshold={16}
-        options={[{ label: 'None', value: '' }, ...selectOptions]}
+        options={allOptions}
         panelFooterTemplate={
           <Button
             variant="secondary"
@@ -90,7 +111,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
             Add Integration
           </Button>
         }
-        onChange={(e) => onUpdate(itemKey, options.find((option) => option.id === e.target.value)!)}
+        onChangeValue={handleChange}
       />
     </div>
   )

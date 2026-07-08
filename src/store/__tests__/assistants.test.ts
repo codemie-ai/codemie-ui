@@ -20,11 +20,12 @@ import { assistantsStore, normalizeAssistant } from '@/store/assistants'
 import { Assistant } from '@/types/entity/assistant'
 
 const mockGet = vi.fn()
+const mockPost = vi.fn()
 
 vi.mock('@/utils/api', () => ({
   default: {
     get: (...args: unknown[]) => mockGet(...args),
-    post: vi.fn(),
+    post: (...args: unknown[]) => mockPost(...args),
     put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
@@ -54,6 +55,28 @@ describe('assistantsStore', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  describe('saveUserMappingSettings', () => {
+    it('sends every slot, using an empty integration_id for DEFAULT (base config) slots', async () => {
+      mockPost.mockResolvedValue({ ok: true, json: async () => ({}) })
+
+      const userMappingSettings = {
+        'MCP_srv-a': { originalName: 'MCP:srv-a', settingId: 'int-1' }, // explicit integration
+        'MCP_srv-b': { originalName: 'MCP:srv-b', settingId: null }, // DEFAULT -> base config
+        Git: { originalName: 'Git', settingId: undefined }, // never selected -> default
+      }
+
+      await assistantsStore.saveUserMappingSettings('a-1', userMappingSettings as never)
+
+      expect(mockPost).toHaveBeenCalledWith('v1/assistants/a-1/users/mapping', {
+        tools_config: [
+          { name: 'MCP:srv-a', integration_id: 'int-1' },
+          { name: 'MCP:srv-b', integration_id: '' },
+          { name: 'Git', integration_id: '' },
+        ],
+      })
+    })
   })
 
   describe('getAssistantBySlug', () => {

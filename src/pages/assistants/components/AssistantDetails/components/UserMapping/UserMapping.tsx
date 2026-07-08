@@ -18,14 +18,15 @@ import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
 import DetailsSidebarSection from '@/components/details/DetailsSidebar/components/DetailsSidebarSection'
-import { userStore } from '@/store'
 import { assistantsStore } from '@/store/assistants'
 import { userSettingsStore } from '@/store/userSettings'
 import { Assistant } from '@/types/entity/assistant'
-import { User } from '@/types/entity/user'
-import { getDisplayableToolkits, initializeUserMappingSettings } from '@/utils/assistants'
+import {
+  getDisplayableToolkits,
+  getScopedMappingIntegrationOptions,
+  initializeUserMappingSettings,
+} from '@/utils/assistants'
 import toaster from '@/utils/toaster'
-import { isUserProjectAdmin } from '@/utils/user'
 
 import { Toolkit } from './components/Toolkit'
 import { SubAssistantUserMapping } from './SubAssistantUserMapping'
@@ -50,7 +51,6 @@ export const UserMapping: React.FC<UserMappingProps> = ({
   onSectionVisibilityChange,
 }) => {
   const { getAssistantToolkits } = useSnapshot(assistantsStore)
-  const { user } = useSnapshot(userStore)
   const [userMappingSettings, setUserMappingSettings] = useState<UserMappingSettings>({})
   const [settingsOptions, setSettingsOptions] = useState<Record<string, UserSetting[]>>({})
   const [toolsDescriptions, setToolsDescriptions] = useState<
@@ -70,20 +70,9 @@ export const UserMapping: React.FC<UserMappingProps> = ({
     await userSettingsStore.indexSettings()
     const fetchedSettings = userSettingsStore.getSettings()
 
-    if (isUserProjectAdmin(user as User, assistant.project, true)) {
-      setSettingsOptions(fetchedSettings)
-      return
-    }
-
-    setSettingsOptions(
-      Object.fromEntries(
-        Object.entries(fetchedSettings).map(([key, settings]) => [
-          key,
-          (settings as UserSetting[]).filter((s) => s.setting_type !== 'project'),
-        ])
-      )
-    )
-  }, [])
+    // Personal integrations plus PROJECT integrations of this assistant's own project.
+    setSettingsOptions(getScopedMappingIntegrationOptions(fetchedSettings, assistant.project))
+  }, [assistant.project])
 
   const fetchUserMappingSettings = useCallback(async () => {
     try {
@@ -209,15 +198,19 @@ export const UserMapping: React.FC<UserMappingProps> = ({
     onSectionVisibilityChange(shouldShowSection)
   }, [shouldShowSection, onSectionVisibilityChange])
 
-  const handleUpdateSetting = (itemKey: string, value: UserSetting | null) => {
+  const handleUpdateSetting = (
+    itemKey: string,
+    settingId: string | null,
+    setting: UserSetting | null
+  ) => {
     setUserMappingSettings((prev) => {
       if (prev[itemKey]) {
         return {
           ...prev,
           [itemKey]: {
             ...prev[itemKey],
-            settingId: value?.id || null,
-            setting: value || null,
+            settingId,
+            setting,
           },
         }
       }
@@ -277,7 +270,7 @@ export const UserMapping: React.FC<UserMappingProps> = ({
     const latestSetting = getLatestSetting(userMappingSettings[itemKey], latestSettingsOptions)
 
     if (latestSetting) {
-      handleUpdateSetting(itemKey, latestSetting)
+      handleUpdateSetting(itemKey, latestSetting.id, latestSetting)
     }
   }
 

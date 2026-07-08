@@ -15,13 +15,18 @@
 
 import { TOOLKIT_KEY } from '@/constants/assistants'
 import { MCP_SETTINGS_TYPE_LABEL } from '@/constants/settings'
-import { Toolkit } from '@/pages/assistants/components/AssistantDetails/components/UserMapping/types'
-import { getCredentialType } from '@/utils/settings'
+import {
+  Toolkit,
+  UserSetting,
+} from '@/pages/assistants/components/AssistantDetails/components/UserMapping/types'
+import { getCredentialType, SETTING_TYPE_PROJECT } from '@/utils/settings'
 
 export const initializeUserMappingSettings = (assistant: any, userMapping: any = null) => {
   const userMappingSettings: Record<string, any> = {}
 
-  if (assistant?.toolkits) {
+  // Regular toolkit/tool slots are per-user mappable only for global (marketplace) assistants,
+  // matching the backend gate. Non-global shared assistants get MCP-only slots below.
+  if (assistant?.is_global && assistant?.toolkits) {
     assistant.toolkits.forEach((toolkit: any) => {
       const toolkitKey = toolkit.toolkit // Key for toolkit itself
 
@@ -44,7 +49,9 @@ export const initializeUserMappingSettings = (assistant: any, userMapping: any =
 
   if (assistant.mcp_servers) {
     assistant.mcp_servers.forEach((server: any) => {
-      if (server.enabled) {
+      // Only non-pinned servers (no author-selected `settings`) are user-selectable.
+      // Pinned servers use the author's baked integration for everyone, so they get no slot.
+      if (server.enabled && !server.settings) {
         const serverKey = `${MCP_SETTINGS_TYPE_LABEL}_${server.name}`
         userMappingSettings[serverKey] = {
           credentialType: MCP_SETTINGS_TYPE_LABEL,
@@ -138,7 +145,10 @@ const findMatchingKey = (userMappingSettings: Record<string, any>, toolName: str
 export const getDisplayableToolkits = (assistant: any): Toolkit[] => {
   let result: Toolkit[] = []
 
-  if (assistant?.toolkits) {
+  // Regular toolkits participate in per-user mapping only for global (marketplace) assistants,
+  // matching the backend gate where regular tools stay marketplace-only. Non-global shared
+  // assistants expose only their MCP servers below.
+  if (assistant?.is_global && assistant?.toolkits) {
     const toolkits = assistant.toolkits.filter(
       (tk: any) => tk.settings_config || (tk.tools && tk.tools.some((t: any) => t.settings_config))
     ) as Toolkit[]
@@ -146,7 +156,9 @@ export const getDisplayableToolkits = (assistant: any): Toolkit[] => {
   }
 
   if (assistant?.mcp_servers) {
-    const enabledMcpServers = assistant.mcp_servers.filter((s: any) => s.enabled)
+    // Pinned servers (author-selected `settings`) apply to everyone and are not user-selectable,
+    // so only non-pinned enabled servers appear in the "Your Integration Settings" section.
+    const enabledMcpServers = assistant.mcp_servers.filter((s: any) => s.enabled && !s.settings)
     if (enabledMcpServers.length > 0) {
       result = [
         ...result,
@@ -177,6 +189,27 @@ export const getDisplayableToolkits = (assistant: any): Toolkit[] => {
     }
   }
   return result
+}
+
+/**
+ * Scopes the integrations offered in the "Your Integration Settings" selection.
+ *
+ * Reusable across the assistant view (Stage 1) and, later, the workflow node selection
+ * (Stage 2) so both apply the exact same visibility rule for every user (admins included):
+ * personal (USER) integrations plus PROJECT integrations that belong strictly to this
+ * assistant's/workflow's own `project`. Integrations from any other project are not shown,
+ * keeping the display consistent with the backend save/runtime access checks.
+ */
+export const getScopedMappingIntegrationOptions = (
+  fetchedSettings: Record<string, UserSetting[]>,
+  project?: string
+): Record<string, UserSetting[]> => {
+  return Object.fromEntries(
+    Object.entries(fetchedSettings).map(([key, settings]) => [
+      key,
+      settings.filter((s) => s.setting_type !== SETTING_TYPE_PROJECT || s.project_name === project),
+    ])
+  )
 }
 
 /**

@@ -720,12 +720,13 @@ export const assistantsStore = proxy<AssistantsStoreType>({
   },
 
   saveUserMappingSettings(assistantId, userMappingSettings: Array<Record<string, any>>) {
-    const tools_config = Object.entries(userMappingSettings)
-      .filter(([_, setting]) => setting.settingId)
-      .map(([_, setting]: any) => ({
-        name: setting.originalName,
-        integration_id: setting.settingId,
-      }))
+    // Send every displayed slot with its current selection. A slot cleared to "None"
+    // carries an empty integration_id so the backend removes its stored mapping and the
+    // tool/server falls back to the author's base (inline) config.
+    const tools_config = Object.entries(userMappingSettings).map(([_, setting]: any) => ({
+      name: setting.originalName,
+      integration_id: setting.settingId || '',
+    }))
     return api
       .post(`v1/assistants/${assistantId}/users/mapping`, { tools_config })
       .then((response) =>

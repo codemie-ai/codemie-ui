@@ -64,15 +64,19 @@ export const SubAssistantUserMapping: React.FC<SubAssistantUserMappingProps> = (
     }
   }, [subAssistant])
 
-  const handleUpdateSetting = (itemKey: string, value: UserSetting | null) => {
+  const handleUpdateSetting = (
+    itemKey: string,
+    settingId: string | null,
+    setting: UserSetting | null
+  ) => {
     setUserMappingSettings((prev) => {
       if (prev[itemKey]) {
         return {
           ...prev,
           [itemKey]: {
             ...prev[itemKey],
-            settingId: value?.id || null,
-            setting: value || null,
+            settingId,
+            setting,
           },
         }
       }
@@ -130,7 +134,7 @@ export const SubAssistantUserMapping: React.FC<SubAssistantUserMappingProps> = (
     const latestSetting = getLatestSetting(userMappingSettings[itemKey], latestSettingsOptions)
 
     if (latestSetting) {
-      handleUpdateSetting(itemKey, latestSetting)
+      handleUpdateSetting(itemKey, latestSetting.id, latestSetting)
     }
   }
 

@@ -85,7 +85,14 @@ const AssistantDetails = ({
     idsToFetch.forEach((id) => mcpStore.getConfig(id).catch(() => {}))
   }, [assistant.mcp_servers])
 
-  const userMappingIsSupported = !!onNewIntegration && assistant.is_global && !isTemplate
+  // Global (marketplace) assistants support the full per-user mapping. Other shared assistants
+  // support it too, but only for their non-pinned MCP servers (matches the backend gate: shared
+  // assistants receive per-user mappings only for MCP toolkit types).
+  const hasSelectableMcpServer = (assistant.mcp_servers ?? []).some((s) => s.enabled && !s.settings)
+  const userMappingIsSupported =
+    !!onNewIntegration &&
+    !isTemplate &&
+    (assistant.is_global || (assistant.shared && hasSelectableMcpServer))
 
   const { assistantDetailsLink, assistantChatLink, assistantTemplateLink } = useMemo(() => {
     const baseUrl = `${getRootPath()}/assistants`
@@ -175,7 +182,11 @@ const AssistantDetails = ({
                 className="mb-6"
                 type={InfoWarningType.INFO}
                 message='You can select your own integrations in the "Your Integration Settings" section below to personalize how this assistant interacts with tools and services.'
-                header="This is a marketplace assistant with customizable integrations."
+                header={
+                  assistant.is_global
+                    ? 'This is a marketplace assistant with customizable integrations.'
+                    : 'This assistant supports customizable integrations.'
+                }
               />
             )}
             <h5 className="font-bold text-sm">About Assistant:</h5>
