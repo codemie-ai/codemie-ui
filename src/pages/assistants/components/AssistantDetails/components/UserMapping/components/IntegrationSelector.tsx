@@ -27,6 +27,11 @@ import { cn } from '@/utils/utils'
 
 import { UserSetting } from '../types'
 
+// Sentinel value for the "no explicit integration" option. PrimeReact's Dropdown can't match an
+// empty string to an option (it renders the placeholder instead), so we use a non-empty value and
+// map it back to null (base config) before it leaves this component.
+const NO_INTEGRATION = '__none__'
+
 interface IntegrationSelectorProps {
   className?: string
   itemKey: string
@@ -72,23 +77,24 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
     return { label, value: option.id }
   })
 
-  // MCP slots expose two states: NO INTEGRATION (empty value -> base config, no per-user creds)
-  // and EXPLICIT INTEGRATION (a real integration). The empty-value semantics/storage are
-  // unchanged (still saved as '' -> base config); only the label wording differs. Regular tool
-  // slots keep the single "None" option (empty value).
+  // MCP slots expose two states: NO INTEGRATION (base config, no per-user creds) and EXPLICIT
+  // INTEGRATION (a real integration). The DEFAULT state's semantics/storage are unchanged (still
+  // saved as '' -> base config); only the label wording differs. Regular tool slots keep the single
+  // "None" option. Both leading options use the NO_INTEGRATION sentinel as their value so the
+  // control can render the selected label instead of the placeholder (see NO_INTEGRATION).
   const leadingOptions = isMcpSlot
-    ? [{ label: 'No integration', value: '' }]
-    : [{ label: 'None', value: '' }]
+    ? [{ label: 'No integration', value: NO_INTEGRATION }]
+    : [{ label: 'None', value: NO_INTEGRATION }]
 
   const allOptions = [...leadingOptions, ...selectOptions]
-  const selectedValue = settingId ?? ''
+  const selectedValue = settingId ?? NO_INTEGRATION
   const selectedOption = allOptions.find((opt) => opt.value === selectedValue) || null
 
   const handleChange = (value: string | null) => {
-    // Always a primitive here: Select's onChangeValue runs extractValue, which returns null for the
-    // empty-string "Default" option (a known PrimeReact bug where it otherwise yields the whole option
-    // object). null => DEFAULT (saved as '' -> base config), a real id => explicit integration.
-    const newSettingId = value || null
+    // The NO_INTEGRATION sentinel (and any empty/nullish value) means DEFAULT: saved as '' -> base
+    // config, no per-user creds. A real id means an explicit integration. Map the sentinel back to
+    // null so the stored value and the backend contract stay unchanged.
+    const newSettingId = value && value !== NO_INTEGRATION ? value : null
     const setting = newSettingId
       ? options.find((option) => option.id === newSettingId) || null
       : null

@@ -20,10 +20,10 @@ import { MCP_SETTINGS_TYPE_LABEL } from '@/constants/settings'
 
 import { IntegrationSelector } from '../IntegrationSelector'
 
-// Capture the props the real Select receives so we can drive its value callback directly. The real
-// Select's `onChangeValue` always hands back a primitive (it runs extractValue, which returns null
-// for the empty-string "Default" option — the known PrimeReact object-leak bug). We assert the
-// selector wires that path and never forwards an option object into settingId.
+// Capture the props the real Select receives so we can drive its value callback directly and assert
+// what the control renders. The leading "No integration" option carries a non-empty sentinel value
+// (not '') so PrimeReact can match it and show the label instead of the "Default integration"
+// placeholder; the selector maps that sentinel back to null before it leaves the component.
 const selectProps: any = {}
 vi.mock('@/components/form/Select', () => ({
   default: (props: any) => {
@@ -55,21 +55,46 @@ describe('IntegrationSelector — MCP two-state emits a string integration id', 
     expect(selectProps.onChange).toBeUndefined()
   })
 
-  it('labels the MCP DEFAULT leading option "No integration" (empty value)', () => {
+  it('labels the MCP DEFAULT leading option "No integration" with a non-empty sentinel value', () => {
     render(<IntegrationSelector {...baseProps} settingId={null} onUpdate={vi.fn()} />)
-    expect(selectProps.options[0]).toEqual({ label: 'No integration', value: '' })
+    expect(selectProps.options[0].label).toBe('No integration')
+    // The value must be a non-empty string so PrimeReact can match it (an empty '' would fall back
+    // to the placeholder), and it must not be a real integration id.
+    expect(selectProps.options[0].value).toBeTruthy()
+    expect(selectProps.options[0].value).not.toBe('')
+    expect(selectProps.options[0].value).not.toBe('uuid-1')
   })
 
-  it('emits null for DEFAULT (empty option leaks as null from Select)', () => {
+  it('feeds the control the leading sentinel value for DEFAULT so it shows "No integration", not the placeholder', () => {
+    render(<IntegrationSelector {...baseProps} settingId={null} onUpdate={vi.fn()} />)
+    // A resolvable, non-empty value guarantees the label renders instead of "Default integration".
+    expect(selectProps.value).toBe(selectProps.options[0].value)
+    expect(selectProps.value).toBeTruthy()
+  })
+
+  it('feeds the control the real uuid when an explicit integration is selected', () => {
+    render(<IntegrationSelector {...baseProps} settingId="uuid-1" onUpdate={vi.fn()} />)
+    expect(selectProps.value).toBe('uuid-1')
+  })
+
+  it('emits null for DEFAULT when the leading sentinel option is chosen', () => {
     const onUpdate = vi.fn()
     render(<IntegrationSelector {...baseProps} settingId={null} onUpdate={onUpdate} />)
 
-    // Select returns null for the empty-string "Default" option after extractValue.
+    // Picking "No integration" hands back the sentinel value; the selector maps it back to null so
+    // the stored value / backend contract is unchanged (base config).
+    selectProps.onChangeValue(selectProps.options[0].value)
+
+    expect(onUpdate).toHaveBeenCalledWith('MCP_srv', null, null)
+  })
+
+  it('still emits null when Select hands back null (empty-option object-leak guard)', () => {
+    const onUpdate = vi.fn()
+    render(<IntegrationSelector {...baseProps} settingId={null} onUpdate={onUpdate} />)
+
     selectProps.onChangeValue(null)
 
     expect(onUpdate).toHaveBeenCalledWith('MCP_srv', null, null)
-    const emitted = onUpdate.mock.calls[0][1]
-    expect(emitted === null || typeof emitted === 'string').toBe(true)
   })
 
   it('emits the uuid string plus the backing setting for an explicit integration', () => {
@@ -80,5 +105,19 @@ describe('IntegrationSelector — MCP two-state emits a string integration id', 
 
     expect(onUpdate).toHaveBeenCalledWith('MCP_srv', 'uuid-1', baseProps.options[0])
     expect(typeof onUpdate.mock.calls[0][1]).toBe('string')
+  })
+
+  it('labels the non-MCP DEFAULT leading option "None" with the same non-empty sentinel', () => {
+    render(
+      <IntegrationSelector
+        {...baseProps}
+        credentialType="Jira"
+        settingId={null}
+        onUpdate={vi.fn()}
+      />
+    )
+    expect(selectProps.options[0].label).toBe('None')
+    expect(selectProps.options[0].value).toBeTruthy()
+    expect(selectProps.value).toBe(selectProps.options[0].value)
   })
 })

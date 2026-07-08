@@ -123,11 +123,16 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
 
   async createUserSetting(values) {
     const response = await api.post('v1/settings/user', values, { skipErrorHandling: true })
+    // Drop the scope-aware option cache so scoped dropdowns pick up the new integration without a reload.
+    userSettingsStore.resetIsSettingsIndexed()
     return response.json()
   },
 
   async updateUserSetting(id, values) {
     const response = await api.put(`v1/settings/user/${id}`, values, { skipErrorHandling: true })
+    // Drop the scope-aware option cache: an edit (e.g. flipping is_global) can change the integration's
+    // scope, so scoped dropdowns must re-fetch to reflect it without a reload.
+    userSettingsStore.resetIsSettingsIndexed()
     return response.json()
   },
 
