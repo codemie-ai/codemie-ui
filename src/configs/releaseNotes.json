@@ -1,5 +1,77 @@
 [
   {
+    "version": "2.38.0",
+    "date": "2026-07-08",
+    "issues": [
+      {
+        "title": "`tavily_search_results_json` tool invocation fails with `'TavilySearch' object has no attribute 'execute'` via Code Assistant API",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13388",
+        "key": "EPMCDME-13388"
+      },
+      {
+        "title": "Per-user MCP integration credentials for assistants: pinned / explicit / default=base-config (chat + workflow)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13337",
+        "key": "EPMCDME-13337"
+      },
+      {
+        "title": "Assistant details: sub-assistant link opens UUID-based URL instead of human-readable URL",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13300",
+        "key": "EPMCDME-13300"
+      },
+      {
+        "title": "CodeMie Workflow YAML Creator prompt generates YAML-style boolean literals in conditional expressions instead of Python-compatible True/False",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13294",
+        "key": "EPMCDME-13294"
+      },
+      {
+        "title": "Improve Google Docs datasource indexing by replacing shared service account with per-user integration",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13222",
+        "key": "EPMCDME-13222"
+      },
+      {
+        "title": "Skills import: ZIP bundle with multiple Markdown files returns HTTP 500",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13163",
+        "key": "EPMCDME-13163"
+      },
+      {
+        "title": "Pagination is missing on Workflows and Assistants Templates pages",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12730",
+        "key": "EPMCDME-12730"
+      },
+      {
+        "title": "Enable Assistant to Spawn General Purpose Subagents with Inherited Properties, Built-in System Prompt, and Skill-level Permission Control",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12623",
+        "key": "EPMCDME-12623"
+      },
+      {
+        "title": "Malformed Sequence of Tool Call/Result When Using Subagents Results in Error 400",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12566",
+        "key": "EPMCDME-12566"
+      },
+      {
+        "title": "Custom Appearance settings with localStorage persistence",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12541",
+        "key": "EPMCDME-12541"
+      },
+      {
+        "title": "Support JWKS validation for supported IDP providers in CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12079",
+        "key": "EPMCDME-12079"
+      }
+    ]
+  },
+  {
     "version": "2.37.0",
     "date": "2026-07-02",
     "issues": [
