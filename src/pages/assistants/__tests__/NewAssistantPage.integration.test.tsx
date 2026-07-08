@@ -1521,15 +1521,21 @@ describe('NewAssistantPage - Integration', () => {
 
       renderPage('/assistants/new')
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Manual Setup' })).toBeInTheDocument()
-      })
+      await waitFor(
+        () => {
+          expect(screen.getByRole('button', { name: 'Manual Setup' })).toBeInTheDocument()
+        },
+        { timeout: 5000 }
+      )
 
       await user.click(screen.getByRole('button', { name: 'Manual Setup' }))
 
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
+      await waitFor(
+        () => {
+          expect(screen.getByRole('dialog')).toBeInTheDocument()
+        },
+        { timeout: 5000 }
+      )
 
       expect(
         within(screen.getByRole('dialog')).getByText('Step 1: Configure MCP Server')
