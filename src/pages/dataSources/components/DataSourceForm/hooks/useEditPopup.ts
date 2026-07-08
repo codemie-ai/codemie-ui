@@ -64,11 +64,11 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
 
   const checkCustomerConfig = async () => {
     const customerEnabledComponents = await appInfoStore.fetchCustomerConfig()
-    const isEnabled = isConfigItemEnabled(customerEnabledComponents, 'userGuide')
+    const isEnabled = isConfigItemEnabled(customerEnabledComponents, 'googleDocsDocumentation')
     return {
       googleDocsGuideEnabled: isEnabled,
       googleDocsGuideConfig:
-        isEnabled && getConfigItemSettings(customerEnabledComponents, 'userGuide'),
+        isEnabled && getConfigItemSettings(customerEnabledComponents, 'googleDocsDocumentation'),
     }
   }
 
