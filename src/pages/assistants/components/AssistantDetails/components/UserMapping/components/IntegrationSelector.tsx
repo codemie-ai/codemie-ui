@@ -72,10 +72,12 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
     return { label, value: option.id }
   })
 
-  // MCP slots expose two states: DEFAULT (empty value -> base config) and EXPLICIT INTEGRATION
-  // (a real integration). Regular tool slots keep the single "None" option (empty value).
+  // MCP slots expose two states: NO INTEGRATION (empty value -> base config, no per-user creds)
+  // and EXPLICIT INTEGRATION (a real integration). The empty-value semantics/storage are
+  // unchanged (still saved as '' -> base config); only the label wording differs. Regular tool
+  // slots keep the single "None" option (empty value).
   const leadingOptions = isMcpSlot
-    ? [{ label: 'Default integration', value: '' }]
+    ? [{ label: 'No integration', value: '' }]
     : [{ label: 'None', value: '' }]
 
   const allOptions = [...leadingOptions, ...selectOptions]

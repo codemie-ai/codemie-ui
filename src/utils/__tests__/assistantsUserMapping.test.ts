@@ -15,7 +15,10 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { initializeUserMappingSettings } from '@/utils/assistants'
+import {
+  getScopedMappingIntegrationOptions,
+  initializeUserMappingSettings,
+} from '@/utils/assistants'
 
 describe('initializeUserMappingSettings — two-state MCP selection', () => {
   const assistant = {
@@ -46,5 +49,50 @@ describe('initializeUserMappingSettings — two-state MCP selection', () => {
 
     // EXPLICIT INTEGRATION slot: stored uuid.
     expect(result['MCP_srv-explicit'].settingId).toBe('int-77')
+  })
+})
+
+describe('getScopedMappingIntegrationOptions — scope depends on assistant type', () => {
+  const settings = {
+    mcp: [
+      { id: 'u-here', alias: 'user here', setting_type: 'user', project_name: 'proj-a' },
+      { id: 'u-other', alias: 'user other', setting_type: 'user', project_name: 'proj-b' },
+      {
+        id: 'u-global',
+        alias: 'user global',
+        setting_type: 'user',
+        project_name: 'proj-b',
+        is_global: true,
+      },
+      { id: 'p-here', alias: 'proj here', setting_type: 'project', project_name: 'proj-a' },
+      { id: 'p-other', alias: 'proj other', setting_type: 'project', project_name: 'proj-b' },
+    ],
+  }
+
+  it('project-shared: own-project USER or global USER, and only this-project PROJECT', () => {
+    const result = getScopedMappingIntegrationOptions(settings, 'proj-a', false)
+    expect(result.mcp.map((s) => s.id).sort()).toEqual(['p-here', 'u-global', 'u-here'])
+  })
+
+  it('project-shared: hides USER integrations of other projects', () => {
+    const result = getScopedMappingIntegrationOptions(settings, 'proj-a', false)
+    expect(result.mcp.some((s) => s.id === 'u-other')).toBe(false)
+    expect(result.mcp.some((s) => s.id === 'p-other')).toBe(false)
+  })
+
+  it('marketplace: offers every USER and PROJECT integration (any project)', () => {
+    const result = getScopedMappingIntegrationOptions(settings, 'proj-a', true)
+    expect(result.mcp.map((s) => s.id).sort()).toEqual([
+      'p-here',
+      'p-other',
+      'u-global',
+      'u-here',
+      'u-other',
+    ])
+  })
+
+  it('defaults to project-shared scoping when the marketplace flag is omitted', () => {
+    const result = getScopedMappingIntegrationOptions(settings, 'proj-a')
+    expect(result.mcp.some((s) => s.id === 'p-other')).toBe(false)
   })
 })

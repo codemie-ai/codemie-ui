@@ -55,6 +55,11 @@ describe('IntegrationSelector — MCP two-state emits a string integration id', 
     expect(selectProps.onChange).toBeUndefined()
   })
 
+  it('labels the MCP DEFAULT leading option "No integration" (empty value)', () => {
+    render(<IntegrationSelector {...baseProps} settingId={null} onUpdate={vi.fn()} />)
+    expect(selectProps.options[0]).toEqual({ label: 'No integration', value: '' })
+  })
+
   it('emits null for DEFAULT (empty option leaks as null from Select)', () => {
     const onUpdate = vi.fn()
     render(<IntegrationSelector {...baseProps} settingId={null} onUpdate={onUpdate} />)

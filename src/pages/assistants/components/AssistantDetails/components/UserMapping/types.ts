@@ -39,6 +39,7 @@ export interface UserSetting {
   alias: string
   setting_type: string
   project_name: string
+  is_global?: boolean
 }
 
 export interface UserMappingSetting {

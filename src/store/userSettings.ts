@@ -27,7 +27,8 @@ interface UserSettingsStoreType {
   userSettingsPagination: Pagination
   settings: Record<string, UserSetting[]>
   isSettingsIndexed: boolean
-  indexSettings: () => Promise<void>
+  indexedMarketplace: boolean
+  indexSettings: (marketplace?: boolean) => Promise<void>
   fetchUserSettings: (
     page?: number | null,
     perPage?: number | null,
@@ -63,6 +64,7 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
   },
   settings: {},
   isSettingsIndexed: false,
+  indexedMarketplace: false,
 
   async fetchUserSettings(page = 0, perPage = DEFAULT_PER_PAGE, filters = {}) {
     const url = `v1/settings/user?page=${page}&per_page=${perPage}&filters=${encodeURIComponent(
@@ -143,11 +145,19 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
     return response.json()
   },
 
-  async indexSettings() {
+  async indexSettings(marketplace = false) {
+    // Cache is scope-aware: a marketplace fetch returns a superset (all PROJECT integrations),
+    // so switching between a marketplace and a project-shared assistant must re-fetch to avoid
+    // leaking cross-project candidates into the stricter project-shared view.
     const isIndexed = userSettingsStore.isSettingsIndexed
-    userSettingsStore.isSettingsIndexed = true
-    if (isIndexed) return
-    const response = await api.get('v1/settings/user/available')
+    const sameScope = userSettingsStore.indexedMarketplace === marketplace
+    if (isIndexed && sameScope) return
+
+    // Only mark the cache as populated AFTER a successful fetch. If the request throws, the
+    // flags stay untouched so the next call honestly re-fetches instead of short-circuiting on
+    // a stale/empty `settings`.
+    const url = `v1/settings/user/available${marketplace ? '?scope=marketplace' : ''}`
+    const response = await api.get(url)
     const settings: UserSetting[] = await response.json()
 
     const grouped: Record<string, UserSetting[]> = {}
@@ -161,6 +171,8 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
     })
 
     userSettingsStore.settings = grouped
+    userSettingsStore.isSettingsIndexed = true
+    userSettingsStore.indexedMarketplace = marketplace
   },
 
   getSettings() {

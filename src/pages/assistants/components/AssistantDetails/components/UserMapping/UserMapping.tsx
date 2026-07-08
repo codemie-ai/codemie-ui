@@ -66,13 +66,20 @@ export const UserMapping: React.FC<UserMappingProps> = ({
   const hasAnySubAssistantMapping = subAssistantsData.some((data) => data.hasMapping)
   const shouldShowSection = hasOrchestratorMapping || hasAnySubAssistantMapping
 
+  const isMarketplace = Boolean(assistant.is_global)
+
   const loadIntegrations = useCallback(async () => {
-    await userSettingsStore.indexSettings()
+    // Marketplace assistants offer cross-project PROJECT integrations, which the default
+    // candidate endpoint does not return; request the marketplace scope so they are available.
+    await userSettingsStore.indexSettings(isMarketplace)
     const fetchedSettings = userSettingsStore.getSettings()
 
-    // Personal integrations plus PROJECT integrations of this assistant's own project.
-    setSettingsOptions(getScopedMappingIntegrationOptions(fetchedSettings, assistant.project))
-  }, [assistant.project])
+    // Project-shared: personal integrations of this project (or global) plus PROJECT
+    // integrations of this project. Marketplace: any USER (own) or PROJECT integration.
+    setSettingsOptions(
+      getScopedMappingIntegrationOptions(fetchedSettings, assistant.project, isMarketplace)
+    )
+  }, [assistant.project, isMarketplace])
 
   const fetchUserMappingSettings = useCallback(async () => {
     try {

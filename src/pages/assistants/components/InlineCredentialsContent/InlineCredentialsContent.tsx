@@ -19,6 +19,8 @@ import React from 'react'
 
 import InfoWarning from '@/components/InfoWarning'
 import { InfoWarningType } from '@/constants'
+import { ToolkitType } from '@/constants/assistants'
+import ToolkitIcon from '@/pages/assistants/components/ToolkitIcon'
 
 export interface InlineCredential {
   credential_type?: string
@@ -35,6 +37,15 @@ interface InlineCredentialsContentProps {
   showMcpEnvVarsWarning?: boolean
 }
 
+// Friendly labels for the technical MCP credential_type strings emitted by the backend
+// validation (see _check_mcp_server_credentials); without this they render as raw
+// humanized types like "Mcp Inline Config Env".
+const MCP_TYPE_LABELS: Record<string, string> = {
+  mcp_inline_config_env: 'Inline environment variables',
+  mcp_environment_vars: 'Environment variables',
+  mcp_auth_token: 'Authentication token',
+}
+
 export const InlineCredentialsContent: React.FC<InlineCredentialsContentProps> = ({
   credentials,
   message = 'This assistant contains inline credentials that will be used by users.',
@@ -44,6 +55,45 @@ export const InlineCredentialsContent: React.FC<InlineCredentialsContentProps> =
     if (!credentialType) return 'Unknown'
     return startCase(camelCase(credentialType))
   }
+
+  const isMcpTechnicalType = (credential: InlineCredential) =>
+    Boolean(MCP_TYPE_LABELS[credential.credential_type ?? ''])
+
+  // A server pinned to a personal integration is surfaced with the real integration's
+  // credential_type plus its alias (the integration name), rather than one of the technical
+  // MCP credential_type strings.
+  const isPinnedIntegration = (credential: InlineCredential) =>
+    Boolean(credential.mcp_server && credential.integration_alias && !isMcpTechnicalType(credential))
+
+  // Name (primary, bold) of the row:
+  // - pinned integration -> the integration name (alias);
+  // - MCP inline/auth (base config) -> the server name;
+  // - non-MCP toolkit tool -> its label;
+  // - fallback -> the friendly / humanized type.
+  const getCredentialName = (credential: InlineCredential) => {
+    if (isPinnedIntegration(credential)) return credential.integration_alias
+    if (isMcpTechnicalType(credential) && credential.mcp_server) return credential.mcp_server
+    return (
+      credential.label ||
+      MCP_TYPE_LABELS[credential.credential_type ?? ''] ||
+      formatCredentialType(credential.credential_type)
+    )
+  }
+
+  // Type (secondary) of the row, shown on the right:
+  // - pinned integration -> the real integration type (e.g. "Jira");
+  // - everything else -> the toolkit the backend attached ("MCP", "Project Management", ...).
+  const getCredentialType = (credential: InlineCredential) => {
+    if (isPinnedIntegration(credential)) return formatCredentialType(credential.credential_type)
+    return credential.toolkit || formatCredentialType(credential.credential_type)
+  }
+
+  // Reuse the same data-driven icon registry the assistant view uses for TOOLS & CAPABILITIES
+  // (ToolkitsViewList -> ToolkitIcon), keyed by the toolkit string the backend attaches to each
+  // credential ("MCP" for MCP servers, the toolkit name for toolkit tools). Unknown/absent
+  // toolkits fall back to the registry's default cog icon, so non-MCP rows never regress.
+  const getIconToolkitType = (credential: InlineCredential) =>
+    (credential.toolkit || undefined) as ToolkitType | undefined
 
   const hasMcpEnvVars = credentials.some((c) => c.mcp_server && c.env_vars && c.env_vars.length > 0)
 
@@ -73,38 +123,18 @@ export const InlineCredentialsContent: React.FC<InlineCredentialsContentProps> =
               key={index}
               className="credential-item p-3 border-b border-border-tertiary last:border-0 flex flex-col"
             >
-              <div className="credential-header flex justify-between items-center">
-                <div className="flex flex-col">
-                  <span className="credential-type font-medium flex items-center">
-                    {formatCredentialType(credential.credential_type)}
+              <div className="credential-header flex justify-between items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="credential-icon shrink-0 [&>svg]:size-5 text-text-quaternary">
+                    <ToolkitIcon toolkitType={getIconToolkitType(credential) as ToolkitType} />
                   </span>
-                  {credential.integration_alias && (
-                    <span className="text-xs text-text-quaternary mt-0.5">
-                      {credential.integration_alias}
-                    </span>
-                  )}
+                  <span className="credential-type font-medium truncate">
+                    {getCredentialName(credential)}
+                  </span>
                 </div>
-                {(() => {
-                  if (credential.toolkit) {
-                    return (
-                      <span className="credential-source text-sm text-text-quaternary flex items-center">
-                        {credential.toolkit || ''}
-                        {credential.toolkit && credential.label ? ' / ' : ''}
-                        {credential.label || ''}
-                      </span>
-                    )
-                  }
-                  if (credential.mcp_server) {
-                    return (
-                      <span className="credential-source text-sm text-text-quaternary flex items-center">
-                        {credential.toolkit || ''}
-                        {credential.toolkit && credential.mcp_server ? ' / ' : ''}
-                        {credential.mcp_server || ''}
-                      </span>
-                    )
-                  }
-                  return null
-                })()}
+                <span className="credential-source text-sm text-text-quaternary shrink-0 flex items-center">
+                  {getCredentialType(credential)}
+                </span>
               </div>
 
               {credential.env_vars && credential.env_vars.length > 0 && (

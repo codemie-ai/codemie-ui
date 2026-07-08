@@ -194,20 +194,35 @@ export const getDisplayableToolkits = (assistant: any): Toolkit[] => {
 /**
  * Scopes the integrations offered in the "Your Integration Settings" selection.
  *
- * Reusable across the assistant view (Stage 1) and, later, the workflow node selection
- * (Stage 2) so both apply the exact same visibility rule for every user (admins included):
- * personal (USER) integrations plus PROJECT integrations that belong strictly to this
- * assistant's/workflow's own `project`. Integrations from any other project are not shown,
- * keeping the display consistent with the backend save/runtime access checks.
+ * The visible candidate set depends on the assistant type, mirroring the backend
+ * save/runtime access checks so the dropdown never offers something the backend rejects:
+ *
+ * - Project-shared assistants (`marketplace` false): personal (USER) integrations of this
+ *   assistant's own `project` or global USER integrations, plus PROJECT integrations that
+ *   belong strictly to this assistant's `project`. USER integrations of other projects and
+ *   PROJECT integrations of other projects are hidden.
+ * - Marketplace assistants (`marketplace` true, i.e. `is_global`): project scoping is
+ *   intentionally relaxed — every USER integration of the current user (any project or
+ *   global) and every PROJECT integration (any project) is offered. USER integrations still
+ *   only ever contain the current user's own (the backend never returns other users'
+ *   personal integrations), so no one else's personal credentials are exposed.
  */
 export const getScopedMappingIntegrationOptions = (
   fetchedSettings: Record<string, UserSetting[]>,
-  project?: string
+  project?: string,
+  marketplace = false
 ): Record<string, UserSetting[]> => {
+  if (marketplace) {
+    return fetchedSettings
+  }
   return Object.fromEntries(
     Object.entries(fetchedSettings).map(([key, settings]) => [
       key,
-      settings.filter((s) => s.setting_type !== SETTING_TYPE_PROJECT || s.project_name === project),
+      settings.filter((s) =>
+        s.setting_type === SETTING_TYPE_PROJECT
+          ? s.project_name === project
+          : s.is_global || s.project_name === project
+      ),
     ])
   )
 }
