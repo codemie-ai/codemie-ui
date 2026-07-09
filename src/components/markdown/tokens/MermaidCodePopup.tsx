@@ -33,6 +33,7 @@ const MermaidCodePopup: React.FC<MermaidCodePopupProps> = ({ visible, onClose, c
       header="Diagram Source Code"
       withBorderBottom={false}
       hideFooter
+      className="w-[75%] max-w-[1000px]"
     >
       <CodeBlock language="mermaid" text={code} />
     </Popup>
