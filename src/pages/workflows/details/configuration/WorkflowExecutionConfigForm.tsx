@@ -16,7 +16,6 @@
 import { FC, useRef } from 'react'
 
 import Button from '@/components/Button'
-import { useVueRouter } from '@/hooks/useVueRouter'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
 import { workflowsStore } from '@/store/workflows'
 import { Workflow } from '@/types/entity/workflow'
@@ -33,20 +32,12 @@ const WorkflowExecutionConfigForm: FC<WorkflowExecutionConfigFormProps> = ({
   workflow,
   onCancel,
 }) => {
-  const router = useVueRouter()
   const formRef = useRef<WorkflowFormRef>(null)
 
   const handleSubmit = async (values: any) => {
     try {
-      const response = await workflowsStore.updateWorkflow(workflow.id, values)
-      if (response.error) throw new Error(response.error)
-
+      await workflowsStore.updateWorkflow(workflow.id, values)
       onCancel()
-      router.replace({
-        name: 'workflow-execution',
-        params: router.currentRoute.value.params,
-        query: router.currentRoute.value.query,
-      })
       workflowExecutionsStore.getWorkflow(workflow.id)
     } catch (error) {
       console.error('Error updating workflow:', error)

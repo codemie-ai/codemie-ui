@@ -27,6 +27,7 @@ interface BaseSetting {
   credential_key?: string
   update_date: string
   project_name: string
+  display_name?: string | null
   default: boolean
   credential_values: SettingCredentialValue[]
   setting_hash: string | null

@@ -67,6 +67,7 @@ export interface Skill {
   description: string
   content: string
   project: string
+  display_name?: string | null
   visibility: SkillVisibility
   created_by?: CreatedBy | null
   categories: string[]

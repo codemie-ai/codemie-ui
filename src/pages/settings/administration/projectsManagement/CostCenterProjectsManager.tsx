@@ -29,6 +29,7 @@ import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { ProjectListItem } from '@/types/entity/projectManagement'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 
 import AssignProjectToCostCenterPopup from './AssignProjectToCostCenterPopup'
@@ -182,7 +183,10 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
           className="text-left text-text-accent-status hover:text-text-accent-status-hover break-all"
           onClick={() => handleOpenProject(project.name)}
         >
-          {project.name}
+          {getProjectDisplayName(project)}
+          {project.display_name && (
+            <span className="block text-xs text-text-quaternary">{project.name}</span>
+          )}
         </button>
       ),
       actions: (project: ProjectListItem) => (

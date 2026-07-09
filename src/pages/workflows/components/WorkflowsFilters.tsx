@@ -31,6 +31,7 @@ import { workflowsStore } from '@/store/workflows'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { FILTER_ENTITY, getFilters, setFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import { makeCleanObject } from '@/utils/utils'
 
 interface WorkflowsFilters {
@@ -81,9 +82,9 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   const loadProjectOptions = useCallback(async (value = '') => {
     try {
       const projects = await userStore.getProjects(value)
-      const options = projects.map((project: string) => ({
-        label: project,
-        value: project,
+      const options = projects.map((project) => ({
+        label: getProjectDisplayName(project),
+        value: project.name,
       }))
       setProjectOptions(options)
     } catch (error) {

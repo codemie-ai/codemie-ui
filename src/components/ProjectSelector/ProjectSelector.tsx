@@ -13,12 +13,12 @@
 // limitations under the License.
 //
 
-import isString from 'lodash/isString'
 import { MultiSelect as PrimeMultiselect, MultiSelectChangeEvent } from 'primereact/multiselect'
 import { forwardRef, useEffect, useState } from 'react'
 
 import MultiSelect from '@/components/form/MultiSelect'
 import { userStore } from '@/store/user'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 
 import { MultiSelectSize } from '../form/MultiSelect/MultiSelect'
 
@@ -63,20 +63,21 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
 
       // Add current value(s) to projects if not already included
       if (value) {
-        if (isString(value) && !projects.includes(value)) {
-          projects.push(value)
-        } else if (Array.isArray(value)) {
-          value.forEach((v) => {
-            if (!projects.includes(v)) projects.push(v)
-          })
-        }
+        const currentNames = Array.isArray(value) ? value : [value]
+        currentNames.forEach((v) => {
+          if (!projects.some((p) => p.name === v)) {
+            projects.push({ name: v })
+          }
+        })
       }
 
-      setAvailableProjects(projects.map((project) => ({ label: project, value: project })))
+      setAvailableProjects(
+        projects.map((project) => ({ label: getProjectDisplayName(project), value: project.name }))
+      )
 
       // Auto-select first project only for single select when no value
       if (!value && projects.length > 0 && !multiple && selectDefault) {
-        onChange?.(projects[0])
+        onChange?.(projects[0].name)
       }
     }
 

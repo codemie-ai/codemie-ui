@@ -31,6 +31,7 @@ import { ProjectType } from '@/types/entity/project'
 import { ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { formatDateTime } from '@/utils/helpers'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
@@ -150,7 +151,7 @@ const ProjectDetailsPage = () => {
   return (
     <>
       <SettingsLayout
-        contentTitle={project.name}
+        contentTitle={getProjectDisplayName(project)}
         onBack={handleBack}
         rightContent={
           canManageProject ? (

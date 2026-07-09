@@ -44,6 +44,10 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
   const canRead = skill.user_abilities?.includes('read') ?? false
   const [showAssistantsModal, setShowAssistantsModal] = useState(false)
 
+  const projectDisplayName = useMemo(() => {
+    return skill.display_name
+  }, [skill])
+
   const skillDetailsLink = useMemo(() => {
     return `${getRootPath()}/skills/${skill.id}`
   }, [skill.id])
@@ -118,6 +122,9 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
         {/* Sidebar */}
         <DetailsSidebar classNames="max-view-details-bp:order-1 max-view-details-bp:min-w-full">
           <DetailsSidebarSection headline="OVERVIEW" itemsWrapperClassName="gap-2 -mt-2">
+            {projectDisplayName && (
+              <DetailsProperty label="Project Name" value={projectDisplayName} />
+            )}
             <DetailsProperty label="Project" value={skill.project} />
             <DetailsProperty label="Visibility" value={getVisibilityLabel(skill.visibility)} />
             <DetailsCopyField

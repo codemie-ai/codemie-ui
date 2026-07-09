@@ -31,6 +31,7 @@ export interface ProjectAssignedBudgetSummary {
 
 export interface ProjectListItem {
   name: string
+  display_name?: string | null
   description?: string | null
   project_type: string
   created_by?: string | null
@@ -90,11 +91,13 @@ export interface ProjectSpendingWidget {
 
 export interface ProjectPayload {
   name: string
+  display_name?: string | null
   description: string
   cost_center_id?: string | null
 }
 
 export interface ProjectUpdatePayload {
+  display_name?: string | null
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean

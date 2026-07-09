@@ -34,6 +34,11 @@ api.redirectHandler = () => {
   userStore.isSessionExpired = true
 }
 
+export interface ProjectOption {
+  name: string
+  display_name?: string | null
+}
+
 interface UserStoreType {
   isSessionExpired: boolean
   isLoadingUser: boolean
@@ -57,10 +62,10 @@ interface UserStoreType {
   updateUserProjectRole: (projectName: string, userId: string, role: string) => Promise<void>
   unassignUserFromProject: (projectName: string, userId: string) => Promise<void>
   getCurrentUser: () => Promise<User>
-  getProjects: (query?: string, adminOnly?: boolean) => Promise<string[]>
+  getProjects: (query?: string, adminOnly?: boolean) => Promise<ProjectOption[]>
   getDefaultProject: () => Promise<string | null>
-  getAdminProjects: (search?: string) => Promise<string[]>
-  getUserProjects: (adminOnly?: boolean) => string[]
+  getAdminProjects: (search?: string) => Promise<ProjectOption[]>
+  getUserProjects: (adminOnly?: boolean) => ProjectOption[]
   addProject: (projectName: string) => any
   isUserVisibleProject: (projectName?: string) => boolean
   getUsers: (params?: {
@@ -345,23 +350,28 @@ export const userStore = proxy<UserStoreType>({
     return api
       .get(`v1/admin/applications${queryParams ? `?${queryParams}` : ''}`)
       .then((response) => response.json())
-      .then((data) => {
-        return [...userProjects, ...data.applications.filter((app) => !userProjects.includes(app))]
+      .then((data: { applications: ProjectOption[] }) => {
+        const userProjectNames = new Set(userProjects.map((p) => p.name))
+        return [...userProjects, ...data.applications.filter((app) => !userProjectNames.has(app.name))]
       })
       .catch((_err) => {
         console.error('Failed to retrieve admin projects')
+        return userProjects
       })
   },
 
   getUserProjects(adminOnly = false) {
-    const projects = adminOnly ? userStore.user?.applicationsAdmin : userStore.user?.applications
-    return projects?.sort((a, b) => a.localeCompare(b)) ?? []
+    const projects = userStore.user?.projects ?? []
+    const filtered = adminOnly ? projects.filter((p) => p.is_project_admin) : projects
+    return filtered
+      .map((p) => ({ name: p.name, display_name: p.display_name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
   },
 
   async getDefaultProject() {
     const projects = await userStore.getProjects()
     if (projects.length) {
-      return projects[0]
+      return projects[0].name
     }
     return null
   },

@@ -86,6 +86,7 @@ describe('NewAssistantPage - Integration', () => {
     is_maintainer: false,
     user_type: 'INTERNAL',
     applications: ['test-project'],
+    projects: [{ name: 'test-project', display_name: null, is_project_admin: true }],
   }
 
   const getDialog = () => screen.getByRole('dialog')

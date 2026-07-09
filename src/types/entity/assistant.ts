@@ -120,6 +120,7 @@ export interface Assistant {
   user_abilities?: string[]
   can_edit?: boolean
   project?: string
+  display_name?: string | null
   context?: AssistantContext[]
   toolkits?: AssistantToolkit[]
   mcp_servers: MCPServerDetails[]

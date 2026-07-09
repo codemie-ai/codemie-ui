@@ -256,6 +256,7 @@ export const projectsStore = proxy<ProjectsStore>({
         `v1/projects/${encodeURIComponent(id)}`,
         {
           name: data.name,
+          display_name: data.display_name,
           description: data.description,
           cost_center_id: data.clear_cost_center ? undefined : data.cost_center_id,
           clear_cost_center: data.clear_cost_center || undefined,

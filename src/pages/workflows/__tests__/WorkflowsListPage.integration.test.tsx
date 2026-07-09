@@ -849,6 +849,11 @@ describe('WorkflowsListPage - Integration', () => {
         is_maintainer: false,
         user_type: 'INTERNAL',
         applications: ['Project A', 'Project B', 'Project C'],
+        projects: [
+          { name: 'Project A', display_name: null, is_project_admin: true },
+          { name: 'Project B', display_name: null, is_project_admin: true },
+          { name: 'Project C', display_name: null, is_project_admin: true },
+        ],
       })
 
       renderPage('/workflows/all')

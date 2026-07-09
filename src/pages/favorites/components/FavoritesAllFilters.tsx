@@ -24,6 +24,7 @@ import { FavoritesFilters } from '@/types/entity/favorites'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { FILTER_ENTITY, checkEmptyFilters, getFilters, setFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 
 interface FavoritesAllFiltersProps {
   onFilterChange: (filters: Partial<FavoritesFilters>) => void
@@ -43,7 +44,7 @@ const FavoritesAllFilters: React.FC<FavoritesAllFiltersProps> = ({ onFilterChang
   const loadProjectOptions = useCallback(async (value = '') => {
     try {
       const projects = await userStore.getProjects(value)
-      setProjectOptions(projects.map((p: string) => ({ label: p, value: p })))
+      setProjectOptions(projects.map((p) => ({ label: getProjectDisplayName(p), value: p.name })))
     } catch (error) {
       console.error('Error loading project options:', error)
     }

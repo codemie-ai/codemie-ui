@@ -26,6 +26,7 @@ import { User } from '@/types/entity/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 
 interface SkillsFiltersProps {
   onFilterChange: (filters: Record<string, unknown>) => void
@@ -61,9 +62,9 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
   const loadProjectOptions = useCallback(async (value: string) => {
     try {
       const projects = await userStore.getProjects(value)
-      const options = projects.map((project: string) => ({
-        label: project,
-        value: project,
+      const options = projects.map((project) => ({
+        label: getProjectDisplayName(project),
+        value: project.name,
       }))
       setProjectOptions(options)
     } catch (error) {

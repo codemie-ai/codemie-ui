@@ -1,3 +1,4 @@
+[ -f "$(dirname "$0")/../.env.local" ] && . "$(dirname "$0")/../.env.local"
 npx lint-staged
 npm run license-headers:check
 npm run secrets:check

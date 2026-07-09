@@ -32,6 +32,7 @@ import { FilterDefinition, FilterDefinitionType } from '@/types/filters'
 import { setFilters, FILTER_ENTITY, getFilters, checkEmptyFilters } from '@/utils/filters'
 import { humanize, createdBy } from '@/utils/helpers'
 import { getFullIndexType } from '@/utils/indexing'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 
 type FilterValues = {
   name: string
@@ -127,9 +128,9 @@ const DataSourceFilters: React.FC<Props> = ({
     async (search = '') => {
       const projects = await getProjects(search)
       setProjectOptions(
-        projects.map((project: string) => ({
-          label: project,
-          value: project,
+        projects.map((project) => ({
+          label: getProjectDisplayName(project),
+          value: project.name,
         }))
       )
     },

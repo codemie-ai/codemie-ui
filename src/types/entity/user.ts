@@ -17,6 +17,7 @@ import { BudgetAssignment, BudgetAssignmentsPayload } from '@/types/entity/budge
 
 export interface UserAssignedProject {
   name: string
+  display_name?: string | null
   is_project_admin: boolean
 }
 

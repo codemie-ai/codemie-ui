@@ -153,6 +153,7 @@ const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
   ]
 
   const customTableColumns: TableProps<ProjectSetting>['customRenderColumns'] = {
+    display_name: (item) => item.display_name || item.project_name,
     actions: (item) => (
       <NavigationMore
         childrenFirst

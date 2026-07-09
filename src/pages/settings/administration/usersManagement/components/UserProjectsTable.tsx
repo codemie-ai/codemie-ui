@@ -26,6 +26,7 @@ import { userStore } from '@/store/user'
 import { UserAssignedProject, UserListItem } from '@/types/entity'
 import { ProjectRole } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 
 import AddProjectPopup from './popups/AddProjectPopup'
@@ -176,7 +177,12 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
   const customRenderColumns = useMemo(
     () => ({
       project: (item: UserAssignedProject) => (
-        <div className="text-text-primary text-sm break-all min-w-0 max-w-[200px]">{item.name}</div>
+        <div className="text-text-primary text-sm break-all min-w-0 max-w-[200px]">
+          {getProjectDisplayName(item)}
+          {item.display_name && (
+            <span className="block text-xs text-text-quaternary">{item.name}</span>
+          )}
+        </div>
       ),
       admin: (item: UserAssignedProject) => {
         const currentRole = item.is_project_admin ? ProjectRole.ADMINISTRATOR : ProjectRole.USER

@@ -257,6 +257,24 @@ describe('projectsStore', () => {
       )
     })
 
+    it('includes display_name in the update payload', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({ name: 'my-project', display_name: 'My Project' }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateProject('my-project', {
+        name: 'my-project',
+        display_name: 'My Project',
+      })
+
+      expect(mockPatch).toHaveBeenCalledWith(
+        'v1/projects/my-project',
+        expect.objectContaining({ display_name: 'My Project' }),
+        { skipErrorHandling: true }
+      )
+    })
+
     it('passes budget tracking flag in update payload', async () => {
       mockPatch.mockResolvedValue({
         json: async () => ({

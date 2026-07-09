@@ -94,6 +94,10 @@ const AssistantDetails = ({
     !isTemplate &&
     (assistant.is_global || (assistant.shared && hasSelectableMcpServer))
 
+  const projectDisplayName = useMemo(() => {
+    return assistant.display_name
+  }, [assistant])
+
   const { assistantDetailsLink, assistantChatLink, assistantTemplateLink } = useMemo(() => {
     const baseUrl = `${getRootPath()}/assistants`
 
@@ -215,6 +219,9 @@ const AssistantDetails = ({
 
         <DetailsSidebar classNames="max-view-details-bp:order-1 max-view-details-bp:min-w-full">
           <DetailsSidebarSection headline="OVERVIEW" itemsWrapperClassName="gap-2 -mt-2">
+            {projectDisplayName && (
+              <DetailsProperty label="Project Name" value={projectDisplayName} />
+            )}
             <DetailsProperty label="Project" value={assistant?.project} />
             <DetailsProperty
               label="Shared status"

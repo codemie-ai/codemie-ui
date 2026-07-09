@@ -26,6 +26,7 @@ import { userStore } from '@/store/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 
 interface AssistantFilters {
   search?: string
@@ -75,9 +76,9 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   const loadProjectOptions = useCallback(async (value: string) => {
     try {
       const projects = await userStore.getProjects(value)
-      const options = projects.map((project: string) => ({
-        label: project,
-        value: project,
+      const options = projects.map((project) => ({
+        label: getProjectDisplayName(project),
+        value: project.name,
       }))
       setProjectOptions(options)
     } catch (error) {

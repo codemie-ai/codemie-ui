@@ -36,6 +36,13 @@ const IntegrationsTab: FC<IntegrationTabProps> = ({ portalSidebarRef, integratio
   const getTableColumns = useCallback(
     (isUserColumns = false) =>
       [
+        {
+          label: 'Project Name',
+          key: 'display_name',
+          type: 'custom',
+          shrink: true,
+          semiBold: true,
+        },
         { label: 'Project', key: 'project_name', type: 'string', shrink: true, semiBold: true },
         { label: 'Alias', key: 'alias', type: 'string', shrink: true },
         { label: 'Type', key: 'credential_type', type: 'custom' },
