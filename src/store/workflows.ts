@@ -72,7 +72,7 @@ interface WorkflowsStore {
   fetchWorkflow: (id: string | number) => Promise<Workflow>
   getWorkflow: (id: string | number) => Promise<Workflow>
   workflowTemplatesPagination: Pagination
-  indexWorkflowTemplates: (page?: number, perPage?: number) => Promise<void>
+  indexWorkflowTemplates: (page?: number, perPage?: number, name?: string) => Promise<void>
 
   getWorkflowTemplate: (slug: string) => Promise<void>
   getWorkflowTemplateBySlug: (slug: string) => Promise<WorkflowTemplate>
@@ -216,7 +216,8 @@ export const workflowsStore = proxy<WorkflowsStore>({
   async indexWorkflowTemplates(
     this: WorkflowsStore,
     page = this.workflowTemplatesPagination.page,
-    perPage = this.workflowTemplatesPagination.perPage
+    perPage = this.workflowTemplatesPagination.perPage,
+    name = ''
   ) {
     workflowTemplatesAbortController?.abort()
     workflowTemplatesAbortController = new AbortController()
@@ -224,9 +225,11 @@ export const workflowsStore = proxy<WorkflowsStore>({
 
     this.workflowsTemplatesLoading = true
     try {
-      const response = await api.get(`v1/workflows/prebuilt?page=${page}&per_page=${perPage}`, {
-        signal,
-      })
+      const filtersParam = name ? `&filters=${encodeURIComponent(JSON.stringify({ name }))}` : ''
+      const response = await api.get(
+        `v1/workflows/prebuilt?page=${page}&per_page=${perPage}${filtersParam}`,
+        { signal }
+      )
       const json = await response.json()
       const isLegacyArray = Array.isArray(json)
       const data = isLegacyArray ? json : json.data ?? []

@@ -143,7 +143,7 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
   const handleTemplatesPageChange = async (page: number, perPage?: number) => {
     const currentPerPage = perPage ?? templatesPagination.perPage
     try {
-      await assistantsStore.loadAssistantTemplates(page, currentPerPage)
+      await assistantsStore.loadAssistantTemplates(page, currentPerPage, filters)
       updateTemplatesURL(page, currentPerPage)
     } catch {
       toaster.error('Failed to load assistant templates')
@@ -167,7 +167,7 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
   useEffect(() => {
     if (isTemplate) {
       const { page, perPage } = getTemplatesPageFromURL()
-      assistantsStore.loadAssistantTemplates(page, perPage).catch(() => {
+      assistantsStore.loadAssistantTemplates(page, perPage, filters).catch(() => {
         toaster.error('Failed to load assistant templates')
       })
     } else {

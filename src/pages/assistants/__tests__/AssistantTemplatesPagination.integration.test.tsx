@@ -71,7 +71,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('shows pagination buttons when templates exceed one page', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', createTemplates(25))
+    mockAPI('GET', 'v1/assistants', createTemplates(25))
 
     renderPage('/assistants/templates')
 
@@ -82,7 +82,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('displays only first page items on initial load', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', createTemplates(25))
+    mockAPI('GET', 'v1/assistants', createTemplates(25))
 
     renderPage('/assistants/templates')
 
@@ -95,7 +95,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('shows next page of templates when pagination button is clicked', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', createTemplates(25))
+    mockAPI('GET', 'v1/assistants', createTemplates(25))
 
     renderPage('/assistants/templates')
 
@@ -114,7 +114,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('does not show pagination buttons when templates fit on one page', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', createTemplates(6))
+    mockAPI('GET', 'v1/assistants', createTemplates(6))
 
     renderPage('/assistants/templates')
 
@@ -126,7 +126,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('navigates back to first page when page 1 button is clicked after going to page 2', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', createTemplates(25))
+    mockAPI('GET', 'v1/assistants', createTemplates(25))
 
     renderPage('/assistants/templates')
 
@@ -150,7 +150,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('loads the page specified in the URL query param on initial render', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', createTemplates(25))
+    mockAPI('GET', 'v1/assistants', createTemplates(25))
     ;(mockRouterState as any).query = { page: '2' }
 
     renderPage('/assistants/templates')
@@ -163,7 +163,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('updates the URL when navigating to a new page', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', createTemplates(25))
+    mockAPI('GET', 'v1/assistants', createTemplates(25))
 
     renderPage('/assistants/templates')
 
@@ -180,7 +180,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('does not include page param in URL when navigating back to page 1', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', createTemplates(25))
+    mockAPI('GET', 'v1/assistants', createTemplates(25))
 
     renderPage('/assistants/templates')
 
@@ -200,7 +200,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('handles paginated {data, pagination} API response format', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', {
+    mockAPI('GET', 'v1/assistants', {
       data: createTemplates(12),
       pagination: { page: 0, per_page: 12, pages: 3, total: 25 },
     })
@@ -215,7 +215,7 @@ describe('AssistantTemplates - Pagination', () => {
 
   it('shows an error toast when the templates API request fails', async () => {
     mockAPI('GET', 'v1/config', [])
-    mockAPI('GET', 'v1/assistants/prebuilt', { error: 'server error' }, 500)
+    mockAPI('GET', 'v1/assistants', { error: 'server error' }, 500)
 
     renderPage('/assistants/templates')
 

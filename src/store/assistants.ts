@@ -89,7 +89,11 @@ interface AssistantsStoreType {
   getHelpAssistants: () => Promise<void>
   getDefaultAssistant: () => Promise<void>
   assistantTemplatesPagination: Pagination
-  loadAssistantTemplates: (page?: number, perPage?: number) => Promise<void>
+  loadAssistantTemplates: (
+    page?: number,
+    perPage?: number,
+    filters?: Record<string, unknown>
+  ) => Promise<void>
   getAssistant: (id: string, skipErrorHandling?: boolean) => Promise<Assistant>
   getAssistantBySlug: (
     slug: string,
@@ -274,7 +278,8 @@ export const assistantsStore = proxy<AssistantsStoreType>({
 
   async loadAssistantTemplates(
     page = assistantsStore.assistantTemplatesPagination.page,
-    perPage = assistantsStore.assistantTemplatesPagination.perPage
+    perPage = assistantsStore.assistantTemplatesPagination.perPage,
+    filters: Record<string, unknown> = {}
   ) {
     assistantTemplatesAbortController?.abort()
     assistantTemplatesAbortController = new AbortController()
@@ -282,9 +287,11 @@ export const assistantsStore = proxy<AssistantsStoreType>({
 
     assistantsStore.assistantTemplatesLoading = true
     try {
-      const response = await api.get(`v1/assistants/prebuilt?page=${page}&per_page=${perPage}`, {
-        signal,
-      })
+      const response = await api.get(
+        `v1/assistants?page=${page}&per_page=${perPage}&scope=${ASSISTANT_INDEX_SCOPES.TEMPLATES}` +
+          `&filters=${encodeURIComponent(JSON.stringify(filters))}`,
+        { signal }
+      )
       const json = await response.json()
       const isLegacyArray = Array.isArray(json)
       const data = isLegacyArray ? json : json.data ?? []

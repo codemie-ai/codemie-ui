@@ -159,7 +159,7 @@ describe('AssistantsListPage - Integration', () => {
 
     it('navigates to templates tab and loads prebuilt assistants', async () => {
       mockAPI('GET', 'v1/config', [])
-      mockAPI('GET', 'v1/assistants/prebuilt', {
+      mockAPI('GET', 'v1/assistants', {
         data: [
           createAssistantFixture({
             id: 'template-1',
@@ -173,7 +173,7 @@ describe('AssistantsListPage - Integration', () => {
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining('v1/assistants/prebuilt'),
+          expect.stringContaining('v1/assistants'),
           expect.anything()
         )
       })

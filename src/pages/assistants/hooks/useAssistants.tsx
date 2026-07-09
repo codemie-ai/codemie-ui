@@ -58,7 +58,7 @@ export const useAssistants = (isTemplate?: boolean) => {
           )
         }
       } else if (isTemplate) {
-        await assistantsStore.loadAssistantTemplates(page, perPage)
+        await assistantsStore.loadAssistantTemplates(page, perPage, filters)
       } else {
         await assistantsStore.indexAssistants(
           scope,
