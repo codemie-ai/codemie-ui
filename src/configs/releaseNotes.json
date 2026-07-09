@@ -16,6 +16,12 @@
         "key": "EPMCDME-13337"
       },
       {
+        "title": "Heroes MCP does not expose assignBadges tool for CodeMie Lab assistants",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13328",
+        "key": "EPMCDME-13328"
+      },
+      {
         "title": "Assistant details: sub-assistant link opens UUID-based URL instead of human-readable URL",
         "type": "BUG",
         "link": "https://jiraeu.epam.com/browse/EPMCDME-13300",
@@ -68,6 +74,12 @@
         "type": "STORY",
         "link": "https://jiraeu.epam.com/browse/EPMCDME-12079",
         "key": "EPMCDME-12079"
+      },
+      {
+        "title": "Add support for EPAM MCP Heroes to CodeMie MCP Catalog",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13409",
+        "key": "EPMCDME-13409"
       }
     ]
   },
