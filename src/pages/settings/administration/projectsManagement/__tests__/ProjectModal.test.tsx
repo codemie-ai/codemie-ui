@@ -120,51 +120,28 @@ function renderModal(props: Partial<Parameters<typeof ProjectModal>[0]> = {}) {
 
 // ─── Tests ─────────────────────────────────────────────────────────────────────
 
-describe('ProjectModal — auto-slug from display_name', () => {
+describe('ProjectModal — name and display_name are independent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('auto-fills name from display_name as user types', async () => {
+  it('does not derive name from display_name as user types', async () => {
     const user = userEvent.setup()
     renderModal()
 
-    const displayNameInput = screen.getByTestId('display_name')
-    await user.type(displayNameInput, 'My Team Project')
+    await user.type(screen.getByTestId('display_name'), 'My Team Project')
 
-    expect(screen.getByTestId<HTMLInputElement>('name').value).toBe('my-team-project')
+    // Name is entered independently and must never be auto-filled from display_name.
+    expect(screen.getByTestId<HTMLInputElement>('name').value).toBe('')
   })
 
-  it('converts spaces to dashes and lowercases', async () => {
+  it('keeps a manually entered name regardless of display_name changes', async () => {
     const user = userEvent.setup()
     renderModal()
 
-    await user.type(screen.getByTestId('display_name'), 'Hello World')
-    expect(screen.getByTestId<HTMLInputElement>('name').value).toBe('hello-world')
-  })
-
-  it('strips special characters', async () => {
-    const user = userEvent.setup()
-    renderModal()
-
-    await user.type(screen.getByTestId('display_name'), 'Team (Alpha)')
-    expect(screen.getByTestId<HTMLInputElement>('name').value).toBe('team-alpha')
-  })
-
-  it('freezes name when user manually edits it', async () => {
-    const user = userEvent.setup()
-    renderModal()
-
-    // Type into display_name to trigger auto-slug
+    await user.type(screen.getByTestId('name'), 'custom-name')
     await user.type(screen.getByTestId('display_name'), 'My Team')
 
-    // Manually clear and type a different name
-    const nameInput = screen.getByTestId('name')
-    await user.clear(nameInput)
-    await user.type(nameInput, 'custom-name')
-
-    // Further display_name changes should NOT update name
-    await user.type(screen.getByTestId('display_name'), ' Extra')
     expect(screen.getByTestId<HTMLInputElement>('name').value).toBe('custom-name')
   })
 
@@ -212,6 +189,7 @@ describe('ProjectModal — form submission', () => {
     const user = userEvent.setup()
     const { onSubmit } = renderModal()
 
+    await user.type(screen.getByTestId('name'), 'my-project')
     await user.type(screen.getByTestId('display_name'), 'My Project')
     await user.type(screen.getByTestId('description'), 'A description')
 

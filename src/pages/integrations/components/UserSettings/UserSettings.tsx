@@ -22,6 +22,7 @@ import IconEdit from '@/assets/icons/edit.svg?react'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import Filters from '@/components/Filters'
 import NavigationMore from '@/components/NavigationMore'
+import { renderProjectNameCell } from '@/components/ProjectNameCell'
 import Table from '@/components/Table'
 import { TableProps } from '@/components/Table/Table'
 import { ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
@@ -155,6 +156,7 @@ const UserSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
   ]
 
   const customTableColumns: TableProps<UserSetting>['customRenderColumns'] = {
+    project_name: renderProjectNameCell,
     actions: (item) => (
       <NavigationMore
         childrenFirst

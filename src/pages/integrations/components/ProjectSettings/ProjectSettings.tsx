@@ -22,6 +22,7 @@ import IconEdit from '@/assets/icons/edit.svg?react'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import Filters from '@/components/Filters'
 import NavigationMore from '@/components/NavigationMore'
+import { renderProjectNameCell } from '@/components/ProjectNameCell'
 import Table from '@/components/Table'
 import { TableProps } from '@/components/Table/Table'
 import UserFilter from '@/components/UserFilter'
@@ -153,7 +154,7 @@ const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
   ]
 
   const customTableColumns: TableProps<ProjectSetting>['customRenderColumns'] = {
-    display_name: (item) => item.display_name || item.project_name,
+    project_name: renderProjectNameCell,
     actions: (item) => (
       <NavigationMore
         childrenFirst

@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
 import PlusIcon from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
+import { renderProjectNameCell } from '@/components/ProjectNameCell'
 import Sidebar from '@/components/Sidebar'
 import Table from '@/components/Table'
 import { TableProps } from '@/components/Table/Table'
@@ -51,6 +52,7 @@ const DataSourcesPage = () => {
   const { indexStatuses, indexStatusesPagination, getIndexesStatuses, loading } = useSnapshot(
     dataSourceStore
   ) as typeof dataSourceStore
+
   const { sort, onSort, onPaginationUpdate, pagination, applyFilters } = useTableFilters({
     filterKey: FILTER_ENTITY.DATASOURCES,
     initialPagination: { page: 0, perPage: indexStatusesPagination.perPage },
@@ -122,7 +124,7 @@ const DataSourcesPage = () => {
   const tableColumns: ColumnDefinition[] = useMemo(
     () => [
       { label: 'Name', key: 'repo_name', type: 'custom', shrink: true, semiBold: true },
-      { label: 'Project', key: 'project_name', type: 'string', shrink: true },
+      { label: 'Project', key: 'project_name', type: 'custom', shrink: true },
       { label: 'Type', key: 'index_type', type: 'custom' },
       { label: 'Created By', key: 'created_by', type: 'user' },
       { label: 'Created', key: 'date', type: 'date', sortable: true },
@@ -137,6 +139,7 @@ const DataSourcesPage = () => {
   const customTableColumns: TableProps<DataSource>['customRenderColumns'] = useMemo(
     () => ({
       index_type: (item) => humanize(getIndexTypeDisplay(item.index_type)),
+      project_name: renderProjectNameCell,
       project_space_visible: (item) => (
         <div className="text-right">{visibility(item.project_space_visible)}</div>
       ),

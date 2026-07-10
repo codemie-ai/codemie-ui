@@ -21,6 +21,7 @@ import DetailsCopyField from '@/components/details/DetailsCopyField'
 import DetailsProperty from '@/components/details/DetailsProperty'
 import DetailsSidebar from '@/components/details/DetailsSidebar'
 import DetailsSidebarSection from '@/components/details/DetailsSidebar/components/DetailsSidebarSection'
+import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import SidebarTags from '@/pages/assistants/components/AssistantDetails/components/sidebar_details/SidebarTags'
 import ToolkitsViewList from '@/pages/assistants/components/ToolkitsViewList/ToolkitsViewList'
 import SkillAssistantsModal from '@/pages/skills/components/SkillAssistantsModal'
@@ -43,10 +44,10 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
   const assistantsCount = skill.assistants_count ?? 0
   const canRead = skill.user_abilities?.includes('read') ?? false
   const [showAssistantsModal, setShowAssistantsModal] = useState(false)
+  const projectDisplayNames = useProjectDisplayNames()
 
-  const projectDisplayName = useMemo(() => {
-    return skill.display_name
-  }, [skill])
+  const projectDisplayName =
+    projectDisplayNames.get(skill.project) || skill.display_name?.trim() || ''
 
   const skillDetailsLink = useMemo(() => {
     return `${getRootPath()}/skills/${skill.id}`
@@ -122,10 +123,18 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
         {/* Sidebar */}
         <DetailsSidebar classNames="max-view-details-bp:order-1 max-view-details-bp:min-w-full">
           <DetailsSidebarSection headline="OVERVIEW" itemsWrapperClassName="gap-2 -mt-2">
-            {projectDisplayName && (
-              <DetailsProperty label="Project Name" value={projectDisplayName} />
-            )}
-            <DetailsProperty label="Project" value={skill.project} />
+            <DetailsProperty
+              label="Project"
+              value={
+                projectDisplayName ? (
+                  <span data-tooltip-id="react-tooltip" data-tooltip-content={projectDisplayName}>
+                    {skill.project}
+                  </span>
+                ) : (
+                  skill.project
+                )
+              }
+            />
             <DetailsProperty label="Visibility" value={getVisibilityLabel(skill.visibility)} />
             <DetailsCopyField
               label="SKILL ID"
