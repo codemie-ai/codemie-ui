@@ -91,6 +91,8 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
     setShow(false)
   }
 
+  const visibleItems = items?.filter((item) => !item.hidden)
+
   const menu = (
     <div
       ref={refs.setFloating}
@@ -102,42 +104,43 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
       <div
         className="flex flex-col bg-surface-base-secondary rounded-lg border border-border-structural z-50 w-44 py-2 px-2"
         role="menu"
-        aria-label="Export options"
+        aria-label="Options"
       >
         {childrenFirst && children}
-        {items?.map((item) => {
-          return (
-            !item.hidden && (
-              <button
-                type="button"
-                role="menuitem"
-                className={cn(
-                  'flex items-center gap-4 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed',
-                  !item.disabled &&
-                    'hover:bg-surface-specific-dropdown-hover hover:text-text-accent',
-                  'focus:outline-none focus:ring-2 focus:ring-primary-500'
-                )}
-                key={item.title}
-                onClick={(e) => {
-                  if (!item.disabled) item.onClick(e)
-                  if (hideOnClickInside) setShow(false)
-                }}
-                disabled={item.disabled}
-                aria-label={item.title}
-                data-tooltip-id="react-tooltip"
-                data-tooltip-content={item.tooltip}
-              >
-                <span
-                  className="w-[18px] h-[18px] flex justify-center items-center"
-                  aria-hidden="true"
+        {visibleItems && visibleItems.length > 0 && (
+          <ul role="none">
+            {visibleItems.map((item) => (
+              <li key={item.title} role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={cn(
+                    'flex items-center gap-4 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed',
+                    !item.disabled &&
+                      'hover:bg-surface-specific-dropdown-hover hover:text-text-accent',
+                    'focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  )}
+                  onClick={(e) => {
+                    if (!item.disabled) item.onClick(e)
+                    if (hideOnClickInside) setShow(false)
+                  }}
+                  disabled={item.disabled}
+                  aria-label={item.title}
+                  data-tooltip-id="react-tooltip"
+                  data-tooltip-content={item.tooltip}
                 >
-                  {item.icon}
-                </span>
-                <span className="text-left grow">{item.title}</span>
-              </button>
-            )
-          )
-        })}
+                  <span
+                    className="w-[18px] h-[18px] flex justify-center items-center"
+                    aria-hidden="true"
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="text-left grow">{item.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {!childrenFirst && children}
       </div>
