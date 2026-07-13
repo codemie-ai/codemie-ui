@@ -13,12 +13,14 @@
 // limitations under the License.
 //
 
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
+import { mockRouterState, replace } from '@/hooks/__mocks__/useVueRouter'
+import { INITIAL_WORKFLOWS_FILTERS } from '@/pages/workflows/constants'
 import { preferencesStore } from '@/store/preferences'
+import { workflowsStore } from '@/store/workflows'
 import { clickMenuOption, selectMultiSelectOptions } from '@/test-utils/component-interactions'
 import { mockAPI, renderPage } from '@/test-utils/integration'
 import type { PaginatedResponse } from '@/types/common'
@@ -1388,6 +1390,123 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/no templates found/i)).toBeInTheDocument()
+      })
+    })
+
+    afterEach(() => {
+      workflowsStore.workflowsFilters = { ...INITIAL_WORKFLOWS_FILTERS }
+      workflowsStore.workflowTemplates = []
+      workflowsStore.workflowsTemplatesLoaded = false
+      workflowsStore.workflowsTemplatesLoading = true
+      localStorage.clear()
+      replace.mockReset()
+      ;(mockRouterState as any).query = {}
+    })
+
+    it('restores persisted search filter when returning via bare-path navigation', async () => {
+      // Simulate what setFilters() writes: `${userId}_filters_${entityKey}`
+      localStorage.setItem(
+        'test-user-id_filters_workflows.templates',
+        JSON.stringify({ name: 'Example' })
+      )
+
+      mockAPI('GET', 'v1/workflows/prebuilt', [
+        {
+          id: 'tmpl-ex',
+          slug: 'example-pipeline',
+          name: 'Example Pipeline',
+          description: 'An example template',
+        },
+      ])
+
+      // Spy before render to capture the mount-time call
+      const indexSpy = vi.spyOn(workflowsStore, 'indexWorkflowTemplates')
+
+      renderPage('/workflows/templates')
+
+      await waitFor(() => {
+        expect(screen.getByText('Example Pipeline')).toBeInTheDocument()
+      })
+
+      expect(indexSpy).toHaveBeenCalledWith(0, 12, 'Example')
+
+      indexSpy.mockRestore()
+    })
+
+    it('resets to full list after Clear All when returning via bare-path navigation', async () => {
+      // Wire replace and push so they update mockRouterState.query,
+      // making the URL change visible to WorkflowTemplates.useEffect on re-render.
+      replace.mockImplementation(({ query }: any) => {
+        ;(mockRouterState as any).query = query ?? {}
+      })
+      ;(mockRouterState as any).push = vi.fn(({ query }: any) => {
+        ;(mockRouterState as any).query = query ?? {}
+      })
+
+      // Seed localStorage: what setFilters() would have written after a previous search
+      localStorage.setItem(
+        'test-user-id_filters_workflows.templates',
+        JSON.stringify({ name: 'Example' })
+      )
+
+      // Filtered API response for the initial render
+      mockAPI('GET', 'v1/workflows/prebuilt', [
+        {
+          id: 'tmpl-ex',
+          slug: 'example-pipeline',
+          name: 'Example Pipeline',
+          description: 'An example template',
+        },
+      ])
+
+      renderPage('/workflows/templates')
+
+      // Wait for filtered list to appear
+      await waitFor(() => {
+        expect(screen.getByText('Example Pipeline')).toBeInTheDocument()
+      })
+
+      // RED gate: restore effect must have called updateUrlWithFilters({ name: 'Example' })
+      // which calls standalone replace({ query: { name: 'Example' } }).
+      // Before fix: replace not called with name → this assertion fails.
+      expect(replace).toHaveBeenCalledWith({ query: { name: 'Example' } })
+
+      // Overwrite API mock with full list
+      mockAPI('GET', 'v1/workflows/prebuilt', [
+        {
+          id: 'tmpl-dp',
+          slug: 'data-pipeline',
+          name: 'Data Pipeline',
+          description: 'A data template',
+        },
+        {
+          id: 'tmpl-ex',
+          slug: 'example-pipeline',
+          name: 'Example Pipeline',
+          description: 'An example template',
+        },
+      ])
+
+      // Click "Clear All" — clears local React state in Filters.tsx
+      await userEvent.click(screen.getByText('Clear all'))
+
+      // Advance 1100ms to fire the 1s debounce → handleApply({}) →
+      // router.push({ page: '1' }) + replace({ query: {} }) → mockRouterState.query = {}
+      await act(async () => {
+        vi.advanceTimersByTime(1100)
+      })
+
+      // Force a Valtio-driven re-render of WorkflowTemplates by mutating subscribed state.
+      // WorkflowTemplates uses useSnapshot(workflowsStore), so mutating workflowTemplates
+      // triggers a re-render where route.query?.name is now undefined (changed from 'Example').
+      // WorkflowTemplates.useEffect dep changes → indexWorkflowTemplates(0, 12, '') fires.
+      await act(async () => {
+        workflowsStore.workflowTemplates = []
+      })
+
+      // Full list must now be visible
+      await waitFor(() => {
+        expect(screen.getByText('Data Pipeline')).toBeInTheDocument()
       })
     })
   })

@@ -84,7 +84,7 @@ const WorkflowTemplates: React.FC = () => {
   useEffect(() => {
     if (route.path.includes('/workflows/templates')) {
       const { page, perPage } = getPageFromURL()
-      const name = (route.query?.name as string) || ''
+      const name = (route.query?.name as string) || workflowsStore.workflowsFilters.name || ''
       workflowsStore.indexWorkflowTemplates(page, perPage, name).catch(() => {
         toaster.error('Failed to load workflow templates')
       })

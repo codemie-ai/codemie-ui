@@ -29,7 +29,7 @@ import { assistantsStore } from '@/store'
 import { userStore } from '@/store/user'
 import { workflowsStore } from '@/store/workflows'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
-import { FILTER_ENTITY, getFilters, setFilters } from '@/utils/filters'
+import { FILTER_ENTITY, getFilters, setFilters, updateUrlWithFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
 import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import { makeCleanObject } from '@/utils/utils'
@@ -143,8 +143,11 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   useEffect(() => {
     if (!onApply) {
       workflowsStore.setWorkflowsFilters(initialFilterValues)
+      if (initialFilterValues.name && route.query?.name !== initialFilterValues.name) {
+        updateUrlWithFilters(initialFilterValues)
+      }
     }
-  }, [initialFilterValues, onApply])
+  }, [initialFilterValues, onApply, route.query?.name])
 
   useEffect(() => {
     if (!onApply) {

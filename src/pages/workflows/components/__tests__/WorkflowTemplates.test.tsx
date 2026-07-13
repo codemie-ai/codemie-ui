@@ -27,6 +27,7 @@ vi.mock('@/store/workflows', () => ({
     workflowTemplates: [],
     workflowsTemplatesLoading: false,
     workflowTemplatesPagination: { page: 0, perPage: 12, totalPages: 0, totalCount: 0 },
+    workflowsFilters: { name: '' },
     indexWorkflowTemplates: vi.fn().mockResolvedValue(undefined),
   },
 }))
@@ -56,6 +57,7 @@ describe('WorkflowTemplates', () => {
       totalPages: 0,
       totalCount: 0,
     }
+    ;(workflowsStore as any).workflowsFilters = { name: '' }
   })
 
   it('shows spinner while loading', async () => {
