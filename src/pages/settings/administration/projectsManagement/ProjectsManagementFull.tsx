@@ -36,6 +36,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import BudgetSpendCell from '@/pages/settings/administration/components/BudgetSpendCell'
 import NameLinkCell from '@/pages/settings/administration/components/NameLinkCell'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
+import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { BudgetCategory, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
@@ -210,15 +211,27 @@ const ProjectsManagementFull: FC = () => {
       nextSortOrder: string | undefined,
       nextBudgetParams = budgetQueryParamsRef.current
     ) =>
-      projectsStore.indexProjects(
-        page,
-        perPage,
-        nextSearch,
-        nextSortKey,
-        nextSortOrder,
-        false,
-        nextBudgetParams
-      ),
+      // The backend's `search` param never matches display_name, so a
+      // non-empty search is resolved client-side to also find projects by
+      // display name (see EPMCDME-13486).
+      nextSearch
+        ? projectsStore.searchProjectsIncludingDisplayName(
+            page,
+            perPage,
+            nextSearch,
+            nextSortKey,
+            nextSortOrder,
+            nextBudgetParams
+          )
+        : projectsStore.indexProjects(
+            page,
+            perPage,
+            undefined,
+            nextSortKey,
+            nextSortOrder,
+            false,
+            nextBudgetParams
+          ),
     []
   )
 
@@ -384,6 +397,8 @@ const ProjectsManagementFull: FC = () => {
         if (isEdit) {
           await projectsStore.updateProject(editingProject.id, data)
           toaster.info('Project updated successfully')
+          projectDisplayNamesStore.invalidate(editingProject.id)
+          await userStore.getCurrentUser()
         } else {
           await projectsStore.createProject(data)
           toaster.info('Project created successfully')

@@ -17,7 +17,9 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import ProjectDetailsPage from '@/pages/settings/administration/ProjectDetailsPage'
+import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
+import { userStore } from '@/store/user'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 
 const pushMock = vi.fn()
@@ -48,8 +50,13 @@ vi.mock('@/pages/settings/components/SettingsLayout', () => ({
   ),
 }))
 
+const projectModalMock = vi.fn()
+
 vi.mock('@/pages/settings/administration/projectsManagement/ProjectModal', () => ({
-  default: () => <div data-testid="project-modal" />,
+  default: (props: any) => {
+    projectModalMock(props)
+    return <div data-testid="project-modal" />
+  },
 }))
 
 vi.mock('@/pages/settings/administration/projectsManagement/ProjectMembersManager', () => ({
@@ -85,6 +92,8 @@ describe('ProjectDetailsPage', () => {
     vi.clearAllMocks()
     projectsStore.getProject = vi.fn().mockResolvedValue(mockProject)
     projectsStore.updateProject = vi.fn().mockResolvedValue(mockProject)
+    userStore.getCurrentUser = vi.fn().mockResolvedValue(userStore.user)
+    projectDisplayNamesStore.invalidate = vi.fn()
   })
 
   it('renders ProjectMembersManager with the loaded project', async () => {
@@ -124,5 +133,31 @@ describe('ProjectDetailsPage', () => {
 
     expect(await screen.findByText('Enforce member spend limits')).toBeInTheDocument()
     expect(screen.getByText('Enabled')).toBeInTheDocument()
+  })
+
+  it('forwards the edited display_name to updateProject and refreshes stale caches on save', async () => {
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectModalMock).toHaveBeenCalled()
+    })
+
+    const { onSubmit } = projectModalMock.mock.calls[0][0]
+    await act(async () => {
+      await onSubmit({
+        name: 'Test Project',
+        display_name: 'New Display Name',
+        description: 'Project description',
+        cost_center_id: 'cc-1',
+        enforce_member_spend_limits: true,
+      })
+    })
+
+    expect(projectsStore.updateProject).toHaveBeenCalledWith(
+      'Test Project',
+      expect.objectContaining({ display_name: 'New Display Name' })
+    )
+    expect(projectDisplayNamesStore.invalidate).toHaveBeenCalledWith('Test Project')
+    expect(userStore.getCurrentUser).toHaveBeenCalled()
   })
 })

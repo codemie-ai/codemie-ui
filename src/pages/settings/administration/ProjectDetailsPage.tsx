@@ -25,6 +25,7 @@ import ProjectModal, {
   ProjectFormData,
 } from '@/pages/settings/administration/projectsManagement/ProjectModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
+import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { ProjectType } from '@/types/entity/project'
@@ -100,6 +101,7 @@ const ProjectDetailsPage = () => {
     try {
       const updatedProject = await projectsStore.updateProject(project.name, {
         name: payload.name,
+        display_name: payload.display_name,
         description: payload.description,
         cost_center_id: payload.cost_center_id,
         clear_cost_center: payload.clear_cost_center,
@@ -107,6 +109,10 @@ const ProjectDetailsPage = () => {
       })
       toaster.info(`Project ${payload.name} updated successfully`)
       setIsEditPopupVisible(false)
+
+      projectDisplayNamesStore.invalidate(project.name)
+      projectDisplayNamesStore.invalidate(updatedProject.name)
+      await userStore.getCurrentUser()
 
       if (updatedProject.name !== project.name) {
         router.push({

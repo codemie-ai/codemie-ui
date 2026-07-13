@@ -24,6 +24,7 @@ interface ProjectDisplayNamesStore {
    */
   cache: Record<string, string>
   ensure: (projectName: string) => Promise<void>
+  invalidate: (projectName: string) => void
 }
 
 /**
@@ -64,5 +65,14 @@ export const projectDisplayNamesStore = proxy<ProjectDisplayNamesStore>({
     } finally {
       inFlight.delete(projectName)
     }
+  },
+
+  /**
+   * Drops a cached lookup so the next `ensure` call re-fetches it — used
+   * after a project's display name changes so stale entries don't linger
+   * for the rest of the session.
+   */
+  invalidate(projectName) {
+    delete this.cache[projectName]
   },
 })

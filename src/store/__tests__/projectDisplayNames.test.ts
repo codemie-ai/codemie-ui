@@ -93,4 +93,18 @@ describe('projectDisplayNamesStore', () => {
     expect(projectDisplayNamesStore.cache['proj-e']).toBe('Project Echo')
     expect(mockGet).toHaveBeenCalledTimes(2)
   })
+
+  it('drops a cached entry so the next ensure re-fetches it', async () => {
+    mockGet.mockResolvedValueOnce(jsonResponse({ name: 'proj-f', display_name: 'Old Name' }))
+    await projectDisplayNamesStore.ensure('proj-f')
+    expect(projectDisplayNamesStore.cache['proj-f']).toBe('Old Name')
+
+    projectDisplayNamesStore.invalidate('proj-f')
+    expect('proj-f' in projectDisplayNamesStore.cache).toBe(false)
+
+    mockGet.mockResolvedValueOnce(jsonResponse({ name: 'proj-f', display_name: 'New Name' }))
+    await projectDisplayNamesStore.ensure('proj-f')
+    expect(projectDisplayNamesStore.cache['proj-f']).toBe('New Name')
+    expect(mockGet).toHaveBeenCalledTimes(2)
+  })
 })
