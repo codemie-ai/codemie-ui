@@ -44,7 +44,7 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
   const assistantsCount = skill.assistants_count ?? 0
   const canRead = skill.user_abilities?.includes('read') ?? false
   const [showAssistantsModal, setShowAssistantsModal] = useState(false)
-  const projectDisplayNames = useProjectDisplayNames()
+  const projectDisplayNames = useProjectDisplayNames(skill.project)
 
   const projectDisplayName =
     projectDisplayNames.get(skill.project) || skill.display_name?.trim() || ''

@@ -20,8 +20,14 @@ import { useProjectDisplayNames } from '../useProjectDisplayNames'
 
 type MockProject = { name: string; display_name?: string | null }
 
-const { mockUserStore } = vi.hoisted(() => ({
-  mockUserStore: { user: null as null | { projects?: MockProject[] } },
+const { mockUserStore, mockProjectDisplayNamesStore } = vi.hoisted(() => ({
+  mockUserStore: {
+    user: null as null | { isAdmin?: boolean; projects?: MockProject[] },
+  },
+  mockProjectDisplayNamesStore: {
+    cache: {} as Record<string, string>,
+    ensure: vi.fn(),
+  },
 }))
 
 // Return the store as-is so the hook reads mockUserStore.user directly.
@@ -33,9 +39,15 @@ vi.mock('@/store', () => ({
   userStore: mockUserStore,
 }))
 
+vi.mock('@/store/projectDisplayNames', () => ({
+  projectDisplayNamesStore: mockProjectDisplayNamesStore,
+}))
+
 describe('useProjectDisplayNames', () => {
   beforeEach(() => {
     mockUserStore.user = null
+    mockProjectDisplayNamesStore.cache = {}
+    mockProjectDisplayNamesStore.ensure.mockReset()
   })
 
   it('returns an empty map when there is no user', () => {
@@ -87,5 +99,89 @@ describe('useProjectDisplayNames', () => {
     }
     const { result } = renderHook(() => useProjectDisplayNames())
     expect(result.current.get('proj')).toBe('Padded Name')
+  })
+
+  describe('Super Admin lazy resolution', () => {
+    it('merges lazily-fetched admin display names with the roster', () => {
+      mockUserStore.user = {
+        isAdmin: true,
+        projects: [{ name: 'assigned', display_name: 'Assigned Project' }],
+      }
+      mockProjectDisplayNamesStore.cache = { unassigned: 'Unassigned Project' }
+
+      const { result } = renderHook(() => useProjectDisplayNames())
+
+      expect(result.current.get('assigned')).toBe('Assigned Project')
+      expect(result.current.get('unassigned')).toBe('Unassigned Project')
+    })
+
+    it('ignores empty cache entries (resolved with no display name)', () => {
+      mockUserStore.user = { isAdmin: true, projects: [] }
+      mockProjectDisplayNamesStore.cache = { 'no-name': '' }
+
+      const { result } = renderHook(() => useProjectDisplayNames('no-name'))
+
+      expect(result.current.has('no-name')).toBe(false)
+    })
+
+    it('lets the roster win over the cache for the same project', () => {
+      mockUserStore.user = {
+        isAdmin: true,
+        projects: [{ name: 'proj', display_name: 'Roster Name' }],
+      }
+      mockProjectDisplayNamesStore.cache = { proj: 'Cache Name' }
+
+      const { result } = renderHook(() => useProjectDisplayNames('proj'))
+
+      expect(result.current.get('proj')).toBe('Roster Name')
+    })
+
+    it('triggers a lazy fetch for a requested name outside the admin roster', () => {
+      mockUserStore.user = { isAdmin: true, projects: [] }
+
+      renderHook(() => useProjectDisplayNames('unassigned'))
+
+      expect(mockProjectDisplayNamesStore.ensure).toHaveBeenCalledWith('unassigned')
+    })
+
+    it('accepts an array of names and fetches each uncovered one', () => {
+      mockUserStore.user = {
+        isAdmin: true,
+        projects: [{ name: 'assigned', display_name: 'Assigned' }],
+      }
+
+      renderHook(() => useProjectDisplayNames(['assigned', 'unassigned-a', 'unassigned-b']))
+
+      expect(mockProjectDisplayNamesStore.ensure).not.toHaveBeenCalledWith('assigned')
+      expect(mockProjectDisplayNamesStore.ensure).toHaveBeenCalledWith('unassigned-a')
+      expect(mockProjectDisplayNamesStore.ensure).toHaveBeenCalledWith('unassigned-b')
+    })
+
+    it('does not fetch when the requested project is already in the roster', () => {
+      mockUserStore.user = {
+        isAdmin: true,
+        projects: [{ name: 'assigned', display_name: 'Assigned' }],
+      }
+
+      renderHook(() => useProjectDisplayNames('assigned'))
+
+      expect(mockProjectDisplayNamesStore.ensure).not.toHaveBeenCalled()
+    })
+
+    it('never fetches for non-admin users, even for unknown projects', () => {
+      mockUserStore.user = { isAdmin: false, projects: [] }
+
+      renderHook(() => useProjectDisplayNames('unassigned'))
+
+      expect(mockProjectDisplayNamesStore.ensure).not.toHaveBeenCalled()
+    })
+
+    it('does not fetch when no names are requested', () => {
+      mockUserStore.user = { isAdmin: true, projects: [] }
+
+      renderHook(() => useProjectDisplayNames())
+
+      expect(mockProjectDisplayNamesStore.ensure).not.toHaveBeenCalled()
+    })
   })
 })

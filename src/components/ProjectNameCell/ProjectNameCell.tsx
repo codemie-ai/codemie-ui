@@ -20,11 +20,12 @@ interface ProjectNameCellProps {
 
 /**
  * Renders a project's technical name, surfacing its human display name as a
- * tooltip hint when one exists. Resolves the display name itself from the
- * current user's project roster.
+ * tooltip hint when one exists. Resolves the display name from the current
+ * user's project roster, or — for Super Admins viewing a project they are not
+ * assigned to — by lazily fetching it.
  */
 const ProjectNameCell = ({ projectName }: ProjectNameCellProps) => {
-  const displayName = useProjectDisplayNames().get(projectName)
+  const displayName = useProjectDisplayNames(projectName).get(projectName)
 
   if (!displayName) return <>{projectName}</>
 

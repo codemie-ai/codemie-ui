@@ -95,7 +95,7 @@ const AssistantDetails = ({
     !isTemplate &&
     (assistant.is_global || (assistant.shared && hasSelectableMcpServer))
 
-  const projectDisplayNames = useProjectDisplayNames()
+  const projectDisplayNames = useProjectDisplayNames(assistant.project)
   const projectDisplayName =
     (assistant.project && projectDisplayNames.get(assistant.project)) ||
     assistant.display_name?.trim() ||

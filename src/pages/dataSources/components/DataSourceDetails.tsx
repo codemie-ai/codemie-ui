@@ -170,7 +170,7 @@ const DataList: React.FC<{ items: DataListItem[]; emptyText?: string }> = ({
 
 const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => {
   const router = useVueRouter()
-  const projectDisplayNames = useProjectDisplayNames()
+  const projectDisplayNames = useProjectDisplayNames(dataSource?.project_name)
   const projectDisplayName = dataSource?.project_name
     ? projectDisplayNames.get(dataSource.project_name)
     : undefined

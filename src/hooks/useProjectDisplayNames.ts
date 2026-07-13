@@ -12,21 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
 import { userStore } from '@/store'
+import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 
 /**
- * Builds a lookup of technical project name -> human display name from the
- * current user's project roster. Only projects that actually have a display
- * name are included, so a hit can be treated as "a display name exists" —
- * useful for showing the human name as a hint next to the technical one.
+ * Builds a lookup of technical project name -> human display name.
+ *
+ * Display names come from two sources:
+ *  - the current user's project roster (covers projects the user is assigned
+ *    to — a hit means a display name exists), and
+ *  - for Super Admins, an on-demand cache for projects they are *not* assigned
+ *    to. Super Admins can view entities across projects outside their roster,
+ *    so pass the project name(s) rendered on the current view via
+ *    `namesToResolve` and the hook lazily fetches their display names.
+ *
+ * Non-admin users, and projects already covered by the roster, never trigger a
+ * fetch, so existing behaviour is unchanged.
  */
-export const useProjectDisplayNames = (): Map<string, string> => {
+export const useProjectDisplayNames = (
+  namesToResolve?: string | Array<string | null | undefined>
+): Map<string, string> => {
   const { user } = useSnapshot(userStore)
+  const { cache } = useSnapshot(projectDisplayNamesStore)
 
-  return useMemo(() => {
+  const rosterNames = useMemo(() => {
     const map = new Map<string, string>()
     user?.projects?.forEach((project) => {
       const displayName = project.display_name?.trim()
@@ -34,4 +46,25 @@ export const useProjectDisplayNames = (): Map<string, string> => {
     })
     return map
   }, [user?.projects])
+
+  const requestedNames = useMemo(() => {
+    if (!namesToResolve) return [] as string[]
+    const list = Array.isArray(namesToResolve) ? namesToResolve : [namesToResolve]
+    return list.filter((name): name is string => !!name)
+  }, [namesToResolve])
+
+  useEffect(() => {
+    if (!user?.isAdmin) return
+    requestedNames.forEach((name) => {
+      if (!rosterNames.has(name)) projectDisplayNamesStore.ensure(name)
+    })
+  }, [user?.isAdmin, requestedNames, rosterNames])
+
+  return useMemo(() => {
+    const map = new Map(rosterNames)
+    Object.entries(cache).forEach(([name, displayName]) => {
+      if (displayName && !map.has(name)) map.set(name, displayName)
+    })
+    return map
+  }, [rosterNames, cache])
 }
