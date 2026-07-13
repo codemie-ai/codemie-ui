@@ -41,6 +41,7 @@ import {
   SHAREPOINT_AUTH_TYPES,
 } from '@/constants/dataSources'
 import { DATASOURCES } from '@/constants/routes'
+import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import DataSourceTypeIcon from '@/pages/dataSources/components/DataSourceTypeIcon'
 import {
@@ -169,6 +170,10 @@ const DataList: React.FC<{ items: DataListItem[]; emptyText?: string }> = ({
 
 const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => {
   const router = useVueRouter()
+  const projectDisplayNames = useProjectDisplayNames()
+  const projectDisplayName = dataSource?.project_name
+    ? projectDisplayNames.get(dataSource.project_name)
+    : undefined
   const indexType = useMemo(() => {
     if (dataSource?.vcs_type === INDEX_TYPES.SVN) return INDEX_TYPES.SVN
     return getIndexTypeCode(dataSource?.index_type)
@@ -666,7 +671,18 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
 
         <DetailsSidebar classNames="max-view-details-bp:order-1 max-view-details-bp:min-w-full">
           <DetailsSidebarSection headline="OVERVIEW" itemsWrapperClassName="gap-2 -mt-2">
-            <DetailsProperty label="Project" value={dataSource?.project_name} />
+            <DetailsProperty
+              label="Project"
+              value={
+                projectDisplayName ? (
+                  <span data-tooltip-id="react-tooltip" data-tooltip-content={projectDisplayName}>
+                    {dataSource?.project_name}
+                  </span>
+                ) : (
+                  dataSource?.project_name
+                )
+              }
+            />
             <DetailsProperty label="Data Source Type" value={humanize(indexType)} />
             <DetailsCopyField
               label="Data Source ID"
