@@ -477,29 +477,6 @@
       }
     },
     {
-      "base_name": "gemini-1.5-pro",
-      "deployment_name": "gemini-1.5-pro-002",
-      "label": "Gemini 1.5 Pro",
-      "multimodal": true,
-      "enabled": true,
-      "provider": "google_vertexai",
-      "default": false,
-      "default_for_categories": [],
-      "cost": {
-        "input": 0.00000125,
-        "output": 0.000005
-      },
-      "max_output_tokens": 8192,
-      "features": {
-        "streaming": true,
-        "tools": true,
-        "temperature": true,
-        "parallel_tool_calls": false,
-        "system_prompt": true,
-        "max_tokens": true
-      }
-    },
-    {
       "base_name": "gemini-2.5-pro",
       "deployment_name": "gemini-2.5-pro",
       "label": "Gemini 2.5 Pro",
