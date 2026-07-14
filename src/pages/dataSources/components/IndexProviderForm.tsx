@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import React, { useEffect, useMemo, useCallback } from 'react'
+import React, { useEffect, useMemo, useCallback, useRef } from 'react'
 import { Controller } from 'react-hook-form'
 
 import CrossIcon from '@/assets/icons/cross.svg?react'
@@ -32,6 +32,8 @@ import {
   PROVIDER_FIELD_TYPES,
   PROVIDER_STRINGISH_TYPES,
   PROVIDER_SKIPPED_FIELDS,
+  getProviderFieldInitialValue,
+  hasProviderEnumOptions,
 } from '../constants'
 
 interface Props {
@@ -62,12 +64,13 @@ const IndexProviderForm: React.FC<Props> = ({
   }, [dataProvider])
 
   const selectInitialValues = useMemo(() => {
-    const fieldsWithEnums = fields.filter(
-      (field) => field.enum && field.parameter_type === PROVIDER_FIELD_TYPES.LIST
-    )
+    return fields.reduce((acc, field) => {
+      const initialValue = getProviderFieldInitialValue(field)
 
-    return fieldsWithEnums.reduce((acc, field) => {
-      ;[acc[field.name]] = field.enum ?? []
+      if (initialValue !== undefined) {
+        acc[field.name] = initialValue
+      }
+
       return acc
     }, {} as Record<string, any>)
   }, [fields])
@@ -122,12 +125,17 @@ const IndexProviderForm: React.FC<Props> = ({
     return filteredOptions
   }
 
+  // Prefill the form with stored/initial values exactly once. Re-running this on
+  // every render would overwrite the user's edits with the original values.
+  const hasPrefilled = useRef(false)
   useEffect(() => {
+    if (hasPrefilled.current || !fields.length || !setValue) return
     fields.forEach((field) => {
-      if (initialValues[field.name] !== undefined && setValue) {
+      if (initialValues[field.name] !== undefined) {
         setValue(field.name, initialValues[field.name], { shouldValidate: true })
       }
     })
+    hasPrefilled.current = true
   }, [fields, initialValues, setValue])
 
   return (
@@ -135,6 +143,31 @@ const IndexProviderForm: React.FC<Props> = ({
       {fields.map((field, index) => {
         if (PROVIDER_SKIPPED_FIELDS.includes(field.name)) {
           return <></>
+        }
+
+        if (hasProviderEnumOptions(field) || field.parameter_type === PROVIDER_FIELD_TYPES.LIST) {
+          const options = buildSelectOptions(field)
+
+          return (
+            <div key={`${index}-${field.name}`} className="mt-3">
+              <Controller
+                name={field.name}
+                control={control}
+                render={({ field: controllerField }) => (
+                  <Autocomplete
+                    id={field.name}
+                    {...controllerField}
+                    options={options}
+                    allowNew={hasProviderEnumOptions(field)}
+                    label={field.title ?? humanize(field.name)}
+                    placeholder={field.example ?? undefined}
+                    hint={field.description}
+                    error={errors[field.name]?.message as string}
+                  />
+                )}
+              />
+            </div>
+          )
         }
 
         if (PROVIDER_STRINGISH_TYPES.includes(field.parameter_type)) {
@@ -154,29 +187,6 @@ const IndexProviderForm: React.FC<Props> = ({
                     hint={field.description}
                     type={isSensitive(field.name) ? 'password' : 'text'}
                     required={field.required}
-                  />
-                )}
-              />
-            </div>
-          )
-        }
-
-        if (field.parameter_type === PROVIDER_FIELD_TYPES.LIST) {
-          const options = buildSelectOptions(field)
-
-          return (
-            <div key={`${index}-${field.name}`} className="mt-3">
-              <Controller
-                name={field.name}
-                control={control}
-                render={({ field: controllerField }) => (
-                  <Autocomplete
-                    id={field.name}
-                    {...controllerField}
-                    options={options}
-                    label={field.title ?? humanize(field.name)}
-                    placeholder={field.example ?? undefined}
-                    hint={field.description}
                   />
                 )}
               />

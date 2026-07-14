@@ -209,6 +209,7 @@ export interface DataProviderField {
   multiselect_options: { label: string; value: string }[]
   title?: string | null
   example?: string | null
+  default_value?: string | null
 }
 
 export interface DataProviderSchema {

@@ -22,6 +22,8 @@ import {
   IndexType,
   SHAREPOINT_AUTH_TYPES,
 } from '@/constants/dataSources'
+import { MASKED_VALUE } from '@/constants/settings'
+import { PROVIDER_FIELD_TYPES } from '@/pages/dataSources/constants'
 import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 
@@ -470,12 +472,22 @@ export const useIndexCreation = ({
     const payload = getBaseRequestFields(values, index, hasProjectChanged)
 
     const providerParams = [
-      ...indexMetadata.base_schema.parameters,
-      ...indexMetadata.create_schema.parameters,
+      ...(indexMetadata?.base_schema?.parameters ?? []),
+      ...(indexMetadata?.create_schema?.parameters ?? []),
     ]
 
     for (const param of providerParams) {
-      payload[param.name] = values[param.name]
+      const value = values[param.name]
+      // In edit mode, skip secret fields the user didn't change (still masked) so we
+      // don't overwrite the stored secret with the mask placeholder.
+      if (
+        isEditMode &&
+        param.parameter_type === PROVIDER_FIELD_TYPES.SECRET &&
+        value === MASKED_VALUE
+      ) {
+        continue
+      }
+      payload[param.name] = value
     }
 
     if (isEditMode && index) {

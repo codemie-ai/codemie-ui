@@ -36,7 +36,11 @@ import { validateCronExpression } from '@/utils/cronValidator'
 import { humanize } from '@/utils/helpers'
 import { getIndexTypeCode, fileSizeValidator, googleDocLinkValidator } from '@/utils/indexing'
 
-import { PROVIDER_FIELD_TYPES, PROVIDER_STRINGISH_TYPES } from '../../../constants'
+import {
+  PROVIDER_FIELD_TYPES,
+  PROVIDER_STRINGISH_TYPES,
+  hasProviderEnumOptions,
+} from '../../../constants'
 
 const DESCRIPTION_REQUIRED_ERR = 'Description is required'
 const CQL_REQUIRED_ERR = 'CQL is required'
@@ -277,7 +281,8 @@ export const useEditPopupForm = (
         if (
           PROVIDER_STRINGISH_TYPES.includes(field.parameter_type) ||
           field.parameter_type === PROVIDER_FIELD_TYPES.LIST ||
-          field.parameter_type === PROVIDER_FIELD_TYPES.TEXT
+          field.parameter_type === PROVIDER_FIELD_TYPES.TEXT ||
+          hasProviderEnumOptions(field)
         ) {
           fieldSchema = Yup.string()
         }
@@ -370,6 +375,9 @@ export const useEditPopupForm = (
     const providerFields = defaults?.provider_fields ?? {}
     const baseParams = providerFields.base_params ?? {}
     const createParams = providerFields.create_params ?? {}
+    const providerSchema = providerFields.provider_id
+      ? indexProviderSchemas.find((item) => item.id === providerFields.provider_id)
+      : undefined
 
     const mergedValues = {
       projectName: defaults?.project_name ?? defaultQueryProject ?? '',
@@ -421,25 +429,23 @@ export const useEditPopupForm = (
       promptTemplate: defaults?.prompt ?? DEFAULT_DOCUMENTATION_PROMPT,
       guardrail_assignments: defaults?.guardrail_assignments ?? [],
       cronExpression: defaults?.cron_expression ?? '',
+      // Set the provider schema together with the form values so it is never
+      // clobbered by a later reset(). Keeping it in a separate effect caused the
+      // submit handler to read an undefined indexMetadata when the schemas were
+      // already cached (SPA navigation), silently aborting the save.
+      indexMetadata: providerSchema as any,
 
       ...baseParams,
       ...createParams,
     }
 
     reset(mergedValues)
-  }, [defaultQueryProject, defaults, reset])
+  }, [defaultQueryProject, defaults, indexProviderSchemas, reset])
 
   useEffect(() => {
     if (!defaults.id) return
     resetInitFormValues()
   }, [defaults, resetInitFormValues])
-
-  useEffect(() => {
-    const providerID = defaults.provider_fields?.provider_id
-    if (!providerID) return
-    const provider = indexProviderSchemas.find((item) => item.id === providerID)
-    if (provider) setValue('indexMetadata', provider as any)
-  }, [defaults.provider_fields, indexProviderSchemas])
 
   const [childSubmitHandlers, setChildSubmitHandlers] = useState<
     Array<(values?: FormValues) => Promise<boolean> | boolean>

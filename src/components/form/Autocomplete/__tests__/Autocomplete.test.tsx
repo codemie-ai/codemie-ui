@@ -64,8 +64,8 @@ describe('Autocomplete', () => {
 
   it('sets initial value correctly', () => {
     renderComponent({ value: 'banana' })
-    const autocompleteInput = screen.getByRole('combobox') as HTMLInputElement
-    expect(autocompleteInput.value).toBe('Banana')
+    const autocompleteInput = screen.getByRole('combobox')
+    expect(autocompleteInput).toHaveValue('Banana')
   })
 
   it('filters options when typing (local filtering)', async () => {
@@ -109,13 +109,13 @@ describe('Autocomplete', () => {
 
   it('resets to selected value on blur when allowNew is false', async () => {
     renderComponent({ value: 'banana', allowNew: false })
-    const autocompleteInput = screen.getByRole('combobox') as HTMLInputElement
+    const autocompleteInput = screen.getByRole('combobox')
 
     await user.clear(autocompleteInput)
     await user.type(autocompleteInput, 'something else')
     await user.tab()
 
-    expect(autocompleteInput.value).toBe('Banana')
+    expect(autocompleteInput).toHaveValue('Banana')
   })
 
   it('allows custom text input when allowNew is true', async () => {
@@ -126,6 +126,18 @@ describe('Autocomplete', () => {
     await user.tab()
 
     expect(mockOnChange).toHaveBeenCalledWith('New Fruit')
+  })
+
+  it('displays a custom value not in options when allowNew is true', () => {
+    renderComponent({ allowNew: true, value: '0.88' })
+    const autocompleteInput = screen.getByRole('combobox')
+    expect(autocompleteInput).toHaveValue('0.88')
+  })
+
+  it('does not display a value missing from options when allowNew is false', () => {
+    renderComponent({ allowNew: false, value: '0.88' })
+    const autocompleteInput = screen.getByRole('combobox')
+    expect(autocompleteInput).toHaveValue('')
   })
 
   it('is disabled when disabled prop is true', () => {

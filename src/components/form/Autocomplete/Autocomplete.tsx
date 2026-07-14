@@ -84,11 +84,13 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
       setFilteredOptions(options)
     }, [options])
 
-    // Set initial text value based on selected option
+    // Set initial text value based on selected option.
+    // When allowNew is enabled, a value that is not one of the options is a
+    // valid custom entry, so display it as-is instead of clearing the field.
     useEffect(() => {
       const selectedOption = options.find((option) => option.value === value)
-      setTextValue(selectedOption?.label || '')
-    }, [value, options])
+      setTextValue(selectedOption?.label ?? (allowNew ? value ?? '' : ''))
+    }, [value, options, allowNew])
 
     const search = (event: { query: string }) => {
       const query = event.query.toLowerCase()

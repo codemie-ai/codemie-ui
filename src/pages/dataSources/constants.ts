@@ -18,10 +18,12 @@ export const CREATE_SCHEMA_KEY = 'create_schema'
 
 export const PROVIDER_FIELD_TYPES = {
   NUMBER: 'Number',
+  INTEGER: 'Integer',
   STRING: 'String',
   BOOLEAN: 'Boolean',
   SECRET: 'Secret',
   URL: 'URL',
+  UUID: 'UUID',
   LIST: 'List',
   MULTISELECT: 'Multiselect',
   TEXT: 'Text',
@@ -33,7 +35,23 @@ export const PROVIDER_STRINGISH_TYPES: Array<
   PROVIDER_FIELD_TYPES.STRING,
   PROVIDER_FIELD_TYPES.SECRET,
   PROVIDER_FIELD_TYPES.URL,
+  PROVIDER_FIELD_TYPES.UUID,
   PROVIDER_FIELD_TYPES.NUMBER,
+  PROVIDER_FIELD_TYPES.INTEGER,
 ]
 
 export const PROVIDER_SKIPPED_FIELDS = ['name', 'description']
+
+export const hasProviderEnumOptions = (field: { enum?: string[] | null }) =>
+  Boolean(field.enum && field.enum.length > 0)
+
+export const getProviderFieldInitialValue = (field: {
+  enum?: string[] | null
+  default_value?: string | null
+}): string | undefined => {
+  if (hasProviderEnumOptions(field)) {
+    return field.default_value ?? field.enum![0]
+  }
+
+  return field.default_value != null && field.default_value !== '' ? field.default_value : undefined
+}

@@ -81,6 +81,7 @@ interface Props {
   onClose: () => void
   index?: DataSourceDetailsResponse | null
   onSubmittingChange?: (isSubmitting: boolean) => void
+  onReadyChange?: (isReady: boolean) => void
   defaultProject?: string
   isPopup?: boolean
   isEditing?: boolean
@@ -94,8 +95,18 @@ export interface DataSourceFormRef {
 }
 
 const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
-  const { index, onClose, onSubmittingChange, defaultProject, isPopup, isEditing, disabled } = props
-  const { llmModels, embeddingModels } = useSnapshot(appInfoStore) as typeof appInfoStore
+  const {
+    index,
+    onClose,
+    onSubmittingChange,
+    onReadyChange,
+    defaultProject,
+    isPopup,
+    isEditing,
+    disabled,
+  } = props
+  const { llmModels, embeddingModels } = useSnapshot(appInfoStore)
+  const { indexProviderSchemas } = useSnapshot(dataSourceStore)
 
   const [googleDocsGuideConfig, setGoogleDocsGuideConfig] = useState<any>(null)
   const [googleDocsGuideEnabled, setGoogleDocsGuideEnabled] = useState(false)
@@ -110,6 +121,13 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
       onSubmittingChange(isSubmitting)
     }
   }, [isSubmitting, onSubmittingChange])
+
+  // Notify parent when the form is ready for submission. Until initialization
+  // finishes the form still holds default values (indexType GIT), so submitting
+  // would validate against the wrong schema and silently fail.
+  useEffect(() => {
+    onReadyChange?.(!isInitializing)
+  }, [isInitializing, onReadyChange])
   const {
     errors,
     control,
@@ -192,18 +210,24 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
 
   useEffect(() => {
     const initialize = async () => {
-      if (!llmModels.length) await appInfoStore.getLLMModels()
-      if (!embeddingModels.length) await appInfoStore.getEmbeddingsModels()
+      try {
+        if (!llmModels.length) await appInfoStore.getLLMModels()
+        if (!embeddingModels.length) await appInfoStore.getEmbeddingsModels()
 
-      setValue('embeddingsModel', getDefaultEmbeddingModel(getValues('embeddingsModel')!))
-      setValue('summarizationModel', getDefaultSummarizationModel(getValues('summarizationModel')!))
-      await userSettingsStore.indexSettings()
-      await dataSourceStore.getProviderIndexSchemas()
-      setIsProviderSchemasLoaded(true)
-      const { googleDocsGuideEnabled, googleDocsGuideConfig } = await checkCustomerConfig()
-      setGoogleDocsGuideConfig(googleDocsGuideConfig)
-      setGoogleDocsGuideEnabled(googleDocsGuideEnabled)
-      setIsInitializing(false)
+        setValue('embeddingsModel', getDefaultEmbeddingModel(getValues('embeddingsModel')!))
+        setValue(
+          'summarizationModel',
+          getDefaultSummarizationModel(getValues('summarizationModel')!)
+        )
+        await userSettingsStore.indexSettings()
+        await dataSourceStore.getProviderIndexSchemas()
+        setIsProviderSchemasLoaded(true)
+        const { googleDocsGuideEnabled, googleDocsGuideConfig } = await checkCustomerConfig()
+        setGoogleDocsGuideConfig(googleDocsGuideConfig)
+        setGoogleDocsGuideEnabled(googleDocsGuideEnabled)
+      } finally {
+        setIsInitializing(false)
+      }
     }
 
     initialize()
@@ -230,16 +254,18 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
     const defaultName = generateDefaultAlias(indexType)
     if (defaultName) setValue('name', defaultName)
   }, [indexType])
-  const indexMetadata = watch('indexMetadata')
   const sharepointAuthType = watch('sharepointAuthType')
+
+  const providerId = index?.provider_fields?.provider_id
 
   const isProviderDeleted = useMemo(
     () =>
       isProviderSchemasLoaded &&
       !!index &&
       indexType === INDEX_TYPES.PROVIDER &&
-      !(indexMetadata as any)?.base_schema,
-    [isProviderSchemasLoaded, indexMetadata, indexType]
+      !!providerId &&
+      !indexProviderSchemas.some((schema) => schema.id === providerId),
+    [isProviderSchemasLoaded, indexType, providerId, indexProviderSchemas]
   )
 
   useActiveHelpSegment(Object.values(INDEX_TYPES).includes(indexType) ? indexType : 'provider')
@@ -586,7 +612,8 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                   }}
                 />
               )}
-              {!Object.values(INDEX_TYPES).includes(field.value as IndexType) && (
+              {(!Object.values(INDEX_TYPES).includes(field.value as IndexType) ||
+                field.value === INDEX_TYPES.PROVIDER) && (
                 <IndexTypeField.Provider
                   {...{
                     index,
@@ -629,6 +656,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
 const MemoizedDataSourceForm = memo(DataSourceForm, (prevProps, nextProps) => {
   if (prevProps.index?.id !== nextProps.index?.id) return false
   if (prevProps.onSubmittingChange !== nextProps.onSubmittingChange) return false
+  if (prevProps.onReadyChange !== nextProps.onReadyChange) return false
   if (prevProps.disabled !== nextProps.disabled) return false
 
   return true

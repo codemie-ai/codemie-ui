@@ -82,6 +82,11 @@ const DataSourceTypeSelector = ({
   }, [indexProviderSchemas])
 
   useEffect(() => {
+    // In edit mode the selector is hidden and the form's indexMetadata is owned
+    // by resetInitFormValues. Running this effect would clobber the provider
+    // schema (intermittently, depending on schema-cache timing), breaking Save.
+    if (hidden) return
+
     const updateMetadata = async () => {
       if (!Object.values(INDEX_TYPES).includes(indexType as IndexType)) {
         const dataProvider = indexProviderSchemas?.find((item) => item.id === indexType)
@@ -93,7 +98,7 @@ const DataSourceTypeSelector = ({
 
     clearErrors()
     updateMetadata()
-  }, [indexType, indexProviderSchemas, indexTypeOptions, onIndexMetadataChange])
+  }, [hidden, indexType, indexProviderSchemas, indexTypeOptions, onIndexMetadataChange])
 
   const itemTemplate = (option: FilterOption) => {
     return (

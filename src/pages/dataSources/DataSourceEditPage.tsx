@@ -45,6 +45,7 @@ const DataSourceEditPage: FC = () => {
   const [loading, setLoading] = useState(true)
   const [canFullIndex, setCanFullIndex] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isFormReady, setIsFormReady] = useState(false)
   const formRef = useRef<DataSourceFormRef>(null)
 
   const { getIndexDetails } = useSnapshot(dataSourceStore) as typeof dataSourceStore
@@ -104,17 +105,21 @@ const DataSourceEditPage: FC = () => {
         <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
-        <Button variant="primary" disabled={isSubmitting} onClick={onSubmit}>
+        <Button variant="primary" disabled={isSubmitting || !isFormReady} onClick={onSubmit}>
           Save
         </Button>
         {canFullIndex && (
-          <Button variant="primary" disabled={isSubmitting} onClick={onSubmitReindex}>
+          <Button
+            variant="primary"
+            disabled={isSubmitting || !isFormReady}
+            onClick={onSubmitReindex}
+          >
             Save & Reindex
           </Button>
         )}
       </div>
     ),
-    [handleClose, isSubmitting, onSubmit, onSubmitReindex]
+    [handleClose, isSubmitting, isFormReady, onSubmit, onSubmitReindex]
   )
 
   return (
@@ -144,6 +149,7 @@ const DataSourceEditPage: FC = () => {
             onClose={handleClose}
             ref={formRef}
             onSubmittingChange={setIsSubmitting}
+            onReadyChange={setIsFormReady}
           />
         )}
       </PageLayout>
