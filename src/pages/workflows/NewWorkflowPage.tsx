@@ -27,12 +27,15 @@ import { appInfoStore } from '@/store/appInfo'
 import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
 import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
+import { GenerateWorkflowResponse } from '@/types/entity/workflow'
 import API from '@/utils/api'
 import { preprocessYamlConfig } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
+import { serialize } from '@/utils/workflowEditor/serialization'
 import { isVisualEditorEnabled } from '@/utils/workflows'
 
+import GenerateWorkflowPopup from './components/GenerateWorkflowPopup'
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
 import WorkflowsNavigation from './components/WorkflowsNavigation'
 import WorkflowStartExecutionPopup from './details/popups/WorkflowStartExecutionPopup'
@@ -72,6 +75,10 @@ const NewWorkflowPage: React.FC = () => {
   const isFromTemplate =
     route.path.includes(FROM_TEMPLATE_ROUTE) || route.path.includes('from-template')
 
+  const [showGeneratePopup, setShowGeneratePopup] = useState(
+    workflowsStore.loadShowNewWorkflowAIPopup() && !isCloning && !isFromTemplate
+  )
+  const [templateKey, setTemplateKey] = useState(0)
   const [headline, setHeadline] = useState(DEFAULT_HEADLINE)
   const [_submitName, setSubmitName] = useState(DEFAULT_SUBMIT)
 
@@ -135,6 +142,15 @@ const NewWorkflowPage: React.FC = () => {
     }
 
     await formRef.current.save(true)
+  }
+
+  const handleGenerated = (data: GenerateWorkflowResponse) => {
+    const { workflow_config } = data
+    const yaml_config =
+      workflow_config.yaml_config ??
+      serialize({ states: workflow_config.states ?? [], assistants: workflow_config.assistants })
+    setTemplate({ ...workflow_config, yaml_config })
+    setTemplateKey((k) => k + 1)
   }
 
   const onBack = () => {
@@ -210,6 +226,7 @@ const NewWorkflowPage: React.FC = () => {
       >
         {!loading && (
           <WorkflowForm
+            key={templateKey}
             ref={formRef}
             issues={issues}
             setIssues={setIssues}
@@ -228,6 +245,12 @@ const NewWorkflowPage: React.FC = () => {
           startHint={formRef.current?.getFormValues()?.start_hint}
         />
       )}
+
+      <GenerateWorkflowPopup
+        visible={showGeneratePopup}
+        onHide={() => setShowGeneratePopup(false)}
+        onGenerated={handleGenerated}
+      />
     </div>
   )
 }

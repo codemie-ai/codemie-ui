@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export function getProjectDisplayName(project: { name: string; display_name?: string | null }): string {
+export function getProjectDisplayName(project: {
+  name: string
+  display_name?: string | null
+}): string {
   return project.display_name?.trim() || project.name
 }
 

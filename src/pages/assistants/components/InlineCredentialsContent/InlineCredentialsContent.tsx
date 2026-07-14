@@ -63,7 +63,9 @@ export const InlineCredentialsContent: React.FC<InlineCredentialsContentProps> =
   // credential_type plus its alias (the integration name), rather than one of the technical
   // MCP credential_type strings.
   const isPinnedIntegration = (credential: InlineCredential) =>
-    Boolean(credential.mcp_server && credential.integration_alias && !isMcpTechnicalType(credential))
+    Boolean(
+      credential.mcp_server && credential.integration_alias && !isMcpTechnicalType(credential)
+    )
 
   // Name (primary, bold) of the row:
   // - pinned integration -> the integration name (alias);

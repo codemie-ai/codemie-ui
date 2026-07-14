@@ -18,10 +18,10 @@ import React, { useEffect } from 'react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import { MASKED_VALUE } from '@/constants/settings'
 
+import RecordItemBadgeView, { type RecordItemBadge } from './RecordItemBadge'
 import Button from '../../Button'
 import TooltipButton from '../../TooltipButton'
 import Input from '../Input'
-import RecordItemBadgeView, { type RecordItemBadge } from './RecordItemBadge'
 
 export type { RecordItemBadge } from './RecordItemBadge'
 

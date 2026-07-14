@@ -14,6 +14,7 @@
 //
 
 import { NodeType } from '../workflowEditor'
+import { WorkflowConfiguration } from '../workflowEditor/configuration'
 
 import type { Thought } from './conversation'
 import type { CreatedBy } from '../common'
@@ -213,4 +214,29 @@ export interface WorkflowInlineCredential {
 
 export interface WorkflowPublishValidationResponse {
   inline_credentials?: WorkflowInlineCredential[]
+}
+
+export interface GenerateWorkflowRequest {
+  text: string
+  include_tools: boolean
+}
+
+export interface GenerateWorkflowConfig extends WorkflowConfiguration {
+  id: string | null
+  name: string
+  description: string
+  mode?: string
+  start_hint?: string | null
+  project?: string | null
+  icon_url?: string | null
+  yaml_config?: string | null
+  shared?: boolean
+  supervisor_prompt?: string
+  meta_config?: unknown
+  guardrail_assignments?: unknown
+}
+
+export interface GenerateWorkflowResponse {
+  workflow_config: GenerateWorkflowConfig
+  workflow_id: string | null
 }

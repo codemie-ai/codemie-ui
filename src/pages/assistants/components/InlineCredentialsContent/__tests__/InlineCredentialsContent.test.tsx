@@ -55,7 +55,9 @@ describe('InlineCredentialsContent — Credential Review rows (logo + name + typ
   it('MCP auth token base config: name = server, type = MCP', () => {
     const { container } = render(
       <InlineCredentialsContent
-        credentials={[{ credential_type: 'mcp_auth_token', mcp_server: 'Test MCP', toolkit: 'MCP' }]}
+        credentials={[
+          { credential_type: 'mcp_auth_token', mcp_server: 'Test MCP', toolkit: 'MCP' },
+        ]}
       />
     )
 

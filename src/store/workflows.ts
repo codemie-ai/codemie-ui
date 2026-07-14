@@ -27,6 +27,7 @@ import {
   WorkflowExecution,
   CreateWorkflowExecutionRequest,
   WorkflowPublishValidationResponse,
+  GenerateWorkflowResponse,
 } from '@/types/entity/workflow'
 import { CustomNodeSchemaResponse } from '@/types/workflowEditor/configuration'
 import api from '@/utils/api'
@@ -34,6 +35,7 @@ import { cleanObject } from '@/utils/helpers'
 import { makeCleanObject } from '@/utils/utils'
 
 import { preferencesStore } from './preferences'
+import { userStore } from './user'
 
 export const MAX_RECENT_WORKFLOWS = 3
 
@@ -41,6 +43,8 @@ export const ERROR_FORMAT_STRING = 'string' as const
 export const ERROR_FORMAT_JSON = 'json' as const
 
 export type ErrorFormat = typeof ERROR_FORMAT_STRING | typeof ERROR_FORMAT_JSON
+
+const SHOW_NEW_WORKFLOW_AI_POPUP = 'codemie-new-workflow-ai-popup'
 
 interface WorkflowsFilters {
   [key: string]: any
@@ -113,6 +117,10 @@ interface WorkflowsStore {
     categories: string[]
   ) => Promise<{ error?: { message?: string; details?: string } }>
   unpublishWorkflowFromMarketplace: (id: string) => Promise<void>
+  generateWorkflow: (text: string, includeTools: boolean) => Promise<GenerateWorkflowResponse>
+  showNewWorkflowAIPopup: boolean
+  setShowNewWorkflowAIPopup: (show?: boolean) => void
+  loadShowNewWorkflowAIPopup: () => boolean
 }
 
 let workflowTemplatesAbortController: AbortController | null = null
@@ -472,5 +480,28 @@ export const workflowsStore = proxy<WorkflowsStore>({
 
   unpublishWorkflowFromMarketplace(id: string): Promise<void> {
     return api.post(`v1/workflows/${id}/marketplace/unpublish`).then(() => undefined)
+  },
+
+  async generateWorkflow(text: string, includeTools: boolean): Promise<GenerateWorkflowResponse> {
+    const response = await api.post('v1/workflows/generate', {
+      text,
+      include_tools: includeTools,
+    })
+    return response.json()
+  },
+
+  showNewWorkflowAIPopup: true,
+
+  setShowNewWorkflowAIPopup(show = true) {
+    const userId = userStore.user?.userId ?? ''
+    localStorage.setItem(`${userId}_${SHOW_NEW_WORKFLOW_AI_POPUP}`, show ? 'true' : 'false')
+    workflowsStore.showNewWorkflowAIPopup = show
+  },
+
+  loadShowNewWorkflowAIPopup() {
+    const userId = userStore.user?.userId ?? ''
+    const show = localStorage.getItem(`${userId}_${SHOW_NEW_WORKFLOW_AI_POPUP}`) !== 'false'
+    workflowsStore.showNewWorkflowAIPopup = show
+    return show
   },
 })
