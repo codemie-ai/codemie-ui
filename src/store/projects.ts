@@ -59,18 +59,6 @@ interface ProjectsStore {
     page?: number,
     perPage?: number
   ) => Promise<PaginatedResponse<Project>>
-  searchProjectsIncludingDisplayName: (
-    page: number,
-    perPage: number,
-    search: string,
-    sortBy?: string,
-    sortOrder?: string,
-    budgetParams?: {
-      includeBudgets?: boolean
-      hasAssignedBudgets?: boolean
-      budgetCategory?: BudgetCategory | null
-    }
-  ) => Promise<Project[]>
   getProject: (projectName: string, includeSpending?: boolean) => Promise<ProjectDetail>
   createProject: (data: ProjectRequest) => Promise<Project>
   updateProject: (id: string, data: ProjectRequest) => Promise<Project>
@@ -93,81 +81,6 @@ interface ProjectsStore {
 
 const DEFAULT_PAGE = 0
 const DEFAULT_PER_PAGE = 10
-
-// Backend caps per_page at 100; this bounds how many pages we'll pull when
-// building the full project list for client-side display-name search.
-const CLIENT_SEARCH_PAGE_SIZE = 100
-const CLIENT_SEARCH_MAX_PAGES = 50
-
-const fetchProjectsPage = async (
-  page: number,
-  budgetParams: {
-    includeBudgets?: boolean
-    hasAssignedBudgets?: boolean
-    budgetCategory?: BudgetCategory | null
-  }
-) => {
-  const params: Record<string, string | number | boolean> = {
-    page,
-    per_page: CLIENT_SEARCH_PAGE_SIZE,
-  }
-  if (budgetParams.includeBudgets) params.include_budgets = true
-  if (budgetParams.hasAssignedBudgets) params.has_assigned_budgets = true
-  if (budgetParams.budgetCategory) params.budget_category = budgetParams.budgetCategory
-
-  const queryParams = new URLSearchParams()
-  Object.entries(params).forEach(([key, value]) => queryParams.append(key, String(value)))
-
-  const response = await api.get(`v1/projects?${queryParams.toString()}`)
-  const responseData = await response.json()
-  const projects: Project[] = (responseData.data || []).map((project: any) => ({
-    ...project,
-    id: project.name,
-  }))
-
-  return { projects, total: responseData.pagination?.total ?? projects.length }
-}
-
-const fetchAllProjectsForClientSearch = async (budgetParams: {
-  includeBudgets?: boolean
-  hasAssignedBudgets?: boolean
-  budgetCategory?: BudgetCategory | null
-}): Promise<Project[]> => {
-  const first = await fetchProjectsPage(0, budgetParams)
-  const totalPages = Math.ceil(first.total / CLIENT_SEARCH_PAGE_SIZE)
-  const pagesToFetch = Math.min(totalPages, CLIENT_SEARCH_MAX_PAGES)
-
-  const remainingPages = await Promise.all(
-    Array.from({ length: Math.max(pagesToFetch - 1, 0) }, (_, i) =>
-      fetchProjectsPage(i + 1, budgetParams)
-    )
-  )
-
-  const all = [first, ...remainingPages].flatMap((result) => result.projects)
-
-  if (all.length < first.total) {
-    console.warn(
-      `Project display-name search only scanned ${all.length} of ${first.total} projects (page cap reached)`
-    )
-  }
-
-  return all
-}
-
-const sortProjectsClientSide = (
-  projects: Project[],
-  sortBy?: string,
-  sortOrder?: string
-): Project[] => {
-  if (!sortBy) return projects
-
-  const direction = sortOrder === 'desc' ? -1 : 1
-  return [...projects].sort((a, b) => {
-    const aValue = String((a as any)[sortBy] ?? '')
-    const bValue = String((b as any)[sortBy] ?? '')
-    return aValue.localeCompare(bValue) * direction
-  })
-}
 
 export const projectsStore = proxy<ProjectsStore>({
   projects: [],
@@ -243,61 +156,6 @@ export const projectsStore = proxy<ProjectsStore>({
       const contextualError = error.response?.data?.message ?? error.message
       this.error = `Failed to load projects: ${contextualError}`
       console.error('Projects Store Error (indexProjects):', error)
-      throw error
-    } finally {
-      this.loading = false
-    }
-  },
-
-  // The backend's `search` query param only matches a project's technical
-  // `name` and `description` — never `display_name` (see EPMCDME-13486). Since
-  // Super Admins need to find projects by display name even when they aren't
-  // a member (and so have no roster entry for it), we fetch every visible
-  // project and match `search` against name/display_name/description here
-  // instead of relying on the backend filter.
-  async searchProjectsIncludingDisplayName(
-    page: number,
-    perPage: number,
-    search: string,
-    sortBy?: string,
-    sortOrder?: string,
-    budgetParams: {
-      includeBudgets?: boolean
-      hasAssignedBudgets?: boolean
-      budgetCategory?: BudgetCategory | null
-    } = {}
-  ) {
-    this.loading = true
-    this.error = null
-
-    try {
-      const allProjects = await fetchAllProjectsForClientSearch(budgetParams)
-
-      const query = search.trim().toLowerCase()
-      const matches = allProjects.filter((project) => {
-        const name = (project.name ?? '').toLowerCase()
-        const displayName = (project.display_name ?? '').toLowerCase()
-        const description = (project.description ?? '').toLowerCase()
-        return name.includes(query) || displayName.includes(query) || description.includes(query)
-      })
-
-      const sorted = sortProjectsClientSide(matches, sortBy, sortOrder)
-      const start = page * perPage
-      const projects = sorted.slice(start, start + perPage)
-
-      this.projects = projects
-      this.pagination = {
-        page,
-        perPage,
-        totalPages: Math.ceil(sorted.length / perPage) || 0,
-        totalCount: sorted.length,
-      }
-
-      return projects
-    } catch (error: any) {
-      const contextualError = error.response?.data?.message ?? error.message
-      this.error = `Failed to load projects: ${contextualError}`
-      console.error('Projects Store Error (searchProjectsIncludingDisplayName):', error)
       throw error
     } finally {
       this.loading = false

@@ -211,27 +211,15 @@ const ProjectsManagementFull: FC = () => {
       nextSortOrder: string | undefined,
       nextBudgetParams = budgetQueryParamsRef.current
     ) =>
-      // The backend's `search` param never matches display_name, so a
-      // non-empty search is resolved client-side to also find projects by
-      // display name (see EPMCDME-13486).
-      nextSearch
-        ? projectsStore.searchProjectsIncludingDisplayName(
-            page,
-            perPage,
-            nextSearch,
-            nextSortKey,
-            nextSortOrder,
-            nextBudgetParams
-          )
-        : projectsStore.indexProjects(
-            page,
-            perPage,
-            undefined,
-            nextSortKey,
-            nextSortOrder,
-            false,
-            nextBudgetParams
-          ),
+      projectsStore.indexProjects(
+        page,
+        perPage,
+        nextSearch,
+        nextSortKey,
+        nextSortOrder,
+        false,
+        nextBudgetParams
+      ),
     []
   )
 
