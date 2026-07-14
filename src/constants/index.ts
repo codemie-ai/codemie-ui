@@ -93,6 +93,7 @@ export enum SettingsTab {
   AWS_DATA_SOURCES = 'aws_data_sources',
   AWS_GUARDRAILS = 'aws_guardrails',
   AWS_AGENTCORE_RUNTIMES = 'aws_agentcore_runtimes',
+  TEAMS_BOT_INTEGRATION = 'teams_bot_integration',
 }
 
 export enum ButtonSize {

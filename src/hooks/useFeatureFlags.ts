@@ -114,3 +114,7 @@ export const useFavoritesPageEnabled = (): FeatureFlagResult => {
 export const useRequestHedgingEnabled = (): FeatureFlagResult => {
   return useFeatureFlag('features:requestHedging')
 }
+
+export const useTeamsEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag('features:teamsBotIntegration')
+}

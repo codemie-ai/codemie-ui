@@ -95,3 +95,10 @@ export const isFavoritesPageEnabled = (): boolean => {
 export const isRequestHedgingEnabled = (): boolean => {
   return isFeatureEnabled('features:requestHedging')
 }
+
+/**
+ * Check if Teams Bot Integration feature is enabled (non-reactive utility)
+ */
+export const isTeamsEnabled = (): boolean => {
+  return isFeatureEnabled('features:teamsBotIntegration')
+}

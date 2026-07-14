@@ -62,6 +62,7 @@ interface AssistantSelectorProps {
   selectClassName?: string
   errorClassName?: string
   enlargedLabel?: boolean
+  scrollHeight?: string
 
   // Allows injecting extra "virtual" assistant options (e.g. built-in subagents)
   // directly into the dropdown list. These will be placed at the top.
@@ -124,6 +125,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
       enlargedLabel = false,
 
       extraOptionsTop = [],
+      scrollHeight,
     },
     ref
   ) => {
@@ -256,6 +258,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
           optionValue="id"
           singleValue={singleValue}
           showCheckbox={!singleValue}
+          scrollHeight={scrollHeight}
         />
       </div>
     )

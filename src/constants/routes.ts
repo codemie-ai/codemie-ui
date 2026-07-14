@@ -61,6 +61,9 @@ export const NEW_SKILL = 'new-skill'
 export const SKILL_DETAILS = 'skill-details'
 export const EDIT_SKILL = 'edit-skill'
 
+export const SETTINGS_TEAMS_BOT = 'teams-bot'
+export const SETTINGS_TEAMS_BOT_PROJECT = 'teams-bot-project'
+
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES = 'aws-agentcore-runtimes-settings'
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES_LIST = 'aws-agentcore-runtimes-settings-detail'
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES_RUNTIME = 'aws-agentcore-runtimes-settings-runtime'

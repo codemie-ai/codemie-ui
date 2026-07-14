@@ -44,7 +44,7 @@ export default defineWorkspace([
     extends: './vite.config.ts',
     test: {
       name: 'integration',
-      environment: 'jsdom',
+      environment: './vitest-env-integration.ts',
       include: ['**/__tests__/**/*.integration.test.?(c|m)[jt]s?(x)'],
       setupFiles: ['./src/setupTests'],
     },

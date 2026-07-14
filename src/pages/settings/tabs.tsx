@@ -19,7 +19,7 @@ import ProfileTabSvg from '@/assets/icons/profile-tab.svg?react'
 import { LayoutTab } from '@/components/Layouts/Layout/Layout'
 import { SettingsTab } from '@/constants'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
-import { isCostCentersEnabled, isMcpEnabled } from '@/utils/featureFlags'
+import { isCostCentersEnabled, isMcpEnabled, isTeamsEnabled } from '@/utils/featureFlags'
 
 const getEnterpriseAdminItems = (
   isMcpFeatureEnabled: boolean,
@@ -74,6 +74,7 @@ export const getNavigationTabs = (
 ): LayoutTab[] => {
   const isMcpFeatureEnabled = isMcpEnabled()
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
+  const isTeamsBotEnabled = isTeamsEnabled()
   const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
   const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
   const isEnterprise = isEnterpriseEdition()
@@ -115,6 +116,16 @@ export const getNavigationTabs = (
               isUserManagementEnabled,
               budgetsManagementTab
             )
+          : []),
+        ...(isTeamsBotEnabled
+          ? [
+              {
+                id: SettingsTab.TEAMS_BOT_INTEGRATION,
+                name: 'Teams bot integration',
+                title: 'Teams bot integration',
+                url: '/settings/administration/teams',
+              },
+            ]
           : []),
       ].sort((a, b) => a.name.localeCompare(b.name))
     : [
