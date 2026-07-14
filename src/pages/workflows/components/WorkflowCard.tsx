@@ -202,15 +202,17 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
           <div className="flex flex-row gap-4">
             <Avatar iconUrl={workflow.icon_url} name={workflow.name} type={AvatarType.MEDIUM} />
 
-            <div className="flex flex-col z-[1] overflow-hidden">
-              <div
-                ref={nameRef}
-                data-pr-tooltip={isNameTruncated ? workflow.name : ''}
-                data-pr-position="bottom"
-                className={classNames('whitespace-nowrap truncate font-semibold', tooltipClass)}
-              >
-                {workflow.name}
-              </div>
+            <div className="flex flex-col z-[1] overflow-hidden flex-1 min-w-0">
+              <h3 className={classNames('text-base font-semibold m-0 truncate', isFavoritesEnabled && 'pr-14')}>
+                <div
+                  ref={nameRef}
+                  data-pr-tooltip={isNameTruncated ? workflow.name : ''}
+                  data-pr-position="bottom"
+                  className={classNames('whitespace-nowrap truncate font-semibold', tooltipClass)}
+                >
+                  {workflow.name}
+                </div>
+              </h3>
 
               <div
                 ref={authorRef}
