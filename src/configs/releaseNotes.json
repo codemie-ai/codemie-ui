@@ -1,5 +1,41 @@
 [
   {
+    "version": "2.39.0",
+    "date": "2026-07-14",
+    "issues": [
+      {
+        "title": "Workflow Templates search filter state is not preserved after navigating away and returning",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13424",
+        "key": "EPMCDME-13424"
+      },
+      {
+        "title": "Extend Codemie Evaluation Capabilities to Support Workflow Dataset Experiments",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13369",
+        "key": "EPMCDME-13369"
+      },
+      {
+        "title": "Workflow graph node execution fails with Bedrock 400 error when request contains assistant message prefill for Claude Sonnet model group",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13365",
+        "key": "EPMCDME-13365"
+      },
+      {
+        "title": "Implement user-friendly project display names based on design specification",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12673",
+        "key": "EPMCDME-12673"
+      },
+      {
+        "title": "API does not validate presence of categories when publishing assistant to marketplace; should reject if categories are missed",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10198",
+        "key": "EPMCDME-10198"
+      }
+    ]
+  },
+  {
     "version": "2.38.0",
     "date": "2026-07-08",
     "issues": [
