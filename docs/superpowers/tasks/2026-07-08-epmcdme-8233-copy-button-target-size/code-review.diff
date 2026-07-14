@@ -1,0 +1,161 @@
+diff --git a/scripts/validate-secrets.mjs b/scripts/validate-secrets.mjs
+index 3bcd49571..c28d4767b 100644
+--- a/scripts/validate-secrets.mjs
++++ b/scripts/validate-secrets.mjs
+@@ -124,7 +124,8 @@ args.push('/workspace')
+ 
+ console.log('Checking for secrets with Gitleaks...')
+ 
+-const gitleaks = spawn(engineBin, args, {
++const safeEngineBin = isWindows && engineBin.includes(' ') ? `"${engineBin}"` : engineBin
++const gitleaks = spawn(safeEngineBin, args, {
+   stdio: 'inherit',
+   shell: isWindows,
+ })
+diff --git a/src/components/Navigation/NavigationProfile.tsx b/src/components/Navigation/NavigationProfile.tsx
+index 5551b13a8..b9291e379 100644
+--- a/src/components/Navigation/NavigationProfile.tsx
++++ b/src/components/Navigation/NavigationProfile.tsx
+@@ -144,8 +144,10 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
+                   {user?.name}
+                 </span>
+                 <button
+-                  className="ml-1 text-text-primary hover:opacity-80"
++                  aria-label="Copy username"
++                  className="inline-flex items-center justify-center min-w-[24px] min-h-[24px] ml-1 text-text-primary hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-accent rounded-sm"
+                   title="Copy username"
++                  type="button"
+                   onClick={copyUserName}
+                 >
+                   <CopySvg className="w-3" />
+@@ -156,8 +158,10 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
+                   ID: {user?.userId}
+                 </span>
+                 <button
+-                  className="ml-1 text-text-primary hover:opacity-80"
++                  aria-label="Copy user ID"
++                  className="inline-flex items-center justify-center min-w-[24px] min-h-[24px] ml-1 text-text-primary hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-accent rounded-sm"
+                   title="Copy user ID"
++                  type="button"
+                   onClick={copyUserID}
+                 >
+                   <CopySvg className="w-3" />
+diff --git a/src/components/Navigation/__tests__/NavigationProfile.test.tsx b/src/components/Navigation/__tests__/NavigationProfile.test.tsx
+index 41a596895..e7f53c21f 100644
+--- a/src/components/Navigation/__tests__/NavigationProfile.test.tsx
++++ b/src/components/Navigation/__tests__/NavigationProfile.test.tsx
+@@ -221,4 +221,20 @@ describe('NavigationProfile', () => {
+     fireEvent.click(logoutButton)
+     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
+   })
++
++  it('copy buttons have aria-label accessible names', () => {
++    render(<NavigationProfile isExpanded={false} />)
++    expect(screen.getByLabelText('Copy username')).toBeInTheDocument()
++    expect(screen.getByLabelText('Copy user ID')).toBeInTheDocument()
++  })
++
++  it('copy buttons meet 24px minimum target size via Tailwind classes', () => {
++    render(<NavigationProfile isExpanded={false} />)
++    const copyUsernameBtn = screen.getByLabelText('Copy username')
++    const copyUserIdBtn = screen.getByLabelText('Copy user ID')
++    expect(copyUsernameBtn.className).toContain('min-w-[24px]')
++    expect(copyUsernameBtn.className).toContain('min-h-[24px]')
++    expect(copyUserIdBtn.className).toContain('min-w-[24px]')
++    expect(copyUserIdBtn.className).toContain('min-h-[24px]')
++  })
+ })
+diff --git a/src/pages/settings/components/ProfileCard.tsx b/src/pages/settings/components/ProfileCard.tsx
+index 31656c3ee..7955b3a1b 100644
+--- a/src/pages/settings/components/ProfileCard.tsx
++++ b/src/pages/settings/components/ProfileCard.tsx
+@@ -41,8 +41,9 @@ const ProfileCard: React.FC<{
+       <div className="flex gap-x-1">
+         <p className="text-xs text-text-quaternary">{user?.userId}</p>
+         <button
++          aria-label="Copy user ID"
+           title="Copy user ID"
+-          className="hover:opacity-80 ml-2"
++          className="inline-flex items-center justify-center min-w-[24px] min-h-[24px] hover:opacity-80 ml-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-accent rounded-sm"
+           type="button"
+           onClick={copyUserID}
+         >
+diff --git a/src/pages/settings/components/__tests__/ProfileCard.test.tsx b/src/pages/settings/components/__tests__/ProfileCard.test.tsx
+new file mode 100644
+index 000000000..1828a097e
+--- /dev/null
++++ b/src/pages/settings/components/__tests__/ProfileCard.test.tsx
+@@ -0,0 +1,73 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render, screen, fireEvent } from '@testing-library/react'
++import { describe, it, expect, vi, beforeEach } from 'vitest'
++
++import ProfileCard from '../ProfileCard'
++
++vi.hoisted(() => vi.resetModules())
++
++const { mockCopyToClipboard } = vi.hoisted(() => ({
++  mockCopyToClipboard: vi.fn(),
++}))
++
++vi.mock('@/assets/icons/copy.svg?react', () => ({
++  default: () => <svg data-testid="copy-icon" />,
++}))
++
++vi.mock('@/assets/images/avatar.jpg', () => ({
++  default: 'avatar.jpg',
++}))
++
++vi.mock('@/utils/helpers', () => ({
++  copyToClipboard: mockCopyToClipboard,
++}))
++
++const mockUser = {
++  userId: 'user-abc-123',
++  name: 'Jane Smith',
++  picture: null,
++} as any
++
++describe('ProfileCard — copy button accessibility', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++  })
++
++  it('has aria-label "Copy user ID" on the copy button', () => {
++    render(<ProfileCard user={mockUser} />)
++    expect(screen.getByLabelText('Copy user ID')).toBeInTheDocument()
++  })
++
++  it('copy button has min-w-[24px] and min-h-[24px] classes', () => {
++    render(<ProfileCard user={mockUser} />)
++    const btn = screen.getByLabelText('Copy user ID')
++    expect(btn.className).toContain('min-w-[24px]')
++    expect(btn.className).toContain('min-h-[24px]')
++  })
++
++  it('copy button has a focus-visible ring class', () => {
++    render(<ProfileCard user={mockUser} />)
++    const btn = screen.getByLabelText('Copy user ID')
++    expect(btn.className).toContain('focus-visible:ring-1')
++  })
++
++  it('calls copyToClipboard with userId when clicked', () => {
++    render(<ProfileCard user={mockUser} />)
++    fireEvent.click(screen.getByLabelText('Copy user ID'))
++    expect(mockCopyToClipboard).toHaveBeenCalledWith('user-abc-123', 'User ID copied to clipboard')
++  })
++})

@@ -1,0 +1,50 @@
+{
+  "decision": "approve",
+  "rationale": "All three acceptance criteria pass: 24×24px minimum target size applied via min-w/min-h Tailwind classes, aria-label added to all three copy buttons, and focus-visible ring applied using the project's established pattern. Commit format and branch naming comply with git-workflow standards. Five findings were triaged to 'defer': (1) validate-secrets.mjs quoting handles the actual use case and any parentheses edge case is pre-existing; (2) className string assertions are the best available in JSDOM without computed-style infrastructure; (3–5) ChatConfigAssistantCard, WorkflowExecutionInfoPopup, and DetailsCopyField copy buttons have the same accessibility gaps but are out of this ticket's scope — should be follow-up tickets. 2 defer findings dismissed: 0 dismissed.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Interactive hit area ≥24×24 CSS px (WCAG 2.2 SC 2.5.8)",
+      "status": "pass",
+      "evidence": "min-w-[24px] min-h-[24px] applied to all three copy buttons (ProfileCard + both NavigationProfile buttons) via inline-flex container",
+      "gap": ""
+    },
+    {
+      "criterion": "Reliable accessible name — aria-label required (title alone insufficient)",
+      "status": "pass",
+      "evidence": "aria-label='Copy user ID' on ProfileCard; aria-label='Copy username' and aria-label='Copy user ID' on NavigationProfile; both aria-label and title coexist",
+      "gap": ""
+    },
+    {
+      "criterion": "Visible focus outline for keyboard operability",
+      "status": "pass",
+      "evidence": "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-accent rounded-sm applied to all three buttons — uses project's established focus ring pattern (same as PinnedRow)",
+      "gap": ""
+    },
+    {
+      "criterion": "Scope: Profile page (ProfileCard.tsx) primary; NavigationProfile.tsx bonus",
+      "status": "pass",
+      "evidence": "Both files modified; all three affected buttons fixed",
+      "gap": ""
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit message format: EPMCDME-XXXX: Capital sentence",
+      "status": "pass",
+      "notes": "All three commits comply: 'Fix secrets check…', 'Fix copy button target size and accessibility in ProfileCard', 'Fix copy button target size and accessibility in NavigationProfile'"
+    },
+    {
+      "standard": "Branch naming: EPMCDME-XXXX_short-description",
+      "status": "pass",
+      "notes": "EPMCDME-8233_copy-button-target-size matches the required pattern"
+    },
+    {
+      "standard": "Security: no credentials or secrets introduced",
+      "status": "pass",
+      "notes": "No credentials, API keys, or sensitive data added; gitleaks scan clean"
+    }
+  ],
+  "findings": []
+}

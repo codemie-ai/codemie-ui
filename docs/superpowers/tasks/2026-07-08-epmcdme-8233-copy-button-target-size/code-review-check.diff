@@ -1,0 +1,13 @@
+diff --git a/src/pages/settings/components/ProfileCard.tsx b/src/pages/settings/components/ProfileCard.tsx
+index 7955b3a1b..51dc28f31 100644
+--- a/src/pages/settings/components/ProfileCard.tsx
++++ b/src/pages/settings/components/ProfileCard.tsx
+@@ -38,7 +38,7 @@ const ProfileCard: React.FC<{
+ 
+   return (
+     <InfoCard heading={user?.name || ''} icon={icon} data-onboarding="profile-card">
+-      <div className="flex gap-x-1">
++      <div className="flex items-center gap-x-1">
+         <p className="text-xs text-text-quaternary">{user?.userId}</p>
+         <button
+           aria-label="Copy user ID"

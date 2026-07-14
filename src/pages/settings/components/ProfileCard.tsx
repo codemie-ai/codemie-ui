@@ -38,11 +38,12 @@ const ProfileCard: React.FC<{
 
   return (
     <InfoCard heading={user?.name || ''} icon={icon} data-onboarding="profile-card">
-      <div className="flex gap-x-1">
+      <div className="flex items-center gap-x-1">
         <p className="text-xs text-text-quaternary">{user?.userId}</p>
         <button
+          aria-label="Copy user ID"
           title="Copy user ID"
-          className="hover:opacity-80 ml-2"
+          className="inline-flex items-center justify-center min-w-[24px] min-h-[24px] hover:opacity-80 ml-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-accent rounded-sm"
           type="button"
           onClick={copyUserID}
         >

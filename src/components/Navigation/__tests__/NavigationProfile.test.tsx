@@ -221,4 +221,20 @@ describe('NavigationProfile', () => {
     fireEvent.click(logoutButton)
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
   })
+
+  it('copy buttons have aria-label accessible names', () => {
+    render(<NavigationProfile isExpanded={false} />)
+    expect(screen.getByLabelText('Copy username')).toBeInTheDocument()
+    expect(screen.getByLabelText('Copy user ID')).toBeInTheDocument()
+  })
+
+  it('copy buttons meet 24px minimum target size via Tailwind classes', () => {
+    render(<NavigationProfile isExpanded={false} />)
+    const copyUsernameBtn = screen.getByLabelText('Copy username')
+    const copyUserIdBtn = screen.getByLabelText('Copy user ID')
+    expect(copyUsernameBtn.className).toContain('min-w-[24px]')
+    expect(copyUsernameBtn.className).toContain('min-h-[24px]')
+    expect(copyUserIdBtn.className).toContain('min-w-[24px]')
+    expect(copyUserIdBtn.className).toContain('min-h-[24px]')
+  })
 })

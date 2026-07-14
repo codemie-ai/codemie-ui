@@ -144,8 +144,10 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
                   {user?.name}
                 </span>
                 <button
-                  className="ml-1 text-text-primary hover:opacity-80"
+                  aria-label="Copy username"
+                  className="inline-flex items-center justify-center min-w-[24px] min-h-[24px] ml-1 text-text-primary hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-accent rounded-sm"
                   title="Copy username"
+                  type="button"
                   onClick={copyUserName}
                 >
                   <CopySvg className="w-3" />
@@ -156,8 +158,10 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
                   ID: {user?.userId}
                 </span>
                 <button
-                  className="ml-1 text-text-primary hover:opacity-80"
+                  aria-label="Copy user ID"
+                  className="inline-flex items-center justify-center min-w-[24px] min-h-[24px] ml-1 text-text-primary hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-accent rounded-sm"
                   title="Copy user ID"
+                  type="button"
                   onClick={copyUserID}
                 >
                   <CopySvg className="w-3" />
