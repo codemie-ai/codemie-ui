@@ -66,7 +66,7 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
   const [files, setFiles] = useState<FileMetadata[]>([])
   const [prompt, setPrompt] = useState<EditorValue>(initialPromptState)
 
-  const { inputProps, removeFile, openFilePicker, addFiles } = useFileUpload({
+  const { inputProps, removeFile, openFilePicker, addFiles, hasActiveUploads } = useFileUpload({
     files,
     setFiles,
     handleErrors: (errors) => {
@@ -82,6 +82,7 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
   }, [isVisible])
 
   async function handleSubmit() {
+    if (hasActiveUploads) return
     setIsLoading(true)
     try {
       const fileNames = files.map((f) => f.fileId).filter(Boolean) as string[]
@@ -122,7 +123,7 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
       dismissableMask={false}
       visible={isVisible}
       withBorderBottom={false}
-      submitDisabled={isLoading}
+      submitDisabled={isLoading || hasActiveUploads}
       header="New Workflow Execution"
       submitText="Create"
       onHide={onHide}

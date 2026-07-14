@@ -298,6 +298,15 @@ describe('useFileUpload', () => {
         }),
       ])
 
+      // Catch block must clear isUploading entries so hasActiveUploads resets after failure
+      const clearUpdater = setFiles.mock.calls[1][0]
+      expect(
+        clearUpdater([
+          { fileName: 'test.txt', isUploading: true },
+          { fileName: 'done.txt', isUploading: false },
+        ])
+      ).toEqual([{ fileName: 'done.txt', isUploading: false }])
+
       uploadFilesSpy.mockRestore()
     })
 

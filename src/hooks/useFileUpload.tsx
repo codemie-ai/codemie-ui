@@ -147,6 +147,7 @@ export const useFileUpload = ({
       setErrors((prev) => [...prev, ...newErrors])
       handleErrors?.(newErrors)
     } catch (e) {
+      setFiles((prev) => prev.filter((f) => !f.isUploading))
       const error: FileUploadError = {
         fileNames: [],
         type: 'UPLOAD_ERROR',
