@@ -77,6 +77,7 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
         highlightGutterLine: !readonly,
         useWorker: false,
         placeholder: placeholder || '',
+        enableKeyboardAccessibility: true,
       })
 
       editorRef.current = editor
@@ -121,6 +122,13 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
     useEffect(() => {
       if (editorRef.current) {
         editorRef.current.setReadOnly(readonly)
+        const renderer = editorRef.current.renderer as unknown as { scroller?: HTMLElement }
+        renderer.scroller?.setAttribute(
+          'aria-label',
+          readonly
+            ? 'Read-only editor content, press Enter to navigate'
+            : 'Editor content, press Enter to start editing'
+        )
       }
     }, [readonly])
 
