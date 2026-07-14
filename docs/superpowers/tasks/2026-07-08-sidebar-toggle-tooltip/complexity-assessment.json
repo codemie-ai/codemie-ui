@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "task": "Add hover-hold tooltip showing 'Ctrl + B' to sidebar toggle button using existing global React Tooltip pattern",
+  "generated": "2026-07-08T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS"
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS"
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS"
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS"
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS"
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single button element in SidebarToggle.tsx. No cross-layer coordination, no architectural impact."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "All criteria defined: add 'Ctrl + B' tooltip using data-attribute pattern. Exact implementation pattern documented and used in 30+ existing components (ChatHeaderClearButton, ChatHeaderBrowseFilesButton, ChatHeaderShareButton, etc.)."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Identical pattern exists throughout codebase. Global tooltip infrastructure already initialized in main.tsx and tooltip.ts. No performance/security implications. Single attribute addition is trivial to roll back."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "1 file modified (SidebarToggle.tsx). 0 new files. Change fully localized to button element attributes."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

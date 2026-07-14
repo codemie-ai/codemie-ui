@@ -58,6 +58,9 @@ const SidebarToggle = () => {
       <button
         type="button"
         aria-label={isOpen ? 'Hide Sidebar' : 'Open Sidebar'}
+        data-tooltip-id="react-tooltip"
+        data-tooltip-content="Toggle Sidebar (Ctrl + B)"
+        data-tooltip-place="right"
         className={classNames(
           'bg-curve absolute left-0 top-[calc(50%-100px)] flex',
           'items-center justify-center cursor-pointer bg-surface-base-primary-border',
