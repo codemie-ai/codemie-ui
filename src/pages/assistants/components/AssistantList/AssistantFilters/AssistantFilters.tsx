@@ -21,6 +21,7 @@ import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CATEGORIES, CREATED_BY, NOT_SHARED, SHARED, GLOBAL } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
+import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { assistantsStore } from '@/store/assistants'
 import { userStore } from '@/store/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
@@ -49,6 +50,8 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   activeScope,
 }) => {
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
+  const [projectSearchTerm, setProjectSearchTerm] = useState('')
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [categoriesOptions, setCategoriesOptions] = useState<FilterOption[]>([])
@@ -83,8 +86,21 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
       setProjectOptions(options)
     } catch (error) {
       console.error('Error loading project options:', error)
+    } finally {
+      setIsLoadingProjects(false)
     }
   }, [])
+
+  const applyProjectSearch = useCallback(
+    () => loadProjectOptions(projectSearchTerm),
+    [projectSearchTerm, loadProjectOptions]
+  )
+
+  const handleProjectFilter = useCallback((value: string) => {
+    setIsLoadingProjects(true)
+    setProjectSearchTerm(value)
+  }, [])
+  useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
 
   const loadCreatedByOptions = useCallback(async () => {
     try {
@@ -138,7 +154,9 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
             maxSelectedLabels: 3,
             filter: true,
             filterPlaceholder: 'Search for projects',
-            onFilter: loadProjectOptions,
+            onFilter: handleProjectFilter,
+            loading: isLoadingProjects,
+            emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
           },
         },
         {
@@ -185,10 +203,10 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
       filters.created_by,
       filters.categories,
       projectOptions,
+      isLoadingProjects,
       createdByOptions,
       categoriesOptions,
       getStatusInitialValue,
-      loadProjectOptions,
       activeScope,
     ]
   )

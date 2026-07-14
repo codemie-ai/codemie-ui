@@ -207,7 +207,7 @@ describe('ProjectModal — form submission', () => {
     })
   })
 
-  it('submits display_name as null when left empty', async () => {
+  it('submits display_name as undefined when left empty on create (no clear_display_name)', async () => {
     const user = userEvent.setup()
     const { onSubmit } = renderModal()
 
@@ -221,7 +221,39 @@ describe('ProjectModal — form submission', () => {
     await vi.waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({
-          display_name: null,
+          display_name: undefined,
+          clear_display_name: false,
+        })
+      )
+    })
+  })
+
+  it('sends clear_display_name=true when an existing display_name is cleared in edit mode (EPMCDME-13486)', async () => {
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({
+      project: {
+        id: 'proj-1',
+        name: 'existing-project',
+        display_name: 'Existing Project',
+        description: 'desc',
+        project_type: 'shared',
+        user_count: 2,
+        admin_count: 1,
+      } as any,
+    })
+
+    const displayNameInput = screen.getByTestId<HTMLInputElement>('display_name')
+    await user.clear(displayNameInput)
+
+    await act(async () => {
+      screen.getByRole('button', { name: /submit/i }).click()
+    })
+
+    await vi.waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          display_name: undefined,
+          clear_display_name: true,
         })
       )
     })

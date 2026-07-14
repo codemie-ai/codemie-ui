@@ -41,6 +41,7 @@ interface ProjectModalProps {
 export interface ProjectFormData {
   name?: string
   display_name?: string | null
+  clear_display_name?: boolean
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean
@@ -131,9 +132,11 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
   }
 
   const handleFormSubmit: SubmitHandler<ProjectModalFormValues> = async (data) => {
+    const trimmedDisplayName = data.display_name?.trim()
     await onSubmit({
       name: isNameDisabled ? undefined : data.name,
-      display_name: data.display_name?.trim() || null,
+      display_name: trimmedDisplayName || undefined,
+      clear_display_name: !!project && !trimmedDisplayName,
       description: data.description,
       cost_center_id: data.cost_center_id || null,
       clear_cost_center: !!project && !data.cost_center_id,

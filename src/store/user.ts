@@ -350,9 +350,12 @@ export const userStore = proxy<UserStoreType>({
     return api
       .get(`v1/admin/applications${queryParams ? `?${queryParams}` : ''}`)
       .then((response) => response.json())
-      .then((data: { applications: ProjectOption[] }) => {
+      .then((data: { applications: { name: string; displayName?: string | null }[] }) => {
         const userProjectNames = new Set(userProjects.map((p) => p.name))
-        return [...userProjects, ...data.applications.filter((app) => !userProjectNames.has(app.name))]
+        const adminProjects = data.applications
+          .filter((app) => !userProjectNames.has(app.name))
+          .map((app) => ({ name: app.name, display_name: app.displayName }))
+        return [...userProjects, ...adminProjects]
       })
       .catch((_err) => {
         console.error('Failed to retrieve admin projects')

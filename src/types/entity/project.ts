@@ -64,6 +64,7 @@ export interface Project {
 export interface ProjectRequest {
   name?: string
   display_name?: string | null
+  clear_display_name?: boolean
   description?: string
   cost_center_id?: string | null
   clear_cost_center?: boolean

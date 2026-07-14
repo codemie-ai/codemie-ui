@@ -102,6 +102,7 @@ const ProjectDetailsPage = () => {
       const updatedProject = await projectsStore.updateProject(project.name, {
         name: payload.name,
         display_name: payload.display_name,
+        clear_display_name: payload.clear_display_name,
         description: payload.description,
         cost_center_id: payload.cost_center_id,
         clear_cost_center: payload.clear_cost_center,

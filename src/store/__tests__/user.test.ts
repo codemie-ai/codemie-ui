@@ -204,8 +204,8 @@ describe('userStore', () => {
       mockGet.mockResolvedValue({
         json: async () => ({
           applications: [
-            { name: 'shared-proj', display_name: 'Shared' },
-            { name: 'admin-only', display_name: 'Admin Only' },
+            { name: 'shared-proj', displayName: 'Shared' },
+            { name: 'admin-only', displayName: 'Admin Only' },
           ],
         }),
       })
@@ -214,7 +214,9 @@ describe('userStore', () => {
 
       // shared-proj from user projects should appear once, admin-only added from API
       expect(result.filter((p: { name: string }) => p.name === 'shared-proj')).toHaveLength(1)
-      expect(result.some((p: { name: string }) => p.name === 'admin-only')).toBe(true)
+      const adminOnly = result.find((p: { name: string }) => p.name === 'admin-only')
+      // API returns displayName (camelCase) - it must be normalized to display_name
+      expect(adminOnly).toMatchObject({ name: 'admin-only', display_name: 'Admin Only' })
     })
 
     it('returns user projects when API call fails', async () => {

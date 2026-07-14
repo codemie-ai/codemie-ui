@@ -294,6 +294,10 @@ const Filters: React.FC<FiltersProps> = ({
                         definition.config?.onFilter as ((filter: string) => void) | undefined
                       }
                       filterPlaceholder={definition.config?.filterPlaceholder as string | undefined}
+                      loading={definition.config?.loading as boolean | undefined}
+                      emptyFilterMessage={
+                        definition.config?.emptyFilterMessage as string | undefined
+                      }
                       {...(definition.config as Pick<MultiSelectProps, 'label' | 'id' | 'name'>)}
                     />
                     {!isEmpty((filters[definition.name] as string[]) || []) && (

@@ -370,6 +370,8 @@ describe('projectsStore', () => {
         'v1/projects/my-project',
         {
           name: 'updated-name',
+          display_name: undefined,
+          clear_display_name: undefined,
           description: 'Updated description',
           cost_center_id: undefined,
           clear_cost_center: undefined,
@@ -397,6 +399,25 @@ describe('projectsStore', () => {
       )
     })
 
+    it('sends clear_display_name and omits display_name when clearing (EPMCDME-13486)', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({ name: 'my-project', display_name: null }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateProject('my-project', {
+        name: 'my-project',
+        display_name: null,
+        clear_display_name: true,
+      })
+
+      expect(mockPatch).toHaveBeenCalledWith(
+        'v1/projects/my-project',
+        expect.objectContaining({ display_name: undefined, clear_display_name: true }),
+        { skipErrorHandling: true }
+      )
+    })
+
     it('passes budget tracking flag in update payload', async () => {
       mockPatch.mockResolvedValue({
         json: async () => ({
@@ -414,6 +435,8 @@ describe('projectsStore', () => {
         'v1/projects/my-project',
         {
           name: undefined,
+          display_name: undefined,
+          clear_display_name: undefined,
           description: undefined,
           cost_center_id: undefined,
           clear_cost_center: undefined,

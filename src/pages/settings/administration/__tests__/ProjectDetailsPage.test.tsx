@@ -160,4 +160,29 @@ describe('ProjectDetailsPage', () => {
     expect(projectDisplayNamesStore.invalidate).toHaveBeenCalledWith('Test Project')
     expect(userStore.getCurrentUser).toHaveBeenCalled()
   })
+
+  it('forwards clear_display_name to updateProject when the form requests clearing (EPMCDME-13486)', async () => {
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectModalMock).toHaveBeenCalled()
+    })
+
+    const { onSubmit } = projectModalMock.mock.calls[0][0]
+    await act(async () => {
+      await onSubmit({
+        name: 'Test Project',
+        display_name: undefined,
+        clear_display_name: true,
+        description: 'Project description',
+        cost_center_id: 'cc-1',
+        enforce_member_spend_limits: true,
+      })
+    })
+
+    expect(projectsStore.updateProject).toHaveBeenCalledWith(
+      'Test Project',
+      expect.objectContaining({ clear_display_name: true })
+    )
+  })
 })

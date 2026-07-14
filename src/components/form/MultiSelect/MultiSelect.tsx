@@ -105,6 +105,7 @@ export type MultiSelectProps = {
   scrollHeight?: string
   required?: boolean
   filterPlaceholder?: string
+  emptyFilterMessage?: string
   max?: number
   display?: 'comma' | 'chip'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -143,6 +144,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       scrollHeight = '200px',
       required = false,
       filterPlaceholder,
+      emptyFilterMessage,
       max,
       display,
       selectedItemTemplate,
@@ -398,6 +400,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           focusOnHover={resolvedFocusOnHover}
           onKeyDown={handleKeyDown}
           filterPlaceholder={filterPlaceholder ?? 'Search'}
+          emptyFilterMessage={emptyFilterMessage}
           dropdownIcon={<ChevronDownSvg />}
           aria-label={label || placeholder}
           display={display}
