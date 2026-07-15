@@ -107,7 +107,13 @@ const typePromptAndClickGenerate = async (promptText = PROMPT_TEXT) => {
 
 describe('FormGenAIPopup', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.runAllTimers()
+    vi.useRealTimers()
   })
 
   describe('handleGenerateClick — success path', () => {
