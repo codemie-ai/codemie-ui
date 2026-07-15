@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
@@ -216,5 +216,23 @@ describe('WorkflowTemplates - Pagination', () => {
     await waitFor(() => {
       expect(toaster.error).toHaveBeenCalledWith('Failed to load workflow templates')
     })
+  })
+
+  it('renders workflow template items as a semantic list', async () => {
+    mockAPI('GET', 'v1/workflows/prebuilt', createTemplates(3))
+
+    renderPage('/workflows/templates')
+
+    await waitFor(() => {
+      expect(screen.getByText('Workflow Template 1')).toBeInTheDocument()
+    })
+
+    const list = screen.getByRole('list', { name: 'Workflow templates' })
+    expect(list.tagName).toBe('UL')
+
+    const { getAllByRole: getAllByRoleInList } = within(list)
+    const items = getAllByRoleInList('listitem')
+    expect(items).toHaveLength(3)
+    items.forEach((item) => expect(item.tagName).toBe('LI'))
   })
 })

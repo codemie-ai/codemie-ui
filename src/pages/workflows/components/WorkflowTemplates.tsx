@@ -148,17 +148,22 @@ const WorkflowTemplates: React.FC = () => {
           {workflowTemplatesPagination.totalCount}{' '}
           {pluralize(workflowTemplatesPagination.totalCount, 'template').toUpperCase()}
         </div>
-        <div className="grid grid-cols-1 gap-2.5 justify-items-center min-[1140px]:grid-cols-2 min-[1540px]:grid-cols-3 mt-4">
+        <ul
+          role="list"
+          aria-label="Workflow templates"
+          className="grid grid-cols-1 gap-2.5 justify-items-center min-[1140px]:grid-cols-2 min-[1540px]:grid-cols-3 mt-4 list-none p-0 m-0"
+        >
           {workflowTemplates.map((workflow) => (
-            <WorkflowCard
-              key={workflow.id}
-              isTemplate
-              workflow={workflow}
-              onViewWorkflowTemplate={viewWorkflowTemplate}
-              onCreateFromWorkflowTemplate={navigateToCreateWFFromTemplate}
-            />
+            <li key={workflow.id} className="w-full">
+              <WorkflowCard
+                isTemplate
+                workflow={workflow}
+                onViewWorkflowTemplate={viewWorkflowTemplate}
+                onCreateFromWorkflowTemplate={navigateToCreateWFFromTemplate}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
       {workflowTemplates.length > 0 && (

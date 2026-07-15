@@ -46,7 +46,11 @@ export default defineWorkspace([
       name: 'integration',
       environment: './vitest-env-integration.ts',
       include: ['**/__tests__/**/*.integration.test.?(c|m)[jt]s?(x)'],
-      setupFiles: ['./src/setupTests'],
+      setupFiles: ['./src/setupTests', './src/setupTests.integration'],
+      // Integration tests run with coverage instrumentation in CI (vitest run --coverage),
+      // which adds ~3× per-test overhead vs the default 5 000 ms timeout. 15 000 ms keeps
+      // the suite reliable without masking genuinely broken tests.
+      testTimeout: 15000,
     },
     server: {
       ws: false,
