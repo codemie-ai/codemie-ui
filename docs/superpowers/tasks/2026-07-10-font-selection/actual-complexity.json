@@ -1,0 +1,95 @@
+{
+  "task": "Add code block font selection to appearance settings UI with 3 font options (GeistMono, JetBrains Mono, IBM Plex Mono) and persistence via localStorage.",
+  "generated": "2026-07-10T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 2,
+      "label": "S",
+      "affected": "CodeBlockFontSection (new), AdvancedSettings (modified), CodeBlock (indirect via CSS var)",
+      "layers": "UI, Styling, Utilities"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M",
+      "modified_files": 5,
+      "modified_file_list": [
+        "src/pages/settings/components/CustomAppearance/AdvancedSettings.tsx",
+        "src/assets/stylesheets/main.scss",
+        "src/components/CodeBlock/CodeBlock.scss",
+        "src/components/CodeBlock/__tests__/CodeBlock.integration.test.tsx",
+        "src/assets/stylesheets/__tests__/main.test.ts"
+      ],
+      "new_files": 15,
+      "new_file_list": [
+        "src/assets/fonts/IBMPlexMono-Regular.woff2",
+        "src/assets/fonts/JetBrainsMono-Regular.woff2",
+        "src/assets/fonts/OFL-IBMPlexMono.txt",
+        "src/assets/fonts/OFL-JetBrainsMono.txt",
+        "src/utils/customAppearance/schema.ts",
+        "src/utils/customAppearance/storage.ts",
+        "src/utils/customAppearance/apply.ts",
+        "src/utils/customAppearance/rules.ts",
+        "src/utils/customAppearance/presets.ts",
+        "src/pages/settings/components/CustomAppearance/sections/CodeBlockFontSection.tsx",
+        "src/pages/settings/components/CustomAppearance/sections/__tests__/CodeBlockFontSection.test.tsx",
+        "src/utils/customAppearance/__tests__/e2e.persistence.test.ts",
+        "src/utils/customAppearance/__tests__/rules.test.ts",
+        "src/utils/customAppearance/__tests__/schema.test.ts",
+        "src/utils/customAppearance/__tests__/storage.test.ts"
+      ],
+      "affected_dirs": [
+        "src/assets/fonts",
+        "src/utils/customAppearance",
+        "src/pages/settings/components/CustomAppearance",
+        "src/components/CodeBlock",
+        "src/assets/stylesheets"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M",
+      "layers_changed": [
+        "UI",
+        "Styling",
+        "Utilities"
+      ],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 13,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 20,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "20 files changed across 4+ directories with 788 insertions. Moderate distribution: 5 modified files (settings UI, stylesheets, tests) plus 15 new files (5 utilities, 1 component, 4 license/font assets, 4 tests). Comprehensive test coverage included."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "3 frontend layers touched: UI (CodeBlockFontSection React component), Styling (CSS variables, @font-face declarations), Utilities (schema, storage, rules, presets). No backend, API, or persistence layer changes."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

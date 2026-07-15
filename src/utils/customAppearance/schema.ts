@@ -38,6 +38,7 @@ export interface AppearanceInputs {
   pageHeaderElevated: boolean
   sidebarToggleMatchesBackground: boolean
   fontStack: 'geist' | 'system' | 'sans' | 'serif'
+  codeBlockFontStack: 'geist-mono' | 'jetbrains-mono' | 'ibm-plex-mono'
   logoMode: 'codemie' | 'custom'
   rectangularLogo: string
   squareLogo: string
@@ -109,6 +110,7 @@ export type CssVar =
   | '--colors-text-specific-navigation-link-hover'
   // font
   | '--font-family-body'
+  | '--font-family-code-block'
   // backgroundImage
   | '--backgroundImage-action-accent-btn'
   | '--backgroundImage-action-accent-hover'

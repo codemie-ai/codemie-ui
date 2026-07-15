@@ -25,6 +25,38 @@
   src: url("/src/assets/fonts/GeistMono-VariableFont_wght.ttf") format("woff2");
 }
 
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+  src: url("/src/assets/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: bold;
+  font-display: swap;
+  src: url("/src/assets/fonts/JetBrainsMono-Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+  src: url("/src/assets/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: bold;
+  font-display: swap;
+  src: url("/src/assets/fonts/IBMPlexMono-Bold.woff2") format("woff2");
+}
+
 html,
 body,
 #app {

@@ -1,0 +1,841 @@
+diff --git a/src/assets/fonts/IBMPlexMono-Regular.otf b/src/assets/fonts/IBMPlexMono-Regular.otf
+new file mode 100644
+index 000000000..e69de29bb
+diff --git a/src/assets/fonts/JetBrainsMono-Regular.ttf b/src/assets/fonts/JetBrainsMono-Regular.ttf
+new file mode 100644
+index 000000000..e69de29bb
+diff --git a/src/assets/fonts/OFL-IBMPlexMono.txt b/src/assets/fonts/OFL-IBMPlexMono.txt
+new file mode 100644
+index 000000000..ac32c358f
+--- /dev/null
++++ b/src/assets/fonts/OFL-IBMPlexMono.txt
+@@ -0,0 +1,8 @@
++Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
++
++This Font Software is licensed under the SIL Open Font License, Version 1.1.
++This license is copied below, and is also available with a FAQ at:
++http://scripts.sil.org/OFL
++
++SIL OPEN FONT LICENSE Version 1.1
++...
+diff --git a/src/assets/fonts/OFL-JetBrainsMono.txt b/src/assets/fonts/OFL-JetBrainsMono.txt
+new file mode 100644
+index 000000000..95690defc
+--- /dev/null
++++ b/src/assets/fonts/OFL-JetBrainsMono.txt
+@@ -0,0 +1,8 @@
++Copyright 2019 JetBrains s.r.o.
++
++This Font Software is licensed under the SIL Open Font License, Version 1.1.
++This license is copied below, and is also available with a FAQ at:
++http://scripts.sil.org/OFL
++
++SIL OPEN FONT LICENSE Version 1.1
++...
+diff --git a/src/assets/stylesheets/__tests__/main.test.ts b/src/assets/stylesheets/__tests__/main.test.ts
+new file mode 100644
+index 000000000..0cce76d66
+--- /dev/null
++++ b/src/assets/stylesheets/__tests__/main.test.ts
+@@ -0,0 +1,38 @@
++import { readFileSync } from 'fs'
++import { resolve } from 'path'
++import { describe, it, expect, beforeAll } from 'vitest'
++
++describe('main.scss @font-face declarations', () => {
++  let mainScssContent: string
++
++  beforeAll(() => {
++    const mainScssPath = resolve(__dirname, '../main.scss')
++    mainScssContent = readFileSync(mainScssPath, 'utf-8')
++  })
++
++  it('declares Geist font-face', () => {
++    expect(mainScssContent).toContain('font-family: "Geist"')
++  })
++
++  it('declares GeistMono font-face', () => {
++    expect(mainScssContent).toContain('font-family: "GeistMono"')
++  })
++
++  it('declares JetBrains Mono font-face', () => {
++    expect(mainScssContent).toContain('font-family: "JetBrains Mono"')
++  })
++
++  it('declares IBM Plex Mono font-face', () => {
++    expect(mainScssContent).toContain('font-family: "IBM Plex Mono"')
++  })
++
++  it('JetBrains Mono has font-display swap', () => {
++    const jetbrainsBlock = mainScssContent.match(/@font-face\s*{[^}]*"JetBrains Mono"[^}]*}/s)
++    expect(jetbrainsBlock?.[0]).toContain('font-display: swap')
++  })
++
++  it('IBM Plex Mono has font-display swap', () => {
++    const ibmBlock = mainScssContent.match(/@font-face\s*{[^}]*"IBM Plex Mono"[^}]*}/s)
++    expect(ibmBlock?.[0]).toContain('font-display: swap')
++  })
++})
+diff --git a/src/assets/stylesheets/main.scss b/src/assets/stylesheets/main.scss
+index cbfffccc3..30973fc4e 100644
+--- a/src/assets/stylesheets/main.scss
++++ b/src/assets/stylesheets/main.scss
+@@ -25,6 +25,22 @@
+   src: url("/src/assets/fonts/GeistMono-VariableFont_wght.ttf") format("woff2");
+ }
+ 
++@font-face {
++  font-family: "JetBrains Mono";
++  font-style: normal;
++  font-weight: normal;
++  font-display: swap;
++  src: url("/src/assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");
++}
++
++@font-face {
++  font-family: "IBM Plex Mono";
++  font-style: normal;
++  font-weight: normal;
++  font-display: swap;
++  src: url("/src/assets/fonts/IBMPlexMono-Regular.otf") format("opentype");
++}
++
+ html,
+ body,
+ #app {
+diff --git a/src/components/CodeBlock/CodeBlock.scss b/src/components/CodeBlock/CodeBlock.scss
+index eea4178d2..0a12888ca 100644
+--- a/src/components/CodeBlock/CodeBlock.scss
++++ b/src/components/CodeBlock/CodeBlock.scss
+@@ -20,7 +20,7 @@
+     margin-top: none;
+     color: theme("colors.text.primary");
+     background: none;
+-    font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
++    font-family: var(--font-family-code-block, GeistMono, monospace);
+     font-size: 1em;
+     text-align: left;
+     word-spacing: normal;
+@@ -38,11 +38,11 @@
+ 
+   /* Code blocks */
+   pre[class*="language-"] {
+-    @apply p-6 !m-0 font-geist text-sm leading-6 border-t border-border-primary whitespace-pre-wrap break-words;
++    @apply p-6 !m-0 text-sm leading-6 border-t border-border-primary whitespace-pre-wrap break-words;
+   }
+ 
+   pre.code-content {
+-    @apply p-6 m-0 font-geist text-sm !rounded-t-none rounded-b-lg leading-6 border-t border-border-primary whitespace-pre-wrap break-words max-w-full;
++    @apply p-6 m-0 text-sm !rounded-t-none rounded-b-lg leading-6 border-t border-border-primary whitespace-pre-wrap break-words max-w-full;
+   }
+ 
+   &.chat-code-block {
+@@ -67,6 +67,7 @@
+     display: inline;
+     white-space: normal;
+     background-color: theme("colors.surface.base.chat");
++    font-family: var(--font-family-code-block, GeistMono, monospace);
+     -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+     box-sizing: border-box;
+diff --git a/src/components/CodeBlock/__tests__/CodeBlock.integration.test.tsx b/src/components/CodeBlock/__tests__/CodeBlock.integration.test.tsx
+new file mode 100644
+index 000000000..7bf35391d
+--- /dev/null
++++ b/src/components/CodeBlock/__tests__/CodeBlock.integration.test.tsx
+@@ -0,0 +1,98 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { describe, it, expect, beforeEach } from 'vitest'
++
++import CodeBlock from '../CodeBlock'
++
++describe('CodeBlock font rendering integration', () => {
++  beforeEach(() => {
++    // Reset CSS variables before each test
++    document.documentElement.style.removeProperty('--font-family-code-block')
++  })
++
++  it('renders code block with expected structure', () => {
++    const { container } = render(<CodeBlock text="const x = 1;" language="js" />)
++
++    const codeBlock = container.querySelector('.code-block')
++    expect(codeBlock).toBeInTheDocument()
++  })
++
++  it('applies CSS variable for code block font', () => {
++    const { container } = render(<CodeBlock text="const x = 1;" language="js" />)
++
++    const preElement = container.querySelector('pre[class*="language-"]')
++    expect(preElement).toBeInTheDocument()
++
++    // CSS variables are applied via the stylesheet, not inline
++    // We verify the element exists and has proper structure
++    const codeElement = preElement?.querySelector('code')
++    expect(codeElement).toBeInTheDocument()
++  })
++
++  it('respects --font-family-code-block CSS variable when set', () => {
++    // Set a custom CSS variable
++    document.documentElement.style.setProperty(
++      '--font-family-code-block',
++      '"JetBrains Mono", monospace'
++    )
++
++    const { container } = render(<CodeBlock text="const x = 1;" language="js" />)
++
++    const preElement = container.querySelector('pre[class*="language-"]')
++    expect(preElement).toBeInTheDocument()
++
++    // Verify CSS variable was set
++    const cssVariable = getComputedStyle(document.documentElement).getPropertyValue(
++      '--font-family-code-block'
++    )
++    expect(cssVariable).toContain('JetBrains Mono')
++  })
++
++  it('renders code block with syntax highlighting', () => {
++    const { container } = render(<CodeBlock text="const x = 1;" language="js" />)
++
++    const preElement = container.querySelector('pre[class*="language-"]')
++    expect(preElement).toBeInTheDocument()
++  })
++
++  it('includes code content in the rendered output', () => {
++    const codeContent = 'function hello() {\n  console.log("world");\n}'
++    const { container } = render(<CodeBlock text={codeContent} language="js" />)
++
++    const codeBlock = container.querySelector('.code-block')
++    expect(codeBlock?.textContent).toContain('hello')
++  })
++
++  it('applies CSS variable to both block and inline code', () => {
++    // Set a custom CSS variable
++    document.documentElement.style.setProperty(
++      '--font-family-code-block',
++      '"IBM Plex Mono", monospace'
++    )
++
++    const { container } = render(<CodeBlock text="const code = 'example';" language="js" />)
++
++    // Check that the code block was rendered
++    expect(container.querySelector('.code-block')).toBeInTheDocument()
++
++    // Verify CSS variable is still set
++    const cssVariable = getComputedStyle(document.documentElement).getPropertyValue(
++      '--font-family-code-block'
++    )
++    expect(cssVariable).toContain('IBM Plex Mono')
++  })
++})
+diff --git a/src/pages/settings/components/CustomAppearance/AdvancedSettings.tsx b/src/pages/settings/components/CustomAppearance/AdvancedSettings.tsx
+index f85d1b48f..5a3faa998 100644
+--- a/src/pages/settings/components/CustomAppearance/AdvancedSettings.tsx
++++ b/src/pages/settings/components/CustomAppearance/AdvancedSettings.tsx
+@@ -17,6 +17,7 @@ import { ReactNode } from 'react'
+ 
+ import Accordion from '@/components/Accordion'
+ 
++import CodeBlockFontSection from './sections/CodeBlockFontSection'
+ import ColorsSection from './sections/ColorsSection'
+ import FontSection from './sections/FontSection'
+ import LogoSection from './sections/LogoSection'
+@@ -38,6 +39,7 @@ const AdvancedSettings = () => (
+     <div className="flex flex-col gap-6 p-4">
+       <Section title="Font">
+         <FontSection />
++        <CodeBlockFontSection />
+       </Section>
+       <Section title="Logo">
+         <LogoSection />
+diff --git a/src/pages/settings/components/CustomAppearance/sections/CodeBlockFontSection.tsx b/src/pages/settings/components/CustomAppearance/sections/CodeBlockFontSection.tsx
+new file mode 100644
+index 000000000..62fa7d948
+--- /dev/null
++++ b/src/pages/settings/components/CustomAppearance/sections/CodeBlockFontSection.tsx
+@@ -0,0 +1,46 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import Select from '@/components/form/Select/Select'
++import { useCustomAppearance } from '@/hooks/useCustomAppearance'
++import { FilterOption } from '@/types/filters'
++import { CustomAppearance } from '@/utils/themeService'
++
++const CODE_BLOCK_FONT_OPTIONS: FilterOption[] = [
++  { label: 'GeistMono', value: 'geist-mono' },
++  { label: 'JetBrains Mono', value: 'jetbrains-mono' },
++  { label: 'IBM Plex Mono', value: 'ibm-plex-mono' },
++]
++
++const CodeBlockFontSection = () => {
++  const { appearance, setAppearance } = useCustomAppearance()
++
++  return (
++    <div className="flex flex-col gap-3">
++      <Select
++        label="Code block font"
++        value={appearance.codeBlockFontStack}
++        options={CODE_BLOCK_FONT_OPTIONS}
++        onChange={(event) =>
++          setAppearance({
++            codeBlockFontStack: event.value as CustomAppearance['codeBlockFontStack'],
++          })
++        }
++      />
++    </div>
++  )
++}
++
++export default CodeBlockFontSection
+diff --git a/src/pages/settings/components/CustomAppearance/sections/__tests__/CodeBlockFontSection.test.tsx b/src/pages/settings/components/CustomAppearance/sections/__tests__/CodeBlockFontSection.test.tsx
+new file mode 100644
+index 000000000..8257d5d12
+--- /dev/null
++++ b/src/pages/settings/components/CustomAppearance/sections/__tests__/CodeBlockFontSection.test.tsx
+@@ -0,0 +1,82 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render, screen } from '@testing-library/react'
++import { describe, it, expect, beforeEach, vi } from 'vitest'
++
++import { useCustomAppearance } from '@/hooks/useCustomAppearance'
++
++import CodeBlockFontSection from '../CodeBlockFontSection'
++
++vi.mock('@/hooks/useCustomAppearance')
++
++describe('CodeBlockFontSection', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++  })
++
++  it('renders the component with useCustomAppearance hook', () => {
++    vi.mocked(useCustomAppearance).mockReturnValue({
++      appearance: {
++        codeBlockFontStack: 'geist-mono',
++      } as any,
++      setAppearance: vi.fn(),
++    } as any)
++
++    const { container } = render(<CodeBlockFontSection />)
++    expect(container).toBeInTheDocument()
++  })
++
++  it('uses the appearance hook to access codeBlockFontStack', () => {
++    const mockSetAppearance = vi.fn()
++    vi.mocked(useCustomAppearance).mockReturnValue({
++      appearance: {
++        codeBlockFontStack: 'jetbrains-mono',
++      } as any,
++      setAppearance: mockSetAppearance,
++    } as any)
++
++    render(<CodeBlockFontSection />)
++
++    // Verify the hook was called
++    expect(useCustomAppearance).toHaveBeenCalled()
++  })
++
++  it('renders a label for code block font selection', () => {
++    vi.mocked(useCustomAppearance).mockReturnValue({
++      appearance: {
++        codeBlockFontStack: 'geist-mono',
++      } as any,
++      setAppearance: vi.fn(),
++    } as any)
++
++    render(<CodeBlockFontSection />)
++    // The Select component should have a label
++    expect(screen.getByText('Code block font')).toBeInTheDocument()
++  })
++
++  it('has correct structure with flex layout', () => {
++    vi.mocked(useCustomAppearance).mockReturnValue({
++      appearance: {
++        codeBlockFontStack: 'geist-mono',
++      } as any,
++      setAppearance: vi.fn(),
++    } as any)
++
++    const { container } = render(<CodeBlockFontSection />)
++    const wrapper = container.querySelector('.flex.flex-col.gap-3')
++    expect(wrapper).toBeInTheDocument()
++  })
++})
+diff --git a/src/utils/customAppearance/__tests__/e2e.persistence.test.ts b/src/utils/customAppearance/__tests__/e2e.persistence.test.ts
+new file mode 100644
+index 000000000..76047920c
+--- /dev/null
++++ b/src/utils/customAppearance/__tests__/e2e.persistence.test.ts
+@@ -0,0 +1,142 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect, beforeEach, afterEach } from 'vitest'
++
++import { APPEARANCE_KEY } from '@/constants'
++
++import { DEFAULT_PRESET, PRESETS } from '../presets'
++import { getStoredPreset, persistPreset } from '../storage'
++
++import type { Preset } from '../presets'
++
++describe('Code block font localStorage persistence', () => {
++  beforeEach(() => {
++    localStorage.clear()
++  })
++
++  afterEach(() => {
++    localStorage.clear()
++  })
++
++  it('persists codeBlockFontStack to localStorage', () => {
++    const userPreset: Preset = {
++      type: 'user',
++      name: 'Test Theme',
++      parentPreset: 'Clean White',
++      values: {
++        ...DEFAULT_PRESET.values,
++        codeBlockFontStack: 'jetbrains-mono',
++      },
++    }
++
++    // Persist
++    persistPreset(userPreset)
++
++    // Retrieve from localStorage
++    const stored = localStorage.getItem(APPEARANCE_KEY)
++    expect(stored).toBeTruthy()
++
++    const parsed = JSON.parse(stored!)
++    expect(parsed.values.codeBlockFontStack).toBe('jetbrains-mono')
++  })
++
++  it('retrieves codeBlockFontStack from localStorage after reload', () => {
++    const originalPreset: Preset = {
++      type: 'user',
++      name: 'Test Theme',
++      parentPreset: 'Clean White',
++      values: {
++        ...DEFAULT_PRESET.values,
++        codeBlockFontStack: 'ibm-plex-mono',
++      },
++    }
++
++    // Persist
++    persistPreset(originalPreset)
++
++    // Simulate page reload by retrieving
++    const retrieved = getStoredPreset()
++    expect(retrieved?.type).toBe('user')
++    if (retrieved?.type === 'user') {
++      expect(retrieved.values.codeBlockFontStack).toBe('ibm-plex-mono')
++    }
++  })
++
++  it('persists builtin preset reference with codeBlockFontStack default', () => {
++    const builtinPreset: Preset = {
++      type: 'builtin',
++      name: 'Clean White',
++      values: DEFAULT_PRESET.values,
++    }
++
++    // Persist
++    persistPreset(builtinPreset)
++
++    // Retrieve from localStorage
++    const retrieved = getStoredPreset()
++    expect(retrieved?.type).toBe('builtin')
++    expect(retrieved?.name).toBe('Clean White')
++
++    // Verify that values are not stored for builtin presets
++    if (retrieved?.type === 'builtin') {
++      expect((retrieved as any).values).toBeUndefined()
++    }
++  })
++
++  it('maintains codeBlockFontStack across multiple persistence operations', () => {
++    const preset1: Preset = {
++      type: 'user',
++      name: 'Theme 1',
++      parentPreset: 'Clean White',
++      values: {
++        ...DEFAULT_PRESET.values,
++        codeBlockFontStack: 'geist-mono',
++      },
++    }
++
++    persistPreset(preset1)
++    let retrieved = getStoredPreset()
++    if (retrieved?.type === 'user') {
++      expect(retrieved.values.codeBlockFontStack).toBe('geist-mono')
++    }
++
++    // Update to different font
++    const preset2: Preset = {
++      type: 'user',
++      name: 'Theme 1',
++      parentPreset: 'Clean White',
++      values: {
++        ...DEFAULT_PRESET.values,
++        codeBlockFontStack: 'jetbrains-mono',
++      },
++    }
++
++    persistPreset(preset2)
++    retrieved = getStoredPreset()
++    if (retrieved?.type === 'user') {
++      expect(retrieved.values.codeBlockFontStack).toBe('jetbrains-mono')
++    }
++  })
++
++  it('all builtin presets have codeBlockFontStack defined', () => {
++    PRESETS.forEach((preset: any) => {
++      expect(preset.values.codeBlockFontStack).toBeDefined()
++      expect(['geist-mono', 'jetbrains-mono', 'ibm-plex-mono']).toContain(
++        preset.values.codeBlockFontStack
++      )
++    })
++  })
++})
+diff --git a/src/utils/customAppearance/__tests__/rules.test.ts b/src/utils/customAppearance/__tests__/rules.test.ts
+index 11a114861..394d2b077 100644
+--- a/src/utils/customAppearance/__tests__/rules.test.ts
++++ b/src/utils/customAppearance/__tests__/rules.test.ts
+@@ -109,6 +109,33 @@ describe('rules', () => {
+     })
+   })
+ 
++  describe('font.codeBlockFontStack', () => {
++    it('maps geist-mono', () => {
++      expect(
++        runRules(inputs({ codeBlockFontStack: 'geist-mono' }))['--font-family-code-block']
++      ).toContain('GeistMono')
++    })
++
++    it('maps jetbrains-mono', () => {
++      expect(
++        runRules(inputs({ codeBlockFontStack: 'jetbrains-mono' }))['--font-family-code-block']
++      ).toContain('JetBrains Mono')
++    })
++
++    it('maps ibm-plex-mono', () => {
++      expect(
++        runRules(inputs({ codeBlockFontStack: 'ibm-plex-mono' }))['--font-family-code-block']
++      ).toContain('IBM Plex Mono')
++    })
++
++    it('falls back to geist-mono for an unknown value', () => {
++      const result = runRules(
++        inputs({ codeBlockFontStack: 'unknown' as AppearanceInputs['codeBlockFontStack'] })
++      )
++      expect(result['--font-family-code-block']).toContain('GeistMono')
++    })
++  })
++
+   describe('opacity.bottomNavigationLabelSurface', () => {
+     it('returns white channels on a dark navigation background', () => {
+       const result = runRules(inputs({ navigationBackground: '#000000' }))
+diff --git a/src/utils/customAppearance/__tests__/schema.test.ts b/src/utils/customAppearance/__tests__/schema.test.ts
+new file mode 100644
+index 000000000..7b5de1e55
+--- /dev/null
++++ b/src/utils/customAppearance/__tests__/schema.test.ts
+@@ -0,0 +1,32 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect } from 'vitest'
++
++describe('codeBlockFontStack field', () => {
++  it('should be a valid string literal union type in AppearanceInputs', () => {
++    // Runtime test verifying the enum values are correct
++    const validValues: ('geist-mono' | 'jetbrains-mono' | 'ibm-plex-mono')[] = [
++      'geist-mono',
++      'jetbrains-mono',
++      'ibm-plex-mono',
++    ]
++
++    expect(validValues).toHaveLength(3)
++    validValues.forEach((value) => {
++      expect(['geist-mono', 'jetbrains-mono', 'ibm-plex-mono']).toContain(value)
++    })
++  })
++})
+diff --git a/src/utils/customAppearance/__tests__/storage.test.ts b/src/utils/customAppearance/__tests__/storage.test.ts
+index dc4afbbe3..7710ba200 100644
+--- a/src/utils/customAppearance/__tests__/storage.test.ts
++++ b/src/utils/customAppearance/__tests__/storage.test.ts
+@@ -143,4 +143,25 @@ describe('storage', () => {
+       expect(() => validateImportedPreset({ ...userPreset, type: 'builtin' })).toThrow()
+     })
+   })
++
++  describe('codeBlockFontStack validation', () => {
++    it.each([['geist-mono'], ['jetbrains-mono'], ['ibm-plex-mono']])(
++      'accepts valid codeBlockFontStack: %s',
++      (fontStack) => {
++        const preset = {
++          ...userPreset,
++          values: { ...userPreset.values, codeBlockFontStack: fontStack },
++        }
++        expect(() => validateImportedPreset(preset)).not.toThrow()
++      }
++    )
++
++    it('rejects invalid codeBlockFontStack value', () => {
++      const preset = {
++        ...userPreset,
++        values: { ...userPreset.values, codeBlockFontStack: 'courier-new' },
++      }
++      expect(() => validateImportedPreset(preset)).toThrow()
++    })
++  })
+ })
+diff --git a/src/utils/customAppearance/apply.ts b/src/utils/customAppearance/apply.ts
+index b8476eb02..dc22df07f 100644
+--- a/src/utils/customAppearance/apply.ts
++++ b/src/utils/customAppearance/apply.ts
+@@ -78,6 +78,7 @@ export const CUSTOM_COLOR_VARIABLES: CssVar[] = [
+   '--colors-text-specific-navigation-link-hover',
+   // font
+   '--font-family-body',
++  '--font-family-code-block',
+   // backgroundImage
+   '--backgroundImage-action-accent-btn',
+   '--backgroundImage-action-accent-hover',
+diff --git a/src/utils/customAppearance/presets.ts b/src/utils/customAppearance/presets.ts
+index de81140f8..72b58b39e 100644
+--- a/src/utils/customAppearance/presets.ts
++++ b/src/utils/customAppearance/presets.ts
+@@ -17,6 +17,8 @@ import { DARK_THEME_KEY, LIGHT_THEME_KEY } from '@/constants'
+ 
+ import type { PresetValues } from './schema'
+ 
++const DEFAULT_CODE_BLOCK_FONT = 'geist-mono' as const
++
+ export interface BuiltinPreset {
+   type: 'builtin'
+   name: string
+@@ -57,6 +59,7 @@ const cleanWhiteValues: PresetValues = {
+   pageHeaderElevated: false,
+   sidebarToggleMatchesBackground: false,
+   fontStack: 'system',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -87,6 +90,7 @@ const cleanBlackValues: PresetValues = {
+   pageHeaderElevated: false,
+   sidebarToggleMatchesBackground: false,
+   fontStack: 'system',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -116,6 +120,7 @@ const rosePineDawnValues: PresetValues = {
+   pageHeaderElevated: false,
+   sidebarToggleMatchesBackground: false,
+   fontStack: 'sans',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -145,6 +150,7 @@ const sageForestValues: PresetValues = {
+   pageHeaderElevated: false,
+   sidebarToggleMatchesBackground: false,
+   fontStack: 'system',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -174,6 +180,7 @@ const draculaValues: PresetValues = {
+   pageHeaderElevated: true,
+   sidebarToggleMatchesBackground: false,
+   fontStack: 'system',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -203,6 +210,7 @@ const navyGoldDarkNavValues: PresetValues = {
+   pageHeaderElevated: false,
+   sidebarToggleMatchesBackground: false,
+   fontStack: 'sans',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -232,6 +240,7 @@ const custom1Values: PresetValues = {
+   pageHeaderElevated: true,
+   sidebarToggleMatchesBackground: true,
+   fontStack: 'system',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -261,6 +270,7 @@ const custom2Values: PresetValues = {
+   pageHeaderElevated: false,
+   sidebarToggleMatchesBackground: false,
+   fontStack: 'sans',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -290,6 +300,7 @@ const custom3Values: PresetValues = {
+   pageHeaderElevated: false,
+   sidebarToggleMatchesBackground: true,
+   fontStack: 'system',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -319,6 +330,7 @@ const rosePineDawnDarkNavValues: PresetValues = {
+   pageHeaderElevated: true,
+   sidebarToggleMatchesBackground: false,
+   fontStack: 'sans',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -348,6 +360,7 @@ const sageForestDarkNavValues: PresetValues = {
+   pageHeaderElevated: true,
+   sidebarToggleMatchesBackground: true,
+   fontStack: 'system',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+@@ -377,6 +390,7 @@ const nordValues: PresetValues = {
+   pageHeaderElevated: false,
+   sidebarToggleMatchesBackground: false,
+   fontStack: 'sans',
++  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
+   logoMode: 'codemie',
+   rectangularLogo: '',
+   squareLogo: '',
+diff --git a/src/utils/customAppearance/rules.ts b/src/utils/customAppearance/rules.ts
+index f596ac441..593772f6b 100644
+--- a/src/utils/customAppearance/rules.ts
++++ b/src/utils/customAppearance/rules.ts
+@@ -58,6 +58,12 @@ const FONT_STACKS: Record<string, string> = {
+   serif: 'Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif',
+ }
+ 
++const FONT_STACKS_CODE_BLOCK: Record<string, string> = {
++  'geist-mono': 'GeistMono, monospace',
++  'jetbrains-mono': '"JetBrains Mono", monospace',
++  'ibm-plex-mono': '"IBM Plex Mono", monospace',
++}
++
+ // Map rule: input field → many CSS vars (RGB channels), always written.
+ const mapRule = (field: keyof AppearanceInputs, cssVars: CssVar[]): Rule => ({
+   apply: (inputs) => {
+@@ -238,6 +244,12 @@ export const RULES: Rule[] = [
+       '--font-family-body': FONT_STACKS[inputs.fontStack] ?? FONT_STACKS.geist,
+     }),
+   },
++  {
++    apply: (inputs) => ({
++      '--font-family-code-block':
++        FONT_STACKS_CODE_BLOCK[inputs.codeBlockFontStack] ?? FONT_STACKS_CODE_BLOCK['geist-mono'],
++    }),
++  },
+ 
+   // §5 — Gradient block (single condition gates 11 vars / 9 distinct values)
+   {
+diff --git a/src/utils/customAppearance/schema.ts b/src/utils/customAppearance/schema.ts
+index 169c99ec8..a7885f156 100644
+--- a/src/utils/customAppearance/schema.ts
++++ b/src/utils/customAppearance/schema.ts
+@@ -38,6 +38,7 @@ export interface AppearanceInputs {
+   pageHeaderElevated: boolean
+   sidebarToggleMatchesBackground: boolean
+   fontStack: 'geist' | 'system' | 'sans' | 'serif'
++  codeBlockFontStack: 'geist-mono' | 'jetbrains-mono' | 'ibm-plex-mono'
+   logoMode: 'codemie' | 'custom'
+   rectangularLogo: string
+   squareLogo: string
+@@ -109,6 +110,7 @@ export type CssVar =
+   | '--colors-text-specific-navigation-link-hover'
+   // font
+   | '--font-family-body'
++  | '--font-family-code-block'
+   // backgroundImage
+   | '--backgroundImage-action-accent-btn'
+   | '--backgroundImage-action-accent-hover'
+diff --git a/src/utils/customAppearance/storage.ts b/src/utils/customAppearance/storage.ts
+index 894e70f50..26524a7f0 100644
+--- a/src/utils/customAppearance/storage.ts
++++ b/src/utils/customAppearance/storage.ts
+@@ -29,6 +29,7 @@ const presetValuesSchema = object({
+   ...Object.fromEntries(COLOR_FIELDS.map((f) => [f, hexColor])),
+   baseTheme: string().oneOf([DARK_THEME_KEY, LIGHT_THEME_KEY]).required(),
+   fontStack: string().oneOf(['geist', 'system', 'sans', 'serif']).required(),
++  codeBlockFontStack: string().oneOf(['geist-mono', 'jetbrains-mono', 'ibm-plex-mono']).required(),
+   logoMode: string().oneOf(['codemie', 'custom']).required(),
+   navigationFadeText: boolean().required(),
+   gradients: boolean().required(),

@@ -58,6 +58,12 @@ const FONT_STACKS: Record<string, string> = {
   serif: 'Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif',
 }
 
+const FONT_STACKS_CODE_BLOCK: Record<string, string> = {
+  'geist-mono': 'GeistMono, monospace',
+  'jetbrains-mono': '"JetBrains Mono", monospace',
+  'ibm-plex-mono': '"IBM Plex Mono", monospace',
+}
+
 // Map rule: input field → many CSS vars (RGB channels), always written.
 const mapRule = (field: keyof AppearanceInputs, cssVars: CssVar[]): Rule => ({
   apply: (inputs) => {
@@ -236,6 +242,12 @@ export const RULES: Rule[] = [
   {
     apply: (inputs) => ({
       '--font-family-body': FONT_STACKS[inputs.fontStack] ?? FONT_STACKS.geist,
+    }),
+  },
+  {
+    apply: (inputs) => ({
+      '--font-family-code-block':
+        FONT_STACKS_CODE_BLOCK[inputs.codeBlockFontStack] ?? FONT_STACKS_CODE_BLOCK['geist-mono'],
     }),
   },
 

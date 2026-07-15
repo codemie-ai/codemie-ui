@@ -19,38 +19,40 @@ import Select from '@/components/form/Select/Select'
 import { useCustomAppearance } from '@/hooks/useCustomAppearance'
 import { FilterOption } from '@/types/filters'
 
-const FONT_OPTIONS: FilterOption[] = [
-  { label: 'Default (Geist)', value: 'geist' },
-  { label: 'System fonts', value: 'system' },
-  { label: 'Sans-serif (Inter / Segoe UI)', value: 'sans' },
-  { label: 'Serif (Palatino / Georgia)', value: 'serif' },
+const CODE_BLOCK_FONT_OPTIONS: FilterOption[] = [
+  { label: 'GeistMono', value: 'geist-mono' },
+  { label: 'JetBrains Mono', value: 'jetbrains-mono' },
+  { label: 'IBM Plex Mono', value: 'ibm-plex-mono' },
 ]
 
-type FontStack = 'geist' | 'system' | 'sans' | 'serif'
+type CodeBlockFont = 'geist-mono' | 'jetbrains-mono' | 'ibm-plex-mono'
 
-const isValidFontStack = (value: unknown): value is FontStack => {
-  return typeof value === 'string' && FONT_OPTIONS.some((opt) => opt.value === value)
+const isValidCodeBlockFont = (value: unknown): value is CodeBlockFont => {
+  return typeof value === 'string' && CODE_BLOCK_FONT_OPTIONS.some((opt) => opt.value === value)
 }
 
-const FontSection = () => {
+const CodeBlockFontSection = () => {
   const { appearance, setAppearance } = useCustomAppearance()
 
   const handleFontChange = (event: DropdownChangeEvent) => {
     if (!event || event.value === undefined) return
-    if (!isValidFontStack(event.value)) return
-    setAppearance({ fontStack: event.value })
+    if (!isValidCodeBlockFont(event.value)) return
+    setAppearance({
+      codeBlockFontStack: event.value,
+    })
   }
 
   return (
     <div className="flex flex-col gap-3">
       <Select
-        label="Font stack"
-        value={appearance.fontStack}
-        options={FONT_OPTIONS}
+        id="code-block-font"
+        label="Code block font"
+        value={appearance.codeBlockFontStack}
+        options={CODE_BLOCK_FONT_OPTIONS}
         onChange={handleFontChange}
       />
     </div>
   )
 }
 
-export default FontSection
+export default CodeBlockFontSection

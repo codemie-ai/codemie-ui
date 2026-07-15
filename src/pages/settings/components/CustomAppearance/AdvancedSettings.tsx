@@ -17,6 +17,7 @@ import { ReactNode } from 'react'
 
 import Accordion from '@/components/Accordion'
 
+import CodeBlockFontSection from './sections/CodeBlockFontSection'
 import ColorsSection from './sections/ColorsSection'
 import FontSection from './sections/FontSection'
 import LogoSection from './sections/LogoSection'
@@ -38,6 +39,7 @@ const AdvancedSettings = () => (
     <div className="flex flex-col gap-6 p-4">
       <Section title="Font">
         <FontSection />
+        <CodeBlockFontSection />
       </Section>
       <Section title="Logo">
         <LogoSection />

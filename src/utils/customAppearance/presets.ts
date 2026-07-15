@@ -17,6 +17,8 @@ import { DARK_THEME_KEY, LIGHT_THEME_KEY } from '@/constants'
 
 import type { PresetValues } from './schema'
 
+const DEFAULT_CODE_BLOCK_FONT = 'geist-mono' as const
+
 export interface BuiltinPreset {
   type: 'builtin'
   name: string
@@ -57,6 +59,7 @@ const cleanWhiteValues: PresetValues = {
   pageHeaderElevated: false,
   sidebarToggleMatchesBackground: false,
   fontStack: 'system',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -87,6 +90,7 @@ const cleanBlackValues: PresetValues = {
   pageHeaderElevated: false,
   sidebarToggleMatchesBackground: false,
   fontStack: 'system',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -116,6 +120,7 @@ const rosePineDawnValues: PresetValues = {
   pageHeaderElevated: false,
   sidebarToggleMatchesBackground: false,
   fontStack: 'sans',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -145,6 +150,7 @@ const sageForestValues: PresetValues = {
   pageHeaderElevated: false,
   sidebarToggleMatchesBackground: false,
   fontStack: 'system',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -174,6 +180,7 @@ const draculaValues: PresetValues = {
   pageHeaderElevated: true,
   sidebarToggleMatchesBackground: false,
   fontStack: 'system',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -203,6 +210,7 @@ const navyGoldDarkNavValues: PresetValues = {
   pageHeaderElevated: false,
   sidebarToggleMatchesBackground: false,
   fontStack: 'sans',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -232,6 +240,7 @@ const custom1Values: PresetValues = {
   pageHeaderElevated: true,
   sidebarToggleMatchesBackground: true,
   fontStack: 'system',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -261,6 +270,7 @@ const custom2Values: PresetValues = {
   pageHeaderElevated: false,
   sidebarToggleMatchesBackground: false,
   fontStack: 'sans',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -290,6 +300,7 @@ const custom3Values: PresetValues = {
   pageHeaderElevated: false,
   sidebarToggleMatchesBackground: true,
   fontStack: 'system',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -319,6 +330,7 @@ const rosePineDawnDarkNavValues: PresetValues = {
   pageHeaderElevated: true,
   sidebarToggleMatchesBackground: false,
   fontStack: 'sans',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -348,6 +360,7 @@ const sageForestDarkNavValues: PresetValues = {
   pageHeaderElevated: true,
   sidebarToggleMatchesBackground: true,
   fontStack: 'system',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',
@@ -377,6 +390,7 @@ const nordValues: PresetValues = {
   pageHeaderElevated: false,
   sidebarToggleMatchesBackground: false,
   fontStack: 'sans',
+  codeBlockFontStack: DEFAULT_CODE_BLOCK_FONT,
   logoMode: 'codemie',
   rectangularLogo: '',
   squareLogo: '',

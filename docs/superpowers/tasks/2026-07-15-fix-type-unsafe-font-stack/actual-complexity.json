@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "verdict": "routine",
+  "risk_level": "low",
+  "average_score": 1.5,
+  "scores": {
+    "code_changes_scope": 1,
+    "testing_scope": 3,
+    "integration_points": 1,
+    "external_dependencies": 1,
+    "code_quality_gains": 2,
+    "red_flags": "low"
+  },
+  "summary": "Minimal surgical scope, well-defined integration boundary, straightforward type safety improvement with no architectural complexity. Changes follow a consistent, understandable pattern.",
+  "routing_decision": "standard_code_review",
+  "assessment_date": "2026-07-15T16:40:00Z"
+}

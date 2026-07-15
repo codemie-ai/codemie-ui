@@ -109,6 +109,33 @@ describe('rules', () => {
     })
   })
 
+  describe('font.codeBlockFontStack', () => {
+    it('maps geist-mono', () => {
+      expect(
+        runRules(inputs({ codeBlockFontStack: 'geist-mono' }))['--font-family-code-block']
+      ).toContain('GeistMono')
+    })
+
+    it('maps jetbrains-mono', () => {
+      expect(
+        runRules(inputs({ codeBlockFontStack: 'jetbrains-mono' }))['--font-family-code-block']
+      ).toContain('JetBrains Mono')
+    })
+
+    it('maps ibm-plex-mono', () => {
+      expect(
+        runRules(inputs({ codeBlockFontStack: 'ibm-plex-mono' }))['--font-family-code-block']
+      ).toContain('IBM Plex Mono')
+    })
+
+    it('falls back to geist-mono for an unknown value', () => {
+      const result = runRules(
+        inputs({ codeBlockFontStack: 'unknown' as AppearanceInputs['codeBlockFontStack'] })
+      )
+      expect(result['--font-family-code-block']).toContain('GeistMono')
+    })
+  })
+
   describe('opacity.bottomNavigationLabelSurface', () => {
     it('returns white channels on a dark navigation background', () => {
       const result = runRules(inputs({ navigationBackground: '#000000' }))

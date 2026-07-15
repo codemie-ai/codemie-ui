@@ -20,7 +20,7 @@
     margin-top: none;
     color: theme("colors.text.primary");
     background: none;
-    font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+    font-family: var(--font-family-code-block, GeistMono, monospace);
     font-size: 1em;
     text-align: left;
     word-spacing: normal;
@@ -38,11 +38,11 @@
 
   /* Code blocks */
   pre[class*="language-"] {
-    @apply p-6 !m-0 font-geist text-sm leading-6 border-t border-border-primary whitespace-pre-wrap break-words;
+    @apply p-6 !m-0 text-sm leading-6 border-t border-border-primary whitespace-pre-wrap break-words;
   }
 
   pre.code-content {
-    @apply p-6 m-0 font-geist text-sm !rounded-t-none rounded-b-lg leading-6 border-t border-border-primary whitespace-pre-wrap break-words max-w-full;
+    @apply p-6 m-0 text-sm !rounded-t-none rounded-b-lg leading-6 border-t border-border-primary whitespace-pre-wrap break-words max-w-full;
   }
 
   &.chat-code-block {
@@ -67,6 +67,7 @@
     display: inline;
     white-space: normal;
     background-color: theme("colors.surface.base.chat");
+    font-family: var(--font-family-code-block, GeistMono, monospace);
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;

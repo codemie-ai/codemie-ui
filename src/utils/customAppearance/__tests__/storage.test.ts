@@ -143,4 +143,38 @@ describe('storage', () => {
       expect(() => validateImportedPreset({ ...userPreset, type: 'builtin' })).toThrow()
     })
   })
+
+  describe('codeBlockFontStack validation', () => {
+    it.each([['geist-mono'], ['jetbrains-mono'], ['ibm-plex-mono']])(
+      'accepts valid codeBlockFontStack: %s',
+      (fontStack) => {
+        const preset = {
+          ...userPreset,
+          values: { ...userPreset.values, codeBlockFontStack: fontStack },
+        }
+        expect(() => validateImportedPreset(preset)).not.toThrow()
+      }
+    )
+
+    it('rejects invalid codeBlockFontStack value', () => {
+      const preset = {
+        ...userPreset,
+        values: { ...userPreset.values, codeBlockFontStack: 'courier-new' },
+      }
+      expect(() => validateImportedPreset(preset)).toThrow()
+    })
+
+    it('backfills a default when a pre-existing stored preset predates this field', () => {
+      const { codeBlockFontStack: _omit, ...legacyValues } = userPreset.values
+      const legacyPreset = { ...userPreset, values: legacyValues }
+      localStorage.setItem(APPEARANCE_KEY, JSON.stringify(legacyPreset))
+
+      const retrieved = getStoredPreset()
+
+      expect(retrieved).not.toBeNull()
+      if (retrieved?.type === 'user') {
+        expect(retrieved.values.codeBlockFontStack).toBe('geist-mono')
+      }
+    })
+  })
 })

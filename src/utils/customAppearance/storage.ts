@@ -29,6 +29,9 @@ const presetValuesSchema = object({
   ...Object.fromEntries(COLOR_FIELDS.map((f) => [f, hexColor])),
   baseTheme: string().oneOf([DARK_THEME_KEY, LIGHT_THEME_KEY]).required(),
   fontStack: string().oneOf(['geist', 'system', 'sans', 'serif']).required(),
+  codeBlockFontStack: string()
+    .oneOf(['geist-mono', 'jetbrains-mono', 'ibm-plex-mono'])
+    .default('geist-mono'),
   logoMode: string().oneOf(['codemie', 'custom']).required(),
   navigationFadeText: boolean().required(),
   gradients: boolean().required(),

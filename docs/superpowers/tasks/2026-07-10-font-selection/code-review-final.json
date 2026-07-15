@@ -1,0 +1,66 @@
+{
+  "decision": "request-changes",
+  "rationale": "Three independent lenses (blind, edge-case, acceptance) converge on two critical defects: the two new font files (JetBrainsMono-Regular.ttf, IBMPlexMono-Regular.otf) are 0-byte stubs, so AC1/AC2 cannot actually be met in production; and the new Select in CodeBlockFontSection.tsx has no id prop, breaking label-input association (WCAG 2.1 violation, AC5 not met). A third, major-severity backward-compatibility bug was confirmed by reading storage.ts directly: getStoredPreset() catches Yup validation failures and returns null, so any existing user with a saved custom preset (which predates the new required codeBlockFontStack field) will have their entire custom theme silently discarded on next load, not just reset the font. Commit messages also don't match this repo's CI-enforced 'EPMCDME-XXXX: Capital sentence' format (11 commits used conventional-commit style instead), which will fail the Tekton pipeline. 2 dismissed findings (absolute font paths match pre-existing convention; missing CURRENT-RULES.md predates this diff) and 1 deferred item (keyboard-nav/focus test depth) omitted from findings.",
+  "confidence": "high",
+  "risk_flags": ["breaking-change", "accessibility"],
+  "business_review": [
+    { "criterion": "AC1: Users can select >=3 fonts for UI and code blocks independently", "status": "fail", "evidence": "Schema/rules/storage/UI all correctly wired for 3 code-block font options, but JetBrainsMono-Regular.ttf and IBMPlexMono-Regular.otf are 0 bytes -- selecting them will not change the rendered font." },
+    { "criterion": "AC2: Code block font change preserves formatting, highlighting, copy/paste", "status": "fail", "evidence": "CSS variable wiring is correct but cannot be verified end-to-end while font files are empty; existing integration tests only assert the CSS variable is set, not that highlighting/copy-paste survive a font change." },
+    { "criterion": "AC3: Discoverable in settings; changes apply instantly", "status": "pass", "evidence": "CodeBlockFontSection wired into AdvancedSettings.tsx under the Font section; CSS variable applies immediately via the existing appearance engine." },
+    { "criterion": "AC4: Font choices persist across sessions (localStorage, per confirmed scope)", "status": "pass", "evidence": "e2e.persistence.test.ts (5 tests) verifies persist/retrieve round-trip through storage.ts." },
+    { "criterion": "AC5: Accessibility compliance maintained (WCAG 2.1 AA)", "status": "fail", "evidence": "Select in CodeBlockFontSection.tsx is not given an id, so its label has no verified programmatic association (WCAG 2.1 SC 1.3.1/4.1.2). No keyboard-navigation or focus-visibility test coverage was added despite Task 11 requiring it." },
+    { "criterion": "AC6: No regression in performance or existing UI features", "status": "partial", "evidence": "CSS-variable approach is inexpensive, but no regression coverage exists for other CodeBlock features (copy button, download, expand) after the font wiring change." }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow.md commit message format (EPMCDME-XXXX: Capital sentence)", "status": "fail", "notes": "All 11 feature commits (ef774a07d..7b4a8ce27) use conventional-commit prefixes (feat:/test:/fix:) instead of the required 'EPMCDME-8665: Capital sentence' format enforced by Tekton CI." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "problem": "src/assets/fonts/JetBrainsMono-Regular.ttf and src/assets/fonts/IBMPlexMono-Regular.otf are 0-byte placeholder files (confirmed via file size); the accompanying OFL license text files are also truncated stubs ending in '...'.",
+      "impact": "Users who select JetBrains Mono or IBM Plex Mono in Settings will see no visual change -- the browser silently falls back to the generic 'monospace' keyword, contradicting their selection and failing AC1/AC2 outright.",
+      "recommendation": "Download real font binaries from the official JetBrains Mono and IBM Plex Mono distributions (with their complete OFL license text) and commit them in place of the stubs before this ships.",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/assets/fonts/JetBrainsMono-Regular.ttf"
+    },
+    {
+      "id": "CR-002",
+      "problem": "CodeBlockFontSection.tsx renders <Select label=\"Code block font\" ... /> without an id (or any prop that lets Select associate the visible label with the control via for/id or aria-labelledby).",
+      "impact": "Screen-reader users cannot reliably determine what the dropdown controls, and clicking the label text will not focus/activate the control -- a WCAG 2.1 SC 1.3.1 (Info and Relationships) / 4.1.2 (Name, Role, Value) violation, failing AC5.",
+      "recommendation": "Pass a stable id to Select (e.g. id=\"code-block-font\") matching how FontSection.tsx associates its own label, and add a test asserting the label is programmatically linked to the control (e.g. getByLabelText).",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/settings/components/CustomAppearance/sections/CodeBlockFontSection.tsx",
+      "line": 302
+    },
+    {
+      "id": "CR-003",
+      "problem": "presetValuesSchema.codeBlockFontStack is .required() with no migration path. getStoredPreset() (storage.ts:57-76) wraps validation in try/catch and returns null on any validation failure, including a pre-existing stored preset that simply predates this field.",
+      "impact": "Any existing user with a previously saved custom appearance preset will have that entire preset silently discarded and reset to the default theme on their next visit after this ships -- not just the code-block font, but every custom color/logo/font choice they made.",
+      "recommendation": "Make codeBlockFontStack optional in the Yup schema with a default applied at read time (e.g. .default('geist-mono') combined with a stripUnknown/cast pass), so preexisting presets validate and simply pick up the new field's default instead of being wiped.",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/customAppearance/storage.ts",
+      "line": 32
+    },
+    {
+      "id": "CR-004",
+      "problem": "All 11 feature commits (ef774a07d..7b4a8ce27) use 'feat:'/'test:'/'fix:' prefixes instead of this repo's enforced 'EPMCDME-8665: Capital sentence' commit format.",
+      "impact": "The documented Tekton CI regex (^((EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.*|...)$) will reject these commits, blocking the pipeline.",
+      "recommendation": "Reword the commit history (interactive rebase or squash) so each commit subject matches 'EPMCDME-8665: Capital sentence' before opening the MR.",
+      "severity": "major",
+      "triage": "patch",
+      "file": ".ai-run/guides/standards/git-workflow.md"
+    },
+    {
+      "id": "CR-005",
+      "problem": "CodeBlock.integration.test.tsx only asserts that the --font-family-code-block CSS variable is present/settable on document.documentElement; it never asserts on the rendered font-family, syntax-highlighting tokens, or copy behavior of the code block itself.",
+      "impact": "The suite passes even though the actual visual/functional guarantee in AC2 (formatting, highlighting, and copy/paste preserved across font changes) is unverified; a regression there would not be caught by CI.",
+      "recommendation": "Extend the integration test to assert the rendered pre/code element's computed font-family reflects the CSS variable, and add a coverage check for copy-to-clipboard and highlighting token presence after a font change.",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/CodeBlock/__tests__/CodeBlock.integration.test.tsx"
+    }
+  ]
+}
