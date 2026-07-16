@@ -20,6 +20,7 @@ import { FC, useMemo } from 'react'
 import Markdown from '@/components/markdown/Markdown'
 import ListToken from '@/components/markdown/tokens/ListToken'
 import MermaidDiagram from '@/components/markdown/tokens/MermaidDiagram'
+import TableBlock from '@/components/markdown/tokens/TableBlock'
 
 import {
   getMarkdownRenderer,
@@ -41,7 +42,7 @@ const inlineTokens: MarkdownTokenType[] = [
   'br',
   'del',
 ]
-const blockTokens: MarkdownTokenType[] = ['hr', 'table', 'heading']
+const blockTokens: MarkdownTokenType[] = ['hr', 'heading']
 
 const renderer = getMarkdownRenderer()
 
@@ -68,6 +69,17 @@ const MarkdownTokens: FC<MarkdownTokensProps> = ({ tokens = [] }) => {
 
   return normalizedTokens.map((token, i) => {
     if (inlineTokens.includes(token.type)) return <span key={i} {...getInlineProps(token)} />
+
+    if (token.type === TOKEN_TYPES.table) {
+      return (
+        <TableBlock
+          key={i} // nosonar
+          html={DOMPurify.sanitize(Parser.parse([token], options), { ADD_ATTR: ['target'] })}
+          raw={token.raw}
+        />
+      )
+    }
+
     if (blockTokens.includes(token.type)) return <div key={i} {...getBlockProps(token)} />
 
     if (token.type === TOKEN_TYPES.paragraph) return <p key={i} {...getBlockProps(token)} />

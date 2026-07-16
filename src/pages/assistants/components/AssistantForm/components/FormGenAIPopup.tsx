@@ -44,6 +44,7 @@ type FormSchema = Yup.InferType<typeof formSchema>
 const FormGenAIPopup = ({ isVisible, onHide, onGenerated }: GenWithAIPopupProps) => {
   const textareaRef = useRef<TextareaRef>(null)
   const requestIdRef = useRef(0)
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
   const [isManual, setIsManual] = useState(!isVisible)
@@ -63,7 +64,8 @@ const FormGenAIPopup = ({ isVisible, onHide, onGenerated }: GenWithAIPopupProps)
   const handleHide = () => {
     requestIdRef.current += 1
     onHide?.()
-    setTimeout(() => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
+    hideTimeoutRef.current = setTimeout(() => {
       setIsManual(true)
       setIsLoading(false)
     }, 500)
@@ -84,6 +86,12 @@ const FormGenAIPopup = ({ isVisible, onHide, onGenerated }: GenWithAIPopupProps)
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     if (isVisible) requestIdRef.current += 1

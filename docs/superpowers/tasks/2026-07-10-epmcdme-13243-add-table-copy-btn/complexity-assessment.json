@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "task": "Add a dedicated copy button for table outputs in the CodeMie UI by extracting the table markdown token into a new React component with a clipboard overlay following the MermaidDiagram.tsx pattern.",
+  "generated": "2026-07-10T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Change is confined to 2–3 components within the Markdown token rendering pipeline: MarkdownTokens.tsx (route table token to new component), new TableBlock.tsx, and optionally Markdown.utils.ts. No cross-cutting concerns, no subsystem boundaries crossed."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Requirements are clear and specific (extract token, follow MermaidDiagram pattern, copy-to-clipboard overlay, accessibility). One open question: whether to copy markdown pipe-table syntax (token.raw) or convert to TSV for spreadsheet compatibility — this requires a decision before implementation."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "An exact structural precedent exists: MermaidDiagram.tsx demonstrates token extraction to a React component with absolute-positioned button overlay. CodeBlock.tsx provides the copy button pattern. The primary CSS nuance (button fixed while table scrolls horizontally) is directly solved by the absolute top-0 right-0 z-10 pattern from MermaidDiagram."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Estimated 3–4 files: MarkdownTokens.tsx (modified), Markdown.utils.ts (possibly minor change), new TableBlock.tsx, new __tests__/TableBlock.test.tsx. All within src/components/markdown/ directory tree."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

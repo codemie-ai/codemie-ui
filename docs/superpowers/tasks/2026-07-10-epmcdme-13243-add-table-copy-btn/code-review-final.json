@@ -1,0 +1,27 @@
+{
+  "decision": "approve",
+  "rationale": "All three lenses ran against a 163-line diff (3 files). No critical or major blocking findings. Five items deferred: (1) button positioning follows the exact MermaidDiagram.tsx precedent explicitly specified in the spec and approved by the user; (2) Parser.parse+DOMPurify.sanitize call pattern pre-exists for all other blockTokens via getBlockProps — not a regression; (3) copyToClipboard silent-fail on unavailable clipboard is a pre-existing utility issue, out of scope; (4) clipboard format (raw markdown) was an explicit design decision confirmed with the user; (5) focus-visible styling relies on Button component's native browser defaults, consistent with all other Button usages in the codebase. Commit format passes project regex. TypeScript clean. Two deferred items (EC-001 scroll overlap, EC-005 memoization) are worth a follow-up ticket but do not block this PR. 1 dismissed finding (empty-input test) out of spec scope.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "A visible copy button is available for generated table outputs.", "status": "pass", "notes": "TableBlock renders a Button with CopySvg icon at absolute top-0 right-0 z-10 over every table output." },
+    { "criterion": "Clicking copies the full table content, not only the visible portion.", "status": "pass", "notes": "onClick calls copyToClipboard(raw) where raw is token.raw — the complete markdown source of the table." },
+    { "criterion": "Copied content preserves markdown pipe-table structure.", "status": "pass", "notes": "token.raw from the marked lexer is the original pipe-table string." },
+    { "criterion": "Works for wide and long tables.", "status": "pass", "notes": "Copy action copies token.raw regardless of visible area. No truncation." },
+    { "criterion": "User receives clear feedback after copying.", "status": "pass", "notes": "copyToClipboard called with 'Table copied to clipboard' notification string." },
+    { "criterion": "Copy button follows existing CodeMie UI style.", "status": "pass", "notes": "ButtonType.TERTIARY, ButtonSize.MEDIUM, bg-surface-base-primary and hover:bg-surface-specific-dropdown-hover — consistent with MermaidDiagram and CodeBlock patterns." },
+    { "criterion": "Accessible via keyboard navigation.", "status": "partial", "notes": "Button is a native <button> element — natively keyboard-focusable. No explicit focus-visible ring added in TableBlock; relies on Button component browser defaults. Deferred: consistent with all other Button usages in the codebase." },
+    { "criterion": "Button has accessible name 'Copy table'.", "status": "pass", "notes": "aria-label=\"Copy table\" present; asserted by unit test getByRole('button', { name: 'Copy table' })." },
+    { "criterion": "Existing message-level copy functionality is not broken.", "status": "pass", "notes": "ChatAiMessageActions untouched. All other MarkdownTokens branches intact." },
+    { "criterion": "'table' removed from blockTokens array in MarkdownTokens.tsx.", "status": "pass", "notes": "blockTokens is now ['hr', 'heading']." },
+    { "criterion": "Three unit tests: renders HTML, renders button with aria-label, calls copyToClipboard on click.", "status": "pass", "notes": "All three tests present and passing (3/3 green)." }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow commit format", "status": "pass", "notes": "Both commits match EPMCDME-XXXX: Capital sentence pattern. 'EPMCDME-13243: Add TableBlock component with copy button' and 'EPMCDME-13243: Wire TableBlock into MarkdownTokens' both valid." },
+    { "standard": "TypeScript / no type errors", "status": "pass", "notes": "tsc --noEmit passed with no errors (confirmed by pre-commit hook output)." },
+    { "standard": "ESLint / code quality", "status": "pass", "notes": "eslint --fix ran cleanly during pre-commit hooks for both commits." },
+    { "standard": "License headers", "status": "pass", "notes": "License headers checked by pre-commit hook — 0 missing." },
+    { "standard": "Security / dangerouslySetInnerHTML", "status": "pass", "notes": "html prop is DOMPurify-sanitized by caller before passing to TableBlock. Same contract as all other dangerouslySetInnerHTML usages in the markdown pipeline." }
+  ],
+  "findings": []
+}
