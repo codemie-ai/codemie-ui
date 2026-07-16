@@ -1,0 +1,61 @@
+{
+  "decision": "approve",
+  "rationale": "All four acceptance criteria pass. The implementation adds a 4-line guard in goBackFromWorkflowEdit — consistent with the reference pattern in goBackFromWorkflowExecutions — and a new test file with 2 test cases. The direct-link test (AC1/AC2) directly exercises the new guard; the in-app navigation test (AC3) confirms no regression. Commit messages and branch naming conform to project conventions. License headers present. Security: no concerns. Code quality guide absent (no violations detectable in the 4-line production change). Three deferred test quality items noted: (a) the in-app nav test cannot distinguish which internal branch fired since both produce identical observable router.push output with the test's history config; (b) no test for single-entry (currentIndex=0) or all-same-workflow-ID history stacks; (c) history is a shared proxy singleton — Vitest per-file isolation should guard against state bleed but is undocumented. None of these is blocking for this XS change.",
+  "follow_ups": [
+    "EC-001: Strengthen the in-app nav test by spying on goBackWorkflows to assert it receives the WOKRFLOW_EXECUTIONS argument, distinguishing the two internal branches regardless of history stack content.",
+    "EC-003/EC-004: Add tests for single-entry stack (currentIndex=0) and all-same-workflow-ID stack to verify the !safeRoute guard fires correctly in those cases.",
+    "EC-005: Document or verify Vitest per-file module isolation guarantees for the history proxy singleton across test files."
+  ],
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "AC1: When the workflow edit page is opened from a direct link, clicking Back navigates to the workflow list.",
+      "status": "pass",
+      "notes": "With empty history stack (currentIndex=-1), findFirstNonWorkflowRoute returns null. New !safeRoute guard fires and calls goBackWorkflows() with no args, which defaults to WORKFLOWS_ALL. Directly exercised by test case 1."
+    },
+    {
+      "criterion": "AC2: When the workflow edit page is opened from a direct link, clicking Cancel navigates to the workflow list.",
+      "status": "pass",
+      "notes": "EditWorkflowPage Cancel calls onBack which calls goBackFromWorkflowEdit. No component changes required — the utility fix covers both Back and Cancel."
+    },
+    {
+      "criterion": "AC3: When the page is opened through in-app navigation (non-empty history stack), Back and Cancel continue to navigate to the previous valid route.",
+      "status": "pass",
+      "notes": "When safeRoute is non-null and not NEW_WORKFLOW, both guards are skipped and the original goBackWorkflows({ name: WOKRFLOW_EXECUTIONS, ... }) call fires. navigateBack finds the prior allowed route in history and pushes to it. Exercised by test case 2."
+    },
+    {
+      "criterion": "AC4: No regression on workflow save, Save and Run, or any other navigation flow.",
+      "status": "pass",
+      "notes": "The guard is additive. All pre-existing paths (safeRoute === NEW_WORKFLOW, truthy safeRoute) are unchanged. No modifications to save/run handlers, router.tsx, useHistoryStack.tsx, or shared utilities."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit message format (EPMCDME-XXXX: Capital sentence)",
+      "status": "pass",
+      "notes": "Both commits conform: 'EPMCDME-13308: Fix Back and Cancel navigation on direct-link workflow edit page' and 'EPMCDME-13308: Add regression test for in-app navigation path'."
+    },
+    {
+      "standard": "Branch naming (EPMCDME-XXXX_short-description)",
+      "status": "pass",
+      "notes": "Branch EPMCDME-13308_fix-workflow-back-cancel-direct-link conforms to the documented pattern."
+    },
+    {
+      "standard": "License headers",
+      "status": "pass",
+      "notes": "New test file includes the required Apache 2.0 copyright header for 2026 EPAM Systems."
+    },
+    {
+      "standard": "Security",
+      "status": "pass",
+      "notes": "No security concerns. Pure navigation utility — no auth, no secrets, no injection vectors."
+    },
+    {
+      "standard": "Code quality (.ai-run/guides/standards/code-quality.md)",
+      "status": "na",
+      "notes": "Guide file not present in repository. No code quality violations detectable in the 4-line production change."
+    }
+  ],
+  "findings": []
+}

@@ -79,6 +79,12 @@ export const goBackFromWorkflowEdit = ({ workflowId }: { workflowId: string }) =
     return
   }
 
+  if (!safeRoute) {
+    // No session history (page opened via direct link) — fall back to workflow list
+    goBackWorkflows()
+    return
+  }
+
   goBackWorkflows({ name: WOKRFLOW_EXECUTIONS, params: { id: workflowId } })
 }
 

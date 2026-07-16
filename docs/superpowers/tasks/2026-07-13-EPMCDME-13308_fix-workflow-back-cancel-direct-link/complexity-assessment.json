@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix Back and Cancel buttons on workflow edit page opened via direct link by adding an empty-history guard in goBackFromWorkflowEdit",
+  "generated": "2026-07-13T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 6,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single function fix: goBackFromWorkflowEdit in src/pages/workflows/utils/goBackWorkflows.ts; EditWorkflowPage.tsx, useHistoryStack.tsx, and router.tsx are all unchanged per technical analysis"
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Exact guard pattern already exists in the same file (goBackFromWorkflowExecutions at line 122) and in NewWorkflowPage; the fix is a local consistency alignment with no novelty, zero performance or security implications, and trivially reversible"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

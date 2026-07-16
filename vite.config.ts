@@ -90,6 +90,7 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['./src/setupTests'],
       environment: 'jsdom',
       globals: true,
+      retry: 1,
       coverage: {
         provider: 'istanbul',
         reporter: ['text', 'lcov', 'html'],

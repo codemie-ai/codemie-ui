@@ -1,0 +1,63 @@
+{
+  "task": "Add empty-history guard in goBackFromWorkflowEdit to fix Back and Cancel buttons on workflow edit page when opened from a direct link",
+  "generated": "2026-07-13T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "goBackFromWorkflowEdit (goBackWorkflows.ts)",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 1,
+      "modified_file_list": ["src/pages/workflows/utils/goBackWorkflows.ts"],
+      "new_files": 1,
+      "new_file_list": ["src/pages/workflows/utils/__tests__/goBackWorkflows.test.ts"],
+      "affected_dirs": ["src/pages/workflows/utils"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single function modified (goBackFromWorkflowEdit); 4-line null-guard added, no layer boundaries crossed, no architectural impact"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "2 files total: 1 modified source file with 6 lines added, 1 new test file with 51 lines; all within the same utils directory"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
