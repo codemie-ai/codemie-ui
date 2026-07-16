@@ -19,6 +19,7 @@ import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CREATED_BY } from '@/constants'
 import { SKILL_INDEX_SCOPES } from '@/constants/skills'
+import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import { skillsStore } from '@/store/skills'
 import { userStore } from '@/store/user'
 import { SkillsFilters, SkillVisibility } from '@/types/entity/skill'
@@ -54,6 +55,15 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
   const [isChecked, setIsChecked] = useState(false)
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [categoryOptions, setCategoryOptions] = useState<FilterOption[]>([])
+  const projectDisplayNames = useProjectDisplayNames(filters.project ?? [])
+
+  const resolvedProjectOptions = useMemo(() => {
+    const existing = new Set(projectOptions.map((o) => o.value))
+    const extras = (filters.project ?? [])
+      .filter((name): name is string => !!name && !existing.has(name))
+      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
+    return [...projectOptions, ...extras]
+  }, [projectOptions, filters.project, projectDisplayNames])
 
   const areFiltersEmpty = useMemo(() => {
     return checkEmptyFilters(filters)
@@ -116,7 +126,7 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
           label: 'Project',
           type: FilterDefinitionType.Multiselect,
           value: filters.project ?? [],
-          options: projectOptions,
+          options: resolvedProjectOptions,
           config: {
             maxSelectedLabels: 3,
             filter: true,
@@ -166,7 +176,7 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
       filters.categories,
       filters.visibility,
       filters.created_by,
-      projectOptions,
+      resolvedProjectOptions,
       createdByOptions,
       categoryOptions,
       loadProjectOptions,

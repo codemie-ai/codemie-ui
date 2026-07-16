@@ -1,0 +1,16 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "CR-001 is resolved. The fix-up diff updates the three v1/projects mock fixtures from display_name: null to real display name strings ('Project A Display', 'Project B Display', 'Project C Display'), updates the selectMultiSelectOptions call to use display names, and adds a waitFor chip assertion (getByText(/Project A Display/)). The test passes at 632ms; all 69 tests in the WorkflowsListPage suite pass. No new issues introduced — the change is purely a test update with no production code affected.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "display_name: null fixtures replaced with real strings; selectMultiSelectOptions updated to use display names; waitFor chip assertion added; test passes at 632ms"
+    }
+  ]
+}

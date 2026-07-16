@@ -1,0 +1,119 @@
+{
+  "decision": "request-changes",
+  "confidence": "medium",
+  "rationale": "All three lenses ran successfully against the spec and implementation diff. One major finding: the spec explicitly required updating the existing 'Project filter applies correctly' test in WorkflowsListPage.integration.test.tsx with non-null display_name fixtures and a chip-label assertion; this was not done. The core feature implementation is correct — all three filter components wire useProjectDisplayNames, and the three new restore-path integration tests pass. The WorkflowsFilters persistedProject stabilization is an acceptable divergence from the literal spec wording (it prevents an IIFE render loop). Deferred: EC-001 (mid-session non-roster selection after clearing search shows technical name — same behavior as before the fix, pre-existing limitation not introduced by this change); ACC-002 (missing v1/assistants mock in AssistantsListPage tests — tests pass and assertion is independent of assistants list load). Dismissed: EC-002 (filters.project ?? [] reference stability — no functional impact); blind-lens minors (fallback-state coverage on Skills, direct cache mutation in tests).",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "id": "AC-001",
+      "criterion": "AssistantFilters: import and wire useProjectDisplayNames",
+      "status": "pass",
+      "notes": "Imported at line 25, hooked at line 101 with filters.project ?? []"
+    },
+    {
+      "id": "AC-002",
+      "criterion": "AssistantFilters: resolvedProjectOptions useMemo derives extras from hook result",
+      "status": "pass",
+      "notes": "Lines 103-109, correctly filters existing set and maps display name"
+    },
+    {
+      "id": "AC-003",
+      "criterion": "AssistantFilters: options: resolvedProjectOptions in filterDefinitions",
+      "status": "pass",
+      "notes": "Line 163 (diff +118), dep array updated at line 212"
+    },
+    {
+      "id": "AC-004",
+      "criterion": "SkillsFilters: import and wire useProjectDisplayNames",
+      "status": "pass",
+      "notes": "Imported at line 22, hooked at line 58"
+    },
+    {
+      "id": "AC-005",
+      "criterion": "SkillsFilters: resolvedProjectOptions useMemo",
+      "status": "pass",
+      "notes": "Lines 60-66"
+    },
+    {
+      "id": "AC-006",
+      "criterion": "SkillsFilters: options: resolvedProjectOptions in filterDefinitions",
+      "status": "pass",
+      "notes": "Line 129, dep array updated at line 176"
+    },
+    {
+      "id": "AC-007",
+      "criterion": "WorkflowsFilters: import and wire useProjectDisplayNames",
+      "status": "pass",
+      "notes": "Imported at line 22; hook called via persistedProject useMemo (see AC-008)"
+    },
+    {
+      "id": "AC-008",
+      "criterion": "WorkflowsFilters: hook receives persisted project values, not IIFE output directly",
+      "status": "pass",
+      "notes": "persistedProject useMemo (lines 62-68, scope-keyed) provides stable reference to avoid render loop from IIFE"
+    },
+    {
+      "id": "AC-009",
+      "criterion": "WorkflowsFilters: resolvedProjectOptions useMemo",
+      "status": "pass",
+      "notes": "Lines 72-78"
+    },
+    {
+      "id": "AC-010",
+      "criterion": "WorkflowsFilters: options: resolvedProjectOptions in filterDefinitions",
+      "status": "pass",
+      "notes": "Line 207 (diff +354), dep array updated at line 249"
+    },
+    {
+      "id": "AC-011",
+      "criterion": "AssistantsListPage: two new tests — resolved state and fallback state",
+      "status": "pass",
+      "notes": "Lines 694-784; both mock v1/user (is_admin: true), v1/projects/non-roster-proj; assertions on 'Non Roster Project' and 'non-roster-proj'"
+    },
+    {
+      "id": "AC-012",
+      "criterion": "SkillsListPage: new integration test file with resolved-state test",
+      "status": "pass",
+      "notes": "New file src/pages/skills/__tests__/SkillsListPage.integration.test.tsx; localStorage key, mocks v1/user, v1/skills, v1/projects correct"
+    },
+    {
+      "id": "AC-013",
+      "criterion": "WorkflowsListPage: existing 'Project filter applies correctly' test updated with real display_name fixtures and chip assertion",
+      "status": "fail",
+      "notes": "Fixtures unchanged (display_name: null); no chip-label assertion added; selectMultiSelectOptions still uses technical names"
+    },
+    {
+      "id": "AC-014",
+      "criterion": "WorkflowsListPage: new restore-path test for persisted non-roster project",
+      "status": "pass",
+      "notes": "Lines 1878-1923; localStorage key correct, mocks v1/user, v1/workflows, v1/projects; assertion on 'Non Roster Project'"
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "All three commits follow EPMCDME-13520: Capital sentence pattern enforced by Tekton CI regex"
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "ESLint clean after nested-ternary fix (no-nested-ternary in WorkflowsFilters.tsx:66 resolved by replacing ternary chain with early return)"
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No security issues — display name resolution reads from a trusted internal API endpoint (v1/projects/{name}) with existing auth patterns; no user-controlled data rendered unsanitized"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "WorkflowsListPage 'Project filter applies correctly' test not updated per spec — display_name: null fixtures retained, no chip-label assertion added",
+      "impact": "The spec-required regression guard for the interactive-filter-selection path is absent. If resolvedProjectOptions broke in a way that still falls back to technical names for dropdown-selected projects (e.g. extras logic has a bug), this test would not catch it. The new restore-path test covers the refresh case only.",
+      "recommendation": "Update the three v1/projects mock responses in 'Project filter applies correctly' (display_name: null → a real string such as 'Project A Display'). Update the selectMultiSelectOptions call to use the display names. Add a waitFor assertion that the applied chip label equals the display name. This is mechanically the same pattern as the restore-path test added for Workflows — just within the existing test body."
+    }
+  ]
+}

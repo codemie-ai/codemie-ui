@@ -22,6 +22,7 @@ import UserFilter from '@/components/UserFilter'
 import { CATEGORIES, CREATED_BY, NOT_SHARED, SHARED, GLOBAL } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
+import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import { assistantsStore } from '@/store/assistants'
 import { userStore } from '@/store/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
@@ -53,6 +54,15 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   const [projectSearchTerm, setProjectSearchTerm] = useState('')
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
+  const projectDisplayNames = useProjectDisplayNames(filters.project ?? [])
+
+  const resolvedProjectOptions = useMemo(() => {
+    const existing = new Set(projectOptions.map((o) => o.value))
+    const extras = (filters.project ?? [])
+      .filter((name): name is string => !!name && !existing.has(name))
+      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
+    return [...projectOptions, ...extras]
+  }, [projectOptions, filters.project, projectDisplayNames])
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [categoriesOptions, setCategoriesOptions] = useState<FilterOption[]>([])
   const { assistantCategories } = useSnapshot(assistantsStore)
@@ -149,7 +159,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
           label: 'Project',
           type: FilterDefinitionType.Multiselect,
           value: filters.project || [],
-          options: projectOptions,
+          options: resolvedProjectOptions,
           config: {
             maxSelectedLabels: 3,
             filter: true,
@@ -202,7 +212,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
       filters.project,
       filters.created_by,
       filters.categories,
-      projectOptions,
+      resolvedProjectOptions,
       isLoadingProjects,
       createdByOptions,
       categoriesOptions,

@@ -1,0 +1,39 @@
+diff --git a/src/pages/workflows/__tests__/WorkflowsListPage.integration.test.tsx b/src/pages/workflows/__tests__/WorkflowsListPage.integration.test.tsx
+index 176ca14c7..89c24364d 100644
+--- a/src/pages/workflows/__tests__/WorkflowsListPage.integration.test.tsx
++++ b/src/pages/workflows/__tests__/WorkflowsListPage.integration.test.tsx
+@@ -853,9 +853,9 @@ describe('WorkflowsListPage - Integration', () => {
+         user_type: 'INTERNAL',
+         applications: ['Project A', 'Project B', 'Project C'],
+         projects: [
+-          { name: 'Project A', display_name: null, is_project_admin: true },
+-          { name: 'Project B', display_name: null, is_project_admin: true },
+-          { name: 'Project C', display_name: null, is_project_admin: true },
++          { name: 'Project A', display_name: 'Project A Display', is_project_admin: true },
++          { name: 'Project B', display_name: 'Project B Display', is_project_admin: true },
++          { name: 'Project C', display_name: 'Project C Display', is_project_admin: true },
+         ],
+       })
+ 
+@@ -872,7 +872,9 @@ describe('WorkflowsListPage - Integration', () => {
+         createWorkflowsResponse([createWorkflowFixture({ name: 'Project A Workflow' })])
+       )
+ 
+-      await selectMultiSelectOptions('Project', ['Project A', 'Project B'], { user })
++      await selectMultiSelectOptions('Project', ['Project A Display', 'Project B Display'], {
++        user,
++      })
+ 
+       await submitFilterViaSearch(user)
+ 
+@@ -880,6 +882,10 @@ describe('WorkflowsListPage - Integration', () => {
+         expect(screen.getByText('Project A Workflow')).toBeInTheDocument()
+       })
+ 
++      await waitFor(() => {
++        expect(screen.getByText(/Project A Display/)).toBeInTheDocument()
++      })
++
+       expect(mockRouterState.push).toHaveBeenCalledWith(
+         expect.objectContaining({
+           query: expect.objectContaining({

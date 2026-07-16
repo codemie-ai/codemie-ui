@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
 import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CREATED_BY } from '@/constants'
+import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import {
   INITIAL_WORKFLOWS_FILTERS,
@@ -55,6 +56,26 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [isCreatedByMeChecked, setIsCreatedByMeChecked] = useState(false)
+
+  // initialFilterValues is an IIFE that creates new array references on every render.
+  // Stabilize the project list so useProjectDisplayNames doesn't re-run the effect every render.
+  const persistedProject = useMemo(() => {
+    const { project = INITIAL_WORKFLOWS_FILTERS.project } = getFilters<WorkflowsFilters>(
+      `${FILTER_ENTITY.WORKFLOWS}.${scope}`
+    )
+    if (Array.isArray(project)) return project
+    return project ? [project] : []
+  }, [scope])
+
+  const projectDisplayNames = useProjectDisplayNames(persistedProject)
+
+  const resolvedProjectOptions = useMemo(() => {
+    const existing = new Set(projectOptions.map((o) => o.value))
+    const extras = persistedProject
+      .filter((name): name is string => !!name && !existing.has(name))
+      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
+    return [...projectOptions, ...extras]
+  }, [projectOptions, persistedProject, projectDisplayNames])
 
   const categoriesOptions = useMemo<FilterOption[]>(
     () => assistantCategories.map((c) => ({ label: c.name, value: c.id })),
@@ -182,7 +203,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
           label: 'Project',
           type: FilterDefinitionType.Multiselect,
           value: initialFilterValues.project || [],
-          options: projectOptions,
+          options: resolvedProjectOptions,
           config: {
             maxSelectedLabels: 3,
             filter: true,
@@ -228,7 +249,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       initialFilterValues.created_by,
       initialFilterValues.shared,
       categoriesOptions,
-      projectOptions,
+      resolvedProjectOptions,
       createdByOptions,
       loadProjectOptions,
       scope,

@@ -1,0 +1,366 @@
+diff --git a/src/pages/assistants/__tests__/AssistantsListPage.integration.test.tsx b/src/pages/assistants/__tests__/AssistantsListPage.integration.test.tsx
+index 80998bd0e..34c04992c 100644
+--- a/src/pages/assistants/__tests__/AssistantsListPage.integration.test.tsx
++++ b/src/pages/assistants/__tests__/AssistantsListPage.integration.test.tsx
+@@ -18,6 +18,7 @@ import userEvent from '@testing-library/user-event'
+ import { describe, it, expect, beforeEach, vi } from 'vitest'
+ 
+ import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
++import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
+ import { renderPage, mockAPI } from '@/test-utils/integration'
+ 
+ describe('AssistantsListPage - Integration', () => {
+@@ -693,4 +694,71 @@ describe('AssistantsListPage - Integration', () => {
+       })
+     })
+   })
++
++  describe('Project filter display name', () => {
++    beforeEach(() => {
++      projectDisplayNamesStore.cache = {}
++      localStorage.clear()
++    })
++
++    it('shows project display name in filter chip on refresh (resolved state)', async () => {
++      localStorage.setItem(
++        'test-user-id_filters_assistants.visible_to_user',
++        JSON.stringify({ project: ['non-roster-proj'] })
++      )
++
++      mockAPI('GET', 'v1/user', {
++        user_id: 'test-user-id',
++        email: 'test@example.com',
++        name: 'Test User',
++        username: 'testuser',
++        is_admin: true,
++        is_maintainer: false,
++        user_type: 'INTERNAL',
++        applications: [],
++        projects: [],
++      })
++
++      mockAPI('GET', 'v1/projects/non-roster-proj', {
++        name: 'non-roster-proj',
++        display_name: 'Non Roster Project',
++      })
++
++      renderPage('/assistants')
++
++      await waitFor(() => {
++        expect(screen.getByText('Non Roster Project')).toBeInTheDocument()
++      })
++    })
++
++    it('shows technical name when display name unavailable (fallback state)', async () => {
++      localStorage.setItem(
++        'test-user-id_filters_assistants.visible_to_user',
++        JSON.stringify({ project: ['non-roster-proj'] })
++      )
++
++      mockAPI('GET', 'v1/user', {
++        user_id: 'test-user-id',
++        email: 'test@example.com',
++        name: 'Test User',
++        username: 'testuser',
++        is_admin: true,
++        is_maintainer: false,
++        user_type: 'INTERNAL',
++        applications: [],
++        projects: [],
++      })
++
++      mockAPI('GET', 'v1/projects/non-roster-proj', {
++        name: 'non-roster-proj',
++        display_name: null,
++      })
++
++      renderPage('/assistants')
++
++      await waitFor(() => {
++        expect(screen.getByText('non-roster-proj')).toBeInTheDocument()
++      })
++    })
++  })
+ })
+diff --git a/src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx b/src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx
+index 6f1ec70eb..240e1ba76 100644
+--- a/src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx
++++ b/src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx
+@@ -22,6 +22,7 @@ import UserFilter from '@/components/UserFilter'
+ import { CATEGORIES, CREATED_BY, NOT_SHARED, SHARED, GLOBAL } from '@/constants'
+ import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
+ import { useDebouncedApply } from '@/hooks/useDebounceApply'
++import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+ import { assistantsStore } from '@/store/assistants'
+ import { userStore } from '@/store/user'
+ import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
+@@ -53,6 +54,15 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
+   const [projectSearchTerm, setProjectSearchTerm] = useState('')
+   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+   const [isChecked, setIsChecked] = useState(false)
++  const projectDisplayNames = useProjectDisplayNames(filters.project ?? [])
++
++  const resolvedProjectOptions = useMemo(() => {
++    const existing = new Set(projectOptions.map((o) => o.value))
++    const extras = (filters.project ?? [])
++      .filter((name): name is string => !!name && !existing.has(name))
++      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
++    return [...projectOptions, ...extras]
++  }, [projectOptions, filters.project, projectDisplayNames])
+   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
+   const [categoriesOptions, setCategoriesOptions] = useState<FilterOption[]>([])
+   const { assistantCategories } = useSnapshot(assistantsStore)
+@@ -149,7 +159,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
+           label: 'Project',
+           type: FilterDefinitionType.Multiselect,
+           value: filters.project || [],
+-          options: projectOptions,
++          options: resolvedProjectOptions,
+           config: {
+             maxSelectedLabels: 3,
+             filter: true,
+@@ -202,7 +212,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
+       filters.project,
+       filters.created_by,
+       filters.categories,
+-      projectOptions,
++      resolvedProjectOptions,
+       isLoadingProjects,
+       createdByOptions,
+       categoriesOptions,
+diff --git a/src/pages/skills/__tests__/SkillsListPage.integration.test.tsx b/src/pages/skills/__tests__/SkillsListPage.integration.test.tsx
+new file mode 100644
+index 000000000..04740fd87
+--- /dev/null
++++ b/src/pages/skills/__tests__/SkillsListPage.integration.test.tsx
+@@ -0,0 +1,67 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { screen, waitFor } from '@testing-library/react'
++import { beforeEach, describe, expect, it } from 'vitest'
++
++import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
++import { mockAPI, renderPage } from '@/test-utils/integration'
++
++describe('SkillsListPage - Integration', () => {
++  describe('Project filter display name', () => {
++    beforeEach(() => {
++      projectDisplayNamesStore.cache = {}
++      localStorage.clear()
++    })
++
++    it('shows project display name in filter chip on refresh (resolved state)', async () => {
++      // Filter key: `test-user-id_filters_skills.project`
++      // (FILTERS_PREFIX = 'filters', FILTER_ENTITY.SKILLS = 'skills',
++      //  default tab = SkillTab.PROJECT → scope = 'project')
++      localStorage.setItem(
++        'test-user-id_filters_skills.project',
++        JSON.stringify({ project: ['non-roster-proj'] })
++      )
++
++      mockAPI('GET', 'v1/user', {
++        user_id: 'test-user-id',
++        email: 'test@example.com',
++        name: 'Test User',
++        username: 'testuser',
++        is_admin: true,
++        is_maintainer: false,
++        user_type: 'INTERNAL',
++        applications: [],
++        projects: [],
++      })
++
++      mockAPI('GET', 'v1/skills', {
++        data: [],
++        pagination: { page: 0, per_page: 12, pages: 0, total: 0 },
++      })
++
++      mockAPI('GET', 'v1/projects/non-roster-proj', {
++        name: 'non-roster-proj',
++        display_name: 'Non Roster Project',
++      })
++
++      renderPage('/skills')
++
++      await waitFor(() => {
++        expect(screen.getByText('Non Roster Project')).toBeInTheDocument()
++      })
++    })
++  })
++})
+diff --git a/src/pages/skills/components/SkillsFilters.tsx b/src/pages/skills/components/SkillsFilters.tsx
+index 16a65533c..489612729 100644
+--- a/src/pages/skills/components/SkillsFilters.tsx
++++ b/src/pages/skills/components/SkillsFilters.tsx
+@@ -19,6 +19,7 @@ import Filters from '@/components/Filters'
+ import UserFilter from '@/components/UserFilter'
+ import { CREATED_BY } from '@/constants'
+ import { SKILL_INDEX_SCOPES } from '@/constants/skills'
++import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+ import { skillsStore } from '@/store/skills'
+ import { userStore } from '@/store/user'
+ import { SkillsFilters, SkillVisibility } from '@/types/entity/skill'
+@@ -54,6 +55,15 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
+   const [isChecked, setIsChecked] = useState(false)
+   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
+   const [categoryOptions, setCategoryOptions] = useState<FilterOption[]>([])
++  const projectDisplayNames = useProjectDisplayNames(filters.project ?? [])
++
++  const resolvedProjectOptions = useMemo(() => {
++    const existing = new Set(projectOptions.map((o) => o.value))
++    const extras = (filters.project ?? [])
++      .filter((name): name is string => !!name && !existing.has(name))
++      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
++    return [...projectOptions, ...extras]
++  }, [projectOptions, filters.project, projectDisplayNames])
+ 
+   const areFiltersEmpty = useMemo(() => {
+     return checkEmptyFilters(filters)
+@@ -116,7 +126,7 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
+           label: 'Project',
+           type: FilterDefinitionType.Multiselect,
+           value: filters.project ?? [],
+-          options: projectOptions,
++          options: resolvedProjectOptions,
+           config: {
+             maxSelectedLabels: 3,
+             filter: true,
+@@ -166,7 +176,7 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
+       filters.categories,
+       filters.visibility,
+       filters.created_by,
+-      projectOptions,
++      resolvedProjectOptions,
+       createdByOptions,
+       categoryOptions,
+       loadProjectOptions,
+diff --git a/src/pages/workflows/__tests__/WorkflowsListPage.integration.test.tsx b/src/pages/workflows/__tests__/WorkflowsListPage.integration.test.tsx
+index f37a02d16..176ca14c7 100644
+--- a/src/pages/workflows/__tests__/WorkflowsListPage.integration.test.tsx
++++ b/src/pages/workflows/__tests__/WorkflowsListPage.integration.test.tsx
+@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { mockRouterState, replace } from '@/hooks/__mocks__/useVueRouter'
+ import { INITIAL_WORKFLOWS_FILTERS } from '@/pages/workflows/constants'
+ import { preferencesStore } from '@/store/preferences'
++import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
+ import { workflowsStore } from '@/store/workflows'
+ import { clickMenuOption, selectMultiSelectOptions } from '@/test-utils/component-interactions'
+ import { mockAPI, renderPage } from '@/test-utils/integration'
+@@ -1877,4 +1878,47 @@ describe('WorkflowsListPage - Integration', () => {
+       })
+     })
+   })
++
++  describe('Project filter display name', () => {
++    beforeEach(() => {
++      projectDisplayNamesStore.cache = {}
++      localStorage.clear()
++    })
++
++    it('shows project display name in filter chip after refresh with persisted non-roster project', async () => {
++      // Filter key: `test-user-id_filters_workflows.all`
++      localStorage.setItem(
++        'test-user-id_filters_workflows.all',
++        JSON.stringify({ project: ['non-roster-proj'] })
++      )
++
++      mockAPI('GET', 'v1/user', {
++        user_id: 'test-user-id',
++        email: 'test@example.com',
++        name: 'Test User',
++        username: 'testuser',
++        is_admin: true,
++        is_maintainer: false,
++        user_type: 'INTERNAL',
++        applications: [],
++        projects: [],
++      })
++
++      mockAPI('GET', 'v1/workflows', {
++        data: [],
++        pagination: { page: 0, per_page: 12, pages: 0, total: 0 },
++      })
++
++      mockAPI('GET', 'v1/projects/non-roster-proj', {
++        name: 'non-roster-proj',
++        display_name: 'Non Roster Project',
++      })
++
++      renderPage('/workflows/all')
++
++      await waitFor(() => {
++        expect(screen.getByText('Non Roster Project')).toBeInTheDocument()
++      })
++    })
++  })
+ })
+diff --git a/src/pages/workflows/components/WorkflowsFilters.tsx b/src/pages/workflows/components/WorkflowsFilters.tsx
+index 7323a57de..5b70a3e81 100644
+--- a/src/pages/workflows/components/WorkflowsFilters.tsx
++++ b/src/pages/workflows/components/WorkflowsFilters.tsx
+@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
+ import Filters from '@/components/Filters'
+ import UserFilter from '@/components/UserFilter'
+ import { CREATED_BY } from '@/constants'
++import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+ import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
+ import {
+   INITIAL_WORKFLOWS_FILTERS,
+@@ -56,6 +57,26 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
+   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
+   const [isCreatedByMeChecked, setIsCreatedByMeChecked] = useState(false)
+ 
++  // initialFilterValues is an IIFE that creates new array references on every render.
++  // Stabilize the project list so useProjectDisplayNames doesn't re-run the effect every render.
++  const persistedProject = useMemo(() => {
++    const { project = INITIAL_WORKFLOWS_FILTERS.project } = getFilters<WorkflowsFilters>(
++      `${FILTER_ENTITY.WORKFLOWS}.${scope}`
++    )
++    if (Array.isArray(project)) return project
++    return project ? [project] : []
++  }, [scope])
++
++  const projectDisplayNames = useProjectDisplayNames(persistedProject)
++
++  const resolvedProjectOptions = useMemo(() => {
++    const existing = new Set(projectOptions.map((o) => o.value))
++    const extras = persistedProject
++      .filter((name): name is string => !!name && !existing.has(name))
++      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
++    return [...projectOptions, ...extras]
++  }, [projectOptions, persistedProject, projectDisplayNames])
++
+   const categoriesOptions = useMemo<FilterOption[]>(
+     () => assistantCategories.map((c) => ({ label: c.name, value: c.id })),
+     [assistantCategories]
+@@ -182,7 +203,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
+           label: 'Project',
+           type: FilterDefinitionType.Multiselect,
+           value: initialFilterValues.project || [],
+-          options: projectOptions,
++          options: resolvedProjectOptions,
+           config: {
+             maxSelectedLabels: 3,
+             filter: true,
+@@ -228,7 +249,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
+       initialFilterValues.created_by,
+       initialFilterValues.shared,
+       categoriesOptions,
+-      projectOptions,
++      resolvedProjectOptions,
+       createdByOptions,
+       loadProjectOptions,
+       scope,

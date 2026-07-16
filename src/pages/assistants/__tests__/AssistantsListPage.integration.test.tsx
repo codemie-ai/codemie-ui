@@ -18,6 +18,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
+import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 
 describe('AssistantsListPage - Integration', () => {
@@ -690,6 +691,73 @@ describe('AssistantsListPage - Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Assistant 13')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Project filter display name', () => {
+    beforeEach(() => {
+      projectDisplayNamesStore.cache = {}
+      localStorage.clear()
+    })
+
+    it('shows project display name in filter chip on refresh (resolved state)', async () => {
+      localStorage.setItem(
+        'test-user-id_filters_assistants.visible_to_user',
+        JSON.stringify({ project: ['non-roster-proj'] })
+      )
+
+      mockAPI('GET', 'v1/user', {
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        name: 'Test User',
+        username: 'testuser',
+        is_admin: true,
+        is_maintainer: false,
+        user_type: 'INTERNAL',
+        applications: [],
+        projects: [],
+      })
+
+      mockAPI('GET', 'v1/projects/non-roster-proj', {
+        name: 'non-roster-proj',
+        display_name: 'Non Roster Project',
+      })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(screen.getByText('Non Roster Project')).toBeInTheDocument()
+      })
+    })
+
+    it('shows technical name when display name unavailable (fallback state)', async () => {
+      localStorage.setItem(
+        'test-user-id_filters_assistants.visible_to_user',
+        JSON.stringify({ project: ['non-roster-proj'] })
+      )
+
+      mockAPI('GET', 'v1/user', {
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        name: 'Test User',
+        username: 'testuser',
+        is_admin: true,
+        is_maintainer: false,
+        user_type: 'INTERNAL',
+        applications: [],
+        projects: [],
+      })
+
+      mockAPI('GET', 'v1/projects/non-roster-proj', {
+        name: 'non-roster-proj',
+        display_name: null,
+      })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(screen.getByText('non-roster-proj')).toBeInTheDocument()
       })
     })
   })

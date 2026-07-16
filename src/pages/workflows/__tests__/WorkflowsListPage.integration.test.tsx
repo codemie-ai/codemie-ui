@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockRouterState, replace } from '@/hooks/__mocks__/useVueRouter'
 import { INITIAL_WORKFLOWS_FILTERS } from '@/pages/workflows/constants'
 import { preferencesStore } from '@/store/preferences'
+import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { workflowsStore } from '@/store/workflows'
 import { clickMenuOption, selectMultiSelectOptions } from '@/test-utils/component-interactions'
 import { mockAPI, renderPage } from '@/test-utils/integration'
@@ -852,9 +853,9 @@ describe('WorkflowsListPage - Integration', () => {
         user_type: 'INTERNAL',
         applications: ['Project A', 'Project B', 'Project C'],
         projects: [
-          { name: 'Project A', display_name: null, is_project_admin: true },
-          { name: 'Project B', display_name: null, is_project_admin: true },
-          { name: 'Project C', display_name: null, is_project_admin: true },
+          { name: 'Project A', display_name: 'Project A Display', is_project_admin: true },
+          { name: 'Project B', display_name: 'Project B Display', is_project_admin: true },
+          { name: 'Project C', display_name: 'Project C Display', is_project_admin: true },
         ],
       })
 
@@ -871,12 +872,18 @@ describe('WorkflowsListPage - Integration', () => {
         createWorkflowsResponse([createWorkflowFixture({ name: 'Project A Workflow' })])
       )
 
-      await selectMultiSelectOptions('Project', ['Project A', 'Project B'], { user })
+      await selectMultiSelectOptions('Project', ['Project A Display', 'Project B Display'], {
+        user,
+      })
 
       await submitFilterViaSearch(user)
 
       await waitFor(() => {
         expect(screen.getByText('Project A Workflow')).toBeInTheDocument()
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Project A Display/)).toBeInTheDocument()
       })
 
       expect(mockRouterState.push).toHaveBeenCalledWith(
@@ -1874,6 +1881,49 @@ describe('WorkflowsListPage - Integration', () => {
           expect.stringContaining('search=mySearch'),
           expect.anything()
         )
+      })
+    })
+  })
+
+  describe('Project filter display name', () => {
+    beforeEach(() => {
+      projectDisplayNamesStore.cache = {}
+      localStorage.clear()
+    })
+
+    it('shows project display name in filter chip after refresh with persisted non-roster project', async () => {
+      // Filter key: `test-user-id_filters_workflows.all`
+      localStorage.setItem(
+        'test-user-id_filters_workflows.all',
+        JSON.stringify({ project: ['non-roster-proj'] })
+      )
+
+      mockAPI('GET', 'v1/user', {
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        name: 'Test User',
+        username: 'testuser',
+        is_admin: true,
+        is_maintainer: false,
+        user_type: 'INTERNAL',
+        applications: [],
+        projects: [],
+      })
+
+      mockAPI('GET', 'v1/workflows', {
+        data: [],
+        pagination: { page: 0, per_page: 12, pages: 0, total: 0 },
+      })
+
+      mockAPI('GET', 'v1/projects/non-roster-proj', {
+        name: 'non-roster-proj',
+        display_name: 'Non Roster Project',
+      })
+
+      renderPage('/workflows/all')
+
+      await waitFor(() => {
+        expect(screen.getByText('Non Roster Project')).toBeInTheDocument()
       })
     })
   })

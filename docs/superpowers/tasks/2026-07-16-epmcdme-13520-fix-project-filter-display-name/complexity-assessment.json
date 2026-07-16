@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix project filter showing technical project name after page refresh for Project Admin not assigned to the project",
+  "generated": "2026-07-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three symmetric filter components (AssistantFilters, SkillsFilters, WorkflowsFilters) across 2 layers (UI components + store state) all require the same change; async resolution timing adds coordination overhead but the pattern is clear"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Three filter component files across three separate page directories (assistants, skills, workflows) plus 1 new SkillsListPage integration test file and 1-2 existing test fixture updates totals approximately 5-6 modified + 1 new file spanning 3+ directories"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
