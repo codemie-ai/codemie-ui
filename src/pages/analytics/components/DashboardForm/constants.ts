@@ -32,7 +32,7 @@ export const TABULAR_METRIC_OPTIONS: SelectOption<TabularMetricType>[] = [
   { label: 'Assistants Chats', value: TabularMetricType.ASSISTANTS_CHATS },
   { label: 'Workflows', value: TabularMetricType.WORKFLOWS },
   { label: 'Tools Usage', value: TabularMetricType.TOOLS_USAGE },
-  { label: 'Agents Usage', value: TabularMetricType.AGENTS_USAGE },
+  { label: 'Assistants Usage', value: TabularMetricType.AGENTS_USAGE },
   { label: 'Webhooks Invocation', value: TabularMetricType.WEBHOOKS_INVOCATION },
   { label: 'MCP Servers', value: TabularMetricType.MCP_SERVERS },
   { label: 'MCP Servers by Users', value: TabularMetricType.MCP_SERVERS_BY_USERS },
@@ -49,7 +49,7 @@ export const TABULAR_METRIC_OPTIONS: SelectOption<TabularMetricType>[] = [
   { label: 'CLI Errors', value: TabularMetricType.CLI_ERRORS },
   { label: 'CLI Repositories', value: TabularMetricType.CLI_REPOSITORIES },
   { label: 'Power Users', value: TabularMetricType.POWER_USERS },
-  { label: 'Top Agents Usage', value: TabularMetricType.TOP_AGENTS_USAGE },
+  { label: 'Top Assistants Usage', value: TabularMetricType.TOP_AGENTS_USAGE },
   { label: 'Top Workflow Usage', value: TabularMetricType.TOP_WORKFLOW_USAGE },
   { label: 'Published to Marketplace', value: TabularMetricType.PUBLISHED_TO_MARKETPLACE },
 ]

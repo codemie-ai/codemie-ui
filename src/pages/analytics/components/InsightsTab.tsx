@@ -155,7 +155,7 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TableWidget
             metricType={TabularMetricType.TOP_AGENTS_USAGE}
-            title="Top Agents Usage"
+            title="Top Assistants Usage"
             description="Most used assistants with invocations, cost, and user metrics"
             filters={filters}
           />
