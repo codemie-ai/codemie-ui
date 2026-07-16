@@ -232,4 +232,31 @@ describe('NavigationSection', () => {
       expect(container.firstChild).toHaveClass('custom-class')
     })
   })
+
+  describe('semantic list structure', () => {
+    it('renders a ul element inside nav', () => {
+      const { container } = renderWithRouter(<NavigationSection items={mockItems} />)
+      const nav = container.firstChild
+      expect(nav?.firstChild?.nodeName).toBe('UL')
+    })
+
+    it('wraps each navigation link in a li element', () => {
+      renderWithRouter(<NavigationSection items={mockItems} />)
+      const listItems = screen.getAllByRole('listitem')
+      expect(listItems).toHaveLength(mockItems.length)
+    })
+
+    it('renders no li elements when items array is empty', () => {
+      renderWithRouter(<NavigationSection items={[]} />)
+      expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+    })
+
+    it('each li contains exactly one link', () => {
+      renderWithRouter(<NavigationSection items={mockItems} />)
+      const listItems = screen.getAllByRole('listitem')
+      listItems.forEach((li) => {
+        expect(li.querySelectorAll('a')).toHaveLength(1)
+      })
+    })
+  })
 })

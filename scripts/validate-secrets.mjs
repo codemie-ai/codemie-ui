@@ -124,7 +124,8 @@ args.push('/workspace')
 
 console.log('Checking for secrets with Gitleaks...')
 
-const gitleaks = spawn(engineBin, args, {
+const spawnBin = isWindows && engineBin.includes(' ') ? `"${engineBin}"` : engineBin
+const gitleaks = spawn(spawnBin, args, {
   stdio: 'inherit',
   shell: isWindows,
 })
