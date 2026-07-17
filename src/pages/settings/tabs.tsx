@@ -91,9 +91,21 @@ export const getNavigationTabs = (
         ]
       : []
 
+  const activityEventsTab: LayoutTab[] = isMaintainer
+    ? [
+        {
+          id: SettingsTab.ACTIVITY_EVENTS,
+          name: 'Activity events',
+          title: 'Activity events',
+          url: '/settings/administration/activity-events',
+        },
+      ]
+    : []
+
   // Build administration children and sort alphabetically
   const administrationChildren = isAdmin
     ? [
+        ...activityEventsTab,
         ...(isCostCentersFeatureEnabled
           ? [
               {
@@ -129,6 +141,7 @@ export const getNavigationTabs = (
           : []),
       ].sort((a, b) => a.name.localeCompare(b.name))
     : [
+        ...activityEventsTab,
         {
           id: SettingsTab.PROJECTS_MANAGEMENT,
           name: 'Projects management',

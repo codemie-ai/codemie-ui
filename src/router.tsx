@@ -59,6 +59,7 @@ import KatasPage, { KatasCategory } from '@/pages/katas/KatasPage'
 import NewKataPage from '@/pages/katas/NewKataPage'
 import LoginSuccessPage from '@/pages/login-success/LoginSuccessPage'
 import ReleaseNotesPage from '@/pages/releaseNotes/ReleaseNotesPage'
+import ActivityEventsPage from '@/pages/settings/administration/ActivityEventsPage'
 import AiAdoptionConfigPage from '@/pages/settings/administration/AiAdoptionConfigPage'
 import BudgetsManagementPage from '@/pages/settings/administration/BudgetsManagementPage'
 import CategoriesManagementPage from '@/pages/settings/administration/CategoriesManagementPage'
@@ -460,6 +461,11 @@ const settingsRoutes: RouteObject[] = [
     id: 'cost-centers-management-detail',
     path: '/settings/administration/cost-centers/:costCenterId',
     Component: CostCenterDetailsPage,
+  },
+  {
+    id: 'activity-events',
+    path: '/settings/administration/activity-events',
+    Component: ActivityEventsPage,
   },
   {
     id: 'budgets-management',
