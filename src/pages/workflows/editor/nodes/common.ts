@@ -38,6 +38,7 @@ export interface CommonNodeProps extends NodeProps {
     totalItems?: number
     active?: boolean
     handlesStatus?: NodeHandlesStatus
+    assistantHighlighted?: boolean
   }
 }
 

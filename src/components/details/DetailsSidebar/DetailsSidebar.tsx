@@ -21,13 +21,15 @@ import DetailsGradientSvg from '@/assets/images/details-gradient.svg?react'
 interface DetailsSidebarProps {
   children: ReactNode
   classNames?: string
+  fullWidth?: boolean
 }
 
-const DetailsSidebar = ({ children, classNames = '' }: DetailsSidebarProps) => {
+const DetailsSidebar = ({ children, classNames = '', fullWidth = false }: DetailsSidebarProps) => {
   return (
     <div
       className={cn(
-        'min-w-80 max-w-80 h-fit p-4 flex flex-col gap-6 bg-surface-base-secondary border border-border-specific-panel-outline rounded-lg relative',
+        fullWidth ? 'min-w-full' : 'min-w-80 max-w-80',
+        'h-fit p-4 flex flex-col gap-6 bg-surface-base-secondary border border-border-specific-panel-outline rounded-lg relative',
         classNames
       )}
     >

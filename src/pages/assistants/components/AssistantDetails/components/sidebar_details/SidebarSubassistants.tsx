@@ -17,22 +17,15 @@ import DiagramSvg from '@/assets/icons/diagram.svg?react'
 import NotSharedSvg from '@/assets/icons/shared-no.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import { AvatarType } from '@/constants/avatar'
-import { useVueRouter } from '@/hooks/useVueRouter'
-import { getAssistantRoute } from '@/pages/assistants/utils/getAssistantLink'
 import { Assistant } from '@/types/entity/assistant'
 import { cn } from '@/utils/utils'
 
 interface SidebarSubassistantsProps {
   assistants?: Assistant[]
+  onAssistantClick?: (assistant: Assistant) => void
 }
 
-const SidebarSubassistants = ({ assistants }: SidebarSubassistantsProps) => {
-  const router = useVueRouter()
-
-  const handleNavigationSubassistent = (subAssistant: Assistant) => {
-    router.push(getAssistantRoute(subAssistant))
-  }
-
+const SidebarSubassistants = ({ assistants, onAssistantClick }: SidebarSubassistantsProps) => {
   const getAssistantStatus = (assistant: Assistant) => {
     // If published to marketplace, show Marketplace status
     if (assistant.is_global) {
@@ -58,17 +51,8 @@ const SidebarSubassistants = ({ assistants }: SidebarSubassistantsProps) => {
       {assistants?.map((subAssistant) => {
         const status = getAssistantStatus(subAssistant)
 
-        return (
-          <button
-            key={subAssistant.id}
-            type="button"
-            onClick={() => handleNavigationSubassistent(subAssistant)}
-            className={cn(
-              'flex items-center gap-2 cursor-pointer p-2 -mx-2 rounded-lg w-full text-left',
-              'hover:bg-surface-elevated transition-colors',
-              'focus:outline-none'
-            )}
-          >
+        const content = (
+          <>
             <Avatar
               iconUrl={subAssistant.icon_url}
               name={subAssistant.name}
@@ -83,6 +67,32 @@ const SidebarSubassistants = ({ assistants }: SidebarSubassistantsProps) => {
                 <span>{status.label}</span>
               </div>
             </div>
+          </>
+        )
+
+        if (!onAssistantClick) {
+          return (
+            <div
+              key={subAssistant.id}
+              className="flex items-center gap-2 p-2 -mx-2 rounded-lg w-full text-left"
+            >
+              {content}
+            </div>
+          )
+        }
+
+        return (
+          <button
+            key={subAssistant.id}
+            type="button"
+            onClick={() => onAssistantClick(subAssistant)}
+            className={cn(
+              'flex items-center gap-2 cursor-pointer p-2 -mx-2 rounded-lg w-full text-left',
+              'hover:bg-surface-elevated transition-colors',
+              'focus:outline-none'
+            )}
+          >
+            {content}
           </button>
         )
       })}

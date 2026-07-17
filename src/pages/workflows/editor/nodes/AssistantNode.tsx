@@ -35,6 +35,7 @@ export const AssistantNode = ({ id, selected, data }: CommonNodeProps) => {
       success={data.success}
       failures={data.failures}
       active={data.active}
+      highlighted={data.assistantHighlighted}
     >
       <Handle type="target" position={Position.Left} status={data.status} />
       <NodeHeader type={NodeTypes.ASSISTANT} title={id} />

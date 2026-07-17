@@ -101,6 +101,9 @@ interface WorkflowEditorProps {
   executionStates?: ExtendedWorkflowExecutionState[]
   executionActiveStateId?: string | null
   executionOverallStatus?: WorkflowExecutionStatus | null
+  // When provided, ReactFlow's onNodeClick is wired without enabling node selection/drag.
+  onExecutionNodeClick?: (nodeId: string) => void
+  highlightedNodeIds?: string[]
 }
 
 enum ColorMode {
@@ -158,6 +161,8 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       executionStates,
       executionActiveStateId,
       executionOverallStatus,
+      onExecutionNodeClick,
+      highlightedNodeIds,
     },
     ref
   ) => {
@@ -219,6 +224,15 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       edges: editor.edges,
       configStates: editor.config.states,
     })
+
+    // ReactFlow's onNodeClick fires independently of elementsSelectable, so the
+    // read-only executions graph stays read-only.
+    const handleNodeClick = useCallback(
+      (_event: React.MouseEvent, node: WorkflowNode) => {
+        onExecutionNodeClick?.(node.id)
+      },
+      [onExecutionNodeClick]
+    )
 
     const [isExpanded, setIsExpanded] = useState(false)
     const handleToggleExpand = useCallback(() => {
@@ -529,6 +543,9 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
             active: execStateData.isActive,
             hasError: nodeHasError(node),
             handlesStatus: execution.handlesStatusMap.get(node.id),
+            // Distinct from `highlighted` (iterator drag-over): marks nodes backed by
+            // the assistant currently open in the side panel.
+            assistantHighlighted: highlightedNodeIds?.includes(node.id) ?? false,
           },
         }
       })
@@ -540,6 +557,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       nodeHasError,
       execution.getNodeExecutionData,
       execution.handlesStatusMap,
+      highlightedNodeIds,
     ])
 
     const wrappedEdges = useMemo(() => {
@@ -624,6 +642,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
             onEdgesChange={handleEdgesChange}
             onNodeDrag={editor.onNodeDrag}
             onNodeDragStop={editor.onNodeDragStop}
+            onNodeClick={onExecutionNodeClick ? handleNodeClick : undefined}
             onSelectionChange={editor.onSelectionChange}
             onConnect={handleConnect}
             onBeforeDelete={editor.onBeforeDelete}

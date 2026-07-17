@@ -13,17 +13,20 @@
 // limitations under the License.
 //
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Panel, Group } from 'react-resizable-panels'
 import { useSnapshot } from 'valtio'
 
 import PageLayout from '@/components/Layouts/Layout'
 import ResizableSeparator from '@/components/ResizableSeparator/ResizableSeparator'
 import { useAuthCallbackListener } from '@/hooks/useAuthCallbackListener'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { goBackFromWorkflowExecutions } from '@/pages/workflows/utils/goBackWorkflows'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
+import { AssistantStateConfiguration } from '@/types/workflowEditor/configuration'
 
+import AssistantNodePanel from './details/AssistantNodePanel'
 import WorkflowExecutionConfiguration from './details/configuration/WorkflowExecutionConfiguration'
 import useExecutionResume from './details/hooks/useExecutionResume'
 import { ExecutionContext, ExecutionContextValue } from './details/hooks/useExecutionsContext'
@@ -79,6 +82,44 @@ const WorkflowDetailsPage = () => {
     })
 
   const { editor } = useWorkflowExecutionEditor({ workflow })
+
+  // Keyed by node id — not assistant id — so two nodes backed by the same assistant
+  // toggle independently.
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+
+  const getNodeAssistantId = useCallback(
+    (nodeId: string): string | null => {
+      const stateCfg = editor.config.states?.find((s) => s.id === nodeId) as
+        | AssistantStateConfiguration
+        | undefined
+      // Only assistant nodes resolve to an actor with a persisted assistant_id; tool/custom
+      // nodes and inline assistants (no standalone id) are out of scope and open nothing.
+      const actor = editor.config.assistants?.find((a) => a.id === stateCfg?.assistant_id)
+      return actor?.assistant_id ?? null
+    },
+    [editor.config]
+  )
+
+  const handleNodeClick = useCallback(
+    (nodeId: string) => {
+      if (!getNodeAssistantId(nodeId)) return
+
+      // Separate from the bottom drawer's stateId selection, so the two don't conflict.
+      setSelectedNodeId((current) => (current === nodeId ? null : nodeId))
+    },
+    [getNodeAssistantId]
+  )
+
+  const selectedAssistantId = selectedNodeId ? getNodeAssistantId(selectedNodeId) : null
+
+  const highlightedNodeIds = useMemo(() => {
+    if (!selectedAssistantId) return []
+    return (editor.config.states ?? [])
+      .filter((s) => getNodeAssistantId(s.id) === selectedAssistantId)
+      .map((s) => s.id)
+  }, [selectedAssistantId, editor.config.states, getNodeAssistantId])
+
+  useEscapeKey(() => setSelectedNodeId(null), !!selectedNodeId)
 
   const extendedStates = useMemo(() => {
     return extendExecutionStates(executionStates, editor.config.states)
@@ -158,6 +199,8 @@ const WorkflowDetailsPage = () => {
                       workflow={workflow}
                       execution={execution}
                       states={extendedStates}
+                      onNodeClick={handleNodeClick}
+                      highlightedNodeIds={highlightedNodeIds}
                     />
                   )}
                 </div>
@@ -194,6 +237,16 @@ const WorkflowDetailsPage = () => {
             execution={execution}
             workflow={workflow}
           />
+
+          {selectedAssistantId && (
+            <AssistantNodePanel
+              // Remount per node so switching nodes never flashes the previous node's
+              // (stale) assistant while the new one loads.
+              key={selectedNodeId}
+              assistantId={selectedAssistantId}
+              onClose={() => setSelectedNodeId(null)}
+            />
+          )}
         </div>
       </PageLayout>
     </ExecutionContext.Provider>

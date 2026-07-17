@@ -94,7 +94,11 @@ interface AssistantsStoreType {
     perPage?: number,
     filters?: Record<string, unknown>
   ) => Promise<void>
-  getAssistant: (id: string, skipErrorHandling?: boolean) => Promise<Assistant>
+  getAssistant: (
+    id: string,
+    skipErrorHandling?: boolean,
+    signal?: AbortSignal
+  ) => Promise<Assistant>
   getAssistantBySlug: (
     slug: string,
     skipErrorHandling?: boolean,
@@ -394,9 +398,9 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       })
   },
 
-  async getAssistant(id, skipErrorHandling = false) {
+  async getAssistant(id, skipErrorHandling = false, signal = undefined) {
     const assistant = await api
-      .get(`v1/assistants/id/${id}`, { skipErrorHandling })
+      .get(`v1/assistants/id/${id}`, { skipErrorHandling, signal })
       .then((response) => response.json() as unknown as Assistant)
 
     // Return full nested assistants data including toolkits and mcp_servers

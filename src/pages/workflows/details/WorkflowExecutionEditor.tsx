@@ -28,6 +28,8 @@ interface WorkflowExecutionEditorProps {
   execution: WorkflowExecution | null
   state?: WorkflowExecutionState
   states: ExtendedWorkflowExecutionState[]
+  onNodeClick?: (nodeId: string) => void
+  highlightedNodeIds?: string[]
 }
 
 const WorkflowExecutionEditor = ({
@@ -35,6 +37,8 @@ const WorkflowExecutionEditor = ({
   execution,
   state,
   states,
+  onNodeClick,
+  highlightedNodeIds,
 }: WorkflowExecutionEditorProps) => {
   let activeStateId: string | null = START_NODE_ID
 
@@ -62,6 +66,8 @@ const WorkflowExecutionEditor = ({
       executionStates={states}
       executionActiveStateId={activeStateId}
       executionOverallStatus={execution?.overall_status}
+      onExecutionNodeClick={onNodeClick}
+      highlightedNodeIds={highlightedNodeIds}
     />
   )
 }

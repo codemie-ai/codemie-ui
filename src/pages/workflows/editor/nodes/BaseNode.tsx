@@ -35,6 +35,7 @@ export interface BaseNodeProps {
   success?: number
   failures?: number
   active?: boolean
+  highlighted?: boolean
 }
 
 const BaseNode: React.FC<BaseNodeProps> = ({
@@ -47,6 +48,7 @@ const BaseNode: React.FC<BaseNodeProps> = ({
   success,
   failures,
   active = true,
+  highlighted = false,
 }) => {
   const ctx = useContext(ExecutionContext)
 
@@ -60,6 +62,7 @@ const BaseNode: React.FC<BaseNodeProps> = ({
         {
           'border-border-specific-node-border-focus': selected,
           'outline outline-offset-2 outline-failed-secondary': hasError,
+          'outline outline-offset-2 outline-border-accent': highlighted && !hasError,
           'border-transparent': status,
           '!pointer-events-auto cursor-grab': isIteratorNode,
         },

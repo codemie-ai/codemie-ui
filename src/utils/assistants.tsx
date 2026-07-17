@@ -19,7 +19,21 @@ import {
   Toolkit,
   UserSetting,
 } from '@/pages/assistants/components/AssistantDetails/components/UserMapping/types'
+import { Assistant } from '@/types/entity/assistant'
 import { getCredentialType, SETTING_TYPE_PROJECT } from '@/utils/settings'
+
+// Whether an assistant exposes the per-user "Your Integration Settings" section.
+// Global (marketplace) assistants support the full mapping; other shared assistants
+// support it only when they have at least one non-pinned MCP server (matches the
+// backend gate). Kept in one place so the assistant details view and the workflow
+// executions side panel decide visibility identically.
+export const isUserMappingSupported = (assistant?: Assistant | null): boolean => {
+  if (!assistant) return false
+  const hasSelectableMcpServer = (assistant.mcp_servers ?? []).some(
+    (server) => server.enabled && !server.settings
+  )
+  return !!(assistant.is_global || (assistant.shared && hasSelectableMcpServer))
+}
 
 export const initializeUserMappingSettings = (assistant: any, userMapping: any = null) => {
   const userMappingSettings: Record<string, any> = {}
