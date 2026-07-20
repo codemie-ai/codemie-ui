@@ -1,0 +1,31 @@
+{
+  "decision": "approve",
+  "rationale": "Both blocking findings are resolved. CR-001: isFocused ref (useRef(false)) added; onFocus sets it true, onBlur sets it false before field.onChange — the useEffect guard correctly skips setRaw when the field is focused, eliminating the blur→refocus keystroke-discard race. CR-002: const user moved out of describe scope; let user declared at describe level and reassigned to a fresh userEvent.setup() instance in beforeEach — test isolation is correct. No new high-risk issues introduced by the fix-up diff (2 files, 19 insertions, 3 deletions; targeted and minimal). All 5 ACs remain passing.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"id": "AC-1", "status": "pass", "notes": "onChange buffers raw string — trailing comma preserved; verified by test 1"},
+    {"id": "AC-2", "status": "pass", "notes": "onBlur splits, trims, filters and calls field.onChange(string[]); verified by test 2"},
+    {"id": "AC-3", "status": "pass", "notes": "field.onChange(string[]) flows to buildNextStateConfig unchanged; type-correct end-to-end"},
+    {"id": "AC-4", "status": "pass", "notes": "No schema, type, or serialization changes; existing YAML configs render via field.value.join(', ')"},
+    {"id": "AC-5", "status": "pass", "notes": "All 4 required test cases present: trailing-comma preservation, onBlur parse+trim, initial render, external-sync"}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow", "status": "pass", "notes": "Fix-up commit 'EPMCDME-13189: Fix useEffect blur/refocus race and test isolation' matches EPMCDME-XXXX: sentence convention"},
+    {"standard": "code-quality", "status": "pass", "notes": "TypeScript clean (useRef import added), ESLint clean, Prettier applied"},
+    {"standard": "security", "status": "pass", "notes": "No security concerns — UI input handling only, no auth/secrets/injection risks"}
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "isFocused = useRef(false) added at line 69; onFocus sets isFocused.current = true; onBlur sets isFocused.current = false before field.onChange; useEffect guards setRaw with if (!isFocused.current). Race window eliminated."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "const user = userEvent.setup() removed from describe scope; replaced with let user at describe level and user = userEvent.setup() inside beforeEach alongside vi.clearAllMocks(). Each test now gets a fresh userEvent v14 instance with no shared mutable state."
+    }
+  ]
+}

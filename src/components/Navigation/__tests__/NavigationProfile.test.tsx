@@ -123,12 +123,22 @@ vi.mock('primereact/overlaypanel', () => {
       const callbacksRef = useRef({ onShow, onHide, transitionOptions })
       callbacksRef.current = { onShow, onHide, transitionOptions }
       const prevVisibleRef = useRef(false)
+      const hideTimeoutRef: { current: ReturnType<typeof setTimeout> | null } = useRef(null)
 
       useImperativeHandle(ref, () => ({
         toggle: toggleVisible,
         hide: () => setVisible(false),
         show: () => setVisible(true),
       }))
+
+      // Clear any pending hide timer on unmount so it can't fire after the test's
+      // jsdom environment has been torn down (was causing a leaked "window is not
+      // defined" error from a stale React state update).
+      useEffect(() => {
+        return () => {
+          if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
+        }
+      }, [])
 
       // Call onShow/onHide when visibility transitions, skipping initial mount.
       // On hide, call transitionOptions.onExit first (mirrors PrimeReact animation-start),
@@ -139,7 +149,10 @@ vi.mock('primereact/overlaypanel', () => {
           callbacksRef.current.onShow?.()
         } else if (!visible && prevVisibleRef.current) {
           callbacksRef.current.transitionOptions?.onExit?.()
-          setTimeout(() => callbacksRef.current.onHide?.(), MOCK_EXIT_TO_HIDE_DELAY_MS)
+          hideTimeoutRef.current = setTimeout(() => {
+            hideTimeoutRef.current = null
+            callbacksRef.current.onHide?.()
+          }, MOCK_EXIT_TO_HIDE_DELAY_MS)
         }
         prevVisibleRef.current = visible
       })

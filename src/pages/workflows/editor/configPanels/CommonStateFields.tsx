@@ -14,7 +14,15 @@
 //
 
 import { yupResolver } from '@hookform/resolvers/yup'
-import { forwardRef, useEffect, useImperativeHandle, useState, useMemo } from 'react'
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  useMemo,
+  type Ref,
+} from 'react'
 import { useForm } from 'react-hook-form'
 import * as Yup from 'yup'
 
@@ -31,6 +39,67 @@ import ConfigAccordion from './components/ConfigAccordion'
 import FieldController from './components/FieldController'
 import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import { registerFields } from '../utils/visualEditorFieldRegistry'
+
+const RESET_KEYS_HINT = `Comma-separated list of specific keys to remove from the context store during state transition.
+
+When specified, only the listed keys will be removed from the context store, while all other keys remain preserved. This provides granular control over context cleanup without clearing the entire store.
+
+Keys that don't exist in the context store are silently ignored. If a reset key is also present in the current state's output, it will be re-added with the new value.
+
+Example:
+    user_data,analysis_result
+
+    # Only removes 'user_data' and 'analysis_result', keeps all other keys`
+
+export interface ResetKeysInputProps {
+  field: {
+    value: string[] | undefined
+    onChange: (...event: any[]) => void
+    onBlur: () => void
+    name: string
+    ref: Ref<HTMLInputElement>
+  }
+  fieldState: { error?: { message?: string } }
+}
+
+export function ResetKeysInput({ field, fieldState }: Readonly<ResetKeysInputProps>) {
+  const [raw, setRaw] = useState<string>(() =>
+    Array.isArray(field.value) ? field.value.join(', ') : ''
+  )
+  const isFocused = useRef(false)
+
+  const fieldValueKey = Array.isArray(field.value) ? field.value.join('\0') : ''
+  useEffect(() => {
+    if (!isFocused.current) {
+      setRaw(Array.isArray(field.value) ? field.value.join(', ') : '')
+    }
+  }, [fieldValueKey])
+
+  return (
+    <Input
+      label="Reset Context Keys"
+      placeholder="e.g.: user_data,analysis_result"
+      error={fieldState.error?.message}
+      hint={RESET_KEYS_HINT}
+      value={raw}
+      onChange={(e) => setRaw(e.target.value)}
+      onFocus={() => {
+        isFocused.current = true
+      }}
+      onBlur={() => {
+        isFocused.current = false
+        const keys = raw
+          .split(',')
+          .map((k) => k.trim())
+          .filter((k) => k.length > 0)
+        field.onChange(keys.length > 0 ? keys : [])
+        field.onBlur()
+      }}
+      name={field.name}
+      ref={field.ref}
+    />
+  )
+}
 
 const CONTEXT_STORE_KEEP_CURRENT = 'keep_current'
 
@@ -470,31 +539,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                   name="next.reset_keys_in_context_store"
                   control={control}
                   render={({ field, fieldState }) => (
-                    <Input
-                      {...field}
-                      label="Reset Context Keys"
-                      placeholder="e.g.: user_data,analysis_result"
-                      error={fieldState.error?.message}
-                      hint="Comma-separated list of specific keys to remove from the context store during state transition.
-
-                            When specified, only the listed keys will be removed from the context store, while all other keys remain preserved. This provides granular control over context cleanup without clearing the entire store.
-
-                            Keys that don't exist in the context store are silently ignored. If a reset key is also present in the current state's output, it will be re-added with the new value.
-
-                            Example:
-                                user_data,analysis_result
-
-                                # Only removes 'user_data' and 'analysis_result', keeps all other keys"
-                      value={Array.isArray(field.value) ? field.value.join(', ') : ''}
-                      onChange={(e) => {
-                        const { value } = e.target
-                        const keys = value
-                          .split(',')
-                          .map((key) => key.trim())
-                          .filter((key) => key.length > 0)
-                        field.onChange(keys.length > 0 ? keys : [])
-                      }}
-                    />
+                    <ResetKeysInput field={field} fieldState={fieldState} />
                   )}
                 />
               </div>

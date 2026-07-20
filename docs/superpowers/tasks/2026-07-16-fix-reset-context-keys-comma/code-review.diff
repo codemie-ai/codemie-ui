@@ -1,0 +1,230 @@
+diff --git a/src/pages/workflows/editor/configPanels/CommonStateFields.tsx b/src/pages/workflows/editor/configPanels/CommonStateFields.tsx
+index 2d579e199..6b4a3ded8 100644
+--- a/src/pages/workflows/editor/configPanels/CommonStateFields.tsx
++++ b/src/pages/workflows/editor/configPanels/CommonStateFields.tsx
+@@ -14,7 +14,7 @@
+ //
+ 
+ import { yupResolver } from '@hookform/resolvers/yup'
+-import { forwardRef, useEffect, useImperativeHandle, useState, useMemo } from 'react'
++import { forwardRef, useEffect, useImperativeHandle, useState, useMemo, type Ref } from 'react'
+ import { useForm } from 'react-hook-form'
+ import * as Yup from 'yup'
+ 
+@@ -32,6 +32,60 @@ import FieldController from './components/FieldController'
+ import { useWorkflowContext } from '../hooks/useWorkflowContext'
+ import { registerFields } from '../utils/visualEditorFieldRegistry'
+ 
++const RESET_KEYS_HINT = `Comma-separated list of specific keys to remove from the context store during state transition.
++
++When specified, only the listed keys will be removed from the context store, while all other keys remain preserved. This provides granular control over context cleanup without clearing the entire store.
++
++Keys that don't exist in the context store are silently ignored. If a reset key is also present in the current state's output, it will be re-added with the new value.
++
++Example:
++    user_data,analysis_result
++
++    # Only removes 'user_data' and 'analysis_result', keeps all other keys`
++
++export interface ResetKeysInputProps {
++  field: {
++    value: string[] | undefined
++    onChange: (...event: any[]) => void
++    onBlur: () => void
++    name: string
++    ref: Ref<HTMLInputElement>
++  }
++  fieldState: { error?: { message?: string } }
++}
++
++export function ResetKeysInput({ field, fieldState }: ResetKeysInputProps) {
++  const [raw, setRaw] = useState<string>(() =>
++    Array.isArray(field.value) ? field.value.join(', ') : ''
++  )
++
++  const fieldValueKey = Array.isArray(field.value) ? field.value.join('\0') : ''
++  useEffect(() => {
++    setRaw(Array.isArray(field.value) ? field.value.join(', ') : '')
++  }, [fieldValueKey])
++
++  return (
++    <Input
++      label="Reset Context Keys"
++      placeholder="e.g.: user_data,analysis_result"
++      error={fieldState.error?.message}
++      hint={RESET_KEYS_HINT}
++      value={raw}
++      onChange={(e) => setRaw(e.target.value)}
++      onBlur={() => {
++        const keys = raw
++          .split(',')
++          .map((k) => k.trim())
++          .filter((k) => k.length > 0)
++        field.onChange(keys.length > 0 ? keys : [])
++        field.onBlur()
++      }}
++      name={field.name}
++      ref={field.ref}
++    />
++  )
++}
++
+ const CONTEXT_STORE_KEEP_CURRENT = 'keep_current'
+ 
+ registerFields(
+@@ -470,31 +524,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
+                   name="next.reset_keys_in_context_store"
+                   control={control}
+                   render={({ field, fieldState }) => (
+-                    <Input
+-                      {...field}
+-                      label="Reset Context Keys"
+-                      placeholder="e.g.: user_data,analysis_result"
+-                      error={fieldState.error?.message}
+-                      hint="Comma-separated list of specific keys to remove from the context store during state transition.
+-
+-                            When specified, only the listed keys will be removed from the context store, while all other keys remain preserved. This provides granular control over context cleanup without clearing the entire store.
+-
+-                            Keys that don't exist in the context store are silently ignored. If a reset key is also present in the current state's output, it will be re-added with the new value.
+-
+-                            Example:
+-                                user_data,analysis_result
+-
+-                                # Only removes 'user_data' and 'analysis_result', keeps all other keys"
+-                      value={Array.isArray(field.value) ? field.value.join(', ') : ''}
+-                      onChange={(e) => {
+-                        const { value } = e.target
+-                        const keys = value
+-                          .split(',')
+-                          .map((key) => key.trim())
+-                          .filter((key) => key.length > 0)
+-                        field.onChange(keys.length > 0 ? keys : [])
+-                      }}
+-                    />
++                    <ResetKeysInput field={field} fieldState={fieldState} />
+                   )}
+                 />
+               </div>
+diff --git a/src/pages/workflows/editor/configPanels/__tests__/CommonStateFields.test.tsx b/src/pages/workflows/editor/configPanels/__tests__/CommonStateFields.test.tsx
+new file mode 100644
+index 000000000..1e0391d10
+--- /dev/null
++++ b/src/pages/workflows/editor/configPanels/__tests__/CommonStateFields.test.tsx
+@@ -0,0 +1,117 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++import { render, screen } from '@testing-library/react'
++import userEvent from '@testing-library/user-event'
++import React, { createRef } from 'react'
++import { Controller, useForm } from 'react-hook-form'
++import { describe, it, expect, vi, beforeEach } from 'vitest'
++
++import CommonStateFields, { ResetKeysInput } from '../CommonStateFields'
++
++import type { CommonStateFieldsRef } from '../CommonStateFields'
++
++// Suppress module-level registerFields side-effect
++vi.mock('../../utils/visualEditorFieldRegistry', () => ({ registerFields: vi.fn() }))
++
++// Supply the minimum context values that CommonStateFields reads
++vi.mock('../../hooks/useWorkflowContext', () => ({
++  useWorkflowContext: vi.fn().mockReturnValue({
++    setActiveIssue: vi.fn(),
++    activeIssue: null,
++  }),
++  WorkflowContext: { Provider: ({ children }: { children: React.ReactNode }) => children },
++}))
++
++// Always render accordion children so the Transition Settings fields are visible
++vi.mock('../components/ConfigAccordion', () => ({
++  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
++}))
++
++const PLACEHOLDER = 'e.g.: user_data,analysis_result'
++
++function renderWithResetKeys(resetKeys: string[] = []) {
++  const ref = createRef<CommonStateFieldsRef>()
++  render(
++    <CommonStateFields
++      ref={ref}
++      state={{ id: 'test-state', next: { reset_keys_in_context_store: resetKeys } }}
++    />
++  )
++  return { ref, input: screen.getByPlaceholderText(PLACEHOLDER) }
++}
++
++describe('CommonStateFields — Reset Context Keys input', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++  })
++  const user = userEvent.setup()
++
++  it('preserves a trailing comma while the field is focused', async () => {
++    const { input } = renderWithResetKeys()
++    await user.click(input)
++    await user.type(input, 'key1,')
++    expect(input).toHaveValue('key1,')
++  })
++
++  it('does not update the form array during typing — only after onBlur trims and parses', async () => {
++    const { ref, input } = renderWithResetKeys()
++    await user.click(input)
++    await user.type(input, ' key1 , key2 , key3 ')
++    // Form value must NOT be updated while the user is still typing
++    expect(ref.current!.getValues().next?.reset_keys_in_context_store).toEqual([])
++    await user.tab() // fires blur
++    expect(ref.current!.getValues().next?.reset_keys_in_context_store).toEqual([
++      'key1',
++      'key2',
++      'key3',
++    ])
++  })
++
++  it('displays an existing string[] as a comma-joined string on initial render', () => {
++    const { input } = renderWithResetKeys(['alpha', 'beta'])
++    expect(input).toHaveValue('alpha, beta')
++  })
++})
++
++describe('ResetKeysInput — external field.value sync', () => {
++  it('updates the raw buffer when field.value changes externally while unfocused', async () => {
++    function ExternalSyncHarness() {
++      const { control, reset } = useForm<{ keys: string[] }>({
++        defaultValues: { keys: ['initial'] },
++      })
++      return (
++        <>
++          <Controller
++            name="keys"
++            control={control}
++            render={({ field, fieldState }) => (
++              <ResetKeysInput field={field} fieldState={fieldState} />
++            )}
++          />
++          <button onClick={() => reset({ keys: ['b', 'c'] })}>external-reset</button>
++        </>
++      )
++    }
++
++    const user = userEvent.setup()
++    render(<ExternalSyncHarness />)
++
++    const input = screen.getByPlaceholderText(PLACEHOLDER)
++    expect(input).toHaveValue('initial')
++
++    await user.click(screen.getByRole('button', { name: 'external-reset' }))
++    expect(input).toHaveValue('b, c')
++  })
++})

@@ -1,0 +1,72 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two major actionable findings: (CR-001) useEffect fires asynchronously after paint — a user who blurs via Tab and immediately Shift+Tabs back and starts typing falls inside the window between paint and effect execution; the effect then calls setRaw(field.value.join(', ')) and silently discards the new keystrokes. (CR-002) userEvent.setup() is declared once at describe scope rather than in beforeEach, meaning all three tests in the CommonStateFields describe share mutable userEvent instance state (pointer position, modifier keys, clipboard, focus tracking) — a best-practice violation that can cause flaky cross-test contamination. Deferred (not blocking): unconditional field.onChange([]) on blur is idempotent given form defaults always initialise to []; stale data on programmatic read while focused is an inherent tradeoff of the approved onBlur-deferred design; the \\0 join-separator collision is theoretically possible but practically impossible for YAML-origin key names; FieldController ref no-op is a pre-existing issue outside the diff scope.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "id": "AC-1",
+      "status": "pass",
+      "notes": "onChange buffers raw string — trailing comma preserved; verified by test 1"
+    },
+    {
+      "id": "AC-2",
+      "status": "pass",
+      "notes": "onBlur splits, trims, filters and calls field.onChange(string[]); verified by test 2"
+    },
+    {
+      "id": "AC-3",
+      "status": "pass",
+      "notes": "field.onChange(string[]) flows to buildNextStateConfig unchanged; type-correct end-to-end"
+    },
+    {
+      "id": "AC-4",
+      "status": "pass",
+      "notes": "No schema, type, or serialization changes; existing YAML configs render via field.value.join(', ')"
+    },
+    {
+      "id": "AC-5",
+      "status": "pass",
+      "notes": "All 4 required test cases present: trailing-comma preservation, onBlur parse+trim, initial render, external-sync"
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "Commit 'EPMCDME-13189: Fix Reset Context Keys field to accept comma input' matches EPMCDME-XXXX: sentence convention"
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "TypeScript clean (tsc --noEmit passes), ESLint clean, Prettier applied, license headers present"
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No security concerns — UI input handling only, no auth/secrets/injection risks"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "file": "src/pages/workflows/editor/configPanels/CommonStateFields.tsx",
+      "line": "46-48",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "useEffect is scheduled asynchronously after browser paint. When onBlur calls field.onChange(keys), the re-render schedules the effect with the new fieldValueKey. A user who presses Tab then Shift+Tab and starts typing before the effect fires will have their new keystrokes overwritten when the effect calls setRaw(field.value.join(', ')).",
+      "impact": "Keystrokes entered after a rapid blur→refocus cycle are silently discarded. The input snaps back to the last committed form value with no error shown to the user. Reproducible with fast keyboard navigation.",
+      "recommendation": "Guard setRaw inside the effect with a focused-ref check: track whether the input is focused via a useRef<boolean>, set it true in an onFocus handler and false in the onBlur handler (before calling field.onChange), and skip the setRaw call when the ref is true. Alternatively, use useLayoutEffect to fire synchronously after DOM mutation and before paint, eliminating the race window."
+    },
+    {
+      "id": "CR-002",
+      "file": "src/pages/workflows/editor/configPanels/__tests__/CommonStateFields.test.tsx",
+      "line": "59",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "const user = userEvent.setup() is declared once at describe-block scope, outside beforeEach. @testing-library/user-event v14 stores mutable internal state per instance (pointer coordinates, modifier key history, clipboard, focus tracking). vi.clearAllMocks() in beforeEach resets Vitest mock call records but has no effect on the userEvent instance. The second describe block correctly creates its user instance inside the test body (line 108), making the inconsistency visible within the same file.",
+      "impact": "Tests that rely on clean keyboard or pointer state can produce false positives or false negatives depending on execution order. Carryover modifier keys (Shift, Control) silently alter character output in subsequent tests.",
+      "recommendation": "Declare user with let at describe scope and re-assign in beforeEach: let user: ReturnType<typeof userEvent.setup>; beforeEach(() => { user = userEvent.setup(); vi.clearAllMocks() }). This gives every test a fresh instance with no carried state."
+    }
+  ]
+}
