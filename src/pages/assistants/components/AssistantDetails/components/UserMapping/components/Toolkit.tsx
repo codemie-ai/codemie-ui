@@ -79,24 +79,25 @@ export const Toolkit: React.FC<ToolkitProps> = ({
           const toolKey = `${toolkit.toolkit}_${tool.name}`
           const toolMapping = userMappingSettings[toolKey]
           const isConfigurableTool = !isToolkitLevelConfig && tool.settings_config && toolMapping
+          const toolHint = toolkitToolsDescriptions?.[tool.name] || tool.user_description
 
           return (
             <div
               key={tool.name}
               className={cn(
-                'flex justify-between min-h-[32px]',
+                'flex justify-between gap-2 min-h-[32px]',
                 tool.additionalInformation ? 'items-start' : 'items-center'
               )}
             >
-              <div>
-                <div className="flex items-center gap-2 text-sm">
-                  {tool.label || tool.name}
-                  {(toolkitToolsDescriptions?.[tool.name] || tool.user_description) && (
+              <div className="min-w-0">
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="break-words min-w-0">{tool.label || tool.name}</span>
+                  {toolHint && (
                     <Hint
                       id={sanitizeHtmlId(tool.name)}
                       showDelay={0}
                       position="right"
-                      hint={toolkitToolsDescriptions?.[tool.name] || tool.user_description}
+                      hint={toolHint}
                     />
                   )}
                 </div>
