@@ -102,6 +102,7 @@ const EditAssistantPage = () => {
         limitWidth
         isLoading={isLoading}
         title="Edit Assistant"
+        subtitle={assistant?.name}
         onBack={handleBack}
         rightContent={
           <div className="flex gap-4">

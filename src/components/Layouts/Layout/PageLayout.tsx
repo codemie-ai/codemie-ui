@@ -26,6 +26,7 @@ interface LayoutProps {
   children?: ReactNode
   renderHeader?: ReactNode
   title?: string
+  subtitle?: string
   onBack?: () => void
   showBack?: boolean
   rightContent?: ReactNode
@@ -39,6 +40,7 @@ const PageLayout = ({
   children,
   renderHeader,
   title,
+  subtitle,
   onBack,
   showBack,
   rightContent,
@@ -77,7 +79,7 @@ const PageLayout = ({
           >
             {renderHeader || (
               <>
-                <div className="flex items-center gap-6 flex-1">
+                <div className="flex items-center gap-6 flex-1 min-w-0">
                   {(showBack || onBack) && (
                     <Button
                       variant="secondary"
@@ -89,11 +91,16 @@ const PageLayout = ({
                     </Button>
                   )}
                   <div
-                    className={cn('flex-1', {
+                    className={cn('flex-1 min-w-0', {
                       'text-center': centerTitle,
                     })}
                   >
                     {title && <h1 className="text-lg text-text-primary font-semibold">{title}</h1>}
+                    {subtitle && (
+                      <div className="text-xs text-text-quaternary whitespace-nowrap overflow-hidden text-ellipsis">
+                        {subtitle}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {rightContent && <div>{rightContent}</div>}

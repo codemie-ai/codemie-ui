@@ -137,7 +137,7 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
         <AssistantsNavigation />
       </Sidebar>
 
-      <PageLayout title="Assistant Details" onBack={handleBack}>
+      <PageLayout title="Assistant Details" subtitle={assistant?.name} onBack={handleBack}>
         {isLoading && (
           <div className="flex justify-center m-40">
             <Spinner />

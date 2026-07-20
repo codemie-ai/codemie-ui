@@ -101,8 +101,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant').length).toBeGreaterThan(0)
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.getByRole('button', { name: 'Chat Now' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
@@ -121,8 +124,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/templates/template-slug')
 
       await waitFor(() => {
-        expect(screen.getByText('Template Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Template Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Template Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.getByRole('button', { name: 'Create Assistant' })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Chat Now' })).not.toBeInTheDocument()
@@ -337,8 +343,6 @@ describe('AssistantDetailsPage - Integration', () => {
     })
   })
 
-
-
   describe('Context Menu Actions', () => {
     it('clones assistant when Clone action clicked', async () => {
       mockAPI('GET', 'v1/config', [])
@@ -512,8 +516,6 @@ describe('AssistantDetailsPage - Integration', () => {
       findRouteObject.mockReset()
     })
 
-
-
     it('calls router.back() when previous route is a different assistant-details page', async () => {
       // renderPage triggers useHistoryStack.updateStack() on mount, pushing one entry.
       // Set only the parent entry so after mount: stack=[parent, current], currentIndex=1,
@@ -528,8 +530,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       await user.click(screen.getByRole('button', { name: 'Back' }))
 
@@ -544,8 +549,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       await user.click(screen.getByRole('button', { name: 'Back' }))
 
@@ -572,8 +580,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/test-proj/test-assistant')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       await user.click(screen.getByRole('button', { name: 'Back' }))
 
@@ -774,8 +785,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.queryByRole('button', { name: 'Pin assistant' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Unpin assistant' })).not.toBeInTheDocument()
@@ -809,8 +823,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.queryByRole('button', { name: 'Add to favorites' })).not.toBeInTheDocument()
     })
@@ -845,8 +862,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.queryByRole('button', { name: 'Pin assistant' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Add to favorites' })).not.toBeInTheDocument()
@@ -867,8 +887,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/templates/template-slug')
 
       await waitFor(() => {
-        expect(screen.getByText('Template Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Template Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Template Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.queryByRole('button', { name: 'Pin assistant' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Add to favorites' })).not.toBeInTheDocument()
@@ -888,8 +911,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.getByRole('button', { name: 'Like' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Dislike' })).toBeInTheDocument()
@@ -903,8 +929,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.queryByRole('button', { name: 'Like' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Dislike' })).not.toBeInTheDocument()
@@ -963,8 +992,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.getByText('Streaming')).toBeInTheDocument()
       expect(screen.getByText('Notifications')).toBeInTheDocument()
@@ -1009,8 +1041,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.queryByText('Prompt Variables')).not.toBeInTheDocument()
     })
@@ -1108,8 +1143,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/asst-123')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.queryByText('Your Integration Settings')).not.toBeInTheDocument()
     })
@@ -1131,8 +1169,11 @@ describe('AssistantDetailsPage - Integration', () => {
       renderPage('/assistants/templates/template-slug')
 
       await waitFor(() => {
-        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+        expect(screen.getAllByText('Test Assistant')[0]).toBeInTheDocument()
       })
+
+      // Verify the first occurrence is the header subtitle with correct styling
+      expect(screen.getAllByText('Test Assistant')[0]).toHaveClass('text-text-quaternary')
 
       expect(screen.queryByText('Your Integration Settings')).not.toBeInTheDocument()
     })
