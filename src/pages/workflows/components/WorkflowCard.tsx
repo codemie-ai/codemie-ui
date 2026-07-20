@@ -203,7 +203,12 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
             <Avatar iconUrl={workflow.icon_url} name={workflow.name} type={AvatarType.MEDIUM} />
 
             <div className="flex flex-col z-[1] overflow-hidden flex-1 min-w-0">
-              <h3 className={classNames('text-base font-semibold m-0 truncate', isFavoritesEnabled && 'pr-14')}>
+              <h3
+                className={classNames(
+                  'text-base font-semibold m-0 truncate',
+                  isFavoritesEnabled && 'pr-14'
+                )}
+              >
                 <div
                   ref={nameRef}
                   data-pr-tooltip={isNameTruncated ? workflow.name : ''}
@@ -277,20 +282,22 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
               </>
             )}
 
-            <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-              {navigationSlot ?? (
-                <WorkflowActions
-                  workflow={workflow}
-                  onView={() =>
-                    router.push({
-                      name: VIEW_WORKFLOW,
-                      params: { workflowId: String(workflow.id) },
-                    })
-                  }
-                  reloadWorkflows={reloadWorkflows}
-                />
-              )}
-            </div>
+            {!isTemplate && (
+              <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                {navigationSlot ?? (
+                  <WorkflowActions
+                    workflow={workflow}
+                    onView={() =>
+                      router.push({
+                        name: VIEW_WORKFLOW,
+                        params: { workflowId: String(workflow.id) },
+                      })
+                    }
+                    reloadWorkflows={reloadWorkflows}
+                  />
+                )}
+              </div>
+            )}
 
             <div className="flex flex-row ml-auto items-center text-xs gap-3">
               {workflow.is_global ? (

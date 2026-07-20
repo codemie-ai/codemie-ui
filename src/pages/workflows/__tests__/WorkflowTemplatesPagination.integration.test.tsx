@@ -218,6 +218,18 @@ describe('WorkflowTemplates - Pagination', () => {
     })
   })
 
+  it('does not render the three-dots menu on workflow template cards', async () => {
+    mockAPI('GET', 'v1/workflows/prebuilt', [createTemplateFixture()])
+
+    renderPage('/workflows/templates')
+
+    await waitFor(() => {
+      expect(screen.getByText('Workflow Template')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByRole('button', { name: /more options/i })).not.toBeInTheDocument()
+  })
+
   it('renders workflow template items as a semantic list', async () => {
     mockAPI('GET', 'v1/workflows/prebuilt', createTemplates(3))
 

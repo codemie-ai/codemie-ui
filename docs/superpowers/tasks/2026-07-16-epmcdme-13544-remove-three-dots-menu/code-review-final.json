@@ -1,0 +1,51 @@
+{
+  "decision": "approve",
+  "rationale": "All three review lenses ran. All 5 acceptance criteria pass. Commit format matches the EPMCDME pattern. No blocking findings. Two deferred items noted: (1) the !isTemplate guard also suppresses any navigationSlot passed to template cards — intentional per spec and technical analysis, no current callers pass both; (2) the test uses a full-document queryByRole query rather than scoping to the template-cards list container — the test is correct and catches the regression today, but would give a false failure if a future layout NavigationMore is added without a dataTooltipContent. Both are noted for future improvement and do not block this change.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "The three-dots menu is not displayed on any workflow template card on the Templates page.",
+      "status": "PASS",
+      "notes": "WorkflowTemplates.tsx passes isTemplate={true} to WorkflowCard. The !isTemplate guard added in the diff suppresses the entire WorkflowActions / navigationSlot block for all template cards."
+    },
+    {
+      "criterion": "Users cannot access View Details, Copy Link, or Clone from a template card.",
+      "status": "PASS",
+      "notes": "WorkflowActions (which renders all three actions) is inside the guarded block and is no longer rendered for templates."
+    },
+    {
+      "criterion": "The Create Workflow button and card layout remain visually unchanged.",
+      "status": "PASS",
+      "notes": "The Create Workflow button is in the isTemplate-true branch at lines 244-254, which is untouched. The h3 reformatting in the diff is cosmetic only (no class or logic change)."
+    },
+    {
+      "criterion": "Regular workflow cards in WorkflowsList continue to show the three-dots menu (no regression).",
+      "status": "PASS",
+      "notes": "WorkflowsList.tsx does not pass isTemplate, so it defaults to false. The guard evaluates to !false, rendering the block exactly as before."
+    },
+    {
+      "criterion": "The new integration test fails if the guard is removed.",
+      "status": "PASS",
+      "notes": "Removing the guard causes WorkflowActions -> NavigationMore to mount with aria-label='More options', which the .not.toBeInTheDocument() assertion will catch."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git_commit_format",
+      "status": "pass",
+      "notes": "Commit 'EPMCDME-13544: Remove three-dots menu from workflow template cards' matches the enforced EPMCDME-NNNN: Capital sentence pattern. No period at end."
+    },
+    {
+      "standard": "code_quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not found in this repository."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "Change is a pure conditional render with no security surface (no auth, secrets, input handling, or data contracts affected)."
+    }
+  ],
+  "findings": []
+}
