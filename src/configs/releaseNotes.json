@@ -1,5 +1,83 @@
 [
   {
+    "version": "2.40.0",
+    "date": "2026-07-20",
+    "issues": [
+      {
+        "title": "GithubTool: GET /search/issues returns 422 because method_arguments are sent as request body instead of URL query params",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13552",
+        "key": "EPMCDME-13552"
+      },
+      {
+        "title": "Assistant View Side-Panel on the Workflow Executions Page for Viewing Assistant Information and Selecting Integrations",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13529",
+        "key": "EPMCDME-13529"
+      },
+      {
+        "title": "Project filter shows technical project name after page refresh for Project Admin not assigned to the project",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13520",
+        "key": "EPMCDME-13520"
+      },
+      {
+        "title": "Add GPT 5.6 models to CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13519",
+        "key": "EPMCDME-13519"
+      },
+      {
+        "title": "Chat is incorrectly marked as “interrupted by user” after MCP/agent error on reopen",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13498",
+        "key": "EPMCDME-13498"
+      },
+      {
+        "title": "Playwright MCP screenshot fails in client Azure environment with InvalidResourceName when filename is omitted",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13485",
+        "key": "EPMCDME-13485"
+      },
+      {
+        "title": "Provide authenticated user context to downstream tool executions",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13260",
+        "key": "EPMCDME-13260"
+      },
+      {
+        "title": "Add copy button for generated table output",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13243",
+        "key": "EPMCDME-13243"
+      },
+      {
+        "title": "Mermaid view window is too narrow after opening it via the Eye icon",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13135",
+        "key": "EPMCDME-13135"
+      },
+      {
+        "title": "Codemie traffic tagging - when used without LiteLLM",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12602",
+        "key": "EPMCDME-12602"
+      },
+      {
+        "title": "UnicodeEncodeError causes 500 Internal Server Error on file review with codemie-claude model",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12571",
+        "key": "EPMCDME-12571"
+      },
+      {
+        "title": "Enable workflow generation from natural language descriptions with backend validation and visual workflow rendering",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10037",
+        "key": "EPMCDME-10037"
+      }
+    ]
+  },
+  {
     "version": "2.39.0",
     "date": "2026-07-14",
     "issues": [
