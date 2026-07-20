@@ -1,0 +1,22 @@
+{
+  "decision": "approve",
+  "rationale": "All three review lenses ran successfully. All 8 spec acceptance criteria satisfied: group/group-hover/focus-within/transition-opacity applied exactly as specced, no structural changes, no test changes. Two deferred items noted for awareness but not blocking: (1) touch/mobile devices cannot trigger group-hover — button is permanently hidden for touch-only users; this is a known limitation of the user-approved hover-based solution, not a regression introduced by this change; (2) unnamed Tailwind group is the established pattern in 4 sibling components (PinnedRow, Card, WorkflowCard, PinnedAssistantsOverflowDropdown) and carries the same ancestor-hover leakage risk as those components. Three dismissed: DOMPurify guards injected HTML making group-class leakage theoretical; the overlay-on-hover position is pre-existing not regressed; ghost-click risk is ~150ms window for a non-destructive copy action. No blocking findings.",
+  "findings": [],
+  "business_review": [
+    { "criterion": "wrapper div receives `group` class", "status": "pass", "notes": "Present in diff on line 10" },
+    { "criterion": "button container hidden at rest via `opacity-0`", "status": "pass", "notes": "Added to button container div" },
+    { "criterion": "button reveals on hover via `group-hover:opacity-100`", "status": "pass", "notes": "Present in diff" },
+    { "criterion": "button reveals on keyboard focus via `focus-within:opacity-100`", "status": "pass", "notes": "Present — WCAG 2.1.1 satisfied" },
+    { "criterion": "smooth transition via `transition-opacity`", "status": "pass", "notes": "Present in diff" },
+    { "criterion": "button remains in DOM and tab order (opacity-only, not display:none or visibility:hidden)", "status": "pass", "notes": "Confirmed — opacity-0 preserves accessibility tree presence and tab order" },
+    { "criterion": "no structural changes — only Tailwind class changes to two divs", "status": "pass", "notes": "2 lines changed, no markup restructuring" },
+    { "criterion": "no test changes required", "status": "pass", "notes": "Spec states no test changes; existing 3 tests pass unchanged" }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow commit format", "status": "pass", "notes": "Commit 'EPMCDME-13243: Hide copy button by default, show on hover/focus' matches ticket-id prefix convention" },
+    { "standard": "Tailwind-only styling (no new SCSS for component states)", "status": "pass", "notes": "Pure Tailwind utility class change, consistent with styling-guide" },
+    { "standard": "No new React state or hooks introduced", "status": "pass", "notes": "Pure CSS change, component remains a stateless functional component" }
+  ],
+  "risk_flags": [],
+  "confidence": "high"
+}

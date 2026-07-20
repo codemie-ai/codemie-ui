@@ -26,9 +26,9 @@ type TableBlockProps = {
 }
 
 const TableBlock: FC<TableBlockProps> = ({ html, raw }) => (
-  <div className="relative my-1">
+  <div className="relative my-1 group">
     <div dangerouslySetInnerHTML={{ __html: html }} />
-    <div className="absolute top-0 right-0 z-10 flex items-center h-9">
+    <div className="absolute top-0 right-0 z-10 flex items-center h-9 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
       <Button
         variant={ButtonType.SECONDARY}
         className="!px-2 mr-2"

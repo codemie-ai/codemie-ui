@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix button overlap with table headings in TableBlock by hiding the copy button by default and showing it only on hover via Tailwind group-hover pattern.",
+  "generated": "2026-07-17T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 6,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single leaf presentational component (TableBlock.tsx) with no layer boundaries crossed and no cross-cutting concerns."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Exact Tailwind group/group-hover pattern already exists in four places in the codebase (PinnedRow, PinnedAssistantsOverflowDropdown, Card, WorkflowCard). Zero novelty, trivially reversible."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
