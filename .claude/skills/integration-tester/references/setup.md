@@ -831,3 +831,34 @@ expect(contentElement).not.toBeVisible()
 ```
 
 Add `aria-expanded` to the toggle button and `aria-hidden` to the content container in production code. Assert those attributes in tests.
+
+## Background Polling / Self-Rescheduling Timers
+
+Some pages run a background refresh loop: fetch → on success, `setTimeout(() => sameFn(), N)` to fetch again later (e.g. `DataSourcesPage.tsx`'s 5s `REFRESH_TIMEOUT`, `useSharePointOAuth.ts`'s device-code polling, `SharePointReindexAuthPopup.tsx`). Grep the page under test for `setTimeout`/`setInterval` combined with a `*Ref.current =` assignment before writing the test — if it's there, this pitfall applies.
+
+The component's own `useEffect` cleanup clears the *already-scheduled* timer on unmount, but if RTL tears the component down while the underlying fetch is still in flight, the resolution can run right after cleanup and schedule **one more** timer that nothing will ever clear. That timer later fires for real — sometimes against a torn-down jsdom (`ReferenceError: localStorage is not defined`), sometimes in a completely different, unrelated test file that happens to still be running at that moment.
+
+This has already bitten a real task (see `docs/superpowers/tasks/2026-07-14-pagination-tests-tables/qa-report.md`'s "Flakiness note"): the obvious fix — wrapping the test in `vi.useFakeTimers({ shouldAdvanceTime: true })` — was tried and **made things worse**, because it also fakes the timers `waitFor` / `userEvent` / PrimeReact dropdowns rely on internally, producing a *new*, unrelated timeout failure. Don't reach for fake timers here.
+
+**Fix**: track every real timer created during the test and force-clear it in `afterEach`, without changing the timer implementation at all — this leaves `waitFor`/`userEvent` untouched:
+
+```typescript
+const originalSetTimeout = global.setTimeout
+let pendingTimeoutIds: NodeJS.Timeout[] = []
+
+beforeEach(() => {
+  pendingTimeoutIds = []
+  global.setTimeout = ((handler: Parameters<typeof setTimeout>[0], timeout?: number, ...args: unknown[]) => {
+    const id = originalSetTimeout(handler, timeout, ...args) as unknown as NodeJS.Timeout
+    pendingTimeoutIds.push(id)
+    return id
+  }) as typeof setTimeout
+})
+
+afterEach(() => {
+  global.setTimeout = originalSetTimeout
+  pendingTimeoutIds.forEach((id) => clearTimeout(id))
+})
+```
+
+This is additive only — it doesn't touch the page component and doesn't change how any existing assertion in the file behaves.

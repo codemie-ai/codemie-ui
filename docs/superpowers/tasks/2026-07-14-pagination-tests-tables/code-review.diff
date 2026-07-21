@@ -1,0 +1,1441 @@
+diff --git a/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/complexity-assessment.json b/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/complexity-assessment.json
+new file mode 100644
+index 000000000..d9f9f3d4c
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/complexity-assessment.json
+@@ -0,0 +1,25 @@
++{
++  "schema": 1,
++  "task": "Add integration tests for pagination behavior on the Data Sources page and the User/Project Settings tables under Integrations, following the existing renderPage()/mockAPI() pattern, with no production code changes.",
++  "generated": "2026-07-14",
++  "dimensions": {
++    "component_scope":      { "score": 4, "label": "L" },
++    "requirements_clarity": { "score": 3, "label": "M" },
++    "technical_risk":       { "score": 3, "label": "M" },
++    "file_change_estimate": { "score": 3, "label": "M" },
++    "dependencies":         { "score": 1, "label": "XS" },
++    "affected_layers":      { "score": 3, "label": "M" }
++  },
++  "total": 17,
++  "size": "M",
++  "routing": "brainstorming",
++  "key_reasoning": [
++    { "dimension": "component_scope", "reason": "Three distinct page-level components (DataSourcesPage, UserSettings, ProjectSettings) must be covered, each wired to a different Valtio store (dataSourceStore, userSettingsStore, projectSettingsStore); the ticket also invites an optional new cross-cutting 'assert a Table paginates' helper that would need to abstract over all three data-fetch paths plus the ProjectSettings admin-gated tab-switch precondition." },
++    { "dimension": "requirements_clarity", "reason": "Acceptance criteria are detailed and unambiguous, but the task is explicitly 'similar to the prior EPMCDME-13479 task but different' in several load-bearing ways (DECIMAL_PAGINATION_OPTIONS vs DEFAULT_PAGINATION_OPTIONS, no router URL-sync for these pages, new per-page-dropdown interaction, admin-gated ProjectSettings tab click) — a red flag that bumped this from S to M." },
++    { "dimension": "technical_risk", "reason": "Core pagination mechanics (DOM-absence convention, nested envelope, renderPage()/mockAPI() harness) are already proven by the prior task, but the 'per-page change' AC requires genuinely new end-to-end interaction code (no existing test drives the PrimeReact per-page <Select> via selectDropdownOption), and DataSourcesPage has a background 5s refetch timer plus no global fetch-mock defaults for 6 relevant endpoints, raising flakiness/setup risk." }
++  ],
++  "red_flags_applied": [
++    "Requirements Clarity bumped from S to M: task is explicitly framed as 'similar to prior task (EPMCDME-13479) but different' in pagination option constants, URL-sync behavior, per-page interaction, and admin-gated tab-switch setup"
++  ],
++  "split_recommendation": null
++}
+diff --git a/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/plan.md b/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/plan.md
+new file mode 100644
+index 000000000..b18f2aa98
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/plan.md
+@@ -0,0 +1,627 @@
++# Pagination tests: Data Sources & Integrations tables Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++
++**Goal:** Add integration test coverage for pagination behavior on the Data Sources page, and the User Settings / Project Settings tables under Integrations — three pages sharing `Table.tsx` + `useTableFilters` that currently have zero pagination tests.
++
++**Architecture:** Three new, self-contained `*.integration.test.tsx` files (no shared helper), each following the proven `renderPage()` + `mockAPI()` pattern from `AssistantsListPage.integration.test.tsx`'s "Marketplace Pagination" describe block (commit `f6cdb7a65`, EPMCDME-13479) — remock the endpoint with new data immediately before the action that triggers a refetch (click / per-page change), then `await waitFor(...)` on the new content.
++
++**Tech Stack:** Vitest 1.6.1, @testing-library/react 16.3.0, @testing-library/user-event 14.6.1, jsdom.
++
++## Global Constraints
++
++- No production code changes. Test files only.
++- Do not modify `src/test-utils/integration.tsx` or `src/test-utils/_mock-state.ts`.
++- Per-page option under test is `20` (from `DECIMAL_PAGINATION_OPTIONS` — `10/20/50/100`), not the `24` used by the prior Assistants/Workflows task's `DEFAULT_PAGINATION_OPTIONS`.
++- Use `fireEvent` (not `userEvent`) for the PrimeReact per-page `<Select>` interaction; `userEvent` for page-number button clicks.
++- "Disabled" pagination controls = DOM absence: `screen.queryByRole('button', { name: ... }).not.toBeInTheDocument()`.
++- No router/URL-sync assertions on any of these three pages.
++- Every new test file needs the same Apache-2.0 license header block used throughout `src/` (see any existing file under `src/pages/dataSources/__tests__/`).
++- Full validation command: `npm run test:integration`.
++
++---
++
++## Task 1: Data Sources pagination tests
++
++**Files:**
++- Create: `src/pages/dataSources/__tests__/DataSourcesPagination.integration.test.tsx`
++
++**Interfaces:**
++- Consumes: `renderPage`, `mockAPI` from `@/test-utils/integration` (existing, read-only).
++- Produces: nothing consumed by later tasks — this file is self-contained.
++
++Route under test: `/data-sources`. Required mocks for every test in this file: `v1/index/users` → `[]` (fired unconditionally on mount by `DataSourceFilters`; if unmocked, `loadIndexUsers()` calls `.sort()` on `null` and throws). `v1/index` is the paginated list endpoint (nested envelope `{ data, pagination: { page, per_page, pages, total } }`), fetched by `dataSourceStore.getIndexesStatuses()`.
++
++- [ ] **Step 1: Write the full test file**
++
++```tsx
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { fireEvent, screen, waitFor } from '@testing-library/react'
++import userEvent from '@testing-library/user-event'
++import { describe, it, expect } from 'vitest'
++
++import { renderPage, mockAPI } from '@/test-utils/integration'
++
++describe('DataSourcesPage - Pagination', () => {
++  const mockIndexUsers = () => mockAPI('GET', 'v1/index/users', [])
++
++  const createDataSourceFixture = (overrides = {}) => ({
++    id: 'ds-1',
++    project_name: 'test-project',
++    repo_name: 'DataSource 1',
++    index_type: 'confluence',
++    created_by: { id: 'user-1', email: 'user1@example.com', name: 'User One', username: 'user1' },
++    project_space_visible: true,
++    link: null,
++    date: '2024-01-01T00:00:00Z',
++    update_date: '2024-01-01T00:00:00Z',
++    text: '',
++    full_name: 'DataSource 1',
++    current_state: 0,
++    complete_state: 0,
++    current__chunks_state: 0,
++    error: false,
++    completed: true,
++    is_fetching: false,
++    is_queued: false,
++    user_abilities: [],
++    jira: { jql: '' },
++    xray: { jql: '' },
++    ...overrides,
++  })
++
++  const createDataSources = (count: number, prefix = 'DataSource') =>
++    Array.from({ length: count }, (_, i) =>
++      createDataSourceFixture({
++        id: `ds-${i + 1}`,
++        repo_name: `${prefix} ${i + 1}`,
++      })
++    )
++
++  it('shows next page of data sources when pagination button is clicked', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 1')).toBeInTheDocument()
++      expect(screen.getByRole('button', { name: 'Page 2' })).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25).slice(10, 20),
++      pagination: { page: 1, per_page: 10, pages: 3, total: 25 },
++    })
++
++    const user = userEvent.setup()
++    await user.click(screen.getByRole('button', { name: 'Page 2' }))
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 11')).toBeInTheDocument()
++      expect(screen.queryByText('DataSource 1')).not.toBeInTheDocument()
++    })
++  })
++
++  it('reloads data sources when per-page selection changes', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 1')).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/index', {
++      data: [createDataSourceFixture({ id: 'ds-perpage', repo_name: 'DataSource PerPage' })],
++      pagination: { page: 0, per_page: 20, pages: 2, total: 25 },
++    })
++
++    const perPageSelect = document.getElementById('per-page') as HTMLElement
++    fireEvent.click(perPageSelect)
++    fireEvent.click(screen.getByLabelText('20 items'))
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource PerPage')).toBeInTheDocument()
++    })
++
++    expect(global.fetch).toHaveBeenCalledWith(
++      expect.stringContaining('per_page=20'),
++      expect.anything()
++    )
++  })
++
++  it('does not show pagination buttons when data sources fit on one page', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(6),
++      pagination: { page: 0, per_page: 10, pages: 1, total: 6 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 1')).toBeInTheDocument()
++      expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
++    })
++  })
++
++  it('Previous page button absent on first page', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 1')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument()
++  })
++
++  it('Next page button absent on last page', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25).slice(20, 25),
++      pagination: { page: 2, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 25')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
++  })
++})
++```
++
++- [ ] **Step 2: Run the file and verify all 5 tests pass**
++
++Run: `npm run test:integration -- DataSourcesPagination`
++Expected: `5 passed`. These are characterization tests of already-working production behavior — a failure means the test/mock setup is wrong (e.g. a missed mock causing a thrown error, or a wrong selector), not a production bug. Iterate on the test file until green; do not touch any file under `src/pages/dataSources` other than the new test file, `src/components/Table`, `src/components/Pagination`, `src/store/dataSources.ts`, or `src/hooks/useTableFilters.ts`.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add src/pages/dataSources/__tests__/DataSourcesPagination.integration.test.tsx
++git commit -m "EPMCDME-13481: Add pagination integration tests for Data Sources page"
++```
++
++---
++
++## Task 2: Integrations — User Settings pagination tests
++
++**Files:**
++- Create: `src/pages/integrations/__tests__/UserSettingsPagination.integration.test.tsx`
++
++**Interfaces:**
++- Consumes: `renderPage`, `mockAPI` from `@/test-utils/integration` (existing, read-only).
++- Produces: nothing consumed by later tasks.
++
++Route under test: `/integrations` — User Settings is the default tab (`IntegrationsPage`'s `integrationType` state initializes to `IntegrationOption.USER`), so no tab-switch step is needed. `v1/settings/user` is the paginated list endpoint (nested envelope), fetched by `userSettingsStore.fetchUserSettings()`. No other endpoint needs mocking: the default `v1/user` global mock (`is_admin: false`) makes `loadProjectOptions()` resolve synchronously via `userStore.getUserProjects()` with no HTTP call.
++
++- [ ] **Step 1: Write the full test file**
++
++```tsx
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { fireEvent, screen, waitFor } from '@testing-library/react'
++import userEvent from '@testing-library/user-event'
++import { describe, it, expect } from 'vitest'
++
++import { renderPage, mockAPI } from '@/test-utils/integration'
++
++describe('UserSettings - Pagination', () => {
++  const createUserSettingFixture = (overrides = {}) => ({
++    user_id: 'test-user-id',
++    id: 'setting-1',
++    date: '2024-01-01T00:00:00Z',
++    alias: 'Setting 1',
++    credential_type: 'jira',
++    update_date: '2024-01-01T00:00:00Z',
++    project_name: 'test-project',
++    display_name: null,
++    default: false,
++    credential_values: [],
++    setting_hash: null,
++    is_global: false,
++    setting_type: 'user',
++    ...overrides,
++  })
++
++  const createUserSettings = (count: number, prefix = 'Setting') =>
++    Array.from({ length: count }, (_, i) =>
++      createUserSettingFixture({
++        id: `setting-${i + 1}`,
++        alias: `${prefix} ${i + 1}`,
++      })
++    )
++
++  it('shows next page of user settings when pagination button is clicked', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++      expect(screen.getByRole('button', { name: 'Page 2' })).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25).slice(10, 20),
++      pagination: { page: 1, per_page: 10, pages: 3, total: 25 },
++    })
++
++    const user = userEvent.setup()
++    await user.click(screen.getByRole('button', { name: 'Page 2' }))
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 11')).toBeInTheDocument()
++      expect(screen.queryByText('Setting 1')).not.toBeInTheDocument()
++    })
++  })
++
++  it('reloads user settings when per-page selection changes', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/settings/user', {
++      data: [createUserSettingFixture({ id: 'setting-perpage', alias: 'Setting PerPage' })],
++      pagination: { page: 0, per_page: 20, pages: 2, total: 25 },
++    })
++
++    const perPageSelect = document.getElementById('per-page') as HTMLElement
++    fireEvent.click(perPageSelect)
++    fireEvent.click(screen.getByLabelText('20 items'))
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting PerPage')).toBeInTheDocument()
++    })
++
++    expect(global.fetch).toHaveBeenCalledWith(
++      expect.stringContaining('per_page=20'),
++      expect.anything()
++    )
++  })
++
++  it('does not show pagination buttons when user settings fit on one page', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(6),
++      pagination: { page: 0, per_page: 10, pages: 1, total: 6 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++      expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
++    })
++  })
++
++  it('Previous page button absent on first page', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument()
++  })
++
++  it('Next page button absent on last page', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25).slice(20, 25),
++      pagination: { page: 2, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 25')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
++  })
++})
++```
++
++- [ ] **Step 2: Run the file and verify all 5 tests pass**
++
++Run: `npm run test:integration -- UserSettingsPagination`
++Expected: `5 passed`. Same characterization-test caveat as Task 1 — do not touch `src/pages/integrations` production files, `src/store/userSettings.ts`, `Table.tsx`, or `Pagination.tsx`.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add src/pages/integrations/__tests__/UserSettingsPagination.integration.test.tsx
++git commit -m "EPMCDME-13481: Add pagination integration tests for Integrations User Settings"
++```
++
++---
++
++## Task 3: Integrations — Project Settings pagination tests
++
++**Files:**
++- Create: `src/pages/integrations/__tests__/ProjectSettingsPagination.integration.test.tsx`
++
++**Interfaces:**
++- Consumes: `renderPage`, `mockAPI` from `@/test-utils/integration` (existing, read-only).
++- Produces: nothing consumed by later tasks.
++
++Route under test: `/integrations`. The Project Settings tab is admin-gated and not the default tab, so every test needs:
++1. `v1/user` mocked with `is_admin: true` (default global mock has `is_admin: false`) — read once during `App`'s bootstrap fetch, before `<Outlet />` (and therefore `IntegrationsPage`) mounts, so `IntegrationsPage`'s plain (non-reactive) `userStore.user` read already reflects it on first render.
++2. `v1/settings/user` mocked (even though unused) — `UserSettings` is the default-rendered tab and mounts first; an unmocked fetch resolves to `null` and `fetchUserSettings` crashes destructuring `{ data, pagination }` from `null`.
++3. `v1/settings/project/users` mocked to `[]` — fired on mount by `ProjectSettings`'s `loadCreatedByOptions`.
++4. `v1/settings/project` — the paginated list endpoint under test.
++5. A click on the `Project` `SelectButton` option (`role="button"`, `aria-label="Project"` per PrimeReact's `SelectButton` — confirmed in `node_modules/primereact/selectbutton/selectbutton.esm.js`) before any pagination assertion.
++
++No `v1/admin/applications` mock is needed: `userStore.getAdminProjects` returns synchronously (no HTTP call) whenever the search string is shorter than 3 characters, which is always true for the empty-string call `loadProjectOptions()` makes on mount.
++
++- [ ] **Step 1: Write the full test file**
++
++```tsx
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { fireEvent, screen, waitFor } from '@testing-library/react'
++import userEvent from '@testing-library/user-event'
++import { describe, it, expect } from 'vitest'
++
++import { renderPage, mockAPI } from '@/test-utils/integration'
++
++describe('ProjectSettings - Pagination', () => {
++  const mockAdminSetup = () => {
++    mockAPI('GET', 'v1/user', {
++      user_id: 'test-user-id',
++      email: 'test@example.com',
++      name: 'Test User',
++      username: 'testuser',
++      is_admin: true,
++      is_maintainer: false,
++      user_type: 'INTERNAL',
++      applications: [],
++    })
++    mockAPI('GET', 'v1/settings/user', {
++      data: [],
++      pagination: { page: 0, per_page: 10, pages: 0, total: 0 },
++    })
++    mockAPI('GET', 'v1/settings/project/users', [])
++  }
++
++  const switchToProjectTab = async () => {
++    await waitFor(() => {
++      expect(screen.getByRole('button', { name: 'Project' })).toBeInTheDocument()
++    })
++    const user = userEvent.setup()
++    await user.click(screen.getByRole('button', { name: 'Project' }))
++  }
++
++  const createProjectSettingFixture = (overrides = {}) => ({
++    user_id: 'test-user-id',
++    id: 'setting-1',
++    date: '2024-01-01T00:00:00Z',
++    alias: 'Setting 1',
++    credential_type: 'jira',
++    update_date: '2024-01-01T00:00:00Z',
++    project_name: 'test-project',
++    display_name: null,
++    default: false,
++    credential_values: [],
++    setting_hash: null,
++    is_global: false,
++    setting_type: 'project',
++    ...overrides,
++  })
++
++  const createProjectSettings = (count: number, prefix = 'Setting') =>
++    Array.from({ length: count }, (_, i) =>
++      createProjectSettingFixture({
++        id: `setting-${i + 1}`,
++        alias: `${prefix} ${i + 1}`,
++      })
++    )
++
++  it('shows next page of project settings when pagination button is clicked', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++      expect(screen.getByRole('button', { name: 'Page 2' })).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25).slice(10, 20),
++      pagination: { page: 1, per_page: 10, pages: 3, total: 25 },
++    })
++
++    const user = userEvent.setup()
++    await user.click(screen.getByRole('button', { name: 'Page 2' }))
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 11')).toBeInTheDocument()
++      expect(screen.queryByText('Setting 1')).not.toBeInTheDocument()
++    })
++  })
++
++  it('reloads project settings when per-page selection changes', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/settings/project', {
++      data: [createProjectSettingFixture({ id: 'setting-perpage', alias: 'Setting PerPage' })],
++      pagination: { page: 0, per_page: 20, pages: 2, total: 25 },
++    })
++
++    const perPageSelect = document.getElementById('per-page') as HTMLElement
++    fireEvent.click(perPageSelect)
++    fireEvent.click(screen.getByLabelText('20 items'))
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting PerPage')).toBeInTheDocument()
++    })
++
++    expect(global.fetch).toHaveBeenCalledWith(
++      expect.stringContaining('per_page=20'),
++      expect.anything()
++    )
++  })
++
++  it('does not show pagination buttons when project settings fit on one page', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(6),
++      pagination: { page: 0, per_page: 10, pages: 1, total: 6 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++      expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
++    })
++  })
++
++  it('Previous page button absent on first page', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument()
++  })
++
++  it('Next page button absent on last page', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25).slice(20, 25),
++      pagination: { page: 2, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 25')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
++  })
++})
++```
++
++- [ ] **Step 2: Run the file and verify all 5 tests pass**
++
++Run: `npm run test:integration -- ProjectSettingsPagination`
++Expected: `5 passed`. If the `Project` `SelectButton` option is not found, first confirm the `v1/user` mock in `mockAdminSetup` is registered before `renderPage` — `App`'s bootstrap fetch is a one-shot call, so a mock registered after mount will not be picked up. Same characterization-test caveat as Tasks 1–2 — do not touch `src/pages/integrations` production files, `src/store/projectSettings.ts`, `Table.tsx`, `Pagination.tsx`, or `SelectButton.tsx`.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add src/pages/integrations/__tests__/ProjectSettingsPagination.integration.test.tsx
++git commit -m "EPMCDME-13481: Add pagination integration tests for Integrations Project Settings"
++```
++
++---
++
++## Final validation
++
++- [ ] Run the full integration suite once all three tasks are committed:
++
++```bash
++npm run test:integration
++```
++
++Expected: all suites pass, including the 15 new tests across the 3 new files (5 each).
+diff --git a/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/spec.md b/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/spec.md
+new file mode 100644
+index 000000000..a667d3c0b
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/spec.md
+@@ -0,0 +1,73 @@
++# Design: EPMCDME-13481 — Pagination tests for Data Sources & Integrations tables
++
++## Context
++
++Sub-task of EPMCDME-5727 ("Add tests for pagination on all tabs"), following EPMCDME-13479 (Assistants/Workflows tabs, unmerged). This ticket covers the three remaining shared-`Table.tsx` pages that have zero pagination coverage today:
++
++- Data Sources page (`/data-sources`)
++- Integrations — User Settings tab (`/integrations`, default tab)
++- Integrations — Project Settings tab (`/integrations`, admin-gated tab)
++
++Scope is integration tests only. No production code changes.
++
++## Approach
++
++Three new, self-contained pagination test files — no shared "assert a Table paginates" helper. The ticket explicitly permits introducing one, but the prior pagination task (EPMCDME-13479) didn't need one, and a first-attempt abstraction over three different store-wiring paths (plus ProjectSettings' extra admin/tab-switch precondition) risks being wrong in a way that's more expensive to unwind than three small, independent files. Each file follows the same shape as the existing `AssistantTemplatesPagination.integration.test.tsx` / `WorkflowTemplatesPagination.integration.test.tsx` reference files: a local fixture factory, `renderPage()` + `mockAPI()` setup, and one `describe` block per page/table.
++
++## Files
++
++### 1. `src/pages/dataSources/__tests__/DataSourcesPagination.integration.test.tsx`
++
++- Route: `/data-sources`
++- Mocks: `v1/index` → nested envelope `{ data, pagination: { page, per_page, pages, total } }`; `v1/index/users` → `[]` (fired on mount by `DataSourceFilters`)
++- No additional admin/project mock needed — `userStore.getProjects()` resolves synchronously via `getUserProjects()` for the default (non-admin) mocked user.
++- Local fixture: `createDataSourceFixture(overrides)` / `createDataSources(count, prefix)` — minimal fields from `DataSource` (`id`, `project_name`, `repo_name`, `index_type`, `created_by`, `project_space_visible`, `date`, `update_date`, `status`-relevant fields as needed by rendered columns).
++
++### 2. `src/pages/integrations/__tests__/UserSettingsPagination.integration.test.tsx`
++
++- Route: `/integrations` (User Settings is the default tab — no tab switch needed)
++- Mocks: `v1/settings/user` → nested envelope
++- Local fixture: `createUserSettingFixture(overrides)` / `createUserSettings(count, prefix)` — minimal fields from `UserSetting`.
++
++### 3. `src/pages/integrations/__tests__/ProjectSettingsPagination.integration.test.tsx`
++
++- Route: `/integrations`
++- Mocks: `v1/user` overridden with `is_admin: true` (reveals the "Project" `SelectButton` option — default mock has `is_admin: false`); `v1/settings/project` → nested envelope; `v1/settings/project/users` → `[]` (fired on mount by `ProjectSettings`'s `loadCreatedByOptions`)
++- Setup step before every test: click the `Project` option (`screen.getByRole('button', { name: 'Project' })` — PrimeReact `SelectButton` renders each option with `role="button"` and `aria-label` = option label) to switch off the default User tab.
++- Confirmed no `v1/admin/applications` mock is required: `userStore.getAdminProjects` short-circuits to a synchronous return when the search string is empty (as it is on initial mount), so the admin-projects endpoint is never actually called in these tests.
++- Local fixture: `createProjectSettingFixture(overrides)` / `createProjectSettings(count, prefix)` — minimal fields from `ProjectSetting`.
++
++## Test cases (5 per file, 15 total)
++
++Per the ticket's acceptance criteria, each file gets:
++
++1. **Page-2 navigation loads the next page** — mock 25 items (`pages: 3`), click `Page 2`, remock page-2 data, assert page-2 item visible and page-1 item gone.
++2. **Per-page change reloads with the new size** — `document.getElementById('per-page')` → `fireEvent.click` to open the PrimeReact overlay → `fireEvent.click(screen.getByLabelText('20 items'))` (switching from the default 10 to 20, per `DECIMAL_PAGINATION_OPTIONS` — distinct from the prior task's `DEFAULT_PAGINATION_OPTIONS` 12/24 set); remock with a distinct 20-per-page dataset; assert the new item renders and `global.fetch` was called with `per_page=20`.
++3. **Pagination controls hidden when items fit on one page** — mock `pages: 1, total: 6`; assert `Page 2` button absent.
++4. **Previous button absent on first page** — mock `page: 0, pages: 3, total: 25`; assert `Previous page` button absent.
++5. **Next button absent on last page** — mock the initial response directly with `page: 2, pages: 3, total: 25` (stores trust the response's `page` field verbatim, confirmed in `dataSourceStore`/`userSettingsStore`/`projectSettingsStore`); assert `Next page` button absent.
++
++## Conventions carried over from the prior pagination task
++
++- `renderPage(path)` + `mockAPI(method, url, data)` — `mockAPI` calls precede `renderPage`; last call per key wins.
++- "Disabled" pagination controls = DOM absence, not the `disabled` attribute — `screen.queryByRole('button', { name: ... }).not.toBeInTheDocument()`.
++- `fireEvent` (not `userEvent`) for the PrimeReact per-page `<Select>` interaction — matches the established convention for this specific component.
++- No router/URL-sync assertions — none of these three pages sync pagination to the router (unlike some Assistants/Workflows tabs in the prior task).
++- `src/test-utils/integration.tsx` and `_mock-state.ts` are read-only; not modified.
++
++## Risk notes
++
++- `DataSourcesPage` has a 5-second background `REFRESH_TIMEOUT` re-fetch loop. Not mitigated with fake timers — the component's `useEffect` cleanup clears the pending timeout on unmount (via `setupTests.tsx`'s `afterEach` → RTL `cleanup()`), and each test completes in well under 5 seconds, so the timer should not fire mid-test. If flakiness appears during implementation, revisit with fake timers.
++- No CI pipeline currently gates `npm run test:integration` — verification is manual/local for this ticket, per AC #3.
++
++## Out of scope
++
++- Any production code change to `Table.tsx`, `Pagination.tsx`, `useTableFilters.ts`, the three stores, or `IntegrationsPage.tsx`/`IntegrationsTab.tsx`.
++- Modifying `src/test-utils/integration.tsx` or `_mock-state.ts`.
++- A shared/reusable pagination-assertion helper (optional per ticket; deliberately not introduced — see Approach).
++- Filter, sort, or create/edit/delete flow coverage for these three pages (already covered elsewhere, e.g. `DataSourceCreatePage.integration.test.tsx`).
++
++## Validation
++
++- `npm run test:integration -- DataSourcesPagination UserSettingsPagination ProjectSettingsPagination` locally per file while iterating.
++- Full `npm run test:integration` before handoff (qa-gates will also run this).
+diff --git a/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/technical-analysis.md b/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/technical-analysis.md
+new file mode 100644
+index 000000000..7a99c6341
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-14-pagination-tests-tables/technical-analysis.md
+@@ -0,0 +1,176 @@
++# Technical Research
++
++**Task**: pagination integration tests Table dataSources integrations
++**Generated**: 2026-07-14
++**Research path**: filesystem
++
++---
++
++## 1. Original Context
++
++Jira ticket EPMCDME-13481 — "Pagination tests: product Table lists (Data Sources, Integrations)"
++
++Issue Type: Sub-task, Status: Open
++
++## Description / Scope
++Add new integration tests for the pages built on the shared Table component (`Table.tsx` + `useTableFilters`):
++- Data Sources page (`src/pages/dataSources`)
++- Integrations — User and Project settings tables (`src/pages/integrations`)
++
++Files (new): under `src/pages/dataSources/__tests__` and `src/pages/integrations/__tests__`.
++
++If a reusable "assert a Table paginates" helper is introduced, put it in a NEW file and import it read-only; do not modify shared test infra (`src/test-utils/integration.tsx`, `_mock-state.ts`).
++
++## Acceptance Criteria
++1. For each list above:
++   - page-2 navigation loads the next page;
++   - per-page change reloads with the new size;
++   - pagination controls hidden/disabled when items fit on one page;
++   - Previous disabled on first page and Next disabled on last.
++2. Follows the `renderPage()` / `mockAPI()` pattern; no production code changes.
++3. All tests pass under `npm run test:integration`.
++
++## Related prior work
++This is a follow-up sub-task to EPMCDME-13479, which added pagination integration tests for the Assistants and Workflows tabs on branch EPMCDME-13479_pagination-tests-remaining-tabs (not yet merged to main). That branch's task directory is docs/superpowers/tasks/2026-07-13-pagination-tests-remaining-tabs/ — look at its spec.md, plan.md, and the actual test files it added (likely under src/pages/assistants/__tests__ and src/pages/workflows/__tests__) as a reference pattern for renderPage()/mockAPI() conventions, shared Table component usage, and any pagination test helper it may have introduced. Also check src/test-utils/integration.tsx and any _mock-state.ts for the existing test infrastructure.
++
++---
++
++## 2. Codebase Findings
++
++### Existing Implementations
++
++**Data Sources**
++- `src/pages/dataSources/DataSourcesPage.tsx` — route target under test; uses `useTableFilters({filterKey: FILTER_ENTITY.DATASOURCES, initialPagination: {page:0, perPage: indexStatusesPagination.perPage}})`; renders one `<Table>` with `perPageOptions={DECIMAL_PAGINATION_OPTIONS}`; data comes from `dataSourceStore.indexStatuses`/`indexStatusesPagination`, fetched via `getIndexesStatuses()` inside a `useEffect`. That effect also sets a **5s `REFRESH_TIMEOUT` background re-fetch loop** — a timing hazard for tests that don't await/cleanup carefully.
++- `src/pages/dataSources/components/DataSourceFilters.tsx` — sidebar filters; on mount calls `loadIndexUsers()` (`GET v1/index/users`) and `loadProjectOptions()` (via `userStore.getProjects`). These calls fire whenever `DataSourcesPage` mounts and must be accounted for in mocks (or left to global defaults if added).
++- `src/store/dataSources.ts` — `getIndexesStatuses()` → `GET v1/index?page=&filters=&per_page=&sort_key=&sort_order=`; response envelope **nested**: `{data, pagination:{page, per_page, pages, total}}`; local `DEFAULT_PER_PAGE = 10`.
++
++**Integrations**
++- `src/pages/integrations/IntegrationsPage.tsx` — route target (`/integrations`); hosts `IntegrationsTab`.
++- `src/pages/integrations/IntegrationsTab.tsx` — tab switch is **local React state** (`integrationType`), not a route change; `SelectButton` toggles `IntegrationOption.USER` / `IntegrationOption.PROJECT`. Defaults to `USER`. The "Project" `SelectButton` option is only shown if the mocked user is admin (`is_admin: true` or non-empty `applicationsAdmin`) — tests targeting ProjectSettings pagination must mock `v1/user` accordingly and click the SelectButton to switch tabs before asserting pagination.
++- `src/pages/integrations/components/UserSettings/UserSettings.tsx` — `useTableFilters({filterKey: FILTER_ENTITY.USER_SETTINGS, initialPagination:{page:0, perPage: userSettingsPagination.perPage}})`; fetch on `[pagination, filters]` change via `userSettingsStore.fetchUserSettings(page, perPage, filters)`; `perPageOptions={DECIMAL_PAGINATION_OPTIONS}`.
++- `src/pages/integrations/components/ProjectSettings/ProjectSettings.tsx` — same shape, `FILTER_ENTITY.PROJECT_SETTINGS`, `projectSettingsStore.fetchProjectSettings`.
++- `src/store/userSettings.ts` — `fetchUserSettings(page,perPage,filters)` → `GET v1/settings/user?page=&per_page=&filters=`; nested envelope `{data, pagination:{...}}`; `DEFAULT_PER_PAGE = 10`.
++- `src/store/projectSettings.ts` — `fetchProjectSettings(page,perPage,filters)` → `GET v1/settings/project?page=&per_page=&filters=`; same nested envelope; `DEFAULT_PER_PAGE = 10`.
++- `src/store/user.ts` — `loadIndexUsers` → `GET v1/index/users`; `loadProjectSettingsUsers` → `GET v1/settings/project/users`; `getAdminProjects` → `GET v1/admin/applications` (only if `user.isAdmin`).
++
++**Shared components**
++- `src/components/Table/Table.tsx` — memoized; renders `<Pagination>` only when `pagination && !embedded`; passes `perPageOptions`, `pagination.{page,totalPages,perPage,totalCount}`, `onPaginationChange`.
++- `src/components/Pagination/Pagination.tsx` — returns `null` entirely when `totalPages <= 1` (no nav rendered at all). Previous/Next buttons (`aria-label="Previous page"` / `"Next page"`) are **conditionally absent from the DOM on first/last page — not rendered-but-`disabled`**. Page buttons carry `aria-label="Page N"` (1-indexed). Per-page `<Select id="per-page">` only renders when `perPage` is truthy; selecting a new value calls `setPage(0, newPerPage)`.
++- `src/hooks/useTableFilters.ts` — `useTableFilters({filterKey, initialPagination, ...})` returns `{sort, pagination, filters, onSort, applyFilters, onPaginationUpdate}`.
++- `src/constants/index.ts` — `DECIMAL_PAGINATION_OPTIONS = [10, 20, 50, 100]` items — used by DataSources/UserSettings/ProjectSettings. This is **distinct** from `DEFAULT_PAGINATION_OPTIONS` (`12/24/45/90`) used by Assistants/Workflows in the prior task — do not reuse the prior task's "24 items" literal.
++
++**Important behavioral difference from the prior task (EPMCDME-13479)**: neither `useTableFilters.onPaginationUpdate` nor `DataSourcesPage`/`UserSettings`/`ProjectSettings` push pagination state to the router — no URL query-param sync exists for these three pages, unlike some Assistants/Workflows tabs. Tests do not need router-push/URL-sync assertions here.
++
++### Architecture and Layers Affected
++- Page/route layer: `DataSourcesPage.tsx`, `IntegrationsPage.tsx` → `IntegrationsTab.tsx` (in-page tab state, not routing).
++- Shared UI component layer: `Table.tsx`, `Pagination.tsx`, `Filters.tsx` (test-only consumers, not modified).
++- Hook layer: `useTableFilters.ts`, `useProjectOptions.ts`, `useIntegrationTypeOptions.ts`.
++- Store (Valtio) layer: `dataSourceStore`, `userSettingsStore`, `projectSettingsStore`.
++- HTTP client: `api.get(...)` wrapper used by all three stores; intercepted in tests by the global `fetch` mock (`requestRegistry` / `mockAPI`).
++- Test layer (new): `src/pages/dataSources/__tests__/*.integration.test.tsx` (extend existing dir), `src/pages/integrations/__tests__/*.integration.test.tsx` (new dir, does not exist yet).
++
++### Integration Points
++- `src/test-utils/integration.tsx` — `renderPage(path)` (mounts real router via `createMemoryRouter`), `mockAPI(method, url, data, paramsOrStatus?)` (exact-pathname match after `v1/` prefix stripping, optional query-param/status narrowing). **Read-only per task constraints.**
++- `src/test-utils/_mock-state.ts` — shared `requestRegistry` Map + `navigate` vi.fn singleton. **Read-only per task constraints.**
++- `src/setupTests.tsx` — global `fetch` mock with hardcoded `globalDefaults` (`v1/config`, `v1/user`, `v1/user/reactions`, `v1/assistants`, etc.). **No global defaults exist for `v1/index`, `v1/index/users`, `v1/settings/user`, `v1/settings/project`, `v1/settings/project/users`, `v1/admin/applications`** — every new test must mock these explicitly.
++- `src/test-utils/component-interactions/select.ts` — exports `selectDropdownOption(identifier, optionLabel, options)`, a reusable helper for driving the PrimeReact dropdown/overlay. None of the existing pagination tests (Assistants/Workflows) actually exercise the per-page dropdown end-to-end via this helper — using it for "per-page change" assertions here would be new usage of an existing utility, not a new pattern.
++- Routes: `/data-sources` → `DataSourcesPage`; `/integrations` → `IntegrationsPage` (single route, tab is client state).
++
++### Patterns and Conventions
++- `renderPage(path)` + `mockAPI(method, url, data)` + `await waitFor(...)` — standard shape; `mockAPI` calls must precede `renderPage`; last call per key wins.
++- Nested pagination envelope `{data, pagination:{page, per_page, pages, total}}` used uniformly by `v1/index`, `v1/settings/user`, `v1/settings/project` — no flat-envelope variant to worry about here (unlike the prior task's Favorites endpoints).
++- "Disabled" pagination controls = DOM absence, not the `disabled` attribute: assert via `screen.queryByRole('button', {name: 'Previous page'|'Next page'|'Page N'}).not.toBeInTheDocument()`.
++- Per-page change interaction (untested pattern until now): `document.getElementById('per-page')` → open the PrimeReact overlay → select the new option (via `fireEvent.click`, not `userEvent`, per the prior task's established convention for this component) → assert `global.fetch` called with `per_page=<n>` in the URL.
++- Per-file bulk fixture factory convention observed in prior pagination tests: `createXFixture(overrides)` + `createXs(count, prefix)`.
++- No existing reusable "assert a Table paginates" helper exists anywhere in the repo — this ticket is the first to need one; per its own scope it must live in a new file, imported read-only, without touching `integration.tsx` or `_mock-state.ts`.
++- Reference test files (from the unmerged EPMCDME-13479 branch, commit `f6cdb7a65`, not present on the current branch except via `.state.json`):
++  - `src/pages/assistants/__tests__/AssistantTemplatesPagination.integration.test.tsx` — dedicated pagination-only file, page-2 click, hidden-when-one-page, URL-sync, nested-envelope, error-toast tests.
++  - `src/pages/workflows/__tests__/WorkflowTemplatesPagination.integration.test.tsx` — dedicated pagination-only file, most exhaustive template (buttons shown when >1 page, total count text, first-page-items-only, next-page click, hidden-when-one-page, back-to-page-1, URL query sync, paginated response shape, error toast).
++  - `src/pages/assistants/__tests__/AssistantsListPage.integration.test.tsx` and `src/pages/workflows/__tests__/WorkflowsListPage.integration.test.tsx` — embedded `describe('Pagination', …)` / `describe('Favorites Pagination')` blocks added to existing multi-tab list-page files.
++- Existing `src/pages/dataSources/__tests__/DataSourceCreatePage.integration.test.tsx` is a same-directory precedent for integration test conventions (imports, mock shape) even though it covers the create flow, not pagination.
++
++---
++
++## 3. Documentation Findings
++
++### Guides and Architecture Docs
++- `.ai-run/guides/testing/testing-patterns.md` — P0, directly authoritative: documents the `renderPage()`/`mockAPI()` pattern, `*.integration.test.tsx` naming under `__tests__/`, mocking rules, query priority, DO/DON'T table, common pitfalls.
++- `.ai-run/guides/testing/qa-strategy.md` — confirms the Vitest workspace `unit`/`integration` project split and coverage config.
++- `.ai-run/guides/testing/qa-health.md` — present, not required beyond `testing-patterns.md` as the P0 guide.
++- **Discrepancy**: `AGENTS.md` (and `CLAUDE.md`, which is just `@AGENTS.md`) describes itself as an execution guide for "the CodeMie **backend** repository" and its Guide Imports/Task Classifier tables reference backend-only paths (FastAPI, SQLModel, LangChain, pytest) that do not exist in this repo's `.ai-run/guides/` tree — no `agents/`, `api/`, `data/`, `integration/`, `workflows/` subdirs are present. This is stale boilerplate from a backend template. The actual `.ai-run/guides/testing/testing-patterns.md` content, however, is correctly frontend-flavored (Vitest/RTL) and trustworthy despite the surrounding entrypoint's wrong framing.
++
++### Architectural Decisions
++- Prior task (EPMCDME-13479) approach, reconstructed from its `.state.json` and the surviving reference test files: extended two existing multi-tab list-page files rather than creating new ones for the "remaining tabs" scope, using `AssistantTemplatesPagination.integration.test.tsx` as the reference pattern; distinguished nested vs flat response envelopes per endpoint; established "absence, not `disabled`" as the convention for asserting Previous/Next state; used `fireEvent` (not `userEvent`) for the PrimeReact per-page dropdown.
++- `spec.md`/`plan.md` for EPMCDME-13479 exist only in that branch's git history (commit `ed243918a`, branch `EPMCDME-13479_pagination-tests-remaining-tabs`), which is **not merged to main** and not present in the current working tree beyond `.state.json`. Direct comparison would require checking out that branch/commit.
++- No formal ADR/DECISION markers exist anywhere in the affected source files — behavioral facts (DOM-absence pattern, envelope shape, no URL-sync for these three pages) are implicit and code-derived, not documented.
++
++### Derived Conventions
++- Test naming convention observed: `it('navigates to page 2 when page button clicked')`, `it('Previous page button absent on first page')`, `it('Next page button absent on last page')`, `it('does not show pagination buttons when items fit on one page')` — "absent" phrasing, not "disabled".
++- `src/pages/integrations/` currently has no `__tests__/` directory at all — must be created for this ticket.
++
++---
++
++## 4. Testing Landscape
++
++### Existing Coverage
++- `src/pages/dataSources/__tests__/DataSourceCreatePage.integration.test.tsx` — create-flow only (type selection, validation), no list/pagination coverage.
++- `src/pages/dataSources/__tests__/constants.test.ts` — plain unit test, unrelated to pagination.
++- `src/pages/dataSources/components/__tests__/*`, `.../DataSourceForm/hooks/__tests__/*` — component/hook-level, unrelated to list pagination.
++- `src/pages/integrations/__tests__/` — **directory does not exist**; zero test files anywhere under `src/pages/integrations`.
++- `src/components/Pagination/__tests__/Pagination.test.tsx`, `Hint.test.tsx` — unit tests of the shared Pagination component itself, not page-level integration coverage.
++- Reference pagination coverage exists only for Assistants/Workflows (from the unmerged EPMCDME-13479 branch): `AssistantTemplatesPagination.integration.test.tsx`, `WorkflowTemplatesPagination.integration.test.tsx`, plus embedded blocks in `AssistantsListPage.integration.test.tsx` / `WorkflowsListPage.integration.test.tsx`.
++
++### Testing Framework and Patterns
++- Vitest 1.6.1, @testing-library/react 16.3.0, @testing-library/user-event 14.6.1, jsdom environment.
++- `vitest.workspace.ts` defines two projects: `unit` (mocked stores, `**/__tests__/**/*.{test,spec}.*`, excludes `*.integration.test.*`) and `integration` (real Valtio stores + mocked global `fetch`, `**/__tests__/**/*.integration.test.?(c|m)[jt]s?(x)`, setup via `src/setupTests.tsx`). Run via `npm run test:integration` → `vitest run --project integration`.
++- `afterEach` in `src/setupTests.tsx` clears `requestRegistry`, the `navigate` mock, `fetchMock`, calls `cleanup()`, and resets `appInfoStore`.
++- Assertion style for "reload with new page/filter": re-register `mockAPI` with new fixture data right before the user action, then `await waitFor(...)` on new content and/or assert `global.fetch` called with the expected query string.
++
++### Coverage Gaps
++- `src/pages/dataSources/__tests__` — zero pagination tests today.
++- `src/pages/integrations/__tests__` — does not exist; fully greenfield for both UserSettings and ProjectSettings tables.
++- No generic "assert Table paginates" helper exists in the repo — this ticket introduces the first one.
++- No existing pagination test (Assistants/Workflows included) actually drives the per-page `<Select>` end-to-end via `selectDropdownOption` — the "per-page change reloads with new size" AC requires genuinely new interaction code, not a copy-paste of an established pattern.
++- No global `fetch` defaults exist for `v1/index`, `v1/index/users`, `v1/settings/user`, `v1/settings/project`, `v1/settings/project/users`, `v1/admin/applications` — every new test must mock these explicitly, increasing per-test setup surface.
++
++---
++
++## 5. Configuration and Environment
++
++### Environment Variables
++- No `import.meta.env` / `process.env` usage found under `src/pages/dataSources`, `src/pages/integrations`, or `src/test-utils` — these pages and the test infra don't read env vars directly. No env setup is needed for these new tests.
++
++### Configuration Files
++- `vitest.workspace.ts` — new tests must be named `*.integration.test.tsx` under a `__tests__/` directory to be picked up by the `integration` project.
++- `package.json` — `test:integration` script (`vitest run --project integration`) is the command ACs require to pass; `test:coverage` runs only the `unit` project and does not include integration tests.
++- `vite.config.ts` — shared base config; istanbul coverage excludes `**/__tests__/**` (not relevant to gating these new tests, since coverage runs on `unit` only).
++- `src/setupTests.tsx` — shared setup for the `integration` project (global fetch mock, defaults, cleanup hooks).
++
++### Feature Flags and Deployment Concerns
++- No feature flags gate pagination behavior in `Table.tsx`, `useTableFilters.ts`, `DataSourcesPage.tsx`, `IntegrationsPage.tsx`, or `IntegrationsTab.tsx`. The only flag found near this area (`features:sharepointCodeMieOAuth` in `DataSourceForm/IndexTypeField/IndexTypeSharePoint.tsx`) gates SharePoint OAuth UI and is unrelated.
++- No CI/CD pipeline definitions (`.github/workflows`, `.gitlab-ci.yml`, `Jenkinsfile`) exist in this repo — test execution appears to be local/pre-commit only (`husky` + `check:pre-commit` script). There is no visible automated gate enforcing `npm run test:integration` passes before merge; this is a process risk worth flagging, not something the tests themselves need to address.
++
++---
++
++## 6. Risk Indicators
++
++- `src/pages/integrations/__tests__` does not exist — must be created; fully greenfield for both UserSettings and ProjectSettings, no prior test file to pattern-match line-by-line within that directory.
++- No global default `fetch` mocks exist for `v1/index`, `v1/index/users`, `v1/settings/user`, `v1/settings/project`, `v1/settings/project/users`, `v1/admin/applications` — every new test needs explicit mocks for these endpoints, increasing setup boilerplate and risk of flaky/incomplete mocking (e.g. `DataSourceFilters.tsx` calls `loadIndexUsers`/`loadProjectOptions` on mount alongside the main list fetch).
++- `DataSourcesPage.tsx` has a background 5s `REFRESH_TIMEOUT` re-fetch loop (`useEffect`) that can re-trigger `mockAPI`-backed fetches during a test if it isn't torn down or awaited carefully — potential source of flaky/act-warning failures.
++- ProjectSettings pagination tests require the mocked `v1/user` response to grant admin/`applicationsAdmin` access (to reveal the "Project" `SelectButton` option) plus a UI click to switch tabs before any pagination assertions — extra setup complexity not present in the Assistants/Workflows precedent (which used direct route navigation between tabs).
++- The per-page dropdown ("per-page change reloads with new size" AC) is not exercised end-to-end by any existing pagination test in the repo — this is new interaction code, not a copy of an established pattern, even though the underlying `selectDropdownOption` helper already exists in `component-interactions/select.ts`.
++- `DECIMAL_PAGINATION_OPTIONS` (`10/20/50/100`) applies to dataSources/integrations, not `DEFAULT_PAGINATION_OPTIONS` (`12/24/45/90`) used by the prior task's Assistants/Workflows tests — reusing prior literals (e.g. "24 items") verbatim would be incorrect for this ticket.
++- The prior task's `spec.md`/`plan.md` (EPMCDME-13479) exist only on an unmerged branch's git history, not in the current working tree — cannot be read directly without checking out that branch/commit; only `.state.json` remains in `docs/superpowers/tasks/2026-07-13-pagination-tests-remaining-tabs/`.
++- No CI/CD pipeline exists in this repo to gate `npm run test:integration` automatically — AC #3 ("all tests pass under npm run test:integration") currently depends on local/manual verification.
++- `AGENTS.md`/`CLAUDE.md` guide entrypoint is stale and backend-flavored (describes FastAPI/pytest conventions that don't apply here), though the actual `.ai-run/guides/testing/testing-patterns.md` content is correct and frontend-flavored — a reader following the entrypoint literally could be misdirected.
++- If a shared "assert a Table paginates" helper is introduced (optional per ticket), it must correctly abstract over three different data-fetch/store wiring paths (`dataSourceStore`, `userSettingsStore`, `projectSettingsStore`) and the ProjectSettings tab-switch precondition — a naive extraction risks being either too rigid (breaks on ProjectSettings) or too loose (misses assertions).
++
++---
++
++## 7. Summary for Complexity Assessment
++
++This task touches three page-level components (`DataSourcesPage`, `UserSettings`, `ProjectSettings`) that share the same `Table.tsx` + `useTableFilters` + `Pagination.tsx` infrastructure already exercised by the prior EPMCDME-13479 task for Assistants/Workflows, so the underlying pagination mechanics (DOM-absence convention for disabled controls, nested `{data, pagination}` envelope, `renderPage()`/`mockAPI()` test harness) are well understood and directly reusable. The expected file-change surface is entirely new test files: likely 1–2 files under `src/pages/dataSources/__tests__` (extending an existing directory) and a brand-new `src/pages/integrations/__tests__` directory with 1–2 files covering both UserSettings and ProjectSettings, plus an optional new shared pagination-assertion helper file. No production code changes are required or permitted.
++
++Technical novelty is moderate rather than low: unlike the prior task, these three pages have no router URL-sync for pagination (simpler in one dimension), but the "per-page change" AC requires genuinely new interaction code — no existing pagination test in the repo drives the PrimeReact per-page `<Select>` end-to-end, even though a generic `selectDropdownOption` helper already exists to do so. ProjectSettings additionally requires mocking an admin user and performing a UI tab-switch click before pagination can even be asserted, which is a new setup wrinkle relative to the direct-route-navigation pattern used for Assistants/Workflows tabs.
++
++Test coverage posture is a clean gap rather than a regression risk: `src/pages/dataSources/__tests__` exists but has zero pagination coverage, and `src/pages/integrations/__tests__` does not exist at all. The main risk factors for complexity scoring are (1) the absence of global `fetch` mock defaults for six relevant endpoints, forcing explicit per-test mocking across three page types; (2) a background 5-second refetch timer in `DataSourcesPage` that could introduce test flakiness if not handled; and (3) the admin-gated ProjectSettings tab requiring extra mock/interaction setup before its pagination behavior can be tested at all.
+diff --git a/src/pages/dataSources/__tests__/DataSourcesPagination.integration.test.tsx b/src/pages/dataSources/__tests__/DataSourcesPagination.integration.test.tsx
+new file mode 100644
+index 000000000..91c6a2d75
+--- /dev/null
++++ b/src/pages/dataSources/__tests__/DataSourcesPagination.integration.test.tsx
+@@ -0,0 +1,164 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { fireEvent, screen, waitFor } from '@testing-library/react'
++import userEvent from '@testing-library/user-event'
++import { describe, it, expect } from 'vitest'
++
++import { renderPage, mockAPI } from '@/test-utils/integration'
++
++describe('DataSourcesPage - Pagination', () => {
++  const mockIndexUsers = () => mockAPI('GET', 'v1/index/users', [])
++
++  const createDataSourceFixture = (overrides = {}) => ({
++    id: 'ds-1',
++    project_name: 'test-project',
++    repo_name: 'DataSource 1',
++    index_type: 'confluence',
++    created_by: { id: 'user-1', email: 'user1@example.com', name: 'User One', username: 'user1' },
++    project_space_visible: true,
++    link: null,
++    date: '2024-01-01T00:00:00Z',
++    update_date: '2024-01-01T00:00:00Z',
++    text: '',
++    full_name: 'DataSource 1',
++    current_state: 0,
++    complete_state: 0,
++    current__chunks_state: 0,
++    error: false,
++    completed: true,
++    is_fetching: false,
++    is_queued: false,
++    user_abilities: [],
++    jira: { jql: '' },
++    xray: { jql: '' },
++    ...overrides,
++  })
++
++  const createDataSources = (count: number, prefix = 'DataSource') =>
++    Array.from({ length: count }, (_, i) =>
++      createDataSourceFixture({
++        id: `ds-${i + 1}`,
++        repo_name: `${prefix} ${i + 1}`,
++      })
++    )
++
++  it('shows next page of data sources when pagination button is clicked', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 1')).toBeInTheDocument()
++      expect(screen.getByRole('button', { name: 'Page 2' })).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25).slice(10, 20),
++      pagination: { page: 1, per_page: 10, pages: 3, total: 25 },
++    })
++
++    const user = userEvent.setup()
++    await user.click(screen.getByRole('button', { name: 'Page 2' }))
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 11')).toBeInTheDocument()
++      expect(screen.queryByText('DataSource 1')).not.toBeInTheDocument()
++    })
++  })
++
++  it('reloads data sources when per-page selection changes', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 1')).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/index', {
++      data: [createDataSourceFixture({ id: 'ds-perpage', repo_name: 'DataSource PerPage' })],
++      pagination: { page: 0, per_page: 20, pages: 2, total: 25 },
++    })
++
++    const perPageSelect = document.getElementById('per-page') as HTMLElement
++    fireEvent.click(perPageSelect)
++    fireEvent.click(screen.getByLabelText('20 items'))
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource PerPage')).toBeInTheDocument()
++    })
++
++    expect(global.fetch).toHaveBeenCalledWith(
++      expect.stringContaining('per_page=20'),
++      expect.anything()
++    )
++  })
++
++  it('does not show pagination buttons when data sources fit on one page', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(6),
++      pagination: { page: 0, per_page: 10, pages: 1, total: 6 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 1')).toBeInTheDocument()
++      expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
++    })
++  })
++
++  it('Previous page button absent on first page', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 1')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument()
++  })
++
++  it('Next page button absent on last page', async () => {
++    mockIndexUsers()
++    mockAPI('GET', 'v1/index', {
++      data: createDataSources(25).slice(20, 25),
++      pagination: { page: 2, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/data-sources')
++
++    await waitFor(() => {
++      expect(screen.getByText('DataSource 25')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
++  })
++})
+diff --git a/src/pages/integrations/__tests__/ProjectSettingsPagination.integration.test.tsx b/src/pages/integrations/__tests__/ProjectSettingsPagination.integration.test.tsx
+new file mode 100644
+index 000000000..9e676ad3e
+--- /dev/null
++++ b/src/pages/integrations/__tests__/ProjectSettingsPagination.integration.test.tsx
+@@ -0,0 +1,185 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { fireEvent, screen, waitFor } from '@testing-library/react'
++import userEvent from '@testing-library/user-event'
++import { describe, it, expect } from 'vitest'
++
++import { renderPage, mockAPI } from '@/test-utils/integration'
++
++describe('ProjectSettings - Pagination', () => {
++  const mockAdminSetup = () => {
++    mockAPI('GET', 'v1/user', {
++      user_id: 'test-user-id',
++      email: 'test@example.com',
++      name: 'Test User',
++      username: 'testuser',
++      is_admin: true,
++      is_maintainer: false,
++      user_type: 'INTERNAL',
++      applications: [],
++    })
++    mockAPI('GET', 'v1/settings/user', {
++      data: [],
++      pagination: { page: 0, per_page: 10, pages: 0, total: 0 },
++    })
++    mockAPI('GET', 'v1/settings/project/users', [])
++  }
++
++  const switchToProjectTab = async () => {
++    await waitFor(() => {
++      expect(screen.getByRole('button', { name: 'Project' })).toBeInTheDocument()
++    })
++    const user = userEvent.setup()
++    await user.click(screen.getByRole('button', { name: 'Project' }))
++  }
++
++  const createProjectSettingFixture = (overrides = {}) => ({
++    user_id: 'test-user-id',
++    id: 'setting-1',
++    date: '2024-01-01T00:00:00Z',
++    alias: 'Setting 1',
++    credential_type: 'jira',
++    update_date: '2024-01-01T00:00:00Z',
++    project_name: 'test-project',
++    display_name: null,
++    default: false,
++    credential_values: [],
++    setting_hash: null,
++    is_global: false,
++    setting_type: 'project',
++    ...overrides,
++  })
++
++  const createProjectSettings = (count: number, prefix = 'Setting') =>
++    Array.from({ length: count }, (_, i) =>
++      createProjectSettingFixture({
++        id: `setting-${i + 1}`,
++        alias: `${prefix} ${i + 1}`,
++      })
++    )
++
++  it('shows next page of project settings when pagination button is clicked', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++      expect(screen.getByRole('button', { name: 'Page 2' })).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25).slice(10, 20),
++      pagination: { page: 1, per_page: 10, pages: 3, total: 25 },
++    })
++
++    const user = userEvent.setup()
++    await user.click(screen.getByRole('button', { name: 'Page 2' }))
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 11')).toBeInTheDocument()
++      expect(screen.queryByText('Setting 1')).not.toBeInTheDocument()
++    })
++  })
++
++  it('reloads project settings when per-page selection changes', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/settings/project', {
++      data: [createProjectSettingFixture({ id: 'setting-perpage', alias: 'Setting PerPage' })],
++      pagination: { page: 0, per_page: 20, pages: 2, total: 25 },
++    })
++
++    const perPageSelect = document.getElementById('per-page') as HTMLElement
++    fireEvent.click(perPageSelect)
++    fireEvent.click(screen.getByLabelText('20 items'))
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting PerPage')).toBeInTheDocument()
++    })
++
++    expect(global.fetch).toHaveBeenCalledWith(
++      expect.stringContaining('per_page=20'),
++      expect.anything()
++    )
++  })
++
++  it('does not show pagination buttons when project settings fit on one page', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(6),
++      pagination: { page: 0, per_page: 10, pages: 1, total: 6 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++      expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
++    })
++  })
++
++  it('Previous page button absent on first page', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument()
++  })
++
++  it('Next page button absent on last page', async () => {
++    mockAdminSetup()
++    mockAPI('GET', 'v1/settings/project', {
++      data: createProjectSettings(25).slice(20, 25),
++      pagination: { page: 2, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++    await switchToProjectTab()
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 25')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
++  })
++})
+diff --git a/src/pages/integrations/__tests__/UserSettingsPagination.integration.test.tsx b/src/pages/integrations/__tests__/UserSettingsPagination.integration.test.tsx
+new file mode 100644
+index 000000000..65122fcdd
+--- /dev/null
++++ b/src/pages/integrations/__tests__/UserSettingsPagination.integration.test.tsx
+@@ -0,0 +1,149 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { fireEvent, screen, waitFor } from '@testing-library/react'
++import userEvent from '@testing-library/user-event'
++import { describe, it, expect } from 'vitest'
++
++import { renderPage, mockAPI } from '@/test-utils/integration'
++
++describe('UserSettings - Pagination', () => {
++  const createUserSettingFixture = (overrides = {}) => ({
++    user_id: 'test-user-id',
++    id: 'setting-1',
++    date: '2024-01-01T00:00:00Z',
++    alias: 'Setting 1',
++    credential_type: 'jira',
++    update_date: '2024-01-01T00:00:00Z',
++    project_name: 'test-project',
++    display_name: null,
++    default: false,
++    credential_values: [],
++    setting_hash: null,
++    is_global: false,
++    setting_type: 'user',
++    ...overrides,
++  })
++
++  const createUserSettings = (count: number, prefix = 'Setting') =>
++    Array.from({ length: count }, (_, i) =>
++      createUserSettingFixture({
++        id: `setting-${i + 1}`,
++        alias: `${prefix} ${i + 1}`,
++      })
++    )
++
++  it('shows next page of user settings when pagination button is clicked', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++      expect(screen.getByRole('button', { name: 'Page 2' })).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25).slice(10, 20),
++      pagination: { page: 1, per_page: 10, pages: 3, total: 25 },
++    })
++
++    const user = userEvent.setup()
++    await user.click(screen.getByRole('button', { name: 'Page 2' }))
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 11')).toBeInTheDocument()
++      expect(screen.queryByText('Setting 1')).not.toBeInTheDocument()
++    })
++  })
++
++  it('reloads user settings when per-page selection changes', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++    })
++
++    mockAPI('GET', 'v1/settings/user', {
++      data: [createUserSettingFixture({ id: 'setting-perpage', alias: 'Setting PerPage' })],
++      pagination: { page: 0, per_page: 20, pages: 2, total: 25 },
++    })
++
++    const perPageSelect = document.getElementById('per-page') as HTMLElement
++    fireEvent.click(perPageSelect)
++    fireEvent.click(screen.getByLabelText('20 items'))
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting PerPage')).toBeInTheDocument()
++    })
++
++    expect(global.fetch).toHaveBeenCalledWith(
++      expect.stringContaining('per_page=20'),
++      expect.anything()
++    )
++  })
++
++  it('does not show pagination buttons when user settings fit on one page', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(6),
++      pagination: { page: 0, per_page: 10, pages: 1, total: 6 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++      expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
++    })
++  })
++
++  it('Previous page button absent on first page', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25),
++      pagination: { page: 0, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 1')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument()
++  })
++
++  it('Next page button absent on last page', async () => {
++    mockAPI('GET', 'v1/settings/user', {
++      data: createUserSettings(25).slice(20, 25),
++      pagination: { page: 2, per_page: 10, pages: 3, total: 25 },
++    })
++
++    renderPage('/integrations')
++
++    await waitFor(() => {
++      expect(screen.getByText('Setting 25')).toBeInTheDocument()
++    })
++
++    expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
++  })
++})

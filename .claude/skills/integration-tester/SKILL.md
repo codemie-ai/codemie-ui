@@ -432,6 +432,7 @@ Integration tests complete for [Component]:
 11. ❌ **Fixing individual tests before pattern analysis** → Group errors first, fix patterns, then individuals
 12. ❌ **Using `Record<string, any>` in fixture overrides** → Use `Partial<EntityType>` for type safety and IDE completion
 13. ❌ **Section comment decorators** (`// ─── Section Name ───`) → Use `describe()` blocks for grouping instead
+14. ❌ **Reaching for `vi.useFakeTimers()` on a page with background polling** (a self-rescheduling `setTimeout`/`setInterval`) → it also fakes `waitFor`/`userEvent`'s internal timers and trades one flake for another. Track and force-clear real timers in `afterEach` instead — see `references/setup.md` → "Background Polling / Self-Rescheduling Timers"
 
 **Technical gotchas**: See `references/setup.md` → "Common Pitfalls" for technical details (fixtures, store initialization, component hierarchy, etc.)
 

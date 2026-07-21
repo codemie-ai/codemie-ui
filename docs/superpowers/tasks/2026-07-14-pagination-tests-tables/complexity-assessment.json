@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "task": "Add integration tests for pagination behavior on the Data Sources page and the User/Project Settings tables under Integrations, following the existing renderPage()/mockAPI() pattern, with no production code changes.",
+  "generated": "2026-07-14",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 17,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Three distinct page-level components (DataSourcesPage, UserSettings, ProjectSettings) must be covered, each wired to a different Valtio store (dataSourceStore, userSettingsStore, projectSettingsStore); the ticket also invites an optional new cross-cutting 'assert a Table paginates' helper that would need to abstract over all three data-fetch paths plus the ProjectSettings admin-gated tab-switch precondition." },
+    { "dimension": "requirements_clarity", "reason": "Acceptance criteria are detailed and unambiguous, but the task is explicitly 'similar to the prior EPMCDME-13479 task but different' in several load-bearing ways (DECIMAL_PAGINATION_OPTIONS vs DEFAULT_PAGINATION_OPTIONS, no router URL-sync for these pages, new per-page-dropdown interaction, admin-gated ProjectSettings tab click) — a red flag that bumped this from S to M." },
+    { "dimension": "technical_risk", "reason": "Core pagination mechanics (DOM-absence convention, nested envelope, renderPage()/mockAPI() harness) are already proven by the prior task, but the 'per-page change' AC requires genuinely new end-to-end interaction code (no existing test drives the PrimeReact per-page <Select> via selectDropdownOption), and DataSourcesPage has a background 5s refetch timer plus no global fetch-mock defaults for 6 relevant endpoints, raising flakiness/setup risk." }
+  ],
+  "red_flags_applied": [
+    "Requirements Clarity bumped from S to M: task is explicitly framed as 'similar to prior task (EPMCDME-13479) but different' in pagination option constants, URL-sync behavior, per-page interaction, and admin-gated tab-switch setup"
+  ],
+  "split_recommendation": null
+}

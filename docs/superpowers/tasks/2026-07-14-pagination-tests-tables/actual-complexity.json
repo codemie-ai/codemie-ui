@@ -1,0 +1,64 @@
+{
+  "task": "Add pagination integration tests for the DataSources, Project Settings, and User Settings tabs",
+  "generated": "2026-07-14T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 2,
+      "label": "S",
+      "affected": "DataSourcesPage, ProjectSettings (Integrations page - Project tab), UserSettings (Integrations page - User tab)",
+      "layers": "Test/Integration layer only (existing pagination UI is exercised via tests; no production components modified)"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": "Test-only addition reusing the exact renderPage/mockAPI integration-test pattern already established by the prior pagination-tests commit (f6cdb7a65) for Assistants and Workflows tabs"
+    },
+    "file_change_estimate": {
+      "score": 4,
+      "label": "L",
+      "modified_files": 0,
+      "modified_file_list": [],
+      "new_files": 7,
+      "new_file_list": [
+        "docs/superpowers/tasks/2026-07-14-pagination-tests-tables/complexity-assessment.json",
+        "docs/superpowers/tasks/2026-07-14-pagination-tests-tables/plan.md",
+        "docs/superpowers/tasks/2026-07-14-pagination-tests-tables/spec.md",
+        "docs/superpowers/tasks/2026-07-14-pagination-tests-tables/technical-analysis.md",
+        "src/pages/dataSources/__tests__/DataSourcesPagination.integration.test.tsx",
+        "src/pages/integrations/__tests__/ProjectSettingsPagination.integration.test.tsx",
+        "src/pages/integrations/__tests__/UserSettingsPagination.integration.test.tsx"
+      ],
+      "affected_dirs": ["docs", "src"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["Testing/Integration"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 10,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 7,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "diffstat reports 7 files changed (all new: 3 integration test files plus 4 planning artifacts under docs/superpowers/tasks/), which maps to the L tier on the actual-mode file-count scale even though the change is purely additive test content" }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
