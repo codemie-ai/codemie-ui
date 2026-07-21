@@ -37,6 +37,7 @@ vi.mock('@/utils/api', async (importOriginal) => {
     },
     parseContentDispositionFilename: mod.parseContentDispositionFilename,
     sanitizeFileName: mod.sanitizeFileName,
+    formatErrorMessage: mod.formatErrorMessage,
   }
 })
 

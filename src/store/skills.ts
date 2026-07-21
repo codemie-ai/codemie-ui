@@ -33,7 +33,8 @@ import {
   SkillUpdateRequest,
   SkillVisibility,
 } from '@/types/entity/skill'
-import api from '@/utils/api'
+import api, { DEFAULT_ERROR_MESSAGE, formatErrorMessage } from '@/utils/api'
+import { HttpError } from '@/utils/handleMultipartError'
 import toaster from '@/utils/toaster'
 
 import { preferencesStore } from './preferences'
@@ -308,10 +309,10 @@ export const skillsStore = proxy<SkillsStoreType>({
       const response = await api.postMultipart(url, formData)
       return await response.json()
     } catch (error: any) {
-      const errorMessage =
-        error?.parsedError?.message ?? error?.message ?? 'Failed to import bundle'
-      toaster.error(errorMessage)
-      throw error
+      if (error instanceof HttpError && error.parsedError?.details) {
+        throw new Error(formatErrorMessage({ error: error.parsedError }))
+      }
+      throw new Error(DEFAULT_ERROR_MESSAGE)
     }
   },
 

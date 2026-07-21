@@ -1,0 +1,21 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "rationale": "Both blocking findings resolved. CR-001: postMultipart/putMultipart now call parseErrorBody(response.clone()), keeping the original response body unconsumed for handleMultipartError. CR-002: skills.ts gates on parsedError.details before formatting; falls back to DEFAULT_ERROR_MESSAGE otherwise. No new issues introduced by the fix-up diff.",
+  "business_review": [
+    { "criterion": "ZIP 400: show formatted message once", "status": "pass" },
+    { "criterion": "Non-JSON 502: show DEFAULT_ERROR_MESSAGE once", "status": "pass" },
+    { "criterion": "Other multipart callers: unchanged behavior", "status": "pass" }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass" },
+    { "standard": "test-coverage", "status": "pass" },
+    { "standard": "security", "status": "pass" }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "note": "parseErrorBody now reads from response.clone(); original body stays intact for handleMultipartError." },
+    { "id": "CR-002", "status": "resolved", "note": "skills.ts catch gates on parsedError.details; no-details path throws DEFAULT_ERROR_MESSAGE." }
+  ]
+}

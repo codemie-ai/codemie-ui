@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix skill import 400 error message by extracting formatErrorMessage as a named export from api.ts and updating importSkillBundlePreview to surface structured API error details via HttpError.",
+  "generated": "2026-07-15T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three components touched: api.ts utility (promoted formatErrorMessage to named export), skills store (importSkillBundlePreview error handling), and test infrastructure (api.test.ts + setupTests.unit.ts mock). Change spans 2 layers but is additive/extractive — no structural redesign."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "5 files changed (api.ts, handleMultipartError.ts, store/skills.ts, utils/__tests__/api.test.ts, setupTests.unit.ts) with 101 insertions and 38 deletions, mapping to M per the 5–7 file threshold."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

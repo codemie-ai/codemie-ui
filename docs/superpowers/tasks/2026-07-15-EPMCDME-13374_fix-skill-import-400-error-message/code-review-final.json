@@ -1,0 +1,47 @@
+{
+  "decision": "request-changes",
+  "confidence": "high",
+  "risk_flags": [],
+  "rationale": "Two blocking issues. CR-001 (critical): postMultipart/putMultipart now consume the response body via parseErrorBody before constructing HttpError; handleMultipartError in dataSources.ts subsequently calls err.response.json() on the same response, throwing 'body stream already read' — file data-source upload/update errors are now silently swallowed. CR-002 (major): for non-JSON HTTP errors (e.g. HTML 502), parseErrorBody returns {message:'Unknown error'}, which skills.ts formats and throws as 'Unknown error' rather than DEFAULT_ERROR_MESSAGE ('Oops! Something went wrong') as the spec requires. 2 deferred, 3 dismissed.",
+  "business_review": [
+    { "criterion": "handleMultipartError.ts — parsedError field added (inline type, no circular dep)", "status": "pass" },
+    { "criterion": "api.ts — formatErrorMessage extracted as pure exported function", "status": "pass" },
+    { "criterion": "api.ts — postMultipart/putMultipart async + parseErrorBody + parsedError set", "status": "pass" },
+    { "criterion": "api.ts — handleError reduced to one-line wrapper", "status": "pass" },
+    { "criterion": "skills.ts — importSkillBundlePreview: no toast, throw pre-formatted Error", "status": "pass" },
+    { "criterion": "CreateSkillPopup.tsx — no logic changes", "status": "pass" },
+    { "criterion": "api.test.ts — 5 formatErrorMessage unit tests (all spec cases covered)", "status": "pass" },
+    { "criterion": "ZIP 400: show 'Invalid skill bundle + details + help' exactly once", "status": "pass" },
+    { "criterion": "Non-JSON error (HTML 502 proxy): show DEFAULT_ERROR_MESSAGE once", "status": "fail", "notes": "parseErrorBody returns {message:'Unknown error'} for non-JSON bodies; skills.ts builds a valid ErrorBody from it and formatErrorMessage returns 'Unknown error', not DEFAULT_ERROR_MESSAGE" },
+    { "criterion": ".md parse error (client-side): message once — unchanged", "status": "pass" },
+    { "criterion": "ZIP success: nothing — unchanged", "status": "pass" },
+    { "criterion": "Other multipart callers: unchanged behavior", "status": "fail", "notes": "dataSources.ts calls handleMultipartError which re-reads err.response.json() on a body already consumed by parseErrorBody — body stream already read regression" }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "3 commits, all follow EPMCDME-13374: Capital sentence pattern" },
+    { "standard": "test-coverage", "status": "pass", "notes": "5 unit tests added for formatErrorMessage covering all specified cases" },
+    { "standard": "security", "status": "pass", "notes": "No new security surface; DOMPurify in toaster sanitizes HTML output" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "file": "src/utils/api.ts",
+      "line": 167,
+      "problem": "postMultipart and putMultipart call parseErrorBody(response) which reads (consumes) the response body, then pass the same response to new HttpError(response). handleMultipartError in src/utils/handleMultipartError.ts (called by createKBIndexFiles and updateKBIndexFiles in dataSources.ts) subsequently calls err.response.json() on the already-drained body, throwing 'body stream already read'.",
+      "impact": "File data-source upload and update errors in dataSources.ts are silently swallowed — no error toast, no error returned — introduced as a regression by this change.",
+      "recommendation": "Update handleMultipartError to use err.parsedError (now always populated by postMultipart/putMultipart) instead of re-reading err.response.json(). Check for err.parsedError first; fall back to the existing data.detail / fallbackMessage logic only if it is absent.",
+      "triage": "patch"
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "file": "src/store/skills.ts",
+      "line": 315,
+      "problem": "When postMultipart rejects with an HttpError for a non-JSON response (HTML 502, plain-text, or unreadable body), parseErrorBody sets parsedError.message = 'Unknown error'. skills.ts takes the HttpError && parsedError branch, builds { error: { message: 'Unknown error' } }, and formatErrorMessage returns 'Unknown error' — not DEFAULT_ERROR_MESSAGE ('Oops! Something went wrong') as the spec requires.",
+      "impact": "Spec acceptance criterion 'Non-JSON error (HTML 502 proxy): show DEFAULT_ERROR_MESSAGE once' is not met. User sees 'Unknown error' instead of the intended generic fallback.",
+      "recommendation": "In the skills.ts catch, detect the case where parsedError was set from a failed body-parse (message is 'Unknown error' or matches the HTTP error status sentinel). Use DEFAULT_ERROR_MESSAGE directly in that case: `throw new Error(error instanceof HttpError && !error.parsedError?.details ? DEFAULT_ERROR_MESSAGE : formatErrorMessage(body))`.",
+      "triage": "patch"
+    }
+  ]
+}

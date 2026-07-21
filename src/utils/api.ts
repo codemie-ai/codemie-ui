@@ -69,7 +69,7 @@ interface RequestOptions extends RequestInit {
   queryParamArrayHandling?: 'compact' | 'separate'
 }
 
-interface ErrorBody {
+export interface ErrorBody {
   error: {
     message: string
     details?: string | object
@@ -82,6 +82,35 @@ interface ResponseWithParsedError extends Response {
     message: string
     details?: string | object
     help?: string
+  }
+}
+
+export function formatErrorMessage(body: ErrorBody, includeHelp = true): string {
+  try {
+    const { message, details, help } = body.error
+    let strDetails: string
+
+    if (typeof details === 'object') {
+      strDetails = JSON.stringify(details)
+    } else {
+      strDetails = details ?? ''
+    }
+
+    let formattedError = message
+
+    if (strDetails) {
+      // @ts-expect-error: Property 'replaceAll' does not exist on type 'string'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2021' or later
+      formattedError += `<br> ${strDetails.replaceAll('<br>', '').trim()}`
+    }
+
+    if (includeHelp && help) {
+      formattedError += `<br><i>${help}</i>`
+    }
+
+    return formattedError
+  } catch (error) {
+    console.error('Error handling issue:', error)
+    return DEFAULT_ERROR_MESSAGE
   }
 }
 
@@ -120,9 +149,9 @@ class API {
     return this.makeRequest(url, 'DELETE', body, options)
   }
 
-  postMultipart(url: string, body: FormData): Promise<Response> {
+  private fetchMultipart(method: 'POST' | 'PUT', url: string, body: FormData): Promise<Response> {
     const requestOptions: RequestInit = {
-      method: 'POST',
+      method,
       headers: {
         ...this.authHeaders(),
       },
@@ -133,9 +162,12 @@ class API {
 
     return new Promise((resolve, reject) => {
       fetch(`${this.BASE_URL}/${url}`, requestOptions)
-        .then((response) => {
+        .then(async (response) => {
           if (!response.ok) {
-            reject(new HttpError(response))
+            const errorData = await this.parseErrorBody(response.clone())
+            const err = new HttpError(response)
+            err.parsedError = errorData.error
+            reject(err)
           } else {
             resolve(response)
           }
@@ -146,30 +178,12 @@ class API {
     })
   }
 
-  putMultipart(url: string, body: FormData): Promise<Response> {
-    const requestOptions: RequestInit = {
-      method: 'PUT',
-      headers: {
-        ...this.authHeaders(),
-      },
-      body,
-      redirect: 'manual',
-      ...(getIsLocalAuth() && { credentials: 'include' as RequestCredentials }),
-    }
+  postMultipart(url: string, body: FormData): Promise<Response> {
+    return this.fetchMultipart('POST', url, body)
+  }
 
-    return new Promise((resolve, reject) => {
-      fetch(`${this.BASE_URL}/${url}`, requestOptions)
-        .then((response) => {
-          if (!response.ok) {
-            reject(new HttpError(response))
-          } else {
-            resolve(response)
-          }
-        })
-        .catch((error) => {
-          reject(error instanceof Error ? error : new Error(String(error)))
-        })
-    })
+  putMultipart(url: string, body: FormData): Promise<Response> {
+    return this.fetchMultipart('PUT', url, body)
   }
 
   async stream(
@@ -406,32 +420,7 @@ class API {
   }
 
   handleError(body: ErrorBody, includeHelp = true): void {
-    try {
-      const { message, details, help } = body.error
-      let strDetails: string
-
-      if (typeof details === 'object') {
-        strDetails = JSON.stringify(details)
-      } else {
-        strDetails = details ?? ''
-      }
-
-      let formattedError = message
-
-      if (strDetails) {
-        // @ts-expect-error: Property 'replaceAll' does not exist on type 'string'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2021' or later
-        formattedError += `<br> ${strDetails.replaceAll('<br>', '').trim()}`
-      }
-
-      if (includeHelp && help) {
-        formattedError += `<br><i>${help}</i>`
-      }
-
-      toaster.error(formattedError)
-    } catch (error) {
-      console.error('Error handling issue:', error)
-      toaster.error(DEFAULT_ERROR_MESSAGE)
-    }
+    toaster.error(formatErrorMessage(body, includeHelp))
   }
 }
 

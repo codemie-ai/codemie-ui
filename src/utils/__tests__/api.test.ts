@@ -16,8 +16,11 @@
 import * as fileSaver from 'file-saver'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-
-import api, { parseContentDispositionFilename, sanitizeFileName } from '@/utils/api'
+import api, {
+  parseContentDispositionFilename,
+  sanitizeFileName,
+  formatErrorMessage,
+} from '@/utils/api'
 import toaster from '@/utils/toaster'
 
 vi.mock('file-saver', () => ({ saveAs: vi.fn() }))
@@ -53,6 +56,48 @@ describe('handleError', () => {
     api.handleError({} as any)
 
     expect(toaster.error).toHaveBeenCalledWith('Oops! Something went wrong')
+  })
+})
+
+describe('formatErrorMessage', () => {
+  it('formats message with string details and help', () => {
+    const result = formatErrorMessage({
+      error: {
+        message: 'Invalid skill bundle',
+        details: 'Skill bundle zip must contain exactly one SKILL.md file',
+        help: 'Add a single SKILL.md file with YAML frontmatter to the root of the bundle',
+      },
+    })
+    expect(result).toBe(
+      'Invalid skill bundle<br> Skill bundle zip must contain exactly one SKILL.md file<br><i>Add a single SKILL.md file with YAML frontmatter to the root of the bundle</i>'
+    )
+  })
+
+  it('stringifies object details', () => {
+    const result = formatErrorMessage({
+      error: { message: 'Validation error', details: { field: 'name', issue: 'required' } },
+    })
+    expect(result).toBe('Validation error<br> {"field":"name","issue":"required"}')
+  })
+
+  it('strips existing <br> tags from details', () => {
+    const result = formatErrorMessage({
+      error: { message: 'Error', details: 'line one<br>line two' },
+    })
+    expect(result).toBe('Error<br> line oneline two')
+  })
+
+  it('omits help when includeHelp is false', () => {
+    const result = formatErrorMessage(
+      { error: { message: 'Error', details: 'some detail', help: 'help text' } },
+      false
+    )
+    expect(result).toBe('Error<br> some detail')
+  })
+
+  it('returns DEFAULT_ERROR_MESSAGE for malformed body', () => {
+    const result = formatErrorMessage({} as any)
+    expect(result).toBe('Oops! Something went wrong')
   })
 })
 

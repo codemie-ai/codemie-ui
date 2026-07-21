@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix skill import ZIP bundle HTTP 400 error display to show backend message/details in toast instead of generic HTTP error string.",
+  "generated": "2026-07-15T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 10,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two components touched: skills.ts store action (primary fix — detect HttpError, await response.json(), call api.handleError) and CreateSkillPopup.tsx component (secondary cleanup — remove violating component-level toaster.error call). Change is additive within one feature flow."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Fix follows established patterns (api.handleError, instanceof HttpError, Valtio async actions). One careful implementation point: Response.json() is async and single-consume inside a catch block — requires defensive handling for already-consumed body and non-JSON responses. Risk is concrete and manageable, not novel."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -16,6 +16,12 @@
 import toaster from '@/utils/toaster'
 
 export class HttpError extends Error {
+  parsedError?: {
+    message: string
+    details?: string | object
+    help?: string
+  }
+
   constructor(public readonly response: Response) {
     super(`HTTP error ${response.status}`)
     this.name = 'HttpError'
