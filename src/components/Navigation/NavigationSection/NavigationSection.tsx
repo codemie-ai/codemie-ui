@@ -28,7 +28,7 @@ interface NavigationSectionProps {
 const NavigationSection: FC<NavigationSectionProps> = ({ items, className, isBottomSection }) => {
   return (
     <nav className={cn(className)}>
-      <ul className="list-none p-0 m-0 flex flex-col gap-2">
+      <ul role="list" className="list-none p-0 m-0 flex flex-col gap-2">
         {items.map((item) => (
           <li key={item.label}>
             <NavigationLink item={item} isBottomSection={isBottomSection} />

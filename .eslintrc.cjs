@@ -18,7 +18,7 @@ module.exports = {
   parserOptions: {
     parser: '@typescript-eslint/parser',
   },
-  plugins: ['@stylistic', 'sonarjs', 'react-hooks'],
+  plugins: ['@stylistic', 'sonarjs', 'react-hooks', 'jsx-a11y'],
   settings: {
     'import/resolver': {
       alias: {
@@ -141,6 +141,11 @@ module.exports = {
 
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'off' /* enable later */,
+
+    // Allow role="list" on <ul>/<ol> — VoiceOver/Safari strips list semantics when
+    // list-style:none is applied. https://www.scottohara.me/blog/2019/01/12/lists-and-safari.html
+    // Allow role="link" on <a> — pre-existing usage in ChatMessageAction; pending review by EPMCDME-9519 author.
+    'jsx-a11y/no-redundant-roles': ['error', { ul: ['list'], ol: ['list'], a: ['link'] }],
 
     // SonarJS rules (errors, blocking)
     'sonarjs/cognitive-complexity': ['error', 15],

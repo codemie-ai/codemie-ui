@@ -201,9 +201,15 @@ const NavigationPinnedSection: React.FC = () => {
 
   const renderExpandedContent = () => {
     if (allFit) {
-      return allItems.map((item) => (
-        <PinnedRow key={item.id} item={item} onDelete={(e) => handleDeleteClick(e, item)} />
-      ))
+      return (
+        <ul role="list" className="list-none p-0 m-0 flex flex-col gap-1.5">
+          {allItems.map((item) => (
+            <li key={item.id}>
+              <PinnedRow item={item} onDelete={(e) => handleDeleteClick(e, item)} />
+            </li>
+          ))}
+        </ul>
+      )
     }
     const hasOverflow = expandedBubbles.overflow.length > 0
 
@@ -258,28 +264,32 @@ const NavigationPinnedSection: React.FC = () => {
           onClick={() => setOverflowOpen((prev) => !prev)}
           onKeyDown={handleOuterKeyDown}
         />
-        <div className="relative z-[1] grid gap-2 grid-cols-[repeat(4,24px)] pointer-events-none">
+        <ul
+          role="list"
+          className="relative z-[1] list-none p-0 m-0 grid gap-2 grid-cols-[repeat(4,24px)] pointer-events-none"
+        >
           {expandedBubbles.visible.map((item, index) => (
-            <button
-              key={item.id}
-              type="button"
-              data-inner
-              tabIndex={-1}
-              aria-label={item.name}
-              data-tooltip-id="react-tooltip"
-              data-tooltip-place="right"
-              data-tooltip-content={item.name}
-              className="size-6 rounded-full pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-white/50"
-              onClick={(e) => {
-                e.stopPropagation()
-                item.onClick()
-              }}
-              onKeyDown={(e) => handleInnerKeyDown(e, index)}
-            >
-              <Avatar iconUrl={item.icon_url} name={item.name} type={AvatarType.XS} />
-            </button>
+            <li key={item.id}>
+              <button
+                type="button"
+                data-inner
+                tabIndex={-1}
+                aria-label={item.name}
+                data-tooltip-id="react-tooltip"
+                data-tooltip-place="right"
+                data-tooltip-content={item.name}
+                className="size-6 rounded-full pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-white/50"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  item.onClick()
+                }}
+                onKeyDown={(e) => handleInnerKeyDown(e, index)}
+              >
+                <Avatar iconUrl={item.icon_url} name={item.name} type={AvatarType.XS} />
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
         <div className="relative z-[1] pointer-events-none">
           <OverflowButton
             count={expandedBubbles.overflow.length}

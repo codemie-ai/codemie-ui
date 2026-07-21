@@ -1,0 +1,16 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "CR-001 resolved: role=\"list\" added to the ul element, restoring ARIA list semantics stripped by list-style:none in VoiceOver/Safari. Fix is minimal and precisely targeted. All deferred findings confirmed out of scope.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "role=\"list\" added to the ul element at NavigationPinnedSection.tsx:205 — ARIA list role explicitly restored for VoiceOver/Safari."
+    }
+  ]
+}

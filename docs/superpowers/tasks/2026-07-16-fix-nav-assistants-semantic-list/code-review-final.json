@@ -1,0 +1,56 @@
+{
+  "decision": "request-changes",
+  "confidence": "medium",
+  "rationale": "Core implementation is correct: renderExpandedContent allFit branch wraps PinnedRow items in semantic ul/li with CSS resets and key on li. One major finding: Tailwind list-none (list-style:none) causes VoiceOver on Safari to strip the ARIA list role from the ul, negating the semantic accessibility benefit on that platform. Fix: add role=\"list\" to the ul. Three deferred findings: collapsed-view parity (out of scope), no allFit=false overflow-path test (coverage gap), plan.md references wrong component (doc defect only).",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "FAQ/Chatbot items wrapped in ul > li in expanded view",
+      "status": "pass",
+      "notes": "renderExpandedContent allFit path returns ul > li > PinnedRow. NavigationPinnedSection is the component that actually renders the FAQ/Chatbot items in the live render tree."
+    },
+    {
+      "criterion": "Test-first with 4 tests covering ul presence, li wrapping, no-ul-when-not-fetched",
+      "status": "partial",
+      "notes": "4 tests exist and cover all named criteria. Test-first ordering is consistent with TDD but not provable from diff alone. Plan outcome metric references wrong component (NavigationAssistants vs NavigationPinnedSection) and wrong test count (14 vs 4) — doc defect."
+    },
+    {
+      "criterion": "Gap spacing consistent with existing component",
+      "status": "pass",
+      "notes": "gap-1.5 on ul matches outer wrapper gap-1.5. Plan specified gap-2; gap-1.5 is the correct consistent choice."
+    },
+    {
+      "criterion": "Plan references correct component",
+      "status": "fail",
+      "notes": "Plan artifact repeatedly names NavigationAssistants.tsx (dead code — never imported by any application component). Implementation correctly targets NavigationPinnedSection.tsx. Plan is a documentation defect; implementation is correct."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Git commit format (EPMCDME-#### prefix)",
+      "status": "pass",
+      "notes": "Commits follow project EPMCDME-#### convention."
+    },
+    {
+      "standard": "TypeScript / React patterns",
+      "status": "pass",
+      "notes": "Key correctly placed on li element, no unused parameters, event handler signatures valid, TypeScript compiles (pre-commit hook verified)."
+    },
+    {
+      "standard": "Accessibility (ARIA semantic list)",
+      "status": "partial",
+      "notes": "list-style:none via Tailwind list-none removes ARIA list role in VoiceOver/Safari without an explicit role=list. The semantic list structure is present in markup but stripped by AT on that platform."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/components/Navigation/NavigationPinnedSection/NavigationPinnedSection.tsx:205",
+      "problem": "Tailwind list-none (list-style: none) causes VoiceOver on Safari to strip the ARIA list role from the ul element. The semantic list structure exists in markup but is invisible to screen readers on that platform.",
+      "impact": "VoiceOver/Safari users receive no list announcement or item count when navigating the FAQ/Chatbot section — the primary accessibility goal of the ul/li change is not achieved for them.",
+      "recommendation": "Add role=\"list\" to the ul: <ul role=\"list\" className=\"list-none p-0 m-0 flex flex-col gap-1.5\">. This explicitly restores the list semantics that list-none strips in VoiceOver/Safari."
+    }
+  ]
+}

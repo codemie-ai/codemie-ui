@@ -1,0 +1,69 @@
+{
+  "task": "Add semantic ul/li list structure to NavigationPinnedSection renderExpandedContent allFit branch (EPMCDME-8466 extension)",
+  "generated": "2026-07-16T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "NavigationPinnedSection",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 1,
+      "modified_file_list": [
+        "src/components/Navigation/NavigationPinnedSection/NavigationPinnedSection.tsx"
+      ],
+      "new_files": 1,
+      "new_file_list": [
+        "src/components/Navigation/NavigationPinnedSection/__tests__/NavigationPinnedSection.test.tsx"
+      ],
+      "affected_dirs": [
+        "src/components/Navigation/NavigationPinnedSection"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 7,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 3,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "1 source file modified (NavigationPinnedSection.tsx, ~9 lines added / 3 removed) plus 1 new test file (179 lines). plan.md is a docs artifact and does not represent production scope. Scores S (2) because of the 1 new file, per guide criteria."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Single function branch modified (renderExpandedContent allFit path) inside a single leaf UI component. No layer boundaries crossed, no shared utilities touched."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
