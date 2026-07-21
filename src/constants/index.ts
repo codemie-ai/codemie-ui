@@ -137,6 +137,7 @@ export const CHECKER_STATUSES = {
 export type CheckerStatus = (typeof CHECKER_STATUSES)[keyof typeof CHECKER_STATUSES]
 
 export { INDEX_TYPES } from '@/constants/dataSources'
+export { FEATURE_FLAGS, type FeatureFlag } from '@/constants/featureFlags'
 
 export enum InfoWarningType {
   WARNING = 'warning',

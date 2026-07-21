@@ -92,5 +92,10 @@ export const getAssistantRoute = (assistant: AssistantRouteRef): string | Assist
 export const getAssistantEditRoute = (
   assistant: AssistantRouteRef
 ): string | AssistantRouteTarget => {
-  return buildReadablePath(assistant, '/edit') ?? { name: 'edit-assistant', params: { id: assistant.id } }
+  return (
+    buildReadablePath(assistant, '/edit') ?? {
+      name: 'edit-assistant',
+      params: { id: assistant.id },
+    }
+  )
 }

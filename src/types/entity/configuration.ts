@@ -17,6 +17,7 @@ export interface ConfigItem {
   id: string
   settings: {
     enabled: boolean
+    value?: string
     availableForExternal?: boolean
     description?: string
     created_by?: string

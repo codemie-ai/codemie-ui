@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+import { appInfoStore } from '@/store/appInfo'
 import api from '@/utils/api'
 
 const AUTH_CALLBACK_EVENT_TYPE = 'mcp_auth_callback'
@@ -52,7 +53,7 @@ interface UseAuthCallbackListenerResult {
 }
 
 const getApiOrigin = (): string | null => {
-  const configured = window._env_?.VITE_MCP_AUTH_ORIGIN ?? import.meta.env.VITE_MCP_AUTH_ORIGIN
+  const configured = appInfoStore.getMcpAuthOrigin()
   if (configured) {
     try {
       return new URL(configured).origin
@@ -97,10 +98,7 @@ const getPositiveInteger = (value: unknown): number | null => {
 }
 
 const getAuthCallbackTimeoutSeconds = (): number =>
-  getPositiveInteger(
-    window._env_?.VITE_MCP_AUTH_AUTHENTICATING_TIMEOUT_SECONDS ??
-      import.meta.env.VITE_MCP_AUTH_AUTHENTICATING_TIMEOUT_SECONDS
-  ) ?? AUTH_CALLBACK_TIMEOUT_SECONDS
+  getPositiveInteger(appInfoStore.getMcpAuthTimeoutSeconds()) ?? AUTH_CALLBACK_TIMEOUT_SECONDS
 
 // Keep the UI timeout <= the backend PKCE lifetime.
 const getAuthCallbackTimeoutMs = (): number => getAuthCallbackTimeoutSeconds() * 1000

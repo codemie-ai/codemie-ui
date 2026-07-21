@@ -15,6 +15,7 @@
 
 import { proxy } from 'valtio'
 
+import { FEATURE_FLAGS } from '@/constants'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 import { BudgetAssignment } from '@/types/entity/budget'
 import { ProjectRole, ProjectRoleBE } from '@/types/entity/project'
@@ -27,6 +28,7 @@ import {
   UserUpdatePayload,
 } from '@/types/entity/user'
 import api from '@/utils/api'
+import { isFeatureEnabled } from '@/utils/featureFlags'
 import toaster from '@/utils/toaster'
 import { formatUserOptions } from '@/utils/user'
 
@@ -336,7 +338,7 @@ export const userStore = proxy<UserStoreType>({
   },
 
   getAdminProjects(search = '') {
-    const showAllProjects = import.meta.env.VITE_SHOW_ALL_PROJECTS === 'true'
+    const showAllProjects = isFeatureEnabled(FEATURE_FLAGS.SHOW_ALL_PROJECTS)
     const limit = 5
     const limitQuery = showAllProjects ? '' : `limit=${limit}`
     const searchQuery = search ? `search=${search}` : ''

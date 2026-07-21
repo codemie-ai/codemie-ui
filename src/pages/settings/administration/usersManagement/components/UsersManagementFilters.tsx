@@ -23,6 +23,7 @@ import Input from '@/components/form/Input/Input'
 import Select from '@/components/form/Select/Select'
 import ProjectSelector from '@/components/ProjectSelector/ProjectSelector'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
+import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import {
   FILTER_INITIAL_STATE,
   UsersManagementFilters as IUsersManagementFilters,
@@ -45,14 +46,13 @@ interface UsersManagementFiltersProps {
   canManageBudgets?: boolean
 }
 
-const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
-
 const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
   onFilterChange,
   filters,
   hasSelection,
   canManageBudgets = false,
 }) => {
+  const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const [localFilters, setLocalFilters] = useState(filters)
 
   const areFiltersEmpty = useMemo(() => {

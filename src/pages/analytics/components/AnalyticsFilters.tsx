@@ -25,6 +25,7 @@ import Select from '@/components/form/Select'
 import ProjectSelector from '@/components/ProjectSelector'
 import { useAbortController } from '@/hooks/useAbortController'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
+import { useUserManagementEnabled } from '@/hooks/useFeatureFlags'
 import { userStore } from '@/store/user'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
@@ -40,10 +41,11 @@ interface AnalyticsFiltersProps {
 
 const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange }) => {
   const { user } = useSnapshot(userStore)
+  const [isUserManagementEnabled] = useUserManagementEnabled()
   const isAdmin = user?.isAdmin ?? false
   const isMaintainer = user?.isMaintainer ?? false
   const showMeCheckbox = isAdmin || isMaintainer
-  const isAdminSearch = isAdmin && window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
+  const isAdminSearch = isAdmin && isUserManagementEnabled
   const [userOptions, setUserOptions] = useState<Array<{ label: string; value: string }>>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   const [localFilters, setLocalFilters] = useState<AnalyticsQueryParams>(filters)

@@ -24,6 +24,7 @@ import Switch from '@/components/form/Switch'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import { USER_TYPES } from '@/constants/user'
+import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import BudgetAssignmentsEditor from '@/pages/settings/administration/components/BudgetAssignmentsEditor'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
 import UserProjectsTable from '@/pages/settings/administration/usersManagement/components/UserProjectsTable'
@@ -45,9 +46,8 @@ interface UserDetailsModalProps {
   onSave?: () => void
 }
 
-const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
-
 const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, onSave }) => {
+  const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<UserListItem | null>(null)
   const [userType, setUserType] = useState<UserType>('regular')

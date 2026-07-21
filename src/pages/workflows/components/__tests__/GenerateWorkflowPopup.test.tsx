@@ -32,6 +32,7 @@ vi.mock('@/store/workflows', () => ({
 
 vi.mock('valtio', () => ({
   useSnapshot: vi.fn((store) => store),
+  proxy: vi.fn((obj) => obj),
 }))
 
 vi.mock('@/utils/toaster', () => ({

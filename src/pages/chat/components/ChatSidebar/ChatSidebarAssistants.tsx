@@ -24,10 +24,7 @@ import Avatar from '@/components/Avatar/Avatar'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import { AvatarType } from '@/constants/avatar'
 import { useVueRouter } from '@/hooks/useVueRouter'
-import {
-  getAssistantEditRoute,
-  getAssistantRoute,
-} from '@/pages/assistants/utils/getAssistantLink'
+import { getAssistantEditRoute, getAssistantRoute } from '@/pages/assistants/utils/getAssistantLink'
 import { assistantsStore, MAX_RECENT_ASSISTANTS } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
 import { Assistant } from '@/types/entity/assistant'

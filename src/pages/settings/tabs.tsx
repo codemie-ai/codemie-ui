@@ -19,11 +19,17 @@ import ProfileTabSvg from '@/assets/icons/profile-tab.svg?react'
 import { LayoutTab } from '@/components/Layouts/Layout/Layout'
 import { SettingsTab } from '@/constants'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
-import { isCostCentersEnabled, isMcpEnabled, isTeamsEnabled } from '@/utils/featureFlags'
+import {
+  isCostCentersEnabled,
+  isMcpEnabled,
+  isUserManagementEnabled,
+  isBudgetManagementEnabled,
+  isTeamsEnabled,
+} from '@/utils/featureFlags'
 
 const getEnterpriseAdminItems = (
   isMcpFeatureEnabled: boolean,
-  isUserManagementEnabled: boolean,
+  isUserMgmtEnabled: boolean,
   budgetsManagementTab: LayoutTab[]
 ): LayoutTab[] => [
   {
@@ -55,7 +61,7 @@ const getEnterpriseAdminItems = (
     title: 'Providers management',
     url: '/settings/administration/providers',
   },
-  ...(isUserManagementEnabled
+  ...(isUserMgmtEnabled
     ? [
         {
           id: SettingsTab.USERS_MANAGEMENT,
@@ -74,13 +80,13 @@ export const getNavigationTabs = (
 ): LayoutTab[] => {
   const isMcpFeatureEnabled = isMcpEnabled()
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
+  const isUserMgmtEnabled = isUserManagementEnabled()
+  const isBudgetMgmtEnabled = isBudgetManagementEnabled()
   const isTeamsBotEnabled = isTeamsEnabled()
-  const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
-  const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
   const isEnterprise = isEnterpriseEdition()
 
   const budgetsManagementTab =
-    isBudgetManagementEnabled && (isAdmin || isMaintainer)
+    isBudgetMgmtEnabled && (isAdmin || isMaintainer)
       ? [
           {
             id: SettingsTab.BUDGETS_MANAGEMENT,
@@ -123,11 +129,7 @@ export const getNavigationTabs = (
           url: '/settings/administration/projects',
         },
         ...(isEnterprise
-          ? getEnterpriseAdminItems(
-              isMcpFeatureEnabled,
-              isUserManagementEnabled,
-              budgetsManagementTab
-            )
+          ? getEnterpriseAdminItems(isMcpFeatureEnabled, isUserMgmtEnabled, budgetsManagementTab)
           : []),
         ...(isTeamsBotEnabled
           ? [

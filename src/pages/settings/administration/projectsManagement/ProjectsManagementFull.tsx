@@ -31,7 +31,11 @@ import NavigationMore, { NavigationItem } from '@/components/NavigationMore/Navi
 import Table from '@/components/Table'
 import { ButtonSize, DECIMAL_PAGINATION_OPTIONS, ButtonType, InfoWarningType } from '@/constants'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
-import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+import {
+  useFeatureFlag,
+  useUserManagementEnabled,
+  useBudgetManagementEnabled,
+} from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import BudgetSpendCell from '@/pages/settings/administration/components/BudgetSpendCell'
 import NameLinkCell from '@/pages/settings/administration/components/NameLinkCell'
@@ -152,8 +156,8 @@ const ProjectsManagementFull: FC = () => {
     budgetCategory: '' as BudgetCategory | '',
   })
 
-  const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
-  const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
+  const [isUserManagementEnabled] = useUserManagementEnabled()
+  const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
 
   // Check if project creation feature is enabled
   const [isProjectCreationForNonAdminsEnabled, isConfigLoaded] = useFeatureFlag(

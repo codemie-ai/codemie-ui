@@ -13,6 +13,10 @@
 // limitations under the License.
 //
 
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
+
+import { isFeatureEnabled } from './featureFlags'
+
 /**
  * Check if application is running in enterprise edition mode
  *
@@ -28,6 +32,5 @@
  * ```
  */
 export const isEnterpriseEdition = (): boolean => {
-  const envValue = import.meta.env.VITE_IS_ENTERPRISE_EDITION ?? 'false'
-  return envValue === 'true'
+  return isFeatureEnabled(FEATURE_FLAGS.ENTERPRISE_EDITION)
 }

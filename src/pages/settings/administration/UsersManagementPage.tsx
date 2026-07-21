@@ -24,6 +24,7 @@ import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Spinner from '@/components/Spinner'
 import Table from '@/components/Table'
 import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
+import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import BudgetSpendCell from '@/pages/settings/administration/components/BudgetSpendCell'
 import { MAX_DISPLAYED_PROJECTS } from '@/pages/settings/administration/usersManagement/constants'
@@ -62,7 +63,7 @@ const BASE_COLUMN_DEFINITIONS: ColumnDefinition[] = [
 ]
 
 const UsersManagementPage: FC = () => {
-  const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
+  const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const { user: currentUser } = useSnapshot(userStore)
   const { filters, handleFilterChange } = useUsersManagementFilters()
   const isAdmin = currentUser?.isAdmin ?? false

@@ -17,7 +17,23 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
+
 import Banner from '../Banner'
+
+vi.mock('@/store/appInfo', () => ({
+  appInfoStore: {
+    getBannerMessage: vi.fn(() => ''),
+    getBannerLinkLabel: vi.fn(() => ''),
+    getBannerLinkRoute: vi.fn(() => ''),
+  },
+}))
+
+const setBanner = (config: { message?: string; linkLabel?: string; linkRoute?: string }) => {
+  vi.mocked(appInfoStore.getBannerMessage).mockReturnValue(config.message ?? '')
+  vi.mocked(appInfoStore.getBannerLinkLabel).mockReturnValue(config.linkLabel ?? '')
+  vi.mocked(appInfoStore.getBannerLinkRoute).mockReturnValue(config.linkRoute ?? '')
+}
 
 const renderWithRouter = () =>
   render(
@@ -46,7 +62,8 @@ describe('Banner', () => {
       key: vi.fn(),
       length: 0,
     } as Storage
-    ;(window as any)._env_ = {}
+
+    setBanner({})
   })
 
   afterEach(() => {
@@ -60,13 +77,13 @@ describe('Banner', () => {
     })
 
     it('does not display banner when no message is set', () => {
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: '' }
+      setBanner({ message: '' })
       render(<Banner />)
       expect(screen.queryByText(/./)).not.toBeInTheDocument()
     })
 
     it('displays banner message when set', () => {
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: 'Important announcement' }
+      setBanner({ message: 'Important announcement' })
       render(<Banner />)
       expect(screen.getByText('Important announcement')).toBeInTheDocument()
     })
@@ -74,7 +91,7 @@ describe('Banner', () => {
 
   describe('banner message display', () => {
     it('shows banner for first time visitors', () => {
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: 'Welcome message' }
+      setBanner({ message: 'Welcome message' })
       render(<Banner />)
       expect(screen.getByText('Welcome message')).toBeInTheDocument()
       expect(localStorage.getItem).toHaveBeenCalled()
@@ -82,7 +99,7 @@ describe('Banner', () => {
 
     it('does not show banner if already closed', () => {
       const message = 'Already closed message'
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: message }
+      setBanner({ message })
 
       // Calculate the correct hash for the message
       const hash = (str: string): string => {
@@ -105,7 +122,7 @@ describe('Banner', () => {
 
     it('displays multiline messages with whitespace preserved', () => {
       const multilineMessage = 'Line 1\nLine 2\nLine 3'
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: multilineMessage }
+      setBanner({ message: multilineMessage })
       const { container } = render(<Banner />)
       // Find the message detail span which contains the multiline text
       const messageDetail = container.querySelector('.p-message-detail')
@@ -116,8 +133,7 @@ describe('Banner', () => {
 
   describe('close functionality', () => {
     it('has close button', () => {
-      const message = 'Closable message'
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: message }
+      setBanner({ message: 'Closable message' })
       const { container } = render(<Banner />)
 
       const closeButton = container.querySelector('button[aria-label="Close"]')
@@ -127,7 +143,7 @@ describe('Banner', () => {
 
   describe('banner properties', () => {
     it('displays info severity banner and is sticky', async () => {
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: 'Sticky message' }
+      setBanner({ message: 'Sticky message' })
       const { container } = render(<Banner />)
       const message = container.querySelector('[role="alert"]')
       expect(message).toBeInTheDocument()
@@ -143,25 +159,22 @@ describe('Banner', () => {
 
   describe('edge cases', () => {
     it('handles empty, undefined, and missing banner message', () => {
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: '' }
+      setBanner({ message: '' })
       let { container } = render(<Banner />)
       expect(container.querySelector('[role="alert"]')).not.toBeInTheDocument()
-      ;(window as any)._env_ = undefined
-      container = render(<Banner />).container
-      expect(container.querySelector('[role="alert"]')).not.toBeInTheDocument()
-      ;(window as any)._env_ = {}
+      setBanner({})
       container = render(<Banner />).container
       expect(container.querySelector('[role="alert"]')).not.toBeInTheDocument()
     })
 
     it('handles very long and special character messages', () => {
       const longMessage = 'A'.repeat(1000)
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: longMessage }
+      setBanner({ message: longMessage })
       render(<Banner />)
       expect(screen.getByText(longMessage)).toBeInTheDocument()
 
       const specialMessage = '<script>alert("xss")</script> & special chars: é, ñ, 中文'
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: specialMessage }
+      setBanner({ message: specialMessage })
       render(<Banner />)
       expect(screen.getByText(specialMessage)).toBeInTheDocument()
     })
@@ -170,14 +183,14 @@ describe('Banner', () => {
   describe('re-rendering behavior', () => {
     it('shows banner again if message changes', () => {
       const message1 = 'First message'
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: message1 }
+      setBanner({ message: message1 })
       const { rerender } = render(<Banner />)
 
       expect(screen.getByText(message1)).toBeInTheDocument()
 
       // Change message
       const message2 = 'Second message'
-      ;(window as any)._env_ = { VITE_BANNER_MESSAGE: message2 }
+      setBanner({ message: message2 })
       rerender(<Banner />)
 
       expect(screen.getByText(message2)).toBeInTheDocument()
@@ -186,11 +199,11 @@ describe('Banner', () => {
 
   describe('optional internal link', () => {
     it('renders an internal link when label and route are configured', () => {
-      ;(window as any)._env_ = {
-        VITE_BANNER_MESSAGE: 'Terms have been updated.',
-        VITE_BANNER_LINK_LABEL: 'Review Terms and Conditions',
-        VITE_BANNER_LINK_ROUTE: '/terms-and-conditions',
-      }
+      setBanner({
+        message: 'Terms have been updated.',
+        linkLabel: 'Review Terms and Conditions',
+        linkRoute: '/terms-and-conditions',
+      })
 
       renderWithRouter()
 
@@ -201,19 +214,10 @@ describe('Banner', () => {
     })
 
     it.each([
-      {
-        VITE_BANNER_LINK_LABEL: 'Review Terms and Conditions',
-        VITE_BANNER_LINK_ROUTE: '',
-      },
-      {
-        VITE_BANNER_LINK_LABEL: '',
-        VITE_BANNER_LINK_ROUTE: '/terms-and-conditions',
-      },
-    ])('omits the link when optional configuration is incomplete', (linkConfig) => {
-      ;(window as any)._env_ = {
-        VITE_BANNER_MESSAGE: 'Terms have been updated.',
-        ...linkConfig,
-      }
+      { linkLabel: 'Review Terms and Conditions', linkRoute: '' },
+      { linkLabel: '', linkRoute: '/terms-and-conditions' },
+    ])('omits the link when optional configuration is incomplete', ({ linkLabel, linkRoute }) => {
+      setBanner({ message: 'Terms have been updated.', linkLabel, linkRoute })
 
       renderWithRouter()
 
@@ -223,11 +227,11 @@ describe('Banner', () => {
 
     it('preserves multiline message text when a link is configured', () => {
       const message = 'Terms have been updated.\nPlease review the changes.'
-      ;(window as any)._env_ = {
-        VITE_BANNER_MESSAGE: message,
-        VITE_BANNER_LINK_LABEL: 'Review Terms and Conditions',
-        VITE_BANNER_LINK_ROUTE: '/terms-and-conditions',
-      }
+      setBanner({
+        message,
+        linkLabel: 'Review Terms and Conditions',
+        linkRoute: '/terms-and-conditions',
+      })
 
       const { container } = renderWithRouter()
 
@@ -237,11 +241,11 @@ describe('Banner', () => {
 
     it('uses only the message to determine the dismissal storage key', () => {
       const message = 'Terms have been updated.'
-      ;(window as any)._env_ = {
-        VITE_BANNER_MESSAGE: message,
-        VITE_BANNER_LINK_LABEL: 'Review Terms and Conditions',
-        VITE_BANNER_LINK_ROUTE: '/terms-and-conditions',
-      }
+      setBanner({
+        message,
+        linkLabel: 'Review Terms and Conditions',
+        linkRoute: '/terms-and-conditions',
+      })
 
       const { container } = renderWithRouter()
       const closeButton = container.querySelector('button[aria-label="Close"]')

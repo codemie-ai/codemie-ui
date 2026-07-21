@@ -42,6 +42,8 @@ const {
   },
 }))
 
+vi.mock('@/store/appInfo', () => ({ appInfoStore: { configs: [] } }))
+
 vi.mock('valtio', () => ({
   useSnapshot: vi.fn(() => mockChatsStore),
 }))

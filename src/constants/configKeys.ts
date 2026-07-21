@@ -13,18 +13,16 @@
 // limitations under the License.
 //
 
-export interface EnvConfig {
-  VITE_ENV: string
-  VITE_API_URL: string
-  VITE_APP_VERSION: string
-}
+/**
+ * Config item IDs for non-boolean runtime config values from GET /v1/config
+ */
+export const CONFIG_KEYS = {
+  IDP_PROVIDER: 'idpProvider',
+  MCP_AUTH_ORIGIN: 'mcpAuthOrigin',
+  MCP_AUTH_TIMEOUT_SECONDS: 'mcpAuthTimeoutSeconds',
+  BANNER_MESSAGE: 'bannerMessage',
+  BANNER_LINK_LABEL: 'bannerLinkLabel',
+  BANNER_LINK_ROUTE: 'bannerLinkRoute',
+} as const
 
-declare global {
-  interface Window {
-    _env_?: EnvConfig
-  }
-}
-
-declare module 'valtio' {
-  function useSnapshot<T extends object>(p: T): T
-}
+export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS]

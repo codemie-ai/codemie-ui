@@ -41,9 +41,15 @@ vi.mock('@/hooks/useVueRouter', () => ({
   }),
 }))
 
-vi.mock('@/hooks/useFeatureFlags', () => ({
-  useFeatureFlag: vi.fn(() => [false, true]),
-}))
+vi.mock('@/hooks/useFeatureFlags', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/hooks/useFeatureFlags')>()
+  return {
+    ...actual,
+    useFeatureFlag: vi.fn(() => [false, true]),
+    useUserManagementEnabled: vi.fn(() => [false, true]),
+    useBudgetManagementEnabled: vi.fn(() => [false, true]),
+  }
+})
 
 vi.mock('@/pages/settings/components/SettingsLayout', () => ({
   default: ({ content }: any) => <div>{content}</div>,

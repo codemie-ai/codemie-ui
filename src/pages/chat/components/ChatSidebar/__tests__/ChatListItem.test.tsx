@@ -25,6 +25,8 @@ import ChatListItem from '../ChatList/ChatListItem'
 
 vi.hoisted(() => vi.resetModules())
 
+vi.mock('@/store/appInfo', () => ({ appInfoStore: { configs: [] } }))
+
 vi.mock('@/hooks/useVueRouter', () => ({ useVueRouter: () => mockRouter }))
 
 vi.mock('@/store/chats', () => ({

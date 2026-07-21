@@ -15,11 +15,13 @@
 
 import { FC } from 'react'
 
+import { useUserManagementEnabled } from '@/hooks/useFeatureFlags'
+
 import ProjectsManagementDefault from './projectsManagement/ProjectsManagementDefault'
 import ProjectsManagementFull from './projectsManagement/ProjectsManagementFull'
 
 const ProjectsManagementPage: FC = () => {
-  const isUserManagementEnabled = window._env_?.VITE_ENABLE_USER_MANAGEMENT === 'true'
+  const [isUserManagementEnabled] = useUserManagementEnabled()
 
   // Show simple view when user management is disabled (production default)
   // Show full table view when user management is enabled

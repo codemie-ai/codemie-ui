@@ -16,6 +16,8 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
+
 import {
   AUTH_CALLBACK_TIMEOUT_MESSAGE,
   getAuthCallbackTimeoutMs,
@@ -28,6 +30,13 @@ vi.mock('@/utils/api', () => ({
   },
 }))
 
+vi.mock('@/store/appInfo', () => ({
+  appInfoStore: {
+    getMcpAuthOrigin: vi.fn(() => null),
+    getMcpAuthTimeoutSeconds: vi.fn(() => null),
+  },
+}))
+
 const dispatchMessage = (origin: string, data: unknown) => {
   window.dispatchEvent(new MessageEvent('message', { origin, data }))
 }
@@ -36,13 +45,11 @@ describe('useAuthCallbackListener', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
-    window._env_ = undefined
   })
 
   afterEach(() => {
     vi.clearAllTimers()
     vi.useRealTimers()
-    window._env_ = undefined
   })
 
   it('marks tracked ids as authenticating', () => {
@@ -192,10 +199,7 @@ describe('useAuthCallbackListener', () => {
   })
 
   it('uses the runtime-config timeout when timeoutMs is not provided', async () => {
-    window._env_ = {
-      VITE_API_URL: 'https://api.example.com/v1',
-      VITE_MCP_AUTH_AUTHENTICATING_TIMEOUT_SECONDS: '2',
-    } as typeof window._env_
+    vi.mocked(appInfoStore.getMcpAuthTimeoutSeconds).mockReturnValue('2')
 
     const { result } = renderHook(() =>
       useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'] })
@@ -218,10 +222,7 @@ describe('useAuthCallbackListener', () => {
   })
 
   it('falls back to 60 seconds when runtime-config timeout is invalid', () => {
-    window._env_ = {
-      VITE_API_URL: 'https://api.example.com/v1',
-      VITE_MCP_AUTH_AUTHENTICATING_TIMEOUT_SECONDS: '0',
-    } as typeof window._env_
+    vi.mocked(appInfoStore.getMcpAuthTimeoutSeconds).mockReturnValue('0')
 
     expect(getAuthCallbackTimeoutMs()).toBe(60_000)
   })

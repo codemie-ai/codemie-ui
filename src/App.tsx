@@ -38,8 +38,11 @@ import { UnsavedChangesProvider } from '@/hooks/useUnsavedChangesWarning'
 import { floatingKataStore } from '@/store/floatingKata'
 import { userStore } from '@/store/user'
 
+import { appInfoStore } from './store/appInfo'
+
 const App: React.FC = () => {
-  const { user, isLoadingUser } = useSnapshot(userStore)
+  const { user } = useSnapshot(userStore)
+  const { isConfigFetched } = useSnapshot(appInfoStore)
   const { appearance } = useTheme()
 
   useHistoryStack()
@@ -62,7 +65,7 @@ const App: React.FC = () => {
           <Banner />
           <ToastContainer />
 
-          {isLoadingUser ? (
+          {!user || !isConfigFetched ? (
             <Spinner className="w-20 h-20" />
           ) : (
             <div className="min-h-0 grow flex bg-surface-base-sidebar">

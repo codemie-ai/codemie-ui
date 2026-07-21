@@ -48,7 +48,6 @@ import {
   generateDefaultAlias,
 } from '@/utils/settings'
 
-
 import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
 import TestIntegration from '../TestIntegration'
 import CredentialFields from './CredentialFields'

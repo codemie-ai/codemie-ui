@@ -18,14 +18,6 @@ image:
 viteApiUrl: https://codemie.%%DOMAIN%%/code-assistant-api
 # -- AI/Run UI ENV. Set to local for dev development
 viteEnv: prod
-# -- Enable user management feature in AI/Run UI
-viteEnableUserManagement: false
-# -- Enable budget management feature in AI/Run UI
-viteEnableBudgetManagement: false
-# -- Identity provider. Options: 'keycloak', 'local'
-viteIdpProvider: keycloak
-# -- MCP authentication origin URL
-viteMcpAuthOrigin: ""
 
 # -- Secrets with credentials to pull images from a private registry.
 imagePullSecrets: []

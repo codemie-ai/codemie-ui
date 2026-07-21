@@ -16,6 +16,7 @@
 import { proxy } from 'valtio'
 
 import releaseNotes from '@/configs/releaseNotes.json'
+import { CONFIG_KEYS } from '@/constants/configKeys'
 import { ModelOption, SpeechConfig, ConfigItem } from '@/types/entity/configuration'
 import api from '@/utils/api'
 
@@ -36,6 +37,12 @@ export interface AppInfoStoreType {
   configs: ConfigItem[]
   isConfigFetched: boolean
   fetchCustomerConfig: () => Promise<ConfigItem[]>
+  getIdpProvider: () => string
+  getMcpAuthOrigin: () => string | null
+  getMcpAuthTimeoutSeconds: () => string | null
+  getBannerMessage: () => string
+  getBannerLinkLabel: () => string
+  getBannerLinkRoute: () => string
 
   description?: string
   appVersion: string
@@ -76,6 +83,35 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   isConfigFetched: false,
   navigationExpanded: getStoredNavigationExpanded(),
   sidebarExpanded: getStoredSidebarExpanded(),
+
+  getIdpProvider(): string {
+    const item = this.configs.find((c) => c.id === CONFIG_KEYS.IDP_PROVIDER)
+    return item?.settings.value ?? 'keycloak'
+  },
+
+  getMcpAuthOrigin(): string | null {
+    const item = this.configs.find((c) => c.id === CONFIG_KEYS.MCP_AUTH_ORIGIN)
+    return item?.settings.value || null
+  },
+
+  getMcpAuthTimeoutSeconds(): string | null {
+    return (
+      this.configs.find((c) => c.id === CONFIG_KEYS.MCP_AUTH_TIMEOUT_SECONDS)?.settings.value ||
+      null
+    )
+  },
+
+  getBannerMessage(): string {
+    return this.configs.find((c) => c.id === CONFIG_KEYS.BANNER_MESSAGE)?.settings.value ?? ''
+  },
+
+  getBannerLinkLabel(): string {
+    return this.configs.find((c) => c.id === CONFIG_KEYS.BANNER_LINK_LABEL)?.settings.value ?? ''
+  },
+
+  getBannerLinkRoute(): string {
+    return this.configs.find((c) => c.id === CONFIG_KEYS.BANNER_LINK_ROUTE)?.settings.value ?? ''
+  },
 
   async fetchCustomerConfig() {
     if (this.isConfigFetched) {

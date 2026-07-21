@@ -17,6 +17,8 @@ import { Messages } from 'primereact/messages'
 import { FC, useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 
+import { appInfoStore } from '@/store/appInfo'
+
 const hash = (str: string): string => {
   let hash = 0
   for (let i = 0; i < str.length; i += 1) {
@@ -29,9 +31,9 @@ const hash = (str: string): string => {
 
 const Banner: FC = () => {
   const messages = useRef<Messages>(null)
-  const bannerMessage = window._env_?.VITE_BANNER_MESSAGE ?? ''
-  const bannerLinkLabel = window._env_?.VITE_BANNER_LINK_LABEL ?? ''
-  const bannerLinkRoute = window._env_?.VITE_BANNER_LINK_ROUTE ?? ''
+  const bannerMessage = appInfoStore.getBannerMessage()
+  const bannerLinkLabel = appInfoStore.getBannerLinkLabel()
+  const bannerLinkRoute = appInfoStore.getBannerLinkRoute()
 
   useEffect(() => {
     if (bannerMessage && messages.current) {

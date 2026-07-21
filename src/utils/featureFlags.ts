@@ -20,6 +20,7 @@
  * For React components, use hooks from @/hooks/useFeatureFlags instead.
  */
 
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { appInfoStore } from '@/store/appInfo'
 
 /**
@@ -49,56 +50,38 @@ export const isFeatureEnabled = (featureName: string): boolean => {
   return config?.settings?.enabled ?? false
 }
 
-/**
- * Check if MCP feature is enabled (non-reactive utility)
- *
- * Convenience function specifically for the mcpConnect feature.
- * Equivalent to isFeatureEnabled('mcpConnect').
- *
- * @returns boolean indicating if mcpConnect is enabled
- */
 export const isMcpEnabled = (): boolean => {
-  return isFeatureEnabled('mcpConnect')
+  return isFeatureEnabled(FEATURE_FLAGS.MCP_CONNECT)
 }
 
-/**
- * Check if Cost Centers feature is enabled (non-reactive utility)
- */
 export const isCostCentersEnabled = (): boolean => {
   return isFeatureEnabled('features:costCenters')
 }
 
-/**
- * Check if Favorites feature is enabled (non-reactive utility)
- */
 export const isFavoritesEnabled = (): boolean => {
-  return isFeatureEnabled('features:favorites')
+  return isFeatureEnabled(FEATURE_FLAGS.FAVORITES)
 }
 
-/**
- * Check if Pinned Assistants feature is enabled (non-reactive utility)
- */
 export const isPinnedAssistantsEnabled = (): boolean => {
-  return isFeatureEnabled('features:pinnedAssistants')
+  return isFeatureEnabled(FEATURE_FLAGS.PINNED_ASSISTANTS)
 }
 
-/**
- * Check if Favorites page is enabled (non-reactive utility)
- */
 export const isFavoritesPageEnabled = (): boolean => {
-  return isFeatureEnabled('features:favoritesPage')
+  return isFeatureEnabled(FEATURE_FLAGS.FAVORITES_PAGE)
 }
 
-/**
- * Check if Request Hedging feature is enabled (non-reactive utility)
- */
 export const isRequestHedgingEnabled = (): boolean => {
-  return isFeatureEnabled('features:requestHedging')
+  return isFeatureEnabled(FEATURE_FLAGS.REQUEST_HEDGING)
 }
 
-/**
- * Check if Teams Bot Integration feature is enabled (non-reactive utility)
- */
+export const isUserManagementEnabled = (): boolean => {
+  return isFeatureEnabled(FEATURE_FLAGS.USER_MANAGEMENT)
+}
+
+export const isBudgetManagementEnabled = (): boolean => {
+  return isFeatureEnabled(FEATURE_FLAGS.BUDGET_MANAGEMENT)
+}
+
 export const isTeamsEnabled = (): boolean => {
-  return isFeatureEnabled('features:teamsBotIntegration')
+  return isFeatureEnabled(FEATURE_FLAGS.TEAMS_BOT_INTEGRATION)
 }

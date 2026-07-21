@@ -11,15 +11,6 @@ data:
       VITE_API_URL: "{{ .Values.viteApiUrl }}",
       VITE_ENV: "{{ .Values.viteEnv }}",
       VITE_APP_VERSION: "{{ .Values.image.tag | default .Chart.AppVersion }}",
-      {{- if .Values.viteBannerMessage }}
-      VITE_BANNER_MESSAGE: "{{ .Values.viteBannerMessage }}",
-      {{- end }}
-      VITE_ENABLE_USER_MANAGEMENT: "{{ .Values.viteEnableUserManagement }}",
-      VITE_ENABLE_BUDGET_MANAGEMENT: "{{ .Values.viteEnableBudgetManagement }}",
-      VITE_IDP_PROVIDER: "{{ .Values.viteIdpProvider }}",
-      {{- if .Values.viteMcpAuthOrigin }}
-      VITE_MCP_AUTH_ORIGIN: "{{ .Values.viteMcpAuthOrigin }}",
-      {{- end }}
       {{- range $key, $val := .Values.extraConfig }}
       {{ $key }}: "{{ $val }}",
       {{- end }}

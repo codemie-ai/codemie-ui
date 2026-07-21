@@ -53,6 +53,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   const route = useVueRoute()
   const { assistantCategories } = useSnapshot(assistantsStore)
   const { workflowTemplates } = useSnapshot(workflowsStore)
+  const { user } = useSnapshot(userStore)
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [isCreatedByMeChecked, setIsCreatedByMeChecked] = useState(false)
@@ -143,7 +144,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
         loadCreatedByOptions()
       }
     }
-  }, [loadProjectOptions, loadCreatedByOptions, scope])
+  }, [loadProjectOptions, loadCreatedByOptions, scope, user])
 
   useEffect(() => {
     if (scope !== WORKFLOW_LIST_SCOPE.TEMPLATES) return

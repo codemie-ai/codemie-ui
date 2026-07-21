@@ -25,12 +25,15 @@ import { skillsStore } from '@/store/skills'
 const useInitialDataFetch = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
+      await appInfoStore.fetchCustomerConfig()
+
       try {
         await userStore.loadUser()
       } catch (error: unknown) {
         if (error instanceof Response && error.status === HTTP_STATUS.UNAUTHORIZED) return
         throw error
       }
+
       await preferencesStore.fetchPreferences(userStore.user!.userId)
 
       await assistantsStore.fetchPinnedAssistants()
@@ -45,10 +48,6 @@ const useInitialDataFetch = () => {
 
       applicationsStore.fetchApplications()
       assistantsStore.loadShowNewAssistantAIPopup()
-
-      await appInfoStore.fetchCustomerConfig()
-
-      appInfoStore.getLLMModels()
 
       assistantsStore.getAssistantCategories()
       skillsStore.getSkillCategories()

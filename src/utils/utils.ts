@@ -19,6 +19,7 @@ import QuillImageDropAndPaste from 'quill-image-drop-and-paste'
 import { twMerge } from 'tailwind-merge'
 
 import { TOOLKITS } from '@/constants/assistants'
+import { appInfoStore } from '@/store/appInfo'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import toaster from '@/utils/toaster'
 
@@ -63,7 +64,7 @@ export function getMode(): string {
 
 /** Returns the configured Identity Provider (IDP) */
 export function getIdpProvider(): string {
-  return window?._env_?.VITE_IDP_PROVIDER || import.meta.env.VITE_IDP_PROVIDER || 'keycloak'
+  return appInfoStore.getIdpProvider()
 }
 
 /** Returns whether local authentication is enabled */

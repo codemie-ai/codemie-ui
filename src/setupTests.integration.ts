@@ -43,6 +43,6 @@ if (_OriginalRequest) {
         const { signal: _signal, ...cleanInit } = (init ?? {}) as RequestInit
         super(input, cleanInit)
       }
-    },
+    }
   )
 }

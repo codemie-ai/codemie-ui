@@ -18,6 +18,7 @@ import { createBrowserRouter, redirect, RouteObject } from 'react-router'
 import SignInPage from '@/authentication/local/SignInPage'
 import SignUpPage from '@/authentication/local/SignUpPage'
 import { AssistantTab } from '@/constants'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import {
   ANALYTICS,
   ANALYTICS_EDIT_DASHBOARD,
@@ -98,9 +99,9 @@ import NewWorkflowPage from '@/pages/workflows/NewWorkflowPage'
 import ViewWorkflowTemplatePage from '@/pages/workflows/ViewWorkflowTemplatePage'
 import WorkflowDetailsPage from '@/pages/workflows/WorkflowDetailsPage'
 import WorkflowsListPage from '@/pages/workflows/WorkflowsListPage'
-import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 
 import App from './App'
+import { FeatureGuard } from './components/FeatureGuard'
 
 const chatRoutes: RouteObject[] = [
   {
@@ -428,7 +429,11 @@ const aiAdoptionConfigRoutes: RouteObject[] = [
   {
     id: 'ai-adoption-config',
     path: '/settings/administration/ai-adoption-config',
-    Component: AiAdoptionConfigPage,
+    element: (
+      <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
+        <AiAdoptionConfigPage />
+      </FeatureGuard>
+    ),
   },
 ]
 
@@ -591,17 +596,29 @@ const analyticsRoutes: RouteObject[] = [
   {
     id: ANALYTICS,
     path: 'analytics',
-    Component: AnalyticsPage,
+    element: (
+      <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
+        <AnalyticsPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: ANALYTICS_NEW_DASHBOARD,
     path: 'analytics/dashboards/new',
-    element: <AnalyticsDashboardFormPage />,
+    element: (
+      <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
+        <AnalyticsDashboardFormPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: ANALYTICS_EDIT_DASHBOARD,
     path: 'analytics/dashboards/:dashboardId/edit',
-    element: <AnalyticsDashboardFormPage isEditing />,
+    element: (
+      <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
+        <AnalyticsDashboardFormPage isEditing />
+      </FeatureGuard>
+    ),
   },
 ]
 
@@ -666,8 +683,8 @@ export const routes: RouteObject[] = [
       ...katasRoutes,
       ...workflowRoutes,
       ...applicationRoutes,
-      ...(isEnterpriseEdition() ? analyticsRoutes : []),
-      ...(isEnterpriseEdition() ? aiAdoptionConfigRoutes : []),
+      ...analyticsRoutes,
+      ...aiAdoptionConfigRoutes,
       ...settingsRoutes,
       ...awsSettingsRoutes,
       ...otherRoutes,

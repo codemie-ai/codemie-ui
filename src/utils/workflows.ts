@@ -16,13 +16,12 @@
 import yaml from 'js-yaml'
 
 import { TOOLKITS } from '@/constants/assistants'
-import { WORKFLOW_VISUAL_EDITOR_FLAG } from '@/constants/workflows'
 import { MCPServerDetails } from '@/types/entity'
 import { AssistantToolkit } from '@/types/entity/assistant'
 import { ConfigItem } from '@/types/entity/configuration'
 import { Setting } from '@/types/entity/setting'
 import { AssistantTool } from '@/types/workflowEditor'
-import { isConfigItemEnabled, SETTING_TYPE_USER } from '@/utils/settings'
+import { SETTING_TYPE_USER } from '@/utils/settings'
 
 import { applyToolkitSettings } from './toolkit'
 
@@ -167,11 +166,8 @@ export const getMCPServersFromConfiguration = (
   })
 }
 
-export const isVisualEditorEnabled = (configs: ConfigItem[]): boolean => {
-  return (
-    isConfigItemEnabled(configs, WORKFLOW_VISUAL_EDITOR_FLAG) ||
-    import.meta.env.VITE_WORKFLOW_VISUAL_EDITOR_ENABLED === 'true'
-  )
+export const isVisualEditorEnabled = (_: ConfigItem[]): boolean => {
+  return true
 }
 
 const isUserAlias = (alias: string | undefined, allSettings: Setting[]): boolean => {

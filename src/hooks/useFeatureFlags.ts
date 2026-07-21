@@ -23,6 +23,7 @@
 import { useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { appInfoStore } from '@/store/appInfo'
 
 /**
@@ -68,53 +69,38 @@ export const useFeatureFlag = (featureName: string): FeatureFlagResult => {
   }, [configs, isConfigFetched, featureName])
 }
 
-/**
- * React hook to check if MCP (Model Context Protocol) feature is enabled
- *
- * Convenience hook specifically for the mcpConnect feature.
- * Returns a tuple [isEnabled, isLoaded] to handle loading states properly.
- *
- * @returns Tuple of [isEnabled, isLoaded] where:
- *   - isEnabled: boolean indicating if mcpConnect is enabled
- *   - isLoaded: boolean indicating if config has been fetched
- *
- * @example
- * ```tsx
- * const MyComponent = () => {
- *   const [isMcpEnabled, isLoaded] = useMcpEnabled()
- *
- *   if (!isLoaded) {
- *     return <LoadingSpinner />
- *   }
- *
- *   return (
- *     <div>
- *       {isMcpEnabled && <MCPFeatures />}
- *     </div>
- *   )
- * }
- * ```
- */
 export const useMcpEnabled = (): FeatureFlagResult => {
-  return useFeatureFlag('mcpConnect')
+  return useFeatureFlag(FEATURE_FLAGS.MCP_CONNECT)
 }
 
 export const useFavoritesEnabled = (): FeatureFlagResult => {
-  return useFeatureFlag('features:favorites')
+  return useFeatureFlag(FEATURE_FLAGS.FAVORITES)
 }
 
 export const usePinnedAssistantsEnabled = (): FeatureFlagResult => {
-  return useFeatureFlag('features:pinnedAssistants')
+  return useFeatureFlag(FEATURE_FLAGS.PINNED_ASSISTANTS)
 }
 
 export const useFavoritesPageEnabled = (): FeatureFlagResult => {
-  return useFeatureFlag('features:favoritesPage')
+  return useFeatureFlag(FEATURE_FLAGS.FAVORITES_PAGE)
 }
 
 export const useRequestHedgingEnabled = (): FeatureFlagResult => {
-  return useFeatureFlag('features:requestHedging')
+  return useFeatureFlag(FEATURE_FLAGS.REQUEST_HEDGING)
+}
+
+export const useUserManagementEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.USER_MANAGEMENT)
+}
+
+export const useBudgetManagementEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.BUDGET_MANAGEMENT)
+}
+
+export const useEnterpriseEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.ENTERPRISE_EDITION)
 }
 
 export const useTeamsEnabled = (): FeatureFlagResult => {
-  return useFeatureFlag('features:teamsBotIntegration')
+  return useFeatureFlag(FEATURE_FLAGS.TEAMS_BOT_INTEGRATION)
 }

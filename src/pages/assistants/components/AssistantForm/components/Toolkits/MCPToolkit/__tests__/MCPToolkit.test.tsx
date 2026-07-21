@@ -34,7 +34,11 @@ vi.mock('@/store/mcp', () => ({
   mcpStore: { configs: [], getConfig: vi.fn(), getCachedConfig: vi.fn() },
 }))
 vi.mock('@/store/appInfo', () => ({
-  appInfoStore: { configs: [] },
+  appInfoStore: {
+    configs: [],
+    getMcpAuthOrigin: vi.fn(() => null),
+    getMcpAuthTimeoutSeconds: vi.fn(() => null),
+  },
 }))
 
 const mockUseSnapshot = vi.mocked(useSnapshot)

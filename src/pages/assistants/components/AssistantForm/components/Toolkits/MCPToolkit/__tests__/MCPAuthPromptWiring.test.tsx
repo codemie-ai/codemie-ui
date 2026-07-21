@@ -52,6 +52,8 @@ const pendingRow: MCPAuthGateServer = {
   },
 }
 
+vi.mock('@/store/appInfo', () => ({ appInfoStore: { configs: [] } }))
+
 vi.mock('valtio', () => ({
   useSnapshot: (store: unknown) => store,
 }))

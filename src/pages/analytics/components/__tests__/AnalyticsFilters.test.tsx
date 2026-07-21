@@ -46,6 +46,10 @@ vi.mock('valtio', () => ({
   subscribe: vi.fn(),
 }))
 
+vi.mock('@/hooks/useFeatureFlags', () => ({
+  useUserManagementEnabled: vi.fn(() => [true, true]),
+}))
+
 let capturedOnSearchChange: ((term: string) => void) | undefined
 
 vi.mock('../AnalyticsUserFilter', () => ({
@@ -199,15 +203,11 @@ describe('AnalyticsFilters - Admin Server-Side Search', () => {
     vi.clearAllMocks()
     capturedOnSearchChange = undefined
     mockStore.user = { isAdmin: true }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(window as any)._env_ = { VITE_ENABLE_USER_MANAGEMENT: 'true' }
     vi.mocked(userStore.getAnalyticsUsers).mockResolvedValue([])
   })
 
   afterEach(() => {
     mockStore.user = null
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (window as any)._env_
     vi.useRealTimers()
   })
 

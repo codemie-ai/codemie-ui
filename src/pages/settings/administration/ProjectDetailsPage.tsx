@@ -19,7 +19,7 @@ import { useSnapshot } from 'valtio'
 import Button from '@/components/Button'
 import Spinner from '@/components/Spinner'
 import { ButtonSize } from '@/constants'
-import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+import { useFeatureFlag, useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import ProjectModal, {
   ProjectFormData,
@@ -40,7 +40,6 @@ import ProjectBudgetsSection from './projectsManagement/ProjectBudgetsSection'
 import ProjectMembersManager from './projectsManagement/ProjectMembersManager'
 
 const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
-const isBudgetManagementEnabled = window._env_?.VITE_ENABLE_BUDGET_MANAGEMENT === 'true'
 
 const formatCurrency = (value: number | null | undefined) =>
   value == null ? '-' : `$${value.toFixed(2)}`
@@ -50,6 +49,7 @@ const ProjectDetailsPage = () => {
   const { user: currentUser } = useSnapshot(userStore)
   const projectName = router.params.projectName as string
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
+  const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const [project, setProject] = useState<ProjectDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditPopupVisible, setIsEditPopupVisible] = useState(false)
