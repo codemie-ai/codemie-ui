@@ -236,4 +236,19 @@ describe('ChatListItem', () => {
 
     expect(screen.getByText('New chat')).toBeInTheDocument()
   })
+
+  it('renders list item with role="treeitem"', () => {
+    render(<ChatListItem chat={mockChat} actions={mockActions} />)
+    expect(screen.getByRole('treeitem')).toBeInTheDocument()
+  })
+
+  it('sets aria-selected="false" for an inactive chat', () => {
+    render(<ChatListItem chat={mockChat} actions={mockActions} currentChatId="other-chat" />)
+    expect(screen.getByRole('treeitem')).toHaveAttribute('aria-selected', 'false')
+  })
+
+  it('sets aria-selected="true" for the active chat', () => {
+    render(<ChatListItem chat={mockChat} actions={mockActions} currentChatId="chat1" />)
+    expect(screen.getByRole('treeitem')).toHaveAttribute('aria-selected', 'true')
+  })
 })

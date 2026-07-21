@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { forwardRef, memo, useMemo } from 'react'
+import { forwardRef, memo, useMemo, type Ref } from 'react'
 
 import { ChatListItem as ChatListItemType } from '@/types/entity/conversation'
 
@@ -23,42 +23,46 @@ interface ChatListProps {
   currentChatId?: string
   chatActions: ChatListItemActions
   chats: ChatListItemType[]
+  id?: string
 }
 
-const ChatList = memo(
-  forwardRef<HTMLUListElement, ChatListProps>(({ currentChatId, chatActions, chats }, ref) => {
-    const { pinnedChats, unpinnedChats } = useMemo(() => {
-      const pinnedChats: ChatListItemType[] = []
-      const unpinnedChats: ChatListItemType[] = []
+const ChatListInner = (
+  { currentChatId, chatActions, chats, id }: ChatListProps,
+  ref: Ref<HTMLUListElement>
+) => {
+  const { pinnedChats, unpinnedChats } = useMemo(() => {
+    const pinnedChats: ChatListItemType[] = []
+    const unpinnedChats: ChatListItemType[] = []
 
-      ;(chats as ChatListItemType[]).forEach((chat) =>
-        chat.pinned ? pinnedChats.push(chat) : unpinnedChats.push(chat)
-      )
-
-      return { pinnedChats, unpinnedChats }
-    }, [chats])
-
-    return (
-      <ul ref={ref}>
-        {pinnedChats.map((chat) => (
-          <ChatListItem
-            key={chat.id}
-            chat={chat}
-            actions={chatActions}
-            currentChatId={currentChatId}
-          />
-        ))}
-        {unpinnedChats.map((chat) => (
-          <ChatListItem
-            key={chat.id}
-            chat={chat}
-            actions={chatActions}
-            currentChatId={currentChatId}
-          />
-        ))}
-      </ul>
+    ;(chats as ChatListItemType[]).forEach((chat) =>
+      chat.pinned ? pinnedChats.push(chat) : unpinnedChats.push(chat)
     )
-  })
-)
+
+    return { pinnedChats, unpinnedChats }
+  }, [chats])
+
+  return (
+    <ul ref={ref} role="group" id={id}>
+      {pinnedChats.map((chat) => (
+        <ChatListItem
+          key={chat.id}
+          chat={chat}
+          actions={chatActions}
+          currentChatId={currentChatId}
+        />
+      ))}
+      {unpinnedChats.map((chat) => (
+        <ChatListItem
+          key={chat.id}
+          chat={chat}
+          actions={chatActions}
+          currentChatId={currentChatId}
+        />
+      ))}
+    </ul>
+  )
+}
+
+const ChatList = memo(forwardRef<HTMLUListElement, ChatListProps>(ChatListInner))
 
 export default ChatList

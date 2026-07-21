@@ -124,6 +124,11 @@ const FolderList: FC<FolderListProps> = ({
                   'aria-label': folder,
                   'data-folder': folder,
                   'data-folder-open': opts?.context.selected,
+                  role: 'treeitem',
+                  'aria-expanded': opts?.context.selected ?? false,
+                  'aria-owns': `chat-tree-folder-group-${folder
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')}`,
                 }),
               }}
               header={() => (
@@ -158,6 +163,7 @@ const FolderList: FC<FolderListProps> = ({
                   chats={foldersToChatsMap[folder] ?? []}
                   chatActions={chatActions}
                   currentChatId={currentChatId}
+                  id={`chat-tree-folder-group-${folder.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
                 />
               </div>
             </AccordionTab>

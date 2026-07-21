@@ -181,14 +181,20 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
   if (isChatsLoading) return <Spinner inline className="mx-auto" />
 
   return (
-    <div className="flex flex-col w-full grow min-h-0">
+    <div role="tree" aria-label="Chats" className="flex flex-col w-full grow min-h-0">
       <ChatSidebarAccordion
         title="Chats"
         isExpanded={activeSection === 'chats'}
         onToggle={() => handleToggleSection('chats')}
         transitionOptions={disableAccordionAnimation ? { timeout: 0 } : undefined}
+        groupId="chat-tree-group-chats"
       >
-        <ChatList chatActions={chatActions} chats={defaultChats} currentChatId={currentChat?.id} />
+        <ChatList
+          chatActions={chatActions}
+          chats={defaultChats}
+          currentChatId={currentChat?.id}
+          id="chat-tree-group-chats"
+        />
       </ChatSidebarAccordion>
 
       <div data-onboarding="chat-sidebar-folders">

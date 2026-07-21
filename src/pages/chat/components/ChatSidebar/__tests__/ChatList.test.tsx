@@ -25,7 +25,7 @@ vi.hoisted(() => vi.resetModules())
 
 vi.mock('../ChatList/ChatListItem', () => ({
   default: ({ chat }: { chat: ChatListItemType }) => (
-    <li data-testid={`chat-item-${chat.id}`}>
+    <li role="treeitem" aria-selected={false} data-testid={`chat-item-${chat.id}`}>
       <span data-testid={`chat-name-${chat.id}`}>{chat.name}</span>
       {chat.pinned && <span data-testid={`pinned-${chat.id}`}>PINNED</span>}
     </li>
@@ -75,7 +75,7 @@ describe('ChatList', () => {
 
   it('renders empty list when no chats are provided', () => {
     render(<ChatList chatActions={mockChatActions} chats={[]} />)
-    const listElement = screen.getByRole('list')
+    const listElement = screen.getByRole('group')
     expect(listElement).toBeInTheDocument()
     expect(listElement.children.length).toBe(0)
   })
@@ -92,7 +92,7 @@ describe('ChatList', () => {
   it('renders pinned chats first', () => {
     render(<ChatList chatActions={mockChatActions} chats={mockChats} />)
 
-    const listItems = screen.getAllByRole('listitem')
+    const listItems = screen.getAllByRole('treeitem')
 
     // The first two items should be the pinned chats
     expect(listItems[0]).toHaveAttribute('data-testid', 'chat-item-chat2')
@@ -134,7 +134,7 @@ describe('ChatList', () => {
 
     render(<ChatList chatActions={mockChatActions} chats={orderedChats} />)
 
-    const listItems = screen.getAllByRole('listitem')
+    const listItems = screen.getAllByRole('treeitem')
 
     // Pinned chats should be first, in their original order
     expect(listItems[0]).toHaveAttribute('data-testid', 'chat-item-chat3')
@@ -163,7 +163,7 @@ describe('ChatList', () => {
     )
 
     // Check initial rendering
-    expect(screen.getAllByRole('listitem').length).toBe(2)
+    expect(screen.getAllByRole('treeitem').length).toBe(2)
     expect(screen.queryByTestId('chat-item-chat1')).toBeInTheDocument()
     expect(screen.queryByTestId('chat-item-chat3')).toBeInTheDocument()
 
@@ -171,7 +171,7 @@ describe('ChatList', () => {
     rerender(<ChatList chatActions={mockChatActions} chats={mockChats} />)
 
     // Check updated rendering with pinned chats first
-    const updatedListItems = screen.getAllByRole('listitem')
+    const updatedListItems = screen.getAllByRole('treeitem')
     expect(updatedListItems.length).toBe(4)
     expect(updatedListItems[0]).toHaveAttribute('data-testid', 'chat-item-chat2')
     expect(updatedListItems[1]).toHaveAttribute('data-testid', 'chat-item-chat4')

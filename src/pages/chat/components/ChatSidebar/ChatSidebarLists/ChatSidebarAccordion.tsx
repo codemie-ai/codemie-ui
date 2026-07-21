@@ -38,6 +38,7 @@ interface ChatSidebarAccordionProps {
   headerContentTemplate?: ReactNode
   onToggle: () => void
   transitionOptions?: CSSTransitionProps
+  groupId?: string
 }
 
 const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
@@ -47,6 +48,7 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
   headerContentTemplate,
   onToggle,
   transitionOptions,
+  groupId,
 }) => {
   return (
     <Accordion
@@ -58,7 +60,16 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
       transitionOptions={transitionOptions}
     >
       <AccordionTab
-        pt={tabPt}
+        pt={{
+          ...tabPt,
+          headerAction: {
+            className: 'hover:no-underline',
+            href: null,
+            role: 'treeitem',
+            'aria-expanded': isExpanded === true,
+            ...(groupId ? { 'aria-owns': groupId } : {}),
+          },
+        }}
         header={() => (
           <div
             className={cn(
