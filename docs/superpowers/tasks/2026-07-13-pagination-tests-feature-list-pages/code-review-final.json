@@ -1,0 +1,70 @@
+{
+  "decision": "request-changes",
+  "rationale": "No spec/story artifact exists for this sdlc-light task (test-only change, no spec.md) so the acceptance lens was skipped and confidence is forced to low per the no-spec rule. Blind + edge-case lenses ran and surfaced 2 blocking (major, patch) test-quality gaps plus several dismissed false positives and several deferred out-of-scope hardening ideas (6 dismissed as verified non-issues or established codebase convention; 8 deferred as pre-existing production quirks or additional coverage beyond the stated ACs, recommended as follow-up tickets).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 6 commits on this branch match 'EPMCDME-13480: Capital sentence' per .ai-run/guides/standards/git-workflow.md."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md does not exist in this repo; no documented blocking standard to check against."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Test-only diff (4 new *.integration.test.tsx files); no secrets, auth, injection, or unsafe I/O surface touched. .ai-run/guides/development/security-patterns.md does not exist in this repo."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/favorites/__tests__/FavoritesPagePagination.integration.test.tsx",
+      "line": 118,
+      "title": "Narrowed tests don't assert truncation actually happens",
+      "problem": "The 4 'narrowed' tests assert pagination controls are absent and the fetch always uses page=0&per_page=12, but never assert that items beyond the fixed page (e.g. 'Assistant 13') are actually absent from the DOM.",
+      "impact": "If the page ever silently rendered all 25 mocked items with no pagination controls (e.g. an accidental switch to client-side infinite rendering), these tests would still pass, so they don't prove truncation occurs.",
+      "recommendation": "Add `expect(screen.queryByText('Assistant 13')).not.toBeInTheDocument()` (and the Skill/Workflow equivalents) alongside the existing assertions in each of the 4 tests."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/katas/__tests__/KatasLeaderboardPagination.integration.test.tsx",
+      "line": 43,
+      "title": "Many-rows test doesn't assert only the fixed page renders",
+      "problem": "'never renders pagination controls when the leaderboard has many rows' mocks 150 rows and waits for rank #1, but never asserts a row beyond the visible set (e.g. rank #101, which would only exist if the client ignored the fixed limit=100) is absent.",
+      "impact": "Same gap as CR-001: a regression that renders more than the fetched/limited set would not be caught by this test.",
+      "recommendation": "Add `expect(screen.queryByText('#101')).not.toBeInTheDocument()` (or equivalent) to the many-rows test."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/katas/__tests__/KatasListPagination.integration.test.tsx",
+      "line": 98,
+      "title": "Per-page-change test omits old-item-absent assertion",
+      "problem": "'reloads katas when per-page selection changes and updates the URL' asserts the new 'Kata PerPage' item appears but never asserts the pre-change item ('Kata 1') is gone, unlike the sibling 'shows next page' test which checks both presence and absence.",
+      "impact": "A component that appended new data instead of replacing it on a per-page change would still pass this test.",
+      "recommendation": "Add `expect(screen.queryByText('Kata 1')).not.toBeInTheDocument()` inside the same waitFor block."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/skills/__tests__/SkillsListPagePagination.integration.test.tsx",
+      "line": 582,
+      "title": "Per-page-change tests omit old-item-absent assertion (all 3 tabs)",
+      "problem": "The three 'reloads ... skills when per-page selection changes' tests (Project line 582, Marketplace line 706, Favorites line 844) only assert the new '... PerPage' item appears, never that the pre-change item ('Project 1' / 'Marketplace 1' / 'Favorite 1') is gone.",
+      "impact": "Same gap as CR-003, applied to all three Skills tabs: an append-instead-of-replace regression on per-page change would not be caught.",
+      "recommendation": "Add the corresponding `expect(screen.queryByText('Project 1')).not.toBeInTheDocument()` (etc.) to each of the three per-page-change tests."
+    }
+  ]
+}

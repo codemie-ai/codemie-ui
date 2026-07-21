@@ -1,0 +1,101 @@
+diff --git a/src/pages/favorites/__tests__/FavoritesPagePagination.integration.test.tsx b/src/pages/favorites/__tests__/FavoritesPagePagination.integration.test.tsx
+index 966974488..a951668ce 100644
+--- a/src/pages/favorites/__tests__/FavoritesPagePagination.integration.test.tsx
++++ b/src/pages/favorites/__tests__/FavoritesPagePagination.integration.test.tsx
+@@ -113,6 +113,12 @@ describe('FavoritesPage - Pagination (narrowed: no pagination UI in production)'
+ 
+     await waitFor(() => {
+       expect(screen.getByText('Assistant 1')).toBeInTheDocument()
++      // FavoritesPage renders every item the API returns with no client-side
++      // slicing (fetchFavoriteAssistants/Skills/Workflows just assign the response
++      // array to the store) — asserting item 13 is absent would assert behavior the
++      // page doesn't implement. The only real guarantee is that pagination controls
++      // never appear and the fetch always requests the fixed page=0&per_page=12.
++      expect(screen.getByText('Assistant 25')).toBeInTheDocument()
+     })
+ 
+     expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+@@ -137,6 +143,8 @@ describe('FavoritesPage - Pagination (narrowed: no pagination UI in production)'
+ 
+     await waitFor(() => {
+       expect(screen.getByText('Assistant 1')).toBeInTheDocument()
++      // See note in the "all" view test above — no client-side slicing exists.
++      expect(screen.getByText('Assistant 25')).toBeInTheDocument()
+     })
+ 
+     expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+@@ -162,6 +170,8 @@ describe('FavoritesPage - Pagination (narrowed: no pagination UI in production)'
+ 
+     await waitFor(() => {
+       expect(screen.getByText('Skill 1')).toBeInTheDocument()
++      // See note in the "all" view test above — no client-side slicing exists.
++      expect(screen.getByText('Skill 25')).toBeInTheDocument()
+     })
+ 
+     expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+@@ -186,6 +196,8 @@ describe('FavoritesPage - Pagination (narrowed: no pagination UI in production)'
+ 
+     await waitFor(() => {
+       expect(screen.getByText('Workflow 1')).toBeInTheDocument()
++      // See note in the "all" view test above — no client-side slicing exists.
++      expect(screen.getByText('Workflow 25')).toBeInTheDocument()
+     })
+ 
+     expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+diff --git a/src/pages/katas/__tests__/KatasLeaderboardPagination.integration.test.tsx b/src/pages/katas/__tests__/KatasLeaderboardPagination.integration.test.tsx
+index 349bf86a9..3cfe97749 100644
+--- a/src/pages/katas/__tests__/KatasLeaderboardPagination.integration.test.tsx
++++ b/src/pages/katas/__tests__/KatasLeaderboardPagination.integration.test.tsx
+@@ -48,6 +48,12 @@ describe('KatasPage - Leaderboard - Pagination (narrowed: no pagination UI in pr
+ 
+     await waitFor(() => {
+       expect(screen.getByText('#1')).toBeInTheDocument()
++      // Production renders every row the API returns with no client-side slicing
++      // (LeaderboardContent has no page-size limit beyond the fixed `limit=100`
++      // request param) — asserting a specific row like '#101' is absent would be
++      // asserting behavior the component doesn't implement. The only guarantee to
++      // check here is that pagination controls never render, regardless of count.
++      expect(screen.getByText('#150')).toBeInTheDocument()
+     })
+ 
+     expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+diff --git a/src/pages/katas/__tests__/KatasListPagination.integration.test.tsx b/src/pages/katas/__tests__/KatasListPagination.integration.test.tsx
+index f48ef89df..dd6afd7c8 100644
+--- a/src/pages/katas/__tests__/KatasListPagination.integration.test.tsx
++++ b/src/pages/katas/__tests__/KatasListPagination.integration.test.tsx
+@@ -121,6 +121,7 @@ describe('KatasPage - ALL_KATAS - Pagination', () => {
+ 
+     await waitFor(() => {
+       expect(screen.getByText('Kata PerPage')).toBeInTheDocument()
++      expect(screen.queryByText('Kata 1')).not.toBeInTheDocument()
+       expect(mockRouterState.replace).toHaveBeenCalledWith({ query: { per_page: '45' } })
+     })
+ 
+diff --git a/src/pages/skills/__tests__/SkillsListPagePagination.integration.test.tsx b/src/pages/skills/__tests__/SkillsListPagePagination.integration.test.tsx
+index f58f94a35..d3b65323f 100644
+--- a/src/pages/skills/__tests__/SkillsListPagePagination.integration.test.tsx
++++ b/src/pages/skills/__tests__/SkillsListPagePagination.integration.test.tsx
+@@ -101,6 +101,7 @@ describe('SkillsListPage - Project tab - Pagination', () => {
+ 
+     await waitFor(() => {
+       expect(screen.getByText('Project PerPage')).toBeInTheDocument()
++      expect(screen.queryByText('Project 1')).not.toBeInTheDocument()
+     })
+ 
+     expect(global.fetch).toHaveBeenCalledWith(
+@@ -231,6 +232,7 @@ describe('SkillsListPage - Marketplace tab - Pagination', () => {
+ 
+     await waitFor(() => {
+       expect(screen.getByText('Marketplace PerPage')).toBeInTheDocument()
++      expect(screen.queryByText('Marketplace 1')).not.toBeInTheDocument()
+     })
+ 
+     expect(global.fetch).toHaveBeenCalledWith(
+@@ -370,6 +372,7 @@ describe('SkillsListPage - Favorites tab - Pagination', () => {
+ 
+     await waitFor(() => {
+       expect(screen.getByText('Favorite PerPage')).toBeInTheDocument()
++      expect(screen.queryByText('Favorite 1')).not.toBeInTheDocument()
+     })
+ 
+     expect(global.fetch).toHaveBeenCalledWith(
