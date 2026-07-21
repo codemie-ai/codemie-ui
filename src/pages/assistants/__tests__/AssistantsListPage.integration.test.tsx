@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
@@ -52,6 +52,14 @@ describe('AssistantsListPage - Integration', () => {
     user_abilities: ['read', 'write'],
     ...overrides,
   })
+
+  const createAssistants = (count: number, namePrefix: string) =>
+    Array.from({ length: count }, (_, i) =>
+      createAssistantFixture({
+        id: `${namePrefix.toLowerCase()}-${i + 1}`,
+        name: `${namePrefix} ${i + 1}`,
+      })
+    )
 
   describe('Initial Page Load', () => {
     it('loads and displays assistants list on PROJECT tab', async () => {
@@ -759,6 +767,258 @@ describe('AssistantsListPage - Integration', () => {
       await waitFor(() => {
         expect(screen.getByText('non-roster-proj')).toBeInTheDocument()
       })
+    })
+  })
+
+  describe('Marketplace Pagination', () => {
+    it('shows next page of marketplace assistants when pagination button is clicked', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(25, 'Marketplace'),
+        pagination: { page: 0, per_page: 12, pages: 3, total: 25 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/marketplace')
+
+      await waitFor(() => {
+        expect(screen.getByText('Marketplace 1')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'Page 2' })).toBeInTheDocument()
+      })
+
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(25, 'Marketplace').slice(12, 24),
+        pagination: { page: 1, per_page: 12, pages: 3, total: 25 },
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Page 2' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('Marketplace 13')).toBeInTheDocument()
+        expect(screen.queryByText('Marketplace 1')).not.toBeInTheDocument()
+      })
+    })
+
+    it('reloads marketplace assistants when per-page selection changes', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(25, 'Marketplace'),
+        pagination: { page: 0, per_page: 12, pages: 3, total: 25 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/marketplace')
+
+      await waitFor(() => {
+        expect(screen.getByText('Marketplace 1')).toBeInTheDocument()
+      })
+
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture({ id: 'marketplace-perpage', name: 'Marketplace PerPage' })],
+        pagination: { page: 0, per_page: 24, pages: 2, total: 25 },
+      })
+
+      const perPageSelect = document.getElementById('per-page') as HTMLElement
+      fireEvent.click(perPageSelect)
+      fireEvent.click(screen.getByLabelText('24 items'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Marketplace PerPage')).toBeInTheDocument()
+      })
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('per_page=24'),
+        expect.anything()
+      )
+    })
+
+    it('does not show pagination buttons when marketplace assistants fit on one page', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(6, 'Marketplace'),
+        pagination: { page: 0, per_page: 12, pages: 1, total: 6 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/marketplace')
+
+      await waitFor(() => {
+        expect(screen.getByText('Marketplace 1')).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+      })
+    })
+
+    it('Previous page button absent on first page for marketplace', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(25, 'Marketplace'),
+        pagination: { page: 0, per_page: 12, pages: 3, total: 25 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/marketplace')
+
+      await waitFor(() => {
+        expect(screen.getByText('Marketplace 1')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument()
+    })
+
+    it('Next page button absent on last page for marketplace', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(25, 'Marketplace').slice(24, 25),
+        pagination: { page: 2, per_page: 12, pages: 3, total: 25 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/marketplace')
+
+      await waitFor(() => {
+        expect(screen.getByText('Marketplace 25')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Favorites Pagination', () => {
+    const mockFavoritesFeatureFlag = () =>
+      mockAPI('GET', 'v1/config', [
+        {
+          id: 'features:favorites',
+          settings: { enabled: true },
+        },
+      ])
+
+    it('shows next page of favorite assistants when pagination button is clicked', async () => {
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+        data: createAssistants(25, 'Favorite'),
+        page: 0,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      renderPage('/assistants/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 1')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'Page 2' })).toBeInTheDocument()
+      })
+
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+        data: createAssistants(25, 'Favorite').slice(12, 24),
+        page: 1,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Page 2' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 13')).toBeInTheDocument()
+        expect(screen.queryByText('Favorite 1')).not.toBeInTheDocument()
+      })
+
+      expect(mockRouterState.replace).not.toHaveBeenCalled()
+    })
+
+    it('reloads favorite assistants when per-page selection changes', async () => {
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+        data: createAssistants(25, 'Favorite'),
+        page: 0,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      renderPage('/assistants/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 1')).toBeInTheDocument()
+      })
+
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+        data: [createAssistantFixture({ id: 'favorite-perpage', name: 'Favorite PerPage' })],
+        page: 0,
+        per_page: 24,
+        pages: 2,
+        total: 25,
+      })
+
+      const perPageSelect = document.getElementById('per-page') as HTMLElement
+      fireEvent.click(perPageSelect)
+      fireEvent.click(screen.getByLabelText('24 items'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite PerPage')).toBeInTheDocument()
+      })
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('per_page=24'),
+        expect.anything()
+      )
+    })
+
+    it('does not show pagination buttons when favorite assistants fit on one page', async () => {
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+        data: createAssistants(6, 'Favorite'),
+        page: 0,
+        per_page: 12,
+        pages: 1,
+        total: 6,
+      })
+
+      renderPage('/assistants/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 1')).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+      })
+    })
+
+    it('Previous page button absent on first page for favorites', async () => {
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+        data: createAssistants(25, 'Favorite'),
+        page: 0,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      renderPage('/assistants/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 1')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument()
+    })
+
+    it('Next page button absent on last page for favorites', async () => {
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+        data: createAssistants(25, 'Favorite').slice(24, 25),
+        page: 2,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      renderPage('/assistants/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 25')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
     })
   })
 })

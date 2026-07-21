@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -80,6 +80,14 @@ describe('WorkflowsListPage - Integration', () => {
       total: workflows.length,
     },
   })
+
+  const createWorkflows = (count: number, namePrefix: string) =>
+    Array.from({ length: count }, (_, i) =>
+      createWorkflowFixture({
+        id: `${namePrefix.toLowerCase()}-${i + 1}`,
+        name: `${namePrefix} ${i + 1}`,
+      })
+    )
 
   describe('Initial Page Load', () => {
     it('loads and displays workflows on ALL tab', async () => {
@@ -1925,6 +1933,162 @@ describe('WorkflowsListPage - Integration', () => {
       await waitFor(() => {
         expect(screen.getByText('Non Roster Project')).toBeInTheDocument()
       })
+    })
+  })
+
+  describe('Favorites Pagination', () => {
+    const mockFavoritesFeatureFlag = () =>
+      mockAPI('GET', 'v1/config', [{ id: 'features:favorites', settings: { enabled: true } }])
+
+    it('shows next page of favorite workflows when pagination button is clicked', async () => {
+      const user = setupUser()
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/workflows', {
+        data: createWorkflows(25, 'Favorite'),
+        page: 0,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      renderPage('/workflows/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 1')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'Page 2' })).toBeInTheDocument()
+      })
+
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/workflows', {
+        data: createWorkflows(25, 'Favorite').slice(12, 24),
+        page: 1,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Page 2' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 13')).toBeInTheDocument()
+        expect(screen.queryByText('Favorite 1')).not.toBeInTheDocument()
+      })
+
+      expect(mockRouterState.push).not.toHaveBeenCalled()
+    })
+
+    it('reloads favorite workflows when per-page selection changes', async () => {
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/workflows', {
+        data: createWorkflows(25, 'Favorite'),
+        page: 0,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      renderPage('/workflows/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 1')).toBeInTheDocument()
+      })
+
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/workflows', {
+        data: [createWorkflowFixture({ id: 'favorite-perpage', name: 'Favorite PerPage' })],
+        page: 0,
+        per_page: 24,
+        pages: 2,
+        total: 25,
+      })
+
+      const perPageSelect = document.getElementById('per-page') as HTMLElement
+      fireEvent.click(perPageSelect)
+      fireEvent.click(screen.getByLabelText('24 items'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite PerPage')).toBeInTheDocument()
+      })
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('per_page=24'),
+        expect.anything()
+      )
+    })
+
+    it('does not show pagination buttons when favorite workflows fit on one page', async () => {
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/workflows', {
+        data: createWorkflows(6, 'Favorite'),
+        page: 0,
+        per_page: 12,
+        pages: 1,
+        total: 6,
+      })
+
+      renderPage('/workflows/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 1')).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+      })
+    })
+
+    it('Previous page button absent on first page for favorites', async () => {
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/workflows', {
+        data: createWorkflows(25, 'Favorite'),
+        page: 0,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      renderPage('/workflows/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 1')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument()
+    })
+
+    it('Next page button absent on last page for favorites', async () => {
+      // Unlike Assistants Favorites (and the Workflows ALL/MY/MARKETPLACE scopes), the
+      // Workflows Favorites tab's `currentPage` comes from local click-driven state
+      // (useFavoriteWorkflows' `favoritesPage`), not from the fetched response's `page`
+      // field — so the last page must be reached via a real click, not just seeded in
+      // the mock response's envelope.
+      const user = setupUser()
+      mockFavoritesFeatureFlag()
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/workflows', {
+        data: createWorkflows(25, 'Favorite'),
+        page: 0,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      renderPage('/workflows/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 1')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'Page 3' })).toBeInTheDocument()
+      })
+
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/workflows', {
+        data: createWorkflows(25, 'Favorite').slice(24, 25),
+        page: 2,
+        per_page: 12,
+        pages: 3,
+        total: 25,
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Page 3' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite 25')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
     })
   })
 })
