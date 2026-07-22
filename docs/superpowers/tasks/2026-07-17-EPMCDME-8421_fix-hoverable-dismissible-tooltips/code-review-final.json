@@ -1,0 +1,22 @@
+{
+  "gate": "code-review.final",
+  "decision": "approve",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "AC1: Hovering over any listed button shows the tooltip", "status": "untestable", "notes": "Runtime behavior; openEvents: { mouseover: true } unchanged and present." },
+    { "criterion": "AC2: Moving cursor from button onto tooltip keeps tooltip visible", "status": "untestable", "notes": "clickable: true added and verified by unit test; runtime confirmation required." },
+    { "criterion": "AC3: Moving cursor off tooltip closes it", "status": "untestable", "notes": "Default mouseleave behavior of react-tooltip v5 with clickable: true; runtime only." },
+    { "criterion": "AC4: Pressing Esc while tooltip is open closes it", "status": "untestable", "notes": "globalCloseEvents: { escape: true } added and verified by unit test; runtime confirmation required." },
+    { "criterion": "AC5: Export Chat tooltip does not appear while overlay is open", "status": "untestable", "notes": "Empty-string suppression is a react-tooltip v5 library contract (falsy content = no render). Named as manual verification in spec. No regression introduced." },
+    { "criterion": "AC6: Tooltip appearance unchanged", "status": "pass", "notes": "Diff touches only clickable and globalCloseEvents. className, arrowColor, and all visual props unmodified." }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow commit format", "status": "pass", "notes": "EPMCDME-8421: Fix tooltip hover and Esc dismiss behavior — matches EPMCDME-XXXX: Capital sentence pattern." },
+    { "standard": "code-quality / TypeScript", "status": "pass", "notes": "tsc --noEmit passed in pre-commit hook." },
+    { "standard": "security", "status": "pass", "notes": ".gitleaks.toml adds .codegraph/ to allowlist — appropriate for a code-intelligence tool database, not project secrets." },
+    { "standard": "license headers", "status": "pass", "notes": "Pre-commit hook confirmed 0 missing headers." }
+  ],
+  "findings": [],
+  "rationale": "Three lenses ran. No blocking findings after triage. Two blind-lens findings dismissed: Blind-1 assumed a module-level re-init guard that does not exist in the implementation (DOM-state guard is correctly reset by beforeEach); Blind-2 incorrectly assumed react-tooltip v5 has a default global click-outside event to override (it does not — globalCloseEvents defaults to no global events). Two edge-case findings deferred: EC-001 (createRoot idempotency) and EC-002 (test for container-exists path) are pre-existing issues not introduced by this diff. AC-5 coverage gap deferred: spec explicitly designates empty-string suppression as a manual verification item; unit test coverage of the two added props is declared sufficient. Diff is minimal (3 files, 52 insertions, all additive). All pre-commit gates passed: lint, tsc, license headers, secrets scan."
+}

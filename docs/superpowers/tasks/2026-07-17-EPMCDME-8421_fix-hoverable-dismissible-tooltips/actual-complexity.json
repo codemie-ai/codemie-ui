@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Fix tooltips to remain visible when hovered (clickable) and dismissible with Esc key across sidebar toggle, chat action buttons, message action buttons, and attach file button.",
+  "generated": "2026-07-17T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Entire fix was 2 prop additions (clickable: true, globalCloseEvents: { escape: true }) to the existing setupGlobalTooltip() function in src/utils/tooltip.ts. No Tooltip.tsx component changes, no ChatHeaderDownloadConversationButton changes, no consumer modifications. Bumped XS→S by red flag for touching a core shared utility."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Standard react-tooltip v5 props applied to an established singleton pattern. Zero security or performance implications. Trivially reversible — remove 2 props. The initial estimate overestimated risk due to API version uncertainty that resolved as straightforward v5 usage."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XS (1) to S (2): src/utils/tooltip.ts is a core shared utility consumed by 20+ callers app-wide"
+  ],
+  "split_recommendation": null
+}

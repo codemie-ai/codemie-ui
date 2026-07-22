@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Fix tooltips to remain visible when hovered (clickable) and dismissible with Esc key across sidebar toggle, chat action buttons, message action buttons, and attach file button.",
+  "generated": "2026-07-17T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 16,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Core fix targets src/utils/tooltip.ts (global react-tooltip singleton, 20+ callers) plus src/components/Tooltip/Tooltip.tsx for PrimeReact path and ChatHeaderDownloadConversationButton for the empty-content workaround conflict. Touches a core shared utility with app-wide blast radius. Red flag applied: bumped M→L."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "react-tooltip version unverified (v4 vs v5 API differs significantly); single shared-utility edit propagates to 20+ callers simultaneously with no automated safety net; PrimeReact tooltip has no built-in hoverable or Esc-dismiss mode (fix path unknown — may require migrating to react-tooltip data attributes or a floating-ui hook); ChatHeaderDownloadConversationButton empty-content workaround may render blank-but-visible tooltip with clickable: true; zero existing test coverage for all affected components."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M (3) to L (4): src/utils/tooltip.ts is a core shared utility consumed by 20+ callers across the app"
+  ],
+  "split_recommendation": null
+}
