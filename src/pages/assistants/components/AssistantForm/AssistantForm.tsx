@@ -73,6 +73,7 @@ import { AssistantSetupSection } from './components/AssistantSetup'
 import { isBackendFileUrl } from './components/AssistantSetup/utils/getFileNameFromUrl'
 import ContextSelector from './components/ContextSelector'
 import HedgingConfigField from './components/HedgingConfig'
+import InteractiveFeaturesAccordion from './components/InteractiveFeaturesAccordion'
 import RefineWithAIPromptPopup from './components/RefineWithAIPromptPopup'
 import ToolsConfiguration from './components/Toolkits/ToolsConfiguration'
 import { useRefineAIRecommendations } from './hooks/useRefineAIRecommendations'
@@ -168,6 +169,13 @@ const formSchema = Yup.object()
       timeout_ms: Yup.number().min(1, 'Must be at least 1').default(200),
       input_mapping: Yup.object().default({}),
       output_field: Yup.string().nullable().optional(),
+    })
+      .nullable()
+      .default(null),
+    interactive_features: Yup.object({
+      action_buttons: Yup.boolean().default(false),
+      choice: Yup.boolean().default(false),
+      short_forms: Yup.boolean().default(false),
     })
       .nullable()
       .default(null),
@@ -287,6 +295,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           prompt_variables: assistant?.prompt_variables ?? [],
           smart_tool_selection_enabled: assistant?.smart_tool_selection_enabled ?? false,
           hedging_config: assistant?.hedging_config ?? null,
+          interactive_features: assistant?.interactive_features ?? null,
           guardrail_assignments: assistant?.guardrail_assignments ?? [],
           skill_ids: assistant?.skills?.map((s) => s.id) ?? [],
           enabled_builtin_subagents: assistant?.enabled_builtin_subagents ?? [],
@@ -573,6 +582,8 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             onNameChange={handleNameChange}
             isCompactView={isChatConfig}
           />
+
+          <InteractiveFeaturesAccordion control={control} />
 
           <div data-onboarding="assistant-context-datasources-accordion">
             <Accordion

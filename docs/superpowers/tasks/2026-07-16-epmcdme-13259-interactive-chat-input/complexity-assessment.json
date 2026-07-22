@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Enable interactive user input in CodeMie agent chat: interactive elements (buttons, single/multi choice, validated short forms) in agent messages, agent pause/resume on explicit user input, and an 'Interactive features' assistant config block whose enabled-element catalog is exposed to the agent, across backend (codemie) and frontend (codemie-ui).",
+  "generated": "2026-07-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 5, "label": "XL" },
+    "technical_risk":       { "score": 6, "label": "XXL" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 3, "label": "M" },
+    "affected_layers":      { "score": 6, "label": "XXL" }
+  },
+  "total": 32,
+  "size": "XXL",
+  "routing": "split-required",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Cross-repo change (codemie backend + codemie-ui frontend) that modifies a shared contract in lockstep: the NDJSON StreamedGenerationResult stream schema (chains/base.py <-> chatGeneration.ts/_handleChunk) plus the assistant config schema (AssistantRequest <-> AssistantForm). Touches chat router/handlers, LangGraphAgent loop and event adapter, system-prompt/tool assembly for catalog exposure, Assistant SQLModel + migration, conversation persistence, and a new family of frontend interactive-element components." },
+    { "dimension": "technical_risk", "reason": "Two genuinely novel areas: (1) agent-chat pause/resume — LangGraph interrupt/checkpoint primitives are installed and proven for workflows only, never wired into LangGraphAgent.stream()/assistant_handlers.py, and no agent-chat resume endpoint exists; (2) id-addressable interactive-element schema with post-action state updates, which the current text+Thought message model cannot persist. Zero test coverage exists for interactive elements, agent-chat interrupt/resume, or chunk-level stream parsing — exactly the areas this task touches — while text-only chat must not regress." },
+    { "dimension": "file_change_estimate", "reason": "Technical analysis estimates ~10-15 backend files plus an alembic migration and ~15-20 frontend files (many new: Button, MultipleChoice, TextField, CheckBox, Column/Row/Text components, plus store, form, types, mock-server changes) — 25-35 files across many directories in two repositories." },
+    { "dimension": "affected_layers", "reason": "All tiers of both applications: frontend UI/store/streaming client, backend API + handlers + service + agent runtime, DB persistence (assistants JSONB column migration and conversation message schema extension), and infrastructure (customer-config.yaml feature flag threaded through Helm ConfigMap). Cross-system by definition." },
+    { "dimension": "requirements_clarity", "reason": "Acceptance criteria and the v1 element catalog are well specified, but the ticket's prescribed CopilotKit + AG-UI + A2UI stack has zero presence in either repo and structurally conflicts with the proprietary NDJSON protocol and the mandatory valtio-store architecture. The build-vs-adopt decision (adopt stack vs extend existing protocol with A2UI-style payloads) is an unmade architectural decision with major rework risk; message-persistence semantics for element state are also unspecified." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from XL to XXL: real-time/streaming requirements — pause/resume and element-state updates must flow over the one-directional NDJSON chat stream, requiring protocol-level changes on both sides",
+    "Requirements Clarity bumped from L to XL: 'similar to X but different' — ticket prescribes CopilotKit/AG-UI/A2UI, which conflicts with existing NDJSON transport and valtio-store conventions; build-vs-adopt architecture decision is TBD",
+    "Changes database schema significantly (assistants JSONB column + conversation message persistence extension) -> Affected Layers and Technical Risk already at XXL cap (6), no further bump possible",
+    "Touches core shared utilities (chains/base.py stream schema, utils/api.ts streaming client) and affects multiple workflows/agents -> Component Scope already at XXL cap (6), no further bump possible"
+  ],
+  "split_recommendation": "Score 32/36 — splitting is mandatory before any planning. Suggested decomposition: (1) By dependency first — 'Interactive features' assistant config block end-to-end (JSONB column + migration + AssistantRequest sub-model + AssistantForm accordion + compareFormData + features:interactiveElements flag), a self-contained S/M story with the HedgingConfig precedent as an exact template; (2) By dependency second — agent-chat pause/resume infrastructure (LangGraph interrupt/checkpointer wired into LangGraphAgent.stream(), new resume endpoint, chatGeneration store resume handling), reusing the workflow-resume and EPMCDME-12393 plumbing; (3) By feature — action buttons happy path (simplest element: stream schema extension + Button rendering + structured action delivery + agent continue), the story that forces the protocol/build-vs-adopt decision; (4) By feature — MultipleChoice single/multi; (5) By feature — short forms with client-side validation (required/regex/email) + Submit; (6) By phase last — element state persistence and post-action state updates (conversation.py schema extension, history materialization, id-addressable element updates surviving reload). A preceding spike/ADR story to decide protocol-extension vs CopilotKit/AG-UI adoption is strongly recommended before story 3."
+}

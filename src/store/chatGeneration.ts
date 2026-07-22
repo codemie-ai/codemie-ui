@@ -21,6 +21,7 @@ import { WORKFLOW_STATE_EVENT_INTERRUPTED, WORKFLOW_STATUSES } from '@/constants
 import { ChatRequest, HistoryMessage, ChatGenerationOptions } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
 import { Conversation, ChatMessage, ChatListItem, Thought } from '@/types/entity/conversation'
+import type { InteractiveResponse } from '@/types/entity/interactive'
 import {
   MCPAuthGateServer,
   MCPAuthInitiateResponse,
@@ -67,6 +68,11 @@ interface ChatGenerationStoreType {
   deleteChatMessage: (chatId: string, historyIndex: number) => Promise<void>
 
   stopChatGeneration: (chatId: string) => void
+  submitInteractiveResponse: (
+    response: InteractiveResponse,
+    displayText: string,
+    replaceHistoryIndex?: number
+  ) => Promise<void>
   resumeWorkflowExecution: (userInput?: string, fileNames?: string[]) => Promise<void>
   abortWorkflowChat: (chatId: string) => Promise<void>
   updateWorkflowChatOutput: (chatId: string, output: string) => Promise<{ message: string } | void>
@@ -145,6 +151,7 @@ interface ChatGenerationStoreType {
     data: ChatRequest
   ) => { endpoint: string; requestData?: any; method?: string }
   _handleRequestError: (historyItem: ChatMessage, error: any, startTime: Date) => void
+  _removeOptimisticTurn: (historyItem: ChatMessage) => void
   _handleNonStreamResponse: (
     reader: Response,
     historyItem: ChatMessage,
@@ -287,6 +294,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       files = [],
       skillIds,
       dynamicToolsConfig,
+      interactiveResponse,
     } = options
     const fileNames = files?.length ? files : null
     let { historyIndex = null, messageIndex = null } = options
@@ -339,6 +347,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       skill_ids: skillIds?.length ? skillIds : undefined,
       enable_web_search: dynamicToolsConfig?.enableWebSearch ?? undefined,
       enable_code_interpreter: dynamicToolsConfig?.enableCodeInterpreter ?? undefined,
+      ...(interactiveResponse ? { interactiveResponse } : {}),
     }
 
     const historyItem = chatGenerationStore._createHistoryItem(
@@ -348,6 +357,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       fileNames,
       assistant
     )
+    if (interactiveResponse) historyItem.interactiveResponse = interactiveResponse
 
     const indexes = chatGenerationStore._addMessageToHistory(
       chat,
@@ -562,6 +572,42 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       controller.abort()
       toaster.error(GENERATION_CANCELLED_MESSAGE)
     }
+  },
+
+  /**
+   * Sends a structured response to an interactive request as a normal chat turn.
+   * The display text becomes the compact user "chip" message in the feed.
+   *
+   * Re-answering a form works exactly like editing the previous user request:
+   * pass `replaceHistoryIndex` (the turn that carried the earlier answer) so the
+   * turn is replaced/re-run instead of appending a duplicate answer.
+   */
+  async submitInteractiveResponse(
+    response: InteractiveResponse,
+    displayText: string,
+    replaceHistoryIndex?: number
+  ) {
+    const chat = chatsStore.currentChat
+    if (!chat) return Promise.resolve()
+
+    // Attribute the follow-up turn to the assistant that ISSUED this request, not
+    // merely the last message (which may be a user chip or, in multi-assistant
+    // chats, a different assistant). Fall back to the last message with an id.
+    const flat = chat.history.flat()
+    const owningMessage = flat.find(
+      (message) => message.interactiveRequest?.request_id === response.request_id
+    )
+    const assistantId =
+      owningMessage?.assistantId ??
+      flat.filter((message) => message.assistantId).at(-1)?.assistantId
+
+    return chatGenerationStore.createChatGeneration({
+      message: displayText,
+      messageRaw: displayText,
+      assistantId,
+      interactiveResponse: response,
+      ...(Number.isInteger(replaceHistoryIndex) ? { historyIndex: replaceHistoryIndex } : {}),
+    })
   },
 
   async resumeWorkflowExecution(userInput?: string, fileNames?: string[]) {
@@ -901,10 +947,35 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   _handleRequestError(historyItem, error, startTime) {
-    historyItem.response = chatGenerationStore._handleGenerationStreamError(error)
+    const errorText = chatGenerationStore._handleGenerationStreamError(error)
+    // A rejected interactive submission has its own retry affordance — the form
+    // re-activates (or can be re-unlocked via Edit). Remove the optimistic chip turn
+    // entirely rather than nulling its interactiveResponse (which would leave a stray
+    // plain-text ghost message), and surface the error via a toast instead.
+    if (historyItem.interactiveResponse) {
+      chatGenerationStore._removeOptimisticTurn(historyItem)
+      toaster.error(errorText)
+      return
+    }
+    historyItem.response = errorText
     historyItem.loginUrl = error?.error?.login_url ?? error?.login_url
     historyItem.mcpAuthPromptRows = null
     finalizeFailedRequest(historyItem, startTime)
+  },
+
+  /** Remove an optimistically-added turn (by identity) from the current chat, and
+   *  drop its group if it becomes empty. Used to roll back a failed interactive
+   *  submission cleanly. */
+  _removeOptimisticTurn(historyItem: ChatMessage): void {
+    const chat = chatsStore.currentChat
+    if (!chat) return
+    for (let groupIndex = chat.history.length - 1; groupIndex >= 0; groupIndex -= 1) {
+      const messageIndex = chat.history[groupIndex].indexOf(historyItem)
+      if (messageIndex === -1) continue
+      chat.history[groupIndex].splice(messageIndex, 1)
+      if (chat.history[groupIndex].length === 0) chat.history.splice(groupIndex, 1)
+      return
+    }
   },
 
   async _handleNonStreamResponse(reader, historyItem, chat, startTime) {
@@ -1029,7 +1100,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const { chunkObjects, incompleteChunk } = streamChunkToObject(value)
 
     for (const chunk of chunkObjects) {
-      if (chunk.thought) {
+      if (chunk.interactive_request) {
+        historyItem.interactiveRequest = chunk.interactive_request
+      } else if (chunk.thought) {
         chatGenerationStore._handleThought(historyItem, chunk.thought)
       } else {
         historyItem.stream?.push(chunk.generated_chunk ?? '')

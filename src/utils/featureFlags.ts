@@ -74,6 +74,10 @@ export const isRequestHedgingEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.REQUEST_HEDGING)
 }
 
+export const isInteractiveElementsEnabled = (): boolean => {
+  return isFeatureEnabled('features:interactiveElements')
+}
+
 export const isUserManagementEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.USER_MANAGEMENT)
 }
@@ -82,6 +86,9 @@ export const isBudgetManagementEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.BUDGET_MANAGEMENT)
 }
 
+/**
+ * Check if Teams Bot Integration feature is enabled (non-reactive utility)
+ */
 export const isTeamsEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.TEAMS_BOT_INTEGRATION)
 }

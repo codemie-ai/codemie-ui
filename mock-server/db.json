@@ -740,6 +740,13 @@
       }
     },
     {
+      "id": "features:interactiveElements",
+      "settings": {
+        "enabled": true,
+        "name": "Interactive Chat Elements"
+      }
+    },
+    {
       "id": "remoteAssistant",
       "settings": {
         "enabled": true

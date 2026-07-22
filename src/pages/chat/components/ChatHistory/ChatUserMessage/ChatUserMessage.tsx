@@ -196,7 +196,16 @@ const ChatUserMessage: FC<ChatUserMessageProps> = ({ message, indexes, onSubmit 
           />
         )}
 
-        {!isEditing && (
+        {!isEditing && message.interactiveResponse && (
+          <span
+            className="inline-flex items-center gap-1 text-sm text-text-primary"
+            data-testid="interactive-response-chip"
+          >
+            ✓ {request}
+          </span>
+        )}
+
+        {!isEditing && !message.interactiveResponse && (
           <p
             ref={messageElementRef}
             className="chat-editor chat-editor-message text-sm text-wrap break-word"

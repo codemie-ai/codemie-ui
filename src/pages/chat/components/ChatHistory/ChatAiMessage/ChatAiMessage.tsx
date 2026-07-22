@@ -31,7 +31,9 @@ import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
+
 import ChatAiAuthPrompt from './ChatAiAuthPrompt'
+import ChatAiInteractiveBlock from './ChatAiInteractiveBlock'
 import ChatAiMessageActions from './ChatAiMessageActions'
 import ThinkingLoader from './ThinkingLoader'
 import { useChatContext } from '../../../hooks/useChatContext'
@@ -60,6 +62,9 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   const [isEditing, setIsEditing] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [newResponse, setNewResponse] = useState('')
+  // For an interactive-widget message, "edit" means unlocking the (otherwise
+  // read-only, already-answered) form so the user can re-answer it.
+  const [isFormEditing, setIsFormEditing] = useState(false)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messageElementRef = useRef<HTMLDivElement>(null)
@@ -95,6 +100,13 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   }
 
   const handleStartEditing = () => {
+    // Editing a widget message re-answers its form (unlock it) rather than opening
+    // the plain-text editor.
+    if (message.interactiveRequest) {
+      setIsFormEditing(true)
+      return
+    }
+
     const messageText = message.response ?? ''
 
     if (!messageElementRef.current) {
@@ -187,7 +199,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
           {!isInProgress && (
             <div className="flex gap-2 text-xs items-center text-text-quaternary">
               <ProcessingCompleteSvg />
-              {processingTime && <>Processed in: {processingTime}s /{' '}</>}
+              {processingTime && <>Processed in: {processingTime}s / </>}
               <span>{formatDateTime(message.createdAt, 'short')} </span>
             </div>
           )}
@@ -241,6 +253,12 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
                     Login to MCP Server
                   </Button>
                 )}
+                <ChatAiInteractiveBlock
+                  message={message}
+                  indexes={indexes}
+                  isFormEditing={isFormEditing}
+                  onSubmitted={() => setIsFormEditing(false)}
+                />
               </>
             )}
           </div>

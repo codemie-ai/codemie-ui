@@ -1,0 +1,5 @@
+{"ts":"2026-07-16T11:31:32Z","event":"gate.resolved","gate_id":"spec.approved","decision":"approve"}
+{"ts":"2026-07-16T11:43:59Z","event":"gate.resolved","gate_id":"plan.approved","decision":"approve"}
+{"ts":"2026-07-16T14:07:56Z","event":"gate.resolved","gate_id":"code-review.final","decision":"request-changes"}
+{"ts":"2026-07-16T14:36:36Z","event":"gate.resolved","gate_id":"code-review.check","decision":"approve"}
+{"ts":"2026-07-16T14:51:32Z","gate_id":"qa.gates","decision":"passed","note":"env-only degradations reproduce on main"}

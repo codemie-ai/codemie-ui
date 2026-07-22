@@ -1,0 +1,4 @@
+{"ts":"2026-07-16T11:31:32Z","gate_id":"spec.approved","mode":"hitl","decision":"approve","artifact":"spec.md","decided_by":"user"}
+{"ts":"2026-07-16T11:43:59Z","gate_id":"plan.approved","mode":"hitl","decision":"approve","artifact":"plan.md","decided_by":"user","note":"spec §3 amended: text materialization instead of synthetic tool-call pair"}
+{"ts":"2026-07-16T14:07:56Z","gate_id":"code-review.final","mode":"hitl","decision":"request-changes","resolution":"fix-all CR-001..CR-006","decided_by":"user"}
+{"ts":"2026-07-16T14:36:36Z","gate_id":"code-review.check","mode":"hitl","decision":"approve","findings_resolved":"CR-001..CR-006","decided_by":"orchestrator+user-fix-all"}

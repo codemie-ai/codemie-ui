@@ -1,0 +1,116 @@
+{
+  "task": "Interactive user input in agent chat: fixed-schema interactive elements (buttons, single/multi choice, validated short forms) delivered over the existing NDJSON stream via a return_direct request_user_input tool, an 'Interactive features' assistant config block (additive nullable JSONB column) enforced server-side and mirrored into a React component family, with server-side response re-validation and history materialization — shipped as one coherent cross-repo change (codemie + codemie-ui).",
+  "generated": "2026-07-16T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 6,
+      "label": "XXL",
+      "affected": "core/interactive protocol module, request_user_input agent tool, chains/base StreamedGenerationResult schema, AssistantRequest/AssistantBase + AssistantChatRequest models, GeneratedMessage/Conversation persistence, assistant_handlers, assistant_service prompt assembly, conversation_service, toolkit_service, alembic migration; frontend InteractiveElements component family (Surface/Actions/Form/MultipleChoice/utils), InteractiveFeaturesSection form block, ChatAiMessage/ChatUserMessage rendering, chatGeneration store, interactive types/utils, feature-flag hooks",
+      "layers": "UI, API, Service, Agent-Tool, DB-Persistence, Config/Infra — across two repositories in lockstep on a shared wire contract"
+    },
+    "requirements_clarity": {
+      "score": 3,
+      "label": "M",
+      "status": "Partially Clear",
+      "gaps": "The predicted build-vs-adopt architectural decision (CopilotKit/AG-UI/A2UI vs extend the existing protocol) was resolved cleanly to a fixed-schema extension of the existing NDJSON stream; element catalog, validation rules, and persistence semantics were specified well enough to execute in a single coherent pass with comprehensive tests and no TODO/FIXME or rework markers in the diff"
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L",
+      "risk_factors": "New interactive-element protocol with no exact precedent; server-side re-validation of untrusted structured input (ReDoS-bounded regex, email, payload/selection caps); new stream chunk type persisted as a typed model; feature-flag gated",
+      "mitigation": "return_direct tool ends the turn and the response arrives as an ordinary next chat message — NO LangGraph interrupt/checkpoint plumbing was needed, collapsing the predicted resume risk; additive nullable JSONB migration is trivially reversible; enabled-element catalog enforced server-side; disabled-by-default customer flag; ~8 test files covering the new paths"
+    },
+    "file_change_estimate": {
+      "score": 6,
+      "label": "XXL",
+      "modified_files": 22,
+      "modified_file_list": [
+        "codemie: config/customer/customer-config.yaml",
+        "codemie: src/codemie/chains/base.py",
+        "codemie: src/codemie/core/models.py",
+        "codemie: src/codemie/rest_api/handlers/assistant_handlers.py",
+        "codemie: src/codemie/rest_api/models/assistant.py",
+        "codemie: src/codemie/rest_api/models/conversation.py",
+        "codemie: src/codemie/service/assistant_service.py",
+        "codemie: src/codemie/service/conversation_service.py",
+        "codemie: src/codemie/service/tools/toolkit_service.py",
+        "codemie: tests/codemie/service/test_assistant_service_methods.py",
+        "codemie-ui: mock-server/db.json",
+        "codemie-ui: src/hooks/useFeatureFlags.ts",
+        "codemie-ui: src/pages/assistants/components/AssistantForm/AssistantForm.tsx",
+        "codemie-ui: src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx",
+        "codemie-ui: src/pages/chat/components/ChatHistory/ChatUserMessage/ChatUserMessage.tsx",
+        "codemie-ui: src/store/chatGeneration.ts",
+        "codemie-ui: src/store/utils/assistants.ts",
+        "codemie-ui: src/types/chatGeneration.ts",
+        "codemie-ui: src/types/entity/assistant.ts",
+        "codemie-ui: src/types/entity/conversation.ts",
+        "codemie-ui: src/utils/chatHelpers.ts",
+        "codemie-ui: src/utils/featureFlags.ts"
+      ],
+      "new_files": 23,
+      "new_file_list": [
+        "codemie: src/codemie/agents/tools/interactive/__init__.py",
+        "codemie: src/codemie/agents/tools/interactive/request_user_input.py",
+        "codemie: src/codemie/core/interactive.py",
+        "codemie: src/codemie/service/conversation/interactive_intake.py",
+        "codemie: src/external/alembic/versions/i1n2t3e4r5a6_add_interactive_features_to_assistants.py",
+        "codemie: tests/codemie/agents/tools/test_request_user_input.py",
+        "codemie: tests/codemie/chains/test_interactive.py",
+        "codemie: tests/codemie/rest_api/handlers/test_assistant_handlers_interactive.py",
+        "codemie: tests/codemie/rest_api/models/test_assistant_interactive_features.py",
+        "codemie: tests/codemie/service/conversation/test_interactive_intake.py",
+        "codemie-ui: src/components/InteractiveElements/InteractiveActions.tsx",
+        "codemie-ui: src/components/InteractiveElements/InteractiveForm.tsx",
+        "codemie-ui: src/components/InteractiveElements/InteractiveMultipleChoice.tsx",
+        "codemie-ui: src/components/InteractiveElements/InteractiveSurface.tsx",
+        "codemie-ui: src/components/InteractiveElements/utils.ts",
+        "codemie-ui: src/components/InteractiveElements/__tests__/InteractiveSurface.test.tsx",
+        "codemie-ui: src/pages/assistants/components/AssistantForm/components/InteractiveFeaturesSection.tsx",
+        "codemie-ui: src/pages/assistants/__tests__/InteractiveFeaturesSection.integration.test.tsx",
+        "codemie-ui: src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiInteractiveBlock.test.tsx",
+        "codemie-ui: src/pages/chat/components/ChatHistory/ChatUserMessage/__tests__/ChatUserMessageChip.test.tsx",
+        "codemie-ui: src/store/__tests__/chatGeneration.interactive.test.ts",
+        "codemie-ui: src/types/entity/interactive.ts",
+        "codemie-ui: src/utils/interactive.ts"
+      ],
+      "affected_dirs": [
+        "codemie/config/customer/",
+        "codemie/src/codemie/",
+        "codemie/src/external/alembic/",
+        "codemie/tests/",
+        "codemie-ui/mock-server/",
+        "codemie-ui/src/"
+      ]
+    },
+    "dependencies": {
+      "score": 2,
+      "label": "S",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 6,
+      "label": "XXL",
+      "layers_changed": ["UI", "API", "Service", "Agent-Tool", "DB-Persistence", "Config/Infra"],
+      "schema_migration": true,
+      "cross_system": true
+    }
+  },
+  "total": 27,
+  "size": "XL",
+  "band_range": "27-31",
+  "files_changed": 45,
+  "routing": "split-required",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "45 files (23 new, 22 modified) across two repositories and six top-level directories — clearly XXL on breadth alone; the single largest driver of the final score." },
+    { "dimension": "component_scope", "reason": "Cross-repo change on a shared wire contract: the NDJSON StreamedGenerationResult stream schema and the assistant interactive_features config schema are mirrored in lockstep between codemie (Pydantic) and codemie-ui (TypeScript), plus a new agent tool, new core protocol module, persistence changes, and a new frontend component family — cross-system by definition, XXL." },
+    { "dimension": "affected_layers", "reason": "Every tier of both apps: React UI/store/streaming client, backend API + handlers + service, agent-tool runtime, DB persistence (additive nullable JSONB column migration + JSONB-embedded conversation message fields), and customer-config feature flag. Two codebases, so cross_system true; schema_migration true." },
+    { "dimension": "technical_risk", "reason": "Realized risk L, well below the predicted XXL. The feared LangGraph interrupt/checkpoint resume plumbing was never built — a return_direct tool ends the turn and the structured response returns as the next chat message. Remaining risk is server-side re-validation of untrusted input (ReDoS-bounded regex, email, selection/payload caps), a new persisted stream chunk type, and a trivially reversible additive migration; feature-flag gated. Security re-validation red flag bumped base M to L." },
+    { "dimension": "requirements_clarity", "reason": "Realized M, below the predicted XL. The build-vs-adopt architectural decision (CopilotKit/AG-UI vs protocol extension) resolved cleanly to a fixed-schema NDJSON extension; the diff shows a coherent, fully-tested single-pass implementation with no rework or TODO markers." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M (3) to L (4): security-sensitive server-side re-validation of untrusted structured input (ReDoS-bounded regex, email validation, selection/payload caps in core/interactive.py and interactive_intake.py)."
+  ],
+  "split_recommendation": null
+}

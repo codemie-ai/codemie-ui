@@ -1,0 +1,102 @@
+{
+  "decision": "request-changes",
+  "rationale": "Three-lens fan-out ran over the combined two-repo diff; a spec and plan were present so acceptance ran too. All ticket acceptance criteria are implemented and tested, but the review surfaced a concrete security issue (agent-authored regex evaluated on user input, both server- and client-side, with no length cap/timeout and an unhandled re.error path) plus several major gaps: missing license headers on new backend files (a repo-enforced blocking gate), the customer feature flag not enforced server-side, response validation wired only into StandardAssistantHandler, and the plan-mandated turn-end test absent. One decision_needed item forces low confidence. The .env secret-leak the blind lens flagged was remediated during review by rewriting the branch to drop .env from the first commit (local dev .env restored as an uncommitted change; rotate the key if it was ever pushed). 12 lower-severity edge findings were triaged to defer/dismiss (unbounded payload size, deep recursion, mixed-surface rendering, duplicate element ids, empty-options choice) and noted for follow-up.",
+  "confidence": "low",
+  "risk_flags": ["security"],
+  "business_review": [
+    {"kind": "story-ac", "item": "Chat UI displays interactive elements", "status": "pass", "notes": "InteractiveElements/* rendered under markdown in ChatAiMessage; unit + block tests"},
+    {"kind": "story-ac", "item": "Actions delivered structured, agent continues", "status": "pass", "notes": "submitInteractiveResponse -> interactive_response -> to_chat_history materialization; tested"},
+    {"kind": "story-ac", "item": "MultipleChoice single/multi via max_allowed_selections", "status": "pass", "notes": "radio vs capped checkboxes; server cap re-check"},
+    {"kind": "story-ac", "item": "Short form submit returns structured values", "status": "pass", "notes": "react-hook-form onSubmit('form',{values})"},
+    {"kind": "story-ac", "item": "Validation required/regex/email, invalid blocked", "status": "pass", "notes": "client Yup + server validate_response_values; but regex path is a security risk, see CR-001"},
+    {"kind": "story-ac", "item": "Agent pauses until explicit input, resumes after", "status": "partial", "notes": "return_direct=True honored by installed langgraph create_react_agent, but plan B4's mandated turn-end test is absent (CR-006)"},
+    {"kind": "story-ac", "item": "Element state updates without breaking chat context", "status": "pass", "notes": "derivation by request_id; submitted/active/stale covered"},
+    {"kind": "story-ac", "item": "Interactive features block in create/edit UI", "status": "pass", "notes": "InteractiveFeaturesSection gated by useInteractiveElementsEnabled; create POST tested"},
+    {"kind": "story-ac", "item": "Disabled features removed from agent catalog (not only UI)", "status": "partial", "notes": "build_surface_args_schema + validate_surface + prompt enforce per-assistant catalog, but platform customer flag not enforced server-side (CR-004)"},
+    {"kind": "story-ac", "item": "Text-only chat not regressed", "status": "pass", "notes": "all wire fields Optional/None; tool appended only when enabled; ChatPrompt untouched"},
+    {"kind": "spec", "item": "Optional wire fields on stream/request/history models", "status": "pass", "notes": "round-trip tests in TestWireFields"},
+    {"kind": "spec", "item": "request_user_input tool: dynamic schema, return_direct, registered only when enabled", "status": "pass", "notes": "tests cover emission, disabled rejection, no-op branches"},
+    {"kind": "spec", "item": "InteractiveFeaturesConfig JSONB column + migration + AssistantRequest field", "status": "pass", "notes": "hedging_config precedent; migration i1n2t3e4r5a6 revises head p1q2r3s4t5u6, linear chain"},
+    {"kind": "spec", "item": "Response intake: unknown/duplicate/invalid rejected 422 before agent build", "status": "partial", "notes": "implemented + tested in StandardAssistantHandler only; other handlers persist unvalidated (CR-005)"},
+    {"kind": "spec", "item": "History materialization as deterministic structured text (approved deviation)", "status": "pass", "notes": "to_chat_history USER branch uses materialize_interactive_message_text"},
+    {"kind": "spec", "item": "Deployment gate features:interactiveElements (+ Helm note)", "status": "partial", "notes": "flag added, FE-gated; no server enforcement and no Helm ConfigMap note (CR-004)"},
+    {"kind": "spec", "item": "Protocol module path src/codemie/chains/interactive.py", "status": "partial", "notes": "implemented at src/codemie/core/interactive.py to avoid a circular import; location-only deviation, reconcile via mode: sync"},
+    {"kind": "spec", "item": "Compact chip rendering for structured user response", "status": "pass", "notes": "ChatUserMessage chip; ChatUserMessageChip.test.tsx"},
+    {"kind": "spec", "item": "Commit titles EPMCDME-13259: Description", "status": "pass", "notes": "all 12 feature commits conform"},
+    {"kind": "spec", "item": "No Jira/EPAM refs or unrelated changes in committed files", "status": "pass", "notes": "product source clean; the .env leak was removed from branch history during review"},
+    {"kind": "spec", "item": "Out of scope: related stories closure, LangGraph interrupt(), custom schemas", "status": "na", "notes": "explicitly out of scope"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "all 12 commits match EPMCDME-13259: Description per git-workflow.md"},
+    {"kind": "code-quality", "status": "fail", "notes": "license headers missing on 9 new backend source files (core/interactive.py, agents/tools/interactive/*, service/conversation/interactive_intake.py, and the 5 new test files) and codemie-ui/src/utils/interactive.ts; repo enforces headers via Makefile license target / husky — CI-blocking (CR-003). alembic versions/ is exempt."},
+    {"kind": "security", "status": "fail", "notes": "agent-authored regex evaluated against user input without length cap or timeout, server (re.fullmatch) and client (new RegExp), plus unhandled re.error -> 500 (CR-001)"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/codemie/core/interactive.py",
+      "line": 239,
+      "title": "ReDoS + unhandled re.error via agent-authored regex on user input",
+      "problem": "validate_response_values compiles validation.regex (authored by the LLM agent, steerable via prompt injection in tool outputs/docs) with Python's backtracking engine and no length cap/timeout; the same string is fed to new RegExp() in InteractiveForm.tsx (buildSchema). A catastrophic pattern like (a+)+$ with a long user value blocks the request worker; an invalid pattern raises re.error (not ValueError), which escapes the ValueError->422 mapping in validate_interactive_intake and returns 500. Python and ECMAScript regex dialects also differ, so a backend-valid pattern can throw in the browser and crash the surface render.",
+      "impact": "Denial of service (blocked worker / hung tab) and unhandled 500 on user-controlled input; client-side crash of the chat message tree.",
+      "recommendation": "Cap field value length and pattern length before matching; wrap re.fullmatch in try/except re.error -> ValueError; validate/whitelist patterns or run matching with a timeout; wrap new RegExp in try/catch and skip (or reject) an uncompilable pattern on the client."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/core/interactive.py",
+      "line": 216,
+      "title": "Non-ValueError exceptions in validate_response_values reach the client as 500",
+      "problem": "validate_response_values assumes payload['selected'] is a list and payload['values'] is a dict, and does not type-check payload shape. A non-list 'selected' (int -> TypeError) or a non-dict 'values' escapes as an exception type other than ValueError, which validate_interactive_intake does not map to 422. Combined with CR-001's re.error, several user-controlled inputs surface as 500 instead of a clean 422.",
+      "impact": "User-controlled payloads produce unhandled 500s instead of validation errors.",
+      "recommendation": "Type-check payload fields (selected is list[str], values is dict) up front and raise ValueError on mismatch; broaden the intake except to also translate re.error/TypeError to 422, or validate InteractiveResponse.payload with a typed model per kind."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/core/interactive.py",
+      "line": 1,
+      "title": "Missing license headers on new source files (CI-blocking)",
+      "problem": "The repo enforces Apache license headers (backend Makefile 'license' target running scripts/license_headers/check_license_headers.py; frontend husky check). Nine new backend files (core/interactive.py, agents/tools/interactive/__init__.py, agents/tools/interactive/request_user_input.py, service/conversation/interactive_intake.py, and the five new test files) and codemie-ui/src/utils/interactive.ts have no header. alembic versions/ is exempt.",
+      "impact": "CI license gate fails; MR is not mergeable.",
+      "recommendation": "Run `make license` (backend) and the frontend header fixer over the new files, then amend/commit."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/service/tools/toolkit_service.py",
+      "line": 583,
+      "title": "features:interactiveElements customer flag not enforced server-side",
+      "problem": "The 'Disabled features are removed from the catalog' AC and spec section 2 (deployment gate) require the platform flag to gate the feature end-to-end, but _append_request_user_input_tool_if_enabled and the system-prompt injection key only on the per-assistant interactive_features config. The FE hides the form section behind the flag, yet a direct API POST setting interactive_features registers request_user_input on deployments where features:interactiveElements is off. Contrast: hedging checks customer_config.is_feature_enabled('requestHedging') in assistant_handlers.",
+      "impact": "Platform kill-switch is UI-only; the feature stays active on the backend when disabled.",
+      "recommendation": "Gate tool registration and the prompt section on customer_config.is_feature_enabled('interactiveElements') in addition to the per-assistant config; add the Helm ConfigMap note per spec section 2."
+    },
+    {
+      "id": "CR-005",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/codemie/rest_api/handlers/assistant_handlers.py",
+      "line": 114,
+      "title": "interactive_response validated only in StandardAssistantHandler",
+      "problem": "interactive_response lives on the shared AssistantChatRequest, but _validate_interactive_response is called only from StandardAssistantHandler.process_request. Other handlers consuming the same model (A2A, background, IDE) accept the field with no request_id/duplicate/value re-validation, and conversation_service persists request.interactive_response unconditionally.",
+      "impact": "Unknown/duplicate/invalid structured responses can be persisted and replayed to the LLM through non-standard handlers.",
+      "recommendation": "Decision: either move validation into a shared pre-generation hook that every handler runs, or explicitly scope interactive input to the standard chat handler (and reject the field elsewhere). For a flag-gated v1 the latter may be acceptable — needs a call."
+    },
+    {
+      "id": "CR-006",
+      "severity": "major",
+      "triage": "patch",
+      "file": "tests/codemie/agents/test_assistant_agent",
+      "line": 1,
+      "title": "Plan-mandated turn-end verification test is missing",
+      "problem": "Plan B4 named return_direct honoring in the agent loop 'the single most uncertain integration point' and required tests/codemie/agents/test_assistant_agent/test_interactive_turn_end.py asserting no second LLM invocation after request_user_input. The turn-based pause AC rests entirely on the framework's return_direct handling but no test in the diff exercises it.",
+      "impact": "The core pause/resume behavior is unverified; a langgraph upgrade or config change could silently break it.",
+      "recommendation": "Add the turn-end test: mock the LLM to call request_user_input and assert the agent stops (no second LLM call) with the interactive_request chunk emitted."
+    }
+  ]
+}

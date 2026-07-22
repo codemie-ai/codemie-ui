@@ -14,6 +14,7 @@
 //
 
 import { Thought } from '@/types/entity/conversation'
+import type { InteractiveResponse } from '@/types/entity/interactive'
 
 export type { Thought }
 
@@ -80,6 +81,7 @@ export interface ChatRequest {
   resumeExecutionFileNames?: string[]
   executionId?: string
   workflowId?: string
+  interactiveResponse?: InteractiveResponse
 }
 
 export interface ChatRequestInput {
@@ -115,4 +117,5 @@ export interface ChatGenerationOptions {
   dynamicToolsConfig?: DynamicToolsConfig
   resumeExecution?: boolean
   executionId?: string
+  interactiveResponse?: InteractiveResponse
 }

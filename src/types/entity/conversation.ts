@@ -17,6 +17,7 @@
  * Chat entity types from backend API
  */
 import type { UserAbility } from '@/types//common'
+import type { InteractiveRequest, InteractiveResponse } from '@/types/entity/interactive'
 import type { MCPAuthGateServer } from '@/types/entity/mcpAuth'
 
 export const messageFeedbackMark = {
@@ -160,6 +161,8 @@ export interface ChatMessage {
   mcpAuthPromptRows?: MCPAuthGateServer[] | null
   executionId: string | null
   stateId?: string | null
+  interactiveRequest?: InteractiveRequest | null
+  interactiveResponse?: InteractiveResponse | null
 }
 
 export type ChatHistoryGroup = ChatMessage[]
@@ -269,6 +272,8 @@ export interface HistoryItemBackend {
   userMark?: any
   executionId: string | null
   stateId?: string | null
+  interactiveRequest?: InteractiveRequest | null
+  interactiveResponse?: InteractiveResponse | null
 }
 
 export interface ChatBackend {
@@ -294,6 +299,7 @@ export interface StreamChunk {
   last?: boolean
   generated?: string
   debug?: any
+  interactive_request?: InteractiveRequest
 }
 
 export interface StreamChunkParseResult {

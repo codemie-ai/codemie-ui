@@ -101,6 +101,10 @@ export const useEnterpriseEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.ENTERPRISE_EDITION)
 }
 
+export const useInteractiveElementsEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag('features:interactiveElements')
+}
+
 export const useTeamsEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.TEAMS_BOT_INTEGRATION)
 }

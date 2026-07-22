@@ -158,6 +158,8 @@ function transformHistoryGroup(
       stream: null,
       executionId: assistantItem.executionId,
       stateId: assistantItem.stateId,
+      interactiveRequest: assistantItem.interactiveRequest ?? null,
+      interactiveResponse: userItem.interactiveResponse ?? null,
     }
   })
 }
