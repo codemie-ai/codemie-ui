@@ -102,7 +102,7 @@ export const useFileUpload = ({
   files,
   setFiles,
   handleErrors,
-  maxFiles = 10,
+  maxFiles = 20,
   maxFileSize = 104_857_600,
   maxFileSizeHumanized = '100MB',
   maxFilesDisplayedInError = 4,

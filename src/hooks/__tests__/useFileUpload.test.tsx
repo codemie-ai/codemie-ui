@@ -184,10 +184,10 @@ describe('useFileUpload', () => {
       const setFiles = vi.fn()
       const handleErrors = vi.fn()
       const { result } = renderHook(() =>
-        useFileUpload({ files, setFiles, handleErrors, maxFiles: 10, maxFileSize: 100 })
+        useFileUpload({ files, setFiles, handleErrors, maxFiles: 20, maxFileSize: 100 })
       )
 
-      const validFiles = Array.from({ length: 10 }, (_, i) => createMockFile(`valid${i}.txt`, 50))
+      const validFiles = Array.from({ length: 20 }, (_, i) => createMockFile(`valid${i}.txt`, 50))
 
       const oversizedFile = createMockFile('big.txt', 101)
       const extraFile = createMockFile('extra.txt', 50)

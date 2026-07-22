@@ -1,0 +1,66 @@
+{
+  "decision": "approve",
+  "rationale": "All acceptance criteria are met. The limit is correctly raised to 20 across frontend (hook default, tooltip strings, test) and backend (two model validators, one endpoint guard). Three independent review lenses surfaced two defer-level concerns: (1) both model validators raise RequestValidationError inside @field_validator — technically non-standard Pydantic v2 (should be ValueError) but this is the established codebase pattern already in index.py and confirmed working by the edge-case lens; (2) VirtualAssistantChatRequest lacks the file_name back-compat model_validator, a pre-existing gap not introduced by this diff. Two additional minor defers: no router-level test for exactly-20-file success boundary; MAX_FILE_COUNT=20 duplicated across 3 sites. No blocking or critical findings.",
+  "follow_ups": [
+    "Consider replacing RequestValidationError with ValueError in both @field_validator bodies for Pydantic v2 compliance — track alongside existing index.py pattern",
+    "Consider extracting MAX_FILE_COUNT=20 to a shared constant to eliminate three-site inconsistency risk"
+  ],
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Upload and send up to 20 attachments per message",
+      "status": "MET",
+      "evidence": "useFileUpload.tsx default maxFiles=20; hook guards on maxFiles so the limit propagates to all 4 call sites",
+      "finding": null
+    },
+    {
+      "criterion": "Backend receives and stores up to 20",
+      "status": "MET",
+      "evidence": "Storage path is unconstrained; validators pass through any count ≤20 unmodified",
+      "finding": null
+    },
+    {
+      "criterion": "Frontend rejects >20 with clear error",
+      "status": "MET",
+      "evidence": "useFileUpload LIMIT_EXCEEDED_ERROR toast: 'Max 20 files are allowed' (template-interpolated from maxFiles)",
+      "finding": null
+    },
+    {
+      "criterion": "Backend rejects >20 with clear error",
+      "status": "MET",
+      "evidence": "@field_validator on AssistantChatRequest and VirtualAssistantChatRequest + write_files_bulk guard → HTTP 422 with 'Too many files. Maximum count is 20'",
+      "finding": null
+    },
+    {
+      "criterion": "UI and backend error/help texts updated",
+      "status": "MET",
+      "evidence": "CHAT_FILE_MULTIUPLOAD_MESSAGE and WF_FILE_UPLOAD_MESSAGE updated to 20; validator messages updated; frontend toast interpolated from runtime maxFiles=20",
+      "finding": null
+    },
+    {
+      "criterion": "Regression: 1, 10, 20 succeed; >20 fails",
+      "status": "PARTIAL",
+      "evidence": "20-succeeds and >20-fails explicitly tested at model and router levels; 0/None cases tested. 1 and 10 cases not explicitly exercised.",
+      "finding": "Explicit regression tests for 1-file and 10-file success absent; boundary logic is correct and the 20-boundary is explicitly tested"
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "All commits follow EPMCDME-11794: Capital sentence convention as required by CI"
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "New code follows established project patterns (ClassVar[int] + @field_validator matches index.py; ExtendedHTTPException usage matches existing router guards)"
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "Count guards improve security posture by preventing unbounded file uploads; no new attack surface introduced"
+    }
+  ],
+  "findings": []
+}
