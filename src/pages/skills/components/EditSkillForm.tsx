@@ -85,7 +85,7 @@ const EditSkillForm: React.FC<EditSkillFormProps> = ({ skill, onBack }) => {
               Cancel
             </Button>
             <Button type="primary" onClick={() => formRef.current?.submit()}>
-              Update Skill
+              Save
             </Button>
           </div>
         }
