@@ -23,13 +23,13 @@ import { chatsStore } from '@/store/chats'
 import { ChatListItem } from '@/types/entity/conversation'
 
 import ChatSidebarAccordion from './ChatSidebarAccordion'
+import { getValidDateTimestamp } from './chatSidebarListsHelpers'
 import ChatList from '../ChatList/ChatList'
 import DeleteChatPopup from '../ChatList/DeleteChatPopup'
 import MoveChatPopup from '../ChatList/MoveChatPopup'
 import FolderFormPopup from '../FolderList/FolderFormPopup'
 import FolderList from '../FolderList/FolderList'
 
-type SectionName = 'chats' | 'folders'
 type PopupName = 'delete-chat' | 'folder-form' | 'move-chat'
 
 export interface ChatSidebarListsRef {
@@ -44,7 +44,9 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
 
   const [selectedChat, setSelectedChat] = useState<ChatListItem>()
   const [activePopup, setActivePopup] = useState<PopupName | null>(null)
-  const [activeSection, setActiveSection] = useState<SectionName | null>(null)
+  const [isPinnedExpanded, setIsPinnedExpanded] = useState(true)
+  const [isRecentExpanded, setIsRecentExpanded] = useState(true)
+  const [isFoldersExpanded, setIsFoldersExpanded] = useState(false)
   const [activeFolder, setActiveFolder] = useState<string | null>(null)
   const [hasManuallyExpandedSection, setHasManuallyExpandedSection] = useState(false)
   const [disableAccordionAnimation, setDisableAccordionAnimation] = useState(false)
@@ -52,7 +54,8 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
   useImperativeHandle(ref, () => ({
     expandFolder: (folderName: string) => {
       setDisableAccordionAnimation(true)
-      setActiveSection('folders')
+      setIsRecentExpanded(false)
+      setIsFoldersExpanded(true)
       setActiveFolder(folderName)
 
       setTimeout(() => {
@@ -74,10 +77,17 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
       setDisableAccordionAnimation(true)
 
       if (folderName) {
-        setActiveSection('folders')
+        setIsRecentExpanded(false)
+        setIsFoldersExpanded(true)
         setActiveFolder(folderName)
       } else {
-        setActiveSection('chats')
+        const targetChat = (chats as ChatListItem[]).find((c) => c.id === chatId)
+        if (targetChat?.pinned) {
+          setIsPinnedExpanded(true)
+        } else {
+          setIsRecentExpanded(true)
+          setIsFoldersExpanded(false)
+        }
       }
 
       setTimeout(() => {
@@ -90,10 +100,22 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
     },
   }))
 
-  const defaultChats = useMemo(
-    () => chats.filter((chat) => !chat.folder || chat.isWorkflow),
-    [chats]
-  )
+  const { pinnedChats, recentChats } = useMemo(() => {
+    const pinnedChats: ChatListItem[] = []
+    const recentChats: ChatListItem[] = []
+    ;(chats as ChatListItem[]).forEach((chat) => {
+      if (chat.pinned) {
+        pinnedChats.push(chat)
+      } else {
+        recentChats.push(chat)
+      }
+    })
+    recentChats.sort(
+      (a, b) =>
+        getValidDateTimestamp(b.updateDate, b.date) - getValidDateTimestamp(a.updateDate, a.date)
+    )
+    return { pinnedChats, recentChats }
+  }, [chats])
 
   const foldersToChatsMap = useMemo(() => {
     return chats.reduce((acc: Record<string, ChatListItem[]>, chat) => {
@@ -109,9 +131,7 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
   const folders = useMemo(() => {
     return chatFolders
       .slice()
-      .sort(
-        (a, b) => new Date(b.updateDate ?? '').getTime() - new Date(a.updateDate ?? '').getTime()
-      )
+      .sort((a, b) => getValidDateTimestamp(b.updateDate) - getValidDateTimestamp(a.updateDate))
       .map((folder) => folder.name)
   }, [chatFolders])
 
@@ -121,32 +141,57 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
   }, [activeFolder, JSON.stringify(folders)])
 
   const handleHidePopup = () => setActivePopup(null)
-  const handleToggleSection = (name: SectionName) => {
+
+  const handleToggleSection = (name: 'pinned' | 'recent' | 'folders') => {
     setHasManuallyExpandedSection(true)
-    setActiveSection(activeSection === name ? null : name)
+    if (name === 'pinned') setIsPinnedExpanded((prev) => !prev)
+    else if (name === 'recent') {
+      const shouldExpand = !isRecentExpanded
+      setIsRecentExpanded(shouldExpand)
+      if (shouldExpand) setIsFoldersExpanded(false)
+    } else {
+      const shouldExpand = !isFoldersExpanded
+      setIsFoldersExpanded(shouldExpand)
+      if (shouldExpand) setIsRecentExpanded(false)
+    }
   }
 
   const handleMoveChat = (folderName: string) => {
     if (currentChat?.id === selectedChat?.id) {
-      setActiveSection(folderName === DEFAULT_CHAT_FOLDER ? 'chats' : 'folders')
-      setActiveFolder(folderName)
+      if (folderName === DEFAULT_CHAT_FOLDER) {
+        setIsRecentExpanded(true)
+        setIsFoldersExpanded(false)
+      } else {
+        setIsRecentExpanded(false)
+        setIsFoldersExpanded(true)
+        setActiveFolder(folderName)
+      }
     }
   }
 
   const handleCreateFolder = () => {
-    setActiveSection('folders')
+    setIsRecentExpanded(false)
+    setIsFoldersExpanded(true)
     setActiveFolder(null)
   }
 
   useEffect(() => {
-    // Auto-switch sections only if:
-    // 1. User hasn't manually toggled sections yet, OR
-    // 2. We're in loading state (new chat being created/navigated to)
     if (currentChat && (!hasManuallyExpandedSection || isChatsLoading)) {
-      setActiveSection(currentChat.folder ? 'folders' : 'chats')
+      if (currentChat.pinned) {
+        setIsPinnedExpanded(true)
+      } else {
+        setIsRecentExpanded(true)
+        setIsFoldersExpanded(false)
+      }
     }
     if (currentChat?.folder) setActiveFolder(currentChat.folder)
-  }, [currentChat?.id, currentChat?.folder, isChatsLoading, hasManuallyExpandedSection])
+  }, [
+    currentChat?.id,
+    currentChat?.folder,
+    currentChat?.pinned,
+    isChatsLoading,
+    hasManuallyExpandedSection,
+  ])
 
   const chatActions = useMemo(
     () => ({
@@ -181,26 +226,34 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
   if (isChatsLoading) return <Spinner inline className="mx-auto" />
 
   return (
-    <div role="tree" aria-label="Chats" className="flex flex-col w-full grow min-h-0">
+    <div className="flex flex-col w-full grow min-h-0">
+      {pinnedChats.length > 0 && (
+        <ChatSidebarAccordion
+          title="Pinned"
+          isExpanded={isPinnedExpanded}
+          onToggle={() => handleToggleSection('pinned')}
+          transitionOptions={disableAccordionAnimation ? { timeout: 0 } : undefined}
+        >
+          <ChatList chatActions={chatActions} chats={pinnedChats} currentChatId={currentChat?.id} />
+        </ChatSidebarAccordion>
+      )}
+
       <ChatSidebarAccordion
-        title="Chats"
-        isExpanded={activeSection === 'chats'}
-        onToggle={() => handleToggleSection('chats')}
+        title="Recent"
+        isExpanded={isRecentExpanded}
+        onToggle={() => handleToggleSection('recent')}
         transitionOptions={disableAccordionAnimation ? { timeout: 0 } : undefined}
         groupId="chat-tree-group-chats"
       >
-        <ChatList
-          chatActions={chatActions}
-          chats={defaultChats}
-          currentChatId={currentChat?.id}
-          id="chat-tree-group-chats"
-        />
+        <ChatList chatActions={chatActions} chats={recentChats} currentChatId={currentChat?.id} />
       </ChatSidebarAccordion>
+
+      <div className="my-2 border-t border-border-secondary" />
 
       <div data-onboarding="chat-sidebar-folders">
         <ChatSidebarAccordion
           title="Folders"
-          isExpanded={activeSection === 'folders'}
+          isExpanded={isFoldersExpanded}
           headerContentTemplate={createFolderButton}
           onToggle={() => handleToggleSection('folders')}
           transitionOptions={disableAccordionAnimation ? { timeout: 0 } : undefined}

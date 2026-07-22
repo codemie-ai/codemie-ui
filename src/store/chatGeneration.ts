@@ -20,7 +20,7 @@ import { GENERATION_CANCELLED_MESSAGE } from '@/constants/chats'
 import { WORKFLOW_STATE_EVENT_INTERRUPTED, WORKFLOW_STATUSES } from '@/constants/workflows'
 import { ChatRequest, HistoryMessage, ChatGenerationOptions } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
-import { Conversation, ChatMessage, Thought } from '@/types/entity/conversation'
+import { Conversation, ChatMessage, ChatListItem, Thought } from '@/types/entity/conversation'
 import {
   MCPAuthGateServer,
   MCPAuthInitiateResponse,
@@ -108,7 +108,10 @@ interface ChatGenerationStoreType {
     historyIndex: number | null,
     messageIndex: number | null
   ) => { historyIndex: number; messageIndex: number }
-  _updateChatMetadata: (chat: Conversation, assistant: Assistant) => void
+  _updateChatMetadata: (
+    chat: Conversation,
+    assistant: Assistant
+  ) => Partial<ChatListItem> & { id: string }
   _updateChatNameIfNeeded: (
     chat: Conversation,
     message: string,
@@ -291,7 +294,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const chat = chatsStore.currentChat
     if (!chat) {
       toaster.error('No chat available')
-      return Promise.reject(new Error('No current chat'))
+      throw new Error('No current chat')
     }
 
     if (chatsStore.isNewChat) {
@@ -304,7 +307,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         saveChatSkills(userId, newId, skillIds ?? [])
       }
       if (pendingLlmModel) await chatsStore.updateChat(newId, { llmModel: pendingLlmModel })
-      return chatGenerationStore.createChatGeneration(options)
+      await chatGenerationStore.createChatGeneration(options)
+      return
     }
 
     // For workflow chats, don't fetch assistant data
@@ -354,10 +358,17 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     historyIndex = indexes.historyIndex
     messageIndex = indexes.messageIndex
 
-    chatGenerationStore._updateChatMetadata(chat, assistant)
+    const chatListItemUpdate = chatGenerationStore._updateChatMetadata(chat, assistant)
     chatGenerationStore._updateChatNameIfNeeded(chat, message, historyIndex, messageIndex)
 
-    return chatGenerationStore._sendRequest(chat, historyIndex, messageIndex, data)
+    await chatGenerationStore._sendRequest(chat, historyIndex, messageIndex, data)
+
+    // Apply avatar/group update only after a real response is received.
+    // Skipped for MCP auth gates (mcpAuthPromptRows set) and failed non-stream requests
+    // (response stays undefined) so that a failed exchange doesn't leave stale avatars.
+    if (historyItem.response !== undefined && !historyItem.mcpAuthPromptRows?.length) {
+      chatsStore.updateChatListItem(chatListItemUpdate)
+    }
   },
 
   async _getAssistant(assistantId: string | undefined): Promise<Assistant> {
@@ -456,21 +467,35 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     return { historyIndex: historyIndex!, messageIndex: messageIndex! }
   },
 
-  _updateChatMetadata(chat: Conversation, assistant: Assistant): void {
+  _updateChatMetadata(
+    chat: Conversation,
+    assistant: Assistant
+  ): Partial<ChatListItem> & { id: string } {
     if (!chat.isWorkflow) {
       assistantsStore.updateRecentAssistants(assistant)
     }
+    // Capture names before updateCurrentChatAssistants may reset assistantData (history.length===1)
+    const assistantNameMap = new Map<string, string>([
+      ...(chat.assistantData ?? []).map((a): [string, string] => [a.id, a.name]),
+      [assistant.id, assistant.name],
+    ])
     chatGenerationStore.updateCurrentChatAssistants(chat, assistant)
-    chatsStore.updateChatListItem({
-      assistantIds: chat.assistantIds,
+    const existingListItem = chatsStore.chats.find((c) => c.id === chat.id)
+    const mergedAssistantIds = [
+      ...new Set([...(existingListItem?.assistantIds ?? []), ...(chat.assistantIds ?? [])]),
+    ]
+    const mergedAssistantNames = mergedAssistantIds.map((id) => assistantNameMap.get(id) ?? '')
+    return {
+      assistantIds: mergedAssistantIds,
+      assistantNames: mergedAssistantNames,
       date: '',
       folder: chat.folder ?? '',
       id: chat.id,
       initialAssistantId: chat.initialAssistantId ?? '',
-      isGroup: !!chat.isGroup,
+      isGroup: mergedAssistantIds.length > 1,
       name: chat.name ?? '',
       pinned: !!chat.pinned,
-    })
+    }
   },
 
   _updateChatNameIfNeeded(

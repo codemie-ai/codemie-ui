@@ -1,0 +1,147 @@
+{
+  "decision": "approve",
+  "rationale": "Two blocking issues identified and fixed before merge: (1) folder-assigned chats appearing in Recent — restored !chat.folder || chat.isWorkflow filter in ChatSidebarLists.tsx; (2) duplicate getChatBEMessageIndex in store/utils/chats.ts — removed and replaced with re-export from utils/chatHelpers.ts. The Popup native-dialog rewrite, store bug fixes (chatsStore.chats indexing, isGroup), and avatar/tooltip changes are all correct and well-structured. Remaining findings are low-severity style items that do not block merge.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Chats sidebar shows Pinned, Recent, and Folders as independent collapsible sections.",
+      "status": "PASS",
+      "notes": "Three independent booleans (isPinnedExpanded, isRecentExpanded, isFoldersExpanded) replace the old single activeSection string. Each section collapses and expands independently."
+    },
+    {
+      "criterion": "Folder-assigned chats appear only inside their folder, not in Recent.",
+      "status": "PASS",
+      "notes": "Fixed: restored !chat.folder || chat.isWorkflow guard in ChatSidebarLists.tsx forEach. Folder-assigned chats no longer appear in Recent."
+    },
+    {
+      "criterion": "Chat list items show per-item Avatar/AvatarGroup instead of generic type icons.",
+      "status": "PASS",
+      "notes": "ChatListItem.tsx replaces workflow/group SVG icons with Avatar and AvatarGroup components resolved via useChatItemAvatar hook."
+    },
+    {
+      "criterion": "Folder headers show a deduplicated AvatarGroup of assistants in the folder.",
+      "status": "PASS",
+      "notes": "FolderList.tsx builds a seen-Set-deduplicated avatar list per folder. hideAvatar suppresses individual chat avatars when all chats share one assistant."
+    },
+    {
+      "criterion": "New Chat modal allows searching and selecting an assistant to start a chat.",
+      "status": "PASS",
+      "notes": "StartNewChatModal.tsx provides debounced search, recent assistants, and pinned assistants sections with skeleton loading and empty state."
+    },
+    {
+      "criterion": "Popup component uses native <dialog> API with focus-trap and scroll-lock.",
+      "status": "PASS",
+      "notes": "Popup.tsx fully replaces PrimeReact Dialog with a native <dialog> element. Focus-trap, scroll-lock, backdrop-click, and Escape handling are all implemented."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git_commit_format",
+      "status": "pass",
+      "notes": "All commits follow EPMCDME-13270: Capital sentence pattern."
+    },
+    {
+      "standard": "test_coverage",
+      "status": "partial",
+      "notes": "ChatSidebarLists.test.tsx covers folder/recent switching and date sorting. Missing: Pinned section tests, imperative ref methods (expandFolder, scrollToChat), StartNewChatModal, Popup native-dialog rewrite, DeleteChatPopup delete+navigate logic."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No XSS risk — chat/folder names rendered as React text content. Backdrop-click uses getBoundingClientRect and is not spoofable. No new unauthenticated API surface."
+    }
+  ],
+  "findings": [
+    {
+      "id": "BUG-01",
+      "severity": "high",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/ChatSidebarLists.tsx",
+      "line": 103,
+      "title": "Folder chats appear in Recent — missing !chat.folder filter",
+      "status": "fixed",
+      "description": "The forEach at lines 103-114 pushed all non-pinned chats into recentChats regardless of folder assignment.",
+      "fix": "Restored !chat.folder || chat.isWorkflow guard in the forEach."
+    },
+    {
+      "id": "BUG-02",
+      "severity": "high",
+      "file": "src/store/utils/chats.ts",
+      "line": 56,
+      "title": "getChatBEMessageIndex duplicated in store/utils/chats.ts and utils/chatHelpers.ts",
+      "status": "fixed",
+      "description": "Identical implementation in two files — could silently diverge.",
+      "fix": "Removed duplicate from store/utils/chats.ts; replaced with re-export from @/utils/chatHelpers."
+    },
+    {
+      "id": "BUG-03",
+      "severity": "medium",
+      "file": "src/components/Popup/Popup.tsx",
+      "line": 113,
+      "title": "triggerRef captures document.activeElement at visible=false→true which may be wrong element",
+      "description": "The effect capturing triggerRef fires on every visible change. At visible=false→true, document.activeElement may be inside a previously opened popup rather than the actual button that triggered this one.",
+      "recommendation": "Accept the trigger element as a ref prop instead of capturing document.activeElement inside the effect."
+    },
+    {
+      "id": "BUG-04",
+      "severity": "medium",
+      "file": "src/pages/chat/components/ChatSidebar/ChatList/DeleteChatPopup.tsx",
+      "line": 43,
+      "title": "candidateNext fallback resolves to folderChats[0] which may be the chat being deleted",
+      "description": "When the deleted chat is the last item, candidateNextIndex is out of bounds and falls back to folderChats[0]. If the folder has only one chat, folderChats[0] is the chat being deleted. The live-store chats.find then returns undefined and the fallback navigates to chats[0] — acceptable but fragile.",
+      "recommendation": "Filter out the deleted chat id before computing the fallback: const candidates = folderChats.filter(c => c.id !== id)."
+    },
+    {
+      "id": "STYLE-01",
+      "severity": "low",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/ChatSidebarLists.tsx",
+      "line": 137,
+      "title": "JSON.stringify in useMemo dependency array",
+      "description": "JSON.stringify(folders) is called on every render before React checks dependencies. Replace with folders directly — it is already a stable memoised reference.",
+      "recommendation": "Change dependency to [activeFolder, folders]."
+    },
+    {
+      "id": "STYLE-02",
+      "severity": "low",
+      "file": "src/components/Popup/Popup.tsx",
+      "line": 277,
+      "title": "Double overflow-auto class",
+      "description": "Both overflow-auto and overflow-y-auto are applied. overflow-auto already covers both axes; overflow-y-auto is redundant.",
+      "recommendation": "Remove overflow-auto, keep overflow-y-auto."
+    },
+    {
+      "id": "STYLE-03",
+      "severity": "low",
+      "file": "src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx",
+      "line": 198,
+      "title": "Off-by-one in name truncation: < should be <=",
+      "description": "When chatName.length === MAX_NAME_LENGTH (exactly 50 chars), the name is sliced and '...' appended unnecessarily.",
+      "recommendation": "Change condition to chatName.length <= MAX_NAME_LENGTH."
+    },
+    {
+      "id": "STYLE-04",
+      "severity": "low",
+      "file": "src/pages/chat/components/ChatSidebar/FolderList/FolderList.tsx",
+      "line": 149,
+      "title": "getChatAssistantIds defined inside render loop",
+      "description": "Pure function with no closures is re-created on every folders.map iteration.",
+      "recommendation": "Move outside the component or outside the map callback."
+    },
+    {
+      "id": "TEST-01",
+      "severity": "low",
+      "file": "src/pages/chat/components/ChatSidebar/__tests__/ChatSidebarLists.test.tsx",
+      "title": "Pinned section, imperative ref, and handleMoveChat not tested",
+      "description": "isPinnedExpanded behavior, expandFolder/scrollToChat imperative handle, and section switching after moveChat are untested.",
+      "recommendation": "Add tests for pin auto-expand, scrollToChat, and handleMoveChat section transition."
+    },
+    {
+      "id": "TEST-02",
+      "severity": "low",
+      "file": "src/pages/chat/components/ChatSidebar/StartNewChatModal.tsx",
+      "title": "StartNewChatModal has no tests",
+      "description": "New component with search, debounce, recent/pinned sections, skeleton, and empty state — all untested.",
+      "recommendation": "Add unit tests covering search debounce, section rendering, and startNewChat call arguments."
+    }
+  ]
+}

@@ -69,13 +69,17 @@ export interface ChatAssistant {
 export interface ChatListItem {
   id: string
   name: string | null
-  folder: string
+  folder: string | null
   pinned: boolean
   date: string
+  updateDate?: string
   assistantIds: string[]
   initialAssistantId: string | null
+  initialWorkflowId: string | null
   isGroup: boolean
   isWorkflow: boolean
+  iconUrl?: string | null
+  assistantNames?: string[]
 }
 
 export interface FolderListItem {

@@ -62,6 +62,8 @@ interface AssistantsStoreType {
   assistantTemplatesLoading: boolean
   assistantsPagination: Pagination
   recentAssistants: Assistant[]
+  isRecentAssistantsLoading: boolean
+  isRecentAssistantsLoaded: boolean
   availableToolkits: AssistantToolkit[]
   hedgeableToolkits: AssistantToolkit[]
   availableContext: AssistantContext[]
@@ -85,7 +87,7 @@ interface AssistantsStoreType {
   deleteAssistant: (id: string) => Promise<Response>
   deleteRecentAssistant: (id: string) => void
   updateRecentAssistants: (assistant: Assistant) => void
-  getRecentAssistants: () => Promise<void | any[]>
+  getRecentAssistants: () => Promise<void>
   getHelpAssistants: () => Promise<void>
   getDefaultAssistant: () => Promise<void>
   assistantTemplatesPagination: Pagination
@@ -176,6 +178,7 @@ interface AssistantsStoreType {
 
   pinnedAssistants: FavoriteItem[]
   fetchPinnedAssistants: () => Promise<void>
+  fetchAssistantsByIds: (ids: string[]) => Promise<void>
   pinAssistant: (id: string) => Promise<void>
   unpinAssistant: (id: string) => Promise<void>
 }
@@ -214,6 +217,8 @@ export const assistantsStore = proxy<AssistantsStoreType>({
   builtinSubagentsCatalog: [],
   builtinSubagentsCatalogLoaded: false,
   recentAssistants: [],
+  isRecentAssistantsLoading: false,
+  isRecentAssistantsLoaded: false,
   helpAssistants: [],
   helpAssistantsFetched: false,
   defaultAssistant: null,
@@ -338,26 +343,23 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     }
   },
 
-  updateRecentAssistants(assistant: any) {
+  updateRecentAssistants(assistant: Pick<Assistant, 'id' | 'name' | 'icon_url'>) {
     const present = assistantsStore.recentAssistants.find((item) => item.id === assistant.id)
     if (present) {
       const index = assistantsStore.recentAssistants.indexOf(present)
       assistantsStore.recentAssistants.splice(index, 1)
       assistantsStore.recentAssistants.unshift({
+        ...present,
         icon_url: assistant.icon_url,
         name: assistant.name,
-        type: assistant.type,
-        user_abilities: assistant.user_abilities,
         id: assistant.id,
       })
     } else {
       assistantsStore.recentAssistants.unshift({
         icon_url: assistant.icon_url,
-        type: assistant.type,
-        user_abilities: assistant.user_abilities,
         name: assistant.name,
         id: assistant.id,
-      })
+      } as Assistant)
     }
     if (assistantsStore.recentAssistants.length > MAX_RECENT_ASSISTANTS) {
       assistantsStore.recentAssistants.pop()
@@ -369,12 +371,20 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     )
   },
 
-  getRecentAssistants() {
+  async getRecentAssistants() {
+    if (assistantsStore.isRecentAssistantsLoading || assistantsStore.isRecentAssistantsLoaded) {
+      return
+    }
+
+    assistantsStore.isRecentAssistantsLoading = true
     const recentAssistants = storage.get(userStore.user!.userId, RECENT_ASSISTANTS_STORAGE_KEY)
     if (!recentAssistants?.length) {
       assistantsStore.recentAssistants = []
-      return Promise.resolve([])
+      assistantsStore.isRecentAssistantsLoaded = true
+      assistantsStore.isRecentAssistantsLoading = false
+      return
     }
+    assistantsStore.recentAssistants = recentAssistants.slice(0, MAX_RECENT_ASSISTANTS)
     const filters = { id: recentAssistants.map((item: any) => item.id) }
 
     const url =
@@ -383,19 +393,19 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       `&scope=${ASSISTANT_INDEX_SCOPES.ALL}` +
       `&minimal_response=true`
 
-    return api
-      .get(url)
-      .then((response: any) => response.json())
-      .then((result: any) => {
-        const { data } = result
-        const recentAssistantsMap = new Map(
-          recentAssistants.map((assistant: any, index: number) => [assistant.id, index])
-        )
-        data.sort(
-          (a: any, b: any) => recentAssistantsMap.get(a.id)! - recentAssistantsMap.get(b.id)!
-        )
-        assistantsStore.recentAssistants = data
-      })
+    try {
+      const response = await api.get(url)
+      const result = await response.json()
+      const data = result.data ?? []
+      const recentAssistantsMap = new Map(
+        recentAssistants.map((assistant: any, index: number) => [assistant.id, index])
+      )
+      data.sort((a: any, b: any) => recentAssistantsMap.get(a.id)! - recentAssistantsMap.get(b.id)!)
+      assistantsStore.recentAssistants = data.slice(0, MAX_RECENT_ASSISTANTS)
+      assistantsStore.isRecentAssistantsLoaded = true
+    } finally {
+      assistantsStore.isRecentAssistantsLoading = false
+    }
   },
 
   async getAssistant(id, skipErrorHandling = false, signal = undefined) {
@@ -970,6 +980,28 @@ export const assistantsStore = proxy<AssistantsStoreType>({
         .map((a) => ({ ...a!, icon_url: a!.icon_url ?? '', is_pinned: true }))
     } catch (error) {
       console.error('[fetchPinnedAssistants] failed to load pinned assistants:', error)
+    }
+  },
+
+  async fetchAssistantsByIds(ids) {
+    if (!ids.length) return
+    const url =
+      `v1/assistants?page=0` +
+      `&filters=${encodeURIComponent(JSON.stringify({ id: ids }))}` +
+      `&scope=${ASSISTANT_INDEX_SCOPES.ALL}` +
+      `&minimal_response=true`
+    try {
+      const response = await api.get(url, { skipErrorHandling: true })
+      const result = await response.json()
+      const data: Assistant[] = result.data ?? []
+      const existingIds = new Set(assistantsStore.recentAssistants.map((a) => a.id))
+      for (const a of data) {
+        if (!existingIds.has(a.id)) {
+          assistantsStore.recentAssistants.push(a)
+        }
+      }
+    } catch (error) {
+      console.error('[fetchAssistantsByIds] failed:', error)
     }
   },
 

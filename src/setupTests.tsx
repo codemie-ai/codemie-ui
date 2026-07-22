@@ -92,6 +92,19 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
+// JSDOM exposes HTMLDialogElement but does not implement the native modal methods.
+if (!HTMLDialogElement.prototype.showModal) {
+  HTMLDialogElement.prototype.showModal = function showModal() {
+    this.setAttribute('open', '')
+  }
+}
+
+if (!HTMLDialogElement.prototype.close) {
+  HTMLDialogElement.prototype.close = function close() {
+    this.removeAttribute('open')
+  }
+}
+
 // JSDOM doesn't implement URL.createObjectURL — needed for file-saver (saveAs) in download flows
 global.URL.createObjectURL = vi.fn()
 global.URL.revokeObjectURL = vi.fn()

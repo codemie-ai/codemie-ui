@@ -13,7 +13,11 @@
 // limitations under the License.
 //
 
-import Popup from './Popup'
-
-export { OverlayPortalContext } from './Popup'
-export default Popup
+export const getValidDateTimestamp = (...values: (string | null | undefined)[]) => {
+  for (const value of values) {
+    if (!value) continue
+    const timestamp = Date.parse(value)
+    if (!Number.isNaN(timestamp)) return timestamp
+  }
+  return 0
+}

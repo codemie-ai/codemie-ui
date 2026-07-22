@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
@@ -112,6 +112,7 @@ describe('FormGenAIPopup', () => {
   })
 
   afterEach(() => {
+    cleanup()
     vi.runAllTimers()
     vi.useRealTimers()
   })
@@ -241,7 +242,7 @@ describe('FormGenAIPopup', () => {
       await waitFor(() => {
         expect(screen.getByLabelText('Loading')).toBeInTheDocument()
       })
-      await user.keyboard('{Escape}')
+      fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
 
       // Resolve the now-stale API call
       resolveRequest(MOCK_GENERATED_FIELDS)

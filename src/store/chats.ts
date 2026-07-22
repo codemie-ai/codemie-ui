@@ -445,8 +445,8 @@ export const chatsStore = proxy<ChatsStoreType>({
     const existingItemIndex = chatsStore.chats.findIndex((item) => item.id === newItem.id)
 
     if (existingItemIndex !== -1) {
-      const existingItem = chatsStore[existingItemIndex]
-      chatsStore[existingItemIndex] = { ...existingItem, ...newItem }
+      const existingItem = chatsStore.chats[existingItemIndex]
+      chatsStore.chats[existingItemIndex] = { ...existingItem, ...newItem }
     }
   },
 

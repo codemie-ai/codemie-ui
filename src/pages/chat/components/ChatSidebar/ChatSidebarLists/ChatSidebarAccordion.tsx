@@ -21,7 +21,7 @@ import ChevronRightIcon from '@/assets/icons/chevron-right.svg?react'
 import { cn } from '@/utils/utils'
 
 const accordionPt = {
-  root: { className: 'flex flex-col min-h-10' },
+  root: { className: 'flex flex-col min-h-10 shrink-0' },
 }
 
 const tabPt = {
@@ -73,7 +73,7 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
         header={() => (
           <div
             className={cn(
-              'flex items-center gap-2 text-text-heading px-2 justify-between text-xs uppercase py-3 hover:text-text-accent-hover transition font-medium'
+              'flex items-center gap-2 text-text-heading px-2 justify-between text-xs uppercase py-4 hover:text-text-accent-hover transition font-medium'
             )}
           >
             <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
           </div>
         )}
       >
-        <div className="flex flex-col overflow-y-auto min-h-0">{children}</div>
+        <div className="flex flex-col overflow-y-auto min-h-0 pb-2">{children}</div>
       </AccordionTab>
     </Accordion>
   )

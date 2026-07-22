@@ -13,20 +13,25 @@
 // limitations under the License.
 //
 
-import { ROLE_ASSISTANT } from '@/constants'
-import { Conversation, ChatListItem, FolderListItem } from '@/types/entity/conversation'
+import { ChatListItem, FolderListItem } from '@/types/entity/conversation'
+
+export { getChatBEMessageIndex } from '@/utils/chatHelpers'
 
 export const transformChatListItemDTO = (dto: any): ChatListItem => {
   return {
     id: dto.id,
     name: dto.name ?? null,
-    folder: dto.folder ?? null,
+    folder: dto.folder?.trim() || null,
     pinned: dto.pinned ?? false,
     date: dto.date,
+    updateDate: dto.update_date ?? undefined,
     assistantIds: dto.assistant_ids ?? [],
     initialAssistantId: dto.initial_assistant_id ?? null,
-    isGroup: false,
+    initialWorkflowId: dto.workflow_id ?? null,
+    isGroup: (dto.assistant_ids?.length ?? 0) > 1,
     isWorkflow: dto.is_workflow_conversation ?? dto.is_workflow ?? false,
+    iconUrl: dto.assistant_icon ?? null,
+    assistantNames: dto.assistant_names ?? [],
   }
 }
 
@@ -39,7 +44,7 @@ export const transformFolderListItemDTO = (dto: any): FolderListItem => {
     id: dto.id,
     date: dto.date,
     updateDate: dto.update_date ?? dto.date,
-    name: dto.folder_name,
+    name: dto.folder_name?.trim() ?? '',
     userId: dto.user_id,
     userAbilities: dto.user_abilities ?? [],
   }
@@ -47,39 +52,4 @@ export const transformFolderListItemDTO = (dto: any): FolderListItem => {
 
 export const transformFolderListItemsDTOs = (dtos: any[]): FolderListItem[] => {
   return (dtos ?? []).map(transformFolderListItemDTO)
-}
-
-export const getChatBEMessageIndex = (
-  chat: Conversation,
-  historyIndexFE: number,
-  messageIndexFE: number,
-  role = ROLE_ASSISTANT
-) => {
-  // Early return if chat or history is empty
-  if (!chat || !chat.history || chat.history.length === 0) return -1
-
-  // Create a flattened copy of the chat history and sort by date
-  const sortedFlatHistory = [...chat.history]
-    .flat()
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-
-  // If historyIndex is out of bounds, return -1
-  if (historyIndexFE < 0 || historyIndexFE >= chat.history.length) return -1
-
-  // If messageIndex is out of bounds, return -1
-  if (messageIndexFE < 0 || messageIndexFE >= chat.history[historyIndexFE].length) return -1
-
-  // Get the message from FE indexing
-  const targetMessage = chat.history[historyIndexFE][messageIndexFE]
-
-  // Find this message in the sorted flat array by comparing essential properties
-  // Using date as the primary identifier since it should be unique
-  const relativeIndex = sortedFlatHistory.findIndex(
-    (msg) => msg.createdAt === targetMessage.createdAt && msg.message === targetMessage.message
-  )
-
-  if (role === ROLE_ASSISTANT) {
-    return relativeIndex * 2 + 1
-  }
-  return relativeIndex * 2
 }

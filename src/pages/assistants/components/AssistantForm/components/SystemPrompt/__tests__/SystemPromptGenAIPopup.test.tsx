@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
@@ -109,6 +109,8 @@ describe('SystemPromptGenAIPopup', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
+
+  afterEach(cleanup)
 
   describe('onFormSubmit — success path', () => {
     it('hides the spinner and calls onSuggestedPrompt with system_prompt when the API call succeeds', async () => {
@@ -253,7 +255,7 @@ describe('SystemPromptGenAIPopup', () => {
       await waitFor(() => {
         expect(screen.getByLabelText('Loading')).toBeInTheDocument()
       })
-      await user.keyboard('{Escape}')
+      fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
 
       // Resolve the now-stale API call
       resolveRequest({ system_prompt: GENERATED_SYSTEM_PROMPT })

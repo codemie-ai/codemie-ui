@@ -21,6 +21,46 @@ import { appInfoStore } from '@/store/appInfo'
 import { applicationsStore } from '@/store/applications'
 import { preferencesStore } from '@/store/preferences'
 import { skillsStore } from '@/store/skills'
+import { workflowsStore } from '@/store/workflows'
+
+const fetchChatsAndMissingAvatarData = async () => {
+  const chats = await chatsStore.getChats()
+  if (!Array.isArray(chats)) return
+
+  const knownIds = new Set([
+    ...assistantsStore.assistants.map((assistant) => assistant.id),
+    ...assistantsStore.recentAssistants.map((assistant) => assistant.id),
+    ...assistantsStore.pinnedAssistants.map((assistant) => assistant.id),
+  ])
+  const missingIds = [
+    ...new Set(
+      chats
+        .filter((chat) => chat.isGroup)
+        .flatMap((chat) => chat.assistantIds)
+        .filter((id) => id && !knownIds.has(id))
+    ),
+  ]
+
+  if (missingIds.length) await assistantsStore.fetchAssistantsByIds(missingIds)
+
+  const knownWorkflowIds = new Set([
+    ...workflowsStore.workflows.map((workflow) => workflow.id),
+    ...workflowsStore.recentWorkflows.map((workflow) => workflow.id),
+    ...workflowsStore.chatWorkflows.map((workflow) => workflow.id),
+  ])
+  const missingWorkflowIds = [
+    ...new Set(
+      chats
+        .filter((chat) => chat.isWorkflow)
+        .map((chat) => chat.initialWorkflowId)
+        .filter((id): id is string => Boolean(id) && !knownWorkflowIds.has(id))
+    ),
+  ]
+
+  if (missingWorkflowIds.length) {
+    await workflowsStore.fetchWorkflowsByIds(missingWorkflowIds)
+  }
+}
 
 const useInitialDataFetch = () => {
   useEffect(() => {
@@ -36,9 +76,23 @@ const useInitialDataFetch = () => {
 
       await preferencesStore.fetchPreferences(userStore.user!.userId)
 
-      await assistantsStore.fetchPinnedAssistants()
-      chatsStore.getFolders()
-      chatsStore.getChats()
+      await Promise.all([
+        assistantsStore.getRecentAssistants().catch((error) => {
+          console.error('[useInitialDataFetch] failed to fetch recent assistants:', error)
+        }),
+        assistantsStore.fetchPinnedAssistants().catch((error) => {
+          console.error('[useInitialDataFetch] failed to fetch pinned assistants:', error)
+        }),
+        workflowsStore.getRecentWorkflows().catch((error) => {
+          console.error('[useInitialDataFetch] failed to fetch recent workflows:', error)
+        }),
+      ])
+      chatsStore.getFolders().catch((error) => {
+        console.error('[useInitialDataFetch] failed to fetch chat folders:', error)
+      })
+      await fetchChatsAndMissingAvatarData().catch((error) => {
+        console.error('[useInitialDataFetch] failed to fetch chats:', error)
+      })
 
       appInfoStore.loadAppInfo()
       appInfoStore.getLLMModels()
@@ -55,7 +109,9 @@ const useInitialDataFetch = () => {
       assistantsStore.getHelpAssistants()
     }
 
-    fetchInitialData()
+    fetchInitialData().catch((error) => {
+      console.error('[useInitialDataFetch] failed to initialize application data:', error)
+    })
   }, [])
 }
 
