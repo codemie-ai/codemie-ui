@@ -117,4 +117,5 @@ export interface MCPServerDetails {
   categories?: string[]
   logo_url?: string
   tools?: string[]
+  use_custom_config?: boolean
 }

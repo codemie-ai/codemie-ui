@@ -19,7 +19,7 @@ import toaster from '@/utils/toaster'
 
 import { parseConfigJson } from '../validators'
 
-export const buildServerConfig = (values: any): MCPServerDetails => {
+export const buildServerConfig = (values: any, mcpConfigId?: string | null): MCPServerDetails => {
   const mcpServer: MCPServerDetails = {
     name: values.name,
     description: values.description,
@@ -35,7 +35,15 @@ export const buildServerConfig = (values: any): MCPServerDetails => {
     mcpServer.tools_tokens_size_limit = values.tokensSizeLimit
   }
 
-  mcpServer.config = config
+  mcpServer.use_custom_config = values.useCustomConfig
+
+  if (values.useCustomConfig) {
+    mcpServer.config = config
+  } else {
+    mcpServer.config = undefined
+  }
+
+  if (mcpConfigId) mcpServer.mcp_config_id = mcpConfigId
 
   return mcpServer
 }

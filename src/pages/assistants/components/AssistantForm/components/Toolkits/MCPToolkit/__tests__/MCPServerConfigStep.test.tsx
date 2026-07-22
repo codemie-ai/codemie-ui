@@ -63,9 +63,11 @@ describe('MCPServerConfigStep', () => {
     expect(screen.getByText('MCP-Connect URL (Optional)')).toBeInTheDocument()
   })
 
-  it('hides MCPConfigSection and connectUrl when isCatalogRef', () => {
+  it('shows MCPConfigSection but hides connectUrl when isCatalogRef', () => {
     render(<Wrapper isCatalogRef />)
-    expect(screen.queryByTestId('mcp-config-section')).toBeNull()
+    // MCPConfigSection is always shown (for Global/Custom toggle)
+    expect(screen.getByTestId('mcp-config-section')).toBeInTheDocument()
+    // But connectUrl is hidden for catalog refs
     expect(screen.queryByText('MCP-Connect URL (Optional)')).toBeNull()
   })
 

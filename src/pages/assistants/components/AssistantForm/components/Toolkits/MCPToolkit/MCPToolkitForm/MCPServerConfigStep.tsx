@@ -13,12 +13,14 @@
 // limitations under the License.
 //
 
+import { useEffect, useState } from 'react'
 import { Controller, Control, UseFormSetValue } from 'react-hook-form'
 
 import Button from '@/components/Button'
 import Input from '@/components/form/Input'
 import { ButtonType } from '@/constants'
-import { MCPServerDetails } from '@/types/entity/mcp'
+import { mcpStore } from '@/store/mcp'
+import { MCPServerConfig, MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 
 import MCPBasicFields from '../MCPBasicFields'
@@ -87,6 +89,37 @@ const MCPServerConfigStep = ({
     onNext()
   }
 
+  const [catalogConfig, setCatalogConfig] = useState<MCPServerConfig | undefined>(undefined)
+  const [catalogConfigLoading, setCatalogConfigLoading] = useState(false)
+  const [catalogConfigError, setCatalogConfigError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const configId = mcpServer?.mcp_config_id
+    if (!configId) return
+
+    const cached = mcpStore.getCachedConfig(configId)
+    if (cached) {
+      setCatalogConfig(cached.config)
+      return
+    }
+
+    setCatalogConfigLoading(true)
+    setCatalogConfigError(null)
+    mcpStore
+      .getConfig(configId)
+      .then((config) => {
+        setCatalogConfig(config.config)
+      })
+      .catch(() => {
+        setCatalogConfigError('Failed to load global configuration')
+      })
+      .finally(() => {
+        setCatalogConfigLoading(false)
+      })
+  }, [mcpServer?.mcp_config_id])
+
+  const hasCatalogReference = !!mcpServer?.mcp_config_id
+
   return (
     <>
       <div className="flex flex-col gap-4" data-onboarding="mcp-custom-form-fields">
@@ -96,9 +129,15 @@ const MCPServerConfigStep = ({
           customSetupEnabled={!isCatalogRef}
         />
 
-        {!isCatalogRef && (
-          <MCPConfigSection control={control} configHasEnv={configHasEnv} setValue={setValue} />
-        )}
+        <MCPConfigSection
+          control={control}
+          configHasEnv={configHasEnv}
+          setValue={setValue}
+          hasCatalogReference={hasCatalogReference}
+          catalogConfig={catalogConfig}
+          catalogConfigLoading={catalogConfigLoading}
+          catalogConfigError={catalogConfigError}
+        />
 
         <MCPEnvVarsSection
           mcpServer={mcpServer}

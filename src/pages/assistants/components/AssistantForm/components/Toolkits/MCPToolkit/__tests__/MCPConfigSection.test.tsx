@@ -32,6 +32,7 @@ const defaultValues: MCPFormValues = {
   configJson: '{}',
   command: '',
   arguments: '',
+  useCustomConfig: false,
 }
 
 const Wrapper = ({ configHasEnv = false }: { configHasEnv?: boolean }) => {

@@ -162,6 +162,7 @@ const MCPToolkit = ({
         description: config.description,
         enabled: true,
         mcp_config_id: config.id,
+        use_custom_config: false,
         required_env_vars: config.required_env_vars,
       }
     } else {
@@ -171,6 +172,7 @@ const MCPToolkit = ({
         enabled: true,
         mcp_config_id: config.id,
         config: config.config,
+        use_custom_config: false,
         required_env_vars: config.required_env_vars,
         isFromMarketplace: true,
         categories: config.categories,

@@ -13,6 +13,11 @@
 // limitations under the License.
 //
 
+export enum McpConfigMode {
+  GLOBAL = 'global',
+  CUSTOM = 'custom',
+}
+
 export interface MCPFormValues {
   name: string
   description: string
@@ -21,4 +26,5 @@ export interface MCPFormValues {
   configJson: string
   command: string
   arguments: string
+  useCustomConfig: boolean
 }

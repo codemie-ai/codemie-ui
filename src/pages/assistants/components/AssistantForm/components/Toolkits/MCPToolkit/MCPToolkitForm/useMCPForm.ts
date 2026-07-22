@@ -37,6 +37,7 @@ const getInitialValues = (mcpServer?: MCPServerDetails): MCPFormValues => ({
   configJson: mcpServer?.config ? JSON.stringify(mcpServer?.config) : '{}',
   command: mcpServer?.command ?? '',
   arguments: mcpServer?.arguments ?? '',
+  useCustomConfig: mcpServer?.use_custom_config ?? false,
 })
 
 const checkConfigHasEnv = (configJson: string): boolean => {
