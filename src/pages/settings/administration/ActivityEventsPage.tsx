@@ -257,78 +257,82 @@ const ActivityEventsPage: FC = () => {
 
   const content = (
     <div className="flex flex-col h-full pt-4">
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="w-44">
-          <MultiSelect
-            label="Domain"
-            value={domain}
-            options={domainOptions}
-            onChange={(e) => setDomain(e.value ?? [])}
-            placeholder="All domains"
-            showCheckbox
-          />
-        </div>
-        <div className="w-52">
-          <MultiSelect
-            label="Event type"
-            value={eventType}
-            options={eventTypeOptions}
-            onChange={(e) => setEventType(e.value ?? [])}
-            placeholder="All events"
-            showCheckbox
-          />
-        </div>
-        <div className="w-44">
-          <MultiSelect
-            label="Entity type"
-            value={entityType}
-            options={entityTypeOptions}
-            onChange={(e) => setEntityType(e.value ?? [])}
-            placeholder="All entity types"
-            showCheckbox
-          />
-        </div>
-        <div className="w-52">
-          <Input
-            label="Actor ID"
-            value={actorId}
-            onChange={(e) => setActorId(e.target.value)}
-            placeholder="Filter by user ID"
-          />
-        </div>
-        <div className="w-52">
-          <Input
-            label="Entity ID"
-            value={entityId}
-            onChange={(e) => setEntityId(e.target.value)}
-            placeholder="Filter by entity ID"
-          />
-        </div>
-        <div className="w-44">
-          <DatePicker label="From" value={from} onChange={setFrom} showTime hourFormat="24" />
-        </div>
-        <div className="w-44">
-          <DatePicker label="To" value={to} onChange={setTo} showTime hourFormat="24" />
-        </div>
-        <div className="w-40">
-          <Select
-            label="Sort"
-            value={sortDir}
-            options={SORT_OPTIONS}
-            onChangeValue={(v) => setSortDir(v ?? 'desc')}
-          />
-        </div>
-        {hasActiveFilters && (
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="h-8 px-3 text-sm text-text-accent hover:text-text-accent-hover border border-border-primary hover:border-border-secondary rounded-lg transition-colors whitespace-nowrap"
-            >
-              Clear filters
-            </button>
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-wrap gap-3">
+          <div className="w-44">
+            <MultiSelect
+              label="Domain"
+              value={domain}
+              options={domainOptions}
+              onChange={(e) => setDomain(e.value ?? [])}
+              placeholder="All domains"
+              showCheckbox
+            />
           </div>
-        )}
+          <div className="w-52">
+            <MultiSelect
+              label="Event type"
+              value={eventType}
+              options={eventTypeOptions}
+              onChange={(e) => setEventType(e.value ?? [])}
+              placeholder="All events"
+              showCheckbox
+            />
+          </div>
+          <div className="w-44">
+            <MultiSelect
+              label="Entity type"
+              value={entityType}
+              options={entityTypeOptions}
+              onChange={(e) => setEntityType(e.value ?? [])}
+              placeholder="All entity types"
+              showCheckbox
+            />
+          </div>
+          <div className="w-52">
+            <Input
+              label="Actor ID"
+              value={actorId}
+              onChange={(e) => setActorId(e.target.value)}
+              placeholder="Filter by user ID"
+            />
+          </div>
+          <div className="w-52">
+            <Input
+              label="Entity ID"
+              value={entityId}
+              onChange={(e) => setEntityId(e.target.value)}
+              placeholder="Filter by entity ID"
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <div className="w-44">
+            <DatePicker label="From" value={from} onChange={setFrom} showTime hourFormat="24" />
+          </div>
+          <div className="w-44">
+            <DatePicker label="To" value={to} onChange={setTo} showTime hourFormat="24" />
+          </div>
+          <div className="w-40">
+            <Select
+              label="Sort"
+              value={sortDir}
+              options={SORT_OPTIONS}
+              onChangeValue={(v) => setSortDir(v ?? 'desc')}
+            />
+          </div>
+          {hasActiveFilters && (
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="h-8 px-3 text-sm text-text-accent hover:text-text-accent-hover border border-border-primary hover:border-border-secondary rounded-lg transition-colors whitespace-nowrap"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <Table

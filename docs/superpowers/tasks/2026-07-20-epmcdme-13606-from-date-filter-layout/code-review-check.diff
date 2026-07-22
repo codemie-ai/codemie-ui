@@ -1,0 +1,169 @@
+diff --git a/config.js b/config.js
+index 3c1b81afa..25e63904c 100644
+--- a/config.js
++++ b/config.js
+@@ -10,5 +10,5 @@ window._env_.VITE_SHOW_ALL_PROJECTS = 'false'
+ window._env_.VITE_IS_EXTERNAL_LOGIN = 'false'
+ window._env_.VITE_ENABLE_USER_MANAGEMENT = 'true'
+ window._env_.VITE_ENABLE_BUDGET_MANAGEMENT = 'true'
+-window._env_.VITE_IDP_PROVIDER = 'local'
++window._env_.VITE_IDP_PROVIDER = 'keycloack'
+ window._env_.VITE_MCP_AUTH_ORIGIN = 'http://localhost:8080'
+diff --git a/src/pages/settings/administration/ActivityEventsPage.tsx b/src/pages/settings/administration/ActivityEventsPage.tsx
+index 248b16ee4..47c9123d7 100644
+--- a/src/pages/settings/administration/ActivityEventsPage.tsx
++++ b/src/pages/settings/administration/ActivityEventsPage.tsx
+@@ -257,79 +257,82 @@ const ActivityEventsPage: FC = () => {
+ 
+   const content = (
+     <div className="flex flex-col h-full pt-4">
+-      <div className="flex flex-wrap gap-3 mb-4">
+-        <div className="w-44">
+-          <MultiSelect
+-            label="Domain"
+-            value={domain}
+-            options={domainOptions}
+-            onChange={(e) => setDomain(e.value ?? [])}
+-            placeholder="All domains"
+-            showCheckbox
+-          />
+-        </div>
+-        <div className="w-52">
+-          <MultiSelect
+-            label="Event type"
+-            value={eventType}
+-            options={eventTypeOptions}
+-            onChange={(e) => setEventType(e.value ?? [])}
+-            placeholder="All events"
+-            showCheckbox
+-          />
+-        </div>
+-        <div className="w-44">
+-          <MultiSelect
+-            label="Entity type"
+-            value={entityType}
+-            options={entityTypeOptions}
+-            onChange={(e) => setEntityType(e.value ?? [])}
+-            placeholder="All entity types"
+-            showCheckbox
+-          />
+-        </div>
+-        <div className="w-52">
+-          <Input
+-            label="Actor ID"
+-            value={actorId}
+-            onChange={(e) => setActorId(e.target.value)}
+-            placeholder="Filter by user ID"
+-          />
+-        </div>
+-        <div className="w-52">
+-          <Input
+-            label="Entity ID"
+-            value={entityId}
+-            onChange={(e) => setEntityId(e.target.value)}
+-            placeholder="Filter by entity ID"
+-          />
+-        </div>
+-        <div className="w-full" />
+-        <div className="w-44">
+-          <DatePicker label="From" value={from} onChange={setFrom} showTime hourFormat="24" />
+-        </div>
+-        <div className="w-44">
+-          <DatePicker label="To" value={to} onChange={setTo} showTime hourFormat="24" />
+-        </div>
+-        <div className="w-40">
+-          <Select
+-            label="Sort"
+-            value={sortDir}
+-            options={SORT_OPTIONS}
+-            onChangeValue={(v) => setSortDir(v ?? 'desc')}
+-          />
++      <div className="flex flex-col gap-3 mb-4">
++        <div className="flex flex-wrap gap-3">
++          <div className="w-44">
++            <MultiSelect
++              label="Domain"
++              value={domain}
++              options={domainOptions}
++              onChange={(e) => setDomain(e.value ?? [])}
++              placeholder="All domains"
++              showCheckbox
++            />
++          </div>
++          <div className="w-52">
++            <MultiSelect
++              label="Event type"
++              value={eventType}
++              options={eventTypeOptions}
++              onChange={(e) => setEventType(e.value ?? [])}
++              placeholder="All events"
++              showCheckbox
++            />
++          </div>
++          <div className="w-44">
++            <MultiSelect
++              label="Entity type"
++              value={entityType}
++              options={entityTypeOptions}
++              onChange={(e) => setEntityType(e.value ?? [])}
++              placeholder="All entity types"
++              showCheckbox
++            />
++          </div>
++          <div className="w-52">
++            <Input
++              label="Actor ID"
++              value={actorId}
++              onChange={(e) => setActorId(e.target.value)}
++              placeholder="Filter by user ID"
++            />
++          </div>
++          <div className="w-52">
++            <Input
++              label="Entity ID"
++              value={entityId}
++              onChange={(e) => setEntityId(e.target.value)}
++              placeholder="Filter by entity ID"
++            />
++          </div>
+         </div>
+-        {hasActiveFilters && (
+-          <div className="flex items-end">
+-            <button
+-              type="button"
+-              onClick={clearFilters}
+-              className="h-8 px-3 text-sm text-text-accent hover:text-text-accent-hover border border-border-primary hover:border-border-secondary rounded-lg transition-colors whitespace-nowrap"
+-            >
+-              Clear filters
+-            </button>
++        <div className="flex flex-wrap gap-3">
++          <div className="w-44">
++            <DatePicker label="From" value={from} onChange={setFrom} showTime hourFormat="24" />
+           </div>
+-        )}
++          <div className="w-44">
++            <DatePicker label="To" value={to} onChange={setTo} showTime hourFormat="24" />
++          </div>
++          <div className="w-40">
++            <Select
++              label="Sort"
++              value={sortDir}
++              options={SORT_OPTIONS}
++              onChangeValue={(v) => setSortDir(v ?? 'desc')}
++            />
++          </div>
++          {hasActiveFilters && (
++            <div className="flex items-end">
++              <button
++                type="button"
++                onClick={clearFilters}
++                className="h-8 px-3 text-sm text-text-accent hover:text-text-accent-hover border border-border-primary hover:border-border-secondary rounded-lg transition-colors whitespace-nowrap"
++              >
++                Clear filters
++              </button>
++            </div>
++          )}
++        </div>
+       </div>
+ 
+       <Table

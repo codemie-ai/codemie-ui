@@ -1,0 +1,67 @@
+{
+  "task": "Reorganise ActivityEventsPage filter controls layout so date pickers, sort, and clear-filters button appear in a dedicated second row.",
+  "generated": "2026-07-20T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "ActivityEventsPage",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 1,
+      "modified_file_list": [
+        "src/pages/settings/administration/ActivityEventsPage.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/pages/settings/administration"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 1,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single file touched (ActivityEventsPage.tsx); layout-only restructuring with no architectural impact and no layer boundaries crossed."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "1 file changed per diffstat (82 insertions, 79 deletions — a near-equal churn consistent with JSX element reordering). 0 new files."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

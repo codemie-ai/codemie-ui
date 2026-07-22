@@ -1,0 +1,12 @@
+diff --git a/src/pages/settings/administration/ActivityEventsPage.tsx b/src/pages/settings/administration/ActivityEventsPage.tsx
+index f96881daf..248b16ee4 100644
+--- a/src/pages/settings/administration/ActivityEventsPage.tsx
++++ b/src/pages/settings/administration/ActivityEventsPage.tsx
+@@ -304,6 +304,7 @@ const ActivityEventsPage: FC = () => {
+             placeholder="Filter by entity ID"
+           />
+         </div>
++        <div className="w-full" />
+         <div className="w-44">
+           <DatePicker label="From" value={from} onChange={setFrom} showTime hourFormat="24" />
+         </div>
