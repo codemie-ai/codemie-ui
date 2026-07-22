@@ -1,0 +1,72 @@
+{
+  "task": "Make event-type and entity-type filter dropdowns domain-dependent on the Activity Events page",
+  "generated": "2026-07-20T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 2,
+      "label": "S",
+      "affected": "ActivityEventsPage, activityEventsFilters (new utility), activityEvent types",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Filter inter-dependency state management (domain drives event/entity type options; stale selections must be cleared on domain change)",
+      "mitigation": "Pure utility functions with no side effects; revalidation logic isolated in activityEventsFilters.ts and driven by a dedicated useEffect; unit-tested"
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 2,
+      "modified_file_list": [
+        "src/pages/settings/administration/ActivityEventsPage.tsx",
+        "src/types/entity/activityEvent.ts"
+      ],
+      "new_files": 2,
+      "new_file_list": [
+        "src/pages/settings/administration/components/activityEventsFilters.ts",
+        "src/pages/settings/administration/__tests__/ActivityEventsPage.test.tsx"
+      ],
+      "affected_dirs": [
+        "src/pages/settings/administration",
+        "src/types/entity"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Change is confined to a single page component, one new pure-utility module, and a type extension — no cross-component or cross-subsystem impact"
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The inter-dependent filter state (domain selection clearing stale event/entity-type selections) required a dedicated revalidation effect, which is slightly beyond a trivial copy-and-adapt; however the logic is fully isolated in a tested utility and all patterns (Valtio useSnapshot, useMemo, useEffect) already existed in the codebase"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

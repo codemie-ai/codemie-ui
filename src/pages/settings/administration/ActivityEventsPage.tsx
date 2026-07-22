@@ -32,6 +32,8 @@ import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import { formatDate } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 
+import { computeFilteredOptions, revalidateSelections } from './components/activityEventsFilters'
+
 const columnDefinitions: ColumnDefinition[] = [
   { key: 'created_at', label: 'When', type: DefinitionTypes.Custom, headClassNames: 'w-[13%]' },
   { key: 'domain', label: 'Domain', type: DefinitionTypes.String, headClassNames: 'w-[11%]' },
@@ -228,20 +230,33 @@ const ActivityEventsPage: FC = () => {
     perPage,
   ])
 
+  useEffect(() => {
+    const { eventType: validEventTypes, entityType: validEntityTypes } = revalidateSelections(
+      filterOptions,
+      domain,
+      eventType,
+      entityType
+    )
+    if (validEventTypes.length !== eventType.length) setEventType(validEventTypes)
+    if (validEntityTypes.length !== entityType.length) setEntityType(validEntityTypes)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [domain, filterOptions])
+
   const domainOptions = useMemo(
     () => (filterOptions?.domains ?? []).map((d) => ({ label: d, value: d })),
     [filterOptions]
   )
 
-  const eventTypeOptions = useMemo(
-    () => (filterOptions?.event_types ?? []).map((e) => ({ label: e, value: e })),
-    [filterOptions]
-  )
-
-  const entityTypeOptions = useMemo(
-    () => (filterOptions?.entity_types ?? []).map((t) => ({ label: t, value: t })),
-    [filterOptions]
-  )
+  const { eventTypeOptions, entityTypeOptions } = useMemo(() => {
+    const { eventTypeOptions: evtOpts, entityTypeOptions: entOpts } = computeFilteredOptions(
+      filterOptions,
+      domain
+    )
+    return {
+      eventTypeOptions: evtOpts.map((e) => ({ label: e, value: e })),
+      entityTypeOptions: entOpts.map((t) => ({ label: t, value: t })),
+    }
+  }, [filterOptions, domain])
 
   const customRenderColumns = useMemo(
     () => ({

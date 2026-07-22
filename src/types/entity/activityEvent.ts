@@ -26,10 +26,16 @@ export interface ActivityEvent {
   created_at: string
 }
 
+export interface DomainFilterEntry {
+  event_types: string[]
+  entity_types: string[]
+}
+
 export interface ActivityEventFilterOptions {
   domains: string[]
   event_types: string[]
   entity_types: string[]
+  mapping: Record<string, DomainFilterEntry>
 }
 
 export interface ActivityEventListParams {
