@@ -22,6 +22,7 @@ import Button from '@/components/Button'
 import StandaloneLayout from '@/components/Layouts/StandaloneLayout'
 import { authStore } from '@/store/auth'
 import { SignInFormData } from '@/types/auth'
+import { consumePostLoginRedirect } from '@/utils/postLoginRedirect'
 import toaster from '@/utils/toaster'
 import { ValidationError } from '@/utils/validationError'
 
@@ -42,7 +43,8 @@ const SignInPage: React.FC = () => {
   const handleSignIn = async (data: SignInFormData, setError: UseFormSetError<SignInFormData>) => {
     try {
       await authStore.login(data)
-      navigate('/')
+      const returnUrl = consumePostLoginRedirect()
+      navigate(returnUrl ?? '/')
     } catch (e) {
       if (e instanceof ValidationError) {
         const items = e.fieldErrors

@@ -15,7 +15,7 @@
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
 
 import { navigate, renderPage, mockAPI } from '@/test-utils/integration'
 import toaster from '@/utils/toaster'
@@ -25,6 +25,10 @@ const TEST_PASSWORD = 'password123'
 const TEST_WRONG_PASSWORD = 'wrongpassword'
 
 describe('SignInPage — Integration', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
   const fillAndSubmit = async (password = TEST_PASSWORD) => {
     const user = userEvent.setup()
     renderPage('/auth/sign-in')
@@ -49,7 +53,40 @@ describe('SignInPage — Integration', () => {
     expect(screen.getByText('Welcome to CodeMie')).toBeInTheDocument()
   })
 
-  it('navigates to / on successful login', async () => {
+  it('navigates to / when no postLoginRedirect is stored', async () => {
+    mockAPI('POST', 'v1/local-auth/login', {})
+
+    await fillAndSubmit()
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith('/')
+    })
+  })
+
+  it('navigates to stored postLoginRedirect URL after login', async () => {
+    sessionStorage.setItem('postLoginRedirect', '/assistants/marketplace/foo')
+    mockAPI('POST', 'v1/local-auth/login', {})
+
+    await fillAndSubmit()
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith('/assistants/marketplace/foo')
+    })
+  })
+
+  it('clears postLoginRedirect from sessionStorage after login', async () => {
+    sessionStorage.setItem('postLoginRedirect', '/assistants/marketplace/foo')
+    mockAPI('POST', 'v1/local-auth/login', {})
+
+    await fillAndSubmit()
+
+    await waitFor(() => {
+      expect(sessionStorage.getItem('postLoginRedirect')).toBeNull()
+    })
+  })
+
+  it('falls back to / when stored postLoginRedirect is invalid (open-redirect guard)', async () => {
+    sessionStorage.setItem('postLoginRedirect', '//evil.com')
     mockAPI('POST', 'v1/local-auth/login', {})
 
     await fillAndSubmit()

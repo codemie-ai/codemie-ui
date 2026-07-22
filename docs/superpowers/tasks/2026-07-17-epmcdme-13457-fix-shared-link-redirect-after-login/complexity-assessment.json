@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Fix shared Marketplace assistant link redirect so unauthenticated users land on the originally requested assistant after login, by saving the current URL to sessionStorage before the sign-in redirect and restoring it with open-redirect sanitization after successful login.",
+  "generated": "2026-07-20T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 15,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "api.ts (handleSessionExpired) and SignInPage.tsx (handleSignIn) are the two primary components changed across HTTP-client and Presentation/Auth layers; api.ts is the central shared HTTP client used throughout the app, which triggered the core-shared-utility red flag bump from M to L."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The fix modifies the auth sign-in flow (session-expiry handling and post-login navigation) and explicitly requires open-redirect sanitization — two red flags applied (auth/authorization and security requirements). The precedents exist in onboardingStore.entryUrl and EPMCDME-12556, so actual implementation risk is contained, but the red-flag rules apply regardless."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M (3) to L (4): api.ts is a core shared utility (central HTTP client for the entire app)",
+    "Technical Risk bumped from S (2) to M (3): fix modifies the authentication sign-in flow and session-expiry handler (auth/authorization red flag)",
+    "Technical Risk bumped from M (3) to L (4): task explicitly requires open-redirect sanitization as a mandatory step (security requirements red flag)"
+  ],
+  "split_recommendation": null
+}

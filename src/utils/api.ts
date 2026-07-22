@@ -18,6 +18,7 @@ import { saveAs } from 'file-saver'
 import { ENV, HTTP_STATUS } from '@/constants'
 import { HttpError } from '@/utils/handleMultipartError'
 import { isMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
+import { savePostLoginRedirect } from '@/utils/postLoginRedirect'
 import toaster from '@/utils/toaster'
 import { getMode, getIsLocalAuth } from '@/utils/utils'
 
@@ -384,13 +385,15 @@ class API {
 
   private handleSessionExpired(url: string): void {
     const isUserEndpoint = url === 'v1/user'
-    const isAuthPage = window.location.pathname === '/auth/sign-in'
+    const base = import.meta.env.BASE_URL.slice(0, -1)
+    const isAuthPage = window.location.pathname.startsWith(base + '/auth/')
 
     if (!isUserEndpoint) {
       sessionStorage.setItem('sessionExpired', 'true')
     }
 
     if (!isAuthPage) {
+      savePostLoginRedirect()
       window.location.assign('/auth/sign-in')
     }
   }

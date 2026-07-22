@@ -1,0 +1,61 @@
+{
+  "decision": "approve",
+  "rationale": "All four original findings are resolved in commit b6ba32eb6. CR-001/CR-002: isAuthPage now uses startsWith(base+'/auth/'), covering sub-path deployments and /auth/sign-up. CR-003: savePostLoginRedirect uses startsWith(base+'/'), preventing incorrect prefix matching. CR-004: integration test for open-redirect fallback added to SignInPage. Three additional api integration tests (sign-up guard, sub-path sign-in guard) confirm guard correctness. No new findings introduced by the fix-up diff.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Unauthenticated users opening a shared Marketplace assistant link are redirected to login and then returned to the originally requested assistant.",
+      "status": "pass",
+      "notes": "Carried forward from final round — round-trip wired correctly."
+    },
+    {
+      "criterion": "The original assistant ID/route is preserved during the authentication flow.",
+      "status": "pass",
+      "notes": "Carried forward from final round — pathname+search+hash preserved."
+    },
+    {
+      "criterion": "Authenticated users continue to open the correct assistant directly from the shared link without any redirect.",
+      "status": "pass",
+      "notes": "Carried forward from final round — authenticated path unchanged."
+    },
+    {
+      "criterion": "No regression for other Marketplace assistant navigation flows.",
+      "status": "pass",
+      "notes": "Carried forward from final round — fallback to '/' preserved, test isolation maintained."
+    },
+    {
+      "criterion": "Sub-path deployments (VITE_SUFFIX) behave identically to root deployments.",
+      "status": "pass",
+      "notes": "Fixed by CR-001: isAuthPage now checks startsWith(base+'/auth/') so sub-path sign-in pathname '/codemie/auth/sign-in' is correctly recognized as an auth page. Covered by new integration test."
+    },
+    {
+      "criterion": "An attacker-controlled postLoginRedirect value (e.g. //evil.com) is rejected and the user lands on /.",
+      "status": "pass",
+      "notes": "Fixed by CR-004: integration test added to SignInPage confirming navigate('/') is called when '//evil.com' is the stored value."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Fix-up commit 'EPMCDME-13457: Fix isAuthPage guard for sub-path/sign-up and startsWith precision' follows 'EPMCDME-XXXX: Capital sentence' format."
+    },
+    {
+      "standard": "code-quality",
+      "status": "na",
+      "notes": "Guide absent — carried forward from final round."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "pass",
+      "notes": "Guide absent — inline assessment: no new secrets or injection vectors. CWE-601 open-redirect now has full integration-level test coverage."
+    }
+  ],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "isAuthPage now uses startsWith(base+'/auth/'), covering sub-path deployments."},
+    {"id": "CR-002", "status": "resolved", "notes": "Same fix as CR-001 — startsWith('/auth/') now guards /auth/sign-up as well."},
+    {"id": "CR-003", "status": "resolved", "notes": "savePostLoginRedirect now uses startsWith(base+'/') to avoid incorrect prefix matching."},
+    {"id": "CR-004", "status": "resolved", "notes": "Integration test for open-redirect rejection added to SignInPage.integration.test.tsx."}
+  ]
+}

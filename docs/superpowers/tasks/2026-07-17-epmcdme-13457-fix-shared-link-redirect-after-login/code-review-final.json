@@ -1,0 +1,97 @@
+{
+  "decision": "request-changes",
+  "rationale": "Four major findings across correctness and test coverage. CR-001/CR-002: the isAuthPage guard in api.ts uses a bare pathname comparison that fails on sub-path deployments and doesn't cover /auth/sign-up, causing a post-login redirect loop in deployed environments. CR-003: savePostLoginRedirect uses startsWith(base) rather than startsWith(base+'/'), incorrectly matching unrelated prefixes. CR-004: the required integration test for open-redirect rejection is missing from SignInPage.integration.test.tsx. All four are patch-class fixes with no design ambiguity.",
+  "confidence": "medium",
+  "risk_flags": ["security"],
+  "business_review": [
+    {
+      "criterion": "Unauthenticated users opening a shared Marketplace assistant link are redirected to login and then returned to the originally requested assistant.",
+      "status": "pass",
+      "notes": "handleSessionExpired calls savePostLoginRedirect() before window.location.assign('/auth/sign-in'). SignInPage calls consumePostLoginRedirect() after successful login. The full round-trip is wired correctly on root deployments."
+    },
+    {
+      "criterion": "The original assistant ID/route is preserved during the authentication flow.",
+      "status": "pass",
+      "notes": "savePostLoginRedirect() captures pathname + search + hash (e.g. '/assistants/marketplace/foo?ref=share'), so query strings and hashes that could carry assistant identifiers are preserved."
+    },
+    {
+      "criterion": "Authenticated users continue to open the correct assistant directly from the shared link without any redirect.",
+      "status": "pass",
+      "notes": "Authenticated requests never hit the 401 path; savePostLoginRedirect() is never called; sessionStorage is never written. No change to the authenticated happy path."
+    },
+    {
+      "criterion": "No regression for other Marketplace assistant navigation flows.",
+      "status": "pass",
+      "notes": "navigate(returnUrl ?? '/') preserves the existing fallback to '/'. The existing error-toast test is retained. beforeEach sessionStorage.clear() provides test isolation."
+    },
+    {
+      "criterion": "Sub-path deployments (VITE_SUFFIX) behave identically to root deployments.",
+      "status": "partial",
+      "notes": "savePostLoginRedirect() correctly strips BASE_URL and is unit-tested. However, the isAuthPage guard at api.ts:374 compares window.location.pathname against the bare '/auth/sign-in' without the BASE_URL prefix. On a sub-path deployment (BASE_URL='/codemie/'), the pathname is '/codemie/auth/sign-in' so the guard returns false, causing savePostLoginRedirect() to store '/auth/sign-in' as the redirect target. See CR-001."
+    },
+    {
+      "criterion": "An attacker-controlled postLoginRedirect value (e.g. //evil.com) is rejected and the user lands on /.",
+      "status": "partial",
+      "notes": "consumePostLoginRedirect() correctly rejects '//evil.com' and '/\\evil' at the unit level (7 tests). However, the spec required an integration-level test in SignInPage.integration.test.tsx confirming the component-level fallback to '/'. Only 2 of the 3 required new integration test cases were added. See CR-004."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "partial",
+      "notes": "Three commits on branch. Two comply with 'EPMCDME-XXXX: Capital sentence' format. One commit ('EPMCDME-13457: add postLoginRedirect utility') begins with lowercase 'add'. Not elevated to a blocking finding since the guide does not explicitly classify commit-format as a build-blocking check."
+    },
+    {
+      "standard": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not found in this repo."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "na",
+      "notes": ".ai-run/guides/development/security-patterns.md not found. Inline assessment: no secrets, no SQL/command injection, no cross-origin exposure, no hardcoded credentials introduced. CWE-601 open-redirect defence is present in consumePostLoginRedirect() but lacks an integration-level test (see CR-004 under risk_flags: security)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The isAuthPage guard at api.ts:374 uses `window.location.pathname === '/auth/sign-in'` without stripping the BASE_URL prefix. On sub-path deployments (BASE_URL='/codemie/'), the sign-in page pathname is '/codemie/auth/sign-in', so the comparison is always false.",
+      "impact": "savePostLoginRedirect() stores '/auth/sign-in' (the router-space path, correctly stripped by the save function) as the redirect target. After a successful login, consumePostLoginRedirect() returns '/auth/sign-in' and navigate() sends the user back to the sign-in page — an infinite redirect loop. This affects all sub-path deployments (any deployment with VITE_SUFFIX set).",
+      "recommendation": "Change the guard to prefix the pathname with the base: `const base = import.meta.env.BASE_URL.slice(0, -1); const isAuthPage = window.location.pathname.startsWith(base + '/auth/')`. This also subsumes CR-002. Add a sub-path integration test to api.postLoginRedirect.integration.test.ts.",
+      "file": "src/utils/api.ts",
+      "line": 374
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The isAuthPage guard checks only '/auth/sign-in'. The router also defines '/auth/sign-up' (router.tsx:689) as a public auth route. If a 401 fires on the sign-up page, savePostLoginRedirect() stores '/auth/sign-up' as the redirect target.",
+      "impact": "After a successful login, consumePostLoginRedirect() returns '/auth/sign-up' and navigate() sends the user to the sign-up page instead of the authenticated app. On sub-path deployments where the isAuthPage guard already fails (CR-001), this is immediately triggerable.",
+      "recommendation": "Use `startsWith(base + '/auth/')` as recommended in CR-001 to guard the entire auth namespace. Alternatively, add a secondary guard in savePostLoginRedirect itself: skip saving if `routerPath.startsWith('/auth/')` (defence-in-depth).",
+      "file": "src/utils/api.ts",
+      "line": 374
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "savePostLoginRedirect uses `raw.startsWith(base)` rather than `raw.startsWith(base + '/')` to test the BASE_URL prefix. For base='/codemie', this incorrectly matches paths like '/codemie-extra/page'. The result is sliced to '-extra/page', which fails the leading-'/' check in consumePostLoginRedirect and returns null.",
+      "impact": "Silent fallback to '/' instead of the correct redirect path, for any URL whose pathname starts with the deployment prefix but belongs to a different app. Unreachable in normal deployments (this app only sees paths under its own BASE_URL), but the code is technically imprecise and the unit tests do not cover this boundary.",
+      "recommendation": "Change the condition to: `base && raw.startsWith(base + '/')`. One-character fix; the existing unit test 2 (sub-path stripping) already exercises the happy path and will continue to pass.",
+      "file": "src/utils/postLoginRedirect.ts",
+      "line": 314
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The spec required 3 new test cases in SignInPage.integration.test.tsx. Only 2 were added (navigates to stored URL; clears sessionStorage). The third — 'ignores invalid postLoginRedirect and falls back to /' — is absent. The open-redirect rejection is tested only at unit level (postLoginRedirect.test.ts).",
+      "impact": "A future refactor that inlines the redirect logic or bypasses consumePostLoginRedirect would leave the open-redirect sanitization untested at the integration level. The security path through the SignInPage component has no integration-level regression guard.",
+      "recommendation": "Add to SignInPage.integration.test.tsx: `it('falls back to / when stored postLoginRedirect is invalid', async () => { sessionStorage.setItem('postLoginRedirect', '//evil.com'); mockAPI('POST', 'v1/local-auth/login', {}); await fillAndSubmit(); await waitFor(() => { expect(navigate).toHaveBeenCalledWith('/'); }); })`",
+      "file": "src/authentication/local/__tests__/SignInPage.integration.test.tsx",
+      "line": 87
+    }
+  ]
+}
