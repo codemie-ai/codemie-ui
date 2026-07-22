@@ -113,6 +113,12 @@ describe('ChatListItem', () => {
     expect(screen.getByTestId('pinned-icon')).toBeInTheDocument()
   })
 
+  it('exposes pinned state in the chat button accessible name', () => {
+    render(<ChatListItem chat={{ ...mockChat, pinned: true }} actions={mockActions} />)
+
+    expect(screen.getByRole('button', { name: /pinned/i })).toBeInTheDocument()
+  })
+
   it('shows people icon for group chats', () => {
     render(<ChatListItem chat={{ ...mockChat, isGroup: true }} actions={mockActions} />)
 

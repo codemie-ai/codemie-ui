@@ -108,12 +108,13 @@ const ChatListItem: FC<ChatListItemProps> = memo(
               {chatName.length < MAX_NAME_LENGTH
                 ? chatName
                 : chatName.slice(0, MAX_NAME_LENGTH) + '...'}
+              {chat.pinned && <span className="sr-only">Pinned</span>}
             </button>
           )}
         </div>
 
         <div className="flex items-center">
-          {!isEditing && chat.pinned && <PinnedSvg className="text-inherit" />}
+          {!isEditing && chat.pinned && <PinnedSvg className="text-inherit" aria-hidden="true" />}
           {!isEditing && (
             <NavigationMore
               renderInRoot

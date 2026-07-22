@@ -1,0 +1,44 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three lenses ran and every plan requirement is satisfied, but two actionable gaps remain: the sr-only 'Pinned' span concatenates with the chat name in the accessible name (no separator), and there is no negative test guarding the unpinned path. Deferred 2 pre-existing items: aria-hidden on PinnedSvg is untestable because the SVG test mock swallows props (limitation accepted by the plan), and the name-truncation boundary at exactly MAX_NAME_LENGTH is off-by-one. Dismissed 5 lens concerns as noise (i18n — main app is not localized; sr-only class verified as Tailwind utility; editing-state label gap mirrors the pre-existing visual behavior; test-assertion ambiguity refuted by the passing 15/15 suite; suspected truncated test verified intact).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "Pinned-chat indicator has an accessible name perceivable via keyboard tab navigation (WCAG 1.1.1)", "status": "pass", "notes": "sr-only 'Pinned' span rendered inside the focusable chat-name button — src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx:111"},
+    {"kind": "spec", "item": "Label rendered INSIDE the chat-name <button> after the name text, using existing sr-only pattern", "status": "pass", "notes": "{chat.pinned && <span className=\"sr-only\">Pinned</span>} placed after the truncated name inside the button; sr-only is an established pattern (Switch.tsx, NavigationAssistants.tsx, TooltipButton.tsx)"},
+    {"kind": "spec", "item": "Decorative <PinnedSvg> gets aria-hidden=\"true\"", "status": "pass", "notes": "ChatListItem.tsx:117 — <PinnedSvg className=\"text-inherit\" aria-hidden=\"true\" />"},
+    {"kind": "spec", "item": "No aria-label on the SVG (mock swallows props)", "status": "pass", "notes": "No aria-label added anywhere in the diff; only aria-hidden on the SVG"},
+    {"kind": "spec", "item": "Do not touch vite.config.ts", "status": "pass", "notes": "Diff contains only ChatListItem.tsx and ChatListItem.test.tsx; the vite.config.ts working-tree modification predates this branch's reviewed diff"},
+    {"kind": "spec", "item": "Test-first: add test asserting getByRole('button', { name: /pinned/i }) for a pinned chat in ChatListItem.test.tsx", "status": "pass", "notes": "New test 'exposes pinned state in the chat button accessible name' at ChatListItem.test.tsx:114-118 matches the prescribed assertion"},
+    {"kind": "spec", "item": "Existing 'shows pinned icon for pinned chats' and all other ChatListItem tests remain intact", "status": "pass", "notes": "Pinned-icon test untouched; QA report shows 15/15 ChatListItem tests passing"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "Both non-merge commits (ea395131e, 717a64efb) match the enforced 'EPMCDME-XXXX: Capital sentence' pattern from .ai-run/guides/standards/git-workflow.md; merge commits excluded from the format check"},
+    {"kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md in this repository; no documented blocking standards to adjudicate"},
+    {"kind": "security", "status": "pass", "notes": "No .ai-run/guides/development/security-patterns.md in this repository; concrete review of the diff (static sr-only text, aria-hidden attribute, one test) found no security-relevant surface"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx",
+      "line": 111,
+      "title": "Accessible name concatenates chat name with 'Pinned'",
+      "problem": "The sr-only span is appended directly after the chat-name text inside the same button with no whitespace text node between them (JSX strips the newline), so accessible-name computation in Chromium yields e.g. 'Test ChatPinned' or '…Pinned'. Flagged independently by both the blind and edge-case lenses.",
+      "impact": "Screen readers may announce the name and pinned state as one run-together word, degrading the exact announcement this WCAG 1.1.1 fix exists to provide; the /pinned/i regex test cannot catch it.",
+      "recommendation": "Add a separator inside the span, e.g. <span className=\"sr-only\">, pinned</span> or a leading space (' Pinned'), so the accessible name tokenizes as 'Test Chat, pinned'."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/__tests__/ChatListItem.test.tsx",
+      "line": 114,
+      "title": "No negative test for the unpinned path",
+      "problem": "The new behavior is only asserted positively; nothing asserts that an unpinned chat's button accessible name does NOT match /pinned/i. Flagged independently by both the blind and edge-case lenses.",
+      "impact": "A regression that renders the sr-only span unconditionally (or moves it) would mislabel every chat as pinned to AT users while the suite stays green.",
+      "recommendation": "Add a companion test rendering {...mockChat, pinned: false} and asserting screen.queryByRole('button', { name: /pinned/i }) is not in the document."
+    }
+  ]
+}
