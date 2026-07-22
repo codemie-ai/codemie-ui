@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "task": "Refactor RefineWorkflowPromptPopup to follow the GenerateWorkflowPopup async-state-internal pattern: move API call inside the popup, remove isLoading prop, align loading UI, simplify EditWorkflowPage state, remove RHF/Yup, and update tests.",
+  "generated": "2026-07-17T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 11,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two components across two UI-tier layers: RefineWorkflowPromptPopup (popup component) and EditWorkflowPage (parent/orchestration). The store method workflowsStore.refineWorkflowWithAI is unchanged — only the call site moves."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Requirements are specific and complete: target pattern (GenerateWorkflowPopup) is identified, all prop changes are named (drop isLoading, add workflowId/yamlConfig, change onRefine to onRefined), RHF/Yup removal is explicit, and test strategy is fully described. No TBD items."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The exact target pattern exists in the same directory (GenerateWorkflowPopup.tsx). Main risks — callback contract change and error extraction pattern mismatch — are both identified and bounded. No security, performance, or external dependency concerns."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Approximately 4 files: RefineWorkflowPromptPopup.tsx (significant rewrite), EditWorkflowPage.tsx (remove isRefining state and handlePromptSubmit), RefineWorkflowPromptPopup.test.tsx (substantial rewrite), EditWorkflowPage.integration.test.tsx (minor assertion updates). No new files needed."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Only two layers touched, both in the same UI tier: the popup component layer and the page/orchestration layer. Store, API, routing, and DB layers are untouched."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

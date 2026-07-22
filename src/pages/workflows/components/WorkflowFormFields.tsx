@@ -43,6 +43,7 @@ export interface WorkflowFormFieldsRef {
   isValid: boolean
   triggerValidation: () => Promise<boolean>
   getValues: () => any
+  setYamlConfig: (yaml: string) => void
 }
 
 interface WorkflowFormFieldsProps {
@@ -123,6 +124,9 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
       isValid,
       triggerValidation: () => trigger(),
       getValues: () => getValues(),
+      setYamlConfig: (yaml: string) => {
+        setValue('yaml_config', yaml, { shouldDirty: true })
+      },
     }))
 
     const generateDiagram = async () => {

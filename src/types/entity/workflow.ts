@@ -240,3 +240,12 @@ export interface GenerateWorkflowResponse {
   workflow_config: GenerateWorkflowConfig
   workflow_id: string | null
 }
+
+export interface WorkflowAIRefineFields {
+  yaml_config: string
+  refine_prompt?: string
+}
+
+export interface WorkflowAIRefineResponse {
+  yaml_config: string
+}

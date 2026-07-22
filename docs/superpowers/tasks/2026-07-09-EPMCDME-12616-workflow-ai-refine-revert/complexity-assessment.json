@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "task": "Enhance Workflow Edit page with 'Refine/Modify with AI' two-step popup+modal flow and 'Revert to Previous' version-history action, introducing new components, a hook, store method, and types.",
+  "generated": "2026-07-09T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 5, "label": "XL" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 4, "label": "L" }
+  },
+  "total": 23,
+  "size": "L",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches EditWorkflowPage, WorkflowEditor (new setYamlConfig on WorkflowEditorRef), WorkflowForm (new replaceYamlConfig on WorkflowFormRef), EditorActions, new RefineWorkflowPromptPopup, new RefineWorkflowModal, new useRefineWorkflowRecommendations hook, workflowsStore (new method), and workflow.ts (new types) — 4+ components across the full workflow subsystem. Bumped from XL (5) to XXL (6) by the new external service integration red flag (POST v1/workflows/refine)."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Core two-step refine flow is well-specified using the assistant/skills pattern as a template. However, the 'Action history is logged' acceptance criterion has no defined implementation (server-side audit log? frontend UI trail? toast notifications?) — explicitly flagged as ambiguous in the technical analysis. The WorkflowAIRefineResponse type shape is also unknown pending backend agreement. Bumped from L (4) to XL (5) by the vague acceptance criteria red flag."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Technical analysis estimates 8–12 files modified plus 5–7 new files spanning EditWorkflowPage, WorkflowEditor, WorkflowForm, EditorActions, workflowsStore, workflow.ts, RefineWorkflowPromptPopup, RefineWorkflowModal, useRefineWorkflowRecommendations hook, constants/workflows.ts, and optionally VersionedField reuse. This maps to L (8–10 modified, 2–4 new) with the upper bound touching XL territory."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Spans Page layer (EditWorkflowPage), visual editor component layer (WorkflowEditor, EditorActions), legacy editor component layer (WorkflowForm, WorkflowConfigField), new UI component layer (RefineWorkflowPromptPopup, RefineWorkflowModal), hooks layer (useRefineWorkflowRecommendations), store/state layer (workflowsStore), and types layer (workflow.ts). Four distinct frontend layers. Bumped from M (3) to L (4) by the new external service integration red flag."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XL (5) to XXL (6): integration with new external service — POST v1/workflows/refine endpoint does not exist and must be delivered by the backend team",
+    "Affected Layers bumped from M (3) to L (4): integration with new external service — same POST v1/workflows/refine dependency adds an external integration layer to the frontend change",
+    "Requirements Clarity bumped from L (4) to XL (5): vague acceptance criterion — 'Action history is logged for all AI modifications and reverts' has no defined implementation approach (server-side log, frontend audit trail, or toast notifications unknown)"
+  ],
+  "split_recommendation": null
+}

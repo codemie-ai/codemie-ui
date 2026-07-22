@@ -1,0 +1,78 @@
+{
+  "verdict": "approve",
+  "confidence": "high",
+  "dimensions": {
+    "spec_compliance": {
+      "status": "pass",
+      "notes": "All ACs are met in the code on disk. Buttons are unconditionally rendered (no feature flag). Refine flow: prompt popup → inline API call (handlePromptSubmit) → auto-apply via replaceYamlConfig → toast. Revert flow: client-side snapshot via preRefinementYaml, no API call, guarded by `if (!preRefinementYaml) return`. isLoading prop is wired to RefineWorkflowPromptPopup (`isLoading={isRefining}`). preRefinementYaml is cleared in the save success path (`setPreRefinementYaml(null)` in submit()). The diff provided to this review is an intermediate/stale snapshot — the code on disk reflects the correct final implementation. The WORKFLOW_AI_REFINE_FLAG constant added in the diff is not present in the deployed constants file, which is correct because the spec explicitly removes the feature flag."
+    },
+    "tdd_compliance": {
+      "status": "pass",
+      "notes": "Store methods (refineWorkflowWithAI, revertWorkflow) have unit tests in workflows-ai.test.ts. WorkflowFormFields.setYamlConfig and WorkflowForm.replaceYamlConfig (including blockTransition) are covered by new test suites. The 7 integration tests in EditWorkflowPage.integration.test.tsx cover the required scenarios. isLoading=true behaviour (both buttons disabled, spinner shown) is now tested in RefineWorkflowPromptPopup.test.tsx (6th test, added as CR-001 fix-up). (2) The integration tests removed the config mock for the feature flag (since buttons are unconditionally rendered) — this is correct and consistent. (3) Revert confirmation flow is tested at the integration level but isolated unit coverage for handleRevertConfirm (error path) is absent — minor gap, not blocking."
+    },
+    "correctness": {
+      "status": "pass",
+      "notes": "handlePromptSubmit: correctly captures yamlBeforeRefine before setIsRefining, sets isRefining, calls store, on success closes popup + sets preRefinementYaml + calls replaceYamlConfig + toast, on error closes popup + error toast, finally block always clears isRefining. handleRevertConfirm: guards on !preRefinementYaml, clears showRevertConfirm, calls replaceYamlConfig(preRefinementYaml), clears preRefinementYaml, emits toast. replaceYamlConfig: calls setYamlConfig for visual editor path, calls formFieldsRef.current.setYamlConfig for legacy path (only when !isUsingVisualEditor), then blockTransition() — re-arms unsaved-changes guard on both paths. preRefinementYaml lifecycle: set on refine success, cleared on revert, cleared on save success — all three covered. One minor note: the store's revertWorkflow passes no body (`api.post(...).then(r => r.json())`) rather than an explicit empty `{}` — this is consistent with how unpublish works and the test accepts `undefined`, so no functional issue."
+    },
+    "security": {
+      "status": "pass",
+      "notes": "YAML is injected into editor state via React `setYamlConfig` (React state → prop → controlled component), never via innerHTML or dangerouslySetInnerHTML — no XSS vector. The refine_prompt is sent to the backend as a plain JSON string field through the standard `api.post` wrapper (same pattern as every other store method). No credentials or tokens are captured or logged. The `parsedError` chain for error messages is accessed via optional chaining and falls back to a static string — no user-controlled string is set as inner HTML anywhere."
+    },
+    "code_quality": {
+      "status": "warn",
+      "notes": "The production code on disk (EditWorkflowPage.tsx, RefineWorkflowPromptPopup.tsx, WorkflowForm.tsx) is clean. No stale feature-flag references, no showRefineModal, no refineFields, no formKey, no RefineWorkflowModal import in EditWorkflowPage on disk. However: (1) The diff submitted for this review is stale — it reflects an intermediate implementation that was later corrected. The diff includes WORKFLOW_AI_REFINE_FLAG constant, RefineWorkflowModal wired into EditWorkflowPage, and server-side revert — all of which are absent from the final code. This is a diff hygiene issue but does not affect the shipped code. (2) RefineWorkflowModal.tsx exists on disk and is tested but is unused in the current flow — spec acknowledges this as a future cleanup item. (3) Spinner is imported in EditWorkflowPage but only used inside the Refine button — not dead code. (4) The WORKFLOW_AI_REFINE_FLAG constant appears in the diff's constants file change but was removed in the final implementation — the constant file on disk is clean."
+    },
+    "test_quality": {
+      "status": "warn",
+      "notes": "Tests in general test real behaviour (user interactions, API calls, toast messages) not implementation details. WorkflowForm.test.tsx correctly tests blockTransition via mock and verifies getFormValues() returns the updated value. Integration tests drive the full UI flow through buttons. CR-001 fix-up: isLoading=true test added to RefineWorkflowPromptPopup.test.tsx (6 tests, all passing). Remaining minor gaps: (1) Integration tests do not cover the refine API error path (toast.error shown on network/API failure). (2) The preRefinementYaml-cleared-after-save path is not integration tested (revert button should re-disable after a successful save). (3) revertWorkflow in the store test asserts `api.post` was called with `undefined` as the body — correct given the implementation but slightly fragile."
+    }
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "file": "src/pages/workflows/components/__tests__/RefineWorkflowPromptPopup.test.tsx",
+      "line": 60,
+      "title": "Missing isLoading=true test coverage in RefineWorkflowPromptPopup",
+      "description": "FIXED. Test added: 'disables both buttons and shows spinner when isLoading is true'. File now has 6 tests, all passing.",
+      "suggestion": "Resolved."
+    },
+    {
+      "id": "CR-002",
+      "severity": "minor",
+      "file": "docs/superpowers/tasks/2026-07-09-EPMCDME-12616-workflow-ai-refine-revert/code-review.diff",
+      "line": 1,
+      "title": "Diff is stale — does not match the code on disk",
+      "description": "The diff submitted for review captures an intermediate implementation that was superseded before the final commit. Specifically: (a) EditWorkflowPage in the diff still uses useFeatureFlag + aiRefineEnabled + RefineWorkflowModal + formKey + showRefineModal + refineFields + server-side revertWorkflow API call; (b) RefineWorkflowPromptPopup in the diff is missing the isLoading prop; (c) the diff adds WORKFLOW_AI_REFINE_FLAG to constants/workflows.ts but the deployed file does not contain it. The code on disk is the correct final state. Future code reviews should regenerate the diff from the final commit.",
+      "suggestion": "Regenerate code-review.diff with `git diff main...HEAD -- src/` after the final commit rather than capturing an intermediate snapshot."
+    },
+    {
+      "id": "CR-003",
+      "severity": "minor",
+      "file": "src/pages/workflows/__tests__/EditWorkflowPage.integration.test.tsx",
+      "line": 98,
+      "title": "No integration test for refine API error path",
+      "description": "The spec documents error codes (400, 403, 404, 429, 500) and the UI should show a toast.error with the parsed error message. The integration tests cover the happy path but not the case where workflowsStore.refineWorkflowWithAI rejects. This leaves the error-toast branch untested at the integration level.",
+      "suggestion": "Add a test: mock the refine endpoint to return a 400/500, then verify `toaster.error` is called with the expected message string."
+    },
+    {
+      "id": "CR-004",
+      "severity": "minor",
+      "file": "src/pages/workflows/__tests__/EditWorkflowPage.integration.test.tsx",
+      "line": 148,
+      "title": "preRefinementYaml-cleared-after-save not integration tested",
+      "description": "The spec requires that after a successful Save, preRefinementYaml is cleared so the Revert button re-disables. The submit() handler on disk does call setPreRefinementYaml(null) after workflowsStore.updateWorkflow succeeds. However, no test verifies this lifecycle — that the Revert button is disabled again after save.",
+      "suggestion": "Add a test that (1) applies a refinement (Revert button enabled), (2) clicks Save and mocks a successful PUT, (3) asserts Revert button is disabled again."
+    },
+    {
+      "id": "CR-005",
+      "severity": "nit",
+      "file": "src/store/workflows.ts",
+      "line": 492,
+      "title": "revertWorkflow passes no body vs. plan specifying {}",
+      "description": "The plan specified `api.post(url, {})` for revertWorkflow but the implementation calls `api.post(url)` (no body arg). The store test asserts `undefined` was passed. Both are functionally equivalent at the HTTP level (empty or absent body), but the inconsistency between plan and implementation is worth noting. The existing patterns in the same store (e.g., `marketplace/unpublish`) also omit the body, so this is consistent.",
+      "suggestion": "No change required — the pattern is consistent with other store methods. Optionally add an explicit `undefined` body or `{}` for documentation clarity."
+    }
+  ],
+  "summary": "The final code on disk correctly implements the spec: both buttons are unconditionally rendered, the refine flow is fully inline (no approval modal), client-side revert via preRefinementYaml snapshot works correctly, isLoading prop drives the popup spinner, and blockTransition() is called from replaceYamlConfig to re-arm the unsaved-changes guard. The only actionable gap is a missing unit test for the isLoading=true popup behaviour (CR-001, rated major because it's a spec-required TDD step). The submitted diff is stale and does not reflect the final code, which inflates apparent risk — the actual production files are clean and spec-compliant."
+}

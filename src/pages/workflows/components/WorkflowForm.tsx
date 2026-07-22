@@ -64,6 +64,7 @@ export interface WorkflowFormRef {
   getFormValues: () => any
   openIssuesPanel: () => void
   clearAllResolvedFields: () => void
+  replaceYamlConfig: (yaml: string) => void
 }
 
 const DEFAULT_YAML_CONFIG = 'states: []'
@@ -254,6 +255,13 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
       },
       clearAllResolvedFields: () => {
         editorRef.current?.clearAllResolvedFields()
+      },
+      replaceYamlConfig: (yaml: string) => {
+        setYamlConfig(yaml)
+        if (!isUsingVisualEditor && formFieldsRef.current) {
+          formFieldsRef.current.setYamlConfig(yaml)
+        }
+        blockTransition()
       },
     }))
 

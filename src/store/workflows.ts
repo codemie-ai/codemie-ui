@@ -28,6 +28,8 @@ import {
   CreateWorkflowExecutionRequest,
   WorkflowPublishValidationResponse,
   GenerateWorkflowResponse,
+  WorkflowAIRefineFields,
+  WorkflowAIRefineResponse,
 } from '@/types/entity/workflow'
 import { CustomNodeSchemaResponse } from '@/types/workflowEditor/configuration'
 import api from '@/utils/api'
@@ -123,6 +125,10 @@ interface WorkflowsStore {
   showNewWorkflowAIPopup: boolean
   setShowNewWorkflowAIPopup: (show?: boolean) => void
   loadShowNewWorkflowAIPopup: () => boolean
+  refineWorkflowWithAI: (
+    id: string,
+    fields: WorkflowAIRefineFields
+  ) => Promise<WorkflowAIRefineResponse>
 }
 
 let workflowTemplatesAbortController: AbortController | null = null
@@ -533,5 +539,12 @@ export const workflowsStore = proxy<WorkflowsStore>({
     const show = localStorage.getItem(`${userId}_${SHOW_NEW_WORKFLOW_AI_POPUP}`) !== 'false'
     workflowsStore.showNewWorkflowAIPopup = show
     return show
+  },
+
+  async refineWorkflowWithAI(
+    id: string,
+    fields: WorkflowAIRefineFields
+  ): Promise<WorkflowAIRefineResponse> {
+    return api.post(`v1/workflows/${id}/refine`, fields).then((r) => r.json())
   },
 })

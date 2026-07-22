@@ -16,22 +16,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import AIGenerateSVG from '@/assets/icons/ai-generate.svg?react'
 import RunSvg from '@/assets/icons/run-wf-small.svg?react'
 import Button from '@/components/Button'
+import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
+import { ButtonType } from '@/constants'
 import { useVueRoute } from '@/hooks/useVueRouter'
 import { goBackFromWorkflowEdit } from '@/pages/workflows/utils/goBackWorkflows'
 import { appInfoStore } from '@/store/appInfo'
 import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
 import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
+import { WorkflowAIRefineResponse } from '@/types/entity/workflow'
 import API from '@/utils/api'
 import toaster from '@/utils/toaster'
 import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
 import { isVisualEditorEnabled } from '@/utils/workflows'
 
+import RefineWorkflowPromptPopup from './components/RefineWorkflowPromptPopup'
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
 import WorkflowsNavigation from './components/WorkflowsNavigation'
 import WorkflowStartExecutionPopup from './details/popups/WorkflowStartExecutionPopup'
@@ -42,6 +47,11 @@ const EditWorkflowPage: React.FC = () => {
   const formRef = useRef<WorkflowFormRef>(null)
   const [showExecutionPopup, setShowExecutionPopup] = useState(false)
   const [issues, setIssues] = useState<WorkflowIssue[] | null>(null)
+  const [showPromptPopup, setShowPromptPopup] = useState(false)
+  const [showRevertConfirm, setShowRevertConfirm] = useState(false)
+  const [capturedYaml, setCapturedYaml] = useState('')
+  // non-null only while an unsaved AI refinement is active
+  const [preRefinementYaml, setPreRefinementYaml] = useState<string | null>(null)
 
   const { currentWorkflow, currentWorkflowLoading, currentWorkflowError } =
     useSnapshot(workflowsStore)
@@ -71,6 +81,8 @@ const EditWorkflowPage: React.FC = () => {
       formRef.current?.clearAllResolvedFields()
 
       await workflowsStore.updateWorkflow(id, values, errorFormat)
+      // Refinement is now the saved baseline — revert no longer makes sense
+      setPreRefinementYaml(null)
       toaster.info('Workflow has been updated successfully!')
 
       if (shouldOpenExecution) {
@@ -126,6 +138,25 @@ const EditWorkflowPage: React.FC = () => {
     goBackFromWorkflowEdit({ workflowId: id })
   }
 
+  const handleRefineStart = () => {
+    setCapturedYaml(formRef.current?.getFormValues()?.yaml_config ?? '')
+    setShowPromptPopup(true)
+  }
+
+  const handleRefined = (result: WorkflowAIRefineResponse) => {
+    setPreRefinementYaml(capturedYaml)
+    formRef.current?.replaceYamlConfig(result.yaml_config)
+    toaster.info('AI refine applied — save to confirm')
+  }
+
+  const handleRevertConfirm = () => {
+    if (!preRefinementYaml) return
+    setShowRevertConfirm(false)
+    formRef.current?.replaceYamlConfig(preRefinementYaml)
+    setPreRefinementYaml(null)
+    toaster.info('Reverted to previous version')
+  }
+
   return (
     <div className="flex h-full">
       <Sidebar title="Workflows" description="Browse and run available AI-powered workflows">
@@ -140,6 +171,18 @@ const EditWorkflowPage: React.FC = () => {
         childrenClassName="px-0"
         rightContent={
           <div className="flex gap-5">
+            {preRefinementYaml && (
+              <Button type="secondary" onClick={() => setShowRevertConfirm(true)}>
+                Revert to Previous
+              </Button>
+            )}
+            <Button
+              type="magical"
+              onClick={handleRefineStart}
+              disabled={currentWorkflowLoading || !currentWorkflow}
+            >
+              <AIGenerateSVG /> Refine with AI
+            </Button>
             <Button type="secondary" className="min-w-20" onClick={onBack}>
               Cancel
             </Button>
@@ -192,6 +235,24 @@ const EditWorkflowPage: React.FC = () => {
         onHide={() => setShowExecutionPopup(false)}
         workflowId={id}
         startHint={currentWorkflow?.start_hint}
+      />
+
+      <RefineWorkflowPromptPopup
+        isVisible={showPromptPopup}
+        workflowId={id}
+        currentYaml={capturedYaml}
+        onHide={() => setShowPromptPopup(false)}
+        onRefined={handleRefined}
+      />
+
+      <ConfirmationModal
+        visible={showRevertConfirm}
+        header="Revert to Previous Version"
+        message="This will discard the AI refinement and restore the previous version. Continue?"
+        confirmText="Revert"
+        confirmButtonType={ButtonType.DELETE}
+        onConfirm={handleRevertConfirm}
+        onCancel={() => setShowRevertConfirm(false)}
       />
     </div>
   )

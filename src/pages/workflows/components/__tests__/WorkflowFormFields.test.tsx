@@ -13,10 +13,11 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
+import { createRef } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import WorkflowFormFields from '../WorkflowFormFields'
+import WorkflowFormFields, { WorkflowFormFieldsRef } from '../WorkflowFormFields'
 
 vi.hoisted(() => vi.resetModules())
 
@@ -192,5 +193,43 @@ describe('WorkflowFormFields — Share with Project disable behavior', () => {
         expect(switchInput).toBeDisabled()
       })
     })
+  })
+})
+
+describe('WorkflowFormFields — setYamlConfig ref method', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockSettingsStore.settings = {}
+    mockHasUserIntegrationInYamlConfig.mockReturnValue(false)
+  })
+
+  it('exposes setYamlConfig on ref', () => {
+    const ref = createRef<WorkflowFormFieldsRef>()
+    render(
+      <WorkflowFormFields
+        ref={ref}
+        workflow={{ yaml_config: 'states: []', yaml_config_history: [] }}
+        isEditing
+      />
+    )
+    expect(typeof ref.current?.setYamlConfig).toBe('function')
+  })
+
+  it('setYamlConfig updates yaml_config value in form', async () => {
+    const ref = createRef<WorkflowFormFieldsRef>()
+    render(
+      <WorkflowFormFields
+        ref={ref}
+        workflow={{ yaml_config: 'states: []', yaml_config_history: [] }}
+        isEditing
+      />
+    )
+
+    await act(async () => {
+      ref.current?.setYamlConfig('states:\n  - id: ai-step')
+    })
+
+    const values = ref.current?.getValues()
+    expect(values?.yaml_config).toBe('states:\n  - id: ai-step')
   })
 })
