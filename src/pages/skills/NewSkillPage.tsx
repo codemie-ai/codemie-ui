@@ -16,7 +16,6 @@
 import React, { useRef, useState } from 'react'
 
 import AIGenerateSVG from '@/assets/icons/ai-generate.svg?react'
-import PlusSVG from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
@@ -159,7 +158,7 @@ const NewSkillPage: React.FC = () => {
               Cancel
             </Button>
             <Button type="primary" onClick={() => formRef.current?.submit()}>
-              <PlusSVG /> Create Skill
+              Save
             </Button>
           </div>
         }
