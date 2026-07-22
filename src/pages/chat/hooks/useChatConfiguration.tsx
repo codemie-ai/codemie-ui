@@ -21,30 +21,29 @@ import { chatsStore } from '@/store/chats'
 import { userStore } from '@/store/user'
 import { DynamicToolsConfig } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
+import {
+  chatSkillsKey,
+  chatToolsConfigKey,
+  DEFAULT_TOOLS_CONFIG,
+  saveChatSkills,
+  saveChatTools,
+} from '@/utils/chatStorageUtils'
 import storage from '@/utils/storage'
 
 import { SkillOption } from '../components/ChatConfiguration/ChatConfigSkillsSelector'
 
-const CHAT_TOOLS_CONFIG_KEY = 'chat-tools-config'
-const CHAT_SKILLS_KEY = 'chat-skills'
-
-const saveChatTools = (userId: string, chatId: string, config: DynamicToolsConfig) => {
-  storage.put(userId, `${CHAT_TOOLS_CONFIG_KEY}-${chatId}`, config)
-}
+export { saveChatSkills, saveChatTools }
 
 const loadChatTools = (userId: string, chatId: string): DynamicToolsConfig => {
-  return storage.getObject<DynamicToolsConfig>(userId, `${CHAT_TOOLS_CONFIG_KEY}-${chatId}`, {
-    enableWebSearch: null,
-    enableCodeInterpreter: null,
-  })
-}
-
-const saveChatSkills = (userId: string, chatId: string, skills: SkillOption[]) => {
-  storage.put(userId, `${CHAT_SKILLS_KEY}-${chatId}`, skills)
+  return storage.getObject<DynamicToolsConfig>(
+    userId,
+    chatToolsConfigKey(chatId),
+    DEFAULT_TOOLS_CONFIG
+  )
 }
 
 const loadChatSkills = (userId: string, chatId: string): SkillOption[] => {
-  return storage.get<SkillOption>(userId, `${CHAT_SKILLS_KEY}-${chatId}`)
+  return storage.get<SkillOption>(userId, chatSkillsKey(chatId))
 }
 
 export type UseChatConfigReturn = {
@@ -80,10 +79,8 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
   const [selectedSkills, setSelectedSkills] = useState<SkillOption[]>([])
 
   // Dynamic tools state - Web Search and Code Interpreter
-  const [dynamicToolsConfig, setDynamicToolsConfig] = useState<DynamicToolsConfig>({
-    enableWebSearch: null,
-    enableCodeInterpreter: null,
-  })
+  const [dynamicToolsConfig, setDynamicToolsConfig] =
+    useState<DynamicToolsConfig>(DEFAULT_TOOLS_CONFIG)
 
   const handleSetDynamicToolsConfig = useCallback(
     (config: DynamicToolsConfig) => {
@@ -173,7 +170,7 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
         setSelectedSkills(loadChatSkills(userId, chatId))
       }
     } else {
-      setDynamicToolsConfig({ enableWebSearch: null, enableCodeInterpreter: null })
+      setDynamicToolsConfig(DEFAULT_TOOLS_CONFIG)
       setSelectedSkills([])
     }
   }, [currentChat?.id, currentChat?.isWorkflow, closeConfigForm])

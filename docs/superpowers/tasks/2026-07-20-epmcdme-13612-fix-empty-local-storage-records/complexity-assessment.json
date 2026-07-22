@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "task": "Fix empty localStorage records causing QuotaExceededError by adding empty-value guards in chatGeneration.ts and useChatConfiguration.tsx, storage.remove calls in chats.ts deletion functions, quota-safe try/catch in storage.ts, and a startup migration sweep for orphaned keys.",
+  "generated": "2026-07-20T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 17,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four distinct components modified across three architectural layers: chatGeneration.ts and chats.ts (store layer), useChatConfiguration.tsx (hook layer), and storage.ts plus storage/index.ts (shared utility layer, duplicate must both be patched). A new startup migration module adds a fifth component, making this a cross-layer coordination effort rather than a single-site fix."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Five files modified (chatGeneration.ts, chats.ts, useChatConfiguration.tsx, storage.ts, storage/index.ts) plus one new migration utility, spanning three directories (src/store/, src/pages/chat/hooks/, src/utils/). Bumped from M (3) to L (4) by the data migration red flag: the startup sweep for orphaned keys is an additional deliverable requiring its own module."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S (2) to M (3): task requires a startup migration sweep for orphaned localStorage keys, which qualifies as a data migration and elevates execution risk (must handle existing user data safely, including the case where storage is already at quota when the sweep runs).",
+    "File Change Estimate bumped from M (3) to L (4): data migration red flag applied — the startup migration sweep is a net-new module that adds to the file surface beyond the five targeted bug-fix files."
+  ],
+  "split_recommendation": null
+}

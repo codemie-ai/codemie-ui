@@ -28,6 +28,7 @@ import {
 } from '@/types/entity/mcpAuth'
 import api, { ABORT_ERROR, DEFAULT_ERROR_MESSAGE } from '@/utils/api'
 import { transformChatHistoryFEtoBE } from '@/utils/chatHelpers'
+import { DEFAULT_TOOLS_CONFIG, saveChatSkills, saveChatTools } from '@/utils/chatStorageUtils'
 import { fileToBase64 } from '@/utils/helpers'
 import { parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
 import {
@@ -36,7 +37,6 @@ import {
   MISSING_REDIRECT_HOSTNAME_MESSAGE,
   POPUP_BLOCKED_AUTH_MESSAGE,
 } from '@/utils/mcpAuthInitiate'
-import storage from '@/utils/storage'
 import Stream, { streamChunkToObject } from '@/utils/stream'
 import toaster from '@/utils/toaster'
 
@@ -300,12 +300,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       const newId = chatsStore.currentChat!.id
       const userId = userStore.user?.userId
       if (userId) {
-        storage.put(
-          userId,
-          `chat-tools-config-${newId}`,
-          dynamicToolsConfig ?? { enableWebSearch: null, enableCodeInterpreter: null }
-        )
-        storage.put(userId, `chat-skills-${newId}`, skillIds ?? [])
+        saveChatTools(userId, newId, dynamicToolsConfig ?? DEFAULT_TOOLS_CONFIG)
+        saveChatSkills(userId, newId, skillIds ?? [])
       }
       if (pendingLlmModel) await chatsStore.updateChat(newId, { llmModel: pendingLlmModel })
       return chatGenerationStore.createChatGeneration(options)

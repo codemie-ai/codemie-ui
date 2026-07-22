@@ -28,6 +28,7 @@ import {
 } from '@/types/entity'
 import api from '@/utils/api'
 import { transformChatBEtoFE } from '@/utils/chatHelpers'
+import { removeChatStorage, sweepOrphanedChatKeys } from '@/utils/chatStorageUtils'
 import storage from '@/utils/storage'
 import toaster from '@/utils/toaster'
 import { getRootPath } from '@/utils/utils'
@@ -167,6 +168,12 @@ export const chatsStore = proxy<ChatsStoreType>({
       const response = await api.get('v1/conversations')
       const chats = transformChatListItemDTOs(await response.json())
       chatsStore.chats = chats
+      const userId = userStore.user?.userId
+      if (userId && chats)
+        sweepOrphanedChatKeys(
+          userId,
+          chats.map((c) => c.id)
+        )
       return chats
     } finally {
       chatsStore.isChatsLoading = false
@@ -386,6 +393,7 @@ export const chatsStore = proxy<ChatsStoreType>({
       chatsStore.chats = chatsStore.chats.filter((chat) => chat.id !== id)
       recentChatsStore.removeRecentChat(id)
       workflowExecutionsStore.removeExecutionsByConversationId(id)
+      removeChatStorage(userStore.user?.userId, id)
       return response.json()
     })
   },
@@ -416,7 +424,9 @@ export const chatsStore = proxy<ChatsStoreType>({
   },
 
   deleteAllConversations: async () => {
+    const chatIds = chatsStore.chats.map((c) => c.id)
     await api.delete(`v1/conversations`).then((response) => response.json())
+    chatIds.forEach((id) => removeChatStorage(userStore.user?.userId, id))
     chatsStore.chats = []
     chatsStore.chatFolders = []
     chatsStore.currentChat = null
@@ -459,6 +469,9 @@ export const chatsStore = proxy<ChatsStoreType>({
   },
 
   deleteChatFolder: (folder, deleteChats = false) => {
+    const folderChatIds = deleteChats
+      ? chatsStore.chats.filter((c) => c.folder === folder).map((c) => c.id)
+      : []
     return api
       .delete(
         `v1/conversations/folder/${encodeURIComponent(folder)}?remove_conversations=${deleteChats}`
@@ -466,6 +479,7 @@ export const chatsStore = proxy<ChatsStoreType>({
       .then(() => {
         if (deleteChats) {
           recentChatsStore.removeRecentChatsByFolder(folder)
+          folderChatIds.forEach((id) => removeChatStorage(userStore.user?.userId, id))
         }
         return chatsStore.getFolders()
       })
