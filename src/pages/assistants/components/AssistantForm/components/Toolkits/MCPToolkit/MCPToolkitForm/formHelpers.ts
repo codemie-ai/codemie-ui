@@ -37,7 +37,7 @@ export const buildServerConfig = (values: any, mcpConfigId?: string | null): MCP
 
   mcpServer.use_custom_config = values.useCustomConfig
 
-  if (values.useCustomConfig) {
+  if (values.useCustomConfig || !mcpConfigId) {
     mcpServer.config = config
   } else {
     mcpServer.config = undefined
