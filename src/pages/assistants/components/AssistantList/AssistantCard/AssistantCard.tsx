@@ -274,7 +274,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
         description={description || assistant.description}
         avatar={renderAvatar()}
         actions={renderActions()}
-        status={renderStatus()}
+        status={isTemplate ? null : renderStatus()}
         topRight={
           !isTemplate ? (
             <div

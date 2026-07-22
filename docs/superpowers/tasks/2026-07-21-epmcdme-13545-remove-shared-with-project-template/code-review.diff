@@ -1,0 +1,76 @@
+diff --git a/src/pages/assistants/components/AssistantList/AssistantCard/AssistantCard.tsx b/src/pages/assistants/components/AssistantList/AssistantCard/AssistantCard.tsx
+index 52bed5405..6290833bf 100644
+--- a/src/pages/assistants/components/AssistantList/AssistantCard/AssistantCard.tsx
++++ b/src/pages/assistants/components/AssistantList/AssistantCard/AssistantCard.tsx
+@@ -274,7 +274,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
+         description={description || assistant.description}
+         avatar={renderAvatar()}
+         actions={renderActions()}
+-        status={renderStatus()}
++        status={isTemplate ? null : renderStatus()}
+         topRight={
+           !isTemplate ? (
+             <div
+diff --git a/src/pages/assistants/components/AssistantList/AssistantCard/__tests__/AssistantCard.test.tsx b/src/pages/assistants/components/AssistantList/AssistantCard/__tests__/AssistantCard.test.tsx
+index 7a3f3a6dd..b74a509c1 100644
+--- a/src/pages/assistants/components/AssistantList/AssistantCard/__tests__/AssistantCard.test.tsx
++++ b/src/pages/assistants/components/AssistantList/AssistantCard/__tests__/AssistantCard.test.tsx
+@@ -124,4 +124,16 @@ describe('AssistantCard', () => {
+     const statusLabel = screen.getByRole('status')
+     expect(statusLabel).toBeInTheDocument()
+   })
++
++  it('does not render status label when isTemplate is true', () => {
++    render(
++      <AssistantCard
++        assistant={mockAssistant}
++        isTemplate={true}
++        isShared={true}
++        onViewAssistant={() => {}}
++      />
++    )
++    expect(screen.queryByRole('status')).not.toBeInTheDocument()
++  })
+ })
+diff --git a/src/pages/workflows/components/WorkflowCard.tsx b/src/pages/workflows/components/WorkflowCard.tsx
+index 47b1bae9c..f03a55325 100644
+--- a/src/pages/workflows/components/WorkflowCard.tsx
++++ b/src/pages/workflows/components/WorkflowCard.tsx
+@@ -299,13 +299,15 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
+               </div>
+             )}
+ 
+-            <div className="flex flex-row ml-auto items-center text-xs gap-3">
+-              {workflow.is_global ? (
+-                <WorkflowMarketplace uniqueUsersCount={workflow.unique_users_count} />
+-              ) : (
+-                <WorkflowShared workflow={workflow} />
+-              )}
+-            </div>
++            {!isTemplate && (
++              <div className="flex flex-row ml-auto items-center text-xs gap-3">
++                {workflow.is_global ? (
++                  <WorkflowMarketplace uniqueUsersCount={workflow.unique_users_count} />
++                ) : (
++                  <WorkflowShared workflow={workflow} />
++                )}
++              </div>
++            )}
+           </div>
+         </div>
+       </div>
+diff --git a/src/pages/workflows/components/__tests__/WorkflowCard.test.tsx b/src/pages/workflows/components/__tests__/WorkflowCard.test.tsx
+index 45a7d5d02..e444a00c4 100644
+--- a/src/pages/workflows/components/__tests__/WorkflowCard.test.tsx
++++ b/src/pages/workflows/components/__tests__/WorkflowCard.test.tsx
+@@ -48,4 +48,10 @@ describe('WorkflowCard', () => {
+     const heading = screen.getByRole('heading', { level: 3, name: 'Branch Comparison Workflow' })
+     expect(heading).toBeInTheDocument()
+   })
++
++  it('does not render sharing status when isTemplate is true', () => {
++    render(<WorkflowCard workflow={makeWorkflow({ shared: true })} isTemplate />)
++    expect(screen.queryByText('Shared with Project')).not.toBeInTheDocument()
++    expect(screen.queryByText('Not shared')).not.toBeInTheDocument()
++  })
+ })

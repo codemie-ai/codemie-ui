@@ -299,13 +299,15 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
               </div>
             )}
 
-            <div className="flex flex-row ml-auto items-center text-xs gap-3">
-              {workflow.is_global ? (
-                <WorkflowMarketplace uniqueUsersCount={workflow.unique_users_count} />
-              ) : (
-                <WorkflowShared workflow={workflow} />
-              )}
-            </div>
+            {!isTemplate && (
+              <div className="flex flex-row ml-auto items-center text-xs gap-3">
+                {workflow.is_global ? (
+                  <WorkflowMarketplace uniqueUsersCount={workflow.unique_users_count} />
+                ) : (
+                  <WorkflowShared workflow={workflow} />
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

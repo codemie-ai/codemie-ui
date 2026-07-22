@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Remove 'Shared with Project' status from Assistants and Workflows template cards by conditionally suppressing the sharing block when isTemplate=true, and add tests asserting sharing label absence on template cards.",
+  "generated": "2026-07-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two card components touched (AssistantCard.tsx and WorkflowCard.tsx), but each change is 1–3 lines, entirely within the UI layer with no cross-cutting concerns and no new abstractions."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Acceptance criteria are explicitly enumerated (1–6) and both fix sites are precisely identified; one minor gap is whether ViewWorkflowHeader.tsx line 115 (WorkflowShared rendered in the template detail view header) is in scope alongside the cards."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Minimum scope is 4 files: AssistantCard.tsx and WorkflowCard.tsx (source), plus AssistantCard.test.tsx and WorkflowCard.test.tsx (unit tests). Two optional integration test files (WorkflowTemplatesPagination and AssistantTemplatesPagination) could push this to 6 files, but all are modifications — no new files created."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

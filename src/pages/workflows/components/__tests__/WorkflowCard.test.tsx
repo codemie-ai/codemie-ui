@@ -48,4 +48,19 @@ describe('WorkflowCard', () => {
     const heading = screen.getByRole('heading', { level: 3, name: 'Branch Comparison Workflow' })
     expect(heading).toBeInTheDocument()
   })
+
+  it('does not render sharing status when isTemplate is true and shared', () => {
+    render(<WorkflowCard workflow={makeWorkflow({ shared: true })} isTemplate />)
+    expect(screen.queryByText('Shared with Project')).not.toBeInTheDocument()
+  })
+
+  it('does not render sharing status when isTemplate is true and not shared', () => {
+    render(<WorkflowCard workflow={makeWorkflow({ shared: false })} isTemplate />)
+    expect(screen.queryByText('Not shared')).not.toBeInTheDocument()
+  })
+
+  it('renders sharing status when isTemplate is false', () => {
+    render(<WorkflowCard workflow={makeWorkflow({ shared: true })} />)
+    expect(screen.getByText('Shared with Project')).toBeInTheDocument()
+  })
 })

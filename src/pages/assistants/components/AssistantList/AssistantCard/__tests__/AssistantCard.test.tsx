@@ -124,4 +124,16 @@ describe('AssistantCard', () => {
     const statusLabel = screen.getByRole('status')
     expect(statusLabel).toBeInTheDocument()
   })
+
+  it('does not render status label when isTemplate is true', () => {
+    render(
+      <AssistantCard
+        assistant={mockAssistant}
+        isTemplate={true}
+        isShared={true}
+        onViewAssistant={() => {}}
+      />
+    )
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
 })

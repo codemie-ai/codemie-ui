@@ -1,0 +1,70 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two major test defects: the 'Not shared' assertion in WorkflowCard.test is trivially true (WorkflowShared never renders 'Not shared' when shared=true, so the assertion can never fail regardless of whether the fix is present), and there is no positive regression test confirming sharing status is still rendered on non-template workflow cards (all WorkflowCard tests use isTemplate=true, leaving AC-5 unverified by the suite). Production code is correct; all acceptance criteria are met in logic. Only test quality blocks.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "id": "AC-1",
+      "text": "\"Shared with Project\" is not displayed on Assistants template cards.",
+      "status": "pass",
+      "notes": "AssistantCard passes null for status when isTemplate=true; Card's {status && (...)} guard suppresses the row cleanly."
+    },
+    {
+      "id": "AC-2",
+      "text": "\"Shared with Project\" is not displayed on Workflows template cards.",
+      "status": "pass",
+      "notes": "WorkflowCard wraps the sharing div with {!isTemplate && (...)}; new test confirms text absent."
+    },
+    {
+      "id": "AC-3",
+      "text": "No empty spacing or alignment gap is left after removal.",
+      "status": "pass",
+      "notes": "AssistantCard uses null-suppression via Card's existing guard; WorkflowCard outer flex container retains other children (Create Workflow button)."
+    },
+    {
+      "id": "AC-4",
+      "text": "Existing template card actions (Create Workflow, more options, favorite) continue to work.",
+      "status": "pass",
+      "notes": "Changes are isolated to sharing-status paths only; action handlers, buttons, and topRight slot are untouched."
+    },
+    {
+      "id": "AC-5",
+      "text": "Non-template Assistants and Workflows cards continue to display sharing status unchanged.",
+      "status": "partial",
+      "notes": "Production code is correct (changes gated on isTemplate=true), but no test in the suite renders a WorkflowCard without isTemplate to assert the sharing label is still present — AC-5 is unverified by the test suite."
+    }
+  ],
+  "standards_review": [
+    {
+      "id": "STD-1",
+      "standard": "Commit format",
+      "status": "pass",
+      "notes": "Both commits match EPMCDME-\\d+: Capital sentence — 'EPMCDME-13545: Suppress sharing label on assistant template cards' and 'EPMCDME-13545: Suppress sharing block on workflow template cards'."
+    },
+    {
+      "id": "STD-2",
+      "standard": "Security",
+      "status": "pass",
+      "notes": "No secrets, user input, injection vectors, or auth concerns in the diff."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "In WorkflowCard.test.tsx, the assertion `expect(screen.queryByText('Not shared')).not.toBeInTheDocument()` is trivially true when the fixture is `makeWorkflow({ shared: true })` — WorkflowShared only renders 'Not shared' when the workflow is NOT shared, so this assertion passes even on a completely broken build. It provides zero regression protection for the 'Not shared' branch.",
+      "impact": "A future regression that accidentally renders 'Not shared' on a template card when `shared: false` would not be caught. The test gives false confidence that both sharing-text variants are suppressed.",
+      "recommendation": "Change the fixture to `makeWorkflow({ shared: false })` (which would trigger the 'Not shared' branch) so both assertions are non-trivial, or add a second test case with `shared: false`."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "No WorkflowCard test renders the card without `isTemplate` to verify that sharing status is still displayed for non-template cards. All three WorkflowCard tests (heading, new template-suppression, existing heading test) pass `isTemplate`. If the guard were accidentally inverted to `isTemplate &&` instead of `!isTemplate &&`, no test would catch the regression.",
+      "impact": "Regression risk: the guarding condition could be silently inverted in a refactor and no test would fail. AC-5 ('Non-template cards continue to display sharing status unchanged') is unverified by the suite.",
+      "recommendation": "Add a test: `render(<WorkflowCard workflow={makeWorkflow({ shared: true })} />)` (no isTemplate) and assert `screen.getByText('Shared with Project')` is present."
+    }
+  ]
+}
