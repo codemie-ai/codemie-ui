@@ -1,0 +1,41 @@
+{
+  "decision": "approve",
+  "rationale": "Two commits on top of the merged Yana-review response chain: (1) b4e8b06f2 added mutual-exclusion between GitHub and GitLab provider fields via shouldShow predicates keyed on non-sensitive companion fields (github_event_filter / gitlab_event_filter) so editing an existing webhook with a blanked sensitive token still gates the other provider; also added a note on gitlab_event_filter clarifying that non-MR events pass through the filter, matching the backend contract fixed in codemie MR !3758 commit 03d96d935. (2) 63ee8d5b1 reverted the shouldShow gating after Ihor Nasukho proposed a section-based layout instead — a single webhook URL may legitimately receive events from multiple providers, so hiding one provider when the other is filled removes a valid workflow. Introduced CredentialComponentType.sectionHeader (pseudo-field that renders <h5> + divider inline, no Controller, no form value), interleaved five headers into the webhook fields config (General → Request verification (legacy header) → GitHub → GitLab → Target resource), and suppressed the outer 'Authentication' heading via fieldsSectionTitle:'' so section titles are not duplicated. Tests: replaced the mutual-exclusion suite with (a) config-shape assertions locking section order and provider-fields ungating, (b) a rendering test confirming each sectionHeader materializes as an <h5> and does not emit a form input. Standards: commit subjects match .ai-run/guides/standards/git-workflow.md format (EPMCDME-8384: <Description>). QA gates local: lint clean, tsc --noEmit clean, vitest CredentialFields.test.tsx 18/18 pass, gitleaks clean.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "topic": "UX layout aligns with reviewer request",
+      "status": "pass",
+      "notes": "Section order and labels mirror the mockup Ihor Nasukho posted on MR !1522 (note 2292672); commit description explicitly references the reviewer's proposal."
+    },
+    {
+      "topic": "Backend contract match",
+      "status": "pass",
+      "notes": "gitlab_event_filter note text matches semantics implemented in codemie MR !3758 (non-MR events bypass filter; filtered MR actions ACK 200)."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit subject format",
+      "status": "pass",
+      "notes": "Both new commits use EPMCDME-8384: <capitalised description> as required."
+    },
+    {
+      "standard": "form-patterns.md — validation in schema, not component state",
+      "status": "pass",
+      "notes": "Section headers are pure presentational pseudo-fields with no validation coupling; existing multiselect Yup validator remains the source of truth."
+    },
+    {
+      "standard": "code-quality.md — ESLint / TS strict",
+      "status": "pass",
+      "notes": "npm run lint and npm run typecheck both exit clean on the touched files (CredentialFields.tsx, MultiSelectCheckboxGroup test, settingsUIConfig.ts, settingsUI.ts)."
+    },
+    {
+      "standard": "security-patterns.md",
+      "status": "na",
+      "notes": "Pure UI restructure; no auth, no secrets, no data-flow changes."
+    }
+  ],
+  "findings": []
+}

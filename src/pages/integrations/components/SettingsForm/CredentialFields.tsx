@@ -30,6 +30,7 @@ import {
   CredentialFieldConfig,
 } from '@/types/settingsUI'
 
+import MultiSelectCheckboxGroup from './MultiSelectCheckboxGroup'
 import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
 
 interface CredentialFieldsProps {
@@ -38,6 +39,7 @@ interface CredentialFieldsProps {
   buildWebhookURL?: (value: string) => string
   position?: CredentialComponentPosition
   editing?: boolean
+  resetKey?: React.Key
 }
 
 const CredentialFields: React.FC<CredentialFieldsProps> = ({
@@ -46,6 +48,7 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
   buildWebhookURL,
   position = CredentialComponentPosition.fieldsSection,
   editing = false,
+  resetKey,
 }) => {
   const formValues = useWatch({ control })
   const formState = useFormState({ control })
@@ -86,6 +89,8 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
           rows,
           position: fieldPosition = CredentialComponentPosition.fieldsSection,
           message,
+          emptySelectionError,
+          showWebhookUrl,
         } = config
 
         if (fieldPosition !== position) {
@@ -96,6 +101,16 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
 
         if (type === CredentialComponentType.message && message) {
           return <SettingFormMessage key={name} message={message} />
+        }
+
+        if (type === CredentialComponentType.sectionHeader) {
+          const heading = getPlaceholder(label)
+          return (
+            <div key={name} className="mt-2">
+              <hr className="opacity-25 mb-3 border-border-structural" />
+              {heading && <h5 className="text-sm font-medium">{heading}</h5>}
+            </div>
+          )
         }
 
         return (
@@ -154,9 +169,12 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
                     </Input>
                   )}
 
-                  {note && buildWebhookURL && (
+                  {note && (
                     <InfoMessage>
-                      {note} Full URL: {buildWebhookURL(formValues[name])}
+                      {note}
+                      {showWebhookUrl &&
+                        buildWebhookURL &&
+                        ` Full URL: ${buildWebhookURL(formValues[name])}`}
                     </InfoMessage>
                   )}
 
@@ -191,6 +209,19 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
                       placeholder={getPlaceholder(placeholder)}
                       label={getLabel(placeholder)}
                       options={options}
+                      onChange={field.onChange}
+                    />
+                  )}
+
+                  {type === CredentialComponentType.multiselect && (
+                    <MultiSelectCheckboxGroup
+                      name={name}
+                      label={label ? getPlaceholder(label) : undefined}
+                      options={options}
+                      value={value}
+                      error={error}
+                      emptySelectionError={emptySelectionError}
+                      resetKey={resetKey}
                       onChange={field.onChange}
                     />
                   )}

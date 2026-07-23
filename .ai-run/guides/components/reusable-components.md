@@ -210,3 +210,4 @@ header/message layout, and preset confirm/cancel buttons.
 | Button variant | Hardcoded string `type='primary'` | `ButtonType.PRIMARY` from `@/constants` |
 | Error/warning message | Custom div with border | `InfoWarning` with `InfoWarningType` enum |
 | Tab navigation | Raw `<button>` tab row | `Tabs` component from `@/components/Tabs` |
+| Collection props on config-driven components | Assume the config always passes them (`options.map(...)`) | Default in the destructure (`options = []`) — configs type them optional, TS won't save you |

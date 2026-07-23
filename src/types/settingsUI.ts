@@ -23,8 +23,12 @@ export enum CredentialComponentType {
   switch = 'switch',
   textarea = 'textarea',
   select = 'select',
+  multiselect = 'multiselect',
   record = 'record',
   message = 'message',
+  /** Non-input pseudo-field that renders a subsection heading + divider
+   *  inline within the credential fields list. Use `label` for the heading. */
+  sectionHeader = 'sectionHeader',
 }
 
 export enum CredentialComponentPosition {
@@ -48,8 +52,15 @@ export type CredentialFieldConfig = {
   sensitive?: boolean
   shouldShow?: (values: Record<string, unknown>) => boolean
   note?: string
+  /** Append the constructed webhook receiving URL after the note. Only meaningful for the webhook-id field. */
+  showWebhookUrl?: boolean
+  /** UI-only field — value is kept in the form for gating (`shouldShow` predicates) but stripped from the
+   *  credential payload on submit so it never reaches the backend. */
+  virtual?: boolean
   rows?: number
   options?: { value: string; label: string }[]
+  /** Shown when a `multiselect` field would be reduced to zero selections. Falls back to a generic message. */
+  emptySelectionError?: string
   position?: CredentialComponentPosition
   validation?: Yup.Schema
   message?: CredentialMessage

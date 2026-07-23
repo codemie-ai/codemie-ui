@@ -240,6 +240,16 @@ VITE_SUFFIX=/app          # optional URL suffix
 
 ---
 
+## Backend Semantic Contracts
+
+When a field's absence or emptiness has meaning on the backend (e.g. "missing filter = allow
+all"), do not guess from the UI side: read the backend handler in the `codemie` repo first.
+Then record the contract as a comment next to the frontend config so nobody "fixes" the
+intentional behavior later. Adding a `defaultValue` or `required()` to such a field changes
+backend behavior — treat it as a cross-repo change, not a UI tweak.
+
+---
+
 ## Related
 
 - `src/utils/api.ts` — fetch wrapper implementation

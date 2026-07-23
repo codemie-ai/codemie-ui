@@ -129,6 +129,10 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   const [credentialType, setCredentialType] = useState(
     initialCredentialType?.toLowerCase() ?? CREDENTIAL_TYPES[0]
   )
+  // Incremented on every external reset() so transient field-level messages
+  // (e.g. the multiselect empty-selection guard) clear even when the reset
+  // re-applies a string-equal value.
+  const [resetCount, setResetCount] = useState(0)
   const [manualCredentialValues, setManualCredentialValues] = useState<
     { key: string; value: string }[]
   >(() => {
@@ -158,7 +162,17 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
 
     if (initialCredentialValues) {
       // Merge existing values with defaults to ensure all fields with defaultValue are populated
-      return { ...defaults, ...initialCredentialValues }
+      const merged: Record<string, any> = { ...defaults, ...initialCredentialValues }
+      // Auto-derive virtual gate for saved gitlab_event_filter so the toggle
+      // reflects an already-persisted filter on edit.
+      if (
+        merged.gitlab_event_filter !== undefined &&
+        merged.gitlab_event_filter !== '' &&
+        merged.gitlab_filter_mr_actions === undefined
+      ) {
+        merged.gitlab_filter_mr_actions = true
+      }
+      return merged
     }
 
     const hasManualConfig = CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration
@@ -264,6 +278,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     }
 
     reset({ alias: getValues('alias'), ...getCredentialDefaults(newType) })
+    setResetCount((count) => count + 1)
   }
 
   useEffect(() => {
@@ -312,9 +327,23 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     const hasManualConfig = CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration
     let credential_values: { key: string; value: unknown }[] = []
     if (!isGoogleOAuth) {
-      credential_values = hasManualConfig
-        ? manualCredentialValues.filter((item) => item.key && item.value)
-        : convertCredsToKeyValue(getValues()).filter(({ value }) => value !== undefined)
+      if (hasManualConfig) {
+        credential_values = manualCredentialValues.filter((item) => item.key && item.value)
+      } else {
+        const rawValues = { ...getValues() }
+        const fieldsCfg = CREDENTIAL_VALUES_MAPPING[credentialType]?.fields ?? {}
+        // Evaluate shouldShow against the ORIGINAL values (before stripping virtuals),
+        // then drop UI-only virtual fields — so a virtual gate can still hide its dependents.
+        Object.entries(fieldsCfg).forEach(([name, cfg]) => {
+          if (cfg.shouldShow && !cfg.shouldShow(rawValues)) delete rawValues[name]
+        })
+        Object.entries(fieldsCfg).forEach(([name, cfg]) => {
+          if (cfg.virtual) delete rawValues[name]
+        })
+        credential_values = convertCredsToKeyValue(rawValues).filter(
+          ({ value }) => value !== undefined
+        )
+      }
     }
 
     onSubmit({
@@ -354,11 +383,13 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
 
           {CREDENTIAL_VALUES_MAPPING[credentialType] && (
             <CredentialFields
+              key={credentialType}
               control={control}
               credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
               buildWebhookURL={buildWebhookURL}
               position={CredentialComponentPosition.top}
               editing={editing}
+              resetKey={resetCount}
             />
           )}
 
@@ -455,10 +486,12 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                 </div>
                 {CREDENTIAL_VALUES_MAPPING[credentialType] && (
                   <CredentialFields
+                    key={credentialType}
                     control={control}
                     credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
                     buildWebhookURL={buildWebhookURL}
                     editing={editing}
+                    resetKey={resetCount}
                   />
                 )}
               </>

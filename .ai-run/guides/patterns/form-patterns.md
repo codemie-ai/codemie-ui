@@ -226,9 +226,20 @@ MyComplexForm/
 
 ---
 
+## Validation Lives in the Schema, Not in Component State
+
+Any field invariant ("at least one selected", "required", format) must be enforced by a Yup
+validator in the field's config/schema — that is what gates the Save button. Component-local
+state (blocked flags, inline guards) is UX feedback only: it can always be bypassed by
+`reset()`, `setValue()`, or data loaded from the backend. If removing the component-level
+guard would let an invalid value be saved, the schema is missing a validator.
+
+---
+
 ## Pre-Delivery Checklist
 
 - [ ] Schema in separate `formSchema.ts`, not in component body
+- [ ] Every field invariant enforced by a Yup validator, not only by component state
 - [ ] `yup.InferType` used for type — no duplicate TS interface
 - [ ] All inputs use `Controller`, not `register`
 - [ ] Leaf components receive explicit props, not `control`
