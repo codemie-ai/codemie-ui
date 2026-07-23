@@ -74,6 +74,24 @@ const req = (surface: unknown): InteractiveRequest =>
   ({ request_id: 'r1', surface } as InteractiveRequest)
 
 describe('InteractiveSurface — single combined submit', () => {
+  it('separates the surface from the message action toolbar with bottom spacing', () => {
+    // A checkbox-only surface renders a Submit button; it must not sit flush against
+    // the per-message action toolbar (Copy/Edit) rendered directly below — EPMCDME-13673.
+    render(
+      <InteractiveSurface
+        request={req([
+          { type: 'checkbox', id: 'cb1', label: 'Checkbox 1' },
+          { type: 'checkbox', id: 'cb2', label: 'Checkbox 2' },
+        ])}
+        disabled={false}
+        submittedResponse={null}
+        onSubmit={vi.fn()}
+      />
+    )
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument()
+    expect(screen.getByTestId('interactive-surface')).toHaveClass('mb-3')
+  })
+
   it('submits an action button as one submit response with its action id', async () => {
     const onSubmit = vi.fn()
     const request = req([

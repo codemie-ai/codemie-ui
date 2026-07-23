@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "task": "Add a bottom-margin Tailwind class to the InteractiveSurface root container so the Submit button of the interactive input surface is visually separated from the per-message action toolbar, plus one unit test.",
+  "generated": "2026-07-23",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 6,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "A single component root div in src/components/InteractiveElements/InteractiveSurface.tsx; one class edit, no layer boundaries crossed. Shared ChatAiMessageActions toolbar is explicitly not touched." },
+    { "dimension": "technical_risk", "reason": "Pure Tailwind bottom-margin class change, trivially reversible, no performance or security implications; InteractiveSurface has exactly one consumer (ChatAiInteractiveBlock) so blast radius is contained." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

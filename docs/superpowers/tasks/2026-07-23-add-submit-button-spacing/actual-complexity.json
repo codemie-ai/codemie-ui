@@ -1,0 +1,60 @@
+{
+  "task": "Add mb-4 bottom spacing to the InteractiveSurface root div so the surface's Submit button is separated from the per-message action toolbar, with a unit test asserting the class.",
+  "generated": "2026-07-23",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "InteractiveSurface",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": "Pure Tailwind class addition; trivially reversible with zero security or performance impact."
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 2,
+      "modified_file_list": [
+        "src/components/InteractiveElements/InteractiveSurface.tsx",
+        "src/components/InteractiveElements/__tests__/InteractiveSurface.test.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": ["src/components/InteractiveElements"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single presentational component (InteractiveSurface) touched at the UI layer only; one className string edit on the root div." },
+    { "dimension": "file_change_estimate", "reason": "2 files modified (component + its existing test), 0 new files, all within one directory (src/components/InteractiveElements); diffstat 19 insertions / 1 deletion, dominated by the added test case." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

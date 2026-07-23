@@ -136,7 +136,7 @@ const InteractiveSurface: FC<InteractiveSurfaceProps> = ({
   ctx.renderChild = renderElement
 
   return (
-    <div className="mt-4 flex flex-col gap-3" data-testid="interactive-surface">
+    <div className="mt-4 mb-3 flex flex-col gap-3" data-testid="interactive-surface">
       {surface.map((element, i) => renderElement(element, `el-${i}`))}
       {/* When the surface has no action buttons, a single Submit sends the combined answer. */}
       {buttons.length === 0 && inputElements.length > 0 && (
