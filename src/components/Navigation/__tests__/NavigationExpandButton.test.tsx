@@ -164,4 +164,32 @@ describe('NavigationExpandButton', () => {
     button = screen.getByRole('button')
     expect(button).not.toHaveAttribute('data-tooltip-content')
   })
+
+  it('has accessible name "Hide Menu" when expanded', () => {
+    mockAppInfoStore.navigationExpanded = true
+    render(<NavigationExpandButton onClick={mockOnClick} />)
+    expect(screen.getByRole('button', { name: /hide menu/i })).toBeInTheDocument()
+  })
+
+  it('has accessible name "Show Menu" when collapsed', () => {
+    mockAppInfoStore.navigationExpanded = false
+    render(<NavigationExpandButton onClick={mockOnClick} />)
+    expect(screen.getByRole('button', { name: /show menu/i })).toBeInTheDocument()
+  })
+
+  it('does not keep the "Hide Menu" name when collapsed', () => {
+    mockAppInfoStore.navigationExpanded = false
+    render(<NavigationExpandButton onClick={mockOnClick} />)
+    expect(screen.queryByRole('button', { name: /hide menu/i })).not.toBeInTheDocument()
+  })
+
+  it('updates accessible name on state change', () => {
+    mockAppInfoStore.navigationExpanded = true
+    const { rerender } = render(<NavigationExpandButton onClick={mockOnClick} />)
+    expect(screen.getByRole('button', { name: /hide menu/i })).toBeInTheDocument()
+
+    mockAppInfoStore.navigationExpanded = false
+    rerender(<NavigationExpandButton onClick={mockOnClick} />)
+    expect(screen.getByRole('button', { name: /show menu/i })).toBeInTheDocument()
+  })
 })

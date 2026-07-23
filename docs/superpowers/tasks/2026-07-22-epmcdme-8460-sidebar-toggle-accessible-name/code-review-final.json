@@ -1,0 +1,26 @@
+{
+  "decision": "approve",
+  "rationale": "All three lenses ran (blind, edge-case, acceptance). Edge-case found zero unguarded paths; acceptance passed all 12 plan criteria; blind raised 8 concerns of which 7 were dismissed (label-in-name verified character-identical, beforeEach mock reset exists at test line 53, i18n and tooltip divergence are documented project decisions, remainder below emission floor) and 1 deferred: absence of aria-expanded on the toggle is pre-existing and outside this ticket's labelling-only scope. No blocking findings.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "spec", "item": "Target is the bottom sidebar toggle button; NavigationLogo.tsx not touched", "status": "pass", "notes": "diff touches only NavigationExpandButton.tsx and its test"},
+    {"kind": "spec", "item": "Expanded state: visible text 'Hide Menu' stays; accessible name is 'Hide Menu'", "status": "pass", "notes": "conditional aria-label at NavigationExpandButton.tsx:33; visible text unchanged"},
+    {"kind": "spec", "item": "Collapsed state: icon-only button gets accessible name 'Show Menu'", "status": "pass", "notes": "aria-label yields 'Show Menu' when navigationExpanded is false"},
+    {"kind": "spec", "item": "Labelling only — no change to toggle logic, tooltip, or visuals", "status": "pass", "notes": "single aria-label attribute added; onClick, tooltip attrs, classNames, SVG untouched"},
+    {"kind": "spec", "item": "Accepted divergence: collapsed tooltip remains 'Expand Menu' while SR name is 'Show Menu'", "status": "pass", "notes": "data-tooltip-content not modified"},
+    {"kind": "spec", "item": "i18n out of scope — hardcoded English labels", "status": "pass", "notes": "hardcoded literals per repo convention"},
+    {"kind": "spec", "item": "WCAG 2.5.3 label-in-name: expanded aria-label exactly matches visible text", "status": "pass", "notes": "'Hide Menu' character-identical to visible text"},
+    {"kind": "spec", "item": "Minimal diff: 2 files only (component + test)", "status": "pass", "notes": "commit 8acb924e9: 2 files, +29 lines"},
+    {"kind": "spec", "item": "Do not modify NavigationLogo.tsx, Navigation.tsx, appInfo.ts, or tooltip attributes", "status": "pass", "notes": "none appear in the diff"},
+    {"kind": "spec", "item": "Do not commit the unrelated local vite.config.ts change", "status": "pass", "notes": "vite.config.ts remains an uncommitted working-tree change"},
+    {"kind": "spec", "item": "Commit message format 'EPMCDME-8460: <description>'", "status": "pass", "notes": "commit subject matches"},
+    {"kind": "spec", "item": "TDD: tests assert accessible names via getByRole('button', { name })", "status": "pass", "notes": "both required tests plus negative and rerender tests; RED then GREEN verified in transcript"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "1 commit in range; subject 'EPMCDME-8460: Add accessible name to sidebar toggle in collapsed state' matches git-workflow.md EPMCDME-XXXX convention"},
+    {"kind": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md not present in this repo; pre-commit hooks (prettier, eslint, tsc) passed"},
+    {"kind": "security", "status": "pass", "notes": "security-patterns.md guide not present; no concrete security issues — one static JSX attribute, no user input, secrets, or IO"}
+  ],
+  "findings": []
+}

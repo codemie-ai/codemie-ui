@@ -30,6 +30,7 @@ const NavigationExpandButton: FC<NavigationExpandButtonProps> = ({ onClick }) =>
   return (
     <button
       type="button"
+      aria-label={navigationExpanded ? 'Hide Menu' : 'Show Menu'}
       className={cn(
         'rounded-lg duration-100 mx-2 flex items-center text-text-specific-bottom-navigation-label gap-6 hover:bg-surface-specific-bottom-navigation-label',
         'px-[11px] h-9 select-none text-sm text-nowrap'
