@@ -20,7 +20,6 @@ import {
 } from 'primereact/multiselect'
 import React, {
   useCallback,
-  useContext,
   useMemo,
   useState,
   forwardRef,
@@ -29,10 +28,8 @@ import React, {
   useRef,
 } from 'react'
 
-
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
 import XMarkSvg from '@/assets/icons/cross.svg?react'
-import { OverlayPortalContext } from '@/components/Popup'
 import TooltipButton from '@/components/TooltipButton'
 import { useInputWidth } from '@/hooks/useInputWidth'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
@@ -159,7 +156,6 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
   ) => {
     const selectRef = React.useRef<PrimeMultiselect>(null)
     const inputWidth = useInputWidth(selectRef)
-    const overlayContainer = useContext(OverlayPortalContext)
 
     // Stores the scroll listener cleanup fn — called on panel close and unmount
     const scrollCleanupRef = useRef<(() => void) | null>(null)
@@ -392,7 +388,6 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           multiple={!singleValue}
           className={cn(className, mappedSizeClassname, inputClassName)}
           panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}
-          appendTo={overlayContainer ?? document.body}
           showSelectAll={false}
           filter={typeof onFilter === 'function'}
           panelHeaderTemplate={onFilter ? null : <div />}

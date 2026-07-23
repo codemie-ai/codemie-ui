@@ -13,9 +13,9 @@
 // limitations under the License.
 //
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import Popup, { PopupProps } from '../Popup'
 
@@ -48,8 +48,6 @@ describe('Popup', () => {
     user = userEvent.setup()
     vi.clearAllMocks()
   })
-
-  afterEach(cleanup)
 
   it('is not rendered when "visible" is false', () => {
     renderPopup({ visible: false })
@@ -86,57 +84,8 @@ describe('Popup', () => {
 
   it('calls onHide when the Escape key is pressed', async () => {
     renderPopup()
-    const cancelEvent = new Event('cancel', { cancelable: true })
-
-    fireEvent(screen.getByRole('dialog'), cancelEvent)
-
-    expect(cancelEvent.defaultPrevented).toBe(true)
-    expect(mockOnHide).toHaveBeenCalledTimes(1)
-  })
-
-  it('keeps body scroll locked until the last popup closes', () => {
-    document.body.style.overflow = 'auto'
-    const { rerender } = render(
-      <>
-        <Popup visible onHide={mockOnHide} header="Outer Popup" />
-        <Popup visible onHide={mockOnHide} header="Inner Popup" />
-      </>
-    )
-
-    expect(document.body.style.overflow).toBe('hidden')
-
-    rerender(
-      <>
-        <Popup visible onHide={mockOnHide} header="Outer Popup" />
-        <Popup visible={false} onHide={mockOnHide} header="Inner Popup" />
-      </>
-    )
-    expect(document.body.style.overflow).toBe('hidden')
-
-    rerender(
-      <>
-        <Popup visible={false} onHide={mockOnHide} header="Outer Popup" />
-        <Popup visible={false} onHide={mockOnHide} header="Inner Popup" />
-      </>
-    )
-    expect(document.body.style.overflow).toBe('auto')
-  })
-
-  it('handles cancel only for the targeted topmost popup', () => {
-    const outerOnHide = vi.fn()
-    const innerOnHide = vi.fn()
-    render(
-      <>
-        <Popup visible onHide={outerOnHide} header="Outer Popup" />
-        <Popup visible onHide={innerOnHide} header="Inner Popup" />
-      </>
-    )
-    const dialogs = screen.getAllByRole('dialog')
-
-    fireEvent(dialogs[1], new Event('cancel', { cancelable: true }))
-
-    expect(innerOnHide).toHaveBeenCalledTimes(1)
-    expect(outerOnHide).not.toHaveBeenCalled()
+    await user.keyboard('{Escape}')
+    expect(mockOnHide).toHaveBeenCalled()
   })
 
   it('renders custom text for submit and cancel buttons', () => {

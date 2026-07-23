@@ -15,5 +15,4 @@
 
 import Popup from './Popup'
 
-export { OverlayPortalContext } from './Popup'
 export default Popup

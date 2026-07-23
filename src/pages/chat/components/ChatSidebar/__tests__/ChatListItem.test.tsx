@@ -39,36 +39,6 @@ vi.mock('@/store/chats', () => ({
 
 vi.mock('valtio', () => ({
   useSnapshot: vi.fn((store) => store),
-  proxy: vi.fn((obj) => obj),
-}))
-
-vi.mock('@floating-ui/react', () => ({
-  useFloating: vi.fn(() => ({
-    refs: { setReference: vi.fn(), setFloating: vi.fn() },
-    floatingStyles: {},
-    context: {},
-  })),
-  useHover: vi.fn(() => ({})),
-  useFocus: vi.fn(() => ({})),
-  useRole: vi.fn(() => ({})),
-  useInteractions: vi.fn(() => ({
-    getReferenceProps: vi.fn(() => ({})),
-    getFloatingProps: vi.fn(() => ({})),
-  })),
-  FloatingPortal: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  offset: vi.fn(),
-  flip: vi.fn(),
-  shift: vi.fn(),
-}))
-
-vi.mock('@/components/Avatar/Avatar', () => ({
-  default: ({ name }: { name?: string }) => <div data-testid="avatar">{name}</div>,
-}))
-
-vi.mock('@/components/Avatar/AvatarGroup', () => ({
-  default: ({ names }: { names?: string[] }) => (
-    <div data-testid="avatar-group">{names?.join(', ')}</div>
-  ),
 }))
 
 vi.mock('@/assets/icons/delete.svg?react', () => ({
@@ -79,8 +49,16 @@ vi.mock('@/assets/icons/pin.svg?react', () => ({
   default: () => <div data-testid="pin-icon">PinIcon</div>,
 }))
 
+vi.mock('@/assets/icons/pinned.svg?react', () => ({
+  default: () => <div data-testid="pinned-icon">PinnedIcon</div>,
+}))
+
 vi.mock('@/assets/icons/edit.svg?react', () => ({
   default: () => <div data-testid="edit-icon">EditIcon</div>,
+}))
+
+vi.mock('@/assets/icons/shared-yes.svg?react', () => ({
+  default: () => <div data-testid="people-icon">PeopleIcon</div>,
 }))
 
 vi.mock('@/assets/icons/folder-move.svg?react', () => ({
@@ -128,31 +106,24 @@ describe('ChatListItem', () => {
     expect(screen.getByTestId('navigation-more')).toBeInTheDocument()
   })
 
-  it('renders avatar for non-group chats', () => {
-    render(<ChatListItem chat={mockChat} actions={mockActions} />)
-
-    expect(screen.getByTestId('avatar')).toBeInTheDocument()
-    expect(screen.queryByTestId('avatar-group')).not.toBeInTheDocument()
-  })
-
-  it('renders avatar group for group chats', () => {
-    render(
-      <ChatListItem
-        chat={{ ...mockChat, isGroup: true, assistantNames: ['Bot A', 'Bot B'] }}
-        actions={mockActions}
-      />
-    )
-
-    expect(screen.getByTestId('avatar-group')).toBeInTheDocument()
-    expect(screen.queryByTestId('avatar')).not.toBeInTheDocument()
-  })
-
-  it('renders pinned chat without a pinned badge icon', () => {
+  it('shows pinned icon for pinned chats', () => {
     render(<ChatListItem chat={{ ...mockChat, pinned: true }} actions={mockActions} />)
 
     expect(screen.getByText('Test Chat')).toBeInTheDocument()
-    expect(screen.queryByTestId('pinned-icon')).not.toBeInTheDocument()
-    expect(screen.getByTestId('navigation-more')).toBeInTheDocument()
+    expect(screen.getByTestId('pinned-icon')).toBeInTheDocument()
+  })
+
+  it('exposes pinned state in the chat button accessible name', () => {
+    render(<ChatListItem chat={{ ...mockChat, pinned: true }} actions={mockActions} />)
+
+    expect(screen.getByRole('button', { name: /pinned/i })).toBeInTheDocument()
+  })
+
+  it('shows people icon for group chats', () => {
+    render(<ChatListItem chat={{ ...mockChat, isGroup: true }} actions={mockActions} />)
+
+    expect(screen.getByText('Test Chat')).toBeInTheDocument()
+    expect(screen.getByTestId('people-icon')).toBeInTheDocument()
   })
 
   it('truncates long chat names', () => {
@@ -234,8 +205,10 @@ describe('ChatListItem', () => {
   it('calls renameChat when edit is completed with enter key', async () => {
     render(<ChatListItem chat={mockChat} actions={mockActions} />)
 
+    // Enter edit mode
     await userEvent.click(screen.getByTestId('menu-item-rename'))
 
+    // Remove original name, enter new and press Enter
     const inputElement = screen.getByRole('textbox')
     await userEvent.type(inputElement, 'Updated Chat Name', {
       initialSelectionStart: 0,
@@ -243,14 +216,17 @@ describe('ChatListItem', () => {
     })
     await userEvent.keyboard('{Enter}')
 
+    // Verify rename was called
     expect(chatsStore.renameChat).toHaveBeenCalledWith('chat1', 'Updated Chat Name')
   })
 
   it('calls renameChat when edit is completed with blur event', async () => {
     render(<ChatListItem chat={mockChat} actions={mockActions} />)
 
+    // Enter edit mode
     await userEvent.click(screen.getByTestId('menu-item-rename'))
 
+    // Remove original name, enter new and unfocus
     const inputElement = screen.getByDisplayValue('Test Chat')
     await userEvent.type(inputElement, 'Updated Chat Name', {
       initialSelectionStart: 0,
@@ -258,6 +234,7 @@ describe('ChatListItem', () => {
     })
     await userEvent.click(document.body)
 
+    // Verify rename was called
     expect(chatsStore.renameChat).toHaveBeenCalledWith('chat1', 'Updated Chat Name')
   })
 
@@ -268,22 +245,18 @@ describe('ChatListItem', () => {
     expect(screen.getByText('New chat')).toBeInTheDocument()
   })
 
-  it('sets data-chat-id attribute on the list item', () => {
-    const { container } = render(<ChatListItem chat={mockChat} actions={mockActions} />)
-
-    const li = container.querySelector('[data-chat-id="chat1"]')
-    expect(li).toBeInTheDocument()
+  it('renders list item with role="treeitem"', () => {
+    render(<ChatListItem chat={mockChat} actions={mockActions} />)
+    expect(screen.getByRole('treeitem')).toBeInTheDocument()
   })
 
-  it('hides avatar when hideAvatar is true', () => {
-    render(<ChatListItem chat={mockChat} actions={mockActions} hideAvatar={true} />)
-
-    expect(screen.queryByTestId('avatar')).not.toBeInTheDocument()
+  it('sets aria-selected="false" for an inactive chat', () => {
+    render(<ChatListItem chat={mockChat} actions={mockActions} currentChatId="other-chat" />)
+    expect(screen.getByRole('treeitem')).toHaveAttribute('aria-selected', 'false')
   })
 
-  it('shows avatar when hideAvatar is false', () => {
-    render(<ChatListItem chat={mockChat} actions={mockActions} hideAvatar={false} />)
-
-    expect(screen.getByTestId('avatar')).toBeInTheDocument()
+  it('sets aria-selected="true" for the active chat', () => {
+    render(<ChatListItem chat={mockChat} actions={mockActions} currentChatId="chat1" />)
+    expect(screen.getByRole('treeitem')).toHaveAttribute('aria-selected', 'true')
   })
 })

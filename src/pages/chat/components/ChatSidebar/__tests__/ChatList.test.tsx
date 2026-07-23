@@ -54,6 +54,13 @@ const mockChats = [
     isGroup: true,
     date: new Date().toISOString(),
   },
+  {
+    id: 'chat4',
+    name: 'Another Pinned Chat',
+    pinned: true,
+    isGroup: true,
+    date: new Date().toISOString(),
+  },
 ] as ChatListItemType[]
 
 const mockChatActions = {
@@ -68,22 +75,12 @@ describe('ChatList', () => {
 
   it('renders empty list when no chats are provided', () => {
     render(<ChatList chatActions={mockChatActions} chats={[]} />)
-    const listElement = screen.getByRole('list')
+    const listElement = screen.getByRole('group')
     expect(listElement).toBeInTheDocument()
     expect(listElement.children.length).toBe(0)
   })
 
-  it('renders all chats in the order they are provided', () => {
-    render(<ChatList chatActions={mockChatActions} chats={mockChats} />)
-
-    const listItems = screen.getAllByRole('treeitem')
-    expect(listItems).toHaveLength(3)
-    expect(listItems[0]).toHaveAttribute('data-testid', 'chat-item-chat1')
-    expect(listItems[1]).toHaveAttribute('data-testid', 'chat-item-chat2')
-    expect(listItems[2]).toHaveAttribute('data-testid', 'chat-item-chat3')
-  })
-
-  it('renders all chat names correctly', () => {
+  it('renders all chats correctly', () => {
     render(<ChatList chatActions={mockChatActions} chats={mockChats} />)
 
     mockChats.forEach((chat) => {
@@ -92,22 +89,91 @@ describe('ChatList', () => {
     })
   })
 
+  it('renders pinned chats first', () => {
+    render(<ChatList chatActions={mockChatActions} chats={mockChats} />)
+
+    const listItems = screen.getAllByRole('treeitem')
+
+    // The first two items should be the pinned chats
+    expect(listItems[0]).toHaveAttribute('data-testid', 'chat-item-chat2')
+    expect(listItems[1]).toHaveAttribute('data-testid', 'chat-item-chat4')
+
+    // The next items should be the unpinned chats
+    expect(listItems[2]).toHaveAttribute('data-testid', 'chat-item-chat1')
+    expect(listItems[3]).toHaveAttribute('data-testid', 'chat-item-chat3')
+  })
+
+  it('preserves the order of chats within their pinned/unpinned groups', () => {
+    // Create chats with specific dates to test ordering
+    const orderedChats = [
+      {
+        id: 'chat1',
+        name: 'Oldest Unpinned',
+        pinned: false,
+        date: new Date(2021, 0, 1).toISOString(),
+      },
+      {
+        id: 'chat2',
+        name: 'Newest Unpinned',
+        pinned: false,
+        date: new Date(2021, 0, 2).toISOString(),
+      },
+      {
+        id: 'chat3',
+        name: 'Oldest Pinned',
+        pinned: true,
+        date: new Date(2021, 0, 3).toISOString(),
+      },
+      {
+        id: 'chat4',
+        name: 'Newest Pinned',
+        pinned: true,
+        date: new Date(2021, 0, 4).toISOString(),
+      },
+    ] as ChatListItemType[]
+
+    render(<ChatList chatActions={mockChatActions} chats={orderedChats} />)
+
+    const listItems = screen.getAllByRole('treeitem')
+
+    // Pinned chats should be first, in their original order
+    expect(listItems[0]).toHaveAttribute('data-testid', 'chat-item-chat3')
+    expect(listItems[1]).toHaveAttribute('data-testid', 'chat-item-chat4')
+
+    // Unpinned chats should follow, in their original order
+    expect(listItems[2]).toHaveAttribute('data-testid', 'chat-item-chat1')
+    expect(listItems[3]).toHaveAttribute('data-testid', 'chat-item-chat2')
+  })
+
   it('correctly handles refs', () => {
+    // Create a ref to pass to the component
     const ref = React.createRef<HTMLUListElement>()
 
     render(<ChatList ref={ref} chatActions={mockChatActions} chats={mockChats} />)
 
+    // Check if the ref was set correctly
     expect(ref.current).not.toBeNull()
     expect(ref.current?.tagName).toBe('UL')
   })
 
-  it('re-renders correctly when chats list changes', () => {
-    const { rerender } = render(<ChatList chatActions={mockChatActions} chats={[mockChats[0]]} />)
+  it('handles mixed addition of pinned and unpinned chats', () => {
+    // Start with some chats
+    const { rerender } = render(
+      <ChatList chatActions={mockChatActions} chats={[mockChats[0], mockChats[2]]} />
+    )
 
-    expect(screen.getAllByRole('treeitem')).toHaveLength(1)
+    // Check initial rendering
+    expect(screen.getAllByRole('treeitem').length).toBe(2)
+    expect(screen.queryByTestId('chat-item-chat1')).toBeInTheDocument()
+    expect(screen.queryByTestId('chat-item-chat3')).toBeInTheDocument()
 
+    // Add more chats including pinned ones
     rerender(<ChatList chatActions={mockChatActions} chats={mockChats} />)
 
-    expect(screen.getAllByRole('treeitem')).toHaveLength(3)
+    // Check updated rendering with pinned chats first
+    const updatedListItems = screen.getAllByRole('treeitem')
+    expect(updatedListItems.length).toBe(4)
+    expect(updatedListItems[0]).toHaveAttribute('data-testid', 'chat-item-chat2')
+    expect(updatedListItems[1]).toHaveAttribute('data-testid', 'chat-item-chat4')
   })
 })
