@@ -1,0 +1,63 @@
+{
+  "task": "Add pagination integration tests for analytics drill-down modals and admin management tables (EPMCDME-13482).",
+  "generated": "2026-07-20",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L",
+      "affected": "UserEngagementDrillDownModal, AssetReusabilityDrillDownModal, Admin Users table, Admin Cost Centers table, Admin Categories table, Admin MCPs table, Admin Budgets table, Admin Projects table, Admin Activity Events table",
+      "layers": "UI, Test/Integration"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Reused the existing test-utils integration harness (renderPage, mockAPI, requestRegistry); had to accommodate per-table pagination variance (offset-based Activity Events vs page-based tables) and permission-gated setup/teardown (admin vs maintainer user, feature-flag mocking for MCPs, env-var toggling for Projects); a documented circular-import trap (importing @/store/analytics before @/test-utils/integration crashes SessionExpiredPopup) had to be avoided in each new file",
+      "mitigation": "Followed established integration test patterns already used elsewhere in the suite; parametrized the seven admin tables via describe.each to isolate per-table configuration and keep risk contained to test code only, no production code touched"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M",
+      "modified_files": 1,
+      "modified_file_list": [".gitleaks.toml"],
+      "new_files": 3,
+      "new_file_list": [
+        "src/pages/analytics/components/__tests__/UserEngagementDrillDownPagination.integration.test.tsx",
+        "src/pages/analytics/components/__tests__/AssetReusabilityDrillDownPagination.integration.test.tsx",
+        "src/pages/settings/administration/__tests__/AdminTablesPagination.integration.test.tsx"
+      ],
+      "affected_dirs": ["src", "."]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M",
+      "layers_changed": ["UI", "Test/Integration"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 15,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 4,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "45 tests span 9 distinct components across two feature domains (analytics drill-down modals, admin settings tables) — bumped from M to L for breadth even though each is additive test-only work" },
+    { "dimension": "affected_layers", "reason": "Integration tests exercise the full UI + store + mocked-API path per component, across two page domains, though no production layer code changed" }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: affects multiple admin management tables (7 tables) and multiple analytics drill-down workflows in the same change"
+  ],
+  "split_recommendation": null
+}

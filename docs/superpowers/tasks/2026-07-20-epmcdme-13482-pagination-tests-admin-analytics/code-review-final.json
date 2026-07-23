@@ -1,0 +1,43 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "No-spec round (sdlc-light — no story/spec artifact; confidence forced low). Two major patch findings: CR-001 (admin 'has no Previous-page button on the first page' test lacks a pagination-settled anchor, creating a vacuous-pass risk mirroring the exact anti-pattern the analytics tests guard against with an explicit await findByRole anchor) and CR-002 (ActivityEventsPage — the 7th admin table added in the preceding commit EPMCDME-13275 — is absent from TABLE_CONFIGS, leaving its pagination unverified). Deferred 1 (Teams bot pages — out of stated task scope). Dismissed 5 (copy-paste structure, initial-store-injection design choice, makeLastPage field-name confusion resolved on re-read, makeSinglePage page consistency, redundant assertions). Git workflow and security pass.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "Both commits match 'EPMCDME-XXXX: Capital sentence' format. Branch 'EPMCDME-13482_pagination-tests-admin-analytics' follows the documented naming pattern."
+    },
+    {
+      "standard": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not present in repository."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": ".gitleaks.toml .codegraph/ exclusion is safe (local development index, no source code or secrets). No credentials, API keys, or real PII in test fixtures. Admin user fixture (is_admin: true) is test-only data."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The 'has no Previous-page button on the first page' test in AdminTablesPagination.integration.test.tsx (parametrized across all 6 table configs, lines ~668-672) asserts absence of the Previous button immediately after 'await screen.findByText(page0Text)' with no intermediate anchor confirming pagination has rendered.",
+      "impact": "If pagination fails to render entirely due to a component regression, the test still passes because no Previous button is trivially absent. The analogous analytics tests (UserEngagement and AssetReusability) explicitly add 'await screen.findByRole(\"button\", { name: \"Next page\" })' before the negative assertion to anchor on settled pagination state; the admin suite is inconsistent and could mask a full pagination outage.",
+      "recommendation": "Add 'await screen.findByRole(\"button\", { name: \"Next page\" })' immediately before the 'expect(screen.queryByRole(\"button\", { name: \"Previous page\" })).not.toBeInTheDocument()' line in the admin 'has no Previous-page button' test, matching the settled-anchor pattern used in both analytics test files."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "ActivityEventsPage (route '/settings/administration/activity-events', API endpoint GET v1/admin/activity-events) is absent from TABLE_CONFIGS in AdminTablesPagination.integration.test.tsx. This page was added in the immediately preceding commit (EPMCDME-13275) and uses the identical nested pagination shape (pagination.page / per_page / total) and the same shared Table+Pagination component as the other entries. The task description targets 7 admin tables; only 6 are covered.",
+      "impact": "A pagination regression in the Activity Events admin table — the most recently added paginated admin view — would ship undetected despite this test file's stated purpose of covering admin table pagination.",
+      "recommendation": "Add an ActivityEventsPage entry to TABLE_CONFIGS: { label: 'Activity Events', route: '/settings/administration/activity-events', apiUrl: 'v1/admin/activity-events', page0Response: { data: [...], pagination: { page: 0, per_page: 10, total: 25 } }, page1Response: { data: [...], pagination: { page: 1, per_page: 10, total: 25 } }, page0Text: '<first-row-text>', page1Text: '<second-row-text>' }. No new helpers are required."
+    }
+  ]
+}

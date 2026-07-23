@@ -1,0 +1,38 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "Both CR-001 and CR-002 are resolved. CR-001: the anchor line 'await screen.findByRole(\"button\", { name: \"Next page\" })' was added immediately before the negative assertion in the admin 'has no Previous-page button' test, matching the settled-anchor pattern used in both analytics suites. CR-002: ActivityEventsPage added as the 7th TABLE_CONFIGS entry with a maintainerUser fixture (is_maintainer: true), nextPageParams: { offset: '50' } for offset-based pagination matching, and domain-field text anchors; the describe.each destructuring and 'loads next page' test were updated accordingly. All 35 tests pass (7 tables × 5 tests). No new high-risk issues found in the fix-up diff.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "Commit format correct. 'EPMCDME-13482: Fix CR-001 anchor and add ActivityEventsPage to admin pagination tests' matches the documented pattern."
+    },
+    {
+      "standard": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not present in repository."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No credentials, API keys, or real PII in fixtures. maintainerUser fixture is test-only data."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Anchor line added at the correct location: 'await screen.findByRole(\"button\", { name: \"Next page\" })' between findByText(page0Text) and the not.toBeInTheDocument() assertion. Matches the settled-anchor pattern from both analytics test files."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "ActivityEventsPage entry added to TABLE_CONFIGS with: label 'Activity Events', route '/settings/administration/activity-events', apiUrl 'v1/admin/activity-events', domain-field page0Text/page1Text ('alpha.example'/'beta.example'), nextPageParams: { offset: '50' } for offset-based subset matching, maintainerUser fixture with is_maintainer: true in setup. TableConfig type extended with optional nextPageParams, describe.each destructuring updated, 'loads next page' test updated to use nextPageParams ?? { page: '1' }."
+    }
+  ],
+  "findings": []
+}

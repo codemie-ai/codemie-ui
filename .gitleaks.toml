@@ -8,4 +8,5 @@ paths = [
   '''\.keycloakify/realm-kc-26\.json''',
   '''\.claude/settings\.local\.json''',
   '''\.env\.local''',
+  '''\.codegraph/''',
 ]

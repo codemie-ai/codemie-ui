@@ -474,17 +474,19 @@ describe('NavigationProfile', () => {
     appRoot.id = 'app'
     document.body.appendChild(appRoot)
 
-    const user = userEvent.setup()
-    render(<NavigationProfile isExpanded={false} />)
-    expect(appRoot).not.toHaveAttribute('aria-hidden')
+    try {
+      const user = userEvent.setup()
+      render(<NavigationProfile isExpanded={false} />)
+      expect(appRoot).not.toHaveAttribute('aria-hidden')
 
-    await openPanel(user)
-    await waitFor(() => expect(appRoot).toHaveAttribute('aria-hidden', 'true'))
+      await openPanel(user)
+      await waitFor(() => expect(appRoot).toHaveAttribute('aria-hidden', 'true'))
 
-    await user.click(screen.getByRole('button', { name: /Settings/i }))
-    await waitFor(() => expect(appRoot).not.toHaveAttribute('aria-hidden'))
-
-    document.body.removeChild(appRoot)
+      await user.click(screen.getByRole('button', { name: /Settings/i }))
+      await waitFor(() => expect(appRoot).not.toHaveAttribute('aria-hidden'))
+    } finally {
+      document.body.removeChild(appRoot)
+    }
   })
 
   it('removes aria-hidden from #app during the exit transition, before the deferred onHide runs (CR-001)', async () => {
