@@ -19,7 +19,9 @@ import { useSnapshot } from 'valtio'
 import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CREATED_BY } from '@/constants'
+import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import {
   INITIAL_WORKFLOWS_FILTERS,
@@ -32,7 +34,6 @@ import { workflowsStore } from '@/store/workflows'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { FILTER_ENTITY, getFilters, setFilters, updateUrlWithFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
-import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import { makeCleanObject } from '@/utils/utils'
 
 interface WorkflowsFilters {
@@ -54,7 +55,9 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   const { assistantCategories } = useSnapshot(assistantsStore)
   const { workflowTemplates } = useSnapshot(workflowsStore)
   const { user } = useSnapshot(userStore)
-  const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
+  const { projectOptions, loadProjectOptions } = useProjectOptions()
+  const [projectSearchTerm, setProjectSearchTerm] = useState('')
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [isCreatedByMeChecked, setIsCreatedByMeChecked] = useState(false)
 
@@ -74,7 +77,11 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
     const existing = new Set(projectOptions.map((o) => o.value))
     const extras = persistedProject
       .filter((name): name is string => !!name && !existing.has(name))
-      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
+      .map((name) => ({
+        label: projectDisplayNames.get(name) ?? name,
+        value: name,
+        displayName: projectDisplayNames.get(name),
+      }))
     return [...projectOptions, ...extras]
   }, [projectOptions, persistedProject, projectDisplayNames])
 
@@ -82,6 +89,18 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
     () => assistantCategories.map((c) => ({ label: c.name, value: c.id })),
     [assistantCategories]
   )
+
+  const applyProjectSearch = useCallback(async () => {
+    await loadProjectOptions(projectSearchTerm)
+    setIsLoadingProjects(false)
+  }, [projectSearchTerm, loadProjectOptions])
+
+  const handleProjectFilter = useCallback((value: string) => {
+    setIsLoadingProjects(true)
+    setProjectSearchTerm(value)
+  }, [])
+
+  useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
 
   const initialFilterValues = (() => {
     const {
@@ -100,19 +119,6 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       categories: Array.isArray(categories) ? categories : [],
     }
   })()
-
-  const loadProjectOptions = useCallback(async (value = '') => {
-    try {
-      const projects = await userStore.getProjects(value)
-      const options = projects.map((project) => ({
-        label: getProjectDisplayName(project),
-        value: project.name,
-      }))
-      setProjectOptions(options)
-    } catch (error) {
-      console.error('Error loading project options:', error)
-    }
-  }, [])
 
   const loadCreatedByOptions = useCallback(async (marketplaceScope = false) => {
     try {
@@ -209,7 +215,9 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
             maxSelectedLabels: 3,
             filter: true,
             filterPlaceholder: 'Search for projects',
-            onFilter: loadProjectOptions,
+            onFilter: handleProjectFilter,
+            loading: isLoadingProjects,
+            emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
           },
         },
         {
@@ -251,8 +259,8 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       initialFilterValues.shared,
       categoriesOptions,
       resolvedProjectOptions,
+      isLoadingProjects,
       createdByOptions,
-      loadProjectOptions,
       scope,
     ]
   )

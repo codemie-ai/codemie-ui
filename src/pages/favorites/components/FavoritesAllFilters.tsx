@@ -19,12 +19,13 @@ import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CREATED_BY } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
+import { useDebouncedApply } from '@/hooks/useDebounceApply'
+import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { userStore } from '@/store/user'
 import { FavoritesFilters } from '@/types/entity/favorites'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { FILTER_ENTITY, checkEmptyFilters, getFilters, setFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
-import { getProjectDisplayName } from '@/utils/projectDisplayName'
 
 interface FavoritesAllFiltersProps {
   onFilterChange: (filters: Partial<FavoritesFilters>) => void
@@ -32,7 +33,9 @@ interface FavoritesAllFiltersProps {
 
 const FavoritesAllFilters: React.FC<FavoritesAllFiltersProps> = ({ onFilterChange }) => {
   const FILTER_KEY = `${FILTER_ENTITY.FAVORITES}.all`
-  const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
+  const { projectOptions, loadProjectOptions } = useProjectOptions()
+  const [projectSearchTerm, setProjectSearchTerm] = useState('')
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [isChecked, setIsChecked] = useState(false)
 
@@ -41,14 +44,17 @@ const FavoritesAllFilters: React.FC<FavoritesAllFiltersProps> = ({ onFilterChang
 
   const areFiltersEmpty = useMemo(() => checkEmptyFilters(filterState), [filterState])
 
-  const loadProjectOptions = useCallback(async (value = '') => {
-    try {
-      const projects = await userStore.getProjects(value)
-      setProjectOptions(projects.map((p) => ({ label: getProjectDisplayName(p), value: p.name })))
-    } catch (error) {
-      console.error('Error loading project options:', error)
-    }
+  const applyProjectSearch = useCallback(async () => {
+    await loadProjectOptions(projectSearchTerm)
+    setIsLoadingProjects(false)
+  }, [projectSearchTerm, loadProjectOptions])
+
+  const handleProjectFilter = useCallback((value: string) => {
+    setIsLoadingProjects(true)
+    setProjectSearchTerm(value)
   }, [])
+
+  useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
 
   const loadCreatedByOptions = useCallback(async () => {
     try {
@@ -80,7 +86,9 @@ const FavoritesAllFilters: React.FC<FavoritesAllFiltersProps> = ({ onFilterChang
           maxSelectedLabels: 3,
           filter: true,
           filterPlaceholder: 'Search for projects',
-          onFilter: loadProjectOptions,
+          onFilter: handleProjectFilter,
+          loading: isLoadingProjects,
+          emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
         },
       },
       {
@@ -95,8 +103,8 @@ const FavoritesAllFilters: React.FC<FavoritesAllFiltersProps> = ({ onFilterChang
       filterState.project,
       filterState.created_by,
       projectOptions,
+      isLoadingProjects,
       createdByOptions,
-      loadProjectOptions,
     ]
   )
 

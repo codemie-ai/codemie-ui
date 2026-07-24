@@ -55,6 +55,11 @@ vi.mock('@/store', () => ({
   assistantsStore: {
     getRemoteAssistant: (...args: any[]) => mockGetRemoteAssistant(...args),
   },
+  // ProjectSelector (rendered by this form) uses useProjectDisplayNames,
+  // which reads userStore from this barrel.
+  userStore: {
+    user: null,
+  },
 }))
 
 vi.mock('@/store/settings', () => ({

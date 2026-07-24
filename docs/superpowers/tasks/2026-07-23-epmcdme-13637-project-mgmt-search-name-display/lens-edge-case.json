@@ -1,0 +1,14 @@
+[
+  {
+    "location": "src/store/user.ts:347",
+    "trigger_condition": "admin user types a display-name search query in any project filter",
+    "guard_snippet": "const userProjects = userStore.getUserProjects(false, search)",
+    "potential_consequence": "all admin-assigned user projects appear unfiltered; display-name search silently ignored for admin's own projects"
+  },
+  {
+    "location": "src/components/ProjectNameDisplay/ProjectNameDisplay.tsx:27-29",
+    "trigger_condition": "name=\"\" (callers use `?? ''`) and displayName is non-empty after trim",
+    "guard_snippet": "if (!name) return <>{trimmed}</> (or return null / a placeholder)",
+    "potential_consequence": "stacked layout renders an empty first <span> above the display name when entity has no project"
+  }
+]

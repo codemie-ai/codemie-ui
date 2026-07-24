@@ -13,27 +13,15 @@
 // limitations under the License.
 
 import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+import { formatProjectLabel } from '@/utils/projectDisplayName'
 
 interface ProjectNameCellProps {
   projectName: string
 }
 
-/**
- * Renders a project's technical name, surfacing its human display name as a
- * tooltip hint when one exists. Resolves the display name from the current
- * user's project roster, or — for Super Admins viewing a project they are not
- * assigned to — by lazily fetching it.
- */
 const ProjectNameCell = ({ projectName }: ProjectNameCellProps) => {
   const displayName = useProjectDisplayNames(projectName).get(projectName)
-
-  if (!displayName) return <>{projectName}</>
-
-  return (
-    <span data-tooltip-id="react-tooltip" data-tooltip-content={displayName}>
-      {projectName}
-    </span>
-  )
+  return <>{formatProjectLabel({ name: projectName, display_name: displayName })}</>
 }
 
 /**

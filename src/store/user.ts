@@ -29,6 +29,7 @@ import {
 } from '@/types/entity/user'
 import api from '@/utils/api'
 import { isFeatureEnabled } from '@/utils/featureFlags'
+import { matchesProjectSearch } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { formatUserOptions } from '@/utils/user'
 
@@ -67,7 +68,7 @@ interface UserStoreType {
   getProjects: (query?: string, adminOnly?: boolean) => Promise<ProjectOption[]>
   getDefaultProject: () => Promise<string | null>
   getAdminProjects: (search?: string) => Promise<ProjectOption[]>
-  getUserProjects: (adminOnly?: boolean) => ProjectOption[]
+  getUserProjects: (adminOnly?: boolean, query?: string) => ProjectOption[]
   addProject: (projectName: string) => any
   isUserVisibleProject: (projectName?: string) => boolean
   getUsers: (params?: {
@@ -334,7 +335,7 @@ export const userStore = proxy<UserStoreType>({
       return userStore.getAdminProjects(query)
     }
 
-    return userStore.getUserProjects(adminOnly)
+    return userStore.getUserProjects(adminOnly, query)
   },
 
   getAdminProjects(search = '') {
@@ -365,10 +366,11 @@ export const userStore = proxy<UserStoreType>({
       })
   },
 
-  getUserProjects(adminOnly = false) {
+  getUserProjects(adminOnly = false, query = '') {
     const projects = userStore.user?.projects ?? []
     const filtered = adminOnly ? projects.filter((p) => p.is_project_admin) : projects
-    return filtered
+    const searched = query ? filtered.filter((p) => matchesProjectSearch(p, query)) : filtered
+    return searched
       .map((p) => ({ name: p.name, display_name: p.display_name }))
       .sort((a, b) => a.name.localeCompare(b.name))
   },

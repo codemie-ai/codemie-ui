@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Extend Project Management search filter predicate to match both Name and Display Name fields",
+  "generated": "2026-07-23T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "technical_risk",
+      "reason": "Well-established OR-predicate extension pattern with direct precedent (GitLab MR event filter in recent commits). Medium uncertainty on client-side vs server-side path, but symptom strongly implies client-side; trivially reversible with no performance or security implications."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Acceptance criteria are fully specified in the ticket (5 explicit conditions). Minor pre-implementation confirmation needed: exact TypeScript field names (name/displayName vs alternatives) and whether filtering is client-side or server-side must be verified before writing code."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

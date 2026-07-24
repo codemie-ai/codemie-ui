@@ -18,6 +18,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockGetProjects = vi.fn()
 const mockOnChange = vi.fn()
+const { mockDisplayNames } = vi.hoisted(() => ({ mockDisplayNames: new Map<string, string>() }))
 
 vi.mock('@/store/user', () => ({
   userStore: {
@@ -25,16 +26,14 @@ vi.mock('@/store/user', () => ({
   },
 }))
 
+vi.mock('@/hooks/useProjectDisplayNames', () => ({
+  useProjectDisplayNames: () => mockDisplayNames,
+}))
+
 // Stub out the heavy PrimeReact MultiSelect with something inspectable
 vi.mock('@/components/form/MultiSelect', () => ({
-  default: ({
-    options,
-    value,
-  }: {
-    options: Array<{ label: string; value: string }>
-    value: any
-  }) => (
-    <div data-testid="multiselect" data-value={JSON.stringify(value)}>
+  default: ({ options }: { options: Array<{ label: string; value: string }> }) => (
+    <div data-testid="multiselect">
       {options.map((o) => (
         <span key={o.value} data-testid={`option-${o.value}`}>
           {o.label}
@@ -47,9 +46,10 @@ vi.mock('@/components/form/MultiSelect', () => ({
 describe('ProjectSelector', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDisplayNames.clear()
   })
 
-  it('shows display_name as option label when available', async () => {
+  it('shows "name (display_name)" as option label when display_name is available', async () => {
     mockGetProjects.mockResolvedValue([
       { name: 'proj-a', display_name: 'Project Alpha' },
       { name: 'proj-b', display_name: null },
@@ -59,7 +59,7 @@ describe('ProjectSelector', () => {
     const { getByTestId } = render(<ProjectSelector onChange={mockOnChange} />)
 
     await waitFor(() => {
-      expect(getByTestId('option-proj-a').textContent).toBe('Project Alpha')
+      expect(getByTestId('option-proj-a').textContent).toBe('proj-a (Project Alpha)')
       expect(getByTestId('option-proj-b').textContent).toBe('proj-b')
     })
   })
@@ -84,6 +84,20 @@ describe('ProjectSelector', () => {
     await waitFor(() => {
       // The missing project should be added to the options list
       expect(getByTestId('option-proj-missing')).toBeTruthy()
+    })
+  })
+
+  it('resolves display_name for a current value not returned by the API, via useProjectDisplayNames (EPMCDME-13637)', async () => {
+    mockGetProjects.mockResolvedValue([])
+    mockDisplayNames.set('codemie', 'Super team')
+
+    const { default: ProjectSelector } = await import('../ProjectSelector')
+    const { getByTestId } = render(<ProjectSelector value="codemie" onChange={mockOnChange} />)
+
+    await waitFor(() => {
+      // Correct from the very first render — not only after typing a 3+
+      // character search that happens to hit the backend.
+      expect(getByTestId('option-codemie').textContent).toBe('codemie (Super team)')
     })
   })
 
@@ -123,6 +137,19 @@ describe('ProjectSelector', () => {
 
     await waitFor(() => {
       expect(mockOnChange).not.toHaveBeenCalled()
+    })
+  })
+
+  it('finds a project by its technical name even when display_name differs (EPMCDME-13637)', async () => {
+    mockGetProjects.mockResolvedValue([{ name: 'epm-fdeg', display_name: 'FDE Group' }])
+
+    const { default: ProjectSelector } = await import('../ProjectSelector')
+    const { getByTestId } = render(<ProjectSelector onChange={mockOnChange} />)
+
+    await waitFor(() => {
+      // "epm-fdeg" is part of the label string, so PrimeReact's default
+      // optionLabel-based filtering matches it without any filterBy override.
+      expect(getByTestId('option-epm-fdeg').textContent).toBe('epm-fdeg (FDE Group)')
     })
   })
 })

@@ -19,6 +19,26 @@ export function getProjectDisplayName(project: {
   return project.display_name?.trim() || project.name
 }
 
+export function formatProjectLabel(project: {
+  name: string
+  display_name?: string | null
+}): string {
+  const trimmed = project.display_name?.trim()
+  return trimmed ? `${project.name} (${trimmed})` : project.name
+}
+
+export function matchesProjectSearch(
+  project: { name: string; display_name?: string | null },
+  query: string
+): boolean {
+  if (!query) return true
+  const q = query.toLowerCase()
+  return (
+    project.name.toLowerCase().includes(q) ||
+    !!project.display_name?.trim().toLowerCase().includes(q)
+  )
+}
+
 export function generateProjectName(displayName: string): string {
   return displayName
     .toLowerCase()

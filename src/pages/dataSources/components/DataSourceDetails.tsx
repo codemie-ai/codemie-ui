@@ -59,6 +59,7 @@ import { getCronDescription, getNextCronRun } from '@/utils/cronValidator'
 import { canDelete, canEdit } from '@/utils/entity'
 import { formatDateTime, formatScheduleDate, humanize, isNumberValue } from '@/utils/helpers'
 import { getIndexTypeCode } from '@/utils/indexing'
+import { formatProjectLabel } from '@/utils/projectDisplayName'
 
 import DataSourceDeleteModal from './DataSourceDeleteModal'
 import DataSourceDetailsProvider from './DataSourceDetails/DetaSourceDetailsProvider'
@@ -673,15 +674,10 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
           <DetailsSidebarSection headline="OVERVIEW" itemsWrapperClassName="gap-2 -mt-2">
             <DetailsProperty
               label="Project"
-              value={
-                projectDisplayName ? (
-                  <span data-tooltip-id="react-tooltip" data-tooltip-content={projectDisplayName}>
-                    {dataSource?.project_name}
-                  </span>
-                ) : (
-                  dataSource?.project_name
-                )
-              }
+              value={formatProjectLabel({
+                name: dataSource?.project_name ?? '',
+                display_name: projectDisplayName,
+              })}
             />
             <DetailsProperty label="Data Source Type" value={humanize(indexType)} />
             <DetailsCopyField

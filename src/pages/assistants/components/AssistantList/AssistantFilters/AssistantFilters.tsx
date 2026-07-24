@@ -23,12 +23,12 @@ import { CATEGORIES, CREATED_BY, NOT_SHARED, SHARED, GLOBAL } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { assistantsStore } from '@/store/assistants'
 import { userStore } from '@/store/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
-import { getProjectDisplayName } from '@/utils/projectDisplayName'
 
 interface AssistantFilters {
   search?: string
@@ -50,7 +50,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   filters,
   activeScope,
 }) => {
-  const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
+  const { projectOptions, loadProjectOptions } = useProjectOptions()
   const [projectSearchTerm, setProjectSearchTerm] = useState('')
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
@@ -60,7 +60,11 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
     const existing = new Set(projectOptions.map((o) => o.value))
     const extras = (filters.project ?? [])
       .filter((name): name is string => !!name && !existing.has(name))
-      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
+      .map((name) => ({
+        label: projectDisplayNames.get(name) ?? name,
+        value: name,
+        displayName: projectDisplayNames.get(name),
+      }))
     return [...projectOptions, ...extras]
   }, [projectOptions, filters.project, projectDisplayNames])
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
@@ -86,25 +90,10 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
     },
   ]
 
-  const loadProjectOptions = useCallback(async (value: string) => {
-    try {
-      const projects = await userStore.getProjects(value)
-      const options = projects.map((project) => ({
-        label: getProjectDisplayName(project),
-        value: project.name,
-      }))
-      setProjectOptions(options)
-    } catch (error) {
-      console.error('Error loading project options:', error)
-    } finally {
-      setIsLoadingProjects(false)
-    }
-  }, [])
-
-  const applyProjectSearch = useCallback(
-    () => loadProjectOptions(projectSearchTerm),
-    [projectSearchTerm, loadProjectOptions]
-  )
+  const applyProjectSearch = useCallback(async () => {
+    await loadProjectOptions(projectSearchTerm)
+    setIsLoadingProjects(false)
+  }, [projectSearchTerm, loadProjectOptions])
 
   const handleProjectFilter = useCallback((value: string) => {
     setIsLoadingProjects(true)

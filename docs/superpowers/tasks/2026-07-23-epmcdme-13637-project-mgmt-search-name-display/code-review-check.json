@@ -1,0 +1,117 @@
+{
+  "decision": "approve",
+  "rationale": "Check round against fix-up diff (code-review-check.diff, 89 lines). One blocking finding from the final round: CR-001 (filterBy rendered-visibility test missing). Fix adds src/components/form/MultiSelect/__tests__/MultiSelect.filterBy.test.tsx — renders the real PrimeReact MultiSelect without mocking, types 'proj-tech-abc' into the filter input (matches option.value but NOT label or displayName), asserts Project Alpha visible and Project Beta absent. Uses vi.useFakeTimers() + vi.runAllTimers() to flush PrimeReact's internal useDebounce (setTimeout(fn, 0)) so filterState updates synchronously in the test. Test confirmed passing. CR-001 resolved. No new findings from the fix-up diff (test-only change, no production code touched, no security or API surface affected).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Search by technical name (name field) — non-admin frontend path",
+      "status": "pass",
+      "notes": "matchesProjectSearch OR-checks name and display_name; getUserProjects passes search param to backend; ProjectSelector/filter components all get debounced applyProjectSearch"
+    },
+    {
+      "kind": "spec",
+      "item": "Search by display name (display_name field) — non-admin frontend path",
+      "status": "pass",
+      "notes": "Both matchesProjectSearch client-side filter and getUserProjects backend search include display_name"
+    },
+    {
+      "kind": "spec",
+      "item": "filterBy='value,displayName' threaded through MultiSelect so PrimeReact matches both fields",
+      "status": "pass",
+      "notes": "filterBy prop added to FilterDefinition type, passed through Filters.tsx and MultiSelect.tsx; all ProjectSelector/filter usages confirmed"
+    },
+    {
+      "kind": "spec",
+      "item": "ProjectNameDisplay component renders stacked technical name + muted display name",
+      "status": "pass",
+      "notes": "New component implemented; uses <span> wrapper (justified: avoids invalid <div> inside <p> in DetailsProperty)"
+    },
+    {
+      "kind": "spec",
+      "item": "Both name and display_name visible in dropdown options (renderProjectOption)",
+      "status": "pass",
+      "notes": "renderProjectOption applies ProjectNameDisplay to all MultiSelect instances: AssistantFilters, FavoritesAllFilters, WorkflowsFilters, SkillsFilters, DataSourceFilters, ProjectSettings, UserSettings, ProjectSelector"
+    },
+    {
+      "kind": "spec",
+      "item": "Debounce on project search input (useDebouncedApply, 1000ms) — 5 filter components",
+      "status": "pass",
+      "notes": "useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch) applied in AssistantFilters, FavoritesAllFilters, WorkflowsFilters, SkillsFilters, DataSourceFilters"
+    },
+    {
+      "kind": "spec",
+      "item": "ProjectNameCell uses ProjectNameDisplay",
+      "status": "pass",
+      "notes": "ProjectNameCell refactored to use ProjectNameDisplay; tooltip removed"
+    },
+    {
+      "kind": "spec",
+      "item": "Detail pages (AssistantDetailsSidebarSections, DataSourceDetails, SkillDetails) use ProjectNameDisplay",
+      "status": "pass",
+      "notes": "All three detail-sidebar pages updated"
+    },
+    {
+      "kind": "spec",
+      "item": "Admin table (ProjectsManagementFull) uses ProjectNameDisplay in name column",
+      "status": "pass",
+      "notes": "Admin table name column updated"
+    },
+    {
+      "kind": "spec",
+      "item": "matchesProjectSearch utility tests (name match, displayName match, no-match)",
+      "status": "pass",
+      "notes": "Unit tests cover all three cases in projectDisplayName.test.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Debounce tests for all 5 filter components",
+      "status": "pass",
+      "notes": "AssistantFilters, FavoritesAllFilters, WorkflowsFilters, SkillsFilters, DataSourceFilters each have a debounce integration test"
+    },
+    {
+      "kind": "spec",
+      "item": "PrimeReact filterBy rendered-visibility test — option visible by technical name when displayName does not match",
+      "status": "pass",
+      "notes": "MultiSelect.filterBy.test.tsx added: renders real PrimeReact MultiSelect with two options, types technical name into filter, asserts matching option remains visible and non-matching option is absent; uses fake timers to flush PrimeReact's 0ms useDebounce; test passes"
+    },
+    {
+      "kind": "spec",
+      "item": "Backend: admin path COALESCE fix + search_by_name API (separate codemie repo)",
+      "status": "na",
+      "notes": "Backend changes are in the codemie repo; separate review target"
+    },
+    {
+      "kind": "spec",
+      "item": "Backend: search_by_name integration tests (separate codemie repo)",
+      "status": "na",
+      "notes": "Backend test changes are in the codemie repo; separate review target"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 12 branch commits match EPMCDME-NNNNN: Capital-sentence format per git-workflow.md; fix-up is working-tree only (not yet committed)"
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "New test file is 76 lines (well under 300 line limit); no inline styles, raw hex tokens, or custom CSS; test-only change"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No secrets exposed; test-only file; no production code changes"
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "MultiSelect.filterBy.test.tsx added at src/components/form/MultiSelect/__tests__/. Renders real PrimeReact MultiSelect (no mock), types 'proj-tech-abc' matching option.value but not label/displayName, asserts correct visibility. vi.useFakeTimers() + vi.runAllTimers() flushes the 0ms useDebounce debounce. Test passes (confirmed via vitest run)."
+    }
+  ]
+}

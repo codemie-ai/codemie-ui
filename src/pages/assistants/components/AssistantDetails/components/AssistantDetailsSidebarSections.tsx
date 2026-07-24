@@ -38,6 +38,7 @@ import { GuardrailEntity } from '@/types/entity/guardrail'
 import { Skill } from '@/types/entity/skill'
 import { sortToolkitsByOrder } from '@/utils/assistants'
 import { isNumberValue } from '@/utils/helpers'
+import { formatProjectLabel } from '@/utils/projectDisplayName'
 import { getSharedValue, getToolkitFromMcpServers, getRootPath } from '@/utils/utils'
 
 import RequestHedgingDetails from './RequestHedgingDetails'
@@ -155,15 +156,10 @@ const AssistantDetailsSidebarSections = ({
       <DetailsSidebarSection headline="OVERVIEW" itemsWrapperClassName="gap-2 -mt-2">
         <DetailsProperty
           label="Project"
-          value={
-            projectDisplayName ? (
-              <span data-tooltip-id="react-tooltip" data-tooltip-content={projectDisplayName}>
-                {assistant?.project}
-              </span>
-            ) : (
-              assistant?.project
-            )
-          }
+          value={formatProjectLabel({
+            name: assistant?.project ?? '',
+            display_name: projectDisplayName || undefined,
+          })}
         />
         <DetailsProperty
           label="Shared status"

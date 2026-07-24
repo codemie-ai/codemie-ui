@@ -19,7 +19,9 @@ import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CREATED_BY } from '@/constants'
 import { SKILL_INDEX_SCOPES } from '@/constants/skills'
+import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { skillsStore } from '@/store/skills'
 import { userStore } from '@/store/user'
 import { SkillsFilters, SkillVisibility } from '@/types/entity/skill'
@@ -27,7 +29,6 @@ import { User } from '@/types/entity/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
-import { getProjectDisplayName } from '@/utils/projectDisplayName'
 
 interface SkillsFiltersProps {
   onFilterChange: (filters: Record<string, unknown>) => void
@@ -51,7 +52,9 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
   filters,
   activeScope,
 }) => {
-  const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
+  const { projectOptions, loadProjectOptions } = useProjectOptions()
+  const [projectSearchTerm, setProjectSearchTerm] = useState('')
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [categoryOptions, setCategoryOptions] = useState<FilterOption[]>([])
@@ -61,26 +64,29 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
     const existing = new Set(projectOptions.map((o) => o.value))
     const extras = (filters.project ?? [])
       .filter((name): name is string => !!name && !existing.has(name))
-      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
+      .map((name) => ({
+        label: projectDisplayNames.get(name) ?? name,
+        value: name,
+        displayName: projectDisplayNames.get(name),
+      }))
     return [...projectOptions, ...extras]
   }, [projectOptions, filters.project, projectDisplayNames])
+
+  const applyProjectSearch = useCallback(async () => {
+    await loadProjectOptions(projectSearchTerm)
+    setIsLoadingProjects(false)
+  }, [projectSearchTerm, loadProjectOptions])
+
+  const handleProjectFilter = useCallback((value: string) => {
+    setIsLoadingProjects(true)
+    setProjectSearchTerm(value)
+  }, [])
+
+  useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
 
   const areFiltersEmpty = useMemo(() => {
     return checkEmptyFilters(filters)
   }, [filters])
-
-  const loadProjectOptions = useCallback(async (value: string) => {
-    try {
-      const projects = await userStore.getProjects(value)
-      const options = projects.map((project) => ({
-        label: getProjectDisplayName(project),
-        value: project.name,
-      }))
-      setProjectOptions(options)
-    } catch (error) {
-      console.error('Error loading project options:', error)
-    }
-  }, [])
 
   const loadCreatedByOptions = useCallback(async () => {
     try {
@@ -131,7 +137,9 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
             maxSelectedLabels: 3,
             filter: true,
             filterPlaceholder: 'Search for projects',
-            onFilter: loadProjectOptions,
+            onFilter: handleProjectFilter,
+            loading: isLoadingProjects,
+            emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
           },
         },
         {
@@ -177,9 +185,9 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
       filters.visibility,
       filters.created_by,
       resolvedProjectOptions,
+      isLoadingProjects,
       createdByOptions,
       categoryOptions,
-      loadProjectOptions,
       activeScope,
     ]
   )

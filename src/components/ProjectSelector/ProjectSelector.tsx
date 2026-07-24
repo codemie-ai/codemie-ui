@@ -14,11 +14,12 @@
 //
 
 import { MultiSelect as PrimeMultiselect, MultiSelectChangeEvent } from 'primereact/multiselect'
-import { forwardRef, useEffect, useState } from 'react'
+import { forwardRef, useEffect, useMemo, useState } from 'react'
 
 import MultiSelect from '@/components/form/MultiSelect'
+import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import { userStore } from '@/store/user'
-import { getProjectDisplayName } from '@/utils/projectDisplayName'
+import { formatProjectLabel } from '@/utils/projectDisplayName'
 
 import { MultiSelectSize } from '../form/MultiSelect/MultiSelect'
 
@@ -55,31 +56,45 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
     },
     ref
   ) => {
-    const [availableProjects, setAvailableProjects] = useState<
-      Array<{ label: string; value: string }>
+    const [rawProjects, setRawProjects] = useState<
+      Array<{ name: string; display_name?: string | null }>
     >([])
+
+    // Resolves display_name for the current value even when it isn't in the
+    // fetched project list (e.g. a Super Admin viewing a project they aren't
+    // assigned to) so the option label is correct from the first render
+    // instead of only after a 3+ character search hits the backend
+    // (EPMCDME-13637).
+    const projectDisplayNames = useProjectDisplayNames(value ?? undefined)
+
     const loadProjects = async (search = '') => {
       const projects = await userStore.getProjects(search, adminOnly)
-
-      // Add current value(s) to projects if not already included
-      if (value) {
-        const currentNames = Array.isArray(value) ? value : [value]
-        currentNames.forEach((v) => {
-          if (!projects.some((p) => p.name === v)) {
-            projects.push({ name: v })
-          }
-        })
-      }
-
-      setAvailableProjects(
-        projects.map((project) => ({ label: getProjectDisplayName(project), value: project.name }))
-      )
+      setRawProjects(projects)
 
       // Auto-select first project only for single select when no value
       if (!value && projects.length > 0 && !multiple && selectDefault) {
         onChange?.(projects[0].name)
       }
     }
+
+    const availableProjects = useMemo(() => {
+      const projects = [...rawProjects]
+
+      // Add current value(s) to projects if not already included
+      if (value) {
+        const currentNames = Array.isArray(value) ? value : [value]
+        currentNames.forEach((v) => {
+          if (!projects.some((p) => p.name === v)) {
+            projects.push({ name: v, display_name: projectDisplayNames.get(v) })
+          }
+        })
+      }
+
+      return projects.map((project) => ({
+        label: formatProjectLabel(project),
+        value: project.name,
+      }))
+    }, [rawProjects, value, projectDisplayNames])
 
     const handleFilter = (value: string) => {
       const searchValue = value.trim().toLowerCase()

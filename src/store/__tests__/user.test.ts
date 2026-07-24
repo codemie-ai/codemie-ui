@@ -181,6 +181,83 @@ describe('userStore', () => {
 
       expect(result.map((p: { name: string }) => p.name)).toEqual(['aaa', 'mmm', 'zzz'])
     })
+
+    it('filters by name query when display_name is set (EPMCDME-13637)', async () => {
+      const { userStore } = await import('@/store/user')
+      userStore.user = {
+        userId: 'u1',
+        email: 'a@b.com',
+        name: 'Alice',
+        username: 'alice',
+        isAdmin: false,
+        isMaintainer: false,
+        isAuthenticated: true,
+        user_type: 'regular',
+        applications: [],
+        applicationsAdmin: [],
+        projects: [
+          { name: 'epm-fdeg', display_name: 'FDE Group', is_project_admin: false },
+          { name: 'epm-other', display_name: 'Other Team', is_project_admin: false },
+        ],
+        picture: null,
+      } as any
+
+      const result = userStore.getUserProjects(false, 'fdeg')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].name).toBe('epm-fdeg')
+    })
+
+    it('filters by display_name query (regression guard)', async () => {
+      const { userStore } = await import('@/store/user')
+      userStore.user = {
+        userId: 'u1',
+        email: 'a@b.com',
+        name: 'Alice',
+        username: 'alice',
+        isAdmin: false,
+        isMaintainer: false,
+        isAuthenticated: true,
+        user_type: 'regular',
+        applications: [],
+        applicationsAdmin: [],
+        projects: [
+          { name: 'epm-fdeg', display_name: 'FDE Group', is_project_admin: false },
+          { name: 'epm-other', display_name: 'Other Team', is_project_admin: false },
+        ],
+        picture: null,
+      } as any
+
+      const result = userStore.getUserProjects(false, 'fde group')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].name).toBe('epm-fdeg')
+    })
+
+    it('returns all projects when query is empty', async () => {
+      const { userStore } = await import('@/store/user')
+      userStore.user = {
+        userId: 'u1',
+        email: 'a@b.com',
+        name: 'Alice',
+        username: 'alice',
+        isAdmin: false,
+        isMaintainer: false,
+        isAuthenticated: true,
+        user_type: 'regular',
+        applications: [],
+        applicationsAdmin: [],
+        projects: [
+          { name: 'proj-a', display_name: 'Alpha', is_project_admin: false },
+          { name: 'proj-b', display_name: 'Beta', is_project_admin: false },
+        ],
+        picture: null,
+      } as any
+
+      const result = userStore.getUserProjects(false, '')
+
+      expect(result).toHaveLength(2)
+    })
   })
 
   describe('getAdminProjects', () => {
@@ -344,6 +421,33 @@ describe('userStore', () => {
       expect(mockGet).not.toHaveBeenCalled()
       expect(result).toHaveLength(1)
       expect(result[0].name).toBe('user-proj')
+    })
+
+    it('threads query to getUserProjects for non-admin (EPMCDME-13637)', async () => {
+      const { userStore } = await import('@/store/user')
+      userStore.user = {
+        userId: 'u1',
+        email: 'a@b.com',
+        name: 'Alice',
+        username: 'alice',
+        isAdmin: false,
+        isMaintainer: false,
+        isAuthenticated: true,
+        user_type: 'regular',
+        applications: [],
+        applicationsAdmin: [],
+        projects: [
+          { name: 'epm-fdeg', display_name: 'FDE Group', is_project_admin: false },
+          { name: 'epm-other', display_name: 'Other Team', is_project_admin: false },
+        ],
+        picture: null,
+      } as any
+
+      const result = await userStore.getProjects('fdeg')
+
+      expect(mockGet).not.toHaveBeenCalled()
+      expect(result).toHaveLength(1)
+      expect(result[0].name).toBe('epm-fdeg')
     })
   })
 })

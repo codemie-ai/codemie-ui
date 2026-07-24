@@ -15,7 +15,12 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { generateProjectName, getProjectDisplayName } from '@/utils/projectDisplayName'
+import {
+  formatProjectLabel,
+  generateProjectName,
+  getProjectDisplayName,
+  matchesProjectSearch,
+} from '@/utils/projectDisplayName'
 
 describe('getProjectDisplayName', () => {
   it('returns display_name when it is a non-empty string', () => {
@@ -43,6 +48,86 @@ describe('getProjectDisplayName', () => {
   it('trims whitespace from display_name before returning', () => {
     expect(getProjectDisplayName({ name: 'my-project', display_name: '  My Project  ' })).toBe(
       'My Project'
+    )
+  })
+})
+
+describe('matchesProjectSearch', () => {
+  it('returns true when query is empty', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, '')).toBe(true)
+  })
+
+  it('matches by name when display_name is set', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'epm-fdeg')).toBe(
+      true
+    )
+  })
+
+  it('matches by partial name when display_name is set', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'fdeg')).toBe(true)
+  })
+
+  it('matches by display_name (regression guard)', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'fde group')).toBe(
+      true
+    )
+  })
+
+  it('matches by partial display_name (regression guard)', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'fde')).toBe(true)
+  })
+
+  it('returns false when query matches neither field', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'xyz')).toBe(false)
+  })
+
+  it('is case-insensitive for name match', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'EPM-FDEG')).toBe(
+      true
+    )
+  })
+
+  it('is case-insensitive for display_name match', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'FDE GROUP')).toBe(
+      true
+    )
+  })
+
+  it('matches by name when display_name is null', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: null }, 'fdeg')).toBe(true)
+  })
+
+  it('returns false when no match and display_name is null', () => {
+    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: null }, 'xyz')).toBe(false)
+  })
+})
+
+describe('formatProjectLabel', () => {
+  it('returns "name (display_name)" when display_name is a non-empty string', () => {
+    expect(formatProjectLabel({ name: 'epm-fdeg', display_name: 'FDE Group' })).toBe(
+      'epm-fdeg (FDE Group)'
+    )
+  })
+
+  it('returns bare name when display_name is null', () => {
+    expect(formatProjectLabel({ name: 'epm-fdeg', display_name: null })).toBe('epm-fdeg')
+  })
+
+  it('returns bare name when display_name is undefined', () => {
+    expect(formatProjectLabel({ name: 'epm-fdeg' })).toBe('epm-fdeg')
+  })
+
+  it('returns bare name when display_name is an empty string', () => {
+    expect(formatProjectLabel({ name: 'epm-fdeg', display_name: '' })).toBe('epm-fdeg')
+  })
+
+  it('returns bare name when display_name is whitespace only', () => {
+    expect(formatProjectLabel({ name: 'epm-fdeg', display_name: '   ' })).toBe('epm-fdeg')
+  })
+
+  it('trims whitespace from display_name before formatting', () => {
+    expect(formatProjectLabel({ name: 'epm-fdeg', display_name: '  FDE Group  ' })).toBe(
+      'epm-fdeg (FDE Group)'
     )
   })
 })

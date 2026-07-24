@@ -1,0 +1,2099 @@
+diff --git a/src/components/Filters/Filters.tsx b/src/components/Filters/Filters.tsx
+index 09ca828ac..c688fce45 100644
+--- a/src/components/Filters/Filters.tsx
++++ b/src/components/Filters/Filters.tsx
+@@ -290,6 +290,7 @@ const Filters: React.FC<FiltersProps> = ({
+                       renderOption={
+                         definition.config?.renderOption as (option: any) => React.ReactNode
+                       }
++                      filterBy={definition.config?.filterBy as string | undefined}
+                       onFilter={
+                         definition.config?.onFilter as ((filter: string) => void) | undefined
+                       }
+diff --git a/src/components/ProjectNameCell/ProjectNameCell.tsx b/src/components/ProjectNameCell/ProjectNameCell.tsx
+index 6bbbdf225..8772dbb42 100644
+--- a/src/components/ProjectNameCell/ProjectNameCell.tsx
++++ b/src/components/ProjectNameCell/ProjectNameCell.tsx
+@@ -12,28 +12,16 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
++import ProjectNameDisplay from '@/components/ProjectNameDisplay'
+ import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+ 
+ interface ProjectNameCellProps {
+   projectName: string
+ }
+ 
+-/**
+- * Renders a project's technical name, surfacing its human display name as a
+- * tooltip hint when one exists. Resolves the display name from the current
+- * user's project roster, or — for Super Admins viewing a project they are not
+- * assigned to — by lazily fetching it.
+- */
+ const ProjectNameCell = ({ projectName }: ProjectNameCellProps) => {
+   const displayName = useProjectDisplayNames(projectName).get(projectName)
+-
+-  if (!displayName) return <>{projectName}</>
+-
+-  return (
+-    <span data-tooltip-id="react-tooltip" data-tooltip-content={displayName}>
+-      {projectName}
+-    </span>
+-  )
++  return <ProjectNameDisplay name={projectName} displayName={displayName} />
+ }
+ 
+ /**
+diff --git a/src/components/ProjectNameCell/__tests__/ProjectNameCell.test.tsx b/src/components/ProjectNameCell/__tests__/ProjectNameCell.test.tsx
+index 32f6dc062..7c25e7b47 100644
+--- a/src/components/ProjectNameCell/__tests__/ProjectNameCell.test.tsx
++++ b/src/components/ProjectNameCell/__tests__/ProjectNameCell.test.tsx
+@@ -33,21 +33,24 @@ describe('ProjectNameCell', () => {
+     expect(screen.getByText('ssg-test')).toBeTruthy()
+   })
+ 
+-  it('shows the display name as a react-tooltip hint when the project has one', () => {
++  it('renders the display name visibly when the project has one', () => {
+     mockDisplayNames.set('ssg-test', 'My Test')
+     render(<ProjectNameCell projectName="ssg-test" />)
+ 
+-    const cell = screen.getByText('ssg-test')
+-    expect(cell.tagName).toBe('SPAN')
+-    expect(cell.getAttribute('data-tooltip-id')).toBe('react-tooltip')
+-    expect(cell.getAttribute('data-tooltip-content')).toBe('My Test')
++    expect(screen.getByText('ssg-test')).toBeTruthy()
++    expect(screen.getByText('My Test')).toBeTruthy()
+   })
+ 
+-  it('adds no tooltip attributes when the project has no display name', () => {
+-    render(<ProjectNameCell projectName="ssg-test" />)
++  it('never renders tooltip attributes', () => {
++    mockDisplayNames.set('ssg-test', 'My Test')
++    const { container } = render(<ProjectNameCell projectName="ssg-test" />)
+ 
+-    const cell = screen.getByText('ssg-test')
+-    expect(cell.getAttribute('data-tooltip-id')).toBeNull()
+-    expect(cell.getAttribute('data-tooltip-content')).toBeNull()
++    expect(container.querySelector('[data-tooltip-id]')).toBeNull()
++    expect(container.querySelector('[data-tooltip-content]')).toBeNull()
++  })
++
++  it('renders just the name when the project has no display name', () => {
++    render(<ProjectNameCell projectName="ssg-test" />)
++    expect(screen.getByText('ssg-test')).toBeTruthy()
+   })
+ })
+diff --git a/src/components/ProjectNameDisplay/ProjectNameDisplay.tsx b/src/components/ProjectNameDisplay/ProjectNameDisplay.tsx
+new file mode 100644
+index 000000000..241d64021
+--- /dev/null
++++ b/src/components/ProjectNameDisplay/ProjectNameDisplay.tsx
+@@ -0,0 +1,34 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++import { cn } from '@/utils/utils'
++
++interface ProjectNameDisplayProps {
++  name: string
++  displayName?: string | null
++  truncate?: boolean
++}
++
++const ProjectNameDisplay = ({ name, displayName, truncate }: ProjectNameDisplayProps) => {
++  const trimmed = displayName?.trim()
++  if (!trimmed) return <>{name}</>
++  return (
++    <span className="flex flex-col gap-0.5 leading-tight">
++      <span>{name}</span>
++      <span className={cn('text-xs text-text-secondary', truncate && 'truncate')}>{trimmed}</span>
++    </span>
++  )
++}
++
++export default ProjectNameDisplay
+diff --git a/src/components/ProjectNameDisplay/__tests__/ProjectNameDisplay.test.tsx b/src/components/ProjectNameDisplay/__tests__/ProjectNameDisplay.test.tsx
+new file mode 100644
+index 000000000..351a57a18
+--- /dev/null
++++ b/src/components/ProjectNameDisplay/__tests__/ProjectNameDisplay.test.tsx
+@@ -0,0 +1,75 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++import { render, screen } from '@testing-library/react'
++import { describe, it, expect } from 'vitest'
++
++import ProjectNameDisplay from '../ProjectNameDisplay'
++
++describe('ProjectNameDisplay', () => {
++  it('renders just the name when displayName is not provided', () => {
++    render(<ProjectNameDisplay name="epm-fdeg" />)
++    expect(screen.getByText('epm-fdeg')).toBeTruthy()
++    expect(screen.queryByText('FDE Group')).toBeNull()
++  })
++
++  it('renders just the name when displayName is null', () => {
++    render(<ProjectNameDisplay name="epm-fdeg" displayName={null} />)
++    expect(screen.getByText('epm-fdeg')).toBeTruthy()
++  })
++
++  it('renders just the name when displayName is an empty string', () => {
++    const { container } = render(<ProjectNameDisplay name="epm-fdeg" displayName="" />)
++    expect(screen.getByText('epm-fdeg')).toBeTruthy()
++    expect(container.querySelectorAll('span')).toHaveLength(0)
++  })
++
++  it('renders just the name when displayName is whitespace only', () => {
++    render(<ProjectNameDisplay name="epm-fdeg" displayName="   " />)
++    expect(screen.getByText('epm-fdeg')).toBeTruthy()
++  })
++
++  it('renders both name and displayName in a stacked layout', () => {
++    render(<ProjectNameDisplay name="epm-fdeg" displayName="FDE Group" />)
++    expect(screen.getByText('epm-fdeg')).toBeTruthy()
++    expect(screen.getByText('FDE Group')).toBeTruthy()
++  })
++
++  it('trims whitespace from displayName before rendering', () => {
++    render(<ProjectNameDisplay name="epm-fdeg" displayName="  FDE Group  " />)
++    expect(screen.getByText('FDE Group')).toBeTruthy()
++  })
++
++  it('does not render data-tooltip-id or data-tooltip-content attributes', () => {
++    const { container } = render(<ProjectNameDisplay name="epm-fdeg" displayName="FDE Group" />)
++    expect(container.querySelector('[data-tooltip-id]')).toBeNull()
++    expect(container.querySelector('[data-tooltip-content]')).toBeNull()
++  })
++
++  it('applies truncate class when truncate prop is true', () => {
++    const { container } = render(
++      <ProjectNameDisplay name="epm-fdeg" displayName="FDE Group" truncate />
++    )
++    const displayNameSpan = container.querySelector('.truncate')
++    expect(displayNameSpan).toBeTruthy()
++    expect(displayNameSpan?.textContent).toBe('FDE Group')
++  })
++
++  it('does not apply truncate class when truncate prop is false', () => {
++    const { container } = render(
++      <ProjectNameDisplay name="epm-fdeg" displayName="FDE Group" truncate={false} />
++    )
++    expect(container.querySelector('.truncate')).toBeNull()
++  })
++})
+diff --git a/src/components/ProjectNameDisplay/index.ts b/src/components/ProjectNameDisplay/index.ts
+new file mode 100644
+index 000000000..a8f44f98e
+--- /dev/null
++++ b/src/components/ProjectNameDisplay/index.ts
+@@ -0,0 +1,15 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++export { default } from './ProjectNameDisplay'
+diff --git a/src/components/ProjectSelector/ProjectSelector.tsx b/src/components/ProjectSelector/ProjectSelector.tsx
+index c7c73ac52..394b0e847 100644
+--- a/src/components/ProjectSelector/ProjectSelector.tsx
++++ b/src/components/ProjectSelector/ProjectSelector.tsx
+@@ -17,6 +17,7 @@ import { MultiSelect as PrimeMultiselect, MultiSelectChangeEvent } from 'primere
+ import { forwardRef, useEffect, useState } from 'react'
+ 
+ import MultiSelect from '@/components/form/MultiSelect'
++import { renderProjectOption } from '@/hooks/useProjectOptions'
+ import { userStore } from '@/store/user'
+ import { getProjectDisplayName } from '@/utils/projectDisplayName'
+ 
+@@ -56,7 +57,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
+     ref
+   ) => {
+     const [availableProjects, setAvailableProjects] = useState<
+-      Array<{ label: string; value: string }>
++      Array<{ label: string; value: string; displayName?: string }>
+     >([])
+     const loadProjects = async (search = '') => {
+       const projects = await userStore.getProjects(search, adminOnly)
+@@ -72,7 +73,11 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
+       }
+ 
+       setAvailableProjects(
+-        projects.map((project) => ({ label: getProjectDisplayName(project), value: project.name }))
++        projects.map((project) => ({
++          label: getProjectDisplayName(project),
++          value: project.name,
++          displayName: project.display_name ?? undefined,
++        }))
+       )
+ 
+       // Auto-select first project only for single select when no value
+@@ -117,6 +122,8 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
+         singleValue={!multiple}
+         error={error}
+         ref={ref}
++        renderOption={renderProjectOption}
++        filterBy="value,displayName"
+       />
+     )
+   }
+diff --git a/src/components/ProjectSelector/__tests__/ProjectSelector.test.tsx b/src/components/ProjectSelector/__tests__/ProjectSelector.test.tsx
+index a2717a213..3bf4901e8 100644
+--- a/src/components/ProjectSelector/__tests__/ProjectSelector.test.tsx
++++ b/src/components/ProjectSelector/__tests__/ProjectSelector.test.tsx
+@@ -25,18 +25,24 @@ vi.mock('@/store/user', () => ({
+   },
+ }))
+ 
++vi.mock('@/hooks/useProjectOptions', () => ({
++  renderProjectOption: (opt: { value: string; displayName?: string }) => opt.value,
++}))
++
+ // Stub out the heavy PrimeReact MultiSelect with something inspectable
+ vi.mock('@/components/form/MultiSelect', () => ({
+   default: ({
+     options,
+     value,
++    filterBy,
+   }: {
+-    options: Array<{ label: string; value: string }>
++    options: Array<{ label: string; value: string; displayName?: string }>
+     value: any
++    filterBy?: string
+   }) => (
+-    <div data-testid="multiselect" data-value={JSON.stringify(value)}>
++    <div data-testid="multiselect" data-value={JSON.stringify(value)} data-filter-by={filterBy}>
+       {options.map((o) => (
+-        <span key={o.value} data-testid={`option-${o.value}`}>
++        <span key={o.value} data-testid={`option-${o.value}`} data-display-name={o.displayName}>
+           {o.label}
+         </span>
+       ))}
+@@ -125,4 +131,28 @@ describe('ProjectSelector', () => {
+       expect(mockOnChange).not.toHaveBeenCalled()
+     })
+   })
++
++  it('passes filterBy="value,displayName" to MultiSelect so PrimeReact matches by technical name (EPMCDME-13637)', async () => {
++    mockGetProjects.mockResolvedValue([{ name: 'epm-fdeg', display_name: 'FDE Group' }])
++
++    const { default: ProjectSelector } = await import('../ProjectSelector')
++    const { getByTestId } = render(<ProjectSelector onChange={mockOnChange} />)
++
++    await waitFor(() => {
++      const multiselect = getByTestId('multiselect')
++      expect(multiselect.getAttribute('data-filter-by')).toBe('value,displayName')
++    })
++  })
++
++  it('includes displayName in option shape for PrimeReact filterBy (EPMCDME-13637)', async () => {
++    mockGetProjects.mockResolvedValue([{ name: 'epm-fdeg', display_name: 'FDE Group' }])
++
++    const { default: ProjectSelector } = await import('../ProjectSelector')
++    const { getByTestId } = render(<ProjectSelector onChange={mockOnChange} />)
++
++    await waitFor(() => {
++      const option = getByTestId('option-epm-fdeg')
++      expect(option.getAttribute('data-display-name')).toBe('FDE Group')
++    })
++  })
+ })
+diff --git a/src/components/form/MultiSelect/MultiSelect.tsx b/src/components/form/MultiSelect/MultiSelect.tsx
+index 376778a1b..231106874 100644
+--- a/src/components/form/MultiSelect/MultiSelect.tsx
++++ b/src/components/form/MultiSelect/MultiSelect.tsx
+@@ -113,6 +113,7 @@ export type MultiSelectProps = {
+   virtualScrollerOptions?: VirtualScrollerProps
+   hasVirtualScroll?: boolean
+   onScrollBottom?: () => void
++  filterBy?: string
+ }
+ 
+ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
+@@ -151,6 +152,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
+       virtualScrollerOptions,
+       hasVirtualScroll = false,
+       onScrollBottom,
++      filterBy,
+     },
+     ref
+   ) => {
+@@ -405,6 +407,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
+           aria-label={label || placeholder}
+           display={display}
+           selectedItemTemplate={preparedSelectedItemTemplate ?? undefined}
++          filterBy={filterBy}
+         >
+           {preparedValue.length > 0 && !singleValue && (
+             <button
+diff --git a/src/hooks/__tests__/useProjectOptions.test.ts b/src/hooks/__tests__/useProjectOptions.test.ts
+index d60b9c759..bb76153a6 100644
+--- a/src/hooks/__tests__/useProjectOptions.test.ts
++++ b/src/hooks/__tests__/useProjectOptions.test.ts
+@@ -36,7 +36,7 @@ describe('useProjectOptions', () => {
+     expect(result.current.projectOptions).toEqual([])
+   })
+ 
+-  it('maps projects to label/value using display_name when available', async () => {
++  it('maps projects to label/value/displayName using display_name when available', async () => {
+     mockGetProjects.mockResolvedValue([
+       { name: 'proj-a', display_name: 'Project Alpha' },
+       { name: 'proj-b', display_name: null },
+@@ -50,8 +50,8 @@ describe('useProjectOptions', () => {
+     })
+ 
+     expect(result.current.projectOptions).toEqual([
+-      { label: 'Project Alpha', value: 'proj-a' },
+-      { label: 'proj-b', value: 'proj-b' },
++      { label: 'Project Alpha', value: 'proj-a', displayName: 'Project Alpha' },
++      { label: 'proj-b', value: 'proj-b', displayName: undefined },
+     ])
+   })
+ 
+@@ -65,7 +65,10 @@ describe('useProjectOptions', () => {
+       await result.current.loadProjectOptions()
+     })
+ 
+-    expect(result.current.projectOptions[0]).toEqual({ label: 'my-project', value: 'my-project' })
++    expect(result.current.projectOptions[0]).toMatchObject({
++      label: 'my-project',
++      value: 'my-project',
++    })
+   })
+ 
+   it('passes the search value to getProjects', async () => {
+diff --git a/src/hooks/useProjectOptions.ts b/src/hooks/useProjectOptions.ts
+index a8a29b6da..0eaa172d3 100644
+--- a/src/hooks/useProjectOptions.ts
++++ b/src/hooks/useProjectOptions.ts
+@@ -13,12 +13,24 @@
+ // limitations under the License.
+ //
+ 
+-import { useState, useCallback } from 'react'
++import React, { useState, useCallback } from 'react'
+ 
++import ProjectNameDisplay from '@/components/ProjectNameDisplay'
+ import { userStore } from '@/store'
+ import { FilterOption } from '@/types/filters'
+ import { getProjectDisplayName } from '@/utils/projectDisplayName'
+ 
++export const renderProjectOption = (opt: {
++  label: string
++  value: string
++  displayName?: string
++}): React.ReactNode =>
++  React.createElement(ProjectNameDisplay, {
++    name: opt.value,
++    displayName: opt.displayName,
++    truncate: true,
++  })
++
+ export const useProjectOptions = () => {
+   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
+ 
+@@ -28,6 +40,7 @@ export const useProjectOptions = () => {
+       const options = projects.map((project) => ({
+         label: getProjectDisplayName(project),
+         value: project.name,
++        displayName: project.display_name ?? undefined,
+       }))
+       setProjectOptions(options)
+     } catch (error) {
+diff --git a/src/pages/assistants/components/AssistantDetails/components/AssistantDetailsSidebarSections.tsx b/src/pages/assistants/components/AssistantDetails/components/AssistantDetailsSidebarSections.tsx
+index 30d63935d..f050db2a6 100644
+--- a/src/pages/assistants/components/AssistantDetails/components/AssistantDetailsSidebarSections.tsx
++++ b/src/pages/assistants/components/AssistantDetails/components/AssistantDetailsSidebarSections.tsx
+@@ -22,6 +22,7 @@ import DetailsCopyField from '@/components/details/DetailsCopyField'
+ import DetailsProperty from '@/components/details/DetailsProperty'
+ import DetailsSidebarSection from '@/components/details/DetailsSidebar/components/DetailsSidebarSection'
+ import GuardrailAssignmentsDetails from '@/components/guardrails/GuardrailAssignmentsDetails/GuardrailAssignmentsDetails'
++import ProjectNameDisplay from '@/components/ProjectNameDisplay'
+ import { TOOLKIT_ORDER_KEYS } from '@/constants/assistants'
+ import { useRequestHedgingEnabled } from '@/hooks/useFeatureFlags'
+ import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+@@ -156,13 +157,10 @@ const AssistantDetailsSidebarSections = ({
+         <DetailsProperty
+           label="Project"
+           value={
+-            projectDisplayName ? (
+-              <span data-tooltip-id="react-tooltip" data-tooltip-content={projectDisplayName}>
+-                {assistant?.project}
+-              </span>
+-            ) : (
+-              assistant?.project
+-            )
++            <ProjectNameDisplay
++              name={assistant?.project ?? ''}
++              displayName={projectDisplayName || undefined}
++            />
+           }
+         />
+         <DetailsProperty
+diff --git a/src/pages/assistants/components/AssistantDetails/components/__tests__/AssistantDetailsSidebarSections.test.tsx b/src/pages/assistants/components/AssistantDetails/components/__tests__/AssistantDetailsSidebarSections.test.tsx
+new file mode 100644
+index 000000000..f2c582141
+--- /dev/null
++++ b/src/pages/assistants/components/AssistantDetails/components/__tests__/AssistantDetailsSidebarSections.test.tsx
+@@ -0,0 +1,92 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { describe, it, expect, vi } from 'vitest'
++
++import { Assistant } from '@/types/entity/assistant'
++
++import AssistantDetailsSidebarSections from '../AssistantDetailsSidebarSections'
++
++vi.mock('@/hooks/useProjectDisplayNames', () => ({
++  useProjectDisplayNames: () => new Map([['my-project', 'My Display Name']]),
++}))
++
++vi.mock('@/hooks/useFeatureFlags', () => ({
++  useRequestHedgingEnabled: () => [false],
++}))
++
++vi.mock('valtio', () => ({
++  proxy: (obj: unknown) => obj,
++  useSnapshot: vi.fn((store) => store),
++  subscribe: vi.fn(),
++}))
++
++vi.mock('@/store/appInfo', () => ({
++  appInfoStore: { findLLMLabel: () => null },
++}))
++
++vi.mock('@/store/mcp', () => ({
++  mcpStore: { configs: [], getConfig: vi.fn().mockResolvedValue({}) },
++}))
++
++vi.mock('@/pages/assistants/components/ToolkitsViewList', () => ({
++  default: () => null,
++}))
++
++vi.mock('@/components/guardrails/GuardrailAssignmentsDetails/GuardrailAssignmentsDetails', () => ({
++  default: () => null,
++}))
++
++vi.mock('../RequestHedgingDetails', () => ({ default: () => null }))
++
++vi.mock('../sidebar_details/SidebarSubassistants', () => ({ default: () => null }))
++
++vi.mock('../sidebar_details/SidebarTags', () => ({ default: () => null }))
++
++const assistant: Assistant = {
++  id: 'a1',
++  name: 'Test Assistant',
++  slug: 'test-assistant',
++  description: '',
++  is_global: false,
++  shared: false,
++  created_at: '2024-01-01',
++  updated_at: '2024-01-01',
++  system_prompt: '',
++  llm_model_type: 'gpt-4',
++  project: 'my-project',
++  mcp_servers: [],
++  system_prompt_history: [],
++  guardrail_assignments: [],
++}
++
++describe('AssistantDetailsSidebarSections — project name display', () => {
++  it('shows project display name without data-tooltip-id', () => {
++    const { container } = render(<AssistantDetailsSidebarSections assistant={assistant} />)
++    expect(container.querySelector('[data-tooltip-id]')).toBeNull()
++    expect(container.querySelector('[data-tooltip-content]')).toBeNull()
++  })
++
++  it('renders project technical name', () => {
++    const { getByText } = render(<AssistantDetailsSidebarSections assistant={assistant} />)
++    expect(getByText('my-project')).toBeInTheDocument()
++  })
++
++  it('renders project display name as stacked second line', () => {
++    const { getByText } = render(<AssistantDetailsSidebarSections assistant={assistant} />)
++    expect(getByText('My Display Name')).toBeInTheDocument()
++  })
++})
+diff --git a/src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx b/src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx
+index 240e1ba76..d0b0754e0 100644
+--- a/src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx
++++ b/src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx
+@@ -23,12 +23,12 @@ import { CATEGORIES, CREATED_BY, NOT_SHARED, SHARED, GLOBAL } from '@/constants'
+ import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
+ import { useDebouncedApply } from '@/hooks/useDebounceApply'
+ import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
++import { renderProjectOption, useProjectOptions } from '@/hooks/useProjectOptions'
+ import { assistantsStore } from '@/store/assistants'
+ import { userStore } from '@/store/user'
+ import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
+ import { checkEmptyFilters } from '@/utils/filters'
+ import { createdBy } from '@/utils/helpers'
+-import { getProjectDisplayName } from '@/utils/projectDisplayName'
+ 
+ interface AssistantFilters {
+   search?: string
+@@ -50,7 +50,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
+   filters,
+   activeScope,
+ }) => {
+-  const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
++  const { projectOptions, loadProjectOptions } = useProjectOptions()
+   const [projectSearchTerm, setProjectSearchTerm] = useState('')
+   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+   const [isChecked, setIsChecked] = useState(false)
+@@ -60,7 +60,11 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
+     const existing = new Set(projectOptions.map((o) => o.value))
+     const extras = (filters.project ?? [])
+       .filter((name): name is string => !!name && !existing.has(name))
+-      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
++      .map((name) => ({
++        label: projectDisplayNames.get(name) ?? name,
++        value: name,
++        displayName: projectDisplayNames.get(name),
++      }))
+     return [...projectOptions, ...extras]
+   }, [projectOptions, filters.project, projectDisplayNames])
+   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
+@@ -86,25 +90,10 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
+     },
+   ]
+ 
+-  const loadProjectOptions = useCallback(async (value: string) => {
+-    try {
+-      const projects = await userStore.getProjects(value)
+-      const options = projects.map((project) => ({
+-        label: getProjectDisplayName(project),
+-        value: project.name,
+-      }))
+-      setProjectOptions(options)
+-    } catch (error) {
+-      console.error('Error loading project options:', error)
+-    } finally {
+-      setIsLoadingProjects(false)
+-    }
+-  }, [])
+-
+-  const applyProjectSearch = useCallback(
+-    () => loadProjectOptions(projectSearchTerm),
+-    [projectSearchTerm, loadProjectOptions]
+-  )
++  const applyProjectSearch = useCallback(async () => {
++    await loadProjectOptions(projectSearchTerm)
++    setIsLoadingProjects(false)
++  }, [projectSearchTerm, loadProjectOptions])
+ 
+   const handleProjectFilter = useCallback((value: string) => {
+     setIsLoadingProjects(true)
+@@ -167,6 +156,8 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
+             onFilter: handleProjectFilter,
+             loading: isLoadingProjects,
+             emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
++            renderOption: renderProjectOption,
++            filterBy: 'value,displayName',
+           },
+         },
+         {
+diff --git a/src/pages/dataSources/components/DataSourceDetails.tsx b/src/pages/dataSources/components/DataSourceDetails.tsx
+index 3bc06b4e6..eec34aa03 100644
+--- a/src/pages/dataSources/components/DataSourceDetails.tsx
++++ b/src/pages/dataSources/components/DataSourceDetails.tsx
+@@ -29,6 +29,7 @@ import DetailsProperty from '@/components/details/DetailsProperty'
+ import DetailsSidebarSection from '@/components/details/DetailsSidebar/components/DetailsSidebarSection'
+ import DetailsSidebar from '@/components/details/DetailsSidebar/DetailsSidebar'
+ import GuardrailAssignmentsDetails from '@/components/guardrails/GuardrailAssignmentsDetails/GuardrailAssignmentsDetails'
++import ProjectNameDisplay from '@/components/ProjectNameDisplay'
+ import TabsMenu from '@/components/TabsMenu/TabsMenu'
+ import Tooltip from '@/components/Tooltip/Tooltip'
+ import { ButtonType } from '@/constants'
+@@ -674,13 +675,10 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) =>
+             <DetailsProperty
+               label="Project"
+               value={
+-                projectDisplayName ? (
+-                  <span data-tooltip-id="react-tooltip" data-tooltip-content={projectDisplayName}>
+-                    {dataSource?.project_name}
+-                  </span>
+-                ) : (
+-                  dataSource?.project_name
+-                )
++                <ProjectNameDisplay
++                  name={dataSource?.project_name ?? ''}
++                  displayName={projectDisplayName}
++                />
+               }
+             />
+             <DetailsProperty label="Data Source Type" value={humanize(indexType)} />
+diff --git a/src/pages/dataSources/components/DataSourceFilters.tsx b/src/pages/dataSources/components/DataSourceFilters.tsx
+index 36507ff39..58e7c41ff 100644
+--- a/src/pages/dataSources/components/DataSourceFilters.tsx
++++ b/src/pages/dataSources/components/DataSourceFilters.tsx
+@@ -26,13 +26,14 @@ import {
+   INDEX_STATUSES,
+   FILTER_INITIAL_STATE,
+ } from '@/constants/dataSources'
++import { useDebouncedApply } from '@/hooks/useDebounceApply'
++import { renderProjectOption, useProjectOptions } from '@/hooks/useProjectOptions'
+ import { UseTableFiltersReturn } from '@/hooks/useTableFilters'
+ import { userStore } from '@/store'
+ import { FilterDefinition, FilterDefinitionType } from '@/types/filters'
+ import { setFilters, FILTER_ENTITY, getFilters, checkEmptyFilters } from '@/utils/filters'
+ import { humanize, createdBy } from '@/utils/helpers'
+ import { getFullIndexType } from '@/utils/indexing'
+-import { getProjectDisplayName } from '@/utils/projectDisplayName'
+ 
+ type FilterValues = {
+   name: string
+@@ -68,12 +69,26 @@ const DataSourceFilters: React.FC<Props> = ({
+     created_by: sourceFilters.created_by || '',
+     status: sourceFilters.status || '',
+   }
+-  const { loadIndexUsers, getProjects } = useSnapshot(userStore) as typeof userStore
++  const { loadIndexUsers } = useSnapshot(userStore) as typeof userStore
++  const { projectOptions, loadProjectOptions } = useProjectOptions()
++  const [projectSearchTerm, setProjectSearchTerm] = useState('')
++  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+ 
+   const [createdByOptions, setCreatedByOptions] = useState<
+     { label: string; value: string; id: string }[]
+   >([])
+-  const [projectOptions, setProjectOptions] = useState<{ label: string; value: string }[]>([])
++
++  const applyProjectSearch = useCallback(async () => {
++    await loadProjectOptions(projectSearchTerm)
++    setIsLoadingProjects(false)
++  }, [projectSearchTerm, loadProjectOptions])
++
++  const handleProjectFilter = useCallback((value: string) => {
++    setIsLoadingProjects(true)
++    setProjectSearchTerm(value)
++  }, [])
++
++  useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
+ 
+   const indexTypeOptions = useMemo(() => {
+     return Object.keys(INDEX_TYPES)
+@@ -124,19 +139,6 @@ const DataSourceFilters: React.FC<Props> = ({
+     )
+   }, [loadIndexUsers])
+ 
+-  const loadProjectOptions = useCallback(
+-    async (search = '') => {
+-      const projects = await getProjects(search)
+-      setProjectOptions(
+-        projects.map((project) => ({
+-          label: getProjectDisplayName(project),
+-          value: project.name,
+-        }))
+-      )
+-    },
+-    [getProjects]
+-  )
+-
+   useEffect(() => {
+     loadCreatedByOptions()
+     loadProjectOptions()
+@@ -163,7 +165,11 @@ const DataSourceFilters: React.FC<Props> = ({
+           maxSelectedLabels: 3,
+           filterPlaceholder: 'Search for projects',
+           filter: true,
+-          onFilter: loadProjectOptions,
++          onFilter: handleProjectFilter,
++          loading: isLoadingProjects,
++          emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
++          renderOption: renderProjectOption,
++          filterBy: 'value,displayName',
+         },
+       },
+       {
+@@ -185,9 +191,9 @@ const DataSourceFilters: React.FC<Props> = ({
+       mergedInitialValues,
+       indexTypeOptions,
+       projectOptions,
++      isLoadingProjects,
+       createdByOptions,
+       statusOptions,
+-      loadProjectOptions,
+     ]
+   )
+ 
+diff --git a/src/pages/dataSources/components/__tests__/DataSourceDetails.test.tsx b/src/pages/dataSources/components/__tests__/DataSourceDetails.test.tsx
+new file mode 100644
+index 000000000..68ed4a9c2
+--- /dev/null
++++ b/src/pages/dataSources/components/__tests__/DataSourceDetails.test.tsx
+@@ -0,0 +1,131 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { describe, it, expect, vi } from 'vitest'
++
++import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
++
++import DataSourceDetails from '../DataSourceDetails'
++
++vi.mock('@/hooks/useProjectDisplayNames', () => ({
++  useProjectDisplayNames: () => new Map([['my-project', 'My Display Name']]),
++}))
++
++vi.mock('@/hooks/useVueRouter', () => ({
++  useVueRouter: () => ({ push: vi.fn() }),
++}))
++
++vi.mock('valtio', () => ({
++  proxy: (obj: unknown) => obj,
++  useSnapshot: vi.fn((store) => store),
++  subscribe: vi.fn(),
++}))
++
++vi.mock('@/store/dataSources', () => ({
++  dataSourceStore: {
++    reindexProviderIndex: vi.fn(),
++    updateKBIndex: vi.fn(),
++    reIndexKBIndex: vi.fn(),
++    updateApplicationIndex: vi.fn(),
++    reindexMarketplace: vi.fn(),
++  },
++}))
++
++vi.mock('@/store/appInfo', () => ({
++  appInfoStore: { findLLMLabel: () => null, findEmbeddingLabel: () => null },
++}))
++
++vi.mock('@/components/guardrails/GuardrailAssignmentsDetails/GuardrailAssignmentsDetails', () => ({
++  default: () => null,
++}))
++
++vi.mock('@/components/TabsMenu/TabsMenu', () => ({ default: () => null }))
++
++vi.mock('../DataSourceDetails/DetaSourceDetailsProvider', () => ({ default: () => null }))
++
++vi.mock('../DataSourceDeleteModal', () => ({ default: () => null }))
++
++vi.mock('../SharePointReindexAuthPopup', () => ({ default: () => null }))
++
++vi.mock('@/pages/dataSources/components/DataSourceTypeIcon', () => ({ default: () => null }))
++
++vi.mock('@/assets/icons/delete.svg?react', () => ({ default: () => null }))
++vi.mock('@/assets/icons/edit.svg?react', () => ({ default: () => null }))
++vi.mock('@/assets/icons/info.svg?react', () => ({ default: () => null }))
++vi.mock('@/assets/icons/reindex.svg?react', () => ({ default: () => null }))
++vi.mock('@/assets/icons/shared-no.svg?react', () => ({ default: () => null }))
++vi.mock('@/assets/icons/shared-yes.svg?react', () => ({ default: () => null }))
++
++const dataSource: DataSourceDetailsResponse = {
++  id: 'ds1',
++  name: 'Test DS',
++  date: '2024-01-01',
++  update_date: '2024-01-01',
++  project_name: 'my-project',
++  description: '',
++  repo_name: '',
++  index_type: 'git',
++  prompt: null,
++  embeddings_model: '',
++  summarization_model: '',
++  current_state: 0,
++  complete_state: 100,
++  current__chunks_state: 0,
++  processed_files: [],
++  uploaded_files: [],
++  error: false,
++  completed: true,
++  text: '',
++  full_name: '',
++  created_by: { id: '1', name: 'User', username: 'user', email: '' },
++  project_space_visible: false,
++  docs_generation: false,
++  branch: '',
++  link: '',
++  files_filter: '',
++  google_doc_link: '',
++  user_abilities: [],
++  confluence: null,
++  jira: null,
++  xray: null,
++  azure_devops_wiki: null,
++  azure_devops_work_item: null,
++  is_fetching: false,
++  is_queued: false,
++  setting_id: '',
++  tokens_usage: { input_tokens: 0, output_tokens: 0, money_spent: 0 },
++  processing_info: { unique_extensions: [] },
++  provider_fields: null,
++  guardrail_assignments: [],
++}
++
++describe('DataSourceDetails — project name display', () => {
++  it('shows project display name without data-tooltip-id', () => {
++    const { container } = render(<DataSourceDetails dataSource={dataSource} />)
++    expect(container.querySelector('[data-tooltip-id]')).toBeNull()
++    expect(container.querySelector('[data-tooltip-content]')).toBeNull()
++  })
++
++  it('renders project technical name', () => {
++    const { getByText } = render(<DataSourceDetails dataSource={dataSource} />)
++    expect(getByText('my-project')).toBeInTheDocument()
++  })
++
++  it('renders project display name as stacked second line', () => {
++    const { getByText } = render(<DataSourceDetails dataSource={dataSource} />)
++    expect(getByText('My Display Name')).toBeInTheDocument()
++  })
++})
+diff --git a/src/pages/dataSources/components/__tests__/DataSourceFilters.test.tsx b/src/pages/dataSources/components/__tests__/DataSourceFilters.test.tsx
+new file mode 100644
+index 000000000..a88987e49
+--- /dev/null
++++ b/src/pages/dataSources/components/__tests__/DataSourceFilters.test.tsx
+@@ -0,0 +1,97 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { act, render } from '@testing-library/react'
++import { describe, it, expect, vi, afterEach } from 'vitest'
++
++import DataSourceFilters from '../DataSourceFilters'
++
++let capturedOnProjectFilter: (value: string) => void = () => {}
++
++vi.mock('@/components/Filters', () => ({
++  default: ({ filterDefinitions }: { filterDefinitions: any[] }) => {
++    const projectDef = filterDefinitions?.find((d: any) => d.name === 'project')
++    if (projectDef?.config?.onFilter) capturedOnProjectFilter = projectDef.config.onFilter
++    return null
++  },
++}))
++
++vi.mock('@/components/UserFilter', () => ({ default: () => null }))
++
++const mockLoadProjectOptions = vi.fn().mockResolvedValue(undefined)
++vi.mock('@/hooks/useProjectOptions', () => ({
++  useProjectOptions: () => ({ projectOptions: [], loadProjectOptions: mockLoadProjectOptions }),
++  renderProjectOption: () => null,
++}))
++
++vi.mock('valtio', () => ({
++  proxy: (obj: unknown) => obj,
++  useSnapshot: vi.fn((store) => store),
++  subscribe: vi.fn(),
++}))
++
++vi.mock('@/store', () => ({
++  userStore: { loadIndexUsers: vi.fn().mockResolvedValue([]), user: null },
++}))
++
++vi.mock('@/utils/filters', () => ({
++  getFilters: () => null,
++  setFilters: vi.fn(),
++  checkEmptyFilters: () => true,
++  FILTER_ENTITY: { DATASOURCES: 'datasources' },
++}))
++
++describe('DataSourceFilters — project search debounce', () => {
++  afterEach(() => {
++    vi.useRealTimers()
++    vi.clearAllMocks()
++    capturedOnProjectFilter = () => {}
++  })
++
++  it('debounces project search: rapid keystrokes produce a single request after 1 second', async () => {
++    vi.useFakeTimers()
++
++    render(<DataSourceFilters onApplyFilters={vi.fn()} />)
++
++    // Let initial effects settle (initial loadProjectOptions() call on mount)
++    await act(async () => {})
++
++    // Reset — only count debounce-triggered calls from here
++    mockLoadProjectOptions.mockClear()
++
++    // Simulate rapid typing: 3 keystrokes within debounce window
++    act(() => {
++      capturedOnProjectFilter('a')
++    })
++    act(() => {
++      capturedOnProjectFilter('ab')
++    })
++    act(() => {
++      capturedOnProjectFilter('abc')
++    })
++
++    // No request fired yet (all within 1000ms debounce window)
++    expect(mockLoadProjectOptions).not.toHaveBeenCalled()
++
++    // Advance past the 1000ms debounce
++    await act(async () => {
++      vi.advanceTimersByTime(1100)
++    })
++
++    // Exactly one request with the final search term
++    expect(mockLoadProjectOptions).toHaveBeenCalledTimes(1)
++    expect(mockLoadProjectOptions).toHaveBeenCalledWith('abc')
++  })
++})
+diff --git a/src/pages/favorites/components/FavoritesAllFilters.tsx b/src/pages/favorites/components/FavoritesAllFilters.tsx
+index 5fa8b35c5..934c36495 100644
+--- a/src/pages/favorites/components/FavoritesAllFilters.tsx
++++ b/src/pages/favorites/components/FavoritesAllFilters.tsx
+@@ -19,12 +19,13 @@ import Filters from '@/components/Filters'
+ import UserFilter from '@/components/UserFilter'
+ import { CREATED_BY } from '@/constants'
+ import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
++import { useDebouncedApply } from '@/hooks/useDebounceApply'
++import { renderProjectOption, useProjectOptions } from '@/hooks/useProjectOptions'
+ import { userStore } from '@/store/user'
+ import { FavoritesFilters } from '@/types/entity/favorites'
+ import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
+ import { FILTER_ENTITY, checkEmptyFilters, getFilters, setFilters } from '@/utils/filters'
+ import { createdBy } from '@/utils/helpers'
+-import { getProjectDisplayName } from '@/utils/projectDisplayName'
+ 
+ interface FavoritesAllFiltersProps {
+   onFilterChange: (filters: Partial<FavoritesFilters>) => void
+@@ -32,7 +33,9 @@ interface FavoritesAllFiltersProps {
+ 
+ const FavoritesAllFilters: React.FC<FavoritesAllFiltersProps> = ({ onFilterChange }) => {
+   const FILTER_KEY = `${FILTER_ENTITY.FAVORITES}.all`
+-  const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
++  const { projectOptions, loadProjectOptions } = useProjectOptions()
++  const [projectSearchTerm, setProjectSearchTerm] = useState('')
++  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
+   const [isChecked, setIsChecked] = useState(false)
+ 
+@@ -41,15 +44,18 @@ const FavoritesAllFilters: React.FC<FavoritesAllFiltersProps> = ({ onFilterChang
+ 
+   const areFiltersEmpty = useMemo(() => checkEmptyFilters(filterState), [filterState])
+ 
+-  const loadProjectOptions = useCallback(async (value = '') => {
+-    try {
+-      const projects = await userStore.getProjects(value)
+-      setProjectOptions(projects.map((p) => ({ label: getProjectDisplayName(p), value: p.name })))
+-    } catch (error) {
+-      console.error('Error loading project options:', error)
+-    }
++  const applyProjectSearch = useCallback(async () => {
++    await loadProjectOptions(projectSearchTerm)
++    setIsLoadingProjects(false)
++  }, [projectSearchTerm, loadProjectOptions])
++
++  const handleProjectFilter = useCallback((value: string) => {
++    setIsLoadingProjects(true)
++    setProjectSearchTerm(value)
+   }, [])
+ 
++  useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
++
+   const loadCreatedByOptions = useCallback(async () => {
+     try {
+       const users = await userStore.loadAssistantsUsers({
+@@ -80,7 +86,11 @@ const FavoritesAllFilters: React.FC<FavoritesAllFiltersProps> = ({ onFilterChang
+           maxSelectedLabels: 3,
+           filter: true,
+           filterPlaceholder: 'Search for projects',
+-          onFilter: loadProjectOptions,
++          onFilter: handleProjectFilter,
++          loading: isLoadingProjects,
++          emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
++          renderOption: renderProjectOption,
++          filterBy: 'value,displayName',
+         },
+       },
+       {
+@@ -95,8 +105,8 @@ const FavoritesAllFilters: React.FC<FavoritesAllFiltersProps> = ({ onFilterChang
+       filterState.project,
+       filterState.created_by,
+       projectOptions,
++      isLoadingProjects,
+       createdByOptions,
+-      loadProjectOptions,
+     ]
+   )
+ 
+diff --git a/src/pages/favorites/components/__tests__/FavoritesAllFilters.test.tsx b/src/pages/favorites/components/__tests__/FavoritesAllFilters.test.tsx
+new file mode 100644
+index 000000000..994e8d622
+--- /dev/null
++++ b/src/pages/favorites/components/__tests__/FavoritesAllFilters.test.tsx
+@@ -0,0 +1,93 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { act, render } from '@testing-library/react'
++import { describe, it, expect, vi, afterEach } from 'vitest'
++
++import FavoritesAllFilters from '../FavoritesAllFilters'
++
++let capturedOnProjectFilter: (value: string) => void = () => {}
++
++vi.mock('@/components/Filters', () => ({
++  default: ({ filterDefinitions }: { filterDefinitions: any[] }) => {
++    const projectDef = filterDefinitions?.find((d: any) => d.name === 'project')
++    if (projectDef?.config?.onFilter) capturedOnProjectFilter = projectDef.config.onFilter
++    return null
++  },
++}))
++
++vi.mock('@/components/UserFilter', () => ({ default: () => null }))
++
++const mockLoadProjectOptions = vi.fn().mockResolvedValue(undefined)
++vi.mock('@/hooks/useProjectOptions', () => ({
++  useProjectOptions: () => ({ projectOptions: [], loadProjectOptions: mockLoadProjectOptions }),
++  renderProjectOption: () => null,
++}))
++
++vi.mock('@/store/user', () => ({
++  userStore: {
++    loadAssistantsUsers: vi.fn().mockResolvedValue([]),
++  },
++}))
++
++vi.mock('@/utils/filters', () => ({
++  getFilters: () => ({}),
++  setFilters: vi.fn(),
++  checkEmptyFilters: () => true,
++  FILTER_ENTITY: { FAVORITES: 'favorites' },
++}))
++
++describe('FavoritesAllFilters — project search debounce', () => {
++  afterEach(() => {
++    vi.useRealTimers()
++    vi.clearAllMocks()
++    capturedOnProjectFilter = () => {}
++  })
++
++  it('debounces project search: rapid keystrokes produce a single request after 1 second', async () => {
++    vi.useFakeTimers()
++
++    render(<FavoritesAllFilters onFilterChange={vi.fn()} />)
++
++    // Let initial effects settle (initial loadProjectOptions('') call on mount)
++    await act(async () => {})
++
++    // Reset — only count debounce-triggered calls from here
++    mockLoadProjectOptions.mockClear()
++
++    // Simulate rapid typing: 3 keystrokes within debounce window
++    act(() => {
++      capturedOnProjectFilter('a')
++    })
++    act(() => {
++      capturedOnProjectFilter('ab')
++    })
++    act(() => {
++      capturedOnProjectFilter('abc')
++    })
++
++    // No request fired yet (all within 1000ms debounce window)
++    expect(mockLoadProjectOptions).not.toHaveBeenCalled()
++
++    // Advance past the 1000ms debounce
++    await act(async () => {
++      vi.advanceTimersByTime(1100)
++    })
++
++    // Exactly one request with the final search term
++    expect(mockLoadProjectOptions).toHaveBeenCalledTimes(1)
++    expect(mockLoadProjectOptions).toHaveBeenCalledWith('abc')
++  })
++})
+diff --git a/src/pages/integrations/components/ProjectSettings/ProjectSettings.tsx b/src/pages/integrations/components/ProjectSettings/ProjectSettings.tsx
+index 74a440901..28b616106 100644
+--- a/src/pages/integrations/components/ProjectSettings/ProjectSettings.tsx
++++ b/src/pages/integrations/components/ProjectSettings/ProjectSettings.tsx
+@@ -28,7 +28,7 @@ import { TableProps } from '@/components/Table/Table'
+ import UserFilter from '@/components/UserFilter'
+ import { ButtonType, DECIMAL_PAGINATION_OPTIONS, CREATED_BY } from '@/constants'
+ import { useIntegrationTypeOptions } from '@/hooks/useIntegrationTypeOptions'
+-import { useProjectOptions } from '@/hooks/useProjectOptions'
++import { renderProjectOption, useProjectOptions } from '@/hooks/useProjectOptions'
+ import { useTableFilters } from '@/hooks/useTableFilters'
+ import { useVueRouter } from '@/hooks/useVueRouter'
+ import { INITIAL_FILTERS } from '@/pages/integrations/IntegrationsTab'
+@@ -130,6 +130,8 @@ const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
+         filter: true,
+         filterPlaceholder: 'Search for projects',
+         onFilter: loadProjectOptions,
++        renderOption: renderProjectOption,
++        filterBy: 'value,displayName',
+       },
+     },
+     {
+diff --git a/src/pages/integrations/components/UserSettings/UserSettings.tsx b/src/pages/integrations/components/UserSettings/UserSettings.tsx
+index 6b80b5742..bd5cfd27f 100644
+--- a/src/pages/integrations/components/UserSettings/UserSettings.tsx
++++ b/src/pages/integrations/components/UserSettings/UserSettings.tsx
+@@ -27,7 +27,7 @@ import Table from '@/components/Table'
+ import { TableProps } from '@/components/Table/Table'
+ import { ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
+ import { useIntegrationTypeOptions } from '@/hooks/useIntegrationTypeOptions'
+-import { useProjectOptions } from '@/hooks/useProjectOptions'
++import { renderProjectOption, useProjectOptions } from '@/hooks/useProjectOptions'
+ import { useTableFilters } from '@/hooks/useTableFilters'
+ import { useVueRouter } from '@/hooks/useVueRouter'
+ import { INITIAL_FILTERS } from '@/pages/integrations/IntegrationsTab'
+@@ -129,6 +129,8 @@ const UserSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
+         filter: true,
+         filterPlaceholder: 'Search for projects',
+         onFilter: loadProjectOptions,
++        renderOption: renderProjectOption,
++        filterBy: 'value,displayName',
+       },
+     },
+     {
+diff --git a/src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx b/src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx
+index 33fe7324e..8b6376b6f 100644
+--- a/src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx
++++ b/src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx
+@@ -28,6 +28,7 @@ import Input from '@/components/form/Input'
+ import Select from '@/components/form/Select'
+ import InfoWarning from '@/components/InfoWarning'
+ import NavigationMore, { NavigationItem } from '@/components/NavigationMore/NavigationMore'
++import ProjectNameDisplay from '@/components/ProjectNameDisplay'
+ import Table from '@/components/Table'
+ import { ButtonSize, DECIMAL_PAGINATION_OPTIONS, ButtonType, InfoWarningType } from '@/constants'
+ import { useDebouncedApply } from '@/hooks/useDebounceApply'
+@@ -424,17 +425,11 @@ const ProjectsManagementFull: FC = () => {
+ 
+   const customRenderColumns = useMemo(
+     () => ({
+-      name: (item: Project) => {
+-        const displayName = item.display_name?.trim()
+-        return (
+-          <NameLinkCell
+-            onClick={() => handleOpenProjectDetails(item.name)}
+-            tooltip={displayName || undefined}
+-          >
+-            {item.name}
+-          </NameLinkCell>
+-        )
+-      },
++      name: (item: Project) => (
++        <NameLinkCell onClick={() => handleOpenProjectDetails(item.name)}>
++          <ProjectNameDisplay name={item.name} displayName={item.display_name} />
++        </NameLinkCell>
++      ),
+       [COST_CENTER_COLUMN_KEY]: (item: Project) => (
+         <span className="text-text-primary break-all">{displayValue(item.cost_center_name)}</span>
+       ),
+diff --git a/src/pages/skills/components/SkillDetails.tsx b/src/pages/skills/components/SkillDetails.tsx
+index 4ce115fbe..e61641a62 100644
+--- a/src/pages/skills/components/SkillDetails.tsx
++++ b/src/pages/skills/components/SkillDetails.tsx
+@@ -21,6 +21,7 @@ import DetailsCopyField from '@/components/details/DetailsCopyField'
+ import DetailsProperty from '@/components/details/DetailsProperty'
+ import DetailsSidebar from '@/components/details/DetailsSidebar'
+ import DetailsSidebarSection from '@/components/details/DetailsSidebar/components/DetailsSidebarSection'
++import ProjectNameDisplay from '@/components/ProjectNameDisplay'
+ import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+ import SidebarTags from '@/pages/assistants/components/AssistantDetails/components/sidebar_details/SidebarTags'
+ import ToolkitsViewList from '@/pages/assistants/components/ToolkitsViewList/ToolkitsViewList'
+@@ -126,13 +127,10 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
+             <DetailsProperty
+               label="Project"
+               value={
+-                projectDisplayName ? (
+-                  <span data-tooltip-id="react-tooltip" data-tooltip-content={projectDisplayName}>
+-                    {skill.project}
+-                  </span>
+-                ) : (
+-                  skill.project
+-                )
++                <ProjectNameDisplay
++                  name={skill.project ?? ''}
++                  displayName={projectDisplayName || undefined}
++                />
+               }
+             />
+             <DetailsProperty label="Visibility" value={getVisibilityLabel(skill.visibility)} />
+diff --git a/src/pages/skills/components/SkillsFilters.tsx b/src/pages/skills/components/SkillsFilters.tsx
+index 489612729..163e1b168 100644
+--- a/src/pages/skills/components/SkillsFilters.tsx
++++ b/src/pages/skills/components/SkillsFilters.tsx
+@@ -19,7 +19,9 @@ import Filters from '@/components/Filters'
+ import UserFilter from '@/components/UserFilter'
+ import { CREATED_BY } from '@/constants'
+ import { SKILL_INDEX_SCOPES } from '@/constants/skills'
++import { useDebouncedApply } from '@/hooks/useDebounceApply'
+ import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
++import { renderProjectOption, useProjectOptions } from '@/hooks/useProjectOptions'
+ import { skillsStore } from '@/store/skills'
+ import { userStore } from '@/store/user'
+ import { SkillsFilters, SkillVisibility } from '@/types/entity/skill'
+@@ -27,7 +29,6 @@ import { User } from '@/types/entity/user'
+ import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
+ import { checkEmptyFilters } from '@/utils/filters'
+ import { createdBy } from '@/utils/helpers'
+-import { getProjectDisplayName } from '@/utils/projectDisplayName'
+ 
+ interface SkillsFiltersProps {
+   onFilterChange: (filters: Record<string, unknown>) => void
+@@ -51,7 +52,9 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
+   filters,
+   activeScope,
+ }) => {
+-  const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
++  const { projectOptions, loadProjectOptions } = useProjectOptions()
++  const [projectSearchTerm, setProjectSearchTerm] = useState('')
++  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+   const [isChecked, setIsChecked] = useState(false)
+   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
+   const [categoryOptions, setCategoryOptions] = useState<FilterOption[]>([])
+@@ -61,27 +64,30 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
+     const existing = new Set(projectOptions.map((o) => o.value))
+     const extras = (filters.project ?? [])
+       .filter((name): name is string => !!name && !existing.has(name))
+-      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
++      .map((name) => ({
++        label: projectDisplayNames.get(name) ?? name,
++        value: name,
++        displayName: projectDisplayNames.get(name),
++      }))
+     return [...projectOptions, ...extras]
+   }, [projectOptions, filters.project, projectDisplayNames])
+ 
++  const applyProjectSearch = useCallback(async () => {
++    await loadProjectOptions(projectSearchTerm)
++    setIsLoadingProjects(false)
++  }, [projectSearchTerm, loadProjectOptions])
++
++  const handleProjectFilter = useCallback((value: string) => {
++    setIsLoadingProjects(true)
++    setProjectSearchTerm(value)
++  }, [])
++
++  useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
++
+   const areFiltersEmpty = useMemo(() => {
+     return checkEmptyFilters(filters)
+   }, [filters])
+ 
+-  const loadProjectOptions = useCallback(async (value: string) => {
+-    try {
+-      const projects = await userStore.getProjects(value)
+-      const options = projects.map((project) => ({
+-        label: getProjectDisplayName(project),
+-        value: project.name,
+-      }))
+-      setProjectOptions(options)
+-    } catch (error) {
+-      console.error('Error loading project options:', error)
+-    }
+-  }, [])
+-
+   const loadCreatedByOptions = useCallback(async () => {
+     try {
+       const users = await userStore.loadSkillsUsers()
+@@ -131,7 +137,11 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
+             maxSelectedLabels: 3,
+             filter: true,
+             filterPlaceholder: 'Search for projects',
+-            onFilter: loadProjectOptions,
++            onFilter: handleProjectFilter,
++            loading: isLoadingProjects,
++            emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
++            renderOption: renderProjectOption,
++            filterBy: 'value,displayName',
+           },
+         },
+         {
+@@ -177,9 +187,9 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
+       filters.visibility,
+       filters.created_by,
+       resolvedProjectOptions,
++      isLoadingProjects,
+       createdByOptions,
+       categoryOptions,
+-      loadProjectOptions,
+       activeScope,
+     ]
+   )
+diff --git a/src/pages/skills/components/__tests__/SkillDetails.test.tsx b/src/pages/skills/components/__tests__/SkillDetails.test.tsx
+new file mode 100644
+index 000000000..c37b1bb28
+--- /dev/null
++++ b/src/pages/skills/components/__tests__/SkillDetails.test.tsx
+@@ -0,0 +1,79 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { describe, it, expect, vi } from 'vitest'
++
++import { Skill, SkillVisibility } from '@/types/entity/skill'
++
++import SkillDetails from '../SkillDetails'
++
++vi.mock('@/hooks/useProjectDisplayNames', () => ({
++  useProjectDisplayNames: () => new Map([['my-project', 'My Display Name']]),
++}))
++
++vi.mock(
++  '@/pages/assistants/components/AssistantDetails/components/sidebar_details/SidebarTags',
++  () => ({ default: () => null })
++)
++
++vi.mock('@/pages/assistants/components/ToolkitsViewList/ToolkitsViewList', () => ({
++  default: () => null,
++}))
++
++vi.mock('@/pages/skills/components/SkillAssistantsModal', () => ({
++  default: () => null,
++}))
++
++vi.mock('@/pages/skills/components/SkillDetailsActions', () => ({
++  default: () => null,
++}))
++
++vi.mock('@/assets/icons/copy.svg?react', () => ({ default: () => null }))
++
++const skill: Skill = {
++  id: 's1',
++  name: 'test-skill',
++  description: 'desc',
++  content: 'content',
++  project: 'my-project',
++  visibility: SkillVisibility.PRIVATE,
++  categories: [],
++  version: '1.0',
++}
++
++describe('SkillDetails — project name display', () => {
++  it('shows project display name without data-tooltip-id', () => {
++    const { container } = render(
++      <SkillDetails skill={skill} onExport={vi.fn()} exporting={false} />
++    )
++    expect(container.querySelector('[data-tooltip-id]')).toBeNull()
++    expect(container.querySelector('[data-tooltip-content]')).toBeNull()
++  })
++
++  it('renders project technical name', () => {
++    const { getByText } = render(
++      <SkillDetails skill={skill} onExport={vi.fn()} exporting={false} />
++    )
++    expect(getByText('my-project')).toBeInTheDocument()
++  })
++
++  it('renders project display name as stacked second line', () => {
++    const { getByText } = render(
++      <SkillDetails skill={skill} onExport={vi.fn()} exporting={false} />
++    )
++    expect(getByText('My Display Name')).toBeInTheDocument()
++  })
++})
+diff --git a/src/pages/skills/components/__tests__/SkillsFilters.test.tsx b/src/pages/skills/components/__tests__/SkillsFilters.test.tsx
+new file mode 100644
+index 000000000..2faa9a13a
+--- /dev/null
++++ b/src/pages/skills/components/__tests__/SkillsFilters.test.tsx
+@@ -0,0 +1,104 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { act, render } from '@testing-library/react'
++import { describe, it, expect, vi, afterEach } from 'vitest'
++
++import { SkillsFilters } from '@/types/entity/skill'
++
++import SkillsFiltersComponent from '../SkillsFilters'
++
++let capturedOnProjectFilter: (value: string) => void = () => {}
++
++vi.mock('@/components/Filters', () => ({
++  default: ({ filterDefinitions }: { filterDefinitions: any[] }) => {
++    const projectDef = filterDefinitions?.find((d: any) => d.name === 'project')
++    if (projectDef?.config?.onFilter) capturedOnProjectFilter = projectDef.config.onFilter
++    return null
++  },
++}))
++
++vi.mock('@/components/UserFilter', () => ({ default: () => null }))
++
++const mockLoadProjectOptions = vi.fn().mockResolvedValue(undefined)
++vi.mock('@/hooks/useProjectOptions', () => ({
++  useProjectOptions: () => ({ projectOptions: [], loadProjectOptions: mockLoadProjectOptions }),
++  renderProjectOption: () => null,
++}))
++
++vi.mock('@/hooks/useProjectDisplayNames', () => ({
++  useProjectDisplayNames: () => new Map(),
++}))
++
++vi.mock('@/store/skills', () => ({
++  skillsStore: { getSkillCategories: vi.fn().mockResolvedValue([]) },
++}))
++
++vi.mock('@/store/user', () => ({
++  userStore: { loadSkillsUsers: vi.fn().mockResolvedValue([]) },
++}))
++
++vi.mock('@/utils/filters', () => ({
++  checkEmptyFilters: () => true,
++}))
++
++describe('SkillsFilters — project search debounce', () => {
++  afterEach(() => {
++    vi.useRealTimers()
++    vi.clearAllMocks()
++    capturedOnProjectFilter = () => {}
++  })
++
++  it('debounces project search: rapid keystrokes produce a single request after 1 second', async () => {
++    vi.useFakeTimers()
++
++    render(
++      <SkillsFiltersComponent
++        onFilterChange={vi.fn()}
++        filters={{} as SkillsFilters}
++        activeScope="all"
++      />
++    )
++
++    // Let initial effects settle (initial loadProjectOptions('') call on mount)
++    await act(async () => {})
++
++    // Reset — only count debounce-triggered calls from here
++    mockLoadProjectOptions.mockClear()
++
++    // Simulate rapid typing: 3 keystrokes within debounce window
++    act(() => {
++      capturedOnProjectFilter('a')
++    })
++    act(() => {
++      capturedOnProjectFilter('ab')
++    })
++    act(() => {
++      capturedOnProjectFilter('abc')
++    })
++
++    // No request fired yet (all within 1000ms debounce window)
++    expect(mockLoadProjectOptions).not.toHaveBeenCalled()
++
++    // Advance past the 1000ms debounce
++    await act(async () => {
++      vi.advanceTimersByTime(1100)
++    })
++
++    // Exactly one request with the final search term
++    expect(mockLoadProjectOptions).toHaveBeenCalledTimes(1)
++    expect(mockLoadProjectOptions).toHaveBeenCalledWith('abc')
++  })
++})
+diff --git a/src/pages/workflows/components/WorkflowsFilters.tsx b/src/pages/workflows/components/WorkflowsFilters.tsx
+index 59e386746..2b5628af4 100644
+--- a/src/pages/workflows/components/WorkflowsFilters.tsx
++++ b/src/pages/workflows/components/WorkflowsFilters.tsx
+@@ -19,7 +19,9 @@ import { useSnapshot } from 'valtio'
+ import Filters from '@/components/Filters'
+ import UserFilter from '@/components/UserFilter'
+ import { CREATED_BY } from '@/constants'
++import { useDebouncedApply } from '@/hooks/useDebounceApply'
+ import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
++import { renderProjectOption, useProjectOptions } from '@/hooks/useProjectOptions'
+ import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
+ import {
+   INITIAL_WORKFLOWS_FILTERS,
+@@ -32,7 +34,6 @@ import { workflowsStore } from '@/store/workflows'
+ import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
+ import { FILTER_ENTITY, getFilters, setFilters, updateUrlWithFilters } from '@/utils/filters'
+ import { createdBy } from '@/utils/helpers'
+-import { getProjectDisplayName } from '@/utils/projectDisplayName'
+ import { makeCleanObject } from '@/utils/utils'
+ 
+ interface WorkflowsFilters {
+@@ -54,7 +55,9 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
+   const { assistantCategories } = useSnapshot(assistantsStore)
+   const { workflowTemplates } = useSnapshot(workflowsStore)
+   const { user } = useSnapshot(userStore)
+-  const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
++  const { projectOptions, loadProjectOptions } = useProjectOptions()
++  const [projectSearchTerm, setProjectSearchTerm] = useState('')
++  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
+   const [isCreatedByMeChecked, setIsCreatedByMeChecked] = useState(false)
+ 
+@@ -74,7 +77,11 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
+     const existing = new Set(projectOptions.map((o) => o.value))
+     const extras = persistedProject
+       .filter((name): name is string => !!name && !existing.has(name))
+-      .map((name) => ({ label: projectDisplayNames.get(name) ?? name, value: name }))
++      .map((name) => ({
++        label: projectDisplayNames.get(name) ?? name,
++        value: name,
++        displayName: projectDisplayNames.get(name),
++      }))
+     return [...projectOptions, ...extras]
+   }, [projectOptions, persistedProject, projectDisplayNames])
+ 
+@@ -83,6 +90,18 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
+     [assistantCategories]
+   )
+ 
++  const applyProjectSearch = useCallback(async () => {
++    await loadProjectOptions(projectSearchTerm)
++    setIsLoadingProjects(false)
++  }, [projectSearchTerm, loadProjectOptions])
++
++  const handleProjectFilter = useCallback((value: string) => {
++    setIsLoadingProjects(true)
++    setProjectSearchTerm(value)
++  }, [])
++
++  useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
++
+   const initialFilterValues = (() => {
+     const {
+       name = INITIAL_WORKFLOWS_FILTERS.name,
+@@ -101,19 +120,6 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
+     }
+   })()
+ 
+-  const loadProjectOptions = useCallback(async (value = '') => {
+-    try {
+-      const projects = await userStore.getProjects(value)
+-      const options = projects.map((project) => ({
+-        label: getProjectDisplayName(project),
+-        value: project.name,
+-      }))
+-      setProjectOptions(options)
+-    } catch (error) {
+-      console.error('Error loading project options:', error)
+-    }
+-  }, [])
+-
+   const loadCreatedByOptions = useCallback(async (marketplaceScope = false) => {
+     try {
+       const users = await userStore.loadWorkflowsUsers(
+@@ -209,7 +215,11 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
+             maxSelectedLabels: 3,
+             filter: true,
+             filterPlaceholder: 'Search for projects',
+-            onFilter: loadProjectOptions,
++            onFilter: handleProjectFilter,
++            loading: isLoadingProjects,
++            emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
++            renderOption: renderProjectOption,
++            filterBy: 'value,displayName',
+           },
+         },
+         {
+@@ -251,8 +261,8 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
+       initialFilterValues.shared,
+       categoriesOptions,
+       resolvedProjectOptions,
++      isLoadingProjects,
+       createdByOptions,
+-      loadProjectOptions,
+       scope,
+     ]
+   )
+diff --git a/src/pages/workflows/components/__tests__/WorkflowsFilters.test.tsx b/src/pages/workflows/components/__tests__/WorkflowsFilters.test.tsx
+new file mode 100644
+index 000000000..3606750c1
+--- /dev/null
++++ b/src/pages/workflows/components/__tests__/WorkflowsFilters.test.tsx
+@@ -0,0 +1,123 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { act, render } from '@testing-library/react'
++import { describe, it, expect, vi, afterEach } from 'vitest'
++
++import WorkflowsFilters from '../WorkflowsFilters'
++
++let capturedOnProjectFilter: (value: string) => void = () => {}
++
++vi.mock('@/components/Filters', () => ({
++  default: ({ filterDefinitions }: { filterDefinitions: any[] }) => {
++    const projectDef = filterDefinitions?.find((d: any) => d.name === 'project')
++    if (projectDef?.config?.onFilter) capturedOnProjectFilter = projectDef.config.onFilter
++    return null
++  },
++}))
++
++vi.mock('@/components/UserFilter', () => ({ default: () => null }))
++
++const mockLoadProjectOptions = vi.fn().mockResolvedValue(undefined)
++vi.mock('@/hooks/useProjectOptions', () => ({
++  useProjectOptions: () => ({ projectOptions: [], loadProjectOptions: mockLoadProjectOptions }),
++  renderProjectOption: () => null,
++}))
++
++vi.mock('@/hooks/useProjectDisplayNames', () => ({
++  useProjectDisplayNames: () => new Map(),
++}))
++
++vi.mock('@/hooks/useVueRouter', () => ({
++  useVueRouter: () => ({ push: vi.fn() }),
++  useVueRoute: () => ({ query: {}, path: '/' }),
++}))
++
++vi.mock('valtio', () => ({
++  proxy: (obj: unknown) => obj,
++  useSnapshot: vi.fn((store) => store),
++  subscribe: vi.fn(),
++}))
++
++vi.mock('@/store', () => ({
++  assistantsStore: { assistantCategories: [], getAssistantCategories: vi.fn() },
++}))
++
++vi.mock('@/store/user', () => ({
++  userStore: { user: null, loadWorkflowsUsers: vi.fn().mockResolvedValue([]) },
++}))
++
++vi.mock('@/store/workflows', () => ({
++  workflowsStore: {
++    workflowTemplates: [],
++    workflowsTemplatesLoaded: false,
++    workflowsTemplatesLoading: false,
++    setWorkflowsFilters: vi.fn(),
++    setWorkflowsPagination: vi.fn(),
++    indexWorkflows: vi.fn(),
++    indexWorkflowTemplates: vi.fn(),
++  },
++}))
++
++vi.mock('@/utils/filters', () => ({
++  getFilters: () => ({}),
++  setFilters: vi.fn(),
++  updateUrlWithFilters: vi.fn(),
++  checkEmptyFilters: () => true,
++  FILTER_ENTITY: { WORKFLOWS: 'workflows' },
++}))
++
++describe('WorkflowsFilters — project search debounce', () => {
++  afterEach(() => {
++    vi.useRealTimers()
++    vi.clearAllMocks()
++    capturedOnProjectFilter = () => {}
++  })
++
++  it('debounces project search: rapid keystrokes produce a single request after 1 second', async () => {
++    vi.useFakeTimers()
++
++    render(<WorkflowsFilters scope="all" onApply={vi.fn()} />)
++
++    // Let initial effects settle (initial loadProjectOptions('') call on mount)
++    await act(async () => {})
++
++    // Reset — only count debounce-triggered calls from here
++    mockLoadProjectOptions.mockClear()
++
++    // Simulate rapid typing: 3 keystrokes within debounce window
++    act(() => {
++      capturedOnProjectFilter('a')
++    })
++    act(() => {
++      capturedOnProjectFilter('ab')
++    })
++    act(() => {
++      capturedOnProjectFilter('abc')
++    })
++
++    // No request fired yet (all within 1000ms debounce window)
++    expect(mockLoadProjectOptions).not.toHaveBeenCalled()
++
++    // Advance past the 1000ms debounce
++    await act(async () => {
++      vi.advanceTimersByTime(1100)
++    })
++
++    // Exactly one request with the final search term
++    expect(mockLoadProjectOptions).toHaveBeenCalledTimes(1)
++    expect(mockLoadProjectOptions).toHaveBeenCalledWith('abc')
++  })
++})
+diff --git a/src/store/__tests__/user.test.ts b/src/store/__tests__/user.test.ts
+index 0db4a1f5a..e7ee46618 100644
+--- a/src/store/__tests__/user.test.ts
++++ b/src/store/__tests__/user.test.ts
+@@ -181,6 +181,83 @@ describe('userStore', () => {
+ 
+       expect(result.map((p: { name: string }) => p.name)).toEqual(['aaa', 'mmm', 'zzz'])
+     })
++
++    it('filters by name query when display_name is set (EPMCDME-13637)', async () => {
++      const { userStore } = await import('@/store/user')
++      userStore.user = {
++        userId: 'u1',
++        email: 'a@b.com',
++        name: 'Alice',
++        username: 'alice',
++        isAdmin: false,
++        isMaintainer: false,
++        isAuthenticated: true,
++        user_type: 'regular',
++        applications: [],
++        applicationsAdmin: [],
++        projects: [
++          { name: 'epm-fdeg', display_name: 'FDE Group', is_project_admin: false },
++          { name: 'epm-other', display_name: 'Other Team', is_project_admin: false },
++        ],
++        picture: null,
++      } as any
++
++      const result = userStore.getUserProjects(false, 'fdeg')
++
++      expect(result).toHaveLength(1)
++      expect(result[0].name).toBe('epm-fdeg')
++    })
++
++    it('filters by display_name query (regression guard)', async () => {
++      const { userStore } = await import('@/store/user')
++      userStore.user = {
++        userId: 'u1',
++        email: 'a@b.com',
++        name: 'Alice',
++        username: 'alice',
++        isAdmin: false,
++        isMaintainer: false,
++        isAuthenticated: true,
++        user_type: 'regular',
++        applications: [],
++        applicationsAdmin: [],
++        projects: [
++          { name: 'epm-fdeg', display_name: 'FDE Group', is_project_admin: false },
++          { name: 'epm-other', display_name: 'Other Team', is_project_admin: false },
++        ],
++        picture: null,
++      } as any
++
++      const result = userStore.getUserProjects(false, 'fde group')
++
++      expect(result).toHaveLength(1)
++      expect(result[0].name).toBe('epm-fdeg')
++    })
++
++    it('returns all projects when query is empty', async () => {
++      const { userStore } = await import('@/store/user')
++      userStore.user = {
++        userId: 'u1',
++        email: 'a@b.com',
++        name: 'Alice',
++        username: 'alice',
++        isAdmin: false,
++        isMaintainer: false,
++        isAuthenticated: true,
++        user_type: 'regular',
++        applications: [],
++        applicationsAdmin: [],
++        projects: [
++          { name: 'proj-a', display_name: 'Alpha', is_project_admin: false },
++          { name: 'proj-b', display_name: 'Beta', is_project_admin: false },
++        ],
++        picture: null,
++      } as any
++
++      const result = userStore.getUserProjects(false, '')
++
++      expect(result).toHaveLength(2)
++    })
+   })
+ 
+   describe('getAdminProjects', () => {
+@@ -345,5 +422,32 @@ describe('userStore', () => {
+       expect(result).toHaveLength(1)
+       expect(result[0].name).toBe('user-proj')
+     })
++
++    it('threads query to getUserProjects for non-admin (EPMCDME-13637)', async () => {
++      const { userStore } = await import('@/store/user')
++      userStore.user = {
++        userId: 'u1',
++        email: 'a@b.com',
++        name: 'Alice',
++        username: 'alice',
++        isAdmin: false,
++        isMaintainer: false,
++        isAuthenticated: true,
++        user_type: 'regular',
++        applications: [],
++        applicationsAdmin: [],
++        projects: [
++          { name: 'epm-fdeg', display_name: 'FDE Group', is_project_admin: false },
++          { name: 'epm-other', display_name: 'Other Team', is_project_admin: false },
++        ],
++        picture: null,
++      } as any
++
++      const result = await userStore.getProjects('fdeg')
++
++      expect(mockGet).not.toHaveBeenCalled()
++      expect(result).toHaveLength(1)
++      expect(result[0].name).toBe('epm-fdeg')
++    })
+   })
+ })
+diff --git a/src/store/user.ts b/src/store/user.ts
+index aebd30120..27768771c 100644
+--- a/src/store/user.ts
++++ b/src/store/user.ts
+@@ -29,6 +29,7 @@ import {
+ } from '@/types/entity/user'
+ import api from '@/utils/api'
+ import { isFeatureEnabled } from '@/utils/featureFlags'
++import { matchesProjectSearch } from '@/utils/projectDisplayName'
+ import toaster from '@/utils/toaster'
+ import { formatUserOptions } from '@/utils/user'
+ 
+@@ -67,7 +68,7 @@ interface UserStoreType {
+   getProjects: (query?: string, adminOnly?: boolean) => Promise<ProjectOption[]>
+   getDefaultProject: () => Promise<string | null>
+   getAdminProjects: (search?: string) => Promise<ProjectOption[]>
+-  getUserProjects: (adminOnly?: boolean) => ProjectOption[]
++  getUserProjects: (adminOnly?: boolean, query?: string) => ProjectOption[]
+   addProject: (projectName: string) => any
+   isUserVisibleProject: (projectName?: string) => boolean
+   getUsers: (params?: {
+@@ -334,7 +335,7 @@ export const userStore = proxy<UserStoreType>({
+       return userStore.getAdminProjects(query)
+     }
+ 
+-    return userStore.getUserProjects(adminOnly)
++    return userStore.getUserProjects(adminOnly, query)
+   },
+ 
+   getAdminProjects(search = '') {
+@@ -365,10 +366,11 @@ export const userStore = proxy<UserStoreType>({
+       })
+   },
+ 
+-  getUserProjects(adminOnly = false) {
++  getUserProjects(adminOnly = false, query = '') {
+     const projects = userStore.user?.projects ?? []
+     const filtered = adminOnly ? projects.filter((p) => p.is_project_admin) : projects
+-    return filtered
++    const searched = query ? filtered.filter((p) => matchesProjectSearch(p, query)) : filtered
++    return searched
+       .map((p) => ({ name: p.name, display_name: p.display_name }))
+       .sort((a, b) => a.name.localeCompare(b.name))
+   },
+diff --git a/src/types/filters.ts b/src/types/filters.ts
+index a8ed18286..13ebd0f7e 100644
+--- a/src/types/filters.ts
++++ b/src/types/filters.ts
+@@ -29,6 +29,7 @@ export interface FilterOption {
+   value: string | number | boolean | null
+   id?: string
+   badge?: string
++  displayName?: string
+ }
+ 
+ export interface SelectOption<
+diff --git a/src/utils/__tests__/projectDisplayName.test.ts b/src/utils/__tests__/projectDisplayName.test.ts
+index 7536432ba..399ac2630 100644
+--- a/src/utils/__tests__/projectDisplayName.test.ts
++++ b/src/utils/__tests__/projectDisplayName.test.ts
+@@ -15,7 +15,11 @@
+ 
+ import { describe, it, expect } from 'vitest'
+ 
+-import { generateProjectName, getProjectDisplayName } from '@/utils/projectDisplayName'
++import {
++  generateProjectName,
++  getProjectDisplayName,
++  matchesProjectSearch,
++} from '@/utils/projectDisplayName'
+ 
+ describe('getProjectDisplayName', () => {
+   it('returns display_name when it is a non-empty string', () => {
+@@ -47,6 +51,56 @@ describe('getProjectDisplayName', () => {
+   })
+ })
+ 
++describe('matchesProjectSearch', () => {
++  it('returns true when query is empty', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, '')).toBe(true)
++  })
++
++  it('matches by name when display_name is set', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'epm-fdeg')).toBe(
++      true
++    )
++  })
++
++  it('matches by partial name when display_name is set', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'fdeg')).toBe(true)
++  })
++
++  it('matches by display_name (regression guard)', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'fde group')).toBe(
++      true
++    )
++  })
++
++  it('matches by partial display_name (regression guard)', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'fde')).toBe(true)
++  })
++
++  it('returns false when query matches neither field', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'xyz')).toBe(false)
++  })
++
++  it('is case-insensitive for name match', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'EPM-FDEG')).toBe(
++      true
++    )
++  })
++
++  it('is case-insensitive for display_name match', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: 'FDE Group' }, 'FDE GROUP')).toBe(
++      true
++    )
++  })
++
++  it('matches by name when display_name is null', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: null }, 'fdeg')).toBe(true)
++  })
++
++  it('returns false when no match and display_name is null', () => {
++    expect(matchesProjectSearch({ name: 'epm-fdeg', display_name: null }, 'xyz')).toBe(false)
++  })
++})
++
+ describe('generateProjectName', () => {
+   it('lowercases the input', () => {
+     expect(generateProjectName('MyTeam')).toBe('myteam')
+diff --git a/src/utils/projectDisplayName.ts b/src/utils/projectDisplayName.ts
+index e3847c124..05b775ea3 100644
+--- a/src/utils/projectDisplayName.ts
++++ b/src/utils/projectDisplayName.ts
+@@ -19,6 +19,18 @@ export function getProjectDisplayName(project: {
+   return project.display_name?.trim() || project.name
+ }
+ 
++export function matchesProjectSearch(
++  project: { name: string; display_name?: string | null },
++  query: string
++): boolean {
++  if (!query) return true
++  const q = query.toLowerCase()
++  return (
++    project.name.toLowerCase().includes(q) ||
++    !!project.display_name?.trim().toLowerCase().includes(q)
++  )
++}
++
+ export function generateProjectName(displayName: string): string {
+   return displayName
+     .toLowerCase()

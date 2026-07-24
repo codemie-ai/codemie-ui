@@ -1,0 +1,5 @@
+{"gate_id":"spec.approved","decision":"approve","actor":"human","ts":"2026-07-23T13:06:00Z","note":"User reviewed spec and approved: 'The rest of the spec looks ready — go ahead to Stage 4'"}
+{"gate_id":"plan.approved","decision":"approve","actor":"human","ts":"2026-07-23T13:27:00Z","note":"User approved plan and selected inline execution"}
+{"gate_id":"code-review.final","decision":"request-changes","actor":"orchestrator","ts":"2026-07-23T18:00:00Z","note":"1 major patch finding CR-001: filterBy rendered-visibility test missing; 2 defer; 8 dismiss"}
+{"gate_id":"code-review.check","decision":"approve","actor":"orchestrator","ts":"2026-07-23T18:30:00Z","note":"CR-001 resolved: MultiSelect.filterBy.test.tsx added, test passes with fake-timer debounce flush; no new findings"}
+{"gate_id":"design.amendment","decision":"approve","actor":"human","ts":"2026-07-23T21:00:00Z","note":"User reverted stacked ProjectNameDisplay + filterBy threading in favor of a single formatProjectLabel \"name (display_name)\" string label everywhere; PrimeReact default optionLabel filtering matches both fields without filterBy override. Implemented directly, not via the SDLC bot."}

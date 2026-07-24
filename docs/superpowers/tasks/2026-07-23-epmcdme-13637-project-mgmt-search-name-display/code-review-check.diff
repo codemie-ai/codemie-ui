@@ -1,0 +1,89 @@
+diff --git a/docs/superpowers/tasks/2026-07-23-epmcdme-13637-project-mgmt-search-name-display/decisions.jsonl b/docs/superpowers/tasks/2026-07-23-epmcdme-13637-project-mgmt-search-name-display/decisions.jsonl
+index 6b6d44427..15be67709 100644
+--- a/docs/superpowers/tasks/2026-07-23-epmcdme-13637-project-mgmt-search-name-display/decisions.jsonl
++++ b/docs/superpowers/tasks/2026-07-23-epmcdme-13637-project-mgmt-search-name-display/decisions.jsonl
+@@ -1 +1,2 @@
+ {"gate_id":"spec.approved","decision":"approve","actor":"human","ts":"2026-07-23T13:06:00Z","note":"User reviewed spec and approved: 'The rest of the spec looks ready — go ahead to Stage 4'"}
++{"gate_id":"plan.approved","decision":"approve","actor":"human","ts":"2026-07-23T13:27:00Z","note":"User approved plan and selected inline execution"}
+diff --git a/src/components/form/MultiSelect/__tests__/MultiSelect.filterBy.test.tsx b/src/components/form/MultiSelect/__tests__/MultiSelect.filterBy.test.tsx
+new file mode 100644
+index 000000000..30249ba87
+--- /dev/null
++++ b/src/components/form/MultiSelect/__tests__/MultiSelect.filterBy.test.tsx
+@@ -0,0 +1,76 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { act, fireEvent, render, screen } from '@testing-library/react'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++
++import MultiSelect from '../MultiSelect'
++
++describe('MultiSelect filterBy regression guard (EPMCDME-13637)', () => {
++  afterEach(() => {
++    vi.useRealTimers()
++    vi.clearAllMocks()
++  })
++
++  it('option whose value (technical name) matches filter query remains visible when displayName does not match', async () => {
++    // PrimeReact uses setTimeout(fn, 0) to update filterState (debounce with 0ms delay).
++    // Fake timers + runAllTimers() advances past it so the filter re-render happens synchronously.
++    vi.useFakeTimers()
++
++    const options = [
++      { value: 'proj-tech-abc', label: 'Project Alpha', displayName: 'Friendly Alpha Display' },
++      { value: 'proj-tech-xyz', label: 'Project Beta', displayName: 'Friendly Beta Display' },
++    ]
++
++    render(
++      <MultiSelect
++        options={options}
++        value={[]}
++        onChange={vi.fn()}
++        onFilter={vi.fn()}
++        filterBy="value,displayName"
++      />
++    )
++
++    // Let initial render effects settle
++    await act(async () => {
++      vi.runAllTimers()
++    })
++
++    // Open the dropdown panel
++    act(() => {
++      fireEvent.click(document.querySelector('[data-pc-name="multiselect"]')!)
++    })
++    await act(async () => {
++      vi.runAllTimers()
++    })
++
++    // Type the technical name — matches option.value='proj-tech-abc' but NOT any label or displayName
++    const filterInput = screen.getByPlaceholderText('Search')
++    act(() => {
++      fireEvent.change(filterInput, { target: { value: 'proj-tech-abc' } })
++    })
++    // Advance past PrimeReact's 0ms debounce to trigger filterState update and re-render
++    await act(async () => {
++      vi.runAllTimers()
++    })
++
++    // Option with matching value field must remain visible in the rendered dropdown
++    expect(screen.getByText('Project Alpha')).toBeInTheDocument()
++
++    // Option with no matching field must not be rendered
++    expect(screen.queryByText('Project Beta')).not.toBeInTheDocument()
++  })
++})

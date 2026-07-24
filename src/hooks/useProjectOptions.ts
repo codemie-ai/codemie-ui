@@ -17,7 +17,7 @@ import { useState, useCallback } from 'react'
 
 import { userStore } from '@/store'
 import { FilterOption } from '@/types/filters'
-import { getProjectDisplayName } from '@/utils/projectDisplayName'
+import { formatProjectLabel } from '@/utils/projectDisplayName'
 
 export const useProjectOptions = () => {
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([])
@@ -26,7 +26,7 @@ export const useProjectOptions = () => {
     try {
       const projects = await userStore.getProjects(value)
       const options = projects.map((project) => ({
-        label: getProjectDisplayName(project),
+        label: formatProjectLabel(project),
         value: project.name,
       }))
       setProjectOptions(options)

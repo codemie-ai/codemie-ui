@@ -26,13 +26,14 @@ import {
   INDEX_STATUSES,
   FILTER_INITIAL_STATE,
 } from '@/constants/dataSources'
+import { useDebouncedApply } from '@/hooks/useDebounceApply'
+import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { UseTableFiltersReturn } from '@/hooks/useTableFilters'
 import { userStore } from '@/store'
 import { FilterDefinition, FilterDefinitionType } from '@/types/filters'
 import { setFilters, FILTER_ENTITY, getFilters, checkEmptyFilters } from '@/utils/filters'
 import { humanize, createdBy } from '@/utils/helpers'
 import { getFullIndexType } from '@/utils/indexing'
-import { getProjectDisplayName } from '@/utils/projectDisplayName'
 
 type FilterValues = {
   name: string
@@ -68,12 +69,26 @@ const DataSourceFilters: React.FC<Props> = ({
     created_by: sourceFilters.created_by || '',
     status: sourceFilters.status || '',
   }
-  const { loadIndexUsers, getProjects } = useSnapshot(userStore) as typeof userStore
+  const { loadIndexUsers } = useSnapshot(userStore) as typeof userStore
+  const { projectOptions, loadProjectOptions } = useProjectOptions()
+  const [projectSearchTerm, setProjectSearchTerm] = useState('')
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
 
   const [createdByOptions, setCreatedByOptions] = useState<
     { label: string; value: string; id: string }[]
   >([])
-  const [projectOptions, setProjectOptions] = useState<{ label: string; value: string }[]>([])
+
+  const applyProjectSearch = useCallback(async () => {
+    await loadProjectOptions(projectSearchTerm)
+    setIsLoadingProjects(false)
+  }, [projectSearchTerm, loadProjectOptions])
+
+  const handleProjectFilter = useCallback((value: string) => {
+    setIsLoadingProjects(true)
+    setProjectSearchTerm(value)
+  }, [])
+
+  useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
 
   const indexTypeOptions = useMemo(() => {
     return Object.keys(INDEX_TYPES)
@@ -124,19 +139,6 @@ const DataSourceFilters: React.FC<Props> = ({
     )
   }, [loadIndexUsers])
 
-  const loadProjectOptions = useCallback(
-    async (search = '') => {
-      const projects = await getProjects(search)
-      setProjectOptions(
-        projects.map((project) => ({
-          label: getProjectDisplayName(project),
-          value: project.name,
-        }))
-      )
-    },
-    [getProjects]
-  )
-
   useEffect(() => {
     loadCreatedByOptions()
     loadProjectOptions()
@@ -163,7 +165,9 @@ const DataSourceFilters: React.FC<Props> = ({
           maxSelectedLabels: 3,
           filterPlaceholder: 'Search for projects',
           filter: true,
-          onFilter: loadProjectOptions,
+          onFilter: handleProjectFilter,
+          loading: isLoadingProjects,
+          emptyFilterMessage: isLoadingProjects ? 'Loading...' : undefined,
         },
       },
       {
@@ -185,9 +189,9 @@ const DataSourceFilters: React.FC<Props> = ({
       mergedInitialValues,
       indexTypeOptions,
       projectOptions,
+      isLoadingProjects,
       createdByOptions,
       statusOptions,
-      loadProjectOptions,
     ]
   )
 

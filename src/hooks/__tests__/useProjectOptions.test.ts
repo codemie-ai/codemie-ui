@@ -36,7 +36,7 @@ describe('useProjectOptions', () => {
     expect(result.current.projectOptions).toEqual([])
   })
 
-  it('maps projects to label/value using display_name when available', async () => {
+  it('maps projects to "name (display_name)" labels when display_name is available', async () => {
     mockGetProjects.mockResolvedValue([
       { name: 'proj-a', display_name: 'Project Alpha' },
       { name: 'proj-b', display_name: null },
@@ -50,7 +50,7 @@ describe('useProjectOptions', () => {
     })
 
     expect(result.current.projectOptions).toEqual([
-      { label: 'Project Alpha', value: 'proj-a' },
+      { label: 'proj-a (Project Alpha)', value: 'proj-a' },
       { label: 'proj-b', value: 'proj-b' },
     ])
   })
@@ -65,7 +65,10 @@ describe('useProjectOptions', () => {
       await result.current.loadProjectOptions()
     })
 
-    expect(result.current.projectOptions[0]).toEqual({ label: 'my-project', value: 'my-project' })
+    expect(result.current.projectOptions[0]).toMatchObject({
+      label: 'my-project',
+      value: 'my-project',
+    })
   })
 
   it('passes the search value to getProjects', async () => {

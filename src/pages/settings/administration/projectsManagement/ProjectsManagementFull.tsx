@@ -46,6 +46,7 @@ import { userStore } from '@/store/user'
 import { BudgetCategory, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
 import { Project, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
+import { formatProjectLabel } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
@@ -424,17 +425,11 @@ const ProjectsManagementFull: FC = () => {
 
   const customRenderColumns = useMemo(
     () => ({
-      name: (item: Project) => {
-        const displayName = item.display_name?.trim()
-        return (
-          <NameLinkCell
-            onClick={() => handleOpenProjectDetails(item.name)}
-            tooltip={displayName || undefined}
-          >
-            {item.name}
-          </NameLinkCell>
-        )
-      },
+      name: (item: Project) => (
+        <NameLinkCell onClick={() => handleOpenProjectDetails(item.name)}>
+          {formatProjectLabel(item)}
+        </NameLinkCell>
+      ),
       [COST_CENTER_COLUMN_KEY]: (item: Project) => (
         <span className="text-text-primary break-all">{displayValue(item.cost_center_name)}</span>
       ),

@@ -1,0 +1,121 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three lenses ran and produced parseable outputs (blind: 10 raw findings; edge-case: 2 findings; acceptance: 23 criteria). After deduplication and triage: 1 major patch finding (AC-partial-1 — spec section 10 explicitly required a rendered-visibility assertion for PrimeReact filterBy; current tests only verify prop threading via mocked MultiSelect). 2 defer findings: ProjectSettings/UserSettings missing debounce (pre-existing, out of this diff's scope per spec) and empty-name visual glitch in ProjectNameDisplay (requires backend constraint violation to manifest). 8 dismiss findings filtered (admin search by-design, isLoadingProjects safe due to swallowed errors, stylistic/hypothetical items). Backend criterion items are na for this frontend-only diff (separate review target).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Search by technical name (name field) — non-admin frontend path",
+      "status": "pass",
+      "notes": "matchesProjectSearch OR-checks name and display_name; getUserProjects passes search param to backend; ProjectSelector/filter components all get debounced applyProjectSearch"
+    },
+    {
+      "kind": "spec",
+      "item": "Search by display name (display_name field) — non-admin frontend path",
+      "status": "pass",
+      "notes": "Both matchesProjectSearch client-side filter and getUserProjects backend search include display_name"
+    },
+    {
+      "kind": "spec",
+      "item": "filterBy='value,displayName' threaded through MultiSelect so PrimeReact matches both fields",
+      "status": "pass",
+      "notes": "filterBy prop added to FilterDefinition type, passed through Filters.tsx and MultiSelect.tsx; all ProjectSelector/filter usages confirmed"
+    },
+    {
+      "kind": "spec",
+      "item": "ProjectNameDisplay component renders stacked technical name + muted display name",
+      "status": "pass",
+      "notes": "New component implemented; uses <span> wrapper (justified: avoids invalid <div> inside <p> in DetailsProperty)"
+    },
+    {
+      "kind": "spec",
+      "item": "Both name and display_name visible in dropdown options (renderProjectOption)",
+      "status": "pass",
+      "notes": "renderProjectOption applies ProjectNameDisplay to all MultiSelect instances: AssistantFilters, FavoritesAllFilters, WorkflowsFilters, SkillsFilters, DataSourceFilters, ProjectSettings, UserSettings, ProjectSelector"
+    },
+    {
+      "kind": "spec",
+      "item": "Debounce on project search input (useDebouncedApply, 1000ms) — 5 filter components",
+      "status": "pass",
+      "notes": "useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch) applied in AssistantFilters, FavoritesAllFilters, WorkflowsFilters, SkillsFilters, DataSourceFilters"
+    },
+    {
+      "kind": "spec",
+      "item": "ProjectNameCell uses ProjectNameDisplay",
+      "status": "pass",
+      "notes": "ProjectNameCell refactored to use ProjectNameDisplay; tooltip removed"
+    },
+    {
+      "kind": "spec",
+      "item": "Detail pages (AssistantDetailsSidebarSections, DataSourceDetails, SkillDetails) use ProjectNameDisplay",
+      "status": "pass",
+      "notes": "All three detail-sidebar pages updated"
+    },
+    {
+      "kind": "spec",
+      "item": "Admin table (ProjectsManagementFull) uses ProjectNameDisplay in name column",
+      "status": "pass",
+      "notes": "Admin table name column updated"
+    },
+    {
+      "kind": "spec",
+      "item": "matchesProjectSearch utility tests (name match, displayName match, no-match)",
+      "status": "pass",
+      "notes": "Unit tests cover all three cases in projectDisplayName.test.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Debounce tests for all 5 filter components",
+      "status": "pass",
+      "notes": "AssistantFilters, FavoritesAllFilters, WorkflowsFilters, SkillsFilters, DataSourceFilters each have a debounce integration test"
+    },
+    {
+      "kind": "spec",
+      "item": "PrimeReact filterBy rendered-visibility test — option visible by technical name when displayName does not match",
+      "status": "partial",
+      "notes": "Tests verify filterBy prop is threaded (data-filter-by attribute on mocked MultiSelect) but do not assert rendered option visibility via getByText/queryByRole as spec section 10 explicitly required; mocked MultiSelect cannot exercise PrimeReact client-side filtering"
+    },
+    {
+      "kind": "spec",
+      "item": "Backend: admin path COALESCE fix + search_by_name API (separate codemie repo)",
+      "status": "na",
+      "notes": "Backend changes are in the codemie repo; separate review target"
+    },
+    {
+      "kind": "spec",
+      "item": "Backend: search_by_name integration tests (separate codemie repo)",
+      "status": "na",
+      "notes": "Backend test changes are in the codemie repo; separate review target"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 12 branch commits match EPMCDME-NNNNN: Capital-sentence format per git-workflow.md"
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "No new files exceed 300 lines; no inline styles, raw hex tokens, or custom CSS; no Dialog usage; no direct API calls in components; new ProjectNameDisplay component is 40 lines"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No secrets exposed; search term treated as a plain string query; no XSS vectors; no unsafe file or process handling"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/ProjectSelector/__tests__/ProjectSelector.test.tsx",
+      "title": "filterBy rendered-visibility test missing",
+      "problem": "Spec section 10 explicitly requires a test that asserts an option whose value (technical name) matches the search query but whose displayName does NOT match remains visible in the rendered dropdown. The current tests mock the MultiSelect component and only verify the data-filter-by attribute value — they cannot detect a PrimeReact regression where the filterBy prop is accepted but silently ignored at runtime.",
+      "impact": "A future PrimeReact upgrade or misconfiguration that breaks filterBy='value,displayName' client-side filtering would pass all existing tests. This is the core regression guard for EPMCDME-13637's fix: if PrimeReact stops matching by value, projects become invisible by technical name again with no test failing.",
+      "recommendation": "Add a test that renders the real PrimeReact MultiSelect (without mocking @/components/form/MultiSelect) with two options — one whose value matches the typed query and one that does not, where the matching option's displayName does NOT contain the query string. After simulating the user typing the query into the filter input, assert the matching option is visible via getByText or queryByRole('option', ...). Place in a separate test file (e.g. MultiSelect.filterBy.test.tsx) to avoid conflicting with existing mocks."
+    }
+  ]
+}
