@@ -1,5 +1,209 @@
 [
   {
+    "version": "2.41.0",
+    "date": "2026-07-24",
+    "issues": [
+      {
+        "title": "Chat: “Processed in” metadata is not shown immediately for interactive-only responses until page refresh",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13688",
+        "key": "EPMCDME-13688"
+      },
+      {
+        "title": "Add spacing between the Submit button and message action buttons",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13673",
+        "key": "EPMCDME-13673"
+      },
+      {
+        "title": "Project Management search only checks Display Name instead of both Name and Display Name",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13637",
+        "key": "EPMCDME-13637"
+      },
+      {
+        "title": "Member budget spend record lost when user is removed from project before nightly spend collection",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13619",
+        "key": "EPMCDME-13619"
+      },
+      {
+        "title": "Many empty records saved in local storage, causing browser storage quota to be exceeded",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13612",
+        "key": "EPMCDME-13612"
+      },
+      {
+        "title": "Actor ID filter should be renamed and replaced with a user dropdown",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13608",
+        "key": "EPMCDME-13608"
+      },
+      {
+        "title": "Domain, Event type, and Entity type values are not filtered by selected domain",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13607",
+        "key": "EPMCDME-13607"
+      },
+      {
+        "title": "Activity events: “From” date filter is displayed on the first row instead of next to “To”",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13606",
+        "key": "EPMCDME-13606"
+      },
+      {
+        "title": "Project-level webhook assistant invocations are billed to the user’s personal account instead of the project account",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13597",
+        "key": "EPMCDME-13597"
+      },
+      {
+        "title": "Project allocated budget is not applied to member/service account budget enforcement",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13582",
+        "key": "EPMCDME-13582"
+      },
+      {
+        "title": "Remove “Shared with Project” item from Assistants and Workflows template cards",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13545",
+        "key": "EPMCDME-13545"
+      },
+      {
+        "title": "Remove the three dots menu from workflow template cards",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13544",
+        "key": "EPMCDME-13544"
+      },
+      {
+        "title": "LiteLLM USER global integration does not override global and project budgets across the platform",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13524",
+        "key": "EPMCDME-13524"
+      },
+      {
+        "title": "Global MCP added from catalog is saved as custom config copy, so later global MCP updates are not propagated to assistants",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13500",
+        "key": "EPMCDME-13500"
+      },
+      {
+        "title": "Orchestrator hides subagent MCP failure and ends with incomplete or misleading response",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13499",
+        "key": "EPMCDME-13499"
+      },
+      {
+        "title": "Marketplace assistant shared link redirects unauthenticated users to the wrong assistant after login",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13457",
+        "key": "EPMCDME-13457"
+      },
+      {
+        "title": "Chromium 150 on Debian 13 causes Mermaid generation and Playwright/Puppeteer MCPs to fail with 400 errors",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13397",
+        "key": "EPMCDME-13397"
+      },
+      {
+        "title": "Skills import: ZIP bundle with single/multiple Markdown files returns HTTP 400",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13374",
+        "key": "EPMCDME-13374"
+      },
+      {
+        "title": "Budget reset value is not populated to PostgreSQL DB from LiteLLM",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13320",
+        "key": "EPMCDME-13320"
+      },
+      {
+        "title": "Enable interactive user input in CodeMie agent chat",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13259",
+        "key": "EPMCDME-13259"
+      },
+      {
+        "title": "Reset Context Keys field does not allow entering commas despite requiring comma-separated values",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13189",
+        "key": "EPMCDME-13189"
+      },
+      {
+        "title": "Stale datasource detection checks only datasource_tokens_usage and misses conversations, workflows, and other usage sources",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13177",
+        "key": "EPMCDME-13177"
+      },
+      {
+        "title": "Tool calls with list parameters intermittently fail because list input is parsed as string",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13152",
+        "key": "EPMCDME-13152"
+      },
+      {
+        "title": "Budget reset does not update displayed value until LLM chat or background refresh repopulates project_spend_tracking",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12991",
+        "key": "EPMCDME-12991"
+      },
+      {
+        "title": "Refactor frontend to load feature enablement flags from backend instead of env variables",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12746",
+        "key": "EPMCDME-12746"
+      },
+      {
+        "title": "Enhance Workflow Edit with 'Refine/Modify with AI' and 'Revert to Previous' Option",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12616",
+        "key": "EPMCDME-12616"
+      },
+      {
+        "title": "Increase Assistant attachment upload and processing support from 10 to 20 files (frontend and backend)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11794",
+        "key": "EPMCDME-11794"
+      },
+      {
+        "title": "After Confluence API update, access to restricted spaces on kb.epam.com is broken — integration tool update required",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10548",
+        "key": "EPMCDME-10548"
+      },
+      {
+        "title": "Related navigation links are not semantically grouped into a list",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8466",
+        "key": "EPMCDME-8466"
+      },
+      {
+        "title": "The label of the \"EPAM AI/RUN Codemie\" button is not descriptive",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8460",
+        "key": "EPMCDME-8460"
+      },
+      {
+        "title": "The tooltip shown on hover for the \"Hide Sidebar\"/\"Open Sidebar\" button is not hoverable and dismissible by pressing Esc",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8421",
+        "key": "EPMCDME-8421"
+      },
+      {
+        "title": "Add filter capability to GitLab webhook integrations for merge request events",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8384",
+        "key": "EPMCDME-8384"
+      },
+      {
+        "title": "Related elements at the bottom of the \"Chats Sidebar\" are not implemented as a tree view",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8375",
+        "key": "EPMCDME-8375"
+      }
+    ]
+  },
+  {
     "version": "2.40.0",
     "date": "2026-07-20",
     "issues": [
