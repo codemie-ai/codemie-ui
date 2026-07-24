@@ -74,14 +74,15 @@ const assistant: Assistant = {
 }
 
 describe('AssistantDetailsSidebarSections — project name display', () => {
-  it('shows project display name without data-tooltip-id', () => {
-    const { container } = render(<AssistantDetailsSidebarSections assistant={assistant} />)
-    expect(container.querySelector('[data-tooltip-id]')).toBeNull()
-    expect(container.querySelector('[data-tooltip-content]')).toBeNull()
+  it('renders project technical name', () => {
+    const { getByText } = render(<AssistantDetailsSidebarSections assistant={assistant} />)
+    expect(getByText('my-project')).toBeInTheDocument()
   })
 
-  it('renders project name and display name together', () => {
+  it('shows the display name as a react-tooltip hint on the project name', () => {
     const { getByText } = render(<AssistantDetailsSidebarSections assistant={assistant} />)
-    expect(getByText('my-project (My Display Name)')).toBeInTheDocument()
+    const projectValue = getByText('my-project')
+    expect(projectValue.getAttribute('data-tooltip-id')).toBe('react-tooltip')
+    expect(projectValue.getAttribute('data-tooltip-content')).toBe('My Display Name')
   })
 })

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
-import { formatProjectLabel } from '@/utils/projectDisplayName'
 
 interface ProjectNameCellProps {
   projectName: string
@@ -21,7 +20,14 @@ interface ProjectNameCellProps {
 
 const ProjectNameCell = ({ projectName }: ProjectNameCellProps) => {
   const displayName = useProjectDisplayNames(projectName).get(projectName)
-  return <>{formatProjectLabel({ name: projectName, display_name: displayName })}</>
+
+  if (!displayName) return <>{projectName}</>
+
+  return (
+    <span data-tooltip-id="react-tooltip" data-tooltip-content={displayName}>
+      {projectName}
+    </span>
+  )
 }
 
 /**

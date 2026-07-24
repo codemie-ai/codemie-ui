@@ -29,7 +29,6 @@ import SkillDetailsActions from '@/pages/skills/components/SkillDetailsActions'
 import { getVisibilityLabel } from '@/pages/skills/utils/skillUtils'
 import { AssistantToolkit } from '@/types/entity/assistant'
 import { Skill } from '@/types/entity/skill'
-import { formatProjectLabel } from '@/utils/projectDisplayName'
 import { copyToClipboard, getToolkitFromMcpServers, getRootPath } from '@/utils/utils'
 
 interface SkillDetailsProps {
@@ -126,10 +125,15 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
           <DetailsSidebarSection headline="OVERVIEW" itemsWrapperClassName="gap-2 -mt-2">
             <DetailsProperty
               label="Project"
-              value={formatProjectLabel({
-                name: skill.project ?? '',
-                display_name: projectDisplayName || undefined,
-              })}
+              value={
+                projectDisplayName ? (
+                  <span data-tooltip-id="react-tooltip" data-tooltip-content={projectDisplayName}>
+                    {skill.project}
+                  </span>
+                ) : (
+                  skill.project
+                )
+              }
             />
             <DetailsProperty label="Visibility" value={getVisibilityLabel(skill.visibility)} />
             <DetailsCopyField

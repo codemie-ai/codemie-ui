@@ -33,23 +33,21 @@ describe('ProjectNameCell', () => {
     expect(screen.getByText('ssg-test')).toBeTruthy()
   })
 
-  it('renders name and display name together when the project has one', () => {
+  it('shows the display name as a react-tooltip hint when the project has one', () => {
     mockDisplayNames.set('ssg-test', 'My Test')
     render(<ProjectNameCell projectName="ssg-test" />)
 
-    expect(screen.getByText('ssg-test (My Test)')).toBeTruthy()
+    const cell = screen.getByText('ssg-test')
+    expect(cell.tagName).toBe('SPAN')
+    expect(cell.getAttribute('data-tooltip-id')).toBe('react-tooltip')
+    expect(cell.getAttribute('data-tooltip-content')).toBe('My Test')
   })
 
-  it('never renders tooltip attributes', () => {
-    mockDisplayNames.set('ssg-test', 'My Test')
-    const { container } = render(<ProjectNameCell projectName="ssg-test" />)
-
-    expect(container.querySelector('[data-tooltip-id]')).toBeNull()
-    expect(container.querySelector('[data-tooltip-content]')).toBeNull()
-  })
-
-  it('renders just the name when the project has no display name', () => {
+  it('adds no tooltip attributes when the project has no display name', () => {
     render(<ProjectNameCell projectName="ssg-test" />)
-    expect(screen.getByText('ssg-test')).toBeTruthy()
+
+    const cell = screen.getByText('ssg-test')
+    expect(cell.getAttribute('data-tooltip-id')).toBeNull()
+    expect(cell.getAttribute('data-tooltip-content')).toBeNull()
   })
 })
