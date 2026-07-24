@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "task": "Fix chat UI bug where the \"Processed in\" duration/timestamp metadata is not rendered immediately for interactive-only assistant responses (checkbox/submit follow-ups) and only appears after a page refresh.",
+  "generated": "2026-07-24",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 16,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "technical_risk",
+      "reason": "Fix lands in the shared NDJSON streaming finalize path (chatGeneration._handleStreamResponse, _handleChunk), which has zero test coverage today - no assertion anywhere for processingTime, the metadata row, or the responseTime -> processingTime mapping. Two plausible root-cause mechanisms exist (the conditional processingTime assignment AND the if/else-if chain that swallows a terminal chunk carrying both interactive_request and last:true), so fixing only one may leave the bug reproducible for a different chunk shape. An undocumented contract question remains: client-measured (endTime-startTime)/1000 vs the server-persisted responseTime shown after refresh may visibly disagree. Mitigated by sibling paths (_handleNonStreamResponse, finalizeFailedRequest) that already set the duration unconditionally - the change is an alignment, not a new design."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Primary change site is chatGeneration store finalize, with an optional adjacent fix to the numeric truthiness guard in ChatAiMessage.tsx ({processingTime && ...} also hides a legitimate 0, and component-patterns.md forbids && on a numeric operand). The finalize path is shared by every chat turn, not just interactive ones, so the blast radius covers all assistant responses - hence AC #5's no-regression clause for message rendering, tool call display, and action buttons."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Ticket carries explicit steps to reproduce and five concrete acceptance criteria, and the root cause is confirmed. Two open decisions remain: whether the displayed duration should stay client-measured or be sourced from the backend responseTime (api-integration.md requires reading the backend handler before assuming the semantic contract - not yet done, and the analysis covered only the frontend repo), and whether the adjacent falsy-0 guard is in scope for AC #2 consistency."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Production diff is small (1-2 files, roughly 5-20 lines: src/store/chatGeneration.ts, optionally ChatAiMessage.tsx). Effort is dominated by test work spanning three directories: extend src/store/__tests__/chatGeneration.interactive.test.ts, add metadata-row coverage under ChatAiMessage/__tests__, and create the repo's first chat integration test (src/pages/chat/__tests__/ChatPage.integration.test.tsx) - unit tests globally stub valtio useSnapshot, so the live re-render failure mode is structurally unprovable at unit level."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M (3) to L (4): the defect and its fix sit inside the streaming chunk-handling pipeline (custom NDJSON reader loop, _handleChunk merge semantics, stream finalize), with no streaming guide and no chunk-level parsing tests in the repo.",
+    "Component Scope bumped from S (2) to M (3): touches a core shared code path - _handleStreamResponse finalizes every chat turn, not only interactive-only follow-ups, so the change carries regression risk across all assistant responses."
+  ],
+  "split_recommendation": null
+}

@@ -1,0 +1,71 @@
+{
+  "task": "Restore the \"Processed in: Ns\" metadata row for interactive-only assistant turns by finalizing processingTime on terminal stream chunks and rendering zero-valued durations.",
+  "generated": "2026-07-24",
+  "dimensions": {
+    "component_scope": {
+      "score": 2,
+      "label": "S",
+      "affected": "chatGeneration store (_handleStreamResponse finalization, _handleChunk terminal-chunk termination), ChatAiMessage component (processingTime memo / metadata row), unit tests for both",
+      "layers": "UI (React component), State/Store (valtio store + stream chunk handling)"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": "One behavioural decision had to be made in-flight and is encoded in code comments and a test: a stream that ends without a terminal `last` chunk (server-side cut, proxy timeout) deliberately leaves processingTime unset rather than labelling a truncated turn as complete."
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L",
+      "risk_factors": "Changes land in the shared streaming finalization path (_handleStreamResponse / _handleChunk) exercised by every chat turn, not only interactive ones; termination is now decided by the chunk `last` flag alone, and a capturedStreamText fallback was added to preserve already-streamed text; regression blast radius extends to regular text responses, workflow chats and abort handling",
+      "mitigation": "Five new unit tests pin the finalization contract (interactive-only turn, regular text turn, stream ending without a terminal chunk, terminal chunk carrying an interactive request) plus a component test for the 0.00s edge case; change is additive to existing conditionals and trivially revertible"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M",
+      "modified_files": 3,
+      "modified_file_list": [
+        "src/store/chatGeneration.ts",
+        "src/store/__tests__/chatGeneration.interactive.test.ts",
+        "src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx"
+      ],
+      "new_files": 1,
+      "new_file_list": [
+        "src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx"
+      ],
+      "affected_dirs": ["src/store", "src/pages"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 2,
+      "label": "S",
+      "layers_changed": ["UI", "State/Store"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "technical_risk",
+      "reason": "The fix rewrites stream finalization semantics in chatGeneration.ts: processingTime is now assigned whenever the terminal chunk arrives (response.last || generated || capturedStreamText) instead of only when text was produced, and _handleChunk terminates on `last` regardless of payload. Both paths are shared by every chat turn, so the change is low-effort but wide-reach."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "4 files changed (283 insertions, 13 deletions) across two areas of src/: the valtio store and the chat message component, of which two are tests and one is a brand-new component test file."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M (3) to L (4): streaming red flag — the change alters chunk-level stream termination and finalization behaviour on the shared real-time streaming path, not just the interactive branch."
+  ],
+  "split_recommendation": null
+}

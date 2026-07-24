@@ -163,7 +163,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   const hasMcpAuthPrompt = Boolean(message.mcpAuthPromptRows?.length)
 
   const processingTime = useMemo(() => {
-    return message.processingTime ? message.processingTime.toFixed(2) : null
+    return message.processingTime == null ? null : message.processingTime.toFixed(2)
   }, [message.processingTime])
 
   const handleAvatarClick = () => {
@@ -199,7 +199,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
           {!isInProgress && (
             <div className="flex gap-2 text-xs items-center text-text-quaternary">
               <ProcessingCompleteSvg />
-              {processingTime && <>Processed in: {processingTime}s / </>}
+              {processingTime !== null && <>Processed in: {processingTime}s / </>}
               <span>{formatDateTime(message.createdAt, 'short')} </span>
             </div>
           )}

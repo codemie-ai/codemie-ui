@@ -1,0 +1,106 @@
+diff --git a/src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx b/src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx
+index f2ba189ee..ea27289b5 100644
+--- a/src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx
++++ b/src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx
+@@ -17,6 +17,7 @@ import { render, screen } from '@testing-library/react'
+ import { describe, expect, it, vi, beforeEach } from 'vitest'
+ 
+ import type { ChatMessage } from '@/types/entity/conversation'
++import type { InteractiveRequest } from '@/types/entity/interactive'
+ 
+ import ChatAiMessage from '../ChatAiMessage'
+ 
+@@ -143,4 +144,29 @@ describe('ChatAiMessage processing metadata', () => {
+     expect(screen.queryByText(/Processed in:/)).not.toBeInTheDocument()
+     expect(screen.getByText(/Apr 30/)).toBeInTheDocument()
+   })
++
++  // The reported scenario: a follow-up turn that renders only a checkbox form and carries no
++  // assistant text. Its metadata row must look the same as a regular response's.
++  it('renders the processing duration for a checkbox-only response with no assistant text', () => {
++    const checkboxRequest: InteractiveRequest = {
++      request_id: 'r1',
++      surface: [
++        { type: 'text', content: 'Select one or more checkboxes:' },
++        { type: 'checkbox', id: 'newsletter', label: 'Subscribe to newsletter' },
++        { type: 'checkbox', id: 'terms', label: 'I agree to the terms' },
++        { type: 'button', id: 'submit', label: 'Submit' },
++      ],
++    }
++    const message = createMessage({
++      response: undefined,
++      processingTime: 1.5,
++      interactiveRequest: checkboxRequest,
++    })
++    mockChatsStore.currentChat.history = [[message]]
++
++    renderMessage(message)
++
++    expect(screen.getByText(/Processed in: 1\.50s/)).toBeInTheDocument()
++    expect(screen.getByLabelText('I agree to the terms')).toBeInTheDocument()
++  })
+ })
+diff --git a/src/store/__tests__/chatGeneration.interactive.test.ts b/src/store/__tests__/chatGeneration.interactive.test.ts
+index bb685980c..600713a92 100644
+--- a/src/store/__tests__/chatGeneration.interactive.test.ts
++++ b/src/store/__tests__/chatGeneration.interactive.test.ts
+@@ -282,7 +282,11 @@ describe('processing time on the streamed finalization path', () => {
+     const { chatGenerationStore } = await import('@/store/chatGeneration')
+ 
+     await chatGenerationStore._handleStreamResponse(
+-      createStreamReader({ generated: 'Hi there', generated_chunk: 'Hi there', last: true }) as never,
++      createStreamReader({
++        generated: 'Hi there',
++        generated_chunk: 'Hi there',
++        last: true,
++      }) as never,
+       historyItem,
+       chat,
+       new Date()
+@@ -291,6 +295,27 @@ describe('processing time on the streamed finalization path', () => {
+     expect(historyItem.response).toBe('Hi there')
+     expect(typeof historyItem.processingTime).toBe('number')
+   })
++
++  it('leaves processingTime unset when the stream ends without a terminal chunk', async () => {
++    const historyItem = createHistoryItem({ role: 'Assistant' })
++    const chat = createChat(historyItem)
++    const { chatGenerationStore } = await import('@/store/chatGeneration')
++
++    // A server-side cut, proxy timeout or dropped connection ends the reader without ever
++    // sending `last: true`. Such a turn never finished, so it must not be labelled as if
++    // it had — otherwise a truncated bubble is indistinguishable from a completed one.
++    await chatGenerationStore._handleStreamResponse(
++      {
++        read: vi.fn().mockResolvedValue({ done: true, value: undefined }),
++        cancel: vi.fn(),
++      } as never,
++      historyItem,
++      chat,
++      new Date()
++    )
++
++    expect(historyItem.processingTime).toBeUndefined()
++  })
+ })
+ 
+ describe('_handleChunk stream termination', () => {
+diff --git a/src/store/chatGeneration.ts b/src/store/chatGeneration.ts
+index 0e766b730..413736674 100644
+--- a/src/store/chatGeneration.ts
++++ b/src/store/chatGeneration.ts
+@@ -979,8 +979,12 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
+     const endTime = new Date()
+ 
+     // Assigned for every finalized turn, not only for the ones that produced text: an
+-    // interactive-only response has no text but still needs its "Processed in" metadata.
+-    historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
++    // interactive-only response has no text but still needs its "Processed in" metadata,
++    // and its terminal chunk carries `last`. A stream that ended without a terminal chunk
++    // (server-side cut, proxy timeout) never finished, so it stays unlabelled.
++    if (response?.last || response?.generated || response?.capturedStreamText) {
++      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
++    }
+ 
+     if (response?.generated) {
+       historyItem.response = response.generated

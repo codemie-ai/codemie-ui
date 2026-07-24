@@ -1,0 +1,81 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "1. \"Processed in\" metadata is displayed immediately for interactive-only responses after user submission.",
+      "status": "pass",
+      "notes": "_handleStreamResponse assigns processingTime before the generated/capturedStreamText branches (chatGeneration.ts:983); the metadata row in ChatAiMessage.tsx:199-205 is gated only on !isInProgress, not on response text. The added store test drives a terminal {generated:'', last:true} chunk and passes."
+    },
+    {
+      "criterion": "2. The metadata display behavior is consistent between regular assistant responses and interactive-only responses.",
+      "status": "pass",
+      "notes": "Both shapes flow through the same single unconditional assignment, matching the sibling _handleNonStreamResponse (line 966) and finalizeFailedRequest (line 206) paths. A regression test asserts a normal text response still sets both response and processingTime."
+    },
+    {
+      "criterion": "3. Refreshing the page does not change whether the \"Processed in\" metadata is visible.",
+      "status": "pass",
+      "notes": "Confirmed against the backend: conversation.py:343 sets response_time=turn.time_elapsed in the same GeneratedMessage constructor that carries interactive_request, so the field is persisted for interactive-only turns exactly as for text turns, and chatHelpers.ts:155 maps it back on reload. Upgraded from the acceptance lens's 'partial' on this evidence."
+    },
+    {
+      "criterion": "4. The fix is validated for checkbox-based interactive responses.",
+      "status": "partial",
+      "notes": "No test exercises a checkbox surface: the _handleChunk test uses a button surface, the _handleStreamResponse tests use a bare empty terminal chunk, and the ChatAiMessage test renders a plain text message. No feature-verification evidence in the run dir."
+    },
+    {
+      "criterion": "5. No regression in chat message rendering, tool call display, or message action buttons.",
+      "status": "pass",
+      "notes": "Full unit suite green (315 files, 3717 tests) and typecheck clean. The _handleChunk restructure preserves push-then-terminate ordering and capturedStreamText composition; the edge-case lens verified the only newly-terminating shapes are thought+last (strictly better than the old spin-until-done) and interactive_request+last (not emitted by any backend site today)."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit format",
+      "status": "pass",
+      "notes": "Single commit 'EPMCDME-13688: Show processing time for interactive-only chat responses' matches ^EPMCDME-\\d+:\\s[A-Z][a-z]*.*$."
+    },
+    {
+      "standard": "components/component-patterns.md conditional rendering",
+      "status": "pass",
+      "notes": "The guide forbids && with a numeric left operand. The change replaces a truthy check with an explicit null comparison, moving toward compliance rather than away from it."
+    },
+    {
+      "standard": "development/security-patterns.md",
+      "status": "na",
+      "notes": "Guide absent in this repo. Diff introduces no input handling, network calls, secrets, or file/process access; no concrete security issue found."
+    },
+    {
+      "standard": "quality-gates.md lint",
+      "status": "partial",
+      "notes": "npm run lint cannot be evaluated locally: the ESLint @/-alias resolver is broken repo-wide (an untouched file, src/store/chats.ts, produces the same import/no-unresolved errors), so the pre-commit hook was bypassed. License-header and secret checks were run manually and pass. CI is the authority for lint."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chatGeneration.ts",
+      "line": 983,
+      "problem": "processingTime is assigned before any check on `response`, so it is now also written for turns that never finished. _handleGenerationStream returns {} when the reader reaches done without a last:true chunk (server-side cut, proxy timeout, dropped connection), and _handleGenerationAbort returns {generated: ''} when the user stops generation before any token arrives — the stream exists, so getStream() yields '' and the `?? EMPTY_MESSAGE` fallback never fires because '' is not nullish.",
+      "impact": "Combined with the widened render guard, a truncated or instantly-cancelled turn renders an empty assistant bubble with a completion icon plus 'Processed in: 12.40s / 15:02'. Previously the absent label was the only visual cue distinguishing a truncated turn from a completed one. The number is also meaningless on that path — it measures how long the socket stayed open, not processing time.",
+      "recommendation": "Gate the assignment on evidence that the turn genuinely finalized while preserving the previous abort behavior: `if (response?.last || response?.generated || response?.capturedStreamText)`. The interactive-only terminal chunk is {generated:'', generated_chunk:'', last:true}, so the ticket's case is still fixed, and aborted turns that produced text are still timed.",
+      "sources": ["edge-case (confirmed by code read)", "acceptance", "blind"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx",
+      "problem": "Acceptance criterion 4 names checkbox-based interactive responses specifically, but no added test renders an interactive-only message: the store tests use a bare empty terminal chunk and a button surface, and the render test uses a plain text message with response: 'Done'.",
+      "impact": "The reported scenario — an interactive-only turn with a checkbox surface and no assistant text — is only plausibly, not demonstrably, fixed. Any interaction between the checkbox surface and the metadata row would go unnoticed.",
+      "recommendation": "Add a render case with response: undefined and an interactiveRequest carrying a checkbox surface, asserting the 'Processed in' line is present.",
+      "sources": ["acceptance"]
+    }
+  ],
+  "rationale": "Three lenses ran as parallel subagents; all three returned usable output, so coverage is complete. Blind raised five findings; three were refuted by code reading — NaN is unreachable (startTime is always `new Date()`), the multi-leg overwrite cannot occur (_handleStreamResponse has a single call site and each interactive submit creates a fresh historyItem via _createHistoryItem), and the interactive_request+last termination arm is defensive only (no backend site emits it; request_user_input.py:65 leaves `last` false). Its remaining two concerns converge with the acceptance lens's third finding and are consolidated as CR-001, which the edge-case lens confirmed by reading the abort and truncation paths end to end. Acceptance criterion 3 was upgraded from partial to pass on backend evidence (conversation.py:343). 3 findings dismissed, 0 deferred. Decision is request-changes on two major patch findings.",
+  "diff_reviewed": "docs/superpowers/tasks/2026-07-24-epmcdme-13688-interactive-processed-in/code-review.diff",
+  "diff_signature": "3a42788275356fb386a21249fa550b318a2641fb47f0f3da0bf6d60854b4065d"
+}

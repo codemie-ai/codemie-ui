@@ -1,0 +1,69 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "chatGeneration.ts:982-986 now gates the assignment on `response?.last || response?.generated || response?.capturedStreamText`. Verified per path: the interactive-only terminal chunk is {generated:'', generated_chunk:'', last:true} and passes via `last`; a stream that reaches done without a terminal chunk returns {} from _handleGenerationStream and no longer gets a duration; _handleGenerationAbort with no accumulated text returns {generated: ''} and is likewise skipped, restoring the pre-change behavior; an abort that did produce text still passes via `generated`. Pinned by a new failing-first test, 'leaves processingTime unset when the stream ends without a terminal chunk' (RED observed: expected +0 to be undefined; GREEN after the guard)."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "evidence": "ChatAiMessage.test.tsx adds 'renders the processing duration for a checkbox-only response with no assistant text', rendering a message with response: undefined and an interactiveRequest whose surface is a text prompt plus two CheckBoxElements and a Submit button — the exact shape from the ticket screenshot. It asserts both that the 'Processed in: 1.50s' label is present and that the checkbox itself renders (getByLabelText). ChatAiInteractiveBlock is deliberately left unmocked so the real surface is exercised."
+    }
+  ],
+  "business_review": [
+    {
+      "criterion": "1. \"Processed in\" metadata is displayed immediately for interactive-only responses after user submission.",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json. Still satisfied: the interactive terminal chunk passes the new guard via `last`."
+    },
+    {
+      "criterion": "2. The metadata display behavior is consistent between regular assistant responses and interactive-only responses.",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json."
+    },
+    {
+      "criterion": "3. Refreshing the page does not change whether the \"Processed in\" metadata is visible.",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; confirmed against backend conversation.py:343."
+    },
+    {
+      "criterion": "4. The fix is validated for checkbox-based interactive responses.",
+      "status": "pass",
+      "notes": "Upgraded from partial by the CR-002 fix: a checkbox surface with no assistant text is now rendered and asserted."
+    },
+    {
+      "criterion": "5. No regression in chat message rendering, tool call display, or message action buttons.",
+      "status": "pass",
+      "notes": "Carried forward. Re-verified after the fix-up: typecheck clean, full unit suite green (315 files, 3719 tests)."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit format",
+      "status": "pass",
+      "notes": "Both commits match the required format: 'EPMCDME-13688: Show processing time for interactive-only chat responses' and 'EPMCDME-13688: Skip processing time for streams without a terminal chunk'."
+    },
+    {
+      "standard": "components/component-patterns.md conditional rendering",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json."
+    },
+    {
+      "standard": "development/security-patterns.md",
+      "status": "na",
+      "notes": "Guide absent; no security surface in the diff."
+    },
+    {
+      "standard": "quality-gates.md lint",
+      "status": "partial",
+      "notes": "Carried forward. Local ESLint alias resolver is broken repo-wide, so lint is deferred to CI. Prettier was run over the touched files to close the formatting gap the final round flagged; an unrelated blank-line normalization it introduced in ChatAiMessage.tsx was reverted to keep the diff scoped."
+    }
+  ],
+  "findings": [],
+  "rationale": "Targeted re-check of the two blocking findings against the fix-up diff taken from the recorded reviewed_head (bfa7f613d). Both are resolved with direct evidence; CR-001 was driven by a failing-first test whose RED was observed before the guard landed. No confirmation fan-out was dispatched: the fix-up narrows behavior rather than widening it, touches no security, public API, data-loss or build surface, and is fully covered by tests — so there was no high-risk suspicion to refute. Acceptance criterion 4 rises from partial to pass, making all five criteria pass."
+}

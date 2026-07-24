@@ -1,0 +1,39 @@
+{
+  "runner": "npm",
+  "detected_from": "package.json",
+  "source": ".ai-run/guides/quality-gates.md",
+  "branch": "EPMCDME-13688_fix-interactive-processed-in",
+  "merge_base": "origin/main",
+  "gates": [
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "blocking": true,
+      "status": "skipped",
+      "reason": "The local ESLint @/-alias resolver is broken repo-wide — an untouched file (src/store/chats.ts) produces the same import/no-unresolved errors. Deferred to CI, which is the authority."
+    },
+    { "name": "typecheck", "command": "npm run typecheck", "blocking": true, "status": "passed" },
+    { "name": "unit", "command": "npm run test:unit", "blocking": true, "status": "passed" },
+    {
+      "name": "integration",
+      "command": "npm run test:integration",
+      "blocking": true,
+      "status": "passed"
+    },
+    { "name": "build", "command": "npm run build", "blocking": true, "status": "passed" },
+    {
+      "name": "license-headers",
+      "command": "npm run license-headers:check",
+      "blocking": true,
+      "status": "passed"
+    },
+    {
+      "name": "secrets",
+      "command": "npm run secrets:check",
+      "blocking": true,
+      "status": "passed"
+    }
+  ],
+  "ui_globs": ["src/pages/**/*.tsx", "src/components/**/*.tsx"],
+  "passed": true
+}

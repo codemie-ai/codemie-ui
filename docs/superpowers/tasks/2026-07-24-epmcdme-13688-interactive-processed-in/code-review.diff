@@ -1,0 +1,297 @@
+diff --git a/src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx b/src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx
+index 00e1e02f8..a735f6f40 100644
+--- a/src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx
++++ b/src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx
+@@ -163,7 +163,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
+   const hasMcpAuthPrompt = Boolean(message.mcpAuthPromptRows?.length)
+ 
+   const processingTime = useMemo(() => {
+-    return message.processingTime ? message.processingTime.toFixed(2) : null
++    return message.processingTime == null ? null : message.processingTime.toFixed(2)
+   }, [message.processingTime])
+ 
+   const handleAvatarClick = () => {
+@@ -199,7 +199,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
+           {!isInProgress && (
+             <div className="flex gap-2 text-xs items-center text-text-quaternary">
+               <ProcessingCompleteSvg />
+-              {processingTime && <>Processed in: {processingTime}s / </>}
++              {processingTime !== null && <>Processed in: {processingTime}s / </>}
+               <span>{formatDateTime(message.createdAt, 'short')} </span>
+             </div>
+           )}
+diff --git a/src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx b/src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx
+new file mode 100644
+index 000000000..f2ba189ee
+--- /dev/null
++++ b/src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx
+@@ -0,0 +1,146 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render, screen } from '@testing-library/react'
++import { describe, expect, it, vi, beforeEach } from 'vitest'
++
++import type { ChatMessage } from '@/types/entity/conversation'
++
++import ChatAiMessage from '../ChatAiMessage'
++
++const { mockChatsStore } = vi.hoisted(() => ({
++  mockChatsStore: {
++    currentChat: {
++      id: 'chat-1',
++      isWorkflow: false,
++      history: [] as ChatMessage[][],
++    },
++  },
++}))
++
++vi.mock('valtio', () => ({
++  proxy: (obj: any) => obj,
++  useSnapshot: vi.fn(() => mockChatsStore),
++  subscribe: vi.fn(),
++}))
++
++vi.mock('@/store/chatGeneration', () => ({
++  chatGenerationStore: {
++    submitInteractiveResponse: vi.fn(),
++    editChatGeneration: vi.fn(),
++  },
++}))
++
++vi.mock('@/store/chats', () => ({
++  chatsStore: mockChatsStore,
++}))
++
++vi.mock('@/hooks/useVueRouter', () => ({
++  useVueRouter: vi.fn(() => ({
++    push: vi.fn(),
++  })),
++}))
++
++vi.mock('@/pages/chat/hooks/useChatContext', () => ({
++  useChatContext: vi.fn(() => ({
++    selectedAssistant: null,
++    openConfigForm: vi.fn(),
++    closeConfig: vi.fn(),
++    isSharedPage: false,
++  })),
++}))
++
++vi.mock('@/components/Avatar/Avatar', () => ({
++  default: () => <div data-testid="avatar" />,
++}))
++
++vi.mock('@/components/markdown/Markdown', () => ({
++  default: ({ content }: { content?: string }) => <div data-testid="markdown">{content}</div>,
++}))
++
++vi.mock('@/components/Thought/Thought', () => ({
++  default: () => <div data-testid="thought" />,
++}))
++
++vi.mock('../ChatAiMessageActions', () => ({
++  default: () => <div data-testid="message-actions" />,
++}))
++
++vi.mock('../ThinkingLoader', () => ({
++  default: () => <div data-testid="thinking-loader" />,
++}))
++
++vi.mock('../../ChatUserMessage/EditMessageModal', () => ({
++  default: () => null,
++}))
++
++vi.mock('@/utils/helpers', () => ({
++  formatDateTime: vi.fn(() => 'Apr 30'),
++}))
++
++vi.mock('@/utils/toaster', () => ({
++  default: {
++    error: vi.fn(),
++  },
++}))
++
++const createMessage = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
++  role: 'Assistant',
++  request: 'Hello',
++  requestRaw: 'Hello',
++  response: 'Done',
++  createdAt: '2026-04-30T10:00:00.000Z',
++  assistantId: 'assistant-1',
++  assistant: {
++    id: 'assistant-1',
++    name: 'Assistant',
++  },
++  inProgress: false,
++  executionId: null,
++  ...overrides,
++})
++
++const renderMessage = (message: ChatMessage) =>
++  render(
++    <ChatAiMessage
++      indexes={{ historyIndex: 0, messageIndex: 0 }}
++      message={message}
++      totalMessages={1}
++      onChangeMessageIndex={vi.fn()}
++    />
++  )
++
++describe('ChatAiMessage processing metadata', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++    mockChatsStore.currentChat.history = []
++  })
++
++  it('renders the processing duration for a completed message', () => {
++    renderMessage(createMessage({ processingTime: 3.2 }))
++    expect(screen.getByText(/Processed in: 3\.20s/)).toBeInTheDocument()
++  })
++
++  it('renders the processing duration when the response completed in under a millisecond', () => {
++    renderMessage(createMessage({ processingTime: 0 }))
++    expect(screen.getByText(/Processed in: 0\.00s/)).toBeInTheDocument()
++  })
++
++  it('omits the duration but keeps the timestamp when no processing time is known', () => {
++    renderMessage(createMessage({ processingTime: undefined }))
++    expect(screen.queryByText(/Processed in:/)).not.toBeInTheDocument()
++    expect(screen.getByText(/Apr 30/)).toBeInTheDocument()
++  })
++})
+diff --git a/src/store/__tests__/chatGeneration.interactive.test.ts b/src/store/__tests__/chatGeneration.interactive.test.ts
+index 7c26bc48a..bb685980c 100644
+--- a/src/store/__tests__/chatGeneration.interactive.test.ts
++++ b/src/store/__tests__/chatGeneration.interactive.test.ts
+@@ -250,3 +250,67 @@ describe('interactive optimistic rollback on error', () => {
+     expect(mockToasterError).toHaveBeenCalled()
+   })
+ })
++
++describe('processing time on the streamed finalization path', () => {
++  const createStreamReader = (chunk: Record<string, unknown>) => ({
++    read: vi
++      .fn()
++      .mockResolvedValueOnce({ done: false, value: JSON.stringify(chunk) })
++      .mockResolvedValue({ done: true, value: undefined }),
++    cancel: vi.fn(),
++  })
++
++  it('records processingTime for an interactive-only turn that carries no text', async () => {
++    const historyItem = createHistoryItem({ role: 'Assistant' })
++    const chat = createChat(historyItem)
++    const { chatGenerationStore } = await import('@/store/chatGeneration')
++
++    await chatGenerationStore._handleStreamResponse(
++      createStreamReader({ generated: '', generated_chunk: '', last: true }) as never,
++      historyItem,
++      chat,
++      new Date()
++    )
++
++    expect(typeof historyItem.processingTime).toBe('number')
++    expect(historyItem.inProgress).toBe(false)
++  })
++
++  it('still records processingTime for a regular text response', async () => {
++    const historyItem = createHistoryItem({ role: 'Assistant' })
++    const chat = createChat(historyItem)
++    const { chatGenerationStore } = await import('@/store/chatGeneration')
++
++    await chatGenerationStore._handleStreamResponse(
++      createStreamReader({ generated: 'Hi there', generated_chunk: 'Hi there', last: true }) as never,
++      historyItem,
++      chat,
++      new Date()
++    )
++
++    expect(historyItem.response).toBe('Hi there')
++    expect(typeof historyItem.processingTime).toBe('number')
++  })
++})
++
++describe('_handleChunk stream termination', () => {
++  it('finishes the stream on a terminal chunk that also carries an interactive request', async () => {
++    const historyItem = createHistoryItem({ role: 'Assistant' })
++    const { chatGenerationStore } = await import('@/store/chatGeneration')
++
++    const { finalChunk } = await chatGenerationStore._handleChunk(
++      historyItem,
++      JSON.stringify({
++        interactive_request: {
++          request_id: 'r1',
++          surface: [{ type: 'button', id: 'ok', label: 'OK' }],
++        },
++        last: true,
++      })
++    )
++
++    expect(historyItem.interactiveRequest?.request_id).toBe('r1')
++    expect(finalChunk).not.toBeNull()
++    expect(historyItem.inProgress).toBe(false)
++  })
++})
+diff --git a/src/store/chatGeneration.ts b/src/store/chatGeneration.ts
+index d53531d77..0e766b730 100644
+--- a/src/store/chatGeneration.ts
++++ b/src/store/chatGeneration.ts
+@@ -978,13 +978,15 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
+ 
+     const endTime = new Date()
+ 
++    // Assigned for every finalized turn, not only for the ones that produced text: an
++    // interactive-only response has no text but still needs its "Processed in" metadata.
++    historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
++
+     if (response?.generated) {
+       historyItem.response = response.generated
+-      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
+       historyItem.debug = response.debug
+     } else if (response?.capturedStreamText) {
+       historyItem.response = response.capturedStreamText
+-      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
+     }
+ 
+     historyItem.inProgress = false
+@@ -1081,16 +1083,19 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
+         chatGenerationStore._handleThought(historyItem, chunk.thought)
+       } else {
+         historyItem.stream?.push(chunk.generated_chunk ?? '')
++      }
+ 
+-        if (chunk.last) {
+-          const streamRef = historyItem.stream as Stream | null
+-          const capturedStreamText = (streamRef?.stream ?? '') + (streamRef?.streamBuffer ?? '')
+-          historyItem.stream?.finish()
+-          historyItem.inProgress = false
+-          return {
+-            finalChunk: capturedStreamText ? { ...chunk, capturedStreamText } : chunk,
+-            incompleteChunk: null,
+-          }
++      // Termination is decided by the chunk's `last` flag alone, independently of what the
++      // chunk carries — a terminal chunk that also holds an interactive request still ends
++      // the stream.
++      if (chunk.last) {
++        const streamRef = historyItem.stream as Stream | null
++        const capturedStreamText = (streamRef?.stream ?? '') + (streamRef?.streamBuffer ?? '')
++        historyItem.stream?.finish()
++        historyItem.inProgress = false
++        return {
++          finalChunk: capturedStreamText ? { ...chunk, capturedStreamText } : chunk,
++          incompleteChunk: null,
+         }
+       }
+     }

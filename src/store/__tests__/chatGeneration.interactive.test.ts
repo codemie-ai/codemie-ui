@@ -250,3 +250,92 @@ describe('interactive optimistic rollback on error', () => {
     expect(mockToasterError).toHaveBeenCalled()
   })
 })
+
+describe('processing time on the streamed finalization path', () => {
+  const createStreamReader = (chunk: Record<string, unknown>) => ({
+    read: vi
+      .fn()
+      .mockResolvedValueOnce({ done: false, value: JSON.stringify(chunk) })
+      .mockResolvedValue({ done: true, value: undefined }),
+    cancel: vi.fn(),
+  })
+
+  it('records processingTime for an interactive-only turn that carries no text', async () => {
+    const historyItem = createHistoryItem({ role: 'Assistant' })
+    const chat = createChat(historyItem)
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+    await chatGenerationStore._handleStreamResponse(
+      createStreamReader({ generated: '', generated_chunk: '', last: true }) as never,
+      historyItem,
+      chat,
+      new Date()
+    )
+
+    expect(typeof historyItem.processingTime).toBe('number')
+    expect(historyItem.inProgress).toBe(false)
+  })
+
+  it('still records processingTime for a regular text response', async () => {
+    const historyItem = createHistoryItem({ role: 'Assistant' })
+    const chat = createChat(historyItem)
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+    await chatGenerationStore._handleStreamResponse(
+      createStreamReader({
+        generated: 'Hi there',
+        generated_chunk: 'Hi there',
+        last: true,
+      }) as never,
+      historyItem,
+      chat,
+      new Date()
+    )
+
+    expect(historyItem.response).toBe('Hi there')
+    expect(typeof historyItem.processingTime).toBe('number')
+  })
+
+  it('leaves processingTime unset when the stream ends without a terminal chunk', async () => {
+    const historyItem = createHistoryItem({ role: 'Assistant' })
+    const chat = createChat(historyItem)
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+    // A server-side cut, proxy timeout or dropped connection ends the reader without ever
+    // sending `last: true`. Such a turn never finished, so it must not be labelled as if
+    // it had — otherwise a truncated bubble is indistinguishable from a completed one.
+    await chatGenerationStore._handleStreamResponse(
+      {
+        read: vi.fn().mockResolvedValue({ done: true, value: undefined }),
+        cancel: vi.fn(),
+      } as never,
+      historyItem,
+      chat,
+      new Date()
+    )
+
+    expect(historyItem.processingTime).toBeUndefined()
+  })
+})
+
+describe('_handleChunk stream termination', () => {
+  it('finishes the stream on a terminal chunk that also carries an interactive request', async () => {
+    const historyItem = createHistoryItem({ role: 'Assistant' })
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+    const { finalChunk } = await chatGenerationStore._handleChunk(
+      historyItem,
+      JSON.stringify({
+        interactive_request: {
+          request_id: 'r1',
+          surface: [{ type: 'button', id: 'ok', label: 'OK' }],
+        },
+        last: true,
+      })
+    )
+
+    expect(historyItem.interactiveRequest?.request_id).toBe('r1')
+    expect(finalChunk).not.toBeNull()
+    expect(historyItem.inProgress).toBe(false)
+  })
+})

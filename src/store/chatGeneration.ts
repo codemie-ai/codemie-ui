@@ -978,13 +978,19 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
     const endTime = new Date()
 
+    // Assigned for every finalized turn, not only for the ones that produced text: an
+    // interactive-only response has no text but still needs its "Processed in" metadata,
+    // and its terminal chunk carries `last`. A stream that ended without a terminal chunk
+    // (server-side cut, proxy timeout) never finished, so it stays unlabelled.
+    if (response?.last || response?.generated || response?.capturedStreamText) {
+      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
+    }
+
     if (response?.generated) {
       historyItem.response = response.generated
-      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
       historyItem.debug = response.debug
     } else if (response?.capturedStreamText) {
       historyItem.response = response.capturedStreamText
-      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
     }
 
     historyItem.inProgress = false
@@ -1081,16 +1087,19 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         chatGenerationStore._handleThought(historyItem, chunk.thought)
       } else {
         historyItem.stream?.push(chunk.generated_chunk ?? '')
+      }
 
-        if (chunk.last) {
-          const streamRef = historyItem.stream as Stream | null
-          const capturedStreamText = (streamRef?.stream ?? '') + (streamRef?.streamBuffer ?? '')
-          historyItem.stream?.finish()
-          historyItem.inProgress = false
-          return {
-            finalChunk: capturedStreamText ? { ...chunk, capturedStreamText } : chunk,
-            incompleteChunk: null,
-          }
+      // Termination is decided by the chunk's `last` flag alone, independently of what the
+      // chunk carries — a terminal chunk that also holds an interactive request still ends
+      // the stream.
+      if (chunk.last) {
+        const streamRef = historyItem.stream as Stream | null
+        const capturedStreamText = (streamRef?.stream ?? '') + (streamRef?.streamBuffer ?? '')
+        historyItem.stream?.finish()
+        historyItem.inProgress = false
+        return {
+          finalChunk: capturedStreamText ? { ...chunk, capturedStreamText } : chunk,
+          incompleteChunk: null,
         }
       }
     }
