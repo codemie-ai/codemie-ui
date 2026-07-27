@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "task": "Add integration tests for AWS Integration entity lists' cursor/nextToken 'Load more' pagination across five entity types, using a novel two-stage mock re-registration technique, with zero production code changes.",
+  "generated": "2026-07-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 18,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Test surface spans AwsEntityList.tsx (shared render/state component), awsVendorStore.getVendorEntities (store action), 5 page wrappers (Agents/Flows/Knowledge Bases/Guardrails/AgentCore Runtimes) with a routing split (4 use mocked useVueRouter, 1 uses real react-router useParams), plus a direct import of requestRegistry (test-infra shared utility) to work around its query-string-blind keying -- bumped to XL by the core-shared-utilities red flag." },
+    { "dimension": "requirements_clarity", "reason": "Acceptance criteria 1-4 are individually well-specified, but the task description's stated test directory (`_tests_`, single underscore) conflicts with the actual vitest.workspace.ts integration discovery glob (`__tests__`, double underscore) -- a factual defect that must be resolved before writing any file or the suite silently discovers zero tests." },
+    { "dimension": "technical_risk", "reason": "No existing integration-level precedent for cursor/nextToken pagination combined with mockAPI anywhere in the codebase; requestRegistry is keyed only by method:url (query string excluded), so simulating page-1-then-page-2 on the same URL requires inventing a new two-stage re-registration technique from first principles -- a genuinely novel approach with no exact precedent to copy." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: touches core shared test-infra utilities (imports requestRegistry directly from the untouchable _mock-state.ts to bypass mockAPI's overwrite-on-same-URL limitation, rather than using the standard mockAPI abstraction alone)",
+    "Requirements Clarity bumped from M to L: task-specified test directory name (`_tests_`) contradicts the real vitest discovery glob (`__tests__`), a concrete inconsistency requiring resolution before implementation"
+  ],
+  "split_recommendation": null
+}
