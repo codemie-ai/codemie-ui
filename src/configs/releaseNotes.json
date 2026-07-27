@@ -4,6 +4,12 @@
     "date": "2026-07-24",
     "issues": [
       {
+        "title": "Add Claude Opus 5 to CodeMie preview and production environments",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13701",
+        "key": "EPMCDME-13701"
+      },
+      {
         "title": "Chat: “Processed in” metadata is not shown immediately for interactive-only responses until page refresh",
         "type": "BUG",
         "link": "https://jiraeu.epam.com/browse/EPMCDME-13688",
@@ -154,12 +160,6 @@
         "key": "EPMCDME-12746"
       },
       {
-        "title": "Enhance Workflow Edit with 'Refine/Modify with AI' and 'Revert to Previous' Option",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-12616",
-        "key": "EPMCDME-12616"
-      },
-      {
         "title": "Increase Assistant attachment upload and processing support from 10 to 20 files (frontend and backend)",
         "type": "STORY",
         "link": "https://jiraeu.epam.com/browse/EPMCDME-11794",
@@ -272,12 +272,6 @@
         "type": "BUG",
         "link": "https://jiraeu.epam.com/browse/EPMCDME-12571",
         "key": "EPMCDME-12571"
-      },
-      {
-        "title": "Enable workflow generation from natural language descriptions with backend validation and visual workflow rendering",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-10037",
-        "key": "EPMCDME-10037"
       }
     ]
   },
