@@ -64,4 +64,24 @@ describe('TableBlock', () => {
     expect(mockCopyToClipboard).toHaveBeenCalledTimes(1)
     expect(mockCopyToClipboard).toHaveBeenCalledWith(raw, 'Table copied to clipboard')
   })
+
+  it('blurs the copy button after pointer click so the overlay dismisses without an extra click', () => {
+    render(<TableBlock html="<table></table>" raw="| a |\n|---|" />)
+    const button = screen.getByRole('button', { name: 'Copy table' })
+    const blurSpy = vi.spyOn(button, 'blur')
+
+    fireEvent.click(button, { detail: 1 })
+
+    expect(blurSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not blur the copy button on keyboard activation so keyboard focus is preserved', () => {
+    render(<TableBlock html="<table></table>" raw="| a |\n|---|" />)
+    const button = screen.getByRole('button', { name: 'Copy table' })
+    const blurSpy = vi.spyOn(button, 'blur')
+
+    fireEvent.click(button, { detail: 0 })
+
+    expect(blurSpy).not.toHaveBeenCalled()
+  })
 })

@@ -1,0 +1,74 @@
+{
+  "decision": "request-changes",
+  "rationale": "One MAJOR finding: blur() is called unconditionally, including on keyboard activation (Enter/Space). After a keyboard user presses Enter to copy, focus is discarded to document.body and the button disappears, breaking WCAG 2.4.3 Focus Order. Fix: guard with `if (e.detail > 0)` so blur fires only on pointer clicks. All AC criteria pass except AC-6 (unit-only verification — CSS overlay interaction not covered). No security, contract, or correctness issues.",
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "file": "src/components/markdown/tokens/TableBlock.tsx",
+      "line": 40,
+      "problem": "blur() is called unconditionally on every click event, including keyboard activation (Enter/Space). After a keyboard user presses Enter to trigger copy, focus is silently moved to document.body and the button disappears, leaving the user without a visual anchor. This violates WCAG 2.4.3 (Focus Order).",
+      "impact": "Keyboard-only users lose their navigation position after activating the Copy button. Screen reader users receive no post-action focus indication.",
+      "recommendation": "Guard the blur() call with a pointer-click check using e.detail: `if (e.detail > 0) { (e.currentTarget as HTMLElement).blur() }`. Mouse clicks have e.detail > 0; keyboard activations (Enter/Space) have e.detail === 0 in all major browsers.",
+      "triage": "patch",
+      "sources": ["blind", "edge-case"]
+    }
+  ],
+  "business_review": [
+    {
+      "id": "AC-1",
+      "text": "Copy button appears when user hovers over a Markdown table in assistant output.",
+      "status": "pass",
+      "rationale": "Pre-existing group-hover:opacity-100 CSS on the overlay div is unchanged by the diff."
+    },
+    {
+      "id": "AC-2",
+      "text": "After clicking the Copy button, table content is copied as expected.",
+      "status": "pass",
+      "rationale": "copyToClipboard(raw.trim(), 'Table copied to clipboard') is still called first in the handler, before blur()."
+    },
+    {
+      "id": "AC-3",
+      "text": "Copy button is hidden when the pointer leaves the table/button hover area.",
+      "status": "pass",
+      "rationale": "blur() releases focus-within; once the pointer leaves, group-hover also deactivates, restoring opacity-0."
+    },
+    {
+      "id": "AC-4",
+      "text": "Copy button does not remain visible until an additional click.",
+      "status": "pass",
+      "rationale": "The root cause (focus retention keeping focus-within active) is eliminated by the blur() call."
+    },
+    {
+      "id": "AC-5",
+      "text": "Existing message/table copy functionality is not broken.",
+      "status": "pass",
+      "rationale": "Change is strictly additive — same copyToClipboard call with same arguments; no other copy paths affected."
+    },
+    {
+      "id": "AC-6",
+      "text": "Behavior is verified with a generated Markdown table in AI Assistant output.",
+      "status": "partial",
+      "rationale": "New unit test verifies blur() is called after click, but no integration test exercises the full CSS visibility cycle in a rendered assistant chat context. CSS opacity transitions are not testable in jsdom."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Commit 'EPMCDME-13611: Blur copy button after click...' matches the project's [TICKET]: Description convention."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "Change is minimal (4 lines added, 1 removed in implementation), TypeScript-compliant, follows existing component patterns."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No security concerns. No user-controlled input flows through the blur() call."
+    }
+  ],
+  "risk_flags": [],
+  "confidence": "high"
+}

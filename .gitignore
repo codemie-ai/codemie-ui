@@ -56,3 +56,4 @@ bmad/*
 /.mr-screenshots/
 /.env_local
 /.codegraph/
+/.serena/

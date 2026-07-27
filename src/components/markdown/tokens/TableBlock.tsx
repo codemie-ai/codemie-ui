@@ -35,7 +35,10 @@ const TableBlock: FC<TableBlockProps> = ({ html, raw }) => (
         aria-label="Copy table"
         data-tooltip-id="react-tooltip"
         data-tooltip-content="Copy to buffer"
-        onClick={() => copyToClipboard(raw.trim(), 'Table copied to clipboard')}
+        onClick={(e) => {
+          copyToClipboard(raw.trim(), 'Table copied to clipboard')
+          if (e.detail > 0) (e.currentTarget as HTMLElement).blur()
+        }}
       >
         <CopySvg />
       </Button>

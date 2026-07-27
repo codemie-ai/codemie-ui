@@ -1,0 +1,69 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: blur() is now guarded by `if (e.detail > 0)`, correctly scoping the dismiss behavior to pointer/mouse clicks only (e.detail > 0) and preserving keyboard focus on Enter/Space activation (e.detail === 0). Tests updated with explicit detail values; keyboard non-blur case is now covered. No new issues introduced by the fix-up diff.",
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Guard `if (e.detail > 0)` applied exactly per recommendation. Test updated with detail:1 for pointer and detail:0 for keyboard; new keyboard test asserts blur not called."
+    }
+  ],
+  "business_review": [
+    {
+      "id": "AC-1",
+      "text": "Copy button appears when user hovers over a Markdown table in assistant output.",
+      "status": "pass",
+      "rationale": "Pre-existing group-hover:opacity-100 CSS on the overlay div is unchanged by the diff."
+    },
+    {
+      "id": "AC-2",
+      "text": "After clicking the Copy button, table content is copied as expected.",
+      "status": "pass",
+      "rationale": "copyToClipboard(raw.trim(), 'Table copied to clipboard') is still called first in the handler, before blur()."
+    },
+    {
+      "id": "AC-3",
+      "text": "Copy button is hidden when the pointer leaves the table/button hover area.",
+      "status": "pass",
+      "rationale": "blur() releases focus-within; once the pointer leaves, group-hover also deactivates, restoring opacity-0."
+    },
+    {
+      "id": "AC-4",
+      "text": "Copy button does not remain visible until an additional click.",
+      "status": "pass",
+      "rationale": "The root cause (focus retention keeping focus-within active) is eliminated by the blur() call."
+    },
+    {
+      "id": "AC-5",
+      "text": "Existing message/table copy functionality is not broken.",
+      "status": "pass",
+      "rationale": "Change is strictly additive — same copyToClipboard call with same arguments; no other copy paths affected."
+    },
+    {
+      "id": "AC-6",
+      "text": "Behavior is verified with a generated Markdown table in AI Assistant output.",
+      "status": "partial",
+      "rationale": "Unit tests cover the mechanism. No integration test for full CSS overlay cycle in jsdom."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Second commit 'EPMCDME-13611: Guard blur with e.detail > 0...' also follows project convention."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "Fix is 1 line, TypeScript-compliant, no new abstractions."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No security concerns."
+    }
+  ],
+  "risk_flags": [],
+  "confidence": "high"
+}
