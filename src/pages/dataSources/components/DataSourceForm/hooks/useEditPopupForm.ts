@@ -35,6 +35,7 @@ import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { validateCronExpression } from '@/utils/cronValidator'
 import { humanize } from '@/utils/helpers'
 import { getIndexTypeCode, fileSizeValidator, googleDocLinkValidator } from '@/utils/indexing'
+import { getBrowserTimezone } from '@/utils/timezone'
 
 import {
   PROVIDER_FIELD_TYPES,
@@ -229,6 +230,7 @@ const baseValidationSchema = Yup.object({
       }
       return true
     }),
+  timezone: Yup.string().optional(),
 }).shape(guardrailAssignmentsSchema)
 
 export const editingSchema = baseValidationSchema.omit(['name']).shape({
@@ -358,6 +360,7 @@ export const useEditPopupForm = (
       promptTemplate: DEFAULT_DOCUMENTATION_PROMPT,
       guardrail_assignments: defaults?.guardrail_assignments ?? [],
       cronExpression: '',
+      timezone: getBrowserTimezone(),
       siteUrl: '',
       includePages: true,
       includeDocuments: true,
@@ -429,6 +432,7 @@ export const useEditPopupForm = (
       promptTemplate: defaults?.prompt ?? DEFAULT_DOCUMENTATION_PROMPT,
       guardrail_assignments: defaults?.guardrail_assignments ?? [],
       cronExpression: defaults?.cron_expression ?? '',
+      timezone: defaults?.timezone ?? getBrowserTimezone(),
       // Set the provider schema together with the form values so it is never
       // clobbered by a later reset(). Keeping it in a separate effect caused the
       // submit handler to read an undefined indexMetadata when the schemas were

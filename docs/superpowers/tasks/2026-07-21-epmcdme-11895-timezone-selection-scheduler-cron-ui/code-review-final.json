@@ -1,0 +1,204 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "rationale": "Four major actionable findings across three review lenses: (1) the timezone Controller is nested inside the cronExpression Controller's render prop — the spec shows a sibling pattern and nesting causes re-registration overhead on every cronExpression change with potential field-value loss; (2) the FilterOption cast in settingsUIConfig.ts uses `as unknown as` to bypass TypeScript's structural check, masking a real type incompatibility the spec does not authorize; (3) datasource-type-specific create/update paths (Git, SVN, Google Doc, Jira, Xray, AzureDevOps) may build payloads independently of getBaseRequestFields() and therefore silently omit timezone; (4) the spec-required default-value behavioral tests for useEditPopupForm (browser timezone on create, defaults.timezone on edit) were not added. Nine additional candidates were dismissed or deferred as either spec-authorized design choices, false positives from diff summarization, or low-risk items for a SPA context.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "New module src/utils/timezone.ts with getIANATimezoneOptions() returning FilterOption[] with memoization",
+      "status": "pass",
+      "notes": "Module created with module-level cachedOptions, lazy initialization, UTC guarantee, and label/value mapping"
+    },
+    {
+      "kind": "spec",
+      "item": "getIANATimezoneOptions: labels use spaces (underscore replacement), values are canonical IANA names",
+      "status": "pass",
+      "notes": "tz.replace(/_/g, ' ') for label, raw tz string for value — confirmed in implementation and test"
+    },
+    {
+      "kind": "spec",
+      "item": "getIANATimezoneOptions: UTC always present (added explicitly if runtime omits it)",
+      "status": "pass",
+      "notes": "supported.includes('UTC') ? supported : ['UTC', ...supported]"
+    },
+    {
+      "kind": "spec",
+      "item": "getIANATimezoneOptions: memoized — same array reference on repeated calls",
+      "status": "pass",
+      "notes": "Module-level cachedOptions singleton; test coverage confirms same reference"
+    },
+    {
+      "kind": "spec",
+      "item": "getBrowserTimezone() returns Intl.DateTimeFormat().resolvedOptions().timeZone",
+      "status": "pass",
+      "notes": "Exact implementation present"
+    },
+    {
+      "kind": "spec",
+      "item": "No new npm packages",
+      "status": "pass",
+      "notes": "No package.json changes in diff; only native Intl API used"
+    },
+    {
+      "kind": "spec",
+      "item": "CronScheduleInput: new optional props timezone? and onTimezoneChange? (backward-compatible)",
+      "status": "pass",
+      "notes": "Props added to interface; backward-compat test covers no-props render"
+    },
+    {
+      "kind": "spec",
+      "item": "CronScheduleInput: timezone selector NOT rendered when preset === SCHEDULE_PRESETS.NONE",
+      "status": "pass",
+      "notes": "preset !== SCHEDULE_PRESETS.NONE guard in render; test covers NONE case (empty value)"
+    },
+    {
+      "kind": "spec",
+      "item": "CronScheduleInput: Autocomplete labelled 'Timezone' with options, localFilter, allowNew, placeholder",
+      "status": "pass",
+      "notes": "All four attributes present in Autocomplete usage"
+    },
+    {
+      "kind": "spec",
+      "item": "CronScheduleInput: onTimezoneChange called with new string value on change",
+      "status": "pass",
+      "notes": "onChange={onTimezoneChange} wired; test covers callback via fireEvent.click"
+    },
+    {
+      "kind": "spec",
+      "item": "useEditPopupForm.ts: schema adds timezone: Yup.string().optional()",
+      "status": "pass",
+      "notes": "Added to baseValidationSchema"
+    },
+    {
+      "kind": "spec",
+      "item": "useEditPopupForm.ts: default on create is getBrowserTimezone()",
+      "status": "pass",
+      "notes": "Present in create defaults block"
+    },
+    {
+      "kind": "spec",
+      "item": "useEditPopupForm.ts: default on edit is defaults?.timezone ?? getBrowserTimezone()",
+      "status": "pass",
+      "notes": "Present in edit defaults block"
+    },
+    {
+      "kind": "spec",
+      "item": "DataSourceForm.tsx: Controller binding for name='timezone' wired to CronScheduleInput's timezone and onTimezoneChange",
+      "status": "partial",
+      "notes": "Implemented as a nested Controller inside the cronExpression Controller's render prop. Spec shows a sibling Controller pattern at the same JSX nesting level. Nesting causes re-instantiation of the timezone Controller on every cronExpression change, leading to repeated field registration/unregistration overhead and potential form-value loss."
+    },
+    {
+      "kind": "spec",
+      "item": "useCreateIndex.ts: getBaseRequestFields() adds timezone: values.timezone || undefined",
+      "status": "partial",
+      "notes": "getBaseRequestFields() updated correctly. However datasource-type-specific functions (Git, SVN, Google Doc, Jira, Xray, AzureDevOps) may build API payloads independently and not spread getBaseRequestFields(), silently omitting timezone for those types."
+    },
+    {
+      "kind": "spec",
+      "item": "DataSource and DataSourceDetailsResponse interfaces: timezone?: string | null",
+      "status": "pass",
+      "notes": "Both interfaces updated"
+    },
+    {
+      "kind": "spec",
+      "item": "DataSourceDetails.tsx: timezone row in SCHEDULER section, conditional on presence",
+      "status": "pass",
+      "notes": "{dataSource.timezone && ...} conditional render matches spec pattern"
+    },
+    {
+      "kind": "spec",
+      "item": "settingsUIConfig.ts: scheduler credential type adds timezone field with CredentialComponentType.select, getIANATimezoneOptions(), Yup.string().required()",
+      "status": "partial",
+      "notes": "Field added with correct type and validation. However options are cast as `getIANATimezoneOptions() as unknown as { value: string; label: string }[]` — the spec shows options without any cast. The double-cast bypasses TypeScript's structural check and indicates a type mismatch between FilterOption and the credential config's expected option shape."
+    },
+    {
+      "kind": "spec",
+      "item": "Test: src/utils/__tests__/timezone.test.ts covers all six specified cases",
+      "status": "pass",
+      "notes": "All six test cases present and passing (confirmed by 3902-test run)"
+    },
+    {
+      "kind": "spec",
+      "item": "Test: CronScheduleInput.test.tsx covers timezone renders when preset != NONE; hidden when NONE; onTimezoneChange called",
+      "status": "pass",
+      "notes": "Five tests covering all three spec scenarios plus daily preset and backward-compat"
+    },
+    {
+      "kind": "spec",
+      "item": "Test: useEditPopupForm.test.ts covers timezone defaults to browser timezone on create; defaults to defaults.timezone on edit",
+      "status": "fail",
+      "notes": "Only schema validation tests added to useEditPopupForm.validation.test.ts. The spec-required default-value behavioral tests (getBrowserTimezone() on create, defaults?.timezone ?? getBrowserTimezone() on edit) targeting useEditPopupForm.test.ts are absent."
+    }
+  ],
+  "standards_review": [
+    {
+      "item": "Commit format (EPMCDME-11895: prefix)",
+      "status": "pass",
+      "notes": "All commits follow the documented ticket-id prefix convention"
+    },
+    {
+      "item": "TypeScript type safety",
+      "status": "partial",
+      "notes": "Two double-casts present: (1) `Intl as unknown as { supportedValuesOf... }` in timezone.ts — necessary workaround for missing TS lib type, acceptable; (2) `getIANATimezoneOptions() as unknown as { value: string; label: string }[]` in settingsUIConfig.ts — bypasses structural check for an unconfirmed type mismatch, should be resolved cleanly"
+    },
+    {
+      "item": "No new npm packages (project constraint)",
+      "status": "pass",
+      "notes": "Only native Intl API used"
+    },
+    {
+      "item": "Test coverage for new behavior",
+      "status": "partial",
+      "notes": "timezone.ts utility, CronScheduleInput rendering, and schema validation covered; useEditPopupForm default-value behavior not tested"
+    },
+    {
+      "item": "Security (no secrets, no injection, no XSS)",
+      "status": "pass",
+      "notes": "Timezone value displayed as text content (no dangerouslySetInnerHTML); IANA names are not executable; no secrets introduced"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "title": "Nested Controller causes unnecessary re-registration of timezone field on every cronExpression change",
+      "location": "src/pages/dataSources/components/DataSourceForm/DataSourceForm.tsx:633-649",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The timezone <Controller name='timezone'> is rendered inside the render prop of <Controller name='cronExpression'>. React Hook Form re-instantiates the inner Controller on every render triggered by cronExpression, causing repeated field registration and unregistration. The spec explicitly shows a sibling Controller pattern where the timezone Controller sits at the same JSX level as cronExpression, not nested inside its render prop.",
+      "impact": "Re-registration on every cronExpression keystroke/change; potential transient loss of the timezone form value during rapid input; non-standard React Hook Form usage that increases cognitive overhead for future maintainers.",
+      "recommendation": "Refactor to a sibling Controller pattern: place both Controllers at the same nesting level and pass both field bindings into a single CronScheduleInput. Alternatively extract an inner wrapper component that uses useController for both fields so neither Controller's render prop contains the other."
+    },
+    {
+      "id": "CR-002",
+      "title": "Double-cast `as unknown as` in settingsUIConfig.ts bypasses TypeScript structural compatibility check",
+      "location": "src/utils/settingsUIConfig.ts:698-702",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "`getIANATimezoneOptions() as unknown as { value: string; label: string }[]` forces TypeScript to accept the value without verifying that FilterOption is structurally compatible with the credential config's expected option type. The spec shows `options: getIANATimezoneOptions()` without any cast. The need for a double-cast indicates a real type mismatch that is being suppressed rather than resolved.",
+      "impact": "If FilterOption carries additional required fields absent in the config's option shape (or vice versa), downstream CredentialFields rendering may silently produce incorrect behavior. The cast makes the incompatibility invisible at compile time, removing the protection TypeScript provides.",
+      "recommendation": "Read the full FilterOption type definition and the credential config's expected options type. Either (a) widen the credential config's options type to accept FilterOption[], (b) add the missing fields to the mapping, or (c) explicitly project: `getIANATimezoneOptions().map(o => ({ value: o.value, label: o.label }))`. Remove the double-cast entirely."
+    },
+    {
+      "id": "CR-003",
+      "title": "Spec-required behavioral tests for useEditPopupForm timezone defaults not present",
+      "location": "src/pages/dataSources/components/DataSourceForm/hooks/__tests__/useEditPopupForm.test.ts",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The spec requires useEditPopupForm.test.ts to cover two behavioral cases: (1) timezone defaults to getBrowserTimezone() on create, and (2) timezone defaults to defaults.timezone on edit. Only schema validation tests were added to useEditPopupForm.validation.test.ts. The file the spec targets was not modified and the two required behavioral tests do not exist anywhere in the diff.",
+      "impact": "The timezone defaulting logic — getBrowserTimezone() on create, defaults?.timezone ?? getBrowserTimezone() on edit — is entirely untested. A regression (e.g. defaults?.cron_expression spread accidentally clobbering timezone, or getBrowserTimezone() returning empty string) would pass CI undetected.",
+      "recommendation": "Add tests to useEditPopupForm.test.ts (or the validation test file if project convention puts all hook tests there) covering: (a) the create-path default value equals getBrowserTimezone(), (b) the edit-path default value equals defaults.timezone when present, and (c) the edit-path falls back to getBrowserTimezone() when defaults.timezone is absent."
+    },
+    {
+      "id": "CR-004",
+      "title": "Datasource-type-specific create/update paths may not spread getBaseRequestFields() and therefore omit timezone",
+      "location": "src/pages/dataSources/components/DataSourceForm/hooks/useCreateIndex.ts",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The timezone field was added to getBaseRequestFields(). However Git, SVN, Google Doc, Jira, Xray, and AzureDevOps datasource types have dedicated create/update functions in useCreateIndex.ts that may build their API request payloads independently rather than spreading getBaseRequestFields(). If any of these functions do not spread that helper, timezone is silently omitted from the payload for that datasource type.",
+      "impact": "Timezone selection would appear to work in the form UI but not be transmitted to the backend for the affected datasource types. The server defaults to UTC regardless of the user's selection, making the feature silently broken for non-FILE datasources.",
+      "recommendation": "Audit every create/update call site in useCreateIndex.ts. For each datasource type function that does not spread getBaseRequestFields(), add `timezone: values.timezone || undefined` explicitly. Add at least one integration or unit test asserting that the timezone field is present in the API payload for a non-FILE datasource type (e.g. Git or Confluence)."
+    }
+  ]
+}

@@ -60,6 +60,7 @@ interface CreateSharePointIndexOptions {
   embedding_model?: string
   guardrail_assignments?: EntityGuardrailAssignment[]
   cron_expression?: string
+  timezone?: string
   include_pages?: boolean
   include_documents?: boolean
   include_lists?: boolean
@@ -363,7 +364,8 @@ export const dataSourceStore = proxy({
     setting_id: string,
     embedding_model?: string,
     guardrail_assignments?: EntityGuardrailAssignment[],
-    cron_expression?: string
+    cron_expression?: string,
+    timezone?: string
   ) {
     return handleIndexResponse(
       api.post('v1/index/knowledge_base/jira', {
@@ -376,6 +378,7 @@ export const dataSourceStore = proxy({
         embedding_model,
         guardrail_assignments,
         cron_expression,
+        timezone,
       })
     )
   },
@@ -389,7 +392,8 @@ export const dataSourceStore = proxy({
     setting_id: string,
     embedding_model?: string,
     guardrail_assignments?: EntityGuardrailAssignment[],
-    cron_expression?: string
+    cron_expression?: string,
+    timezone?: string
   ) {
     return handleIndexResponse(
       api.post('v1/index/knowledge_base/xray', {
@@ -402,6 +406,7 @@ export const dataSourceStore = proxy({
         embedding_model,
         guardrail_assignments,
         cron_expression,
+        timezone,
       })
     )
   },
@@ -416,7 +421,8 @@ export const dataSourceStore = proxy({
     setting_id: string,
     embedding_model?: string,
     guardrail_assignments?: EntityGuardrailAssignment[],
-    cron_expression?: string
+    cron_expression?: string,
+    timezone?: string
   ) {
     return handleIndexResponse(
       api.post('v1/index/knowledge_base/azure_devops_wiki', {
@@ -430,6 +436,7 @@ export const dataSourceStore = proxy({
         embedding_model,
         guardrail_assignments,
         cron_expression,
+        timezone,
       })
     )
   },
@@ -443,7 +450,8 @@ export const dataSourceStore = proxy({
     setting_id: string,
     embedding_model?: string,
     guardrail_assignments?: EntityGuardrailAssignment[],
-    cron_expression?: string
+    cron_expression?: string,
+    timezone?: string
   ) {
     return handleIndexResponse(
       api.post('v1/index/knowledge_base/azure_devops_work_item', {
@@ -456,6 +464,7 @@ export const dataSourceStore = proxy({
         embedding_model,
         guardrail_assignments,
         cron_expression,
+        timezone,
       })
     )
   },
@@ -516,7 +525,8 @@ export const dataSourceStore = proxy({
     embedding_model?: string,
     guardrail_assignments?: EntityGuardrailAssignment[],
     cron_expression?: string,
-    setting_id?: string
+    setting_id?: string,
+    timezone?: string
   ) {
     return handleIndexResponse(
       api.post('v1/index/knowledge_base/google', {
@@ -529,6 +539,7 @@ export const dataSourceStore = proxy({
         guardrail_assignments,
         cron_expression,
         setting_id,
+        timezone,
       })
     )
   },

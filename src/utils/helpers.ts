@@ -42,7 +42,7 @@ export const capitalize = (string: string): string => {
 
 export const parseDate = (dateString?: string | null): DateTime => {
   const isDevMode = import.meta.env.MODE === 'development'
-  const currentZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const currentZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   const serverZone = isDevMode ? currentZone : 'utc'
 
   return DateTime.fromISO(dateString, { zone: serverZone }).setZone(currentZone)

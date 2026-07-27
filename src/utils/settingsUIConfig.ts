@@ -25,6 +25,7 @@ import {
   CredentialUIMap,
 } from '@/types/settingsUI'
 import { validateCronExpression } from '@/utils/cronValidator'
+import { getIANATimezoneOptions } from '@/utils/timezone'
 
 const AUTH_TYPE = {
   BASIC: 'basic',
@@ -693,6 +694,15 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
             }
             return true
           }),
+      },
+      timezone: {
+        placeholder: 'Timezone (e.g. Europe/Warsaw)',
+        type: CredentialComponentType.select,
+        options: getIANATimezoneOptions().map(({ label, value }) => ({
+          label,
+          value: value as string,
+        })),
+        validation: Yup.string().required('Timezone is required'),
       },
       resource_type: {
         placeholder: 'Resource Type',

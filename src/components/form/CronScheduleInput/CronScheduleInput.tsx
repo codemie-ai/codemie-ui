@@ -16,6 +16,7 @@
 import React, { useState, useEffect, forwardRef } from 'react'
 
 import ExternalSvg from '@/assets/icons/external.svg?react'
+import Autocomplete from '@/components/form/Autocomplete'
 import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Select from '@/components/form/Select'
@@ -31,6 +32,7 @@ import {
   REINDEX_TYPES,
   ReindexType,
 } from '@/constants/dataSources'
+import { getIANATimezoneOptions } from '@/utils/timezone'
 import { cn } from '@/utils/utils'
 
 interface CronScheduleInputProps {
@@ -43,6 +45,8 @@ interface CronScheduleInputProps {
   hint?: string
   className?: string
   required?: boolean
+  timezone?: string
+  onTimezoneChange?: (tz: string) => void
 }
 
 const CronScheduleInput = forwardRef<HTMLDivElement, CronScheduleInputProps>(
@@ -57,6 +61,8 @@ const CronScheduleInput = forwardRef<HTMLDivElement, CronScheduleInputProps>(
       hint,
       className,
       required = false,
+      timezone,
+      onTimezoneChange,
     },
     ref
   ) => {
@@ -131,6 +137,19 @@ const CronScheduleInput = forwardRef<HTMLDivElement, CronScheduleInputProps>(
         />
 
         {hint && <InfoBox text={hint} />}
+
+        {preset !== SCHEDULE_PRESETS.NONE && (
+          <Autocomplete
+            label="Timezone"
+            value={timezone ?? ''}
+            onChange={onTimezoneChange}
+            options={getIANATimezoneOptions()}
+            localFilter={true}
+            allowNew={false}
+            placeholder="e.g. Europe/Warsaw"
+            disabled={disabled}
+          />
+        )}
 
         {isCustom && (
           <Input

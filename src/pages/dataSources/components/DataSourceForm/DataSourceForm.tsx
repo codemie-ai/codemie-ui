@@ -23,7 +23,7 @@ import {
   forwardRef,
   useImperativeHandle,
 } from 'react'
-import { Controller, SubmitHandler } from 'react-hook-form'
+import { Controller, SubmitHandler, useController } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
 
 import CronScheduleInput from '@/components/form/CronScheduleInput'
@@ -148,6 +148,8 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
     },
     isEditing
   )
+
+  const { field: timezoneField } = useController({ name: 'timezone', control })
 
   const formId = FormIDs.DATA_SOURCE_FORM
 
@@ -638,6 +640,8 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                           onChange={cronField.onChange}
                           error={fieldState.error?.message}
                           hint="Set up automatic reindexing schedule for this datasource. Manual reindexing will always be available."
+                          timezone={timezoneField.value}
+                          onTimezoneChange={timezoneField.onChange}
                         />
                       )}
                     />

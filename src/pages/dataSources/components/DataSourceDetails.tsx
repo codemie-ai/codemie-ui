@@ -767,6 +767,12 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                       </code>
                     </div>
                   )}
+                  {dataSource.timezone && (
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs text-text-quaternary">Timezone</p>
+                      <p className="text-xs">{dataSource.timezone}</p>
+                    </div>
+                  )}
                 </>
               )}
             </div>

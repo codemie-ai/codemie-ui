@@ -1,0 +1,79 @@
+// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+import { renderHook } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+
+import { getBrowserTimezone } from '@/utils/timezone'
+
+import { useEditPopupForm } from '../useEditPopupForm'
+
+// Prevent the dataSources store (772 lines + transitive API/type imports) from loading.
+vi.mock('@/store/dataSources', () => ({
+  dataSourceStore: { indexProviderSchemas: [] },
+}))
+
+// Prevent @/utils/helpers → @/router → all page components from loading.
+vi.mock('@/utils/helpers', () => ({
+  humanize: (s: string) => s,
+}))
+
+vi.mock('@/utils/indexing', () => ({
+  getIndexTypeCode: vi.fn(() => 'git'),
+  fileSizeValidator: vi.fn(() => true),
+  googleDocLinkValidator: vi.fn(() => true),
+}))
+
+// Prevent GuardrailAssignmentPanel's deep component tree from loading.
+vi.mock(
+  '@/components/guardrails/GuardrailAssignmentPanel/schemas/guardrailAssignmentSchema',
+  () => ({ guardrailAssignmentsSchema: {} })
+)
+
+vi.mock('@/hooks/useSearchParams', () => ({
+  useSearchParams: () => [new URLSearchParams(), vi.fn()],
+}))
+
+vi.mock('@/utils/timezone', () => ({
+  getBrowserTimezone: vi.fn(() => 'America/New_York'),
+  getIANATimezoneOptions: vi.fn(() => []),
+}))
+
+describe('useEditPopupForm — timezone default values', () => {
+  it('create form: timezone defaults to getBrowserTimezone()', () => {
+    const { result } = renderHook(() => useEditPopupForm({}, false))
+    expect(result.current.getValues('timezone')).toBe('America/New_York')
+  })
+
+  it('edit form: timezone uses the stored value when defaults.timezone is set', () => {
+    // Stable reference — avoids infinite re-render loop from useEffect([defaults])
+    const defaults = { id: '1', timezone: 'Europe/Warsaw' } as any
+    const { result } = renderHook(() => useEditPopupForm(defaults, true))
+    expect(getBrowserTimezone()).toBe('America/New_York')
+    expect(result.current.getValues('timezone')).toBe('Europe/Warsaw')
+  })
+
+  it('edit form: timezone falls back to getBrowserTimezone() when defaults.timezone is absent', () => {
+    const defaults = { id: '1', timezone: undefined } as any
+    const { result } = renderHook(() => useEditPopupForm(defaults, true))
+    expect(result.current.getValues('timezone')).toBe('America/New_York')
+  })
+
+  it('edit form: timezone falls back to getBrowserTimezone() when defaults.timezone is null', () => {
+    const defaults = { id: '1', timezone: null } as any
+    const { result } = renderHook(() => useEditPopupForm(defaults, true))
+    expect(result.current.getValues('timezone')).toBe('America/New_York')
+  })
+})

@@ -134,6 +134,7 @@ export interface DataSource {
     oauth_tenant_id?: string
   }
   cron_expression?: string | null
+  timezone?: string | null
   vcs_type?: string
 }
 
@@ -194,6 +195,7 @@ export interface DataSourceDetailsResponse {
   provider_fields: any
   guardrail_assignments: EntityGuardrailAssignment[]
   cron_expression?: string | null
+  timezone?: string | null
   vcs_type?: string
   last_reindex_triggered_at?: string | null
 }

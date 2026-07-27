@@ -66,6 +66,7 @@ const getBaseRequestFields = (
   embedding_model: values.embeddingsModel,
   guardrail_assignments: values.guardrail_assignments,
   cron_expression: values.cronExpression,
+  timezone: values.timezone || undefined,
   ...(hasProjectChanged && { new_project_name: values.projectName }),
 })
 
@@ -172,6 +173,7 @@ export const useIndexCreation = ({
       setting_id: values.setting_id,
       guardrail_assignments: values.guardrail_assignments,
       cron_expression: values.cronExpression,
+      timezone: values.timezone || undefined,
       ...(hasProjectChanged && { new_project_name: values.projectName }),
     }
 
@@ -247,7 +249,8 @@ export const useIndexCreation = ({
       request.embedding_model as string | undefined,
       request.guardrail_assignments,
       request.cron_expression ?? undefined,
-      request.setting_id
+      request.setting_id,
+      request.timezone
     )
   }
 
@@ -289,7 +292,8 @@ export const useIndexCreation = ({
       request.setting_id as string,
       request.embedding_model as string | undefined,
       request.guardrail_assignments,
-      request.cron_expression ?? undefined
+      request.cron_expression ?? undefined,
+      request.timezone
     )
   }
 
@@ -315,7 +319,8 @@ export const useIndexCreation = ({
       request.setting_id as string,
       request.embedding_model as string | undefined,
       request.guardrail_assignments,
-      request.cron_expression ?? undefined
+      request.cron_expression ?? undefined,
+      request.timezone
     )
   }
 
@@ -343,7 +348,8 @@ export const useIndexCreation = ({
       request.setting_id as string,
       request.embedding_model as string | undefined,
       request.guardrail_assignments,
-      request.cron_expression ?? undefined
+      request.cron_expression ?? undefined,
+      request.timezone
     )
   }
 
@@ -369,7 +375,8 @@ export const useIndexCreation = ({
       request.setting_id as string,
       request.embedding_model as string | undefined,
       request.guardrail_assignments,
-      request.cron_expression ?? undefined
+      request.cron_expression ?? undefined,
+      request.timezone
     )
   }
 
@@ -417,6 +424,7 @@ export const useIndexCreation = ({
       embedding_model: request.embedding_model as string | undefined,
       guardrail_assignments: request.guardrail_assignments,
       cron_expression: request.cron_expression ?? undefined,
+      timezone: request.timezone,
       include_pages: request.include_pages,
       include_documents: request.include_documents,
       include_lists: request.include_lists,
@@ -449,6 +457,7 @@ export const useIndexCreation = ({
       setting_id: values.setting_id,
       guardrail_assignments: values.guardrail_assignments,
       cron_expression: values.cronExpression,
+      timezone: values.timezone || undefined,
       ...(hasProjectChanged && { new_project_name: values.projectName }),
     }
 

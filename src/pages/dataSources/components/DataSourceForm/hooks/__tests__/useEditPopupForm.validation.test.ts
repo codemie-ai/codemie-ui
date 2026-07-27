@@ -79,3 +79,27 @@ describe('editingSchema — uploadedFiles validation', () => {
     await expect(editingSchema.validate(values, { abortEarly: false })).resolves.toBeTruthy()
   })
 })
+
+describe('editingSchema — timezone validation', () => {
+  const baseWithFiles = { ...baseValidObject, uploadedFiles: ['a.pdf'] }
+
+  it('accepts a valid IANA timezone string', async () => {
+    const values = { ...baseWithFiles, timezone: 'Europe/Warsaw' }
+    await expect(editingSchema.validate(values, { abortEarly: false })).resolves.toBeTruthy()
+  })
+
+  it('accepts UTC (always present in IANA options for legacy compat)', async () => {
+    const values = { ...baseWithFiles, timezone: 'UTC' }
+    await expect(editingSchema.validate(values, { abortEarly: false })).resolves.toBeTruthy()
+  })
+
+  it('accepts undefined timezone (optional — server defaults to UTC)', async () => {
+    const values = { ...baseWithFiles, timezone: undefined }
+    await expect(editingSchema.validate(values, { abortEarly: false })).resolves.toBeTruthy()
+  })
+
+  it('accepts empty string timezone (payload key omitted, server uses UTC)', async () => {
+    const values = { ...baseWithFiles, timezone: '' }
+    await expect(editingSchema.validate(values, { abortEarly: false })).resolves.toBeTruthy()
+  })
+})
