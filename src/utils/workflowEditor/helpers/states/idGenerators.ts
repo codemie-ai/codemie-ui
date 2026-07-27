@@ -101,15 +101,21 @@ export const generateActorID = (actorType: ActorTypes, config: WorkflowConfigura
 }
 
 /**
- * Checks if an actor ID (assistant, tool, or custom node) is only referenced by the current node.
- * Returns true if the actor is used by only one node (the current one).
- * Returns false if the actor is used by multiple nodes or doesn't exist.
+ * Checks whether an actor ID should be preserved (reused) when saving a state.
+ *
+ * Behaviour differs by actor type:
+ * - Assistant: returns true whenever the current state is among the states referencing the actor,
+ *   regardless of how many states share it. Shared assistants are updated in-place.
+ * - Tool / CustomNode: returns true only when the current state is the sole referencer
+ *   (exclusive ownership). Multiple references generate a new actor ID on save.
+ *
+ * Returns false when actorId is undefined or the current state does not reference the actor.
  *
  * @param config - The workflow configuration containing all states
  * @param actorType - The type of actor (Assistant, Tool, or CustomNode)
  * @param actorId - The actor ID to check
  * @param currentStateId - The ID of the current state/node
- * @returns True if the actor ID can be reused, false otherwise
+ * @returns True if the existing actor ID should be preserved, false if a new one should be generated
  */
 export const shouldReuseActorId = (
   config: WorkflowConfiguration,
@@ -127,6 +133,10 @@ export const shouldReuseActorId = (
     config.states?.filter((state) => {
       return (state as any)[actorField] === actorId
     }) ?? []
+
+  if (actorType === ActorTypes.Assistant) {
+    return referencingStates.some((state) => state.id === currentStateId)
+  }
 
   return referencingStates.length === 1 && referencingStates[0].id === currentStateId
 }

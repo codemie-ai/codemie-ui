@@ -193,7 +193,7 @@ describe('idGenerators', () => {
         expect(result).toBe(true)
       })
 
-      it('returns false when actor is referenced by multiple nodes', () => {
+      it('returns true when assistant is referenced by multiple nodes and current node is one of them', () => {
         const config: WorkflowConfiguration = {
           states: [
             { id: 'state1', assistant_id: 'assistant_1' } as AssistantStateConfiguration,
@@ -203,6 +203,33 @@ describe('idGenerators', () => {
         }
 
         const result = shouldReuseActorId(config, ActorTypes.Assistant, 'assistant_1', 'state1')
+        expect(result).toBe(true)
+      })
+
+      it('returns true when assistant is shared and the current node is the second referencing state', () => {
+        const config: WorkflowConfiguration = {
+          states: [
+            { id: 'state1', assistant_id: 'assistant_1' } as AssistantStateConfiguration,
+            { id: 'state2', assistant_id: 'assistant_1' } as AssistantStateConfiguration,
+            { id: 'state3', assistant_id: 'assistant_1' } as AssistantStateConfiguration,
+          ],
+          assistants: [],
+        }
+
+        const result = shouldReuseActorId(config, ActorTypes.Assistant, 'assistant_1', 'state2')
+        expect(result).toBe(true)
+      })
+
+      it('returns false when assistant is shared but current node does not reference it', () => {
+        const config: WorkflowConfiguration = {
+          states: [
+            { id: 'state1', assistant_id: 'assistant_1' } as AssistantStateConfiguration,
+            { id: 'state2', assistant_id: 'assistant_1' } as AssistantStateConfiguration,
+          ],
+          assistants: [],
+        }
+
+        const result = shouldReuseActorId(config, ActorTypes.Assistant, 'assistant_1', 'state3')
         expect(result).toBe(false)
       })
 

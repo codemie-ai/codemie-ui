@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Fix assistant duplication in the visual workflow editor by updating the referenced shared assistant instead of generating a new duplicate ID when multiple states share the same virtual assistant and one is edited.",
+  "generated": "2026-07-20T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 14,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Five files must change: the shared helper idGenerators.ts plus four sibling config panel tabs (AssistantTab, ToolTab, CustomTab, TransformTab). All are within the workflow editor subsystem but span two tiers — UI config panel components and a pure-TS utility layer."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "No novel pattern is needed, but the existing test for shouldReuseActorId explicitly asserts multi-reference returns false — that assertion must be inverted or removed. The fix must be applied consistently to all four tabs (risk of partial application), and the cleanupOrphanedAssistants interaction through the full updateStateConfigurationAction path is not currently covered by any integration test. AssistantTab.saveData() has zero existing test coverage, so the fix lands in an untested critical path."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Approximately 5 source files modified (idGenerators.ts + 4 config panel tabs), 1 existing test file updated (idGenerators.test.ts with its now-incorrect assertion), and 1-2 new test files needed. Changes span configPanels/, helpers/states/, and __tests__/ directories."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -1,0 +1,67 @@
+{
+  "gate": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "id": "AC-1",
+      "text": "A single virtual assistant can be assigned to multiple workflow steps in the visual editor without duplication.",
+      "status": "pass",
+      "notes": "shouldReuseActorId returns true for any referencing state; generateActorID is never called for shared assistant states."
+    },
+    {
+      "id": "AC-2",
+      "text": "Editing any step referencing a shared assistant updates that assistant in-place; no duplicate is created.",
+      "status": "pass",
+      "notes": "All referencing states get canReuseId=true, preserving the same assistantId on every save."
+    },
+    {
+      "id": "AC-3",
+      "text": "The assistant-to-state reference relationship is preserved after any UI modification.",
+      "status": "pass",
+      "notes": "assistant_id in each state is carried through unchanged since the existing ID is always reused."
+    },
+    {
+      "id": "AC-4",
+      "text": "Workflows imported via YAML with shared assistants are handled correctly by the UI.",
+      "status": "pass",
+      "notes": "YAML import populates config.states with original assistant_id values; subsequent UI edits hit the fixed code path."
+    },
+    {
+      "id": "AC-5",
+      "text": "Tool and custom-node actor sharing behavior is unchanged.",
+      "status": "pass",
+      "notes": "Tool and CustomNode fall through to the unchanged exclusive-ownership guard. Existing regression tests confirm."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Message 'EPMCDME-10583: Allow shared assistant actors to be updated in-place on step edit' matches the required EPMCDME-NNNN: Capital sentence pattern."
+    },
+    {
+      "standard": "typescript-strict",
+      "status": "pass",
+      "notes": "No new `any` introductions; tsc --noEmit passed in pre-commit lint-staged."
+    },
+    {
+      "standard": "test-coverage",
+      "status": "pass",
+      "notes": "Three new test cases added covering multi-reference shared assistant scenarios. Existing Tool/CustomNode multi-reference tests unchanged and passing."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "location": "src/utils/workflowEditor/helpers/states/idGenerators.ts:106-109",
+      "problem": "The JSDoc comment for shouldReuseActorId describes the old symmetric contract ('Returns true if the actor is used by only one node (the current one)'; 'Returns false if the actor is used by multiple nodes or doesn't exist'). This is now incorrect for ActorTypes.Assistant — the function returns true for a shared assistant as long as the current state is among the referencers.",
+      "impact": "Any developer reading the JSDoc will apply the wrong mental model (exclusive-ownership semantics) when the actual behaviour for Assistant actors is shared-ownership semantics. This will lead to incorrect usage or suppression of the function in future changes.",
+      "recommendation": "Update the JSDoc to describe the asymmetric contract: for Tool and CustomNode, returns true only when the current state is the sole referencer; for Assistant, returns true whenever the current state is any referencer. Update the @returns tag to match."
+    }
+  ],
+  "rationale": "All 5 acceptance criteria pass. One major finding: the JSDoc for shouldReuseActorId describes the old exclusive-ownership contract and is now misleading for the Assistant case. Fix is a documentation-only change. Deferred: EC-002 (silent shared-actor mutation) is the ticket's intended behaviour per explicit user requirement ('no warning, silent save'). EC-003 (useEffect reset for co-open panels) is a pre-existing concern not introduced by this diff; panel lifecycle in the visual editor makes simultaneous editing of two panels unlikely. Dismissed: blind-lens findings on test setup pedantry, non-Assistant fallthrough coverage, and multi-true returns — none are real defects."
+}
