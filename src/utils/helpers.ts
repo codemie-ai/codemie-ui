@@ -356,14 +356,16 @@ export const isNumberValue = (num: any): boolean => {
   return isNumber(num)
 }
 
+// 308px matches CHAT_SIDEBAR_DEFAULT_WIDTH in
+// src/pages/chat/components/ChatSidebar/chatSidebarWidth.ts — keep in sync.
 export const getSidebarMaxWidthClass = (): string => {
   if (!appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded) return 'max-w-navbar'
   if (appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded)
-    return 'max-w-[calc(theme(spacing.navbar)+theme(spacing.sidebar))]'
+    return 'max-w-[calc(theme(spacing.navbar)+var(--chat-sidebar-width,308px))]'
   if (!appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
     return 'max-w-navbar-expanded'
   if (appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
-    return 'max-w-[calc(theme(spacing.navbar-expanded)+theme(spacing.sidebar))]'
+    return 'max-w-[calc(theme(spacing.navbar-expanded)+var(--chat-sidebar-width,308px))]'
 
   return ''
 }
@@ -371,11 +373,11 @@ export const getSidebarMaxWidthClass = (): string => {
 export const getSidebarOffsetClass = (): string => {
   if (!appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded) return 'left-navbar'
   if (appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded)
-    return 'left-[calc(theme(spacing.navbar)+theme(spacing.sidebar))]'
+    return 'left-[calc(theme(spacing.navbar)+var(--chat-sidebar-width,308px))]'
   if (!appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
     return 'left-navbar-expanded'
   if (appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
-    return 'left-[calc(theme(spacing.navbar-expanded)+theme(spacing.sidebar))]'
+    return 'left-[calc(theme(spacing.navbar-expanded)+var(--chat-sidebar-width,308px))]'
 
   return ''
 }

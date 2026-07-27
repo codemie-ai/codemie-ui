@@ -57,6 +57,7 @@ const SidebarToggle = () => {
     sidebarOffsetClass && (
       <button
         type="button"
+        data-sidebar-toggle
         aria-label={isOpen ? 'Hide Sidebar' : 'Open Sidebar'}
         data-tooltip-id="react-tooltip"
         data-tooltip-content="Toggle Sidebar (Ctrl + B)"

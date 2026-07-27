@@ -76,6 +76,7 @@ export interface AppInfoStoreType {
   setIsNavigationExpanded: () => void
   toggleSidebar: () => void
   setIsSidebarExpanded: () => void
+  setSidebarExpanded: (expanded: boolean) => void
 }
 
 export const appInfoStore = proxy<AppInfoStoreType>({
@@ -280,5 +281,10 @@ export const appInfoStore = proxy<AppInfoStoreType>({
     if (stored) {
       this.sidebarExpanded = stored === 'true'
     }
+  },
+
+  setSidebarExpanded(expanded: boolean) {
+    this.sidebarExpanded = expanded
+    localStorage.setItem(SIDEBAR_EXPANDED_KEY, expanded.toString())
   },
 })

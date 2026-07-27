@@ -1,0 +1,79 @@
+{
+  "decision": "request-changes",
+  "rationale": "Three review lenses (blind, edge-case, acceptance) ran successfully against the full diff plus the ticket's acceptance criteria. All four acceptance criteria are functionally satisfied, but two independently-confirmed correctness bugs and one standards violation block approval: (1) useDefaultLayout's own percentage-based localStorage persistence competes with the diff's pixel-based persistence and can desync the rendered panel width from the --chat-sidebar-width CSS var after a reload on a different window width; (2) dragging the separator to collapse the panel (collapsedSize=0) never updates appInfoStore.sidebarExpanded, leaving SidebarToggle in a stale state that requires two clicks to recover; (3) the main-content Panel has no minSize, so dragging the sidebar toward its 520px max on a narrow viewport can crush the chat content area. Additionally, all 7 commits on this branch use conventional-commit style ('feat(chat): ...') instead of the project's CI-enforced 'EPMCDME-XXXX: Capital sentence' format documented in .ai-run/guides/standards/git-workflow.md -- confirmed by the fact that all 20 sampled commits on main strictly follow that format with no exceptions. 3 additional minor findings (308px magic-number duplication across 3 files, no automated test at real pixel width extremes, no cross-tab sync) were triaged as defer -- real but non-blocking, left as follow-up notes.",
+  "follow_ups": [
+    "Consider a follow-up to add a storage-event listener for cross-tab sync (deferred, out of ticket scope: session persistence via reload was the stated requirement, not real-time cross-tab sync)",
+    "Consider importing CHAT_SIDEBAR_DEFAULT_WIDTH into a shared location the Tailwind arbitrary-value strings could reference, or add a unit test asserting the three 308px literals stay in sync",
+    "Consider a real-pixel-width integration/visual test for the 260px/520px extremes if the project adds visual regression tooling later"
+  ],
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Chat pane width can be adjusted by dragging its border.",
+      "status": "satisfied",
+      "notes": "Group/Panel/ResizableSeparator wiring in ChatPage.tsx mirrors the proven WorkflowDetailsPage/useWorkflowDrawer pattern. All new and pre-existing tests pass."
+    },
+    {
+      "criterion": "Minimum and maximum widths are enforced to preserve UI stability.",
+      "status": "satisfied",
+      "notes": "Panel minSize={260}/maxSize={520} are genuine pixel bounds enforced by the library's own layout resolution, independent of how initial size is derived."
+    },
+    {
+      "criterion": "Pane width persists at least for the session.",
+      "status": "satisfied",
+      "notes": "getStoredChatSidebarWidth/setStoredChatSidebarWidth use real localStorage and survive reload. See CR-001: a second, independent persistence path (useDefaultLayout) can diverge from this one across window-width changes, but the common case (same window width) round-trips correctly."
+    },
+    {
+      "criterion": "No loss of functionality or information in chat navigation when resizing.",
+      "status": "satisfied",
+      "notes": "No chat-list/navigation components are touched by this diff; ChatListItem.tsx already truncates titles with min-w-0. See CR-002 and CR-003 for two related functionality gaps introduced by the new resize mechanism itself (toggle desync, unconstrained main-content squeeze), not by the untouched chat-list code."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit Message Format (.ai-run/guides/standards/git-workflow.md)",
+      "status": "fail",
+      "notes": "Pattern required: 'EPMCDME-XXXX: Capital sentence', CI-enforced (Tekton). All 7 commits on this branch use 'feat(chat): ...'/'fix(sidebar): ...'/'refactor(sidebar): ...' conventional-commit style instead. Confirmed by sampling 20 commits on main: 100% compliance with the documented format, no exceptions found."
+    },
+    {
+      "standard": "Constants Usage (.ai-run/guides/development/constants-usage.md)",
+      "status": "partial",
+      "notes": "CHAT_SIDEBAR_DEFAULT_WIDTH=308 is correctly centralized in chatSidebarWidth.ts, but the same 308px value is separately hardcoded as a string literal inside two Tailwind arbitrary-value class strings (helpers.ts, useSidebarOffsetClass.ts) because Tailwind requires statically-analyzable class strings. This is a documented, unavoidable constraint of the tool, not a lapse in following the guide -- not raised as a blocking finding, noted as a follow-up only."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "useChatSidebarResize wires useDefaultLayout's defaultLayout/onLayoutChanged into the Group, which makes react-resizable-panels persist its own percentage-based (flexGrow) layout under a separate localStorage key on every drag. Verified in the library's compiled source (node_modules/react-resizable-panels/dist/react-resizable-panels.js) that this persisted defaultLayout takes priority over each Panel's own defaultSize prop once populated.",
+      "impact": "After the first drag, the rendered panel width on the next load is governed by the flexGrow-derived percentage layout (recomputed against whatever the Group's total width is at that moment), not by the clamped, user-scoped pixel value that getStoredChatSidebarWidth()/the CSS var/the tests treat as the source of truth. If the browser window width differs between sessions, the visually rendered sidebar width and --chat-sidebar-width (used for gradient/toggle offset positioning elsewhere) can diverge, producing a visible layout gap or overlap.",
+      "recommendation": "Drop useDefaultLayout for this panel entirely -- do not pass defaultLayout/onLayoutChanged to the Group (or don't call useDefaultLayout at all in useChatSidebarResize). The existing pixel-based getStoredChatSidebarWidth/setStoredChatSidebarWidth mechanism, combined with Panel's defaultSize={initialWidth}, is already sufficient and is the single intended source of truth."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "The sidebar Panel is collapsible with collapsedSize={0}, so a user can collapse it by dragging the separator all the way, not only via Ctrl+B. handleResize's guard (panelSize.inPixels > 0) correctly skips persisting width/CSS-var in that case, but never updates appInfoStore.sidebarExpanded.",
+      "impact": "SidebarToggle and useSidebarOffsetClass derive the toggle button's icon and left-offset purely from appInfoStore.sidebarExpanded, which is still true after a drag-collapse. The toggle button keeps rendering in the 'expanded/visible' state even though the sidebar is 0px wide, and clicking it first sets sidebarExpanded=false (triggering a no-op collapse(), since the panel is already collapsed) -- the user must click the toggle a second time before the sidebar actually re-expands, which contradicts the ticket's 'no loss of functionality' criterion.",
+      "recommendation": "In handleResize, when panelSize.inPixels === 0 (drag-collapsed), also set appInfoStore.sidebarExpanded = false (persisting via the store's existing toggleSidebar/setIsSidebarExpanded pattern) so the toggle button and the panel's actual collapsed state stay in sync. The reconciliation effect calling collapse() again in response is a harmless no-op."
+    },
+    {
+      "id": "CR-003",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "The chat-main-content Panel in ChatPage.tsx has no minSize constraint, while the sidebar Panel can grow up to CHAT_SIDEBAR_MAX_WIDTH (520px).",
+      "impact": "On a narrow browser window, dragging the separator toward the sidebar's max can compress the main chat content area (ChatHistory/ChatPrompt) to a very small width with no protection, degrading usability. The previous fixed-width flex layout implicitly prevented this since the sidebar could never exceed ~308px.",
+      "recommendation": "Add a reasonable minSize (in pixels or a percentage) to the chat-main-content Panel, e.g. minSize={400} or similar, to guarantee the chat composer/history area stays usable even at the sidebar's max width on smaller viewports."
+    },
+    {
+      "id": "CR-004",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "All 7 commits on this branch use conventional-commit style subjects ('feat(chat): ...', 'fix(sidebar): ...', 'refactor(sidebar): ...') instead of the project's documented and CI-enforced format 'EPMCDME-XXXX: Capital sentence'.",
+      "impact": "Per .ai-run/guides/standards/git-workflow.md, the Tekton CI pipeline blocks on commit-message-format violations, and all 20 sampled commits on main comply with the required format with zero exceptions -- this is an actively enforced, not aspirational, convention.",
+      "recommendation": "Rewrite the 7 commit messages (interactive rebase or equivalent) to the 'EPMCDME-10137: Capital sentence' format before opening the MR."
+    }
+  ]
+}

@@ -14,9 +14,11 @@
 //
 
 import { FC, useEffect, useMemo } from 'react'
+import { Group, Panel } from 'react-resizable-panels'
 import { useSnapshot } from 'valtio'
 
 import PageLayout from '@/components/Layouts/Layout'
+import ResizableSeparator from '@/components/ResizableSeparator/ResizableSeparator'
 import { useNewIntegrationPopup } from '@/hooks/useNewIntegrationPopup'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
@@ -27,6 +29,11 @@ import ChatHeader from './components/ChatHeader/ChatHeader'
 import ChatHistory from './components/ChatHistory/ChatHistory'
 import ChatPrompt from './components/ChatPrompt/ChatPrompt'
 import ChatSidebar from './components/ChatSidebar/ChatSidebar'
+import {
+  CHAT_SIDEBAR_MAX_WIDTH,
+  CHAT_SIDEBAR_MIN_WIDTH,
+} from './components/ChatSidebar/chatSidebarWidth'
+import { useChatSidebarResize } from './components/ChatSidebar/useChatSidebarResize'
 import { useChatAuthCallbacks } from './hooks/useChatAuthCallbacks'
 import { useChatConfiguration } from './hooks/useChatConfiguration'
 import { ChatContext, ChatContextValue } from './hooks/useChatContext'
@@ -44,6 +51,7 @@ const ChatPage: FC = () => {
   } = useNewIntegrationPopup()
   useChatNavigation()
   useChatInitialPrompt()
+  const { panelRef, initialWidth, handleResize } = useChatSidebarResize()
 
   const router = useVueRouter()
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
@@ -67,21 +75,37 @@ const ChatPage: FC = () => {
 
   return (
     <ChatContext.Provider value={chatContextValue}>
-      <div className="flex h-full">
-        <ChatSidebar />
+      <Group orientation="horizontal" className="h-full">
+        <Panel
+          id="chat-sidebar"
+          panelRef={panelRef}
+          defaultSize={initialWidth}
+          minSize={CHAT_SIDEBAR_MIN_WIDTH}
+          maxSize={CHAT_SIDEBAR_MAX_WIDTH}
+          collapsible
+          collapsedSize={0}
+          groupResizeBehavior="preserve-pixel-size"
+          onResize={handleResize}
+        >
+          <ChatSidebar />
+        </Panel>
 
-        <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
-          <div className="flex h-full">
-            {currentChat && (
-              <div className="flex flex-col items-center grow min-w-0 pb-4">
-                {!!currentChat?.history.length && <ChatHistory />}
-                <ChatPrompt />
-              </div>
-            )}
-            <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
-          </div>
-        </PageLayout>
-      </div>
+        <ResizableSeparator orientation="horizontal" />
+
+        <Panel id="chat-main-content" minSize={400}>
+          <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
+            <div className="flex h-full">
+              {currentChat && (
+                <div className="flex flex-col items-center grow min-w-0 pb-4">
+                  {!!currentChat?.history.length && <ChatHistory />}
+                  <ChatPrompt />
+                </div>
+              )}
+              <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
+            </div>
+          </PageLayout>
+        </Panel>
+      </Group>
 
       <NewIntegrationPopup
         visible={showNewIntegration}

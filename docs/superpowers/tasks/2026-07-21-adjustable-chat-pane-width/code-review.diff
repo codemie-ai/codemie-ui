@@ -1,0 +1,877 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index 662cd1ba0..ede0925a3 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -30,6 +30,7 @@ import Navigation from '@/components/Navigation/Navigation'
+ import { OnboardingProvider } from '@/components/Onboarding'
+ import Spinner from '@/components/Spinner'
+ import { primeReactPtOptions } from '@/constants/theme'
++import useChatSidebarWidthBootstrap from '@/hooks/appLevel/useChatSidebarWidthBootstrap'
+ import { useHistoryStack } from '@/hooks/appLevel/useHistoryStack'
+ import useInitialDataFetch from '@/hooks/appLevel/useInitialDataFetch'
+ import usePrismThemeToggle from '@/hooks/appLevel/usePrismThemeToggle'
+@@ -45,6 +46,7 @@ const App: React.FC = () => {
+   useHistoryStack()
+   usePrismThemeToggle()
+   useInitialDataFetch()
++  useChatSidebarWidthBootstrap()
+ 
+   const showGradient = appearance?.gradients ?? true
+ 
+diff --git a/src/components/Sidebar/Sidebar.tsx b/src/components/Sidebar/Sidebar.tsx
+index 977cab3cf..eda822371 100644
+--- a/src/components/Sidebar/Sidebar.tsx
++++ b/src/components/Sidebar/Sidebar.tsx
+@@ -13,11 +13,9 @@
+ // limitations under the License.
+ //
+ 
+-import { ReactNode, useState } from 'react'
+-import { subscribe } from 'valtio'
++import { ReactNode } from 'react'
+ 
+ import { useTheme } from '@/hooks/useTheme'
+-import { appInfoStore } from '@/store/appInfo'
+ import { cn } from '@/utils/utils'
+ 
+ import SidebarToggle from './SidebarToggle'
+@@ -31,30 +29,22 @@ interface SidebarProps {
+ }
+ 
+ const Sidebar = ({ title, description, children, headerContent, className }: SidebarProps) => {
+-  const [isVisible, setIsVisible] = useState<boolean>(appInfoStore.sidebarExpanded)
+   const { appearance } = useTheme()
+-
+-  subscribe(appInfoStore, () => {
+-    setIsVisible(appInfoStore.sidebarExpanded)
+-  })
+-
+   const showGradient = appearance?.gradients ?? true
+ 
+   return (
+     <aside
+       className={cn(
+-        'flex flex-col border-r min-h-full',
++        'flex flex-col border-r min-h-full w-full h-full',
+         showGradient && 'bg-sidebar-gradient',
+         'transition-all ease-in-out duration-150 overflow-x-hidden shrink-0',
+         {
+-          'w-sidebar max-w-sidebar': isVisible,
+-          'w-0': !isVisible,
+           'border-border-specific-sidebar': !appearance,
+           'border-border-structural': Boolean(appearance),
+         }
+       )}
+     >
+-      <div className="pt-10 flex h-full flex-col min-w-sidebar w-sidebar max-w-sidebar">
++      <div className="pt-10 flex h-full flex-col w-full">
+         <div className="flex justify-between items-center px-6">
+           <h2 className="text-2xl font-semibold text-text-primary">{title}</h2>
+           {headerContent}
+diff --git a/src/components/Sidebar/__tests__/Sidebar.test.tsx b/src/components/Sidebar/__tests__/Sidebar.test.tsx
+new file mode 100644
+index 000000000..c0636ef1c
+--- /dev/null
++++ b/src/components/Sidebar/__tests__/Sidebar.test.tsx
+@@ -0,0 +1,42 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render, screen } from '@testing-library/react'
++import { describe, it, expect } from 'vitest'
++
++import Sidebar from '../Sidebar'
++
++describe('Sidebar', () => {
++  it('renders the title and children', () => {
++    render(
++      <Sidebar title="Chats">
++        <div>list content</div>
++      </Sidebar>
++    )
++
++    expect(screen.getByText('Chats')).toBeInTheDocument()
++    expect(screen.getByText('list content')).toBeInTheDocument()
++  })
++
++  it('fills its container width instead of using a fixed sidebar width class', () => {
++    const { container } = render(<Sidebar title="Chats" />)
++    const aside = container.querySelector('aside')
++
++    expect(aside).not.toHaveClass('w-sidebar')
++    expect(aside).not.toHaveClass('max-w-sidebar')
++    expect(aside).not.toHaveClass('w-0')
++    expect(aside).toHaveClass('w-full')
++  })
++})
+diff --git a/src/hooks/__tests__/useSidebarOffsetClass.test.ts b/src/hooks/__tests__/useSidebarOffsetClass.test.ts
+new file mode 100644
+index 000000000..8a43532a3
+--- /dev/null
++++ b/src/hooks/__tests__/useSidebarOffsetClass.test.ts
+@@ -0,0 +1,52 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { renderHook } from '@testing-library/react'
++import { describe, it, expect, beforeEach } from 'vitest'
++
++import { appInfoStore } from '@/store/appInfo'
++
++import { useSidebarOffsetClass } from '../useSidebarOffsetClass'
++
++describe('useSidebarOffsetClass', () => {
++  beforeEach(() => {
++    appInfoStore.sidebarExpanded = true
++    appInfoStore.navigationExpanded = false
++  })
++
++  it('uses the runtime CSS var when sidebar is expanded, nav collapsed', () => {
++    const { result } = renderHook(() => useSidebarOffsetClass())
++
++    expect(result.current).toBe(
++      'left-[calc(theme(spacing.navbar)+var(--chat-sidebar-width,308px))]'
++    )
++  })
++
++  it('uses the runtime CSS var when sidebar and nav are expanded', () => {
++    appInfoStore.navigationExpanded = true
++    const { result } = renderHook(() => useSidebarOffsetClass())
++
++    expect(result.current).toBe(
++      'left-[calc(theme(spacing.navbar-expanded)+var(--chat-sidebar-width,308px))]'
++    )
++  })
++
++  it('is unaffected by the CSS var when sidebar is collapsed', () => {
++    appInfoStore.sidebarExpanded = false
++    const { result } = renderHook(() => useSidebarOffsetClass())
++
++    expect(result.current).toBe('left-navbar')
++  })
++})
+diff --git a/src/hooks/appLevel/__tests__/useChatSidebarWidthBootstrap.test.ts b/src/hooks/appLevel/__tests__/useChatSidebarWidthBootstrap.test.ts
+new file mode 100644
+index 000000000..f785bfa34
+--- /dev/null
++++ b/src/hooks/appLevel/__tests__/useChatSidebarWidthBootstrap.test.ts
+@@ -0,0 +1,50 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { renderHook } from '@testing-library/react'
++import { describe, it, expect, beforeEach, vi } from 'vitest'
++
++import { CHAT_SIDEBAR_WIDTH_CSS_VAR } from '@/pages/chat/components/ChatSidebar/chatSidebarWidth'
++
++import useChatSidebarWidthBootstrap from '../useChatSidebarWidthBootstrap'
++
++vi.mock('@/store/user', () => ({
++  userStore: { user: { userId: 'boot-user' } },
++}))
++
++describe('useChatSidebarWidthBootstrap', () => {
++  beforeEach(() => {
++    localStorage.clear()
++    document.documentElement.style.removeProperty(CHAT_SIDEBAR_WIDTH_CSS_VAR)
++  })
++
++  it('sets --chat-sidebar-width from localStorage on mount', () => {
++    localStorage.setItem('chat-sidebar-width-boot-user', '440')
++
++    renderHook(() => useChatSidebarWidthBootstrap())
++
++    expect(document.documentElement.style.getPropertyValue(CHAT_SIDEBAR_WIDTH_CSS_VAR)).toBe(
++      '440px'
++    )
++  })
++
++  it('sets the default width when nothing is stored', () => {
++    renderHook(() => useChatSidebarWidthBootstrap())
++
++    expect(document.documentElement.style.getPropertyValue(CHAT_SIDEBAR_WIDTH_CSS_VAR)).toBe(
++      '308px'
++    )
++  })
++})
+diff --git a/src/hooks/appLevel/useChatSidebarWidthBootstrap.tsx b/src/hooks/appLevel/useChatSidebarWidthBootstrap.tsx
+new file mode 100644
+index 000000000..8903ffc77
+--- /dev/null
++++ b/src/hooks/appLevel/useChatSidebarWidthBootstrap.tsx
+@@ -0,0 +1,37 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { useEffect } from 'react'
++import { useSnapshot } from 'valtio'
++
++import {
++  getStoredChatSidebarWidth,
++  setChatSidebarWidthCssVar,
++} from '@/pages/chat/components/ChatSidebar/chatSidebarWidth'
++import { userStore } from '@/store/user'
++
++// Sets --chat-sidebar-width on the document root at app startup so pages
++// other than /chat (e.g. Gradient, SidebarToggle offset) render a correct
++// offset even before ChatPage's own resize hook has mounted.
++const useChatSidebarWidthBootstrap = () => {
++  const { user } = useSnapshot(userStore)
++  const userId = user?.userId ?? 'default'
++
++  useEffect(() => {
++    setChatSidebarWidthCssVar(getStoredChatSidebarWidth(userId))
++  }, [userId])
++}
++
++export default useChatSidebarWidthBootstrap
+diff --git a/src/hooks/useSidebarOffsetClass.ts b/src/hooks/useSidebarOffsetClass.ts
+index f553ea963..6b186ae54 100644
+--- a/src/hooks/useSidebarOffsetClass.ts
++++ b/src/hooks/useSidebarOffsetClass.ts
+@@ -21,15 +21,17 @@ import { appInfoStore } from '@/store/appInfo'
+ export const useSidebarOffsetClass = () => {
+   const [offsetClass, setOffsetClass] = useState<string | null>(null)
+ 
++  // 308px matches CHAT_SIDEBAR_DEFAULT_WIDTH in
++  // src/pages/chat/components/ChatSidebar/chatSidebarWidth.ts — keep in sync.
+   const update = () => {
+     if (!appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded)
+       setOffsetClass('left-navbar')
+     if (appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded)
+-      setOffsetClass('left-[calc(theme(spacing.navbar)+theme(spacing.sidebar))]')
++      setOffsetClass('left-[calc(theme(spacing.navbar)+var(--chat-sidebar-width,308px))]')
+     if (!appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
+       setOffsetClass('left-navbar-expanded')
+     if (appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
+-      setOffsetClass('left-[calc(theme(spacing.navbar-expanded)+theme(spacing.sidebar))]')
++      setOffsetClass('left-[calc(theme(spacing.navbar-expanded)+var(--chat-sidebar-width,308px))]')
+   }
+ 
+   useEffect(() => {
+diff --git a/src/pages/chat/ChatPage.tsx b/src/pages/chat/ChatPage.tsx
+index cfd8d5679..412f913d8 100644
+--- a/src/pages/chat/ChatPage.tsx
++++ b/src/pages/chat/ChatPage.tsx
+@@ -14,9 +14,11 @@
+ //
+ 
+ import { FC, useEffect, useMemo } from 'react'
++import { Group, Panel } from 'react-resizable-panels'
+ import { useSnapshot } from 'valtio'
+ 
+ import PageLayout from '@/components/Layouts/Layout'
++import ResizableSeparator from '@/components/ResizableSeparator/ResizableSeparator'
+ import { useNewIntegrationPopup } from '@/hooks/useNewIntegrationPopup'
+ import { useVueRouter } from '@/hooks/useVueRouter'
+ import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
+@@ -27,6 +29,11 @@ import ChatHeader from './components/ChatHeader/ChatHeader'
+ import ChatHistory from './components/ChatHistory/ChatHistory'
+ import ChatPrompt from './components/ChatPrompt/ChatPrompt'
+ import ChatSidebar from './components/ChatSidebar/ChatSidebar'
++import {
++  CHAT_SIDEBAR_MAX_WIDTH,
++  CHAT_SIDEBAR_MIN_WIDTH,
++} from './components/ChatSidebar/chatSidebarWidth'
++import { useChatSidebarResize } from './components/ChatSidebar/useChatSidebarResize'
+ import { useChatAuthCallbacks } from './hooks/useChatAuthCallbacks'
+ import { useChatConfiguration } from './hooks/useChatConfiguration'
+ import { ChatContext, ChatContextValue } from './hooks/useChatContext'
+@@ -44,6 +51,8 @@ const ChatPage: FC = () => {
+   } = useNewIntegrationPopup()
+   useChatNavigation()
+   useChatInitialPrompt()
++  const { panelRef, defaultLayout, onLayoutChanged, initialWidth, handleResize } =
++    useChatSidebarResize()
+ 
+   const router = useVueRouter()
+   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
+@@ -67,21 +76,42 @@ const ChatPage: FC = () => {
+ 
+   return (
+     <ChatContext.Provider value={chatContextValue}>
+-      <div className="flex h-full">
+-        <ChatSidebar />
++      <Group
++        orientation="horizontal"
++        defaultLayout={defaultLayout}
++        onLayoutChanged={onLayoutChanged}
++        className="h-full"
++      >
++        <Panel
++          id="chat-sidebar"
++          panelRef={panelRef}
++          defaultSize={initialWidth}
++          minSize={CHAT_SIDEBAR_MIN_WIDTH}
++          maxSize={CHAT_SIDEBAR_MAX_WIDTH}
++          collapsible
++          collapsedSize={0}
++          groupResizeBehavior="preserve-pixel-size"
++          onResize={handleResize}
++        >
++          <ChatSidebar />
++        </Panel>
+ 
+-        <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
+-          <div className="flex h-full">
+-            {currentChat && (
+-              <div className="flex flex-col items-center grow min-w-0 pb-4">
+-                {!!currentChat?.history.length && <ChatHistory />}
+-                <ChatPrompt />
+-              </div>
+-            )}
+-            <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
+-          </div>
+-        </PageLayout>
+-      </div>
++        <ResizableSeparator orientation="horizontal" />
++
++        <Panel id="chat-main-content">
++          <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
++            <div className="flex h-full">
++              {currentChat && (
++                <div className="flex flex-col items-center grow min-w-0 pb-4">
++                  {!!currentChat?.history.length && <ChatHistory />}
++                  <ChatPrompt />
++                </div>
++              )}
++              <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
++            </div>
++          </PageLayout>
++        </Panel>
++      </Group>
+ 
+       <NewIntegrationPopup
+         visible={showNewIntegration}
+diff --git a/src/pages/chat/__tests__/ChatPage.resize.test.tsx b/src/pages/chat/__tests__/ChatPage.resize.test.tsx
+new file mode 100644
+index 000000000..0daeadfa5
+--- /dev/null
++++ b/src/pages/chat/__tests__/ChatPage.resize.test.tsx
+@@ -0,0 +1,55 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render, screen } from '@testing-library/react'
++import { describe, it, expect, vi } from 'vitest'
++
++import ChatPage from '../ChatPage'
++
++vi.mock('../components/ChatSidebar/ChatSidebar', () => ({
++  default: () => <div data-testid="chat-sidebar-content">sidebar</div>,
++}))
++vi.mock('../components/ChatHeader/ChatHeader', () => ({ default: () => <div /> }))
++vi.mock('../components/ChatConfiguration/ChatConfiguration', () => ({ default: () => <div /> }))
++vi.mock('../components/ChatHistory/ChatHistory', () => ({ default: () => <div /> }))
++vi.mock('../components/ChatPrompt/ChatPrompt', () => ({ default: () => <div /> }))
++vi.mock('@/pages/integrations/components/NewIntegrationPopup', () => ({ default: () => <div /> }))
++vi.mock('@/hooks/useNewIntegrationPopup', () => ({
++  useNewIntegrationPopup: () => ({
++    showNewIntegration: false,
++    showNewIntegrationPopup: vi.fn(),
++    hideNewIntegrationPopup: vi.fn(),
++    onIntegrationSuccess: vi.fn(),
++  }),
++}))
++vi.mock('../hooks/useChatNavigation', () => ({ useChatNavigation: vi.fn() }))
++vi.mock('../hooks/useChatInitialPrompt', () => ({ useChatInitialPrompt: vi.fn() }))
++vi.mock('../hooks/useChatAuthCallbacks', () => ({ useChatAuthCallbacks: vi.fn() }))
++vi.mock('../hooks/useChatConfiguration', () => ({ useChatConfiguration: () => ({}) }))
++vi.mock('@/hooks/useVueRouter', () => ({
++  useVueRouter: () => ({ currentRoute: { value: { params: {} } }, push: vi.fn() }),
++}))
++vi.mock('@/store/chats', () => ({ chatsStore: { currentChat: null } }))
++
++describe('ChatPage resizable sidebar', () => {
++  it('renders the sidebar inside a resizable Group/Panel structure', () => {
++    const { container } = render(<ChatPage />)
++
++    expect(screen.getByTestId('chat-sidebar-content')).toBeInTheDocument()
++    expect(container.querySelector('[data-group]')).toBeInTheDocument()
++    expect(container.querySelectorAll('[data-panel]')).toHaveLength(2)
++    expect(container.querySelector('[data-separator]')).toBeInTheDocument()
++  })
++})
+diff --git a/src/pages/chat/components/ChatSidebar/__tests__/chatSidebarWidth.test.ts b/src/pages/chat/components/ChatSidebar/__tests__/chatSidebarWidth.test.ts
+new file mode 100644
+index 000000000..4ca94fbac
+--- /dev/null
++++ b/src/pages/chat/components/ChatSidebar/__tests__/chatSidebarWidth.test.ts
+@@ -0,0 +1,85 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect, beforeEach } from 'vitest'
++
++import {
++  CHAT_SIDEBAR_MIN_WIDTH,
++  CHAT_SIDEBAR_MAX_WIDTH,
++  CHAT_SIDEBAR_DEFAULT_WIDTH,
++  CHAT_SIDEBAR_WIDTH_CSS_VAR,
++  getStoredChatSidebarWidth,
++  setStoredChatSidebarWidth,
++  setChatSidebarWidthCssVar,
++} from '../chatSidebarWidth'
++
++describe('chatSidebarWidth', () => {
++  beforeEach(() => {
++    localStorage.clear()
++    document.documentElement.style.removeProperty(CHAT_SIDEBAR_WIDTH_CSS_VAR)
++  })
++
++  describe('getStoredChatSidebarWidth', () => {
++    it('returns the default width when nothing is stored', () => {
++      expect(getStoredChatSidebarWidth('user-1')).toBe(CHAT_SIDEBAR_DEFAULT_WIDTH)
++    })
++
++    it('returns the stored width when present and within bounds', () => {
++      localStorage.setItem('chat-sidebar-width-user-1', '400')
++      expect(getStoredChatSidebarWidth('user-1')).toBe(400)
++    })
++
++    it('clamps a stored width below the minimum', () => {
++      localStorage.setItem('chat-sidebar-width-user-1', '10')
++      expect(getStoredChatSidebarWidth('user-1')).toBe(CHAT_SIDEBAR_MIN_WIDTH)
++    })
++
++    it('clamps a stored width above the maximum', () => {
++      localStorage.setItem('chat-sidebar-width-user-1', '9999')
++      expect(getStoredChatSidebarWidth('user-1')).toBe(CHAT_SIDEBAR_MAX_WIDTH)
++    })
++
++    it('returns the default width for a non-numeric stored value', () => {
++      localStorage.setItem('chat-sidebar-width-user-1', 'not-a-number')
++      expect(getStoredChatSidebarWidth('user-1')).toBe(CHAT_SIDEBAR_DEFAULT_WIDTH)
++    })
++
++    it('scopes the storage key by userId', () => {
++      localStorage.setItem('chat-sidebar-width-user-1', '400')
++      expect(getStoredChatSidebarWidth('user-2')).toBe(CHAT_SIDEBAR_DEFAULT_WIDTH)
++    })
++  })
++
++  describe('setStoredChatSidebarWidth', () => {
++    it('persists a width at or above the minimum', () => {
++      setStoredChatSidebarWidth('user-1', 350)
++      expect(localStorage.getItem('chat-sidebar-width-user-1')).toBe('350')
++    })
++
++    it('does not persist a width below the minimum', () => {
++      setStoredChatSidebarWidth('user-1', 0)
++      expect(localStorage.getItem('chat-sidebar-width-user-1')).toBeNull()
++    })
++  })
++
++  describe('setChatSidebarWidthCssVar', () => {
++    it('sets the CSS custom property on the document root', () => {
++      setChatSidebarWidthCssVar(340)
++      expect(document.documentElement.style.getPropertyValue(CHAT_SIDEBAR_WIDTH_CSS_VAR)).toBe(
++        '340px'
++      )
++    })
++  })
++})
+diff --git a/src/pages/chat/components/ChatSidebar/__tests__/useChatSidebarResize.test.ts b/src/pages/chat/components/ChatSidebar/__tests__/useChatSidebarResize.test.ts
+new file mode 100644
+index 000000000..b34d83fda
+--- /dev/null
++++ b/src/pages/chat/components/ChatSidebar/__tests__/useChatSidebarResize.test.ts
+@@ -0,0 +1,102 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { renderHook, act } from '@testing-library/react'
++import { describe, it, expect, vi, beforeEach } from 'vitest'
++
++import { appInfoStore } from '@/store/appInfo'
++
++import { CHAT_SIDEBAR_WIDTH_CSS_VAR } from '../chatSidebarWidth'
++import { useChatSidebarResize } from '../useChatSidebarResize'
++
++vi.mock('@/store/user', () => ({
++  userStore: {
++    user: { userId: 'test-user-123' },
++  },
++}))
++
++describe('useChatSidebarResize', () => {
++  beforeEach(() => {
++    localStorage.clear()
++    document.documentElement.style.removeProperty(CHAT_SIDEBAR_WIDTH_CSS_VAR)
++    appInfoStore.sidebarExpanded = true
++  })
++
++  it('returns the stored width as the initial width', () => {
++    localStorage.setItem('chat-sidebar-width-test-user-123', '400')
++    const { result } = renderHook(() => useChatSidebarResize())
++
++    expect(result.current.initialWidth).toBe(400)
++  })
++
++  it('returns the default width when nothing is stored', () => {
++    const { result } = renderHook(() => useChatSidebarResize())
++
++    expect(result.current.initialWidth).toBe(308)
++  })
++
++  it('persists width and updates the CSS var on resize while expanded', () => {
++    const { result } = renderHook(() => useChatSidebarResize())
++
++    act(() => {
++      result.current.handleResize({ inPixels: 450, asPercentage: 40 })
++    })
++
++    expect(localStorage.getItem('chat-sidebar-width-test-user-123')).toBe('450')
++    expect(document.documentElement.style.getPropertyValue(CHAT_SIDEBAR_WIDTH_CSS_VAR)).toBe(
++      '450px'
++    )
++  })
++
++  it('does not persist width when resize reports a collapsed (0px) panel', () => {
++    localStorage.setItem('chat-sidebar-width-test-user-123', '400')
++    const { result } = renderHook(() => useChatSidebarResize())
++
++    act(() => {
++      result.current.handleResize({ inPixels: 0, asPercentage: 0 })
++    })
++
++    expect(localStorage.getItem('chat-sidebar-width-test-user-123')).toBe('400')
++  })
++
++  it('calls panelRef.collapse() when appInfoStore.sidebarExpanded becomes false', () => {
++    const { result, rerender } = renderHook(() => useChatSidebarResize())
++    const collapse = vi.fn()
++    // @ts-expect-error -- assigning a partial imperative handle for the test double
++    result.current.panelRef.current = { collapse, expand: vi.fn() }
++
++    act(() => {
++      appInfoStore.sidebarExpanded = false
++    })
++    rerender()
++
++    expect(collapse).toHaveBeenCalledTimes(1)
++  })
++
++  it('calls panelRef.expand() when appInfoStore.sidebarExpanded becomes true', () => {
++    appInfoStore.sidebarExpanded = false
++    const { result, rerender } = renderHook(() => useChatSidebarResize())
++    const expand = vi.fn()
++    // @ts-expect-error -- assigning a partial imperative handle for the test double
++    result.current.panelRef.current = { collapse: vi.fn(), expand }
++
++    act(() => {
++      appInfoStore.sidebarExpanded = true
++    })
++    rerender()
++
++    expect(expand).toHaveBeenCalledTimes(1)
++  })
++})
+diff --git a/src/pages/chat/components/ChatSidebar/chatSidebarWidth.ts b/src/pages/chat/components/ChatSidebar/chatSidebarWidth.ts
+new file mode 100644
+index 000000000..0e3ae8f03
+--- /dev/null
++++ b/src/pages/chat/components/ChatSidebar/chatSidebarWidth.ts
+@@ -0,0 +1,41 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++export const CHAT_SIDEBAR_MIN_WIDTH = 260
++export const CHAT_SIDEBAR_MAX_WIDTH = 520
++export const CHAT_SIDEBAR_DEFAULT_WIDTH = 308
++export const CHAT_SIDEBAR_WIDTH_CSS_VAR = '--chat-sidebar-width'
++
++const STORAGE_KEY_PREFIX = 'chat-sidebar-width'
++
++const clamp = (width: number): number =>
++  Math.min(CHAT_SIDEBAR_MAX_WIDTH, Math.max(CHAT_SIDEBAR_MIN_WIDTH, width))
++
++export const getStoredChatSidebarWidth = (userId: string): number => {
++  const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}-${userId}`)
++  const parsed = stored ? parseInt(stored, 10) : NaN
++
++  return Number.isFinite(parsed) ? clamp(parsed) : CHAT_SIDEBAR_DEFAULT_WIDTH
++}
++
++export const setStoredChatSidebarWidth = (userId: string, width: number): void => {
++  if (width >= CHAT_SIDEBAR_MIN_WIDTH) {
++    localStorage.setItem(`${STORAGE_KEY_PREFIX}-${userId}`, width.toString())
++  }
++}
++
++export const setChatSidebarWidthCssVar = (width: number): void => {
++  document.documentElement.style.setProperty(CHAT_SIDEBAR_WIDTH_CSS_VAR, `${width}px`)
++}
+diff --git a/src/pages/chat/components/ChatSidebar/useChatSidebarResize.ts b/src/pages/chat/components/ChatSidebar/useChatSidebarResize.ts
+new file mode 100644
+index 000000000..e3ad095aa
+--- /dev/null
++++ b/src/pages/chat/components/ChatSidebar/useChatSidebarResize.ts
+@@ -0,0 +1,66 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { useCallback, useEffect, useRef } from 'react'
++import { PanelImperativeHandle, PanelSize, useDefaultLayout } from 'react-resizable-panels'
++import { useSnapshot } from 'valtio'
++
++import { appInfoStore } from '@/store/appInfo'
++import { userStore } from '@/store/user'
++
++import {
++  getStoredChatSidebarWidth,
++  setChatSidebarWidthCssVar,
++  setStoredChatSidebarWidth,
++} from './chatSidebarWidth'
++
++export const useChatSidebarResize = () => {
++  const { user } = useSnapshot(userStore)
++  const userId = user?.userId ?? 'default'
++  const { sidebarExpanded } = useSnapshot(appInfoStore)
++
++  const panelRef = useRef<PanelImperativeHandle>(null)
++  const initialWidth = getStoredChatSidebarWidth(userId)
++
++  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
++    id: `chat-sidebar-${userId}`,
++    storage: localStorage,
++  })
++
++  useEffect(() => {
++    setChatSidebarWidthCssVar(initialWidth)
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [])
++
++  const handleResize = useCallback(
++    (panelSize: PanelSize) => {
++      if (panelSize.inPixels > 0) {
++        setStoredChatSidebarWidth(userId, panelSize.inPixels)
++        setChatSidebarWidthCssVar(panelSize.inPixels)
++      }
++    },
++    [userId]
++  )
++
++  useEffect(() => {
++    if (sidebarExpanded) {
++      panelRef.current?.expand()
++    } else {
++      panelRef.current?.collapse()
++    }
++  }, [sidebarExpanded])
++
++  return { panelRef, defaultLayout, onLayoutChanged, initialWidth, handleResize }
++}
+diff --git a/src/utils/__tests__/helpers.sidebar.test.ts b/src/utils/__tests__/helpers.sidebar.test.ts
+new file mode 100644
+index 000000000..38725d4ce
+--- /dev/null
++++ b/src/utils/__tests__/helpers.sidebar.test.ts
+@@ -0,0 +1,62 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect, beforeEach } from 'vitest'
++
++import { appInfoStore } from '@/store/appInfo'
++import { getSidebarMaxWidthClass, getSidebarOffsetClass } from '@/utils/helpers'
++
++describe('sidebar offset helpers', () => {
++  beforeEach(() => {
++    appInfoStore.sidebarExpanded = true
++    appInfoStore.navigationExpanded = false
++  })
++
++  it('getSidebarMaxWidthClass uses the runtime CSS var when sidebar is expanded, nav collapsed', () => {
++    expect(getSidebarMaxWidthClass()).toBe(
++      'max-w-[calc(theme(spacing.navbar)+var(--chat-sidebar-width,308px))]'
++    )
++  })
++
++  it('getSidebarMaxWidthClass uses the runtime CSS var when sidebar and nav are expanded', () => {
++    appInfoStore.navigationExpanded = true
++    expect(getSidebarMaxWidthClass()).toBe(
++      'max-w-[calc(theme(spacing.navbar-expanded)+var(--chat-sidebar-width,308px))]'
++    )
++  })
++
++  it('getSidebarMaxWidthClass is unaffected by the CSS var when sidebar is collapsed', () => {
++    appInfoStore.sidebarExpanded = false
++    expect(getSidebarMaxWidthClass()).toBe('max-w-navbar')
++  })
++
++  it('getSidebarOffsetClass uses the runtime CSS var when sidebar is expanded, nav collapsed', () => {
++    expect(getSidebarOffsetClass()).toBe(
++      'left-[calc(theme(spacing.navbar)+var(--chat-sidebar-width,308px))]'
++    )
++  })
++
++  it('getSidebarOffsetClass uses the runtime CSS var when sidebar and nav are expanded', () => {
++    appInfoStore.navigationExpanded = true
++    expect(getSidebarOffsetClass()).toBe(
++      'left-[calc(theme(spacing.navbar-expanded)+var(--chat-sidebar-width,308px))]'
++    )
++  })
++
++  it('getSidebarOffsetClass is unaffected by the CSS var when sidebar is collapsed', () => {
++    appInfoStore.sidebarExpanded = false
++    expect(getSidebarOffsetClass()).toBe('left-navbar')
++  })
++})
+diff --git a/src/utils/helpers.ts b/src/utils/helpers.ts
+index abe9fa87f..da1aeadbd 100644
+--- a/src/utils/helpers.ts
++++ b/src/utils/helpers.ts
+@@ -356,14 +356,16 @@ export const isNumberValue = (num: any): boolean => {
+   return isNumber(num)
+ }
+ 
++// 308px matches CHAT_SIDEBAR_DEFAULT_WIDTH in
++// src/pages/chat/components/ChatSidebar/chatSidebarWidth.ts — keep in sync.
+ export const getSidebarMaxWidthClass = (): string => {
+   if (!appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded) return 'max-w-navbar'
+   if (appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded)
+-    return 'max-w-[calc(theme(spacing.navbar)+theme(spacing.sidebar))]'
++    return 'max-w-[calc(theme(spacing.navbar)+var(--chat-sidebar-width,308px))]'
+   if (!appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
+     return 'max-w-navbar-expanded'
+   if (appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
+-    return 'max-w-[calc(theme(spacing.navbar-expanded)+theme(spacing.sidebar))]'
++    return 'max-w-[calc(theme(spacing.navbar-expanded)+var(--chat-sidebar-width,308px))]'
+ 
+   return ''
+ }
+@@ -371,11 +373,11 @@ export const getSidebarMaxWidthClass = (): string => {
+ export const getSidebarOffsetClass = (): string => {
+   if (!appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded) return 'left-navbar'
+   if (appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded)
+-    return 'left-[calc(theme(spacing.navbar)+theme(spacing.sidebar))]'
++    return 'left-[calc(theme(spacing.navbar)+var(--chat-sidebar-width,308px))]'
+   if (!appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
+     return 'left-navbar-expanded'
+   if (appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
+-    return 'left-[calc(theme(spacing.navbar-expanded)+theme(spacing.sidebar))]'
++    return 'left-[calc(theme(spacing.navbar-expanded)+var(--chat-sidebar-width,308px))]'
+ 
+   return ''
+ }

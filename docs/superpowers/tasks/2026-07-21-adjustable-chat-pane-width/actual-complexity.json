@@ -1,0 +1,93 @@
+{
+  "task": "Made the chat sidebar drag-resizable (260-520px) via react-resizable-panels, persisted per-user in localStorage, and reconciled with the existing Ctrl+B collapse toggle.",
+  "generated": "2026-07-21T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 6,
+      "label": "XXL",
+      "affected": "ChatPage (page-level Group/Panel wiring), Sidebar (width model removed), ChatSidebar module (new chatSidebarWidth.ts + useChatSidebarResize.ts), useSidebarOffsetClass hook, helpers.ts sidebar offset/max-width helpers, appInfo store (new setSidebarExpanded action), App bootstrap (new useChatSidebarWidthBootstrap hook)",
+      "layers": "Page component, shared component, feature hooks/utils module, shared utils, global valtio store, app bootstrap"
+    },
+    "requirements_clarity": {
+      "score": 4,
+      "label": "L",
+      "status": "Partially Clear",
+      "gaps": "Min/max width (260/520px) and default (308px) are not specified anywhere in the ticket -- plan.md flags them explicitly as an assumption pending product/design confirmation. The reconciliation between drag-resize and the pre-existing Ctrl+B toggle was also underspecified: the first implementation round left two competing persistence mechanisms and a stale toggle state on drag-collapse, both found and fixed only during code review (CR-001, CR-002)."
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L",
+      "risk_factors": "Reconciling drag-resize with an existing independent collapse mechanism (appInfoStore.sidebarExpanded / Ctrl+B) -- two state sources needing sync; useDefaultLayout's percentage-based persistence competed with the new pixel-based localStorage persistence and could desync the rendered width from the --chat-sidebar-width CSS var after a reload at a different window width (CR-001, major); drag-collapsing via the separator left the toggle button in a stale 'expanded' state requiring two clicks to recover (CR-002, major); the main-content Panel had no minSize, so dragging the sidebar to its 520px max on a narrow viewport could crush the chat content area (CR-003, major).",
+      "mitigation": "All three correctness bugs were patched in a follow-up fix-up round: useDefaultLayout removed entirely so pixel-based localStorage is the single source of truth; appInfoStore.setSidebarExpanded(false) now called on drag-collapse (0px) to keep the toggle in sync; minSize={400} added to the main-content Panel. Re-review (code-review-check.json) confirmed all four findings resolved and approved."
+    },
+    "file_change_estimate": {
+      "score": 6,
+      "label": "XXL",
+      "modified_files": 6,
+      "modified_file_list": [
+        "src/App.tsx",
+        "src/components/Sidebar/Sidebar.tsx",
+        "src/hooks/useSidebarOffsetClass.ts",
+        "src/pages/chat/ChatPage.tsx",
+        "src/utils/helpers.ts",
+        "src/store/appInfo.ts"
+      ],
+      "new_files": 10,
+      "new_file_list": [
+        "src/components/Sidebar/__tests__/Sidebar.test.tsx",
+        "src/hooks/__tests__/useSidebarOffsetClass.test.ts",
+        "src/hooks/appLevel/__tests__/useChatSidebarWidthBootstrap.test.ts",
+        "src/hooks/appLevel/useChatSidebarWidthBootstrap.tsx",
+        "src/pages/chat/__tests__/ChatPage.resize.test.tsx",
+        "src/pages/chat/components/ChatSidebar/__tests__/chatSidebarWidth.test.ts",
+        "src/pages/chat/components/ChatSidebar/__tests__/useChatSidebarResize.test.ts",
+        "src/pages/chat/components/ChatSidebar/chatSidebarWidth.ts",
+        "src/pages/chat/components/ChatSidebar/useChatSidebarResize.ts",
+        "src/utils/__tests__/helpers.sidebar.test.ts"
+      ],
+      "affected_dirs": [
+        "src",
+        "src/components/Sidebar",
+        "src/hooks",
+        "src/hooks/appLevel",
+        "src/pages/chat",
+        "src/pages/chat/components/ChatSidebar",
+        "src/utils",
+        "src/store"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M",
+      "layers_changed": [
+        "UI/Components (ChatPage, Sidebar)",
+        "Client-State/Hooks (appInfoStore, useChatSidebarResize, useSidebarOffsetClass, useChatSidebarWidthBootstrap)",
+        "Client-Side Persistence (localStorage)"
+      ],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 24,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 16,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touched 7 distinct components spanning a page, a shared component, a new feature module, a shared hook, shared utils, the global valtio store, and the app bootstrap layer -- and two of those (helpers.ts, appInfo store) are core shared utilities, triggering the 'touches core shared utilities' red flag." },
+    { "dimension": "file_change_estimate", "reason": "16 total files touched (6 modified + 10 new, 7 of the new files being tests), meeting the guide's XXL thresholds on both the total-touched and new-file counts." },
+    { "dimension": "requirements_clarity", "reason": "Ticket left min/max/default width unspecified (implementer's own plan.md flags it as an unconfirmed assumption), and the toggle-reconciliation design was ambiguous enough that the first implementation round shipped two real desync bugs caught only in review." },
+    { "dimension": "technical_risk", "reason": "Reconciling a new drag-resize mechanism with a pre-existing independent collapse toggle produced three major-severity correctness bugs (competing persistence sources, stale toggle state, unbounded content crush), all requiring a dedicated fix-up round before approval." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XL to XXL: touches core shared utilities (src/utils/helpers.ts, src/store/appInfo.ts)",
+    "Requirements Clarity bumped from M to L: vague acceptance criteria -- no min/max/default width specified in the ticket, flagged as an assumption in plan.md"
+  ],
+  "split_recommendation": null
+}

@@ -51,6 +51,7 @@ const ChatSidebar = () => {
   return (
     <Sidebar
       title="Chats"
+      fillContainer
       className="px-4"
       headerContent={
         <Button variant="primary" onClick={handleCreateChat} data-onboarding="chat-new-chat-button">

@@ -28,9 +28,24 @@ interface SidebarProps {
   children?: ReactNode
   headerContent?: ReactNode
   className?: string
+  /**
+   * When true, the sidebar fills its container's width and height and lets the
+   * parent own collapse/expand (used by the chat page, where a resizable
+   * `Panel` controls the width). When false (default, all other pages) the
+   * sidebar keeps its fixed `w-sidebar` width and collapses to `w-0` in sync
+   * with `appInfoStore.sidebarExpanded`.
+   */
+  fillContainer?: boolean
 }
 
-const Sidebar = ({ title, description, children, headerContent, className }: SidebarProps) => {
+const Sidebar = ({
+  title,
+  description,
+  children,
+  headerContent,
+  className,
+  fillContainer = false,
+}: SidebarProps) => {
   const [isVisible, setIsVisible] = useState<boolean>(appInfoStore.sidebarExpanded)
   const { appearance } = useTheme()
 
@@ -47,14 +62,20 @@ const Sidebar = ({ title, description, children, headerContent, className }: Sid
         showGradient && 'bg-sidebar-gradient',
         'transition-all ease-in-out duration-150 overflow-x-hidden shrink-0',
         {
-          'w-sidebar max-w-sidebar': isVisible,
-          'w-0': !isVisible,
+          'w-full h-full': fillContainer,
+          'w-sidebar max-w-sidebar': !fillContainer && isVisible,
+          'w-0': !fillContainer && !isVisible,
           'border-border-specific-sidebar': !appearance,
           'border-border-structural': Boolean(appearance),
         }
       )}
     >
-      <div className="pt-10 flex h-full flex-col min-w-sidebar w-sidebar max-w-sidebar">
+      <div
+        className={cn(
+          'pt-10 flex h-full flex-col',
+          fillContainer ? 'w-full' : 'min-w-sidebar w-sidebar max-w-sidebar'
+        )}
+      >
         <div className="flex justify-between items-center px-6">
           <h2 className="text-2xl font-semibold text-text-primary">{title}</h2>
           {headerContent}

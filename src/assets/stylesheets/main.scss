@@ -394,3 +394,28 @@ input[type="number"] {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+// Chat sidebar resize (EPMCDME-10137).
+// react-resizable-panels owns the chat sidebar width and sets each panel's flex
+// imperatively with no transition, so Ctrl+B collapse/expand snapped. A resting
+// flex transition on the two chat panels restores that animation. While the user
+// is actively dragging the separator, useChatSidebarResize marks <html> with
+// data-chat-sidebar-resizing; we drop the transitions then so the panel edge and
+// the sidebar toggle track the pointer instantly instead of easing behind it.
+// Gated on data-chat-sidebar-ready (set one frame after ChatPage mounts) so the
+// initial paint snaps to the stored width; entering /chat from a page with a
+// differently-sized sidebar must not animate from the previous layout.
+[data-chat-sidebar-ready] {
+  #chat-sidebar[data-panel],
+  #chat-main-content[data-panel] {
+    transition: flex 150ms ease-in-out;
+  }
+}
+
+[data-chat-sidebar-resizing] {
+  #chat-sidebar[data-panel],
+  #chat-main-content[data-panel],
+  [data-sidebar-toggle] {
+    transition: none;
+  }
+}

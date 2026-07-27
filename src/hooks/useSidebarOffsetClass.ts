@@ -21,15 +21,17 @@ import { appInfoStore } from '@/store/appInfo'
 export const useSidebarOffsetClass = () => {
   const [offsetClass, setOffsetClass] = useState<string | null>(null)
 
+  // 308px matches CHAT_SIDEBAR_DEFAULT_WIDTH in
+  // src/pages/chat/components/ChatSidebar/chatSidebarWidth.ts — keep in sync.
   const update = () => {
     if (!appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded)
       setOffsetClass('left-navbar')
     if (appInfoStore.sidebarExpanded && !appInfoStore.navigationExpanded)
-      setOffsetClass('left-[calc(theme(spacing.navbar)+theme(spacing.sidebar))]')
+      setOffsetClass('left-[calc(theme(spacing.navbar)+var(--chat-sidebar-width,308px))]')
     if (!appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
       setOffsetClass('left-navbar-expanded')
     if (appInfoStore.sidebarExpanded && appInfoStore.navigationExpanded)
-      setOffsetClass('left-[calc(theme(spacing.navbar-expanded)+theme(spacing.sidebar))]')
+      setOffsetClass('left-[calc(theme(spacing.navbar-expanded)+var(--chat-sidebar-width,308px))]')
   }
 
   useEffect(() => {

@@ -1,0 +1,52 @@
+{
+  "decision": "approve",
+  "rationale": "All 4 blocking findings from code-review-final.json are resolved. CR-001: useChatSidebarResize no longer calls useDefaultLayout, and ChatPage's Group no longer receives defaultLayout/onLayoutChanged -- the pixel-based getStoredChatSidebarWidth/setStoredChatSidebarWidth mechanism is now the single source of truth, verified by reading the fix-up diff. CR-002: handleResize now calls appInfoStore.setSidebarExpanded(false) when panelSize.inPixels === 0 (drag-collapse), keeping the store in sync with the panel's actual state; a new test 'syncs appInfoStore.sidebarExpanded to false when drag-collapsed to 0px' covers it and the full suite passes. CR-003: the chat-main-content Panel now has minSize={400}, bounding how far the main content area can be crushed. CR-004: confirmed by inspecting `git log --format='%s' f8f836ce7..HEAD` directly (not part of the fix-up diff, since it was a history rewrite via git filter-branch, not a content change) -- all 9 commits on the branch now match the required `EPMCDME-XXXX: Capital sentence` pattern and the CI regex in .ai-run/guides/standards/git-workflow.md; the branch has no configured upstream, so rewriting local history carries no shared-history risk. No new high-risk issue was introduced by the fix-up diff -- it is a small, contained removal of the competing persistence path plus two additive lines (a store setter call and a minSize prop). The unrelated .codemie/codemie-cli.config.json hunk in the fix-up diff is pre-existing dirty state from the environment's Jira CLI profile, not part of this feature, and is excluded from this review's scope per project convention.",
+  "follow_ups": [
+    "Consider a follow-up to add a storage-event listener for cross-tab sync (deferred, out of ticket scope)",
+    "Consider importing CHAT_SIDEBAR_DEFAULT_WIDTH into a shared location the Tailwind arbitrary-value strings could reference, or add a unit test asserting the three 308px literals stay in sync",
+    "Consider a real-pixel-width integration/visual test for the 260px/520px extremes if the project adds visual regression tooling later"
+  ],
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Chat pane width can be adjusted by dragging its border.",
+      "status": "satisfied",
+      "notes": "Group/Panel/ResizableSeparator wiring in ChatPage.tsx mirrors the proven WorkflowDetailsPage/useWorkflowDrawer pattern. All new and pre-existing tests pass."
+    },
+    {
+      "criterion": "Minimum and maximum widths are enforced to preserve UI stability.",
+      "status": "satisfied",
+      "notes": "Panel minSize={260}/maxSize={520} on the sidebar, plus the newly added minSize={400} on the main-content panel (CR-003 fix), bound both sides of the resize."
+    },
+    {
+      "criterion": "Pane width persists at least for the session.",
+      "status": "satisfied",
+      "notes": "getStoredChatSidebarWidth/setStoredChatSidebarWidth is now the sole persistence path (CR-001 fix removed the competing useDefaultLayout percentage-based mechanism), so the rendered width and --chat-sidebar-width CSS var can no longer diverge after a reload."
+    },
+    {
+      "criterion": "No loss of functionality or information in chat navigation when resizing.",
+      "status": "satisfied",
+      "notes": "CR-002 fix keeps appInfoStore.sidebarExpanded in sync when the sidebar is drag-collapsed to 0px, so SidebarToggle no longer requires two clicks to recover -- closing the last functional gap."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit Message Format (.ai-run/guides/standards/git-workflow.md)",
+      "status": "pass",
+      "notes": "All 9 commits on the branch now match 'EPMCDME-10137: Capital sentence', rewritten via git filter-branch --msg-filter. Verified against the documented CI regex. No shared/pushed history was rewritten (no upstream configured)."
+    },
+    {
+      "standard": "Constants Usage (.ai-run/guides/development/constants-usage.md)",
+      "status": "partial",
+      "notes": "Unchanged from the final round: CHAT_SIDEBAR_DEFAULT_WIDTH=308 is centralized, but the same value is separately hardcoded in two Tailwind arbitrary-value class strings out of tooling necessity. Not blocking; recorded as a follow-up."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved" },
+    { "id": "CR-002", "status": "resolved" },
+    { "id": "CR-003", "status": "resolved" },
+    { "id": "CR-004", "status": "resolved" }
+  ]
+}
