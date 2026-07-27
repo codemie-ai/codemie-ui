@@ -66,7 +66,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, text, className }) =>
   })
 
   return (
-    <div className={badgeClasses}>
+    <div role="status" aria-label={text} className={badgeClasses}>
       <div className={dotClasses}></div>
       {text}
     </div>

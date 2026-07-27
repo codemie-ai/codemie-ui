@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Remove VoiceOver-specific executionStatusAnnouncer singleton and replace with role='status' directly on StatusBadge, following the SkillStatusLabel pattern.",
+  "generated": "2026-07-22T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches two StatusBadge variants (StatusBadge/StatusBadge.tsx and StatusBadge.tsx) and two workflow-detail page components (WorkflowExecutions.tsx, WorkflowStartExecutionPopup.tsx) plus deletion of executionStatusAnnouncer.ts. StatusBadge is a shared component used in 15+ call sites — bumped from S to M by the 'touches core shared utilities' red flag."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "8 files across 3 directories: 2 component files receive ARIA attribute addition, 1 utility module deleted, 1 utility test file deleted, 2 page components have announcer logic surgically removed, 2 test files have announcement describe-blocks removed. Spans src/components/, src/pages/workflows/details/, and co-located __tests__/ subdirectories."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S (2) to M (3): StatusBadge is a core shared UI component used in 15+ call sites across workflows, settings, chat, and katas — matches 'touches core shared utilities' red flag."
+  ],
+  "split_recommendation": null
+}

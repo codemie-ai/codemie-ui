@@ -1,0 +1,15 @@
+{
+  "verdict": "approved",
+  "confidence": "high",
+  "summary": "The implementation correctly replaces the VoiceOver-specific `executionStatusAnnouncer` singleton with `role=\"status\"` on `StatusBadge`. The ARIA approach is sound for NVDA/JAWS: live region fires only on text-content change (not initial mount), `aria-label={undefined}` safely omits the attribute. One non-blocking finding is noted: a pre-existing `aria-hidden=\"true\"` ancestor in `ThoughtHeader` suppresses the new live region there (thought-status transitions remain unannounced).",
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "non-blocking",
+      "file": "src/components/Thought/ThoughtHeader.tsx",
+      "line": "51",
+      "description": "`StatusBadge` is rendered inside `<div aria-hidden=\"true\">` in `ThoughtStatus`. Per the ARIA spec, `aria-hidden` hides the entire subtree, including any `role=\"status\"` live region inside it. This means thought-status transitions will NOT be announced to NVDA/JAWS via the new live region. The badge appears intentionally decorative in this context, but when `isEmbedded` is true the `StatusIndicator` is also hidden and the only status indicator becomes the suppressed badge.",
+      "suggestion": "If thought status must be announced when `isEmbedded` is true, remove `aria-hidden=\"true\"` from the wrapping div for the `StatusBadge` case, or expose an `aria-live` region outside the hidden subtree. This is out of scope for this ticket and should be tracked as a follow-up accessibility issue."
+    }
+  ]
+}
