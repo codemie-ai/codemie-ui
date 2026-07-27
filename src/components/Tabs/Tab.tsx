@@ -37,6 +37,7 @@ const TabsButton = <TabId extends string>({
   <button
     role="tab"
     type="button"
+    aria-selected={isActive}
     key={tab.id}
     onClick={() => handleClick(tab.id)}
     className={cn(

@@ -69,6 +69,7 @@ const Tabs = <TabId extends string = string>({
     <div className={cn('flex flex-col', className)}>
       {showTabs && (
         <div
+          role="tablist"
           className={cn(
             'flex items-stretch border-b border-border-specific-panel-outline mb-4',
             headerClassName
