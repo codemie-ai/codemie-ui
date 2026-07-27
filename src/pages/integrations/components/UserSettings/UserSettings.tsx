@@ -42,6 +42,7 @@ import { getSettingCredsURL, getTestableCredentialTypes, SETTING_TYPE_USER } fro
 import toaster from '@/utils/toaster'
 
 import IntegrationDeleteWarning from '../IntegrationDeleteWarning'
+import { renderIntegrationStateCell } from '../IntegrationStateBadge/renderIntegrationStateCell'
 import TestIntegration from '../TestIntegration'
 
 const REFRESH_TIMEOUT = 1000
@@ -189,6 +190,7 @@ const UserSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
     credential_type: (item) => humanize(item.credential_type),
     credential_values: (item) =>
       getSettingCredsURL(item.credential_values, item.credential_type.toLowerCase()),
+    is_enabled: renderIntegrationStateCell,
   }
 
   const refreshUserSettings = useCallback(async () => {

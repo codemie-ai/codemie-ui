@@ -47,6 +47,7 @@ const IntegrationsTab: FC<IntegrationTabProps> = ({ portalSidebarRef, integratio
         { label: 'Type', key: 'credential_type', type: 'custom' },
         ...(isUserColumns ? [{ label: 'Global', key: 'is_global', type: 'boolean' }] : []),
         { label: 'URL', key: 'credential_values', type: 'custom' },
+        { label: 'State', key: 'is_enabled', type: 'custom' },
         { label: '', key: 'actions', type: 'custom' },
       ] as ColumnDefinition[],
     []

@@ -47,6 +47,7 @@ import {
 import toaster from '@/utils/toaster'
 
 import IntegrationDeleteWarning from '../IntegrationDeleteWarning'
+import { renderIntegrationStateCell } from '../IntegrationStateBadge/renderIntegrationStateCell'
 import TestIntegration from '../TestIntegration'
 
 const REFRESH_TIMEOUT = 1000
@@ -190,6 +191,7 @@ const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
         item.credential_values as Array<{ key: string; value: string }>,
         item.credential_type.toLowerCase()
       ),
+    is_enabled: renderIntegrationStateCell,
   }
 
   const refreshProjectSettings = useCallback(() => {

@@ -1,0 +1,131 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two major findings require fixes: (1) missing `min-w-0` on flex ancestors prevents subtitle truncation CSS from working—long names will overflow buttons; (2) EditAssistantPage subtitle test uses soft assertion that cannot detect regressions. Multiple existing tests are also fragile and will fail after this change when both header and body render the same text.",
+  "confidence": "high",
+  "risk_flags": ["layout-regression", "test-fragility"],
+  "business_review": [
+    {
+      "criterion": "Add assistant name to sticky top header in both views",
+      "status": "satisfied"
+    },
+    {
+      "criterion": "Name displays below generic label and remains visible when scrolling",
+      "status": "satisfied"
+    },
+    {
+      "criterion": "Long names truncated gracefully",
+      "status": "unsatisfied",
+      "notes": "CSS classes are present but flex layout bug prevents truncation from working"
+    },
+    {
+      "criterion": "Edit page buttons remain properly aligned",
+      "status": "partial",
+      "notes": "Alignment is structurally sound but test coverage is insufficient (only checks button count)"
+    },
+    {
+      "criterion": "Loading state handled gracefully",
+      "status": "satisfied"
+    },
+    {
+      "criterion": "No regressions on other pages",
+      "status": "satisfied"
+    }
+  ],
+  "standards_review": [
+    {
+      "check": "Commit format",
+      "status": "pass",
+      "notes": "Commits follow pattern EPMCDME-12553: <description>"
+    },
+    {
+      "check": "Code style",
+      "status": "pass",
+      "notes": "TypeScript, JSX styling, and test patterns match project conventions"
+    },
+    {
+      "check": "Test coverage",
+      "status": "partial",
+      "notes": "Tests exist but have soft assertions and fragility issues"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "category": "Layout / Correctness",
+      "title": "Flex truncation CSS will not work—missing min-w-0 on flex ancestors",
+      "problem": "The subtitle div has `overflow-hidden text-ellipsis whitespace-nowrap` CSS, but its parent flex container lacks `min-w-0`. In flexbox, without `min-w-0` a flex item's minimum size defaults to `auto` (content size), so the container can grow past available width. This means `overflow-hidden` never triggers and long assistant names will overflow the header, pushing action buttons off-screen.",
+      "impact": "Long assistant names cause layout corruption (buttons pushed off-screen or wrapped unexpectedly). The truncation feature does not work.",
+      "files_touched": [
+        "src/components/Layouts/Layout/PageLayout.tsx"
+      ],
+      "recommendation": "Add `min-w-0` to both the outer flex container (`div.flex.items-center.gap-6.flex-1` at line 82) and the inner title/subtitle wrapper (`div.flex-1` at line 94). This allows flex children to shrink below content size, enabling `overflow-hidden` + `text-ellipsis` to work as intended. Verify in browser that a 100+ character assistant name is correctly truncated with ellipsis in both AssistantDetailsPage and EditAssistantPage headers.",
+      "triage": "patch"
+    },
+    {
+      "id": "CR-002",
+      "severity": "critical",
+      "category": "Test Coverage",
+      "title": "EditAssistantPage subtitle test will not catch regressions—uses soft assertion",
+      "problem": "The test at line 81-85 of EditAssistantPage.integration.test.tsx uses `screen.queryByText('Test Assistant')` wrapped in `if (headerSubtitle)`. If the subtitle element is never rendered (regression), `queryByText` returns `null`, the condition is false, and the test passes without asserting anything. This means a regression where the subtitle feature breaks will not be caught by this test.",
+      "impact": "Regression where subtitle is removed will not be detected by tests, causing silent failures in CI.",
+      "files_touched": [
+        "src/pages/assistants/__tests__/EditAssistantPage.integration.test.tsx"
+      ],
+      "recommendation": "Replace the soft assertion with an unconditional check. Use `await waitFor(() => expect(screen.getByText('Test Assistant')).toBeInTheDocument())` to ensure the subtitle is actually rendered. Add an explicit class assertion: `expect(screen.getByText('Test Assistant')).toHaveClass('text-text-quaternary')` to verify it is the header subtitle (not another instance).",
+      "triage": "patch"
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "category": "Test Coverage",
+      "title": "Existing AssistantDetailsPage tests are fragile—will fail when multiple instances of name appear",
+      "problem": "Several existing tests in AssistantDetailsPage.integration.test.tsx use `screen.getByText('Test Assistant')` as a waitFor condition or assertion. After this change, both the header subtitle and the body hero-section name render 'Test Assistant', creating two DOM nodes with that text. `getByText` throws 'found multiple elements' when there is more than one match, causing these tests to fail. Examples: line 124 in the template mode test, and many tests in Navigation and Feature Flags sections.",
+      "impact": "Tests that previously passed will now fail on CI/local runs when both header and body render. This breaks the build.",
+      "files_touched": [
+        "src/pages/assistants/__tests__/AssistantDetailsPage.integration.test.tsx"
+      ],
+      "recommendation": "Update all `screen.getByText('Test Assistant')` calls that depend on a single match to use `screen.getAllByText('Test Assistant')[0]` (to select the first match), or preferably be more specific by querying within a known region (e.g., within the body content `<h4 class='name-target'>` instead of globally). Verify all 47 tests pass after the change.",
+      "triage": "patch"
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "category": "Test Coverage",
+      "title": "Button layout test does not verify buttons are accessible or unobscured",
+      "problem": "The EditAssistantPage integration test 'renders action buttons without layout issues when assistant name is present' (line 88-102) only asserts `buttons.length > 0`. This passes trivially (the back button alone satisfies it) and does not verify that the three action buttons — 'Refine with AI', 'Cancel', 'Save' — are all visible and accessible. A layout regression where the subtitle causes buttons to overflow off-screen or become hidden would not be caught.",
+      "impact": "Layout regressions go undetected. Users may be unable to access action buttons on the Edit page.",
+      "files_touched": [
+        "src/pages/assistants/__tests__/EditAssistantPage.integration.test.tsx"
+      ],
+      "recommendation": "Assert all three named buttons are rendered and accessible: `expect(screen.getByRole('button', { name: /refine with ai/i })).toBeInTheDocument()`, `expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()`, and `expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()`. This ensures the header layout accommodates both subtitle and all buttons without overflow.",
+      "triage": "patch"
+    },
+    {
+      "id": "CR-005",
+      "severity": "minor",
+      "category": "Accessibility",
+      "title": "Missing title attribute on truncated subtitle for hover tooltip",
+      "problem": "When the subtitle text is truncated via `text-ellipsis`, users have no way to see the full content on hover. A `title` attribute would provide a browser tooltip. This is consistent with the existing `<h1>` title which also lacks a `title` attribute, but the subtitle is more likely to be truncated (smaller text, `text-xs`, `whitespace-nowrap`).",
+      "impact": "Users cannot see the full assistant name if it is truncated in the header.",
+      "files_touched": [
+        "src/components/Layouts/Layout/PageLayout.tsx"
+      ],
+      "recommendation": "Add `title={subtitle}` to the subtitle `<div>` (line 100). This provides a browser tooltip showing the full text when the mouse hovers. Example: `<div className=\"...\" title={subtitle}>{subtitle}</div>`.",
+      "triage": "defer"
+    },
+    {
+      "id": "CR-006",
+      "severity": "minor",
+      "category": "Test Coverage",
+      "title": "No explicit test for subtitle truncation CSS behavior",
+      "problem": "The PageLayout unit tests (lines 21-101) verify that the subtitle renders when provided and omit rendering when undefined, but there is no test that explicitly checks: (1) when subtitle is undefined, the `<div>` element is not in the DOM, and (2) when a very long subtitle is passed, the rendered element has `overflow-hidden` and `text-ellipsis` classes applied.",
+      "impact": "Truncation CSS could be accidentally removed or modified in the future without tests catching it.",
+      "files_touched": [
+        "src/components/Layouts/Layout/__tests__/PageLayout.test.tsx"
+      ],
+      "recommendation": "Add a test: `it('should have truncation CSS on subtitle', () => { render(<PageLayout title='Test' subtitle='Very long name'><div>Content</div></PageLayout>); const subtitle = screen.getByText('Very long name'); expect(subtitle).toHaveClass('overflow-hidden'); expect(subtitle).toHaveClass('text-ellipsis'); expect(subtitle).toHaveClass('whitespace-nowrap'); })`.",
+      "triage": "defer"
+    }
+  ]
+}

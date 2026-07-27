@@ -13,22 +13,19 @@
 // limitations under the License.
 //
 
-import { StatusEnum, StatusType } from '@/components/StatusBadge/StatusBadge'
+import React from 'react'
 
-export enum IntegrationOption {
-  USER = 'User',
-  PROJECT = 'Project',
+import { SettingCredentialValue } from '@/types/entity/setting'
+
+import IntegrationStateBadge from './IntegrationStateBadge'
+import { shouldShowIntegrationState } from './shouldShowIntegrationState'
+
+interface IntegrationStateItem {
+  credential_type: string
+  credential_values: SettingCredentialValue[]
 }
 
-export const GOOGLE_OAUTH_CREDENTIAL_TYPE = 'googleoauth'
-
-export const INTEGRATION_STATE_ENABLED = 'Enabled'
-export const INTEGRATION_STATE_DISABLED = 'Disabled'
-
-export const INTEGRATION_ENABLED_BADGE_MAP: Record<
-  string,
-  { text: string; statusEnum: StatusType }
-> = {
-  enabled: { text: INTEGRATION_STATE_ENABLED, statusEnum: StatusEnum.Success },
-  disabled: { text: INTEGRATION_STATE_DISABLED, statusEnum: StatusEnum.NotStarted },
+export const renderIntegrationStateCell = (item: IntegrationStateItem): React.ReactNode => {
+  if (!shouldShowIntegrationState(item)) return null
+  return <IntegrationStateBadge credentialValues={item.credential_values} />
 }

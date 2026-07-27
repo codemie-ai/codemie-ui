@@ -1,0 +1,70 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two patch findings: a missing unit test for the explicit `value === 'true'` code branch in IntegrationStateBadge, and integration test negative assertions placed outside the waitFor block. Implementation is otherwise correct; all acceptance criteria are satisfied. Both fixes are small and self-contained.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Each scheduler record displays a readable state indicator showing whether it is enabled or disabled",
+      "status": "satisfied",
+      "notes": "IntegrationStateBadge renders a StatusBadge with text 'Enabled' (green) or 'Disabled' (gray) in both User and Project tabs. Rows without is_enabled in credential_values render no badge (correct null path)."
+    },
+    {
+      "criterion": "Users do not need to open or edit individual records to determine their state",
+      "status": "satisfied",
+      "notes": "The State column is visible inline in the list view for both tabs."
+    },
+    {
+      "criterion": "State indicators are updated in real time or upon page refresh",
+      "status": "satisfied",
+      "notes": "Badge derives from credential_values already returned by existing API endpoints. The store refetches on pagination/filter change, satisfying the 'upon page refresh' alternative."
+    },
+    {
+      "criterion": "No regressions in current scheduler editing/creation logic or Integration page performance",
+      "status": "satisfied",
+      "notes": "Change is purely additive — a read-only display column. No mutations to create/edit flows, form fields, or action handlers. Performance impact is negligible (one find() per row)."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit format",
+      "status": "pass",
+      "notes": "Commits follow EPMCDME-XXXX: Capital sentence format per git-workflow guide."
+    },
+    {
+      "standard": "Code quality",
+      "status": "pass",
+      "notes": "Component follows established DefinitionTypes.Custom + customRenderColumns pattern used throughout the codebase. Badge-map constant pattern matches agentCoreRuntimes precedent."
+    },
+    {
+      "standard": "Security",
+      "status": "pass",
+      "notes": "Read-only display component. No user input, no sensitive data handling, no security concerns."
+    },
+    {
+      "standard": "Test coverage",
+      "status": "partial",
+      "notes": "Unit tests cover boolean true/false, absent key, and empty array cases but miss the explicit `value === 'true'` (string) branch that is present in the component code. Integration test has a minor async assertion placement issue."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/components/IntegrationStateBadge/__tests__/IntegrationStateBadge.test.tsx",
+      "problem": "The component explicitly handles `entry.value === 'true'` (string) as an enabled state but no unit test exercises this branch. If this branch breaks in a refactor, the test suite will not catch it.",
+      "impact": "Silent regression risk on the string 'true' handling path. The branch exists defensively (backend string serialisation) and its absence from tests creates a false sense of full coverage.",
+      "recommendation": "Add one test case: `render(<IntegrationStateBadge credentialValues={[{ key: 'is_enabled', value: 'true' }]} />)` and assert `expect(screen.getByText('Enabled')).toBeInTheDocument()`."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/__tests__/IntegrationsPage.integration.test.tsx",
+      "problem": "The third test ('shows no Enabled/Disabled badge for a row without is_enabled') waits inside `waitFor` for the alias text, then asserts `queryByText('Enabled')` and `queryByText('Disabled')` outside any `waitFor` block. If badge rendering ever becomes async, these negative assertions could pass before badges have mounted.",
+      "impact": "Test reliability: a regression where the badge incorrectly appears for non-is_enabled rows could be missed in a future refactor that defers rendering.",
+      "recommendation": "Move both negative assertions inside the same `waitFor` callback, or wrap them in a second `await waitFor(...)` call."
+    }
+  ]
+}

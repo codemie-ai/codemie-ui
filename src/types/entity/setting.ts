@@ -15,7 +15,7 @@
 
 export interface SettingCredentialValue {
   key: string
-  value: string | boolean
+  value: string | boolean | number
 }
 
 interface BaseSetting {
