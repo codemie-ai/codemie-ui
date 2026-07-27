@@ -25,7 +25,7 @@ const SystemInstructions = ({ text }: SystemInstructionsProps) => {
   return (
     <div className="flex flex-col bg-surface-base-secondary border border-border-specific-panel-outline rounded-lg overflow-hidden">
       <div className="flex justify-between items-center px-4 py-2 bg-white/5">
-        <p className="text-xs">System Instructions</p>
+        <h3 className="text-xs">System Instructions</h3>
         <Button
           variant="secondary"
           onClick={() => copyToClipboard(text, 'Instructions copied to clipboard')}

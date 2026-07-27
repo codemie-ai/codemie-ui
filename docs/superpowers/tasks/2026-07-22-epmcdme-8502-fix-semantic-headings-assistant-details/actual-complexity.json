@@ -1,0 +1,77 @@
+{
+  "task": "Accessibility bug fix: replace non-semantic <p> elements with <h3>/<h4> heading elements across DetailsSidebarSection, SystemInstructions, and DetailsCopyField on the Assistant Details page.",
+  "generated": "2026-07-22T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 3,
+      "label": "M",
+      "affected": "DetailsSidebarSection (shared primitive), SystemInstructions, DetailsCopyField",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 3,
+      "modified_file_list": [
+        "src/components/details/DetailsCopyField/DetailsCopyField.tsx",
+        "src/components/details/DetailsSidebar/components/DetailsSidebarSection.tsx",
+        "src/pages/assistants/components/AssistantDetails/components/SystemInstructions.tsx"
+      ],
+      "new_files": 3,
+      "new_file_list": [
+        "src/components/details/DetailsCopyField/__tests__/DetailsCopyField.test.tsx",
+        "src/components/details/DetailsSidebar/components/__tests__/DetailsSidebarSection.test.tsx",
+        "src/pages/assistants/components/AssistantDetails/components/__tests__/SystemInstructions.test.tsx"
+      ],
+      "affected_dirs": [
+        "src/components/details/DetailsCopyField",
+        "src/components/details/DetailsSidebar/components",
+        "src/pages/assistants/components/AssistantDetails/components"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 6,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three UI components changed across two directory subtrees; DetailsSidebarSection is a shared primitive used across the details sidebar, triggering the shared-utility red flag bump from S to M. All changes are a single layer (UI) and consist of element-tag substitutions only."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "6 files total (3 source, 3 test) spanning 3 directories. Source changes are minimal (1-2 line tag substitutions each). Test files appear to be newly created with role-based heading assertions."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S (2) to M (3): DetailsSidebarSection is a shared primitive whose change propagates to all consumers of the details sidebar."
+  ],
+  "split_recommendation": null
+}

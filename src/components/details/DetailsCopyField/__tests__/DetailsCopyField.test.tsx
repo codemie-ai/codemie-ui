@@ -27,6 +27,14 @@ describe('DetailsCopyField', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('renders the label as a semantic heading', () => {
+    render(<DetailsCopyField label={label} value={value} />)
+
+    const labelHeading = screen.getByRole('heading', { level: 4, name: label })
+    expect(labelHeading).toBeInTheDocument()
+    expect(labelHeading).toHaveClass('text-xs')
+  })
+
   it('renders the label, input, and copy button when a value is provided', () => {
     render(<DetailsCopyField label={label} value={value} />)
 

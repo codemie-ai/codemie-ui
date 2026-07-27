@@ -1,0 +1,30 @@
+{
+  "decision": "request-changes",
+  "rationale": "Five of six acceptance criteria are met: OVERVIEW, ACCESS LINKS, System Instructions, CONFIGURATION, and TOOLS & CAPABILITIES are now <h3> elements. However, 'ASSISTANT ID:' remains a <p> label in DetailsCopyField (line 31) — not touched by the diff — and this criterion is explicitly listed in the ticket. Because ASSISTANT ID: is a field label inside the OVERVIEW section (not a section title), whether it should become a native heading element or receive an aria pattern is a decision that must be made before implementation. Heading hierarchy inconsistencies across other detail page types (DataSourceDetails, KataDetailView) are pre-existing and deferred. Both commit messages conform to the EPMCDME-XXXX: Capital sentence format. No security concerns.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "OVERVIEW heading is programmatically determined as a heading", "status": "pass", "notes": "DetailsSidebarSection now renders headline as <h3>; OVERVIEW is passed as headline prop." },
+    { "criterion": "ACCESS LINKS heading is programmatically determined as a heading", "status": "pass", "notes": "Passed as headline to DetailsSidebarSection, now <h3>." },
+    { "criterion": "System Instructions heading is programmatically determined as a heading", "status": "pass", "notes": "SystemInstructions.tsx now renders <h3 className=\"text-xs\">System Instructions</h3>." },
+    { "criterion": "CONFIGURATION heading is programmatically determined as a heading", "status": "pass", "notes": "Passed as headline to DetailsSidebarSection, now <h3>." },
+    { "criterion": "TOOLS & CAPABILITIES heading is programmatically determined as a heading", "status": "pass", "notes": "Passed as headline to DetailsSidebarSection, now <h3>." },
+    { "criterion": "ASSISTANT ID: heading is programmatically determined as a heading", "status": "fail", "notes": "ASSISTANT ID is rendered by DetailsCopyField as <p className=\"text-xs text-text-primary\">{label}</p> (DetailsCopyField/DetailsCopyField.tsx line 31). The diff does not touch this component. Screen readers announce it as plain text, not a heading." },
+    { "criterion": "Visual appearance of the page remains unchanged", "status": "pass", "notes": "Tailwind Preflight resets heading font-size/weight/margin. All original Tailwind classes preserved on new <h3> elements. Confirmed by edge-case and acceptance lenses." }
+  ],
+  "standards_review": [
+    { "standard": "Commit message format (EPMCDME-XXXX: Capital sentence)", "status": "pass", "notes": "Both commits match the required regex: 'EPMCDME-8502: Fix semantic heading in DetailsSidebarSection shared primitive' and 'EPMCDME-8502: Fix semantic heading in SystemInstructions component'." },
+    { "standard": "Code quality (no logic changes, no new dependencies)", "status": "pass", "notes": "Pure tag-only swaps. No new imports, abstractions, or dependencies introduced." },
+    { "standard": "Security patterns", "status": "pass", "notes": "No auth, input handling, or secrets affected. Pure markup change." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "decision_needed",
+      "problem": "The 'ASSISTANT ID:' label remains a <p> element in DetailsCopyField (DetailsCopyField/DetailsCopyField.tsx line 31) and is not changed by this diff, leaving one acceptance criterion explicitly listed in the Jira ticket unmet.",
+      "impact": "Screen readers will not announce 'ASSISTANT ID:' as a heading. Because it is a field label inside the OVERVIEW section rather than a section title, the appropriate semantic fix is ambiguous — a native heading element at what level? or an aria-label/aria-describedby pattern?",
+      "recommendation": "Decide the right semantic pattern for a field label that must be perceived as a heading: (a) change DetailsCopyField's label <p> to <h4> when in a heading context (requires a prop or variant), (b) add a visually-hidden <h4> before the DetailsCopyField in AssistantDetailsSidebarSections, or (c) confirm with the ticket reporter whether a descriptive aria-label on the copy-field wrapper suffices. Once decided, implement and add a test asserting the heading role on the ASSISTANT ID element."
+    }
+  ]
+}

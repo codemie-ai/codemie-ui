@@ -23,16 +23,15 @@ describe('DetailsSidebarSection', () => {
   const childText = 'This is the child content'
   const ChildComponent = () => <p>{childText}</p>
 
-  it('renders the headline with its specific styles', () => {
+  it('renders the headline as a semantic heading', () => {
     render(
       <DetailsSidebarSection headline={defaultHeadline}>
         <ChildComponent />
       </DetailsSidebarSection>
     )
 
-    const headlineElement = screen.getByText(defaultHeadline)
+    const headlineElement = screen.getByRole('heading', { level: 3, name: defaultHeadline })
     expect(headlineElement).toBeInTheDocument()
-    expect(headlineElement.tagName).toBe('P')
     expect(headlineElement).toHaveClass('text-xs', 'font-semibold')
   })
 

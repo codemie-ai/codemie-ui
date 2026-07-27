@@ -13,27 +13,16 @@
 // limitations under the License.
 //
 
-import { ReactNode } from 'react'
+import { render, screen } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
 
-import { cn } from '@/utils/utils'
+import SystemInstructions from '../SystemInstructions'
 
-interface DetailsSidebarSectionProps {
-  headline: string
-  children: ReactNode
-  itemsWrapperClassName?: string
-}
+describe('SystemInstructions', () => {
+  it('renders "System Instructions" as a semantic heading', () => {
+    render(<SystemInstructions text="Do not discuss competitors." />)
 
-const DetailsSidebarSection = ({
-  headline,
-  children,
-  itemsWrapperClassName,
-}: DetailsSidebarSectionProps) => {
-  return (
-    <div className="flex flex-col gap-4">
-      <h3 className="text-xs text-text-primary font-semibold">{headline}</h3>
-      <div className={cn('flex flex-col gap-4', itemsWrapperClassName)}>{children}</div>
-    </div>
-  )
-}
-
-export default DetailsSidebarSection
+    const heading = screen.getByRole('heading', { level: 3, name: 'System Instructions' })
+    expect(heading).toBeInTheDocument()
+  })
+})

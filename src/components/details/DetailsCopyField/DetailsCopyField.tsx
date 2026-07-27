@@ -28,7 +28,7 @@ const DetailsCopyField = ({ label, value, className, notification }: DetailsCopy
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>
-      <p className="text-xs text-text-primary">{label}</p>
+      <h4 className="text-xs text-text-primary">{label}</h4>
       <div className="h-8 pl-2 items-center flex bg-surface-base-primary border border-border-primary y rounded-lg overflow-hidden">
         <input
           readOnly

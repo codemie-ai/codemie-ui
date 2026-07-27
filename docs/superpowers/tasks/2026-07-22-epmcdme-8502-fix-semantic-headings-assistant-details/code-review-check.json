@@ -1,0 +1,28 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 is resolved: DetailsCopyField.tsx label changed from <p> to <h4> with all Tailwind classes preserved, and a new role-based test (getByRole heading level 4) confirms the semantic heading. No new high-risk issues in the fix-up diff — the change is a tag-only swap identical in pattern to the primary fixes. Commit message 'EPMCDME-8502: Fix semantic heading in DetailsCopyField label' conforms to the required format.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "OVERVIEW heading is programmatically determined as a heading", "status": "pass", "notes": "DetailsSidebarSection now renders headline as <h3>; OVERVIEW is passed as headline prop." },
+    { "criterion": "ACCESS LINKS heading is programmatically determined as a heading", "status": "pass", "notes": "Passed as headline to DetailsSidebarSection, now <h3>." },
+    { "criterion": "System Instructions heading is programmatically determined as a heading", "status": "pass", "notes": "SystemInstructions.tsx now renders <h3 className=\"text-xs\">System Instructions</h3>." },
+    { "criterion": "CONFIGURATION heading is programmatically determined as a heading", "status": "pass", "notes": "Passed as headline to DetailsSidebarSection, now <h3>." },
+    { "criterion": "TOOLS & CAPABILITIES heading is programmatically determined as a heading", "status": "pass", "notes": "Passed as headline to DetailsSidebarSection, now <h3>." },
+    { "criterion": "ASSISTANT ID: heading is programmatically determined as a heading", "status": "fail", "notes": "ASSISTANT ID is rendered by DetailsCopyField as <p className=\"text-xs text-text-primary\">{label}</p> (DetailsCopyField/DetailsCopyField.tsx line 31). The diff does not touch this component. Screen readers announce it as plain text, not a heading." },
+    { "criterion": "Visual appearance of the page remains unchanged", "status": "pass", "notes": "Tailwind Preflight resets heading font-size/weight/margin. All original Tailwind classes preserved on new <h3> elements. Confirmed by edge-case and acceptance lenses." }
+  ],
+  "standards_review": [
+    { "standard": "Commit message format (EPMCDME-XXXX: Capital sentence)", "status": "pass", "notes": "Both commits match the required regex: 'EPMCDME-8502: Fix semantic heading in DetailsSidebarSection shared primitive' and 'EPMCDME-8502: Fix semantic heading in SystemInstructions component'." },
+    { "standard": "Code quality (no logic changes, no new dependencies)", "status": "pass", "notes": "Pure tag-only swaps. No new imports, abstractions, or dependencies introduced." },
+    { "standard": "Security patterns", "status": "pass", "notes": "No auth, input handling, or secrets affected. Pure markup change." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "DetailsCopyField.tsx label changed from <p className=\"text-xs text-text-primary\"> to <h4 className=\"text-xs text-text-primary\">. New test getByRole('heading', { level: 4 }) confirms the semantic heading role. Fix is identical in pattern to primary fixes already reviewed."
+    }
+  ]
+}
