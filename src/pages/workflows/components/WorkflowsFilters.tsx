@@ -34,6 +34,7 @@ import { workflowsStore } from '@/store/workflows'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { FILTER_ENTITY, getFilters, setFilters, updateUrlWithFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
+import { formatProjectLabel } from '@/utils/projectDisplayName'
 import { makeCleanObject } from '@/utils/utils'
 
 interface WorkflowsFilters {
@@ -78,7 +79,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
     const extras = persistedProject
       .filter((name): name is string => !!name && !existing.has(name))
       .map((name) => ({
-        label: projectDisplayNames.get(name) ?? name,
+        label: formatProjectLabel({ name, display_name: projectDisplayNames.get(name) }),
         value: name,
         displayName: projectDisplayNames.get(name),
       }))

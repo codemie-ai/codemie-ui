@@ -29,6 +29,7 @@ import { userStore } from '@/store/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
+import { formatProjectLabel } from '@/utils/projectDisplayName'
 
 interface AssistantFilters {
   search?: string
@@ -61,7 +62,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
     const extras = (filters.project ?? [])
       .filter((name): name is string => !!name && !existing.has(name))
       .map((name) => ({
-        label: projectDisplayNames.get(name) ?? name,
+        label: formatProjectLabel({ name, display_name: projectDisplayNames.get(name) }),
         value: name,
         displayName: projectDisplayNames.get(name),
       }))

@@ -29,6 +29,7 @@ import { User } from '@/types/entity/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
+import { formatProjectLabel } from '@/utils/projectDisplayName'
 
 interface SkillsFiltersProps {
   onFilterChange: (filters: Record<string, unknown>) => void
@@ -65,7 +66,7 @@ const SkillsFiltersComponent: React.FC<SkillsFiltersProps> = ({
     const extras = (filters.project ?? [])
       .filter((name): name is string => !!name && !existing.has(name))
       .map((name) => ({
-        label: projectDisplayNames.get(name) ?? name,
+        label: formatProjectLabel({ name, display_name: projectDisplayNames.get(name) }),
         value: name,
         displayName: projectDisplayNames.get(name),
       }))

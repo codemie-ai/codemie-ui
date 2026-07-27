@@ -735,7 +735,7 @@ describe('AssistantsListPage - Integration', () => {
       renderPage('/assistants')
 
       await waitFor(() => {
-        expect(screen.getByText('Non Roster Project')).toBeInTheDocument()
+        expect(screen.getByText('non-roster-proj (Non Roster Project)')).toBeInTheDocument()
       })
     })
 
