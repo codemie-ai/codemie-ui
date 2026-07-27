@@ -1,0 +1,89 @@
+{
+  "decision": "request-changes",
+  "confidence": "high",
+  "rationale": "Three blocking findings. CR-001 [critical]: Tailwind `!hidden` (display:none) on .ace_invisible_space/.ace_invisible_eol collapses all YAML indentation to zero-width because these spans are the sole DOM representation of whitespace in Ace's showInvisibles rendering — all YAML editors in the app hardcode showInvisibles={true}. Fix: replace !hidden with !invisible (visibility:hidden). CR-002 [major]: /\\t/.test(newYaml) pre-check scans the full document, rejecting valid YAML with tabs in quoted string values with a misleading indentation error. Fix: narrow to leading-whitespace scan. CR-003 [major]: Tailwind class conditional (the core visual mechanism) has no test coverage. Deferred (2): showInvisibles not reactive after mount (all callers hardcode true); handleRestore does not call validateYaml (pre-existing gap). Dismissed (3): prop-name semantics, onChange-on-tab consistent with existing invalid-input handling, acceptance-lens false positives on AC#3 (validateYaml IS called on every keystroke via handleYamlChange line 149) and AC#6 (Apache 2.0 headers present in all files).",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "ac": "#1",
+      "status": "pass",
+      "notes": "showInvisibles wired into ace.edit() options and forwarded via showInvisibles prop from both YamlEditor and YamlPanel."
+    },
+    {
+      "ac": "#2",
+      "status": "partial",
+      "notes": "Intent correct: space/EOL glyphs suppressed, tab glyphs colored red via text-failed-secondary. Mechanism broken: !hidden (display:none) collapses space glyphs from layout — see CR-001. Fix to CR-001 restores this AC to pass."
+    },
+    {
+      "ac": "#3",
+      "status": "pass",
+      "notes": "YamlEditor.handleYamlChange and YamlPanel.handleYamlChange both call validate on every keystroke; visual glyph always-on from mount. Acceptance lens finding was false — validateYaml is called from handleYamlChange (line 149), not only on save."
+    },
+    {
+      "ac": "#4",
+      "status": "pass",
+      "notes": "Both YamlEditor and YamlPanel compute 1-based line number via split/findIndex and embed it in the error message string."
+    },
+    {
+      "ac": "#5",
+      "status": "pass",
+      "notes": "Tab check returns early before yaml.load() in both components. Diff is purely additive — no existing paths removed or altered."
+    },
+    {
+      "ac": "#6",
+      "status": "pass",
+      "notes": "Apache 2.0 headers present in all modified files (existing headers unchanged, confirmed by reading files). AI-Generated, AI/Run label present in new YamlEditor.test.tsx. Acceptance lens finding was false — diff headers are omitted for unchanged lines in existing files."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Tailwind-only styling",
+      "status": "pass",
+      "notes": "No CSS files, style={{}} props, or non-Tailwind class strings introduced. Arbitrary variants used consistently with existing codebase pattern."
+    },
+    {
+      "standard": "Semantic color tokens",
+      "status": "pass",
+      "notes": "text-failed-secondary used for tab glyph color; no raw palette values (no text-red-400 etc.)."
+    },
+    {
+      "standard": "Commit format (EPMCDME-XXXX: Sentence)",
+      "status": "pass",
+      "notes": "All three commits follow the required prefix/format: EPMCDME-8254: Add showInvisibles prop..., EPMCDME-8254: Add tab detection..., EPMCDME-8254: Add tab detection..."
+    },
+    {
+      "standard": "TDD / test-first",
+      "status": "pass",
+      "notes": "RED state confirmed before each implementation step; 8 tests added/updated across 2 test files; all 3444 suite tests pass."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "location": "src/components/AceEditor/AceEditor.tsx:159-160",
+      "problem": "Tailwind `!hidden` (compiles to display:none !important) is applied to .ace_invisible_space and .ace_invisible_eol glyphs via [&_.ace_invisible_space]:!hidden [&_.ace_invisible_eol]:!hidden. In Ace's rendering model when showInvisibles is true, these <span> elements are the sole DOM representation of space/newline characters — no separate text node also renders them. Setting display:none removes them from layout flow with zero width, collapsing all YAML leading-space indentation.",
+      "impact": "Both YamlEditor and YamlPanel hardcode showInvisibles={true}, so every YAML editor instance in the app renders with collapsed indentation and desynced cursor/selection positions, making YAML editing unusable.",
+      "recommendation": "Replace !hidden with !invisible on both selectors: [&_.ace_invisible_space]:!invisible [&_.ace_invisible_eol]:!invisible. Tailwind invisible compiles to visibility:hidden, which makes the glyph invisible while preserving its layout footprint, keeping character cell widths intact."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/components/form/YamlEditor/YamlEditor.tsx:74 / src/pages/workflows/editor/configPanels/YamlPanel.tsx:75",
+      "problem": "Pre-check /\\t/.test(newYaml) scans the entire document string before yaml.load(). YAML allows tab characters inside double-quoted scalars, single-quoted scalars, and block/flow scalars. Valid YAML such as `key: \"foo\\tbar\"` is blocked with an indentation-specific error message that is factually incorrect.",
+      "impact": "Users cannot save valid YAML whose string values contain literal tab characters (shell commands, regex patterns, data fields). The error message 'YAML requires spaces for indentation' misleads users into removing valid content.",
+      "recommendation": "Narrow the scan to leading-whitespace only: newYaml.split('\\n').findIndex(line => /^[ \\t]*\\t/.test(line)) — this matches only lines where a tab appears in the indentation region, excluding tabs embedded in value strings."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/components/AceEditor/__tests__/AceEditor.test.tsx:100-107",
+      "problem": "The new AceEditor test only asserts showInvisibles:true is forwarded to ace.edit(). The conditional Tailwind class string — [&_.ace_invisible_space]:!hidden... [&_.ace_invisible_tab]:!text-failed-secondary — the entire visual mechanism of this feature, has zero test coverage. Neither its presence when showInvisibles={true} nor its absence when false is verified.",
+      "impact": "Any regression in the CSS class string from fixing CR-001 or future refactoring will not be caught by automated tests.",
+      "recommendation": "Add a test that renders <AceEditor value=\"\" showInvisibles /> and asserts container.className contains the expected class fragments (invisible_space suppression, invisible_tab color). Add a counterpart asserting those fragments are absent when showInvisibles is omitted."
+    }
+  ]
+}

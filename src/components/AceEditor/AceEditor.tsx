@@ -23,6 +23,8 @@ import 'ace-builds/src-noconflict/theme-tomorrow'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/utils/utils'
 
+import './AceEditor.css'
+
 interface AceEditorProps {
   value: string
   onChange?: (value: string) => void
@@ -31,6 +33,7 @@ interface AceEditorProps {
   name?: string
   className?: string
   placeholder?: string
+  showInvisibles?: boolean
 }
 
 export interface AceEditorRef {
@@ -48,6 +51,7 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
       name = 'ace_editor',
       className,
       placeholder,
+      showInvisibles = false,
     },
     ref
   ) => {
@@ -78,6 +82,7 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
         useWorker: false,
         placeholder: placeholder || '',
         enableKeyboardAccessibility: true,
+        showInvisibles,
       })
 
       editorRef.current = editor
@@ -151,7 +156,11 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
     return (
       <div
         ref={containerRef}
-        className={cn('text-sm rounded-xl w-full h-full [&_div]:!font-geist-mono', className)}
+        className={cn(
+          'text-sm rounded-xl w-full h-full [&_div]:!font-geist-mono',
+          { 'ace-show-tabs': showInvisibles },
+          className
+        )}
         data-name={name}
       />
     )

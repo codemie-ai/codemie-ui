@@ -382,3 +382,9 @@ export const getSidebarOffsetClass = (): string => {
 
 // Re-export generateThemes for backwards compatibility
 export { generateThemes } from './themeHelpers'
+
+export const findLeadingTabLine = (text: string): number => {
+  const lines = text.split('\n')
+  const idx = lines.findIndex((line) => /^[ \t]*\t/.test(line))
+  return idx === -1 ? 0 : idx + 1
+}

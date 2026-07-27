@@ -1,0 +1,78 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "All three blocking findings confirmed resolved by the fix-up diff. CR-001: !hidden replaced with !invisible — the regex change is exact and a new test verifies the className contains the correct Tailwind classes. CR-002: /\\t/.test() replaced with split/some/findIndex using /^[ \\t]*\\t/ in both YamlEditor and YamlPanel; new regression test verifies key: \"foo\\tbar\" is no longer rejected; positive cases still caught. CR-003: two new tests assert the conditional class string is present when showInvisibles=true and absent when false. No new issues introduced by the fix-up diff: the regex /^[ \\t]*\\t/ handles backtracking correctly (greedy [ \\t]* backtracks to allow the required \\t to match), and the test additions are straightforward. AC#2 is now fully pass. Standards pass unchanged.",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "ac": "#1",
+      "status": "pass",
+      "notes": "Carried forward: showInvisibles wired into ace.edit() options and forwarded from both YamlEditor and YamlPanel."
+    },
+    {
+      "ac": "#2",
+      "status": "pass",
+      "notes": "CR-001 fix restores correct layout: space/EOL glyphs now use visibility:hidden (layout-preserving), tab glyphs colored red via text-failed-secondary."
+    },
+    {
+      "ac": "#3",
+      "status": "pass",
+      "notes": "Carried forward: handleYamlChange fires validateYaml on every keystroke; feature always-on from mount."
+    },
+    {
+      "ac": "#4",
+      "status": "pass",
+      "notes": "Carried forward: both components compute 1-based line number and embed it in the error message."
+    },
+    {
+      "ac": "#5",
+      "status": "pass",
+      "notes": "Carried forward: tab check returns early before yaml.load(); no existing paths altered."
+    },
+    {
+      "ac": "#6",
+      "status": "pass",
+      "notes": "Carried forward: Apache 2.0 headers present in all files; AI-Generated, AI/Run label in new test file."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Tailwind-only styling",
+      "status": "pass",
+      "notes": "Carried forward: no CSS files or style={{}} introduced. Fix-up stays within arbitrary-variant pattern."
+    },
+    {
+      "standard": "Semantic color tokens",
+      "status": "pass",
+      "notes": "Carried forward: text-failed-secondary used for tab glyph color."
+    },
+    {
+      "standard": "Commit format (EPMCDME-XXXX: Sentence)",
+      "status": "pass",
+      "notes": "Fix-up commits follow the required format: EPMCDME-8254: Fix display:none glyph collapse..., EPMCDME-8254: Narrow tab detection..."
+    },
+    {
+      "standard": "TDD / test-first",
+      "status": "pass",
+      "notes": "Fix-up followed TDD: CSS class tests written and confirmed RED before applying CR-001 fix; false-positive test written and confirmed RED before applying CR-002 fix."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "AceEditor.tsx line 160: [&_.ace_invisible_space]:!hidden → [&_.ace_invisible_eol]:!invisible, [&_.ace_invisible_eol]:!hidden → [&_.ace_invisible_eol]:!invisible. New test confirms className contains the !invisible classes when showInvisibles=true."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "YamlEditor.tsx and YamlPanel.tsx: /\\t/.test() guard replaced with split/some using /^[ \\t]*\\t/; findIndex also updated to same pattern. New regression test confirms key: \"foo\\tbar\" is accepted without error. Positive cases (leading-tab lines) still caught."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "AceEditor.test.tsx: two new tests added — one asserts the !invisible class fragments appear in the container className when showInvisibles=true, one asserts no ace_invisible classes appear when showInvisibles=false (default). Tests run against the fixed AceEditor.tsx."
+    }
+  ]
+}

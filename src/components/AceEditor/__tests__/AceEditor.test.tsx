@@ -96,4 +96,25 @@ describe('AceEditor keyboard focus trap fix', () => {
     expect(ariaLabelCall).toBeDefined()
     expect(ariaLabelCall![1]).toBe('Editor content, press Enter to start editing')
   })
+
+  it('initializes Ace with showInvisibles: true when the showInvisibles prop is set', () => {
+    render(<AceEditor value="" showInvisibles />)
+
+    expect(mockAceEdit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ showInvisibles: true })
+    )
+  })
+
+  it('adds ace-show-tabs class to the container when showInvisibles is true', () => {
+    const { container } = render(<AceEditor value="" showInvisibles />)
+
+    expect(container.firstChild).toHaveClass('ace-show-tabs')
+  })
+
+  it('does not add ace-show-tabs class when showInvisibles is false (default)', () => {
+    const { container } = render(<AceEditor value="" />)
+
+    expect(container.firstChild).not.toHaveClass('ace-show-tabs')
+  })
 })

@@ -25,7 +25,7 @@ import Tabs from '@/components/Tabs/Tabs'
 import { ButtonType } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
 import { CreatedBy } from '@/types/common'
-import { createdBy, formatDateTime } from '@/utils/helpers'
+import { createdBy, findLeadingTabLine, formatDateTime } from '@/utils/helpers'
 import { isConfigItemEnabled, getConfigItemSettings } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
@@ -70,6 +70,14 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
       if (!yamlText.trim()) {
         setValidationError(null)
         return true
+      }
+
+      const tabLine = findLeadingTabLine(yamlText)
+      if (tabLine > 0) {
+        setValidationError(
+          `Tab character found at line ${tabLine} — YAML requires spaces for indentation`
+        )
+        return false
       }
 
       try {
@@ -205,6 +213,7 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
             onChange={handleYamlChange}
             lang="yaml"
             name="yaml_config"
+            showInvisibles
           />
         </div>
       </div>
@@ -234,6 +243,7 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
                   lang="yaml"
                   readonly
                   name="yaml_config_history"
+                  showInvisibles
                 />
               </div>
             )}

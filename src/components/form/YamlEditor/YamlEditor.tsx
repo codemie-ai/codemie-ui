@@ -63,19 +63,25 @@ const YamlEditor: React.FC<YamlEditorProps> = ({
   const handleYamlChange = (newYaml: string) => {
     setYamlText(newYaml)
 
-    // Try to parse YAML
     try {
       if (!newYaml.trim()) {
-        // Empty is valid
         onChange({})
         setInternalError(null)
         onValidationChange?.(false)
         return
       }
 
+      if (newYaml.split('\n').some((line) => /^[ \t]*\t/.test(line))) {
+        const tabLine = newYaml.split('\n').findIndex((line) => /^[ \t]*\t/.test(line)) + 1
+        setInternalError(
+          `Tab character found at line ${tabLine} — YAML requires spaces for indentation`
+        )
+        onValidationChange?.(true)
+        return
+      }
+
       const parsed = yaml.load(newYaml) as any
 
-      // Ensure it's an object
       if (typeof parsed !== 'object' || Array.isArray(parsed)) {
         setInternalError('Must be a YAML object (key-value pairs)')
         onValidationChange?.(true)
@@ -102,6 +108,7 @@ const YamlEditor: React.FC<YamlEditorProps> = ({
           onChange={handleYamlChange}
           lang="yaml"
           placeholder={placeholder}
+          showInvisibles
         />
       </div>
 
