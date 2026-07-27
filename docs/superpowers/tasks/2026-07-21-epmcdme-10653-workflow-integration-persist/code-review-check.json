@@ -1,0 +1,26 @@
+{
+  "decision": "approve",
+  "rationale": "Fix-up addresses the deferred edge from the final round (mixed settings_config within a single toolkit). New guard `preserveToolkitSettings = !tool.settings_config` correctly reads as falsy for both `false` and `undefined`, so uniform toolkits still hit the preservation path (bug fix intact) while a settings_config=true tool triggers the reset (avoiding the stale-UI vs empty-save asymmetry surfaced by the edge-case lens). Regression test asserts the new behavior; the original EPMCDME-10653 regression test still passes; total 21/21 green. Lint clean. Prior verdict listed no blocking findings — nothing to re-verify — so finding_status is empty. Scoped confirmation on the 37-line fix-up reveals no new high-risk surface (no security, no public-API, no data path, no runtime concurrency).",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit subject format",
+      "status": "pass",
+      "notes": "Fix-up commit 'EPMCDME-10653: Skip toolkit settings preservation for per-tool integrations' matches ^EPMCDME-\\d+:\\s[A-Z]... pattern."
+    },
+    {
+      "standard": "code-quality.md",
+      "status": "pass",
+      "notes": "Lint clean; explanatory comment on non-obvious invariant is minimal and targeted."
+    },
+    {
+      "standard": "security-patterns.md",
+      "status": "na",
+      "notes": "No security surface touched."
+    }
+  ],
+  "finding_status": [],
+  "findings": []
+}

@@ -1,0 +1,52 @@
+diff --git a/src/hooks/__tests__/useToolkitSelection.test.ts b/src/hooks/__tests__/useToolkitSelection.test.ts
+index f126523ce..028b98cbe 100644
+--- a/src/hooks/__tests__/useToolkitSelection.test.ts
++++ b/src/hooks/__tests__/useToolkitSelection.test.ts
+@@ -141,6 +141,34 @@ describe('useToolkitSelection', () => {
+         expect.objectContaining({ tools: [tool], settings: undefined }),
+       ])
+     })
++
++    // EPMCDME-10653 — regression: toggling a different tool inside a toolkit that
++    // already has an integration selected must preserve that integration. Without
++    // this guard the workflow Tool popup silently drops the integration on Save.
++    it('should preserve existing toolkit settings when toggling a different tool', () => {
++      const firstTool = makeTool('first_tool')
++      const secondTool = makeTool('second_tool')
++      const integration = { id: 'int-1', alias: 'my-git-integration' } as any
++      const existingToolkit: AssistantToolkit = {
++        ...makeToolkit('git', [firstTool]),
++        settings: integration,
++      }
++      const { result } = renderHook(() =>
++        useToolkitSelection({ selectedToolkits: [existingToolkit], onToolkitsChange })
++      )
++
++      act(() => {
++        result.current.toggleSingleTool(existingToolkit, secondTool)
++      })
++
++      expect(onToolkitsChange).toHaveBeenCalledWith([
++        expect.objectContaining({
++          toolkit: 'git',
++          tools: [secondTool],
++          settings: integration,
++        }),
++      ])
++    })
+   })
+ 
+   describe('toggleMultiTool', () => {
+diff --git a/src/hooks/useToolkitSelection.ts b/src/hooks/useToolkitSelection.ts
+index 25af371f5..933297353 100644
+--- a/src/hooks/useToolkitSelection.ts
++++ b/src/hooks/useToolkitSelection.ts
+@@ -65,7 +65,7 @@ export const useToolkitSelection = ({
+           {
+             ...toolkit,
+             tools: [tool],
+-            settings: undefined,
++            settings: existingToolkit?.settings,
+           },
+         ])
+       }

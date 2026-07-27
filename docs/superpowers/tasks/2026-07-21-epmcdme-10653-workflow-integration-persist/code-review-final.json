@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "One-line UI fix that correctly resolves EPMCDME-10653. toggleSingleTool now reads `existingToolkit?.settings` from selectedToolkits (matched by toolkit key), so a toolkit-kind switch still yields undefined settings (same as before) while a same-toolkit tool toggle preserves the integration the user picked. Included regression test fails against the old code. Blind lens raised no actionable concerns. Edge-case lens surfaced one narrow follow-up (mixed settings_config within a single toolkit — the right-side IntegrationSelector shows the preserved toolkit.settings while extractToolkitSettings on a settings_config=true tool reads tool.settings and emits integration_alias: undefined) that is a pre-existing UI/save asymmetry, out of scope for this bug (Git tools are uniform), and safely deferred to a follow-up ticket. Standards: commit subject 'EPMCDME-10653: Preserve toolkit integration when toggling single tool selection' matches .ai-run/guides/standards/git-workflow.md pattern. No spec/story artifact (sdlc-light, no-spec mode) → confidence low so decision-router escalates for HITL confirmation. Deferred: 1 (mixed settings_config edge). Dismissed: 4 (test coverage nits, theoretical null-dereference, session-cycle self-clear, arrayContaining vs exact match).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit subject format",
+      "status": "pass",
+      "notes": "Commit 'EPMCDME-10653: Preserve toolkit integration when toggling single tool selection' matches ^EPMCDME-\\d+:\\s[A-Z]... pattern."
+    },
+    {
+      "standard": "code-quality.md",
+      "status": "pass",
+      "notes": "Lint clean (eslint), typecheck clean (tsc --noEmit) for both changed files."
+    },
+    {
+      "standard": "security-patterns.md",
+      "status": "na",
+      "notes": "No security surface touched — pure client-side state hook logic."
+    }
+  ],
+  "findings": []
+}

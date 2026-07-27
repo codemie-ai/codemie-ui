@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Bug fix: preserve toolkit-level integration settings in toggleSingleTool when the newly selected tool uses settings_config=false (EPMCDME-10653).",
+  "generated": "2026-07-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 6,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single function (toggleSingleTool) inside useToolkitSelection.ts modified; no layer boundaries crossed"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "2 files changed, both in src/hooks/ — the hook implementation and its co-located test file"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

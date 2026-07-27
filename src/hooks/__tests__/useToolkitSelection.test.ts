@@ -141,6 +141,64 @@ describe('useToolkitSelection', () => {
         expect.objectContaining({ tools: [tool], settings: undefined }),
       ])
     })
+
+    // EPMCDME-10653 — regression: toggling a different tool inside a toolkit that
+    // already has an integration selected must preserve that integration. Without
+    // this guard the workflow Tool popup silently drops the integration on Save.
+    it('should preserve existing toolkit settings when toggling a different tool', () => {
+      const firstTool = makeTool('first_tool')
+      const secondTool = makeTool('second_tool')
+      const integration = { id: 'int-1', alias: 'my-git-integration' } as any
+      const existingToolkit: AssistantToolkit = {
+        ...makeToolkit('git', [firstTool]),
+        settings: integration,
+      }
+      const { result } = renderHook(() =>
+        useToolkitSelection({ selectedToolkits: [existingToolkit], onToolkitsChange })
+      )
+
+      act(() => {
+        result.current.toggleSingleTool(existingToolkit, secondTool)
+      })
+
+      expect(onToolkitsChange).toHaveBeenCalledWith([
+        expect.objectContaining({
+          toolkit: 'git',
+          tools: [secondTool],
+          settings: integration,
+        }),
+      ])
+    })
+
+    // EPMCDME-10653 — when the newly picked tool uses per-tool integrations
+    // (settings_config: true), extractToolkitSettings on save reads tool.settings
+    // and ignores toolkit.settings. Preserving a stale toolkit-level integration
+    // would leave the toolkit dropdown showing an integration that the save path
+    // then discards, so it must be cleared.
+    it('should NOT preserve toolkit settings when the new tool uses per-tool integrations', () => {
+      const firstTool = makeTool('first_tool') // settings_config: false
+      const secondTool: Tool = { ...makeTool('second_tool'), settings_config: true }
+      const integration = { id: 'int-1', alias: 'my-git-integration' } as any
+      const existingToolkit: AssistantToolkit = {
+        ...makeToolkit('git', [firstTool]),
+        settings: integration,
+      }
+      const { result } = renderHook(() =>
+        useToolkitSelection({ selectedToolkits: [existingToolkit], onToolkitsChange })
+      )
+
+      act(() => {
+        result.current.toggleSingleTool(existingToolkit, secondTool)
+      })
+
+      expect(onToolkitsChange).toHaveBeenCalledWith([
+        expect.objectContaining({
+          toolkit: 'git',
+          tools: [secondTool],
+          settings: undefined,
+        }),
+      ])
+    })
   })
 
   describe('toggleMultiTool', () => {

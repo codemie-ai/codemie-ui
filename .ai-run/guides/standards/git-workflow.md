@@ -89,11 +89,23 @@ Fix hook failures before re-committing. Never skip with `--no-verify`.
 ## Merge Request (MR) Workflow
 
 1. Push branch: `git push -u origin EPMCDME-XXXX_short-description`
-2. Open MR against `main` via GitLab UI or `glab mr create`
-3. MR title format: `EPMCDME-XXXX: Capital sentence` (same as commit)
-4. Wait for CI pipeline to pass (Tekton)
-5. Resolve reviewer comments
-6. Squash and merge
+2. Run `npm run test-harness` locally and capture the full console output — the MR description **must** include this log (see "MR description checklist" below). The gitbud compliance bot enforces it; the MR will not merge without the harness section.
+3. Open MR against `main` via GitLab UI or `glab mr create`.
+4. MR title format: `EPMCDME-XXXX: Capital sentence` (same as commit).
+5. Wait for CI pipeline to pass (Tekton).
+6. Resolve reviewer comments.
+7. Squash and merge.
+
+### MR description checklist
+
+Include these sections in the MR body (mandatory unless explicitly N/A with a one-line reason):
+
+- **Summary** — one paragraph: what changed and why.
+- **Test-harness output** — full `npm run test-harness` console log, wrapped in a `<details><summary>…</summary>` block or a fenced code block. **Always required — the compliance bot enforces it and unit tests do not substitute for the harness run.**
+- **UI before/after screenshots (section 4.1)** — for any user-visible change. Skip only when the diff cannot alter UI (mark N/A with a reason).
+- **Ticket link** — `Closes EPMCDME-XXXX`.
+
+If `npm run test-harness` cannot run locally (missing `~/.codemie/test-harness.json`, stack not up, `ENV=local` prerequisites missing), fix the setup rather than skipping — the compliance bot checks the harness log, and every change requires a fresh run regardless of scope.
 
 ---
 

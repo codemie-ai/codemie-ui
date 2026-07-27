@@ -61,11 +61,17 @@ export const useToolkitSelection = ({
       if (toolExists) {
         onToolkitsChange([])
       } else {
+        // Preserve the toolkit-level integration only when the newly picked tool
+        // uses it (settings_config=false). Tools with settings_config=true carry
+        // their own tool.settings, so any toolkit-level settings would be orphaned
+        // — visible in the toolkit dropdown but ignored by extractToolkitSettings
+        // on save, producing a stale-UI vs. empty-save mismatch.
+        const preserveToolkitSettings = !tool.settings_config
         onToolkitsChange([
           {
             ...toolkit,
             tools: [tool],
-            settings: undefined,
+            settings: preserveToolkitSettings ? existingToolkit?.settings : undefined,
           },
         ])
       }
