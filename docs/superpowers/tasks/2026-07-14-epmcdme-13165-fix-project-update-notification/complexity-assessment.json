@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix EPMCDME-13165: project update success notification shows 'Project undefined updated successfully' by replacing payload.name with updatedProject.name in ProjectDetailsPage.tsx and adding a regression test.",
+  "generated": "2026-07-14T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 7,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two files touched — ProjectDetailsPage.tsx (two one-line edits at lines 111 and 121) and ProjectDetailsPage.test.tsx (one new test block) — both in the same directory and the same UI/Page layer. No layer boundaries crossed."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Task description names the exact files, exact line numbers, exact variable substitution (payload.name -> updatedProject.name), and specifies the regression test to add. Zero ambiguity."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

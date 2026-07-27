@@ -185,4 +185,29 @@ describe('ProjectDetailsPage', () => {
       expect.objectContaining({ clear_display_name: true })
     )
   })
+
+  it('shows the project name in the success toast when name is omitted from the payload (EPMCDME-13165)', async () => {
+    const { default: toaster } = await import('@/utils/toaster')
+
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectModalMock).toHaveBeenCalled()
+    })
+
+    const { onSubmit } = projectModalMock.mock.calls[0][0]
+    await act(async () => {
+      await onSubmit({
+        name: undefined,
+        display_name: 'New Display Name',
+        description: 'Project description',
+        cost_center_id: 'cc-1',
+        enforce_member_spend_limits: true,
+      })
+    })
+
+    expect(toaster.info).toHaveBeenCalledWith(
+      expect.stringContaining('Test Project'),
+    )
+  })
 })
