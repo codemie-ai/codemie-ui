@@ -108,3 +108,7 @@ export const useInteractiveElementsEnabled = (): FeatureFlagResult => {
 export const useTeamsEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.TEAMS_BOT_INTEGRATION)
 }
+
+export const useWorkflowAIEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.WORKFLOW_AI)
+}

@@ -22,6 +22,7 @@ import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
 import { WORKFLOWS_ALL, WORKFLOWS_MY } from '@/constants/routes'
 import { history } from '@/hooks/appLevel/useHistoryStack'
+import { useWorkflowAIEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
@@ -75,6 +76,7 @@ const NewWorkflowPage: React.FC = () => {
   const isFromTemplate =
     route.path.includes(FROM_TEMPLATE_ROUTE) || route.path.includes('from-template')
 
+  const [workflowAIEnabled] = useWorkflowAIEnabled()
   const [showGeneratePopup, setShowGeneratePopup] = useState(
     workflowsStore.loadShowNewWorkflowAIPopup() && !isCloning && !isFromTemplate
   )
@@ -246,11 +248,13 @@ const NewWorkflowPage: React.FC = () => {
         />
       )}
 
-      <GenerateWorkflowPopup
-        visible={showGeneratePopup}
-        onHide={() => setShowGeneratePopup(false)}
-        onGenerated={handleGenerated}
-      />
+      {workflowAIEnabled && (
+        <GenerateWorkflowPopup
+          visible={showGeneratePopup}
+          onHide={() => setShowGeneratePopup(false)}
+          onGenerated={handleGenerated}
+        />
+      )}
     </div>
   )
 }

@@ -27,6 +27,7 @@ export const FEATURE_FLAGS = {
   SHOW_ALL_PROJECTS: 'features:showAllProjects',
   REQUEST_HEDGING: 'features:requestHedging',
   TEAMS_BOT_INTEGRATION: 'features:teamsBotIntegration',
+  WORKFLOW_AI: 'features:workflowAI',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

@@ -17,6 +17,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
+import { appInfoStore } from '@/store/appInfo'
 import { mockAPI, renderPage } from '@/test-utils/integration'
 import type { Workflow } from '@/types/entity/workflow'
 import toaster from '@/utils/toaster'
@@ -47,6 +48,8 @@ describe('EditWorkflowPage - AI Refine and Revert', () => {
     mockRouterState.push.mockClear()
     mockRouterState.replace.mockClear()
     mockAPI('GET', 'v1/workflows/id/wf-edit-1', createWorkflowFixture())
+    appInfoStore.configs = [{ id: 'features:workflowAI', settings: { enabled: true } } as any]
+    appInfoStore.isConfigFetched = true
   })
 
   afterEach(() => {

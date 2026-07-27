@@ -24,6 +24,7 @@ import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
 import { ButtonType } from '@/constants'
+import { useWorkflowAIEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRoute } from '@/hooks/useVueRouter'
 import { goBackFromWorkflowEdit } from '@/pages/workflows/utils/goBackWorkflows'
 import { appInfoStore } from '@/store/appInfo'
@@ -52,6 +53,8 @@ const EditWorkflowPage: React.FC = () => {
   const [capturedYaml, setCapturedYaml] = useState('')
   // non-null only while an unsaved AI refinement is active
   const [preRefinementYaml, setPreRefinementYaml] = useState<string | null>(null)
+
+  const [workflowAIEnabled] = useWorkflowAIEnabled()
 
   const { currentWorkflow, currentWorkflowLoading, currentWorkflowError } =
     useSnapshot(workflowsStore)
@@ -171,18 +174,20 @@ const EditWorkflowPage: React.FC = () => {
         childrenClassName="px-0"
         rightContent={
           <div className="flex gap-5">
-            {preRefinementYaml && (
+            {workflowAIEnabled && preRefinementYaml && (
               <Button type="secondary" onClick={() => setShowRevertConfirm(true)}>
                 Revert to Previous
               </Button>
             )}
-            <Button
-              type="magical"
-              onClick={handleRefineStart}
-              disabled={currentWorkflowLoading || !currentWorkflow}
-            >
-              <AIGenerateSVG /> Refine with AI
-            </Button>
+            {workflowAIEnabled && (
+              <Button
+                type="magical"
+                onClick={handleRefineStart}
+                disabled={currentWorkflowLoading || !currentWorkflow}
+              >
+                <AIGenerateSVG /> Refine with AI
+              </Button>
+            )}
             <Button type="secondary" className="min-w-20" onClick={onBack}>
               Cancel
             </Button>
