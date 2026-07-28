@@ -90,6 +90,7 @@ export const useIndexCreation = ({
           [INDEX_TYPES.AZURE_DEVOPS_WIKI]: { wikiQuery: data.wikiQuery, wikiName: data.wikiName },
           [INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM]: { wiqlQuery: data.wiqlQuery },
           [INDEX_TYPES.SVN]: { svn_repo_url: data.repoLink, svn_branch: data.branch },
+          [INDEX_TYPES.GIT]: { git_url: data.repoLink },
         }[data.indexType] ?? {}
 
       const response = await dataSourceStore.healthCheckDatasource(

@@ -199,7 +199,6 @@ const baseValidationSchema = Yup.object({
         INDEX_TYPES.JIRA,
         INDEX_TYPES.XRAY,
         INDEX_TYPES.CONFLUENCE,
-        INDEX_TYPES.GIT,
         INDEX_TYPES.AZURE_DEVOPS_WIKI,
         INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM,
         INDEX_TYPES.GOOGLE,

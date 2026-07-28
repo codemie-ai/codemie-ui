@@ -304,6 +304,7 @@ export const dataSourceStore = proxy({
       wiqlQuery?: string | null
       svn_repo_url?: string | null
       svn_branch?: string | null
+      git_url?: string | null
     } = {}
   ) {
     try {
@@ -318,6 +319,7 @@ export const dataSourceStore = proxy({
         ...(options.wiqlQuery != null && { wiql_query: options.wiqlQuery }),
         ...(options.svn_repo_url != null && { svn_repo_url: options.svn_repo_url }),
         ...(options.svn_branch != null && { svn_branch: options.svn_branch }),
+        ...(options.git_url != null && { git_url: options.git_url }),
       }
       const response = await api.post('v1/index/health', requestData)
       return response.json()

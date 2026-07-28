@@ -39,6 +39,7 @@ interface IntegrationSectionProps {
   integrationLabel: string
   integrationPlaceholder: string
   credentialType?: string
+  isRequired?: boolean
 }
 
 const IntegrationSection: FC<IntegrationSectionProps> = ({
@@ -56,19 +57,32 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
   integrationLabel,
   integrationPlaceholder,
   credentialType,
+  isRequired = true,
 }) => {
   const { isDark } = useTheme()
 
   return (
     <>
+      {!isRequired && (
+        <div className="flex text-text-quaternary text-xs mt-3 mb-1">
+          <InfoSvg className="w-[18px] h-[18px] mr-2 flex-shrink-0 opacity-75" />
+          <span className="mt-0.5">
+            Integration is optional. Public repositories can be indexed without credentials. For
+            private repositories, select a Git integration below.
+          </span>
+        </div>
+      )}
+
       {hasNoSettings && (
         <div className="mt-3 mb-4">
-          <div className="flex text-text-quaternary text-xs">
-            <InfoSvg className="w-[18px] h-[18px] mr-2 flex-shrink-0 opacity-75" />
-            <span className="mt-0.5">
-              No integrations found for this datasource type. Add a user integration to continue.
-            </span>
-          </div>
+          {isRequired && (
+            <div className="flex text-text-quaternary text-xs">
+              <InfoSvg className="w-[18px] h-[18px] mr-2 flex-shrink-0 opacity-75" />
+              <span className="mt-0.5">
+                No integrations found for this datasource type. Add a user integration to continue.
+              </span>
+            </div>
+          )}
           <div className="flex pt-3">
             <Button
               type={isDark ? 'primary' : 'secondary'}

@@ -179,6 +179,7 @@ const IndexTypeGit: FC<Props> = ({
           onIntegrationCancel={handleIntegrationCancel}
           integrationLabel="Integration for Git"
           integrationPlaceholder="Integration for Git"
+          isRequired={false}
         />
       </div>
 
