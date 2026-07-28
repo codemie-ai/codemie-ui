@@ -16664,5 +16664,23 @@
         "setting_type": "project"
     }
 ],
-"datasource_schemas": []
+"datasource_schemas": [],
+"tools_configs": [
+  { "jiraconfig": { "credential_type": { "default": "Jira" }, "url": { "default": "https://jira.example.com/", "placeholder": "https://jira.example.com/ or https://jira.example.com/jira/", "type": "string" }, "cloud": { "default": false, "type": "boolean" } } },
+  { "confluenceconfig": { "credential_type": { "default": "Confluence" }, "url": { "default": "http://confluence.example.com/", "placeholder": "http://confluence.example.com/", "type": "string" }, "cloud": { "default": false, "type": "boolean" } } },
+  { "genericgitconfig": { "credential_type": { "default": "Git" }, "url": { "default": "", "placeholder": "https://gitlab.example.com", "type": "string" }, "auth_type": { "default": "pat", "type": "string" } } },
+  { "keycloakconfig": { "credential_type": { "default": "Keycloak" }, "base_url": { "default": "https://keycloak.example.com/auth", "placeholder": "https://keycloak.example.com/auth", "type": "string" } } },
+  { "genericazuredevopsconfig": { "credential_type": { "default": "AzureDevOps" }, "url": { "default": "", "placeholder": "https://dev.azure.com", "type": "string" }, "auth_type": { "default": "pat", "type": "string" } } },
+  { "elasticconfig": { "credential_type": { "default": "Elastic" }, "url": { "default": "https://localhost:9200", "placeholder": "https://localhost:9200", "type": "string" } } },
+  { "emailtoolconfig": { "credential_type": { "default": "Email" }, "url": { "default": "smtp.office365.com:587", "placeholder": "smtp.office365.com:587", "type": "string" }, "auth_type": { "default": "basic", "type": "string" } } },
+  { "sonarconfig": { "credential_type": { "default": "Sonar" }, "url": { "default": "http://localhost:9000", "placeholder": "http://localhost:9000", "type": "string" } } },
+  { "xrayconfig": { "credential_type": { "default": "Xray" }, "base_url": { "default": "https://xray.cloud.getxray.app", "placeholder": "https://xray.cloud.getxray.app", "type": "string" } } },
+  { "zephyrconfig": { "credential_type": { "default": "ZephyrScale" }, "url": { "default": "https://api.zephyrscale.smartbear.com/v2", "placeholder": "https://prod-api.zephyr4jiracloud.com/v2 or https://api.zephyrscale.smartbear.com/v2", "type": "string" } } },
+  { "servicenowconfig": { "credential_type": { "default": "ServiceNow" }, "url": { "default": "https://dev000000.service-now.com/", "placeholder": "https://dev000000.service-now.com/", "type": "string" } } },
+  { "reportportalconfig": { "credential_type": { "default": "ReportPortal" }, "url": { "default": "https://reportportal.example.com/", "placeholder": "https://reportportal.example.com/", "type": "string" } } },
+  { "kubernetesconfig": { "credential_type": { "default": "Kubernetes" }, "url": { "default": "https://kubernetes.default.svc", "placeholder": "https://kubernetes.default.svc", "type": "string" } } },
+  { "sharepointconfig": { "credential_type": { "default": "SharePoint" }, "url": { "default": "https://yourtenant.sharepoint.com", "placeholder": "https://yourtenant.sharepoint.com", "type": "string" } } },
+  { "xwikiconfig": { "credential_type": { "default": "XWiki" }, "url": { "default": "https://wiki.example.com", "placeholder": "https://wiki.example.com", "type": "string" }, "use_bearer": { "default": false, "type": "boolean" } } },
+  { "githubconfig": { "credential_type": { "default": "Git" }, "url": { "default": "https://api.github.com", "type": "string" } } }
+]
 }

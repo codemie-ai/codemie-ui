@@ -1,0 +1,46 @@
+{
+  "decision": "approve",
+  "rationale": "Both blocking findings from the final round are resolved. CR-001: fix-up adds Array.isArray(data) early-return, empty-entries guard, and null-configVal guard — all three paths correctly addressed. CR-002: two tests added covering the empty-entry-in-array and non-array-response paths. Fix-up is small and targeted; no new high-risk issues introduced.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "settingsUI.ts: defaultUrl accepts string | (() => string)", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "appInfo.ts: TOOL_CONFIG_URL_MAP has 15 entries with correct credentialType/urlField pairs", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "appInfo.ts: toolUrlDefaults initialized as empty object", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "appInfo.ts: fetchToolConfigs() async method with try/catch, parses field.default, skips empty strings", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "useInitialDataFetch.tsx: fetchToolConfigs() fire-and-forget after fetchCustomerConfig()", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "settingsUIConfig.ts: appInfoStore imported and dynUrl helper defined", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "settingsUIConfig.ts: 15 defaultUrl string literals replaced with dynUrl() calls", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "settingsUIConfig.ts: field placeholder strings remain hardcoded", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "settings.ts: getSettingCredsURL resolves function-type defaultUrl via typeof check", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "settings.ts: getDefaultUrl() deleted (was dead code)", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "No changes to SettingsForm.tsx or CredentialFields.tsx", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "mock-server/routes.json: /v1/tools/configs route added", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "mock-server/db.json: tools_configs fixture with 16 entries (15 mapped + githubconfig)", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "Fallback: fetch throws → toolUrlDefaults stays {} → all dynUrl() return hardcoded fallback", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "Fallback: empty array → toolUrlDefaults stays {}", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "Fallback: entry default is '' → dynUrl() returns hardcoded fallback", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "Fallback: settings page renders before fetch completes → fallback shown, no re-render wiring needed", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "appInfo.test.ts: 5 tests covering standard url.default, base_url, unknown skip, empty skip, network error", "status": "pass", "notes": "Carried forward from final round. Fix-up adds 2 more tests." },
+    { "criterion": "settings.test.ts: 5 new tests for getSettingCredsURL with function-type defaultUrl", "status": "pass", "notes": "Carried forward from final round." },
+    { "criterion": "No new unit tests for settingsUIConfig.ts itself", "status": "pass", "notes": "Carried forward from final round." }
+  ],
+  "standards_review": [
+    { "check": "commit-format", "status": "pass", "notes": "Fix-up commit EPMCDME-10928: Fix fetchToolConfigs entry isolation and add edge-case tests matches format." },
+    { "check": "security", "status": "pass", "notes": "No new security surface in fix-up." },
+    { "check": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md found." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Array.isArray(data) early-return added at line 132; empty-entries guard (if (!entries.length) continue) at line 137; null/non-object configVal guard at line 139. All three recommended guards applied."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Two tests added: 'skips empty entry objects without discarding subsequent valid entries' (empty {} in array, asserts jira still populated) and 'leaves toolUrlDefaults empty when response is not an array' (null response). Both paths from CR-001 now covered."
+    }
+  ]
+}

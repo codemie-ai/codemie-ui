@@ -20,6 +20,24 @@ import { CONFIG_KEYS } from '@/constants/configKeys'
 import { ModelOption, SpeechConfig, ConfigItem } from '@/types/entity/configuration'
 import api from '@/utils/api'
 
+const TOOL_CONFIG_FIELD_MAP: Record<string, { credentialType: string; fields: string[] }> = {
+  jiraconfig: { credentialType: 'jira', fields: ['url', 'cloud'] },
+  confluenceconfig: { credentialType: 'confluence', fields: ['url', 'cloud'] },
+  genericgitconfig: { credentialType: 'git', fields: ['url', 'auth_type'] },
+  genericazuredevopsconfig: { credentialType: 'azuredevops', fields: ['url', 'auth_type'] },
+  emailtoolconfig: { credentialType: 'email', fields: ['url', 'auth_type'] },
+  xwikiconfig: { credentialType: 'xwiki', fields: ['url', 'use_bearer'] },
+  keycloakconfig: { credentialType: 'keycloak', fields: ['base_url'] },
+  xrayconfig: { credentialType: 'xray', fields: ['base_url'] },
+  elasticconfig: { credentialType: 'elastic', fields: ['url'] },
+  sonarconfig: { credentialType: 'sonar', fields: ['url'] },
+  zephyrconfig: { credentialType: 'zephyrscale', fields: ['url'] },
+  servicenowconfig: { credentialType: 'servicenow', fields: ['url'] },
+  reportportalconfig: { credentialType: 'reportportal', fields: ['url'] },
+  kubernetesconfig: { credentialType: 'kubernetes', fields: ['url'] },
+  sharepointconfig: { credentialType: 'sharepoint', fields: ['url'] },
+}
+
 const VIEWED_RN_VERSION_KEY = 'codemie-viewed-release-version'
 const ONBOARDING_COMPLETED_KEY = 'codemie-onboarding-completed'
 const QUICK_ACTIONS_COLLAPSED_KEY = 'codemie-quick-actions-collapsed'
@@ -56,6 +74,10 @@ export interface AppInfoStoreType {
   navigationExpanded: boolean
   sidebarExpanded: boolean
 
+  toolFieldDefaults: Record<string, string | boolean>
+  toolFieldPlaceholders: Record<string, string>
+  fetchToolConfigs: () => Promise<void>
+
   loadAppInfo: () => Promise<void>
   loadReleaseNotes: () => Promise<any[]>
   loadSpeechConfig: () => Promise<SpeechConfig>
@@ -77,6 +99,31 @@ export interface AppInfoStoreType {
   toggleSidebar: () => void
   setIsSidebarExpanded: () => void
   setSidebarExpanded: (expanded: boolean) => void
+}
+
+function extractConfigEntry(
+  entry: Record<string, Record<string, unknown>>,
+  defaults: Record<string, string | boolean>,
+  placeholders: Record<string, string>
+): void {
+  const entries = Object.entries(entry)
+  if (!entries.length) return
+  const [configKey, configVal] = entries[0]
+  if (!configVal || typeof configVal !== 'object') return
+  const mapping = TOOL_CONFIG_FIELD_MAP[configKey.toLowerCase()]
+  if (!mapping) return
+  for (const fieldName of mapping.fields) {
+    const field = configVal[fieldName] as Record<string, unknown> | undefined
+    if (!field) continue
+    const defaultVal = field.default
+    if (defaultVal !== undefined && defaultVal !== null && defaultVal !== '') {
+      defaults[`${mapping.credentialType}.${fieldName}`] = defaultVal as string | boolean
+    }
+    const placeholderVal = field.placeholder
+    if (typeof placeholderVal === 'string' && placeholderVal) {
+      placeholders[`${mapping.credentialType}.${fieldName}`] = placeholderVal
+    }
+  }
 }
 
 export const appInfoStore = proxy<AppInfoStoreType>({
@@ -139,6 +186,26 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   imageGenerationModels: [],
   embeddingModels: [],
   speechConfig: {},
+  toolFieldDefaults: {},
+  toolFieldPlaceholders: {},
+
+  async fetchToolConfigs() {
+    try {
+      const response = await api.get('v1/tools/configs')
+      const data: Array<Record<string, Record<string, unknown>>> = await response.json()
+      if (!Array.isArray(data)) return
+      const defaults: Record<string, string | boolean> = {}
+      const placeholders: Record<string, string> = {}
+      for (const entry of data) {
+        if (entry == null) continue
+        extractConfigEntry(entry, defaults, placeholders)
+      }
+      this.toolFieldDefaults = defaults
+      this.toolFieldPlaceholders = placeholders
+    } catch {
+      // Non-fatal — form fields fall back to empty / unchecked
+    }
+  },
 
   async loadAppInfo() {
     try {

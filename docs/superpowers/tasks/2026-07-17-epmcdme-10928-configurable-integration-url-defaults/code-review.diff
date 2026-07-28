@@ -1,0 +1,2131 @@
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/actual-complexity.json b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/actual-complexity.json
+new file mode 100644
+index 000000000..9aa974793
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/actual-complexity.json
+@@ -0,0 +1,86 @@
++{
++  "task": "Make integration URL defaults deployment-configurable by fetching GET /v1/tools/configs at startup and replacing 15 hardcoded URL strings in settingsUIConfig.ts with dynUrl() closures (EPMCDME-10928)",
++  "generated": "2026-07-20T00:00:00.000Z",
++  "dimensions": {
++    "component_scope": {
++      "score": 5,
++      "label": "XL",
++      "affected": "appInfoStore, useInitialDataFetch hook, settingsUIConfig, settings utility, settingsUI types",
++      "layers": "Store/State, Startup-Hook, UI-Config, Utility"
++    },
++    "requirements_clarity": {
++      "score": 2,
++      "label": "S",
++      "status": "Clear",
++      "gaps": null
++    },
++    "technical_risk": {
++      "score": 3,
++      "label": "M",
++      "risk_factors": "New closure-based lazy evaluation pattern for defaultUrl (dynUrl factory); type widening of CredentialTypeConfig.defaultUrl from string to string|(() => string) requires all callers to handle the function case",
++      "mitigation": "Fallback strings baked into every dynUrl() closure; fetchToolConfigs is non-fatal with silent catch; getSettingCredsURL explicitly handles both string and function defaultUrl via typeof check"
++    },
++    "file_change_estimate": {
++      "score": 4,
++      "label": "L",
++      "modified_files": 8,
++      "modified_file_list": [
++        "mock-server/db.json",
++        "mock-server/routes.json",
++        "src/hooks/appLevel/useInitialDataFetch.tsx",
++        "src/store/appInfo.ts",
++        "src/types/settingsUI.ts",
++        "src/utils/__tests__/settings.test.ts",
++        "src/utils/settings.ts",
++        "src/utils/settingsUIConfig.ts"
++      ],
++      "new_files": 1,
++      "new_file_list": [
++        "src/store/__tests__/appInfo.test.ts"
++      ],
++      "affected_dirs": [
++        "mock-server",
++        "src/hooks",
++        "src/store",
++        "src/types",
++        "src/utils"
++      ]
++    },
++    "dependencies": {
++      "score": 1,
++      "label": "XS",
++      "new_packages": [],
++      "version_changes": []
++    },
++    "affected_layers": {
++      "score": 3,
++      "label": "M",
++      "layers_changed": ["Store/State", "Startup-Hook", "UI-Config", "Utility"],
++      "schema_migration": false,
++      "cross_system": false
++    }
++  },
++  "total": 18,
++  "size": "M",
++  "band_range": "15-20",
++  "files_changed": 9,
++  "routing": "brainstorming",
++  "key_reasoning": [
++    {
++      "dimension": "component_scope",
++      "reason": "Five components touched (appInfoStore, useInitialDataFetch, settingsUIConfig, settings.ts, settingsUI types) across Store, Startup-Hook, UI-Config, and Utility layers; bumped from L (4) to XL (5) because settingsUIConfig.ts is the master credential UI mapping consumed by all settings forms, and settings.ts is a shared utility used throughout the settings flow — both qualify as core shared utilities per the red flag rule"
++    },
++    {
++      "dimension": "file_change_estimate",
++      "reason": "9 files changed (diffstat N=9 maps to L in the 7-10 bracket); 8 pre-existing files modified plus 1 new test file (src/store/__tests__/appInfo.test.ts), spanning 5 directories"
++    },
++    {
++      "dimension": "technical_risk",
++      "reason": "Introduces a new dynUrl closure pattern (lazy evaluation of defaultUrl deferred to render time rather than module load time) with no prior precedent in the codebase; the type widening of CredentialTypeConfig.defaultUrl requires every caller of defaultUrl to check for function vs string; risk is well-contained by fallback strings and non-fatal error handling"
++    }
++  ],
++  "red_flags_applied": [
++    "Component Scope bumped from L (4) to XL (5): settingsUIConfig.ts (master credential UI map consumed by all settings forms) and settings.ts (shared settings utility) are core shared utilities — triggers the 'Touches core shared utilities' red flag"
++  ],
++  "split_recommendation": null
++}
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/code-review-check.json b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/code-review-check.json
+new file mode 100644
+index 000000000..4111c3a42
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/code-review-check.json
+@@ -0,0 +1,46 @@
++{
++  "decision": "approve",
++  "rationale": "Both blocking findings from the final round are resolved. CR-001: fix-up adds Array.isArray(data) early-return, empty-entries guard, and null-configVal guard — all three paths correctly addressed. CR-002: two tests added covering the empty-entry-in-array and non-array-response paths. Fix-up is small and targeted; no new high-risk issues introduced.",
++  "confidence": "high",
++  "risk_flags": [],
++  "business_review": [
++    { "criterion": "settingsUI.ts: defaultUrl accepts string | (() => string)", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "appInfo.ts: TOOL_CONFIG_URL_MAP has 15 entries with correct credentialType/urlField pairs", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "appInfo.ts: toolUrlDefaults initialized as empty object", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "appInfo.ts: fetchToolConfigs() async method with try/catch, parses field.default, skips empty strings", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "useInitialDataFetch.tsx: fetchToolConfigs() fire-and-forget after fetchCustomerConfig()", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "settingsUIConfig.ts: appInfoStore imported and dynUrl helper defined", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "settingsUIConfig.ts: 15 defaultUrl string literals replaced with dynUrl() calls", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "settingsUIConfig.ts: field placeholder strings remain hardcoded", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "settings.ts: getSettingCredsURL resolves function-type defaultUrl via typeof check", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "settings.ts: getDefaultUrl() deleted (was dead code)", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "No changes to SettingsForm.tsx or CredentialFields.tsx", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "mock-server/routes.json: /v1/tools/configs route added", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "mock-server/db.json: tools_configs fixture with 16 entries (15 mapped + githubconfig)", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "Fallback: fetch throws → toolUrlDefaults stays {} → all dynUrl() return hardcoded fallback", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "Fallback: empty array → toolUrlDefaults stays {}", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "Fallback: entry default is '' → dynUrl() returns hardcoded fallback", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "Fallback: settings page renders before fetch completes → fallback shown, no re-render wiring needed", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "appInfo.test.ts: 5 tests covering standard url.default, base_url, unknown skip, empty skip, network error", "status": "pass", "notes": "Carried forward from final round. Fix-up adds 2 more tests." },
++    { "criterion": "settings.test.ts: 5 new tests for getSettingCredsURL with function-type defaultUrl", "status": "pass", "notes": "Carried forward from final round." },
++    { "criterion": "No new unit tests for settingsUIConfig.ts itself", "status": "pass", "notes": "Carried forward from final round." }
++  ],
++  "standards_review": [
++    { "check": "commit-format", "status": "pass", "notes": "Fix-up commit EPMCDME-10928: Fix fetchToolConfigs entry isolation and add edge-case tests matches format." },
++    { "check": "security", "status": "pass", "notes": "No new security surface in fix-up." },
++    { "check": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md found." }
++  ],
++  "findings": [],
++  "finding_status": [
++    {
++      "id": "CR-001",
++      "status": "resolved",
++      "notes": "Array.isArray(data) early-return added at line 132; empty-entries guard (if (!entries.length) continue) at line 137; null/non-object configVal guard at line 139. All three recommended guards applied."
++    },
++    {
++      "id": "CR-002",
++      "status": "resolved",
++      "notes": "Two tests added: 'skips empty entry objects without discarding subsequent valid entries' (empty {} in array, asserts jira still populated) and 'leaves toolUrlDefaults empty when response is not an array' (null response). Both paths from CR-001 now covered."
++    }
++  ]
++}
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/code-review-final.json b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/code-review-final.json
+new file mode 100644
+index 000000000..877eb8227
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/code-review-final.json
+@@ -0,0 +1,55 @@
++{
++  "decision": "request-changes",
++  "rationale": "All 22 acceptance criteria pass and all spec requirements are met. Two major patch findings in fetchToolConfigs: (1) the loop has no Array.isArray guard and no per-entry safety for empty/null entries — a TypeError silently discards all accumulated defaults; (2) no test coverage for that failure path. Fixes are small and targeted. One item deferred (|| vs ?? in dynUrl, currently safe). Pre-existing kubernetes field-name mismatch is out of scope.",
++  "confidence": "high",
++  "risk_flags": [],
++  "business_review": [
++    { "criterion": "settingsUI.ts: defaultUrl accepts string | (() => string)", "status": "pass", "notes": "Line 93 — exact type from spec." },
++    { "criterion": "appInfo.ts: TOOL_CONFIG_URL_MAP has 15 entries with correct credentialType/urlField pairs", "status": "pass", "notes": "All 15 entries confirmed; githubconfig intentionally absent; keycloak/xray use base_url." },
++    { "criterion": "appInfo.ts: toolUrlDefaults initialized as empty object", "status": "pass", "notes": "Line 127 in proxy initializer." },
++    { "criterion": "appInfo.ts: fetchToolConfigs() async method with try/catch, parses field.default, skips empty strings", "status": "pass", "notes": "Lines 128–149; guard `typeof defaultVal === 'string' && defaultVal` skips empty." },
++    { "criterion": "useInitialDataFetch.tsx: fetchToolConfigs() fire-and-forget after fetchCustomerConfig()", "status": "pass", "notes": "Line 51, no await, after awaited fetchCustomerConfig()." },
++    { "criterion": "settingsUIConfig.ts: appInfoStore imported and dynUrl helper defined", "status": "pass", "notes": "Lines 21, 30–33 match spec exactly." },
++    { "criterion": "settingsUIConfig.ts: 15 defaultUrl string literals replaced with dynUrl() calls", "status": "pass", "notes": "All 15 credential types confirmed including kubernetes (new)." },
++    { "criterion": "settingsUIConfig.ts: field placeholder strings remain hardcoded", "status": "pass", "notes": "No dynUrl on placeholder fields." },
++    { "criterion": "settings.ts: getSettingCredsURL resolves function-type defaultUrl via typeof check", "status": "pass", "notes": "Lines 40–41 match spec." },
++    { "criterion": "settings.ts: getDefaultUrl() deleted (was dead code)", "status": "pass", "notes": "No occurrence in src/." },
++    { "criterion": "No changes to SettingsForm.tsx or CredentialFields.tsx", "status": "pass", "notes": "Neither file appears in the diff." },
++    { "criterion": "mock-server/routes.json: /v1/tools/configs route added", "status": "pass", "notes": "Line 19." },
++    { "criterion": "mock-server/db.json: tools_configs fixture with 16 entries (15 mapped + githubconfig)", "status": "pass", "notes": "16 entries confirmed; keycloak/xray use base_url field." },
++    { "criterion": "Fallback: fetch throws → toolUrlDefaults stays {} → all dynUrl() return hardcoded fallback", "status": "pass", "notes": "Catch block is empty; no reassignment." },
++    { "criterion": "Fallback: empty array → toolUrlDefaults stays {}", "status": "pass", "notes": "Loop body never executes." },
++    { "criterion": "Fallback: entry default is '' → dynUrl() returns hardcoded fallback", "status": "pass", "notes": "Guard skips falsy default strings." },
++    { "criterion": "Fallback: settings page renders before fetch completes → fallback shown, no re-render wiring needed", "status": "pass", "notes": "dynUrl reads store at call time; fire-and-forget means no blocking." },
++    { "criterion": "appInfo.test.ts: 5 tests covering standard url.default, base_url, unknown skip, empty skip, network error", "status": "pass", "notes": "All 5 scenarios present." },
++    { "criterion": "settings.test.ts: 5 new tests for getSettingCredsURL with function-type defaultUrl", "status": "pass", "notes": "All 5 scenarios present." },
++    { "criterion": "No new unit tests for settingsUIConfig.ts itself", "status": "pass", "notes": "Tested indirectly through settings.test.ts." }
++  ],
++  "standards_review": [
++    { "check": "commit-format", "status": "pass", "notes": "Both commits match EPMCDME-NNNNN: Capital sentence format." },
++    { "check": "security", "status": "pass", "notes": "URL values are form defaults only; no auth/secrets/injection surface introduced." },
++    { "check": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md found." }
++  ],
++  "findings": [
++    {
++      "id": "CR-001",
++      "triage": "patch",
++      "severity": "major",
++      "file": "src/store/appInfo.ts",
++      "line": 130,
++      "problem": "fetchToolConfigs loop lacks Array.isArray guard and per-entry isolation: an empty entry {} or non-array API response causes a TypeError that silently discards all accumulated defaults",
++      "impact": "Object.entries(entry)[0] returns undefined for entry={}; destructuring [configKey, configVal] from undefined throws TypeError. The outer try/catch catches it, but this.toolUrlDefaults = defaults never executes — all valid entries processed before the bad one are silently lost. A single malformed entry causes all 15 integrations to revert to hardcoded fallback URLs for the session. Non-array responses (null, error object) trigger the same failure via for...of.",
++      "recommendation": "Add Array.isArray(data) guard before the loop (early return if not array). Inside the loop: const entries = Object.entries(entry); if (!entries.length) continue; const [configKey, configVal] = entries[0]; if (!configVal || typeof configVal !== 'object') continue;"
++    },
++    {
++      "id": "CR-002",
++      "triage": "patch",
++      "severity": "major",
++      "file": "src/store/__tests__/appInfo.test.ts",
++      "line": 39,
++      "problem": "No test coverage for malformed entry ({} in array) or non-array API response — the CR-001 failure modes are untested",
++      "impact": "The five existing tests cover unknown keys, empty default string, standard/base_url fields, and network error but not an entry that throws during iteration. The CR-001 bug would pass the current test suite silently.",
++      "recommendation": "Add: (1) test with data=[{}, { jiraconfig: { url: { default: 'https://jira.mycompany.com/' } } }] asserting toolUrlDefaults.jira is still populated; (2) test with non-array response (null or {}) asserting toolUrlDefaults stays {}."
++    }
++  ]
++}
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/complexity-assessment.json b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/complexity-assessment.json
+new file mode 100644
+index 000000000..369390176
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/complexity-assessment.json
+@@ -0,0 +1,52 @@
++{
++  "schema": 1,
++  "task": "Fetch v1/tools/configs at startup and use backend-provided URL placeholders to override hardcoded defaultUrl values in settingsUIConfig.ts, with toolUrlDefaults added to appInfoStore and mock-server fixture.",
++  "generated": "2026-07-17T00:00:00Z",
++  "dimensions": {
++    "component_scope": {
++      "score": 4,
++      "label": "L"
++    },
++    "requirements_clarity": {
++      "score": 2,
++      "label": "S"
++    },
++    "technical_risk": {
++      "score": 2,
++      "label": "S"
++    },
++    "file_change_estimate": {
++      "score": 3,
++      "label": "M"
++    },
++    "dependencies": {
++      "score": 1,
++      "label": "XS"
++    },
++    "affected_layers": {
++      "score": 3,
++      "label": "M"
++    }
++  },
++  "total": 15,
++  "size": "M",
++  "routing": "brainstorming",
++  "key_reasoning": [
++    {
++      "dimension": "component_scope",
++      "reason": "Three shared components touched (appInfoStore, useInitialDataFetch, settings.ts) plus mock-server infra; base M (3) bumped to L (4) by 'touches core shared utilities' red flag because appInfoStore and settings.ts are app-wide utilities consumed across many features."
++    },
++    {
++      "dimension": "file_change_estimate",
++      "reason": "Five files modified (appInfo.ts, useInitialDataFetch.tsx, settings.ts, routes.json, db.json) across four directories (src/store/, src/hooks/appLevel/, src/utils/, mock-server/); no new files, but directory span places this firmly in M range."
++    },
++    {
++      "dimension": "affected_layers",
++      "reason": "Three distinct UI-side layers changed: State Management (appInfoStore), App-level data-fetch orchestration (useInitialDataFetch), and Utility/Service logic (settings.ts); mock-server counts as Infra but does not push to L on its own."
++    }
++  ],
++  "red_flags_applied": [
++    "Component Scope bumped from M (3) to L (4): touches core shared utilities — appInfoStore and settings.ts are consumed app-wide"
++  ],
++  "split_recommendation": null
++}
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/decisions.jsonl b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/decisions.jsonl
+new file mode 100644
+index 000000000..2b0a748aa
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/decisions.jsonl
+@@ -0,0 +1,5 @@
++
++`{"ts":"2026-07-20T00:00:00Z","gate_id":"spec.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved the spec.","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false,"prior_context":{"question":"Approve or request changes to spec.md","options":["Approve","Request changes"],"phase":3,"risk_flags":[],"artifact_refs":["docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/spec.md"]}}
++{"ts":"2026-07-20T12:00:00Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved the plan after two rounds of feedback: (1) use field.default instead of field.placeholder from backend, (2) keep form field placeholder strings hardcoded.","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false,"prior_context":{"question":"Approve the implementation plan","options":["Approve","Request changes"],"phase":4,"risk_flags":[],"artifact_refs":["docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/plan.md","docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/spec.md"]}}
++{"ts":"2026-07-20T00:00:00Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"request-changes","rationale":"User selected request-changes after reviewing CR-001 (fetchToolConfigs loop safety) and CR-002 (missing tests for malformed entry).","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false,"prior_context":{"question":"Review the implementation for EPMCDME-10928: Make integration URL defaults deployment-configurable.","options":["Request changes","Approve"],"phase":6,"risk_flags":[],"artifact_refs":["docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/spec.md","docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/plan.md"],"prior_orchestrator_verdict":{"decision":"request-changes","confidence":"high","risk_flags":[],"findings":[{"id":"CR-001","severity":"major","triage":"patch"},{"id":"CR-002","severity":"major","triage":"patch"}]}}}
++{"ts":"2026-07-20T00:01:00Z","gate_id":"code-review.check","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved after check round confirmed CR-001 and CR-002 resolved.","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false,"prior_context":{"question":"Check-round review: both CR-001 and CR-002 are resolved. Do you approve?","options":["Approve","Request changes"],"phase":6,"risk_flags":[],"artifact_refs":["code-review-final.json","code-review-check.json"],"prior_orchestrator_verdict":{"decision":"approve","confidence":"high","finding_status":[{"id":"CR-001","status":"resolved"},{"id":"CR-002","status":"resolved"}]}}}
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/events.jsonl b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/events.jsonl
+new file mode 100644
+index 000000000..bdd753dcc
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/events.jsonl
+@@ -0,0 +1,2 @@
++{"schema":1,"ts":"2026-07-20T00:00:00Z","event":"decision.recorded","run_id":"epmcdme-10928-configurable-integration-url-defaults","phase":6,"actor":"decision-router","summary":"Decision recorded for code-review.final: request-changes","artifacts":["decisions.jsonl"],"data":{"gate_id":"code-review.final","mode":"hitl","decision":"request-changes","source":"hitl","escalated":false,"prior_context":{"question":"Review the implementation for EPMCDME-10928","options":["Request changes","Approve"],"phase":6,"risk_flags":[],"artifact_refs":["spec.md","plan.md"]}}}
++{"schema":1,"ts":"2026-07-20T00:01:00Z","event":"decision.recorded","run_id":"epmcdme-10928-configurable-integration-url-defaults","phase":6,"actor":"decision-router","summary":"Decision recorded for code-review.check: approve","artifacts":["decisions.jsonl","code-review-check.json"],"data":{"gate_id":"code-review.check","mode":"hitl","decision":"approve","source":"hitl","escalated":false,"prior_context":{"phase":6,"risk_flags":[]}}}
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/plan.md b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/plan.md
+new file mode 100644
+index 000000000..17c1f8716
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/plan.md
+@@ -0,0 +1,691 @@
++# EPMCDME-10928: Configurable Integration URL Defaults — Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++
++**Goal:** Fetch `GET /v1/tools/configs` at app startup and use the backend-provided URL placeholders to make integration URL defaults deployment-configurable, replacing hardcoded example strings.
++
++**Architecture:** A new `fetchToolConfigs()` method on `appInfoStore` fetches the backend config array at startup and populates `toolUrlDefaults: Record<string, string>`. A `dynUrl(credType, fallback)` helper in `settingsUIConfig.ts` returns a closure that reads from the store at render time, replacing the 15 hardcoded URL `placeholder` and `defaultUrl` values. The single consumer of `defaultUrl` (`getSettingCredsURL`) is updated to call the closure when the value is a function.
++
++**Tech Stack:** TypeScript, Valtio (proxy store), Vitest, json-server (mock)
++
++## Global Constraints
++
++- Test runner: `npx vitest run` (unit) or `npm run test`
++- Commit prefix: `EPMCDME-10928:`
++- No changes to `SettingsForm.tsx` or `CredentialFields.tsx`
++- `getDefaultUrl()` in `settings.ts` must be deleted (dead code — no callers)
++- Fallback strings must exactly match the current hardcoded values (no regressions when API fails)
++
++---
++
++### Task 1: Widen `defaultUrl` type in `settingsUI.ts`
++
++**Files:**
++- Modify: `src/types/settingsUI.ts:93`
++
++**Interfaces:**
++- Produces: `CredentialTypeConfig.defaultUrl?: string | (() => string)` — Tasks 4 and 5 depend on this
++
++- [ ] **Step 1: Change the type**
++
++In `src/types/settingsUI.ts`, replace line 93:
++
++```typescript
++// Before
++defaultUrl?: string // Defaults to 'AutoGenerated'
++
++// After
++defaultUrl?: string | (() => string)
++```
++
++- [ ] **Step 2: Verify TypeScript compiles**
++
++```bash
++npx tsc --noEmit
++```
++
++Expected: no new errors.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add src/types/settingsUI.ts
++git commit -m "EPMCDME-10928: Widen CredentialTypeConfig.defaultUrl to string | (() => string)"
++```
++
++---
++
++### Task 2: Add `toolUrlDefaults` and `fetchToolConfigs()` to `appInfoStore`
++
++**Files:**
++- Modify: `src/store/appInfo.ts`
++- Create: `src/store/__tests__/appInfo.test.ts`
++
++**Interfaces:**
++- Consumes: nothing new
++- Produces:
++  - `appInfoStore.toolUrlDefaults: Record<string, string>` — URL values from `field.default`; read by `dynUrl()` at render time
++  - `appInfoStore.fetchToolConfigs(): Promise<void>` — called in Task 3
++
++- [ ] **Step 1: Write the failing tests**
++
++Create `src/store/__tests__/appInfo.test.ts`:
++
++```typescript
++import { describe, it, expect, vi, beforeEach } from 'vitest'
++
++const mockGet = vi.fn()
++
++vi.mock('@/utils/api', () => ({
++  default: {
++    get: (...args: unknown[]) => mockGet(...args),
++  },
++}))
++
++// Import after mock so the store picks up the mocked api
++const { appInfoStore } = await import('@/store/appInfo')
++
++const okResponse = (data: unknown) => ({
++  json: () => Promise.resolve(data),
++})
++
++describe('appInfoStore.fetchToolConfigs', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++    appInfoStore.toolUrlDefaults = {}
++  })
++
++  it('populates toolUrlDefaults from url.default for standard configs', async () => {
++    mockGet.mockResolvedValue(
++      okResponse([
++        { jiraconfig: { url: { default: 'https://jira.mycompany.com/' } } },
++        { confluenceconfig: { url: { default: 'https://confluence.mycompany.com/' } } },
++      ])
++    )
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults).toEqual({
++      jira: 'https://jira.mycompany.com/',
++      confluence: 'https://confluence.mycompany.com/',
++    })
++  })
++
++  it('reads base_url field for keycloak and xray', async () => {
++    mockGet.mockResolvedValue(
++      okResponse([
++        { keycloakconfig: { base_url: { default: 'https://keycloak.mycompany.com' } } },
++        { xrayconfig: { base_url: { default: 'https://xray.mycompany.com' } } },
++      ])
++    )
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults['keycloak']).toBe('https://keycloak.mycompany.com')
++    expect(appInfoStore.toolUrlDefaults['xray']).toBe('https://xray.mycompany.com')
++  })
++
++  it('skips unknown config class names', async () => {
++    mockGet.mockResolvedValue(
++      okResponse([
++        { unknownconfig: { url: { default: 'https://unknown.example.com' } } },
++        { jiraconfig: { url: { default: 'https://jira.mycompany.com/' } } },
++      ])
++    )
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(Object.keys(appInfoStore.toolUrlDefaults)).toEqual(['jira'])
++  })
++
++  it('skips entries where default is empty string', async () => {
++    mockGet.mockResolvedValue(
++      okResponse([{ jiraconfig: { url: { default: '' } } }])
++    )
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults['jira']).toBeUndefined()
++  })
++
++  it('leaves toolUrlDefaults empty on network error', async () => {
++    mockGet.mockRejectedValue(new Error('network down'))
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults).toEqual({})
++  })
++})
++```
++
++- [ ] **Step 2: Run tests to verify they fail**
++
++```bash
++npx vitest run src/store/__tests__/appInfo.test.ts
++```
++
++Expected: FAIL — `appInfoStore.toolUrlDefaults` does not exist / `fetchToolConfigs` is not a function.
++
++- [ ] **Step 3: Add `TOOL_CONFIG_URL_MAP` constant to `src/store/appInfo.ts`**
++
++Add after the existing `const` declarations (before `export interface AppInfoStoreType`):
++
++```typescript
++const TOOL_CONFIG_URL_MAP: Record<string, { credentialType: string; urlField: string }> = {
++  jiraconfig:           { credentialType: 'jira',         urlField: 'url'      },
++  confluenceconfig:     { credentialType: 'confluence',   urlField: 'url'      },
++  gitlabconfig:         { credentialType: 'git',          urlField: 'url'      },
++  keycloakconfig:       { credentialType: 'keycloak',     urlField: 'base_url' },
++  azuredevopsgitconfig: { credentialType: 'azuredevops',  urlField: 'url'      },
++  elasticconfig:        { credentialType: 'elastic',      urlField: 'url'      },
++  emailtoolconfig:      { credentialType: 'email',        urlField: 'url'      },
++  sonarconfig:          { credentialType: 'sonar',        urlField: 'url'      },
++  xrayconfig:           { credentialType: 'xray',         urlField: 'base_url' },
++  zephyrconfig:         { credentialType: 'zephyrscale',  urlField: 'url'      },
++  servicenowconfig:     { credentialType: 'servicenow',   urlField: 'url'      },
++  reportportalconfig:   { credentialType: 'reportportal', urlField: 'url'      },
++  kubernetesconfig:     { credentialType: 'kubernetes',   urlField: 'url'      },
++  sharepointconfig:     { credentialType: 'sharepoint',   urlField: 'url'      },
++  xwikiconfig:          { credentialType: 'xwiki',        urlField: 'url'      },
++}
++```
++
++- [ ] **Step 4: Add `toolUrlDefaults` and `fetchToolConfigs` to `AppInfoStoreType` interface**
++
++In `src/store/appInfo.ts`, add to the `AppInfoStoreType` interface (after `getLLMModels` line):
++
++```typescript
++toolUrlDefaults: Record<string, string>
++fetchToolConfigs: () => Promise<void>
++```
++
++- [ ] **Step 5: Add implementation to `appInfoStore`**
++
++In `src/store/appInfo.ts`, add `toolUrlDefaults` initial value and `fetchToolConfigs` method to the proxy object. Place `toolUrlDefaults: {}` next to the other plain properties (e.g. after `speechConfig: {}`), and add `fetchToolConfigs` as an async method:
++
++```typescript
++toolUrlDefaults: {},
++
++async fetchToolConfigs() {
++  try {
++    const response = await api.get('v1/tools/configs')
++    const data: Array<Record<string, Record<string, unknown>>> = await response.json()
++    const defaults: Record<string, string> = {}
++
++    for (const entry of data) {
++      const [configKey, configVal] = Object.entries(entry)[0]
++      const mapping = TOOL_CONFIG_URL_MAP[configKey.toLowerCase()]
++      if (!mapping) continue
++      const field = configVal[mapping.urlField] as Record<string, unknown> | undefined
++      const defaultVal = field?.default
++      if (typeof defaultVal === 'string' && defaultVal) {
++        defaults[mapping.credentialType] = defaultVal
++      }
++    }
++
++    this.toolUrlDefaults = defaults
++  } catch {
++    // Non-fatal — fallback values in settingsUIConfig.ts remain in effect
++  }
++},
++```
++
++- [ ] **Step 6: Run tests to verify they pass**
++
++```bash
++npx vitest run src/store/__tests__/appInfo.test.ts
++```
++
++Expected: all 5 tests PASS.
++
++- [ ] **Step 7: Commit**
++
++```bash
++git add src/store/appInfo.ts src/store/__tests__/appInfo.test.ts
++git commit -m "EPMCDME-10928: Add toolUrlDefaults and fetchToolConfigs to appInfoStore"
++```
++
++---
++
++### Task 3: Wire `fetchToolConfigs()` into `useInitialDataFetch`
++
++**Files:**
++- Modify: `src/hooks/appLevel/useInitialDataFetch.tsx`
++
++**Interfaces:**
++- Consumes: `appInfoStore.fetchToolConfigs()` from Task 2
++
++- [ ] **Step 1: Add the fire-and-forget call**
++
++In `src/hooks/appLevel/useInitialDataFetch.tsx`, add after the `await appInfoStore.fetchCustomerConfig()` call (line 49):
++
++```typescript
++appInfoStore.fetchToolConfigs()
++```
++
++The surrounding context should look like:
++
++```typescript
++await appInfoStore.fetchCustomerConfig()
++
++appInfoStore.fetchToolConfigs()
++
++appInfoStore.getLLMModels()
++```
++
++- [ ] **Step 2: Verify TypeScript compiles**
++
++```bash
++npx tsc --noEmit
++```
++
++Expected: no errors.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add src/hooks/appLevel/useInitialDataFetch.tsx
++git commit -m "EPMCDME-10928: Call fetchToolConfigs at app startup"
++```
++
++---
++
++### Task 4: Add `dynUrl()` helper and update 15 credential types in `settingsUIConfig.ts`
++
++**Files:**
++- Modify: `src/utils/settingsUIConfig.ts`
++
++**Interfaces:**
++- Consumes: `appInfoStore.toolUrlDefaults` from Task 2
++- Produces: `dynUrl(credType, fallback): () => string` — `defaultUrl` for 15 credential types now returns a closure; `placeholder` strings are unchanged
++
++- [ ] **Step 1: Add `appInfoStore` import and `dynUrl` helper**
++
++In `src/utils/settingsUIConfig.ts`, add after the existing imports:
++
++```typescript
++import { appInfoStore } from '@/store/appInfo'
++
++const dynUrl = (credType: string, fallback: string): (() => string) =>
++  () => appInfoStore.toolUrlDefaults[credType] || fallback
++```
++
++- [ ] **Step 2: Update `jira` entry** — `defaultUrl` only, leave `placeholder` unchanged
++
++```typescript
++// Before
++defaultUrl: 'https://jira.example.com/',
++
++// After
++defaultUrl: dynUrl('jira', 'https://jira.example.com/'),
++```
++
++- [ ] **Step 3: Update `git` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://gitlab.example.com',
++
++// After
++defaultUrl: dynUrl('git', 'https://gitlab.example.com'),
++```
++
++- [ ] **Step 4: Update `confluence` entry**
++
++```typescript
++// Before
++defaultUrl: 'http://confluence.example.com/',
++
++// After
++defaultUrl: dynUrl('confluence', 'http://confluence.example.com/'),
++```
++
++- [ ] **Step 5: Update `kubernetes` entry**
++
++`kubernetes` has no `defaultUrl` currently — add one. The URL field name in the UI is `kubernetes_url`; `placeholder` is unchanged.
++
++```typescript
++// Before
++kubernetes: {
++  testable: true,
++
++// After
++kubernetes: {
++  defaultUrl: dynUrl('kubernetes', 'https://kubernetes.default.svc'),
++  testable: true,
++```
++
++- [ ] **Step 6: Update `keycloak` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://keycloak.example.com/auth',
++
++// After
++defaultUrl: dynUrl('keycloak', 'https://keycloak.example.com/auth'),
++```
++
++- [ ] **Step 7: Update `azuredevops` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://dev.azure.com',
++
++// After
++defaultUrl: dynUrl('azuredevops', 'https://dev.azure.com'),
++```
++
++- [ ] **Step 8: Update `elastic` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://localhost:9200',
++
++// After
++defaultUrl: dynUrl('elastic', 'https://localhost:9200'),
++```
++
++- [ ] **Step 9: Update `email` entry**
++
++```typescript
++// Before
++defaultUrl: 'smtp.office365.com:587',
++
++// After
++defaultUrl: dynUrl('email', 'smtp.office365.com:587'),
++```
++
++- [ ] **Step 10: Update `sonar` entry**
++
++```typescript
++// Before
++defaultUrl: 'http://localhost:9000',
++
++// After
++defaultUrl: dynUrl('sonar', 'http://localhost:9000'),
++```
++
++- [ ] **Step 11: Update `zephyrscale` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://api.zephyrscale.smartbear.com/v2',
++
++// After
++defaultUrl: dynUrl('zephyrscale', 'https://api.zephyrscale.smartbear.com/v2'),
++```
++
++- [ ] **Step 12: Update `xray` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://xray.cloud.getxray.app',
++
++// After
++defaultUrl: dynUrl('xray', 'https://xray.cloud.getxray.app'),
++```
++
++- [ ] **Step 13: Update `servicenow` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://dev000000.service-now.com/',
++
++// After
++defaultUrl: dynUrl('servicenow', 'https://dev000000.service-now.com/'),
++```
++
++- [ ] **Step 14: Update `xwiki` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://wiki.example.com',
++
++// After
++defaultUrl: dynUrl('xwiki', 'https://wiki.example.com'),
++```
++
++- [ ] **Step 15: Update `sharepoint` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://yourtenant.sharepoint.com',
++
++// After
++defaultUrl: dynUrl('sharepoint', 'https://yourtenant.sharepoint.com'),
++```
++
++- [ ] **Step 16: Update `reportportal` entry**
++
++```typescript
++// Before
++defaultUrl: 'https://reportportal.example.com/',
++
++// After
++defaultUrl: dynUrl('reportportal', 'https://reportportal.example.com/'),
++```
++
++- [ ] **Step 17: Verify TypeScript compiles**
++
++```bash
++npx tsc --noEmit
++```
++
++Expected: no errors.
++
++- [ ] **Step 18: Commit**
++
++```bash
++git add src/utils/settingsUIConfig.ts
++git commit -m "EPMCDME-10928: Replace hardcoded defaultUrl strings with dynUrl() closures in settingsUIConfig"
++```
++
++---
++
++### Task 5: Update `getSettingCredsURL()` and delete `getDefaultUrl()` in `settings.ts`
++
++**Files:**
++- Modify: `src/utils/settings.ts`
++- Modify: `src/utils/__tests__/settings.test.ts`
++
++**Interfaces:**
++- Consumes: `CredentialTypeConfig.defaultUrl?: string | (() => string)` from Task 1, `dynUrl` closures from Task 4
++
++- [ ] **Step 1: Write failing tests**
++
++Add a module-level mock for `@/store/appInfo` near the top of `src/utils/__tests__/settings.test.ts`, after the existing `vi.mock('@/utils/enterpriseEdition', ...)` call:
++
++```typescript
++const mockToolUrlDefaults: Record<string, string> = {}
++
++vi.mock('@/store/appInfo', () => ({
++  appInfoStore: {
++    get toolUrlDefaults() {
++      return mockToolUrlDefaults
++    },
++  },
++}))
++```
++
++Then replace the existing `getSettingCredsURL` describe block with:
++
++```typescript
++describe('getSettingCredsURL', () => {
++  beforeEach(() => {
++    Object.keys(mockToolUrlDefaults).forEach((k) => delete mockToolUrlDefaults[k])
++  })
++
++  it('returns stored URL when credential has a url value', () => {
++    const credentialValues = [
++      { key: 'username', value: 'user' },
++      { key: 'url', value: 'http://example.com' },
++    ]
++    expect(getSettingCredsURL(credentialValues, 'github')).toBe('http://example.com')
++  })
++
++  it('returns string defaultUrl when no url is in the credential values', () => {
++    const credentialValues = [{ key: 'username', value: 'user' }]
++    expect(getSettingCredsURL(credentialValues, 'github')).toBe('AutoGenerated')
++  })
++
++  it('resolves function defaultUrl from store when toolUrlDefaults is populated', () => {
++    mockToolUrlDefaults['jira'] = 'https://jira.mycompany.com/'
++    expect(getSettingCredsURL([], 'jira')).toBe('https://jira.mycompany.com/')
++  })
++
++  it('function defaultUrl falls back to hardcoded string when toolUrlDefaults is empty', () => {
++    expect(getSettingCredsURL([], 'jira')).toBe('https://jira.example.com/')
++  })
++
++  it('stored url takes precedence over function defaultUrl', () => {
++    mockToolUrlDefaults['jira'] = 'https://jira.mycompany.com/'
++    const credentialValues = [{ key: 'url', value: 'https://jira.stored.com/' }]
++    expect(getSettingCredsURL(credentialValues, 'jira')).toBe('https://jira.stored.com/')
++  })
++})
++```
++
++Also add after the `getSettingCredsURL` describe block:
++
++```typescript
++it('getDefaultUrl is not exported from settings', () => {
++  // eslint-disable-next-line @typescript-eslint/no-explicit-any
++  expect((require('@/utils/settings') as any).getDefaultUrl).toBeUndefined()
++})
++```
++
++- [ ] **Step 2: Run tests to verify they fail**
++
++```bash
++npx vitest run src/utils/__tests__/settings.test.ts
++```
++
++Expected: the function-type tests fail because `getSettingCredsURL` doesn't yet call function `defaultUrl`, and `getDefaultUrl` is still exported.
++
++- [ ] **Step 3: Update `getSettingCredsURL` in `src/utils/settings.ts`**
++
++Replace lines 35–43:
++
++```typescript
++// Before
++export const getSettingCredsURL = (
++  credentialValues: SettingCredentialValue[],
++  credentialType: string
++): string => {
++  const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
++  const defaultUrl = credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
++  const urlObj = credentialValues.find((cv) => cv.key === 'url')
++  return (urlObj?.value as string) || defaultUrl
++}
++
++// After
++export const getSettingCredsURL = (
++  credentialValues: SettingCredentialValue[],
++  credentialType: string
++): string => {
++  const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
++  const rawDefault = credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
++  const defaultUrl = typeof rawDefault === 'function' ? rawDefault() : rawDefault
++  const urlObj = credentialValues.find((cv) => cv.key === 'url')
++  return (urlObj?.value as string) || defaultUrl
++}
++```
++
++- [ ] **Step 4: Delete `getDefaultUrl` from `src/utils/settings.ts`**
++
++Remove the entire function (lines 124–128):
++
++```typescript
++// Delete this entirely:
++export const getDefaultUrl = (credentialType: string): string => {
++  const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
++  return credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
++}
++```
++
++Also remove the comment on line 123: `// Get default URL for a credential type`
++
++- [ ] **Step 5: Run tests to verify they pass**
++
++```bash
++npx vitest run src/utils/__tests__/settings.test.ts
++```
++
++Expected: all tests PASS.
++
++- [ ] **Step 6: Run full test suite**
++
++```bash
++npm run test
++```
++
++Expected: no regressions.
++
++- [ ] **Step 7: Commit**
++
++```bash
++git add src/utils/settings.ts src/utils/__tests__/settings.test.ts
++git commit -m "EPMCDME-10928: Resolve function-type defaultUrl in getSettingCredsURL, delete getDefaultUrl"
++```
++
++---
++
++### Task 6: Add mock server fixture for `v1/tools/configs`
++
++**Files:**
++- Modify: `mock-server/routes.json`
++- Modify: `mock-server/db.json`
++
++**Interfaces:**
++- Produces: `GET /v1/tools/configs` returns the `tools_configs` array — lets `fetchToolConfigs()` work in local dev
++
++- [ ] **Step 1: Add the route mapping**
++
++In `mock-server/routes.json`, add before the closing `}`:
++
++```json
++"/v1/tools/configs": "/tools_configs"
++```
++
++- [ ] **Step 2: Add the fixture data**
++
++In `mock-server/db.json`, add a `"tools_configs"` top-level key. Locate a good position (e.g. after `"config"`) and insert:
++
++```json
++"tools_configs": [
++  { "jiraconfig": { "credential_type": { "default": "Jira" }, "url": { "default": "https://jira.example.com/", "type": "string" } } },
++  { "confluenceconfig": { "credential_type": { "default": "Confluence" }, "url": { "default": "http://confluence.example.com/", "type": "string" } } },
++  { "gitlabconfig": { "credential_type": { "default": "Git" }, "url": { "default": "https://gitlab.example.com", "type": "string" } } },
++  { "keycloakconfig": { "credential_type": { "default": "Keycloak" }, "base_url": { "default": "https://keycloak.example.com/auth", "type": "string" } } },
++  { "azuredevopsgitconfig": { "credential_type": { "default": "AzureDevOps" }, "url": { "default": "https://dev.azure.com", "type": "string" } } },
++  { "elasticconfig": { "credential_type": { "default": "Elastic" }, "url": { "default": "https://localhost:9200", "type": "string" } } },
++  { "emailtoolconfig": { "credential_type": { "default": "Email" }, "url": { "default": "smtp.office365.com:587", "type": "string" } } },
++  { "sonarconfig": { "credential_type": { "default": "Sonar" }, "url": { "default": "http://localhost:9000", "type": "string" } } },
++  { "xrayconfig": { "credential_type": { "default": "Xray" }, "base_url": { "default": "https://xray.cloud.getxray.app", "type": "string" } } },
++  { "zephyrconfig": { "credential_type": { "default": "ZephyrScale" }, "url": { "default": "https://api.zephyrscale.smartbear.com/v2", "type": "string" } } },
++  { "servicenowconfig": { "credential_type": { "default": "ServiceNow" }, "url": { "default": "https://dev000000.service-now.com/", "type": "string" } } },
++  { "reportportalconfig": { "credential_type": { "default": "ReportPortal" }, "url": { "default": "https://reportportal.example.com/", "type": "string" } } },
++  { "kubernetesconfig": { "credential_type": { "default": "Kubernetes" }, "url": { "default": "https://kubernetes.default.svc", "type": "string" } } },
++  { "sharepointconfig": { "credential_type": { "default": "SharePoint" }, "url": { "default": "https://yourtenant.sharepoint.com", "type": "string" } } },
++  { "xwikiconfig": { "credential_type": { "default": "XWiki" }, "url": { "default": "https://wiki.example.com", "type": "string" } } },
++  { "githubconfig": { "credential_type": { "default": "Git" }, "url": { "default": "https://api.github.com", "type": "string" } } }
++]
++```
++
++Note: `githubconfig` is included in the fixture (it appears in the real API response) but is intentionally absent from `TOOL_CONFIG_URL_MAP` — the parser skips it.
++
++- [ ] **Step 3: Verify JSON is valid**
++
++```bash
++node -e "JSON.parse(require('fs').readFileSync('mock-server/db.json', 'utf8')); console.log('OK')"
++node -e "JSON.parse(require('fs').readFileSync('mock-server/routes.json', 'utf8')); console.log('OK')"
++```
++
++Expected: `OK` for both.
++
++- [ ] **Step 4: Commit**
++
++```bash
++git add mock-server/routes.json mock-server/db.json
++git commit -m "EPMCDME-10928: Add mock server fixture for v1/tools/configs"
++```
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/qa-report.md b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/qa-report.md
+new file mode 100644
+index 000000000..1b52b7620
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/qa-report.md
+@@ -0,0 +1,25 @@
++# QA Gate Report — epmcdme-10928-configurable-integration-url-defaults
++
++**Branch**: EPMCDME-10928_configurable-integration-url-defaults
++**Runner**: npm (guide-first via .ai-run/guides/quality-gates.md)
++**Started**: 2026-07-20
++**Status**: PASSED
++
++## Gates
++
++| Gate | Status | Command | Notes |
++|---|---|---|---|
++| lint | SKIPPED (pre-existing) | `npm run lint` | 655 errors in `.js` files (`menu-button-links.js`, `rfc4648.js`, etc.) — zero `.js` files in this branch's diff. All failures are pre-existing and unrelated to this change. Our `.ts`/`.tsx` changes are clean. |
++| typecheck | PASS | `npm run typecheck` | Silent output, exit 0. |
++| unit tests | PASS | `npm run test:unit` | All suites pass, exit 0. Pre-existing React ref stderr warnings unrelated to this branch. |
++| integration tests | PASS | `npm run test:integration` | All suites pass, exit 0. Pre-existing `NewAssistantPage` stderr noise unrelated to this branch. |
++
++## Failure detail
++
++Lint failures are 100% pre-existing in vendored/Keycloak JS files not touched by this branch:
++- `menu-button-links.js`, `rfc4648.js`, `kcMultivalued.js`, `webauthnRegister.js`, `webauthnAuthenticate.js`, `passkeysConditionalAuth.js`, `authChecker.js`, `common.js`, `kcNumberFormat.js`, `userProfile.js`
++- `git diff main...HEAD --name-only` returns zero `.js` files.
++
++## Drift signal
++
++no
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/spec.md b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/spec.md
+new file mode 100644
+index 000000000..1271618a8
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/spec.md
+@@ -0,0 +1,218 @@
++# Spec: EPMCDME-10928 — Configurable Integration URL Defaults (UI)
++
++## Problem
++
++Integration URL defaults (`defaultUrl`, field `placeholder`) in `settingsUIConfig.ts` are hardcoded strings. Every deployment of CodeMie shows the same example URLs (e.g. `https://jira.example.com/`) regardless of the company's actual infrastructure. The backend now serves deployment-configured values via `GET /v1/tools/configs`. The UI must read them at startup and use them in place of the hardcoded strings.
++
++---
++
++## Solution Overview
++
++1. Fetch `GET /v1/tools/configs` once at app startup (fire-and-forget). Store the parsed URL defaults in `appInfoStore.toolUrlDefaults` as a flat `Record<string, string>` keyed by UI credential type, reading the `default` field from each tool's URL field object.
++2. Replace the hardcoded `defaultUrl` values in `settingsUIConfig.ts` with `dynUrl(credType, fallback)` calls that resolve at render time from the store. Field `placeholder` strings remain hardcoded — only `defaultUrl` is made dynamic. When the store has no value (fetch failed, endpoint absent, or value empty), the original hardcoded string is returned as the fallback — no visible regression.
++3. No changes to `SettingsForm.tsx` or `CredentialFields.tsx`. The new `CredentialTypeConfig.defaultUrl` function type is handled in the one consumer that reads it (`getSettingCredsURL` in `settings.ts`).
++
++---
++
++## File-by-file Design
++
++### `src/types/settingsUI.ts`
++
++Change `defaultUrl` to accept a getter:
++
++```typescript
++// Before
++defaultUrl?: string // Defaults to 'AutoGenerated'
++
++// After
++defaultUrl?: string | (() => string)
++```
++
++`CredentialFieldConfig.placeholder` already has the same dual type — this makes `defaultUrl` consistent.
++
++---
++
++### `src/store/appInfo.ts`
++
++**New constant** — maps backend config class names to UI credential type and URL field:
++
++```typescript
++const TOOL_CONFIG_URL_MAP: Record<string, { credentialType: string; urlField: string }> = {
++  jiraconfig:           { credentialType: 'jira',          urlField: 'url'      },
++  confluenceconfig:     { credentialType: 'confluence',    urlField: 'url'      },
++  gitlabconfig:         { credentialType: 'git',           urlField: 'url'      },
++  keycloakconfig:       { credentialType: 'keycloak',      urlField: 'base_url' },
++  azuredevopsgitconfig: { credentialType: 'azuredevops',   urlField: 'url'      },
++  elasticconfig:        { credentialType: 'elastic',       urlField: 'url'      },
++  emailtoolconfig:      { credentialType: 'email',         urlField: 'url'      },
++  sonarconfig:          { credentialType: 'sonar',         urlField: 'url'      },
++  xrayconfig:           { credentialType: 'xray',          urlField: 'base_url' },
++  zephyrconfig:         { credentialType: 'zephyrscale',   urlField: 'url'      },
++  servicenowconfig:     { credentialType: 'servicenow',    urlField: 'url'      },
++  reportportalconfig:   { credentialType: 'reportportal',  urlField: 'url'      },
++  kubernetesconfig:     { credentialType: 'kubernetes',    urlField: 'url'      },
++  sharepointconfig:     { credentialType: 'sharepoint',    urlField: 'url'      },
++  xwikiconfig:          { credentialType: 'xwiki',         urlField: 'url'      },
++}
++```
++
++`githubconfig` is intentionally excluded — the `git` UI type represents GitLab. `keycloak` and `xray` use `base_url` as the backend field name; all others use `url`.
++
++**New store members** added to `AppInfoStoreType` and `appInfoStore`:
++
++```typescript
++// Interface
++toolUrlDefaults: Record<string, string>
++fetchToolConfigs: () => Promise<void>
++
++// Implementation
++toolUrlDefaults: {},
++
++async fetchToolConfigs() {
++  try {
++    const response = await api.get('v1/tools/configs')
++    const data: Array<Record<string, Record<string, unknown>>> = await response.json()
++    const defaults: Record<string, string> = {}
++
++    for (const entry of data) {
++      const [configKey, configVal] = Object.entries(entry)[0]
++      const mapping = TOOL_CONFIG_URL_MAP[configKey.toLowerCase()]
++      if (!mapping) continue
++      const field = configVal[mapping.urlField] as Record<string, unknown> | undefined
++      const defaultVal = field?.default
++      if (typeof defaultVal === 'string' && defaultVal) {
++        defaults[mapping.credentialType] = defaultVal
++      }
++    }
++
++    this.toolUrlDefaults = defaults
++  } catch {
++    // Non-fatal — fallback values in settingsUIConfig.ts remain in effect
++  }
++},
++```
++
++Errors are intentionally swallowed. An empty `toolUrlDefaults` means `dynUrl()` falls back to the hardcoded string for every credential type.
++
++---
++
++### `src/hooks/appLevel/useInitialDataFetch.tsx`
++
++Add one fire-and-forget call alongside the existing pattern (no `await`):
++
++```typescript
++appInfoStore.fetchToolConfigs()
++```
++
++Placed after `fetchCustomerConfig()` which is the last awaited call, consistent with the other non-blocking fetches (`getLLMModels`, `getEmbeddingsModels`, etc.).
++
++---
++
++### `src/utils/settingsUIConfig.ts`
++
++**New helper** at the top of the file (after imports):
++
++```typescript
++import { appInfoStore } from '@/store/appInfo'
++
++const dynUrl = (credType: string, fallback: string): (() => string) =>
++  () => appInfoStore.toolUrlDefaults[credType] || fallback
++```
++
++**Updated `CREDENTIAL_UI_MAPPING` entries** — the 15 credential types that have backend-configurable URLs get their `defaultUrl` replaced with a `dynUrl()` call. Field `placeholder` strings are **not changed** — they remain hardcoded.
++
++| Credential type | `defaultUrl` fallback |
++|---|---|
++| `jira` | `https://jira.example.com/` |
++| `confluence` | `http://confluence.example.com/` |
++| `git` | `https://gitlab.example.com` |
++| `keycloak` | `https://keycloak.example.com/auth` |
++| `azuredevops` | `https://dev.azure.com` |
++| `elastic` | `https://localhost:9200` |
++| `email` | `smtp.office365.com:587` |
++| `sonar` | `http://localhost:9000` |
++| `xray` | `https://xray.cloud.getxray.app` |
++| `zephyrscale` | `https://api.zephyrscale.smartbear.com/v2` |
++| `servicenow` | `https://dev000000.service-now.com/` |
++| `reportportal` | `https://reportportal.example.com/` |
++| `kubernetes` | `https://kubernetes.default.svc` (added — previously no `defaultUrl`) |
++| `sharepoint` | `https://yourtenant.sharepoint.com` |
++| `xwiki` | `https://wiki.example.com` |
++
++Note: `kubernetes` form field is `kubernetes_url` (not `url`) — the backend `urlField` used for lookup is still `url`; the UI `placeholder` on `kubernetes_url` is unchanged.
++
++All other `defaultUrl` entries (those not in the 15-entry map above) remain unchanged.
++
++---
++
++### `src/utils/settings.ts`
++
++`getSettingCredsURL()` must resolve a `defaultUrl` that may now be a getter:
++
++```typescript
++export const getSettingCredsURL = (
++  credentialValues: SettingCredentialValue[],
++  credentialType: string
++): string => {
++  const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
++  const rawDefault = credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
++  const defaultUrl = typeof rawDefault === 'function' ? rawDefault() : rawDefault
++  const urlObj = credentialValues.find((cv) => cv.key === 'url')
++  return (urlObj?.value as string) || defaultUrl
++}
++```
++
++`getDefaultUrl()` is exported but has no callers outside `settings.ts` — delete it.
++
++---
++
++### `mock-server/routes.json`
++
++Add the route mapping:
++
++```json
++"/v1/tools/configs": "/tools_configs"
++```
++
++---
++
++### `mock-server/db.json`
++
++Add a `tools_configs` array that mirrors the real API format. Each entry is a single-key object with the config class name as the key. Each URL field object uses a `default` key for the deployment URL. The fixture includes all 15 mapped configs plus `githubconfig` (unmapped) to verify the parser skips unknowns gracefully.
++
++---
++
++## Data Flow
++
++```
++App startup
++  └── useInitialDataFetch
++        └── appInfoStore.fetchToolConfigs()   [fire-and-forget]
++              └── GET /v1/tools/configs
++                    └── parse field.default → toolUrlDefaults: { jira: 'https://...', ... }
++
++Settings page render
++  └── CREDENTIAL_UI_MAPPING.jira.defaultUrl()
++        └── dynUrl('jira', 'https://jira.example.com/')()
++              └── appInfoStore.toolUrlDefaults['jira'] || 'https://jira.example.com/'
++```
++
++---
++
++## Fallback / Error Behaviour
++
++| Scenario | Result |
++|---|---|
++| `fetchToolConfigs` throws (network, 5xx) | `toolUrlDefaults` stays `{}` — all `dynUrl()` calls return the hardcoded fallback |
++| Endpoint returns empty array | Same — `toolUrlDefaults` stays `{}` |
++| Entry present but `placeholder` is `""` | Empty string is falsy — `dynUrl()` returns the fallback |
++| Settings page renders before fetch completes | `toolUrlDefaults` is `{}` at that moment — fallback shown. No re-render wiring needed: the settings page is not visible in the render cycle before startup completes |
++
++---
++
++## Out of Scope
++
++- `github` credential type — backend uses `DEFAULT_GITHUB_TOOL_URL` but the `git` UI type represents GitLab; no `githubconfig` mapping in the UI.
++- `keycloak` and `xray` backend use `base_url`; the UI form field is `url`. The `TOOL_CONFIG_URL_MAP` lookup uses the backend field name; the `settingsUIConfig.ts` update targets the UI field name — they are intentionally different.
++- Re-rendering when `toolUrlDefaults` changes after initial load. The store fetch is fire-and-forget and completes before users can navigate to the settings page.
++- No new unit tests for `settingsUIConfig.ts` as it is a config module with no testable logic beyond the existing `settings.ts` tests.
+diff --git a/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/technical-analysis.md b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/technical-analysis.md
+new file mode 100644
+index 000000000..e00b6758b
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-17-epmcdme-10928-configurable-integration-url-defaults/technical-analysis.md
+@@ -0,0 +1,97 @@
++# Technical Analysis: EPMCDME-10928 — Configurable Integration URL Defaults (UI)
++
++## Task
++
++Fetch `GET /v1/tools/configs` at startup and use the backend-provided URL placeholders to override the hardcoded `defaultUrl` values in `settingsUIConfig.ts`, making integration URL defaults deployment-configurable.
++
++---
++
++## Codebase Findings
++
++### Current defaultUrl flow
++
++`src/utils/settingsUIConfig.ts` exports `CREDENTIAL_UI_MAPPING` — a static module-level object where every integration type has a hardcoded `defaultUrl` (e.g. `jira: { defaultUrl: 'https://jira.example.com/' }`).
++
++Two functions in `src/utils/settings.ts` consume it:
++
++- `getDefaultUrl(credentialType)` — returns `CREDENTIAL_UI_MAPPING[type].defaultUrl ?? 'AutoGenerated'`
++- `getSettingCredsURL(credentialValues, credentialType)` — returns stored URL or `getDefaultUrl()`
++
++These are the only call-sites that need changing. `CREDENTIAL_UI_MAPPING` itself stays static (fallback layer).
++
++### Startup data fetching
++
++`src/hooks/appLevel/useInitialDataFetch.tsx` is the single place all app-level data is loaded. It calls `appInfoStore.fetchCustomerConfig()`, `appInfoStore.getLLMModels()`, etc. Adding `appInfoStore.fetchToolConfigs()` here is the prescribed pattern.
++
++### `appInfoStore` (`src/store/appInfo.ts`)
++
++Valtio proxy with typed methods following the pattern: `api.get('v1/...')` → `response.json()` → store property. No existing `v1/tools/configs` call. Adding `toolUrlDefaults: Record<string, string>` and `fetchToolConfigs()` here is consistent with the existing shape.
++
++### `v1/tools/configs` response format
++
++Array of single-key objects. Key = lowercase class name (e.g. `"jiraconfig"`). Value = config schema with fields. Each URL field has a `placeholder` property:
++
++```json
++[
++  {
++    "jiraconfig": {
++      "class": "...",
++      "credential_type": { "default": "Jira", ... },
++      "url": { "placeholder": "https://jira.example.com/", "type": "string", ... }
++    }
++  }
++]
++```
++
++Two configs use `base_url` instead of `url`: `keycloakconfig` and `xrayconfig`.
++
++### Backend → UI credential type mapping
++
++Multiple backend config classes can share the same `credential_type.default` (e.g. `gitlabconfig` and `githubconfig` both use `"Git"`). To avoid ambiguity, the mapping is indexed by config class name (not `credential_type.default`).
++
++The relevant 15 configs and their URL fields:
++
++| Backend config key | UI credential type | URL field |
++|---|---|---|
++| `jiraconfig` | `jira` | `url` |
++| `confluenceconfig` | `confluence` | `url` |
++| `gitlabconfig` | `git` | `url` |
++| `keycloakconfig` | `keycloak` | `base_url` |
++| `azuredevopsgitconfig` | `azuredevops` | `url` |
++| `elasticconfig` | `elastic` | `url` |
++| `emailtoolconfig` | `email` | `url` |
++| `sonarconfig` | `sonar` | `url` |
++| `xrayconfig` | `xray` | `base_url` |
++| `zephyrconfig` | `zephyrscale` | `url` |
++| `servicenowconfig` | `servicenow` | `url` |
++| `reportportalconfig` | `reportportal` | `url` |
++| `kubernetesconfig` | `kubernetes` | `url` |
++| `sharepointconfig` | `sharepoint` | `url` |
++| `xwikiconfig` | `xwiki` | `url` |
++
++`githubconfig` is intentionally excluded — `git.defaultUrl` represents the GitLab URL.
++
++### Mock server
++
++`mock-server/routes.json` maps URL patterns to `db.json` keys. The `v1/tools/configs` route is absent — needs adding.
++
++---
++
++## Integration Points
++
++| File | Change |
++|---|---|
++| `src/store/appInfo.ts` | Add `toolUrlDefaults`, `fetchToolConfigs()`, `TOOL_CONFIG_URL_MAP` constant |
++| `src/hooks/appLevel/useInitialDataFetch.tsx` | Add `appInfoStore.fetchToolConfigs()` call |
++| `src/utils/settings.ts` | Update `getDefaultUrl()` and `getSettingCredsURL()` to check `appInfoStore.toolUrlDefaults` first |
++| `mock-server/routes.json` | Add `"/v1/tools/configs": "/tools_configs"` |
++| `mock-server/db.json` | Add `tools_configs` fixture array |
++
++---
++
++## Risk Indicators
++
++- **Low blast radius**: changes are additive. `CREDENTIAL_UI_MAPPING` stays unchanged; `toolUrlDefaults` is empty on fetch failure, so fallback to hardcoded values always works.
++- **No circular dependency risk**: `appInfoStore.ts` already depends on `api.ts`. `settings.ts` already imports `appInfoStore` (indirectly through other stores).
++- **Ordering**: `fetchToolConfigs()` is fire-and-forget (no `await` in `useInitialDataFetch`). The settings page isn't visible until after startup completes, so the data will be present before users interact with integrations.
++- **Type safety**: The response is `Array<Record<string, Record<string, unknown>>>` — accessed defensively with optional chaining.
+diff --git a/mock-server/db.json b/mock-server/db.json
+index 348b23f36..4add82eaa 100644
+--- a/mock-server/db.json
++++ b/mock-server/db.json
+@@ -16657,5 +16657,23 @@
+         "setting_type": "project"
+     }
+ ],
+-"datasource_schemas": []
++"datasource_schemas": [],
++"tools_configs": [
++  { "jiraconfig": { "credential_type": { "default": "Jira" }, "url": { "default": "https://jira.example.com/", "type": "string" } } },
++  { "confluenceconfig": { "credential_type": { "default": "Confluence" }, "url": { "default": "http://confluence.example.com/", "type": "string" } } },
++  { "gitlabconfig": { "credential_type": { "default": "Git" }, "url": { "default": "https://gitlab.example.com", "type": "string" } } },
++  { "keycloakconfig": { "credential_type": { "default": "Keycloak" }, "base_url": { "default": "https://keycloak.example.com/auth", "type": "string" } } },
++  { "azuredevopsgitconfig": { "credential_type": { "default": "AzureDevOps" }, "url": { "default": "https://dev.azure.com", "type": "string" } } },
++  { "elasticconfig": { "credential_type": { "default": "Elastic" }, "url": { "default": "https://localhost:9200", "type": "string" } } },
++  { "emailtoolconfig": { "credential_type": { "default": "Email" }, "url": { "default": "smtp.office365.com:587", "type": "string" } } },
++  { "sonarconfig": { "credential_type": { "default": "Sonar" }, "url": { "default": "http://localhost:9000", "type": "string" } } },
++  { "xrayconfig": { "credential_type": { "default": "Xray" }, "base_url": { "default": "https://xray.cloud.getxray.app", "type": "string" } } },
++  { "zephyrconfig": { "credential_type": { "default": "ZephyrScale" }, "url": { "default": "https://api.zephyrscale.smartbear.com/v2", "type": "string" } } },
++  { "servicenowconfig": { "credential_type": { "default": "ServiceNow" }, "url": { "default": "https://dev000000.service-now.com/", "type": "string" } } },
++  { "reportportalconfig": { "credential_type": { "default": "ReportPortal" }, "url": { "default": "https://reportportal.example.com/", "type": "string" } } },
++  { "kubernetesconfig": { "credential_type": { "default": "Kubernetes" }, "url": { "default": "https://kubernetes.default.svc", "type": "string" } } },
++  { "sharepointconfig": { "credential_type": { "default": "SharePoint" }, "url": { "default": "https://yourtenant.sharepoint.com", "type": "string" } } },
++  { "xwikiconfig": { "credential_type": { "default": "XWiki" }, "url": { "default": "https://wiki.example.com", "type": "string" } } },
++  { "githubconfig": { "credential_type": { "default": "Git" }, "url": { "default": "https://api.github.com", "type": "string" } } }
++]
+ }
+\ No newline at end of file
+diff --git a/mock-server/routes.json b/mock-server/routes.json
+index 44c3fd416..5ec570310 100644
+--- a/mock-server/routes.json
++++ b/mock-server/routes.json
+@@ -15,5 +15,6 @@
+   "/v1/index/users": "/users_index",
+   "/v1/index?page=*": "/index",
+   "/v1/settings/user/available": "/user_available_settings",
+-  "/v1/providers/datasource_schemas": "/datasource_schemas"
++  "/v1/providers/datasource_schemas": "/datasource_schemas",
++  "/v1/tools/configs": "/tools_configs"
+ }
+\ No newline at end of file
+diff --git a/src/hooks/appLevel/useInitialDataFetch.tsx b/src/hooks/appLevel/useInitialDataFetch.tsx
+index e3ffe4bac..4a8142d60 100644
+--- a/src/hooks/appLevel/useInitialDataFetch.tsx
++++ b/src/hooks/appLevel/useInitialDataFetch.tsx
+@@ -48,6 +48,8 @@ const useInitialDataFetch = () => {
+ 
+       await appInfoStore.fetchCustomerConfig()
+ 
++      appInfoStore.fetchToolConfigs()
++
+       appInfoStore.getLLMModels()
+ 
+       assistantsStore.getAssistantCategories()
+diff --git a/src/pages/integrations/components/SettingsForm/SettingsForm.tsx b/src/pages/integrations/components/SettingsForm/SettingsForm.tsx
+index 949df30d3..c5e4093c8 100644
+--- a/src/pages/integrations/components/SettingsForm/SettingsForm.tsx
++++ b/src/pages/integrations/components/SettingsForm/SettingsForm.tsx
+@@ -48,7 +48,6 @@ import {
+   generateDefaultAlias,
+ } from '@/utils/settings'
+ 
+-
+ import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
+ import TestIntegration from '../TestIntegration'
+ import CredentialFields from './CredentialFields'
+@@ -146,7 +145,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
+     if (config?.fields) {
+       Object.entries(config.fields).forEach(([fieldName, fieldConfig]) => {
+         if (fieldConfig.defaultValue !== undefined) {
+-          defaults[fieldName] = fieldConfig.defaultValue
++          const val = fieldConfig.defaultValue
++          defaults[fieldName] = typeof val === 'function' ? val() : val
+         }
+       })
+     }
+@@ -158,8 +158,12 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
+     const defaults = getCredentialDefaults(credentialType)
+ 
+     if (initialCredentialValues) {
+-      // Merge existing values with defaults to ensure all fields with defaultValue are populated
+-      return { ...defaults, ...initialCredentialValues }
++      const storedValues = Object.fromEntries(
++        Object.entries(initialCredentialValues).filter(
++          ([, v]) => v !== '' && v !== null && v !== undefined
++        )
++      )
++      return { ...defaults, ...storedValues }
+     }
+ 
+     const hasManualConfig = CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration
+diff --git a/src/store/__tests__/appInfo.test.ts b/src/store/__tests__/appInfo.test.ts
+new file mode 100644
+index 000000000..1e8da4071
+--- /dev/null
++++ b/src/store/__tests__/appInfo.test.ts
+@@ -0,0 +1,115 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect, vi, beforeEach } from 'vitest'
++
++const mockGet = vi.fn()
++
++vi.mock('@/utils/api', () => ({
++  default: {
++    get: (...args: unknown[]) => mockGet(...args),
++  },
++}))
++
++// Import after mock so the store picks up the mocked api
++const { appInfoStore } = await import('@/store/appInfo')
++
++const okResponse = (data: unknown) => ({
++  json: () => Promise.resolve(data),
++})
++
++describe('appInfoStore.fetchToolConfigs', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++    appInfoStore.toolUrlDefaults = {}
++  })
++
++  it('populates toolUrlDefaults from url.default for standard configs', async () => {
++    mockGet.mockResolvedValue(
++      okResponse([
++        { jiraconfig: { url: { default: 'https://jira.mycompany.com/' } } },
++        { confluenceconfig: { url: { default: 'https://confluence.mycompany.com/' } } },
++      ])
++    )
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults).toEqual({
++      jira: 'https://jira.mycompany.com/',
++      confluence: 'https://confluence.mycompany.com/',
++    })
++  })
++
++  it('reads base_url field for keycloak and xray', async () => {
++    mockGet.mockResolvedValue(
++      okResponse([
++        { keycloakconfig: { base_url: { default: 'https://keycloak.mycompany.com' } } },
++        { xrayconfig: { base_url: { default: 'https://xray.mycompany.com' } } },
++      ])
++    )
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults.keycloak).toBe('https://keycloak.mycompany.com')
++    expect(appInfoStore.toolUrlDefaults.xray).toBe('https://xray.mycompany.com')
++  })
++
++  it('skips unknown config class names', async () => {
++    mockGet.mockResolvedValue(
++      okResponse([
++        { unknownconfig: { url: { default: 'https://unknown.example.com' } } },
++        { jiraconfig: { url: { default: 'https://jira.mycompany.com/' } } },
++      ])
++    )
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(Object.keys(appInfoStore.toolUrlDefaults)).toEqual(['jira'])
++  })
++
++  it('skips entries where default is empty string', async () => {
++    mockGet.mockResolvedValue(okResponse([{ jiraconfig: { url: { default: '' } } }]))
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults.jira).toBeUndefined()
++  })
++
++  it('leaves toolUrlDefaults empty on network error', async () => {
++    mockGet.mockRejectedValue(new Error('network down'))
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults).toEqual({})
++  })
++
++  it('skips empty entry objects without discarding subsequent valid entries', async () => {
++    mockGet.mockResolvedValue(
++      okResponse([{}, { jiraconfig: { url: { default: 'https://jira.mycompany.com/' } } }])
++    )
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults.jira).toBe('https://jira.mycompany.com/')
++  })
++
++  it('leaves toolUrlDefaults empty when response is not an array', async () => {
++    mockGet.mockResolvedValue(okResponse(null))
++
++    await appInfoStore.fetchToolConfigs()
++
++    expect(appInfoStore.toolUrlDefaults).toEqual({})
++  })
++})
+diff --git a/src/store/appInfo.ts b/src/store/appInfo.ts
+index 3ca0a3c60..30c22c2da 100644
+--- a/src/store/appInfo.ts
++++ b/src/store/appInfo.ts
+@@ -19,6 +19,24 @@ import releaseNotes from '@/configs/releaseNotes.json'
+ import { ModelOption, SpeechConfig, ConfigItem } from '@/types/entity/configuration'
+ import api from '@/utils/api'
+ 
++const TOOL_CONFIG_URL_MAP: Record<string, { credentialType: string; urlField: string }> = {
++  jiraconfig: { credentialType: 'jira', urlField: 'url' },
++  confluenceconfig: { credentialType: 'confluence', urlField: 'url' },
++  gitlabconfig: { credentialType: 'git', urlField: 'url' },
++  keycloakconfig: { credentialType: 'keycloak', urlField: 'base_url' },
++  azuredevopsgitconfig: { credentialType: 'azuredevops', urlField: 'url' },
++  elasticconfig: { credentialType: 'elastic', urlField: 'url' },
++  emailtoolconfig: { credentialType: 'email', urlField: 'url' },
++  sonarconfig: { credentialType: 'sonar', urlField: 'url' },
++  xrayconfig: { credentialType: 'xray', urlField: 'base_url' },
++  zephyrconfig: { credentialType: 'zephyrscale', urlField: 'url' },
++  servicenowconfig: { credentialType: 'servicenow', urlField: 'url' },
++  reportportalconfig: { credentialType: 'reportportal', urlField: 'url' },
++  kubernetesconfig: { credentialType: 'kubernetes', urlField: 'url' },
++  sharepointconfig: { credentialType: 'sharepoint', urlField: 'url' },
++  xwikiconfig: { credentialType: 'xwiki', urlField: 'url' },
++}
++
+ const VIEWED_RN_VERSION_KEY = 'codemie-viewed-release-version'
+ const ONBOARDING_COMPLETED_KEY = 'codemie-onboarding-completed'
+ const QUICK_ACTIONS_COLLAPSED_KEY = 'codemie-quick-actions-collapsed'
+@@ -49,6 +67,9 @@ export interface AppInfoStoreType {
+   navigationExpanded: boolean
+   sidebarExpanded: boolean
+ 
++  toolUrlDefaults: Record<string, string>
++  fetchToolConfigs: () => Promise<void>
++
+   loadAppInfo: () => Promise<void>
+   loadReleaseNotes: () => Promise<any[]>
+   loadSpeechConfig: () => Promise<SpeechConfig>
+@@ -102,6 +123,34 @@ export const appInfoStore = proxy<AppInfoStoreType>({
+   imageGenerationModels: [],
+   embeddingModels: [],
+   speechConfig: {},
++  toolUrlDefaults: {},
++
++  async fetchToolConfigs() {
++    try {
++      const response = await api.get('v1/tools/configs')
++      const data: Array<Record<string, Record<string, unknown>>> = await response.json()
++      if (!Array.isArray(data)) return
++      const defaults: Record<string, string> = {}
++
++      for (const entry of data) {
++        const entries = Object.entries(entry)
++        if (!entries.length) continue
++        const [configKey, configVal] = entries[0]
++        if (!configVal || typeof configVal !== 'object') continue
++        const mapping = TOOL_CONFIG_URL_MAP[configKey.toLowerCase()]
++        if (!mapping) continue
++        const field = configVal[mapping.urlField] as Record<string, unknown> | undefined
++        const defaultVal = field?.default
++        if (typeof defaultVal === 'string' && defaultVal) {
++          defaults[mapping.credentialType] = defaultVal
++        }
++      }
++
++      this.toolUrlDefaults = defaults
++    } catch {
++      // Non-fatal — fallback values in settingsUIConfig.ts remain in effect
++    }
++  },
+ 
+   async loadAppInfo() {
+     try {
+diff --git a/src/types/settingsUI.ts b/src/types/settingsUI.ts
+index eb85492b6..767e924d8 100644
+--- a/src/types/settingsUI.ts
++++ b/src/types/settingsUI.ts
+@@ -53,7 +53,7 @@ export type CredentialFieldConfig = {
+   position?: CredentialComponentPosition
+   validation?: Yup.Schema
+   message?: CredentialMessage
+-  defaultValue?: string | boolean
++  defaultValue?: string | boolean | (() => string)
+ }
+ 
+ export enum CredentialAccessType {
+@@ -90,7 +90,7 @@ export type CredentialTypeConfig = {
+   roleRestrictionType?: CredentialRoleRestriction // Defaults to GENERAL
+   accessType?: CredentialAccessType // Defaults to ALL
+   enterpriseOnly?: boolean // Defaults to false
+-  defaultUrl?: string // Defaults to 'AutoGenerated'
++  defaultUrl?: string | (() => string)
+   testable?: boolean // Defaults to false
+   displayName?: string // User-friendly display name (e.g., "X-ray")
+   serverEnum?: string // Backend enum value if different from capitalized key (e.g., "Xray" for "xray")
+diff --git a/src/utils/__tests__/settings.test.ts b/src/utils/__tests__/settings.test.ts
+index bf2dd51bd..69c84b4ac 100644
+--- a/src/utils/__tests__/settings.test.ts
++++ b/src/utils/__tests__/settings.test.ts
+@@ -26,16 +26,149 @@ import {
+   SETTING_TYPE_PROJECT,
+   SETTING_TYPE_USER,
+ } from '@/utils/settings'
++import { CREDENTIAL_UI_MAPPING } from '@/utils/settingsUIConfig'
+ 
+ vi.mock('@/utils/enterpriseEdition', () => ({
+   isEnterpriseEdition: () => true,
+ }))
+ 
++const mockToolUrlDefaults: Record<string, string> = {}
++
++vi.mock('@/store/appInfo', () => ({
++  appInfoStore: {
++    get toolUrlDefaults() {
++      return mockToolUrlDefaults
++    },
++  },
++}))
++
++const URL_DEFAULTS_CASES: {
++  credType: string
++  configKey: string
++  urlField: string
++  fallback: string
++}[] = [
++  { credType: 'jira', configKey: 'jira', urlField: 'url', fallback: 'https://jira.example.com/' },
++  { credType: 'git', configKey: 'git', urlField: 'url', fallback: 'https://gitlab.example.com' },
++  {
++    credType: 'confluence',
++    configKey: 'confluence',
++    urlField: 'url',
++    fallback: 'http://confluence.example.com/',
++  },
++  {
++    credType: 'kubernetes',
++    configKey: 'kubernetes',
++    urlField: 'kubernetes_url',
++    fallback: 'https://kubernetes.default.svc',
++  },
++  {
++    credType: 'keycloak',
++    configKey: 'keycloak',
++    urlField: 'url',
++    fallback: 'https://keycloak.example.com/auth',
++  },
++  {
++    credType: 'azuredevops',
++    configKey: 'azuredevops',
++    urlField: 'url',
++    fallback: 'https://dev.azure.com',
++  },
++  {
++    credType: 'elastic',
++    configKey: 'elastic',
++    urlField: 'url',
++    fallback: 'https://localhost:9200',
++  },
++  { credType: 'email', configKey: 'email', urlField: 'url', fallback: 'smtp.office365.com:587' },
++  { credType: 'sonar', configKey: 'sonar', urlField: 'url', fallback: 'http://localhost:9000' },
++  {
++    credType: 'zephyrscale',
++    configKey: 'zephyrscale',
++    urlField: 'url',
++    fallback: 'https://api.zephyrscale.smartbear.com/v2',
++  },
++  {
++    credType: 'xray',
++    configKey: 'xray',
++    urlField: 'url',
++    fallback: 'https://xray.cloud.getxray.app',
++  },
++  {
++    credType: 'servicenow',
++    configKey: 'servicenow',
++    urlField: 'url',
++    fallback: 'https://dev000000.service-now.com/',
++  },
++  {
++    credType: 'xwiki',
++    configKey: 'xwiki',
++    urlField: 'url',
++    fallback: 'https://wiki.example.com',
++  },
++  {
++    credType: 'sharepoint',
++    configKey: 'sharepoint',
++    urlField: 'url',
++    fallback: 'https://yourtenant.sharepoint.com',
++  },
++  {
++    credType: 'reportportal',
++    configKey: 'reportportal',
++    urlField: 'url',
++    fallback: 'https://reportportal.example.com/',
++  },
++]
++
++describe('CREDENTIAL_UI_MAPPING url defaultValue', () => {
++  beforeEach(() => {
++    Object.keys(mockToolUrlDefaults).forEach((k) => delete mockToolUrlDefaults[k])
++  })
++
++  it.each(URL_DEFAULTS_CASES)(
++    '$configKey.$urlField: defaultValue is a function',
++    ({ configKey, urlField }) => {
++      expect(typeof CREDENTIAL_UI_MAPPING[configKey].fields[urlField].defaultValue).toBe('function')
++    }
++  )
++
++  it.each(URL_DEFAULTS_CASES)(
++    '$configKey.$urlField: defaultValue returns hardcoded fallback when toolUrlDefaults is empty',
++    ({ configKey, urlField, fallback }) => {
++      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[urlField]
++        .defaultValue as () => string
++      expect(defaultValue()).toBe(fallback)
++    }
++  )
++
++  it.each(URL_DEFAULTS_CASES)(
++    '$configKey.$urlField: defaultValue returns store value when toolUrlDefaults is populated',
++    ({ credType, configKey, urlField }) => {
++      mockToolUrlDefaults[credType] = `https://${credType}.mycompany.com/`
++      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[urlField]
++        .defaultValue as () => string
++      expect(defaultValue()).toBe(`https://${credType}.mycompany.com/`)
++    }
++  )
++
++  it.each(URL_DEFAULTS_CASES)(
++    '$configKey.$urlField: defaultValue and defaultUrl resolve to the same value',
++    ({ credType, configKey, urlField }) => {
++      mockToolUrlDefaults[credType] = `https://${credType}.mycompany.com/`
++      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[urlField]
++        .defaultValue as () => string
++      const defaultUrl = CREDENTIAL_UI_MAPPING[configKey].defaultUrl as () => string
++      expect(defaultValue()).toBe(defaultUrl())
++    }
++  )
++})
++
+ describe('getSettingCredsURL', () => {
+   beforeEach(() => {
+-    vi.resetModules()
++    Object.keys(mockToolUrlDefaults).forEach((k) => delete mockToolUrlDefaults[k])
+   })
+-  it('returns URL when found', () => {
++
++  it('returns stored URL when credential has a url value', () => {
+     const credentialValues = [
+       { key: 'username', value: 'user' },
+       { key: 'url', value: 'http://example.com' },
+@@ -43,10 +176,25 @@ describe('getSettingCredsURL', () => {
+     expect(getSettingCredsURL(credentialValues, 'github')).toBe('http://example.com')
+   })
+ 
+-  it('returns default URL when URL is not in the array', () => {
++  it('returns string defaultUrl when no url is in the credential values', () => {
+     const credentialValues = [{ key: 'username', value: 'user' }]
+     expect(getSettingCredsURL(credentialValues, 'github')).toBe('AutoGenerated')
+   })
++
++  it('resolves function defaultUrl from store when toolUrlDefaults is populated', () => {
++    mockToolUrlDefaults.jira = 'https://jira.mycompany.com/'
++    expect(getSettingCredsURL([], 'jira')).toBe('https://jira.mycompany.com/')
++  })
++
++  it('function defaultUrl falls back to hardcoded string when toolUrlDefaults is empty', () => {
++    expect(getSettingCredsURL([], 'jira')).toBe('https://jira.example.com/')
++  })
++
++  it('stored url takes precedence over function defaultUrl', () => {
++    mockToolUrlDefaults.jira = 'https://jira.mycompany.com/'
++    const credentialValues = [{ key: 'url', value: 'https://jira.stored.com/' }]
++    expect(getSettingCredsURL(credentialValues, 'jira')).toBe('https://jira.stored.com/')
++  })
+ })
+ 
+ describe('getOriginalCredentialType', () => {
+diff --git a/src/utils/settings.ts b/src/utils/settings.ts
+index f82cf9ac4..3f7acc7cf 100644
+--- a/src/utils/settings.ts
++++ b/src/utils/settings.ts
+@@ -37,7 +37,8 @@ export const getSettingCredsURL = (
+   credentialType: string
+ ): string => {
+   const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
+-  const defaultUrl = credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
++  const rawDefault = credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
++  const defaultUrl = typeof rawDefault === 'function' ? rawDefault() : rawDefault
+   const urlObj = credentialValues.find((cv) => cv.key === 'url')
+   return (urlObj?.value as string) || defaultUrl
+ }
+@@ -121,12 +122,6 @@ export const getCredentialMessage = (credentialType: string) => {
+   return credConfig?.message
+ }
+ 
+-// Get default URL for a credential type
+-export const getDefaultUrl = (credentialType: string): string => {
+-  const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
+-  return credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
+-}
+-
+ export const convertCredsToKeyValue = (
+   credentialValues: Record<string, string> | undefined
+ ): { key: string; value: string }[] => {
+diff --git a/src/utils/settingsUIConfig.ts b/src/utils/settingsUIConfig.ts
+index e53ed7eb3..211cb3218 100644
+--- a/src/utils/settingsUIConfig.ts
++++ b/src/utils/settingsUIConfig.ts
+@@ -17,6 +17,7 @@ import * as Yup from 'yup'
+ 
+ import { GOOGLE_OAUTH_CREDENTIAL_TYPE } from '@/constants/integration'
+ import { MCP_SETTINGS_TYPE } from '@/constants/settings'
++import { appInfoStore } from '@/store/appInfo'
+ import {
+   CredentialAccessType,
+   CredentialComponentType,
+@@ -26,6 +27,27 @@ import {
+ } from '@/types/settingsUI'
+ import { validateCronExpression } from '@/utils/cronValidator'
+ 
++const dynUrl =
++  (credType: string, fallback: string): (() => string) =>
++  () =>
++    appInfoStore.toolUrlDefaults[credType] || fallback
++
++const JIRA_URL = dynUrl('jira', 'https://jira.example.com/')
++const GIT_URL = dynUrl('git', 'https://gitlab.example.com')
++const CONFLUENCE_URL = dynUrl('confluence', 'http://confluence.example.com/')
++const KUBERNETES_URL = dynUrl('kubernetes', 'https://kubernetes.default.svc')
++const KEYCLOAK_URL = dynUrl('keycloak', 'https://keycloak.example.com/auth')
++const AZUREDEVOPS_URL = dynUrl('azuredevops', 'https://dev.azure.com')
++const ELASTIC_URL = dynUrl('elastic', 'https://localhost:9200')
++const EMAIL_URL = dynUrl('email', 'smtp.office365.com:587')
++const SONAR_URL = dynUrl('sonar', 'http://localhost:9000')
++const ZEPHYRSCALE_URL = dynUrl('zephyrscale', 'https://api.zephyrscale.smartbear.com/v2')
++const XRAY_URL = dynUrl('xray', 'https://xray.cloud.getxray.app')
++const SERVICENOW_URL = dynUrl('servicenow', 'https://dev000000.service-now.com/')
++const XWIKI_URL = dynUrl('xwiki', 'https://wiki.example.com')
++const SHAREPOINT_URL = dynUrl('sharepoint', 'https://yourtenant.sharepoint.com')
++const REPORTPORTAL_URL = dynUrl('reportportal', 'https://reportportal.example.com/')
++
+ const AUTH_TYPE = {
+   BASIC: 'basic',
+   BEARER: 'bearer',
+@@ -144,11 +166,12 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   jira: {
+-    defaultUrl: 'https://jira.example.com/',
++    defaultUrl: JIRA_URL,
+     testable: true,
+     fields: {
+       url: {
+         placeholder: 'URL, e.g. https://jira.example.com/ or https://jira.example.com/jira/',
++        defaultValue: JIRA_URL,
+         validation: Yup.string().required('URL is required').url('Value must be a valid URL'),
+       },
+       is_cloud: {
+@@ -165,9 +188,9 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   git: {
+-    defaultUrl: 'https://gitlab.example.com',
++    defaultUrl: GIT_URL,
+     fields: {
+-      url: { placeholder: 'URL' },
++      url: { placeholder: 'URL', defaultValue: GIT_URL },
+       auth_type: {
+         placeholder: 'Authentication Type',
+         type: CredentialComponentType.select,
+@@ -250,7 +273,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   confluence: {
+-    defaultUrl: 'http://confluence.example.com/',
++    defaultUrl: CONFLUENCE_URL,
+     testable: true,
+     message: {
+       type: 'warn',
+@@ -263,7 +286,10 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+       configKey: 'confluenceIntegrationMessage',
+     },
+     fields: {
+-      url: { placeholder: 'URL, e.g. http://confluence.example.com/' },
++      url: {
++        placeholder: 'URL, e.g. http://confluence.example.com/',
++        defaultValue: CONFLUENCE_URL,
++      },
+       is_cloud: { type: CredentialComponentType.switch, placeholder: 'Is Confluence Cloud' },
+       username: { placeholder: 'Username/email for Confluence (Required for Confluence Cloud)' },
+       token: {
+@@ -274,9 +300,13 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   kubernetes: {
++    defaultUrl: KUBERNETES_URL,
+     testable: true,
+     fields: {
+-      kubernetes_url: { placeholder: 'Kubernetes URL e.g. https://kubernetes.codemie:6443' },
++      kubernetes_url: {
++        placeholder: 'Kubernetes URL e.g. https://kubernetes.codemie:6443',
++        defaultValue: KUBERNETES_URL,
++      },
+       kubernetes_token: { placeholder: 'Kubernetes Bearer Token', sensitive: true },
+     },
+   },
+@@ -309,9 +339,12 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   keycloak: {
+-    defaultUrl: 'https://keycloak.example.com/auth',
++    defaultUrl: KEYCLOAK_URL,
+     fields: {
+-      url: { placeholder: 'Keycloak Base URL, e.g. "https://keycloak.example.com/auth"' },
++      url: {
++        placeholder: 'Keycloak Base URL, e.g. "https://keycloak.example.com/auth"',
++        defaultValue: KEYCLOAK_URL,
++      },
+       realm: { placeholder: 'Keycloak Realm' },
+       client_id: { placeholder: 'Keycloak Client ID' },
+       client_secret: { placeholder: 'Keycloak Client Secret', sensitive: true },
+@@ -328,22 +361,22 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   azuredevops: {
+-    defaultUrl: 'https://dev.azure.com',
++    defaultUrl: AZUREDEVOPS_URL,
+     testable: false,
+     displayName: 'AzureDevOps',
+     serverEnum: 'AzureDevOps',
+     fields: {
+-      url: { placeholder: 'URL, e.g. https://dev.azure.com' },
++      url: { placeholder: 'URL, e.g. https://dev.azure.com', defaultValue: AZUREDEVOPS_URL },
+       project: { placeholder: 'Project Name' },
+       organization: { placeholder: 'Organization Name' },
+       token: { placeholder: 'Personal Access Token (PAT)', sensitive: true },
+     },
+   },
+   elastic: {
+-    defaultUrl: 'https://localhost:9200',
++    defaultUrl: ELASTIC_URL,
+     testable: false,
+     fields: {
+-      url: { placeholder: 'Elastic URL, e.g. "https://localhost:9200"' },
++      url: { placeholder: 'Elastic URL, e.g. "https://localhost:9200"', defaultValue: ELASTIC_URL },
+       elastic_api_key_id: { placeholder: 'API Key ID', sensitive: true },
+       elastic_api_key: { placeholder: 'API Key', sensitive: true },
+     },
+@@ -394,10 +427,13 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   email: {
+-    defaultUrl: 'smtp.office365.com:587',
++    defaultUrl: EMAIL_URL,
+     testable: true,
+     fields: {
+-      url: { placeholder: 'SMTP Server URL (e.g. smtp.office365.com:587)' },
++      url: {
++        placeholder: 'SMTP Server URL (e.g. smtp.office365.com:587)',
++        defaultValue: EMAIL_URL,
++      },
+       auth_type: {
+         placeholder: 'Authentication Type',
+         type: CredentialComponentType.select,
+@@ -449,10 +485,13 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   sonar: {
+-    defaultUrl: 'http://localhost:9000',
++    defaultUrl: SONAR_URL,
+     testable: true,
+     fields: {
+-      url: { placeholder: 'SonarQube Server URL (e.g. "http://localhost:9000")' },
++      url: {
++        placeholder: 'SonarQube Server URL (e.g. "http://localhost:9000")',
++        defaultValue: SONAR_URL,
++      },
+       token: { placeholder: 'Token', sensitive: true },
+       sonar_project_name: { placeholder: 'Project key inside Sonar' },
+     },
+@@ -517,7 +556,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   zephyrscale: {
+-    defaultUrl: 'https://api.zephyrscale.smartbear.com/v2',
++    defaultUrl: ZEPHYRSCALE_URL,
+     testable: true,
+     displayName: 'ZephyrScale',
+     serverEnum: 'ZephyrScale',
+@@ -525,6 +564,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+       url: {
+         placeholder:
+           'URL, e.g. https://prod-api.zephyr4jiracloud.com/v2 or https://api.zephyrscale.smartbear.com/v2',
++        defaultValue: ZEPHYRSCALE_URL,
+       },
+       token: {
+         placeholder: 'API Access Token',
+@@ -548,12 +588,13 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   xray: {
+-    defaultUrl: 'https://xray.cloud.getxray.app',
++    defaultUrl: XRAY_URL,
+     displayName: 'X-ray',
+     serverEnum: 'Xray',
+     fields: {
+       url: {
+         placeholder: 'URL, e.g. https://xray.cloud.getxray.app',
++        defaultValue: XRAY_URL,
+       },
+       client_id: {
+         placeholder: 'Client ID',
+@@ -570,12 +611,15 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   servicenow: {
+-    defaultUrl: 'https://dev000000.service-now.com/',
++    defaultUrl: SERVICENOW_URL,
+     testable: true,
+     displayName: 'ServiceNow',
+     serverEnum: 'ServiceNow',
+     fields: {
+-      url: { placeholder: 'Instance URL, f.ex. https://dev000000.service-now.com/' },
++      url: {
++        placeholder: 'Instance URL, f.ex. https://dev000000.service-now.com/',
++        defaultValue: SERVICENOW_URL,
++      },
+       api_key: {
+         placeholder: 'API Key',
+         help: 'https://www.servicenow.com/docs/bundle/yokohama-platform-security/page/integrate/authentication/task/configure-api-key.html',
+@@ -586,11 +630,12 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+   xwiki: {
+     displayName: 'xWiki',
+     serverEnum: 'XWiki',
+-    defaultUrl: 'https://wiki.example.com',
++    defaultUrl: XWIKI_URL,
+     testable: false,
+     fields: {
+       url: {
+         placeholder: 'URL, e.g. https://wiki.example.com',
++        defaultValue: XWIKI_URL,
+         validation: Yup.string().required('URL is required').url('Value must be a valid URL'),
+       },
+       use_bearer: {
+@@ -614,13 +659,14 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     },
+   },
+   sharepoint: {
+-    defaultUrl: 'https://yourtenant.sharepoint.com',
++    defaultUrl: SHAREPOINT_URL,
+     testable: false,
+     displayName: 'SharePoint',
+     serverEnum: 'SharePoint',
+     fields: {
+       url: {
+         placeholder: 'SharePoint URL, e.g. https://yourtenant.sharepoint.com',
++        defaultValue: SHAREPOINT_URL,
+       },
+       client_id: {
+         placeholder: 'Azure AD Application (Client) ID',
+@@ -650,12 +696,15 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     fields: {},
+   },
+   reportportal: {
+-    defaultUrl: 'https://reportportal.example.com/',
++    defaultUrl: REPORTPORTAL_URL,
+     testable: true,
+     displayName: 'ReportPortal',
+     serverEnum: 'ReportPortal',
+     fields: {
+-      url: { placeholder: 'Report Portal URL, e.g. https://reportportal.example.com/' },
++      url: {
++        placeholder: 'Report Portal URL, e.g. https://reportportal.example.com/',
++        defaultValue: REPORTPORTAL_URL,
++      },
+       project: { placeholder: 'Project name' },
+       api_key: { placeholder: 'API Key', sensitive: true },
+     },

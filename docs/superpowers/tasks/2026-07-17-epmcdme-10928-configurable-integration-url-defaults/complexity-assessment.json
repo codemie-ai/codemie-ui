@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "task": "Fetch v1/tools/configs at startup and use backend-provided URL placeholders to override hardcoded defaultUrl values in settingsUIConfig.ts, with toolUrlDefaults added to appInfoStore and mock-server fixture.",
+  "generated": "2026-07-17T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S"
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M"
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS"
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M"
+    }
+  },
+  "total": 15,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three shared components touched (appInfoStore, useInitialDataFetch, settings.ts) plus mock-server infra; base M (3) bumped to L (4) by 'touches core shared utilities' red flag because appInfoStore and settings.ts are app-wide utilities consumed across many features."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Five files modified (appInfo.ts, useInitialDataFetch.tsx, settings.ts, routes.json, db.json) across four directories (src/store/, src/hooks/appLevel/, src/utils/, mock-server/); no new files, but directory span places this firmly in M range."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Three distinct UI-side layers changed: State Management (appInfoStore), App-level data-fetch orchestration (useInitialDataFetch), and Utility/Service logic (settings.ts); mock-server counts as Infra but does not push to L on its own."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M (3) to L (4): touches core shared utilities — appInfoStore and settings.ts are consumed app-wide"
+  ],
+  "split_recommendation": null
+}

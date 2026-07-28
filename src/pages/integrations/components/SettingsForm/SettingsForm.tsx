@@ -102,6 +102,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   } = props
 
   const { user } = useSnapshot(userStore)
+  const { toolFieldDefaults } = useSnapshot(appInfoStore)
 
   const [projectName, setProjectName] = useState(initialProjectName || '')
   const [isGlobal, setIsGlobal] = useState(initialIsGlobal || false)
@@ -149,7 +150,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     if (config?.fields) {
       Object.entries(config.fields).forEach(([fieldName, fieldConfig]) => {
         if (fieldConfig.defaultValue !== undefined) {
-          defaults[fieldName] = fieldConfig.defaultValue
+          const val = fieldConfig.defaultValue
+          defaults[fieldName] = typeof val === 'function' ? val() : val
         }
       })
     }
@@ -161,8 +163,12 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     const defaults = getCredentialDefaults(credentialType)
 
     if (initialCredentialValues) {
-      // Merge existing values with defaults to ensure all fields with defaultValue are populated
-      const merged: Record<string, any> = { ...defaults, ...initialCredentialValues }
+      const storedValues = Object.fromEntries(
+        Object.entries(initialCredentialValues).filter(
+          ([, v]) => v !== '' && v !== null && v !== undefined
+        )
+      )
+      const merged: Record<string, any> = { ...defaults, ...storedValues }
       // Auto-derive virtual gate for saved gitlab_event_filter so the toggle
       // reflects an already-persisted filter on edit.
       if (
@@ -294,6 +300,15 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     // handleCredentialTypeChange closes over stable React state setters and form methods
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const isToolDefaultsLoaded = Object.keys(toolFieldDefaults).length > 0
+  const appliedInitialDefaultsRef = useRef(isToolDefaultsLoaded)
+  useEffect(() => {
+    if (appliedInitialDefaultsRef.current || !isToolDefaultsLoaded || initialCredentialValues)
+      return
+    appliedInitialDefaultsRef.current = true
+    reset({ alias: getValues('alias'), ...getCredentialDefaults(credentialType) })
+  }, [isToolDefaultsLoaded, credentialType, reset, initialCredentialValues])
 
   const buildWebhookURL = (value: string) => {
     const webhookId = value && value.trim() !== '' ? value : '<id>'

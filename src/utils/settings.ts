@@ -37,9 +37,10 @@ export const getSettingCredsURL = (
   credentialType: string
 ): string => {
   const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
-  const defaultUrl = credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
-  const urlObj = credentialValues.find((cv) => cv.key === 'url')
-  return (urlObj?.value as string) || defaultUrl
+  const rawDefault = credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
+  const defaultUrl = typeof rawDefault === 'function' ? rawDefault() : rawDefault
+  const urlObj = credentialValues.find((cv) => cv.key === 'url' || cv.key === 'base_url')
+  return (urlObj?.value as string) || defaultUrl || ''
 }
 
 export const getCredentialUIMapping = ({
@@ -119,12 +120,6 @@ export const getTestableCredentialTypes = (): string[] => {
 export const getCredentialMessage = (credentialType: string) => {
   const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
   return credConfig?.message
-}
-
-// Get default URL for a credential type
-export const getDefaultUrl = (credentialType: string): string => {
-  const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
-  return credConfig?.defaultUrl ?? CREDENTIAL_DEFAULTS.defaultUrl
 }
 
 export const convertCredsToKeyValue = (

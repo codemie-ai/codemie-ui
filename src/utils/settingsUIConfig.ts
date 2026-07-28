@@ -17,6 +17,7 @@ import * as Yup from 'yup'
 
 import { GOOGLE_OAUTH_CREDENTIAL_TYPE } from '@/constants/integration'
 import { MCP_SETTINGS_TYPE } from '@/constants/settings'
+import { appInfoStore } from '@/store/appInfo'
 import {
   CredentialAccessType,
   CredentialComponentType,
@@ -26,6 +27,37 @@ import {
 } from '@/types/settingsUI'
 import { validateCronExpression } from '@/utils/cronValidator'
 import { getIANATimezoneOptions } from '@/utils/timezone'
+
+const dynDefault =
+  (credType: string, field: string, fallback = ''): (() => string) =>
+  () =>
+    (appInfoStore.toolFieldDefaults[`${credType}.${field}`] as string) ?? fallback
+
+const dynDefaultBool =
+  (credType: string, field: string): (() => boolean) =>
+  () =>
+    (appInfoStore.toolFieldDefaults[`${credType}.${field}`] as boolean) ?? false
+
+const dynPlaceholder =
+  (credType: string, field: string): (() => string) =>
+  () =>
+    appInfoStore.toolFieldPlaceholders[`${credType}.${field}`] ?? ''
+
+const JIRA_URL = dynDefault('jira', 'url')
+const GIT_URL = dynDefault('git', 'url')
+const CONFLUENCE_URL = dynDefault('confluence', 'url')
+const KUBERNETES_URL = dynDefault('kubernetes', 'url')
+const KEYCLOAK_URL = dynDefault('keycloak', 'base_url')
+const AZUREDEVOPS_URL = dynDefault('azuredevops', 'url')
+const ELASTIC_URL = dynDefault('elastic', 'url')
+const EMAIL_URL = dynDefault('email', 'url')
+const SONAR_URL = dynDefault('sonar', 'url')
+const ZEPHYRSCALE_URL = dynDefault('zephyrscale', 'url')
+const XRAY_URL = dynDefault('xray', 'base_url')
+const SERVICENOW_URL = dynDefault('servicenow', 'url')
+const XWIKI_URL = dynDefault('xwiki', 'url')
+const SHAREPOINT_URL = dynDefault('sharepoint', 'url')
+const REPORTPORTAL_URL = dynDefault('reportportal', 'url')
 
 const AUTH_TYPE = {
   BASIC: 'basic',
@@ -145,16 +177,19 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   jira: {
-    defaultUrl: 'https://jira.example.com/',
+    defaultUrl: JIRA_URL,
     testable: true,
     fields: {
       url: {
-        placeholder: 'URL, e.g. https://jira.example.com/ or https://jira.example.com/jira/',
+        label: 'URL',
+        placeholder: dynPlaceholder('jira', 'url'),
+        defaultValue: JIRA_URL,
         validation: Yup.string().required('URL is required').url('Value must be a valid URL'),
       },
       is_cloud: {
         placeholder: 'Is Jira Cloud',
         type: CredentialComponentType.switch,
+        defaultValue: dynDefaultBool('jira', 'cloud'),
       },
       username: { placeholder: 'Username/email for Jira (Required for Jira Cloud)' },
       token: {
@@ -166,9 +201,9 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   git: {
-    defaultUrl: 'https://gitlab.example.com',
+    defaultUrl: GIT_URL,
     fields: {
-      url: { placeholder: 'URL' },
+      url: { label: 'URL', placeholder: dynPlaceholder('git', 'url'), defaultValue: GIT_URL },
       auth_type: {
         placeholder: 'Authentication Type',
         type: CredentialComponentType.select,
@@ -176,7 +211,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
           { value: 'pat', label: 'Personal Access Token' },
           { value: 'github_app', label: 'GitHub Application' },
         ],
-        defaultValue: 'pat',
+        defaultValue: dynDefault('git', 'auth_type', 'pat'),
       },
       _github_app_message: {
         type: CredentialComponentType.message,
@@ -251,7 +286,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   confluence: {
-    defaultUrl: 'http://confluence.example.com/',
+    defaultUrl: CONFLUENCE_URL,
     testable: true,
     message: {
       type: 'warn',
@@ -264,8 +299,16 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
       configKey: 'confluenceIntegrationMessage',
     },
     fields: {
-      url: { placeholder: 'URL, e.g. http://confluence.example.com/' },
-      is_cloud: { type: CredentialComponentType.switch, placeholder: 'Is Confluence Cloud' },
+      url: {
+        label: 'URL',
+        placeholder: dynPlaceholder('confluence', 'url'),
+        defaultValue: CONFLUENCE_URL,
+      },
+      is_cloud: {
+        type: CredentialComponentType.switch,
+        placeholder: 'Is Confluence Cloud',
+        defaultValue: dynDefaultBool('confluence', 'cloud'),
+      },
       username: { placeholder: 'Username/email for Confluence (Required for Confluence Cloud)' },
       token: {
         placeholder: 'Token/ApiKey',
@@ -275,9 +318,14 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   kubernetes: {
+    defaultUrl: KUBERNETES_URL,
     testable: true,
     fields: {
-      kubernetes_url: { placeholder: 'Kubernetes URL e.g. https://kubernetes.codemie:6443' },
+      kubernetes_url: {
+        label: 'URL',
+        placeholder: dynPlaceholder('kubernetes', 'url'),
+        defaultValue: KUBERNETES_URL,
+      },
       kubernetes_token: { placeholder: 'Kubernetes Bearer Token', sensitive: true },
     },
   },
@@ -310,9 +358,13 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   keycloak: {
-    defaultUrl: 'https://keycloak.example.com/auth',
+    defaultUrl: KEYCLOAK_URL,
     fields: {
-      url: { placeholder: 'Keycloak Base URL, e.g. "https://keycloak.example.com/auth"' },
+      base_url: {
+        label: 'Base URL',
+        placeholder: dynPlaceholder('keycloak', 'base_url'),
+        defaultValue: KEYCLOAK_URL,
+      },
       realm: { placeholder: 'Keycloak Realm' },
       client_id: { placeholder: 'Keycloak Client ID' },
       client_secret: { placeholder: 'Keycloak Client Secret', sensitive: true },
@@ -329,22 +381,30 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   azuredevops: {
-    defaultUrl: 'https://dev.azure.com',
+    defaultUrl: AZUREDEVOPS_URL,
     testable: false,
     displayName: 'AzureDevOps',
     serverEnum: 'AzureDevOps',
     fields: {
-      url: { placeholder: 'URL, e.g. https://dev.azure.com' },
+      url: {
+        label: 'URL',
+        placeholder: dynPlaceholder('azuredevops', 'url'),
+        defaultValue: AZUREDEVOPS_URL,
+      },
       project: { placeholder: 'Project Name' },
       organization: { placeholder: 'Organization Name' },
       token: { placeholder: 'Personal Access Token (PAT)', sensitive: true },
     },
   },
   elastic: {
-    defaultUrl: 'https://localhost:9200',
+    defaultUrl: ELASTIC_URL,
     testable: false,
     fields: {
-      url: { placeholder: 'Elastic URL, e.g. "https://localhost:9200"' },
+      url: {
+        label: 'URL',
+        placeholder: dynPlaceholder('elastic', 'url'),
+        defaultValue: ELASTIC_URL,
+      },
       elastic_api_key_id: { placeholder: 'API Key ID', sensitive: true },
       elastic_api_key: { placeholder: 'API Key', sensitive: true },
     },
@@ -395,10 +455,14 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   email: {
-    defaultUrl: 'smtp.office365.com:587',
+    defaultUrl: EMAIL_URL,
     testable: true,
     fields: {
-      url: { placeholder: 'SMTP Server URL (e.g. smtp.office365.com:587)' },
+      url: {
+        label: 'URL',
+        placeholder: dynPlaceholder('email', 'url'),
+        defaultValue: EMAIL_URL,
+      },
       auth_type: {
         placeholder: 'Authentication Type',
         type: CredentialComponentType.select,
@@ -406,6 +470,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
           { value: 'basic', label: 'Basic Authentication' },
           { value: 'oauth_azure', label: 'OAuth via Microsoft Entra ID Application' },
         ],
+        defaultValue: dynDefault('email', 'auth_type', 'basic'),
       },
       smtp_username: {
         placeholder: 'SMTP Server Username',
@@ -450,10 +515,14 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   sonar: {
-    defaultUrl: 'http://localhost:9000',
+    defaultUrl: SONAR_URL,
     testable: true,
     fields: {
-      url: { placeholder: 'SonarQube Server URL (e.g. "http://localhost:9000")' },
+      url: {
+        label: 'URL',
+        placeholder: dynPlaceholder('sonar', 'url'),
+        defaultValue: SONAR_URL,
+      },
       token: { placeholder: 'Token', sensitive: true },
       sonar_project_name: { placeholder: 'Project key inside Sonar' },
     },
@@ -518,14 +587,15 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   zephyrscale: {
-    defaultUrl: 'https://api.zephyrscale.smartbear.com/v2',
+    defaultUrl: ZEPHYRSCALE_URL,
     testable: true,
     displayName: 'ZephyrScale',
     serverEnum: 'ZephyrScale',
     fields: {
       url: {
-        placeholder:
-          'URL, e.g. https://prod-api.zephyr4jiracloud.com/v2 or https://api.zephyrscale.smartbear.com/v2',
+        label: 'URL',
+        placeholder: dynPlaceholder('zephyrscale', 'url'),
+        defaultValue: ZEPHYRSCALE_URL,
       },
       token: {
         placeholder: 'API Access Token',
@@ -549,12 +619,14 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   xray: {
-    defaultUrl: 'https://xray.cloud.getxray.app',
+    defaultUrl: XRAY_URL,
     displayName: 'X-ray',
     serverEnum: 'Xray',
     fields: {
-      url: {
-        placeholder: 'URL, e.g. https://xray.cloud.getxray.app',
+      base_url: {
+        label: 'Base URL',
+        placeholder: dynPlaceholder('xray', 'base_url'),
+        defaultValue: XRAY_URL,
       },
       client_id: {
         placeholder: 'Client ID',
@@ -571,12 +643,16 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   servicenow: {
-    defaultUrl: 'https://dev000000.service-now.com/',
+    defaultUrl: SERVICENOW_URL,
     testable: true,
     displayName: 'ServiceNow',
     serverEnum: 'ServiceNow',
     fields: {
-      url: { placeholder: 'Instance URL, f.ex. https://dev000000.service-now.com/' },
+      url: {
+        label: 'URL',
+        placeholder: dynPlaceholder('servicenow', 'url'),
+        defaultValue: SERVICENOW_URL,
+      },
       api_key: {
         placeholder: 'API Key',
         help: 'https://www.servicenow.com/docs/bundle/yokohama-platform-security/page/integrate/authentication/task/configure-api-key.html',
@@ -587,16 +663,19 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
   xwiki: {
     displayName: 'xWiki',
     serverEnum: 'XWiki',
-    defaultUrl: 'https://wiki.example.com',
+    defaultUrl: XWIKI_URL,
     testable: false,
     fields: {
       url: {
-        placeholder: 'URL, e.g. https://wiki.example.com',
+        label: 'URL',
+        placeholder: dynPlaceholder('xwiki', 'url'),
+        defaultValue: XWIKI_URL,
         validation: Yup.string().required('URL is required').url('Value must be a valid URL'),
       },
       use_bearer: {
         placeholder: 'Use Bearer Token Authentication',
         type: CredentialComponentType.switch,
+        defaultValue: dynDefaultBool('xwiki', 'use_bearer'),
       },
       username: {
         placeholder: 'Username',
@@ -615,13 +694,15 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     },
   },
   sharepoint: {
-    defaultUrl: 'https://yourtenant.sharepoint.com',
+    defaultUrl: SHAREPOINT_URL,
     testable: false,
     displayName: 'SharePoint',
     serverEnum: 'SharePoint',
     fields: {
       url: {
-        placeholder: 'SharePoint URL, e.g. https://yourtenant.sharepoint.com',
+        label: 'URL',
+        placeholder: dynPlaceholder('sharepoint', 'url'),
+        defaultValue: SHAREPOINT_URL,
       },
       client_id: {
         placeholder: 'Azure AD Application (Client) ID',
@@ -651,12 +732,16 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     fields: {},
   },
   reportportal: {
-    defaultUrl: 'https://reportportal.example.com/',
+    defaultUrl: REPORTPORTAL_URL,
     testable: true,
     displayName: 'ReportPortal',
     serverEnum: 'ReportPortal',
     fields: {
-      url: { placeholder: 'Report Portal URL, e.g. https://reportportal.example.com/' },
+      url: {
+        label: 'URL',
+        placeholder: dynPlaceholder('reportportal', 'url'),
+        defaultValue: REPORTPORTAL_URL,
+      },
       project: { placeholder: 'Project name' },
       api_key: { placeholder: 'API Key', sensitive: true },
     },

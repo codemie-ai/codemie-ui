@@ -41,6 +41,7 @@ const useInitialDataFetch = () => {
       chatsStore.getChats()
 
       appInfoStore.loadAppInfo()
+      appInfoStore.fetchToolConfigs()
       appInfoStore.getLLMModels()
       appInfoStore.getEmbeddingsModels()
       appInfoStore.setIsNavigationExpanded()

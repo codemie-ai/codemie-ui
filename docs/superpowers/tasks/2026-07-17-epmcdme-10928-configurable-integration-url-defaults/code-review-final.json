@@ -1,0 +1,66 @@
+{
+  "decision": "request-changes",
+  "confidence": "medium",
+  "rationale": "All 28 spec criteria pass (acceptance lens clean). One defensive-coding gap survives triage: fetchToolConfigs guards against non-array response, empty entry objects, and null configVal — but not against a null/undefined element in the array itself. Object.entries(null) throws, the outer catch fires, and all defaults accumulated before that element are discarded. The fix is a one-line null guard consistent with the existing defensive pattern. Fallbacks work in this scenario so user-visible impact is limited, but the omission is inconsistent with the surrounding defensive code. Seven findings dismissed (xrayconfig fixture concern invalid — actual file uses base_url correctly; githubconfig intentionally excluded; fire-and-forget timing by design; empty-string filter per spec; entries[0] per API contract; getDefaultUrl deletion per spec; github/gitlab collision speculative). Three findings deferred as pre-existing behaviour not introduced by this PR (no-logging in catch, template-token fallback strings, http-scheme fallback strings).",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "spec", "item": "settingsUI.ts: CredentialTypeConfig.defaultUrl widened to string | (() => string)", "status": "pass", "notes": "Exact type from spec confirmed in diff."},
+    {"kind": "spec", "item": "settingsUI.ts: CredentialFieldConfig.defaultValue widened to string | boolean | (() => string)", "status": "pass", "notes": "Exact type from spec confirmed in diff."},
+    {"kind": "spec", "item": "appInfo.ts: TOOL_CONFIG_URL_MAP has 15 entries; keycloak/xray use base_url; githubconfig excluded", "status": "pass", "notes": "All 15 entries present with correct urlField values; githubconfig absent."},
+    {"kind": "spec", "item": "appInfo.ts: AppInfoStoreType declares toolUrlDefaults: Record<string, string>", "status": "pass", "notes": "Interface addition confirmed."},
+    {"kind": "spec", "item": "appInfo.ts: AppInfoStoreType declares fetchToolConfigs: () => Promise<void>", "status": "pass", "notes": "Interface addition confirmed."},
+    {"kind": "spec", "item": "appInfo.ts: fetchToolConfigs() fetches v1/tools/configs, parses field.default, skips empty strings, swallows errors non-fatally", "status": "pass", "notes": "try/catch with empty catch; typeof defaultVal === 'string' && defaultVal guard present."},
+    {"kind": "spec", "item": "appInfo.ts: Array.isArray(data) early-return guard", "status": "pass", "notes": "if (!Array.isArray(data)) return present."},
+    {"kind": "spec", "item": "appInfo.ts: empty-entry skip (if (!entries.length) continue)", "status": "pass", "notes": "if (!entries.length) continue present."},
+    {"kind": "spec", "item": "appInfo.ts: null/non-object configVal skip", "status": "pass", "notes": "if (!configVal || typeof configVal !== 'object') continue present."},
+    {"kind": "spec", "item": "useInitialDataFetch.tsx: fetchToolConfigs() fire-and-forget after await fetchCustomerConfig()", "status": "pass", "notes": "Bare call added immediately after the awaited fetchCustomerConfig()."},
+    {"kind": "spec", "item": "settingsUIConfig.ts: dynUrl(credType, fallback): () => string closure reading appInfoStore.toolUrlDefaults[credType] || fallback", "status": "pass", "notes": "Definition matches spec exactly."},
+    {"kind": "spec", "item": "settingsUIConfig.ts: 15 named URL constants (JIRA_URL through REPORTPORTAL_URL)", "status": "pass", "notes": "All 15 constants defined."},
+    {"kind": "spec", "item": "settingsUIConfig.ts: all 15 credential types have defaultUrl set to the named constant", "status": "pass", "notes": "Confirmed for all 15 types."},
+    {"kind": "spec", "item": "settingsUIConfig.ts: all 15 credential types have URL form field defaultValue set to the same named constant", "status": "pass", "notes": "All 15 credential types wire defaultValue to the same constant as defaultUrl."},
+    {"kind": "spec", "item": "settingsUIConfig.ts: kubernetes uses kubernetes_url field for defaultValue", "status": "pass", "notes": "kubernetes_url field confirmed."},
+    {"kind": "spec", "item": "settingsUIConfig.ts: placeholder strings remain hardcoded", "status": "pass", "notes": "No dynUrl calls on placeholder fields; all placeholders are unchanged string literals."},
+    {"kind": "spec", "item": "settings.ts: getSettingCredsURL resolves function-type defaultUrl", "status": "pass", "notes": "typeof rawDefault === 'function' ? rawDefault() : rawDefault confirmed."},
+    {"kind": "spec", "item": "settings.ts: getDefaultUrl() deleted", "status": "pass", "notes": "Deletion confirmed; no remaining occurrence."},
+    {"kind": "spec", "item": "SettingsForm.tsx: getCredentialDefaults resolves function-type defaultValue", "status": "pass", "notes": "typeof val === 'function' ? val() : val confirmed."},
+    {"kind": "spec", "item": "SettingsForm.tsx: getInitialCredentialValues filters stored values (v !== '' && v !== null && v !== undefined) before merge", "status": "pass", "notes": "Object.fromEntries/filter pattern confirmed."},
+    {"kind": "spec", "item": "mock-server/routes.json: /v1/tools/configs route added", "status": "pass", "notes": "Route mapping confirmed."},
+    {"kind": "spec", "item": "mock-server/db.json: 16-entry tools_configs array; keycloak/xray use base_url; values match fallbacks", "status": "pass", "notes": "16 entries confirmed; keycloakconfig/xrayconfig use base_url; values match hardcoded fallbacks."},
+    {"kind": "spec", "item": "Fallback: fetchToolConfigs throws → toolUrlDefaults stays {} → dynUrl returns hardcoded fallback", "status": "pass", "notes": "Empty catch + || fallback in dynUrl ensures regression-free degradation."},
+    {"kind": "spec", "item": "Fallback: endpoint returns empty array → toolUrlDefaults stays {}", "status": "pass", "notes": "Loop body never executes; defaults stays {} and is assigned to toolUrlDefaults."},
+    {"kind": "spec", "item": "Fallback: entry default is '' → dynUrl returns hardcoded fallback", "status": "pass", "notes": "Empty string falsy; typeof guard skips it; || fallback in dynUrl catches it."},
+    {"kind": "spec", "item": "Fallback: edit form credential saved without URL → stored url:'' filtered → form falls back to configured default", "status": "pass", "notes": "getInitialCredentialValues filter excludes empty string values before merge."},
+    {"kind": "spec", "item": "appInfo.test.ts: 7 tests covering all specified scenarios", "status": "pass", "notes": "All 7 tests present."},
+    {"kind": "spec", "item": "settings.test.ts: 5 tests for getSettingCredsURL with function-type defaultUrl", "status": "pass", "notes": "All 5 tests present in the getSettingCredsURL describe block."}
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "All 4 branch commits match EPMCDME-XXXX: Capital sentence — 16bf6276c, e01adab4e, 00d4aad7c, 9d69bb3b7."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "No blocking code-quality violations in the changed lines."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No security issues. URLs are user-configurable defaults, not secrets. Error swallowing is intentional per spec."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "title": "fetchToolConfigs: null/undefined array element causes TypeError and discards accumulated defaults",
+      "file": "src/store/appInfo.ts",
+      "line": 135,
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The for-of loop calls Object.entries(entry) on each array element. If an element is null or undefined, Object.entries throws a TypeError. The outer catch fires, leaving toolUrlDefaults as {} and discarding any defaults accumulated before the null element in that loop run.",
+      "impact": "All configured URL defaults are silently lost for that app startup. Users see hardcoded fallback URLs instead of deployment-configured ones. No crash or data loss, but the feature's core value is negated silently when a null element appears before valid entries.",
+      "recommendation": "Add a one-line null guard at the top of the loop body: if (entry == null) continue — consistent with the existing guards for empty entries, null configVal, and non-array response."
+    }
+  ]
+}

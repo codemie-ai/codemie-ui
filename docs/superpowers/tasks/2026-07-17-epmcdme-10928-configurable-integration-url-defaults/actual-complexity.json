@@ -1,0 +1,86 @@
+{
+  "task": "Make integration URL defaults deployment-configurable by fetching GET /v1/tools/configs at startup and replacing 15 hardcoded URL strings in settingsUIConfig.ts with dynUrl() closures (EPMCDME-10928)",
+  "generated": "2026-07-20T00:00:00.000Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 5,
+      "label": "XL",
+      "affected": "appInfoStore, useInitialDataFetch hook, settingsUIConfig, settings utility, settingsUI types",
+      "layers": "Store/State, Startup-Hook, UI-Config, Utility"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 3,
+      "label": "M",
+      "risk_factors": "New closure-based lazy evaluation pattern for defaultUrl (dynUrl factory); type widening of CredentialTypeConfig.defaultUrl from string to string|(() => string) requires all callers to handle the function case",
+      "mitigation": "Fallback strings baked into every dynUrl() closure; fetchToolConfigs is non-fatal with silent catch; getSettingCredsURL explicitly handles both string and function defaultUrl via typeof check"
+    },
+    "file_change_estimate": {
+      "score": 4,
+      "label": "L",
+      "modified_files": 8,
+      "modified_file_list": [
+        "mock-server/db.json",
+        "mock-server/routes.json",
+        "src/hooks/appLevel/useInitialDataFetch.tsx",
+        "src/store/appInfo.ts",
+        "src/types/settingsUI.ts",
+        "src/utils/__tests__/settings.test.ts",
+        "src/utils/settings.ts",
+        "src/utils/settingsUIConfig.ts"
+      ],
+      "new_files": 1,
+      "new_file_list": [
+        "src/store/__tests__/appInfo.test.ts"
+      ],
+      "affected_dirs": [
+        "mock-server",
+        "src/hooks",
+        "src/store",
+        "src/types",
+        "src/utils"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M",
+      "layers_changed": ["Store/State", "Startup-Hook", "UI-Config", "Utility"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 18,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 9,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Five components touched (appInfoStore, useInitialDataFetch, settingsUIConfig, settings.ts, settingsUI types) across Store, Startup-Hook, UI-Config, and Utility layers; bumped from L (4) to XL (5) because settingsUIConfig.ts is the master credential UI mapping consumed by all settings forms, and settings.ts is a shared utility used throughout the settings flow — both qualify as core shared utilities per the red flag rule"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "9 files changed (diffstat N=9 maps to L in the 7-10 bracket); 8 pre-existing files modified plus 1 new test file (src/store/__tests__/appInfo.test.ts), spanning 5 directories"
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Introduces a new dynUrl closure pattern (lazy evaluation of defaultUrl deferred to render time rather than module load time) with no prior precedent in the codebase; the type widening of CredentialTypeConfig.defaultUrl requires every caller of defaultUrl to check for function vs string; risk is well-contained by fallback strings and non-fatal error handling"
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): settingsUIConfig.ts (master credential UI map consumed by all settings forms) and settings.ts (shared settings utility) are core shared utilities — triggers the 'Touches core shared utilities' red flag"
+  ],
+  "split_recommendation": null
+}

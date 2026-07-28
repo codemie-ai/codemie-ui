@@ -15,5 +15,6 @@
   "/v1/index/users": "/users_index",
   "/v1/index?page=*": "/index",
   "/v1/settings/user/available": "/user_available_settings",
-  "/v1/providers/datasource_schemas": "/datasource_schemas"
+  "/v1/providers/datasource_schemas": "/datasource_schemas",
+  "/v1/tools/configs": "/tools_configs"
 }

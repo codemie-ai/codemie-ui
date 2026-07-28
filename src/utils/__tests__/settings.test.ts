@@ -26,16 +26,208 @@ import {
   SETTING_TYPE_PROJECT,
   SETTING_TYPE_USER,
 } from '@/utils/settings'
+import { CREDENTIAL_UI_MAPPING } from '@/utils/settingsUIConfig'
 
 vi.mock('@/utils/enterpriseEdition', () => ({
   isEnterpriseEdition: () => true,
 }))
 
+const mockToolFieldDefaults: Record<string, string | boolean> = {}
+const mockToolFieldPlaceholders: Record<string, string> = {}
+
+vi.mock('@/store/appInfo', () => ({
+  appInfoStore: {
+    get toolFieldDefaults() {
+      return mockToolFieldDefaults
+    },
+    get toolFieldPlaceholders() {
+      return mockToolFieldPlaceholders
+    },
+  },
+}))
+
+// storeField: the backend field name used as the key suffix in toolFieldDefaults.
+// urlField: the key inside CREDENTIAL_UI_MAPPING[configKey].fields for the URL input.
+// These differ for kubernetes (urlField='kubernetes_url', storeField='url').
+const URL_DEFAULTS_CASES: {
+  credType: string
+  configKey: string
+  urlField: string
+  storeField: string
+}[] = [
+  { credType: 'jira', configKey: 'jira', urlField: 'url', storeField: 'url' },
+  { credType: 'git', configKey: 'git', urlField: 'url', storeField: 'url' },
+  { credType: 'confluence', configKey: 'confluence', urlField: 'url', storeField: 'url' },
+  {
+    credType: 'kubernetes',
+    configKey: 'kubernetes',
+    urlField: 'kubernetes_url',
+    storeField: 'url',
+  },
+  { credType: 'keycloak', configKey: 'keycloak', urlField: 'base_url', storeField: 'base_url' },
+  { credType: 'azuredevops', configKey: 'azuredevops', urlField: 'url', storeField: 'url' },
+  { credType: 'elastic', configKey: 'elastic', urlField: 'url', storeField: 'url' },
+  { credType: 'email', configKey: 'email', urlField: 'url', storeField: 'url' },
+  { credType: 'sonar', configKey: 'sonar', urlField: 'url', storeField: 'url' },
+  { credType: 'zephyrscale', configKey: 'zephyrscale', urlField: 'url', storeField: 'url' },
+  { credType: 'xray', configKey: 'xray', urlField: 'base_url', storeField: 'base_url' },
+  { credType: 'servicenow', configKey: 'servicenow', urlField: 'url', storeField: 'url' },
+  { credType: 'xwiki', configKey: 'xwiki', urlField: 'url', storeField: 'url' },
+  { credType: 'sharepoint', configKey: 'sharepoint', urlField: 'url', storeField: 'url' },
+  { credType: 'reportportal', configKey: 'reportportal', urlField: 'url', storeField: 'url' },
+]
+
+const clearMocks = () => {
+  Object.keys(mockToolFieldDefaults).forEach((k) => delete mockToolFieldDefaults[k])
+  Object.keys(mockToolFieldPlaceholders).forEach((k) => delete mockToolFieldPlaceholders[k])
+}
+
+describe('CREDENTIAL_UI_MAPPING url defaultValue', () => {
+  beforeEach(clearMocks)
+
+  it.each(URL_DEFAULTS_CASES)(
+    '$credType $urlField: defaultValue is a function',
+    ({ configKey, urlField }) => {
+      expect(typeof CREDENTIAL_UI_MAPPING[configKey].fields[urlField].defaultValue).toBe('function')
+    }
+  )
+
+  it.each(URL_DEFAULTS_CASES)(
+    '$credType $urlField: defaultValue returns empty string when backend returned nothing',
+    ({ configKey, urlField }) => {
+      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[urlField]
+        .defaultValue as () => string
+      expect(defaultValue()).toBe('')
+    }
+  )
+
+  it.each(URL_DEFAULTS_CASES)(
+    '$credType $urlField: defaultValue returns store value when toolFieldDefaults is populated',
+    ({ credType, configKey, urlField, storeField }) => {
+      mockToolFieldDefaults[`${credType}.${storeField}`] = `https://${credType}.mycompany.com/`
+      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[urlField]
+        .defaultValue as () => string
+      expect(defaultValue()).toBe(`https://${credType}.mycompany.com/`)
+    }
+  )
+
+  it.each(URL_DEFAULTS_CASES)(
+    '$credType $urlField: defaultValue and defaultUrl resolve to the same value',
+    ({ credType, configKey, urlField, storeField }) => {
+      mockToolFieldDefaults[`${credType}.${storeField}`] = `https://${credType}.mycompany.com/`
+      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[urlField]
+        .defaultValue as () => string
+      const defaultUrl = CREDENTIAL_UI_MAPPING[configKey].defaultUrl as () => string
+      expect(defaultValue()).toBe(defaultUrl())
+    }
+  )
+})
+
+describe('CREDENTIAL_UI_MAPPING url placeholder', () => {
+  beforeEach(clearMocks)
+
+  it.each(URL_DEFAULTS_CASES)(
+    '$credType $urlField: placeholder is a function',
+    ({ configKey, urlField }) => {
+      expect(typeof CREDENTIAL_UI_MAPPING[configKey].fields[urlField].placeholder).toBe('function')
+    }
+  )
+
+  it.each(URL_DEFAULTS_CASES)(
+    '$credType $urlField: placeholder returns empty string when backend returned nothing',
+    ({ configKey, urlField }) => {
+      const placeholder = CREDENTIAL_UI_MAPPING[configKey].fields[urlField]
+        .placeholder as () => string
+      expect(placeholder()).toBe('')
+    }
+  )
+
+  it.each(URL_DEFAULTS_CASES)(
+    '$credType $urlField: placeholder returns store value when toolFieldPlaceholders is populated',
+    ({ credType, configKey, urlField, storeField }) => {
+      mockToolFieldPlaceholders[`${credType}.${storeField}`] = `https://${credType}.example.com/`
+      const placeholder = CREDENTIAL_UI_MAPPING[configKey].fields[urlField]
+        .placeholder as () => string
+      expect(placeholder()).toBe(`https://${credType}.example.com/`)
+    }
+  )
+})
+
+describe('CREDENTIAL_UI_MAPPING non-url boolean defaults', () => {
+  const BOOL_CASES = [
+    { credType: 'jira', configKey: 'jira', fieldKey: 'is_cloud', storeField: 'cloud' },
+    { credType: 'confluence', configKey: 'confluence', fieldKey: 'is_cloud', storeField: 'cloud' },
+    { credType: 'xwiki', configKey: 'xwiki', fieldKey: 'use_bearer', storeField: 'use_bearer' },
+  ]
+
+  beforeEach(clearMocks)
+
+  it.each(BOOL_CASES)(
+    '$credType $fieldKey: defaultValue is a function',
+    ({ configKey, fieldKey }) => {
+      expect(typeof CREDENTIAL_UI_MAPPING[configKey].fields[fieldKey].defaultValue).toBe('function')
+    }
+  )
+
+  it.each(BOOL_CASES)(
+    '$credType $fieldKey: defaultValue returns false when backend returned nothing',
+    ({ configKey, fieldKey }) => {
+      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[fieldKey]
+        .defaultValue as () => boolean
+      expect(defaultValue()).toBe(false)
+    }
+  )
+
+  it.each(BOOL_CASES)(
+    '$credType $fieldKey: defaultValue returns true when backend configures true',
+    ({ credType, configKey, fieldKey, storeField }) => {
+      mockToolFieldDefaults[`${credType}.${storeField}`] = true
+      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[fieldKey]
+        .defaultValue as () => boolean
+      expect(defaultValue()).toBe(true)
+    }
+  )
+})
+
+describe('CREDENTIAL_UI_MAPPING non-url string defaults', () => {
+  const STRING_CASES = [
+    { credType: 'git', configKey: 'git', fieldKey: 'auth_type', fallback: 'pat' },
+    { credType: 'email', configKey: 'email', fieldKey: 'auth_type', fallback: 'basic' },
+  ]
+
+  beforeEach(clearMocks)
+
+  it.each(STRING_CASES)(
+    '$credType $fieldKey: defaultValue is a function',
+    ({ configKey, fieldKey }) => {
+      expect(typeof CREDENTIAL_UI_MAPPING[configKey].fields[fieldKey].defaultValue).toBe('function')
+    }
+  )
+
+  it.each(STRING_CASES)(
+    '$credType $fieldKey: defaultValue returns fallback when backend returned nothing',
+    ({ configKey, fieldKey, fallback }) => {
+      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[fieldKey]
+        .defaultValue as () => string
+      expect(defaultValue()).toBe(fallback)
+    }
+  )
+
+  it.each(STRING_CASES)(
+    '$credType $fieldKey: defaultValue returns configured value from store',
+    ({ credType, configKey, fieldKey }) => {
+      mockToolFieldDefaults[`${credType}.${fieldKey}`] = 'oauth_azure'
+      const defaultValue = CREDENTIAL_UI_MAPPING[configKey].fields[fieldKey]
+        .defaultValue as () => string
+      expect(defaultValue()).toBe('oauth_azure')
+    }
+  )
+})
+
 describe('getSettingCredsURL', () => {
-  beforeEach(() => {
-    vi.resetModules()
-  })
-  it('returns URL when found', () => {
+  beforeEach(clearMocks)
+
+  it('returns stored url value when credential has a url key', () => {
     const credentialValues = [
       { key: 'username', value: 'user' },
       { key: 'url', value: 'http://example.com' },
@@ -43,9 +235,53 @@ describe('getSettingCredsURL', () => {
     expect(getSettingCredsURL(credentialValues, 'github')).toBe('http://example.com')
   })
 
-  it('returns default URL when URL is not in the array', () => {
+  it('returns stored base_url value when credential has a base_url key', () => {
+    const credentialValues = [{ key: 'base_url', value: 'https://keycloak.stored.com' }]
+    expect(getSettingCredsURL(credentialValues, 'keycloak')).toBe('https://keycloak.stored.com')
+  })
+
+  it('returns string defaultUrl when no url or base_url is in the credential values', () => {
     const credentialValues = [{ key: 'username', value: 'user' }]
     expect(getSettingCredsURL(credentialValues, 'github')).toBe('AutoGenerated')
+  })
+
+  it('returns empty string for url-type integration when no url stored and backend returned nothing', () => {
+    expect(getSettingCredsURL([], 'jira')).toBe('')
+  })
+
+  it('returns empty string for keycloak (base_url path) when no url stored and backend returned nothing', () => {
+    expect(getSettingCredsURL([], 'keycloak')).toBe('')
+  })
+
+  it('returns empty string for xray (base_url path) when no url stored and backend returned nothing', () => {
+    expect(getSettingCredsURL([], 'xray')).toBe('')
+  })
+
+  it('returns empty string when stored url is empty string and backend returned nothing', () => {
+    const credentialValues = [{ key: 'url', value: '' }]
+    expect(getSettingCredsURL(credentialValues, 'jira')).toBe('')
+  })
+
+  it('resolves function defaultUrl from store when toolFieldDefaults is populated', () => {
+    mockToolFieldDefaults['jira.url'] = 'https://jira.mycompany.com/'
+    expect(getSettingCredsURL([], 'jira')).toBe('https://jira.mycompany.com/')
+  })
+
+  it('resolves keycloak defaultUrl from base_url store key', () => {
+    mockToolFieldDefaults['keycloak.base_url'] = 'https://keycloak.mycompany.com'
+    expect(getSettingCredsURL([], 'keycloak')).toBe('https://keycloak.mycompany.com')
+  })
+
+  it('stored url takes precedence over function defaultUrl', () => {
+    mockToolFieldDefaults['jira.url'] = 'https://jira.mycompany.com/'
+    const credentialValues = [{ key: 'url', value: 'https://jira.stored.com/' }]
+    expect(getSettingCredsURL(credentialValues, 'jira')).toBe('https://jira.stored.com/')
+  })
+
+  it('stored base_url takes precedence over function defaultUrl for keycloak', () => {
+    mockToolFieldDefaults['keycloak.base_url'] = 'https://keycloak.mycompany.com'
+    const credentialValues = [{ key: 'base_url', value: 'https://keycloak.stored.com' }]
+    expect(getSettingCredsURL(credentialValues, 'keycloak')).toBe('https://keycloak.stored.com')
   })
 })
 
