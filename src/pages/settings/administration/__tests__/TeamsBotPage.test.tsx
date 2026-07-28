@@ -37,6 +37,14 @@ vi.mock('@/store/projects', () => ({
   },
 }))
 
+vi.mock('valtio', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('valtio')>()
+  return {
+    ...actual,
+    useSnapshot: (store: any) => store,
+  }
+})
+
 vi.mock('@/hooks/useFeatureFlags', () => ({
   useTeamsEnabled: () => [true, true],
 }))
