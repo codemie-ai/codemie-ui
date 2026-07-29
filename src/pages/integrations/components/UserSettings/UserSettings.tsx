@@ -28,6 +28,7 @@ import { TableProps } from '@/components/Table/Table'
 import { ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import { useIntegrationTypeOptions } from '@/hooks/useIntegrationTypeOptions'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
+import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
 import { useTableFilters } from '@/hooks/useTableFilters'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { INITIAL_FILTERS } from '@/pages/integrations/IntegrationsTab'
@@ -81,6 +82,11 @@ const UserSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
     initialPagination: { page: 0, perPage: userSettingsPagination.perPage },
   })
 
+  const resolvedProjectOptions = useResolvedProjectOptions(
+    projectOptions,
+    (filters['project' as keyof typeof INITIAL_FILTERS] || []) as string[]
+  )
+
   const editUserSetting = (setting) => {
     router.push({
       name: 'edit-user-integration',
@@ -124,7 +130,7 @@ const UserSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
       label: 'Project',
       type: FilterDefinitionType.Multiselect,
       value: filters['project' as keyof typeof INITIAL_FILTERS] || [],
-      options: projectOptions,
+      options: resolvedProjectOptions,
       config: {
         maxSelectedLabels: 3,
         filter: true,

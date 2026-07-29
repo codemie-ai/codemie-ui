@@ -20,8 +20,8 @@ import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CREATED_BY } from '@/constants'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
-import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
+import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import {
   INITIAL_WORKFLOWS_FILTERS,
@@ -34,7 +34,6 @@ import { workflowsStore } from '@/store/workflows'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { FILTER_ENTITY, getFilters, setFilters, updateUrlWithFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
-import { formatProjectLabel } from '@/utils/projectDisplayName'
 import { makeCleanObject } from '@/utils/utils'
 
 interface WorkflowsFilters {
@@ -72,19 +71,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
     return project ? [project] : []
   }, [scope])
 
-  const projectDisplayNames = useProjectDisplayNames(persistedProject)
-
-  const resolvedProjectOptions = useMemo(() => {
-    const existing = new Set(projectOptions.map((o) => o.value))
-    const extras = persistedProject
-      .filter((name): name is string => !!name && !existing.has(name))
-      .map((name) => ({
-        label: formatProjectLabel({ name, display_name: projectDisplayNames.get(name) }),
-        value: name,
-        displayName: projectDisplayNames.get(name),
-      }))
-    return [...projectOptions, ...extras]
-  }, [projectOptions, persistedProject, projectDisplayNames])
+  const resolvedProjectOptions = useResolvedProjectOptions(projectOptions, persistedProject)
 
   const categoriesOptions = useMemo<FilterOption[]>(
     () => assistantCategories.map((c) => ({ label: c.name, value: c.id })),

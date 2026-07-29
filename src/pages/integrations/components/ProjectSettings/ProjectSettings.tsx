@@ -29,6 +29,7 @@ import UserFilter from '@/components/UserFilter'
 import { ButtonType, DECIMAL_PAGINATION_OPTIONS, CREATED_BY } from '@/constants'
 import { useIntegrationTypeOptions } from '@/hooks/useIntegrationTypeOptions'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
+import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
 import { useTableFilters } from '@/hooks/useTableFilters'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { INITIAL_FILTERS } from '@/pages/integrations/IntegrationsTab'
@@ -70,6 +71,11 @@ const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
     filterKey: FILTER_ENTITY.PROJECT_SETTINGS,
     initialPagination: { page: 0, perPage: projectSettingsPagination.perPage },
   })
+
+  const resolvedProjectOptions = useResolvedProjectOptions(
+    projectOptions,
+    (filters['project' as keyof typeof INITIAL_FILTERS] || []) as string[]
+  )
 
   const loadCreatedByOptions = useCallback(async () => {
     try {
@@ -125,7 +131,7 @@ const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
       label: 'Project',
       type: FilterDefinitionType.Multiselect,
       value: filters['project' as keyof typeof INITIAL_FILTERS] || [],
-      options: projectOptions,
+      options: resolvedProjectOptions,
       config: {
         maxSelectedLabels: 3,
         filter: true,

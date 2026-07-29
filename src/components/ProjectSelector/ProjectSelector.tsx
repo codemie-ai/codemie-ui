@@ -17,7 +17,7 @@ import { MultiSelect as PrimeMultiselect, MultiSelectChangeEvent } from 'primere
 import { forwardRef, useEffect, useMemo, useState } from 'react'
 
 import MultiSelect from '@/components/form/MultiSelect'
-import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
+import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
 import { userStore } from '@/store/user'
 import { formatProjectLabel } from '@/utils/projectDisplayName'
 
@@ -60,13 +60,6 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
       Array<{ name: string; display_name?: string | null }>
     >([])
 
-    // Resolves display_name for the current value even when it isn't in the
-    // fetched project list (e.g. a Super Admin viewing a project they aren't
-    // assigned to) so the option label is correct from the first render
-    // instead of only after a 3+ character search hits the backend
-    // (EPMCDME-13637).
-    const projectDisplayNames = useProjectDisplayNames(value ?? undefined)
-
     const loadProjects = async (search = '') => {
       const projects = await userStore.getProjects(search, adminOnly)
       setRawProjects(projects)
@@ -77,24 +70,34 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
       }
     }
 
-    const availableProjects = useMemo(() => {
-      const projects = [...rawProjects]
+    const projectOptions = useMemo(
+      () =>
+        rawProjects.map((project) => ({
+          label: formatProjectLabel(project),
+          value: project.name,
+        })),
+      [rawProjects]
+    )
 
-      // Add current value(s) to projects if not already included
-      if (value) {
-        const currentNames = Array.isArray(value) ? value : [value]
-        currentNames.forEach((v) => {
-          if (!projects.some((p) => p.name === v)) {
-            projects.push({ name: v, display_name: projectDisplayNames.get(v) })
-          }
-        })
-      }
+    const selectedProjects = useMemo(() => {
+      if (!value) return []
+      return Array.isArray(value) ? value : [value]
+    }, [value])
 
-      return projects.map((project) => ({
-        label: formatProjectLabel(project),
-        value: project.name,
-      }))
-    }, [rawProjects, value, projectDisplayNames])
+    // Resolves display_name for the current value even when it isn't in the
+    // fetched project list (e.g. a Super Admin viewing a project they aren't
+    // assigned to) so the option label is correct from the first render
+    // instead of only after a 3+ character search hits the backend
+    // (EPMCDME-13637).
+    const resolvedProjectOptions = useResolvedProjectOptions(projectOptions, selectedProjects)
+    const availableProjects = useMemo(
+      () =>
+        resolvedProjectOptions.map((option) => ({
+          label: option.label,
+          value: option.value as string,
+        })),
+      [resolvedProjectOptions]
+    )
 
     const handleFilter = (value: string) => {
       const searchValue = value.trim().toLowerCase()

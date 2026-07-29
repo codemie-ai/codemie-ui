@@ -28,6 +28,7 @@ import {
 } from '@/constants/dataSources'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
+import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
 import { UseTableFiltersReturn } from '@/hooks/useTableFilters'
 import { userStore } from '@/store'
 import { FilterDefinition, FilterDefinitionType } from '@/types/filters'
@@ -73,6 +74,10 @@ const DataSourceFilters: React.FC<Props> = ({
   const { projectOptions, loadProjectOptions } = useProjectOptions()
   const [projectSearchTerm, setProjectSearchTerm] = useState('')
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+  const resolvedProjectOptions = useResolvedProjectOptions(
+    projectOptions,
+    mergedInitialValues.project as string[]
+  )
 
   const [createdByOptions, setCreatedByOptions] = useState<
     { label: string; value: string; id: string }[]
@@ -160,7 +165,7 @@ const DataSourceFilters: React.FC<Props> = ({
         name: 'project',
         type: FilterDefinitionType.Multiselect,
         value: mergedInitialValues.project,
-        options: projectOptions,
+        options: resolvedProjectOptions,
         config: {
           maxSelectedLabels: 3,
           filterPlaceholder: 'Search for projects',
@@ -188,7 +193,7 @@ const DataSourceFilters: React.FC<Props> = ({
     [
       mergedInitialValues,
       indexTypeOptions,
-      projectOptions,
+      resolvedProjectOptions,
       isLoadingProjects,
       createdByOptions,
       statusOptions,

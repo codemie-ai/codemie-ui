@@ -22,14 +22,13 @@ import UserFilter from '@/components/UserFilter'
 import { CATEGORIES, CREATED_BY, NOT_SHARED, SHARED, GLOBAL } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
-import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
+import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
 import { assistantsStore } from '@/store/assistants'
 import { userStore } from '@/store/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
-import { formatProjectLabel } from '@/utils/projectDisplayName'
 
 interface AssistantFilters {
   search?: string
@@ -55,19 +54,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   const [projectSearchTerm, setProjectSearchTerm] = useState('')
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
-  const projectDisplayNames = useProjectDisplayNames(filters.project ?? [])
-
-  const resolvedProjectOptions = useMemo(() => {
-    const existing = new Set(projectOptions.map((o) => o.value))
-    const extras = (filters.project ?? [])
-      .filter((name): name is string => !!name && !existing.has(name))
-      .map((name) => ({
-        label: formatProjectLabel({ name, display_name: projectDisplayNames.get(name) }),
-        value: name,
-        displayName: projectDisplayNames.get(name),
-      }))
-    return [...projectOptions, ...extras]
-  }, [projectOptions, filters.project, projectDisplayNames])
+  const resolvedProjectOptions = useResolvedProjectOptions(projectOptions, filters.project ?? [])
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [categoriesOptions, setCategoriesOptions] = useState<FilterOption[]>([])
   const { assistantCategories } = useSnapshot(assistantsStore)
