@@ -1,0 +1,81 @@
+{
+  "decision": "approve",
+  "rationale": "Check round for the follow-up fix on the projects list page (ProjectsManagementFull.tsx), against a 4-line source fix-up diff plus one new regression test. The prior final verdict (code-review-final.json) carried no blocking findings, so finding_status is empty and there was nothing to re-verify; business_review and standards_review are carried forward unchanged per the check-round contract. A scoped confirmation pass (blind + edge-case lenses on the fix-up diff alone) was dispatched because the fix-up introduces production code the final round never saw. One suspected high-risk issue was raised and REFUTED: the blind lens posited that updatedProject could be undefined, making `updatedProject.name` throw inside the try block, diverting to catch and skipping projectDisplayNamesStore.invalidate + userStore.getCurrentUser. The edge-case lens refuted it against source \u2014 src/store/projects.ts:270-282 returns `{...result, id: result.name}`, always an object, never undefined; and src/utils/api.ts:369-379 rejects on non-2xx even with skipErrorHandling, so a failed update never reaches the toast. No crash path, no skipped cache invalidation. 2 findings deferred (non-blocking, recorded here rather than emitted): (1) `updatedProject.name` has no fallback, and the Promise<Project> contract is compile-time only (response.json() is `any`), so a malformed 2xx body omitting `name` would print 'Project undefined updated successfully'. Narrow, not security/public-API/data-loss/runtime correctness, and identical to the already-merged ProjectDetailsPage pattern; `?? editingProject.name` would close it. (2) The new regression test resolves the updateProject mock to `mockProject` \u2014 the same object as the row being edited \u2014 so it cannot distinguish `updatedProject.name` from `editingProject.name`. It is still a valid regression test for the reported defect: the edge-case lens verified it goes red when the fix is reverted ('Project updated successfully' fails the exact-string assertion). Resolving the mock to a distinct name would make it prove the value comes from the server response. 3 dismissed: blind lens's crash path (refuted above); blind lens's claim that the toast should show display_name (contradicts the spec AC, which explicitly requires the project name); projectDisplayNamesStore.invalidate key asymmetry on rename (pre-existing, declared out of scope in spec.md). Both new commit subjects match the EPMCDME-NNNNN: Capital sentence format required by git-workflow.md. No security, public API, or data contract surface is touched.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "The success notification displays the actual updated project name.",
+      "status": "pass",
+      "notes": "Line 111 now uses updatedProject.name instead of payload.name; updatedProject is the API response and always carries a non-empty name."
+    },
+    {
+      "kind": "story-ac",
+      "item": "The notification never displays undefined for valid project updates.",
+      "status": "pass",
+      "notes": "Root cause eliminated: payload.name (undefined when isNameDisabled=true) is no longer interpolated into the toast string."
+    },
+    {
+      "kind": "story-ac",
+      "item": "The name in the notification matches the project being edited.",
+      "status": "pass",
+      "notes": "updatedProject is the server-returned object for the project just saved; its name is authoritative."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Behaviour is consistent after page refresh and repeated updates.",
+      "status": "na",
+      "notes": "Cannot be verified from a static diff; fix uses server-returned data which is inherently stable across refreshes."
+    },
+    {
+      "kind": "story-ac",
+      "item": "No regression for project creation, deletion, or other Project Management notifications.",
+      "status": "na",
+      "notes": "Diff touches only the update path in ProjectDetailsPage.tsx; creation, deletion, and other paths are unchanged."
+    },
+    {
+      "kind": "spec",
+      "item": "Line 111: replace payload.name with updatedProject.name in the toast call.",
+      "status": "pass",
+      "notes": "Exact replacement confirmed in the diff hunk."
+    },
+    {
+      "kind": "spec",
+      "item": "Line 121: replace payload.name with updatedProject.name in the router redirect params.",
+      "status": "pass",
+      "notes": "Exact replacement confirmed in the diff hunk."
+    },
+    {
+      "kind": "spec",
+      "item": "No other files change.",
+      "status": "pass",
+      "notes": "Diff contains exactly two files: ProjectDetailsPage.tsx and its test file."
+    },
+    {
+      "kind": "spec",
+      "item": "Add regression test for the name: undefined path with correct assertion.",
+      "status": "pass",
+      "notes": "Test added with correct name, setup (name: undefined payload), and assertion (stringContaining 'Test Project')."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "EPMCDME-13165: Fix project update notification showing undefined project name \u2014 matches EPMCDME-XXXX: Capital sentence format, no trailing period."
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "Change follows existing pattern (lines 114-115 already use updatedProject.name); no new patterns or abstractions introduced."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No security concerns: string interpolation swapped, no user-controlled input in new path, no new external calls or data exposure."
+    }
+  ],
+  "findings": [],
+  "finding_status": []
+}

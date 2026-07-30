@@ -388,8 +388,8 @@ const ProjectsManagementFull: FC = () => {
 
       try {
         if (isEdit) {
-          await projectsStore.updateProject(editingProject.id, data)
-          toaster.info('Project updated successfully')
+          const updatedProject = await projectsStore.updateProject(editingProject.id, data)
+          toaster.info(`Project ${updatedProject.name} updated successfully`)
           projectDisplayNamesStore.invalidate(editingProject.id)
           await userStore.getCurrentUser()
         } else {

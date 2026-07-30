@@ -2,15 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Fix the project update success toast showing "Project undefined updated successfully" by replacing `payload.name` with `updatedProject.name` in `ProjectDetailsPage.tsx`, and add a regression test.
+**Goal:** Fix the project update success toast on both surfaces that show it — replace `payload.name` with `updatedProject.name` in `ProjectDetailsPage.tsx`, replace the nameless hardcoded string in `ProjectsManagementFull.tsx` — and add a regression test for each.
 
-**Architecture:** Single-file source fix (2 lines changed in `handleSaveProject`) plus one regression test added to the existing test file. The fix uses `updatedProject` — already returned by `projectsStore.updateProject` two lines above the bug — which always carries `name: string` from the API response.
+**Architecture:** Two single-file source fixes plus one regression test per file. Both fixes use `updatedProject` — already returned by `projectsStore.updateProject` on the line above each toast — which always carries `name: string` from the API response.
 
 **Tech Stack:** React, TypeScript, Valtio (state store), Vitest + React Testing Library
 
 ## Global Constraints
 
-- Only `ProjectDetailsPage.tsx` and its test file change — no other files.
+- Only `ProjectDetailsPage.tsx`, `ProjectsManagementFull.tsx`, and their test files change — no other files.
 - Commit message format: `EPMCDME-13165: Capital sentence` (no period, first word capitalised).
 - Pre-commit hooks run automatically: lint-staged, license headers, secrets check, sonar-local. Never use `--no-verify`.
 
@@ -26,7 +26,7 @@
 
 **Interfaces:**
 - Consumes: existing `mockProject` fixture (`name: 'Test Project'`), existing `toaster` mock (`info: vi.fn()`), existing `projectModalMock` to extract `onSubmit`.
-- Produces: nothing consumed by other tasks — this is the only task.
+- Produces: nothing consumed by other tasks.
 
 - [ ] **Step 1: Write the failing regression test**
 
@@ -123,4 +123,109 @@
   git add src/pages/settings/administration/ProjectDetailsPage.tsx
   git add src/pages/settings/administration/__tests__/ProjectDetailsPage.test.tsx
   git commit -m "EPMCDME-13165: Fix project update notification showing undefined project name"
+  ```
+
+---
+
+### Task 2: Regression test + source fix for the nameless toast on the projects list page
+
+Raised by QA after Task 1 shipped: the details page toast was correct, but editing a project from the projects list still showed `Project updated successfully` with no name.
+
+**Files:**
+- Modify: `src/pages/settings/administration/projectsManagement/__tests__/ProjectsManagementFull.editFlow.test.tsx` (add one `it` block at the end of the existing `describe`)
+- Modify: `src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx:391,392`
+
+**Test-first: yes** — write a test that opens the edit modal and calls `onSubmit` with `name: undefined`, asserting `toaster.info` receives `Project my-project updated successfully`. This test will fail because line 392 currently passes a hardcoded `'Project updated successfully'`.
+
+**Interfaces:**
+- Consumes: existing `mockProject` fixture (`name: 'my-project'`), the existing `vi.mock('@/utils/toaster')` mock, existing `projectModalMock` to extract `onSubmit`.
+- Produces: nothing consumed by other tasks.
+
+- [ ] **Step 1: Write the failing regression test**
+
+  Open `src/pages/settings/administration/projectsManagement/__tests__/ProjectsManagementFull.editFlow.test.tsx`.
+
+  Import the mocked toaster alongside the existing store imports:
+
+  ```typescript
+  import toaster from '@/utils/toaster'
+  ```
+
+  Clear it in `beforeEach` next to the other mock resets:
+
+  ```typescript
+  vi.mocked(toaster.info).mockClear()
+  ```
+
+  Add the following `it` block at the end of the `describe('ProjectsManagementFull — edit save flow')` block:
+
+  ```typescript
+  it('shows the project name in the success toast when name is omitted from the payload (EPMCDME-13165)', async () => {
+    render(<ProjectsManagementFull />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+
+    const { onSubmit } = projectModalMock.mock.calls.at(-1)[0]
+    await act(async () => {
+      await onSubmit({
+        name: undefined,
+        display_name: 'New Display Name',
+        description: 'desc',
+        cost_center_id: '',
+        enforce_member_spend_limits: false,
+      })
+    })
+
+    expect(toaster.info).toHaveBeenCalledWith(`Project ${mockProject.name} updated successfully`)
+  })
+  ```
+
+- [ ] **Step 2: Run the test to verify it fails (RED)**
+
+  ```bash
+  npx vitest run --project unit src/pages/settings/administration/projectsManagement/__tests__/ProjectsManagementFull.editFlow.test.tsx
+  ```
+
+  Expected: the new test **FAILS** with:
+  ```
+  - "Project my-project updated successfully"
+  + "Project updated successfully"
+  ```
+
+  All pre-existing tests should still pass.
+
+- [ ] **Step 3: Fix the source — capture and interpolate `updatedProject.name`**
+
+  Open `src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx`.
+
+  **Change lines 391–392** inside the `isEdit` branch of `handleModalSubmit`:
+  ```typescript
+  // Before
+  await projectsStore.updateProject(editingProject.id, data)
+  toaster.info('Project updated successfully')
+
+  // After
+  const updatedProject = await projectsStore.updateProject(editingProject.id, data)
+  toaster.info(`Project ${updatedProject.name} updated successfully`)
+  ```
+
+  No other lines in this file change — in particular, leave `projectDisplayNamesStore.invalidate(editingProject.id)` and the creation branch untouched.
+
+- [ ] **Step 4: Run the gates to verify GREEN**
+
+  ```bash
+  npx vitest run --project unit src/pages/settings/administration/projectsManagement/__tests__/
+  npm run typecheck
+  npm run test:unit
+  npm run test:integration
+  ```
+
+  Expected: all pass.
+
+- [ ] **Step 5: Commit**
+
+  ```bash
+  git add src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx
+  git add src/pages/settings/administration/projectsManagement/__tests__/ProjectsManagementFull.editFlow.test.tsx
+  git commit -m "EPMCDME-13165: Show project name in Projects management update toast"
   ```

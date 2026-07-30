@@ -20,6 +20,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
+import toaster from '@/utils/toaster'
 
 import ProjectsManagementFull from '../ProjectsManagementFull'
 
@@ -161,6 +162,7 @@ describe('ProjectsManagementFull — edit save flow', () => {
     userStore.getCurrentUser = vi.fn().mockResolvedValue(userStore.user)
     projectDisplayNamesStore.invalidate = vi.fn()
     projectModalMock.mockClear()
+    vi.mocked(toaster.info).mockClear()
   })
 
   it('forwards display_name on edit save and refreshes stale display-name caches', async () => {
@@ -185,5 +187,24 @@ describe('ProjectsManagementFull — edit save flow', () => {
     )
     expect(projectDisplayNamesStore.invalidate).toHaveBeenCalledWith('my-project')
     expect(userStore.getCurrentUser).toHaveBeenCalled()
+  })
+
+  it('shows the project name in the success toast when name is omitted from the payload (EPMCDME-13165)', async () => {
+    render(<ProjectsManagementFull />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+
+    const { onSubmit } = projectModalMock.mock.calls.at(-1)[0]
+    await act(async () => {
+      await onSubmit({
+        name: undefined,
+        display_name: 'New Display Name',
+        description: 'desc',
+        cost_center_id: '',
+        enforce_member_spend_limits: false,
+      })
+    })
+
+    expect(toaster.info).toHaveBeenCalledWith(`Project ${mockProject.name} updated successfully`)
   })
 })
