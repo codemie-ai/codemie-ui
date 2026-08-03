@@ -1,5 +1,137 @@
 [
   {
+    "version": "2.42.0",
+    "date": "2026-08-03",
+    "issues": [
+      {
+        "title": "CLI MCP connection fails with MCPToolLoadException due to dependency-related connection closure",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13801",
+        "key": "EPMCDME-13801"
+      },
+      {
+        "title": "Add EPAM Support Portal MCP to CodeMie prod MCP Servers catalog",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13798",
+        "key": "EPMCDME-13798"
+      },
+      {
+        "title": "Project display name resolution fails with 400 when User Management is disabled",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13778",
+        "key": "EPMCDME-13778"
+      },
+      {
+        "title": "SharePointPKCEService ignores SHAREPOINT_PKCE_ENABLED=false and initializes Redis on startup",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13770",
+        "key": "EPMCDME-13770"
+      },
+      {
+        "title": "Project filter shows project display name after page refresh instead of tech_name (display_name)",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13698",
+        "key": "EPMCDME-13698"
+      },
+      {
+        "title": "Implement Python-level filesystem access whitelist for executed customer code",
+        "type": "TASK",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13695",
+        "key": "EPMCDME-13695"
+      },
+      {
+        "title": "Allow creating Git datasource for public repositories without specifying an integration",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13690",
+        "key": "EPMCDME-13690"
+      },
+      {
+        "title": "Copy table button remains visible after copying and moving the mouse away",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13611",
+        "key": "EPMCDME-13611"
+      },
+      {
+        "title": "Skill Creation page UI: add a clear Save button/action",
+        "type": "TASK",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13169",
+        "key": "EPMCDME-13169"
+      },
+      {
+        "title": "Project Management: project update success message shows “Project undefined updated successfully”",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13165",
+        "key": "EPMCDME-13165"
+      },
+      {
+        "title": "PDF Documents Indexed via SharePoint Data Source Only Provide 1 Page to Agent, While File Data Source Works as Expected",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12768",
+        "key": "EPMCDME-12768"
+      },
+      {
+        "title": "Allow timezone selection for cron expression in Scheduler integration creation",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11895",
+        "key": "EPMCDME-11895"
+      },
+      {
+        "title": "Default hostnames for integrations & data sources",
+        "type": "IMPROVEMENT",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10928",
+        "key": "EPMCDME-10928"
+      },
+      {
+        "title": "Improve file filtering of git repositories to save tokens when indexing",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10839",
+        "key": "EPMCDME-10839"
+      },
+      {
+        "title": "UI: Settings not saved when selecting Integration first and then Tool",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10653",
+        "key": "EPMCDME-10653"
+      },
+      {
+        "title": "Workflow Visual Editor: Unable to use the same virtual assistant in multiple steps—assistant gets duplicated when step is edited in UI",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10583",
+        "key": "EPMCDME-10583"
+      },
+      {
+        "title": "Allow adjustable width for the chat pane to improve chat discoverability",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10137",
+        "key": "EPMCDME-10137"
+      },
+      {
+        "title": "Editing Git Data Source resets chosen summarization model from `gpt-5.1-mini` to default `gpt-4`",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10036",
+        "key": "EPMCDME-10036"
+      },
+      {
+        "title": "Improvements for creation and update flows of preconfigured_assistant with MCP server integrations",
+        "type": "TASK",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8996",
+        "key": "EPMCDME-8996"
+      },
+      {
+        "title": "Display Scheduler State (Enabled/Disabled) in Integration Page List View",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8260",
+        "key": "EPMCDME-8260"
+      },
+      {
+        "title": "[YAML Editor] Show Tab character visually inside editor to help users find invalid YAML formatting",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8254",
+        "key": "EPMCDME-8254"
+      }
+    ]
+  },
+  {
     "version": "2.41.0",
     "date": "2026-07-24",
     "issues": [
