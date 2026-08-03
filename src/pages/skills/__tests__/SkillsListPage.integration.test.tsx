@@ -35,6 +35,8 @@ describe('SkillsListPage - Integration', () => {
         JSON.stringify({ project: ['non-roster-proj'] })
       )
 
+      mockAPI('GET', 'v1/config', [{ id: 'features:userManagement', settings: { enabled: true } }])
+
       mockAPI('GET', 'v1/user', {
         user_id: 'test-user-id',
         email: 'test@example.com',

@@ -15,6 +15,7 @@
 import { useEffect, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
+import { useUserManagementEnabled } from '@/hooks/useFeatureFlags'
 import { userStore } from '@/store'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 
@@ -37,6 +38,7 @@ export const useProjectDisplayNames = (
 ): Map<string, string> => {
   const { user } = useSnapshot(userStore)
   const { cache } = useSnapshot(projectDisplayNamesStore)
+  const [isUserManagementEnabled] = useUserManagementEnabled()
 
   const rosterNames = useMemo(() => {
     const map = new Map<string, string>()
@@ -55,10 +57,11 @@ export const useProjectDisplayNames = (
 
   useEffect(() => {
     if (!user?.isAdmin) return
+    if (!isUserManagementEnabled) return
     requestedNames.forEach((name) => {
       if (!rosterNames.has(name)) projectDisplayNamesStore.ensure(name)
     })
-  }, [user?.isAdmin, requestedNames, rosterNames])
+  }, [user?.isAdmin, isUserManagementEnabled, requestedNames, rosterNames])
 
   return useMemo(() => {
     const map = new Map(rosterNames)

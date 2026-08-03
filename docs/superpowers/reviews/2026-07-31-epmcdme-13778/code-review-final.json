@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: replaced non-reactive isUserManagementEnabled() call with the reactive useUserManagementEnabled() hook; its boolean value is destructured and added to the useEffect dep array, so the effect re-runs correctly when config arrives. Acceptance lens skipped (no-spec mode — confidence remains low). 5 findings dismissed as below-emission-floor or by-design.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Working-tree only review — no commit in scope; no commit message to audit."
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "Fix uses useUserManagementEnabled() from @/hooks/useFeatureFlags — the reactive hook explicitly recommended for React components."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No auth, injection, secrets, or unsafe-IO concerns found in the diff."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "useUserManagementEnabled() (reactive hook) replaces isUserManagementEnabled() (non-reactive utility); its return value [isUserManagementEnabled] is included in the useEffect dep array at src/hooks/useProjectDisplayNames.ts:68."
+    }
+  ]
+}

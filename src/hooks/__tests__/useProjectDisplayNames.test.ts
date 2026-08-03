@@ -20,15 +20,18 @@ import { useProjectDisplayNames } from '../useProjectDisplayNames'
 
 type MockProject = { name: string; display_name?: string | null }
 
-const { mockUserStore, mockProjectDisplayNamesStore } = vi.hoisted(() => ({
-  mockUserStore: {
-    user: null as null | { isAdmin?: boolean; projects?: MockProject[] },
-  },
-  mockProjectDisplayNamesStore: {
-    cache: {} as Record<string, string>,
-    ensure: vi.fn(),
-  },
-}))
+const { mockUserStore, mockProjectDisplayNamesStore, mockIsUserManagementEnabled } = vi.hoisted(
+  () => ({
+    mockUserStore: {
+      user: null as null | { isAdmin?: boolean; projects?: MockProject[] },
+    },
+    mockProjectDisplayNamesStore: {
+      cache: {} as Record<string, string>,
+      ensure: vi.fn(),
+    },
+    mockIsUserManagementEnabled: vi.fn(),
+  })
+)
 
 // Return the store as-is so the hook reads mockUserStore.user directly.
 vi.mock('valtio', () => ({
@@ -43,11 +46,18 @@ vi.mock('@/store/projectDisplayNames', () => ({
   projectDisplayNamesStore: mockProjectDisplayNamesStore,
 }))
 
+vi.mock('@/hooks/useFeatureFlags', () => ({
+  useUserManagementEnabled: mockIsUserManagementEnabled,
+}))
+
 describe('useProjectDisplayNames', () => {
   beforeEach(() => {
     mockUserStore.user = null
     mockProjectDisplayNamesStore.cache = {}
     mockProjectDisplayNamesStore.ensure.mockReset()
+    // Default to enabled so existing roster/admin-fetch tests are unaffected;
+    // the disabled case is covered explicitly below.
+    mockIsUserManagementEnabled.mockReturnValue([true, true])
   })
 
   it('returns an empty map when there is no user', () => {
@@ -170,6 +180,15 @@ describe('useProjectDisplayNames', () => {
 
     it('never fetches for non-admin users, even for unknown projects', () => {
       mockUserStore.user = { isAdmin: false, projects: [] }
+
+      renderHook(() => useProjectDisplayNames('unassigned'))
+
+      expect(mockProjectDisplayNamesStore.ensure).not.toHaveBeenCalled()
+    })
+
+    it('never fetches when User Management is disabled, even for an admin with an unknown project', () => {
+      mockIsUserManagementEnabled.mockReturnValue([false, true])
+      mockUserStore.user = { isAdmin: true, projects: [] }
 
       renderHook(() => useProjectDisplayNames('unassigned'))
 
