@@ -1,0 +1,66 @@
+{
+  "task": "Update AzureDevOps 'project' field placeholder from 'Project Name' to 'Project Name (optional)' and assert the new placeholder value in CredentialFields tests",
+  "generated": "2026-07-29T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "CREDENTIAL_UI_MAPPING.azuredevops.fields.project (settingsUIConfig), azuredevops credential fields test suite (CredentialFields.test.tsx)",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 2,
+      "modified_file_list": [
+        "src/utils/settingsUIConfig.ts",
+        "src/pages/integrations/components/SettingsForm/__tests__/CredentialFields.test.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": ["src/utils", "src/pages"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single field placeholder string changed inside one config object (CREDENTIAL_UI_MAPPING.azuredevops.fields.project); no layer boundaries crossed, no components coordinated"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "2 files changed, 6 insertions, 1 deletion — one config file modified and one existing test file extended with one assertion; no new files created"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

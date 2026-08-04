@@ -1,0 +1,66 @@
+{
+  "task": "Rename the AzureDevOps URL field label from 'URL' to 'Hostname' in settingsUIConfig.ts and add unit tests asserting the label value and required-message string.",
+  "generated": "2026-07-29T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "CREDENTIAL_UI_MAPPING.azuredevops.fields.url (settingsUIConfig), CredentialFields test suite",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 2,
+      "modified_file_list": [
+        "src/utils/settingsUIConfig.ts",
+        "src/pages/integrations/components/SettingsForm/__tests__/CredentialFields.test.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": ["src/utils", "src/pages"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 7,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "2 files modified (1 source config + 1 existing test file extended); 0 new files. Guide maps 2-3 files to S (score 2), which is the only dimension above XS."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "A single string value ('URL' -> 'Hostname') and one Yup message string changed inside one config object entry. No structural changes, no new abstractions, no cross-component coordination."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

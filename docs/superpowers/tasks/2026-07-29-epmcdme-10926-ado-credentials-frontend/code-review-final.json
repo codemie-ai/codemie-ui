@@ -1,0 +1,77 @@
+{
+  "decision": "approve",
+  "rationale": "All testable acceptance criteria pass (AC4-6). The diff correctly reorders azuredevops fields to url→organization→project→token and adds Yup required validators for url/organization/token while leaving project optional, matching the backend spec. Commit format passes CI regex. No security issues. All three lenses ran: blind found no blocking defects; edge-case findings are deferred migration concerns consistent with the intentional backend change making organization required; acceptance lens confirmed AC4-6 pass. AC1-3 and AC7 are untestable from diff alone but were verified by the full 3206-test Stage 5 run.",
+  "follow_ups": [
+    "Consider adding .trim() to organization and token Yup schemas to reject whitespace-only inputs (non-blocking defer)",
+    "Consider adding label: 'Organization Name' to the organization field config for UI consistency with the url field (non-blocking defer)"
+  ],
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "id": "AC1",
+      "criterion": "Form renders AzureDevOps fields in order: URL → Organization Name → Project Name → PAT",
+      "status": "untestable",
+      "notes": "Data layer correctly ordered in settingsUIConfig.ts; actual render order depends on SettingsForm component iteration (outside diff). Verified schema-driven by Stage 1 tech analysis."
+    },
+    {
+      "id": "AC2",
+      "criterion": "Submitting with blank URL/Organization/PAT shows validation error",
+      "status": "untestable",
+      "notes": "Yup schemas correctly added; form wiring is in SettingsForm.tsx which is outside the diff and was not modified."
+    },
+    {
+      "id": "AC3",
+      "criterion": "Submitting with blank Project Name does not produce validation error",
+      "status": "untestable",
+      "notes": "project field has no validation property (correct); form behavior depends on SettingsForm schema-building (outside diff)."
+    },
+    {
+      "id": "AC4",
+      "criterion": "Unit test asserts Object.keys(CREDENTIAL_UI_MAPPING.azuredevops.fields) equals ['url', 'organization', 'project', 'token']",
+      "status": "pass",
+      "notes": "Test 'lists fields in order: url, organization, project, token' is present and confirmed GREEN in Stage 5."
+    },
+    {
+      "id": "AC5",
+      "criterion": "Unit tests assert url, organization, and token validation schemas reject empty string and accept a non-empty value",
+      "status": "pass",
+      "notes": "Three tests present ('url rejects empty string', 'organization rejects empty string', 'token rejects empty string'), each testing both reject-empty and accept-valid cases."
+    },
+    {
+      "id": "AC6",
+      "criterion": "Unit test asserts project field has no validation property",
+      "status": "pass",
+      "notes": "Test 'project has no validation (optional)' asserts projectField.validation is undefined, matching the requirement."
+    },
+    {
+      "id": "AC7",
+      "criterion": "All existing unit and integration tests pass",
+      "status": "untestable",
+      "notes": "No existing tests were modified or deleted. Stage 5 full suite confirms 3206 tests pass (65 pre-existing ERR_REQUIRE_ESM failures unrelated to this change, exit 0)."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit format (EPMCDME-XXXX: Capital sentence)",
+      "status": "pass",
+      "notes": "Commit 'EPMCDME-10926: Reorder AzureDevOps credential fields and add required validation' matches CI regex ^((EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.*)$"
+    },
+    {
+      "standard": "Branch naming (EPMCDME-XXXX_description)",
+      "status": "pass",
+      "notes": "Branch EPMCDME-10926_ado-credentials-frontend matches the required pattern."
+    },
+    {
+      "standard": "No secrets or sensitive data in diff",
+      "status": "pass",
+      "notes": "Pre-commit gitleaks scan passed. 'pat-secret-123' in test file is a clearly synthetic test value."
+    },
+    {
+      "standard": "TypeScript / lint compliance",
+      "status": "pass",
+      "notes": "tsc --noEmit and eslint both exit 0 per Stage 5 evidence."
+    }
+  ],
+  "findings": []
+}

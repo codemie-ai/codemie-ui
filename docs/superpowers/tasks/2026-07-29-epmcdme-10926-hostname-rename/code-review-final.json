@@ -1,0 +1,70 @@
+{
+  "decision": "approve",
+  "rationale": "All acceptance criteria pass (AC1-AC6). The diff correctly adds the two missing label/message tests inside the existing azuredevops credential fields describe block, and settingsUIConfig.ts carries label: 'Hostname' and required('Hostname is required'). No blocking findings. Edge-case lens flagged Yup .url() rejecting on-premises bare hostnames — this concern is pre-existing (introduced in the prior field-ordering commit, already reviewed and approved with a defer classification). The hostname rename does not worsen the issue and the ticket explicitly required no changes to underlying logic. All three lenses ran and produced usable output. Standards: commit format, branch naming, no secrets, lint/tsc all pass.",
+  "follow_ups": [
+    "Defer: Yup .url() rejects intranet hostnames (e.g. http://tfs-server/, bare IPs) — consider replacing with .matches(/^https?:\\/\\/.+/) if on-premises AzureDevOps Server support is needed (pre-existing from field-ordering commit, not introduced here)"
+  ],
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "id": "AC1",
+      "criterion": "Add it('url field label is Hostname') inside azuredevops credential fields describe, asserting urlField.label toBe 'Hostname'",
+      "status": "pass",
+      "notes": "Test present at bottom of the azuredevops credential fields describe block. Asserts urlField.label === 'Hostname'."
+    },
+    {
+      "id": "AC2",
+      "criterion": "Add it('url required message is Hostname is required') inside same describe, asserting validateSync('') throws 'Hostname is required'",
+      "status": "pass",
+      "notes": "Test present in the same describe block. Asserts () => validation.validateSync('') toThrow 'Hostname is required'."
+    },
+    {
+      "id": "AC3",
+      "criterion": "Both tests must be inside the existing azuredevops credential fields describe block (not a separate describe)",
+      "status": "pass",
+      "notes": "Both new tests are nested inside the single describe('azuredevops credential fields', ...) block alongside the 5 pre-existing tests."
+    },
+    {
+      "id": "AC4",
+      "criterion": "settingsUIConfig.ts must set label: 'Hostname' on the azuredevops url field",
+      "status": "pass",
+      "notes": "label: 'URL' changed to label: 'Hostname' in settingsUIConfig.ts azuredevops.fields.url."
+    },
+    {
+      "id": "AC5",
+      "criterion": "settingsUIConfig.ts must set required('Hostname is required') on the azuredevops url field",
+      "status": "pass",
+      "notes": "Yup.string().required('Hostname is required').url('Value must be a valid URL') is set on azuredevops.fields.url."
+    },
+    {
+      "id": "AC6",
+      "criterion": "No component, API, or store files other than CredentialFields.test.tsx and settingsUIConfig.ts changed",
+      "status": "pass",
+      "notes": "Diff only touches CredentialFields.test.tsx and settingsUIConfig.ts in the source tree."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit format (EPMCDME-XXXX: Capital sentence)",
+      "status": "pass",
+      "notes": "Commits 'EPMCDME-10926: Reorder AzureDevOps credential fields and add required validation' and 'EPMCDME-10926: Add label and required-message tests for AzureDevOps url field' both match the CI regex."
+    },
+    {
+      "standard": "Branch naming (EPMCDME-XXXX_description)",
+      "status": "pass",
+      "notes": "Branch EPMCDME-10926_ado-credentials-frontend matches required pattern."
+    },
+    {
+      "standard": "No secrets or sensitive data in diff",
+      "status": "pass",
+      "notes": "Pre-commit gitleaks scan passed. 'pat-secret-123' in test file is a clearly synthetic test value."
+    },
+    {
+      "standard": "TypeScript / lint compliance",
+      "status": "pass",
+      "notes": "tsc --noEmit and eslint both exit 0 per pre-commit hook output."
+    }
+  ],
+  "findings": []
+}

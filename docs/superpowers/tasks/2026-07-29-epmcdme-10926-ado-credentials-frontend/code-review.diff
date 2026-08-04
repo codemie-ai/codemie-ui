@@ -1,0 +1,63 @@
+diff --git a/src/pages/integrations/components/SettingsForm/__tests__/CredentialFields.test.tsx b/src/pages/integrations/components/SettingsForm/__tests__/CredentialFields.test.tsx
+index 637f43712..24a302a8d 100644
+--- a/src/pages/integrations/components/SettingsForm/__tests__/CredentialFields.test.tsx
++++ b/src/pages/integrations/components/SettingsForm/__tests__/CredentialFields.test.tsx
+@@ -414,3 +414,33 @@ describe('CredentialFields — sectionHeader rendering', () => {
+     expect(screen.queryByRole('textbox', { name: /_general_section/i })).not.toBeInTheDocument()
+   })
+ })
++
++describe('azuredevops credential fields', () => {
++  it('lists fields in order: url, organization, project, token', () => {
++    const keys = Object.keys(CREDENTIAL_UI_MAPPING.azuredevops.fields)
++    expect(keys).toEqual(['url', 'organization', 'project', 'token'])
++  })
++
++  it('url rejects empty string', () => {
++    const { validation } = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).url
++    expect(validation.isValidSync('')).toBe(false)
++    expect(validation.isValidSync('https://dev.azure.com')).toBe(true)
++  })
++
++  it('organization rejects empty string', () => {
++    const { validation } = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).organization
++    expect(validation.isValidSync('')).toBe(false)
++    expect(validation.isValidSync('my-org')).toBe(true)
++  })
++
++  it('token rejects empty string', () => {
++    const { validation } = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).token
++    expect(validation.isValidSync('')).toBe(false)
++    expect(validation.isValidSync('pat-secret-123')).toBe(true)
++  })
++
++  it('project has no validation (optional)', () => {
++    const projectField = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).project
++    expect(projectField.validation).toBeUndefined()
++  })
++})
+diff --git a/src/utils/settingsUIConfig.ts b/src/utils/settingsUIConfig.ts
+index 730e4c7d5..208c85ad4 100644
+--- a/src/utils/settingsUIConfig.ts
++++ b/src/utils/settingsUIConfig.ts
+@@ -390,10 +390,18 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+         label: 'URL',
+         placeholder: dynPlaceholder('azuredevops', 'url'),
+         defaultValue: AZUREDEVOPS_URL,
++        validation: Yup.string().required('URL is required').url('Value must be a valid URL'),
++      },
++      organization: {
++        placeholder: 'Organization Name',
++        validation: Yup.string().required('Organization is required'),
+       },
+       project: { placeholder: 'Project Name' },
+-      organization: { placeholder: 'Organization Name' },
+-      token: { placeholder: 'Personal Access Token (PAT)', sensitive: true },
++      token: {
++        placeholder: 'Personal Access Token (PAT)',
++        sensitive: true,
++        validation: Yup.string().required('Personal Access Token is required'),
++      },
+     },
+   },
+   elastic: {

@@ -387,13 +387,21 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     serverEnum: 'AzureDevOps',
     fields: {
       url: {
-        label: 'URL',
+        label: 'Hostname',
         placeholder: dynPlaceholder('azuredevops', 'url'),
         defaultValue: AZUREDEVOPS_URL,
+        validation: Yup.string().required('Hostname is required').url('Value must be a valid URL'),
       },
-      project: { placeholder: 'Project Name' },
-      organization: { placeholder: 'Organization Name' },
-      token: { placeholder: 'Personal Access Token (PAT)', sensitive: true },
+      organization: {
+        placeholder: 'Organization Name',
+        validation: Yup.string().required('Organization is required'),
+      },
+      project: { placeholder: 'Project Name (optional)' },
+      token: {
+        placeholder: 'Personal Access Token (PAT)',
+        sensitive: true,
+        validation: Yup.string().required('Personal Access Token is required'),
+      },
     },
   },
   elastic: {
