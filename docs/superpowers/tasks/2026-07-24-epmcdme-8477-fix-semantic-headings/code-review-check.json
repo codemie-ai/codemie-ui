@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "Both original findings resolved. CR-001: the fix-up commit adds the exact boundary test described in the recommendation (totalCount=0 asserts queryByRole returns null, all 6 tests green). CR-002: branch renamed to 'EPMCDME-8477_fix-semantic-headings' — uppercase prefix, underscore separator, Tekton-compliant. No new issues introduced in the 12-line pure-test fix-up.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "branch-naming",
+      "guide": ".ai-run/guides/standards/git-workflow.md",
+      "status": "pass",
+      "notes": "Branch renamed to 'EPMCDME-8477_fix-semantic-headings'. Matches required pattern: uppercase ticket prefix, underscore separator, lowercase description slug."
+    },
+    {
+      "standard": "commit-format",
+      "guide": ".ai-run/guides/standards/git-workflow.md",
+      "status": "pass",
+      "notes": "Fix-up commit 'EPMCDME-8477: Add boundary test for totalCount=0 suppressing the count heading' matches required format."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Fix-up diff adds 'does not render a count heading when totalCount is 0' test. Renders with non-empty assistants list and totalCount=0; asserts queryByRole('heading', { level: 2 }) is null. Test passes (6/6 green)."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Branch renamed from 'epmcdme-8477-fix-semantic-headings' to 'EPMCDME-8477_fix-semantic-headings'. Pattern now matches EPMCDME-XXXX_short-description."
+    }
+  ]
+}

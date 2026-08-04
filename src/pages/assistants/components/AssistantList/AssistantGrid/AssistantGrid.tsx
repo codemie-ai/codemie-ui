@@ -63,9 +63,9 @@ const AssistantGrid: React.FC<AssistantGridProps> = ({
   return (
     <section>
       {totalCount && (
-        <div className="flex-row px-1 w-full text-xs text-text-quaternary font-semibold pb-4 pt-6 bg-surface-base-primary">
+        <h2 className="flex-row px-1 w-full text-xs text-text-quaternary font-semibold pb-4 pt-6 bg-surface-base-primary">
           {totalCountInfo}
-        </div>
+        </h2>
       )}
 
       <div

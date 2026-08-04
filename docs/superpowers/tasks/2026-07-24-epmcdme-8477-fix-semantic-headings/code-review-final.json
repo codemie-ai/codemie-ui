@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "rationale": "Two actionable findings: (1) the new test suite omits boundary tests for totalCount=0 and null, leaving a regression gap on the truthiness guard; (2) the branch name 'epmcdme-8477-fix-semantic-headings' does not follow the required EPMCDME-XXXX_short-description pattern (Tekton enforced). Three findings deferred as pre-existing or out-of-scope: the page-level h1 absence (the empty-state <h2> already existed before this diff under the same page with no h1 — this diff does not introduce the problem), null totalCountInfo string computation, and negative-count guard edge case. Acceptance lens not run: no story/spec artifact — no-spec round.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "branch-naming",
+      "guide": ".ai-run/guides/standards/git-workflow.md",
+      "status": "partial",
+      "notes": "Branch 'epmcdme-8477-fix-semantic-headings' uses lowercase and hyphens throughout. Required pattern: 'EPMCDME-XXXX_short-description' (uppercase ticket prefix, underscore between ticket ID and description). Tekton CI enforces this pattern. Note: the user explicitly chose this branch name at the Stage 0 HITL prompt."
+    },
+    {
+      "standard": "commit-format",
+      "guide": ".ai-run/guides/standards/git-workflow.md",
+      "status": "pass",
+      "notes": "Commit message 'EPMCDME-8477: Mark assistant count headings as semantic h2' matches the required 'EPMCDME-XXXX: Capital sentence' format."
+    },
+    {
+      "standard": "security",
+      "guide": null,
+      "status": "pass",
+      "notes": "No security concerns. Change is pure HTML semantics (div to h2) with no data handling, auth, or external interaction."
+    },
+    {
+      "standard": "code-quality",
+      "guide": ".ai-run/guides/standards/code-quality.md",
+      "status": "na",
+      "notes": "Guide file not found in the guides directory. Lint and typecheck are covered by the qa-gates stage."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "file": "src/pages/assistants/components/AssistantList/AssistantGrid/__tests__/AssistantGrid.test.tsx",
+      "lines": "L65-L96",
+      "problem": "The new test suite covers only positive totalCount values (1, 3, 5). The guard '{totalCount && ...}' is falsy for both 0 and null, so neither must render a heading — but no test asserts this. If a future refactor loosens the guard (e.g., to '{totalCount !== null && ...}'), totalCount=0 would silently start rendering '0 ASSISTANTS' with no regression test catching it.",
+      "impact": "Regression risk on the core boundary condition: when the heading renders versus when it is suppressed.",
+      "recommendation": "Add one test: it('does not render a count heading when totalCount is 0', () => { render(<AssistantGrid {...baseProps} assistants={[stubAssistant]} totalCount={0} isTemplate={false} />); expect(screen.queryByRole('heading', { level: 2 })).toBeNull(); })",
+      "triage": "patch",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "file": "branch",
+      "lines": "N/A",
+      "problem": "Branch name 'epmcdme-8477-fix-semantic-headings' is all-lowercase with hyphens throughout. The project standard per git-workflow.md requires 'EPMCDME-XXXX_short-description' (uppercase ticket prefix, underscore separating ticket ID from the description slug). Tekton CI enforces the pattern.",
+      "impact": "Branch may fail CI branch-name validation when a merge request is opened. The user explicitly chose this branch name at the Stage 0 HITL prompt, so this may be an intentional deviation.",
+      "recommendation": "Rename branch to 'EPMCDME-8477_fix-semantic-headings' before creating the MR, or confirm with the team that lowercase branch names are accepted.",
+      "triage": "patch",
+      "sources": ["standards"]
+    }
+  ],
+  "deferred": [
+    {
+      "description": "No page-level h1 precedes the h2 count heading on AssistantsListPage — potential WCAG 1.3.1 heading hierarchy gap. Pre-existing: the empty-state <h2> already existed before this diff under the same page with no h1. This diff does not introduce the problem; it simply adds a second h2 path. Broader heading hierarchy should be addressed in a separate accessibility audit ticket.",
+      "count": 1
+    },
+    {
+      "description": "Negative totalCount values are truthy and would render an invalid '-1 ASSISTANTS' heading. Pre-existing guard behavior, not introduced by this diff. Extremely unlikely from the internal API.",
+      "count": 1
+    },
+    {
+      "description": "totalCountInfo string is computed unconditionally even when totalCount is null, producing 'null ASSISTANTS'. Never rendered due to guard, but a latent correctness issue. Pre-existing.",
+      "count": 1
+    }
+  ],
+  "dismissed": [
+    {
+      "description": "Blind reviewer questioned whether the test assertion string '5 ASSISTANTS' matches the actual rendered text. Dismissed: AssistantGrid.tsx line 51-52 uses pluralize(totalCount, 'assistant').toUpperCase(), so the output is '5 ASSISTANTS' — the assertion is correct.",
+      "count": 1
+    }
+  ]
+}
