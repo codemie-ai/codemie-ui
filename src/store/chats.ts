@@ -114,6 +114,7 @@ export interface ChatsStoreType {
   ): Promise<any>
   updateChatListItem(newChatListItem: Partial<ChatListItem> & { id: string }): void
   refreshWorkflowExecutionIds(id: string): Promise<void>
+  getConversationName(id: string): Promise<string | null>
 
   // Folder management methods
   createFolder(folder: string): Promise<any>
@@ -235,6 +236,17 @@ export const chatsStore = proxy<ChatsStoreType>({
         }
       })
     })
+  },
+
+  /**
+   * Reads a conversation's current name without the `setOpenChat` side effects
+   * `getChat` has (which would force-switch `currentChat` if the caller has
+   * since navigated away) — safe to poll for a chat that isn't open anymore.
+   */
+  getConversationName: async (id) => {
+    const response = await api.get(`v1/conversations/${id}`)
+    const data = await response.json()
+    return data.conversation_name ?? null
   },
 
   getSharedChat: async (token) => {
@@ -452,8 +464,8 @@ export const chatsStore = proxy<ChatsStoreType>({
     const existingItemIndex = chatsStore.chats.findIndex((item) => item.id === newItem.id)
 
     if (existingItemIndex !== -1) {
-      const existingItem = chatsStore[existingItemIndex]
-      chatsStore[existingItemIndex] = { ...existingItem, ...newItem }
+      const existingItem = chatsStore.chats[existingItemIndex]
+      chatsStore.chats[existingItemIndex] = { ...existingItem, ...newItem }
     }
   },
 

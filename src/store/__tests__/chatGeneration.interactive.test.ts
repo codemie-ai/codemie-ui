@@ -30,9 +30,12 @@ const mockToasterInfo = vi.fn()
 const mockChatsStore = {
   currentChat: null as Conversation | null,
   chats: [] as ChatListItem[],
+  openedChatsHistory: [] as Conversation[],
   updateChatListItem: vi.fn(),
   updateChat: vi.fn(),
   getChat: vi.fn(),
+  findChat: vi.fn(),
+  getConversationName: vi.fn(),
   refreshWorkflowExecutionIds: vi.fn(),
 }
 

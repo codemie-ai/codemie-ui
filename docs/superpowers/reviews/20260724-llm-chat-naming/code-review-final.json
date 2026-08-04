@@ -1,0 +1,54 @@
+{
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "No spec/story was supplied (no-spec mode), so the acceptance lens did not run and business_review is empty by design; confidence is forced to low per no-spec rules. Blind and edge-case lenses both ran successfully. Triage kept 4 blocking findings (1 critical, 3 major) out of ~11 raw observations; the remainder (reference-equality risk on first-message detection, silent drop of stray post-final chunks, poll-timeout Map teardown on logout/workspace switch, and getConversationName null-coercion ambiguity) were deferred as speculative or low-impact and are not required before merge.",
+  "risk_flags": ["breaking-change"],
+  "business_review": [],
+  "standards_review": [
+    {"check": "commit-format", "status": "pass", "notes": "All 4 commits in range match `EPMCDME-11647: Capital sentence` per .ai-run/guides/standards/git-workflow.md."},
+    {"check": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md present in this repo; no project-documented blocking standard to check against."},
+    {"check": "security", "status": "na", "notes": "No .ai-run/guides/development/security-patterns.md present; no concrete security issue surfaced by either lens (no injection, secrets, or auth-boundary changes in this diff)."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "title": "Non-abort read error after final chunk discards an already-successful generation",
+      "file": "src/store/chatGeneration.ts (~lines 1086-1114, _handleGenerationStream; ~line 1039, _handleStreamResponse)",
+      "problem": "The stream-drain loop added by this diff keeps reading past the final chunk (to let backend BackgroundTasks/rename complete) but only special-cases ABORT_ERROR in its catch; any other read error is rethrown and propagates out of _handleGenerationStream. _handleStreamResponse awaits it with no try/catch.",
+      "impact": "If the connection drops for any non-abort reason after the final chunk was already received (state.response fully populated with the correct answer), the whole promise rejects and the already-generated response is discarded: historyItem.response is never set, inProgress is never cleared, and stream is never nulled. Before this diff the loop broke immediately on the final chunk, so this failure window didn't exist. No test covers a post-final-chunk, non-abort read error.",
+      "recommendation": "Wrap the post-final-chunk drain reads in their own try/catch that swallows/logs non-abort errors once state.receivedFinalChunk is true (the response is already complete at that point), instead of letting them reject the whole handler; only genuine failures before the final chunk should propagate."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "title": "TOCTOU race lets the rename poll overwrite a concurrent manual rename",
+      "file": "src/store/chatGeneration.ts, _checkRenamedChat (~lines 623-647)",
+      "problem": "The guard `listItem.name === optimisticName` is checked once, before the async `chatsStore.getConversationName(chatId)` call, and never re-checked after the await resolves.",
+      "impact": "If the user manually renames the chat while the getConversationName request is in flight, the poll will still unconditionally call updateChatListItem with the fetched name once the await resolves, clobbering the user's manual rename. The new test only covers a rename that happens strictly before the poll's pre-fetch check, not one landing during the network round-trip, so this race is real and untested.",
+      "recommendation": "Re-check chatsStore.findChat(chatId)?.name === optimisticName again immediately after the await, right before calling updateChatListItem, and skip the update if it no longer matches."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Regression-guard test comment contradicts the behavior the diff actually introduces",
+      "file": "src/store/__tests__/chatGeneration.renamePoll.test.ts (~lines 175-178) vs src/utils/chatHelpers.ts (~lines 819-820)",
+      "problem": "The test comment states 'isGroup is unconditionally true on every real conversation ... it is a UI capability flag, not a signal that this happens to be a multi-assistant chat,' but the diff changes transformChatBEtoFE's isGroup from a hardcoded true to `(chatBE.assistant_ids?.length ?? 0) > 1` — i.e. it is no longer unconditionally true.",
+      "impact": "The 'regression guard' documents an invariant the code no longer upholds, which will mislead the next person who touches this file into believing isGroup can't be used as a multi-assistant signal, when the diff just made it exactly that. This pairs with an unexplained, unrelated UI behavior change bundled into a chat-rename bugfix: ChatListItem.tsx now gives PeopleSvg explicit w-4 h-4 sizing, and because isGroup is no longer always true, the group icon's presence itself becomes conditional on assistant_ids.length > 1 — a user-visible change riding along without being called out as in-scope.",
+      "recommendation": "Either fix the test comment to describe the new (correct) invariant, or if the isGroup semantic change is intentional and out of scope for this ticket, split it into its own commit/PR with its own test description and rationale."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "title": "A single transient network error permanently aborts the rename poll instead of retrying",
+      "file": "src/store/chatGeneration.ts, _checkRenamedChat (~lines 629-635); src/store/chats.ts, getConversationName (~lines 778-782)",
+      "problem": "When getConversationName throws (transient 5xx, timeout, or api.get rejecting on non-2xx), the catch block logs and returns without rescheduling — it never calls _pollForRenamedChat again, even though up to MAX_RENAME_POLL_ATTEMPTS (5) retries with backoff are otherwise available for the 'name not yet changed' case.",
+      "impact": "A single dropped request on a flaky network permanently kills the rest of the retry sequence for that chat, so the LLM-generated name is silently never picked up, with no test covering a getConversationName rejection — only the chat-deleted (findChat undefined) path is tested.",
+      "recommendation": "Treat a caught fetch error the same as an unmatched name for retry purposes: reschedule the next attempt (respecting MAX_RENAME_POLL_ATTEMPTS) instead of giving up on the first error."
+    }
+  ]
+}

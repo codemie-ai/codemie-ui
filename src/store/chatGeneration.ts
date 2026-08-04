@@ -52,6 +52,22 @@ const ASSISTANT_NOT_FOUND =
   'Assistant you are trying to reach is not found. Please mention another one using @mention.'
 const EMPTY_MESSAGE = '/Empty message/'
 
+const MAX_RENAME_POLL_ATTEMPTS = 5
+const RENAME_POLL_BASE_DELAY_MS = 500
+const RENAME_POLL_MAX_DELAY_MS = 2_000
+
+// Backend renames the chat asynchronously (BackgroundTasks, after the stream
+// closes) — tracked here so a chat switch/delete can cancel a pending retry
+// instead of it firing against a chat the user has navigated away from.
+const renameChatPollTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+
+interface StreamDrainState {
+  cachedValue: string
+  response: any
+  receivedFinalChunk: boolean
+  notificationTimeoutId: NodeJS.Timeout | null
+}
+
 interface ChatGenerationStoreType {
   chatAbortControllers: Record<string, AbortController>
 
@@ -121,6 +137,8 @@ interface ChatGenerationStoreType {
     historyIndex: number,
     messageIndex: number
   ) => void
+  _pollForRenamedChat: (chatId: string, optimisticName: string, attempt?: number) => void
+  _checkRenamedChat: (chatId: string, optimisticName: string, attempt: number) => Promise<void>
   _sendRequest: (
     chat: Conversation,
     historyIndex: number,
@@ -131,6 +149,11 @@ interface ChatGenerationStoreType {
     historyItem: ChatMessage,
     reader: ReadableStreamDefaultReader
   ) => Promise<any>
+  _processStreamChunk: (
+    historyItem: ChatMessage,
+    value: string,
+    state: StreamDrainState
+  ) => Promise<void>
   _handleChunk: (
     historyItem: ChatMessage,
     value: string
@@ -495,6 +518,56 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     if (isFirstMessage && hasDefaultName) {
       const newName = message.length > 50 ? message.substring(0, 50) + '...' : message
       chatsStore.updateChat(chat.id, { name: newName })
+    }
+  },
+
+  _pollForRenamedChat(chatId: string, optimisticName: string, attempt = 0): void {
+    const existingTimeoutId = renameChatPollTimeouts.get(chatId)
+    if (existingTimeoutId) clearTimeout(existingTimeoutId)
+
+    const delay = Math.min(RENAME_POLL_BASE_DELAY_MS * 1.5 ** attempt, RENAME_POLL_MAX_DELAY_MS)
+
+    const timeoutId = setTimeout(() => {
+      renameChatPollTimeouts.delete(chatId)
+      chatGenerationStore._checkRenamedChat(chatId, optimisticName, attempt).catch(console.error)
+    }, delay)
+
+    renameChatPollTimeouts.set(chatId, timeoutId)
+  },
+
+  async _checkRenamedChat(chatId: string, optimisticName: string, attempt: number): Promise<void> {
+    const listItem = chatsStore.findChat(chatId)
+    // Chat was deleted, or something else (manual rename, list refresh)
+    // already moved it off the optimistic name — don't fight it.
+    if (!listItem || listItem.name !== optimisticName) return
+
+    let fetchedName: string | null = null
+    try {
+      fetchedName = await chatsStore.getConversationName(chatId)
+    } catch (error) {
+      console.error(error)
+      // A transient fetch error is not "the name hasn't changed" — retry
+      // like any other unresolved attempt instead of giving up for good.
+      if (attempt + 1 < MAX_RENAME_POLL_ATTEMPTS) {
+        chatGenerationStore._pollForRenamedChat(chatId, optimisticName, attempt + 1)
+      }
+      return
+    }
+
+    // Re-check after the async fetch: a manual rename could have landed
+    // during the network round-trip above — don't clobber it.
+    const currentItem = chatsStore.findChat(chatId)
+    if (!currentItem || currentItem.name !== optimisticName) return
+
+    if (fetchedName && fetchedName !== optimisticName) {
+      chatsStore.updateChatListItem({ id: chatId, name: fetchedName })
+      const openedChat = chatsStore.openedChatsHistory.find((chat) => chat.id === chatId)
+      if (openedChat) openedChat.name = fetchedName
+      return
+    }
+
+    if (attempt + 1 < MAX_RENAME_POLL_ATTEMPTS) {
+      chatGenerationStore._pollForRenamedChat(chatId, optimisticName, attempt + 1)
     }
   },
 
@@ -1004,6 +1077,14 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       await chatsStore.refreshWorkflowExecutionIds(chat.id).catch(console.error)
       chat.isInterrupted = response?.workflow_state?.event_type === WORKFLOW_STATE_EVENT_INTERRUPTED
     }
+
+    // The LLM-generated name (EPMCDME-11647) lands seconds after the stream
+    // closes, via a backend BackgroundTasks rename — poll for it rather than
+    // leaving the optimistic truncated name displayed indefinitely.
+    const isFirstMessage = chat.history[0]?.[0] === historyItem
+    if (isFirstMessage && !chat.isWorkflow && chat.name) {
+      chatGenerationStore._pollForRenamedChat(chat.id, chat.name)
+    }
   },
 
   async _handleGenerationStream(
@@ -1011,9 +1092,12 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     reader: ReadableStreamDefaultReader
   ): Promise<any> {
     historyItem.stream = new Stream()
-    let cachedValue = ''
-    let response: any = {}
-    let notificationTimeoutId: NodeJS.Timeout | null = null
+    const state: StreamDrainState = {
+      cachedValue: '',
+      response: {},
+      receivedFinalChunk: false,
+      notificationTimeoutId: null,
+    }
 
     /* eslint-disable no-constant-condition */
     while (true) {
@@ -1023,30 +1107,23 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
         if (done) break
 
-        if (!historyItem?.stream?.isStreaming) historyItem.stream?.start()
-
-        const { finalChunk, incompleteChunk } = await chatGenerationStore._handleChunk(
-          historyItem,
-          cachedValue + value
-        )
-
-        chatGenerationStore._clearWaitingNotification(historyItem, notificationTimeoutId!)
-        notificationTimeoutId = chatGenerationStore._scheduleWaitingNotification(historyItem)
-
-        if (incompleteChunk) {
-          cachedValue = incompleteChunk
-          /* eslint-disable no-continue */
-          continue
+        // Keep draining the reader to `done` even after the final chunk is
+        // received, so the HTTP response completes normally server-side and
+        // any server-side response.background hook (e.g. FastAPI
+        // BackgroundTasks) reliably runs.
+        if (!state.receivedFinalChunk) {
+          await chatGenerationStore._processStreamChunk(historyItem, value, state)
         }
-
-        if (finalChunk) {
-          response = finalChunk
+      } catch (error: any) {
+        // If we already received the final chunk, state.response is complete —
+        // a drain-phase error (e.g. connection drop or user abort while waiting for `done`)
+        // must not discard an already-successful generation.
+        if (state.receivedFinalChunk) {
+          console.error(error.name)
           break
         }
 
-        cachedValue = ''
-      } catch (error: any) {
-        // Request was aborted by user
+        // Request was aborted by user (before final chunk received)
         if (error.name === ABORT_ERROR) {
           return chatGenerationStore._handleGenerationAbort(historyItem, reader)
         }
@@ -1057,7 +1134,37 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
 
     chatGenerationStore._clearWaitingNotification(historyItem)
-    return response
+    return state.response
+  },
+
+  async _processStreamChunk(
+    historyItem: ChatMessage,
+    value: string,
+    state: StreamDrainState
+  ): Promise<void> {
+    if (!historyItem?.stream?.isStreaming) historyItem.stream?.start()
+
+    const { finalChunk, incompleteChunk } = await chatGenerationStore._handleChunk(
+      historyItem,
+      state.cachedValue + value
+    )
+
+    chatGenerationStore._clearWaitingNotification(historyItem, state.notificationTimeoutId!)
+    state.notificationTimeoutId = chatGenerationStore._scheduleWaitingNotification(historyItem)
+
+    if (incompleteChunk) {
+      state.cachedValue = incompleteChunk
+      return
+    }
+
+    if (finalChunk) {
+      state.response = finalChunk
+      state.receivedFinalChunk = true
+      state.cachedValue = ''
+      return
+    }
+
+    state.cachedValue = ''
   },
 
   _scheduleWaitingNotification(historyItem: ChatMessage): NodeJS.Timeout {

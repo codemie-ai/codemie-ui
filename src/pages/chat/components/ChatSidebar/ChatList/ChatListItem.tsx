@@ -87,7 +87,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
       >
         <div className="flex items-center gap-1 grow min-w-0 h-full cursor-pointer">
           {chat.isWorkflow && <WorkflowSvg className="ml-2 w-4 h-4 flex-shrink-0" />}
-          {chat.isGroup && !chat.isWorkflow && <PeopleSvg className="ml-2" />}
+          {chat.isGroup && !chat.isWorkflow && <PeopleSvg className="ml-2 w-4 h-4 flex-shrink-0" />}
           {isEditing ? (
             <input
               type="text"

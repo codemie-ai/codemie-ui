@@ -31,7 +31,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
     imageGenerationModel: chatBE.image_generation_model,
     isWorkflow: chatBE.is_workflow_conversation ?? chatBE.is_workflow ?? false,
     isInterrupted: chatBE.history.some((item) => item.thoughts?.some((t) => t.interrupted)),
-    isGroup: true,
+    isGroup: (chatBE.assistant_ids?.length ?? 0) > 1,
     folder: chatBE.folder,
     assistantIds: chatBE.assistant_ids ?? [],
     initialAssistantId: chatBE.initial_assistant_id,

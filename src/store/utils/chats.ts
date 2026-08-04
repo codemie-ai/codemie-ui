@@ -25,7 +25,7 @@ export const transformChatListItemDTO = (dto: any): ChatListItem => {
     date: dto.date,
     assistantIds: dto.assistant_ids ?? [],
     initialAssistantId: dto.initial_assistant_id ?? null,
-    isGroup: false,
+    isGroup: (dto.assistant_ids?.length ?? 0) > 1,
     isWorkflow: dto.is_workflow_conversation ?? dto.is_workflow ?? false,
   }
 }
