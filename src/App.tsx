@@ -32,6 +32,7 @@ import Spinner from '@/components/Spinner'
 import { primeReactPtOptions } from '@/constants/theme'
 import { useHistoryStack } from '@/hooks/appLevel/useHistoryStack'
 import useInitialDataFetch from '@/hooks/appLevel/useInitialDataFetch'
+import { usePageTitle } from '@/hooks/appLevel/usePageTitle'
 import usePrismThemeToggle from '@/hooks/appLevel/usePrismThemeToggle'
 import { useTheme } from '@/hooks/useTheme'
 import { UnsavedChangesProvider } from '@/hooks/useUnsavedChangesWarning'
@@ -48,6 +49,7 @@ const App: React.FC = () => {
   useHistoryStack()
   usePrismThemeToggle()
   useInitialDataFetch()
+  usePageTitle()
 
   const showGradient = appearance?.gradients ?? true
 
