@@ -42,12 +42,18 @@ import { extractArrayFromResponse } from './utils/parseApiResponse'
 
 const SHOW_NEW_SKILL_AI_POPUP = 'codemie-new-skill-ai-popup'
 
+export interface SkillConfig {
+  max_content_length: number
+  min_content_length: number
+}
+
 interface SkillsStoreType {
   skills: Skill[]
   skillsPagination: Pagination
   skillCategories: SkillCategoryDefinition[]
   selectedSkill: Skill | null
   loading: boolean
+  skillConfig: SkillConfig | null
 
   indexSkills: (
     filters?: SkillsFilters,
@@ -95,6 +101,7 @@ interface SkillsStoreType {
     description: string,
     existingContent: string
   ) => Promise<{ instructions: string }>
+  getSkillConfig: () => Promise<SkillConfig>
 }
 
 export const skillsStore = proxy<SkillsStoreType>({
@@ -108,6 +115,7 @@ export const skillsStore = proxy<SkillsStoreType>({
   skillCategories: [],
   selectedSkill: null,
   loading: false,
+  skillConfig: null,
   showNewSkillAIPopup: true,
 
   async indexSkills(
@@ -778,5 +786,12 @@ export const skillsStore = proxy<SkillsStoreType>({
       toaster.error(errorMessage)
       throw error
     }
+  },
+
+  async getSkillConfig(): Promise<SkillConfig> {
+    const response = await api.get('v1/skills/config')
+    const result: SkillConfig = await response.json()
+    skillsStore.skillConfig = result
+    return result
   },
 })

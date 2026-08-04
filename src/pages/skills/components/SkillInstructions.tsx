@@ -24,7 +24,7 @@ import Button from '@/components/Button'
 import Textarea, { TextareaRef } from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
 import { ButtonType } from '@/constants'
-import { MAX_CONTENT_LENGTH, SKILL_INSTRUCTIONS_PLACEHOLDER } from '@/constants/skills'
+import { SKILL_INSTRUCTIONS_PLACEHOLDER } from '@/constants/skills'
 import { copyToClipboard } from '@/utils/utils'
 
 import SkillInstructionsDiffModal from './SkillInstructionsDiffModal'
@@ -32,6 +32,7 @@ import SkillInstructionsGenAIPopup from './SkillInstructionsGenAIPopup'
 
 interface SkillInstructionsProps {
   value: string
+  maxContentLength: number
   error?: string
   isAIGenerated?: boolean
   onChange: (value: string) => void
@@ -39,7 +40,7 @@ interface SkillInstructionsProps {
 }
 
 const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
-  ({ value, error, isAIGenerated = false, onChange, onBlur }, ref) => {
+  ({ value, maxContentLength, error, isAIGenerated = false, onChange, onBlur }, ref) => {
     const [isExpanded, setIsExpanded] = useState(false)
     const [showGenAIPopup, setShowGenAIPopup] = useState(false)
     const [showDiffModal, setShowDiffModal] = useState(false)
@@ -57,7 +58,7 @@ const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
         <div className="flex flex-col h-full">
           <div className="flex justify-between items-end min-h-8 max-h-8 mb-4">
             <p className="text-sm font-semibold">
-              Instructions ({charCount.toLocaleString()}/{MAX_CONTENT_LENGTH.toLocaleString()})
+              Instructions ({charCount.toLocaleString()}/{maxContentLength.toLocaleString()})
             </p>
             <div className="ml-auto flex gap-4">
               <Button variant={ButtonType.MAGICAL} onClick={() => setShowGenAIPopup(true)}>
@@ -78,7 +79,7 @@ const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
             className="resize-none min-h-full font-mono text-sm"
             placeholder={SKILL_INSTRUCTIONS_PLACEHOLDER}
             onBlur={onBlur}
-            maxLength={MAX_CONTENT_LENGTH}
+            maxLength={maxContentLength}
             onChange={(e) => onChange(e.target.value)}
           >
             {isAIGenerated && (
@@ -115,7 +116,7 @@ const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
           <div className="h-full pt-4">
             <div className="flex justify-between items-center mb-2">
               <p className="text-sm text-text-secondary">
-                {charCount.toLocaleString()}/{MAX_CONTENT_LENGTH.toLocaleString()} characters
+                {charCount.toLocaleString()}/{maxContentLength.toLocaleString()} characters
               </p>
             </div>
             <Textarea
@@ -126,7 +127,7 @@ const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
               className="resize-none min-h-full font-mono text-sm"
               placeholder={SKILL_INSTRUCTIONS_PLACEHOLDER}
               onBlur={onBlur}
-              maxLength={MAX_CONTENT_LENGTH}
+              maxLength={maxContentLength}
               onChange={(e) => onChange(e.target.value)}
             />
           </div>

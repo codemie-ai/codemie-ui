@@ -1,0 +1,122 @@
+{
+  "gate_id": "code-review.final",
+  "run_id": "20260724-0800-EPMCDME-13541-UI",
+  "round": "final",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "rationale": "Final effective verdict: the sole blocking finding CR-001 (missing assertion that resolved max_content_length is forwarded to createSkillValidationSchema) is resolved in the current test file src/pages/skills/hooks/__tests__/useSkillForm.test.tsx — see the second test case 'passes max_content_length from skillConfig to createSkillValidationSchema' which spies on the factory and asserts toHaveBeenCalledWith(45000). Business review (AC1–AC6) and standards review carry forward unchanged; AC6 is now covered.",
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: UI reads max_content_length and min_content_length from GET /v1/skills/config on form mount",
+      "status": "pass",
+      "notes": "src/store/skills.ts adds getSkillConfig() calling api.get('v1/skills/config'); useSkillForm.tsx fires it inside useEffect([], []) on mount"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: Character counter in SkillInstructions displays the configured limit, not hardcoded 30000",
+      "status": "pass",
+      "notes": "SkillInstructions.tsx replaces both MAX_CONTENT_LENGTH references in the counter UI with the maxContentLength prop; SkillForm.tsx derives maxContentLength from skillConfig?.max_content_length and passes it as the prop"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: Yup validation uses the configured max_content_length, not the hardcoded constant",
+      "status": "pass",
+      "notes": "skillValidation.ts introduces createSkillValidationSchema(maxContentLength) factory applying .max(maxContentLength); useSkillForm.tsx calls it with the store-derived value"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: maxLength HTML attribute on textareas reflects the configured limit",
+      "status": "pass",
+      "notes": "SkillInstructions.tsx replaces maxLength={MAX_CONTENT_LENGTH} with maxLength={maxContentLength} on both textarea elements (collapsed and expanded views)"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC5: Default behaviour is backward-compatible when endpoint is unreachable (falls back to MAX_CONTENT_LENGTH = 30000)",
+      "status": "pass",
+      "notes": "useSkillForm.tsx: snap.skillConfig?.max_content_length ?? MAX_CONTENT_LENGTH; SkillForm.tsx: skillConfig?.max_content_length ?? MAX_CONTENT_LENGTH; getSkillConfig() wrapped with .catch(() => {}) so failure leaves skillConfig null and both fallbacks activate"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC6: Tests cover store getSkillConfig(), schema factory with custom limit, component prop, integration flow",
+      "status": "partial",
+      "notes": "Store (2 tests), schema factory (4 tests), and component prop (2 tests) are fully covered. Integration flow test in useSkillForm.test.tsx only asserts getSkillConfig is called once on mount — it does not assert that the resolved config value is threaded into the schema. A regression where the hook fetches but ignores the config would not be caught."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "Commit subject 'EPMCDME-13541: Read skill content length limit from GET /v1/skills/config' matches required format ^EPMCDME-\\d+:\\s[A-Z][a-z]*"
+    },
+    {
+      "standard": "code-quality",
+      "status": "na",
+      "notes": "Guide .ai-run/guides/standards/code-quality.md is absent for codemie-ui; pre-commit lint-staged and tsc --noEmit gates confirmed passing at commit time"
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No secrets, credentials, injection vectors, or auth bypass in changed lines. No external user input is reflected unsanitized. The API response is typed and stored in Valtio proxy state with no DOM rendering of raw values."
+    }
+  ],
+  "findings": [],
+  "deferred_findings": [
+    {
+      "summary": "No response.ok check in getSkillConfig — a non-2xx response body could be stored as skillConfig",
+      "location": "src/store/skills.ts:791-796",
+      "reason": "api client behavior for non-ok responses is not visible in diff; fallback (skillConfig null → ?? MAX_CONTENT_LENGTH) prevents UI breakage; defer to api-client conventions audit"
+    },
+    {
+      "summary": "Zero or negative max_content_length bypasses the ?? fallback and propagates to schema and textarea",
+      "location": "src/store/skills.ts:791-796, useSkillForm.tsx:53-54, SkillForm.tsx:96-97",
+      "reason": "Backend contract specifies a positive integer; frontend defensive guard is a hardening improvement, not a required AC item; defer to future hardening"
+    },
+    {
+      "summary": "min_content_length is received from API but not consumed in createSkillValidationSchema — client/server min limit can diverge",
+      "location": "src/pages/skills/validation/skillValidation.ts",
+      "reason": "AC1 requires reading both values; AC3 only requires using max_content_length in validation; min configurability is out of scope for this story"
+    },
+    {
+      "summary": "createSkillValidationSchema duplicates all non-content fields from skillValidationSchema — parallel maintenance risk",
+      "location": "src/pages/skills/validation/skillValidation.ts",
+      "reason": "Additive design avoids breaking existing callers; duplication is a known tradeoff; refactor to share non-content fields can follow independently"
+    },
+    {
+      "summary": ".catch(() => {}) swallows getSkillConfig errors silently — no user toast, no logging",
+      "location": "src/pages/skills/hooks/useSkillForm.tsx:57",
+      "reason": "AC5 requires graceful fallback on unreachable endpoint, not user notification; logging enhancement is a separate observability concern"
+    }
+  ],
+  "dismissed_count": 4,
+  "dismissed_summary": "Stale resolver dismissed — react-hook-form resolver is updated via options ref on each render; subsequent validations use the current resolver. Concurrent getSkillConfig mounts dismissed — single-page flow makes this a theoretical race; fallback prevents breakage. Test isolation concern in skills.test.ts dismissed — vitest ESM isolation handles dynamic import re-evaluation per test suite. SkillInstructions maxLength attribute test dismissed — prop passthrough is trivially correct given the counter tests passing.",
+  "lens_coverage": {
+    "blind": "completed",
+    "edge_case": "completed",
+    "acceptance": "completed"
+  },
+  "produced_at": "2026-07-24T00:00:00Z",
+  "superseded_findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/pages/skills/hooks/__tests__/useSkillForm.test.tsx",
+      "problem": "The integration flow test only asserts that skillsStore.getSkillConfig is called once on mount. It does not verify that the resolved config value (max_content_length) is forwarded to createSkillValidationSchema — the core behavioral contract of the feature.",
+      "impact": "A regression where the hook fetches config but ignores the resolved value when constructing the form resolver would not be caught. AC6 requires integration flow coverage and this gap means the test suite does not fulfill that criterion.",
+      "recommendation": "Add one assertion to useSkillForm.test.tsx: mock skillsStore with skillConfig: { max_content_length: 45000, min_content_length: 100 } and either (a) spy on createSkillValidationSchema and assert it was called with 45000, or (b) trigger content validation on the returned form and assert that content of length 45001 produces a validation error referencing 45000. Option (a) is simpler given the existing mock structure.",
+      "sources": [
+        "acceptance",
+        "blind"
+      ]
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "Second test case in useSkillForm.test.tsx spies on skillValidation.createSkillValidationSchema, seeds skillsStore.skillConfig with {max_content_length: 45000, min_content_length: 100}, renders the hook, and asserts expect(spy).toHaveBeenCalledWith(45000). This closes the AC6 integration-coverage gap that CR-001 flagged."
+    }
+  ]
+}

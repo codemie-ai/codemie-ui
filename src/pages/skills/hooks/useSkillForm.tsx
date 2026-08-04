@@ -16,8 +16,10 @@
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useSnapshot } from 'valtio'
 
-import { skillValidationSchema } from '@/pages/skills/validation/skillValidation'
+import { MAX_CONTENT_LENGTH } from '@/constants/skills'
+import { createSkillValidationSchema } from '@/pages/skills/validation/skillValidation'
 import { skillsStore } from '@/store/skills'
 import { AssistantToolkit } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
@@ -48,8 +50,15 @@ export const useSkillForm = (initialData?: Skill) => {
   const [isCompanionFilesLoading, setIsCompanionFilesLoading] = useState(false)
   const [areCompanionFilesDirty, setAreCompanionFilesDirty] = useState(false)
 
+  const snap = useSnapshot(skillsStore)
+  const maxContentLength = snap.skillConfig?.max_content_length ?? MAX_CONTENT_LENGTH
+
+  useEffect(() => {
+    skillsStore.getSkillConfig().catch(() => {})
+  }, [])
+
   const form = useForm<SkillFormData>({
-    resolver: yupResolver(skillValidationSchema),
+    resolver: yupResolver(createSkillValidationSchema(maxContentLength)),
     defaultValues: initialData
       ? {
           name: initialData.name,

@@ -32,13 +32,14 @@ import Textarea from '@/components/form/Textarea'
 import ProjectSelector from '@/components/ProjectSelector'
 import BuiltinSubagentToggle from '@/components/subagents/BuiltinSubagentToggle'
 import TooltipButton from '@/components/TooltipButton'
-import { MAX_DESCRIPTION_LENGTH } from '@/constants/skills'
+import { MAX_CONTENT_LENGTH, MAX_DESCRIPTION_LENGTH } from '@/constants/skills'
 import { AssistantFormContext } from '@/pages/assistants/components/AssistantForm/AssistantForm'
 import FormSection from '@/pages/assistants/components/AssistantForm/components/FormSection'
 import ToolsConfiguration from '@/pages/assistants/components/AssistantForm/components/Toolkits/ToolsConfiguration'
 import { useRefineSkillRecommendations } from '@/pages/skills/hooks/useRefineSkillRecommendations'
 import { SkillFormData } from '@/pages/skills/hooks/useSkillForm'
 import { assistantsStore } from '@/store/assistants'
+import { skillsStore } from '@/store/skills'
 import { AssistantToolkit } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import {
@@ -94,6 +95,8 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
     const { control, watch, setValue, handleSubmit, getValues } = form
 
     const { builtinSubagentsCatalog, getBuiltinSubagentsCatalog } = useSnapshot(assistantsStore)
+    const { skillConfig } = useSnapshot(skillsStore)
+    const maxContentLength = skillConfig?.max_content_length ?? MAX_CONTENT_LENGTH
 
     const descriptionValue = watch('description') ?? ''
     const visibility = watch('visibility')
@@ -314,6 +317,7 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
               render={({ field, fieldState }) => (
                 <SkillInstructions
                   value={field.value ?? ''}
+                  maxContentLength={maxContentLength}
                   error={fieldState.error?.message}
                   isAIGenerated={aiGeneratedFieldMarkers.instructions}
                   onChange={field.onChange}

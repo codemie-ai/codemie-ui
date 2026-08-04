@@ -118,4 +118,32 @@ describe('skillsStore', () => {
       expect(url).toContain('per_page=100')
     })
   })
+
+  describe('getSkillConfig', () => {
+    it('calls GET v1/skills/config and returns config values', async () => {
+      mockGet.mockResolvedValue({
+        json: async () => ({ max_content_length: 50000, min_content_length: 100 }),
+      })
+
+      const { skillsStore } = await import('@/store/skills')
+      const result = await skillsStore.getSkillConfig()
+
+      expect(mockGet).toHaveBeenCalledWith('v1/skills/config')
+      expect(result).toEqual({ max_content_length: 50000, min_content_length: 100 })
+    })
+
+    it('stores the config in skillsStore.skillConfig', async () => {
+      mockGet.mockResolvedValue({
+        json: async () => ({ max_content_length: 45000, min_content_length: 100 }),
+      })
+
+      const { skillsStore } = await import('@/store/skills')
+      await skillsStore.getSkillConfig()
+
+      expect(skillsStore.skillConfig).toEqual({
+        max_content_length: 45000,
+        min_content_length: 100,
+      })
+    })
+  })
 })
