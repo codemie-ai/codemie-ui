@@ -119,7 +119,7 @@ const NewAssistantPage = () => {
   }
 
   const handleSubmit = async (values, skipValidation = false) => {
-    return assistantsStore.createAssistant(values, skipValidation)
+    return assistantsStore.createAssistant(values, skipValidation, isCloning ? id : undefined)
   }
 
   useEffect(() => {

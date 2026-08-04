@@ -133,4 +133,18 @@ describe('transformAssistantToCreateDTO', () => {
       expect(dto.skill_ids).toEqual(['explicit-1'])
     })
   })
+
+  describe('source_assistant_id', () => {
+    it('sets source_assistant_id when a source id is passed', () => {
+      const dto = transformAssistantToCreateDTO(baseAssistant as Assistant, 'source-assistant-1')
+
+      expect(dto.source_assistant_id).toBe('source-assistant-1')
+    })
+
+    it('omits source_assistant_id when no source id is passed', () => {
+      const dto = transformAssistantToCreateDTO(baseAssistant as Assistant)
+
+      expect(dto.source_assistant_id).toBeUndefined()
+    })
+  })
 })

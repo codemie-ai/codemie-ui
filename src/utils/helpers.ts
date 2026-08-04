@@ -356,6 +356,15 @@ export const isNumberValue = (num: any): boolean => {
   return isNumber(num)
 }
 
+export const formatCompactCount = (value?: number | string | null): string => {
+  return Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    compactDisplay: 'short',
+  })
+    .format(Number(value) || 0)
+    .toLocaleLowerCase()
+}
+
 // 308px matches CHAT_SIDEBAR_DEFAULT_WIDTH in
 // src/pages/chat/components/ChatSidebar/chatSidebarWidth.ts — keep in sync.
 export const getSidebarMaxWidthClass = (): string => {

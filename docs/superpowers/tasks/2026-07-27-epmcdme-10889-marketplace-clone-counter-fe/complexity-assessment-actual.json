@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "task": "Add clone_count display to AssistantCard and thread source_assistant_id through the clone submit payload",
+  "generated": "2026-07-27T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L",
+      "affected": "Assistant type contracts (assistant.ts), transformAssistantToCreateDTO shared utility, assistantsStore.createAssistant, NewAssistantPage.handleSubmit, AssistantCard clone-count button",
+      "layers": "Types/DTO, Store, UI"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "None significant — purely additive optional fields, no breaking API/DTO changes",
+      "mitigation": "Clone-count button mirrors the existing like/dislike button pattern exactly (same stopPropagation guard, aria-label style, ?? 0 fallback); sourceAssistantId spread conditionally so non-clone flows are unaffected"
+    },
+    "file_change_estimate": {
+      "score": 4,
+      "label": "L",
+      "modified_files": 8,
+      "modified_file_list": [
+        "src/types/entity/assistant.ts",
+        "src/store/utils/assistants.ts",
+        "src/store/utils/__tests__/assistants.test.ts",
+        "src/store/assistants.ts",
+        "src/pages/assistants/NewAssistantPage.tsx",
+        "src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx",
+        "src/pages/assistants/components/AssistantList/AssistantCard/AssistantCard.tsx",
+        "src/pages/assistants/components/AssistantList/AssistantCard/__tests__/AssistantCard.test.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": ["src/types", "src/store", "src/pages"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M",
+      "layers_changed": ["Types/DTO", "Store", "UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 16,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 8,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches 5 discrete pieces (type contracts, shared DTO transform used by both create and update, store action, page submit handler, UI card) across 3 layers — coordination needed but no new abstractions" },
+    { "dimension": "file_change_estimate", "reason": "8 files changed with 0 new files (diffstat maps 7-10 files to L); all changes are modifications to existing files, none creating new modules" }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null,
+  "drift_vs_estimate": {
+    "estimate_total": 15,
+    "estimate_size": "M",
+    "actual_total": 16,
+    "actual_size": "M",
+    "band_crossed": false,
+    "notes": "1-point drift, driven by file_change_estimate landing at L(4) instead of the predicted M-tier count — actual touched 8 files (including 3 test files with new cases). No band-crossing drift; pre-implementation estimate held up well."
+  }
+}

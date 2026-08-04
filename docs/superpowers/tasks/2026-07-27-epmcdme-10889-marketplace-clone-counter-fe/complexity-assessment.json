@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "task": "Add clone_count display to AssistantCard and thread source_assistant_id through the clone submit payload in codemie-ui.",
+  "generated": "2026-07-27T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 15,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches 4 components across the vertical slice (types, store/utils DTO transform, NewAssistantPage submit, AssistantCard render) plus 2 test files — coordination needed but every piece has a direct existing pattern to copy (is_pinned/is_favorited passthrough, like/dislike button block)." },
+    { "dimension": "file_change_estimate", "reason": "Estimated 6-7 files modified (assistant.ts types, store/assistants.ts, store/utils/assistants.ts, NewAssistantPage.tsx, AssistantCard.tsx, AssistantCard.test.tsx, NewAssistantPage.integration.test.tsx), all within src/, no new files required." },
+    { "dimension": "affected_layers", "reason": "3 distinct layers: types layer, store/state layer, UI component/page layer. No DB, no external integration — backend contract already shipped and fixed." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { vi, expect, beforeEach, describe, it } from 'vitest'
 
 import { Assistant } from '@/types/entity/assistant'
@@ -22,6 +22,10 @@ import AssistantCard from '../AssistantCard'
 
 vi.mock('@/utils/helpers', () => ({
   createdBy: (user) => user?.name || 'Unknown',
+  formatCompactCount: (value?: number | string | null) =>
+    Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short' })
+      .format(Number(value) || 0)
+      .toLocaleLowerCase(),
 }))
 
 vi.mock('@/assets/images/ai-avatar.png', () => ({
@@ -48,6 +52,32 @@ vi.mock('@/store/assistants', () => ({
     removeReaction: vi.fn(),
     reactToAssistant: vi.fn(),
   },
+}))
+
+const mockRouterPush = vi.fn()
+vi.mock('@/hooks/useVueRouter', () => ({
+  useVueRouter: () => ({
+    push: mockRouterPush,
+  }),
+}))
+
+vi.mock('@/store/chats', () => ({
+  chatsStore: {
+    startNewChat: vi.fn(),
+  },
+}))
+
+vi.mock('@/store/favorites', () => ({
+  favoritesStore: {
+    patchAssistantReaction: vi.fn(),
+    patchAssistantPinned: vi.fn(),
+  },
+}))
+
+vi.mock('@/hooks/useFeatureFlags', () => ({
+  useFavoritesEnabled: () => [false],
+  usePinnedAssistantsEnabled: () => [false],
+  useFeatureFlag: () => [false],
 }))
 
 describe('AssistantCard', () => {
@@ -135,5 +165,71 @@ describe('AssistantCard', () => {
       />
     )
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('renders clone count next to like/dislike counters when assistant is global', () => {
+    const globalAssistant: Assistant = {
+      ...mockAssistant,
+      is_global: true,
+      unique_likes_count: 3,
+      unique_dislikes_count: 1,
+      clone_count: 7,
+    }
+
+    render(<AssistantCard assistant={globalAssistant} onViewAssistant={() => {}} />)
+
+    expect(screen.getByLabelText(`Clone ${globalAssistant.name}, 7`)).toBeInTheDocument()
+  })
+
+  it('defaults clone count to 0 when clone_count is absent', () => {
+    const globalAssistant: Assistant = {
+      ...mockAssistant,
+      is_global: true,
+      unique_likes_count: 0,
+      unique_dislikes_count: 0,
+    }
+
+    render(<AssistantCard assistant={globalAssistant} onViewAssistant={() => {}} />)
+
+    expect(screen.getByLabelText(`Clone ${globalAssistant.name}, 0`)).toBeInTheDocument()
+  })
+
+  it('navigates to clone route when clone button is clicked', () => {
+    const globalAssistant: Assistant = {
+      ...mockAssistant,
+      is_global: true,
+      unique_likes_count: 0,
+      unique_dislikes_count: 0,
+      clone_count: 4,
+    }
+
+    render(<AssistantCard assistant={globalAssistant} onViewAssistant={() => {}} />)
+
+    fireEvent.click(screen.getByLabelText(`Clone ${globalAssistant.name}, 4`))
+
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      name: 'clone-assistant',
+      params: { id: globalAssistant.id },
+    })
+  })
+
+  it('renders 5-digit counters in compact form and keeps the chat button intact', () => {
+    const globalAssistant: Assistant = {
+      ...mockAssistant,
+      is_global: true,
+      unique_likes_count: 12345,
+      unique_dislikes_count: 67890,
+      clone_count: 54321,
+    }
+
+    render(<AssistantCard assistant={globalAssistant} onViewAssistant={() => {}} />)
+
+    expect(screen.getByLabelText(`Like ${globalAssistant.name}, 12345`)).toHaveTextContent('12k')
+    expect(screen.getByLabelText(`Dislike ${globalAssistant.name}, 67890`)).toHaveTextContent('68k')
+    expect(screen.getByLabelText(`Clone ${globalAssistant.name}, 54321`)).toHaveTextContent('54k')
+
+    const chatButton = screen.getByLabelText(`Start chat with ${globalAssistant.name}`)
+    expect(chatButton).toBeInTheDocument()
+    expect(chatButton).toHaveClass('shrink-0')
   })
 })

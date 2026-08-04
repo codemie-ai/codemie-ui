@@ -1,0 +1,42 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three lenses ran cleanly (spec present, acceptance audit fully passed, no lens failures, small diff). Two blocking findings: the new AssistantCard clone-count button omits event.stopPropagation(), unlike every sibling control in the same block, so a click bubbles to the card's onViewAssistant navigation; and all 4 commit messages on this branch violate the project's CI-enforced commit-format regex (lowercase first word after the colon). 8 other blind-lens concerns were reviewed and dismissed as either already-covered by explicit design decisions in the approved spec/plan (?? 0 fallback, positional optional param, no-op-on-clone-mode-GET-failure per backend contract), consistent with pre-existing project conventions (raw JSON-substring body assertions used 11x elsewhere in the same test file; duplicated optional fields across interfaces matches is_pinned/is_favorited precedent), or not a regression introduced by this diff (missing hidden-when-non-global test predates this change). 0 defer, 8 dismiss.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "spec", "item": "Types: add clone_count?: number to Assistant and AssistantListResponse", "status": "pass", "notes": "src/types/entity/assistant.ts: clone_count?: number added to both interfaces."},
+    {"kind": "spec", "item": "Types: add source_assistant_id?: string to CreateAssistantDto", "status": "pass", "notes": "src/types/entity/assistant.ts: field added."},
+    {"kind": "spec", "item": "transformAssistantToCreateDTO gains optional sourceAssistantId param, sets source_assistant_id on DTO when provided", "status": "pass", "notes": "src/store/utils/assistants.ts: signature updated, conditional spread added; unit tests cover both branches."},
+    {"kind": "spec", "item": "NewAssistantPage.handleSubmit passes isCloning ? id : undefined (route param) through the call chain into assistantsStore.createAssistant", "status": "pass", "notes": "Uses route param id, not form state, matching spec."},
+    {"kind": "spec", "item": "Store passthrough: confirm clone_count flows through indexAssistants/normalizeAssistant without narrowing; add explicit passthrough only if needed", "status": "pass", "notes": "normalizeAssistant still spreads ...raw, no explicit mapping change needed."},
+    {"kind": "spec", "item": "AssistantCard UI: third stat button inside isGlobal gate, Button type=tertiary + icon + span.text-sm-1, divider, reusing copy.svg via ?react", "status": "pass", "notes": "Structurally matches like/dislike buttons; copy.svg exists and is imported via ?react."},
+    {"kind": "spec", "item": "AssistantCard.test.tsx: exercise the is_global gated block and assert clone-count span renders including ?? 0 default", "status": "pass", "notes": "Two new tests cover both cases via local is_global:true overrides rather than flipping the shared mock; functionally equivalent."},
+    {"kind": "spec", "item": "NewAssistantPage.integration.test.tsx: add coverage asserting source_assistant_id in POST body for a cloned assistant", "status": "pass", "notes": "New test added (no existing clone-mode test actually submitted the form/mocked POST, so a single-assertion addition wasn't possible); achieves the acceptance intent."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "fail", "notes": "All 4 commits on this branch (46273f4be, 3e32aa868, 0b4f58d7b, 8078b634c) use a lowercase first word after the ticket colon ('add', 'thread', 'send', 'render'); .ai-run/guides/standards/git-workflow.md's CI-enforced regex requires an uppercase first word."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantList/AssistantCard/AssistantCard.tsx",
+      "line": 232,
+      "title": "New clone-count button doesn't stop click propagation, unlike its siblings",
+      "problem": "The new Clone-count Button has no onClick handler. Every other interactive control in the same isGlobal block (toggleLike, toggleDislike, and handleChatClick elsewhere in the file) starts its handler with event.stopPropagation(), because the whole card has onClick={() => onViewAssistant(assistant)}.",
+      "impact": "Clicking the clone-count pill bubbles the click to the Card's onClick and unintentionally navigates via onViewAssistant(assistant) — a surprising side effect for what is meant to be a read-only stat display, and an inconsistency with the identical-looking sibling buttons right next to it.",
+      "recommendation": "Add onClick={(e) => e.stopPropagation()} to the new Button, matching the pattern already used by toggleLike/toggleDislike."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "(git commit messages)",
+      "title": "Commit messages violate the project's CI-enforced format",
+      "problem": "All 4 commits use a lowercase first word after the ticket colon (e.g. 'EPMCDME-10889: add clone_count...'), but .ai-run/guides/standards/git-workflow.md documents the format as EPMCDME-XXXX: Capital sentence, enforced by a Tekton CI regex that blocks on violation.",
+      "impact": "Pushing this branch and opening an MR will fail CI's commit-message check before any human review happens.",
+      "recommendation": "Reword the 4 commit subjects to start with a capital letter ('Add', 'Thread', 'Send', 'Render') via interactive rebase, or squash into a single correctly-formatted commit before pushing."
+    }
+  ]
+}

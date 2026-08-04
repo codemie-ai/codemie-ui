@@ -81,6 +81,7 @@ export interface AssistantListResponse {
   unique_users_count?: number
   unique_likes_count?: number
   unique_dislikes_count?: number
+  clone_count?: number
   categories?: string[]
   is_global?: boolean
   shared?: boolean
@@ -152,6 +153,7 @@ export interface Assistant {
   skills?: Skill[]
   is_favorited?: boolean
   is_pinned?: boolean
+  clone_count?: number
 
   // Built-in subagents
   enabled_builtin_subagents?: string[]
@@ -470,6 +472,7 @@ export interface CreateAssistantDto {
   guardrail_assignments: EntityGuardrailAssignment[]
   skip_integration_validation?: boolean
   skill_ids?: string[]
+  source_assistant_id?: string
 
   // Built-in subagents
   enabled_builtin_subagents?: string[]

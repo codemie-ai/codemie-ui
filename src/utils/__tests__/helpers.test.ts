@@ -15,7 +15,35 @@
 
 import { vi, describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest'
 
-import { decodeFileName, getRootPath, formatScheduleDate } from '@/utils/helpers'
+import {
+  decodeFileName,
+  getRootPath,
+  formatScheduleDate,
+  formatCompactCount,
+} from '@/utils/helpers'
+
+describe('formatCompactCount', () => {
+  it('formats large numbers using compact notation', () => {
+    expect(formatCompactCount(12345)).toBe('12k')
+    expect(formatCompactCount(67890)).toBe('68k')
+    expect(formatCompactCount(1200000)).toBe('1.2m')
+  })
+
+  it('leaves small numbers unformatted', () => {
+    expect(formatCompactCount(3)).toBe('3')
+    expect(formatCompactCount(999)).toBe('999')
+  })
+
+  it('accepts numeric strings', () => {
+    expect(formatCompactCount('54321')).toBe('54k')
+  })
+
+  it('defaults to 0 for null, undefined, and NaN input', () => {
+    expect(formatCompactCount(null)).toBe('0')
+    expect(formatCompactCount(undefined)).toBe('0')
+    expect(formatCompactCount('not-a-number')).toBe('0')
+  })
+})
 
 describe('decodeFileName', () => {
   it('should return an empty array if input is not base64 encoded', () => {

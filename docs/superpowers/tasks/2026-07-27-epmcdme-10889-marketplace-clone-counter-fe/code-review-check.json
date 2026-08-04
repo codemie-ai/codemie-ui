@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "rationale": "Both blocking findings from code-review.final are resolved. CR-001: the fix-up diff adds onClick={(event) => event.stopPropagation()} to the clone-count Button (AssistantCard.tsx), plus a new regression test asserting onViewAssistant is not called on click; test suite passes (9/9 in AssistantCard.test.tsx). CR-002: all 5 commit subjects on the branch were reworded via cherry-pick+amend (non-interactive, no rebase -i) to start with a capitalized word after the ticket colon, matching the CI-enforced format in git-workflow.md; verified via git log. No new high-risk issue found in the small fix-up diff (2 files, +19/-1), so no confirmation-pass dispatch was needed.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "spec", "item": "Types: add clone_count?: number to Assistant and AssistantListResponse", "status": "pass", "notes": "src/types/entity/assistant.ts: clone_count?: number added to both interfaces."},
+    {"kind": "spec", "item": "Types: add source_assistant_id?: string to CreateAssistantDto", "status": "pass", "notes": "src/types/entity/assistant.ts: field added."},
+    {"kind": "spec", "item": "transformAssistantToCreateDTO gains optional sourceAssistantId param, sets source_assistant_id on DTO when provided", "status": "pass", "notes": "src/store/utils/assistants.ts: signature updated, conditional spread added; unit tests cover both branches."},
+    {"kind": "spec", "item": "NewAssistantPage.handleSubmit passes isCloning ? id : undefined (route param) through the call chain into assistantsStore.createAssistant", "status": "pass", "notes": "Uses route param id, not form state, matching spec."},
+    {"kind": "spec", "item": "Store passthrough: confirm clone_count flows through indexAssistants/normalizeAssistant without narrowing; add explicit passthrough only if needed", "status": "pass", "notes": "normalizeAssistant still spreads ...raw, no explicit mapping change needed."},
+    {"kind": "spec", "item": "AssistantCard UI: third stat button inside isGlobal gate, Button type=tertiary + icon + span.text-sm-1, divider, reusing copy.svg via ?react", "status": "pass", "notes": "Structurally matches like/dislike buttons; copy.svg exists and is imported via ?react."},
+    {"kind": "spec", "item": "AssistantCard.test.tsx: exercise the is_global gated block and assert clone-count span renders including ?? 0 default", "status": "pass", "notes": "Two new tests cover both cases via local is_global:true overrides rather than flipping the shared mock; functionally equivalent."},
+    {"kind": "spec", "item": "NewAssistantPage.integration.test.tsx: add coverage asserting source_assistant_id in POST body for a cloned assistant", "status": "pass", "notes": "New test added (no existing clone-mode test actually submitted the form/mocked POST, so a single-assertion addition wasn't possible); achieves the acceptance intent."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "fail", "notes": "All 4 commits on this branch (46273f4be, 3e32aa868, 0b4f58d7b, 8078b634c) use a lowercase first word after the ticket colon ('add', 'thread', 'send', 'render'); .ai-run/guides/standards/git-workflow.md's CI-enforced regex requires an uppercase first word."}
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "onClick={(event) => event.stopPropagation()} added to the clone-count Button in AssistantCard.tsx; new regression test 'does not navigate to the assistant when the clone count button is clicked' passes (fireEvent.click + expect(onViewAssistant).not.toHaveBeenCalled())."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "All 5 commit subjects on EPMCDME-10889_marketplace-clone-counter now read 'EPMCDME-10889: <Capitalized word>...' (verified via git log 7f4165963..HEAD), matching the CI-enforced regex in git-workflow.md. Reworded via cherry-pick + commit --amend on a temp branch (rebase -i avoided per tooling restriction), tree content unchanged (git diff against pre-reword tip is empty)."
+    }
+  ]
+}

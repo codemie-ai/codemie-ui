@@ -146,7 +146,8 @@ interface AssistantsStoreType {
   viewMode: boolean
   createAssistant: (
     values: Assistant,
-    skipIntegrationValidation?: boolean
+    skipIntegrationValidation?: boolean,
+    sourceAssistantId?: string
   ) => Promise<AssistantCreateResponse>
   generateAssistantPromptWithAI: (
     prompt: string,
@@ -719,10 +720,11 @@ export const assistantsStore = proxy<AssistantsStoreType>({
 
   async createAssistant(
     values: Assistant,
-    skipIntegrationValidation = false
+    skipIntegrationValidation = false,
+    sourceAssistantId: string | undefined = undefined
   ): Promise<AssistantCreateResponse> {
     const assistantData: CreateAssistantDto = {
-      ...transformAssistantToCreateDTO(values),
+      ...transformAssistantToCreateDTO(values, sourceAssistantId),
       skip_integration_validation: skipIntegrationValidation,
     }
 

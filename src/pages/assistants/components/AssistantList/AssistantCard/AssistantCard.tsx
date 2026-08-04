@@ -18,6 +18,7 @@ import React, { useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import ChatSvg from '@/assets/icons/chat-new-filled.svg?react'
+import CopySvg from '@/assets/icons/copy.svg?react'
 import PlusSvg from '@/assets/icons/plus.svg?react'
 import ThumbDownSvg from '@/assets/icons/thumb-down.svg?react'
 import ThumbUpFilledSvg from '@/assets/icons/thumb-up-filled.svg?react'
@@ -38,7 +39,7 @@ import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
 import { favoritesStore } from '@/store/favorites'
 import { Assistant } from '@/types/entity/assistant'
-import { createdBy } from '@/utils/helpers'
+import { formatCompactCount, createdBy } from '@/utils/helpers'
 
 import StatusLabel from './StatusLabel'
 
@@ -143,6 +144,14 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
     })
   }
 
+  const handleClone = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    router.push({
+      name: 'clone-assistant',
+      params: { id: assistant.id },
+    })
+  }
+
   const tooltipClass = useMemo(() => {
     const id = assistant.id || assistant.slug
     return 'tooltip-target-' + id
@@ -157,7 +166,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
             variant="action"
             onClick={(event) => handleCreateAssistant(event, assistant)}
             size="medium"
-            className={classNames(tooltipClass)}
+            className={classNames(tooltipClass, 'shrink-0')}
             data-pr-tooltip="Create Assistant"
             aria-label={`Create assistant from ${assistant.name}`}
           >
@@ -168,7 +177,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
             variant="action"
             onClick={handleChatClick}
             size="medium"
-            className={classNames(tooltipClass)}
+            className={classNames(tooltipClass, 'shrink-0')}
             data-pr-tooltip="Start chat"
             aria-label={`Start chat with ${assistant.name}`}
           >
@@ -194,7 +203,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
                 <ThumbUpSvg className="w-3 h-3" aria-hidden="true" />
               )}
               <span className="text-sm-1" aria-hidden="true">
-                {assistant.unique_likes_count}
+                {formatCompactCount(assistant.unique_likes_count)}
               </span>
             </Button>
 
@@ -220,7 +229,22 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
                 <ThumbDownSvg className="w-3 h-3" aria-hidden="true" />
               )}
               <span className="text-sm-1" aria-hidden="true">
-                {assistant.unique_dislikes_count}
+                {formatCompactCount(assistant.unique_dislikes_count)}
+              </span>
+            </Button>
+
+            <div className="h-[12px] w-px bg-border-structural mx-1" aria-hidden="true"></div>
+
+            <Button
+              type="tertiary"
+              className={tooltipClass}
+              data-pr-tooltip="Clone this assistant"
+              aria-label={`Clone ${assistant.name}, ${assistant.clone_count ?? 0}`}
+              onClick={handleClone}
+            >
+              <CopySvg className="w-3 h-3" aria-hidden="true" />
+              <span className="text-sm-1" aria-hidden="true">
+                {formatCompactCount(assistant.clone_count)}
               </span>
             </Button>
           </div>

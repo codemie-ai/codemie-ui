@@ -22,6 +22,7 @@ import { AssistantType } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { Assistant } from '@/types/entity/assistant'
+import { formatCompactCount } from '@/utils/helpers'
 import { createdBy as getCreatedBy } from '@/utils/utils'
 
 interface AssistantDetailsProfileProps {
@@ -29,12 +30,7 @@ interface AssistantDetailsProfileProps {
 }
 
 const AssistantDetailsProfile = ({ assistant }: AssistantDetailsProfileProps) => {
-  const formattedTotalUses = Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    compactDisplay: 'short',
-  })
-    .format(Number(assistant.unique_users_count) || 0)
-    .toLocaleLowerCase()
+  const formattedTotalUses = formatCompactCount(assistant.unique_users_count)
 
   const nameEl = useRef<HTMLParagraphElement>(null)
   const isNameTruncated = useIsTruncated(nameEl)

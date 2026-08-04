@@ -315,6 +315,45 @@ describe('NewAssistantPage - Integration', () => {
       })
     })
 
+    it('sends source_assistant_id in the POST body when submitting a cloned assistant', async () => {
+      mockRouterState.currentRoute.value = {
+        path: '/assistants/assistant-1/clone',
+        name: 'clone-assistant',
+        params: { id: 'assistant-1' },
+        query: {},
+        hash: '',
+      }
+      mockAPI('GET', 'v1/user', userWithProject)
+      mockAPI('GET', 'v1/assistants/id/assistant-1', createAssistantFixture())
+      mockAPI('POST', 'v1/assistants', { id: 'cloned-id', assistantId: 'cloned-id' })
+
+      renderPage('/assistants/assistant-1/clone')
+
+      await waitFor(() => {
+        expect(screen.getByText('Clone Assistant')).toBeInTheDocument()
+      })
+
+      // Wait for project auto-selection
+      await waitFor(() => {
+        expect(screen.getByText('test-project')).toBeInTheDocument()
+      })
+
+      // Clone mode blanks the name field (see buildTemplate in NewAssistantPage.tsx) — fill it in.
+      await user.type(screen.getByPlaceholderText('Name*'), 'Cloned Assistant')
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('v1/assistants'),
+          expect.objectContaining({
+            method: 'POST',
+            body: expect.stringContaining('"source_assistant_id":"assistant-1"'),
+          })
+        )
+      })
+    })
+
     it('shows error toast when create assistant API call fails', async () => {
       mockAPI('GET', 'v1/user', userWithProject)
       mockAPI(

@@ -16,7 +16,10 @@
 import { AssistantType } from '@/constants/assistants'
 import { Assistant, CreateAssistantDto } from '@/types/entity/assistant'
 
-export function transformAssistantToCreateDTO(assistant: Assistant): CreateAssistantDto {
+export function transformAssistantToCreateDTO(
+  assistant: Assistant,
+  sourceAssistantId?: string
+): CreateAssistantDto {
   // Handle skill_ids: prefer explicit skill_ids from form, fallback to extracting from skills array
   const skillIds = (assistant as any).skill_ids ?? assistant.skills?.map((s) => s.id) ?? []
 
@@ -72,6 +75,7 @@ export function transformAssistantToCreateDTO(assistant: Assistant): CreateAssis
     interactive_features: assistant.interactive_features ?? null,
     guardrail_assignments: assistant.guardrail_assignments,
     skill_ids: skillIds,
+    ...(sourceAssistantId ? { source_assistant_id: sourceAssistantId } : {}),
 
     // Built-in subagents
     enabled_builtin_subagents: assistant.enabled_builtin_subagents ?? [],
