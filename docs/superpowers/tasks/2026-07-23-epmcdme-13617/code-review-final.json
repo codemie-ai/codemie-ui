@@ -1,0 +1,70 @@
+{
+  "decision": "request-changes",
+  "confidence": "medium",
+  "rationale": "The fix correctly addresses the original crash by skipping array unwrapping for MULTISELECT fields and adding a type guard in filterMultiselectOptions. However, four edge-case and test-coverage issues must be resolved: (1) the MULTISELECT tests assert only crash-prevention, not value integrity, so a regression in initialValues would go undetected; (2) `fields` is missing from the initialValues useMemo dependency array, risking stale lookups if selectInitialValues becomes independent; (3) the behavioral change where `null` is no longer reset to `[]` may break downstream API contracts; (4) during provider switches, stale dataProvider/values pairs could bypass the fix. Two of these are dependencies of the architectural fix; two are test/contract gaps. All must be addressed before merge.",
+  "risk_flags": [
+    "regression-path",
+    "test-coverage",
+    "api-contract-change",
+    "race-condition"
+  ],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Both commits follow EPMCDME-XXXX: Capital format per git-workflow.md. 'EPMCDME-13617: Fix MULTISELECT array unwrapping crash' and 'EPMCDME-13617: Add comprehensive MULTISELECT test coverage' are valid."
+    },
+    {
+      "standard": "branch-naming",
+      "status": "pass",
+      "notes": "Branch EPMCDME-13617-multiselect-filter-uuid-fix follows EPMCDME-XXXX_short-description pattern."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "title": "Tests validate crash-prevention only, not value integrity",
+      "file": "src/pages/dataSources/components/__tests__/IndexProviderForm.test.tsx",
+      "line": 222,
+      "problem": "Every new MULTISELECT test asserts only `expect(element).not.toBeNull()` — i.e., the component rendered without throwing. Because `filterMultiselectOptions` now also guards against non-arrays (`Array.isArray(currentValue) &&`), the crash is suppressed even if the `initialValues` fix is reverted. The tests exercise only the secondary defensive guard, not the primary fix.",
+      "impact": "Silent regression path: if the initialValues fix regresses, all new tests pass while form submission silently sends `code_analysis_datasources: 'uuid'` instead of `['uuid']` to the backend, breaking data contracts.",
+      "recommendation": "In each MULTISELECT test, assert the actual controller value is an array. Use `react-hook-form`'s `getValues()` method or verify `controllerField.value` is an array, e.g.: `expect(Array.isArray(form.getValues('code_analysis_datasources'))).toBe(true)` in the regression test.",
+      "triage": "patch"
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "title": "`fields` is a missing dependency in `initialValues` useMemo",
+      "file": "src/pages/dataSources/components/IndexProviderForm.tsx",
+      "line": 99,
+      "problem": "The new `fields.find()` call inside `initialValues` useMemo captures `fields` from the outer scope but `fields` is absent from the dependency array `[values, selectInitialValues, isSensitive]`. While `selectInitialValues` transitively depends on `fields`, if `selectInitialValues` is ever made independent, the `fields.find()` will use stale field configs.",
+      "impact": "A MULTISELECT field in a newly loaded schema would not be recognized, causing its array to be destructured to its first element — reintroducing the original bug in the provider-switch flow.",
+      "recommendation": "Add `fields` to the dependency array: `[values, fields, selectInitialValues, isSensitive]`. This satisfies exhaustive-deps linting and guarantees consistency.",
+      "triage": "patch"
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "title": "`null` currentValue no longer resets to `[]` in filterMultiselectOptions — behavioral change",
+      "file": "src/pages/dataSources/components/IndexProviderForm.tsx",
+      "line": 126,
+      "problem": "Before: `!currentValue?.every(...)` returned `true` for `null`, calling `setValue(..., [])`. After: `Array.isArray(null)` is `false`, so `null` is preserved. The form now submits `null` for a cleared MULTISELECT instead of `[]`. If the backend distinguishes these semantically (null = not provided, [] = cleared), this breaks the user's intent.",
+      "impact": "User clears a MULTISELECT, changes project, and the backend sees `null` instead of `[]` — old selections may be retained or the API may error due to unexpected value type.",
+      "recommendation": "Verify backend API contract: if `null` and `[]` differ in semantics, modify the fix to handle `null` explicitly. Either return early from `filterMultiselectOptions` without calling `setValue` when `currentValue` is `null`, or ensure the CrossIcon handler (line 246) sets value to `[]` not `null`.",
+      "triage": "patch"
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "title": "Race window during provider switch: stale dataProvider/values pairs bypass the fix",
+      "file": "src/pages/dataSources/components/IndexProviderForm.tsx",
+      "line": 99,
+      "problem": "In the provider-switch flow, `dataProvider` (derived from `indexMetadata` controller field) and `values` (from parent `index` object) can update asynchronously. If `values.create_params` contains a MULTISELECT field name but `fields` (from the new provider) doesn't yet include it, `fieldConfig` is `undefined`, the guard `undefined !== 'Multiselect'` evaluates to `true`, and the array is unwrapped anyway.",
+      "impact": "MULTISELECT values are corrupted during provider switches. The `hasPrefilled.current = true` guard prevents corrective prefill, so the form renders with stale string values instead of arrays.",
+      "recommendation": "Guard `initialValues` useMemo with a consistency check: if `fields.length === 0` or if keys from `createParams` do not exist in `fields`, return `selectInitialValues` directly without the merge. Alternatively, rely on adding `fields` to the dependency array (CR-002) to force recalculation when schemas don't align.",
+      "triage": "patch"
+    }
+  ]
+}

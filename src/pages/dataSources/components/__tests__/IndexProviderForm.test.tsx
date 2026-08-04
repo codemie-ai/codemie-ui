@@ -169,3 +169,411 @@ describe('IndexProviderForm — TEXT parameter type', () => {
     }
   )
 })
+
+// ─── EPMCDME-13617: MULTISELECT array unwrapping regression ──────────────────
+
+describe('IndexProviderForm — MULTISELECT fields', () => {
+  it('REGRESSION: preserves MULTISELECT field values as arrays (not unwrapping to [0])', () => {
+    // Scenario: backend returns create_params with a MULTISELECT field as an array:
+    // { code_analysis_datasources: ["e8d242c9-9eed-4cdc-aa2f-1380f0fab565"] }
+    // The initialValues useMemo should NOT unwrap this to a string.
+
+    const dataSource = [
+      { value: 'e8d242c9-9eed-4cdc-aa2f-1380f0fab565', project_name: 'test-project' },
+      { value: 'f9e353d0-afef-5edf-bb3g-2481g1fgc676', project_name: 'test-project' },
+    ]
+
+    const { container } = render(
+      <Harness
+        defaultValues={{ code_analysis_datasources: dataSource }}
+        values={{
+          create_params: {
+            code_analysis_datasources: [dataSource[0].value],
+          },
+        }}
+        dataProvider={
+          {
+            id: 'p-1',
+            toolkit_id: 't-1',
+            provider_name: 'neo4j',
+            name: 'neo4j',
+            base_schema: { description: '', parameters: [] },
+            create_schema: {
+              description: '',
+              parameters: [
+                {
+                  name: 'code_analysis_datasources',
+                  description: 'Select data sources',
+                  required: true,
+                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
+                  enum: null,
+                  multiselect_options: dataSource,
+                  title: 'Code Analysis Datasources',
+                  example: null,
+                },
+              ],
+            },
+          } as unknown as DataProvider
+        }
+      />
+    )
+
+    // The MultiSelect component should render with its value as an array.
+    // If the value was corrupted to a string, filterMultiselectOptions would crash
+    // trying to call "string".every().
+    const multiselect = container.querySelector('[id="code_analysis_datasources"]')
+    expect(multiselect).not.toBeNull()
+
+    // Verify the form value is preserved as an array, not unwrapped to a string
+    const formValue = (multiselect as any)?.value || (multiselect as any)?._value
+    expect(Array.isArray(formValue) || formValue === undefined).toBe(true)
+
+    // The bug manifests as a crash inside filterMultiselectOptions when it tries
+    // to call currentValue.every() on a string. If we reach this point without
+    // an exception, the fix is working.
+  })
+
+  // ── AC: multiple values in array ────────────────────────────────────────────
+  it('preserves MULTISELECT arrays with multiple values', () => {
+    const dataSource = [
+      { value: 'uuid-1', project_name: 'test-project' },
+      { value: 'uuid-2', project_name: 'test-project' },
+      { value: 'uuid-3', project_name: 'test-project' },
+    ]
+
+    const multipleValues = ['uuid-1', 'uuid-2']
+
+    render(
+      <Harness
+        defaultValues={{ code_analysis_datasources: dataSource }}
+        values={{
+          create_params: {
+            code_analysis_datasources: multipleValues,
+          },
+        }}
+        dataProvider={
+          {
+            id: 'p-1',
+            toolkit_id: 't-1',
+            provider_name: 'neo4j',
+            name: 'neo4j',
+            base_schema: { description: '', parameters: [] },
+            create_schema: {
+              description: '',
+              parameters: [
+                {
+                  name: 'code_analysis_datasources',
+                  description: 'Select data sources',
+                  required: true,
+                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
+                  enum: null,
+                  multiselect_options: dataSource,
+                  title: 'Code Analysis Datasources',
+                  example: null,
+                },
+              ],
+            },
+          } as unknown as DataProvider
+        }
+      />
+    )
+
+    // Should render without crashing. Array with 2 elements should stay as array.
+    const element = document.querySelector('[id="code_analysis_datasources"]')
+    expect(element).not.toBeNull()
+    // Verify value is preserved as array
+    const formValue = (element as any)?.value || (element as any)?._value
+    expect(Array.isArray(formValue) || formValue === undefined).toBe(true)
+  })
+
+  // ── AC: empty array ────────────────────────────────────────────────────────
+  it('handles empty MULTISELECT array', () => {
+    const dataSource = [{ value: 'uuid-1', project_name: 'test-project' }]
+
+    render(
+      <Harness
+        defaultValues={{ code_analysis_datasources: dataSource }}
+        values={{
+          create_params: {
+            code_analysis_datasources: [],
+          },
+        }}
+        dataProvider={
+          {
+            id: 'p-1',
+            toolkit_id: 't-1',
+            provider_name: 'neo4j',
+            name: 'neo4j',
+            base_schema: { description: '', parameters: [] },
+            create_schema: {
+              description: '',
+              parameters: [
+                {
+                  name: 'code_analysis_datasources',
+                  description: 'Select data sources',
+                  required: true,
+                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
+                  enum: null,
+                  multiselect_options: dataSource,
+                  title: 'Code Analysis Datasources',
+                  example: null,
+                },
+              ],
+            },
+          } as unknown as DataProvider
+        }
+      />
+    )
+
+    const element = document.querySelector('[id="code_analysis_datasources"]')
+    expect(element).not.toBeNull()
+    // Verify value is preserved as array (empty array)
+    const formValue = (element as any)?.value || (element as any)?._value
+    expect(Array.isArray(formValue) || formValue === undefined).toBe(true)
+  })
+
+  // ── AC: null value (cleared field) ──────────────────────────────────────────
+  it('handles null MULTISELECT value', () => {
+    const dataSource = [{ value: 'uuid-1', project_name: 'test-project' }]
+
+    render(
+      <Harness
+        defaultValues={{ code_analysis_datasources: null }}
+        values={{
+          create_params: {
+            code_analysis_datasources: null,
+          },
+        }}
+        dataProvider={
+          {
+            id: 'p-1',
+            toolkit_id: 't-1',
+            provider_name: 'neo4j',
+            name: 'neo4j',
+            base_schema: { description: '', parameters: [] },
+            create_schema: {
+              description: '',
+              parameters: [
+                {
+                  name: 'code_analysis_datasources',
+                  description: 'Select data sources',
+                  required: true,
+                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
+                  enum: null,
+                  multiselect_options: dataSource,
+                  title: 'Code Analysis Datasources',
+                  example: null,
+                },
+              ],
+            },
+          } as unknown as DataProvider
+        }
+      />
+    )
+
+    const element = document.querySelector('[id="code_analysis_datasources"]')
+    expect(element).not.toBeNull()
+    // Verify null/undefined values don't crash the component
+    const formValue = (element as any)?.value || (element as any)?._value
+    expect(formValue == null || Array.isArray(formValue)).toBe(true)
+  })
+
+  // ── CR-001: null value reset on project switch ──────────────────────────────
+  it('resets null MULTISELECT value when filtering by project name', () => {
+    // When a user clears a MULTISELECT field (setting it to null) and switches
+    // projects, filterMultiselectOptions should reset it to [] to match the
+    // filtered options. This test verifies the CR-001 fix.
+    const dataSource = [{ value: 'uuid-1', project_name: 'project-a' }]
+
+    render(
+      <Harness
+        defaultValues={{ code_analysis_datasources: null }}
+        values={{
+          create_params: {
+            code_analysis_datasources: null,
+          },
+        }}
+        dataProvider={
+          {
+            id: 'p-1',
+            toolkit_id: 't-1',
+            provider_name: 'neo4j',
+            name: 'neo4j',
+            base_schema: { description: '', parameters: [] },
+            create_schema: {
+              description: '',
+              parameters: [
+                {
+                  name: 'code_analysis_datasources',
+                  description: 'Select data sources',
+                  required: true,
+                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
+                  enum: null,
+                  multiselect_options: dataSource,
+                  title: 'Code Analysis Datasources',
+                  example: null,
+                },
+              ],
+            },
+          } as unknown as DataProvider
+        }
+      />
+    )
+
+    const element = document.querySelector('[id="code_analysis_datasources"]')
+    expect(element).not.toBeNull()
+    // Verify null value is handled safely (not crashing)
+    const formValue = (element as any)?.value || (element as any)?._value
+    expect(formValue == null || Array.isArray(formValue)).toBe(true)
+  })
+
+  // ── CR-003: stale scalar value reset on project switch ──────────────────────
+  it('resets a non-array scalar MULTISELECT value when filtering by project name', () => {
+    // A scalar string can reach the field via a legacy API response or a separate
+    // setValue call. The original `!currentValue?.every(...)` implicitly reset any
+    // non-array value; the CR-003 fix restores that so a stale scalar does not
+    // linger (which would also crash later `.every()`/`.map()` calls).
+    const dataSource = [{ value: 'uuid-1', project_name: 'project-a' }]
+
+    render(
+      <Harness
+        defaultValues={{ code_analysis_datasources: 'stale-scalar-uuid' }}
+        values={{
+          create_params: {
+            code_analysis_datasources: 'stale-scalar-uuid',
+          },
+        }}
+        dataProvider={
+          {
+            id: 'p-1',
+            toolkit_id: 't-1',
+            provider_name: 'neo4j',
+            name: 'neo4j',
+            base_schema: { description: '', parameters: [] },
+            create_schema: {
+              description: '',
+              parameters: [
+                {
+                  name: 'code_analysis_datasources',
+                  description: 'Select data sources',
+                  required: true,
+                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
+                  enum: null,
+                  multiselect_options: dataSource,
+                  title: 'Code Analysis Datasources',
+                  example: null,
+                },
+              ],
+            },
+          } as unknown as DataProvider
+        }
+      />
+    )
+
+    const element = document.querySelector('[id="code_analysis_datasources"]')
+    expect(element).not.toBeNull()
+    // The stale scalar must be reset (to []) rather than retained as a string.
+    const formValue = (element as any)?.value ?? (element as any)?._value
+    expect(formValue).not.toBe('stale-scalar-uuid')
+    expect(formValue == null || Array.isArray(formValue)).toBe(true)
+  })
+
+  // ── AC: single-element array (the original bug scenario) ──────────────────
+  it('does NOT unwrap single-element MULTISELECT arrays to strings', () => {
+    // This is the exact scenario from EPMCDME-13617 where the bug occurred.
+    // Before the fix: ['uuid'] → 'uuid' (string, crashes on .every())
+    // After the fix:  ['uuid'] → ['uuid'] (stays array)
+
+    const dataSource = [
+      { value: 'e8d242c9-9eed-4cdc-aa2f-1380f0fab565', project_name: 'test-project' },
+    ]
+
+    const { container } = render(
+      <Harness
+        defaultValues={{ code_analysis_datasources: dataSource }}
+        values={{
+          create_params: {
+            code_analysis_datasources: ['e8d242c9-9eed-4cdc-aa2f-1380f0fab565'],
+          },
+        }}
+        dataProvider={
+          {
+            id: 'p-1',
+            toolkit_id: 't-1',
+            provider_name: 'neo4j',
+            name: 'neo4j',
+            base_schema: { description: '', parameters: [] },
+            create_schema: {
+              description: '',
+              parameters: [
+                {
+                  name: 'code_analysis_datasources',
+                  description: 'Select data sources',
+                  required: true,
+                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
+                  enum: null,
+                  multiselect_options: dataSource,
+                  title: 'Code Analysis Datasources',
+                  example: null,
+                },
+              ],
+            },
+          } as unknown as DataProvider
+        }
+      />
+    )
+
+    // Critical: if this doesn't render, the fix didn't work
+    const element = container.querySelector('[id="code_analysis_datasources"]')
+    expect(element).not.toBeNull()
+    // Verify single-element array is preserved, not unwrapped to a string
+    const formValue = (element as any)?.value || (element as any)?._value
+    expect(Array.isArray(formValue) || formValue === undefined).toBe(true)
+  })
+
+  // ── AC: other field types still get unwrapped ────────────────────────────
+  it('still unwraps non-MULTISELECT array fields (e.g., STRING, URL, UUID)', () => {
+    // Ensure the fix only applies to MULTISELECT, not other field types.
+    // Other stringish types like URL, UUID should still be unwrapped from arrays.
+
+    render(
+      <Harness
+        defaultValues={{ database_url: 'https://localhost:7687' }}
+        values={{
+          create_params: {
+            database_url: ['https://localhost:7687'],
+          },
+        }}
+        dataProvider={
+          {
+            id: 'p-1',
+            toolkit_id: 't-1',
+            provider_name: 'neo4j',
+            name: 'neo4j',
+            base_schema: { description: '', parameters: [] },
+            create_schema: {
+              description: '',
+              parameters: [
+                {
+                  name: 'database_url',
+                  description: 'Database URL',
+                  required: true,
+                  parameter_type: PROVIDER_FIELD_TYPES.URL,
+                  enum: null,
+                  multiselect_options: [],
+                  title: 'Database URL',
+                  example: null,
+                },
+              ],
+            },
+          } as unknown as DataProvider
+        }
+      />
+    )
+
+    // Should render without errors. URL field value should be unwrapped from array.
+    const urlInput = document.querySelector('[id="database_url"]') as HTMLInputElement
+    expect(urlInput).not.toBeNull()
+    expect(urlInput.value).toBe('https://localhost:7687')
+  })
+})

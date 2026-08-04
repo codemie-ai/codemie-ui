@@ -1,0 +1,325 @@
+diff --git a/src/pages/dataSources/components/IndexProviderForm.tsx b/src/pages/dataSources/components/IndexProviderForm.tsx
+index 617d37213..02dabb573 100644
+--- a/src/pages/dataSources/components/IndexProviderForm.tsx
++++ b/src/pages/dataSources/components/IndexProviderForm.tsx
+@@ -96,7 +96,10 @@ const IndexProviderForm: React.FC<Props> = ({
+ 
+     Object.keys(mergedValues).forEach((key) => {
+       if (Array.isArray(mergedValues[key])) {
+-        ;[mergedValues[key]] = mergedValues[key]
++        const fieldConfig = fields.find((field) => field.name === key)
++        if (fieldConfig?.parameter_type !== PROVIDER_FIELD_TYPES.MULTISELECT) {
++          ;[mergedValues[key]] = mergedValues[key]
++        }
+       }
+       if (isSensitive(key)) {
+         mergedValues[key] = MASKED_VALUE
+@@ -117,10 +120,11 @@ const IndexProviderForm: React.FC<Props> = ({
+   const filterMultiselectOptions = (options, currentValue, fieldName) => {
+     if (!options.length || !(PROJECT_NAME_KEY in options[0])) return options
+ 
+-    // If multiselect is dependand of project name - filter and reset if needed
++    // If multiselect is dependent of project name - filter and reset if needed
+     const filteredOptions = options.filter((item) => item.project_name === projectName)
+     const optionValues = filteredOptions.map((option) => option.value)
+-    const resetValue = !currentValue?.every((value) => optionValues.includes(value))
++    const resetValue =
++      Array.isArray(currentValue) && !currentValue.every((value) => optionValues.includes(value))
+     if (resetValue) setValue?.(fieldName, [])
+     return filteredOptions
+   }
+diff --git a/src/pages/dataSources/components/__tests__/IndexProviderForm.test.tsx b/src/pages/dataSources/components/__tests__/IndexProviderForm.test.tsx
+index 63b13b455..5be16d66d 100644
+--- a/src/pages/dataSources/components/__tests__/IndexProviderForm.test.tsx
++++ b/src/pages/dataSources/components/__tests__/IndexProviderForm.test.tsx
+@@ -169,3 +169,290 @@ describe('IndexProviderForm — TEXT parameter type', () => {
+     }
+   )
+ })
++
++// ─── EPMCDME-13617: MULTISELECT array unwrapping regression ──────────────────
++
++describe('IndexProviderForm — MULTISELECT fields', () => {
++  it('REGRESSION: preserves MULTISELECT field values as arrays (not unwrapping to [0])', () => {
++    // Scenario: backend returns create_params with a MULTISELECT field as an array:
++    // { code_analysis_datasources: ["e8d242c9-9eed-4cdc-aa2f-1380f0fab565"] }
++    // The initialValues useMemo should NOT unwrap this to a string.
++
++    const dataSource = [
++      { value: 'e8d242c9-9eed-4cdc-aa2f-1380f0fab565', project_name: 'test-project' },
++      { value: 'f9e353d0-afef-5edf-bb3g-2481g1fgc676', project_name: 'test-project' },
++    ]
++
++    const { container } = render(
++      <Harness
++        defaultValues={{ code_analysis_datasources: dataSource }}
++        values={{
++          create_params: {
++            code_analysis_datasources: [dataSource[0].value],
++          },
++        }}
++        dataProvider={
++          {
++            id: 'p-1',
++            toolkit_id: 't-1',
++            provider_name: 'neo4j',
++            name: 'neo4j',
++            base_schema: { description: '', parameters: [] },
++            create_schema: {
++              description: '',
++              parameters: [
++                {
++                  name: 'code_analysis_datasources',
++                  description: 'Select data sources',
++                  required: true,
++                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
++                  enum: null,
++                  multiselect_options: dataSource,
++                  title: 'Code Analysis Datasources',
++                  example: null,
++                },
++              ],
++            },
++          } as unknown as DataProvider
++        }
++      />
++    )
++
++    // The MultiSelect component should render with its value as an array.
++    // If the value was corrupted to a string, filterMultiselectOptions would crash
++    // trying to call "string".every().
++    const multiselect = container.querySelector('[id="code_analysis_datasources"]')
++    expect(multiselect).not.toBeNull()
++
++    // The bug manifests as a crash inside filterMultiselectOptions when it tries
++    // to call currentValue.every() on a string. If we reach this point without
++    // an exception, the fix is working.
++  })
++
++  // ── AC: multiple values in array ────────────────────────────────────────────
++  it('preserves MULTISELECT arrays with multiple values', () => {
++    const dataSource = [
++      { value: 'uuid-1', project_name: 'test-project' },
++      { value: 'uuid-2', project_name: 'test-project' },
++      { value: 'uuid-3', project_name: 'test-project' },
++    ]
++
++    const multipleValues = ['uuid-1', 'uuid-2']
++
++    render(
++      <Harness
++        defaultValues={{ code_analysis_datasources: dataSource }}
++        values={{
++          create_params: {
++            code_analysis_datasources: multipleValues,
++          },
++        }}
++        dataProvider={
++          {
++            id: 'p-1',
++            toolkit_id: 't-1',
++            provider_name: 'neo4j',
++            name: 'neo4j',
++            base_schema: { description: '', parameters: [] },
++            create_schema: {
++              description: '',
++              parameters: [
++                {
++                  name: 'code_analysis_datasources',
++                  description: 'Select data sources',
++                  required: true,
++                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
++                  enum: null,
++                  multiselect_options: dataSource,
++                  title: 'Code Analysis Datasources',
++                  example: null,
++                },
++              ],
++            },
++          } as unknown as DataProvider
++        }
++      />
++    )
++
++    // Should render without crashing. Array with 2 elements should stay as array.
++    expect(document.querySelector('[id="code_analysis_datasources"]')).not.toBeNull()
++  })
++
++  // ── AC: empty array ────────────────────────────────────────────────────────
++  it('handles empty MULTISELECT array', () => {
++    const dataSource = [{ value: 'uuid-1', project_name: 'test-project' }]
++
++    render(
++      <Harness
++        defaultValues={{ code_analysis_datasources: dataSource }}
++        values={{
++          create_params: {
++            code_analysis_datasources: [],
++          },
++        }}
++        dataProvider={
++          {
++            id: 'p-1',
++            toolkit_id: 't-1',
++            provider_name: 'neo4j',
++            name: 'neo4j',
++            base_schema: { description: '', parameters: [] },
++            create_schema: {
++              description: '',
++              parameters: [
++                {
++                  name: 'code_analysis_datasources',
++                  description: 'Select data sources',
++                  required: true,
++                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
++                  enum: null,
++                  multiselect_options: dataSource,
++                  title: 'Code Analysis Datasources',
++                  example: null,
++                },
++              ],
++            },
++          } as unknown as DataProvider
++        }
++      />
++    )
++
++    expect(document.querySelector('[id="code_analysis_datasources"]')).not.toBeNull()
++  })
++
++  // ── AC: null value (cleared field) ──────────────────────────────────────────
++  it('handles null MULTISELECT value', () => {
++    const dataSource = [{ value: 'uuid-1', project_name: 'test-project' }]
++
++    render(
++      <Harness
++        defaultValues={{ code_analysis_datasources: null }}
++        values={{
++          create_params: {
++            code_analysis_datasources: null,
++          },
++        }}
++        dataProvider={
++          {
++            id: 'p-1',
++            toolkit_id: 't-1',
++            provider_name: 'neo4j',
++            name: 'neo4j',
++            base_schema: { description: '', parameters: [] },
++            create_schema: {
++              description: '',
++              parameters: [
++                {
++                  name: 'code_analysis_datasources',
++                  description: 'Select data sources',
++                  required: true,
++                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
++                  enum: null,
++                  multiselect_options: dataSource,
++                  title: 'Code Analysis Datasources',
++                  example: null,
++                },
++              ],
++            },
++          } as unknown as DataProvider
++        }
++      />
++    )
++
++    expect(document.querySelector('[id="code_analysis_datasources"]')).not.toBeNull()
++  })
++
++  // ── AC: single-element array (the original bug scenario) ──────────────────
++  it('does NOT unwrap single-element MULTISELECT arrays to strings', () => {
++    // This is the exact scenario from EPMCDME-13617 where the bug occurred.
++    // Before the fix: ['uuid'] → 'uuid' (string, crashes on .every())
++    // After the fix:  ['uuid'] → ['uuid'] (stays array)
++
++    const dataSource = [
++      { value: 'e8d242c9-9eed-4cdc-aa2f-1380f0fab565', project_name: 'test-project' },
++    ]
++
++    const { container } = render(
++      <Harness
++        defaultValues={{ code_analysis_datasources: dataSource }}
++        values={{
++          create_params: {
++            code_analysis_datasources: ['e8d242c9-9eed-4cdc-aa2f-1380f0fab565'],
++          },
++        }}
++        dataProvider={
++          {
++            id: 'p-1',
++            toolkit_id: 't-1',
++            provider_name: 'neo4j',
++            name: 'neo4j',
++            base_schema: { description: '', parameters: [] },
++            create_schema: {
++              description: '',
++              parameters: [
++                {
++                  name: 'code_analysis_datasources',
++                  description: 'Select data sources',
++                  required: true,
++                  parameter_type: PROVIDER_FIELD_TYPES.MULTISELECT,
++                  enum: null,
++                  multiselect_options: dataSource,
++                  title: 'Code Analysis Datasources',
++                  example: null,
++                },
++              ],
++            },
++          } as unknown as DataProvider
++        }
++      />
++    )
++
++    // Critical: if this doesn't render, the fix didn't work
++    expect(container.querySelector('[id="code_analysis_datasources"]')).not.toBeNull()
++  })
++
++  // ── AC: other field types still get unwrapped ────────────────────────────
++  it('still unwraps non-MULTISELECT array fields (e.g., STRING, URL, UUID)', () => {
++    // Ensure the fix only applies to MULTISELECT, not other field types.
++    // Other stringish types like URL, UUID should still be unwrapped from arrays.
++
++    render(
++      <Harness
++        values={{
++          create_params: {
++            database_url: ['https://localhost:7687'],
++          },
++        }}
++        dataProvider={
++          {
++            id: 'p-1',
++            toolkit_id: 't-1',
++            provider_name: 'neo4j',
++            name: 'neo4j',
++            base_schema: { description: '', parameters: [] },
++            create_schema: {
++              description: '',
++              parameters: [
++                {
++                  name: 'database_url',
++                  description: 'Database URL',
++                  required: true,
++                  parameter_type: PROVIDER_FIELD_TYPES.URL,
++                  enum: null,
++                  multiselect_options: [],
++                  title: 'Database URL',
++                  example: null,
++                },
++              ],
++            },
++          } as unknown as DataProvider
++        }
++      />
++    )
++
++    // Should render without errors. URL field value should be unwrapped from array.
++    const urlInput = document.querySelector('[id="database_url"]') as HTMLInputElement
++    expect(urlInput).not.toBeNull()
++    expect(urlInput.value).toBe('https://localhost:7687')
++  })
++})

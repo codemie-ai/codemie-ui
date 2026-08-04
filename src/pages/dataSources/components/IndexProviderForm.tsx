@@ -96,7 +96,10 @@ const IndexProviderForm: React.FC<Props> = ({
 
     Object.keys(mergedValues).forEach((key) => {
       if (Array.isArray(mergedValues[key])) {
-        ;[mergedValues[key]] = mergedValues[key]
+        const fieldConfig = fields.find((field) => field.name === key)
+        if (fieldConfig?.parameter_type !== PROVIDER_FIELD_TYPES.MULTISELECT) {
+          ;[mergedValues[key]] = mergedValues[key]
+        }
       }
       if (isSensitive(key)) {
         mergedValues[key] = MASKED_VALUE
@@ -104,7 +107,7 @@ const IndexProviderForm: React.FC<Props> = ({
     })
 
     return mergedValues
-  }, [values, selectInitialValues, isSensitive])
+  }, [values, fields, selectInitialValues, isSensitive])
 
   const buildSelectOptions = useCallback((field: DataProviderField) => {
     if (!field.enum) return []
@@ -117,11 +120,18 @@ const IndexProviderForm: React.FC<Props> = ({
   const filterMultiselectOptions = (options, currentValue, fieldName) => {
     if (!options.length || !(PROJECT_NAME_KEY in options[0])) return options
 
-    // If multiselect is dependand of project name - filter and reset if needed
+    // If multiselect is dependent of project name - filter and reset if needed
     const filteredOptions = options.filter((item) => item.project_name === projectName)
     const optionValues = filteredOptions.map((option) => option.value)
-    const resetValue = !currentValue?.every((value) => optionValues.includes(value))
-    if (resetValue) setValue?.(fieldName, [])
+    // Reset if the value is not an array (null/undefined or a stale scalar), or if
+    // the array holds values not present in the filtered options. Checking
+    // Array.isArray first keeps `.every` from being called on non-array values.
+    if (
+      !Array.isArray(currentValue) ||
+      !currentValue.every((value) => optionValues.includes(value))
+    ) {
+      setValue?.(fieldName, [])
+    }
     return filteredOptions
   }
 
