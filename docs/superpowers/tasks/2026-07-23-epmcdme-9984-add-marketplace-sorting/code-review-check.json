@@ -1,0 +1,30 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "All three findings from the prior review are addressed. F1 is fixed by stripping sort_order from cleanFilters when sort_by is absent and then evaluating isReset against cleanFilters, eliminating the false-negative. F2 is fixed by removing the local duplicate interface and importing the canonical one from useAssistantFilters. F3 is fixed by removing the optional modifiers and the downstream defensive null-coalescing guards. No new bugs or contract changes are introduced.",
+  "findings": [
+    {
+      "id": "F1",
+      "status": "resolved",
+      "note": "sort_order is now deleted from cleanFilters when sort_by is absent (useAssistantFilters.ts lines 98-100), and isReset is evaluated against the post-deletion cleanFilters (line 106), so a standalone 'desc' value no longer blocks the reset path."
+    },
+    {
+      "id": "F2",
+      "status": "resolved",
+      "note": "The local interface AssistantFilters block has been removed from AssistantFilters.tsx; line 26 now re-exports the single canonical type from useAssistantFilters.ts via a type-only import."
+    },
+    {
+      "id": "F3",
+      "status": "resolved",
+      "note": "sort_by is now typed string | null (required) and sort_order is now typed string (required) in the exported interface. The ?? null and ?? 'desc' fallbacks in the filter-definitions useMemo have been removed, leaving direct property reads that are always safe given the merge useMemo guarantees."
+    }
+  ],
+  "new_issues": [
+    {
+      "id": "NI1",
+      "severity": "cosmetic",
+      "note": "AssistantFilters.tsx lines 49 and 53 still use '?? []' on filters.project, which is now typed string[] (non-optional). These guards are harmless no-ops but are inconsistent with the tightened interface. Not blocking."
+    }
+  ],
+  "confidence": "high"
+}

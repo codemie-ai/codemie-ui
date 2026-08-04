@@ -204,6 +204,8 @@ export const FILTER_INITIAL_STATE: {
   is_global: boolean | null
   shared: boolean | null
   categories: string[]
+  sort_by: string | null
+  sort_order: string
 } = {
   search: '',
   project: [],
@@ -211,4 +213,6 @@ export const FILTER_INITIAL_STATE: {
   is_global: null,
   shared: null,
   categories: [],
+  sort_by: null,
+  sort_order: 'desc',
 }

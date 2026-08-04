@@ -32,6 +32,8 @@ export interface AssistantFilters extends Record<string, unknown> {
   is_global: boolean | null
   shared: boolean | null
   categories: string[]
+  sort_by: string | null
+  sort_order: string
 }
 
 /**
@@ -91,9 +93,17 @@ export const useAssistantFilters = ({ scope }: UseAssistantFiltersProps) => {
     async (newFilters: Record<string, unknown>) => {
       const cleanFilters = cleanObject(newFilters)
 
+      // sort_order is only meaningful when sort_by is set; strip it when sort_by is absent
+      // so the default 'desc' value does not mark the filter state as non-empty.
+      if (!cleanFilters.sort_by) {
+        delete cleanFilters.sort_order
+      }
+
       try {
-        // Check if all filter values are empty (reset scenario)
-        const isReset = Object.values(newFilters).every((value) => {
+        // Check if all filter values are empty (reset scenario).
+        // Use cleanFilters (post-deletion) so that the stripped sort_order default
+        // does not prevent isReset from going true when the user clears all filters.
+        const isReset = Object.values(cleanFilters).every((value) => {
           if (Array.isArray(value)) return value.length === 0
           if (typeof value === 'string') return value === ''
           if (typeof value === 'boolean') return false

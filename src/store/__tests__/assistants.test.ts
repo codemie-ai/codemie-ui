@@ -184,6 +184,21 @@ describe('assistantsStore', () => {
 
       expect(assistantsStore.assistantTemplates).toEqual([{ id: 'kept', name: 'Kept' }])
     })
+
+    it('URL-encodes sort parameters in query string', async () => {
+      mockGet.mockResolvedValue({
+        json: () => Promise.resolve({ data: [], pagination: mockPagination }),
+      })
+
+      await assistantsStore.indexAssistants(ASSISTANT_INDEX_SCOPES.ALL, {
+        sort_by: 'name&hack=true',
+        sort_order: 'asc&foo=bar',
+      })
+
+      const calledUrl = mockGet.mock.calls[0]?.[0] as string
+      expect(calledUrl).toContain('sort_by=name%26hack%3Dtrue')
+      expect(calledUrl).toContain('sort_order=asc%26foo%3Dbar')
+    })
   })
 
   describe('getHedgeableToolkits', () => {

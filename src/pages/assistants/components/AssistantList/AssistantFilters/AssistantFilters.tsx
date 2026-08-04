@@ -24,24 +24,16 @@ import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
+import type { AssistantFilters as AssistantFiltersType } from '@/pages/assistants/hooks/useAssistantFilters'
 import { assistantsStore } from '@/store/assistants'
 import { userStore } from '@/store/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
 
-interface AssistantFilters {
-  search?: string
-  project?: string[]
-  created_by?: string
-  is_global?: boolean | null
-  shared?: boolean | null
-  categories?: string[]
-}
-
 interface AssistantFiltersProps {
   onFilterChange: (filters: Record<string, unknown>) => void
-  filters: AssistantFilters
+  filters: AssistantFiltersType
   activeScope: string
 }
 
@@ -176,12 +168,40 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
             defaultValue: statusOptions[0],
           },
         },
+        {
+          name: 'sort_by',
+          label: 'Sort by',
+          type: FilterDefinitionType.Select,
+          value: filters.sort_by,
+          options: [
+            { label: 'Usage', value: 'usage' },
+            { label: 'Likes', value: 'likes' },
+            { label: 'Dislikes', value: 'dislikes' },
+            { label: 'Name', value: 'name' },
+          ],
+        },
+        {
+          name: 'sort_order',
+          label: 'Sort order',
+          type: FilterDefinitionType.RadioGroup,
+          value: filters.sort_order,
+          options: [
+            { label: 'Descending', value: 'desc' },
+            { label: 'Ascending', value: 'asc' },
+          ],
+          config: { defaultValue: 'desc' },
+        },
       ].filter((definition) => {
         if (activeScope === ASSISTANT_INDEX_SCOPES.TEMPLATES) {
           return false
         }
         if (activeScope === ASSISTANT_INDEX_SCOPES.MARKETPLACE) {
-          return definition.name === CREATED_BY || definition.name === CATEGORIES
+          return (
+            definition.name === CREATED_BY ||
+            definition.name === CATEGORIES ||
+            definition.name === 'sort_by' ||
+            definition.name === 'sort_order'
+          )
         }
         return definition
       }),
@@ -189,6 +209,8 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
       filters.project,
       filters.created_by,
       filters.categories,
+      filters.sort_by,
+      filters.sort_order,
       resolvedProjectOptions,
       isLoadingProjects,
       createdByOptions,

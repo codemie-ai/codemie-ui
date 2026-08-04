@@ -236,12 +236,23 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       assistantsStore.assistantTemplates = []
     }
 
-    const url =
+    const { sort_by, sort_order, ...restFilters } = filters as {
+      sort_by?: string | null
+      sort_order?: string
+    } & Record<string, unknown>
+
+    let url =
       `v1/assistants?page=${page}` +
       `&per_page=${per_page}` +
       `&scope=${scope}` +
-      `&filters=${encodeURIComponent(JSON.stringify(filters))}` +
+      `&filters=${encodeURIComponent(JSON.stringify(restFilters))}` +
       `&minimal_response=${minimal_response}`
+
+    if (sort_by) {
+      url +=
+        `&sort_by=${encodeURIComponent(sort_by)}` +
+        `&sort_order=${encodeURIComponent(sort_order ?? 'desc')}`
+    }
 
     return api.get(url).then((response) => {
       return response.json().then((result) => {

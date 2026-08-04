@@ -1,0 +1,27 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "rationale": "Three correctness defects found: isReset false-negative prevents filter clear when sort_order is at default 'desc', dual AssistantFilters interface duplication can drift, and optional type modifiers on sort_by/sort_order are incorrect since the merge useMemo always populates them.",
+  "follow_ups": [
+    {
+      "id": "F1",
+      "severity": "bug",
+      "title": "isReset false-negative for sort_order='desc'",
+      "description": "sort_order='desc' is a non-empty string so isReset evaluates false when the user clears all MARKETPLACE filters, leaving sort_order:'desc' persisted to storage and the clear-filters affordance permanently shown."
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "title": "Dual AssistantFilters interface can drift",
+      "description": "AssistantFilters.tsx defines its own local AssistantFilters interface independent of the exported one in useAssistantFilters.ts. Both were updated consistently in this diff but there is no compiler enforcement."
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "title": "Optional modifiers on sort_by/sort_order are incorrect",
+      "description": "useAssistantFilters.ts exports sort_by?: string | null and sort_order?: string but the merge useMemo always populates both from FILTER_INITIAL_STATE, forcing defensive ?? guards in the component."
+    }
+  ],
+  "confidence": "high",
+  "risk_flags": []
+}
