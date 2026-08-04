@@ -33,6 +33,7 @@ import { useTheme } from '@/hooks/useTheme'
 import ChatControls from '@/pages/chat/components/ChatControls'
 import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { useChatContext } from '@/pages/chat/hooks/useChatContext'
+import { useChatPromptDraft } from '@/pages/chat/hooks/useChatPromptDraft'
 import { useFilePaste } from '@/pages/chat/hooks/useFilePaste'
 import { assistantsStore, userStore } from '@/store'
 import { chatGenerationStore } from '@/store/chatGeneration'
@@ -75,15 +76,13 @@ const ChatPrompt: FC = () => {
   const editorRef = useRef<EditorRef>(null)
   const { isDark } = useTheme()
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
-  const { userData } = useSnapshot(userStore)
+  const { userData, user } = useSnapshot(userStore)
   const { defaultAssistant } = useSnapshot(assistantsStore)
   const { selectedSkills, isSharedPage, dynamicToolsConfig } = useChatContext()
+  const { initial, saveDraft, clearDraft } = useChatPromptDraft(currentChat?.id, user?.userId)
 
   const [isEditorFocused, setIsEditorFocused] = useState(false)
-  const [prompt, setPrompt] = useState<{ message: string; messageRaw: string }>({
-    message: '',
-    messageRaw: '',
-  })
+  const [prompt, setPrompt] = useState<{ message: string; messageRaw: string }>(initial)
 
   const [files, setFiles] = useState<FileMetadata[]>([])
   const fileUpload = useFileUpload({
@@ -122,6 +121,7 @@ const ChatPrompt: FC = () => {
     if (isInterrupted) {
       const userInput = prompt.message.trim() || undefined
       const fileNames = files.flatMap((f) => (f.fileId ? [f.fileId] : []))
+      clearDraft()
       setPrompt({ message: '', messageRaw: '' })
       setFiles([])
       chatGenerationStore.resumeWorkflowExecution(userInput, fileNames)
@@ -151,6 +151,7 @@ const ChatPrompt: FC = () => {
       message = getMessageTextWithMentions(editorRef.current?.getContent() ?? { ops: [] }, message)
     }
 
+    clearDraft()
     setPrompt({ message: '', messageRaw: '' })
     setFiles([])
 
@@ -184,6 +185,10 @@ const ChatPrompt: FC = () => {
   useEffect(() => {
     editorRef.current?.focus()
   }, [currentChat?.id])
+
+  useEffect(() => {
+    saveDraft(prompt)
+  }, [prompt, saveDraft])
 
   const hasChatHistory = !!currentChat?.history.length
 

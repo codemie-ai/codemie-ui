@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "gate": "code-review.check",
+  "run_dir": "docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"id": "AC-1",  "text": "New useChatPromptDraft(chatId, userId) hook with initial, saveDraft, clearDraft exports", "status": "pass",    "notes": ""},
+    {"id": "AC-2",  "text": "initial reads localStorage once via useRef guard; falls back to default on missing/error", "status": "pass",    "notes": "try/catch in readPromptDraft and ?? DEFAULT_PROMPT handle both paths"},
+    {"id": "AC-3",  "text": "saveDraft writes when messageRaw non-empty; removes when empty; no-op on undefined params", "status": "pass",    "notes": ""},
+    {"id": "AC-4",  "text": "clearDraft removes draft key; no-op on undefined params", "status": "pass",    "notes": ""},
+    {"id": "AC-5",  "text": "Storage key: chat-prompt-draft-${chatId} namespaced with ${userId}_ prefix", "status": "pass",    "notes": "Matches established chat-tools-config-${chatId} convention"},
+    {"id": "AC-6",  "text": "ChatPrompt.tsx initializes prompt with useState(initial)", "status": "pass",    "notes": ""},
+    {"id": "AC-7",  "text": "useEffect([prompt, saveDraft]) calls saveDraft on every prompt change", "status": "pass",    "notes": ""},
+    {"id": "AC-8",  "text": "clearDraft called in both submit paths before state reset", "status": "pass",    "notes": "Normal path: line ~154; interrupted path: line ~124"},
+    {"id": "AC-9",  "text": "Guard conditions for undefined chatId/userId on all mutations", "status": "pass",    "notes": ""},
+    {"id": "AC-10", "text": "Malformed JSON in localStorage returns null gracefully", "status": "pass",    "notes": "readPromptDraft wraps getObject in try/catch"},
+    {"id": "AC-11", "text": "File attachments out of scope", "status": "na",      "notes": "PromptDraft = EditorValue (message + messageRaw only)"},
+    {"id": "AC-12", "text": "New chat (chatId undefined) handled silently by guard", "status": "pass",    "notes": ""},
+    {"id": "AC-13", "text": "Unit tests: readPromptDraft, saveDraft, clearDraft no-ops, initial reads", "status": "partial", "notes": "Carried forward from final round; resolved by CR-002 fix (see finding_status)"},
+    {"id": "AC-14", "text": "ChatPrompt tests: draft initialization and draft cleared on submit", "status": "partial", "notes": "Carried forward from final round; resolved by CR-003 fix (see finding_status)"}
+  ],
+  "standards_review": [
+    {
+      "id": "STD-1",
+      "standard": "git-workflow commit format",
+      "status": "fail",
+      "notes": "Carried forward from final round; resolved by CR-001 fix — all 6 commits now follow EPMCDME-XXXX: Capital sentence format (see finding_status CR-001: resolved)"
+    },
+    {
+      "id": "STD-2",
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "TypeScript types correct; React hooks patterns (useRef, useCallback, useEffect) follow conventions; copyright headers present; no unused imports"
+    },
+    {
+      "id": "STD-3",
+      "standard": "security",
+      "status": "pass",
+      "notes": "localStorage contains only user-authored chat text. userId-namespaced keys prevent cross-user data reads."
+    }
+  ],
+  "findings": [],
+  "finding_status": {
+    "CR-001": "resolved",
+    "CR-002": "resolved",
+    "CR-003": "resolved"
+  },
+  "rationale": "All 3 findings resolved. CR-001: git log confirms all 6 branch commits now follow the EPMCDME-XXXX: Capital sentence format after interactive rebase (Add, Wire, Guard, Remove, Add — all capitalized). CR-002: fix-up diff adds 'clearDraft is a no-op when userId is undefined' to useChatPromptDraft.test.ts (line ~136), exactly matching the recommendation. CR-003: fix-up diff adds 'calls clearDraft when the continue button is clicked on an interrupted workflow' to ChatPrompt.test.tsx, setting isInterrupted:true and asserting clearDraft.toHaveBeenCalledOnce(). Fix-up diff is 43 lines of pure test additions — no new high-risk concerns. Confirmation pass not needed."
+}

@@ -1,0 +1,1649 @@
+diff --git a/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/code-review.diff b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/code-review.diff
+new file mode 100644
+index 000000000..ce7ed5eb4
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/code-review.diff
+@@ -0,0 +1,344 @@
++diff --git a/src/pages/chat/components/ChatPrompt/ChatPrompt.tsx b/src/pages/chat/components/ChatPrompt/ChatPrompt.tsx
++index 591a7abdd..cc7fd6e2e 100644
++--- a/src/pages/chat/components/ChatPrompt/ChatPrompt.tsx
+++++ b/src/pages/chat/components/ChatPrompt/ChatPrompt.tsx
++@@ -33,6 +33,7 @@ import { useTheme } from '@/hooks/useTheme'
++ import ChatControls from '@/pages/chat/components/ChatControls'
++ import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
++ import { useChatContext } from '@/pages/chat/hooks/useChatContext'
+++import { useChatPromptDraft } from '@/pages/chat/hooks/useChatPromptDraft'
++ import { useFilePaste } from '@/pages/chat/hooks/useFilePaste'
++ import { assistantsStore, userStore } from '@/store'
++ import { chatGenerationStore } from '@/store/chatGeneration'
++@@ -75,15 +76,13 @@ const ChatPrompt: FC = () => {
++   const editorRef = useRef<EditorRef>(null)
++   const { isDark } = useTheme()
++   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
++-  const { userData } = useSnapshot(userStore)
+++  const { userData, user } = useSnapshot(userStore) as typeof userStore
++   const { defaultAssistant } = useSnapshot(assistantsStore)
++   const { selectedSkills, isSharedPage, dynamicToolsConfig } = useChatContext()
+++  const { initial, saveDraft, clearDraft } = useChatPromptDraft(currentChat?.id, user?.userId)
++ 
++   const [isEditorFocused, setIsEditorFocused] = useState(false)
++-  const [prompt, setPrompt] = useState<{ message: string; messageRaw: string }>({
++-    message: '',
++-    messageRaw: '',
++-  })
+++  const [prompt, setPrompt] = useState<{ message: string; messageRaw: string }>(initial)
++ 
++   const [files, setFiles] = useState<FileMetadata[]>([])
++   const fileUpload = useFileUpload({
++@@ -122,6 +121,7 @@ const ChatPrompt: FC = () => {
++     if (isInterrupted) {
++       const userInput = prompt.message.trim() || undefined
++       const fileNames = files.flatMap((f) => (f.fileId ? [f.fileId] : []))
+++      clearDraft()
++       setPrompt({ message: '', messageRaw: '' })
++       setFiles([])
++       chatGenerationStore.resumeWorkflowExecution(userInput, fileNames)
++@@ -151,6 +151,7 @@ const ChatPrompt: FC = () => {
++       message = getMessageTextWithMentions(editorRef.current?.getContent() ?? { ops: [] }, message)
++     }
++ 
+++    clearDraft()
++     setPrompt({ message: '', messageRaw: '' })
++     setFiles([])
++ 
++@@ -185,6 +186,10 @@ const ChatPrompt: FC = () => {
++     editorRef.current?.focus()
++   }, [currentChat?.id])
++ 
+++  useEffect(() => {
+++    saveDraft(prompt)
+++  }, [prompt, saveDraft])
+++
++   const hasChatHistory = !!currentChat?.history.length
++ 
++   return (
++diff --git a/src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx b/src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx
++index 5a2392ab4..2dfd57174 100644
++--- a/src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx
+++++ b/src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx
++@@ -20,7 +20,7 @@ import ChatPrompt from '../ChatPrompt'
++ 
++ vi.hoisted(() => vi.resetModules())
++ 
++-const { mockChatGenerationStore, mockChatsStore } = vi.hoisted(() => ({
+++const { mockChatGenerationStore, mockChatsStore, mockUseChatPromptDraft } = vi.hoisted(() => ({
++   mockChatGenerationStore: {
++     stopChatGeneration: vi.fn(),
++     createChatGeneration: vi.fn(),
++@@ -35,6 +35,11 @@ const { mockChatGenerationStore, mockChatsStore } = vi.hoisted(() => ({
++       assistantIds: ['assistant-1'],
++     },
++   },
+++  mockUseChatPromptDraft: {
+++    initial: { message: '', messageRaw: '' },
+++    saveDraft: vi.fn(),
+++    clearDraft: vi.fn(),
+++  },
++ }))
++ 
++ vi.mock('valtio', () => ({
++@@ -48,7 +53,11 @@ vi.mock('@/store/chats', () => ({ chatsStore: mockChatsStore }))
++ vi.mock('@/store/chatGeneration', () => ({ chatGenerationStore: mockChatGenerationStore }))
++ vi.mock('@/store', () => ({
++   assistantsStore: { defaultAssistant: { id: 'assistant-1' } },
++-  userStore: { userData: { stt_support: false } },
+++  userStore: { userData: { stt_support: false }, user: { userId: 'user-1' } },
+++}))
+++
+++vi.mock('../../../hooks/useChatPromptDraft', () => ({
+++  useChatPromptDraft: () => mockUseChatPromptDraft,
++ }))
++ vi.mock('@/hooks/useTheme', () => ({ useTheme: () => ({ isDark: false }) }))
++ vi.mock('@/hooks/useFileUpload', () => ({
++@@ -148,4 +157,51 @@ describe('ChatPrompt', () => {
++       expect(screen.queryByRole('button', { name: /send/i })).not.toBeInTheDocument()
++     })
++   })
+++
+++  describe('draft initialization', () => {
+++    it('calls saveDraft with the initial draft value on first render', () => {
+++      mockUseChatPromptDraft.initial = { message: 'saved draft', messageRaw: '<p>saved draft</p>' }
+++      mockUseChatPromptDraft.saveDraft = vi.fn()
+++
+++      render(<ChatPrompt />)
+++
+++      expect(mockUseChatPromptDraft.saveDraft).toHaveBeenCalledWith({
+++        message: 'saved draft',
+++        messageRaw: '<p>saved draft</p>',
+++      })
+++    })
+++  })
+++
+++  describe('draft cleared on submit', () => {
+++    beforeEach(() => {
+++      mockChatsStore.currentChat = {
+++        id: 'chat-1',
+++        history: [],
+++        isInterrupted: false,
+++        isWorkflow: false,
+++        assistantIds: ['assistant-1'],
+++      }
+++      mockUseChatPromptDraft.initial = { message: 'draft text', messageRaw: '<p>draft text</p>' }
+++      mockUseChatPromptDraft.clearDraft = vi.fn()
+++    })
+++
+++    afterEach(() => {
+++      mockChatsStore.currentChat = {
+++        id: 'chat-1',
+++        history: [[{ inProgress: true }]],
+++        isInterrupted: false,
+++        isWorkflow: false,
+++        assistantIds: ['assistant-1'],
+++      }
+++      mockUseChatPromptDraft.initial = { message: '', messageRaw: '' }
+++    })
+++
+++    it('calls clearDraft when the send button is clicked', () => {
+++      render(<ChatPrompt />)
+++
+++      fireEvent.click(screen.getByRole('button', { name: /send/i }))
+++
+++      expect(mockUseChatPromptDraft.clearDraft).toHaveBeenCalledOnce()
+++    })
+++  })
++ })
++diff --git a/src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts b/src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts
++new file mode 100644
++index 000000000..94c4279b4
++--- /dev/null
+++++ b/src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts
++@@ -0,0 +1,131 @@
+++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+++//
+++// Licensed under the Apache License, Version 2.0 (the "License");
+++// you may not use this file except in compliance with the License.
+++// You may obtain a copy of the License at
+++//
+++//     http://www.apache.org/licenses/LICENSE-2.0
+++//
+++// Unless required by applicable law or agreed to in writing, software
+++// distributed under the License is distributed on an "AS IS" BASIS,
+++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+++// See the License for the specific language governing permissions and
+++// limitations under the License.
+++//
+++
+++import { act, renderHook } from '@testing-library/react'
+++import { beforeEach, describe, expect, it, vi } from 'vitest'
+++
+++import storage from '@/utils/storage'
+++
+++import { readPromptDraft, useChatPromptDraft } from '../useChatPromptDraft'
+++
+++// @/utils/storage is globally mocked in setupTests.unit.ts as a default export:
+++// { getObject: vi.fn(), get: vi.fn(), put: vi.fn(), remove: vi.fn() }
+++
+++describe('readPromptDraft', () => {
+++  beforeEach(() => {
+++    vi.mocked(storage.getObject).mockReturnValue(null)
+++  })
+++
+++  it('returns null when no draft is stored', () => {
+++    expect(readPromptDraft('user-1', 'chat-1')).toBeNull()
+++  })
+++
+++  it('calls storage.getObject with the correct namespaced key', () => {
+++    readPromptDraft('user-1', 'chat-1')
+++
+++    expect(storage.getObject).toHaveBeenCalledWith('user-1', 'chat-prompt-draft-chat-1', null)
+++  })
+++
+++  it('returns the stored draft when one exists', () => {
+++    const draft = { message: 'hello', messageRaw: '<p>hello</p>' }
+++    vi.mocked(storage.getObject).mockReturnValue(draft)
+++
+++    expect(readPromptDraft('user-1', 'chat-1')).toEqual(draft)
+++  })
+++})
+++
+++describe('useChatPromptDraft', () => {
+++  beforeEach(() => {
+++    vi.clearAllMocks()
+++    vi.mocked(storage.getObject).mockReturnValue(null)
+++  })
+++
+++  it('returns the empty-prompt default as initial when no draft is stored', () => {
+++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
+++
+++    expect(result.current.initial).toEqual({ message: '', messageRaw: '' })
+++  })
+++
+++  it('returns the stored draft as initial when a draft exists', () => {
+++    const draft = { message: 'hello', messageRaw: '<p>hello</p>' }
+++    vi.mocked(storage.getObject).mockReturnValue(draft)
+++
+++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
+++
+++    expect(result.current.initial).toEqual(draft)
+++  })
+++
+++  it('returns the empty-prompt default as initial when chatId is undefined', () => {
+++    const { result } = renderHook(() => useChatPromptDraft(undefined, 'user-1'))
+++
+++    expect(result.current.initial).toEqual({ message: '', messageRaw: '' })
+++    expect(storage.getObject).not.toHaveBeenCalled()
+++  })
+++
+++  it('saveDraft calls storage.put with the correct key when messageRaw is non-empty', () => {
+++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
+++
+++    act(() => result.current.saveDraft({ message: 'hello', messageRaw: '<p>hello</p>' }))
+++
+++    expect(storage.put).toHaveBeenCalledWith('user-1', 'chat-prompt-draft-chat-1', {
+++      message: 'hello',
+++      messageRaw: '<p>hello</p>',
+++    })
+++    expect(storage.remove).not.toHaveBeenCalled()
+++  })
+++
+++  it('saveDraft calls storage.remove when messageRaw is empty', () => {
+++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
+++
+++    act(() => result.current.saveDraft({ message: '', messageRaw: '' }))
+++
+++    expect(storage.remove).toHaveBeenCalledWith('user-1', 'chat-prompt-draft-chat-1')
+++    expect(storage.put).not.toHaveBeenCalled()
+++  })
+++
+++  it('clearDraft calls storage.remove with the correct key', () => {
+++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
+++
+++    act(() => result.current.clearDraft())
+++
+++    expect(storage.remove).toHaveBeenCalledWith('user-1', 'chat-prompt-draft-chat-1')
+++  })
+++
+++  it('saveDraft is a no-op when chatId is undefined', () => {
+++    const { result } = renderHook(() => useChatPromptDraft(undefined, 'user-1'))
+++
+++    act(() => result.current.saveDraft({ message: 'hello', messageRaw: '<p>hello</p>' }))
+++
+++    expect(storage.put).not.toHaveBeenCalled()
+++    expect(storage.remove).not.toHaveBeenCalled()
+++  })
+++
+++  it('saveDraft is a no-op when userId is undefined', () => {
+++    const { result } = renderHook(() => useChatPromptDraft('chat-1', undefined))
+++
+++    act(() => result.current.saveDraft({ message: 'hello', messageRaw: '<p>hello</p>' }))
+++
+++    expect(storage.put).not.toHaveBeenCalled()
+++    expect(storage.remove).not.toHaveBeenCalled()
+++  })
+++
+++  it('clearDraft is a no-op when chatId is undefined', () => {
+++    const { result } = renderHook(() => useChatPromptDraft(undefined, 'user-1'))
+++
+++    act(() => result.current.clearDraft())
+++
+++    expect(storage.remove).not.toHaveBeenCalled()
+++  })
+++})
++diff --git a/src/pages/chat/hooks/useChatPromptDraft.ts b/src/pages/chat/hooks/useChatPromptDraft.ts
++new file mode 100644
++index 000000000..d1527692f
++--- /dev/null
+++++ b/src/pages/chat/hooks/useChatPromptDraft.ts
++@@ -0,0 +1,53 @@
+++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+++//
+++// Licensed under the Apache License, Version 2.0 (the "License");
+++// you may not use this file except in compliance with the License.
+++// You may obtain a copy of the License at
+++//
+++//     http://www.apache.org/licenses/LICENSE-2.0
+++//
+++// Unless required by applicable law or agreed to in writing, software
+++// distributed under the License is distributed on an "AS IS" BASIS,
+++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+++// See the License for the specific language governing permissions and
+++// limitations under the License.
+++//
+++
+++import { useCallback, useRef } from 'react'
+++
+++import storage from '@/utils/storage'
+++
+++export type PromptDraft = { message: string; messageRaw: string }
+++
+++const DRAFT_KEY = 'chat-prompt-draft'
+++const DEFAULT_PROMPT: PromptDraft = { message: '', messageRaw: '' }
+++
+++export const readPromptDraft = (userId: string, chatId: string): PromptDraft | null =>
+++  storage.getObject<PromptDraft | null>(userId, `${DRAFT_KEY}-${chatId}`, null)
+++
+++export const useChatPromptDraft = (chatId: string | undefined, userId: string | undefined) => {
+++  const initialRef = useRef<PromptDraft | undefined>(undefined)
+++  if (initialRef.current === undefined) {
+++    initialRef.current =
+++      chatId && userId ? readPromptDraft(userId, chatId) ?? DEFAULT_PROMPT : DEFAULT_PROMPT
+++  }
+++
+++  const saveDraft = useCallback(
+++    (draft: PromptDraft) => {
+++      if (!chatId || !userId) return
+++      if (draft.messageRaw === '') {
+++        storage.remove(userId, `${DRAFT_KEY}-${chatId}`)
+++      } else {
+++        storage.put(userId, `${DRAFT_KEY}-${chatId}`, draft)
+++      }
+++    },
+++    [chatId, userId]
+++  )
+++
+++  const clearDraft = useCallback(() => {
+++    if (!chatId || !userId) return
+++    storage.remove(userId, `${DRAFT_KEY}-${chatId}`)
+++  }, [chatId, userId])
+++
+++  return { initial: initialRef.current, saveDraft, clearDraft }
+++}
+diff --git a/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/complexity-assessment.json b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/complexity-assessment.json
+new file mode 100644
+index 000000000..b8f9ee78d
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/complexity-assessment.json
+@@ -0,0 +1,28 @@
++{
++  "schema": 1,
++  "task": "Preserve the user's typed prompt text and attachments in the chat prompt box across navigation by adding localStorage persistence keyed by chatId, mirroring the useChatConfiguration pattern.",
++  "generated": "2026-07-13T00:00:00Z",
++  "dimensions": {
++    "component_scope":      { "score": 3, "label": "M" },
++    "requirements_clarity": { "score": 2, "label": "S" },
++    "technical_risk":       { "score": 3, "label": "M" },
++    "file_change_estimate": { "score": 2, "label": "S" },
++    "dependencies":         { "score": 1, "label": "XS" },
++    "affected_layers":      { "score": 2, "label": "S" }
++  },
++  "total": 13,
++  "size": "S",
++  "routing": "writing-plans",
++  "key_reasoning": [
++    {
++      "dimension": "component_scope",
++      "reason": "ChatPrompt.tsx (state init + submit path), a new useChatPromptDraft hook, and possibly ChatPage.tsx (key prop scope) are the primary components — 2–3 components across the UI/Presentation and State/Hooks layers. The coordination pattern is clear because useChatConfiguration.tsx provides a direct reference implementation to mirror."
++    },
++    {
++      "dimension": "technical_risk",
++      "reason": "Three non-trivial sub-problems exist: (1) the key={currentChat?.id} structural remounting that destroys ChatPrompt state, (2) the Quill Editor clear-on-empty useEffect timing race where restoring a draft via a post-mount effect could be overwritten, and (3) the useChatInitialPrompt ?prompt= query-param collision that requires an explicit priority guard. All are well-understood from codebase exploration, but each requires careful implementation."
++    }
++  ],
++  "red_flags_applied": [],
++  "split_recommendation": null
++}
+diff --git a/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/gate-plan.json b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/gate-plan.json
+new file mode 100644
+index 000000000..5290a0819
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/gate-plan.json
+@@ -0,0 +1,13 @@
++{
++  "schema": 1,
++  "runner": "npm",
++  "gates": [
++    {"id": "lint",        "command": "npm run lint",              "available": true},
++    {"id": "typecheck",   "command": "npm run typecheck",         "available": true},
++    {"id": "unit",        "command": "npm run test:unit",         "available": true},
++    {"id": "integration", "command": "npm run test:integration",  "available": true},
++    {"id": "ui",          "command": "",                          "available": false}
++  ],
++  "ui_globs": ["\\.(tsx|jsx|css|html)$", "src/.*/components/"],
++  "detected_at": "2026-07-13T15:03:00Z"
++}
+diff --git a/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/plan.md b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/plan.md
+new file mode 100644
+index 000000000..f84a9740d
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/plan.md
+@@ -0,0 +1,475 @@
++# EPMCDME-9922 — Preserve Prompt Box Text Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++
++**Goal:** Persist and restore the chat prompt text across chat switches and route navigation using `localStorage`, mirroring the existing `useChatConfiguration` pattern.
++
++**Architecture:** A new `useChatPromptDraft` hook owns all draft lifecycle: it reads the stored draft synchronously from `localStorage` via a `useRef` guard on first render, returns the value as `initial`, and exposes `saveDraft`/`clearDraft` callbacks. `ChatPrompt` initialises its `prompt` state with `useState(initial)` so the Quill editor receives the draft text before its `onLoad` fires. A `useEffect` auto-saves on every prompt change; `handleSubmit` explicitly calls `clearDraft` before resetting state.
++
++**Tech Stack:** React 18, Valtio, `localStorage` via `src/utils/storage/index.ts`, Vitest + @testing-library/react
++
++---
++
++## File Map
++
++| File | Action | Responsibility |
++|---|---|---|
++| `src/pages/chat/hooks/useChatPromptDraft.ts` | **Create** | `readPromptDraft` helper + `useChatPromptDraft` hook |
++| `src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts` | **Create** | Unit tests for hook (real jsdom `localStorage`) |
++| `src/pages/chat/components/ChatPrompt/ChatPrompt.tsx` | **Modify** | Wire hook: init state, save effect, clear on submit |
++| `src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx` | **Modify** | Add draft tests; update `@/store` mock to include `user` |
++
++---
++
++## Task 1: `useChatPromptDraft` hook (TDD)
++
++**Files:**
++- Create: `src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts`
++- Create: `src/pages/chat/hooks/useChatPromptDraft.ts`
++
++---
++
++- [ ] **Step 1.1 — Write failing tests for `readPromptDraft`**
++
++Create `src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts`:
++
++```typescript
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { act, renderHook } from '@testing-library/react'
++import { beforeEach, describe, expect, it } from 'vitest'
++
++import { readPromptDraft, useChatPromptDraft } from '../useChatPromptDraft'
++
++describe('readPromptDraft', () => {
++  beforeEach(() => localStorage.clear())
++
++  it('returns null when no draft is stored', () => {
++    expect(readPromptDraft('user-1', 'chat-1')).toBeNull()
++  })
++
++  it('returns the stored draft when the key exists', () => {
++    const draft = { message: 'hello', messageRaw: '<p>hello</p>' }
++    localStorage.setItem('user-1_chat-prompt-draft-chat-1', JSON.stringify(draft))
++
++    expect(readPromptDraft('user-1', 'chat-1')).toEqual(draft)
++  })
++})
++
++describe('useChatPromptDraft', () => {
++  beforeEach(() => localStorage.clear())
++
++  it('returns the empty-prompt default as initial when no draft stored', () => {
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    expect(result.current.initial).toEqual({ message: '', messageRaw: '' })
++  })
++
++  it('returns the stored draft as initial when a draft exists', () => {
++    const draft = { message: 'hello', messageRaw: '<p>hello</p>' }
++    localStorage.setItem('user-1_chat-prompt-draft-chat-1', JSON.stringify(draft))
++
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    expect(result.current.initial).toEqual(draft)
++  })
++
++  it('saveDraft writes to localStorage when messageRaw is non-empty', () => {
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    act(() => result.current.saveDraft({ message: 'hello', messageRaw: '<p>hello</p>' }))
++
++    expect(localStorage.getItem('user-1_chat-prompt-draft-chat-1')).toBe(
++      JSON.stringify({ message: 'hello', messageRaw: '<p>hello</p>' })
++    )
++  })
++
++  it('saveDraft removes the key when messageRaw is empty', () => {
++    localStorage.setItem(
++      'user-1_chat-prompt-draft-chat-1',
++      JSON.stringify({ message: 'hello', messageRaw: '<p>hello</p>' })
++    )
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    act(() => result.current.saveDraft({ message: '', messageRaw: '' }))
++
++    expect(localStorage.getItem('user-1_chat-prompt-draft-chat-1')).toBeNull()
++  })
++
++  it('clearDraft removes the key', () => {
++    localStorage.setItem(
++      'user-1_chat-prompt-draft-chat-1',
++      JSON.stringify({ message: 'hello', messageRaw: '<p>hello</p>' })
++    )
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    act(() => result.current.clearDraft())
++
++    expect(localStorage.getItem('user-1_chat-prompt-draft-chat-1')).toBeNull()
++  })
++
++  it('saveDraft is a no-op when chatId is undefined', () => {
++    const { result } = renderHook(() => useChatPromptDraft(undefined, 'user-1'))
++
++    act(() => result.current.saveDraft({ message: 'hello', messageRaw: '<p>hello</p>' }))
++
++    expect(localStorage.length).toBe(0)
++  })
++
++  it('saveDraft is a no-op when userId is undefined', () => {
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', undefined))
++
++    act(() => result.current.saveDraft({ message: 'hello', messageRaw: '<p>hello</p>' }))
++
++    expect(localStorage.length).toBe(0)
++  })
++
++  it('clearDraft is a no-op when chatId is undefined', () => {
++    const { result } = renderHook(() => useChatPromptDraft(undefined, 'user-1'))
++
++    act(() => result.current.clearDraft())
++
++    expect(localStorage.length).toBe(0)
++  })
++})
++```
++
++- [ ] **Step 1.2 — Run tests to verify they fail**
++
++```bash
++npx vitest run --project unit src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts
++```
++
++Expected: all tests fail with `Cannot find module '../useChatPromptDraft'`.
++
++---
++
++- [ ] **Step 1.3 — Create the hook**
++
++Create `src/pages/chat/hooks/useChatPromptDraft.ts`:
++
++```typescript
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { useCallback, useRef } from 'react'
++
++import { getObject, put, remove } from '@/utils/storage'
++
++export type PromptDraft = { message: string; messageRaw: string }
++
++const DRAFT_KEY = 'chat-prompt-draft'
++const DEFAULT_PROMPT: PromptDraft = { message: '', messageRaw: '' }
++
++export const readPromptDraft = (userId: string, chatId: string): PromptDraft | null =>
++  getObject<PromptDraft | null>(userId, `${DRAFT_KEY}-${chatId}`, null)
++
++export const useChatPromptDraft = (
++  chatId: string | undefined,
++  userId: string | undefined
++) => {
++  const initialRef = useRef<PromptDraft | undefined>(undefined)
++  if (initialRef.current === undefined) {
++    initialRef.current =
++      chatId && userId ? (readPromptDraft(userId, chatId) ?? DEFAULT_PROMPT) : DEFAULT_PROMPT
++  }
++
++  const saveDraft = useCallback(
++    (draft: PromptDraft) => {
++      if (!chatId || !userId) return
++      if (draft.messageRaw === '') {
++        remove(userId, `${DRAFT_KEY}-${chatId}`)
++      } else {
++        put(userId, `${DRAFT_KEY}-${chatId}`, draft)
++      }
++    },
++    [chatId, userId]
++  )
++
++  const clearDraft = useCallback(() => {
++    if (!chatId || !userId) return
++    remove(userId, `${DRAFT_KEY}-${chatId}`)
++  }, [chatId, userId])
++
++  return { initial: initialRef.current, saveDraft, clearDraft }
++}
++```
++
++- [ ] **Step 1.4 — Run tests to verify they pass**
++
++```bash
++npx vitest run --project unit src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts
++```
++
++Expected: all 9 tests pass.
++
++- [ ] **Step 1.5 — Commit**
++
++```bash
++git add src/pages/chat/hooks/useChatPromptDraft.ts src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts
++git commit -m "EPMCDME-9922: add useChatPromptDraft hook with localStorage persistence"
++```
++
++---
++
++## Task 2: Wire `useChatPromptDraft` into `ChatPrompt` (TDD)
++
++**Files:**
++- Modify: `src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx`
++- Modify: `src/pages/chat/components/ChatPrompt/ChatPrompt.tsx`
++
++---
++
++- [ ] **Step 2.1 — Add failing tests to `ChatPrompt.test.tsx`**
++
++Open `src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx`.
++
++**a) Add `useChatPromptDraft` to the hoisted mocks block.** Replace the existing `vi.hoisted` call that defines `mockChatGenerationStore` and `mockChatsStore`:
++
++```tsx
++const { mockChatGenerationStore, mockChatsStore, mockUseChatPromptDraft } = vi.hoisted(() => ({
++  mockChatGenerationStore: {
++    stopChatGeneration: vi.fn(),
++    createChatGeneration: vi.fn(),
++    resumeWorkflowExecution: vi.fn(),
++  },
++  mockChatsStore: {
++    currentChat: {
++      id: 'chat-1',
++      history: [[{ inProgress: true }]],
++      isInterrupted: false,
++      isWorkflow: false,
++      assistantIds: ['assistant-1'],
++    },
++  },
++  mockUseChatPromptDraft: {
++    initial: { message: '', messageRaw: '' },
++    saveDraft: vi.fn(),
++    clearDraft: vi.fn(),
++  },
++}))
++```
++
++**b) Add the mock for `useChatPromptDraft`** after the existing `vi.mock` blocks (e.g., after the `@/assets/icons/play.svg?react` mock):
++
++```tsx
++vi.mock('../../../hooks/useChatPromptDraft', () => ({
++  useChatPromptDraft: () => mockUseChatPromptDraft,
++}))
++```
++
++**c) Replace the existing `@/store` mock** to add `user` to `userStore` (required because `ChatPrompt` will destructure `user` from `useSnapshot(userStore)` after this task):
++
++```tsx
++vi.mock('@/store', () => ({
++  assistantsStore: { defaultAssistant: { id: 'assistant-1' } },
++  userStore: { userData: { stt_support: false }, user: { userId: 'user-1' } },
++}))
++```
++
++**d) Append two new `describe` blocks** at the end of the outer `describe('ChatPrompt', ...)` block:
++
++```tsx
++describe('draft initialization', () => {
++  it('calls saveDraft with the initial draft value on first render', () => {
++    mockUseChatPromptDraft.initial = { message: 'saved draft', messageRaw: '<p>saved draft</p>' }
++    mockUseChatPromptDraft.saveDraft = vi.fn()
++
++    render(<ChatPrompt />)
++
++    expect(mockUseChatPromptDraft.saveDraft).toHaveBeenCalledWith({
++      message: 'saved draft',
++      messageRaw: '<p>saved draft</p>',
++    })
++  })
++})
++
++describe('draft cleared on submit', () => {
++  beforeEach(() => {
++    mockChatsStore.currentChat = {
++      id: 'chat-1',
++      history: [],
++      isInterrupted: false,
++      isWorkflow: false,
++      assistantIds: ['assistant-1'],
++    }
++    mockUseChatPromptDraft.initial = { message: 'draft text', messageRaw: '<p>draft text</p>' }
++    mockUseChatPromptDraft.clearDraft = vi.fn()
++  })
++
++  afterEach(() => {
++    mockChatsStore.currentChat = {
++      id: 'chat-1',
++      history: [[{ inProgress: true }]],
++      isInterrupted: false,
++      isWorkflow: false,
++      assistantIds: ['assistant-1'],
++    }
++    mockUseChatPromptDraft.initial = { message: '', messageRaw: '' }
++  })
++
++  it('calls clearDraft when the send button is clicked', () => {
++    render(<ChatPrompt />)
++
++    fireEvent.click(screen.getByRole('button', { name: /send/i }))
++
++    expect(mockUseChatPromptDraft.clearDraft).toHaveBeenCalledOnce()
++  })
++})
++```
++
++- [ ] **Step 2.2 — Run tests to verify the new tests fail**
++
++```bash
++npx vitest run --project unit src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx
++```
++
++Expected: the two new tests fail (`useChatPromptDraft` not yet imported in `ChatPrompt.tsx`; existing tests continue to pass).
++
++---
++
++- [ ] **Step 2.3 — Modify `ChatPrompt.tsx`**
++
++Open `src/pages/chat/components/ChatPrompt/ChatPrompt.tsx`.
++
++**a) Add the import** after the existing `useChatContext` import:
++
++```tsx
++import { useChatPromptDraft } from '@/pages/chat/hooks/useChatPromptDraft'
++```
++
++**b) Update the `userStore` snapshot line** (line 78) to also destructure `user`:
++
++```tsx
++const { userData, user } = useSnapshot(userStore) as typeof userStore
++```
++
++**c) Add the hook call** directly after the `useChatContext` line (after `const { selectedSkills, isSharedPage, dynamicToolsConfig } = useChatContext()`):
++
++```tsx
++const { initial, saveDraft, clearDraft } = useChatPromptDraft(currentChat?.id, user?.userId)
++```
++
++**d) Change the `prompt` state initializer** from the hardcoded empty object to `initial`:
++
++Before:
++```tsx
++const [prompt, setPrompt] = useState<{ message: string; messageRaw: string }>({
++  message: '',
++  messageRaw: '',
++})
++```
++
++After:
++```tsx
++const [prompt, setPrompt] = useState<{ message: string; messageRaw: string }>(initial)
++```
++
++**e) Add the auto-save effect** after the existing `useEffect(() => { editorRef.current?.focus() }, [currentChat?.id])` block:
++
++```tsx
++useEffect(() => {
++  saveDraft(prompt)
++}, [prompt, saveDraft])
++```
++
++**f) Add `clearDraft()` to the interrupted submit path.** Find the `if (isInterrupted)` block in `handleSubmit`:
++
++Before:
++```tsx
++setPrompt({ message: '', messageRaw: '' })
++setFiles([])
++chatGenerationStore.resumeWorkflowExecution(userInput, fileNames)
++return
++```
++
++After:
++```tsx
++clearDraft()
++setPrompt({ message: '', messageRaw: '' })
++setFiles([])
++chatGenerationStore.resumeWorkflowExecution(userInput, fileNames)
++return
++```
++
++**g) Add `clearDraft()` to the normal submit path.** Find the two consecutive lines that reset state before `createChatGeneration`:
++
++Before:
++```tsx
++setPrompt({ message: '', messageRaw: '' })
++setFiles([])
++
++chatGenerationStore.createChatGeneration({
++```
++
++After:
++```tsx
++clearDraft()
++setPrompt({ message: '', messageRaw: '' })
++setFiles([])
++
++chatGenerationStore.createChatGeneration({
++```
++
++- [ ] **Step 2.4 — Run all `ChatPrompt` tests to verify they pass**
++
++```bash
++npx vitest run --project unit src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx
++```
++
++Expected: all tests pass, including the two new ones.
++
++- [ ] **Step 2.5 — Run the full unit suite to check for regressions**
++
++```bash
++npm run test:unit
++```
++
++Expected: all unit tests pass with no regressions.
++
++- [ ] **Step 2.6 — Commit**
++
++```bash
++git add src/pages/chat/components/ChatPrompt/ChatPrompt.tsx src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx
++git commit -m "EPMCDME-9922: wire useChatPromptDraft into ChatPrompt for prompt draft persistence"
++```
++
++---
++
++## Async Upgrade Path (not implemented now — documented for future reference)
++
++If `localStorage` is replaced with async storage, change only `useChatPromptDraft.ts`:
++
++1. Replace the `useRef` synchronous read with `useLayoutEffect`.
++2. Add `draftLoaded: boolean` to the return type (starts `false`, set `true` after load).
++3. In `ChatPrompt`, gate the `<Editor>` render on `draftLoaded`:
++   ```tsx
++   {draftLoaded && <Editor value={prompt} ... />}
++   ```
++
++`ChatPrompt` state init (`useState(initial)`) stays unchanged.
+diff --git a/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/qa-report.md b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/qa-report.md
+new file mode 100644
+index 000000000..723a91212
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/qa-report.md
+@@ -0,0 +1,29 @@
++# QA Gate Report — EPMCDME-9922
++
++**Branch**: EPMCDME-9922_preserve_prompt_box
++**Runner**: npm
++**Started**: 2026-07-13T15:04:00Z
++**Status**: PASSED
++
++## Gates
++
++| Gate        | Status  | Duration | Command                    | Notes |
++|-------------|---------|----------|----------------------------|-------|
++| lint        | PASS    | ~5s      | `npm run lint`             | React version warning only (pre-existing, non-blocking) |
++| typecheck   | PASS    | ~15s     | `npm run typecheck`        | Silent, exit 0 |
++| unit        | PASS    | ~23s     | `npm run test:unit`        | 259 files, 3382 tests |
++| integration | PASS    | ~18s     | `npm run test:integration` | 2 pre-existing failures in navigateBack / AssistantDetailsPage — confirmed present on main before this branch |
++| ui          | SKIPPED | —        | (n/a)                      | No browser UI test script configured |
++
++## Failure detail
++
++Integration test failures in `navigateBack.integration.test.ts` (4 tests) and
++`AssistantDetailsPage.integration.test.tsx` (1 test) reproduce identically on `main`
++with this branch's commits stashed — pre-existing, not introduced by EPMCDME-9922.
++
++Root error: `TypeError: Cannot read properties of null (reading 'nested_assistants')`
++in `assistantsStore.getDefaultAssistant()` — unrelated to prompt-draft persistence.
++
++## Drift signal
++
++no
+diff --git a/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/spec.md b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/spec.md
+new file mode 100644
+index 000000000..5975e70a7
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/spec.md
+@@ -0,0 +1,144 @@
++# EPMCDME-9922 — Preserve Prompt Box Text Across Navigation
++
++## Problem
++
++`ChatPrompt` owns two pieces of local React state: `prompt: { message, messageRaw }` and
++`files: FileMetadata[]`. Neither is persisted. Two navigation events silently discard
++whatever the user has typed:
++
++1. **Chat switch** — `ChatPage` renders `<PageLayout key={currentChat?.id}>`, which fully
++   unmounts and remounts the entire `ChatPrompt` subtree on every chat-ID change.
++2. **Route leave** — navigating to Assistants, Workflows, or any non-chat route unmounts
++   `ChatPage` entirely via React Router's `<Outlet>`.
++
++When the user returns to a chat, the prompt box is always empty.
++
++## Scope
++
++- **In scope**: persist and restore the text prompt (`message` + `messageRaw`) per chat.
++- **Out of scope**: file attachments. `FileMetadata` objects carry a server-assigned `fileId`
++  from `v1/files/bulk`. Restoring them requires verifying the file still exists server-side
++  and resetting `isUploading` state — a meaningfully larger sub-problem deferred to a
++  follow-up ticket.
++- **Out of scope**: new chats (`currentChat?.id` undefined / `isNewChat === true`). No
++  stable key to scope the draft to; silently skipped, consistent with the existing
++  `useChatConfiguration` pattern.
++
++## Design
++
++### New hook: `useChatPromptDraft`
++
++File: `src/pages/chat/hooks/useChatPromptDraft.ts`
++
++The hook owns the full draft lifecycle — initialization, save, and clear — and exposes
++three stable values:
++
++```
++{ initial, saveDraft, clearDraft }
++```
++
++**Initialization (`initial`):**
++
++The hook reads from `localStorage` synchronously on first render using a `useRef` guard
++(reads once, never again for the same mount). It returns the stored draft as `initial`, or
++the empty-prompt default if none exists.
++
++`ChatPrompt` passes `initial` directly to `useState`:
++
++```tsx
++const { initial, saveDraft, clearDraft } = useChatPromptDraft(chatId, userId)
++const [prompt, setPrompt] = useState(initial)
++```
++
++Because `ChatPage` already renders `<PageLayout key={currentChat?.id}>`, `ChatPrompt`
++remounts on every chat switch. Each fresh mount runs `useChatPromptDraft` anew, reads the
++correct draft for the new `chatId`, and `useState(initial)` captures it. No lazy-initializer
++function is needed in `ChatPrompt` — the stable `initial` value from the hook is enough.
++
++This timing is critical: the `Editor` component's `onLoad` callback initializes the Quill
++DOM from `value.messageRaw` at mount. If `value.messageRaw` is non-empty at that point, the
++draft appears in the editor. A post-mount `useEffect` restore would race with `Editor`'s
++own clear-on-empty effect (`Editor.tsx:135–143`) and lose.
++
++**Save (`saveDraft`):**
++
++`ChatPrompt` calls `saveDraft(prompt)` in a `useEffect([prompt])` that fires on every
++prompt state change. `saveDraft` writes to `localStorage` when `messageRaw` is non-empty,
++and removes the key when it is empty (implicit draft clear on backspace-to-empty).
++
++**Clear (`clearDraft`):**
++
++`ChatPrompt` calls `clearDraft()` in `handleSubmit` (both the normal and
++workflow-interrupted paths) before resetting local state. This is an explicit removal
++independent of the `useEffect` path, making submit semantics unambiguous.
++
++### Storage key
++
++```
++chat-prompt-draft-${chatId}
++```
++
++Namespaced via the existing `put`/`getObject`/`remove` utilities from
++`src/utils/storage/index.ts` with the `${userId}_` prefix, matching the established
++`chat-tools-config-${chatId}` and `chat-skills-${chatId}` convention. `userId` is
++`userStore.user?.userId` (the `User.userId` field, same source as `useChatConfiguration`).
++
++### Guard conditions
++
++Both `saveDraft` and `clearDraft` are no-ops when `chatId` or `userId` is `undefined`.
++`readPromptDraft` returns `null` for those cases. This silently covers new chats and any
++edge case where the user store has not yet resolved.
++
++### Files changed
++
++| File | Change |
++|---|---|
++| `src/pages/chat/hooks/useChatPromptDraft.ts` | **New** — hook + `readPromptDraft` helper |
++| `src/pages/chat/components/ChatPrompt/ChatPrompt.tsx` | Use `initial` from hook, add save effect, add `clearDraft` calls in submit |
++| `src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts` | **New** — unit tests |
++
++No changes to `ChatPage.tsx`, `Editor.tsx`, routing, or stores.
++
++## Edge Cases
++
++| Scenario | Behaviour |
++|---|---|
++| New chat (no `chatId`) | Draft persistence skipped silently |
++| `?prompt=` auto-submit fires | `useChatInitialPrompt` calls `createChatGeneration` directly, bypassing `handleSubmit`. The draft is not cleared automatically — it remains in the box and in `localStorage`. The user's next normal submit or manual clear (backspace to empty) removes it. |
++| Malformed JSON in `localStorage` | `storage.getObject` returns `null` (default); gracefully falls back to empty prompt |
++| Chat switch | `PageLayout key={currentChat?.id}` remounts `ChatPrompt`; fresh `useChatPromptDraft` read loads draft for new chatId |
++| Browser refresh | Draft survives in `localStorage`; fresh mount restores it |
++| Submit clears draft | `clearDraft()` called before `setPrompt({ message: '', messageRaw: '' })`; both the explicit call and the subsequent save-effect agree |
++
++## Async Upgrade Path
++
++The current implementation reads `localStorage` synchronously via `useRef` on first render.
++If the storage layer is ever replaced with an async mechanism (IndexedDB, remote API), the
++hook internals change as follows — `ChatPrompt` does not need to change its API:
++
++1. Replace the `useRef` synchronous read with `useLayoutEffect` (fires before paint).
++2. Add `draftLoaded: boolean` to the hook's return type (initially `false`, set `true` after
++   load completes).
++3. Gate the `Editor` render in `ChatPrompt` on `draftLoaded`:
++   ```tsx
++   {draftLoaded && <Editor value={prompt} ... />}
++   ```
++   For `localStorage` this would be imperceptible; `useLayoutEffect` resolves before the
++   browser paints even with a microtask-wrapped async call.
++
++## Testing
++
++**Unit — `useChatPromptDraft.test.ts`**
++
++- `readPromptDraft` returns `null` for a missing key.
++- `readPromptDraft` returns the stored draft when the key exists.
++- `saveDraft` writes to `localStorage` when `messageRaw` is non-empty.
++- `saveDraft` removes the key when `messageRaw` is empty.
++- `clearDraft` removes the key.
++- Both `saveDraft` and `clearDraft` are no-ops when `chatId` or `userId` is `undefined`.
++
++**Unit — extend `ChatPrompt.test.tsx`**
++
++- `ChatPrompt` initializes `prompt` state from the stored draft (non-empty `messageRaw`
++  passed to `Editor` on first render).
++- `ChatPrompt` submit path calls `clearDraft` and resets prompt state.
+diff --git a/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/technical-analysis.md b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/technical-analysis.md
+new file mode 100644
+index 000000000..4fb01e633
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box/technical-analysis.md
+@@ -0,0 +1,216 @@
++# Technical Research
++
++**Task**: prompt box chat input navigation state preservation
++**Generated**: 2026-07-13T00:00:00Z
++**Research path**: filesystem
++
++---
++
++## 1. Original Context
++
++EPMCDME-9922: preserve the prompt box / chat input content across navigation. The branch is named EPMCDME-9922_preserve_prompt_box, suggesting the task is to preserve the user's typed prompt text (and possibly attachments/settings) in the prompt/chat input box when the user navigates away from the chat page and comes back.
++
++---
++
++## 2. Codebase Findings
++
++### Existing Implementations
++
++**Prompt box component:**
++- `src/pages/chat/components/ChatPrompt/ChatPrompt.tsx` — The prompt box component. Owns all local state: `prompt` (`{ message: string; messageRaw: string }`) and `files: FileMetadata[]`. Neither is persisted anywhere. Both are cleared on submit.
++- `src/components/Editor/Editor.tsx` — The Quill-based rich-text editor rendered inside `ChatPrompt`. Controlled: receives `value` prop, calls `onChange`. On `onLoad`, initializes Quill DOM from `value.messageRaw`. Actively clears Quill DOM whenever `value.messageRaw === ''` via `useEffect`.
++
++**Chat page entry points:**
++- `src/pages/chat/ChatPage.tsx` — Main chat page. Renders `<PageLayout key={currentChat?.id}>` which contains the `ChatPrompt` subtree. The `key={currentChat?.id}` forces full unmount + remount on every chat switch. When navigating to a non-chat route, `ChatPage` is unmounted entirely by React Router's `<Outlet />` rendering.
++- `src/pages/chat/SharedChatPage.tsx` — Read-only shared chat view; does not render `ChatPrompt`.
++
++**Chat hooks adjacent to the prompt box:**
++- `src/pages/chat/hooks/useChatNavigation.tsx` — Redirects to last/first chat when no `:id` param is present. Uses `router.replace` / `router.push` via the Vue-router adapter.
++- `src/pages/chat/hooks/useChatInitialPrompt.tsx` — Reads `?prompt=` query param, auto-submits it once the chat is ready, then clears the param with `setSearchParams`. This is a one-shot seeding mechanism, not a draft round-trip.
++- `src/pages/chat/hooks/useChatConfiguration.tsx` — The most relevant reference implementation. Persists and restores `selectedSkills` and `dynamicToolsConfig` per chat in `localStorage` using the pattern `storage.put(userId, 'chat-tools-config-${chatId}', value)`. Loads in a `useEffect([currentChat?.id])`.
++
++**State stores:**
++- `src/store/chats.ts` — Valtio `proxy` store. Holds `currentChat`, `openedChatsHistory`, `isNewChat`, `newChatParams`. Persists last-chat-id to `localStorage` on every `getChat()` call.
++- `src/store/chatGeneration.ts` — Valtio `proxy` store. Handles streaming generation lifecycle, MCP auth flow, workflow resumption.
++- `src/store/files.ts` — Valtio `proxy` store for file API operations (upload, download). Does NOT hold prompt attachment list state.
++
++**Storage utilities:**
++- `src/utils/storage.ts` — Older default-export object `{ get, put, getObject, remove }`. Keys namespaced as `${userId}_${key}`.
++- `src/utils/storage/index.ts` — Newer named-export version with identical API and key scheme. Both are in active use.
++
++**Unsaved changes infrastructure (exists, not wired to ChatPrompt):**
++- `src/hooks/useUnsavedChangesWarning.tsx` — `UnsavedChangesProvider` + `useUnsavedChanges` hook. Registers dirty-check callbacks and blocks navigation with a confirmation dialog. Currently used only by form-level edit/create pages; not wired to the chat prompt box.
++- `src/components/appLevel/UnsavedChangesPopup.tsx` — Uses React Router's `useBlocker` and `window.beforeunload` to intercept navigation when any dirty check is active.
++
++**Router:**
++- `src/router.tsx` — `createBrowserRouter` (React Router v7). Chat routes: `chats` (no `:id`) and `chats/:id`, both rendering `ChatPage`.
++- `src/hooks/useVueRouter.tsx` — Custom Vue-router-shaped adapter wrapping React Router's `useLocation`, `useParams`, and `hashRouter.navigate`. All navigation in the chat domain uses this adapter.
++
++### Architecture and Layers Affected
++
++| Layer | Component / File | How It Is Affected |
++|---|---|---|
++| UI / Presentation | `ChatPrompt.tsx`, `Editor.tsx` | State initialization must change to accept an externally restored value; reset-on-submit must also clear the persisted draft |
++| UI / Presentation | `ChatPage.tsx` | `key={currentChat?.id}` on `PageLayout` is the mechanical root cause of remounting; may need to be scoped or removed |
++| State / Hooks | `useChatConfiguration.tsx` | Direct reference implementation for the save-on-change / load-on-chat-switch pattern; a new `useChatPromptDraft` hook would mirror this |
++| State / Persistence | `src/utils/storage.ts` / `storage/index.ts` | Already-established localStorage primitives; will be used for read/write of draft content |
++| State / Valtio | `chatsStore` | Provides `currentChat?.id` and `isNewChat` flags needed to scope draft keys and guard against storing drafts for unsaved new chats |
++| Routing | React Router v6 / `useVueRouter` | Navigation events trigger the remount that destroys state; no changes needed in the router itself, but the architecture of state lift must account for route changes |
++
++### Integration Points
++
++**Internal dependencies that the implementation must interact with:**
++- `useSnapshot(chatsStore)` inside `ChatPrompt` — provides `currentChat?.id` for keying drafts.
++- `useSnapshot(userStore)` — provides `userId` for storage key namespacing (`${userId}_chat-prompt-draft-${chatId}`).
++- `storage.put` / `storage.getObject` (`src/utils/storage/index.ts`) — the write/read primitives for persistence.
++- `chatGenerationStore.createChatGeneration()` — the submit path that must also clear the draft after a successful send.
++- `filesStore.uploadFiles()` — called by `useFileUpload` to upload files. File metadata (`FileMetadata[]`) must also be considered for draft persistence (though files already uploaded to the server have a `fileId` that could be restored).
++
++**Cross-cutting concerns:**
++- `useChatInitialPrompt` — reads `?prompt=` and auto-submits. If both a `?prompt=` query param and a stored draft exist simultaneously, the implementation must define priority (the query param likely takes precedence and should clear the draft).
++- `UnsavedChangesProvider` — already in `App.tsx:57`. Not recommended for this task; silent restoration matches the existing skills/tools pattern better.
++
++### Patterns and Conventions
++
++1. **Per-user per-chat `localStorage` key pattern** (established by `useChatConfiguration.tsx`):
++   - Key format: `${userId}_chat-<domain>-${chatId}`
++   - Write: `storage.put(userId, key, value)` on every relevant state change (optionally debounced)
++   - Read: `storage.getObject<T>(userId, key)` inside `useEffect([currentChat?.id])`
++   - Clear: `storage.remove(userId, key)` on submit / chat deletion
++
++2. **Controlled `Editor` component initialization** (`Editor.tsx:171–177`):
++   - Quill DOM is initialized from `value.messageRaw` inside the `onLoad` callback.
++   - Any restored draft must be present in the `prompt` state before the component mounts (i.e., set as initial `useState` value or applied in a first `useEffect` before Quill's `onLoad` fires).
++
++3. **Valtio `useSnapshot` subscription** — all store reads in components use `useSnapshot(store)` for reactivity. New Valtio store properties (if added to `chatsStore` or a new store) follow this convention.
++
++4. **React hooks location convention**: Global hooks live in `src/hooks/`; page-scoped hooks live in `src/pages/<page>/hooks/`. A `useChatPromptDraft` hook serving only `ChatPage` would go in `src/pages/chat/hooks/`.
++
++---
++
++## 3. Documentation Findings
++
++### Guides and Architecture Docs
++
++The following guides under `src/.ai-run/guides/` (the project guide directory) are relevant:
++
++- `.ai-run/guides/architecture/architecture.md` — Documents `UnsavedChangesProvider + useUnsavedChangesWarning` as the cross-cutting mechanism for unsaved state. Lists `storage` utility (user-scoped localStorage) as the persistence mechanism for per-user data.
++- `.ai-run/guides/architecture/routing-patterns.md` — Documents hash-based routing with React Router v7. Explicitly states that `useSearchParams` Variant B (`@/hooks/useSearchParams`) persists state to `sessionStorage` keyed by pathname; Variant A (native react-router) is labeled "one-shot params that do not need persistence." This is the hook used by `useChatInitialPrompt`.
++- `.ai-run/guides/patterns/custom-hooks.md` — Defines hook naming and location rules. No chat-input-specific hook exists yet.
++- `.ai-run/guides/development/performance-patterns.md` — Documents conditional unmount vs CSS-hide as a known tension. Relevant because `ChatPrompt` unmounts on navigation.
++
++No guide file explicitly documents the chat input state lifecycle, the `key={currentChat?.id}` remount pattern, or navigation state preservation in the chat domain.
++
++### Architectural Decisions
++
++- **ADR (implicit): `key={currentChat?.id}` on `PageLayout`** — This forces a clean Quill editor instance on every chat switch, preventing cross-chat state bleed. The decision trades off isolation for persistence. The implementation must decide whether to preserve this key (and use external storage) or remove it for `ChatPrompt` specifically (and rely on component-level state with an effect-based load).
++- **ADR (implicit): Prompt state is ephemeral by design** — No storage key, no store property, and no comment documenting intentional non-persistence suggests the original implementation simply did not consider draft preservation. This is a greenfield addition within an existing component.
++- **ADR (implicit): `useChatInitialPrompt` uses `?prompt=` for one-shot injection** — Explicitly noted in the routing guide as a non-persistence pattern. The draft-preservation feature must not collide with this mechanism.
++
++### Derived Conventions
++
++- **Silent restoration over navigation blocking** — Skills and tools config are silently restored on chat switch. The prompt draft should follow the same pattern rather than blocking navigation with an unsaved-changes dialog.
++- **`localStorage` over `sessionStorage` for cross-session persistence** — All per-chat domain data (skills, tools config, last-chat-id, recent chats) uses `localStorage`. The prompt draft should too, so it survives a browser refresh or returning hours later.
++- **userId-scoped keys** — Every key that persists user-facing data (as opposed to purely local UI preferences like sidebar width) is prefixed with `${userId}_`. The prompt draft must follow this convention.
++- **Clear on successful submit** — Skills and tools config are not cleared on submit (they persist intentionally). Prompt draft is different: once sent, it should be cleared. This is analogous to `useChatInitialPrompt` clearing the `?prompt=` param after firing.
++
++---
++
++## 4. Testing Landscape
++
++### Existing Coverage
++
++**`ChatPrompt` component tests:**
++- `src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx` — Covers: stop-generation button visibility; stop button click delegation to `chatGenerationStore.stopChatGeneration`. Does NOT cover: prompt text state, file attachment state, clearing or preserving state on navigation.
++- `src/pages/chat/components/ChatPrompt/__tests__/ChatPromptLlmSelector.test.tsx` — Covers: keyboard navigation in the model selector dropdown; updating `llmModel` via `updateChat`.
++
++**`ChatPage` test:**
++- `src/pages/chat/__tests__/ChatPage.test.tsx` — Covers: chat loading on mount, auth callback wiring, composer visibility for workflow vs normal chats. `useChatNavigation` and `useChatInitialPrompt` are fully mocked.
++
++**Hooks:**
++- `src/pages/chat/hooks/__tests__/useAssistantFeatures.test.ts` — Covers feature flag derivation from assistantData type.
++
++**No tests exist for:**
++- `useChatNavigation`
++- `useChatInitialPrompt`
++- `useChatConfiguration` (the reference pattern for this feature)
++- Prompt text or file state lifecycle in `ChatPrompt`
++
++### Testing Framework and Patterns
++
++- **Framework**: Vitest 1.6.1 with two projects (`unit` and `integration`) defined in `vitest.workspace.ts`.
++- **Libraries**: `@testing-library/react` 16.3, `@testing-library/user-event` 14.6, `@testing-library/jest-dom` 6.6.
++- **Unit pattern**: `vi.hoisted()` + per-store `vi.mock` with object literals. `useSnapshot` replaced with `(store) => store`. Stores are plain objects.
++- **Integration pattern**: `renderPage(path)` wraps real `createMemoryRouter` + full route config; `mockAPI(method, url, data)` registers fetch overrides. Real Valtio proxy reactivity.
++- **Reference unit test to model new tests on**: `ChatPrompt.test.tsx` (same directory as the component under test).
++- **Reference integration test to model navigation tests on**: `src/utils/__tests__/navigateBack.integration.test.ts` and `src/pages/assistants/__tests__/AssistantDetailsPage.integration.test.tsx`.
++
++### Coverage Gaps
++
++The following areas have zero existing test coverage and will need new tests:
++
++1. **Prompt text persistence across chat switch** — no test verifies that text typed in `ChatPrompt` survives navigation to another chat and back. Needs both a unit test (new hook logic) and an integration test (navigate away → navigate back → content restored).
++2. **File attachment list persistence** — `files: FileMetadata[]` state is equally ephemeral; no test exercises its lifecycle across chat navigation.
++3. **Draft cleared on submit** — a unit test must verify that sending a message also clears the `localStorage` draft key (not just the component state).
++4. **`useChatInitialPrompt` interaction** — no test verifies that a stored draft is not applied when a `?prompt=` query param is present (or vice versa). Completely untested hook.
++5. **`useChatConfiguration` pattern** — the reference implementation has zero tests. While not required for this task, the new `useChatPromptDraft` hook should not inherit the same coverage gap.
++6. **`Editor` value synchronization timing** — `Editor.tsx` clears Quill when `value.messageRaw === ''`. A unit test must confirm that a restored draft is set before the clear-effect fires.
++
++---
++
++## 5. Configuration and Environment
++
++### Environment Variables
++
++No `VITE_` environment variable gates, configures, or references chat/prompt input behavior. Relevant env vars are:
++
++- `VITE_CHATBOT_ASSISTANT_SLUG` — resolves the default assistant in `assistantsStore.getDefaultAssistant()`; affects `assistantId` in the generation request payload but not prompt input state.
++- `VITE_API_URL=/api` — base URL for all API calls including `v1/files/bulk` (file upload).
++
++No feature flags (loaded from `v1/config` into `appInfoStore.configs`) currently gate any aspect of the chat prompt input.
++
++### Configuration Files
++
++- `vite.config.ts` — Vite build config. Module federation remote `angular-upgrade-app` is currently an empty string. No bundler-level state management configuration. Vitest runs in `jsdom` environment.
++- `.env` — Local development env vars (see above). No chat-input-specific values.
++- `tsconfig.json` — Standard TypeScript config. No relevance to state management choices.
++- `vitest.workspace.ts` — Defines `unit` and `integration` test projects. New tests for this feature should go in the `unit` project (hook logic) and `integration` project (navigation round-trip).
++
++### Feature Flags and Deployment Concerns
++
++- No feature flags currently gate the prompt box or its state lifecycle.
++- Module Federation: the app is federated but the remote (`angular-upgrade-app`) is empty. No deployment concern for this feature.
++- The `localStorage` keys added by this feature will persist in users' browsers until explicitly cleared. Key naming must be stable and versioned if the stored schema changes. The existing project convention is not to version keys — they are simply overwritten. This is acceptable for a string draft.
++- If a user's stored draft contains Quill delta HTML, the schema should be treated as opaque and validated on read (return empty string if malformed) to avoid rendering crashes after a schema change.
++
++---
++
++## 6. Risk Indicators
++
++- **Root cause is structural, not incidental**: `ChatPage.tsx:73` uses `key={currentChat?.id}` on `PageLayout`, which is the primary architectural mechanism destroying `ChatPrompt` state. Any implementation must either work around this (external persistence) or change it (lift `ChatPrompt` above `PageLayout`). Changing the key is riskier because the key was likely added intentionally to prevent Quill editor state bleed between chats.
++
++- **`Editor.tsx` clear-on-empty timing**: The Quill DOM is actively cleared by a `useEffect` whenever `value.messageRaw === ''` (`Editor.tsx:135–143`). Restoring a draft by setting state in a subsequent `useEffect` after mount could race with this clear. Initial `useState` value or synchronous initialization before the empty-check effect fires is required.
++
++- **`useChatInitialPrompt` collision**: This hook auto-submits on `?prompt=` query param. If a stored draft exists at the same time (e.g., user was mid-typing, then opened a deep link), there is no defined behavior. The implementation must explicitly decide priority and add a guard.
++
++- **New chat edge case**: `chatsStore.isNewChat` is `true` while the conversation has not been persisted to the API yet (no real `chatId`). Drafts cannot be scoped to a chat ID that does not exist. The implementation must handle the new-chat case separately (either skip persistence, or use a special `new` key).
++
++- **File attachment restoration complexity**: `FileMetadata` objects have a `fileId` (a server-assigned URL from `v1/files/bulk`). Files already uploaded can be restored by `fileId`. However, `isUploading` state would need to be reset to `false`, and there is no API to verify that the file still exists server-side. Restoring file attachments is significantly more complex than restoring text and may warrant a separate decision or scoped out of EPMCDME-9922.
++
++- **No existing test coverage for `useChatConfiguration`**: The reference pattern this feature should follow has zero tests. The new hook should not inherit this gap, but it means there is no test scaffold to copy from.
++
++- **No guide documents the chat input state lifecycle**: Conventions must be inferred from `useChatConfiguration.tsx`, `chatsStore.ts`, and the storage utilities. The implementation must establish the pattern as a new de facto convention.
++
++- **Quill delta HTML as stored value**: Storing `messageRaw` (Quill's HTML output) in `localStorage` preserves rich formatting (bold, mentions). On restore, the HTML must be set back into the controlled `value` prop before Quill's `onLoad` runs. If the stored string is malformed, Quill may throw or render incorrectly. Input validation on read is needed.
++
++- **codegraph returned no results**: Repository is not indexed in codegraph. All findings are from filesystem exploration only. Coverage is best-effort over the filesystem, not guaranteed complete.
++
++---
++
++## 7. Summary for Complexity Assessment
++
++This task introduces a state-persistence feature within the `ChatPrompt` component that is currently entirely stateless with respect to navigation. The affected architectural layers are: **UI/Presentation** (`ChatPrompt.tsx`, `Editor.tsx`), **State/Hooks** (a new `useChatPromptDraft` hook mirroring `useChatConfiguration.tsx`), and **State/Persistence** (`src/utils/storage/index.ts`). The likely file change surface is 3–6 files: `ChatPrompt.tsx` (state init and submit path), a new `useChatPromptDraft` hook (new file), `ChatPage.tsx` (potentially adjusting the `key` prop scope), and possibly `useChatConfiguration.tsx` if the draft hook is co-located there. No router, store, or API changes are expected.
++
++The task follows an already-established pattern (`useChatConfiguration`'s per-chat localStorage save/restore cycle) and introduces no new third-party dependencies. The primary technical novelty is the interaction with the Quill editor's initialization timing and the `key={currentChat?.id}` remounting architecture. Both are well-understood from the codebase exploration: restoring state must happen at the initial `useState` value level rather than via a post-mount `useEffect`, and the `isNewChat` guard must handle the case where no `chatId` exists yet. File attachment restoration is the most complex sub-problem and may warrant explicit scoping decisions.
++
++Test coverage for this domain is sparse. `ChatPrompt.test.tsx` exists but covers only the stop-generation button; the reference pattern (`useChatConfiguration`) has no tests at all. New unit tests for the draft hook (save on change, restore on chat switch, clear on submit, guard for `isNewChat`) and at least one integration test (navigate away → navigate back → text persists) will be essential to validate the feature. The risk of regressions is moderate: the `key={currentChat?.id}` remounting pattern is a deliberate isolation mechanism, and any change to it (or work around it) must be verified not to bleed Quill state across chats.
+diff --git a/src/pages/chat/components/ChatPrompt/ChatPrompt.tsx b/src/pages/chat/components/ChatPrompt/ChatPrompt.tsx
+index 591a7abdd..a50e6f4ab 100644
+--- a/src/pages/chat/components/ChatPrompt/ChatPrompt.tsx
++++ b/src/pages/chat/components/ChatPrompt/ChatPrompt.tsx
+@@ -33,6 +33,7 @@ import { useTheme } from '@/hooks/useTheme'
+ import ChatControls from '@/pages/chat/components/ChatControls'
+ import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
+ import { useChatContext } from '@/pages/chat/hooks/useChatContext'
++import { useChatPromptDraft } from '@/pages/chat/hooks/useChatPromptDraft'
+ import { useFilePaste } from '@/pages/chat/hooks/useFilePaste'
+ import { assistantsStore, userStore } from '@/store'
+ import { chatGenerationStore } from '@/store/chatGeneration'
+@@ -75,15 +76,13 @@ const ChatPrompt: FC = () => {
+   const editorRef = useRef<EditorRef>(null)
+   const { isDark } = useTheme()
+   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
+-  const { userData } = useSnapshot(userStore)
++  const { userData, user } = useSnapshot(userStore)
+   const { defaultAssistant } = useSnapshot(assistantsStore)
+   const { selectedSkills, isSharedPage, dynamicToolsConfig } = useChatContext()
++  const { initial, saveDraft, clearDraft } = useChatPromptDraft(currentChat?.id, user?.userId)
+ 
+   const [isEditorFocused, setIsEditorFocused] = useState(false)
+-  const [prompt, setPrompt] = useState<{ message: string; messageRaw: string }>({
+-    message: '',
+-    messageRaw: '',
+-  })
++  const [prompt, setPrompt] = useState<{ message: string; messageRaw: string }>(initial)
+ 
+   const [files, setFiles] = useState<FileMetadata[]>([])
+   const fileUpload = useFileUpload({
+@@ -122,6 +121,7 @@ const ChatPrompt: FC = () => {
+     if (isInterrupted) {
+       const userInput = prompt.message.trim() || undefined
+       const fileNames = files.flatMap((f) => (f.fileId ? [f.fileId] : []))
++      clearDraft()
+       setPrompt({ message: '', messageRaw: '' })
+       setFiles([])
+       chatGenerationStore.resumeWorkflowExecution(userInput, fileNames)
+@@ -151,6 +151,7 @@ const ChatPrompt: FC = () => {
+       message = getMessageTextWithMentions(editorRef.current?.getContent() ?? { ops: [] }, message)
+     }
+ 
++    clearDraft()
+     setPrompt({ message: '', messageRaw: '' })
+     setFiles([])
+ 
+@@ -185,6 +186,10 @@ const ChatPrompt: FC = () => {
+     editorRef.current?.focus()
+   }, [currentChat?.id])
+ 
++  useEffect(() => {
++    saveDraft(prompt)
++  }, [prompt, saveDraft])
++
+   const hasChatHistory = !!currentChat?.history.length
+ 
+   return (
+diff --git a/src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx b/src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx
+index 5a2392ab4..2dfd57174 100644
+--- a/src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx
++++ b/src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx
+@@ -20,7 +20,7 @@ import ChatPrompt from '../ChatPrompt'
+ 
+ vi.hoisted(() => vi.resetModules())
+ 
+-const { mockChatGenerationStore, mockChatsStore } = vi.hoisted(() => ({
++const { mockChatGenerationStore, mockChatsStore, mockUseChatPromptDraft } = vi.hoisted(() => ({
+   mockChatGenerationStore: {
+     stopChatGeneration: vi.fn(),
+     createChatGeneration: vi.fn(),
+@@ -35,6 +35,11 @@ const { mockChatGenerationStore, mockChatsStore } = vi.hoisted(() => ({
+       assistantIds: ['assistant-1'],
+     },
+   },
++  mockUseChatPromptDraft: {
++    initial: { message: '', messageRaw: '' },
++    saveDraft: vi.fn(),
++    clearDraft: vi.fn(),
++  },
+ }))
+ 
+ vi.mock('valtio', () => ({
+@@ -48,7 +53,11 @@ vi.mock('@/store/chats', () => ({ chatsStore: mockChatsStore }))
+ vi.mock('@/store/chatGeneration', () => ({ chatGenerationStore: mockChatGenerationStore }))
+ vi.mock('@/store', () => ({
+   assistantsStore: { defaultAssistant: { id: 'assistant-1' } },
+-  userStore: { userData: { stt_support: false } },
++  userStore: { userData: { stt_support: false }, user: { userId: 'user-1' } },
++}))
++
++vi.mock('../../../hooks/useChatPromptDraft', () => ({
++  useChatPromptDraft: () => mockUseChatPromptDraft,
+ }))
+ vi.mock('@/hooks/useTheme', () => ({ useTheme: () => ({ isDark: false }) }))
+ vi.mock('@/hooks/useFileUpload', () => ({
+@@ -148,4 +157,51 @@ describe('ChatPrompt', () => {
+       expect(screen.queryByRole('button', { name: /send/i })).not.toBeInTheDocument()
+     })
+   })
++
++  describe('draft initialization', () => {
++    it('calls saveDraft with the initial draft value on first render', () => {
++      mockUseChatPromptDraft.initial = { message: 'saved draft', messageRaw: '<p>saved draft</p>' }
++      mockUseChatPromptDraft.saveDraft = vi.fn()
++
++      render(<ChatPrompt />)
++
++      expect(mockUseChatPromptDraft.saveDraft).toHaveBeenCalledWith({
++        message: 'saved draft',
++        messageRaw: '<p>saved draft</p>',
++      })
++    })
++  })
++
++  describe('draft cleared on submit', () => {
++    beforeEach(() => {
++      mockChatsStore.currentChat = {
++        id: 'chat-1',
++        history: [],
++        isInterrupted: false,
++        isWorkflow: false,
++        assistantIds: ['assistant-1'],
++      }
++      mockUseChatPromptDraft.initial = { message: 'draft text', messageRaw: '<p>draft text</p>' }
++      mockUseChatPromptDraft.clearDraft = vi.fn()
++    })
++
++    afterEach(() => {
++      mockChatsStore.currentChat = {
++        id: 'chat-1',
++        history: [[{ inProgress: true }]],
++        isInterrupted: false,
++        isWorkflow: false,
++        assistantIds: ['assistant-1'],
++      }
++      mockUseChatPromptDraft.initial = { message: '', messageRaw: '' }
++    })
++
++    it('calls clearDraft when the send button is clicked', () => {
++      render(<ChatPrompt />)
++
++      fireEvent.click(screen.getByRole('button', { name: /send/i }))
++
++      expect(mockUseChatPromptDraft.clearDraft).toHaveBeenCalledOnce()
++    })
++  })
+ })
+diff --git a/src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts b/src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts
+new file mode 100644
+index 000000000..2aa6e37fd
+--- /dev/null
++++ b/src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts
+@@ -0,0 +1,139 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { act, renderHook } from '@testing-library/react'
++import { beforeEach, describe, expect, it, vi } from 'vitest'
++
++import storage from '@/utils/storage'
++
++import { readPromptDraft, useChatPromptDraft } from '../useChatPromptDraft'
++
++// @/utils/storage is globally mocked in setupTests.unit.ts as a default export:
++// { getObject: vi.fn(), get: vi.fn(), put: vi.fn(), remove: vi.fn() }
++
++describe('readPromptDraft', () => {
++  beforeEach(() => {
++    vi.mocked(storage.getObject).mockReturnValue(null)
++  })
++
++  it('returns null when no draft is stored', () => {
++    expect(readPromptDraft('user-1', 'chat-1')).toBeNull()
++  })
++
++  it('calls storage.getObject with the correct namespaced key', () => {
++    readPromptDraft('user-1', 'chat-1')
++
++    expect(storage.getObject).toHaveBeenCalledWith('user-1', 'chat-prompt-draft-chat-1', null)
++  })
++
++  it('returns the stored draft when one exists', () => {
++    const draft = { message: 'hello', messageRaw: '<p>hello</p>' }
++    vi.mocked(storage.getObject).mockReturnValue(draft)
++
++    expect(readPromptDraft('user-1', 'chat-1')).toEqual(draft)
++  })
++
++  it('returns null when storage.getObject throws (malformed JSON)', () => {
++    vi.mocked(storage.getObject).mockImplementation(() => {
++      throw new SyntaxError('Unexpected token')
++    })
++
++    expect(readPromptDraft('user-1', 'chat-1')).toBeNull()
++  })
++})
++
++describe('useChatPromptDraft', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++    vi.mocked(storage.getObject).mockReturnValue(null)
++  })
++
++  it('returns the empty-prompt default as initial when no draft is stored', () => {
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    expect(result.current.initial).toEqual({ message: '', messageRaw: '' })
++  })
++
++  it('returns the stored draft as initial when a draft exists', () => {
++    const draft = { message: 'hello', messageRaw: '<p>hello</p>' }
++    vi.mocked(storage.getObject).mockReturnValue(draft)
++
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    expect(result.current.initial).toEqual(draft)
++  })
++
++  it('returns the empty-prompt default as initial when chatId is undefined', () => {
++    const { result } = renderHook(() => useChatPromptDraft(undefined, 'user-1'))
++
++    expect(result.current.initial).toEqual({ message: '', messageRaw: '' })
++    expect(storage.getObject).not.toHaveBeenCalled()
++  })
++
++  it('saveDraft calls storage.put with the correct key when messageRaw is non-empty', () => {
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    act(() => result.current.saveDraft({ message: 'hello', messageRaw: '<p>hello</p>' }))
++
++    expect(storage.put).toHaveBeenCalledWith('user-1', 'chat-prompt-draft-chat-1', {
++      message: 'hello',
++      messageRaw: '<p>hello</p>',
++    })
++    expect(storage.remove).not.toHaveBeenCalled()
++  })
++
++  it('saveDraft calls storage.remove when messageRaw is empty', () => {
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    act(() => result.current.saveDraft({ message: '', messageRaw: '' }))
++
++    expect(storage.remove).toHaveBeenCalledWith('user-1', 'chat-prompt-draft-chat-1')
++    expect(storage.put).not.toHaveBeenCalled()
++  })
++
++  it('clearDraft calls storage.remove with the correct key', () => {
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', 'user-1'))
++
++    act(() => result.current.clearDraft())
++
++    expect(storage.remove).toHaveBeenCalledWith('user-1', 'chat-prompt-draft-chat-1')
++  })
++
++  it('saveDraft is a no-op when chatId is undefined', () => {
++    const { result } = renderHook(() => useChatPromptDraft(undefined, 'user-1'))
++
++    act(() => result.current.saveDraft({ message: 'hello', messageRaw: '<p>hello</p>' }))
++
++    expect(storage.put).not.toHaveBeenCalled()
++    expect(storage.remove).not.toHaveBeenCalled()
++  })
++
++  it('saveDraft is a no-op when userId is undefined', () => {
++    const { result } = renderHook(() => useChatPromptDraft('chat-1', undefined))
++
++    act(() => result.current.saveDraft({ message: 'hello', messageRaw: '<p>hello</p>' }))
++
++    expect(storage.put).not.toHaveBeenCalled()
++    expect(storage.remove).not.toHaveBeenCalled()
++  })
++
++  it('clearDraft is a no-op when chatId is undefined', () => {
++    const { result } = renderHook(() => useChatPromptDraft(undefined, 'user-1'))
++
++    act(() => result.current.clearDraft())
++
++    expect(storage.remove).not.toHaveBeenCalled()
++  })
++})
+diff --git a/src/pages/chat/hooks/useChatPromptDraft.ts b/src/pages/chat/hooks/useChatPromptDraft.ts
+new file mode 100644
+index 000000000..f63e6c795
+--- /dev/null
++++ b/src/pages/chat/hooks/useChatPromptDraft.ts
+@@ -0,0 +1,59 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { useCallback, useRef } from 'react'
++
++import type { EditorValue } from '@/components/Editor/Editor'
++import storage from '@/utils/storage'
++
++export type PromptDraft = EditorValue
++
++const DRAFT_KEY = 'chat-prompt-draft'
++const DEFAULT_PROMPT: PromptDraft = { message: '', messageRaw: '' }
++
++export const readPromptDraft = (userId: string, chatId: string): PromptDraft | null => {
++  try {
++    return storage.getObject<PromptDraft | null>(userId, `${DRAFT_KEY}-${chatId}`, null)
++  } catch {
++    return null
++  }
++}
++
++export const useChatPromptDraft = (chatId: string | undefined, userId: string | undefined) => {
++  const initialRef = useRef<PromptDraft | undefined>(undefined)
++  if (initialRef.current === undefined) {
++    initialRef.current =
++      chatId && userId ? readPromptDraft(userId, chatId) ?? DEFAULT_PROMPT : DEFAULT_PROMPT
++  }
++
++  const saveDraft = useCallback(
++    (draft: PromptDraft) => {
++      if (!chatId || !userId) return
++      if (draft.messageRaw === '') {
++        storage.remove(userId, `${DRAFT_KEY}-${chatId}`)
++      } else {
++        storage.put(userId, `${DRAFT_KEY}-${chatId}`, draft)
++      }
++    },
++    [chatId, userId]
++  )
++
++  const clearDraft = useCallback(() => {
++    if (!chatId || !userId) return
++    storage.remove(userId, `${DRAFT_KEY}-${chatId}`)
++  }, [chatId, userId])
++
++  return { initial: initialRef.current, saveDraft, clearDraft }
++}

@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "gate": "code-review.final",
+  "run_dir": "docs/superpowers/tasks/2026-07-13-epmcdme-9922-preserve-prompt-box",
+  "decision": "request-changes",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {"id": "AC-1",  "text": "New useChatPromptDraft(chatId, userId) hook with initial, saveDraft, clearDraft exports", "status": "pass",    "notes": ""},
+    {"id": "AC-2",  "text": "initial reads localStorage once via useRef guard; falls back to default on missing/error", "status": "pass",    "notes": "try/catch in readPromptDraft and ?? DEFAULT_PROMPT handle both paths"},
+    {"id": "AC-3",  "text": "saveDraft writes when messageRaw non-empty; removes when empty; no-op on undefined params", "status": "pass",    "notes": ""},
+    {"id": "AC-4",  "text": "clearDraft removes draft key; no-op on undefined params", "status": "pass",    "notes": ""},
+    {"id": "AC-5",  "text": "Storage key: chat-prompt-draft-${chatId} namespaced with ${userId}_ prefix", "status": "pass",    "notes": "Matches established chat-tools-config-${chatId} convention"},
+    {"id": "AC-6",  "text": "ChatPrompt.tsx initializes prompt with useState(initial)", "status": "pass",    "notes": ""},
+    {"id": "AC-7",  "text": "useEffect([prompt, saveDraft]) calls saveDraft on every prompt change", "status": "pass",    "notes": ""},
+    {"id": "AC-8",  "text": "clearDraft called in both submit paths before state reset", "status": "pass",    "notes": "Normal path: line ~154; interrupted path: line ~124"},
+    {"id": "AC-9",  "text": "Guard conditions for undefined chatId/userId on all mutations", "status": "pass",    "notes": ""},
+    {"id": "AC-10", "text": "Malformed JSON in localStorage returns null gracefully", "status": "pass",    "notes": "readPromptDraft wraps getObject in try/catch"},
+    {"id": "AC-11", "text": "File attachments out of scope", "status": "na",      "notes": "PromptDraft = EditorValue (message + messageRaw only)"},
+    {"id": "AC-12", "text": "New chat (chatId undefined) handled silently by guard", "status": "pass",    "notes": ""},
+    {"id": "AC-13", "text": "Unit tests: readPromptDraft, saveDraft, clearDraft no-ops, initial reads", "status": "partial", "notes": "Missing: clearDraft no-op test for userId=undefined (saveDraft has both chatId and userId guards tested; clearDraft only has chatId)"},
+    {"id": "AC-14", "text": "ChatPrompt tests: draft initialization and draft cleared on submit", "status": "partial", "notes": "Normal submit path tested; workflow-interrupted path (isInterrupted=true) not tested"}
+  ],
+  "standards_review": [
+    {
+      "id": "STD-1",
+      "standard": "git-workflow commit format",
+      "status": "fail",
+      "notes": "All 5 branch commits violate the Tekton-enforced format. The regex requires EPMCDME-XXXX: [A-Z][a-z]* (first word must be capitalized). Violations: 'add useChatPromptDraft…', 'wire useChatPromptDraft…', 'guard readPromptDraft…', 'remove redundant type assertion…' (all lowercase first word); 'epmcdme-9922-preserve-prompt-box: add planning artifacts' (wrong format, all-lowercase prefix). CI pipeline will block on merge."
+    },
+    {
+      "id": "STD-2",
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "TypeScript types correct; React hooks patterns (useRef, useCallback, useEffect) follow conventions; copyright headers present; no unused imports"
+    },
+    {
+      "id": "STD-3",
+      "standard": "security",
+      "status": "pass",
+      "notes": "localStorage contains only user-authored chat text (no credentials, tokens, or PII beyond what the user typed). userId-namespaced keys prevent cross-user data reads on shared sessions."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "git history (all 5 branch commits)",
+      "problem": "All 5 commits on this branch have lowercase first word after the ticket colon, violating the EPMCDME-XXXX: Capital sentence format enforced by Tekton CI. Examples: 'add useChatPromptDraft hook…', 'wire useChatPromptDraft into…', 'guard readPromptDraft…', 'remove redundant type assertion…'. The planning-artifact commit also uses an entirely wrong format ('epmcdme-9922-preserve-prompt-box: add planning artifacts').",
+      "impact": "Tekton CI pipeline blocks the MR from merging until commit subjects are corrected.",
+      "recommendation": "Rewrite commit messages via interactive rebase: capitalize the first word of each subject ('Add', 'Wire', 'Guard', 'Remove'). For the planning artifact commit, use 'EPMCDME-9922: Add planning artifacts' or amend it into the first commit."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/__tests__/useChatPromptDraft.test.ts",
+      "problem": "clearDraft no-op test for userId=undefined is missing. saveDraft has symmetrical tests for both chatId-undefined and userId-undefined guards; clearDraft only has the chatId-undefined case. The userId guard in clearDraft (line ~54) is untested.",
+      "impact": "The clearDraft userId guard could be silently deleted in a future refactor without any test failing.",
+      "recommendation": "Add: it('clearDraft is a no-op when userId is undefined', () => { const { result } = renderHook(() => useChatPromptDraft('chat-1', undefined)); act(() => result.current.clearDraft()); expect(storage.remove).not.toHaveBeenCalled(); })"
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatPrompt/__tests__/ChatPrompt.test.tsx",
+      "problem": "The 'draft cleared on submit' describe block only tests the normal submit path. The workflow-interrupted path (isInterrupted=true → resumeWorkflowExecution) also calls clearDraft() in the implementation but has no test coverage.",
+      "impact": "The clearDraft call in the interrupted path could be silently removed without a test catching it.",
+      "recommendation": "Add a test: set mockChatsStore.currentChat.isInterrupted = true, render, click the Continue/Resume button, assert mockUseChatPromptDraft.clearDraft.toHaveBeenCalledOnce()."
+    }
+  ],
+  "rationale": "The implementation is well-structured and fully satisfies the spec's functional requirements. Core logic is correct: useRef-guarded sync read, userId-namespaced storage key, saveDraft auto-save effect, clearDraft on both submit paths. The ?prompt= bypass is by design (spec-documented). The EC-001 concern about userId resolving async is deferred — useChatPromptDraft mirrors useChatConfiguration exactly in this regard, and that reference pattern is in production. Three blocking findings: CR-001 (all branch commits violate the Tekton-enforced EPMCDME-XXXX: Capital sentence format — CI will block merge); CR-002 (missing clearDraft userId-undefined no-op test); CR-003 (missing test for clearDraft in the workflow-interrupted submit path). Two partial acceptance criteria (AC-13, AC-14) drive CR-002 and CR-003. One dismissed cluster: blind-lens stale-ref findings are false positives because ChatPage uses key={currentChat?.id} guaranteeing full remount on every chat switch. The clearDraft/saveDraft post-submit race is self-healing (saveDraft with empty messageRaw calls storage.remove, same outcome)."
+}

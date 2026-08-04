@@ -20,7 +20,7 @@ import ChatPrompt from '../ChatPrompt'
 
 vi.hoisted(() => vi.resetModules())
 
-const { mockChatGenerationStore, mockChatsStore } = vi.hoisted(() => ({
+const { mockChatGenerationStore, mockChatsStore, mockUseChatPromptDraft } = vi.hoisted(() => ({
   mockChatGenerationStore: {
     stopChatGeneration: vi.fn(),
     createChatGeneration: vi.fn(),
@@ -35,6 +35,11 @@ const { mockChatGenerationStore, mockChatsStore } = vi.hoisted(() => ({
       assistantIds: ['assistant-1'],
     },
   },
+  mockUseChatPromptDraft: {
+    initial: { message: '', messageRaw: '' },
+    saveDraft: vi.fn(),
+    clearDraft: vi.fn(),
+  },
 }))
 
 vi.mock('valtio', () => ({
@@ -48,7 +53,11 @@ vi.mock('@/store/chats', () => ({ chatsStore: mockChatsStore }))
 vi.mock('@/store/chatGeneration', () => ({ chatGenerationStore: mockChatGenerationStore }))
 vi.mock('@/store', () => ({
   assistantsStore: { defaultAssistant: { id: 'assistant-1' } },
-  userStore: { userData: { stt_support: false } },
+  userStore: { userData: { stt_support: false }, user: { userId: 'user-1' } },
+}))
+
+vi.mock('../../../hooks/useChatPromptDraft', () => ({
+  useChatPromptDraft: () => mockUseChatPromptDraft,
 }))
 vi.mock('@/hooks/useTheme', () => ({ useTheme: () => ({ isDark: false }) }))
 vi.mock('@/hooks/useFileUpload', () => ({
@@ -146,6 +155,69 @@ describe('ChatPrompt', () => {
 
       expect(screen.getByRole('button', { name: /stop generation/i })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /send/i })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('draft initialization', () => {
+    it('calls saveDraft with the initial draft value on first render', () => {
+      mockUseChatPromptDraft.initial = { message: 'saved draft', messageRaw: '<p>saved draft</p>' }
+      mockUseChatPromptDraft.saveDraft = vi.fn()
+
+      render(<ChatPrompt />)
+
+      expect(mockUseChatPromptDraft.saveDraft).toHaveBeenCalledWith({
+        message: 'saved draft',
+        messageRaw: '<p>saved draft</p>',
+      })
+    })
+  })
+
+  describe('draft cleared on submit', () => {
+    beforeEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+      mockUseChatPromptDraft.initial = { message: 'draft text', messageRaw: '<p>draft text</p>' }
+      mockUseChatPromptDraft.clearDraft = vi.fn()
+    })
+
+    afterEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [[{ inProgress: true }]],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+      mockUseChatPromptDraft.initial = { message: '', messageRaw: '' }
+    })
+
+    it('calls clearDraft when the send button is clicked', () => {
+      render(<ChatPrompt />)
+
+      fireEvent.click(screen.getByRole('button', { name: /send/i }))
+
+      expect(mockUseChatPromptDraft.clearDraft).toHaveBeenCalledOnce()
+    })
+
+    it('calls clearDraft when the continue button is clicked on an interrupted workflow', () => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [],
+        isInterrupted: true,
+        isWorkflow: true,
+        assistantIds: ['assistant-1'],
+      }
+
+      render(<ChatPrompt />)
+
+      fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+
+      expect(mockUseChatPromptDraft.clearDraft).toHaveBeenCalledOnce()
     })
   })
 })
