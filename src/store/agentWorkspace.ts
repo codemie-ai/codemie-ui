@@ -208,10 +208,13 @@ export const agentWorkspaceStore = proxy<AgentWorkspaceStoreType>({
     this.isDownloading = true
 
     try {
+      const fileName = this.selectedFilePath.split('/').pop() || undefined
       return await api.downloadFileStream(
         `v1/workspaces/${this.workspace.id}/files/download?file_path=${encodeURIComponent(
           this.selectedFilePath
-        )}`
+        )}`,
+        undefined,
+        fileName
       )
     } finally {
       this.isDownloading = false

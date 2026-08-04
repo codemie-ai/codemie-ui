@@ -85,15 +85,29 @@ export const filesStore = proxy<FilesStoreType>({
   },
 
   async downloadFile(fileUrl) {
+    const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+    if (UUID_PATTERN.test(fileUrl)) {
+      // UUID fileId: name comes from Content-Disposition header
+      await api.downloadFileStream(`v1/files/${fileUrl}`)
+      return
+    }
+
     const [_mimeType, _user, originalFileName] = decodeFileName(fileUrl)
-    const response = await api.get(`v1/files/${fileUrl}`)
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = originalFileName
-    a.click()
-    window.URL.revokeObjectURL(url)
+
+    if (originalFileName) {
+      // Legacy base64-encoded fileId: name decoded directly from the id
+      const response = await api.get(`v1/files/${fileUrl}`)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = originalFileName
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } else {
+      await api.downloadFileStream(`v1/files/${fileUrl}`)
+    }
   },
 
   async getMermaidFile(code) {

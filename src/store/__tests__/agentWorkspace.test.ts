@@ -215,7 +215,9 @@ describe('agentWorkspaceStore', () => {
 
     expect(result).toBe(true)
     expect(mockDownloadFileStream).toHaveBeenCalledWith(
-      'v1/workspaces/workspace-1/files/download?file_path=scripts%2Fexample.py'
+      'v1/workspaces/workspace-1/files/download?file_path=scripts%2Fexample.py',
+      undefined,
+      'example.py'
     )
   })
 })

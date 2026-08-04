@@ -26,7 +26,7 @@ import {
   FeedbackSubmission,
   FolderListItem,
 } from '@/types/entity'
-import api from '@/utils/api'
+import api, { sanitizeFileName } from '@/utils/api'
 import { transformChatBEtoFE } from '@/utils/chatHelpers'
 import { removeChatStorage, sweepOrphanedChatKeys } from '@/utils/chatStorageUtils'
 import storage from '@/utils/storage'
@@ -401,7 +401,12 @@ export const chatsStore = proxy<ChatsStoreType>({
   exportChat: (format) => {
     const chat = chatsStore.currentChat
     if (!chat) return null
-    return api.downloadFileStream(`v1/conversations/${chat.id}/export?export_format=${format}`)
+    const name = sanitizeFileName(chat.name) || 'chat_export'
+    return api.downloadFileStream(
+      `v1/conversations/${chat.id}/export?export_format=${format}`,
+      undefined,
+      `${name}.${format}`
+    )
   },
 
   shareChat: async (chatId) => {
@@ -437,7 +442,9 @@ export const chatsStore = proxy<ChatsStoreType>({
 
   exportConversationAIMessage: (chatID, historyIndex, messageIndex, format) => {
     return api.downloadFileStream(
-      `v1/conversations/${chatID}/history/${historyIndex}/${messageIndex}/export?export_format=${format}`
+      `v1/conversations/${chatID}/history/${historyIndex}/${messageIndex}/export?export_format=${format}`,
+      undefined,
+      `message_export.${format}`
     )
   },
 
