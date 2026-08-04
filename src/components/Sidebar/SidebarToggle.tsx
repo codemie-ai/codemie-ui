@@ -14,15 +14,15 @@
 //
 
 import { classNames } from 'primereact/utils'
-import { useState, useEffect } from 'react'
-import { subscribe } from 'valtio'
+import { useEffect } from 'react'
+import { useSnapshot } from 'valtio'
 
 import ChevronLeftSvg from '@/assets/icons/chevron-left.svg?react'
 import { useSidebarOffsetClass } from '@/hooks/useSidebarOffsetClass'
 import { appInfoStore } from '@/store/appInfo'
 
 const SidebarToggle = () => {
-  const [isOpen, setIsOpen] = useState<boolean>(appInfoStore.sidebarExpanded)
+  const { sidebarExpanded: isOpen } = useSnapshot(appInfoStore)
   const SHORTCUT_TRIGGER = 'KeyB'
 
   useEffect(() => {
@@ -41,11 +41,7 @@ const SidebarToggle = () => {
     return () => {
       document.removeEventListener('keydown', handleKeydown)
     }
-  }, [appInfoStore.sidebarExpanded])
-
-  subscribe(appInfoStore, () => {
-    setIsOpen(appInfoStore.sidebarExpanded)
-  })
+  }, [])
 
   const sidebarOffsetClass = useSidebarOffsetClass()
 
@@ -59,6 +55,7 @@ const SidebarToggle = () => {
         type="button"
         data-sidebar-toggle
         aria-label={isOpen ? 'Hide Sidebar' : 'Open Sidebar'}
+        aria-expanded={isOpen}
         data-tooltip-id="react-tooltip"
         data-tooltip-content="Toggle Sidebar (Ctrl + B)"
         data-tooltip-place="right"

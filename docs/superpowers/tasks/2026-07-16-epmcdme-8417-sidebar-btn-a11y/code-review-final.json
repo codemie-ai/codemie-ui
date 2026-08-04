@@ -1,0 +1,62 @@
+{
+  "decision": "approve",
+  "rationale": "All three review lenses passed with no critical/major findings. Blind lens: clean — useSnapshot migration is correct, aria-expanded addition is correct, vite.config.ts fallback is safe. Edge-case lens: clean — confirmed useSnapshot returns a live reactive snapshot eliminating the old subscribe-outside-useEffect memory leak, empty useEffect dependency array is correct (handler closes over appInfoStore directly, no stale reference), vite.config.ts change is dev-server-only with safe fallback. Acceptance lens: AC1–AC3, AC5–AC6 all pass; AC4 (NVDA runtime announcement) is partial because runtime AT behaviour is inherently not automatable — the implementation is correct per ARIA spec and all necessary attributes are present and reactive. AC4 partial is deferred (not a code defect). Confidence set to medium due to the one deferred partial AC. 0 patch/decision_needed findings; 0 dismissed.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "AC1: Button has aria-label=\"Hide Sidebar\" when sidebarExpanded === true",
+      "status": "pass",
+      "evidence": "aria-label={isOpen ? 'Hide Sidebar' : 'Open Sidebar'} set in JSX; test 'has aria-label \"Hide Sidebar\" when expanded' verifies",
+      "gap": ""
+    },
+    {
+      "criterion": "AC2: Button has aria-label=\"Open Sidebar\" when sidebarExpanded === false",
+      "status": "pass",
+      "evidence": "Same ternary expression covers collapsed case; test 'has aria-label \"Open Sidebar\" when collapsed' verifies",
+      "gap": ""
+    },
+    {
+      "criterion": "AC3: Button has aria-expanded={sidebarExpanded} reflecting current state",
+      "status": "pass",
+      "evidence": "aria-expanded={isOpen} added to button JSX; tests verify both true and false values and state-change rerenders",
+      "gap": ""
+    },
+    {
+      "criterion": "AC4: After activation, NVDA announces updated name and role",
+      "status": "partial",
+      "evidence": "ARIA attributes (aria-label, aria-expanded) are correctly set and update reactively via useSnapshot; implementation is correct per ARIA spec",
+      "gap": "Runtime AT announcement is inherently not automatable — deferred to manual QA verification"
+    },
+    {
+      "criterion": "AC5: Keyboard shortcut (Ctrl+B) continues to work",
+      "status": "pass",
+      "evidence": "keydown handler preserved unchanged; useEffect dependency array change to [] is safe (handler reads appInfoStore directly); tests cover Ctrl+B and Meta+B",
+      "gap": ""
+    },
+    {
+      "criterion": "AC6: No regressions in sidebar toggle behaviour",
+      "status": "pass",
+      "evidence": "useSnapshot replaces buggy subscribe pattern (which leaked subscriptions on every render); click-toggle test verifies toggleSidebar called on click; no regressions identified by any lens",
+      "gap": ""
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit message format: EPMCDME-XXXX: Capital sentence",
+      "status": "pass",
+      "notes": "All commits follow format: 'EPMCDME-8417: Add sidebar toggle a11y spec', 'EPMCDME-8417: Fix sidebar toggle button accessibility', 'EPMCDME-8417: Add keyboard shortcut tests for sidebar toggle', 'EPMCDME-8417: Add planning artifacts'"
+    },
+    {
+      "standard": "Branch naming: EPMCDME-XXXX_short-description",
+      "status": "pass",
+      "notes": "EPMCDME-8417_sidebar_btn_a11y matches the required pattern"
+    },
+    {
+      "standard": "Security: no credentials or secrets introduced",
+      "status": "pass",
+      "notes": "vite.config.ts change reads from env var with safe fallback — no credentials, API keys, or sensitive data added"
+    }
+  ],
+  "findings": []
+}
