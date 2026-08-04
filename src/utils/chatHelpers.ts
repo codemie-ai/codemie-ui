@@ -32,7 +32,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
     isWorkflow: chatBE.is_workflow_conversation ?? chatBE.is_workflow ?? false,
     isInterrupted: chatBE.history.some((item) => item.thoughts?.some((t) => t.interrupted)),
     isGroup: (chatBE.assistant_ids?.length ?? 0) > 1,
-    folder: chatBE.folder,
+    folder: chatBE.folder || undefined,
     assistantIds: chatBE.assistant_ids ?? [],
     initialAssistantId: chatBE.initial_assistant_id,
     assistantData:
@@ -50,7 +50,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
 
   transformedChat.history = groupAndTransformHistory(chatBE.history, {
     assistantData: chatBE.assistant_data,
-    folder: chatBE.folder,
+    folder: chatBE.folder || undefined,
   })
 
   return transformedChat

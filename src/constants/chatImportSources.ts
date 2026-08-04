@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import claudeDesktopIcon from '@/assets/icons/claude-desktop.svg'
+import chatImportIcon from '@/assets/icons/chat-import.svg'
 
 export interface ChatImportSource {
   /** Human-readable name shown as the avatar tooltip / fallback label. */
@@ -31,11 +31,12 @@ export interface ChatImportSource {
  * the resolution stays generic, with no per-provider code elsewhere.
  */
 const CHAT_IMPORT_SOURCES: Record<string, ChatImportSource> = {
-  'Claude Desktop': { name: 'Claude Desktop', iconUrl: claudeDesktopIcon },
-  // Legacy folder name used before the rename — kept so older imports still match.
-  'Claude Imports': { name: 'Claude Desktop', iconUrl: claudeDesktopIcon },
+  'claude desktop': { name: 'Claude Desktop', iconUrl: chatImportIcon },
+  'claude imports': { name: 'Claude Desktop', iconUrl: chatImportIcon },
+  claude: { name: 'Claude Desktop', iconUrl: chatImportIcon },
+  'codemie-code': { name: 'Claude Desktop', iconUrl: chatImportIcon },
 }
 
 /** Returns the import source for a chat folder, or undefined for regular chats. */
 export const getChatImportSource = (folder?: string | null): ChatImportSource | undefined =>
-  folder ? CHAT_IMPORT_SOURCES[folder] : undefined
+  folder ? CHAT_IMPORT_SOURCES[folder.toLowerCase()] : undefined

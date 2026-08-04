@@ -23,6 +23,7 @@ import { cn } from '@/utils/utils'
 import SidebarToggle from './SidebarToggle'
 
 interface SidebarProps {
+  id?: string
   title: string
   description?: string
   children?: ReactNode
@@ -39,6 +40,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({
+  id,
   title,
   description,
   children,
@@ -57,14 +59,16 @@ const Sidebar = ({
 
   return (
     <aside
+      id={id}
       className={cn(
-        'flex flex-col border-r min-h-full',
+        'flex flex-col min-h-full',
         showGradient && 'bg-sidebar-gradient',
         'transition-all ease-in-out duration-150 overflow-x-hidden shrink-0',
         {
           'w-full h-full': fillContainer,
           'w-sidebar max-w-sidebar': !fillContainer && isVisible,
           'w-0': !fillContainer && !isVisible,
+          'border-r': isVisible,
           'border-border-specific-sidebar': !appearance,
           'border-border-structural': Boolean(appearance),
         }

@@ -25,6 +25,7 @@ import { cn } from '@/utils/utils'
 export interface PopupProps {
   isFullWidth?: boolean
   header?: string
+  headerDescription?: ReactNode
   visible?: boolean
   onHide: () => void
   onSubmit?: () => void
@@ -53,6 +54,7 @@ export interface PopupProps {
 const Popup: React.FC<PopupProps> = ({
   isFullWidth,
   header,
+  headerDescription,
   visible,
   onHide,
   onSubmit,
@@ -102,9 +104,14 @@ const Popup: React.FC<PopupProps> = ({
     return (
       <div className="flex items-center justify-between">
         {header && (
-          <h4 id={headerId} className="text-base font-semibold mb-0">
-            {header}
-          </h4>
+          <div className="flex flex-col gap-1">
+            <h4 id={headerId} className="text-base font-semibold mb-0">
+              {header}
+            </h4>
+            {headerDescription && (
+              <div className="text-xs text-text-quaternary">{headerDescription}</div>
+            )}
+          </div>
         )}
       </div>
     )

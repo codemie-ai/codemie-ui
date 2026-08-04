@@ -21,7 +21,11 @@ import ChevronRightIcon from '@/assets/icons/chevron-right.svg?react'
 import { cn } from '@/utils/utils'
 
 const accordionPt = {
-  root: { className: 'flex flex-col min-h-10' },
+  root: { className: 'flex flex-col min-h-10 shrink-0' },
+}
+
+const scrollableAccordionPt = {
+  root: { className: 'flex flex-col min-h-12' },
 }
 
 const tabPt = {
@@ -31,14 +35,24 @@ const tabPt = {
   content: { className: 'flex flex-col min-h-0' },
 }
 
+const scrollableTabPt = {
+  headerAction: { className: 'hover:no-underline', href: null },
+  root: { className: 'flex flex-col overflow-hidden flex-1 min-h-0' },
+  toggleableContent: { className: 'flex-1 min-h-0 overflow-hidden flex flex-col' },
+  content: { className: 'flex flex-col min-h-0 flex-1' },
+}
+
 interface ChatSidebarAccordionProps {
   isExpanded?: boolean
   title: string
   children: ReactNode
   headerContentTemplate?: ReactNode
   onToggle: () => void
+  onScrollIntent?: () => void
   transitionOptions?: CSSTransitionProps
   groupId?: string
+  scrollable?: boolean
+  contentClassName?: string
 }
 
 const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
@@ -47,8 +61,11 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
   children,
   headerContentTemplate,
   onToggle,
+  onScrollIntent,
   transitionOptions,
   groupId,
+  scrollable,
+  contentClassName,
 }) => {
   return (
     <Accordion
@@ -56,12 +73,12 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
       onTabChange={() => onToggle()}
       expandIcon={() => null}
       collapseIcon={() => null}
-      pt={accordionPt}
+      pt={scrollable ? scrollableAccordionPt : accordionPt}
       transitionOptions={transitionOptions}
     >
       <AccordionTab
         pt={{
-          ...tabPt,
+          ...(scrollable ? scrollableTabPt : tabPt),
           headerAction: {
             className: 'hover:no-underline',
             href: null,
@@ -73,7 +90,7 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
         header={() => (
           <div
             className={cn(
-              'flex items-center gap-2 text-text-heading px-2 justify-between text-xs uppercase py-3 hover:text-text-accent-hover transition font-medium'
+              'flex items-center gap-2 text-text-heading px-2 justify-between text-xs uppercase py-4 hover:text-text-accent-hover transition font-medium'
             )}
           >
             <div className="flex items-center gap-2">
@@ -84,7 +101,14 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
           </div>
         )}
       >
-        <div className="flex flex-col overflow-y-auto min-h-0">{children}</div>
+        <div
+          className={cn('flex flex-col overflow-y-auto min-h-0 pb-2', contentClassName)}
+          onScroll={onScrollIntent}
+          onWheel={onScrollIntent}
+          onTouchMove={onScrollIntent}
+        >
+          {children}
+        </div>
       </AccordionTab>
     </Accordion>
   )

@@ -104,6 +104,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-label={triggerLabel}
       data-tooltip-id="react-tooltip"
       data-tooltip-content="Select LLM model for this conversation"
       data-onboarding="chat-llm-selector"
@@ -114,9 +115,9 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
         disabled && 'opacity-50 cursor-not-allowed hover:bg-transparent'
       )}
     >
-      <AiGenerateSvg className="w-4 h-4 shrink-0" />
+      <AiGenerateSvg aria-hidden="true" className="w-4 h-4 shrink-0" />
       <span className="text-xs font-medium">{triggerLabel}</span>
-      <ChevronDownSvg className="w-3 h-3 shrink-0 opacity-60" />
+      <ChevronDownSvg aria-hidden="true" className="w-3 h-3 shrink-0 opacity-60" />
     </button>
   )
 

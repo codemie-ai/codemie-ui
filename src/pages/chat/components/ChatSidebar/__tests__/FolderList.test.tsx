@@ -59,6 +59,7 @@ vi.mock('@/hooks/useVueRouter', () => ({ useVueRouter: () => mockRouter }))
 
 vi.mock('valtio', () => ({
   useSnapshot: vi.fn((store) => store),
+  proxy: vi.fn((obj: unknown) => obj),
 }))
 
 vi.mock('@/store/chats', () => ({

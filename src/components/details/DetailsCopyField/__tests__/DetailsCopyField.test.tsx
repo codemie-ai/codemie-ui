@@ -38,7 +38,7 @@ describe('DetailsCopyField', () => {
   it('renders the label, input, and copy button when a value is provided', () => {
     render(<DetailsCopyField label={label} value={value} />)
 
-    expect(screen.getByText(label)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: label, level: 4 })).toBeInTheDocument()
 
     const inputElement = screen.getByRole('textbox') as HTMLInputElement
     expect(inputElement).toBeInTheDocument()

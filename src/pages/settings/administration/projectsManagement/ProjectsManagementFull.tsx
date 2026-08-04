@@ -98,6 +98,15 @@ const calculateTotalAssignments = (project: Project): number => {
   )
 }
 
+const renderProjectName = (
+  onOpenProjectDetails: (projectName: string) => void,
+  project: Project
+) => (
+  <NameLinkCell onClick={() => onOpenProjectDetails(project.name)}>
+    {formatProjectLabel(project)}
+  </NameLinkCell>
+)
+
 const columnDefinitions: ColumnDefinition[] = [
   {
     key: 'name',
@@ -425,11 +434,7 @@ const ProjectsManagementFull: FC = () => {
 
   const customRenderColumns = useMemo(
     () => ({
-      name: (item: Project) => (
-        <NameLinkCell onClick={() => handleOpenProjectDetails(item.name)}>
-          {formatProjectLabel(item)}
-        </NameLinkCell>
-      ),
+      name: renderProjectName.bind(null, handleOpenProjectDetails),
       [COST_CENTER_COLUMN_KEY]: (item: Project) => (
         <span className="text-text-primary break-all">{displayValue(item.cost_center_name)}</span>
       ),

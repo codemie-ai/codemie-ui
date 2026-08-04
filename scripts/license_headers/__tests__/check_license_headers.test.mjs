@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// @vitest-environment node
+
 /* eslint-disable max-classes-per-file, import/extensions */
 
 import fs from 'fs'

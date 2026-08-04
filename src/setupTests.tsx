@@ -92,23 +92,40 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
+// JSDOM exposes HTMLDialogElement but does not implement the native modal methods.
+if (typeof HTMLDialogElement !== 'undefined') {
+  if (!HTMLDialogElement.prototype.showModal) {
+    HTMLDialogElement.prototype.showModal = function showModal() {
+      this.setAttribute('open', '')
+    }
+  }
+
+  if (!HTMLDialogElement.prototype.close) {
+    HTMLDialogElement.prototype.close = function close() {
+      this.removeAttribute('open')
+    }
+  }
+}
+
 // JSDOM doesn't implement URL.createObjectURL — needed for file-saver (saveAs) in download flows
 global.URL.createObjectURL = vi.fn()
 global.URL.revokeObjectURL = vi.fn()
 
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-})
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(), // deprecated
+      removeListener: vi.fn(), // deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+}
 
 // file-saver creates a blob URL anchor and calls click() — JSDOM can't navigate non-hash URLs
 vi.mock('file-saver', () => ({ saveAs: vi.fn() }))
@@ -218,12 +235,21 @@ const globalDefaults: Record<string, () => unknown> = {
   'v1/info': () => ({ version: '0.0.0' }),
   'v1/settings/user/available': () => [],
   'v1/conversations/folders/list': () => [],
-  'v1/conversations': () => ({ data: [], pagination: { total: 0, page: 0, per_page: 20 } }),
+  'v1/conversations': () => [],
   'v1/customer-config': () => ({}),
   'v1/skills/categories': () => [],
   'v1/assistants': () => ({ data: [], pagination: { total: 0, page: 0, per_page: 12, pages: 0 } }),
   'v1/assistants/default': () => null,
   'v1/assistants/help': () => ({ data: [] }),
+  'v1/assistants/slug/ai-run-chatbot': () => ({
+    id: 'default-assistant',
+    name: 'Default Assistant',
+    slug: 'ai-run-chatbot',
+    nested_assistants: [],
+    mcp_servers: [],
+    toolkits: [],
+    skills: [],
+  }),
   'v1/applications': () => [],
   'v1/preferences/test-user-id': () => ({
     user_id: 'test-user-id',

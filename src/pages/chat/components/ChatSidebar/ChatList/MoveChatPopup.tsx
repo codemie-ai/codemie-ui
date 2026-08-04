@@ -24,7 +24,6 @@ import FolderSvg from '@/assets/icons/folder-add.svg?react'
 import Button from '@/components/Button'
 import Autocomplete from '@/components/form/Autocomplete'
 import Popup from '@/components/Popup'
-import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
 import { VALIDATION_MESSAGES } from '@/constants/validation'
 import { chatsStore } from '@/store/chats'
 import { ChatListItem } from '@/types/entity/conversation'
@@ -49,7 +48,7 @@ const MoveChatPopup = ({ isVisible, selectedChat, onHide, onMove }: MoveChatPopu
     targetFolder: Yup.string().required(VALIDATION_MESSAGES.FOLDER_NAME_REQUIRED),
   })
 
-  const { control, handleSubmit, setValue } = useForm({
+  const { control, handleSubmit, reset, setValue } = useForm({
     mode: 'all',
     shouldUnregister: true,
     resolver: yupResolver(formSchema),
@@ -59,25 +58,24 @@ const MoveChatPopup = ({ isVisible, selectedChat, onHide, onMove }: MoveChatPopu
   })
 
   const folderOptions = useMemo(() => {
-    const options = chatFolders
+    return chatFolders
       .map(({ name }) => ({
         label: name,
         value: name,
       }))
       .sort((a, b) => a.label.localeCompare(b.label))
-
-    const isDefaultOptIncluded = options.find((item) => item.value === DEFAULT_CHAT_FOLDER)
-    if (!isDefaultOptIncluded) {
-      options.unshift({ label: DEFAULT_CHAT_FOLDER, value: DEFAULT_CHAT_FOLDER })
-    }
-
-    return options.filter((option) => option.value !== selectedChat?.folder)
+      .filter((option) => option.value !== selectedChat?.folder)
   }, [chatFolders, selectedChat])
+
+  const handleHide = () => {
+    reset()
+    onHide()
+  }
 
   const onSubmit = handleSubmit(async ({ targetFolder }) => {
     if (selectedChat) {
       await moveChatToFolder(selectedChat.id, targetFolder)
-      onHide()
+      handleHide()
       onMove(targetFolder)
     }
   })
@@ -89,9 +87,16 @@ const MoveChatPopup = ({ isVisible, selectedChat, onHide, onMove }: MoveChatPopu
         withBorderBottom={false}
         visible={isVisible}
         header="Move to folder"
-        onHide={onHide}
+        headerDescription={
+          selectedChat?.folder ? (
+            <>
+              Current folder: <strong className="text-text-primary">{selectedChat.folder}</strong>
+            </>
+          ) : undefined
+        }
+        onHide={handleHide}
         onSubmit={onSubmit}
-        submitText="Move"
+        submitText={selectedChat?.folder ? 'Move' : 'Add'}
       >
         <Controller
           name="targetFolder"

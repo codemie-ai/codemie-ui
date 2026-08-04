@@ -70,7 +70,7 @@ const DataSourceFilters: React.FC<Props> = ({
     created_by: sourceFilters.created_by || '',
     status: sourceFilters.status || '',
   }
-  const { loadIndexUsers } = useSnapshot(userStore) as typeof userStore
+  const { loadIndexUsers } = useSnapshot(userStore)
   const { projectOptions, loadProjectOptions } = useProjectOptions()
   const [projectSearchTerm, setProjectSearchTerm] = useState('')
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)

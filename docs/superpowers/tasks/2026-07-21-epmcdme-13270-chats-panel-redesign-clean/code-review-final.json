@@ -1,0 +1,132 @@
+{
+  "decision": "approve",
+  "rationale": "The current MR diff was reviewed against the UI component, state-management, modal, and accessibility guides. Three findings were fixed during review: exact backend folder names are now preserved consistently for both chat-list and opened-chat DTOs, the assistant-search clear button has an accessible name, and 50-character chat names are no longer truncated unnecessarily. The previous artifact's native-dialog and Recent-section claims were stale; this artifact reflects the current HEAD, where Popup uses the established PrimeReact wrapper and regular folder chats intentionally remain visible in Recent while imported chats are kept in their source folders. No unresolved blocking correctness, security, or accessibility issue was found.",
+  "confidence": "high",
+  "risk_flags": [
+    "automated_tests_not_run_in_this_review"
+  ],
+  "business_review": [
+    {
+      "criterion": "Chats sidebar shows Pinned, Recent, and Folders as separately controlled sections.",
+      "status": "PASS",
+      "notes": "Pinned has independent expansion state. Recent and Folders use separate state while intentionally collapsing one another when the user switches between them."
+    },
+    {
+      "criterion": "Recent chat ordering and client-side lazy loading remain usable for large chat lists.",
+      "status": "PASS",
+      "notes": "Recent chats are sorted by the first valid update/creation timestamp and rendered in batches of 20 after explicit scroll intent. Imperative navigation expands the visible batch to include the target chat."
+    },
+    {
+      "criterion": "Regular folder chats remain discoverable in Recent, while imported chats stay in their source folders.",
+      "status": "PASS",
+      "notes": "The Recent filter excludes recognized import-source folders and retains ordinary folder chats, matching the current component test and product behavior."
+    },
+    {
+      "criterion": "Chat and folder rows show assistant/workflow avatar information.",
+      "status": "PASS",
+      "notes": "Single, group, workflow, and imported-chat avatars have explicit resolution paths. Missing assistant/workflow metadata is hydrated through store actions, and folder avatar groups are deduplicated."
+    },
+    {
+      "criterion": "New Chat opens an assistant picker with recent, pinned, and searched assistants.",
+      "status": "PASS",
+      "notes": "The modal resets on close, debounces search with cleanup, starts the selected assistant chat, and provides accessible labels for the search and clear controls."
+    },
+    {
+      "criterion": "Folder actions preserve exact backend folder names.",
+      "status": "PASS",
+      "notes": "Both list-item and opened-conversation transformations now preserve folder names without trimming, so rename, move, remove, and active-folder matching use the same value."
+    },
+    {
+      "criterion": "Popup remains on the repository-standard modal implementation.",
+      "status": "PASS",
+      "notes": "The temporary native-dialog rewrite was reverted. Popup continues to wrap PrimeReact Dialog and now supports a typed headerDescription slot."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "component_and_modal_patterns",
+      "status": "pass",
+      "notes": "New modals use Popup, async data access is routed through stores, effects clean up timers, and component props are explicitly typed."
+    },
+    {
+      "standard": "state_management",
+      "status": "pass",
+      "notes": "Components call store actions rather than APIs directly. Avatar hydration, recent assistants, workflow availability, and chat-list updates remain within the store layer."
+    },
+    {
+      "standard": "accessibility",
+      "status": "pass",
+      "notes": "Interactive controls use native buttons, the new search input has a label, the clear button now has an aria-label, and tooltip/menu visibility is coordinated to avoid overlapping overlays."
+    },
+    {
+      "standard": "file_size",
+      "status": "partial",
+      "notes": "ChatListItem.tsx and ChatSidebarLists.tsx exceed the guide's 300-line extraction threshold. This is a maintainability concern but does not change runtime behavior."
+    },
+    {
+      "standard": "test_coverage",
+      "status": "partial",
+      "notes": "The branch includes focused tests for the sidebar lists, assistant picker, avatars, initial-data fetch, and chat-generation metadata. Tests were not executed as part of this artifact-only review."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No new unauthenticated surface, unsafe HTML rendering, credential handling, or user-controlled script execution was introduced."
+    }
+  ],
+  "findings": [
+    {
+      "id": "BUG-01",
+      "severity": "high",
+      "file": "src/utils/chatHelpers.ts",
+      "lines": [
+        35,
+        53
+      ],
+      "title": "Opened chats normalized folder names differently from chat-list items",
+      "status": "fixed",
+      "description": "transformChatBEtoFE trimmed folder names while transformChatListItemDTO and folder DTOs preserved the backend value. Folder names containing leading or trailing spaces could therefore fail active-folder matching and target the wrong name in subsequent operations.",
+      "fix": "Removed trim() from both opened-chat folder transformations so all DTO paths preserve the exact backend folder name."
+    },
+    {
+      "id": "A11Y-01",
+      "severity": "medium",
+      "file": "src/pages/chat/components/ChatSidebar/StartNewChatModal.tsx",
+      "line": 145,
+      "title": "Search clear icon button had no accessible name",
+      "status": "fixed",
+      "description": "The icon-only clear button exposed no text or aria-label to assistive technology.",
+      "fix": "Added aria-label=\"Clear search\"."
+    },
+    {
+      "id": "STYLE-01",
+      "severity": "low",
+      "file": "src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx",
+      "line": 189,
+      "title": "Exactly 50-character chat names were truncated",
+      "status": "fixed",
+      "description": "The boundary check used < MAX_NAME_LENGTH, so a name exactly at the limit received an unnecessary ellipsis.",
+      "fix": "Changed the boundary check to <= MAX_NAME_LENGTH."
+    },
+    {
+      "id": "MAINT-01",
+      "severity": "low",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/ChatSidebarLists.tsx",
+      "line": 1,
+      "title": "Sidebar orchestration exceeds the project file-size guideline",
+      "status": "open",
+      "description": "ChatSidebarLists.tsx is 358 lines and combines filtering, lazy loading, imperative navigation, accordion state, and popup orchestration.",
+      "recommendation": "Extract chat grouping/lazy-loading state and popup orchestration into focused hooks in a follow-up refactor."
+    },
+    {
+      "id": "MAINT-02",
+      "severity": "low",
+      "file": "src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx",
+      "line": 1,
+      "title": "Chat row component exceeds the project file-size guideline",
+      "status": "open",
+      "description": "ChatListItem.tsx is over 300 lines and contains rename, navigation menu, avatar resolution, and rich-tooltip rendering.",
+      "recommendation": "Extract the tooltip content and menu item construction into focused components or hooks in a follow-up refactor."
+    }
+  ]
+}

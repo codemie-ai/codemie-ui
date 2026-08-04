@@ -116,6 +116,8 @@ const handleIndexResponse = async (
   }
 }
 
+let indexesStatusesRequestId = 0
+
 export const dataSourceStore = proxy({
   loading: false,
   initStatuses: false,
@@ -145,6 +147,8 @@ export const dataSourceStore = proxy({
       signal?: AbortSignal
     } = {}
   ) {
+    indexesStatusesRequestId += 1
+    const requestId = indexesStatusesRequestId
     const {
       page = 0,
       filters = {},
@@ -182,22 +186,29 @@ export const dataSourceStore = proxy({
       `&sort_key=${sortKey}` +
       `&sort_order=${sortOrder}`
 
-    const response = await api.get(statusLink, { signal })
-    if (response.status !== 200) throw Error()
-    const result = await response.json()
+    try {
+      const response = await api.get(statusLink, { signal })
+      if (response.status !== 200) throw Error()
+      const result = await response.json()
 
-    const { data, pagination } = result as DatasetResponse
+      const { data, pagination } = result as DatasetResponse
 
-    dataSourceStore.indexStatuses = data
-    dataSourceStore.indexStatusesPagination = {
-      page: pagination.page,
-      perPage: pagination.per_page,
-      totalPages: pagination.pages,
-      totalCount: pagination.total,
+      if (requestId !== indexesStatusesRequestId) return null
+
+      dataSourceStore.indexStatuses = data
+      dataSourceStore.indexStatusesPagination = {
+        page: pagination.page,
+        perPage: pagination.per_page,
+        totalPages: pagination.pages,
+        totalCount: pagination.total,
+      }
+      dataSourceStore.indexStatusesSort = { key: sortKey!, order: sortOrder! }
+      return data
+    } finally {
+      if (requestId === indexesStatusesRequestId) {
+        dataSourceStore.loading = false
+      }
     }
-    dataSourceStore.indexStatusesSort = { key: sortKey!, order: sortOrder! }
-    dataSourceStore.loading = false
-    return data
   },
 
   async getIndexDetails(id: string) {

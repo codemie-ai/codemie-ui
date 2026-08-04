@@ -13,7 +13,8 @@
 // limitations under the License.
 //
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { useSnapshot } from 'valtio'
 
 import Autocomplete from '@/components/form/Autocomplete'
 import { Checkbox } from '@/components/form/Checkbox'
@@ -37,29 +38,18 @@ const UserFilter: React.FC<UserFilterProps> = ({
   setIsChecked,
 }) => {
   const [previousCreatedBy, setPreviousCreatedBy] = useState<string | null>(null)
-  const [currentUserName, setCurrentUserName] = useState<string>('')
+  const { user } = useSnapshot(userStore)
+  const currentUserName = useMemo(() => {
+    const currentUserOption = definition.options.find((option) => option.id === user?.username)
+
+    return typeof currentUserOption?.value === 'string'
+      ? currentUserOption.value
+      : user?.name ?? user?.username ?? ''
+  }, [definition.options, user?.name, user?.username])
 
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const { user } = userStore
-        const option = definition.options.find((option) => option.id === user.username)
-        const userName = option?.value || user.name
-        setCurrentUserName(userName as string)
-
-        setIsChecked(value === userName)
-      } catch (error) {
-        console.error('Error fetching current user:', error)
-      }
-    }
-    fetchCurrentUser()
-  }, [definition.options, value])
-
-  useEffect(() => {
-    if (currentUserName) {
-      setIsChecked(value === currentUserName)
-    }
-  }, [value, currentUserName])
+    setIsChecked(Boolean(currentUserName) && value === currentUserName)
+  }, [currentUserName, setIsChecked, value])
 
   const toggleCreatedByMe = (checked: boolean) => {
     setIsChecked(checked)
@@ -82,6 +72,7 @@ const UserFilter: React.FC<UserFilterProps> = ({
           </span>
           <Checkbox
             checked={isChecked}
+            disabled={!currentUserName}
             onChange={toggleCreatedByMe}
             label="Me"
             rootClassName="gap-x-0"
