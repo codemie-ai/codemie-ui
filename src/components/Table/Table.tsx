@@ -128,19 +128,21 @@ const Table = <T,>({
   )
 
   return (
-    <div className="w-full relative flex flex-col">
+    <div className={cn('w-full relative flex flex-col', { 'pb-20': !embedded && !!pagination })}>
       {loading && (
         <div className="absolute inset-0 bg-surface-base-primary flex items-center justify-center z-30">
           <Spinner />
         </div>
       )}
-      <div className={cn('w-full grow', { 'overflow-auto min-h-[300px]': !embedded })}>
+      <div
+        className={cn('w-full grow', {
+          'overflow-auto min-h-[300px] show-scroll': !embedded,
+        })}
+      >
         <table
           className={cn(
             'mt-4 border-separate border-spacing-0 w-full text-[12px] leading-tight',
-            {
-              'mb-[80px]': !embedded,
-            },
+            {},
             tableClassName,
             className
           )}

@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix table borders/sliders displayed incorrectly on Integrations and Data Sources pages by adding show-scroll to Table scroll container and fixing useSidebarOffsetClass null initial state.",
+  "generated": "2026-07-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two components touched: Table.tsx (add show-scroll class to its overflow-auto scroll container div) and useSidebarOffsetClass.ts (change null initial state to a sensible default). Both live in the shared UI layer with no cross-layer coordination needed."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The show-scroll pattern already exists on PageLayout and is defined in main.scss — exact copy-adapt-done. The useSidebarOffsetClass null-initial-state fix is a trivial safe default-value change. Both changes are trivially reversible. The only elevated factor is that the hook fix affects every page using Table with pagination, not just Integrations and Data Sources, but the change itself is low-risk."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
