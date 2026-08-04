@@ -1,0 +1,70 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two major patch findings: (1) nextStep sets isTransitioning=true but has no try/finally block, so an exception in runTechnicalStep permanently locks the flag for the session. (2) prevStep reads isTransitioning as a guard but never sets it to true, leaving rapid backward navigation fully unguarded. Both are fixable in-place. The core bug fix (delay removal + forward-path isTransitioning guard) is correct, and 3 of 4 acceptance criteria are fully satisfied.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "onboarding-tours-section step appears at the correct position in the flow and is not skipped.",
+      "status": "satisfied",
+      "evidence": "Step 18 is unconditional in navigationIntroduction.tsx with delay removed. Step-sequence test pins it as the next user-visible step after product-updates-section using the real flow array."
+    },
+    {
+      "criterion": "profile-section does not replace it.",
+      "status": "satisfied",
+      "evidence": "onboarding-tours-section at index 18, profile-section at index 19, separated by expand-profile-menu tech step. Step-sequence test asserts the ordering explicitly."
+    },
+    {
+      "criterion": "A rapid double-click on Next cannot skip any step.",
+      "status": "partial",
+      "evidence": "The forward isTransitioning guard works correctly. However: prevStep lacks the symmetric set (CR-002), and nextStep has no try/finally so an exception leaves the flag permanently true (CR-001).",
+      "finding": "CR-001, CR-002"
+    },
+    {
+      "criterion": "Step order matches the designed flow.",
+      "status": "satisfied",
+      "evidence": "Step array ordering verified by onboarding.stepSequence.test.ts using the real navigationIntroductionFlow export."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Commit subject follows JIRA-key: Capital sentence format. All pre-commit hooks (prettier, eslint, tsc, license-headers, secrets, sonar-local) passed."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "no-plusplus satisfied (i += 1). Optional chaining reduces cognitive complexity below the 15-point limit. No issues from pre-commit lint/tsc."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No security issues. No auth, secrets, injection, or unsafe file/process handling in the diff."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/store/onboarding.ts",
+      "line": 162,
+      "title": "No try/finally in nextStep — isTransitioning permanently stuck on runTechnicalStep exception",
+      "problem": "isTransitioning is set to true before the while-loop but there is no try/finally block. If runTechnicalStep() rejects (e.g. router guard throws, step.execute() rejects), the exception propagates out of nextStep before either isTransitioning = false reset on lines 191 and 197 is reached, leaving the flag permanently true.",
+      "impact": "All subsequent nextStep and prevStep calls are silently swallowed by the guard. Onboarding freezes on the current step with no forward or backward movement possible. Only stopFlow() (Skip or Complete) recovers the flag — not a discoverable recovery path for users.",
+      "recommendation": "Wrap the while-loop and all code after `this.isTransitioning = true` in a try/finally block with `this.isTransitioning = false` in the finally clause, ensuring the flag resets on any exit path including thrown exceptions."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/store/onboarding.ts",
+      "line": 202,
+      "title": "prevStep reads isTransitioning guard but never sets it — rapid back-clicks not guarded",
+      "problem": "prevStep guards with `if (this.isTransitioning) return` but never sets `this.isTransitioning = true` before its async work (router.back() + 500ms wait + step.onBack()). Two rapid back-clicks both pass the guard and run concurrently.",
+      "impact": "Both concurrent executions call router.back() and await 500ms, navigating back twice in quick succession and landing the user on the wrong page. The subsequent currentStepIndex writes from both continuations race, leaving the store at an inconsistent step index.",
+      "recommendation": "Add `this.isTransitioning = true` immediately after the two early-return guards in prevStep, and add `this.isTransitioning = false` as the last statement before the function returns, mirroring the pattern in nextStep. Also wrap in try/finally per CR-001 to be consistent."
+    }
+  ]
+}

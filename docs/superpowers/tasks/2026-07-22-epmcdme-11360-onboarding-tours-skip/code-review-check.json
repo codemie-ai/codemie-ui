@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 and CR-002 are both resolved. nextStep now wraps its async body in try/finally so isTransitioning resets on any exit path including exceptions. prevStep now sets isTransitioning=true before its async work and uses the same try/finally pattern. Regression tests cover both paths and pass. No new issues introduced in the fix-up diff.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Fix-up commit follows JIRA-key: Capital sentence format. Pre-commit hooks passed."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "try/finally without catch adds 0 cognitive complexity. Both nextStep and prevStep remain within the 15-point limit."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "try/finally added to nextStep; new test resets isTransitioning to false when a technical step throws confirms the exception path."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "isTransitioning = true added after early-return guards in prevStep; try/finally wraps body; new test confirms router.back called exactly once on concurrent calls."
+    }
+  ]
+}

@@ -363,13 +363,12 @@ Perfect for deepening your understanding of CodeMie capabilities.`,
 Stay up-to-date with new features and improvements to make the most of CodeMie.`,
     },
 
-    // Step 18: Onboarding Tours Section (Conditional - future)
+    // Step 18: Onboarding Tours Section
     {
       id: 'onboarding-tours-section',
       actionType: 'Highlight',
       title: 'Onboarding Tours - Interactive Learning',
       target: '[data-onboarding="help-onboarding-section"]',
-      delay: 300,
       description: `Access all interactive onboarding tours from one convenient place! You can restart any tour or explore new features anytime from here.`,
     },
 

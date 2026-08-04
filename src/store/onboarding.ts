@@ -56,6 +56,7 @@ export interface OnboardingStoreType {
   currentStepIndex: number
   isActive: boolean
   entryUrl: string | null
+  isTransitioning: boolean
 
   startFlow: (flowId: string) => Promise<void>
   stopFlow: () => void
@@ -88,6 +89,7 @@ export const onboardingStore = proxy<OnboardingStoreType>({
   currentStepIndex: 0,
   isActive: false,
   entryUrl: null,
+  isTransitioning: false,
 
   async startFlow(flowId: string) {
     const flow = flows.find((f) => f.id === flowId) ?? null
@@ -147,87 +149,101 @@ export const onboardingStore = proxy<OnboardingStoreType>({
     this.activeSteps = []
     this.currentStepIndex = 0
     this.entryUrl = null
+    this.isTransitioning = false
   },
 
   async nextStep() {
+    if (this.isTransitioning) return
     if (this.currentStepIndex >= this.activeSteps.length - 1) {
       this.completeFlow()
       return
     }
 
-    let cursor = this.currentStepIndex + 1
+    this.isTransitioning = true
+    try {
+      let cursor = this.currentStepIndex + 1
 
-    // Advance through technical steps without updating currentStepIndex —
-    // this keeps the overlay visible (showing the current user-visible step)
-    // while navigation/code-execution steps run in the background
-    while (cursor < this.activeSteps.length) {
-      const step = this.activeSteps[cursor]
+      // Advance through technical steps without updating currentStepIndex —
+      // this keeps the overlay visible (showing the current user-visible step)
+      // while navigation/code-execution steps run in the background
+      while (cursor < this.activeSteps.length) {
+        const step = this.activeSteps[cursor]
 
-      if (isTechnicalStep(step)) {
-        // eslint-disable-next-line no-await-in-loop
-        await runTechnicalStep(step)
-        cursor += 1
-      } else {
-        // Next user-visible step — apply delay then show it
-        if (step.delay) {
+        if (isTechnicalStep(step)) {
           // eslint-disable-next-line no-await-in-loop
-          await new Promise<void>((resolve) => {
-            setTimeout(resolve, step.delay)
-          })
-        }
-        this.currentStepIndex = cursor
-        if (isHighlightStep(step)) {
-          const element = this.getTargetElement(step.target)
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+          await runTechnicalStep(step)
+          cursor += 1
+        } else {
+          // Next user-visible step — apply delay then show it
+          if (step.delay) {
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise<void>((resolve) => {
+              setTimeout(resolve, step.delay)
+            })
           }
+          this.currentStepIndex = cursor
+          if (isHighlightStep(step)) {
+            this.getTargetElement(step.target)?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'center',
+            })
+          }
+          return
         }
-        return
       }
-    }
 
-    // No more user-visible steps
-    this.completeFlow()
+      // No more user-visible steps
+      this.completeFlow()
+    } finally {
+      this.isTransitioning = false
+    }
   },
 
   async prevStep() {
+    if (this.isTransitioning) return
     if (this.currentStepIndex <= 0) return
 
-    // Find the nearest previous user-visible step
-    let targetIndex = this.currentStepIndex - 1
-    while (targetIndex > 0 && isTechnicalStep(this.activeSteps[targetIndex])) {
-      targetIndex -= 1
-    }
-
-    // If the found index is still a technical step, there is no visible step to go back to
-    if (isTechnicalStep(this.activeSteps[targetIndex])) return
-
-    // Reverse technical steps between current and target (in reverse order)
-    for (let i = this.currentStepIndex - 1; i > targetIndex; i -= 1) {
-      const step = this.activeSteps[i]
-
-      if (isNavigationStep(step)) {
-        router.back()
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 500)
-        })
-      } else if (isCodeExecutionStep(step) && step.onBack) {
-        // eslint-disable-next-line no-await-in-loop
-        await step.onBack()
+    this.isTransitioning = true
+    try {
+      // Find the nearest previous user-visible step
+      let targetIndex = this.currentStepIndex - 1
+      while (targetIndex > 0 && isTechnicalStep(this.activeSteps[targetIndex])) {
+        targetIndex -= 1
       }
-    }
 
-    // Land on the target user-visible step
-    this.currentStepIndex = targetIndex
-    const targetStep = this.activeSteps[targetIndex]
+      // If the found index is still a technical step, there is no visible step to go back to
+      if (isTechnicalStep(this.activeSteps[targetIndex])) return
 
-    // For Highlight steps, scroll element into view (mirrors forward executeStep behaviour)
-    if (isHighlightStep(targetStep)) {
-      const element = this.getTargetElement(targetStep.target)
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+      // Reverse technical steps between current and target (in reverse order)
+      for (let i = this.currentStepIndex - 1; i > targetIndex; i -= 1) {
+        const step = this.activeSteps[i]
+
+        if (isNavigationStep(step)) {
+          router.back()
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, 500)
+          })
+        } else if (isCodeExecutionStep(step) && step.onBack) {
+          // eslint-disable-next-line no-await-in-loop
+          await step.onBack()
+        }
       }
+
+      // Land on the target user-visible step
+      this.currentStepIndex = targetIndex
+      const targetStep = this.activeSteps[targetIndex]
+
+      // For Highlight steps, scroll element into view (mirrors forward executeStep behaviour)
+      if (isHighlightStep(targetStep)) {
+        const element = this.getTargetElement(targetStep.target)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+        }
+      }
+    } finally {
+      this.isTransitioning = false
     }
   },
 
