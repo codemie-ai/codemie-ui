@@ -1,0 +1,47 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 is resolved: useChatPromptResize now exposes userId, and the Group receives key={userId} so it remounts with the correct localStorage key when the real user ID resolves from userStore. The fix is minimal and targeted — userId is stable after initial auth, so no additional remounts occur during normal session use. No new high-risk issues introduced by the fix-up diff. All prior business_review and standards_review carry forward unchanged.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "id": "AC-1", "criterion": "Users can drag to resize prompt area height", "status": "pass" },
+    { "id": "AC-2", "criterion": "Resize position persists per user across sessions", "status": "pass", "notes": "CR-001 resolved: key={userId} on Group ensures correct localStorage key is used once user data loads" },
+    { "id": "AC-3", "criterion": "Neither panel collapsed to zero — both visible at all times", "status": "pass" },
+    { "id": "AC-4", "criterion": "Pure UI change — no API calls, store changes, or new dependencies", "status": "pass" },
+    { "id": "AC-5", "criterion": "History present: Group/Panel/ChatResizableSeparator/Panel layout", "status": "pass" },
+    { "id": "AC-6", "criterion": "No history: ChatPrompt standalone unchanged", "status": "pass" },
+    { "id": "AC-7", "criterion": "useChatPromptResize: per-user key, 300ms debounce, unmount cleanup", "status": "pass" },
+    { "id": "AC-8", "criterion": "ChatResizableSeparator: pill handle, no line, WCAG 2.1.1/2.4.7/4.1.2", "status": "pass" },
+    { "id": "AC-9", "criterion": "ChatPrompt resizable prop: correct class switching for all 4 elements", "status": "pass" },
+    { "id": "AC-10", "criterion": "ChatHistory: grow → h-full", "status": "pass" },
+    { "id": "AC-11", "criterion": "Tests: useChatPromptResize unit, ChatPage unit, ChatPage integration", "status": "pass" }
+  ],
+  "standards_review": [
+    {
+      "id": "STD-1",
+      "standard": "Commit message format (EPMCDME-XXXX: Capital sentence)",
+      "status": "pass",
+      "notes": "All commits follow the documented format."
+    },
+    {
+      "id": "STD-2",
+      "standard": "SonarJS cognitive complexity ≤15",
+      "status": "pass",
+      "notes": "No new complexity introduced by the fix-up."
+    },
+    {
+      "id": "STD-3",
+      "standard": "Apache 2.0 license headers on new files",
+      "status": "pass",
+      "notes": "No new files added in the fix-up."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "useChatPromptResize now returns userId; Group in ChatPage.tsx receives key={userId}, causing a remount when the real user ID resolves, so useDefaultLayout is called with the correct per-user localStorage key. Test mock updated; new test asserts userId is returned."
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "decision": "request-changes",
+  "rationale": "One major finding: useChatPromptResize calls useDefaultLayout with userId='default' until userStore.user resolves. In async-auth scenarios where currentChat loads (from cache) before user data, the Group renders using the wrong localStorage key, ignoring the user's saved layout preference; any drag in this window writes to 'chat-prompt-height-default'. Fix: add key={userId} to the Group so it remounts when the real userId is known. All other lens findings were false positives: minSize values are in pixels (confirmed by library source and WorkflowDrawer pattern where MIN_COLLAPSED_SIZE=50 is compared to panelSize.inPixels); defaultSize=70/30 are percentages (WorkflowDetailsPage uses 75+25=100%); keyboard resize is natively handled by the react-resizable-panels Separator; test files are present in the diff (the acceptance lens reviewed a condensed excerpt). EC-2 (210px combined minimum floor) is deferred — only affects sub-7-inch viewports.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "id": "AC-1", "criterion": "Users can drag to resize prompt area height", "status": "pass" },
+    { "id": "AC-2", "criterion": "Resize position persists per user across sessions", "status": "partial", "notes": "Correct in typical auth flow; may apply 'default' layout in async-auth race where currentChat loads before user data (CR-001)" },
+    { "id": "AC-3", "criterion": "Neither panel collapsed to zero — both visible at all times", "status": "pass" },
+    { "id": "AC-4", "criterion": "Pure UI change — no API calls, store changes, or new dependencies", "status": "pass" },
+    { "id": "AC-5", "criterion": "History present: Group/Panel/ChatResizableSeparator/Panel layout", "status": "pass" },
+    { "id": "AC-6", "criterion": "No history: ChatPrompt standalone unchanged", "status": "pass" },
+    { "id": "AC-7", "criterion": "useChatPromptResize: per-user key, 300ms debounce, unmount cleanup", "status": "pass" },
+    { "id": "AC-8", "criterion": "ChatResizableSeparator: pill handle, no line, WCAG 2.1.1/2.4.7/4.1.2", "status": "pass" },
+    { "id": "AC-9", "criterion": "ChatPrompt resizable prop: correct class switching for all 4 elements", "status": "pass" },
+    { "id": "AC-10", "criterion": "ChatHistory: grow → h-full", "status": "pass" },
+    { "id": "AC-11", "criterion": "Tests: useChatPromptResize unit, ChatPage unit, ChatPage integration", "status": "pass" }
+  ],
+  "standards_review": [
+    {
+      "id": "STD-1",
+      "standard": "Commit message format (EPMCDME-XXXX: Capital sentence)",
+      "status": "pass",
+      "notes": "All 9 commits follow the documented format."
+    },
+    {
+      "id": "STD-2",
+      "standard": "SonarJS cognitive complexity ≤15",
+      "status": "pass",
+      "notes": "getBorderWrapperClassName extracted from ChatPrompt to bring complexity from 17 back to ≤15."
+    },
+    {
+      "id": "STD-3",
+      "standard": "Apache 2.0 license headers on new files",
+      "status": "pass",
+      "notes": "All new .tsx/.ts files (useChatPromptResize.ts, ChatResizableSeparator.tsx, test files) carry the required header."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "problem": "useChatPromptResize calls useDefaultLayout with userId='default' (the fallback when userStore.user is null) during the async-auth loading window. If currentChat loads from cache before user data resolves — making hasHistory true — the Group renders and reads from localStorage key 'chat-prompt-height-default' instead of the real user's key, so the saved layout preference is not applied. Any drag during this window writes to the wrong key.",
+      "impact": "User's persisted layout preference is silently ignored on initial render when auth is slow or cached chats load ahead of user data. Drag events in this window pollute the 'default' localStorage slot.",
+      "recommendation": "Add key={userId} to the Group component so it remounts (and re-reads the correct localStorage key) once the real userId resolves from userStore, e.g. key={currentChat?.id ?? 'no-chat'} is already present on PageLayout — similarly add key={userId} to the Group, or gate Group render with {hasHistory && userId !== 'default' && <Group ...>}.",
+      "severity": "major",
+      "file": "src/pages/chat/ChatPage.tsx",
+      "line": 84,
+      "triage": "patch"
+    }
+  ]
+}

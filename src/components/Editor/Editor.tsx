@@ -134,6 +134,17 @@ const Editor = forwardRef<EditorRef, EditorProps>(
 
     useEffect(() => {
       const quill = editorRef.current?.getQuill()
+      if (!quill) return
+      // PrimeReact only sets readOnly at Quill init time; imperatively sync it on changes.
+      if (disabled) {
+        quill.disable()
+      } else {
+        quill.enable()
+      }
+    }, [disabled])
+
+    useEffect(() => {
+      const quill = editorRef.current?.getQuill()
       if (quill && value.messageRaw === '') {
         const currentContent = quill.root.innerHTML
         if (currentContent.trim() !== '') {

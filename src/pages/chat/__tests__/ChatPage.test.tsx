@@ -129,6 +129,24 @@ vi.mock('@/pages/integrations/components/NewIntegrationPopup', () => ({
   default: () => <div data-testid="new-integration-popup" />,
 }))
 
+vi.mock('react-resizable-panels', () => ({
+  Group: ({ children }: any) => <div data-testid="panel-group">{children}</div>,
+  Panel: ({ children }: any) => <div data-testid="panel">{children}</div>,
+  Separator: ({ children }: any) => <div data-testid="panel-separator">{children}</div>,
+}))
+
+vi.mock('../components/ChatResizableSeparator', () => ({
+  default: () => <div data-testid="resizable-separator" />,
+}))
+
+vi.mock('../hooks/useChatPromptResize', () => ({
+  useChatPromptResize: vi.fn(() => ({
+    defaultLayout: undefined,
+    debouncedOnLayoutChanged: vi.fn(),
+    userId: 'test-user',
+  })),
+}))
+
 describe('ChatPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -289,6 +307,37 @@ describe('ChatPage', () => {
     render(<ChatPage />)
 
     expect(screen.getByTestId('chat-history')).toBeInTheDocument()
+    expect(screen.getByTestId('chat-prompt')).toBeInTheDocument()
+  })
+
+  it('renders the resize separator when chat has history', () => {
+    mockChatsStore.currentChat = {
+      id: 'chat-1',
+      history: [[{ createdAt: '2026-07-16T00:00:00Z' }]],
+      assistantIds: ['assistant-1'],
+      assistantData: [],
+      initialAssistantId: 'assistant-1',
+      isWorkflow: false,
+    } as unknown as Conversation
+
+    render(<ChatPage />)
+
+    expect(screen.getByTestId('resizable-separator')).toBeInTheDocument()
+  })
+
+  it('renders ChatPrompt standalone without separator when history is empty', () => {
+    mockChatsStore.currentChat = {
+      id: 'chat-1',
+      history: [],
+      assistantIds: ['assistant-1'],
+      assistantData: [],
+      initialAssistantId: 'assistant-1',
+      isWorkflow: false,
+    } as unknown as Conversation
+
+    render(<ChatPage />)
+
+    expect(screen.queryByTestId('resizable-separator')).not.toBeInTheDocument()
     expect(screen.getByTestId('chat-prompt')).toBeInTheDocument()
   })
 })

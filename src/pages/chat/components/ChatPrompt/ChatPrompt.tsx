@@ -14,7 +14,7 @@
 //
 
 import './ChatPrompt.scss'
-import { FC, MouseEvent, useEffect, useRef, useState } from 'react'
+import { FC, KeyboardEvent, MouseEvent, useEffect, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import PlaySvg from '@/assets/icons/play.svg?react'
@@ -72,7 +72,27 @@ const SUBMIT_LABELS: Record<PromptMode, React.ReactNode> = {
   ),
 }
 
-const ChatPrompt: FC = () => {
+interface ChatPromptProps {
+  resizable?: boolean
+}
+
+const getBorderWrapperClassName = (
+  resizable: boolean,
+  isInterrupted: boolean,
+  isEditorFocused: boolean,
+  isInProgress: boolean
+) =>
+  cn(
+    'box-content p-px rounded-xl w-full max-w-5xl mx-auto',
+    resizable ? 'h-full flex flex-col' : 'min-h-fit',
+    !isInterrupted && 'border-gradient promp-shadow prompt-border-gradient',
+    !isInterrupted && isEditorFocused && 'prompt-border-gradient-focused',
+    !isInterrupted && isInProgress && 'prompt-border-gradient-in-progress',
+    isInterrupted && 'bg-interrupted-primary',
+    isInProgress && 'pointer-events-none'
+  )
+
+const ChatPrompt: FC<ChatPromptProps> = ({ resizable = false }) => {
   const editorRef = useRef<EditorRef>(null)
   const { isDark } = useTheme()
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
@@ -180,6 +200,10 @@ const ChatPrompt: FC = () => {
     if (e.target === e.currentTarget) editorRef.current?.focus()
   }
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') editorRef.current?.focus()
+  }
+
   const isVoiceRecorderVisible = !!userData?.stt_support && !isInProgress && !isInterrupted
 
   useEffect(() => {
@@ -199,25 +223,31 @@ const ChatPrompt: FC = () => {
           onStarterClick={(text) => setPrompt({ message: text, messageRaw: sanitizeMessage(text) })}
         />
       )}
-      <div className="relative w-full z-20">
+      <div className={cn('relative w-full z-20', resizable && 'h-full flex flex-col')}>
         {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
-        <div className="w-full flex flex-col px-6 scrollbar-gutter overflow-y-auto min-h-32 h-fit -translate-y-3 z-10 shrink-0">
+        <div
+          className={cn(
+            'w-full flex flex-col px-6 scrollbar-gutter overflow-y-auto z-10',
+            resizable ? 'flex-1 min-h-0' : 'min-h-32 h-fit -translate-y-3 shrink-0'
+          )}
+        >
           <div
-            className={cn(
-              'box-content p-px rounded-xl w-full max-w-5xl mx-auto min-h-fit',
-              !isInterrupted && 'border-gradient promp-shadow prompt-border-gradient',
-              !isInterrupted && isEditorFocused && 'prompt-border-gradient-focused',
-              !isInterrupted && isInProgress && 'prompt-border-gradient-in-progress',
-              isInterrupted && 'bg-interrupted-primary',
-              isInProgress && 'pointer-events-none'
+            className={getBorderWrapperClassName(
+              resizable,
+              !!isInterrupted,
+              isEditorFocused,
+              !!isInProgress
             )}
           >
             <div
+              role="none"
               onClick={focusEditor}
               onMouseDown={handleMouseDown}
+              onKeyDown={handleKeyDown}
               data-onboarding="chat-input"
               className={cn(
-                'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated min-h-32 max-h-64 cursor-text'
+                'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated cursor-text',
+                resizable ? 'h-full min-h-0' : 'min-h-32 max-h-64'
               )}
             >
               <div className={cn('flex flex-col grow min-h-0', isInProgress && 'opacity-60')}>
@@ -236,8 +266,10 @@ const ChatPrompt: FC = () => {
               </div>
 
               <div
+                role="none"
                 onClick={focusEditor}
                 onMouseDown={handleMouseDown}
+                onKeyDown={handleKeyDown}
                 className="flex justify-between items-center pl-2"
               >
                 <div className={cn('flex items-center gap-2', isInProgress && 'opacity-60')}>

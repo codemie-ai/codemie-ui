@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Add a resizable separator between chat history and chat prompt input so users can drag to resize the prompt area height.",
+  "generated": "2026-07-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three components touched across two UI sub-layers: ChatPage (layout refactor to introduce Panel/Group), ChatPrompt (remove hardcoded min-h-32/max-h-64/h-fit height classes), ChatHistory (change grow to h-full), plus a new useChatPromptResize hook. Pattern is established in WorkflowDetailsPage and useWorkflowDrawer."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Core pattern (react-resizable-panels Group/Panel/ResizableSeparator + localStorage persistence via useDefaultLayout) is fully exercised twice in the codebase. Residual risk comes from the -translate-y-3 visual overlap on ChatPrompt that must be removed and replaced, the h-fit/shrink-0 classes that must become h-full, and the conditional rendering logic (Panel split only when ChatHistory is present)."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

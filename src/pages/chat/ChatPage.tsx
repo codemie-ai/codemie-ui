@@ -28,6 +28,7 @@ import ChatConfiguration from './components/ChatConfiguration/ChatConfiguration'
 import ChatHeader from './components/ChatHeader/ChatHeader'
 import ChatHistory from './components/ChatHistory/ChatHistory'
 import ChatPrompt from './components/ChatPrompt/ChatPrompt'
+import ChatResizableSeparator from './components/ChatResizableSeparator'
 import ChatSidebar from './components/ChatSidebar/ChatSidebar'
 import {
   CHAT_SIDEBAR_MAX_WIDTH,
@@ -39,6 +40,7 @@ import { useChatConfiguration } from './hooks/useChatConfiguration'
 import { ChatContext, ChatContextValue } from './hooks/useChatContext'
 import { useChatInitialPrompt } from './hooks/useChatInitialPrompt'
 import { useChatNavigation } from './hooks/useChatNavigation'
+import { useChatPromptResize } from './hooks/useChatPromptResize'
 
 const ChatPage: FC = () => {
   const {
@@ -67,6 +69,9 @@ const ChatPage: FC = () => {
 
   useChatAuthCallbacks(currentChat)
 
+  const { defaultLayout, debouncedOnLayoutChanged, userId } = useChatPromptResize()
+  const hasHistory = !!currentChat?.history.length
+
   const chatConfiguration = useChatConfiguration()
   const chatContextValue: ChatContextValue = useMemo(
     () => ({ ...chatConfiguration, isSharedPage: false }),
@@ -94,16 +99,32 @@ const ChatPage: FC = () => {
 
         <Panel id="chat-main-content" minSize={400}>
           <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
-            <div className="flex h-full">
-              {currentChat && (
-                <div className="flex flex-col items-center grow min-w-0 pb-4">
-                  {!!currentChat?.history.length && <ChatHistory />}
+          <div className="flex h-full">
+            {currentChat && (
+              <div className="flex flex-col grow min-w-0 overflow-hidden">
+                {hasHistory ? (
+                  <Group
+                    key={userId}
+                    orientation="vertical"
+                    defaultLayout={defaultLayout}
+                    onLayoutChanged={debouncedOnLayoutChanged}
+                  >
+                    <Panel id="chat-history" defaultSize={70} minSize={80}>
+                      <ChatHistory />
+                    </Panel>
+                    <ChatResizableSeparator />
+                    <Panel id="chat-prompt" defaultSize={30} minSize={130}>
+                      <ChatPrompt resizable />
+                    </Panel>
+                  </Group>
+                ) : (
                   <ChatPrompt />
-                </div>
-              )}
-              <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
-            </div>
-          </PageLayout>
+                )}
+              </div>
+            )}
+            <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
+          </div>
+        </PageLayout>
         </Panel>
       </Group>
 

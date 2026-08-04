@@ -42,6 +42,20 @@ vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: () => ({ currentRoute: { value: { params: {} } }, push: vi.fn() }),
 }))
 vi.mock('@/store/chats', () => ({ chatsStore: { currentChat: null } }))
+vi.mock('../hooks/useChatPromptResize', () => ({
+  useChatPromptResize: vi.fn(() => ({
+    defaultLayout: undefined,
+    debouncedOnLayoutChanged: vi.fn(),
+    userId: 'test-user',
+  })),
+}))
+vi.mock('../components/ChatSidebar/useChatSidebarResize', () => ({
+  useChatSidebarResize: vi.fn(() => ({
+    panelRef: { current: null },
+    initialWidth: 250,
+    handleResize: vi.fn(),
+  })),
+}))
 
 describe('ChatPage resizable sidebar', () => {
   it('renders the sidebar inside a resizable Group/Panel structure', () => {

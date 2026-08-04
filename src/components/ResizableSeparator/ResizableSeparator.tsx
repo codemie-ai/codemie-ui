@@ -13,23 +13,29 @@
 // limitations under the License.
 //
 
+import { ReactNode } from 'react'
 import { Separator } from 'react-resizable-panels'
 
 interface ResizableSeparatorProps {
   orientation: 'horizontal' | 'vertical'
   className?: string
+  children?: ReactNode
 }
 
-const ResizableSeparator = ({ orientation, className = '' }: ResizableSeparatorProps) => {
+const ResizableSeparator = ({ orientation, className = '', children }: ResizableSeparatorProps) => {
   const baseClasses =
-    'bg-black/20 transition-all duration-200 ease-in-out z-[1] box-border bg-clip-padding !outline-none'
+    'relative bg-black/20 transition-all duration-200 ease-in-out z-[1] box-border bg-clip-padding !outline-none'
 
   const orientationClasses =
     orientation === 'vertical'
       ? 'h-[7px] my-[-5px] border-t-[5px] border-b-[5px] border-transparent bg-transparent !cursor-[ns-resize] hover:border-t-[5px] hover:border-b-[5px] hover:bg-black/20 hover:border-black/20'
       : 'w-[7px] mx-[-5px] border-l-[5px] border-r-[5px] border-transparent my-4 rounded-lg bg-transparent !cursor-[ew-resize] hover:border-l-[5px] hover:border-r-[5px] hover:bg-black/20 hover:border-black/20'
 
-  return <Separator className={`${baseClasses} ${orientationClasses} ${className}`} />
+  return (
+    <Separator className={`${baseClasses} ${orientationClasses} ${className}`}>
+      {children}
+    </Separator>
+  )
 }
 
 export default ResizableSeparator
