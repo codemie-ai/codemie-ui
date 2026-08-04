@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "task": "Add .xlsb to the two supported-format messaging string constants in src/constants/common.ts (UI-only; backend covered separately)",
+  "generated": "2026-07-23",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 6,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single constants file (src/constants/common.ts) touched, two string literals edited, no component logic, hooks, store, or API layer involved" },
+    { "dimension": "file_change_estimate", "reason": "Exactly 1 file modified, 0 new files, per technical-analysis.md; no other upload surfaces need changes since accept attributes and client-side validation already permit any file type" }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

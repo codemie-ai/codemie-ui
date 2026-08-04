@@ -1,0 +1,57 @@
+{
+  "task": "Add XLSB to supported-format messaging strings in constants",
+  "generated": "2026-07-23T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "SUPPORTED_FILE_FORMATS_MESSAGE_BASE, SUPPORTED_FILE_FORMATS_MESSAGE_CHAT",
+      "layers": "UI (constants)"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 1,
+      "modified_file_list": ["src/constants/common.ts"],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": ["src/constants"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 1,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Only two string constant literals edited (SUPPORTED_FILE_FORMATS_MESSAGE_BASE and SUPPORTED_FILE_FORMATS_MESSAGE_CHAT) in src/constants/common.ts — no function, no logic touched" },
+    { "dimension": "file_change_estimate", "reason": "Single file changed, +2/-2 lines, no new files, fully localized to src/constants" }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
