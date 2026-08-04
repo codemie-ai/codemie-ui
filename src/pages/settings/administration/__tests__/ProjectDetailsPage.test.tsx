@@ -206,8 +206,6 @@ describe('ProjectDetailsPage', () => {
       })
     })
 
-    expect(toaster.info).toHaveBeenCalledWith(
-      expect.stringContaining('Test Project'),
-    )
+    expect(toaster.info).toHaveBeenCalledWith(expect.stringContaining('Test Project'))
   })
 })

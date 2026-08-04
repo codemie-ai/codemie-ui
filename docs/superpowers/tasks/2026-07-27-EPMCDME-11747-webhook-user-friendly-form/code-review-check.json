@@ -1,0 +1,43 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "rationale": "All three blocking findings from the final round are resolved in the fix-up diff. CR-001: catch block added to fetchOptions in useResourceOptions.ts, API errors now contained. CR-002: webhookIdManuallyEdited.current = false added as first statement in handleCredentialTypeChange, flag resets on type switch. CR-003: onChangeValue handler changed to field.onChange(val ?? null), cleared selection produces null. The diff also contains an unrelated vite.config.ts hunk (SDLC-excluded) which introduces no new security or correctness concerns. No new high-risk issues in the fix-up diff; confirmation pass not required.",
+  "business_review": [
+    {"criterion": "AC 1.1 — showWebhookUrl flag and rendering branch removed", "status": "pass"},
+    {"criterion": "AC 1.2 — webhookUrl component type added; webhook_url_display field inserted after webhook_id", "status": "pass"},
+    {"criterion": "AC 1.3 — webhookUrl renders InputCopy with buildWebhookURL via existing prop", "status": "pass"},
+    {"criterion": "AC 1.4 — webhook_url_display is display-only and never submitted to API", "status": "pass"},
+    {"criterion": "AC 2.1 — alias changes auto-fill webhook_id as slug on non-edit webhook form", "status": "pass"},
+    {"criterion": "AC 2.2 — manual edit of webhook_id stops auto-sync permanently", "status": "pass"},
+    {"criterion": "AC 2.3 — auto-fill does not overwrite webhook_id in edit mode", "status": "pass"},
+    {"criterion": "AC 2.4 — setFormValue uses shouldDirty:false, shouldTouch:false", "status": "pass"},
+    {"criterion": "AC 2.5 — slug logic inlined (equivalent to generateDefaultAlias)", "status": "pass"},
+    {"criterion": "AC 3.1 — collapsible and accordionTitle optional fields added to CredentialFieldConfig", "status": "pass"},
+    {"criterion": "AC 3.2 — three sections become collapsible accordions with correct titles and defaultExpanded=false", "status": "pass"},
+    {"criterion": "AC 3.3 — non-collapsible sectionHeaders still render as inline hr+heading", "status": "pass"},
+    {"criterion": "AC 3.4 — ConfigAccordion from correct path used for accordion groups", "status": "pass"},
+    {"criterion": "AC 4.1 — resourceSelect added to CredentialComponentType enum", "status": "pass"},
+    {"criterion": "AC 4.2 — rowGroup optional field added to CredentialFieldConfig", "status": "pass"},
+    {"criterion": "AC 4.3 — resource_id registered in form state for submission; resourceSelect approach differs from spec but is functionally equivalent", "status": "partial", "notes": "Approach deviation judged harmless — field is RHF-registered and submitted correctly."},
+    {"criterion": "AC 4.4 — resource_type and resource_id share rowGroup:resource_row", "status": "pass"},
+    {"criterion": "AC 4.5 — useResourceOptions hook at correct path, correct mappings for all three types", "status": "pass"},
+    {"criterion": "AC 4.6 — resourceSelect Select is disabled when resourceType is empty", "status": "pass"},
+    {"criterion": "AC 4.7 — resourceSelect onChange stores entity ID in resource_id form field", "status": "pass"},
+    {"criterion": "AC T.1 — alias auto-fill test file covers 3 required scenarios", "status": "pass"},
+    {"criterion": "AC T.2 — useResourceOptions test file covers 6 required scenarios", "status": "pass"},
+    {"criterion": "AC T.3 — CredentialFields.test.tsx updated for accordion, rowGroup, webhookUrl, resourceSelect", "status": "pass"}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow commit format", "status": "pass", "notes": "Fix-up commit 'EPMCDME-11747: Fix code review findings CR-001 CR-002 CR-003' matches required format."},
+    {"standard": "code-quality", "status": "na", "notes": "No code-quality.md in standards/. Pre-commit hooks passed on fix-up commit."},
+    {"standard": "security-patterns", "status": "pass", "notes": "No new security concerns in fix-up diff."}
+  ],
+  "findings": [],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "catch block added to fetchOptions; API errors are now contained and setOptions([]) called on failure."},
+    {"id": "CR-002", "status": "resolved", "notes": "webhookIdManuallyEdited.current = false added as first statement in handleCredentialTypeChange."},
+    {"id": "CR-003", "status": "resolved", "notes": "onChangeValue handler changed to field.onChange(val ?? null); cleared selection produces null."}
+  ]
+}

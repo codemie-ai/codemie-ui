@@ -1,0 +1,69 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "medium",
+  "risk_flags": [],
+  "rationale": "All three review lenses ran successfully. 3 major actionable findings were confirmed across blind and edge-case lenses: missing error handling in useResourceOptions (CR-001), webhookIdManuallyEdited ref not reset on credential-type change (CR-002), and resourceSelect clearing stores empty string instead of null (CR-003). Acceptance lens confirmed all 22 spec criteria pass or are functionally met via an equivalent approach (AC 4.3 partial — approach deviation judged harmless by reviewer). 2 deferred items: 'editing' missing from useEffect deps (not behavioral — mount-time prop) and loading state not wired to Select disabled (UX only). 2 dismissed: accordion boundary check (sectionHeader never in rowGroup) and showWebhookUrl backwards-compat (static config). Git workflow and security checks passed.",
+  "business_review": [
+    {"criterion": "AC 1.1 — showWebhookUrl flag and rendering branch removed", "status": "pass"},
+    {"criterion": "AC 1.2 — webhookUrl component type added; webhook_url_display field inserted after webhook_id", "status": "pass"},
+    {"criterion": "AC 1.3 — webhookUrl renders InputCopy with buildWebhookURL via existing prop", "status": "pass"},
+    {"criterion": "AC 1.4 — webhook_url_display is display-only and never submitted to API", "status": "pass"},
+    {"criterion": "AC 2.1 — alias changes auto-fill webhook_id as slug on non-edit webhook form", "status": "pass"},
+    {"criterion": "AC 2.2 — manual edit of webhook_id stops auto-sync permanently", "status": "pass"},
+    {"criterion": "AC 2.3 — auto-fill does not overwrite webhook_id in edit mode", "status": "pass"},
+    {"criterion": "AC 2.4 — setFormValue uses shouldDirty:false, shouldTouch:false", "status": "pass"},
+    {"criterion": "AC 2.5 — slug logic inlined (equivalent to generateDefaultAlias)", "status": "pass"},
+    {"criterion": "AC 3.1 — collapsible and accordionTitle optional fields added to CredentialFieldConfig", "status": "pass"},
+    {"criterion": "AC 3.2 — three sections become collapsible accordions with correct titles and defaultExpanded=false", "status": "pass"},
+    {"criterion": "AC 3.3 — non-collapsible sectionHeaders still render as inline hr+heading", "status": "pass"},
+    {"criterion": "AC 3.4 — ConfigAccordion from correct path used for accordion groups", "status": "pass"},
+    {"criterion": "AC 4.1 — resourceSelect added to CredentialComponentType enum", "status": "pass"},
+    {"criterion": "AC 4.2 — rowGroup optional field added to CredentialFieldConfig", "status": "pass"},
+    {"criterion": "AC 4.3 — resource_id registered in form state for submission; resourceSelect approach differs from spec but is functionally equivalent (cleaner implementation)", "status": "partial", "notes": "Spec prescribed shouldShow:()=>false + separate display field; implementation makes resource_id itself the resourceSelect Controller — field is RHF-registered and submitted correctly; functionally equivalent."},
+    {"criterion": "AC 4.4 — resource_type and resource_id share rowGroup:resource_row", "status": "pass"},
+    {"criterion": "AC 4.5 — useResourceOptions hook at correct path, correct mappings for all three types", "status": "pass"},
+    {"criterion": "AC 4.6 — resourceSelect Select is disabled when resourceType is empty", "status": "pass"},
+    {"criterion": "AC 4.7 — resourceSelect onChange stores entity ID in resource_id form field", "status": "pass"},
+    {"criterion": "AC T.1 — alias auto-fill test file covers 3 required scenarios", "status": "pass"},
+    {"criterion": "AC T.2 — useResourceOptions test file covers 6 required scenarios", "status": "pass"},
+    {"criterion": "AC T.3 — CredentialFields.test.tsx updated for accordion, rowGroup, webhookUrl, resourceSelect", "status": "pass"}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow commit format", "status": "pass", "notes": "Commit 'EPMCDME-11747: Webhook user-friendly form visual polish' matches required EPMCDME-XXXX: Capital sentence pattern. Branch name EPMCDME-11747_webhook-user-friendly-form is valid."},
+    {"standard": "code-quality", "status": "na", "notes": "No code-quality.md found in .ai-run/guides/standards/. Pre-commit hooks (lint, tsc, license headers, secrets) all passed at commit time."},
+    {"standard": "security-patterns", "status": "pass", "notes": "No security guide present. Manual check: no secrets or credentials in diff. InputCopy renders URL as input value (no XSS path). Slug computation is local regex. autoComplete:off is a safe browser directive."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/integrations/components/SettingsForm/hooks/useResourceOptions.ts",
+      "lines": "L38-L65",
+      "problem": "fetchOptions() uses try/finally with no catch; any API rejection from getAssistantOptions, getWorkflowOptions, or getDataSourceOptions becomes an unhandled promise rejection.",
+      "impact": "A network error or API failure leaves the resourceSelect dropdown silently empty with loading=false and no error surfaced to the user, making the dropdown permanently unusable without any indication of the failure.",
+      "recommendation": "Add a catch block inside fetchOptions: catch { if (!cancelled) setOptions([]) } before the finally, so errors are contained and the component degrades gracefully."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/integrations/components/SettingsForm/SettingsForm.tsx",
+      "lines": "L286-L296",
+      "problem": "handleCredentialTypeChange resets aliasManuallyEdited.current = false but never resets webhookIdManuallyEdited.current = false.",
+      "impact": "After a user manually edits webhook_id then switches credential type (e.g. webhook → github → webhook), webhookIdManuallyEdited.current stays true for the component lifetime; the auto-fill effect is permanently gated out and webhook_id will never be re-populated from alias on the second webhook selection.",
+      "recommendation": "Add webhookIdManuallyEdited.current = false inside handleCredentialTypeChange alongside the existing aliasManuallyEdited reset."
+    },
+    {
+      "id": "CR-003",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/integrations/components/SettingsForm/CredentialFields.tsx",
+      "lines": "L196-L260",
+      "problem": "The resourceSelect onChangeValue handler calls field.onChange(val ?? '') which stores an empty string when the user clears the selection.",
+      "impact": "Yup .required() validators that do not also call .min(1) pass silently on empty string, allowing form submission with resource_id=''; the backend receives an empty-string resource ID that fails FK validation or causes a silent no-op.",
+      "recommendation": "Change the handler to field.onChange(val ?? null) so a cleared selection produces null, which Yup .required() correctly rejects and the backend treats as absent."
+    }
+  ]
+}

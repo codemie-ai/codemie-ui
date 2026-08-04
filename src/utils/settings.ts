@@ -183,7 +183,7 @@ export const getSettingsFieldsSectionTitle = (credentialType: string): string =>
 const ALIAS_SEPARATOR = '-'
 const ALIAS_DATE_FORMAT = 'yyyy-MM-dd_HH-mm'
 
-const slugifyType = (value: string): string =>
+export const slugifyType = (value: string): string =>
   value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ALIAS_SEPARATOR)

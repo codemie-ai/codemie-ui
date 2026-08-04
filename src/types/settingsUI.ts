@@ -29,6 +29,8 @@ export enum CredentialComponentType {
   /** Non-input pseudo-field that renders a subsection heading + divider
    *  inline within the credential fields list. Use `label` for the heading. */
   sectionHeader = 'sectionHeader',
+  webhookUrl = 'webhookUrl',
+  resourceSelect = 'resourceSelect',
 }
 
 export enum CredentialComponentPosition {
@@ -65,6 +67,14 @@ export type CredentialFieldConfig = {
   validation?: Yup.Schema
   message?: CredentialMessage
   defaultValue?: string | boolean | (() => string | boolean)
+  /** When true on a sectionHeader, renders the section as a collapsible ConfigAccordion instead of an inline heading. */
+  collapsible?: boolean
+  /** Title shown on the accordion trigger when collapsible is true. Falls back to label. */
+  accordionTitle?: string
+  /** Groups consecutive fields sharing the same rowGroup value into a flex row. */
+  rowGroup?: string
+  /** HTML autocomplete attribute forwarded to the native input. Use 'off' to disable browser autofill. */
+  autoComplete?: string
 }
 
 export enum CredentialAccessType {

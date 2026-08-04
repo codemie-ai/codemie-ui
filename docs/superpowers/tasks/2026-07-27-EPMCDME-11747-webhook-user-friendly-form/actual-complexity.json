@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "task": "Improve the Webhook integration setup form with a read-only URL field, alias-to-ID auto-fill, collapsible accordion sections, and a name-based resource dropdown.",
+  "estimated": {
+    "total": 19,
+    "size": "M",
+    "file_change_estimate_label": "M"
+  },
+  "actual": {
+    "files_changed": 8,
+    "insertions": 801,
+    "deletions": 213,
+    "net_lines": 588,
+    "commits": 2,
+    "cr_fix_commits": 1,
+    "test_files_added": 2,
+    "test_cases": 42
+  },
+  "variance": "on-estimate",
+  "notes": [
+    "8 files changed matches M estimate (file_change_estimate score 3).",
+    "Two new test files added (useResourceOptions.test.ts, SettingsForm.autoFill.test.tsx) covering 42 test cases.",
+    "GitLab accordion ambiguity resolved in spec as explicitly in-scope — no PO deferral needed.",
+    "Three CR findings required a fix-up commit (CR-001 missing catch, CR-002 ref not reset, CR-003 empty-string clear) — minor, no design changes.",
+    "Data-driven accordion grouping implemented as pre-processing pass (buildRenderGroups/groupByRow) as expected from risk note."
+  ]
+}

@@ -855,9 +855,15 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
         label: 'General',
       },
       webhook_id: {
-        placeholder: 'Webhook ID',
-        note: 'A webhook identifier is a unique ID for each webhook created in an application, allowing external apps like GitHub/GitLab to receive events. ',
-        showWebhookUrl: true,
+        label: 'Webhook ID',
+        placeholder: 'Webhook ID: Unique identifier of the webhook, e.g. "webhook-qwerty"',
+        note: 'A webhook identifier is a unique ID for each webhook created in an application, allowing external apps like GitHub/GitLab to receive events.',
+        defaultValue: '',
+        autoComplete: 'off',
+      },
+      webhook_url_display: {
+        label: 'Webhook URL',
+        type: CredentialComponentType.webhookUrl,
       },
       is_enabled: {
         placeholder: 'Is Enabled',
@@ -866,6 +872,8 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
       _verification_section: {
         type: CredentialComponentType.sectionHeader,
         label: 'Request verification (legacy header)',
+        collapsible: true,
+        accordionTitle: 'Advanced Security Settings (optional)',
       },
       secure_header_name: {
         label: 'Secure Header Name',
@@ -879,6 +887,8 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
       _github_section: {
         type: CredentialComponentType.sectionHeader,
         label: 'GitHub',
+        collapsible: true,
+        accordionTitle: 'GitHub Settings (optional)',
       },
       github_require_sha256: {
         placeholder: 'Require SHA-256 Signature',
@@ -897,6 +907,8 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
       _gitlab_section: {
         type: CredentialComponentType.sectionHeader,
         label: 'GitLab',
+        collapsible: true,
+        accordionTitle: 'GitLab Settings (optional)',
       },
       gitlab_webhook_token: {
         label: 'GitLab Webhook Secret Token',
@@ -944,13 +956,18 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
       resource_type: {
         placeholder: 'Resource Type',
         type: CredentialComponentType.select,
+        rowGroup: 'resource_row',
         options: [
           { value: 'assistant', label: 'Assistant' },
           { value: 'workflow', label: 'Workflow' },
           { value: 'datasource', label: 'Datasource' },
         ],
       },
-      resource_id: { placeholder: 'Resource ID' },
+      resource_id: {
+        label: 'Resource',
+        type: CredentialComponentType.resourceSelect,
+        rowGroup: 'resource_row',
+      },
     },
   },
   [GOOGLE_OAUTH_CREDENTIAL_TYPE]: {

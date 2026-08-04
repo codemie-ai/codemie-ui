@@ -50,6 +50,9 @@ interface SelectProps<TValue extends string | number | null = string | number | 
   inputRef?: Ref<HTMLSelectElement>
   hint?: string
   appendTo?: 'self' | HTMLElement | null | undefined
+  filter?: boolean
+  filterBy?: string
+  filterPlaceholder?: string
 }
 
 // PrimeReact returns the full option object when the selected value is an empty
@@ -90,6 +93,9 @@ const Select = forwardRef(
       inputRef,
       hint,
       appendTo,
+      filter,
+      filterBy,
+      filterPlaceholder,
     }: SelectProps<TValue>,
     ref: Ref<Dropdown>
   ) => {
@@ -147,6 +153,9 @@ const Select = forwardRef(
             itemTemplate={OptionTemplate}
             loading={loading}
             appendTo={appendTo}
+            filter={filter}
+            filterBy={filterBy}
+            filterPlaceholder={filterPlaceholder}
             className={cn(
               'h-8 gap-2 !px-2 text-sm flex text-text-primary justify-between items-center bg-surface-base-content border border-border-primary rounded-lg transition hover:border-border-secondary cursor-pointer',
               !value && 'text-text-quaternary',

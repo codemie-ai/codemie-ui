@@ -23,7 +23,12 @@ import { CredentialComponentType, CredentialFieldConfig } from '@/types/settings
 import { CREDENTIAL_UI_MAPPING } from '@/utils/settingsUIConfig'
 
 import CredentialFields from '../CredentialFields'
+import { useResourceOptions } from '../hooks/useResourceOptions'
 import MultiSelectCheckboxGroup from '../MultiSelectCheckboxGroup'
+
+vi.mock('../hooks/useResourceOptions', () => ({
+  useResourceOptions: vi.fn().mockReturnValue({ options: [], loading: false }),
+}))
 
 const MR_ACTION_OPTIONS = [
   { value: 'open', label: 'Created (open)' },
@@ -201,66 +206,6 @@ describe('CredentialFields — multiselect (GitLab MR event filter)', () => {
   })
 })
 
-describe('CredentialFields — note "Full URL" preview scoping', () => {
-  const buildWebhookURL = (value: string) =>
-    `https://api.example.com/v1/webhooks/${value && value.trim() !== '' ? value : '<id>'}`
-
-  function NoteWrapper({
-    fields,
-    values,
-  }: Readonly<{
-    fields: Record<string, CredentialFieldConfig>
-    values: Record<string, unknown>
-  }>) {
-    const { control } = useForm({ defaultValues: values })
-    return (
-      <CredentialFields
-        control={control as any}
-        credentialFields={fields}
-        buildWebhookURL={buildWebhookURL}
-      />
-    )
-  }
-
-  it('appends the Full URL only when the field opts in via showWebhookUrl', () => {
-    render(
-      <NoteWrapper
-        fields={{
-          webhook_id: {
-            placeholder: 'Webhook ID',
-            note: 'A webhook identifier.',
-            showWebhookUrl: true,
-          },
-        }}
-        values={{ webhook_id: 'abc123' }}
-      />
-    )
-
-    expect(
-      screen.getByText(/Full URL: https:\/\/api\.example\.com\/v1\/webhooks\/abc123/)
-    ).toBeInTheDocument()
-  })
-
-  it('does NOT append the Full URL to a multiselect note (regression: stray URL under MR action filter)', () => {
-    render(
-      <NoteWrapper
-        fields={{
-          gitlab_event_filter: {
-            label: 'Trigger on merge request actions',
-            type: CredentialComponentType.multiselect,
-            note: 'Applies to merge_request events only.',
-            options: MR_ACTION_OPTIONS,
-          },
-        }}
-        values={{ gitlab_event_filter: 'approved,unapproved,close,open' }}
-      />
-    )
-
-    expect(screen.getByText(/Applies to merge_request events only\./)).toBeInTheDocument()
-    expect(screen.queryByText(/Full URL:/)).not.toBeInTheDocument()
-  })
-})
-
 describe('MultiSelectCheckboxGroup — hardening', () => {
   it('renders without crashing when no options are provided', () => {
     render(<MultiSelectCheckboxGroup name="empty" value="" onChange={vi.fn()} />)
@@ -386,6 +331,150 @@ describe('webhook form section grouping', () => {
     expect(gate?.({ gitlab_filter_mr_actions: false })).toBe(false)
     expect(gate?.({ gitlab_filter_mr_actions: true })).toBe(true)
   })
+
+  it('marks the three optional sections as collapsible with new accordion titles', () => {
+    expect(fields._verification_section.collapsible).toBe(true)
+    expect(fields._verification_section.accordionTitle).toBe(
+      'Advanced Security Settings (optional)'
+    )
+    expect(fields._github_section.collapsible).toBe(true)
+    expect(fields._github_section.accordionTitle).toBe('GitHub Settings (optional)')
+    expect(fields._gitlab_section.collapsible).toBe(true)
+    expect(fields._gitlab_section.accordionTitle).toBe('GitLab Settings (optional)')
+  })
+
+  it('includes webhook_url_display field after webhook_id with webhookUrl type', () => {
+    const keys = Object.keys(fields)
+    const idx = (k: string) => keys.indexOf(k)
+    expect(idx('webhook_url_display')).toBeGreaterThan(idx('webhook_id'))
+    expect(idx('webhook_url_display')).toBeLessThan(idx('is_enabled'))
+    expect(fields.webhook_url_display.type).toBe(CredentialComponentType.webhookUrl)
+  })
+
+  it('changes resource_id to resourceSelect type with rowGroup, and resource_type gains rowGroup', () => {
+    expect(fields.resource_id.type).toBe(CredentialComponentType.resourceSelect)
+    expect(fields.resource_id.rowGroup).toBe('resource_row')
+    expect(fields.resource_type.rowGroup).toBe('resource_row')
+  })
+
+  it('does not have legacy showWebhookUrl property on webhook_id', () => {
+    expect((fields.webhook_id as any).showWebhookUrl).toBeUndefined()
+  })
+})
+
+describe('CredentialFields — collapsible accordion sections', () => {
+  function AccordionWrapper() {
+    const { control } = useForm({ defaultValues: { secure_header_name: '' } })
+    const fields: Record<string, CredentialFieldConfig> = {
+      _verification_section: {
+        type: CredentialComponentType.sectionHeader,
+        label: 'Request verification (legacy header)',
+        collapsible: true,
+        accordionTitle: 'Advanced Security Settings (optional)',
+      },
+      secure_header_name: {
+        label: 'Secure Header Name',
+        placeholder: 'Secure Header Name',
+      },
+    }
+    return <CredentialFields control={control as any} credentialFields={fields} />
+  }
+
+  it('renders collapsible sectionHeader as accordion with accordionTitle text visible', () => {
+    render(<AccordionWrapper />)
+    expect(screen.getByText('Advanced Security Settings (optional)')).toBeInTheDocument()
+  })
+
+  it('hides fields inside a collapsed accordion by default', () => {
+    render(<AccordionWrapper />)
+    expect(screen.queryByLabelText('Secure Header Name')).not.toBeInTheDocument()
+  })
+
+  it('does NOT render the old label as a heading element', () => {
+    render(<AccordionWrapper />)
+    expect(
+      screen.queryByRole('heading', { name: 'Request verification (legacy header)' })
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('CredentialFields — rowGroup flex layout', () => {
+  function RowWrapper() {
+    const { control } = useForm({ defaultValues: { field_a: '', field_b: '' } })
+    const fields: Record<string, CredentialFieldConfig> = {
+      field_a: {
+        label: 'Field A',
+        placeholder: 'Field A',
+        rowGroup: 'test_row',
+      },
+      field_b: {
+        label: 'Field B',
+        placeholder: 'Field B',
+        rowGroup: 'test_row',
+      },
+    }
+    return <CredentialFields control={control as any} credentialFields={fields} />
+  }
+
+  it('wraps fields sharing a rowGroup in a flex container', () => {
+    const { container } = render(<RowWrapper />)
+    const flexDiv = container.querySelector('.flex.gap-4')
+    expect(flexDiv).not.toBeNull()
+    expect(flexDiv!.querySelectorAll('input').length).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe('CredentialFields — webhookUrl display field', () => {
+  const buildWebhookURL = (value: string) =>
+    `https://test/v1/webhooks/${value && value.trim() !== '' ? value : '<id>'}`
+
+  function UrlWrapper({ webhookId }: Readonly<{ webhookId: string }>) {
+    const { control } = useForm({
+      defaultValues: { webhook_id: webhookId, webhook_url_display: '' },
+    })
+    const fields: Record<string, CredentialFieldConfig> = {
+      webhook_url_display: {
+        label: 'Webhook URL',
+        type: CredentialComponentType.webhookUrl,
+      },
+    }
+    return (
+      <CredentialFields
+        control={control as any}
+        credentialFields={fields}
+        buildWebhookURL={buildWebhookURL}
+      />
+    )
+  }
+
+  it('renders InputCopy with URL built from the current webhook_id value', () => {
+    render(<UrlWrapper webhookId="my-hook" />)
+    const input = screen.getByDisplayValue('https://test/v1/webhooks/my-hook')
+    expect(input).toBeInTheDocument()
+  })
+
+  it('renders InputCopy with placeholder URL when webhook_id is empty', () => {
+    render(<UrlWrapper webhookId="" />)
+    const input = screen.getByDisplayValue('https://test/v1/webhooks/<id>')
+    expect(input).toBeInTheDocument()
+  })
+
+  it('renders the Webhook URL label', () => {
+    render(<UrlWrapper webhookId="x" />)
+    expect(screen.getByText('Webhook URL')).toBeInTheDocument()
+  })
+
+  it('renders nothing when buildWebhookURL prop is absent', () => {
+    function NoBuildWrapper() {
+      const { control } = useForm({ defaultValues: { webhook_id: 'x', webhook_url_display: '' } })
+      const fields: Record<string, CredentialFieldConfig> = {
+        webhook_url_display: { label: 'Webhook URL', type: CredentialComponentType.webhookUrl },
+      }
+      return <CredentialFields control={control as any} credentialFields={fields} />
+    }
+    render(<NoBuildWrapper />)
+    expect(screen.queryByText('Webhook URL')).not.toBeInTheDocument()
+  })
 })
 
 describe('CredentialFields — sectionHeader rendering', () => {
@@ -457,5 +546,34 @@ describe('azuredevops credential fields', () => {
   it('project placeholder indicates optional', () => {
     const projectField = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).project
     expect(projectField.placeholder).toBe('Project Name (optional)')
+  })
+})
+
+describe('CredentialFields — resourceSelect field', () => {
+  function ResourceWrapper({
+    resourceType,
+    options,
+  }: Readonly<{ resourceType: string; options: { label: string; value: string }[] }>) {
+    vi.mocked(useResourceOptions).mockReturnValue({ options, loading: false })
+    const { control } = useForm({ defaultValues: { resource_type: resourceType, resource_id: '' } })
+    const fields: Record<string, CredentialFieldConfig> = {
+      resource_id: {
+        label: 'Resource',
+        type: CredentialComponentType.resourceSelect,
+        rowGroup: 'resource_row',
+      },
+    }
+    return <CredentialFields control={control as any} credentialFields={fields} />
+  }
+
+  it('renders the Resource label', () => {
+    render(<ResourceWrapper resourceType="" options={[]} />)
+    expect(screen.getByText('Resource')).toBeInTheDocument()
+  })
+
+  it('is disabled when resource_type is empty', () => {
+    const { container } = render(<ResourceWrapper resourceType="" options={[]} />)
+    // PrimeReact Dropdown marks disabled state with data-p-disabled attribute
+    expect(container.querySelector('[data-p-disabled="true"]')).not.toBeNull()
   })
 })

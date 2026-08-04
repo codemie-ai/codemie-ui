@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "task": "Improve the Webhook integration setup form with a read-only URL field, alias-to-ID auto-fill, collapsible accordion sections, and a name-based resource dropdown.",
+  "generated": "2026-07-27T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L"
+    },
+    "requirements_clarity": {
+      "score": 4,
+      "label": "L"
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M"
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS"
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M"
+    }
+  },
+  "total": 19,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four independent feature areas (URL display field, alias auto-fill with override flag, data-driven accordion grouping, resource dropdown with Valtio hook) each require changes across SettingsForm, CredentialFields, settingsUIConfig, settingsUI types, and new files — 3 architectural layers touched."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Most requirements are precisely specified, but the GitLab section accordion is explicitly deferred ('or confirm with PO') — an unresolved ambiguity requiring product owner clarification before implementation. Also, buildWebhookURL path correctness (BASE_URL prefix) must be verified against the live environment."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The data-driven accordion grouping mechanism has no established precedent in the codebase: existing accordion usages (FormAccordion, ConfigAccordion) are all explicit, not data-driven. Adding collapsible grouping to the CredentialFields renderer requires a novel architectural decision (accordionGroup container type vs. pre-processing pass) with no prior pattern to copy. The useResourceOptions three-way conditional Valtio fetch is also a new pattern in this domain."
+    }
+  ],
+  "red_flags_applied": [
+    "Requirements Clarity bumped from M (3) to L (4): GitLab section accordion requirement is explicitly deferred with 'or confirm with PO' — a TBD that requires product owner resolution before implementation begins."
+  ],
+  "split_recommendation": null
+}

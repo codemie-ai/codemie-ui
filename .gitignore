@@ -57,3 +57,6 @@ bmad/*
 /.env_local
 /.codegraph/
 /.serena/
+
+# Code-review diff artifacts
+*.diff

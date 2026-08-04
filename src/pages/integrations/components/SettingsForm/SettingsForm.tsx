@@ -46,6 +46,7 @@ import {
   getSettingsFieldsSectionTitle,
   SETTING_TYPE_PROJECT,
   generateDefaultAlias,
+  slugifyType,
 } from '@/utils/settings'
 
 import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
@@ -108,6 +109,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   const [isGlobal, setIsGlobal] = useState(initialIsGlobal || false)
   const [customerConfig, setCustomerConfig] = useState<any>(null)
   const aliasManuallyEdited = useRef(false)
+  const webhookIdManuallyEdited = useRef(false)
+  const prevResourceType = useRef<string | undefined>(undefined)
 
   const CREDENTIAL_TYPES = useMemo(() => {
     return getAvailableCredentialsTypes({
@@ -275,8 +278,30 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     if (defaultAlias) setFormValue('alias', defaultAlias)
   }, [credentialType])
 
+  useEffect(() => {
+    if (credentialType !== 'webhook' || editing || webhookIdManuallyEdited.current) return
+    const alias = formValues.alias as string | undefined
+    if (!alias) return
+    const slug = slugifyType(alias)
+    if (!slug || (formValues.webhook_id as string | undefined) === slug) return
+    setFormValue('webhook_id', slug, { shouldDirty: false, shouldTouch: false })
+  }, [formValues.alias, formValues.webhook_id, credentialType, editing])
+
+  // Clear the linked resource when the user switches between two real resource
+  // types (its stored id belongs to the old type). Never fires on the initial
+  // mount or edit-mode prefill (prev undefined / empty → value transition).
+  useEffect(() => {
+    const current = (formValues.resource_type as string | undefined) ?? ''
+    const prev = prevResourceType.current
+    prevResourceType.current = current
+    if (prev && prev !== current && formValues.resource_id) {
+      setFormValue('resource_id', '', { shouldDirty: false, shouldTouch: false })
+    }
+  }, [formValues.resource_type])
+
   const handleCredentialTypeChange = (newType: string) => {
     setCredentialType(newType)
+    webhookIdManuallyEdited.current = false
 
     const hasManualConfig = CREDENTIAL_VALUES_MAPPING[newType]?.fieldsManualConfiguration
     if (hasManualConfig) {
@@ -405,6 +430,9 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               position={CredentialComponentPosition.top}
               editing={editing}
               resetKey={resetCount}
+              onManualFieldEdit={(fieldName) => {
+                if (fieldName === 'webhook_id') webhookIdManuallyEdited.current = true
+              }}
             />
           )}
 
@@ -491,14 +519,14 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               />
             ) : (
               <>
-                <div className="-mt-3 -mb-2">
-                  <hr className="opacity-25 mb-6 border-border-structural" />
-                  {getSettingsFieldsSectionTitle(credentialType) && (
+                {getSettingsFieldsSectionTitle(credentialType) && (
+                  <div className="-mt-3 -mb-2">
+                    <hr className="opacity-25 mb-6 border-border-structural" />
                     <h4 className="text-sm font-medium">
                       {getSettingsFieldsSectionTitle(credentialType)}
                     </h4>
-                  )}
-                </div>
+                  </div>
+                )}
                 {CREDENTIAL_VALUES_MAPPING[credentialType] && (
                   <CredentialFields
                     key={credentialType}
@@ -507,6 +535,9 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                     buildWebhookURL={buildWebhookURL}
                     editing={editing}
                     resetKey={resetCount}
+                    onManualFieldEdit={(fieldName) => {
+                      if (fieldName === 'webhook_id') webhookIdManuallyEdited.current = true
+                    }}
                   />
                 )}
               </>
