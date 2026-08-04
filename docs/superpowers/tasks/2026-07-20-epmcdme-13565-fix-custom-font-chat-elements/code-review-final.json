@@ -1,0 +1,41 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two missed elements with hardcoded font-geist-mono outside the current fix scope: EditOutputForm.tsx:126 applies font-geist-mono to a Markdown component in the AI output editor preview tab; quillModules.ts:257 applies font-geist-mono to the mention autocomplete container in the chat editor. Both are part of the chat interface and retain hardcoded font classes after this PR. All three commits follow the correct EPMCDME-13565: Capital sentence format. Blind-lens concerns — Editor.scss using --font-family-body (correct for chat text input per the ticket), JSX trailing-space (Prettier-stable), test source-text approach (established CodeBlock pattern), StatusBadge test (regression guard) — were dismissed. No story/spec artifact provided: no-spec round, confidence low.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "All 3 commits follow EPMCDME-XXXX: Capital sentence pattern required by git-workflow.md."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No security surface — font-family declarations and test files only."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "title": "Missed font-geist-mono in EditOutputForm Markdown preview tab",
+      "problem": "EditOutputForm.tsx line 126 renders a <Markdown> component with a className that includes font-geist-mono, overriding CSS variable inheritance on the Markdown component in the AI output editor's preview tab.",
+      "impact": "The Markdown preview tab in the AI output editor always renders in GeistMono regardless of the user's custom body font selection, leaving the chat interface inconsistent after this fix.",
+      "recommendation": "Remove font-geist-mono from the className prop in src/components/EditOutputForm/EditOutputForm.tsx:126 so the Markdown component inherits from body.",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/components/EditOutputForm/EditOutputForm.tsx:126"
+    },
+    {
+      "id": "CR-002",
+      "title": "Missed font-geist-mono in Quill mention autocomplete container",
+      "problem": "quillModules.ts line 257 passes a mentionContainerClass string that includes font-geist-mono. The mention autocomplete popup rendered in the chat editor retains the hardcoded monospace font.",
+      "impact": "When the user types @ in the chat input and the mention popup appears, it renders in GeistMono regardless of the user's custom font setting, creating a visible font inconsistency during chat interaction.",
+      "recommendation": "Remove font-geist-mono from the mentionContainerClass string in src/components/Editor/quillModules.ts:257; the container will then inherit from body (no explicit CSS var needed, unlike ql-editor where Quill bundled CSS would win).",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/components/Editor/quillModules.ts:257"
+    }
+  ]
+}

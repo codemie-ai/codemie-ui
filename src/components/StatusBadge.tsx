@@ -75,7 +75,7 @@ const StatusBadge: FC<StatusBadgeProps> = ({ status, text }) => {
       aria-label={text}
       className={cn(
         'flex flex-row items-center gap-1.5 px-2 rounded-full',
-        'uppercase font-bold font-geist-mono text-[10px] w-fit select-none',
+        'uppercase font-bold text-[10px] w-fit select-none',
         'whitespace-nowrap h-[17px] leading-[17px] border',
         styles.container
       )}

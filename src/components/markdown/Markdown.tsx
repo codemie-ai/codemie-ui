@@ -42,7 +42,7 @@ const Markdown: React.FC<MarkdownProps> = ({
   return (
     <div
       className={cn(
-        'markdown text-text-primary font-geist text-sm break-words',
+        'markdown text-text-primary text-sm break-words',
         withBlinker ? 'with-blinker' : '',
         className
       )}

@@ -220,7 +220,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
             onKeyDown={handleKeyDown}
             onChange={(e) => setNewResponse(e.target.value)}
             className={cn(
-              'p-3 text-sm leading-6 overflow-hidden font-geist break-words rounded-lg border-border-primary transition hover:border-border-secondary focus:border-border-secondary',
+              'p-3 text-sm leading-6 overflow-hidden break-words rounded-lg border-border-primary transition hover:border-border-secondary focus:border-border-secondary',
               'resize-none outline-none',
               'bg-surface-base-primary border border-border-structural',
               'mt-4 mb-2'

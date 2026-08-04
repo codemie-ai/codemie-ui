@@ -51,7 +51,8 @@
   @apply flex flex-col grow min-h-0;
 
   .ql-editor {
-    @apply text-text-primary !leading-6 font-geist-mono overflow-y-auto whitespace-pre-wrap;
+    @apply text-text-primary !leading-6 overflow-y-auto whitespace-pre-wrap;
+    font-family: var(--font-family-body, "GeistMono", monospace);
   }
 
   .ql-editor::before {

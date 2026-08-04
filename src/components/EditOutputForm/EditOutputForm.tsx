@@ -123,7 +123,7 @@ const EditOutputForm: FC<EditOutputFormProps> = ({
     {
       id: 'markdown',
       label: 'Markdown',
-      element: <Markdown content={output} className="-mt-1 font-geist-mono py-4" />,
+      element: <Markdown content={output} className="-mt-1 py-4" />,
     },
   ]
 

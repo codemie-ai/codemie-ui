@@ -254,7 +254,7 @@ export const getEditorModules = ({ editorId, enableMentions }: EditorModulesProp
       mentionDenotationChars: ['@'],
       positioningStrategy: 'fixed',
       mentionContainerClass:
-        'bg-surface-base-secondary max-w-xs max-h-40 border border-border-specific-panel-outline rounded-lg shadow-lg overflow-y-auto font-geist-mono p-2',
+        'bg-surface-base-secondary max-w-xs max-h-40 border border-border-specific-panel-outline rounded-lg shadow-lg overflow-y-auto p-2',
       defaultMenuOrientation: 'top',
       listItemClass: 'ql-ml-item',
       dataAttributes: [
