@@ -1,0 +1,27 @@
+{
+  "decision": "approve",
+  "rationale": "Both original blocking findings are resolved with clear fix-up evidence. CR-001: Textarea.tsx now destructures 'aria-describedby' and 'aria-invalid' out of the incoming props before {...rest} spreads, confirmed by a new regression test (RED before: caller's aria-describedby won; GREEN after). CR-002: FilesDropzone.tsx now derives errorId via useId() combined with name instead of the raw name prop alone, confirmed by a new regression test asserting two instances sharing the same name get distinct wrapper ids (RED before: both got 'files-errors'; GREEN after). No new high-risk issue introduced by this small, mechanical fix-up (2 files, 2 new tests, both green; lint and typecheck clean), so no confirmation pass was needed.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Textarea: aria-describedby/aria-invalid/id wired when error present", "status": "pass", "notes": "Textarea.tsx:116-117,133-137; test asserts id match + toHaveAccessibleDescription" },
+    { "kind": "spec", "item": "Textarea: no aria-describedby/error node, aria-invalid false/absent when no error", "status": "pass", "notes": "Textarea.test.tsx no-error case passes" },
+    { "kind": "spec", "item": "useId() fallback used when id prop not provided", "status": "pass", "notes": "Textarea.tsx:74-75, errorId = `${id ?? reactId}-error`, dedicated test passes" },
+    { "kind": "spec", "item": "Textarea not wrapped in <label> (Input.tsx pattern not copied)", "status": "pass", "notes": "label remains sibling above textarea" },
+    { "kind": "spec", "item": "'Add file' location identified as different control and fixed with same pattern", "status": "pass", "notes": "FileDropArea.tsx hidden file input gets aria-describedby/aria-invalid" },
+    { "kind": "spec", "item": "Single wrapper id used for multiple simultaneous file errors, not per-message ids", "status": "pass", "notes": "FileDropzoneErrors.tsx single <div id={errorId}> wraps all messages; test confirms" },
+    { "kind": "spec", "item": "Data Source Create AND Edit Description fields both covered by one Textarea fix", "status": "pass", "notes": "Both render the same DataSourceForm.tsx -> single Textarea id=\"description\"" },
+    { "kind": "spec", "item": "Labelling-only change, no visual/behavioural change", "status": "pass", "notes": "Diff is additive id/aria-* attrs only; filter/dedup logic moved, not altered" },
+    { "kind": "spec", "item": "Tests assert accessible description / aria-describedby-id relationship", "status": "pass", "notes": "Textarea.test.tsx and FilesDropzone.test.tsx both assert the id relationship directly" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "Both commits match EPMCDME-8550: Capital sentence format per git-workflow.md" },
+    { "kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md present in this repo" },
+    { "kind": "security", "status": "pass", "notes": "No security guide present; no concrete security issues found in a labelling-only ARIA change" }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "Textarea.tsx:69-70 now destructures 'aria-describedby'/'aria-invalid' out of props before ...rest spread; regression test 'keeps the computed error association even when a caller passes its own aria-describedby/aria-invalid' confirms." },
+    { "id": "CR-002", "status": "resolved", "notes": "FilesDropzone.tsx:46-47 now derives errorId via useId() combined with name; regression test 'uses a unique wrapper id per instance even when two dropzones share the same name' confirms." }
+  ]
+}

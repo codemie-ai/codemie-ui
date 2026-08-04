@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC } from 'react'
+import { FC, useId, useMemo } from 'react'
 
 import { FileDropArea } from '@/components/form/FilesDropzone/components/FileDropArea'
 import { FileDropzoneErrors } from '@/components/form/FilesDropzone/components/FileDropzoneErrors'
@@ -43,6 +43,25 @@ const FilesDropzone: FC<Props> = ({
   uploadedFiles = [],
   onUploadedFileRemove,
 }) => {
+  const reactId = useId()
+  const errorId = `${name}-${reactId}-errors`
+
+  const errorsMessages = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (errors ?? [])
+            .filter(
+              (e): e is { message: string } => !!e?.message && (showErrors || files.length > 0)
+            )
+            .map((e) => e.message)
+        )
+      ),
+    [errors, files.length, showErrors]
+  )
+
+  const hasErrors = errorsMessages.length > 0
+
   return (
     <div className="flex flex-col gap-3">
       <FileDropArea
@@ -50,6 +69,7 @@ const FilesDropzone: FC<Props> = ({
         files={files}
         uploadedFilesCount={uploadedFiles.length}
         onChange={onChange}
+        errorId={hasErrors ? errorId : undefined}
       />
       <FileList
         files={files}
@@ -60,7 +80,7 @@ const FilesDropzone: FC<Props> = ({
       <InfoBox
         text={`${SUPPORTED_FILE_FORMATS_MESSAGE_BASE} Max file size: ${MAX_FILE_SIZE_MB}Mb (images: ${MAX_IMAGE_FILE_SIZE_MB}Mb).`}
       />
-      <FileDropzoneErrors filesCount={files.length} errors={errors} showErrors={showErrors} />
+      <FileDropzoneErrors errorId={errorId} messages={errorsMessages} />
     </div>
   )
 }

@@ -17,6 +17,7 @@ import React, {
   forwardRef,
   ReactNode,
   TextareaHTMLAttributes,
+  useId,
   useImperativeHandle,
   useRef,
 } from 'react'
@@ -65,11 +66,15 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
       className,
       children,
       disabled,
+      'aria-describedby': _ariaDescribedBy,
+      'aria-invalid': _ariaInvalid,
       ...rest
     },
     ref
   ) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const reactId = useId()
+    const errorId = `${id ?? reactId}-error`
 
     useImperativeHandle(ref, () => ({
       scrollIntoView: () => textareaRef.current?.scrollIntoView(),
@@ -110,6 +115,8 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
           name={name}
           value={value}
           onChange={onChange}
+          aria-describedby={error ? errorId : undefined}
+          aria-invalid={!!error}
           className={cn(
             'rounded-lg border border-border-primary p-2 py-2.5 px-3 max-h-96 min-h-12 text-sm transition',
             'bg-surface-base-content placeholder:text-text-specific-input-placeholder focus:outline-none !text-text-primary show-scroll w-auto [scrollbar-width:auto]',
@@ -125,7 +132,11 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
           {...rest}
         />
 
-        {error && <div className="text-text-error text-sm">{error}</div>}
+        {error && (
+          <div id={errorId} role="alert" className="text-text-error text-sm">
+            {error}
+          </div>
+        )}
         {children}
       </div>
     )

@@ -13,34 +13,23 @@
 // limitations under the License.
 //
 
-import { FC, useMemo } from 'react'
+import { FC } from 'react'
 
 type Props = {
-  filesCount: number
-  errors: Array<{ message: string } | undefined>
-  showErrors: boolean
+  messages: string[]
+  errorId: string
 }
 
-export const FileDropzoneErrors: FC<Props> = ({ errors, showErrors, filesCount }) => {
-  const errorsMessages = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          (errors ?? [])
-            .filter((e): e is { message: string } => !!e?.message && (showErrors || filesCount > 0))
-            .map((e) => e.message)
-        )
-      ),
-    [errors, filesCount, showErrors]
-  )
+export const FileDropzoneErrors: FC<Props> = ({ messages, errorId }) => {
+  if (messages.length === 0) return null
 
   return (
-    <>
-      {errorsMessages.map((errorMessage) => (
+    <div id={errorId}>
+      {messages.map((errorMessage) => (
         <div className="text-text-error text-sm" key={errorMessage} role="alert">
           {errorMessage}
         </div>
       ))}
-    </>
+    </div>
   )
 }

@@ -1,0 +1,46 @@
+{
+  "decision": "request-changes",
+  "rationale": "All 9 acceptance criteria pass and both new test files are green, but blind and edge-case lenses independently confirmed the same real defect: aria-describedby/aria-invalid on Textarea's <textarea> are set before {...rest} spreads, so any future caller passing those props directly overrides the fix with no compiler warning, breaking the pattern the file already uses for disabled/required. Edge-case also flagged FilesDropzone's errorId deriving from the raw name prop instead of useId(), inconsistent with the useId() idiom the plan specified and Textarea itself uses in this same diff — currently latent (one call site) but fragile. One minor blind finding (FileDropArea omitting aria-invalid vs Textarea's aria-invalid=\"false\") was dismissed as a deliberate, tested, spec-valid choice, not a defect. 0 defer, 1 dismiss.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Textarea: aria-describedby/aria-invalid/id wired when error present", "status": "pass", "notes": "Textarea.tsx:116-117,133-137; test asserts id match + toHaveAccessibleDescription" },
+    { "kind": "spec", "item": "Textarea: no aria-describedby/error node, aria-invalid false/absent when no error", "status": "pass", "notes": "Textarea.test.tsx no-error case passes" },
+    { "kind": "spec", "item": "useId() fallback used when id prop not provided", "status": "pass", "notes": "Textarea.tsx:74-75, errorId = `${id ?? reactId}-error`, dedicated test passes" },
+    { "kind": "spec", "item": "Textarea not wrapped in <label> (Input.tsx pattern not copied)", "status": "pass", "notes": "label remains sibling above textarea" },
+    { "kind": "spec", "item": "'Add file' location identified as different control and fixed with same pattern", "status": "pass", "notes": "FileDropArea.tsx hidden file input gets aria-describedby/aria-invalid" },
+    { "kind": "spec", "item": "Single wrapper id used for multiple simultaneous file errors, not per-message ids", "status": "pass", "notes": "FileDropzoneErrors.tsx single <div id={errorId}> wraps all messages; test confirms" },
+    { "kind": "spec", "item": "Data Source Create AND Edit Description fields both covered by one Textarea fix", "status": "pass", "notes": "Both render the same DataSourceForm.tsx -> single Textarea id=\"description\"" },
+    { "kind": "spec", "item": "Labelling-only change, no visual/behavioural change", "status": "pass", "notes": "Diff is additive id/aria-* attrs only; filter/dedup logic moved, not altered" },
+    { "kind": "spec", "item": "Tests assert accessible description / aria-describedby-id relationship", "status": "pass", "notes": "Textarea.test.tsx and FilesDropzone.test.tsx both assert the id relationship directly" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "Both commits match EPMCDME-8550: Capital sentence format per git-workflow.md" },
+    { "kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md present in this repo" },
+    { "kind": "security", "status": "pass", "notes": "No security guide present; no concrete security issues found in a labelling-only ARIA change" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/form/Textarea/Textarea.tsx",
+      "line": 116,
+      "title": "aria-describedby/aria-invalid can be silently overridden by {...rest} spread",
+      "problem": "aria-describedby={error ? errorId : undefined} and aria-invalid={!!error} are set on the <textarea> before {...rest} is spread. Neither prop is destructured out of the incoming props, and TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement>, so both are valid props a caller can pass through; if they do, the later {...rest} spread silently wins over the hardcoded values, with no compiler warning.",
+      "impact": "A future caller doing <Textarea aria-describedby=\"hint-id\" error=\"Required\" /> would have the error text silently un-associated from the textarea for assistive tech, defeating this exact accessibility fix. The file already destructures disabled/required/etc. specifically to prevent this class of bug for other props, so the two new ARIA props break the file's own established defensive pattern. Currently latent: confirmed none of the 41 existing Textarea consumers pass these props today.",
+      "recommendation": "Destructure 'aria-describedby' and 'aria-invalid' out of the incoming props (e.g. via a renamed computed-property destructure) so they cannot leak into rest, or move the two computed attributes after {...rest} in the JSX so they always win."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/form/FilesDropzone/FilesDropzone.tsx",
+      "line": 47,
+      "title": "errorId derived from raw name prop instead of useId(), unlike Textarea in the same diff",
+      "problem": "errorId = `${name}-errors` uses the caller-supplied name prop directly as a DOM id source, instead of the useId()-fallback idiom the plan specified and that Textarea.tsx uses for the equivalent id in this same diff.",
+      "impact": "If two FilesDropzone instances ever render simultaneously with the same name (currently prevented only by there being a single call site, IndexTypeFile.tsx, not by any guarantee in the component itself), both produce an identical DOM id, which is invalid HTML and makes aria-describedby resolution ambiguous for screen reader users. It also assumes name is always a valid HTML id token, which nothing enforces.",
+      "recommendation": "Derive errorId with useId() (optionally combined with name for readability/debugging), matching Textarea's approach in the same PR and guaranteeing per-instance uniqueness regardless of how many FilesDropzone instances end up on a page."
+    }
+  ]
+}

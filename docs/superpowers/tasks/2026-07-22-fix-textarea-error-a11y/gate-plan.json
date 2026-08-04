@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "runner": "npm",
+  "gates": [
+    {"id": "lint", "command": "npm run lint", "available": true},
+    {"id": "typecheck", "command": "npm run typecheck", "available": true},
+    {"id": "unit", "command": "npm run test:unit", "available": true},
+    {"id": "integration", "command": "npm run test:integration", "available": true},
+    {"id": "ui", "command": null, "available": false}
+  ],
+  "ui_globs": ["\\.(tsx|jsx|css|html)$", "src/(pages|components)/"],
+  "detected_at": "2026-07-23T00:00:00Z",
+  "notes": "Guide-first mode: gates and commands sourced from .ai-run/guides/quality-gates.md, not auto-detected."
+}

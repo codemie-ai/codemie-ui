@@ -1,0 +1,342 @@
+diff --git a/src/components/form/FilesDropzone/FilesDropzone.tsx b/src/components/form/FilesDropzone/FilesDropzone.tsx
+index dbdd252f7..258abd146 100644
+--- a/src/components/form/FilesDropzone/FilesDropzone.tsx
++++ b/src/components/form/FilesDropzone/FilesDropzone.tsx
+@@ -13,7 +13,7 @@
+ // limitations under the License.
+ //
+ 
+-import { FC } from 'react'
++import { FC, useMemo } from 'react'
+ 
+ import { FileDropArea } from '@/components/form/FilesDropzone/components/FileDropArea'
+ import { FileDropzoneErrors } from '@/components/form/FilesDropzone/components/FileDropzoneErrors'
+@@ -43,6 +43,24 @@ const FilesDropzone: FC<Props> = ({
+   uploadedFiles = [],
+   onUploadedFileRemove,
+ }) => {
++  const errorId = `${name}-errors`
++
++  const errorsMessages = useMemo(
++    () =>
++      Array.from(
++        new Set(
++          (errors ?? [])
++            .filter(
++              (e): e is { message: string } => !!e?.message && (showErrors || files.length > 0)
++            )
++            .map((e) => e.message)
++        )
++      ),
++    [errors, files.length, showErrors]
++  )
++
++  const hasErrors = errorsMessages.length > 0
++
+   return (
+     <div className="flex flex-col gap-3">
+       <FileDropArea
+@@ -50,6 +68,7 @@ const FilesDropzone: FC<Props> = ({
+         files={files}
+         uploadedFilesCount={uploadedFiles.length}
+         onChange={onChange}
++        errorId={hasErrors ? errorId : undefined}
+       />
+       <FileList
+         files={files}
+@@ -60,7 +79,7 @@ const FilesDropzone: FC<Props> = ({
+       <InfoBox
+         text={`${SUPPORTED_FILE_FORMATS_MESSAGE_BASE} Max file size: ${MAX_FILE_SIZE_MB}Mb (images: ${MAX_IMAGE_FILE_SIZE_MB}Mb).`}
+       />
+-      <FileDropzoneErrors filesCount={files.length} errors={errors} showErrors={showErrors} />
++      <FileDropzoneErrors errorId={errorId} messages={errorsMessages} />
+     </div>
+   )
+ }
+diff --git a/src/components/form/FilesDropzone/__tests__/FilesDropzone.test.tsx b/src/components/form/FilesDropzone/__tests__/FilesDropzone.test.tsx
+new file mode 100644
+index 000000000..e761b9639
+--- /dev/null
++++ b/src/components/form/FilesDropzone/__tests__/FilesDropzone.test.tsx
+@@ -0,0 +1,86 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render, screen } from '@testing-library/react'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++
++import FilesDropzone from '../FilesDropzone'
++
++vi.mock('@/components/form/DropzoneArea', () => ({
++  default: ({ children, onClick }: any) => <div onClick={onClick}>{children(false)}</div>,
++}))
++
++vi.mock('@/components/form/InfoBox', () => ({
++  default: () => <div />,
++}))
++
++const noop = vi.fn()
++
++afterEach(() => {
++  vi.clearAllMocks()
++})
++
++describe('FilesDropzone', () => {
++  describe('error association', () => {
++    it('links the file input to a single error wrapper via aria-describedby', () => {
++      render(
++        <FilesDropzone
++          name="files"
++          files={[]}
++          onChange={noop}
++          errors={[{ message: 'File too large' }]}
++          showErrors
++        />
++      )
++
++      const fileInput = screen.getByLabelText('Select files to upload')
++      const errorText = screen.getByText('File too large')
++      const wrapper = errorText.parentElement as HTMLElement
++
++      expect(wrapper).toHaveAttribute('id', fileInput.getAttribute('aria-describedby'))
++      expect(fileInput).toHaveAttribute('aria-invalid', 'true')
++    })
++
++    it('does not render aria-describedby or a wrapper when there are no errors', () => {
++      render(<FilesDropzone name="files" files={[]} onChange={noop} />)
++
++      const fileInput = screen.getByLabelText('Select files to upload')
++
++      expect(fileInput).not.toHaveAttribute('aria-describedby')
++      expect(fileInput).not.toHaveAttribute('aria-invalid')
++    })
++
++    it('groups multiple simultaneous error messages inside the same single wrapper id', () => {
++      render(
++        <FilesDropzone
++          name="files"
++          files={[]}
++          onChange={noop}
++          errors={[{ message: 'File too large' }, { message: 'Unsupported format' }]}
++          showErrors
++        />
++      )
++
++      const fileInput = screen.getByLabelText('Select files to upload')
++      const describedBy = fileInput.getAttribute('aria-describedby')
++
++      const firstError = screen.getByText('File too large')
++      const secondError = screen.getByText('Unsupported format')
++
++      expect(firstError.parentElement).toHaveAttribute('id', describedBy)
++      expect(secondError.parentElement).toBe(firstError.parentElement)
++    })
++  })
++})
+diff --git a/src/components/form/FilesDropzone/components/FileDropArea.tsx b/src/components/form/FilesDropzone/components/FileDropArea.tsx
+index 6054f4bcd..649c39df3 100644
+--- a/src/components/form/FilesDropzone/components/FileDropArea.tsx
++++ b/src/components/form/FilesDropzone/components/FileDropArea.tsx
+@@ -29,8 +29,15 @@ type FileDropArea = {
+   uploadedFilesCount: number
+   files: File[]
+   onChange: (updatedFiles: File[]) => void
++  errorId?: string
+ }
+-export const FileDropArea: FC<FileDropArea> = ({ name, files, uploadedFilesCount, onChange }) => {
++export const FileDropArea: FC<FileDropArea> = ({
++  name,
++  files,
++  uploadedFilesCount,
++  onChange,
++  errorId,
++}) => {
+   const fileInputRef = useRef<HTMLInputElement>(null)
+   const addFiles = useCallback(
+     (newFiles: File[]) => {
+@@ -89,6 +96,8 @@ export const FileDropArea: FC<FileDropArea> = ({ name, files, uploadedFilesCount
+         className="hidden"
+         onChange={handleInputChange}
+         aria-label="Select files to upload"
++        aria-describedby={errorId}
++        aria-invalid={errorId ? true : undefined}
+       />
+       <DropzoneArea
+         onFilesDrop={addFiles}
+diff --git a/src/components/form/FilesDropzone/components/FileDropzoneErrors.tsx b/src/components/form/FilesDropzone/components/FileDropzoneErrors.tsx
+index 819f92b57..bda03d14f 100644
+--- a/src/components/form/FilesDropzone/components/FileDropzoneErrors.tsx
++++ b/src/components/form/FilesDropzone/components/FileDropzoneErrors.tsx
+@@ -13,34 +13,23 @@
+ // limitations under the License.
+ //
+ 
+-import { FC, useMemo } from 'react'
++import { FC } from 'react'
+ 
+ type Props = {
+-  filesCount: number
+-  errors: Array<{ message: string } | undefined>
+-  showErrors: boolean
++  messages: string[]
++  errorId: string
+ }
+ 
+-export const FileDropzoneErrors: FC<Props> = ({ errors, showErrors, filesCount }) => {
+-  const errorsMessages = useMemo(
+-    () =>
+-      Array.from(
+-        new Set(
+-          (errors ?? [])
+-            .filter((e): e is { message: string } => !!e?.message && (showErrors || filesCount > 0))
+-            .map((e) => e.message)
+-        )
+-      ),
+-    [errors, filesCount, showErrors]
+-  )
++export const FileDropzoneErrors: FC<Props> = ({ messages, errorId }) => {
++  if (messages.length === 0) return null
+ 
+   return (
+-    <>
+-      {errorsMessages.map((errorMessage) => (
++    <div id={errorId}>
++      {messages.map((errorMessage) => (
+         <div className="text-text-error text-sm" key={errorMessage} role="alert">
+           {errorMessage}
+         </div>
+       ))}
+-    </>
++    </div>
+   )
+ }
+diff --git a/src/components/form/Textarea/Textarea.tsx b/src/components/form/Textarea/Textarea.tsx
+index 85482e877..a7486454a 100644
+--- a/src/components/form/Textarea/Textarea.tsx
++++ b/src/components/form/Textarea/Textarea.tsx
+@@ -17,6 +17,7 @@ import React, {
+   forwardRef,
+   ReactNode,
+   TextareaHTMLAttributes,
++  useId,
+   useImperativeHandle,
+   useRef,
+ } from 'react'
+@@ -70,6 +71,8 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
+     ref
+   ) => {
+     const textareaRef = useRef<HTMLTextAreaElement>(null)
++    const reactId = useId()
++    const errorId = `${id ?? reactId}-error`
+ 
+     useImperativeHandle(ref, () => ({
+       scrollIntoView: () => textareaRef.current?.scrollIntoView(),
+@@ -110,6 +113,8 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
+           name={name}
+           value={value}
+           onChange={onChange}
++          aria-describedby={error ? errorId : undefined}
++          aria-invalid={!!error}
+           className={cn(
+             'rounded-lg border border-border-primary p-2 py-2.5 px-3 max-h-96 min-h-12 text-sm transition',
+             'bg-surface-base-content placeholder:text-text-specific-input-placeholder focus:outline-none !text-text-primary show-scroll w-auto [scrollbar-width:auto]',
+@@ -125,7 +130,11 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
+           {...rest}
+         />
+ 
+-        {error && <div className="text-text-error text-sm">{error}</div>}
++        {error && (
++          <div id={errorId} role="alert" className="text-text-error text-sm">
++            {error}
++          </div>
++        )}
+         {children}
+       </div>
+     )
+diff --git a/src/components/form/Textarea/__tests__/Textarea.test.tsx b/src/components/form/Textarea/__tests__/Textarea.test.tsx
+new file mode 100644
+index 000000000..a88f09bea
+--- /dev/null
++++ b/src/components/form/Textarea/__tests__/Textarea.test.tsx
+@@ -0,0 +1,69 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render, screen } from '@testing-library/react'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++
++import Textarea from '../Textarea'
++
++const noop = vi.fn()
++
++afterEach(() => {
++  vi.clearAllMocks()
++})
++
++describe('Textarea', () => {
++  describe('error association', () => {
++    it('links the textarea to the error message via aria-describedby', () => {
++      render(
++        <Textarea
++          id="description"
++          name="description"
++          value=""
++          onChange={noop}
++          error="This field is required"
++        />
++      )
++
++      const textarea = screen.getByRole('textbox')
++      const errorNode = screen.getByText('This field is required')
++
++      expect(errorNode).toHaveAttribute('id', textarea.getAttribute('aria-describedby'))
++      expect(textarea).toHaveAttribute('aria-invalid', 'true')
++      expect(textarea).toHaveAccessibleDescription('This field is required')
++    })
++
++    it('does not render aria-describedby or an error node when there is no error', () => {
++      render(<Textarea id="description" name="description" value="" onChange={noop} />)
++
++      const textarea = screen.getByRole('textbox')
++
++      expect(textarea).not.toHaveAttribute('aria-describedby')
++      expect(textarea).toHaveAttribute('aria-invalid', 'false')
++      expect(screen.queryByText('This field is required')).not.toBeInTheDocument()
++    })
++
++    it('still associates the error when no id prop is passed (useId fallback)', () => {
++      render(<Textarea name="description" value="" onChange={noop} error="Required" />)
++
++      const textarea = screen.getByRole('textbox')
++      const errorNode = screen.getByText('Required')
++      const describedBy = textarea.getAttribute('aria-describedby')
++
++      expect(describedBy).toBeTruthy()
++      expect(errorNode).toHaveAttribute('id', describedBy)
++    })
++  })
++})

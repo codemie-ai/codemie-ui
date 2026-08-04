@@ -29,8 +29,15 @@ type FileDropArea = {
   uploadedFilesCount: number
   files: File[]
   onChange: (updatedFiles: File[]) => void
+  errorId?: string
 }
-export const FileDropArea: FC<FileDropArea> = ({ name, files, uploadedFilesCount, onChange }) => {
+export const FileDropArea: FC<FileDropArea> = ({
+  name,
+  files,
+  uploadedFilesCount,
+  onChange,
+  errorId,
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const addFiles = useCallback(
     (newFiles: File[]) => {
@@ -89,6 +96,8 @@ export const FileDropArea: FC<FileDropArea> = ({ name, files, uploadedFilesCount
         className="hidden"
         onChange={handleInputChange}
         aria-label="Select files to upload"
+        aria-describedby={errorId}
+        aria-invalid={errorId ? true : undefined}
       />
       <DropzoneArea
         onFilesDrop={addFiles}
