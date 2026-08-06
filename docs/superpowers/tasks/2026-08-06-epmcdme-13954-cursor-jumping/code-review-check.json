@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "gate": "code-review.check",
+  "decision": "approved",
+  "rationale": "No findings from final review. Approved on first pass.",
+  "findings": [],
+  "prior_findings_resolved": [],
+  "confidence": "high"
+}

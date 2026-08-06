@@ -201,7 +201,8 @@ const ChatPrompt: FC<ChatPromptProps> = ({ resizable = false }) => {
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') editorRef.current?.focus()
+    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' '))
+      editorRef.current?.focus()
   }
 
   const isVoiceRecorderVisible = !!userData?.stt_support && !isInProgress && !isInterrupted

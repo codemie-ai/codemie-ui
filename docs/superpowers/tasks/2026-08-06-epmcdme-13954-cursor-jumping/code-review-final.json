@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "gate": "code-review.final",
+  "decision": "approved",
+  "rationale": "XS single-line fix: adds e.target === e.currentTarget guard to handleKeyDown in ChatPrompt.tsx, matching the pattern already used in handleMouseDown and focusEditor in the same component. Two regression tests added. No regressions in 363 unit files / 35 integration files. TypeScript and lint clean.",
+  "findings": [],
+  "confidence": "high"
+}

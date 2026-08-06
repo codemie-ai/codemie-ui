@@ -20,6 +20,8 @@ import ChatPrompt from '../ChatPrompt'
 
 vi.hoisted(() => vi.resetModules())
 
+const mockEditorFocus = vi.hoisted(() => vi.fn())
+
 const { mockChatGenerationStore, mockChatsStore, mockUseChatPromptDraft } = vi.hoisted(() => ({
   mockChatGenerationStore: {
     stopChatGeneration: vi.fn(),
@@ -69,7 +71,15 @@ vi.mock('../../../hooks/useChatContext', () => ({
 vi.mock('../../../hooks/useFilePaste', () => ({
   useFilePaste: () => ({ setupPasteHandler: vi.fn() }),
 }))
-vi.mock('@/components/Editor/Editor', () => ({ default: () => null }))
+vi.mock('@/components/Editor/Editor', async () => {
+  const { forwardRef, useImperativeHandle } = await import('react')
+  return {
+    default: forwardRef<{ focus: () => void }, object>((_props, ref) => {
+      useImperativeHandle(ref, () => ({ focus: mockEditorFocus }))
+      return null
+    }),
+  }
+})
 vi.mock('@/components/Editor/quillModules', () => ({
   getAnyMentions: vi.fn(() => []),
   getAssistantMentions: vi.fn(() => []),
@@ -218,6 +228,29 @@ describe('ChatPrompt', () => {
       fireEvent.click(screen.getByRole('button', { name: /continue/i }))
 
       expect(mockUseChatPromptDraft.clearDraft).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('handleKeyDown', () => {
+    it('does NOT focus the editor when Space keydown bubbles from a child element', () => {
+      const { container } = render(<ChatPrompt />)
+      mockEditorFocus.mockClear()
+      const outerWrapper = container.querySelector('[data-onboarding="chat-input"]') as HTMLElement
+      const innerEditorContainer = outerWrapper.firstElementChild as HTMLElement
+
+      fireEvent.keyDown(innerEditorContainer, { key: ' ' })
+
+      expect(mockEditorFocus).not.toHaveBeenCalled()
+    })
+
+    it('focuses the editor when Space keydown fires directly on the wrapper', () => {
+      const { container } = render(<ChatPrompt />)
+      mockEditorFocus.mockClear()
+      const outerWrapper = container.querySelector('[data-onboarding="chat-input"]') as HTMLElement
+
+      fireEvent.keyDown(outerWrapper, { key: ' ' })
+
+      expect(mockEditorFocus).toHaveBeenCalledOnce()
     })
   })
 })
