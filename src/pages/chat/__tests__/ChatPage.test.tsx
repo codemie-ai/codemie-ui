@@ -33,6 +33,7 @@ const mockRouter = {
 
 const mockChatConfiguration = {
   isConfigVisible: false,
+  closeConfig: vi.fn(),
   toggleConfigVisibility: vi.fn(),
   attemptToggleConfigVisibility: vi.fn(),
   openConfigForm: vi.fn(),
@@ -123,6 +124,21 @@ vi.mock('../components/ChatPrompt/ChatPrompt', () => ({
 
 vi.mock('../components/ChatConfiguration/ChatConfiguration', () => ({
   default: () => <div data-testid="chat-configuration" />,
+}))
+
+vi.mock('../components/ChatConfiguration/useChatConfigResize', () => ({
+  useChatConfigResize: vi.fn((_opts: unknown) => ({
+    panelRef: { current: null },
+    handleResize: vi.fn(),
+  })),
+}))
+
+vi.mock('react-resizable-panels', () => ({
+  Group: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div className={className}>{children}</div>
+  ),
+  Panel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Separator: ({ className }: { className?: string }) => <div className={className} />,
 }))
 
 vi.mock('@/pages/integrations/components/NewIntegrationPopup', () => ({

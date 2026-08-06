@@ -56,6 +56,12 @@ vi.mock('../components/ChatSidebar/useChatSidebarResize', () => ({
     handleResize: vi.fn(),
   })),
 }))
+vi.mock('../components/ChatConfiguration/useChatConfigResize', () => ({
+  useChatConfigResize: vi.fn(() => ({
+    panelRef: { current: null },
+    handleResize: vi.fn(),
+  })),
+}))
 
 describe('ChatPage resizable sidebar', () => {
   it('renders the sidebar inside a resizable Group/Panel structure', () => {
@@ -63,7 +69,7 @@ describe('ChatPage resizable sidebar', () => {
 
     expect(screen.getByTestId('chat-sidebar-content')).toBeInTheDocument()
     expect(container.querySelector('[data-group]')).toBeInTheDocument()
-    expect(container.querySelectorAll('[data-panel]')).toHaveLength(2)
+    expect(container.querySelectorAll('[data-panel]')).toHaveLength(4)
     expect(container.querySelector('[data-separator]')).toBeInTheDocument()
   })
 })

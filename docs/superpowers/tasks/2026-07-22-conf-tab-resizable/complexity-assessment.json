@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Make the chat configuration panel resizable using react-resizable-panels (already installed), replacing hardcoded w-96 Tailwind classes with a draggable panel boundary, and migrate 5 existing unit tests.",
+  "generated": "2026-07-22T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "3 components across 2–3 UI layers: ChatConfiguration.tsx (panel), ChatPage.tsx (layout host), useChatConfiguration or a new useChatConfigPanelWidth hook. Optionally ChatHeader.tsx for a reset button. Coordination is needed but the pattern is clear."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Approximately 5–7 files modified (ChatConfiguration.tsx, ChatPage.tsx, useChatConfiguration.tsx or new hook, ChatConfiguration.test.tsx, ChatHeader.tsx optional) plus 1–2 new files (new hook file, hook test file), spanning 2–3 directories under src/pages/chat/."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

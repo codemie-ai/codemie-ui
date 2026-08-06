@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "CR-001 is resolved: onOpen callback added to UseChatConfigResizeOptions, isConfigVisibleRef tracks visibility so handleResize can read it stably, onOpen() called when inPixels>0 and !isConfigVisibleRef.current, wired in ChatPage.tsx with toggleConfigVisibility, 2 new tests cover the behaviour. No new high-risk issues. vite.config.ts in diff is a pre-existing dirty file not committed as part of this ticket.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "1 — ew-resize drag handle present", "status": "pass", "note": "Carried forward from final round."},
+    {"criterion": "2 — resize within 260–640px", "status": "pass", "note": "Carried forward from final round."},
+    {"criterion": "3 — no lag or flicker", "status": "pass", "note": "Carried forward from final round."},
+    {"criterion": "4 — content fills new width", "status": "pass", "note": "Carried forward from final round."},
+    {"criterion": "5 — close+reopen resets to 384px", "status": "pass", "note": "Carried forward from final round."},
+    {"criterion": "6 — drag to 0px syncs header button", "status": "pass", "note": "Carried forward from final round."},
+    {"criterion": "7 — main chat area unbroken", "status": "pass", "note": "Carried forward from final round."},
+    {"criterion": "8 — existing tests pass after migration", "status": "pass", "note": "238/238 tests pass."}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow commit format", "status": "pass", "notes": "Fix-up commit follows EPMCDME-XXXX: Capital sentence pattern."},
+    {"standard": "TypeScript/ESLint", "status": "pass", "notes": "Pre-commit hooks passed."},
+    {"standard": "security", "status": "pass", "notes": "No security concerns."}
+  ],
+  "findings": [],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "note": "onOpen callback added and wired; isConfigVisibleRef ensures stale-closure-free read; 2 tests confirm the behaviour."}
+  ]
+}

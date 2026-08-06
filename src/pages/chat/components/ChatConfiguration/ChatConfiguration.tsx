@@ -19,7 +19,6 @@ import { useSnapshot } from 'valtio'
 import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { useChatContext } from '@/pages/chat/hooks/useChatContext'
 import { chatsStore } from '@/store/chats'
-import { cn } from '@/utils/utils'
 
 import ChatConfigAssistantForm from './ChatConfigAssistants/ChatConfigAssistantForm'
 import ChatConfigAssistants from './ChatConfigAssistants/ChatConfigAssistants'
@@ -39,13 +38,11 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
   return (
     <aside
       id="chat-configuration-panel"
-      className={cn(
-        'flex flex-col shrink-0 h-full overflow-x-hidden bg-surface-base-sidebar shadow-surface-base-sidebar border-l border-border-specific-panel-outline transition-all duration-150 ease-in-out',
-        isConfigVisible ? 'w-96 max-w-96' : 'w-0'
-      )}
+      data-testid="chat-configuration-panel"
+      className="flex flex-col h-full overflow-x-hidden bg-surface-base-sidebar shadow-surface-base-sidebar border-l border-border-specific-panel-outline"
     >
       {isConfigVisible && (
-        <div className="flex flex-col w-96 pl-2 pr-2 h-full">
+        <div className="flex flex-col w-full pl-2 pr-2 h-full">
           {isConfigFormVisible ? (
             <ChatConfigAssistantForm showNewIntegrationPopup={showNewIntegrationPopup} />
           ) : (

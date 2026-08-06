@@ -24,7 +24,14 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
 import { chatsStore } from '@/store/chats'
 
+import ChatConfigResizableSeparator from './components/ChatConfiguration/ChatConfigResizableSeparator'
 import ChatConfiguration from './components/ChatConfiguration/ChatConfiguration'
+import {
+  CHAT_AREA_MIN_WIDTH,
+  CHAT_CONFIG_MAX_WIDTH,
+  CHAT_CONFIG_MIN_WIDTH,
+} from './components/ChatConfiguration/chatConfigWidth'
+import { useChatConfigResize } from './components/ChatConfiguration/useChatConfigResize'
 import ChatHeader from './components/ChatHeader/ChatHeader'
 import ChatHistory from './components/ChatHistory/ChatHistory'
 import ChatPrompt from './components/ChatPrompt/ChatPrompt'
@@ -73,6 +80,11 @@ const ChatPage: FC = () => {
   const hasHistory = !!currentChat?.history.length
 
   const chatConfiguration = useChatConfiguration()
+  const { panelRef: configPanelRef, handleResize: handleConfigResize } = useChatConfigResize({
+    isConfigVisible: chatConfiguration.isConfigVisible,
+    onClose: chatConfiguration.closeConfig,
+    onOpen: chatConfiguration.toggleConfigVisibility,
+  })
   const chatContextValue: ChatContextValue = useMemo(
     () => ({ ...chatConfiguration, isSharedPage: false }),
     [chatConfiguration]
@@ -99,32 +111,51 @@ const ChatPage: FC = () => {
 
         <Panel id="chat-main-content" minSize={400}>
           <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
-          <div className="flex h-full">
-            {currentChat && (
-              <div className="flex flex-col grow min-w-0 overflow-hidden">
-                {hasHistory ? (
-                  <Group
-                    key={userId}
-                    orientation="vertical"
-                    defaultLayout={defaultLayout}
-                    onLayoutChanged={debouncedOnLayoutChanged}
-                  >
-                    <Panel id="chat-history" defaultSize={70} minSize={80}>
-                      <ChatHistory />
-                    </Panel>
-                    <ChatResizableSeparator />
-                    <Panel id="chat-prompt" defaultSize={30} minSize={130}>
-                      <ChatPrompt resizable />
-                    </Panel>
-                  </Group>
-                ) : (
-                  <ChatPrompt />
-                )}
-              </div>
-            )}
-            <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
-          </div>
-        </PageLayout>
+            <Group orientation="horizontal" className="h-full">
+              <Panel id="chat-area" minSize={CHAT_AREA_MIN_WIDTH}>
+                {currentChat &&
+                  (hasHistory ? (
+                    <div className="flex flex-col h-full pb-4">
+                      <Group
+                        key={userId}
+                        orientation="vertical"
+                        defaultLayout={defaultLayout}
+                        onLayoutChanged={debouncedOnLayoutChanged}
+                        className="flex-1 min-h-0"
+                      >
+                        <Panel id="chat-history" minSize={80}>
+                          <ChatHistory />
+                        </Panel>
+                        <ChatResizableSeparator />
+                        <Panel id="chat-prompt" defaultSize={130} minSize={130}>
+                          <ChatPrompt resizable />
+                        </Panel>
+                      </Group>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col h-full">
+                      <ChatPrompt />
+                    </div>
+                  ))}
+              </Panel>
+
+              <ChatConfigResizableSeparator />
+
+              <Panel
+                id="chat-config"
+                panelRef={configPanelRef}
+                defaultSize={0}
+                minSize={CHAT_CONFIG_MIN_WIDTH}
+                maxSize={CHAT_CONFIG_MAX_WIDTH}
+                collapsible
+                collapsedSize={0}
+                groupResizeBehavior="preserve-pixel-size"
+                onResize={handleConfigResize}
+              >
+                <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
+              </Panel>
+            </Group>
+          </PageLayout>
         </Panel>
       </Group>
 

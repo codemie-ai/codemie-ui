@@ -152,23 +152,15 @@ describe('ChatConfiguration', () => {
 
   it('renders sidebar with collapsed state initially', () => {
     mockChatContext.isConfigVisible = false
-    const { container } = render(
-      <ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />
-    )
+    render(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
 
-    const aside = container.querySelector('aside')
-    expect(aside).toHaveClass('w-0')
     expect(screen.queryByText('General')).not.toBeInTheDocument()
   })
 
   it('expands sidebar and shows general settings when config is visible', () => {
     mockChatContext.isConfigVisible = true
-    const { container } = render(
-      <ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />
-    )
+    render(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
 
-    const aside = container.querySelector('aside')
-    expect(aside).toHaveClass('w-96')
     expect(screen.getByText('General')).toBeInTheDocument()
     expect(screen.getByText('LLM Model')).toBeInTheDocument()
     expect(screen.getByText('Image generation')).toBeInTheDocument()

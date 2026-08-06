@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "rationale": "One major finding: the ResizableSeparator is always rendered regardless of panel state. When the config panel is collapsed (isConfigVisible=false), a user can drag the separator to expand the panel DOM-side, but ChatConfiguration's {isConfigVisible && ...} guard leaves the panel empty and the header toggle desynchronised. Fix: add an onOpen callback to useChatConfigResize and call it in handleResize when inPixels > 0 and isConfigVisible is false. All other raised concerns (pointer-global tracking, inPixels===0 equality, initial-mount race, viewport conflict) match patterns in the accepted useChatSidebarResize implementation and are deferred or dismissed. Commit format, types, and security are clean.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "1 — ew-resize drag handle present", "status": "pass", "note": "ResizableSeparator orientation=horizontal between the two panels."},
+    {"criterion": "2 — resize within 260–640px", "status": "pass", "note": "minSize=CHAT_CONFIG_MIN_WIDTH(260), maxSize=CHAT_CONFIG_MAX_WIDTH(640) on config Panel."},
+    {"criterion": "3 — no lag or flicker", "status": "pass", "note": "CSS transition removed; resize handled by library."},
+    {"criterion": "4 — content fills new width", "status": "pass", "note": "Inner div changed from w-96 to w-full."},
+    {"criterion": "5 — close+reopen resets to 384px", "status": "pass", "note": "panel.resize(DEFAULT_WIDTH) called when isConfigVisible→true and panel.isCollapsed()."},
+    {"criterion": "6 — drag to 0px syncs header button", "status": "pass", "note": "handleResize calls onClose() when inPixels===0 and pointer is down."},
+    {"criterion": "7 — main chat area unbroken", "status": "pass", "note": "chat-area Panel has minSize=400 preserving usability."},
+    {"criterion": "8 — existing tests pass after migration", "status": "pass", "note": "Class assertions replaced with content-visibility assertions; 5 tests pass."}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow commit format", "status": "pass", "notes": "All 4 commits follow EPMCDME-XXXX: Capital sentence pattern."},
+    {"standard": "TypeScript/ESLint", "status": "pass", "notes": "Pre-commit hooks passed on all commits."},
+    {"standard": "security", "status": "pass", "notes": "No auth, secrets, or injection concerns in a resize feature."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/ChatPage.tsx + src/pages/chat/components/ChatConfiguration/useChatConfigResize.ts",
+      "problem": "ResizableSeparator is always rendered regardless of panel collapsed state. When isConfigVisible=false and panel is at 0px, the 17px separator hit-area sits at the viewport's right edge. A user can drag it to expand the panel DOM-side. react-resizable-panels updates the DOM width, but ChatConfiguration guards its content with {isConfigVisible && ...}, so the panel grows but is empty. isConfigVisible stays false, so the Configuration header button also stays inactive.",
+      "impact": "User sees an expanding empty panel and the toggle button does not reflect the open state. No config controls are accessible. State and DOM are desynchronised.",
+      "recommendation": "Add onOpen: () => void to UseChatConfigResizeOptions. In handleResize, when panelSize.inPixels > 0 and !isConfigVisible (tracked via a ref or passed as a prop), call onOpen(). Wire it in ChatPage.tsx: onOpen: chatConfiguration.toggleConfigVisibility. Alternatively, conditionally render the separator only when isConfigVisible is true."
+    }
+  ]
+}
