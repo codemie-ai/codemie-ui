@@ -54,9 +54,9 @@ const ASSISTANT_NOT_FOUND =
 const WORKFLOW_DELETED = 'This workflow was deleted and can no longer be used.'
 const EMPTY_MESSAGE = '/Empty message/'
 
-const MAX_RENAME_POLL_ATTEMPTS = 5
+const MAX_RENAME_POLL_ATTEMPTS = 8
 const RENAME_POLL_BASE_DELAY_MS = 500
-const RENAME_POLL_MAX_DELAY_MS = 2_000
+const RENAME_POLL_MAX_DELAY_MS = 4_000
 
 // Backend renames the chat asynchronously (BackgroundTasks, after the stream
 // closes) — tracked here so a chat switch/delete can cancel a pending retry
@@ -142,6 +142,11 @@ interface ChatGenerationStoreType {
   _updateChatNameIfNeeded: (
     chat: Conversation,
     message: string,
+    historyIndex: number,
+    messageIndex: number
+  ) => void
+  _clearPendingRenameForFirstMessage: (
+    chat: Conversation,
     historyIndex: number,
     messageIndex: number
   ) => void
@@ -543,8 +548,6 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       id: chat.id,
       initialAssistantId: chat.initialAssistantId ?? '',
       isGroup: mergedAssistantIds.length > 1,
-      name: chat.name ?? '',
-      pinned: !!chat.pinned,
     }
   },
 
@@ -560,6 +563,27 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     if (isFirstMessage && hasDefaultName) {
       const newName = message.length > 50 ? message.substring(0, 50) + '...' : message
       chatsStore.updateChat(chat.id, { name: newName })
+      // Mask the raw truncated name behind the assistant-name placeholder for
+      // the whole generation + rename-poll window, not just the poll part —
+      // otherwise it flashes the raw prompt text while the LLM is still
+      // streaming, before _pollForRenamedChat ever gets a chance to run.
+      if (!chat.isWorkflow) {
+        chatsStore.updateChatListItem({ id: chat.id, pendingRename: true })
+      }
+    }
+  },
+
+  // Counterpart to the pendingRename: true set above — for use on paths that
+  // abort before _handleStreamResponse's poll kickoff would ever clear it
+  // (e.g. the initial request itself failing).
+  _clearPendingRenameForFirstMessage(
+    chat: Conversation,
+    historyIndex: number,
+    messageIndex: number
+  ): void {
+    const isFirstMessage = historyIndex === 0 && messageIndex === 0
+    if (isFirstMessage && !chat.isWorkflow) {
+      chatsStore.updateChatListItem({ id: chat.id, pendingRename: false })
     }
   },
 
@@ -578,10 +602,19 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   async _checkRenamedChat(chatId: string, optimisticName: string, attempt: number): Promise<void> {
+    // Every exit below either retries or drops the placeholder mask — never both.
+    const clearPendingRename = (name?: string) =>
+      chatsStore.updateChatListItem({ id: chatId, pendingRename: false, ...(name ? { name } : {}) })
+
     const listItem = chatsStore.findChat(chatId)
     // Chat was deleted, or something else (manual rename, list refresh)
-    // already moved it off the optimistic name — don't fight it.
-    if (!listItem || listItem.name !== optimisticName) return
+    // already moved it off the optimistic name — don't fight it. If it's a
+    // manual rename, drop the placeholder mask so it's visible immediately.
+    if (!listItem) return
+    if (listItem.name !== optimisticName) {
+      clearPendingRename()
+      return
+    }
 
     let fetchedName: string | null = null
     try {
@@ -592,6 +625,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       // like any other unresolved attempt instead of giving up for good.
       if (attempt + 1 < MAX_RENAME_POLL_ATTEMPTS) {
         chatGenerationStore._pollForRenamedChat(chatId, optimisticName, attempt + 1)
+      } else {
+        clearPendingRename()
       }
       return
     }
@@ -599,10 +634,14 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     // Re-check after the async fetch: a manual rename could have landed
     // during the network round-trip above — don't clobber it.
     const currentItem = chatsStore.findChat(chatId)
-    if (!currentItem || currentItem.name !== optimisticName) return
+    if (!currentItem) return
+    if (currentItem.name !== optimisticName) {
+      clearPendingRename()
+      return
+    }
 
     if (fetchedName && fetchedName !== optimisticName) {
-      chatsStore.updateChatListItem({ id: chatId, name: fetchedName })
+      clearPendingRename(fetchedName)
       const openedChat = chatsStore.openedChatsHistory.find((chat) => chat.id === chatId)
       if (openedChat) openedChat.name = fetchedName
       return
@@ -610,6 +649,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
     if (attempt + 1 < MAX_RENAME_POLL_ATTEMPTS) {
       chatGenerationStore._pollForRenamedChat(chatId, optimisticName, attempt + 1)
+    } else {
+      clearPendingRename()
     }
   },
 
@@ -980,6 +1021,13 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     try {
       reader = await api.stream(endpoint, requestData, abortController, method ?? 'POST')
     } catch (error: any) {
+      // pendingRename (set synchronously in _updateChatNameIfNeeded, before this
+      // request ever started) is only ever cleared by the rename poll — which is
+      // kicked off from _handleStreamResponse and never runs on this failure path.
+      // Without this, a failed first message leaves the sidebar stuck on the
+      // assistant-name placeholder forever instead of showing the optimistic name.
+      chatGenerationStore._clearPendingRenameForFirstMessage(chat, historyIndex, messageIndex)
+
       const promptRows = parseMCPAuthRequiredErrorPayload(error)
 
       // MCP auth throws { error: 'authentication_required', servers: [...] }.
@@ -1125,6 +1173,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     // leaving the optimistic truncated name displayed indefinitely.
     const isFirstMessage = chat.history[0]?.[0] === historyItem
     if (isFirstMessage && !chat.isWorkflow && chat.name) {
+      // pendingRename was already set true in _updateChatNameIfNeeded, before
+      // the stream started — this just picks up polling for the real name.
       chatGenerationStore._pollForRenamedChat(chat.id, chat.name)
     }
   },

@@ -156,9 +156,13 @@ describe('chatGenerationStore rename-after-stream polling', () => {
     await vi.advanceTimersByTimeAsync(1000)
 
     expect(mockChatsStore.getConversationName).toHaveBeenCalledWith('chat-1')
+    // pendingRename is set true earlier, by _updateChatNameIfNeeded (exercised
+    // via createChatGeneration, not this direct _handleStreamResponse call) —
+    // here we only assert the poll's own success transition clears it.
     expect(mockChatsStore.updateChatListItem).toHaveBeenCalledWith({
       id: 'chat-1',
       name: 'LLM Generated Title',
+      pendingRename: false,
     })
     expect(chat.name).toBe('LLM Generated Title')
   })
@@ -178,10 +182,16 @@ describe('chatGenerationStore rename-after-stream polling', () => {
     await vi.advanceTimersByTimeAsync(0)
     await promise
 
-    await vi.advanceTimersByTimeAsync(15_000)
+    await vi.advanceTimersByTimeAsync(30_000)
 
-    expect(mockChatsStore.getConversationName).toHaveBeenCalledTimes(5)
-    expect(mockChatsStore.updateChatListItem).not.toHaveBeenCalled()
+    expect(mockChatsStore.getConversationName).toHaveBeenCalledTimes(8)
+    expect(mockChatsStore.updateChatListItem).toHaveBeenCalledWith({
+      id: 'chat-1',
+      pendingRename: false,
+    })
+    expect(mockChatsStore.updateChatListItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: expect.anything() })
+    )
     expect(mockToasterError).not.toHaveBeenCalled()
   })
 
@@ -199,6 +209,7 @@ describe('chatGenerationStore rename-after-stream polling', () => {
     expect(mockChatsStore.updateChatListItem).toHaveBeenCalledWith({
       id: 'chat-1',
       name: 'LLM Generated Title',
+      pendingRename: false,
     })
   })
 
@@ -208,10 +219,13 @@ describe('chatGenerationStore rename-after-stream polling', () => {
     const { chatGenerationStore } = await import('@/store/chatGeneration')
     chatGenerationStore._pollForRenamedChat('chat-1', OPTIMISTIC_NAME)
 
-    await vi.advanceTimersByTimeAsync(15_000)
+    await vi.advanceTimersByTimeAsync(30_000)
 
-    expect(mockChatsStore.getConversationName).toHaveBeenCalledTimes(5)
-    expect(mockChatsStore.updateChatListItem).not.toHaveBeenCalled()
+    expect(mockChatsStore.getConversationName).toHaveBeenCalledTimes(8)
+    expect(mockChatsStore.updateChatListItem).toHaveBeenCalledWith({
+      id: 'chat-1',
+      pendingRename: false,
+    })
   })
 
   it('does not clobber a name the user manually changed while polling', async () => {
@@ -226,7 +240,11 @@ describe('chatGenerationStore rename-after-stream polling', () => {
     await vi.advanceTimersByTimeAsync(15_000)
 
     expect(mockChatsStore.getConversationName).not.toHaveBeenCalled()
-    expect(mockChatsStore.updateChatListItem).not.toHaveBeenCalled()
+    // Drops the placeholder mask so the manually-typed name isn't hidden behind it.
+    expect(mockChatsStore.updateChatListItem).toHaveBeenCalledWith({
+      id: 'chat-1',
+      pendingRename: false,
+    })
   })
 
   it('CR-002: does not clobber a manual rename that lands while the getConversationName fetch is in flight', async () => {
@@ -248,7 +266,13 @@ describe('chatGenerationStore rename-after-stream polling', () => {
     await vi.advanceTimersByTimeAsync(15_000)
 
     expect(mockChatsStore.getConversationName).toHaveBeenCalled()
-    expect(mockChatsStore.updateChatListItem).not.toHaveBeenCalled()
+    expect(mockChatsStore.updateChatListItem).toHaveBeenCalledWith({
+      id: 'chat-1',
+      pendingRename: false,
+    })
+    expect(mockChatsStore.updateChatListItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: expect.anything() })
+    )
   })
 
   it('stops polling if the chat was deleted mid-poll', async () => {
@@ -302,5 +326,143 @@ describe('chatGenerationStore rename-after-stream polling', () => {
     await vi.advanceTimersByTimeAsync(15_000)
 
     expect(mockChatsStore.getConversationName).not.toHaveBeenCalled()
+  })
+
+  // Regression (found 2026-08-06): pendingRename was only set true once the
+  // stream finished, inside _handleStreamResponse. But the raw truncated
+  // optimistic name is set here, in _updateChatNameIfNeeded, which runs
+  // BEFORE the stream even starts — so the sidebar flashed the raw prompt
+  // text for the entire generation, then flipped to the placeholder, then
+  // finally to the LLM name. pendingRename must go true at the same time as
+  // the optimistic name itself, so the placeholder covers the whole window.
+  it('masks the optimistic name behind the placeholder the moment it is set, before the stream runs', async () => {
+    const historyItem = createHistoryItem()
+    const chat = createChat(historyItem, { name: '' })
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    chatGenerationStore._updateChatNameIfNeeded(chat, 'Hello there', 0, 0)
+
+    expect(mockChatsStore.updateChatListItem).toHaveBeenCalledWith({
+      id: 'chat-1',
+      pendingRename: true,
+    })
+  })
+
+  it('does not mask workflow chats (their poll never runs to unmask them)', async () => {
+    const historyItem = createHistoryItem()
+    const chat = createChat(historyItem, { name: '', isWorkflow: true })
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    chatGenerationStore._updateChatNameIfNeeded(chat, 'Hello there', 0, 0)
+
+    expect(mockChatsStore.updateChatListItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({ pendingRename: true })
+    )
+  })
+
+  // Regression (CR-001, found 2026-08-06): pendingRename is set true
+  // synchronously by _updateChatNameIfNeeded, before the request runs. It was
+  // only ever cleared by the rename poll, kicked off from _handleStreamResponse
+  // after a *successful* stream. If the initial request fails before that,
+  // _handleStreamResponse never runs, so nothing cleared the flag — the
+  // sidebar got stuck on the placeholder forever. _sendRequest now clears it
+  // on both error exits.
+  describe('CR-001: pendingRename does not get stuck true when the first-message request fails', () => {
+    const createSendRequestData = () =>
+      ({
+        conversationId: 'chat-1',
+        text: 'Hello there',
+        contentRaw: 'Hello there',
+        file_names: [],
+        llmModel: null,
+        history: [],
+        historyIndex: 0,
+        mcpServerSingleUsage: false,
+        workflowExecutionId: null,
+        stream: true,
+        topK: 10,
+        systemPrompt: '',
+        backgroundTask: false,
+        metadata: null,
+        toolsConfig: [],
+        outputSchema: null,
+      } as any)
+
+    it('clears pendingRename when api.stream() throws a generic error on the first message', async () => {
+      const historyItem = createHistoryItem()
+      const chat = createChat(historyItem, { name: '' })
+      mockStream.mockRejectedValueOnce({
+        error: { message: 'Generation failed', details: '', help: '' },
+      })
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      await chatGenerationStore._sendRequest(chat, 0, 0, createSendRequestData())
+
+      expect(mockChatsStore.updateChatListItem).toHaveBeenCalledWith({
+        id: 'chat-1',
+        pendingRename: false,
+      })
+    })
+
+    it('clears pendingRename when the first message hits the MCP-auth-required branch', async () => {
+      const historyItem = createHistoryItem()
+      const chat = createChat(historyItem, { name: '' })
+      mockStream.mockRejectedValueOnce({
+        error: 'authentication_required',
+        servers: [
+          {
+            mcp_config_id: 'mcp-1',
+            mcp_config_name: 'GitHub',
+            mcp_server_name: 'GitHub',
+            auth_config_id: 'auth-1',
+            auth_type: 'oauth2',
+            as_hostname: 'login.github.com',
+            status: 'authentication_required',
+            error_context: null,
+            initiate_url: '/v1/mcp-auth/oauth2/initiate',
+          },
+        ],
+      })
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      await chatGenerationStore._sendRequest(chat, 0, 0, createSendRequestData())
+
+      expect(mockChatsStore.updateChatListItem).toHaveBeenCalledWith({
+        id: 'chat-1',
+        pendingRename: false,
+      })
+    })
+
+    it('does not touch pendingRename on a request failure for a non-first message', async () => {
+      const firstHistoryItem = createHistoryItem({ request: 'First' })
+      const secondHistoryItem = createHistoryItem({ request: 'Second' })
+      const chat = createChat(firstHistoryItem)
+      chat.history.push([secondHistoryItem])
+      mockStream.mockRejectedValueOnce({
+        error: { message: 'Generation failed', details: '', help: '' },
+      })
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      await chatGenerationStore._sendRequest(chat, 1, 0, createSendRequestData())
+
+      expect(mockChatsStore.updateChatListItem).not.toHaveBeenCalledWith(
+        expect.objectContaining({ pendingRename: expect.anything() })
+      )
+    })
+
+    it('does not touch pendingRename on a request failure for a workflow chat', async () => {
+      const historyItem = createHistoryItem()
+      const chat = createChat(historyItem, { name: '', isWorkflow: true })
+      mockStream.mockRejectedValueOnce({
+        error: { message: 'Generation failed', details: '', help: '' },
+      })
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      await chatGenerationStore._sendRequest(chat, 0, 0, createSendRequestData())
+
+      expect(mockChatsStore.updateChatListItem).not.toHaveBeenCalledWith(
+        expect.objectContaining({ pendingRename: expect.anything() })
+      )
+    })
   })
 })

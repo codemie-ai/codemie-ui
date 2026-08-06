@@ -175,7 +175,19 @@ export const chatsStore = proxy<ChatsStoreType>({
     if (!chatsStore.isInitialDataFetched) chatsStore.isChatsLoading = true
     try {
       const response = await api.get('v1/conversations')
-      const chats = transformChatListItemDTOs(await response.json())
+      const fetchedChats = transformChatListItemDTOs(await response.json())
+      // Backend DTOs never carry pendingRename (frontend-only, EPMCDME-11647) — a
+      // wholesale replace here would silently drop the placeholder mask mid-poll
+      // and re-flash the raw truncated name. Carry it forward for any chat still
+      // being polled; the poll's own terminal step clears it for real.
+      const pendingRenameIds = new Set(
+        chatsStore.chats.filter((chat) => chat.pendingRename).map((chat) => chat.id)
+      )
+      const chats = pendingRenameIds.size
+        ? fetchedChats.map((chat) =>
+            pendingRenameIds.has(chat.id) ? { ...chat, pendingRename: true } : chat
+          )
+        : fetchedChats
       chatsStore.chats = chats
       const userId = userStore.user?.userId
       if (userId)

@@ -272,6 +272,31 @@ describe('_updateChatMetadata — returns correct chat list item payload', () =>
 
     expect(mockUpdateChatListItem).not.toHaveBeenCalled()
   })
+
+  // Regression (EPMCDME-13270, found 2026-08-06): _updateChatMetadata is captured
+  // BEFORE the stream runs, but applied AFTER it (createChatGeneration awaits
+  // _sendRequest between capture and apply). At capture time chat.name is still
+  // the pre-rename default ('' or unset), so a `name` key here clobbers the
+  // optimistic/LLM-renamed name that lands on the list item in between — and
+  // silently kills the EPMCDME-11647 rename poll's `listItem.name === optimisticName`
+  // guard. _updateChatMetadata owns avatar/group fields only; it must never emit
+  // `name` or `pinned`.
+  it('does NOT include name or pinned in the deferred payload', () => {
+    mockChatsStore.chats = [makeListItem({ assistantIds: ['a1'], isGroup: false })]
+
+    const chat = makeConversation({
+      assistantIds: ['a1'],
+      assistantData: [{ id: 'a1', name: 'Assistant A1' }],
+      history: [[makeMsg()]],
+    })
+    const update = chatGenerationStore._updateChatMetadata(
+      chat,
+      makeAssistant('a1', 'Assistant A1')
+    )
+
+    expect(update).not.toHaveProperty('name')
+    expect(update).not.toHaveProperty('pinned')
+  })
 })
 
 // ── Layer 3: resolveGroupChatAvatars ─────────────────────────────────────

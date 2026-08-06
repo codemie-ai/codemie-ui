@@ -98,7 +98,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
     const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, role])
 
     let chatName: string = ''
-    if (chat.name?.trim()) chatName = chat.name.trim()
+    if (chat.name?.trim() && !chat.pendingRename) chatName = chat.name.trim()
     else chatName = resolvedName ?? DEFAULT_CHAT_NAME
 
     const resolveRouteName = (folder?: string | null) =>

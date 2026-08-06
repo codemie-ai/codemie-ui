@@ -81,6 +81,10 @@ export interface ChatListItem {
   isWorkflow: boolean
   iconUrl?: string | null
   assistantNames?: string[]
+  // Frontend-only: true while the LLM-generated name (EPMCDME-11647) is still
+  // being polled for, so the UI can show the assistant name as a placeholder
+  // instead of the raw truncated first-message optimistic name.
+  pendingRename?: boolean
 }
 
 export interface FolderListItem {

@@ -1,0 +1,58 @@
+{
+  "decision": "request-changes",
+  "rationale": "No-spec round (no story/spec artifact for this bugfix branch) — business_review is empty and confidence is forced low by design. Both lens fan-outs ran (blind ×2 due to a mis-dispatched first attempt, edge-case ×1). Confirmed by direct code trace: pendingRename can get stuck permanently true if the first-message request fails before _handleStreamResponse ever runs (CR-001), and a full chats-list refresh mid-poll silently drops pendingRename causing a regression flash of the raw prompt text (CR-002). All 3 commit subjects in this branch violate the project's documented, CI-enforced commit-format rule (CR-003). 2 blind-lens findings were downgraded to defer/dismiss: the cross-generation clearPendingRename race is speculative with no confirming evidence from the edge-case lens's full repo access, and the dropped `pinned` field from _updateChatMetadata is handled independently via the existing dedicated pinChat() function, so no functional gap.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "fail",
+      "notes": "git-workflow.md requires the word after the ticket colon to start uppercase (CI regex [A-Z][a-z]*). All 3 commits on this branch violate it: 50f08e5b0 'fix rename-poll...', 72768699d 'mask raw prompt...', 2256759e2 'dedupe pendingRename...' — all start lowercase. Guide states this is enforced by Tekton CI and blocks the pipeline."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md present in this repo to adjudicate against."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "No .ai-run/guides/development/security-patterns.md present; no concrete security issue found in the diff by either lens."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/store/chatGeneration.ts",
+      "line": 1003,
+      "title": "pendingRename gets stuck true forever if the first-message request fails before streaming starts",
+      "problem": "_updateChatNameIfNeeded sets pendingRename: true synchronously and unconditionally on the first message (chatGeneration.ts:558-566), before _sendRequest runs. But pendingRename is only ever cleared inside _checkRenamedChat, which is reached solely via _handleStreamResponse's poll kickoff at the end of a successful stream (chatGeneration.ts:1147-1153). If api.stream() throws (network error) at line 1003, _handleRequestError is called and the function returns at line 1014 without ever calling _handleStreamResponse — same for the MCP-auth-required branch at line 1010 (applyPromptRows + return). Neither path ever clears pendingRename.",
+      "impact": "Any first message whose initial request fails (network hiccup, or an MCP auth gate) leaves that chat's sidebar item permanently masked behind the assistant-name placeholder for the rest of the session — worse than pre-diff behavior, where the raw truncated name (at least a real, readable name) would have shown. Verified by direct code trace, not just diff inspection: confirmed via grep of the current _sendRequest implementation.",
+      "recommendation": "Clear pendingRename in _handleRequestError and in the MCP-auth-required branch (or wrap the whole _sendRequest body so pendingRename is guaranteed to be reconciled — set/cleared — regardless of which exit path is taken), so a failed first message doesn't leave the sidebar stuck on the placeholder."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chats.ts",
+      "line": 174,
+      "title": "Full chats-list refresh mid-poll silently drops pendingRename, re-flashing the raw prompt text",
+      "problem": "chatsStore.getChats() (and moveChatToFolder/deleteChatFolder/renameChatFolder) replaces chatsStore.chats wholesale with fresh ChatListItem objects built from backend DTOs, which never carry pendingRename (it's a frontend-only field). If a rename poll is in flight (pendingRename: true) when one of these refreshes lands, the flag is silently reset to falsy while _checkRenamedChat's retry branches never re-assert it — they only reschedule the poll timer.",
+      "impact": "A refresh landing mid-poll (app-load getChats(), a folder move/delete/rename in another part of the UI, or a second browser tab) makes the sidebar drop the assistant-name placeholder and show the raw truncated first-message text again for the remainder of the poll window — exactly the bug this diff set out to fix, just re-triggered by a different code path. Self-heals once the poll's own terminal step (success/giveup/manual-rename) eventually fires.",
+      "recommendation": "Preserve pendingRename across list refreshes by merging it forward from the existing item (the same pattern updateChatListItem already uses for partial updates) instead of full replacement, or re-derive pendingRename from whether a poll timeout is currently registered for that chat id (renameChatPollTimeouts) rather than storing it as independent, easily-clobbered state."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "N/A (commit messages)",
+      "title": "All 3 commits on this branch violate the documented, CI-enforced commit-message format",
+      "problem": "git-workflow.md's commit-format section requires the word immediately after 'EPMCDME-NNN: ' to start with an uppercase letter (CI regex: ^EPMCDME-\\d+:\\s[A-Z][a-z]*.*$). All 3 commits start lowercase: 'fix rename-poll clobbered...' (50f08e5b0), 'mask raw prompt name...' (72768699d), 'dedupe pendingRename-clearing...' (2256759e2).",
+      "impact": "The guide states this is enforced by Tekton CI and blocks the pipeline — as committed, this branch's MR will fail its CI commit-lint check.",
+      "recommendation": "Reword the 3 commit subjects to start with a capitalized verb (e.g. 'Fix rename-poll clobbered by...', 'Mask raw prompt name behind...', 'Dedupe pendingRename-clearing writes...') via interactive rebase, or squash into one compliant commit message before merge (the project's merge strategy is squash-merge anyway, per git-workflow.md, so the final squash commit message on main is the one that actually needs to comply — but the guide's rule applies to every commit subject, so this should still be corrected or confirmed against the actual CI check before assuming squash alone resolves it)."
+    }
+  ]
+}
