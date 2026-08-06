@@ -70,6 +70,13 @@ vi.mock('@/utils/helpers', () => ({
   fileToBase64: vi.fn(),
 }))
 
+// This suite exercises the pendingRename/poll mechanism itself, which only
+// runs when the backend's LLM contextual naming is enabled — see
+// isChatContextualNamingEnabled() gating in chatGeneration.ts.
+vi.mock('@/utils/featureFlags', () => ({
+  isChatContextualNamingEnabled: () => true,
+}))
+
 vi.mock('@/utils/toaster', () => ({
   default: {
     error: (...args: unknown[]) => mockToasterError(...args),

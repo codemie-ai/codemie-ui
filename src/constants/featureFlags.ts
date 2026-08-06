@@ -28,6 +28,7 @@ export const FEATURE_FLAGS = {
   REQUEST_HEDGING: 'features:requestHedging',
   TEAMS_BOT_INTEGRATION: 'features:teamsBotIntegration',
   WORKFLOW_AI: 'features:workflowAI',
+  CHAT_CONTEXTUAL_NAMING: 'features:chatContextualNaming',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

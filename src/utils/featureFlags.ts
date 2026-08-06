@@ -92,3 +92,10 @@ export const isBudgetManagementEnabled = (): boolean => {
 export const isTeamsEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.TEAMS_BOT_INTEGRATION)
 }
+
+/**
+ * Check if backend LLM-based contextual chat naming is enabled (non-reactive utility)
+ */
+export const isChatContextualNamingEnabled = (): boolean => {
+  return isFeatureEnabled(FEATURE_FLAGS.CHAT_CONTEXTUAL_NAMING)
+}

@@ -30,6 +30,7 @@ import {
 import api, { ABORT_ERROR, DEFAULT_ERROR_MESSAGE } from '@/utils/api'
 import { transformChatHistoryFEtoBE } from '@/utils/chatHelpers'
 import { DEFAULT_TOOLS_CONFIG, saveChatSkills, saveChatTools } from '@/utils/chatStorageUtils'
+import { isChatContextualNamingEnabled } from '@/utils/featureFlags'
 import { fileToBase64 } from '@/utils/helpers'
 import { parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
 import {
@@ -567,7 +568,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       // the whole generation + rename-poll window, not just the poll part —
       // otherwise it flashes the raw prompt text while the LLM is still
       // streaming, before _pollForRenamedChat ever gets a chance to run.
-      if (!chat.isWorkflow) {
+      // Only relevant when the backend's LLM rename can actually happen —
+      // with CHAT_CONTEXTUAL_NAMING_ENABLED off, the truncated name here is
+      // already final, so masking it would just hide a correct name behind
+      // the placeholder indefinitely.
+      if (!chat.isWorkflow && isChatContextualNamingEnabled()) {
         chatsStore.updateChatListItem({ id: chat.id, pendingRename: true })
       }
     }
@@ -1172,7 +1177,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     // closes, via a backend BackgroundTasks rename — poll for it rather than
     // leaving the optimistic truncated name displayed indefinitely.
     const isFirstMessage = chat.history[0]?.[0] === historyItem
-    if (isFirstMessage && !chat.isWorkflow && chat.name) {
+    if (isFirstMessage && !chat.isWorkflow && chat.name && isChatContextualNamingEnabled()) {
       // pendingRename was already set true in _updateChatNameIfNeeded, before
       // the stream started — this just picks up polling for the real name.
       chatGenerationStore._pollForRenamedChat(chat.id, chat.name)
