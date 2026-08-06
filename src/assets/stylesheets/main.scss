@@ -67,6 +67,12 @@ body,
     display: none;
   }
 
+  // Hides scrollbars in Firefox and IE/Edge for all elements except textareas
+  :not(textarea):not(.show-scroll) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
   .show-scroll {
     scrollbar-color: theme("colors.border.structural") transparent;
     scrollbar-width: thin;

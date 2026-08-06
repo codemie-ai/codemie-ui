@@ -1,0 +1,19 @@
+{
+  "decision": "approve",
+  "rationale": "All three changes are minimal, correct, and tightly scoped to the stated root cause. The main.scss rule is idiomatic (mirrors the existing WebKit rule structure, uses the same :not(textarea):not(.show-scroll) scope). The ChatHistory class swap is a single word. The ChatPrompt removal is a single token — notably, scrollbar-gutter was unconditional in cn() so it applied to both resizable and non-resizable modes; both modes now lose the both-edges gutter, which is acceptable because the global Firefox/IE rule means the scrollbar is hidden and can't cause layout shift. Tests verify the absence of unwanted classes in both components. Lint, typecheck, 363 unit files, 35 integration files all pass.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "id": "AC-1", "criterion": "No visible scrollbar tracks at left or right edge of chat content area (Firefox and Chrome on Windows)", "status": "pass", "notes": "Firefox: scrollbar-width: none overrides inherited thin. Chrome Windows: scrollbar-gutter both-edges removed from ChatPrompt, changed to single-edge on ChatHistory." },
+    { "id": "AC-2", "criterion": "Chat history messages still scroll correctly when they exceed the Panel height", "status": "pass", "notes": "overflow-y-auto retained on ChatHistory root. Only the gutter side changed." },
+    { "id": "AC-3", "criterion": "ChatPrompt resize handle and panel sizing unaffected", "status": "pass", "notes": "ChatPage.tsx not touched. Panel structure unchanged." },
+    { "id": "AC-4", "criterion": "No regression on pages that use .show-scroll for intentional scrollbars", "status": "pass", "notes": "New main.scss rule uses :not(.show-scroll); .show-scroll elements retain scrollbar-width: thin from their own class (specific > inherited)." },
+    { "id": "AC-5", "criterion": "All existing unit and integration tests pass", "status": "pass", "notes": "363 unit test files (4206 tests), 35 integration files (463 passed, 1 pre-existing skip)." }
+  ],
+  "standards_review": [
+    { "id": "STD-1", "standard": "Commit message format (EPMCDME-XXXX: Capital sentence)", "status": "pass", "notes": "All 3 commits follow the format." },
+    { "id": "STD-2", "standard": "Apache 2.0 license headers on new files", "status": "pass", "notes": "Both new test files carry the required header." },
+    { "id": "STD-3", "standard": "SonarJS cognitive complexity ≤15", "status": "pass", "notes": "No logic changes; no complexity impact." }
+  ],
+  "findings": []
+}

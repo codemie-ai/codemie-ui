@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Fix scrollbar regression from EPMCDME-11292: invalid minSize percentage on chat-prompt Panel, potential overflow-hidden clipping in no-history state, and scrollbar-gutter interaction issues in ChatPage.",
+  "generated": "2026-08-06T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 11,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Fix touches ChatPage.tsx (Panel minSize correction), ChatPrompt.tsx (overflow chain in resizable mode), and potentially ChatHistory.tsx and main.scss (scrollbar-gutter utility). Bumped from S to M because main.scss is a shared CSS file used globally — touching it triggers the shared-utilities red flag."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Three specific failure modes are named in the task description and confirmed by the technical analysis: invalid minSize={130} percentage, overflow-hidden clipping in no-history state, and scrollbar-gutter gutter-space interaction. Root causes are identified from static analysis; only runtime confirmation of the exact rendered regression remains."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: main.scss is a shared global CSS utility file — any change to scrollbar-gutter or show-scroll definitions has blast radius across all pages."
+  ],
+  "split_recommendation": null
+}

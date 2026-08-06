@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "flow": "sdlc-standard",
+  "slug": "epmcdme-13934-scrollbars",
+  "branch": "EPMCDME-13934_scrollbars",
+  "phase": "maintenance",
+  "started_at": "2026-08-06T12:50:00Z",
+  "completed_at": "2026-08-06T13:05:00Z",
+  "last_sync_commit": "666c7617b508eef7005c7f79ef2bddcf312d8fb3"
+}

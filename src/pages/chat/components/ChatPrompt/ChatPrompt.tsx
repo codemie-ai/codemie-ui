@@ -227,7 +227,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({ resizable = false }) => {
         {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
         <div
           className={cn(
-            'w-full flex flex-col px-6 scrollbar-gutter overflow-y-auto z-10',
+            'w-full flex flex-col px-6 overflow-y-auto z-10',
             resizable ? 'flex-1 min-h-0' : 'min-h-32 h-fit -translate-y-3 shrink-0'
           )}
         >
