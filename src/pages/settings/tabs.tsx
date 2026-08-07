@@ -76,7 +76,8 @@ const getEnterpriseAdminItems = (
 export const getNavigationTabs = (
   isAdmin: boolean,
   awsSupported = false,
-  isMaintainer = false
+  isMaintainer = false,
+  isProjectAdmin = false
 ): LayoutTab[] => {
   const isMcpFeatureEnabled = isMcpEnabled()
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
@@ -150,6 +151,16 @@ export const getNavigationTabs = (
           title: 'Projects management',
           url: '/settings/administration/projects',
         },
+        ...(isTeamsBotEnabled && isProjectAdmin
+          ? [
+              {
+                id: SettingsTab.TEAMS_BOT_INTEGRATION,
+                name: 'Teams bot integration',
+                title: 'Teams bot integration',
+                url: '/settings/administration/teams',
+              },
+            ]
+          : []),
       ]
 
   const administrationTab: LayoutTab = {
