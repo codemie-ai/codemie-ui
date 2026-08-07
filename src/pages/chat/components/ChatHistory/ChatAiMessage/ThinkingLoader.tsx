@@ -20,7 +20,7 @@ const ThinkingLoader = ({ className = '' }) => {
   return (
     <div
       className={cn(
-        'flex items-center justify-center gap-1 w-fit text-xs font-normal leading-6 tracking-wide text-text-quaternary',
+        'thinking-loader flex items-center justify-center gap-1 w-fit text-xs font-normal leading-6 tracking-wide text-text-quaternary',
         className
       )}
     >

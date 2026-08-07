@@ -36,3 +36,25 @@ describe('main.scss @font-face declarations', () => {
     expect(ibmBlock?.[0]).toContain('font-display: swap')
   })
 })
+
+describe('main.scss --font-family-body-sans custom property', () => {
+  let mainScssContent: string
+
+  beforeAll(() => {
+    const mainScssPath = resolve(__dirname, '../main.scss')
+    mainScssContent = readFileSync(mainScssPath, 'utf-8')
+  })
+
+  it('defines --font-family-body-sans on :root', () => {
+    const rootBlock = mainScssContent.match(/:root\s*{[^}]*}/s)
+    expect(rootBlock?.[0]).toContain('--font-family-body-sans')
+  })
+
+  it('derives from --font-family-body-prose, falling back to sans-serif Geist (not GeistMono)', () => {
+    const decl = mainScssContent.match(/--font-family-body-sans:\s*[^;]+;/)
+    expect(decl).not.toBeNull()
+    expect(decl?.[0]).toContain('var(--font-family-body-prose')
+    expect(decl?.[0]).toContain('Geist')
+    expect(decl?.[0]).not.toContain('GeistMono')
+  })
+})

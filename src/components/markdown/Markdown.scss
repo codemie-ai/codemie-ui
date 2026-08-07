@@ -45,6 +45,8 @@
 }
 
 .markdown {
+  font-family: var(--font-family-body-sans);
+
   @include no-mermaid(">*") {
     @apply p-0 m-0 my-1 whitespace-normal leading-6;
   }

@@ -49,4 +49,12 @@ describe('Markdown.scss font-family wiring', () => {
     expect(decls).not.toBeNull()
     decls?.forEach((d) => expect(d).toContain('GeistMono'))
   })
+
+  it('.markdown block uses the shared --font-family-body-sans custom property', () => {
+    expect(scssContent).toContain('font-family: var(--font-family-body-sans)')
+  })
+
+  it('.markdown block does not duplicate the Geist fallback list locally', () => {
+    expect(scssContent).not.toContain('Geist, Arial, Helvetica, sans-serif')
+  })
 })

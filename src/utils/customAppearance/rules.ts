@@ -64,6 +64,17 @@ const FONT_STACKS_CODE_BLOCK: Record<string, string> = {
   'ibm-plex-mono': '"IBM Plex Mono", monospace',
 }
 
+// Chat prose (markdown responses, thinking loader, thought panel, message edit
+// textarea) intentionally stays sans-serif Geist even though the app's own
+// "Default (Geist)" body stack is monospace GeistMono. Every other stack matches
+// --font-family-body so chat prose still follows the user's customization.
+const FONT_STACKS_PROSE: Record<string, string> = {
+  geist: 'Geist, Arial, Helvetica, sans-serif',
+  system: FONT_STACKS.system,
+  sans: FONT_STACKS.sans,
+  serif: FONT_STACKS.serif,
+}
+
 // Map rule: input field → many CSS vars (RGB channels), always written.
 const mapRule = (field: keyof AppearanceInputs, cssVars: CssVar[]): Rule => ({
   apply: (inputs) => {
@@ -242,6 +253,11 @@ export const RULES: Rule[] = [
   {
     apply: (inputs) => ({
       '--font-family-body': FONT_STACKS[inputs.fontStack] ?? FONT_STACKS.geist,
+    }),
+  },
+  {
+    apply: (inputs) => ({
+      '--font-family-body-prose': FONT_STACKS_PROSE[inputs.fontStack] ?? FONT_STACKS_PROSE.geist,
     }),
   },
   {

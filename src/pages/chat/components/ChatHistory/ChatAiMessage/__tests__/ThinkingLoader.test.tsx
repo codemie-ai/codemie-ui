@@ -13,8 +13,11 @@
 // limitations under the License.
 //
 
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+
 import { render } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 
 import ThinkingLoader from '../ThinkingLoader'
 
@@ -23,5 +26,27 @@ describe('ThinkingLoader font class', () => {
     const { container } = render(<ThinkingLoader />)
     const root = container.firstElementChild
     expect(root?.className).not.toContain('font-geist')
+  })
+
+  it('root div carries the thinking-loader CSS class', () => {
+    const { container } = render(<ThinkingLoader />)
+    const root = container.firstElementChild
+    expect(root?.classList.contains('thinking-loader')).toBe(true)
+  })
+})
+
+describe('ThinkingLoader.scss font-family wiring', () => {
+  let scssContent: string
+
+  beforeAll(() => {
+    scssContent = readFileSync(resolve(__dirname, '../ThinkingLoader.scss'), 'utf-8')
+  })
+
+  it('uses the shared --font-family-body-sans custom property', () => {
+    expect(scssContent).toContain('font-family: var(--font-family-body-sans)')
+  })
+
+  it('does not duplicate the Geist fallback list locally', () => {
+    expect(scssContent).not.toContain('Geist, Arial, Helvetica, sans-serif')
   })
 })

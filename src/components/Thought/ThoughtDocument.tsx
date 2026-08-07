@@ -19,6 +19,8 @@ import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
 import ChevronUpSvg from '@/assets/icons/chevron-up.svg?react'
 import { cn } from '@/utils/utils'
 
+import './ThoughtDocument.scss'
+
 type ThoughtDocumentProps = {
   title?: string
   content?: string | ReactNode
@@ -32,7 +34,7 @@ const ThoughtDocument: FC<ThoughtDocumentProps> = ({ title = '', content = '' })
   return (
     <div
       className={cn(
-        'text-sm leading-6',
+        'thought-document text-sm leading-6',
         'overflow-x-auto [word-break:break-word] mt-2',
         'rounded-lg border border-border-specific-panel-outline bg-surface-base-chat shadow-sm transition hover:border-border-specific-interactive-outline',
         !collapsed && 'border-border-specific-interactive-outline'
@@ -40,7 +42,7 @@ const ThoughtDocument: FC<ThoughtDocumentProps> = ({ title = '', content = '' })
     >
       <button
         type="button"
-        className="p-3 w-full text-sm leading-6 text-text-quaternary hover:text-text-primary transition text-left gap-2 cursor-pointer flex items-center justify-between"
+        className="thought-document-toggle p-3 w-full text-sm leading-6 text-text-quaternary hover:text-text-primary transition text-left gap-2 cursor-pointer flex items-center justify-between"
         onClick={(e) => {
           e.stopPropagation()
           toggleCollapse()

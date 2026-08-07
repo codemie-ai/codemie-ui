@@ -1,0 +1,41 @@
+{
+  "decision": "request-changes",
+  "rationale": "All four SCSS declarations and TSX class-name additions are correct and satisfy the plan. Two test-quality findings block merge: CR-001 — the anti-GeistMono regex is vacuously passing (GeistMono always appears after the first comma, so the regex never matches it, and `toContain('Geist')` also matches GeistMono), meaning neither guard in any of the four test suites can catch a wrong fallback; CR-002 — the render-level tests only assert the old font-geist class is absent, not that the new CSS class is present, so removing a class from TSX cn() would leave the tests green. Two items deferred: EditMessageModal textarea path (out of scope, not in the four-element list) and _codemie-custom.scss body fallback divergence (pre-existing). 0 critical findings, 0 dismissed.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "Markdown wrapper div renders sans-serif Geist without custom theme", "status": "pass", "notes": "font-family: var(--font-family-body, Geist, Arial, Helvetica, sans-serif) added to .markdown in Markdown.scss" },
+    { "criterion": "ThinkingLoader renders sans-serif Geist without custom theme", "status": "pass", "notes": ".thinking-loader class added with correct font-family; class wired in ThinkingLoader.tsx" },
+    { "criterion": "ThoughtDocument outer div and toggle button render sans-serif Geist without custom theme", "status": "pass", "notes": "New ThoughtDocument.scss with .thought-document and .thought-document-toggle; both classes wired in TSX" },
+    { "criterion": "ChatAiMessage edit textarea renders sans-serif Geist without custom theme", "status": "pass", "notes": "New ChatAiMessage.scss with .ai-message-edit-textarea; class wired on textarea in TSX" },
+    { "criterion": "All four elements use --font-family-body when custom theme is active", "status": "pass", "notes": "CSS var is the first argument in all four declarations" },
+    { "criterion": "Out-of-scope items (FONT_STACKS.geist, Editor.scss, StatusBadge.tsx) left untouched", "status": "pass", "notes": "None appear in the diff" }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "EPMCDME-13565: single-line imperative subject, consistent with project conventions" },
+    { "standard": "code-quality", "status": "pass", "notes": "SCSS and TSX changes are clean; license headers present on all new files; no lint or type errors" },
+    { "standard": "security", "status": "na", "notes": "CSS-only changes; no security surface" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/components/Thought/__tests__/ThoughtDocument.font.test.tsx",
+      "line": 94,
+      "problem": "The regex assertion `not.toMatch(/^[^,]*GeistMono/)` is vacuously passing in all four test suites. The regex anchors at the start of the string and matches only non-comma characters before requiring 'GeistMono', but GeistMono always appears after the first comma in a var() declaration (e.g. `font-family: var(--font-family-body, GeistMono, monospace)`), so the regex never matches it. Additionally, `toContain('Geist')` also passes for 'GeistMono' since it is a substring. Neither assertion can catch a wrong fallback.",
+      "impact": "A developer could write `var(--font-family-body, GeistMono, monospace)` in any of the four SCSS files and all test suites would still pass green, defeating the purpose of the fallback-font guard.",
+      "recommendation": "Replace `expect(d).not.toMatch(/^[^,]*GeistMono/)` with `expect(d).not.toContain('GeistMono')` in all four test files (Markdown.font.integration.test.tsx, ThinkingLoader.test.tsx, ThoughtDocument.font.test.tsx, ChatAiMessage.font.test.tsx)."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.font.test.tsx",
+      "line": 21,
+      "problem": "The font test suites for ChatAiMessage, ThinkingLoader, and ThoughtDocument only verify that the SCSS file contains the expected CSS variable declaration. No test renders the component and asserts that the new CSS class name (`ai-message-edit-textarea`, `thinking-loader`, `thought-document`, `thought-document-toggle`) is actually present on the correct DOM element. Removing a class name from cn() in any TSX file would leave all tests green.",
+      "impact": "The TSX wiring (class applied to element) is unverified. A future refactor that drops a class from cn() silently breaks the font fix without any test failing.",
+      "recommendation": "For each affected component, add a render-level assertion: render the component, find the target element, and assert `classList.contains('<class-name>')` is true. For ChatAiMessage, render with isEditing state active to expose the textarea."
+    }
+  ]
+}

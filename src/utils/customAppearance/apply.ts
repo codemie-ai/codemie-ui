@@ -78,6 +78,7 @@ export const CUSTOM_COLOR_VARIABLES: CssVar[] = [
   '--colors-text-specific-navigation-link-hover',
   // font
   '--font-family-body',
+  '--font-family-body-prose',
   '--font-family-code-block',
   // backgroundImage
   '--backgroundImage-action-accent-btn',

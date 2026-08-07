@@ -57,6 +57,16 @@
   src: url("/src/assets/fonts/IBMPlexMono-Bold.woff2") format("woff2");
 }
 
+:root {
+  // Chat prose default when no custom theme is active. Intentionally sans —
+  // distinct from the monospace fallback that Editor.scss's .ql-editor and
+  // _codemie-custom.scss's .codemieCustom body keep on --font-family-body itself.
+  // Derives from --font-family-body-prose (customAppearance/rules.ts), not
+  // --font-family-body, so chat prose stays sans even when a custom theme's
+  // "Default (Geist)" option keeps the rest of the app in GeistMono.
+  --font-family-body-sans: var(--font-family-body-prose, Geist, Arial, Helvetica, sans-serif);
+}
+
 html,
 body,
 #app {

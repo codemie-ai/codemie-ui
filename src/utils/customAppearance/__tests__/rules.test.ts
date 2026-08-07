@@ -109,6 +109,28 @@ describe('rules', () => {
     })
   })
 
+  describe('font.fontFamilyBodyProse', () => {
+    it('stays sans-serif Geist for the default geist stack, unlike --font-family-body', () => {
+      const result = runRules(inputs({ fontStack: 'geist' }))
+      expect(result['--font-family-body-prose']).toContain('Geist')
+      expect(result['--font-family-body-prose']).not.toContain('GeistMono')
+      expect(result['--font-family-body']).toContain('GeistMono')
+    })
+
+    it('matches --font-family-body for non-default font stacks', () => {
+      ;(['system', 'sans', 'serif'] as const).forEach((fontStack) => {
+        const result = runRules(inputs({ fontStack }))
+        expect(result['--font-family-body-prose']).toBe(result['--font-family-body'])
+      })
+    })
+
+    it('falls back to sans-serif Geist for an unknown value', () => {
+      const result = runRules(inputs({ fontStack: 'unknown' as AppearanceInputs['fontStack'] }))
+      expect(result['--font-family-body-prose']).toContain('Geist')
+      expect(result['--font-family-body-prose']).not.toContain('GeistMono')
+    })
+  })
+
   describe('font.codeBlockFontStack', () => {
     it('maps geist-mono', () => {
       expect(
