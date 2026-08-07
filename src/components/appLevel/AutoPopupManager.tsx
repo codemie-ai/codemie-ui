@@ -80,12 +80,6 @@ const AutoPopupManager: FC = () => {
   // Handles P3; suppressed when a higher-priority popup or onboarding session is active
   useEffect(() => {
     if (!currentPageId || !user) return
-    if (navigator.webdriver) {
-      if (onboardingStore.isFirstPageVisit(currentPageId)) {
-        onboardingStore.markPageVisited(currentPageId)
-      }
-      return
-    }
     if (isOnboardingActive) {
       // Silently consume the first-visit token so the popup doesn't fire after the tour ends
       if (onboardingStore.isFirstPageVisit(currentPageId)) {

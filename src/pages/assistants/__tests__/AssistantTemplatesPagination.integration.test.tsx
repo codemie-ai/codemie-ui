@@ -22,10 +22,9 @@ import { renderPage, mockAPI } from '@/test-utils/integration'
 import toaster from '@/utils/toaster'
 
 describe('AssistantTemplates - Pagination', () => {
-  let user: ReturnType<typeof userEvent.setup>
+  const user = userEvent.setup()
 
   beforeEach(() => {
-    user = userEvent.setup()
     mockRouterState.push.mockClear()
     mockRouterState.replace.mockClear()
     ;(mockRouterState as any).query = {}

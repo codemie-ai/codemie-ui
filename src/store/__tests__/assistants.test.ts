@@ -241,41 +241,4 @@ describe('assistantsStore', () => {
       expect(assistantsStore.hedgeableToolkits).toEqual([])
     })
   })
-
-  describe('fetchAssistantsByIds', () => {
-    beforeEach(() => {
-      assistantsStore.recentAssistants = [{ id: 'recent-1', name: 'Recent Assistant' } as Assistant]
-      assistantsStore.chatAssistants = []
-    })
-
-    it('stores avatar hydration results separately from recent assistants', async () => {
-      const hydratedAssistant = {
-        id: 'chat-1',
-        name: 'Chat Assistant',
-        icon_url: 'https://cdn/chat-1.png',
-      } as Assistant
-      mockGet.mockResolvedValue({
-        json: async () => ({ data: [hydratedAssistant] }),
-      })
-
-      await assistantsStore.fetchAssistantsByIds(['chat-1'])
-
-      expect(assistantsStore.chatAssistants).toEqual([hydratedAssistant])
-      expect(assistantsStore.recentAssistants).toEqual([
-        { id: 'recent-1', name: 'Recent Assistant' },
-      ])
-    })
-
-    it('does not add duplicate assistants to the chat cache', async () => {
-      const hydratedAssistant = { id: 'chat-1', name: 'Chat Assistant' } as Assistant
-      assistantsStore.chatAssistants = [hydratedAssistant]
-      mockGet.mockResolvedValue({
-        json: async () => ({ data: [hydratedAssistant, hydratedAssistant] }),
-      })
-
-      await assistantsStore.fetchAssistantsByIds(['chat-1'])
-
-      expect(assistantsStore.chatAssistants).toEqual([hydratedAssistant])
-    })
-  })
 })

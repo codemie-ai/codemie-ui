@@ -66,10 +66,6 @@ const mapConversationUpdatePayload = (data: Partial<Conversation>) => {
 
 const LAST_CHAT_ID = 'last-chat-id'
 
-interface MoveChatToFolderOptions {
-  successMessage?: string
-}
-
 interface NewChatParams {
   assistantId: string
   folder: string
@@ -125,11 +121,7 @@ export interface ChatsStoreType {
   getFolders(): Promise<ChatFolder[]>
   deleteChatFolder(folder: string, deleteChats?: boolean, localUpdate?: boolean): Promise<void>
   renameChatFolder(oldFolder: string, newFolder: string): Promise<void>
-  moveChatToFolder(
-    chatId: string,
-    targetFolder: string,
-    options?: MoveChatToFolderOptions
-  ): Promise<void>
+  moveChatToFolder(chatId: string, targetFolder: string): Promise<void>
 
   // Additional features
   getMetrics(chatId: string): Promise<ChatMetrics>
@@ -190,7 +182,7 @@ export const chatsStore = proxy<ChatsStoreType>({
         : fetchedChats
       chatsStore.chats = chats
       const userId = userStore.user?.userId
-      if (userId)
+      if (userId && chats)
         sweepOrphanedChatKeys(
           userId,
           chats.map((c) => c.id)
@@ -485,10 +477,7 @@ export const chatsStore = proxy<ChatsStoreType>({
 
     if (existingItemIndex !== -1) {
       const existingItem = chatsStore.chats[existingItemIndex]
-      const definedUpdates = Object.fromEntries(
-        Object.entries(newItem).filter(([, v]) => v !== undefined)
-      )
-      chatsStore.chats[existingItemIndex] = { ...existingItem, ...definedUpdates }
+      chatsStore.chats[existingItemIndex] = { ...existingItem, ...newItem }
     }
   },
 
@@ -535,7 +524,7 @@ export const chatsStore = proxy<ChatsStoreType>({
       .then(() => chatsStore.getChats())
   },
 
-  moveChatToFolder: async (chatId, targetFolder, options) => {
+  moveChatToFolder: async (chatId, targetFolder) => {
     const chat = chatsStore.findChat(chatId)
 
     if (!chat) return
@@ -549,8 +538,7 @@ export const chatsStore = proxy<ChatsStoreType>({
       })
       .then(() => {
         const displayName = targetFolder === DEFAULT_CHAT_FOLDER ? 'Chats section' : targetFolder
-        if (options?.successMessage) toaster.success(options.successMessage)
-        else toaster.info(`Chat moved to ${displayName || 'Chats section'}`)
+        toaster.info(`Chat moved to ${displayName || 'Chats section'}`)
         return chatsStore.getChats()
       })
       .catch((error) => {

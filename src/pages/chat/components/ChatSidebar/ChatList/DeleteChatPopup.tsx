@@ -31,14 +31,13 @@ const DeleteChatPopup = ({ isVisible, selectedChat, onHide }: DeleteChatPopupPro
   const router = useVueRouter()
   const { currentChat, chats } = useSnapshot(chatsStore)
 
-  const resolveRouteName = (folder?: string | null) =>
+  const resolveRouteName = (folder?: string) =>
     folder === AVATAR_CHAT_FOLDER ? 'avatar-chat' : 'chats'
 
   const confirmDelete = async () => {
     if (!selectedChat) return
 
-    const { id } = selectedChat
-    const folder = selectedChat.folder ?? ''
+    const { id, folder = '' } = selectedChat
     const folderChats = chats.filter((c) => c.folder === folder)
     const candidateNextIndex = folderChats.findIndex((c) => c.id === id) + 1
     const candidateNext = folderChats[candidateNextIndex] ?? folderChats[0]

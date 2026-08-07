@@ -84,11 +84,11 @@ export const getFilters = <T extends object>(
     throw new Error('Entity key is required for filter operations')
   }
 
-  const urlFilters = getFiltersFromUrl(filterKeys)
   const userId = userStore.user?.userId
-  if (!userId) return urlFilters as T
+  if (!userId) return {} as T
 
-  // Get filters from storage and merge them with URL filters
+  // Get filters from URL and storage
+  const urlFilters = getFiltersFromUrl(filterKeys)
   const key = `${FILTERS_PREFIX}_${entityKey}`
   const storageFilters = storage.getObject<T>(userId, key)
 

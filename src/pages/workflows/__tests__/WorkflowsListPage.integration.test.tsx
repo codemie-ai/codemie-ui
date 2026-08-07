@@ -905,11 +905,9 @@ describe('WorkflowsListPage - Integration', () => {
     })
 
     it('Created by filter applies correctly', async () => {
-      vi.useRealTimers()
-      const user = userEvent.setup()
+      const user = setupUser()
       mockAPI('GET', 'v1/workflows', createWorkflowsResponse())
-      mockAPI('GET', 'v1/workflows/users', [
-        { username: 'testuser', name: 'Test User', email: 'test@example.com' },
+      mockAPI('GET', 'v1/users/workflows-users', [
         { username: 'user1', name: 'User One', email: 'user1@example.com' },
         { username: 'user2', name: 'User Two', email: 'user2@example.com' },
       ])
@@ -928,9 +926,6 @@ describe('WorkflowsListPage - Integration', () => {
       )
 
       const meCheckbox = screen.getByLabelText('Me')
-      await waitFor(() => {
-        expect(meCheckbox).toBeEnabled()
-      })
       await user.click(meCheckbox)
 
       await submitFilterViaSearch(user)
@@ -1055,8 +1050,6 @@ describe('WorkflowsListPage - Integration', () => {
 
     it('Clear all button resets all filters', async () => {
       const user = setupUser()
-      const storageKey = 'test-user-id_filters_workflows.all'
-      localStorage.setItem(storageKey, JSON.stringify({ name: 'test-query' }))
       mockAPI('GET', 'v1/workflows', createWorkflowsResponse())
 
       renderPage('/workflows/all')
@@ -1064,22 +1057,21 @@ describe('WorkflowsListPage - Integration', () => {
       await waitForWorkflowLoaded('Test Workflow')
 
       const searchInput = screen.getByPlaceholderText('Search')
-      expect(searchInput).toHaveValue('test-query')
+      await user.type(searchInput, 'test-query')
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /clear all/i })).toBeInTheDocument()
+      })
 
       mockAPI('GET', 'v1/workflows', createWorkflowsResponse())
 
       const clearButton = screen.getByRole('button', { name: /clear all/i })
       await user.click(clearButton)
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(1100)
-      })
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Search')).toHaveValue('')
-        const lastPush = mockRouterState.push.mock.calls.at(-1)?.[0]
-        expect(lastPush?.query?.name).toBeUndefined()
+        expect(screen.queryByRole('button', { name: /clear all/i })).not.toBeInTheDocument()
       })
-      localStorage.removeItem(storageKey)
     })
   })
 

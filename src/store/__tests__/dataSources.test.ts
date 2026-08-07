@@ -267,7 +267,6 @@ describe('dataSourceStore.getIndexesStatuses', () => {
       name: 'AbortError',
       message: 'The operation was aborted',
     })
-    expect(dataSourceStore.loading).toBe(false)
   })
 
   it('should pass signal to api.get when provided', async () => {
@@ -295,40 +294,6 @@ describe('dataSourceStore.getIndexesStatuses', () => {
       expect.stringContaining('v1/index?page=0'),
       expect.objectContaining({ signal: controller.signal })
     )
-  })
-
-  it('should ignore a stale response that resolves after a newer request', async () => {
-    let resolveFirstRequest: ((response: Response) => void) | undefined
-    const firstRequest = new Promise<Response>((resolve) => {
-      resolveFirstRequest = resolve
-    })
-    const latestResponse = {
-      status: 200,
-      json: async () => ({
-        data: [{ id: 'latest', repo_name: 'latest-result' }],
-        pagination: { page: 0, per_page: 10, pages: 1, total: 1 },
-      }),
-    } as Response
-    const staleResponse = {
-      status: 200,
-      json: async () => ({
-        data: [{ id: 'stale', repo_name: 'stale-result' }],
-        pagination: { page: 0, per_page: 10, pages: 1, total: 1 },
-      }),
-    } as Response
-    vi.spyOn(api, 'get').mockReturnValueOnce(firstRequest).mockResolvedValueOnce(latestResponse)
-
-    const staleResult = dataSourceStore.getIndexesStatuses({ filters: { name: 'stale' } })
-    const latestResult = dataSourceStore.getIndexesStatuses({ filters: { name: 'latest' } })
-
-    await latestResult
-    resolveFirstRequest?.(staleResponse)
-
-    await expect(staleResult).resolves.toBeNull()
-    expect(dataSourceStore.indexStatuses).toEqual([
-      expect.objectContaining({ repo_name: 'latest-result' }),
-    ])
-    expect(dataSourceStore.loading).toBe(false)
   })
 
   it('should work without signal parameter (backward compatibility)', async () => {

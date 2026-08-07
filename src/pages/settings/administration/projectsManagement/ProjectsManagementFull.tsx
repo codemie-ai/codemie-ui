@@ -98,15 +98,6 @@ const calculateTotalAssignments = (project: Project): number => {
   )
 }
 
-const renderProjectName = (
-  onOpenProjectDetails: (projectName: string) => void,
-  project: Project
-) => (
-  <NameLinkCell onClick={() => onOpenProjectDetails(project.name)}>
-    {formatProjectLabel(project)}
-  </NameLinkCell>
-)
-
 const columnDefinitions: ColumnDefinition[] = [
   {
     key: 'name',
@@ -143,6 +134,19 @@ const columnDefinitions: ColumnDefinition[] = [
   { key: 'users', label: 'Users', type: DefinitionTypes.Custom, headClassNames: 'w-[5%]' },
   { key: 'actions', label: 'Actions', type: DefinitionTypes.Custom, headClassNames: 'w-[6%]' },
 ]
+
+const ProjectNameCell = ({
+  item,
+  onOpenDetails,
+}: {
+  item: Project
+  onOpenDetails: (name: string) => void
+}) => (
+  <NameLinkCell onClick={() => onOpenDetails(item.name)}>{formatProjectLabel(item)}</NameLinkCell>
+)
+
+const renderProjectNameColumn = (onOpenDetails: (name: string) => void) => (item: Project) =>
+  <ProjectNameCell item={item} onOpenDetails={onOpenDetails} />
 
 const ProjectsManagementFull: FC = () => {
   const router = useVueRouter()
@@ -434,7 +438,7 @@ const ProjectsManagementFull: FC = () => {
 
   const customRenderColumns = useMemo(
     () => ({
-      name: renderProjectName.bind(null, handleOpenProjectDetails),
+      name: renderProjectNameColumn(handleOpenProjectDetails),
       [COST_CENTER_COLUMN_KEY]: (item: Project) => (
         <span className="text-text-primary break-all">{displayValue(item.cost_center_name)}</span>
       ),

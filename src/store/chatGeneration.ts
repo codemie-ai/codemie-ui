@@ -20,7 +20,7 @@ import { GENERATION_CANCELLED_MESSAGE } from '@/constants/chats'
 import { WORKFLOW_STATE_EVENT_INTERRUPTED, WORKFLOW_STATUSES } from '@/constants/workflows'
 import { ChatRequest, HistoryMessage, ChatGenerationOptions } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
-import { Conversation, ChatMessage, ChatListItem, Thought } from '@/types/entity/conversation'
+import { Conversation, ChatMessage, Thought } from '@/types/entity/conversation'
 import type { InteractiveResponse } from '@/types/entity/interactive'
 import {
   MCPAuthGateServer,
@@ -46,13 +46,11 @@ import { assistantsStore } from './assistants'
 import { chatsStore } from './chats'
 import { userStore } from './user'
 import { workflowExecutionsStore } from './workflowExecutions'
-import { workflowsStore } from './workflows'
 
 const STREAMING_NOTIFICATION = 'Still waiting for response, agent is thinking'
 const STREAMING_NOTIFICATION_INTERVAL = 5_000 // 5 seconds
 const ASSISTANT_NOT_FOUND =
   'Assistant you are trying to reach is not found. Please mention another one using @mention.'
-const WORKFLOW_DELETED = 'This workflow was deleted and can no longer be used.'
 const EMPTY_MESSAGE = '/Empty message/'
 
 const MAX_RENAME_POLL_ATTEMPTS = 8
@@ -119,10 +117,7 @@ interface ChatGenerationStoreType {
 
   // Private methods
   _getAssistant: (assistantId: string | undefined) => Promise<Assistant>
-  _getWorkflowAsAssistant: (
-    workflowId: string | undefined,
-    chat: Conversation
-  ) => Promise<Assistant>
+  _getWorkflowAsAssistant: (workflowId: string | undefined, chat: Conversation) => Assistant
   _createHistoryItem: (
     message: string,
     messageRaw: string,
@@ -136,10 +131,7 @@ interface ChatGenerationStoreType {
     historyIndex: number | null,
     messageIndex: number | null
   ) => { historyIndex: number; messageIndex: number }
-  _updateChatMetadata: (
-    chat: Conversation,
-    assistant: Assistant
-  ) => Partial<ChatListItem> & { id: string }
+  _updateChatMetadata: (chat: Conversation, assistant: Assistant) => void
   _updateChatNameIfNeeded: (
     chat: Conversation,
     message: string,
@@ -336,7 +328,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const chat = chatsStore.currentChat
     if (!chat) {
       toaster.error('No chat available')
-      throw new Error('No current chat')
+      return Promise.reject(new Error('No current chat'))
     }
 
     if (chatsStore.isNewChat) {
@@ -349,13 +341,12 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         saveChatSkills(userId, newId, skillIds ?? [])
       }
       if (pendingLlmModel) await chatsStore.updateChat(newId, { llmModel: pendingLlmModel })
-      await chatGenerationStore.createChatGeneration(options)
-      return
+      return chatGenerationStore.createChatGeneration(options)
     }
 
-    // Validate workflow availability before creating a history item; assistant data comes from chat.
+    // For workflow chats, don't fetch assistant data
     const assistant = chat.isWorkflow
-      ? await chatGenerationStore._getWorkflowAsAssistant(assistantId, chat)
+      ? chatGenerationStore._getWorkflowAsAssistant(assistantId, chat)
       : await chatGenerationStore._getAssistant(assistantId)
 
     const history = transformChatHistoryFEtoBE(chat, historyIndex)
@@ -402,20 +393,10 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     historyIndex = indexes.historyIndex
     messageIndex = indexes.messageIndex
 
-    const chatListItemUpdate = chatGenerationStore._updateChatMetadata(chat, assistant)
+    chatGenerationStore._updateChatMetadata(chat, assistant)
     chatGenerationStore._updateChatNameIfNeeded(chat, message, historyIndex, messageIndex)
 
-    await chatGenerationStore._sendRequest(chat, historyIndex, messageIndex, data)
-
-    // Apply avatar/group update only after a real response is received.
-    // Skipped for MCP auth gates (mcpAuthPromptRows set) and failed non-stream requests
-    // (response stays undefined) so that a failed exchange doesn't leave stale avatars.
-    if (historyItem.response !== undefined && !historyItem.mcpAuthPromptRows?.length) {
-      chatsStore.updateChatListItem({
-        ...chatListItemUpdate,
-        updateDate: new Date().toISOString(),
-      })
-    }
+    return chatGenerationStore._sendRequest(chat, historyIndex, messageIndex, data)
   },
 
   async _getAssistant(assistantId: string | undefined): Promise<Assistant> {
@@ -432,20 +413,10 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
   },
 
-  async _getWorkflowAsAssistant(
-    workflowId: string | undefined,
-    chat: Conversation
-  ): Promise<Assistant> {
+  _getWorkflowAsAssistant(workflowId: string | undefined, chat: Conversation): Assistant {
     if (!workflowId) {
-      toaster.error(WORKFLOW_DELETED)
-      return Promise.reject(new Error('No workflow ID provided'))
-    }
-
-    try {
-      await workflowsStore.getWorkflow(workflowId, true)
-    } catch (error) {
-      toaster.error(WORKFLOW_DELETED)
-      throw error instanceof Error ? error : new Error(String(error))
+      toaster.error('No workflow ID provided')
+      throw new Error('No workflow ID provided')
     }
 
     // Use existing assistant data from chat (populated by backend)
@@ -524,32 +495,21 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     return { historyIndex: historyIndex!, messageIndex: messageIndex! }
   },
 
-  _updateChatMetadata(
-    chat: Conversation,
-    assistant: Assistant
-  ): Partial<ChatListItem> & { id: string } {
+  _updateChatMetadata(chat: Conversation, assistant: Assistant): void {
     if (!chat.isWorkflow) {
       assistantsStore.updateRecentAssistants(assistant)
     }
-    // Capture names before updateCurrentChatAssistants may reset assistantData (history.length===1)
-    const assistantNameMap = new Map<string, string>([
-      ...(chat.assistantData ?? []).map((a): [string, string] => [a.id, a.name]),
-      [assistant.id, assistant.name],
-    ])
     chatGenerationStore.updateCurrentChatAssistants(chat, assistant)
-    const existingListItem = chatsStore.chats.find((c) => c.id === chat.id)
-    const mergedAssistantIds = [
-      ...new Set([...(existingListItem?.assistantIds ?? []), ...(chat.assistantIds ?? [])]),
-    ]
-    const mergedAssistantNames = mergedAssistantIds.map((id) => assistantNameMap.get(id) ?? '')
-    return {
-      assistantIds: mergedAssistantIds,
-      assistantNames: mergedAssistantNames,
+    chatsStore.updateChatListItem({
+      assistantIds: chat.assistantIds,
       date: '',
+      folder: chat.folder ?? '',
       id: chat.id,
       initialAssistantId: chat.initialAssistantId ?? '',
-      isGroup: mergedAssistantIds.length > 1,
-    }
+      isGroup: !!chat.isGroup,
+      name: chat.name ?? '',
+      pinned: !!chat.pinned,
+    })
   },
 
   _updateChatNameIfNeeded(

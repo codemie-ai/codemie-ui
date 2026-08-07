@@ -13,33 +13,14 @@
 // limitations under the License.
 //
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
-import { userStore } from '@/store/user'
 import {
   getChangedKeys,
   getInitialAssistantFilters,
   checkEmptyFilters,
   createEmptyFilters,
-  getFilters,
 } from '@/utils/filters'
-
-describe('getFilters', () => {
-  const originalUser = userStore.user
-  const originalUrl = window.location.href
-
-  afterEach(() => {
-    userStore.user = originalUser
-    window.history.replaceState({}, '', originalUrl)
-  })
-
-  it('reads URL filters before the current user is loaded', () => {
-    userStore.user = null
-    window.history.replaceState({}, '', '/data-sources?name=created-datasource')
-
-    expect(getFilters('datasources')).toMatchObject({ name: 'created-datasource' })
-  })
-})
 
 describe('getChangedKeys', () => {
   it('returns an empty array when all values are identical strings', () => {

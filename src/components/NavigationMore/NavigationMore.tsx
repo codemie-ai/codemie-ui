@@ -48,7 +48,6 @@ interface NavigationMoreProps {
   alignment?: Alignment | null
   autoAlignment?: boolean
   onClick?: MouseEventHandler<Element>
-  onOpenChange?: (open: boolean) => void
   className?: string
   buttonClassName?: string
   'data-tooltip-content'?: string
@@ -66,20 +65,14 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   className,
   buttonClassName,
   onClick,
-  onOpenChange,
   'data-tooltip-content': dataTooltipContent,
 }) => {
   const [show, setShow] = useState(false)
 
-  const handleOpenChange = (value: boolean) => {
-    setShow(value)
-    onOpenChange?.(value)
-  }
-
   const { refs, floatingStyles, context } = useFloating({
     open: show,
     middleware: [offset(4), shift(), autoPlacement({ alignment, autoAlignment })],
-    onOpenChange: handleOpenChange,
+    onOpenChange: setShow,
   })
 
   const dismiss = useDismiss(context)
@@ -95,7 +88,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
 
   const handleClickInside = () => {
     if (!hideOnClickInside) return
-    handleOpenChange(false)
+    setShow(false)
   }
 
   const visibleItems = items?.filter((item) => !item.hidden)
@@ -129,7 +122,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
                   )}
                   onClick={(e) => {
                     if (!item.disabled) item.onClick(e)
-                    if (hideOnClickInside) handleOpenChange(false)
+                    if (hideOnClickInside) setShow(false)
                   }}
                   disabled={item.disabled}
                   aria-label={item.title}

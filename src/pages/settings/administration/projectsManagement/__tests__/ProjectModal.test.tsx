@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, act, fireEvent } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -266,11 +266,10 @@ describe('ProjectModal — display_name validation', () => {
   })
 
   it('shows error when display_name exceeds 150 characters', async () => {
+    const user = userEvent.setup()
     renderModal()
 
-    fireEvent.change(screen.getByTestId('display_name'), {
-      target: { value: 'a'.repeat(151) },
-    })
+    await user.type(screen.getByTestId('display_name'), 'a'.repeat(151))
 
     await act(async () => {
       screen.getByRole('button', { name: /submit/i }).click()

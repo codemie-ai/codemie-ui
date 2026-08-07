@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /* eslint-disable max-classes-per-file, no-plusplus, no-continue, no-inner-declarations, consistent-return, @typescript-eslint/no-unused-vars */
 
 import { spawnSync } from 'child_process'

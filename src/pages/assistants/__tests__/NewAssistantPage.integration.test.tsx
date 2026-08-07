@@ -38,7 +38,7 @@ const suppressUnhandledRejection = () => {
 }
 
 describe('NewAssistantPage - Integration', () => {
-  let user: ReturnType<typeof userEvent.setup>
+  const user = userEvent.setup()
 
   const createAssistantFixture = (overrides = {}) => ({
     id: 'assistant-1',
@@ -92,7 +92,6 @@ describe('NewAssistantPage - Integration', () => {
   const getDialog = () => screen.getByRole('dialog')
 
   beforeEach(() => {
-    user = userEvent.setup()
     mockRouterState.push.mockClear()
     mockRouterState.replace.mockClear()
     mockRouterState.currentRoute.value = {

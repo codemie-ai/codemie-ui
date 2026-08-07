@@ -19,17 +19,11 @@ import { useSnapshot } from 'valtio'
 
 import ArchiveSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
+import FolderIcon from '@/assets/icons/folder.svg?react'
 import Plus from '@/assets/icons/plus.svg?react'
-import AvatarGroup from '@/components/Avatar/AvatarGroup'
 import NavigationMore, { NavigationItem } from '@/components/NavigationMore/NavigationMore'
 import Tooltip from '@/components/Tooltip'
 import { useVueRouter } from '@/hooks/useVueRouter'
-import {
-  resolveChatAvatar,
-  resolveGroupChatAvatars,
-  useAvatarStores,
-  type ResolvedChatAvatar,
-} from '@/pages/chat/hooks/useChatItemAvatar'
 import { chatsStore } from '@/store/chats'
 import { ChatListItem as ChatListItemType } from '@/types/entity/conversation'
 
@@ -63,7 +57,6 @@ const FolderList: FC<FolderListProps> = ({
 
   const router = useVueRouter()
   const { chats } = useSnapshot(chatsStore) as typeof chatsStore
-  const avatarStores = useAvatarStores()
 
   const addFolderChat = async (folderName: string) => {
     const folderChatIds = foldersToChatsMap[folderName] ?? []
@@ -120,39 +113,6 @@ const FolderList: FC<FolderListProps> = ({
       >
         {folders.map((folder) => {
           const isOverMaxLength = folder.length > MAX_CHAT_NAME_LENGTH
-          const folderChats = foldersToChatsMap[folder] ?? []
-
-          const seen = new Set<string>()
-          const uniqueAvatarItems: ResolvedChatAvatar[] = []
-
-          for (const chat of folderChats) {
-            if (chat.isGroup && chat.assistantIds.length > 0) {
-              const avatars = resolveGroupChatAvatars(chat, avatarStores)
-              chat.assistantIds.forEach((id, i) => {
-                if (id && !seen.has(id)) {
-                  seen.add(id)
-                  uniqueAvatarItems.push(
-                    avatars[i] ?? { iconUrl: null, name: chat.assistantNames?.[i] }
-                  )
-                }
-              })
-            } else {
-              const key =
-                chat.initialAssistantId ?? `${chat.iconUrl ?? ''}:${chat.assistantNames?.[0] ?? ''}`
-              if (!seen.has(key)) {
-                seen.add(key)
-                uniqueAvatarItems.push(resolveChatAvatar(chat, avatarStores))
-              }
-            }
-          }
-
-          const getChatAssistantIds = (c: ChatListItemType): string[] => {
-            if (c.isGroup) return c.assistantIds ?? []
-            if (c.initialAssistantId) return [c.initialAssistantId]
-            return []
-          }
-          const uniqueAssistantIds = new Set(folderChats.flatMap(getChatAssistantIds))
-          const hasSingleAssistant = uniqueAssistantIds.size === 1
 
           return (
             <AccordionTab
@@ -172,17 +132,9 @@ const FolderList: FC<FolderListProps> = ({
                 }),
               }}
               header={() => (
-                <div className="flex items-center justify-between px-2 text-sm">
-                  <div className="flex items-center whitespace-nowrap overflow-hidden text-ellipsis h-9">
-                    <AvatarGroup
-                      iconUrls={uniqueAvatarItems.map((a) => a.iconUrl)}
-                      names={
-                        uniqueAvatarItems.length > 0
-                          ? uniqueAvatarItems.map((a) => a.name)
-                          : [folder]
-                      }
-                      className="mr-2 shrink-0"
-                    />
+                <div className="flex items-center justify-between my-1 ml-2 text-sm">
+                  <div className="flex items-center whitespace-nowrap overflow-hidden text-ellipsis h-12">
+                    <FolderIcon className="mr-2 h-8" />
                     <p
                       data-pr-tooltip={isOverMaxLength ? folder : ''}
                       className="font-semibold whitespace-nowrap h-full flex items-center overflow-hidden text-ellipsis chat-sidebar-folder"
@@ -208,10 +160,10 @@ const FolderList: FC<FolderListProps> = ({
             >
               <div className="flex flex-col border-l ml-4 pl-4 border-border-secondary">
                 <ChatList
-                  chats={folderChats}
+                  chats={foldersToChatsMap[folder] ?? []}
                   chatActions={chatActions}
                   currentChatId={currentChatId}
-                  hideAvatar={hasSingleAssistant}
+                  id={`chat-tree-folder-group-${folder.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
                 />
               </div>
             </AccordionTab>

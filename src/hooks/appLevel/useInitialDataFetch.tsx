@@ -25,31 +25,20 @@ import { skillsStore } from '@/store/skills'
 const useInitialDataFetch = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
-      const loadUser = async () => {
-        try {
-          await userStore.loadUser()
-          return true
-        } catch (error: unknown) {
-          if (error instanceof Response && error.status === HTTP_STATUS.UNAUTHORIZED) return false
-          throw error
-        }
-      }
-
       await appInfoStore.fetchCustomerConfig()
-      const isUserLoaded = await loadUser()
-      if (!isUserLoaded) return
+
+      try {
+        await userStore.loadUser()
+      } catch (error: unknown) {
+        if (error instanceof Response && error.status === HTTP_STATUS.UNAUTHORIZED) return
+        throw error
+      }
 
       await preferencesStore.fetchPreferences(userStore.user!.userId)
 
-      await assistantsStore.fetchPinnedAssistants().catch((error) => {
-        console.error('[useInitialDataFetch] failed to fetch pinned assistants:', error)
-      })
-      chatsStore.getFolders().catch((error) => {
-        console.error('[useInitialDataFetch] failed to fetch chat folders:', error)
-      })
-      chatsStore.getChats().catch((error) => {
-        console.error('[useInitialDataFetch] failed to fetch chats:', error)
-      })
+      await assistantsStore.fetchPinnedAssistants()
+      chatsStore.getFolders()
+      chatsStore.getChats()
 
       appInfoStore.loadAppInfo()
       appInfoStore.fetchToolConfigs()
@@ -67,9 +56,7 @@ const useInitialDataFetch = () => {
       assistantsStore.getHelpAssistants()
     }
 
-    fetchInitialData().catch((error) => {
-      console.error('[useInitialDataFetch] failed to initialize application data:', error)
-    })
+    fetchInitialData()
   }, [])
 }
 
