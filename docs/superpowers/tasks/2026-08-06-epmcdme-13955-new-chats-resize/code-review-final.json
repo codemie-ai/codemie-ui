@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "gate": "code-review.final",
+  "decision": "request-changes",
+  "rationale": "Three issues: (1) Integration test deleted two valid behavioral assertions the plan explicitly said to keep; (2) no test covers the empty→hasHistory re-key transition; (3) reviewer flagged defaultSize/minSize pixel semantics (subsequently confirmed correct per library source — numeric values are pixels in react-resizable-panels v4).",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "low-medium",
+      "title": "Integration test lost chat-history and chat-prompt assertions",
+      "file": "src/pages/chat/__tests__/ChatPage.integration.test.tsx",
+      "description": "Two assertions removed without replacement. Plan stated queryByTestId('chat-history').not.toBeInTheDocument() remains valid.",
+      "resolution": "Added queryAllByTestId('chat-history').toHaveLength(1) — distinguishes panel-only (empty state) from panel+content (history state) despite library mapping id→data-testid."
+    },
+    {
+      "id": "F2",
+      "severity": "low-medium",
+      "title": "No test for empty→hasHistory transition (Group re-key logic)",
+      "file": "src/pages/chat/__tests__/ChatPage.test.tsx",
+      "description": "The re-keying from empty-{userId} to {userId} on first message was untested.",
+      "resolution": "Added transition test that mutates history from [] to non-empty, rerenders, and asserts separator stays and chat-history appears."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "title": "defaultSize=130 / minSize=130 query about percentage vs pixel",
+      "file": "src/pages/chat/ChatPage.tsx",
+      "description": "Reviewer flagged these as >100% percentages. Pre-existing code.",
+      "resolution": "Confirmed via library source (case 'number': return [e, 'px']) that numeric values are treated as pixels in react-resizable-panels v4. No change needed."
+    }
+  ],
+  "confidence": "high"
+}

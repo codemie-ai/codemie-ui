@@ -341,7 +341,7 @@ describe('ChatPage', () => {
     expect(screen.getByTestId('resizable-separator')).toBeInTheDocument()
   })
 
-  it('renders ChatPrompt standalone without separator when history is empty', () => {
+  it('renders ChatPrompt with separator in empty new chat', () => {
     mockChatsStore.currentChat = {
       id: 'chat-1',
       history: [],
@@ -353,7 +353,37 @@ describe('ChatPage', () => {
 
     render(<ChatPage />)
 
-    expect(screen.queryByTestId('resizable-separator')).not.toBeInTheDocument()
+    expect(screen.getByTestId('resizable-separator')).toBeInTheDocument()
+    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
     expect(screen.getByTestId('chat-prompt')).toBeInTheDocument()
+  })
+
+  it('separator stays visible and chat-history appears after sending the first message', () => {
+    mockChatsStore.currentChat = {
+      id: 'chat-1',
+      history: [],
+      assistantIds: ['assistant-1'],
+      assistantData: [],
+      initialAssistantId: 'assistant-1',
+      isWorkflow: false,
+    } as unknown as Conversation
+
+    const { rerender } = render(<ChatPage />)
+
+    expect(screen.getByTestId('resizable-separator')).toBeInTheDocument()
+    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
+
+    mockChatsStore.currentChat = {
+      id: 'chat-1',
+      history: [[{ createdAt: '2026-08-06T00:00:00Z' }]],
+      assistantIds: ['assistant-1'],
+      assistantData: [],
+      initialAssistantId: 'assistant-1',
+      isWorkflow: false,
+    } as unknown as Conversation
+    rerender(<ChatPage />)
+
+    expect(screen.getByTestId('resizable-separator')).toBeInTheDocument()
+    expect(screen.getByTestId('chat-history')).toBeInTheDocument()
   })
 })

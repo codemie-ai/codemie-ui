@@ -44,7 +44,6 @@ import { cn } from '@/utils/utils'
 import ChatPromptFileUpload from './ChatPromptFileUpload'
 import ChatPromptLlmSelector from './ChatPromptLlmSelector'
 import ChatPromptSkillsButton from './ChatPromptSkillsButton'
-import ChatPromptStarters from './ChatPromptStarters'
 import ChatPromptVoiceRecorder from './ChatPromptVoiceRecorder'
 import DynamicToolsSettings from './DynamicToolsSettings'
 
@@ -74,6 +73,8 @@ const SUBMIT_LABELS: Record<PromptMode, React.ReactNode> = {
 
 interface ChatPromptProps {
   resizable?: boolean
+  externalPrompt?: string | null
+  onExternalPromptConsumed?: () => void
 }
 
 const getBorderWrapperClassName = (
@@ -92,7 +93,11 @@ const getBorderWrapperClassName = (
     isInProgress && 'pointer-events-none'
   )
 
-const ChatPrompt: FC<ChatPromptProps> = ({ resizable = false }) => {
+const ChatPrompt: FC<ChatPromptProps> = ({
+  resizable = false,
+  externalPrompt,
+  onExternalPromptConsumed,
+}) => {
   const editorRef = useRef<EditorRef>(null)
   const { isDark } = useTheme()
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
@@ -212,18 +217,18 @@ const ChatPrompt: FC<ChatPromptProps> = ({ resizable = false }) => {
   }, [currentChat?.id])
 
   useEffect(() => {
+    if (externalPrompt) {
+      setPrompt({ message: externalPrompt, messageRaw: sanitizeMessage(externalPrompt) })
+      onExternalPromptConsumed?.()
+    }
+  }, [externalPrompt])
+
+  useEffect(() => {
     saveDraft(prompt)
   }, [prompt, saveDraft])
 
-  const hasChatHistory = !!currentChat?.history.length
-
   return (
     <>
-      {!hasChatHistory && (
-        <ChatPromptStarters
-          onStarterClick={(text) => setPrompt({ message: text, messageRaw: sanitizeMessage(text) })}
-        />
-      )}
       <div className={cn('relative w-full z-20', resizable && 'h-full flex flex-col')}>
         {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
         <div

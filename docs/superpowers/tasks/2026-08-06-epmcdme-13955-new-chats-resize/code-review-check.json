@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "gate": "code-review.check",
+  "decision": "approved",
+  "rationale": "All actionable findings resolved. F1: queryAllByTestId length assertion added to integration test. F2: transition test added to unit test. F3: confirmed false positive — numeric sizes are pixels per library source. 12/12 tests pass, lint and typecheck clean.",
+  "findings": [],
+  "prior_findings_resolved": ["F1", "F2"],
+  "prior_findings_dismissed": ["F3"],
+  "confidence": "high"
+}

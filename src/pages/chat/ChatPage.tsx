@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useEffect, useMemo } from 'react'
+import { FC, useCallback, useEffect, useMemo, useState } from 'react'
 import { Group, Panel } from 'react-resizable-panels'
 import { useSnapshot } from 'valtio'
 
@@ -35,6 +35,7 @@ import { useChatConfigResize } from './components/ChatConfiguration/useChatConfi
 import ChatHeader from './components/ChatHeader/ChatHeader'
 import ChatHistory from './components/ChatHistory/ChatHistory'
 import ChatPrompt from './components/ChatPrompt/ChatPrompt'
+import ChatPromptStarters from './components/ChatPrompt/ChatPromptStarters'
 import ChatResizableSeparator from './components/ChatResizableSeparator'
 import ChatSidebar from './components/ChatSidebar/ChatSidebar'
 import {
@@ -79,6 +80,10 @@ const ChatPage: FC = () => {
   const { defaultLayout, debouncedOnLayoutChanged, userId } = useChatPromptResize()
   const hasHistory = !!currentChat?.history.length
 
+  const [starterPrompt, setStarterPrompt] = useState<string | null>(null)
+  const handleStarterClick = useCallback((text: string) => setStarterPrompt(text), [])
+  const clearStarterPrompt = useCallback(() => setStarterPrompt(null), [])
+
   const chatConfiguration = useChatConfiguration()
   const { panelRef: configPanelRef, handleResize: handleConfigResize } = useChatConfigResize({
     isConfigVisible: chatConfiguration.isConfigVisible,
@@ -113,30 +118,35 @@ const ChatPage: FC = () => {
           <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
             <Group orientation="horizontal" className="h-full">
               <Panel id="chat-area" minSize={CHAT_AREA_MIN_WIDTH}>
-                {currentChat &&
-                  (hasHistory ? (
-                    <div className="flex flex-col h-full pb-4">
-                      <Group
-                        key={userId}
-                        orientation="vertical"
-                        defaultLayout={defaultLayout}
-                        onLayoutChanged={debouncedOnLayoutChanged}
-                        className="flex-1 min-h-0"
-                      >
-                        <Panel id="chat-history" minSize={80}>
+                {currentChat && (
+                  <div className="flex flex-col h-full pb-4">
+                    <Group
+                      key={hasHistory ? userId : `empty-${userId}`}
+                      orientation="vertical"
+                      defaultLayout={defaultLayout}
+                      onLayoutChanged={debouncedOnLayoutChanged}
+                      className="flex-1 min-h-0"
+                    >
+                      <Panel id="chat-history" minSize={80}>
+                        {hasHistory ? (
                           <ChatHistory />
-                        </Panel>
-                        <ChatResizableSeparator />
-                        <Panel id="chat-prompt" defaultSize={130} minSize={130}>
-                          <ChatPrompt resizable />
-                        </Panel>
-                      </Group>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col h-full">
-                      <ChatPrompt />
-                    </div>
-                  ))}
+                        ) : (
+                          <div className="h-full flex flex-col">
+                            <ChatPromptStarters onStarterClick={handleStarterClick} />
+                          </div>
+                        )}
+                      </Panel>
+                      <ChatResizableSeparator />
+                      <Panel id="chat-prompt" defaultSize={130} minSize={130}>
+                        <ChatPrompt
+                          resizable
+                          externalPrompt={starterPrompt}
+                          onExternalPromptConsumed={clearStarterPrompt}
+                        />
+                      </Panel>
+                    </Group>
+                  </div>
+                )}
               </Panel>
 
               <ChatConfigResizableSeparator />

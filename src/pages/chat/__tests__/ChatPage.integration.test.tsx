@@ -125,7 +125,7 @@ describe('ChatPage — resize separator (integration)', () => {
     expect(screen.getByRole('separator', { name: 'Resize chat prompt area' })).toBeInTheDocument()
   })
 
-  it('does not render a resize handle when the chat has no history', () => {
+  it('renders the resize handle even when the chat has no history', () => {
     mockChatsStore.currentChat = {
       id: 'chat-1',
       history: [],
@@ -137,10 +137,8 @@ describe('ChatPage — resize separator (integration)', () => {
 
     render(<ChatPage />)
 
-    expect(
-      screen.queryByRole('separator', { name: 'Resize chat prompt area' })
-    ).not.toBeInTheDocument()
-    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
-    expect(screen.getByTestId('chat-prompt')).toBeInTheDocument()
+    expect(screen.getByRole('separator', { name: 'Resize chat prompt area' })).toBeInTheDocument()
+    // Panel element is always in the DOM (1 match); ChatHistory content absent means no second match.
+    expect(screen.queryAllByTestId('chat-history')).toHaveLength(1)
   })
 })
