@@ -203,7 +203,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
             definition.name === 'sort_order'
           )
         }
-        return definition
+        return definition.name !== 'sort_by' && definition.name !== 'sort_order'
       }),
     [
       filters.project,

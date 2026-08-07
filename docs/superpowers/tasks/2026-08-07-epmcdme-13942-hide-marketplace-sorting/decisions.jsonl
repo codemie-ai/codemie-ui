@@ -1,0 +1,4 @@
+{"gate_id":"code-review.final","timestamp":"2026-08-07T10:59:47.2458705Z","prior_orchestrator_verdict":"code-review-final.json","source":"orchestrator-report","decision":"pending-hitl"}
+{"confidence":"high","source":"hitl","timestamp":"2026-08-07T11:43:46.2914091Z","gate_id":"code-review.final","decision":"approve","prior_orchestrator_verdict":"code-review-final.json"}
+{"gate_id":"feature.verification","timestamp":"2026-08-07T11:54:25.2931681Z","reason":"unit gate failed on unrelated locale tests","decision":"pending-hitl"}
+{"confidence":"high","source":"hitl","timestamp":"2026-08-07T11:55:12.5468391Z","gate_id":"feature.verification","rationale":"Proceed despite unrelated locale unit failures","decision":"approve"}

@@ -16,7 +16,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
-import { FILTER_INITIAL_STATE } from '@/constants/assistants'
+import { ASSISTANT_INDEX_SCOPES, FILTER_INITIAL_STATE } from '@/constants/assistants'
 import { userStore } from '@/store/user'
 import { FILTER_ENTITY, getFilters, setFilters, updateUrlWithFilters } from '@/utils/filters'
 import { cleanObject } from '@/utils/helpers'
@@ -70,6 +70,12 @@ export const useAssistantFilters = ({ scope }: UseAssistantFiltersProps) => {
       return result
     }, {} as AssistantFilters)
     result[scope] = null
+
+    // Marketplace-only sorting must not leak into other scopes via persisted state
+    if (scope !== ASSISTANT_INDEX_SCOPES.MARKETPLACE) {
+      result.sort_by = null
+    }
+
     return result
   }, [filterState, scope])
 

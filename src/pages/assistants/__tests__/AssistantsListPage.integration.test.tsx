@@ -703,6 +703,90 @@ describe('AssistantsListPage - Integration', () => {
     })
   })
 
+  describe('Marketplace sorting visibility', () => {
+    it('shows Sort by and Sort order on Marketplace', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: [
+          createAssistantFixture({
+            id: 'marketplace-1',
+            name: 'Marketplace Assistant',
+            is_global: true,
+          }),
+        ],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+      mockAPI('GET', 'v1/users', { data: [] })
+      mockAPI('GET', 'v1/assistants/categories', [])
+
+      renderPage('/assistants/marketplace')
+
+      await waitFor(() => {
+        expect(screen.getByText('Marketplace Assistant')).toBeInTheDocument()
+      })
+
+      expect(screen.getByText('SORT BY')).toBeInTheDocument()
+      expect(screen.getByText('SORT ORDER')).toBeInTheDocument()
+    })
+
+    it('does not show Sort by or Sort order on Project Assistants', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture()],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+      mockAPI('GET', 'v1/projects', { data: [] })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByText('SORT BY')).not.toBeInTheDocument()
+      expect(screen.queryByText('SORT ORDER')).not.toBeInTheDocument()
+    })
+
+    it('does not show Sort by or Sort order on Favorites', async () => {
+      mockAPI('GET', 'v1/config', [
+        {
+          id: 'features:favorites',
+          settings: { enabled: true },
+        },
+      ])
+      mockAPI('GET', 'v1/user', {
+        user_id: 'test-user-id',
+        name: 'Test User',
+        username: 'testuser',
+        applications: [],
+      })
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+        data: [
+          createAssistantFixture({
+            id: 'fav-assistant-1',
+            name: 'Favorite Assistant',
+            is_favorited: true,
+          }),
+        ],
+        page: 0,
+        per_page: 12,
+        pages: 1,
+        total: 3,
+      })
+
+      renderPage('/assistants/favorites')
+
+      await waitFor(() => {
+        expect(screen.getByText('Favorite Assistant')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByText('SORT BY')).not.toBeInTheDocument()
+      expect(screen.queryByText('SORT ORDER')).not.toBeInTheDocument()
+    })
+  })
+
   describe('Project filter display name', () => {
     beforeEach(() => {
       projectDisplayNamesStore.cache = {}

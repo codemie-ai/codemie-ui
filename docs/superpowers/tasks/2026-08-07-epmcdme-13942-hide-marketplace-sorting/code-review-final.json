@@ -1,0 +1,74 @@
+{
+  "decision": "approve",
+  "rationale": "All three lenses completed. Acceptance criteria all pass. Edge-case found no unhandled paths (store already ignores sort_order without sort_by). Blind concerns about sort_order leak and vacuous negatives were dismissed or deferred as non-blocking. Commit subjects match EPMCDME-####: format.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Marketplace sorting/ordering options are visible only on the Assistant Marketplace page.",
+      "status": "pass",
+      "notes": "Marketplace allowlist unchanged; non-marketplace excludes sort_by/sort_order."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Project Assistants page does not show marketplace-specific sorting/ordering options.",
+      "status": "pass",
+      "notes": "Fall-through excludes sort fields; integration test on /assistants."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Other assistants pages do not show marketplace-specific sorting/ordering options unless explicitly supported by requirements.",
+      "status": "pass",
+      "notes": "Favorites covered by shared exclusion + integration test; Templates already hides all filters."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Assistant Marketplace sorting behavior from EPMCDME-9984 remains functional.",
+      "status": "pass",
+      "notes": "Marketplace allowlist and sort preservation unit test retained."
+    },
+    {
+      "kind": "story-ac",
+      "item": "UI visibility logic is covered by regression testing for Assistant Marketplace and Project Assistants pages.",
+      "status": "pass",
+      "notes": "Marketplace sorting visibility describe block added."
+    },
+    {
+      "kind": "story-ac",
+      "item": "No regression is introduced in Assistant Marketplace listing, filtering, searching, or sorting.",
+      "status": "pass",
+      "notes": "Diff does not alter marketplace listing/filter/search paths."
+    },
+    {
+      "kind": "spec",
+      "item": "Favorites also hides sort controls.",
+      "status": "pass",
+      "notes": "Shared non-marketplace exclusion + favorites integration assertion."
+    },
+    {
+      "kind": "spec",
+      "item": "Stale persisted sort_by must not affect non-marketplace API queries.",
+      "status": "pass",
+      "notes": "useAssistantFilters nulls sort_by off marketplace; store gates on sort_by."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All three commits use EPMCDME-13942: Description format per git-workflow.md."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality.md guide present in this repo."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "UI visibility / filter-state change only; no auth, secrets, or injection surface."
+    }
+  ],
+  "findings": []
+}
