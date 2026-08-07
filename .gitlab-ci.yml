@@ -1,0 +1,23 @@
+include:
+  - project: "epm-cdme/codemie-gitlab-templates"
+    ref: "0.1.1"
+    file: "/templates/pre-ci-guard.yml"
+
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - when: never
+
+stages:
+  - pre-ci-guard
+
+wait-ci-init:
+  extends: .wait-ci-init-template
+
+  variables:
+    EXPECTED_CONTEXTS: |
+      ci-pipeline
+      compliance-report
