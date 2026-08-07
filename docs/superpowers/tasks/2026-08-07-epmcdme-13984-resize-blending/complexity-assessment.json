@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix chat input resize handle dark theme visibility by aligning ChatResizableSeparator Tailwind classes with the existing ChatConfigResizableSeparator pattern.",
+  "generated": "2026-08-07T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 6,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single zero-prop, zero-state presentational component (ChatResizableSeparator.tsx) is the only file touched — no layer boundaries, no state, no API."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Root cause is confirmed (border-subtle token resolves to neutral-700 against neutral-900 background at ~2.2:1 contrast), reference implementation is identified, and the exact fix pattern is fully documented — no ambiguity."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

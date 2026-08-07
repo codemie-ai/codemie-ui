@@ -28,7 +28,7 @@ const ChatResizableSeparator = () => (
     {/* Decorative pill — focus ring appears here so the indicator is visible */}
     <div
       aria-hidden="true"
-      className="w-10 h-1 rounded-full bg-border-subtle/40 pointer-events-none transition-all duration-150 group-hover:bg-border-subtle/80 group-hover:w-12 group-focus-visible:bg-border-subtle group-focus-visible:w-12 group-focus-visible:h-[3px] group-focus-visible:ring-2 group-focus-visible:ring-border-subtle/60"
+      className="w-10 h-1 rounded-full bg-black/20 [.codemieDark_&]:bg-white/25 pointer-events-none transition-all duration-150 group-hover:bg-black/45 [.codemieDark_&]:group-hover:bg-white/50 group-hover:w-12 group-focus-visible:bg-black/60 [.codemieDark_&]:group-focus-visible:bg-white/65 group-focus-visible:w-12 group-focus-visible:h-[3px] group-focus-visible:ring-2 group-focus-visible:ring-black/30 [.codemieDark_&]:group-focus-visible:ring-white/50"
     />
   </Separator>
 )
