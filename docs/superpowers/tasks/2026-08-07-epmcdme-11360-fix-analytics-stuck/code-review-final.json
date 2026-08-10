@@ -1,0 +1,41 @@
+{
+  "decision": "approve",
+  "rationale": "The fix correctly aligns the step condition with the actual target selector, eliminating the permanent-block scenario. The defensive fallback timer in OnboardingTooltip is a well-scoped safety net. No new patterns introduced; changes are minimal and focused.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Onboarding tour no longer gets stuck on the analytics step when NavigationAssistants returns null.",
+      "status": "satisfied",
+      "evidence": "Condition changed from div[class*='flex'] (always true) to !!document.querySelector('[data-onboarding=\"prebuilt-assistants\"]') (matches only when the actual target exists). When NavigationAssistants renders null, the step is excluded from activeSteps entirely."
+    },
+    {
+      "criterion": "User cannot be permanently blocked by a missing target element.",
+      "status": "satisfied",
+      "evidence": "OnboardingTooltip now sets fallbackReady=true after 400ms when the target element is absent. tooltipReady becomes true via the fallbackReady condition, making the tooltip visible and interactive regardless of target presence."
+    },
+    {
+      "criterion": "The overlay does not block clicks when the tooltip is not visible.",
+      "status": "satisfied",
+      "evidence": "With the condition fix the affected step is skipped entirely, so the overlay is never rendered for it. The fallback timer ensures the tooltip is always made visible if a step is rendered without its target."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Commit subject follows JIRA-key: fix(scope): description format. Pre-commit hooks passed (prettier, eslint, tsc, license-headers, secrets)."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "Changes are minimal — 2 files, 16 net insertions. No new abstractions. fallbackReady state follows existing useState patterns in the component."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No security issues. No auth, secrets, injection, or unsafe handling in the diff."
+    }
+  ],
+  "findings": []
+}

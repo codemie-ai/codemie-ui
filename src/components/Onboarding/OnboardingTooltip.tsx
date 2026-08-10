@@ -56,6 +56,7 @@ export const OnboardingTooltip = ({
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null)
   const [containerEl, setContainerEl] = useState<HTMLElement | null>(null)
   const [containerHeight, setContainerHeight] = useState(0)
+  const [fallbackReady, setFallbackReady] = useState(false)
   const arrowRef = useRef<HTMLDivElement>(null)
 
   // Get target element
@@ -64,6 +65,8 @@ export const OnboardingTooltip = ({
       setTargetElement(null)
       return
     }
+
+    setFallbackReady(false)
 
     const getElement = () => {
       if (typeof step.target === 'string') {
@@ -83,8 +86,15 @@ export const OnboardingTooltip = ({
       }
     }, 500)
 
+    // If the target element is absent (e.g. conditionally rendered), show the tooltip
+    // in a centered fallback position after 400 ms so the user is never permanently stuck
+    const fallbackTimer = setTimeout(() => setFallbackReady(true), 400)
+
     // eslint-disable-next-line consistent-return
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      clearTimeout(fallbackTimer)
+    }
   }, [step.target])
 
   const explicitPlacement: Placement | undefined =
@@ -143,9 +153,10 @@ export const OnboardingTooltip = ({
     : undefined
   const arrowBgSize = containerHeight ? `100% ${containerHeight}px` : undefined
 
-  // Don't render at all until element is found and Floating UI has computed position
-  // This prevents the tooltip from flashing in the center/corner before positioning
-  const tooltipReady = !step.target || (targetElement !== null && isPositioned)
+  // Hide until Floating UI has positioned the tooltip (avoids an initial center-flash).
+  // After 400 ms, fall back to showing the tooltip centered regardless — this ensures
+  // the user is never permanently blocked when a target element is absent.
+  const tooltipReady = !step.target || (targetElement !== null && isPositioned) || fallbackReady
 
   // Fallback to center if no target
   const tooltipStyle = targetElement

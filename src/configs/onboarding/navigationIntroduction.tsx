@@ -292,12 +292,7 @@ These assistants are ready to use:
 - Chatbot: General conversations and image generation with DALL-E
 
 Click on any assistant to start using it right away!`,
-      condition: () => {
-        const assistantsSection = document.querySelector(
-          'header nav[aria-label="bottom-nav-links"]'
-        )
-        return !!assistantsSection?.querySelector('div[class*="flex"]')
-      },
+      condition: () => !!document.querySelector('[data-onboarding="prebuilt-assistants"]'),
     },
 
     // Step 14: Help Navigation Item
