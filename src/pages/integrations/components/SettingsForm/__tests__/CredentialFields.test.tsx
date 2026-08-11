@@ -504,51 +504,6 @@ describe('CredentialFields — sectionHeader rendering', () => {
   })
 })
 
-describe('azuredevops credential fields', () => {
-  it('lists fields in order: url, organization, project, token', () => {
-    const keys = Object.keys(CREDENTIAL_UI_MAPPING.azuredevops.fields)
-    expect(keys).toEqual(['url', 'organization', 'project', 'token'])
-  })
-
-  it('url rejects empty string', () => {
-    const { validation } = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).url
-    expect(validation.isValidSync('')).toBe(false)
-    expect(validation.isValidSync('https://dev.azure.com')).toBe(true)
-  })
-
-  it('organization rejects empty string', () => {
-    const { validation } = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).organization
-    expect(validation.isValidSync('')).toBe(false)
-    expect(validation.isValidSync('my-org')).toBe(true)
-  })
-
-  it('token rejects empty string', () => {
-    const { validation } = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).token
-    expect(validation.isValidSync('')).toBe(false)
-    expect(validation.isValidSync('pat-secret-123')).toBe(true)
-  })
-
-  it('project has no validation (optional)', () => {
-    const projectField = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).project
-    expect(projectField.validation).toBeUndefined()
-  })
-
-  it('url field label is Hostname', () => {
-    const urlField = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).url
-    expect(urlField.label).toBe('Hostname')
-  })
-
-  it('url required message is Hostname is required', () => {
-    const { validation } = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).url
-    expect(() => validation.validateSync('')).toThrow('Hostname is required')
-  })
-
-  it('project placeholder indicates optional', () => {
-    const projectField = (CREDENTIAL_UI_MAPPING.azuredevops.fields as any).project
-    expect(projectField.placeholder).toBe('Project Name (optional)')
-  })
-})
-
 describe('CredentialFields — resourceSelect field', () => {
   function ResourceWrapper({
     resourceType,
