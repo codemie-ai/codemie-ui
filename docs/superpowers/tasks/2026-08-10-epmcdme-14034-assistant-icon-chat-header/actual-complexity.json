@@ -1,0 +1,37 @@
+{
+  "ticket": "EPMCDME-14034",
+  "generated": "2026-08-10",
+  "mode": "actual",
+  "feature_area": "chat header avatar UI rendering",
+  "task_summary": "Bug fix: Add Avatar component to the single-assistant branch of ChatHeader.tsx, which was rendering only a name span despite Avatar being imported and used in the group-chat branch.",
+
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS", "note": "Single conditional block inside ChatHeader.tsx; no cross-cutting concerns, no layer crossing." },
+    "requirements_clarity": { "score": 1, "label": "XS", "note": "Root cause explicitly stated in ticket; exact pattern exists in the group-chat branch of the same file; acceptance criteria unambiguous." },
+    "technical_risk":       { "score": 1, "label": "XS", "note": "Exact pattern copied from existing group-chat branch; Avatar already imported; trivial rollback; zero perf or security implications." },
+    "file_change_estimate": { "score": 1, "label": "XS", "note": "2 files changed (ChatHeader.tsx + ChatHeader.test.tsx), 0 new files, both in the same directory." },
+    "dependencies":         { "score": 1, "label": "XS", "note": "No new packages, no version changes; Avatar and AvatarType were already imported in ChatHeader.tsx." },
+    "affected_layers":      { "score": 1, "label": "XS", "note": "UI component layer only; no API, service, DB, infrastructure, or external layers touched." }
+  },
+
+  "red_flags_applied": [],
+
+  "total_score": 6,
+  "total_max": 36,
+  "size": "XS",
+  "routing": "superpowers:subagent-driven-development",
+  "routing_note": "Direct implementation, no planning needed.",
+
+  "actual_outcome": {
+    "files_changed": 2,
+    "lines_added": 59,
+    "lines_deleted": 9,
+    "new_files": 0,
+    "changed_files": [
+      "src/pages/chat/components/ChatHeader/ChatHeader.tsx",
+      "src/pages/chat/components/ChatHeader/__tests__/ChatHeader.test.tsx"
+    ],
+    "implementation_notes": "Added Avatar to single-assistant branch (lines 117-136). Applied optional chaining (assistantData?.[0]) and added !currentChat?.isGroup guard to prevent double-rendering in 1-member group chats. Added 3 unit tests: avatar with icon, without icon, click handler. All 4 quality gates pass (lint, typecheck, 4171 unit tests, 468 integration tests).",
+    "estimate_accuracy": "on-target"
+  }
+}

@@ -131,6 +131,26 @@ const mockWorkflowChat = {
   assistantIds: ['workflow-assistant-id'],
 } as unknown as Conversation
 
+const mockSingleAssistantChat = {
+  id: 'chat-single',
+  name: 'Single Assistant Chat',
+  isGroup: false,
+  assistantData: [
+    { id: 'assistant-abc', name: 'Assistant One', iconUrl: 'https://example.com/icon.png' },
+  ],
+  initialAssistantId: 'assistant-abc',
+  assistantIds: ['assistant-abc'],
+} as unknown as Conversation
+
+const mockSingleAssistantChatNoIcon = {
+  id: 'chat-single-noicon',
+  name: 'Single No Icon Chat',
+  isGroup: false,
+  assistantData: [{ id: 'assistant-xyz', name: 'Single No Icon', iconUrl: undefined }],
+  initialAssistantId: 'assistant-xyz',
+  assistantIds: ['assistant-xyz'],
+} as unknown as Conversation
+
 const mockGroupChat = {
   id: 'chat-456',
   name: 'Group Chat',
@@ -321,6 +341,25 @@ describe('ChatHeader', () => {
     mockChatsStore.currentChat = mockChat
     render(<ChatHeader />)
     expect(screen.queryByText('Assistant One')).not.toBeInTheDocument()
+  })
+
+  it('renders avatar for single-assistant chat with iconUrl', () => {
+    mockChatsStore.currentChat = mockSingleAssistantChat
+    render(<ChatHeader />)
+    expect(screen.getByLabelText('Assistant One')).toBeInTheDocument()
+  })
+
+  it('renders avatar for single-assistant chat without iconUrl', () => {
+    mockChatsStore.currentChat = mockSingleAssistantChatNoIcon
+    render(<ChatHeader />)
+    expect(screen.getByLabelText('Single No Icon')).toBeInTheDocument()
+  })
+
+  it('calls handleAvatarClick when single-assistant header avatar is clicked', async () => {
+    mockChatsStore.currentChat = mockSingleAssistantChat
+    render(<ChatHeader />)
+    await user.click(screen.getByLabelText('Assistant One'))
+    expect(mockChatContext.attemptToggleConfigVisibility).toHaveBeenCalled()
   })
 
   it('shows only first 3 assistant avatars', () => {

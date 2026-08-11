@@ -1,0 +1,44 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two major patch findings: (1) Avatar iconUrl prop uses `currentChat?.assistantData[0]?.iconUrl` without optional chaining on [0], inconsistent with the defensive ?. already applied to assistantData.length in the same condition — latent crash risk if assistantData is ever absent. (2) A group chat with exactly 1 assistant satisfies both the isGroup section condition (isGroup=true && length>0) and the new single-assistant section condition (assistantDisplayName truthy as joined name + length<=1), producing duplicate Avatar rendering. Acceptance: 5/6 criteria pass; screenshot verification is manual QA scope. Standards: commit format valid, TypeScript and ESLint clean.",
+  "follow_ups": [
+    "Fix optional chaining: `currentChat?.assistantData?.[0]?.iconUrl` in ChatHeader.tsx",
+    "Add `!currentChat?.isGroup` guard to the single-assistant block condition in ChatHeader.tsx"
+  ],
+  "confidence": "medium",
+  "risk_flags": [],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "Avatar iconUrl prop uses `currentChat?.assistantData[0]?.iconUrl` without optional chaining on [0], inconsistent with the defensive `?.` already applied to `assistantData.length` in the same outer condition.",
+      "impact": "If assistantData is absent or null at runtime, `undefined[0]` throws a TypeError that crashes the ChatHeader component.",
+      "recommendation": "Change to `currentChat?.assistantData?.[0]?.iconUrl`.",
+      "location": "src/pages/chat/components/ChatHeader/ChatHeader.tsx:118"
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "A group chat with exactly 1 assistant satisfies both the isGroup block condition (`isGroup=true && assistantData.length===1 > 0`) and the new single-assistant block condition (`assistantDisplayName` truthy as joined name + `length <= 1`). Both blocks render simultaneously, producing two Avatar components for the same assistant.",
+      "impact": "Group chats that have or transition to exactly 1 member show a duplicate avatar in the header. The second Avatar's click handler also fires `handleAvatarClick`, creating confusing interaction.",
+      "recommendation": "Add `!currentChat?.isGroup` to the single-assistant block condition: `{assistantDisplayName && !currentChat?.isGroup && (currentChat?.assistantData?.length ?? 0) <= 1 && ...}`.",
+      "location": "src/pages/chat/components/ChatHeader/ChatHeader.tsx:117"
+    }
+  ],
+  "business_review": [
+    {"id": "AC-001", "description": "Assistant icon displayed in chat header next to name", "status": "pass", "notes": "Avatar added before name span in single-assistant branch"},
+    {"id": "AC-002", "description": "Icon uses same Avatar component (AvatarType.SMALL) as group-chat header", "status": "pass", "notes": "Same Avatar import, AvatarType.SMALL, withTooltip — identical to group branch"},
+    {"id": "AC-003", "description": "Layout aligned for short and long assistant names", "status": "pass", "notes": "ml-2 and line-clamp-1 preserved on the span; parent flex container unchanged"},
+    {"id": "AC-004", "description": "Fallback avatar behavior applied when no custom icon", "status": "pass", "notes": "iconUrl passes undefined when absent; Avatar fallback logic is internal and verified by no-icon test"},
+    {"id": "AC-005", "description": "No regression in assistant list, message area, or avatar rendering", "status": "pass", "notes": "Only single-assistant branch modified; Avatar.tsx, ChatAiMessage, AssistantCard untouched; 4171 tests pass"},
+    {"id": "AC-006", "description": "Fix verified using screenshot scenario", "status": "na", "notes": "Screenshot verification is a manual QA step; unit tests cover all logic paths"}
+  ],
+  "standards_review": [
+    {"standard": "commit-format", "status": "pass", "notes": "EPMCDME-14034: Add assistant avatar to single-assistant chat header — matches required pattern"},
+    {"standard": "typescript", "status": "pass", "notes": "tsc --noEmit exits clean"},
+    {"standard": "lint", "status": "pass", "notes": "ESLint clean; prettier applied by pre-commit hook"},
+    {"standard": "security", "status": "pass", "notes": "Pure UI rendering change; no auth, secrets, or injection surface"}
+  ]
+}

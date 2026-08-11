@@ -114,15 +114,26 @@ const ChatHeader: FC = () => {
           </div>
         )}
 
-        {assistantDisplayName && (currentChat?.assistantData?.length ?? 0) <= 1 && (
-          <span
-            className="ml-2 line-clamp-1 font-semibold text-text-primary"
-            data-tooltip-id="react-tooltip"
-            data-tooltip-content={assistantDisplayName}
-          >
-            {assistantDisplayName}
-          </span>
-        )}
+        {assistantDisplayName &&
+          !currentChat?.isGroup &&
+          (currentChat?.assistantData?.length ?? 0) <= 1 && (
+            <>
+              <Avatar
+                iconUrl={currentChat?.assistantData?.[0]?.iconUrl}
+                name={assistantDisplayName}
+                type={AvatarType.SMALL}
+                onClick={handleAvatarClick}
+                withTooltip
+              />
+              <span
+                className="ml-2 line-clamp-1 font-semibold text-text-primary"
+                data-tooltip-id="react-tooltip"
+                data-tooltip-content={assistantDisplayName}
+              >
+                {assistantDisplayName}
+              </span>
+            </>
+          )}
       </div>
 
       {currentChat && (

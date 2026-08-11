@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "Both CR-001 and CR-002 are resolved in the fix-up commit. CR-001: optional chaining added (`assistantData?.[0]?.iconUrl`). CR-002: `!currentChat?.isGroup` guard added to the single-assistant condition. Fix-up is minimal and introduces no new issues.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"id": "AC-001", "description": "Assistant icon displayed in chat header next to name", "status": "pass"},
+    {"id": "AC-002", "description": "Icon uses same Avatar component (AvatarType.SMALL) as group-chat header", "status": "pass"},
+    {"id": "AC-003", "description": "Layout aligned for short and long assistant names", "status": "pass"},
+    {"id": "AC-004", "description": "Fallback avatar behavior applied when no custom icon", "status": "pass"},
+    {"id": "AC-005", "description": "No regression in assistant list, message area, or avatar rendering", "status": "pass"},
+    {"id": "AC-006", "description": "Fix verified using screenshot scenario", "status": "na"}
+  ],
+  "standards_review": [
+    {"standard": "commit-format", "status": "pass", "notes": "EPMCDME-14034: Fix optional chaining and isGroup guard in chat header avatar — valid format"},
+    {"standard": "typescript", "status": "pass"},
+    {"standard": "lint", "status": "pass"},
+    {"standard": "security", "status": "pass"}
+  ],
+  "findings": [],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "Changed to `currentChat?.assistantData?.[0]?.iconUrl`"},
+    {"id": "CR-002", "status": "resolved", "notes": "Added `!currentChat?.isGroup &&` to the condition"}
+  ]
+}
