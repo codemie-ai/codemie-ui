@@ -528,7 +528,7 @@ describe('CredentialFields — resourceSelect field', () => {
 
   it('is disabled when resource_type is empty', () => {
     const { container } = render(<ResourceWrapper resourceType="" options={[]} />)
-    // PrimeReact Dropdown marks disabled state with data-p-disabled attribute
-    expect(container.querySelector('[data-p-disabled="true"]')).not.toBeNull()
+    // PrimeReact MultiSelect marks disabled state with p-disabled CSS class
+    expect(container.querySelector('.p-disabled')).not.toBeNull()
   })
 })

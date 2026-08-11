@@ -111,6 +111,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   const aliasManuallyEdited = useRef(false)
   const webhookIdManuallyEdited = useRef(false)
   const prevResourceType = useRef<string | undefined>(undefined)
+  const prevProjectName = useRef<string>(initialProjectName || '')
 
   const CREDENTIAL_TYPES = useMemo(() => {
     return getAvailableCredentialsTypes({
@@ -299,6 +300,17 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     }
   }, [formValues.resource_type])
 
+  // Clear the linked resource when the project changes — the previously selected
+  // entity may belong to the old project and would be invalid in the new one.
+  // Never fires on mount (prev === current on first render).
+  useEffect(() => {
+    const prev = prevProjectName.current
+    prevProjectName.current = projectName
+    if (prev && prev !== projectName) {
+      setFormValue('resource_id', '', { shouldDirty: false, shouldTouch: false })
+    }
+  }, [projectName])
+
   const handleCredentialTypeChange = (newType: string) => {
     setCredentialType(newType)
     webhookIdManuallyEdited.current = false
@@ -403,7 +415,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   return (
     <>
       <form
-        className="flex flex-col w-full gap-y-6 pt-6 px-6 mx-auto max-w-5xl pb-8"
+        className="flex flex-col w-full gap-y-6 pt-6 px-6 mx-auto max-w-5xl pb-[272px]"
         onSubmit={(e) => {
           e.preventDefault()
           submit()
@@ -430,6 +442,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               position={CredentialComponentPosition.top}
               editing={editing}
               resetKey={resetCount}
+              project={projectName}
               onManualFieldEdit={(fieldName) => {
                 if (fieldName === 'webhook_id') webhookIdManuallyEdited.current = true
               }}
@@ -535,6 +548,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                     buildWebhookURL={buildWebhookURL}
                     editing={editing}
                     resetKey={resetCount}
+                    project={projectName}
                     onManualFieldEdit={(fieldName) => {
                       if (fieldName === 'webhook_id') webhookIdManuallyEdited.current = true
                     }}

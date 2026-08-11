@@ -21,7 +21,11 @@ import { workflowsStore } from '@/store/workflows'
 
 type ResourceOption = { label: string; value: string }
 
-export function useResourceOptions(resourceType: string): {
+export function useResourceOptions(
+  resourceType: string,
+  project?: string,
+  search?: string
+): {
   options: ResourceOption[]
   loading: boolean
 } {
@@ -40,19 +44,22 @@ export function useResourceOptions(resourceType: string): {
       try {
         let mapped: ResourceOption[] = []
         if (resourceType === 'assistant') {
-          const data = await assistantsStore.getAssistantOptions()
+          const data = await assistantsStore.getAssistantOptions(
+            search ?? '',
+            { project }
+          )
           mapped = data.map((item: { id: string; name: string }) => ({
             label: item.name,
             value: String(item.id),
           }))
         } else if (resourceType === 'workflow') {
-          const data = await workflowsStore.getWorkflowOptions()
+          const data = await workflowsStore.getWorkflowOptions({ search, project })
           mapped = data.map((item: { id: string; name: string }) => ({
             label: item.name,
             value: String(item.id),
           }))
         } else if (resourceType === 'datasource') {
-          const data = await dataSourceStore.getDataSourceOptions()
+          const data = await dataSourceStore.getDataSourceOptions({ project, query: search })
           mapped = data.map((item: { id: string; repo_name: string }) => ({
             label: item.repo_name,
             value: String(item.id),
@@ -69,7 +76,7 @@ export function useResourceOptions(resourceType: string): {
     return () => {
       cancelled = true
     }
-  }, [resourceType])
+  }, [resourceType, project, search])
 
   return { options, loading }
 }

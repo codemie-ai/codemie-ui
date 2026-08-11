@@ -17,6 +17,8 @@ import { renderHook, act } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 import { assistantsStore } from '@/store/assistants'
+import { dataSourceStore } from '@/store/dataSources'
+import { workflowsStore } from '@/store/workflows'
 
 import { useResourceOptions } from '../hooks/useResourceOptions'
 
@@ -96,5 +98,92 @@ describe('useResourceOptions', () => {
     rerender({ rt: 'workflow' })
     await act(async () => {})
     expect(result.current.options[0].label).toBe('Deploy Flow')
+  })
+
+  describe('project scoping', () => {
+    it('passes project to assistant options store', async () => {
+      renderHook(() => useResourceOptions('assistant', 'proj-x'))
+      await act(async () => {})
+      expect(vi.mocked(assistantsStore.getAssistantOptions)).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ project: 'proj-x' })
+      )
+    })
+
+    it('passes project to workflow options store', async () => {
+      renderHook(() => useResourceOptions('workflow', 'proj-x'))
+      await act(async () => {})
+      expect(vi.mocked(workflowsStore.getWorkflowOptions)).toHaveBeenCalledWith(
+        expect.objectContaining({ project: 'proj-x' })
+      )
+    })
+
+    it('passes project to datasource options store', async () => {
+      renderHook(() => useResourceOptions('datasource', 'proj-x'))
+      await act(async () => {})
+      expect(vi.mocked(dataSourceStore.getDataSourceOptions)).toHaveBeenCalledWith(
+        expect.objectContaining({ project: 'proj-x' })
+      )
+    })
+
+    it('re-fetches and scopes to the new project when project changes', async () => {
+      const { rerender } = renderHook(
+        ({ rt, p }: { rt: string; p: string }) => useResourceOptions(rt, p),
+        { initialProps: { rt: 'assistant', p: 'proj-a' } }
+      )
+      await act(async () => {})
+      expect(vi.mocked(assistantsStore.getAssistantOptions)).toHaveBeenCalledTimes(1)
+
+      rerender({ rt: 'assistant', p: 'proj-b' })
+      await act(async () => {})
+      expect(vi.mocked(assistantsStore.getAssistantOptions)).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(assistantsStore.getAssistantOptions)).toHaveBeenLastCalledWith(
+        expect.anything(),
+        expect.objectContaining({ project: 'proj-b' })
+      )
+    })
+  })
+
+  describe('search', () => {
+    it('passes search term to assistant options store', async () => {
+      renderHook(() => useResourceOptions('assistant', undefined, 'my query'))
+      await act(async () => {})
+      expect(vi.mocked(assistantsStore.getAssistantOptions)).toHaveBeenCalledWith(
+        'my query',
+        expect.anything()
+      )
+    })
+
+    it('passes search term to workflow options store', async () => {
+      renderHook(() => useResourceOptions('workflow', undefined, 'my query'))
+      await act(async () => {})
+      expect(vi.mocked(workflowsStore.getWorkflowOptions)).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'my query' })
+      )
+    })
+
+    it('passes search term as query to datasource options store', async () => {
+      renderHook(() => useResourceOptions('datasource', undefined, 'my query'))
+      await act(async () => {})
+      expect(vi.mocked(dataSourceStore.getDataSourceOptions)).toHaveBeenCalledWith(
+        expect.objectContaining({ query: 'my query' })
+      )
+    })
+
+    it('re-fetches when search term changes', async () => {
+      const { rerender } = renderHook(
+        ({ rt, s }: { rt: string; s: string }) => useResourceOptions(rt, undefined, s),
+        { initialProps: { rt: 'workflow', s: '' } }
+      )
+      await act(async () => {})
+      expect(vi.mocked(workflowsStore.getWorkflowOptions)).toHaveBeenCalledTimes(1)
+
+      rerender({ rt: 'workflow', s: 'deploy' })
+      await act(async () => {})
+      expect(vi.mocked(workflowsStore.getWorkflowOptions)).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(workflowsStore.getWorkflowOptions)).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: 'deploy' })
+      )
+    })
   })
 })

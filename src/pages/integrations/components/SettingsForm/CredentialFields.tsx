@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Control, Controller, useWatch, useFormState } from 'react-hook-form'
 
 import ExternalSvg from '@/assets/icons/external.svg?react'
@@ -21,7 +21,7 @@ import PasswordToggleButton from '@/authentication/components/PasswordToggleButt
 import Autocomplete from '@/components/form/Autocomplete'
 import Input from '@/components/form/Input'
 import InputCopy from '@/components/form/InputCopy/InputCopy'
-import Select from '@/components/form/Select/Select'
+import MultiSelect from '@/components/form/MultiSelect/MultiSelect'
 import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import Link from '@/components/Link'
@@ -107,6 +107,7 @@ interface CredentialFieldsProps {
   editing?: boolean
   resetKey?: React.Key
   onManualFieldEdit?: (name: string) => void
+  project?: string
 }
 
 const CredentialFields: React.FC<CredentialFieldsProps> = ({
@@ -117,12 +118,36 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
   editing = false,
   resetKey,
   onManualFieldEdit,
+  project,
 }) => {
   const formValues = useWatch({ control })
   const formState = useFormState({ control })
   const [passwordVisibility, setPasswordVisibility] = useState<Record<string, boolean>>({})
   const resourceType = String(formValues.resource_type ?? '')
-  const { options: resourceOptions, loading: resourceLoading } = useResourceOptions(resourceType)
+
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const handleSearchFilter = (value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300)
+  }
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    setDebouncedSearch('')
+  }, [resourceType, project])
+
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    },
+    []
+  )
+
+  const { options: resourceOptions, loading: resourceLoading } = useResourceOptions(
+    resourceType,
+    project,
+    debouncedSearch
+  )
 
   const togglePasswordVisibility = (fieldName: string) => {
     setPasswordVisibility((prev) => ({
@@ -301,16 +326,17 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
               )}
 
               {type === CredentialComponentType.resourceSelect && (
-                <Select
+                <MultiSelect
                   id={name}
                   label={typeof label === 'string' ? label : 'Resource'}
                   options={resourceOptions}
                   disabled={!resourceType || resourceLoading}
                   loading={resourceLoading}
-                  filter
+                  singleValue
                   filterPlaceholder="Search…"
-                  value={field.value ?? null}
-                  onChangeValue={(val) => field.onChange(val ?? null)}
+                  onFilter={handleSearchFilter}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange((e.target.value as string) ?? null)}
                 />
               )}
 
