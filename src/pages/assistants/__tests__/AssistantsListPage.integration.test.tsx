@@ -724,10 +724,9 @@ describe('AssistantsListPage - Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Marketplace Assistant')).toBeInTheDocument()
+        expect(screen.getByText('SORT BY')).toBeInTheDocument()
+        expect(screen.getByText('SORT ORDER')).toBeInTheDocument()
       })
-
-      expect(screen.getByText('SORT BY')).toBeInTheDocument()
-      expect(screen.getByText('SORT ORDER')).toBeInTheDocument()
     })
 
     it('does not show Sort by or Sort order on Project Assistants', async () => {

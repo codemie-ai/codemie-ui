@@ -63,7 +63,7 @@ const AssistantSetupSection = ({
       title="Assistant Setup"
       description="Define the assistant's name, project, and visibility."
       defaultOpen={true}
-      className={cn(isCompactView && 'max-w-sm mt-5')}
+      className={cn(isCompactView && 'mt-5')}
     >
       <div className="px-4 pb-4 flex flex-col gap-6">
         <div data-onboarding="assistant-basic-fields" className="flex flex-col gap-6">
@@ -244,11 +244,7 @@ const AssistantSetupSection = ({
         </div>
 
         <div data-onboarding="assistant-extra-config-accordion">
-          <Accordion
-            title="Extra configuration"
-            defaultOpen={false}
-            className={cn(isCompactView && 'max-w-sm')}
-          >
+          <Accordion title="Extra configuration" defaultOpen={false}>
             <div
               className={cn('px-4 pb-4 flex gap-6', isCompactView ? 'flex-col' : 'flex-row gap-16')}
             >

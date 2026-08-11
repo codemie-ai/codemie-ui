@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Fix EPMCDME-14000: repair broken accordion expand animation in Configure & Test panel assistant blocks and fix LLM Model dropdown width to match full-width Skills dropdown.",
+  "generated": "2026-08-10T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 11,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two bug fixes each touch distinct components: LLMSelector.tsx (max-w-sm removal) and Accordion.tsx (PrimeReact display:none override). Accordion.tsx is a shared component used across the codebase, triggering the shared-utility red flag that bumped scope from S to M. AssistantSetupSection.tsx also needs its own max-w-sm removals on the outer and nested accordion wrappers."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Root causes are precisely identified in the technical analysis. One open design decision exists for Bug 1: whether to remove max-w-sm unconditionally from LLMSelector or introduce a conditional prop to avoid affecting non-compact render sites. This is a minor choice, not a blocker."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S (2) to M (3): Accordion.tsx is a shared UI utility component used across multiple features — touches core shared utilities red flag applies."
+  ],
+  "split_recommendation": null
+}

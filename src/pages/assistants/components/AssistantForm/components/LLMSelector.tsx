@@ -121,7 +121,7 @@ const LLMSelector = forwardRef<
     }, [defaultLlmModel?.value, invalidModel, value])
 
     return (
-      <div className="flex flex-col gap-2 grow max-w-sm">
+      <div className="flex flex-col gap-2 grow">
         <MultiSelect
           singleValue
           label={label}
