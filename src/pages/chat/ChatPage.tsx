@@ -119,7 +119,7 @@ const ChatPage: FC = () => {
             <Group orientation="horizontal" className="h-full">
               <Panel id="chat-area" minSize={CHAT_AREA_MIN_WIDTH}>
                 {currentChat && (
-                  <div className="flex flex-col h-full pb-4">
+                  <div className="flex flex-col h-full pb-7">
                     <Group
                       key={hasHistory ? userId : `empty-${userId}`}
                       orientation="vertical"
