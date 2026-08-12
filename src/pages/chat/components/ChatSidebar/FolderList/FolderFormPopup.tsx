@@ -87,7 +87,12 @@ const FolderFormPopup = ({
         name="folderName"
         control={control}
         render={({ field, fieldState }) => (
-          <Input placeholder="Folder name" error={fieldState.error?.message} {...field} />
+          <Input
+            aria-label="Folder name"
+            placeholder="Folder name"
+            error={fieldState.error?.message}
+            {...field}
+          />
         )}
       />
     </Popup>

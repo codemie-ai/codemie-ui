@@ -1,0 +1,92 @@
+{
+  "decision": "approve",
+  "rationale": "Three lenses ran over the 2-file / 47-line diff (blind, edge-case, acceptance); every story and spec criterion passes, commit format matches the guide, and the automated gates (ci-pipeline, SonarQube 0 new issues, test-harness 79 passed / 0 failed) are green. Two blind-lens concerns were refuted by measurement rather than argument: the new test is a genuine regression guard (dom-accessibility-api computes an empty accessible name for the pre-fix markup, so it fails without the aria-label), and the aria-label shadows no visible label (the Input `label` prop is unset here, so the wrapping <label> carries no text). 3 findings deferred, none blocking: (1) in the error state the accessible name was previously the error text and is now the stable field name, so the error message needs aria-describedby/aria-invalid in the shared src/components/form/Input/Input.tsx — a pre-existing 3.3.1 gap in that component, deliberately out of this 4.1.2 ticket's scope and handed to the maintainer as a follow-up alongside the three Popup.tsx defects; (2) {...field} is spread after aria-label, which is harmless today (react-hook-form's field carries only name/value/onChange/onBlur/ref) but would silently win if that ever changes; (3) the edit-mode test asserts only the accessible name and could additionally assert toHaveValue('Existing folder') to prove it is really in edit mode. 6 further concerns dismissed as refuted or non-blocking style.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Folder-name input in the \"Create new folder\" modal has a descriptive programmatic accessible name (WCAG 4.1.2)",
+      "status": "pass",
+      "notes": "FolderFormPopup.tsx renders <Input aria-label=\"Folder name\">; Input.tsx spreads ...rest onto the native <input>, so the attribute reaches the DOM."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Announcement no longer depends on the placeholder-fallback step of accname",
+      "status": "pass",
+      "notes": "aria-label wins over both the empty wrapping <label> and the placeholder fallback; measured with dom-accessibility-api: \"\" before, \"Folder name\" after."
+    },
+    {
+      "kind": "spec",
+      "item": "Selected approach: aria-label=\"Folder name\", no visual change",
+      "status": "pass",
+      "notes": "Only an ARIA attribute added; placeholder retained; no markup, class or layout change."
+    },
+    {
+      "kind": "spec",
+      "item": "Fix also covers the Edit Folder mode of the same modal",
+      "status": "pass",
+      "notes": "A single Input instance serves both modes; the edit-mode test renders with isEditing/folder and passes."
+    },
+    {
+      "kind": "spec",
+      "item": "Unit tests assert the exact accessible name via toHaveAccessibleName",
+      "status": "pass",
+      "notes": "Exact string, not regex/substring; jest-dom registered globally in src/setupTests.tsx."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope: touch only FolderFormPopup.tsx and the new __tests__/FolderFormPopup.test.tsx",
+      "status": "pass",
+      "notes": "2 files, 47 insertions, 1 deletion."
+    },
+    {
+      "kind": "spec",
+      "item": "Do NOT touch src/components/Popup/Popup.tsx (owned by EPMCDME-8430 / 8429)",
+      "status": "pass",
+      "notes": "Popup.tsx absent from the diff; its known defects remain and are reported, not fixed."
+    },
+    {
+      "kind": "spec",
+      "item": "T1 — the test must FAIL on current main (RED before the fix)",
+      "status": "pass",
+      "notes": "Verified independently: computeAccessibleName() returns \"\" for <label><input placeholder=\"Folder name\"></label>, so the assertion genuinely fails without the aria-label."
+    },
+    {
+      "kind": "spec",
+      "item": "T3 — gates: lint, affected unit tests, sonar-local, test-harness numbers captured",
+      "status": "pass",
+      "notes": "Affected unit tests 2/2 green; SonarQube quality gate passed with 0 new issues on MR !1684; test-harness on the rebased branch: 79 passed, 0 failed, 4 rerun in 14m10s; numbers recorded in the MR description."
+    },
+    {
+      "kind": "spec",
+      "item": "T4 — single commit \"EPMCDME-8428: Add accessible name to folder-name input\"",
+      "status": "pass",
+      "notes": "HEAD carries exactly that subject with only the two in-scope source files."
+    },
+    {
+      "kind": "spec",
+      "item": "T4 — report lists harness numbers, the observed-not-fixed Popup.tsx defects, and that toHaveAccessibleName is new to the repo",
+      "status": "pass",
+      "notes": "All three are in the MR description; grep confirms toHaveAccessibleName occurs only in the new test file."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "\"EPMCDME-8428: Add accessible name to folder-name input\" matches the EPMCDME-XXXX: Capital sentence pattern in .ai-run/guides/standards/git-workflow.md; no trailing period."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md in this repo; the automated equivalents are green (ESLint clean, SonarQube quality gate passed with 0 new issues)."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No security-patterns.md guide present; the diff adds one ARIA attribute and a unit-test file — no auth, secrets, I/O or process handling touched. gitleaks-scan green in the pipeline."
+    }
+  ],
+  "findings": []
+}
