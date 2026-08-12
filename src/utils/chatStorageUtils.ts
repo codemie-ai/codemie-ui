@@ -19,9 +19,12 @@ import toaster from '@/utils/toaster'
 
 const CHAT_SKILLS_KEY = 'chat-skills'
 const CHAT_TOOLS_CONFIG_KEY = 'chat-tools-config'
+const CHAT_HIDE_TOOL_OUTPUTS_KEY = 'chat-hide-tool-outputs'
 
 export const chatSkillsKey = (chatId: string): string => `${CHAT_SKILLS_KEY}-${chatId}`
 export const chatToolsConfigKey = (chatId: string): string => `${CHAT_TOOLS_CONFIG_KEY}-${chatId}`
+export const chatHideToolOutputsKey = (chatId: string): string =>
+  `${CHAT_HIDE_TOOL_OUTPUTS_KEY}-${chatId}`
 
 export const DEFAULT_TOOLS_CONFIG: DynamicToolsConfig = {
   enableWebSearch: null,
@@ -52,6 +55,28 @@ export const saveChatSkills = (userId: string, chatId: string, skills: unknown[]
   }
 }
 
+export const saveChatHideToolOutputs = (userId: string, chatId: string, value: boolean): void => {
+  if (!value) {
+    localStorage.removeItem(`${userId}_${chatHideToolOutputsKey(chatId)}`)
+    return
+  }
+  try {
+    localStorage.setItem(`${userId}_${chatHideToolOutputsKey(chatId)}`, JSON.stringify(value))
+  } catch {
+    toaster.error('Failed to save chat tool outputs setting')
+  }
+}
+
+export const loadChatHideToolOutputs = (userId: string, chatId: string): boolean => {
+  const raw = localStorage.getItem(`${userId}_${chatHideToolOutputsKey(chatId)}`)
+  if (!raw) return false
+  try {
+    return JSON.parse(raw) as boolean
+  } catch {
+    return false
+  }
+}
+
 export const removeChatStorage = (userId: string | undefined, chatId: string): void => {
   if (!userId) return
   storage.remove(userId, chatSkillsKey(chatId))
@@ -73,6 +98,7 @@ const isEmptyChatValue = (key: string): boolean => {
 export const sweepOrphanedChatKeys = (userId: string, validChatIds?: string[]): void => {
   const skillsPrefix = `${userId}_${chatSkillsKey('')}`
   const toolsPrefix = `${userId}_${chatToolsConfigKey('')}`
+  const hideToolOutputsPrefix = `${userId}_${chatHideToolOutputsKey('')}`
 
   const allKeys: string[] = []
   for (let i = 0; i < localStorage.length; i += 1) {
@@ -85,8 +111,12 @@ export const sweepOrphanedChatKeys = (userId: string, validChatIds?: string[]): 
     if (validChatIds !== undefined) {
       const isUserSkills = key.startsWith(skillsPrefix)
       const isUserTools = key.startsWith(toolsPrefix)
-      if (isUserSkills || isUserTools) {
-        const chatId = isUserSkills ? key.slice(skillsPrefix.length) : key.slice(toolsPrefix.length)
+      const isUserHideToolOutputs = key.startsWith(hideToolOutputsPrefix)
+      if (isUserSkills || isUserTools || isUserHideToolOutputs) {
+        let chatId: string
+        if (isUserSkills) chatId = key.slice(skillsPrefix.length)
+        else if (isUserTools) chatId = key.slice(toolsPrefix.length)
+        else chatId = key.slice(hideToolOutputsPrefix.length)
         if (!validChatIds.includes(chatId)) {
           localStorage.removeItem(key)
           return
@@ -96,7 +126,9 @@ export const sweepOrphanedChatKeys = (userId: string, validChatIds?: string[]): 
 
     // Empty-value sweep: all users' chat keys (including other users)
     const isChatKey =
-      key.includes(`_${chatSkillsKey('')}`) || key.includes(`_${chatToolsConfigKey('')}`)
+      key.includes(`_${chatSkillsKey('')}`) ||
+      key.includes(`_${chatToolsConfigKey('')}`) ||
+      key.includes(`_${chatHideToolOutputsKey('')}`)
     if (isChatKey && isEmptyChatValue(key)) localStorage.removeItem(key)
   })
 }

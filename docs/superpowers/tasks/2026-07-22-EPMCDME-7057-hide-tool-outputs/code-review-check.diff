@@ -1,0 +1,95 @@
+diff --git a/package.json b/package.json
+index c8b978396..06ae71333 100644
+--- a/package.json
++++ b/package.json
+@@ -145,5 +145,10 @@
+     "*.{json,md,html,css,scss}": [
+       "prettier --write"
+     ]
++  },
++  "allowScripts": {
++    "esbuild@0.21.5": true,
++    "@parcel/watcher@2.5.6": true,
++    "fsevents@2.3.3": true
+   }
+ }
+diff --git a/src/pages/chat/SharedChatPage.tsx b/src/pages/chat/SharedChatPage.tsx
+index 2cbeb712d..7867501a0 100644
+--- a/src/pages/chat/SharedChatPage.tsx
++++ b/src/pages/chat/SharedChatPage.tsx
+@@ -52,7 +52,9 @@ const SharedChatPage: React.FC = () => {
+       ({
+         openConfigForm: (assistantId) => handleAssistantClick(assistantId),
+         isSharedPage: true,
+-      } as ChatContextValue),
++        hideToolOutputs: false,
++        setHideToolOutputs: () => {},
++      } as unknown as ChatContextValue),
+     []
+   )
+ 
+diff --git a/src/pages/chat/components/ChatConfiguration/ChatConfiguration.tsx b/src/pages/chat/components/ChatConfiguration/ChatConfiguration.tsx
+index 0873cda7a..08c831650 100644
+--- a/src/pages/chat/components/ChatConfiguration/ChatConfiguration.tsx
++++ b/src/pages/chat/components/ChatConfiguration/ChatConfiguration.tsx
+@@ -51,7 +51,9 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
+             <ChatConfigAssistantForm showNewIntegrationPopup={showNewIntegrationPopup} />
+           ) : (
+             <div className="py-7 px-4 overflow-y-auto">
+-              {(assistantFeatures.modelSelector || assistantFeatures.skills) && (
++              {(assistantFeatures.modelSelector ||
++                assistantFeatures.skills ||
++                assistantFeatures.tools) && (
+                 <>
+                   <h3 className="font-semibold mb-3">General</h3>
+                   {assistantFeatures.modelSelector && <ChatConfigLlmSelector />}
+diff --git a/src/pages/chat/hooks/useChatConfiguration.tsx b/src/pages/chat/hooks/useChatConfiguration.tsx
+index f1240371b..de13dfa69 100644
+--- a/src/pages/chat/hooks/useChatConfiguration.tsx
++++ b/src/pages/chat/hooks/useChatConfiguration.tsx
+@@ -188,8 +188,8 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
+       if (currentChat?.history.length) {
+         setDynamicToolsConfig(loadChatTools(userId, chatId))
+         setSelectedSkills(loadChatSkills(userId, chatId))
+-        setHideToolOutputsState(loadChatHideToolOutputs(userId, chatId))
+       }
++      setHideToolOutputsState(loadChatHideToolOutputs(userId, chatId))
+     } else {
+       setDynamicToolsConfig(DEFAULT_TOOLS_CONFIG)
+       setSelectedSkills([])
+diff --git a/src/utils/__tests__/chatStorageUtils.test.ts b/src/utils/__tests__/chatStorageUtils.test.ts
+index e343699e6..dba6f5659 100644
+--- a/src/utils/__tests__/chatStorageUtils.test.ts
++++ b/src/utils/__tests__/chatStorageUtils.test.ts
+@@ -132,7 +132,14 @@ describe('saveChatHideToolOutputs', () => {
+     expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-chat-1`)).toBe('true')
+   })
+ 
+-  it('is a no-op when value is false (default — skip-on-default pattern)', () => {
++  it('does not write a key when value is false and no prior entry exists', () => {
++    saveChatHideToolOutputs(USER, 'chat-1', false)
++    expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-chat-1`)).toBeNull()
++  })
++
++  it('removes the key when value is false and a prior true entry exists (round-trip)', () => {
++    saveChatHideToolOutputs(USER, 'chat-1', true)
++    expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-chat-1`)).toBe('true')
+     saveChatHideToolOutputs(USER, 'chat-1', false)
+     expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-chat-1`)).toBeNull()
+   })
+diff --git a/src/utils/chatStorageUtils.ts b/src/utils/chatStorageUtils.ts
+index c4913d352..67bf821c8 100644
+--- a/src/utils/chatStorageUtils.ts
++++ b/src/utils/chatStorageUtils.ts
+@@ -56,7 +56,10 @@ export const saveChatSkills = (userId: string, chatId: string, skills: unknown[]
+ }
+ 
+ export const saveChatHideToolOutputs = (userId: string, chatId: string, value: boolean): void => {
+-  if (!value) return
++  if (!value) {
++    localStorage.removeItem(`${userId}_${chatHideToolOutputsKey(chatId)}`)
++    return
++  }
+   try {
+     localStorage.setItem(`${userId}_${chatHideToolOutputsKey(chatId)}`, JSON.stringify(value))
+   } catch {

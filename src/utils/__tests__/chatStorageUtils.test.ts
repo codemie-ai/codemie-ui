@@ -15,7 +15,12 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 
-import { sweepOrphanedChatKeys } from '../chatStorageUtils'
+import {
+  chatHideToolOutputsKey,
+  loadChatHideToolOutputs,
+  saveChatHideToolOutputs,
+  sweepOrphanedChatKeys,
+} from '../chatStorageUtils'
 
 const USER = 'user-1'
 const OTHER = 'user-2'
@@ -112,5 +117,60 @@ describe('sweepOrphanedChatKeys', () => {
       sweepOrphanedChatKeys(USER, ['current-chat'])
       expect(localStorage.getItem(`${USER}_chat-tools-config-old-chat`)).toBeNull()
     })
+  })
+})
+
+describe('chatHideToolOutputsKey', () => {
+  it('returns the expected key for a chat id', () => {
+    expect(chatHideToolOutputsKey('chat-abc')).toBe('chat-hide-tool-outputs-chat-abc')
+  })
+})
+
+describe('saveChatHideToolOutputs', () => {
+  it('stores true in localStorage under the user-scoped key', () => {
+    saveChatHideToolOutputs(USER, 'chat-1', true)
+    expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-chat-1`)).toBe('true')
+  })
+
+  it('does not write a key when value is false and no prior entry exists', () => {
+    saveChatHideToolOutputs(USER, 'chat-1', false)
+    expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-chat-1`)).toBeNull()
+  })
+
+  it('removes the key when value is false and a prior true entry exists (round-trip)', () => {
+    saveChatHideToolOutputs(USER, 'chat-1', true)
+    expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-chat-1`)).toBe('true')
+    saveChatHideToolOutputs(USER, 'chat-1', false)
+    expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-chat-1`)).toBeNull()
+  })
+})
+
+describe('loadChatHideToolOutputs', () => {
+  it('returns false when no value is stored', () => {
+    expect(loadChatHideToolOutputs(USER, 'chat-1')).toBe(false)
+  })
+
+  it('returns true when true is stored', () => {
+    localStorage.setItem(`${USER}_chat-hide-tool-outputs-chat-1`, 'true')
+    expect(loadChatHideToolOutputs(USER, 'chat-1')).toBe(true)
+  })
+
+  it('returns false when false is stored', () => {
+    localStorage.setItem(`${USER}_chat-hide-tool-outputs-chat-1`, 'false')
+    expect(loadChatHideToolOutputs(USER, 'chat-1')).toBe(false)
+  })
+})
+
+describe('sweepOrphanedChatKeys — hide-tool-outputs existence sweep', () => {
+  it('removes hide-tool-outputs key for unknown chatId', () => {
+    localStorage.setItem(`${USER}_chat-hide-tool-outputs-stale`, 'true')
+    sweepOrphanedChatKeys(USER, ['chat-known'])
+    expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-stale`)).toBeNull()
+  })
+
+  it('keeps hide-tool-outputs key for a valid chatId', () => {
+    localStorage.setItem(`${USER}_chat-hide-tool-outputs-chat-1`, 'true')
+    sweepOrphanedChatKeys(USER, ['chat-1'])
+    expect(localStorage.getItem(`${USER}_chat-hide-tool-outputs-chat-1`)).not.toBeNull()
   })
 })

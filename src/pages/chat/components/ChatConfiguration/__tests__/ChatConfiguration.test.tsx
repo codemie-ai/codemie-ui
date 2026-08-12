@@ -41,6 +41,8 @@ const {
       setSelectedSkills: vi.fn(),
       closeConfigForm: vi.fn(),
       openConfigForm: vi.fn(),
+      hideToolOutputs: false,
+      setHideToolOutputs: vi.fn(),
     },
     mockChatsStore: {
       currentChat: null as Conversation | null,
@@ -222,5 +224,11 @@ describe('ChatConfiguration', () => {
     render(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
 
     expect(screen.getByText('General')).toBeInTheDocument()
+  })
+
+  it('shows hide tool outputs toggle in General section when config is visible', () => {
+    mockChatContext.isConfigVisible = true
+    render(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
+    expect(screen.getByText('Hide tool outputs')).toBeInTheDocument()
   })
 })

@@ -1,0 +1,115 @@
+{
+  "decision": "request-changes",
+  "confidence": "medium",
+  "rationale": "All three lenses ran successfully. Two required-criteria fails (SR2, SR4) and two partials (AC1, AC3). Four blocking patch findings before approval. Critical: toggle-off is a no-op in saveChatHideToolOutputs — stale 'true' is never removed from localStorage, making the setting irrecoverable after page reload. Major: toggle is unreachable when tools=true but both modelSelector and skills are false (wrong outer gate in ChatConfiguration.tsx); SharedChatPage context omits hideToolOutputs, relying on undefined-is-falsy via an unsafe 'as' cast; useEffect restoration skips when history.length===0 on chat switch, causing missed restores on slow connections. Deferred 1: removeChatStorage missing hideToolOutputs key cleanup (sweepOrphanedChatKeys covers eventual cleanup; no immediate user-visible impact). Dismissed 1: blind-lens concern about other tool-output render sites — edge-case lens confirmed Thoughts[] are the correct and complete render target per spec. Commit format clean across all 5 commits.",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "AC1",
+      "status": "partial",
+      "evidence": "Toggle exists and functions, but is unreachable when assistantFeatures.tools=true while both modelSelector and skills are false — the outer gate in ChatConfiguration.tsx line 54 short-circuits the entire General section."
+    },
+    {
+      "criterion": "AC2",
+      "status": "pass",
+      "evidence": "ChatAiMessage.tsx hides the thoughts block when hideToolOutputs=true; the final <Markdown> response is unconditional. Confirmed by 5 unit tests."
+    },
+    {
+      "criterion": "AC3",
+      "status": "partial",
+      "evidence": "Enabling (true) persists correctly. Disabling (false) is a no-op: saveChatHideToolOutputs returns early without calling removeItem, so the stale 'true' remains in localStorage and restores on the next reload. Additionally, the useEffect restoration is skipped when history.length===0 at the moment of chat switch."
+    },
+    {
+      "criterion": "AC4",
+      "status": "partial",
+      "evidence": "Label 'Hide tool outputs' is clear and the Switch UI is standard. Toggle is inaccessible for tools-only assistants (same root cause as AC1)."
+    },
+    {
+      "criterion": "SR1",
+      "status": "pass",
+      "evidence": "useState<boolean>(false) initialises to false; loadChatHideToolOutputs returns false when key absent; saveChatHideToolOutputs is no-op on false so first-load is always unset. Existing sessions unaffected."
+    },
+    {
+      "criterion": "SR2",
+      "status": "fail",
+      "evidence": "ChatConfigHideToolOutputs is inside a JSX fragment gated on '(assistantFeatures.modelSelector || assistantFeatures.skills)' at ChatConfiguration.tsx:54. The inner guard on line 60 correctly checks assistantFeatures.tools, but the outer gate prevents the entire General section from rendering when only tools is enabled."
+    },
+    {
+      "criterion": "SR3",
+      "status": "partial",
+      "evidence": "SharedChatPage builds ChatContext with only {openConfigForm, isSharedPage: true} cast as ChatContextValue. hideToolOutputs is undefined at runtime; '!hideToolOutputs' evaluates correctly as !undefined===true, so thoughts show on the shared page. However, this relies on implicit JS coercion and the TypeScript 'as' cast bypasses compile-time safety for all other UseChatConfigReturn fields."
+    },
+    {
+      "criterion": "SR4",
+      "status": "fail",
+      "evidence": "saveChatHideToolOutputs line 59: 'if (!value) return' leaves stale 'true' in localStorage. Sequence: enable (stores true) → disable (no-op) → reload → loadChatHideToolOutputs reads 'true' → toggle re-enables. Also: useEffect (useChatConfiguration.tsx:188) skips load when history.length===0 at effect-fire time, with history.length absent from the dependency array."
+    },
+    {
+      "criterion": "SR5",
+      "status": "pass",
+      "evidence": "sweepOrphanedChatKeys updated with hideToolOutputsPrefix in both the existence sweep and the empty-value sweep; tests at chatStorageUtils.test.ts cover both sweep paths."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "guide": ".ai-run/guides/standards/git-workflow.md",
+      "status": "pass",
+      "notes": "All 5 commits in range follow 'EPMCDME-XXXX: Capital sentence' format. No violations."
+    },
+    {
+      "standard": "code-quality",
+      "guide": ".ai-run/guides/standards/code-quality.md",
+      "status": "na",
+      "notes": "Guide not checked in this pass. Pre-commit hooks (ESLint, tsc --noEmit, license-headers, secrets scan) passed on all commits, covering the primary automated quality gates."
+    },
+    {
+      "standard": "security",
+      "guide": ".ai-run/guides/development/security-patterns.md",
+      "status": "na",
+      "notes": "No security-relevant changes; localStorage use is for a UI boolean preference with no auth, injection, or data-leak surface."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/utils/chatStorageUtils.ts",
+      "line": 59,
+      "problem": "saveChatHideToolOutputs is a no-op when value===false but does not remove an existing 'true' entry from localStorage.",
+      "impact": "Once the user enables the toggle, disabling it has no persistent effect. After any page reload, loadChatHideToolOutputs reads the stale 'true' and the toggle re-enables itself. The setting becomes irrecoverable without manually clearing localStorage.",
+      "recommendation": "Replace the early return with localStorage.removeItem: `if (!value) { localStorage.removeItem(\\`${userId}_${chatHideToolOutputsKey(chatId)}\\`); return; }`. Add a round-trip test: save(true) then save(false) → key absent from localStorage."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatConfiguration/ChatConfiguration.tsx",
+      "line": 54,
+      "problem": "ChatConfigHideToolOutputs is inside the JSX fragment gated on '(assistantFeatures.modelSelector || assistantFeatures.skills)'. When assistantFeatures.tools=true but both modelSelector and skills are false, the entire General section — including the toggle — never renders.",
+      "impact": "Users of assistants that expose tools-only capability cannot access the hide-tool-outputs toggle, silently defeating the feature for the most directly relevant assistants.",
+      "recommendation": "Expand the outer gate: '(assistantFeatures.modelSelector || assistantFeatures.skills || assistantFeatures.tools)' so the General section renders whenever any of the three features is active."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/SharedChatPage.tsx",
+      "line": 52,
+      "problem": "SharedChatPage builds the ChatContext value without hideToolOutputs and uses an 'as ChatContextValue' cast. hideToolOutputs is undefined at runtime; '!hideToolOutputs' works only because !undefined===true.",
+      "impact": "The TypeScript 'as' cast suppresses all compile-time errors for missing UseChatConfigReturn fields. Any future accessor using 'hideToolOutputs === false' or setHideToolOutputs() in shared-page context would produce wrong results or crash silently.",
+      "recommendation": "Add explicit 'hideToolOutputs: false' and 'setHideToolOutputs: () => {}' to the SharedChatPage context object, removing reliance on undefined-is-falsy and the need for the unsafe cast."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/useChatConfiguration.tsx",
+      "line": 188,
+      "problem": "The useEffect restores hideToolOutputs from localStorage only when currentChat?.history.length is truthy, but history.length is not in the dependency array. If a chat is selected while its history is still loading, the effect fires once with length===0, skips the load, and never re-fires when history populates.",
+      "impact": "On slow connections or direct-URL navigation, a stored hideToolOutputs=true setting is silently ignored for the entire session. Tool outputs appear unexpectedly with no visible indication the setting was missed.",
+      "recommendation": "Either (a) add currentChat?.history.length to the useEffect dependency array, or (b) remove the history.length gate entirely — loadChatHideToolOutputs returns false for a missing key, which is the correct default for new/empty chats, making the gate unnecessary."
+    }
+  ]
+}

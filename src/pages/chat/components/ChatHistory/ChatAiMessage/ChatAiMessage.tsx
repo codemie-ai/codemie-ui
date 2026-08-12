@@ -57,7 +57,8 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
 }) => {
   const router = useVueRouter()
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
-  const { selectedAssistant, openConfigForm, closeConfig, isSharedPage } = useChatContext()
+  const { selectedAssistant, openConfigForm, closeConfig, isSharedPage, hideToolOutputs } =
+    useChatContext()
 
   const [isEditing, setIsEditing] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -207,11 +208,13 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
           {isInProgress && <ThinkingLoader />}
         </div>
 
-        <div className="flex flex-col gap-2 mt-2">
-          {message?.thoughts?.map((thought) => (
-            <Thought key={thought.id} thought={thought} />
-          ))}
-        </div>
+        {!hideToolOutputs && !!message?.thoughts?.length && (
+          <div className="flex flex-col gap-2 mt-2">
+            {message.thoughts.map((thought) => (
+              <Thought key={thought.id} thought={thought} />
+            ))}
+          </div>
+        )}
 
         {isEditing && (
           <textarea

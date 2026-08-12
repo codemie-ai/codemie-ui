@@ -25,6 +25,8 @@ import {
   chatSkillsKey,
   chatToolsConfigKey,
   DEFAULT_TOOLS_CONFIG,
+  loadChatHideToolOutputs,
+  saveChatHideToolOutputs,
   saveChatSkills,
   saveChatTools,
 } from '@/utils/chatStorageUtils'
@@ -60,6 +62,10 @@ export type UseChatConfigReturn = {
   dynamicToolsConfig: DynamicToolsConfig
   setDynamicToolsConfig: (config: DynamicToolsConfig) => void
 
+  // Hide tool outputs toggle
+  hideToolOutputs: boolean
+  setHideToolOutputs: (value: boolean) => void
+
   closeConfig: () => void
   toggleConfigVisibility: () => void
   attemptToggleConfigVisibility: () => void
@@ -82,6 +88,8 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
   const [dynamicToolsConfig, setDynamicToolsConfig] =
     useState<DynamicToolsConfig>(DEFAULT_TOOLS_CONFIG)
 
+  const [hideToolOutputs, setHideToolOutputs] = useState<boolean>(false)
+
   const handleSetDynamicToolsConfig = useCallback(
     (config: DynamicToolsConfig) => {
       setDynamicToolsConfig(config)
@@ -89,6 +97,18 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
       const userId = userStore.user?.userId
       if (chatId && userId) {
         saveChatTools(userId, chatId, config)
+      }
+    },
+    [currentChat?.id]
+  )
+
+  const handleSetHideToolOutputs = useCallback(
+    (value: boolean) => {
+      setHideToolOutputs(value)
+      const chatId = currentChat?.id
+      const userId = userStore.user?.userId
+      if (chatId && userId) {
+        saveChatHideToolOutputs(userId, chatId, value)
       }
     },
     [currentChat?.id]
@@ -169,9 +189,11 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
         setDynamicToolsConfig(loadChatTools(userId, chatId))
         setSelectedSkills(loadChatSkills(userId, chatId))
       }
+      setHideToolOutputs(loadChatHideToolOutputs(userId, chatId))
     } else {
       setDynamicToolsConfig(DEFAULT_TOOLS_CONFIG)
       setSelectedSkills([])
+      setHideToolOutputs(false)
     }
   }, [currentChat?.id, currentChat?.isWorkflow, closeConfigForm])
 
@@ -187,6 +209,9 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
       // Dynamic tools state
       dynamicToolsConfig,
       setDynamicToolsConfig: handleSetDynamicToolsConfig,
+      // Hide tool outputs toggle
+      hideToolOutputs,
+      setHideToolOutputs: handleSetHideToolOutputs,
       closeConfig,
       toggleConfigVisibility,
       attemptToggleConfigVisibility,
@@ -202,6 +227,8 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
       dynamicToolsConfig,
       handleSetSelectedSkills,
       handleSetDynamicToolsConfig,
+      hideToolOutputs,
+      handleSetHideToolOutputs,
       closeConfig,
       toggleConfigVisibility,
       attemptToggleConfigVisibility,

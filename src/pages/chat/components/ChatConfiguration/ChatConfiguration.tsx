@@ -22,6 +22,7 @@ import { chatsStore } from '@/store/chats'
 
 import ChatConfigAssistantForm from './ChatConfigAssistants/ChatConfigAssistantForm'
 import ChatConfigAssistants from './ChatConfigAssistants/ChatConfigAssistants'
+import ChatConfigHideToolOutputs from './ChatConfigHideToolOutputs'
 import ChatConfigImageGeneration from './ChatConfigImageGeneration'
 import ChatConfigLlmSelector from './ChatConfigLlmSelector'
 import ChatConfigSkillsSelector from './ChatConfigSkillsSelector'
@@ -47,12 +48,15 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
             <ChatConfigAssistantForm showNewIntegrationPopup={showNewIntegrationPopup} />
           ) : (
             <div className="py-7 px-4 overflow-y-auto">
-              {(assistantFeatures.modelSelector || assistantFeatures.skills) && (
+              {(assistantFeatures.modelSelector ||
+                assistantFeatures.skills ||
+                assistantFeatures.tools) && (
                 <>
                   <h3 className="font-semibold mb-3">General</h3>
                   {assistantFeatures.modelSelector && <ChatConfigLlmSelector />}
                   {assistantFeatures.skills && <ChatConfigSkillsSelector />}
                   {assistantFeatures.modelSelector && <ChatConfigImageGeneration />}
+                  {assistantFeatures.tools && <ChatConfigHideToolOutputs />}
                 </>
               )}
               <ChatConfigAssistants />

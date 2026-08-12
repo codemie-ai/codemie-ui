@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Add a toggle in the chat configuration sidebar that hides or shows technical tool outputs (Thoughts) in chatbot responses, persisting per chat session via localStorage.",
+  "generated": "2026-07-22T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 14,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "4–5 components touched across 3 distinct areas within the chat module: ChatAiMessage (rendering gate), ChatConfiguration (sidebar host), new ChatConfigHideToolOutputs component, useChatConfiguration hook (adds hideToolOutputs state), and chatStorageUtils (adds storage key and helpers)."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "6 files total: 2 new (ChatConfigHideToolOutputs.tsx, ChatAiMessage.test.tsx) and 4 modified (useChatConfiguration.tsx, ChatConfiguration.tsx, ChatAiMessage.tsx, chatStorageUtils.ts) spanning 2–3 directories."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Three layers touched: UI/Presentation (ChatAiMessage rendering guard, ChatConfiguration sidebar, new toggle component), State/Context (useChatConfiguration Valtio hook adds the boolean state), and Persistence/Storage (chatStorageUtils adds CHAT_HIDE_TOOL_OUTPUT_KEY and save/load helpers)."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
