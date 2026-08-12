@@ -30,13 +30,17 @@ const FileListItem: FC<Props> = ({ fileName, onRemove }) => {
         <FileSvg className="size-4 flex-shrink-0 text-text-quaternary" />
         <span className="text-sm text-text-primary truncate">{fileName}</span>
       </div>
-      <XMarkSvg
-        className="cursor-pointer size-4 flex-shrink-0 text-text-quaternary hover:text-text-primary"
+      <button
+        type="button"
+        aria-label={`Remove file ${fileName}`}
+        className="cursor-pointer flex-shrink-0 text-text-quaternary hover:text-text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-accent rounded-sm"
         onClick={(e) => {
           e.stopPropagation()
           onRemove()
         }}
-      />
+      >
+        <XMarkSvg className="size-4" />
+      </button>
     </div>
   )
 }
