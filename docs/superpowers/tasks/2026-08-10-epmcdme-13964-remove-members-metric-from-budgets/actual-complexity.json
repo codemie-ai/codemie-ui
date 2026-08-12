@@ -1,0 +1,67 @@
+{
+  "task": "Remove members metric display from ProjectBudgetCard UI component",
+  "generated": "2026-08-10T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "ProjectBudgetCard",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 1,
+      "modified_file_list": [
+        "src/pages/settings/administration/projectsManagement/components/ProjectBudgetCard.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/pages/settings/administration/projectsManagement/components"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 1,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Exactly 1 file modified with 6 deletions — fully localized removal of a metric display row inside AssignedCard"
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Single UI component (ProjectBudgetCard / AssignedCard sub-component) touched; no layer boundaries crossed"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

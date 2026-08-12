@@ -235,12 +235,6 @@ const AssignedCard: FC<ProjectBudgetCardAssignedProps & { mode?: 'manage' | 'vie
               </>
             )}
           </div>
-          <div className="col-span-2">
-            <span className="text-text-quaternary">Members</span>
-            <span className="ml-2 text-text-primary">
-              {budget.member_count} / {formatCurrency(budget.allocated_member_budget_total)}
-            </span>
-          </div>
         </div>
       </div>
 
