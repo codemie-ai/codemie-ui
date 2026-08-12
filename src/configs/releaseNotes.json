@@ -134,6 +134,24 @@
         "type": "STORY",
         "link": "https://jiraeu.epam.com/browse/EPMCDME-13931",
         "key": "EPMCDME-13931"
+      },
+      {
+        "title": "GitHub integrations can't work with GHE, and always default to api.github.com",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-6577",
+        "key": "EPMCDME-6577"
+      },
+      {
+        "title": "Enable native .xlsx (and other binary file) generation/download from assistant outputs",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12313",
+        "key": "EPMCDME-12313"
+      },
+      {
+        "title": "Personal LiteLLM key requests incorrectly send user_id header and cause wrong budget assignment",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13264",
+        "key": "EPMCDME-13264"
       }
     ]
   },
