@@ -1,5 +1,143 @@
 [
   {
+    "version": "2.43.0",
+    "date": "2026-08-12",
+    "issues": [
+      {
+        "title": "Add filter capability to GitLab webhook integrations for merge request events",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-8384",
+        "key": "EPMCDME-8384"
+      },
+      {
+        "title": "Table borders (sliders) are displayed incorrectly on Integrations and Data Sources pages",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-9314",
+        "key": "EPMCDME-9314"
+      },
+      {
+        "title": "Preserve prompt box input in new CodeMie chat when switching between chats",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-9922",
+        "key": "EPMCDME-9922"
+      },
+      {
+        "title": "Add sorting options to Assistant Marketplace view: usage, likes, dislikes, name.",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-9984",
+        "key": "EPMCDME-9984"
+      },
+      {
+        "title": "Add a counter on the Marketplace to track and display 'clone' actions for each assistant, affecting the usage metric and assistant visibility",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10889",
+        "key": "EPMCDME-10889"
+      },
+      {
+        "title": "update_dashboard tool missing from mcp-grafana integration, prevents dashboard editing",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11241",
+        "key": "EPMCDME-11241"
+      },
+      {
+        "title": "Enable CodeMie Users to Adjust the Height of the Context Window for Prompt Insertion",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11292",
+        "key": "EPMCDME-11292"
+      },
+      {
+        "title": "Onboarding flow: 'Onboarding Tours' step is skipped and 'Your Profile & Settings' appears instead",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11360",
+        "key": "EPMCDME-11360"
+      },
+      {
+        "title": "Implement LLM-Based Contextual Chat Naming in CodeMie (Feature-Flagged)",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11647",
+        "key": "EPMCDME-11647"
+      },
+      {
+        "title": "Enable propagation of headers into workflow context store at workflow start",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11692",
+        "key": "EPMCDME-11692"
+      },
+      {
+        "title": "Support for .xlsb File Format for PnL Report Assistant and Simulation",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11738",
+        "key": "EPMCDME-11738"
+      },
+      {
+        "title": "User-friendly Webhook integration setup screen",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11747",
+        "key": "EPMCDME-11747"
+      },
+      {
+        "title": "Workflow execution becomes stuck in \"in progress\" state if model receives mismatched image media type (e.g., GIF sent as PNG); requires manual cancellation",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11918",
+        "key": "EPMCDME-11918"
+      },
+      {
+        "title": "file downloaded from CodeMie assistant has an unintelligible, base64-encoded filename",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12266",
+        "key": "EPMCDME-12266"
+      },
+      {
+        "title": "Make skill content length limit configurable",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13541",
+        "key": "EPMCDME-13541"
+      },
+      {
+        "title": "Custom font selection is not applied to multiple chat text elements",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13565",
+        "key": "EPMCDME-13565"
+      },
+      {
+        "title": "Data Source edit page crashes with TypeError: b.every is not a function",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13617",
+        "key": "EPMCDME-13617"
+      },
+      {
+        "title": "Implement a tool to visually analyze workspace images",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13621",
+        "key": "EPMCDME-13621"
+      },
+      {
+        "title": "CodeMie assistant returns 500 when PlainTextConverter processes UTF-8 Cyrillic file content using ASCII codec",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13761",
+        "key": "EPMCDME-13761"
+      },
+      {
+        "title": "UnsupportedFormatException when converting attachments to Markdown",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13779",
+        "key": "EPMCDME-13779"
+      },
+      {
+        "title": "Default and Personal premium model budget limits are not enforced for platform requests via personal agents",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13794",
+        "key": "EPMCDME-13794"
+      },
+      {
+        "title": "Gemini 3.6 Flash is now available in CodeMie",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13931",
+        "key": "EPMCDME-13931"
+      }
+    ]
+  },
+  {
     "version": "2.42.0",
     "date": "2026-08-03",
     "issues": [
