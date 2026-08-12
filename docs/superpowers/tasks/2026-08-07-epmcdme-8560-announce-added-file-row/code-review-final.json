@@ -1,0 +1,59 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "rationale": "Three lenses ran (blind, edge-case, acceptance). Acceptance: both ticket criteria pass and all plan Global Constraints are respected. Edge-case confirmed one real defect with a probe test and mutation testing, independently raised by the blind lens: in RecordInput two consecutive removals can produce a byte-identical announcement string, so React bails out, the live region's text never changes and screen readers stay silent on the most important removal (deleting the last row). 7 further blind-lens findings were dismissed after verification against source: uploadedFiles has a `= []` default; MAX_FILES is enforced against the combined total; the delete Button carries disabled={disabled} so the missing guard is unreachable; toHaveTextContent('') is not vacuous in jest-dom 6.6.3 (probe-verified: it fails against non-empty text); async uploadedFiles hydration cannot announce because FilesDropzone only mounts after reset(); the hardcoded 10 in tests and the re-seed wording are style-level. 0 deferred.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Adding a file to the datasource File list is announced (retargeted from the stale '+Add file' control to FilesDropzone)",
+      "status": "pass",
+      "notes": "Always-mounted sr-only role=status region, text derived from filesCount, first render skipped; verified against the real consumer IndexTypeFile.tsx."
+    },
+    {
+      "criterion": "Integrations > MCP > Environment Variables: adding AND deleting a row is announced",
+      "status": "pass",
+      "notes": "RecordInput sets the message in both addEmptyItem and removeItem; confirmed MCP_SETTINGS_TYPE.fieldsManualConfiguration routes through RecordInput, not InputArray."
+    },
+    {
+      "criterion": "No spurious announcement when either form is opened",
+      "status": "pass",
+      "notes": "RecordInput is handler-driven so the auto-seed effect cannot announce; FilesDropzone skips the first effect run. Both covered by tests."
+    },
+    {
+      "criterion": "Scope constraints (InputArray out of scope, no shared announcer, no jest-axe, no visual change)",
+      "status": "pass",
+      "notes": "Diff touches only the two named components and their tests; two inline JSX regions, no hook/singleton/timer; no jest-axe; both regions sr-only."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit format",
+      "status": "pass",
+      "notes": "Both subjects match ^EPMCDME-\\d+: [A-Z]... — 'EPMCDME-8560: Announce added and removed rows in RecordInput' and 'EPMCDME-8560: Announce file list changes in FilesDropzone'."
+    },
+    {
+      "standard": "code-quality.md",
+      "status": "na",
+      "notes": "No such guide in this repo; .ai-run/guides/components/component-patterns.md conventions (single quotes, no semicolons, React.FC, import order, <300 lines) are respected."
+    },
+    {
+      "standard": "security-patterns.md",
+      "status": "na",
+      "notes": "No such guide in this repo. Change is presentation-only: no auth, secrets, network, or user-controlled HTML. No concrete security issue found."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/form/RecordInput/RecordInput.tsx",
+      "line": 83,
+      "problem": "removeItem re-seeds an empty row when the list empties, so removing the last row produces 'Row removed. 1 row total.' — byte-identical to the message from the previous removal that left one row. setAnnouncement is then a no-op bail-out, the live region's text node never changes, and screen readers do not re-announce.",
+      "impact": "The most significant removal (deleting the last key/value row, which wipes its content) gives screen-reader users no feedback — exactly the WCAG 4.1.3 status change this ticket exists to fix. Affects SettingsForm MCP env vars and HedgingConfig.",
+      "recommendation": "Make consecutive announcements distinguishable regardless of message text — e.g. alternate between two sr-only status regions so each message is written into a region that was previously empty. Strengthen the re-seed test to start from two rows and delete both.",
+      "sources": ["edge-case", "blind"]
+    }
+  ]
+}

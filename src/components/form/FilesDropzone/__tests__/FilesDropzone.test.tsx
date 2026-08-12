@@ -13,10 +13,14 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import FilesDropzone from '../FilesDropzone'
+
+// The live region is written one animation frame after the file count changes.
+const expectAnnouncement = (expected: string) =>
+  waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(expected))
 
 vi.mock('@/components/form/DropzoneArea', () => ({
   default: ({ children }: any) => <div>{children(false)}</div>,
@@ -27,6 +31,8 @@ vi.mock('@/components/form/InfoBox', () => ({
 }))
 
 const noop = vi.fn()
+
+const makeFile = (name: string) => new File(['x'], name, { type: 'text/plain' })
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -110,6 +116,63 @@ describe('FilesDropzone', () => {
       expect(firstWrapperId).toBeTruthy()
       expect(secondWrapperId).toBeTruthy()
       expect(firstWrapperId).not.toBe(secondWrapperId)
+    })
+  })
+
+  describe('file count announcements', () => {
+    it('renders an empty status region on the initial render', () => {
+      render(<FilesDropzone name="files" files={[makeFile('a.txt')]} onChange={noop} />)
+
+      expect(screen.getByRole('status')).toHaveTextContent('')
+    })
+
+    it('announces the new total when a file is added', async () => {
+      const { rerender } = render(<FilesDropzone name="files" files={[]} onChange={noop} />)
+
+      rerender(<FilesDropzone name="files" files={[makeFile('a.txt')]} onChange={noop} />)
+
+      await expectAnnouncement('1 of 10 files selected')
+    })
+
+    it('announces the remaining total when a file is removed', async () => {
+      const { rerender } = render(
+        <FilesDropzone
+          name="files"
+          files={[makeFile('a.txt'), makeFile('b.txt')]}
+          onChange={noop}
+        />
+      )
+
+      rerender(<FilesDropzone name="files" files={[makeFile('a.txt')]} onChange={noop} />)
+
+      await expectAnnouncement('1 of 10 files selected')
+    })
+
+    it('announces that no files are selected when the last file is removed', async () => {
+      const { rerender } = render(
+        <FilesDropzone name="files" files={[makeFile('a.txt')]} onChange={noop} />
+      )
+
+      rerender(<FilesDropzone name="files" files={[]} onChange={noop} />)
+
+      await expectAnnouncement('No files selected')
+    })
+
+    it('counts already uploaded files towards the announced total', async () => {
+      const { rerender } = render(
+        <FilesDropzone name="files" files={[]} onChange={noop} uploadedFiles={['old.txt']} />
+      )
+
+      rerender(
+        <FilesDropzone
+          name="files"
+          files={[makeFile('a.txt')]}
+          onChange={noop}
+          uploadedFiles={['old.txt']}
+        />
+      )
+
+      await expectAnnouncement('2 of 10 files selected')
     })
   })
 })

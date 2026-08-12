@@ -1,0 +1,54 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "CR-001 is resolved. RecordInput now alternates between two sr-only role=status regions, so every message — including a repeated identical one — is written into a region that was previously empty and is therefore re-announced. The fix was driven test-first: the new test 'writes a repeated identical message into a previously empty region so it is announced again' failed against the reviewed baseline (both removals landed in region index 0) and passes after the change; the full src/components/form suite is green at 86/86. No new high-risk issue in the fix-up diff: no timers, no imperative announcer, no singleton — the precedent from EPMCDME-8527 is respected; the regions stay sr-only so there is no visual change; FilesDropzone was deliberately not touched because its message is a pure function of a count that only changes when the effect fires, so it cannot emit two identical consecutive strings.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Adding a file to the datasource File list is announced (retargeted from the stale '+Add file' control to FilesDropzone)",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; untouched by the fix-up."
+    },
+    {
+      "criterion": "Integrations > MCP > Environment Variables: adding AND deleting a row is announced",
+      "status": "pass",
+      "notes": "Carried forward; strengthened by the fix — the delete-last-row path now re-announces."
+    },
+    {
+      "criterion": "No spurious announcement when either form is opened",
+      "status": "pass",
+      "notes": "Carried forward; both regions start empty and the mount test still passes."
+    },
+    {
+      "criterion": "Scope constraints (InputArray out of scope, no shared announcer, no jest-axe, no visual change)",
+      "status": "pass",
+      "notes": "Carried forward; the fix-up stays inside RecordInput and its test file."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit format",
+      "status": "pass",
+      "notes": "Fix-up commit 'EPMCDME-8560: Re-announce repeated identical row messages' matches the enforced regex."
+    },
+    {
+      "standard": "code-quality.md",
+      "status": "na",
+      "notes": "No such guide in this repo."
+    },
+    {
+      "standard": "security-patterns.md",
+      "status": "na",
+      "notes": "No such guide in this repo; fix-up is presentation-only."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Alternating dual live regions in RecordInput.tsx:67-78 and 168-178; covered by a test that fails against the pre-fix implementation."
+    }
+  ],
+  "findings": []
+}

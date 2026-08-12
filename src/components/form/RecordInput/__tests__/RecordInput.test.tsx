@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import RecordInput from '../RecordInput'
+import RecordInput, { type RecordItem } from '../RecordInput'
 
 vi.mock('@/assets/icons/delete.svg?react', () => ({
   default: () => <svg data-testid="delete-icon" />,
@@ -49,7 +51,31 @@ vi.mock('@/components/form/Input', () => ({
 
 const noop = vi.fn()
 
+const ControlledRecordInput = ({ initial }: { initial: RecordItem[] }) => {
+  const [items, setItems] = useState<RecordItem[]>(initial)
+
+  return (
+    <RecordInput name="test" value={items} onChange={setItems} addText="Add Environment Variable" />
+  )
+}
+
+const getDeleteButtons = () =>
+  screen
+    .getAllByRole('button')
+    .filter((button) => button.querySelector('[data-testid="delete-icon"]'))
+
+const getAnnouncement = () => screen.getByRole('status').textContent
+
+// The live region is written one animation frame after the change, so every announcement
+// assertion has to wait for it.
+const expectAnnouncement = (expected: string) =>
+  waitFor(() => expect(getAnnouncement()).toBe(expected))
+
 describe('RecordInput', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   describe('badge rendering', () => {
     it('does not render a badge when badge is not provided', () => {
       render(<RecordInput name="test" value={[{ key: 'foo', value: 'bar' }]} onChange={noop} />)
@@ -153,6 +179,72 @@ describe('RecordInput', () => {
       render(<RecordInput name="test" value={[{ key: '', value: '' }]} onChange={noop} />)
 
       expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('row announcements', () => {
+    it('renders an empty status region on mount so the auto-seeded row is not announced', () => {
+      render(<ControlledRecordInput initial={[]} />)
+
+      expect(getAnnouncement()).toBe('')
+    })
+
+    it('announces the new row count when a row is added', async () => {
+      const user = userEvent.setup()
+      render(<ControlledRecordInput initial={[{ key: 'FOO', value: 'bar' }]} />)
+
+      await user.click(screen.getByRole('button', { name: 'Add Environment Variable' }))
+
+      await expectAnnouncement('Row added. 2 rows total.')
+    })
+
+    it('announces the remaining row count when a row is removed', async () => {
+      const user = userEvent.setup()
+      render(
+        <ControlledRecordInput
+          initial={[
+            { key: 'FOO', value: 'bar' },
+            { key: 'BAZ', value: 'qux' },
+          ]}
+        />
+      )
+
+      await user.click(getDeleteButtons()[0])
+
+      await expectAnnouncement('Row removed. 1 row total.')
+    })
+
+    it('announces one remaining row when the last row is removed and re-seeded', async () => {
+      const user = userEvent.setup()
+      render(<ControlledRecordInput initial={[{ key: 'FOO', value: 'bar' }]} />)
+
+      await user.click(getDeleteButtons()[0])
+
+      await expectAnnouncement('Row removed. 1 row total.')
+    })
+
+    it('repeats an identical message so the second removal is announced too', async () => {
+      const user = userEvent.setup()
+      render(
+        <ControlledRecordInput
+          initial={[
+            { key: 'FOO', value: 'bar' },
+            { key: 'BAZ', value: 'qux' },
+          ]}
+        />
+      )
+
+      await user.click(getDeleteButtons()[0])
+      await expectAnnouncement('Row removed. 1 row total.')
+
+      // Removing the only remaining row re-seeds an empty one, so the message is identical. The
+      // queue empties the region first and replays it a gap later — see useAnnouncementQueue.
+      await user.click(getDeleteButtons()[0])
+
+      await waitFor(() => expect(getAnnouncement()).toBe(''))
+      await waitFor(() => expect(getAnnouncement()).toBe('Row removed. 1 row total.'), {
+        timeout: 3000,
+      })
     })
   })
 })

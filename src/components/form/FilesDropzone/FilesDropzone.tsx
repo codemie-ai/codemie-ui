@@ -13,13 +13,16 @@
 // limitations under the License.
 //
 
-import { FC, useId, useMemo } from 'react'
+import { FC, useEffect, useId, useMemo, useRef } from 'react'
 
+import Announcement from '@/components/Announcement'
 import { FileDropArea } from '@/components/form/FilesDropzone/components/FileDropArea'
 import { FileDropzoneErrors } from '@/components/form/FilesDropzone/components/FileDropzoneErrors'
 import { FileList } from '@/components/form/FilesDropzone/components/FileList'
+import { MAX_FILES } from '@/components/form/FilesDropzone/constants'
 import InfoBox from '@/components/form/InfoBox'
 import { SUPPORTED_FILE_FORMATS_MESSAGE_BASE } from '@/constants/common'
+import { useAnnouncementQueue } from '@/hooks/useAnnouncementQueue'
 
 const MAX_FILE_SIZE_MB = 100
 const MAX_IMAGE_FILE_SIZE_MB = 10
@@ -62,6 +65,25 @@ const FilesDropzone: FC<Props> = ({
 
   const hasErrors = errorsMessages.length > 0
 
+  const filesCount = files.length + uploadedFiles.length
+  const previousFilesCount = useRef<number | null>(null)
+  const { announcement, announce } = useAnnouncementQueue()
+
+  useEffect(() => {
+    if (previousFilesCount.current === null) {
+      previousFilesCount.current = filesCount
+
+      return
+    }
+
+    if (previousFilesCount.current !== filesCount) {
+      previousFilesCount.current = filesCount
+      announce(
+        filesCount === 0 ? 'No files selected' : `${filesCount} of ${MAX_FILES} files selected`
+      )
+    }
+  }, [announce, filesCount])
+
   return (
     <div className="flex flex-col gap-3">
       <FileDropArea
@@ -81,6 +103,7 @@ const FilesDropzone: FC<Props> = ({
         text={`${SUPPORTED_FILE_FORMATS_MESSAGE_BASE} Max file size: ${MAX_FILE_SIZE_MB}Mb (images: ${MAX_IMAGE_FILE_SIZE_MB}Mb).`}
       />
       <FileDropzoneErrors errorId={errorId} messages={errorsMessages} />
+      <Announcement announcement={announcement} />
     </div>
   )
 }

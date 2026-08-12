@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "task": "Add WCAG 4.1.3 screen-reader live-region announcements when rows are added or removed in the FilesDropzone file list and the RecordInput key-value repeater.",
+  "generated": "2026-08-07",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "No existing live-region precedent in the shared form components; RecordInput required a non-obvious dual-slot alternating aria-live pattern because screen readers suppress identical consecutive messages. Code review found exactly this defect after the first implementation round, confirming the risk was real rather than theoretical. Correctness is only observable through assistive technology, not visually." },
+    { "dimension": "component_scope", "reason": "Two independent shared form components (FilesDropzone, RecordInput) each got a self-contained announcement mechanism; both are reused across datasource and Integrations MCP screens, so the change is shared-component surface but purely additive." },
+    { "dimension": "requirements_clarity", "reason": "WCAG 4.1.3 acceptance criterion was explicit, but the exact announcement wording and count semantics (files-selected vs rows-total) were left to implementation." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M (3) to L (4): accessibility conformance (WCAG 4.1.3) is a compliance requirement, and the identical-consecutive-message live-region defect surfaced in code review confirms non-obvious failure modes."
+  ],
+  "split_recommendation": null
+}

@@ -16,7 +16,9 @@
 import React, { useEffect } from 'react'
 
 import DeleteSvg from '@/assets/icons/delete.svg?react'
+import Announcement from '@/components/Announcement'
 import { MASKED_VALUE } from '@/constants/settings'
+import { useAnnouncementQueue } from '@/hooks/useAnnouncementQueue'
 
 import RecordItemBadgeView, { type RecordItemBadge } from './RecordItemBadge'
 import Button from '../../Button'
@@ -64,14 +66,24 @@ const RecordInput: React.FC<RecordInputProps> = ({
     }
   }, [value?.length])
 
+  const { announcement, announce } = useAnnouncementQueue()
+
+  const announceRowChange = (action: string, count: number) => {
+    announce(`${action}. ${count} row${count === 1 ? '' : 's'} total.`)
+  }
+
   const addEmptyItem = () => {
     if (disabled) return
-    onChange([...(value || []), { key: '', value: '' }])
+    const newItems = [...(value || []), { key: '', value: '' }]
+    onChange(newItems)
+    announceRowChange('Row added', newItems.length)
   }
 
   const removeItem = (keyToRemove: string) => {
-    const newItems = (value || []).filter((item) => item.key !== keyToRemove)
-    onChange(newItems.length ? newItems : [{ key: '', value: '' }])
+    const filtered = (value || []).filter((item) => item.key !== keyToRemove)
+    const newItems = filtered.length ? filtered : [{ key: '', value: '' }]
+    onChange(newItems)
+    announceRowChange('Row removed', newItems.length)
   }
 
   const updateKey = (newKey: string, index: number) => {
@@ -148,6 +160,7 @@ const RecordInput: React.FC<RecordInputProps> = ({
         </div>
       </div>
       {error && <div className="mt-2 text-text-error">{error}</div>}
+      <Announcement announcement={announcement} />
     </div>
   )
 }
