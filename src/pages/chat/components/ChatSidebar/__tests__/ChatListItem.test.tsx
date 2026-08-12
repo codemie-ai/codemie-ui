@@ -50,7 +50,7 @@ vi.mock('@/assets/icons/pin.svg?react', () => ({
 }))
 
 vi.mock('@/assets/icons/pinned.svg?react', () => ({
-  default: () => <div data-testid="pinned-icon">PinnedIcon</div>,
+  default: (props: any) => <div data-testid="pinned-icon" {...props} />,
 }))
 
 vi.mock('@/assets/icons/edit.svg?react', () => ({
@@ -113,10 +113,25 @@ describe('ChatListItem', () => {
     expect(screen.getByTestId('pinned-icon')).toBeInTheDocument()
   })
 
-  it('exposes pinned state in the chat button accessible name', () => {
+  it('describes the chat button as pinned via visually hidden text, leaving its name untouched', () => {
     render(<ChatListItem chat={{ ...mockChat, pinned: true }} actions={mockActions} />)
 
-    expect(screen.getByRole('button', { name: /pinned/i })).toBeInTheDocument()
+    // The icon itself carries no accessible text: sonar rule typescript:S6819 rejects
+    // role="img" on a non-<img> element, and an icon named inside the button is what
+    // produced the concatenated name ("Test ChatPinned") this ticket was reopened for.
+    expect(screen.getByTestId('pinned-icon')).toHaveAttribute('aria-hidden', 'true')
+
+    const description = screen.getByText('Pinned')
+    const button = screen.getByRole('button', { name: 'Test Chat' })
+    expect(button).toHaveAttribute('aria-describedby', description.getAttribute('id'))
+  })
+
+  it('does not set aria-describedby on the chat button for unpinned chats', () => {
+    render(<ChatListItem chat={mockChat} actions={mockActions} />)
+
+    expect(screen.queryByTestId('pinned-icon')).not.toBeInTheDocument()
+    const button = screen.getByRole('button', { name: 'Test Chat' })
+    expect(button).not.toHaveAttribute('aria-describedby')
   })
 
   it('shows people icon for group chats', () => {

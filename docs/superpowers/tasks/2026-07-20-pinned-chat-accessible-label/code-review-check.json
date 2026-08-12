@@ -1,0 +1,33 @@
+{
+  "decision": "approve",
+  "rationale": "Both blocking findings from code-review-final.json are resolved by fix-up commit c62290b67, which implements the JIRA reviewer's redesign rather than a minimal patch: the sr-only span is removed from the button entirely (CR-001's concatenation defect is structurally impossible now — the button carries no second text node), and the new test 'does not set aria-describedby on the chat button for unpinned chats' provides the negative-path coverage CR-002 required, adapted to the new aria-describedby/role=img mechanism. The new test 'exposes pinned icon via role=img and links it to the chat button' asserts the button's exact accessible name is 'Test Chat' (no concatenation) and independently confirms the icon carries role=img/aria-label='Pinned'/no aria-hidden per the reviewer's request. No new high-risk issue (security, public API, data loss, build/runtime correctness) was found in the scoped fix-up diff, so no confirmation pass was needed. business_review/standards_review are carried forward unchanged from the prior verdict per the check-round contract; several of those business_review rows describe the superseded sr-only/aria-hidden approach and are stale relative to the new design — that is a plan-drift concern handled separately by sdlc-light sync mode updating plan.md, not a re-derivation this check round performs.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "Pinned-chat indicator has an accessible name perceivable via keyboard tab navigation (WCAG 1.1.1)", "status": "pass", "notes": "sr-only 'Pinned' span rendered inside the focusable chat-name button — src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx:111"},
+    {"kind": "spec", "item": "Label rendered INSIDE the chat-name <button> after the name text, using existing sr-only pattern", "status": "pass", "notes": "{chat.pinned && <span className=\"sr-only\">Pinned</span>} placed after the truncated name inside the button; sr-only is an established pattern (Switch.tsx, NavigationAssistants.tsx, TooltipButton.tsx)"},
+    {"kind": "spec", "item": "Decorative <PinnedSvg> gets aria-hidden=\"true\"", "status": "pass", "notes": "ChatListItem.tsx:117 — <PinnedSvg className=\"text-inherit\" aria-hidden=\"true\" />"},
+    {"kind": "spec", "item": "No aria-label on the SVG (mock swallows props)", "status": "pass", "notes": "No aria-label added anywhere in the diff; only aria-hidden on the SVG"},
+    {"kind": "spec", "item": "Do not touch vite.config.ts", "status": "pass", "notes": "Diff contains only ChatListItem.tsx and ChatListItem.test.tsx; the vite.config.ts working-tree modification predates this branch's reviewed diff"},
+    {"kind": "spec", "item": "Test-first: add test asserting getByRole('button', { name: /pinned/i }) for a pinned chat in ChatListItem.test.tsx", "status": "pass", "notes": "New test 'exposes pinned state in the chat button accessible name' at ChatListItem.test.tsx:114-118 matches the prescribed assertion"},
+    {"kind": "spec", "item": "Existing 'shows pinned icon for pinned chats' and all other ChatListItem tests remain intact", "status": "pass", "notes": "Pinned-icon test untouched; QA report shows 15/15 ChatListItem tests passing"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "Both non-merge commits (ea395131e, 717a64efb) match the enforced 'EPMCDME-XXXX: Capital sentence' pattern from .ai-run/guides/standards/git-workflow.md; merge commits excluded from the format check"},
+    {"kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md in this repository; no documented blocking standards to adjudicate"},
+    {"kind": "security", "status": "pass", "notes": "No .ai-run/guides/development/security-patterns.md in this repository; concrete review of the diff (static sr-only text, aria-hidden attribute, one test) found no security-relevant surface"}
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "The sr-only span was removed from the button entirely rather than patched with a separator (code-review-check.diff, ChatListItem.tsx). The new test asserts screen.getByRole('button', { name: 'Test Chat' }) with an exact string match, which directly confirms no second text node is concatenated into the button's accessible name anymore."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "New test 'does not set aria-describedby on the chat button for unpinned chats' (ChatListItem.test.tsx) asserts an unpinned chat renders no pinned-icon and the button carries no aria-describedby — the negative-path regression guard CR-002 required, expressed against the new aria-describedby/role=img mechanism instead of the old accessible-name regex."
+    }
+  ]
+}

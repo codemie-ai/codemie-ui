@@ -1,0 +1,72 @@
+diff --git a/src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx b/src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx
+index 7d8deaa03..8bf23a702 100644
+--- a/src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx
++++ b/src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx
+@@ -103,18 +103,25 @@ const ChatListItem: FC<ChatListItemProps> = memo(
+             <button
+               type="button"
+               onClick={select}
++              aria-describedby={chat.pinned ? `pinned-icon-${chat.id}` : undefined}
+               className="text-inherit hover:no-underline truncate pl-2 grow text-sm h-full text-left"
+             >
+               {chatName.length < MAX_NAME_LENGTH
+                 ? chatName
+                 : chatName.slice(0, MAX_NAME_LENGTH) + '...'}
+-              {chat.pinned && <span className="sr-only">Pinned</span>}
+             </button>
+           )}
+         </div>
+ 
+         <div className="flex items-center">
+-          {!isEditing && chat.pinned && <PinnedSvg className="text-inherit" aria-hidden="true" />}
++          {!isEditing && chat.pinned && (
++            <PinnedSvg
++              id={`pinned-icon-${chat.id}`}
++              className="text-inherit"
++              role="img"
++              aria-label="Pinned"
++            />
++          )}
+           {!isEditing && (
+             <NavigationMore
+               renderInRoot
+diff --git a/src/pages/chat/components/ChatSidebar/__tests__/ChatListItem.test.tsx b/src/pages/chat/components/ChatSidebar/__tests__/ChatListItem.test.tsx
+index e58afbd5d..1de782941 100644
+--- a/src/pages/chat/components/ChatSidebar/__tests__/ChatListItem.test.tsx
++++ b/src/pages/chat/components/ChatSidebar/__tests__/ChatListItem.test.tsx
+@@ -50,7 +50,7 @@ vi.mock('@/assets/icons/pin.svg?react', () => ({
+ }))
+ 
+ vi.mock('@/assets/icons/pinned.svg?react', () => ({
+-  default: () => <div data-testid="pinned-icon">PinnedIcon</div>,
++  default: (props: any) => <div data-testid="pinned-icon" {...props} />,
+ }))
+ 
+ vi.mock('@/assets/icons/edit.svg?react', () => ({
+@@ -113,10 +113,24 @@ describe('ChatListItem', () => {
+     expect(screen.getByTestId('pinned-icon')).toBeInTheDocument()
+   })
+ 
+-  it('exposes pinned state in the chat button accessible name', () => {
++  it('exposes pinned icon via role=img and links it to the chat button', () => {
+     render(<ChatListItem chat={{ ...mockChat, pinned: true }} actions={mockActions} />)
+ 
+-    expect(screen.getByRole('button', { name: /pinned/i })).toBeInTheDocument()
++    const icon = screen.getByTestId('pinned-icon')
++    expect(icon).toHaveAttribute('role', 'img')
++    expect(icon).toHaveAttribute('aria-label', 'Pinned')
++    expect(icon).not.toHaveAttribute('aria-hidden')
++
++    const button = screen.getByRole('button', { name: 'Test Chat' })
++    expect(button).toHaveAttribute('aria-describedby', icon.getAttribute('id'))
++  })
++
++  it('does not set aria-describedby on the chat button for unpinned chats', () => {
++    render(<ChatListItem chat={mockChat} actions={mockActions} />)
++
++    expect(screen.queryByTestId('pinned-icon')).not.toBeInTheDocument()
++    const button = screen.getByRole('button', { name: 'Test Chat' })
++    expect(button).not.toHaveAttribute('aria-describedby')
+   })
+ 
+   it('shows people icon for group chats', () => {

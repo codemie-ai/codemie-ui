@@ -103,18 +103,25 @@ const ChatListItem: FC<ChatListItemProps> = memo(
             <button
               type="button"
               onClick={select}
+              aria-describedby={chat.pinned ? `pinned-icon-${chat.id}` : undefined}
               className="text-inherit hover:no-underline truncate pl-2 grow text-sm h-full text-left"
             >
               {chatName.length < MAX_NAME_LENGTH
                 ? chatName
                 : chatName.slice(0, MAX_NAME_LENGTH) + '...'}
-              {chat.pinned && <span className="sr-only">Pinned</span>}
             </button>
           )}
         </div>
 
         <div className="flex items-center">
-          {!isEditing && chat.pinned && <PinnedSvg className="text-inherit" aria-hidden="true" />}
+          {!isEditing && chat.pinned && (
+            <>
+              <span id={`pinned-icon-${chat.id}`} className="sr-only">
+                Pinned
+              </span>
+              <PinnedSvg className="text-inherit" aria-hidden="true" />
+            </>
+          )}
           {!isEditing && (
             <NavigationMore
               renderInRoot
