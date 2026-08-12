@@ -13,18 +13,36 @@
 // limitations under the License.
 //
 
+import { DateTime } from 'luxon'
+
 import { FilterOption } from '@/types/filters'
 
 const intlWithTimezones = Intl as unknown as { supportedValuesOf(type: string): string[] }
 
 let cachedOptions: FilterOption[] | null = null
 
+function formatUtcOffset(offsetMinutes: number): string {
+  const sign = offsetMinutes >= 0 ? '+' : '-'
+  const abs = Math.abs(offsetMinutes)
+  const hours = Math.floor(abs / 60)
+  const minutes = abs % 60
+  return minutes === 0
+    ? `UTC${sign}${hours}`
+    : `UTC${sign}${hours}:${String(minutes).padStart(2, '0')}`
+}
+
+export const formatTimezoneLabel = (tz: string): string => {
+  const name = tz.replace(/_/g, ' ')
+  const dt = DateTime.now().setZone(tz)
+  return dt.isValid ? `${name} (${formatUtcOffset(dt.offset)})` : name
+}
+
 export const getIANATimezoneOptions = (): FilterOption[] => {
   if (!cachedOptions) {
     const supported = intlWithTimezones.supportedValuesOf('timeZone')
     const timezones = supported.includes('UTC') ? supported : ['UTC', ...supported]
     cachedOptions = timezones.map((tz) => ({
-      label: tz.replace(/_/g, ' '),
+      label: formatTimezoneLabel(tz),
       value: tz,
     }))
   }

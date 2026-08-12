@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: formatTimezoneLabel now checks dt.isValid before calling formatUtcOffset, falling back to name-only for unrecognized timezone strings. A new test 'returns name-only for an unrecognized timezone string (no NaN in output)' directly covers this path and passes. The vite.config.ts proxy-target change in the fix-up diff is unrelated local dev config and introduces no new risk. No new high-risk issues found in the fix-up diff.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "check": "commit-format",
+      "status": "pass",
+      "notes": "Both commit subjects match EPMCDME-XXXX: Capital sentence pattern"
+    },
+    {
+      "check": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not present in repo"
+    },
+    {
+      "check": "security",
+      "status": "pass",
+      "notes": "No secrets, injection points, auth changes, or unsafe operations in diff"
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "formatTimezoneLabel now uses dt.isValid guard; returns name-only string for unrecognized zones. Covered by new test."
+    }
+  ]
+}

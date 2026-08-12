@@ -1,0 +1,36 @@
+{
+  "decision": "request-changes",
+  "rationale": "One critical bug found: formatTimezoneLabel does not guard against invalid/unrecognized timezone strings. When luxon cannot resolve a zone, .offset returns NaN, and formatUtcOffset(NaN) produces the literal string 'UTC-NaN:NaN' in the rendered label — confirmed by both review lenses with runtime verification. Any stored legacy or non-IANA timezone value (Windows IDs, typos, old database rows) will show corrupted text in DataSourceDetails. Two findings deferred: (1) module-level cache freezes DST offsets at first call — explicitly accepted as a known limitation in the plan; (2) displayed offset reflects current time rather than schedule-execution time — inherent limitation of showing a static UTC offset for DST-observing timezones. No spec/story artifact present (no-spec mode). Commit subjects conform to EPMCDME-XXXX: Capital sentence format. 2 findings deferred, 0 dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "check": "commit-format",
+      "status": "pass",
+      "notes": "Both commit subjects match EPMCDME-XXXX: Capital sentence pattern — 'EPMCDME-13800: Add UTC offset suffix to timezone option labels' and 'EPMCDME-13800: Show UTC offset in DataSource timezone detail display'"
+    },
+    {
+      "check": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not present in repo"
+    },
+    {
+      "check": "security",
+      "status": "pass",
+      "notes": "No secrets, injection points, auth changes, or unsafe operations in diff"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/utils/timezone.ts",
+      "line": 36,
+      "problem": "formatTimezoneLabel does not validate the timezone string — when luxon cannot resolve the zone, DateTime.now().setZone(tz).offset returns NaN, and formatUtcOffset(NaN) produces the literal string 'UTC-NaN:NaN'.",
+      "impact": "Any data source whose stored timezone is not recognized by luxon (legacy Windows IDs such as 'Eastern Standard Time', typos, or non-IANA values from the database) renders a corrupted label in DataSourceDetails (e.g. 'Eastern Standard Time (UTC-NaN:NaN)'). The sign is always '-' because NaN >= 0 evaluates to false.",
+      "recommendation": "Guard with luxon's isValid flag before formatting: const dt = DateTime.now().setZone(tz); const name = tz.replace(/_/g, ' '); return dt.isValid ? `${name} (${formatUtcOffset(dt.offset)})` : name; — this degrades gracefully to just the name for unrecognized values instead of showing corrupted text."
+    }
+  ]
+}

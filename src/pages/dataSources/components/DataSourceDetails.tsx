@@ -59,6 +59,7 @@ import { getCronDescription, getNextCronRun } from '@/utils/cronValidator'
 import { canDelete, canEdit } from '@/utils/entity'
 import { formatDateTime, formatScheduleDate, humanize, isNumberValue } from '@/utils/helpers'
 import { getIndexTypeCode } from '@/utils/indexing'
+import { formatTimezoneLabel } from '@/utils/timezone'
 
 import DataSourceDeleteModal from './DataSourceDeleteModal'
 import DataSourceDetailsProvider from './DataSourceDetails/DetaSourceDetailsProvider'
@@ -770,7 +771,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                   {dataSource.timezone && (
                     <div className="flex flex-col gap-1">
                       <p className="text-xs text-text-quaternary">Timezone</p>
-                      <p className="text-xs">{dataSource.timezone}</p>
+                      <p className="text-xs">{formatTimezoneLabel(dataSource.timezone)}</p>
                     </div>
                   )}
                 </>
