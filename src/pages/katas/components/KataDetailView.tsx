@@ -505,7 +505,10 @@ const KataDetailView = () => {
                 className="w-16 h-16 rounded-xl object-cover border-2 border-border-specific-assistant-avatar bg-white/90 shrink-0"
               />
               <div className="flex flex-col gap-1 min-w-0 flex-1 mt-1">
-                <h4 className="text-2xl font-semibold leading-8 overflow-hidden text-ellipsis line-clamp-2">
+                <h4
+                  id={`kata-name-${currentKata.id}`}
+                  className="text-2xl font-semibold leading-8 overflow-hidden text-ellipsis line-clamp-2"
+                >
                   {currentKata.title}
                 </h4>
               </div>
@@ -578,7 +581,9 @@ const KataDetailView = () => {
               )}
 
               {/* 3-dots menu for admin actions */}
-              {isAdmin && <KataMenu actions={kataMenuActions} />}
+              {isAdmin && (
+                <KataMenu actions={kataMenuActions} contextId={`kata-name-${currentKata.id}`} />
+              )}
             </div>
           </div>
 

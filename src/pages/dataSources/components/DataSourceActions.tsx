@@ -31,6 +31,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import { userStore } from '@/store'
 import { dataSourceStore } from '@/store/dataSources'
 import { DataSource } from '@/types/entity/dataSource'
+import { dataSourceNameId } from '@/utils/ariaIds'
 import { canDelete, canEdit } from '@/utils/entity'
 import { copyToClipboard } from '@/utils/helpers'
 
@@ -221,7 +222,11 @@ const DataSourceActions: FC<Props> = ({ item }) => {
   return (
     <div className="flex justify-end">
       <div data-onboarding="datasource-actions-menu">
-        <NavigationMore hideOnClickInside items={menuActions}></NavigationMore>
+        <NavigationMore
+          hideOnClickInside
+          items={menuActions}
+          contextId={dataSourceNameId(item.id)}
+        ></NavigationMore>
       </div>
 
       <DataSourceDeleteModal

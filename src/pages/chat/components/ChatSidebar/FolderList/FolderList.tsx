@@ -113,6 +113,7 @@ const FolderList: FC<FolderListProps> = ({
       >
         {folders.map((folder) => {
           const isOverMaxLength = folder.length > MAX_CHAT_NAME_LENGTH
+          const folderKey = encodeURIComponent(folder)
 
           return (
             <AccordionTab
@@ -126,9 +127,7 @@ const FolderList: FC<FolderListProps> = ({
                   'data-folder-open': opts?.context.selected,
                   role: 'treeitem',
                   'aria-expanded': opts?.context.selected ?? false,
-                  'aria-owns': `chat-tree-folder-group-${folder
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')}`,
+                  'aria-owns': `chat-tree-folder-group-${folderKey}`,
                 }),
               }}
               header={() => (
@@ -136,6 +135,7 @@ const FolderList: FC<FolderListProps> = ({
                   <div className="flex items-center whitespace-nowrap overflow-hidden text-ellipsis h-12">
                     <FolderIcon className="mr-2 h-8" />
                     <p
+                      id={`folder-name-${folderKey}`}
                       data-pr-tooltip={isOverMaxLength ? folder : ''}
                       className="font-semibold whitespace-nowrap h-full flex items-center overflow-hidden text-ellipsis chat-sidebar-folder"
                     >
@@ -148,6 +148,7 @@ const FolderList: FC<FolderListProps> = ({
                       renderInRoot
                       autoAlignment
                       hideOnClickInside
+                      contextId={`folder-name-${folderKey}`}
                       onClick={(e) => {
                         e.stopPropagation()
                         e.preventDefault()
@@ -163,7 +164,7 @@ const FolderList: FC<FolderListProps> = ({
                   chats={foldersToChatsMap[folder] ?? []}
                   chatActions={chatActions}
                   currentChatId={currentChatId}
-                  id={`chat-tree-folder-group-${folder.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                  id={`chat-tree-folder-group-${folderKey}`}
                 />
               </div>
             </AccordionTab>

@@ -1,0 +1,53 @@
+{
+  "decision": "approve",
+  "rationale": "Fix-up diff is purely additive: one new test in src/pages/skills/components/__tests__/SkillCard.test.tsx that directly exercises what CR-001 flagged as untested — it renders SkillCard, resolves aria-labelledby off the NavigationMore-produced button, and asserts it points at the same heading element Card renders (matching text content 'Test Skill'). Fix-up evidence confirms it passes (SkillCard.test.tsx now 16/16, was 15/15) alongside all other real test files in the directory. No new high-risk issue introduced — the change is confined to a single new describe block appending an assertion-only test, no production code touched. No confirmation pass needed.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "No aria-labelledby reference depends on an id template written in a different file",
+      "status": "pass",
+      "evidence": "All 6 named pairs now import a shared builder from src/utils/ariaIds.ts or use useId() co-location; repo-wide grep confirms no remaining cross-file literal duplication among the 6 pairs."
+    },
+    {
+      "criterion": "Each of the 6 pairs resolved via useId() co-location or an imported builder from src/utils/ariaIds.ts",
+      "status": "pass",
+      "evidence": "4 builder pairs (DataSource, Provider, MCPServer, Workflow) and 2 useId() pairs (SkillActions/SkillCard, SkillDetailsActions/SkillDetails) all implemented per the spec's per-pair table; ariaIds.ts exports exactly the 4 spec'd functions with unchanged template strings, verified by src/utils/__tests__/ariaIds.test.ts."
+    },
+    {
+      "criterion": "The 4 hardcoded-id tests converted to DOM resolution",
+      "status": "pass",
+      "evidence": "SkillDetailsActions, DataSourceActions, ProviderActions, and WorkflowsList accessibility tests all now resolve aria-labelledby off the rendered DOM instead of asserting a literal string. ProjectSettingActionsCell correctly left untouched."
+    },
+    {
+      "criterion": "Full test suite, lint, and build green",
+      "status": "pass",
+      "evidence": "Full vitest run: 4745 passed, 1 pre-existing skip. npm run lint: clean. tsc --noEmit: clean. npm run build: succeeds."
+    },
+    {
+      "criterion": "accessibility-patterns.md updated with cross-component decision rule; constants-usage.md cross-referenced",
+      "status": "pass",
+      "evidence": "New 'Cross-component ARIA id sharing' section added with the 3-case decision rule; constants-usage.md has a 'See also' cross-reference."
+    },
+    {
+      "criterion": "Implementation risk: duplicate DOM id in workflow pair verified and guarded",
+      "status": "pass",
+      "evidence": "WorkflowsList.tsx hoists nameId to one variable per row gating both the nameId prop and navigationSlot together, preserving mutual exclusivity with WorkflowCard's navigationSlot ?? WorkflowActions fallback. New WorkflowCard.duplicateId.test.tsx asserts exactly one element carries the id on both render paths."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit format",
+      "status": "pass",
+      "notes": "All 9 commits in the diff (8 original + 1 fix-up) match 'EPMCDME-8420: Capital sentence.'"
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "New test added to SkillCard.test.tsx directly verifies aria-labelledby resolves to the Card heading element carrying the same useId()-generated id passed to SkillActions' contextId. Test passes."
+    }
+  ]
+}

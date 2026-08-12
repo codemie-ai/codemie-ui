@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Extend contextId accessibility fix to 21 remaining NavigationMore callers across assistants, workflows, skills, katas, data sources, integrations, and admin settings pages",
+  "generated": "2026-07-29T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 16,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "~30 files modified across 6+ feature domains: 2 inline JSX callers (ChatSidebarAssistants, ChatSidebarWorkflows), 5 wrapper/action components plus their parents (AssistantMenu, KataMenu, AssistantActions, and KataMenu callers), ~10 card-based pages plus action components that need prop threading (MCPServerCard, MCPServerDetail, WorkflowActions+WorkflowCard, SkillActions+SkillCard, KataActions+kata parent, ProjectBudgetCard, WorkflowExecutionsListItem), ~10 table admin pages plus action component parents (DataSourceActions, BudgetsManagementPage, ProviderActions, MCPServerActions, ProjectsManagementFull, CostCentersManagementPage, UsersManagementPage, CategoriesManagementPage and their wiring parents), 2 integration settings files (UserSettings, ProjectSettings), 1 MermaidDiagram"
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Spans 8 feature subsystems (chat sidebar, assistants, workflows, skills, katas, data sources, integration settings, admin management). Requires prop threading through 8 intermediate wrapper/action components (AssistantMenu, KataMenu, WorkflowActions, SkillActions, KataActions, DataSourceActions, ProviderActions, MCPServerActions) plus id-coordination in customRenderColumns for 8 table admin pages. No architectural restructuring but wide subsystem reach."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

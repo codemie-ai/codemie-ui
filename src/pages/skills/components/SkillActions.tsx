@@ -44,6 +44,7 @@ interface ActionItem {
 
 interface SkillActionsProps {
   skill: Skill
+  nameId: string
   page?: 'list' | 'details'
   onView?: () => void
   onExport?: () => void
@@ -53,6 +54,7 @@ interface SkillActionsProps {
 
 const SkillActions: React.FC<SkillActionsProps> = ({
   skill,
+  nameId,
   page = 'list',
   onView,
   onExport,
@@ -163,7 +165,7 @@ const SkillActions: React.FC<SkillActionsProps> = ({
 
   return (
     <>
-      <NavigationMore hideOnClickInside items={visibleActions} />
+      <NavigationMore hideOnClickInside items={visibleActions} contextId={nameId} />
 
       <ConfirmationModal
         visible={activeModal === 'delete'}

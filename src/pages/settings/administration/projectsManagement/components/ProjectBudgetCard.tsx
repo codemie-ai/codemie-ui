@@ -169,7 +169,10 @@ const AssignedCard: FC<ProjectBudgetCardAssignedProps & { mode?: 'manage' | 'vie
       <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4 flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="text-sm font-medium text-text-primary shrink-0">
+            <div
+              id={`budget-card-category-${budget.budget_id}`}
+              className="text-sm font-medium text-text-primary shrink-0"
+            >
               {getBudgetCategoryLabel(budget.budget_category)}
             </div>
             {spendingRow != null &&
@@ -207,7 +210,12 @@ const AssignedCard: FC<ProjectBudgetCardAssignedProps & { mode?: 'manage' | 'vie
               </button>
             )}
             {mode === 'manage' ? (
-              <NavigationMore items={menuItems} hideOnClickInside renderInRoot />
+              <NavigationMore
+                items={menuItems}
+                hideOnClickInside
+                renderInRoot
+                contextId={`budget-card-category-${budget.budget_id}`}
+              />
             ) : null}
           </div>
         </div>

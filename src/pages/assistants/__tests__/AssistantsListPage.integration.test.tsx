@@ -333,7 +333,7 @@ describe('AssistantsListPage - Integration', () => {
         expect(screen.getByText('Test Assistant')).toBeInTheDocument()
       })
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {
@@ -377,7 +377,7 @@ describe('AssistantsListPage - Integration', () => {
         expect(screen.getByText('Test Assistant')).toBeInTheDocument()
       })
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {
@@ -419,7 +419,7 @@ describe('AssistantsListPage - Integration', () => {
         expect(screen.getByText('Test Assistant')).toBeInTheDocument()
       })
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {
@@ -449,7 +449,7 @@ describe('AssistantsListPage - Integration', () => {
         expect(screen.getByText('Test Assistant')).toBeInTheDocument()
       })
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {
@@ -479,7 +479,7 @@ describe('AssistantsListPage - Integration', () => {
         expect(screen.getByText('Test Assistant')).toBeInTheDocument()
       })
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {

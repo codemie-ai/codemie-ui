@@ -218,7 +218,7 @@ describe('WorkflowDetailsPage - Integration', () => {
 
       await waitForPageLoaded()
 
-      await user.click(screen.getByRole('button', { name: 'More options' }))
+      await user.click(screen.getByRole('button', { name: 'Remove execution' }))
 
       await waitFor(() => {
         const removeButton = screen.getByRole('menuitem', { name: 'Remove' })
@@ -462,7 +462,7 @@ describe('WorkflowDetailsPage - Integration', () => {
 
       await waitForPageLoaded()
 
-      await clickMenuOption('More options', 'Remove', user)
+      await clickMenuOption('Remove execution', 'Remove', user)
 
       await waitFor(() => {
         expect(screen.getByText('Confirm Deletion')).toBeInTheDocument()
@@ -505,7 +505,7 @@ describe('WorkflowDetailsPage - Integration', () => {
         expect(screen.getByText('Failed')).toBeInTheDocument()
       })
 
-      const menuButtons = screen.getAllByRole('button', { name: 'More options' })
+      const menuButtons = screen.getAllByRole('button', { name: 'Remove execution' })
       await user.click(menuButtons[menuButtons.length - 1])
 
       await waitFor(() => {

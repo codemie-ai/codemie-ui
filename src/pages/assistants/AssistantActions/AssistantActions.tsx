@@ -145,9 +145,14 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
     },
   ]
 
+  const assistantNameId = `assistant-name-${assistant.id}`
+
   return (
     <>
-      <AssistantMenu actions={assistantActions} />
+      <span id={assistantNameId} className="sr-only">
+        {assistant.name}
+      </span>
+      <AssistantMenu actions={assistantActions} contextId={assistantNameId} />
 
       <ActionConfirmationModal
         isOpen={activeModal === 'delete'}

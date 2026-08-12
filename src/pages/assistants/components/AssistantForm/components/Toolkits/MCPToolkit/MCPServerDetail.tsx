@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import { useId } from 'react'
+
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import Button from '@/components/Button'
@@ -45,6 +47,7 @@ const MCPServerDetail = ({
   onDelete,
   showNewIntegrationPopup,
 }: MCPServerDetailProps) => {
+  const nameId = useId()
   const menuItems = isUnavailable
     ? [{ title: 'Delete', icon: <DeleteSvg />, onClick: onDelete }]
     : [
@@ -61,7 +64,16 @@ const MCPServerDetail = ({
           </span>
           {!isUnavailable && (
             <MCPToolkitTestProvider mcpServer={server}>
-              <NavigationMore renderInRoot alignment="end" hideOnClickInside items={menuItems}>
+              <span id={nameId} className="sr-only">
+                {server.name || 'MCP Server'}
+              </span>
+              <NavigationMore
+                renderInRoot
+                alignment="end"
+                hideOnClickInside
+                contextId={nameId}
+                items={menuItems}
+              >
                 <MCPToolkitTestTrigger inline />
               </NavigationMore>
             </MCPToolkitTestProvider>

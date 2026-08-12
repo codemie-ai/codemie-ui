@@ -36,6 +36,7 @@ import { getWorkflowLink } from '@/pages/workflows/utils/getWorkflowLink'
 import { chatsStore } from '@/store/chats'
 import { userStore } from '@/store/user'
 import { workflowsStore } from '@/store/workflows'
+import { workflowNameId } from '@/utils/ariaIds'
 import { canEdit, canDelete } from '@/utils/entity'
 import { pluralize } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
@@ -283,25 +284,30 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
           </div>
         )}
         <div className="min-w-80 grid auto-rows-min grid-cols-1 card-grid-2:grid-cols-2 card-grid-3:grid-cols-3 gap-2.5 justify-items-cente">
-          {activeWorkflows.map((workflow) => (
-            <WorkflowCard
-              key={workflow.id}
-              workflow={workflow}
-              onCreateWorkflowChat={!isFavorites ? createWorkflowChat : undefined}
-              onStartChat={startChat}
-              onViewWorkflow={showWorkflow}
-              navigationSlot={
-                !isFavorites ? (
-                  <NavigationMore
-                    hideOnClickInside
-                    renderInRoot
-                    items={navigationActions(workflow)}
-                  />
-                ) : undefined
-              }
-              reloadWorkflows={isFavorites ? handleRefresh : undefined}
-            />
-          ))}
+          {activeWorkflows.map((workflow) => {
+            const nameId = !isFavorites ? workflowNameId(workflow.id) : undefined
+            return (
+              <WorkflowCard
+                key={workflow.id}
+                workflow={workflow}
+                onCreateWorkflowChat={!isFavorites ? createWorkflowChat : undefined}
+                onStartChat={startChat}
+                onViewWorkflow={showWorkflow}
+                nameId={nameId}
+                navigationSlot={
+                  nameId ? (
+                    <NavigationMore
+                      hideOnClickInside
+                      renderInRoot
+                      contextId={nameId}
+                      items={navigationActions(workflow)}
+                    />
+                  ) : undefined
+                }
+                reloadWorkflows={isFavorites ? handleRefresh : undefined}
+              />
+            )
+          })}
         </div>
       </section>
 

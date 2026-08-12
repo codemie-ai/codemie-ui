@@ -148,9 +148,11 @@ const CostCentersManagementPage = () => {
   const customRenderColumns = useMemo(
     () => ({
       name: (costCenter: CostCenterListItem) => (
-        <NameLinkCell onClick={() => handleCostCenterOpen(costCenter.id)}>
-          {costCenter.name}
-        </NameLinkCell>
+        <span id={`cost-center-name-${costCenter.id}`}>
+          <NameLinkCell onClick={() => handleCostCenterOpen(costCenter.id)}>
+            {costCenter.name}
+          </NameLinkCell>
+        </span>
       ),
       description: (costCenter: CostCenterListItem) => (
         <span className="text-text-quaternary line-clamp-2">
@@ -183,7 +185,11 @@ const CostCentersManagementPage = () => {
 
         return (
           <div className="flex justify-end">
-            <NavigationMore hideOnClickInside items={menuItems} />
+            <NavigationMore
+              hideOnClickInside
+              items={menuItems}
+              contextId={`cost-center-name-${costCenter.id}`}
+            />
           </div>
         )
       },

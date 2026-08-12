@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "runner": "npm",
+  "gates": [
+    {"id": "lint", "command": "npm run lint", "available": true, "source": "guide"},
+    {"id": "typecheck", "command": "npm run typecheck", "available": true, "source": "guide"},
+    {"id": "unit", "command": "npm run test:unit", "available": true, "source": "guide"},
+    {"id": "integration", "command": "npm run test:integration", "available": true, "source": "guide"}
+  ],
+  "ui_globs": ["\\.(tsx|jsx|css|html)$", "src/(pages|components)/"],
+  "detected_at": "2026-08-07T00:00:00Z"
+}

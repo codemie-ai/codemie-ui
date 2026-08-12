@@ -62,6 +62,8 @@ export const API_ENDPOINTS = {
 
 Usage: `api.get(API_ENDPOINTS.ASSISTANT_BY_ID(id))` — never construct endpoint strings inline.
 
+See also: `.ai-run/guides/patterns/accessibility-patterns.md` § Cross-component ARIA id sharing — `src/utils/ariaIds.ts` is a constants-adjacent module of narrowly-named id-builder functions, not a generic keyed lookup.
+
 ### Status label/color maps
 
 Pair an enum with display maps to avoid `if/else` chains:

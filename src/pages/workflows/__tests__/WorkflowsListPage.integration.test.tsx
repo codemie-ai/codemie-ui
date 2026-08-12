@@ -505,7 +505,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'View Details', user)
+      await clickMenuOption(/^More options( |$)/, 'View Details', user)
 
       expect(mockRouterState.push).toHaveBeenCalledWith({
         name: 'view-workflow',
@@ -527,7 +527,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Edit', user)
+      await clickMenuOption(/^More options( |$)/, 'Edit', user)
 
       expect(mockRouterState.push).toHaveBeenCalledWith({
         name: 'edit-workflow',
@@ -549,7 +549,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Delete', user)
+      await clickMenuOption(/^More options( |$)/, 'Delete', user)
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -581,7 +581,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Copy Link', user)
+      await clickMenuOption(/^More options( |$)/, 'Copy Link', user)
     })
 
     it('navigates to clone workflow when Clone menu item clicked', async () => {
@@ -592,7 +592,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Clone', user)
+      await clickMenuOption(/^More options( |$)/, 'Clone', user)
 
       expect(mockRouterState.push).toHaveBeenCalledWith({
         name: 'clone-workflow',
@@ -612,7 +612,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Delete', user)
+      await clickMenuOption(/^More options( |$)/, 'Delete', user)
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -1610,7 +1610,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Publish to Marketplace', user)
+      await clickMenuOption(/^More options( |$)/, 'Publish to Marketplace', user)
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -1645,7 +1645,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Publish to Marketplace', user)
+      await clickMenuOption(/^More options( |$)/, 'Publish to Marketplace', user)
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -1682,7 +1682,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Publish to Marketplace', user)
+      await clickMenuOption(/^More options( |$)/, 'Publish to Marketplace', user)
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -1716,7 +1716,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Publish to Marketplace', user)
+      await clickMenuOption(/^More options( |$)/, 'Publish to Marketplace', user)
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -1764,7 +1764,7 @@ describe('WorkflowsListPage - Integration', () => {
 
       await waitForWorkflowLoaded('Test Workflow')
 
-      await clickMenuOption('More options', 'Publish to Marketplace', user)
+      await clickMenuOption(/^More options( |$)/, 'Publish to Marketplace', user)
 
       await waitFor(() => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -1791,7 +1791,9 @@ describe('WorkflowsListPage - Integration', () => {
       // Mock the refresh call that happens after unpublish
       mockAPI('GET', 'v1/workflows', createWorkflowsResponse())
 
-      const moreButton = await waitFor(() => screen.getByRole('button', { name: 'More options' }))
+      const moreButton = await waitFor(() =>
+        screen.getByRole('button', { name: /^More options( |$)/ })
+      )
       await user.click(moreButton)
 
       await waitFor(() => {

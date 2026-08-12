@@ -1,0 +1,422 @@
+diff --git a/docs/superpowers/tasks/2026-07-21-epmcdme-13611-copy-table-button-behavior/work-item-events.jsonl b/docs/superpowers/tasks/2026-07-21-epmcdme-13611-copy-table-button-behavior/work-item-events.jsonl
+new file mode 100644
+index 000000000..8634b8d93
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-21-epmcdme-13611-copy-table-button-behavior/work-item-events.jsonl
+@@ -0,0 +1,2 @@
++{"event":"work_item.created","ticket":"EPMCDME-13611","path":"docs/superpowers/work-items/epmcdme-13611-copy-table-button-behavior.md","timestamp":"2026-07-21T00:00:00Z"}
++{"event":"work_item.adapter_receipt","ticket":"EPMCDME-13611","status":"success","adapter":"jira-handler","timestamp":"2026-07-21T00:00:00Z"}
+diff --git a/docs/superpowers/tasks/2026-07-21-epmcdme-13611-copy-table-button-behavior/work-item.md b/docs/superpowers/tasks/2026-07-21-epmcdme-13611-copy-table-button-behavior/work-item.md
+new file mode 100644
+index 000000000..7acb6ed6a
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-21-epmcdme-13611-copy-table-button-behavior/work-item.md
+@@ -0,0 +1,19 @@
++# Work Item — EPMCDME-13611
++
++**External Ticket**: https://jiraeu.epam.com/browse/EPMCDME-13611
++**Type**: Bug
++**Priority**: Major
++**Status**: Ready for dev
++
++## Title
++
++Copy table button remains visible after copying and moving the mouse away
++
++## Acceptance Criteria
++
++- Copy button appears when user hovers over a Markdown table in assistant output.
++- After click, table content is copied as expected.
++- Copy button is hidden when pointer leaves the table/button hover area.
++- Copy button does not remain visible until an additional click.
++- Existing message/table copy functionality is not broken.
++- Behavior verified with a generated Markdown table in AI Assistant output.
+diff --git a/docs/superpowers/work-items/epmcdme-13611-copy-table-button-behavior.md b/docs/superpowers/work-items/epmcdme-13611-copy-table-button-behavior.md
+new file mode 100644
+index 000000000..2940c096f
+--- /dev/null
++++ b/docs/superpowers/work-items/epmcdme-13611-copy-table-button-behavior.md
+@@ -0,0 +1,35 @@
++# Work Item — EPMCDME-13611
++
++**External Ticket**: https://jiraeu.epam.com/browse/EPMCDME-13611
++**Type**: Bug
++**Priority**: Major
++**Status**: Ready for dev
++**Labels**: Frontend, AI/Run, codemie_core
++
++## Title
++
++Copy table button remains visible after copying and moving the mouse away
++
++## Summary
++
++The Copy button for a Markdown table in the AI Assistant output stays visible after the user clicks it and moves the mouse away. It should auto-hide when the pointer leaves the hover area.
++
++## Acceptance Criteria
++
++- Copy button appears when user hovers over a Markdown table in assistant output.
++- After click, table content is copied as expected.
++- Copy button is hidden when pointer leaves the table/button hover area.
++- Copy button does not remain visible until an additional click.
++- Existing message/table copy functionality is not broken.
++- Behavior verified with a generated Markdown table in AI Assistant output.
++
++## Linked Artifacts
++
++- docs/superpowers/tasks/2026-07-21-epmcdme-13611-copy-table-button-behavior/requirements.md
++
++## History
++
++| Date | Event | Notes |
++|------|-------|-------|
++| 2026-07-21 | work_item.created | Created from EPMCDME-13611 via requirements-intake |
++| 2026-07-21 | work_item.adapter_receipt | status: success; source: jira-handler |
+diff --git a/src/components/NavigationMore/NavigationMore.tsx b/src/components/NavigationMore/NavigationMore.tsx
+index 264e4d540..1aeada498 100644
+--- a/src/components/NavigationMore/NavigationMore.tsx
++++ b/src/components/NavigationMore/NavigationMore.tsx
+@@ -24,7 +24,7 @@ import {
+   FloatingPortal,
+   Alignment,
+ } from '@floating-ui/react'
+-import React, { memo, MouseEventHandler, useState } from 'react'
++import React, { memo, MouseEventHandler, useId, useState } from 'react'
+ 
+ import NavigationMoreSvg from '@/assets/icons/navigation-more.svg?react'
+ import { cn } from '@/utils/utils'
+@@ -51,6 +51,7 @@ interface NavigationMoreProps {
+   className?: string
+   buttonClassName?: string
+   'data-tooltip-content'?: string
++  contextId?: string
+ }
+ 
+ const NavigationMore: React.FC<NavigationMoreProps> = ({
+@@ -66,8 +67,12 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
+   buttonClassName,
+   onClick,
+   'data-tooltip-content': dataTooltipContent,
++  contextId,
+ }) => {
+   const [show, setShow] = useState(false)
++  const id = useId()
++  const menuId = `nav-more-menu-${id}`
++  const buttonId = `nav-more-btn-${id}`
+ 
+   const { refs, floatingStyles, context } = useFloating({
+     open: show,
+@@ -102,6 +107,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
+       {...getFloatingProps()}
+     >
+       <div
++        id={menuId}
+         className="flex flex-col bg-surface-base-secondary rounded-lg border border-border-structural z-50 w-44 py-2 px-2"
+         role="menu"
+         aria-label="Options"
+@@ -151,6 +157,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
+     <div className={cn('flex items-center relative', className)}>
+       <button
+         type="button"
++        id={buttonId}
+         ref={refs.setReference}
+         className={cn(
+           'm-1 p-1 rounded-md border border-transparent hover:bg-surface-specific-dropdown-hover transition',
+@@ -159,11 +166,14 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
+         )}
+         {...getReferenceProps()}
+         aria-label={dataTooltipContent || 'More options'}
++        aria-labelledby={contextId ? `${buttonId} ${contextId}` : undefined}
+         aria-haspopup="menu"
+         aria-expanded={show}
++        aria-controls={menuId}
+         data-tooltip-id="react-tooltip"
+         data-tooltip-content={dataTooltipContent}
+       >
++        {contextId && <span className="sr-only">More Options</span>}
+         {customIcon || <NavigationMoreSvg />}
+       </button>
+ 
+diff --git a/src/components/NavigationMore/__tests__/NavigationMore.test.tsx b/src/components/NavigationMore/__tests__/NavigationMore.test.tsx
+index 483e7af55..484449b19 100644
+--- a/src/components/NavigationMore/__tests__/NavigationMore.test.tsx
++++ b/src/components/NavigationMore/__tests__/NavigationMore.test.tsx
+@@ -102,3 +102,52 @@ describe('NavigationMore', () => {
+     expect(container.querySelector('ul')).not.toBeInTheDocument()
+   })
+ })
++
++describe('NavigationMore accessibility attributes', () => {
++  it('trigger button has aria-controls pointing to the menu container', () => {
++    render(<NavigationMore items={makeItems()} />)
++    const trigger = screen.getByRole('button', { name: 'More options' })
++    const menuId = trigger.getAttribute('aria-controls')
++    expect(menuId).toBeTruthy()
++
++    fireEvent.click(trigger)
++    expect(document.getElementById(menuId!)).toBeInTheDocument()
++    expect(document.getElementById(menuId!)).toHaveAttribute('role', 'menu')
++  })
++
++  it('without contextId keeps aria-label and has no aria-labelledby', () => {
++    render(<NavigationMore items={makeItems()} />)
++    const trigger = screen.getByRole('button', { name: 'More options' })
++    expect(trigger).toHaveAttribute('aria-label', 'More options')
++    expect(trigger).not.toHaveAttribute('aria-labelledby')
++  })
++
++  it('with contextId adds compound aria-labelledby and sr-only More Options span', () => {
++    const { container } = render(
++      <div>
++        <button id="chat-name-abc">My Chat</button>
++        <NavigationMore contextId="chat-name-abc" items={makeItems()} />
++      </div>
++    )
++    const trigger = container.querySelector('button[aria-haspopup]') as HTMLElement
++    expect(trigger).toHaveAttribute('id')
++    const buttonId = trigger.getAttribute('id')!
++    expect(trigger).toHaveAttribute('aria-labelledby', `${buttonId} chat-name-abc`)
++    const srOnly = trigger.querySelector('.sr-only')
++    expect(srOnly).toBeInTheDocument()
++    expect(srOnly).toHaveTextContent('More Options')
++  })
++
++  it('with contextId aria-controls still links trigger to menu after open', () => {
++    const { container } = render(
++      <div>
++        <button id="chat-name-xyz">Chat</button>
++        <NavigationMore contextId="chat-name-xyz" items={makeItems()} />
++      </div>
++    )
++    const trigger = container.querySelector('button[aria-haspopup]') as HTMLElement
++    fireEvent.click(trigger)
++    const menuId = trigger.getAttribute('aria-controls')!
++    expect(document.getElementById(menuId)).toHaveAttribute('role', 'menu')
++  })
++})
+diff --git a/src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx b/src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx
+index 7d8deaa03..54be97e51 100644
+--- a/src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx
++++ b/src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx
+@@ -102,6 +102,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
+           ) : (
+             <button
+               type="button"
++              id={`chat-name-${chat.id}`}
+               onClick={select}
+               className="text-inherit hover:no-underline truncate pl-2 grow text-sm h-full text-left"
+             >
+@@ -119,6 +120,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
+             <NavigationMore
+               renderInRoot
+               hideOnClickInside
++              contextId={`chat-name-${chat.id}`}
+               items={[
+                 {
+                   title: chat.pinned ? 'Unpin' : 'Pin',
+diff --git a/src/pages/chat/components/ChatSidebar/ChatList/__tests__/ChatListItem.test.tsx b/src/pages/chat/components/ChatSidebar/ChatList/__tests__/ChatListItem.test.tsx
+new file mode 100644
+index 000000000..d8164b56d
+--- /dev/null
++++ b/src/pages/chat/components/ChatSidebar/ChatList/__tests__/ChatListItem.test.tsx
+@@ -0,0 +1,71 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render, screen } from '@testing-library/react'
++import { describe, it, expect, vi } from 'vitest'
++
++import ChatListItem, { ChatListItemActions } from '../ChatListItem'
++
++vi.mock('@/hooks/useVueRouter', () => ({
++  useVueRouter: () => ({ push: vi.fn() }),
++}))
++
++vi.mock('valtio', async (importOriginal) => {
++  const actual = await importOriginal<typeof import('valtio')>()
++  return {
++    ...actual,
++    useSnapshot: () => ({ renameChat: vi.fn(), pinChat: vi.fn() }),
++  }
++})
++
++vi.mock('@/store/chats', () => ({
++  chatsStore: { renameChat: vi.fn(), pinChat: vi.fn() },
++}))
++
++vi.mock('@/assets/icons/navigation-more.svg?react', () => ({
++  default: () => <span data-testid="nav-more-icon" />,
++}))
++
++const actions: ChatListItemActions = {
++  moveChat: vi.fn(),
++  deleteChat: vi.fn(),
++}
++
++const chat = {
++  id: 'test-chat-id-123',
++  name: 'My Test Chat',
++  folder: '',
++  pinned: false,
++  date: '',
++  assistantIds: [],
++  initialAssistantId: null,
++  isGroup: false,
++  isWorkflow: false,
++}
++
++describe('ChatListItem accessibility', () => {
++  it('chat name button has id derived from chat.id', () => {
++    render(<ChatListItem chat={chat} actions={actions} />)
++    const chatNameBtn = screen.getByRole('button', { name: 'My Test Chat' })
++    expect(chatNameBtn).toHaveAttribute('id', `chat-name-${chat.id}`)
++  })
++
++  it('More Options button has aria-labelledby referencing both button id and chat name id', () => {
++    const { container } = render(<ChatListItem chat={chat} actions={actions} />)
++    const moreBtn = container.querySelector('button[aria-haspopup]') as HTMLElement
++    const chatNameId = `chat-name-${chat.id}`
++    expect(moreBtn.getAttribute('aria-labelledby')).toContain(chatNameId)
++  })
++})
+diff --git a/src/pages/chat/components/ChatSidebar/FolderList/FolderList.tsx b/src/pages/chat/components/ChatSidebar/FolderList/FolderList.tsx
+index 233aee048..d0c6d5a52 100644
+--- a/src/pages/chat/components/ChatSidebar/FolderList/FolderList.tsx
++++ b/src/pages/chat/components/ChatSidebar/FolderList/FolderList.tsx
+@@ -113,6 +113,7 @@ const FolderList: FC<FolderListProps> = ({
+       >
+         {folders.map((folder) => {
+           const isOverMaxLength = folder.length > MAX_CHAT_NAME_LENGTH
++          const folderSlug = folder.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+ 
+           return (
+             <AccordionTab
+@@ -126,9 +127,7 @@ const FolderList: FC<FolderListProps> = ({
+                   'data-folder-open': opts?.context.selected,
+                   role: 'treeitem',
+                   'aria-expanded': opts?.context.selected ?? false,
+-                  'aria-owns': `chat-tree-folder-group-${folder
+-                    .toLowerCase()
+-                    .replace(/[^a-z0-9]+/g, '-')}`,
++                  'aria-owns': `chat-tree-folder-group-${folderSlug}`,
+                 }),
+               }}
+               header={() => (
+@@ -136,6 +135,7 @@ const FolderList: FC<FolderListProps> = ({
+                   <div className="flex items-center whitespace-nowrap overflow-hidden text-ellipsis h-12">
+                     <FolderIcon className="mr-2 h-8" />
+                     <p
++                      id={`folder-name-${folderSlug}`}
+                       data-pr-tooltip={isOverMaxLength ? folder : ''}
+                       className="font-semibold whitespace-nowrap h-full flex items-center overflow-hidden text-ellipsis chat-sidebar-folder"
+                     >
+@@ -148,6 +148,7 @@ const FolderList: FC<FolderListProps> = ({
+                       renderInRoot
+                       autoAlignment
+                       hideOnClickInside
++                      contextId={`folder-name-${folderSlug}`}
+                       onClick={(e) => {
+                         e.stopPropagation()
+                         e.preventDefault()
+@@ -163,7 +164,7 @@ const FolderList: FC<FolderListProps> = ({
+                   chats={foldersToChatsMap[folder] ?? []}
+                   chatActions={chatActions}
+                   currentChatId={currentChatId}
+-                  id={`chat-tree-folder-group-${folder.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
++                  id={`chat-tree-folder-group-${folderSlug}`}
+                 />
+               </div>
+             </AccordionTab>
+diff --git a/src/pages/chat/components/ChatSidebar/FolderList/__tests__/FolderList.test.tsx b/src/pages/chat/components/ChatSidebar/FolderList/__tests__/FolderList.test.tsx
+new file mode 100644
+index 000000000..abbd389c6
+--- /dev/null
++++ b/src/pages/chat/components/ChatSidebar/FolderList/__tests__/FolderList.test.tsx
+@@ -0,0 +1,75 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { describe, it, expect, vi } from 'vitest'
++
++import { ChatListItemActions } from '../../ChatList/ChatListItem'
++import FolderList from '../FolderList'
++
++vi.mock('@/hooks/useVueRouter', () => ({
++  useVueRouter: () => ({ push: vi.fn() }),
++}))
++
++vi.mock('valtio', async (importOriginal) => {
++  const actual = await importOriginal<typeof import('valtio')>()
++  return {
++    ...actual,
++    useSnapshot: () => ({ chats: [] }),
++  }
++})
++
++vi.mock('@/store/chats', () => ({
++  chatsStore: { startNewChat: vi.fn(), chats: [] },
++}))
++
++vi.mock('@/assets/icons/navigation-more.svg?react', () => ({
++  default: () => <span data-testid="nav-more-icon" />,
++}))
++
++const chatActions: ChatListItemActions = {
++  moveChat: vi.fn(),
++  deleteChat: vi.fn(),
++}
++
++describe('FolderList accessibility', () => {
++  it('folder name paragraph has id derived from folder slug', () => {
++    const { container } = render(
++      <FolderList
++        folders={['My Folder']}
++        activeFolderIndex={null}
++        chatActions={chatActions}
++        foldersToChatsMap={{}}
++        setActiveFolder={vi.fn()}
++      />
++    )
++    const folderNameP = container.querySelector('p[id]')
++    expect(folderNameP).toHaveAttribute('id', 'folder-name-my-folder')
++  })
++
++  it('More Options button has aria-labelledby referencing the folder name id', () => {
++    const { container } = render(
++      <FolderList
++        folders={['My Folder']}
++        activeFolderIndex={null}
++        chatActions={chatActions}
++        foldersToChatsMap={{}}
++        setActiveFolder={vi.fn()}
++      />
++    )
++    const moreBtn = container.querySelector('button[aria-haspopup]') as HTMLElement
++    expect(moreBtn.getAttribute('aria-labelledby')).toContain('folder-name-my-folder')
++  })
++})

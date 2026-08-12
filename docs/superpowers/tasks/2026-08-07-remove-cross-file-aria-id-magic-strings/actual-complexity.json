@@ -1,0 +1,91 @@
+{
+  "task": "Centralize aria-id generation for cross-file accessible-name references (dataSources, settings/administration, skills, workflows) into a shared src/utils/ariaIds.ts module, backed by accessibility and duplicate-DOM-id regression tests",
+  "generated": "2026-08-07T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 5,
+      "label": "XL",
+      "affected": "DataSourceActions, DataSourceName, ProvidersManagementPage, MCPServerActions, ProviderActions, columnRenderers, SkillActions, SkillCard, SkillDetails, SkillDetailsActions, WorkflowActions, WorkflowsList, ariaIds (new shared utility)",
+      "layers": "UI only — but spans 4 independent feature domains plus a new shared cross-cutting utility"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Pure id-generation refactor with no user-facing behavior change beyond corrected accessible names; blast radius is wide (shared utility consumed by 4 feature areas) but mechanical",
+      "mitigation": "Centralized builder functions in src/utils/ariaIds.ts turn id ownership into a compile-time import; new accessibility tests per touched component plus a dedicated duplicate-DOM-id regression test (WorkflowCard.duplicateId.test.tsx)"
+    },
+    "file_change_estimate": {
+      "score": 6,
+      "label": "XXL",
+      "modified_files": 15,
+      "modified_file_list": [
+        ".ai-run/guides/development/constants-usage.md",
+        ".ai-run/guides/patterns/accessibility-patterns.md",
+        "src/pages/dataSources/components/DataSourceActions.tsx",
+        "src/pages/dataSources/components/DataSourceName.tsx",
+        "src/pages/settings/administration/ProvidersManagementPage.tsx",
+        "src/pages/settings/administration/components/MCPServerActions.tsx",
+        "src/pages/settings/administration/components/ProviderActions.tsx",
+        "src/pages/settings/administration/utils/columnRenderers.tsx",
+        "src/pages/skills/components/SkillActions.tsx",
+        "src/pages/skills/components/SkillCard.tsx",
+        "src/pages/skills/components/SkillDetails.tsx",
+        "src/pages/skills/components/SkillDetailsActions.tsx",
+        "src/pages/skills/components/__tests__/SkillCard.test.tsx",
+        "src/pages/workflows/components/WorkflowActions.tsx",
+        "src/pages/workflows/components/WorkflowsList.tsx"
+      ],
+      "new_files": 8,
+      "new_file_list": [
+        "src/pages/dataSources/components/__tests__/DataSourceActions.accessibility.test.tsx",
+        "src/pages/settings/administration/components/__tests__/MCPServerActions.accessibility.test.tsx",
+        "src/pages/settings/administration/components/__tests__/ProviderActions.accessibility.test.tsx",
+        "src/pages/skills/components/__tests__/SkillDetailsActions.accessibility.test.tsx",
+        "src/pages/workflows/components/__tests__/WorkflowCard.duplicateId.test.tsx",
+        "src/pages/workflows/components/__tests__/WorkflowsList.accessibility.test.tsx",
+        "src/utils/__tests__/ariaIds.test.ts",
+        "src/utils/ariaIds.ts"
+      ],
+      "affected_dirs": [
+        ".ai-run/guides",
+        "src/pages/dataSources/components",
+        "src/pages/settings/administration",
+        "src/pages/skills/components",
+        "src/pages/workflows/components",
+        "src/utils"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 17,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 23,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "23 files changed (15 modified, 8 new) — diffstat maps to XXL per the actual-mode file-count table (16+ files). Spans dataSources, settings/administration, skills, and workflows pages plus a brand-new shared src/utils/ariaIds.ts module and 5 new accessibility/regression test files." },
+    { "dimension": "component_scope", "reason": "A new shared utility (src/utils/ariaIds.ts) centralizes id generation and is imported by 12 production components across 4 independent feature domains (dataSources, settings/administration, skills, workflows). Cross-cutting shared-utility change triggers the red flag bump." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): touches core shared utilities — new src/utils/ariaIds.ts consumed across 4 feature areas"
+  ],
+  "split_recommendation": null
+}

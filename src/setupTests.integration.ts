@@ -20,7 +20,14 @@ import { vi } from 'vitest'
 // Integration tests run with --coverage in CI, which adds ~3x per-test overhead.
 // Raise the waitFor/findBy timeout to match the overall testTimeout so async assertions
 // do not time out before the component has finished fetching and re-rendering.
-configure({ asyncUtilTimeout: 15000 })
+configure({
+  asyncUtilTimeout: 15000,
+  // Accessibility labels are rendered as visually-hidden `.sr-only` spans that duplicate
+  // visible text (e.g. a card title also exposed via aria-labelledby). Text queries must
+  // target the visible node, so exclude them. 'script, style' is the library default and
+  // must be preserved.
+  defaultIgnore: 'script, style, .sr-only',
+})
 
 // Fix: React Router v7 calls new Request(url, { signal: AbortController.signal }) during
 // router.navigate(). In jsdom + Node.js 26, jsdom replaces globalThis.AbortController

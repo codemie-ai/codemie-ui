@@ -286,6 +286,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code }) => {
           items={exportMenuItems}
           buttonClassName="bg-surface-base-primary"
           className="bg-transparent"
+          data-tooltip-content="Export diagram"
         />
       </div>
 

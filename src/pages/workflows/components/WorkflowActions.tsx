@@ -28,6 +28,7 @@ import { ButtonType } from '@/constants'
 import { CLONE_WORKFLOW, EDIT_WORKFLOW, VIEW_WORKFLOW } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { workflowsStore } from '@/store/workflows'
+import { workflowNameId } from '@/utils/ariaIds'
 import { canDelete, canEdit } from '@/utils/entity'
 import toaster from '@/utils/toaster'
 import { copyToClipboard } from '@/utils/utils'
@@ -151,9 +152,14 @@ const WorkflowActions: React.FC<WorkflowActionsProps> = ({ workflow, onView, rel
 
   if (actions.length === 0) return null
 
+  const nameId = workflowNameId(workflow.id)
+
   return (
     <>
-      <NavigationMore hideOnClickInside renderInRoot items={actions} />
+      <span id={nameId} className="sr-only">
+        {workflow.name}
+      </span>
+      <NavigationMore hideOnClickInside renderInRoot items={actions} contextId={nameId} />
       <ConfirmationModal
         visible={showDeleteConfirm}
         header="Delete this Workflow?"

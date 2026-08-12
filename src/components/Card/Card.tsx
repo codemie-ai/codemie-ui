@@ -25,6 +25,7 @@ import { truncateInput } from '@/utils/helpers'
 
 export interface CardProps {
   title: string
+  titleId?: string
   subtitle?: string
   description: string
   label?: string
@@ -38,6 +39,7 @@ export interface CardProps {
 
 const Card: React.FC<CardProps> = ({
   title,
+  titleId,
   subtitle,
   description,
   label = null,
@@ -89,6 +91,7 @@ const Card: React.FC<CardProps> = ({
                   )}
                 >
                   <div
+                    id={titleId}
                     ref={titleEl}
                     data-pr-tooltip={isTitleTruncated ? title : ''}
                     data-pr-position="bottom"

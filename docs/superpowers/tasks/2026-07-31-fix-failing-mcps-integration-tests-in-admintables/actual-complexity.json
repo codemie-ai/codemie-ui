@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Fix failing MCP integration tests in admin tables by adding ARIA accessible names to NavigationMore (triple-dots) buttons across all feature pages.",
+  "generated": "2026-07-31T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 17,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Change spans 8 UI feature subsystems (Skills, Assistants, Workflows, DataSources, Integrations/ProjectSettings, Integrations/UserSettings, Settings/Admin, Katas) plus the shared Card component. Started at L (4) for multiple subsystems; bumped to XL (5) by the 'touches core shared utility' red flag because Card.tsx is a shared UI primitive consumed across many pages."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "20 files changed: 18 modified components plus 2 new accessibility test files (WorkflowActions.accessibility.test.tsx, UserSettings.accessibility.test.tsx). 16+ files maps to XXL (6) per the scoring scale."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): touches core shared utility Card.tsx which is consumed by Skills, Assistants, and other pages"
+  ],
+  "split_recommendation": null
+}

@@ -28,6 +28,7 @@ import { dataSourceStore } from '@/store/dataSources'
 import { providersStore } from '@/store/providers'
 import { Provider } from '@/types/entity/provider'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import { providerNameId } from '@/utils/ariaIds'
 import toaster from '@/utils/toaster'
 
 import ProviderActions from './components/ProviderActions'
@@ -36,9 +37,13 @@ const PROVIDER_DELETED_MESSAGE = 'Provider deleted successfully'
 
 const columnDefinitions: ColumnDefinition[] = [
   { key: 'id', label: 'ID', type: DefinitionTypes.String, headClassNames: 'w-[65%]' },
-  { key: 'name', label: 'Name', type: DefinitionTypes.String, headClassNames: 'w-[30%]' },
+  { key: 'name', label: 'Name', type: DefinitionTypes.Custom, headClassNames: 'w-[30%]' },
   { key: 'actions', label: '', type: DefinitionTypes.Custom, headClassNames: 'w-[5%]' },
 ]
+
+const renderProviderNameCell = (item: Provider) => (
+  <span id={providerNameId(item.id)}>{item.name}</span>
+)
 
 const ProvidersManagementPage = () => {
   const { providers, loading } = useSnapshot(providersStore) as typeof providersStore
@@ -100,6 +105,7 @@ const ProvidersManagementPage = () => {
 
   const customRenderColumns = useMemo(
     () => ({
+      name: renderProviderNameCell,
       actions: renderActions,
     }),
     [renderActions]

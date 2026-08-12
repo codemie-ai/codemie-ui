@@ -142,7 +142,9 @@ const ProjectNameCell = ({
   item: Project
   onOpenDetails: (name: string) => void
 }) => (
-  <NameLinkCell onClick={() => onOpenDetails(item.name)}>{formatProjectLabel(item)}</NameLinkCell>
+  <span id={`project-name-${item.id}`}>
+    <NameLinkCell onClick={() => onOpenDetails(item.name)}>{formatProjectLabel(item)}</NameLinkCell>
+  </span>
 )
 
 const renderProjectNameColumn = (onOpenDetails: (name: string) => void) => (item: Project) =>
@@ -508,7 +510,11 @@ const ProjectsManagementFull: FC = () => {
 
         return (
           <div className="flex justify-end">
-            <NavigationMore hideOnClickInside={true} items={menuItems} />
+            <NavigationMore
+              hideOnClickInside={true}
+              items={menuItems}
+              contextId={`project-name-${item.id}`}
+            />
           </div>
         )
       },

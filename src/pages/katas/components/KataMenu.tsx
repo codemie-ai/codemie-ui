@@ -28,9 +28,10 @@ export interface KataActionItem {
 
 interface KataMenuProps {
   actions: KataActionItem[]
+  contextId?: string
 }
 
-const KataMenu: React.FC<KataMenuProps> = ({ actions }) => {
+const KataMenu: React.FC<KataMenuProps> = ({ actions, contextId }) => {
   const visibleActions = actions.filter((action) => action.isVisible)
 
   if (visibleActions.length === 0) {
@@ -46,7 +47,7 @@ const KataMenu: React.FC<KataMenuProps> = ({ actions }) => {
     }
   })
 
-  return <NavigationMore hideOnClickInside items={actionItems} />
+  return <NavigationMore hideOnClickInside items={actionItems} contextId={contextId} />
 }
 
 export default KataMenu

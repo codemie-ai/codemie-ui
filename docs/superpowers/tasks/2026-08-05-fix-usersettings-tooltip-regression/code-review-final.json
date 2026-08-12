@@ -1,0 +1,34 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two blocking findings. CR-001 (critical): the alias column in IntegrationsTab.tsx is declared type:'string'; TableCell only calls customRenderColumns when type===Custom, so the <span id> renderer never fires — contextId references a ghost element and aria-labelledby silently drops it, leaving the button with only 'More options' as its accessible name. The fix is structurally ineffective. CR-002 (major): the alias cell fallback uses literal '-' instead of credential_type, degrading accessible names for empty-alias rows ('More options -' vs the removed 'More options for jira'). No-spec round (confidence low due to no acceptance criteria; both findings are concrete correctness issues confirmed by edge-case lens with repo access).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow commit format",
+      "status": "pass",
+      "notes": "Commit subject starts with EPMCDME-8420: ticket reference, imperative verb, under 72 chars."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "file": "src/pages/integrations/IntegrationsTab.tsx",
+      "problem": "alias column defined with type:'string' — TableCell only invokes customRenderColumns for type===Custom, so the <span id='user-setting-name-${item.id}'> renderer is never called. contextId on NavigationMore references a non-existent DOM element; aria-labelledby silently drops it; button accessible name is only 'More options' with no row context.",
+      "impact": "The entire accessibility improvement is ineffective. contextId approach does not work without the alias column being type Custom.",
+      "recommendation": "In IntegrationsTab.tsx getTableColumns(), change the alias column definition from type:'string' to type:Custom (DefinitionTypes.Custom or equivalent). Verify ProjectSettings does not unintentionally receive a customRenderColumns.alias that conflicts.",
+      "triage": "patch"
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "file": "src/pages/integrations/components/UserSettings/UserSettings.tsx",
+      "problem": "alias cell fallback is literal '-' for empty alias, producing accessible name 'More options -'. The removed accessibleName used item.credential_type as a fallback, giving a meaningful name like 'More options for jira'.",
+      "impact": "For integrations with no alias (common), the accessible name is less descriptive than before the fix.",
+      "recommendation": "Change alias renderer fallback: {item.alias || item.credential_type || 'Integration'} to match the removed accessibleName logic.",
+      "triage": "patch"
+    }
+  ]
+}

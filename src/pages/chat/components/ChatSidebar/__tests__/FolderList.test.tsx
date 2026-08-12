@@ -144,10 +144,25 @@ describe('FolderList', () => {
     expect(headers[1]).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('sets aria-owns to the slugified folder group id on each header', () => {
+  it('sets aria-owns to the composite folder group id on each header', () => {
     render(<FolderList {...defaultProps} />)
     const headers = screen.getAllByTestId('folder-header')
-    expect(headers[0]).toHaveAttribute('aria-owns', 'chat-tree-folder-group-work')
-    expect(headers[1]).toHaveAttribute('aria-owns', 'chat-tree-folder-group-personal')
+    expect(headers[0]).toHaveAttribute('aria-owns', 'chat-tree-folder-group-Work')
+    expect(headers[1]).toHaveAttribute('aria-owns', 'chat-tree-folder-group-Personal')
+  })
+
+  it('encodes folder names that contain slashes — A/B and A-B produce distinct aria-owns', () => {
+    render(
+      <FolderList
+        {...defaultProps}
+        folders={['A/B', 'A-B']}
+        foldersToChatsMap={{ 'A/B': [], 'A-B': [] }}
+      />
+    )
+    const headers = screen.getAllByTestId('folder-header')
+    const ownsValues = headers.map((h) => h.getAttribute('aria-owns'))
+    expect(ownsValues).toContain('chat-tree-folder-group-A%2FB')
+    expect(ownsValues).toContain('chat-tree-folder-group-A-B')
+    expect(new Set(ownsValues).size).toBe(2)
   })
 })

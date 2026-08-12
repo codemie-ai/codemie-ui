@@ -69,8 +69,8 @@ vi.mock('@/utils/entity', () => ({
 }))
 
 vi.mock('@/components/NavigationMore/NavigationMore', () => ({
-  default: ({ items }: any) => (
-    <div data-testid="navigation-more">
+  default: ({ items, contextId }: any) => (
+    <div data-testid="navigation-more" data-context-id={contextId}>
       {items.map((item: any, index: number) => (
         <button
           key={index}
@@ -362,5 +362,16 @@ describe('ChatSidebarAssistants', () => {
 
     const button = screen.getByRole('button', { name: 'Start new chat with Code Helper' })
     expect(button).toBeInTheDocument()
+  })
+
+  it('adds sidebar-prefixed id to name span and passes contextId to NavigationMore', () => {
+    mockAssistantsStore.recentAssistants = [mockAssistants[0]]
+    render(<ChatSidebarAssistants />)
+
+    const nameSpan = screen.getByText('Code Helper')
+    expect(nameSpan).toHaveAttribute('id', 'sidebar-assistant-name-assistant-1')
+
+    const navMore = screen.getByTestId('navigation-more')
+    expect(navMore).toHaveAttribute('data-context-id', 'sidebar-assistant-name-assistant-1')
   })
 })

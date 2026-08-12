@@ -160,9 +160,14 @@ const KataActions: React.FC<KataActionsProps> = ({ kata, onView, isAdmin = false
     },
   ].filter((action) => action.isVisible !== false)
 
+  const kataNameId = `kata-name-${kata.id}`
+
   return (
     <>
-      <NavigationMore hideOnClickInside items={kataActions} />
+      <span id={kataNameId} className="sr-only">
+        {kata.title}
+      </span>
+      <NavigationMore hideOnClickInside items={kataActions} contextId={kataNameId} />
       <UnpublishKataConfirmation
         visible={showUnpublishConfirmation}
         onCancel={cancelUnpublish}

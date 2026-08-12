@@ -123,4 +123,26 @@ describe('AssistantMenu', () => {
     const { container } = render(<AssistantMenu actions={[]} />)
     expect(container.firstChild).toBeNull()
   })
+
+  it('passes contextId to NavigationMore as aria-labelledby on trigger button', () => {
+    render(
+      <>
+        <span id="test-context-id">Test Assistant</span>
+        <AssistantMenu actions={mockActions} contextId="test-context-id" />
+      </>
+    )
+
+    expect(document.getElementById('test-context-id')).toBeInTheDocument()
+
+    const trigger = screen.getByRole('button', { name: 'More options Test Assistant' })
+
+    expect(trigger).not.toHaveAttribute('aria-label')
+    expect(trigger).toHaveAttribute('aria-labelledby', `${trigger.id} test-context-id`)
+  })
+
+  it('has no aria-labelledby on trigger button when contextId is not provided', () => {
+    render(<AssistantMenu actions={mockActions} />)
+    const triggerButton = screen.getByRole('button', { name: /More options/i })
+    expect(triggerButton).not.toHaveAttribute('aria-labelledby')
+  })
 })

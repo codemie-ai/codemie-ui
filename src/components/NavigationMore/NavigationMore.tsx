@@ -24,7 +24,7 @@ import {
   FloatingPortal,
   Alignment,
 } from '@floating-ui/react'
-import React, { memo, MouseEventHandler, useState } from 'react'
+import React, { memo, MouseEventHandler, useId, useState } from 'react'
 
 import NavigationMoreSvg from '@/assets/icons/navigation-more.svg?react'
 import { cn } from '@/utils/utils'
@@ -38,6 +38,10 @@ export interface NavigationItem {
   hidden?: boolean
 }
 
+/**
+ * Prefer `contextId` when an entity name exists in the DOM; use `data-tooltip-content` for
+ * action-only menus with no named entity (e.g. "Export diagram", "Remove execution").
+ */
 interface NavigationMoreProps {
   children?: React.ReactNode
   items?: Array<NavigationItem>
@@ -51,6 +55,7 @@ interface NavigationMoreProps {
   className?: string
   buttonClassName?: string
   'data-tooltip-content'?: string
+  contextId?: string
 }
 
 const NavigationMore: React.FC<NavigationMoreProps> = ({
@@ -66,8 +71,12 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   buttonClassName,
   onClick,
   'data-tooltip-content': dataTooltipContent,
+  contextId,
 }) => {
   const [show, setShow] = useState(false)
+  const id = useId()
+  const menuId = `nav-more-menu-${id}`
+  const buttonId = `nav-more-btn-${id}`
 
   const { refs, floatingStyles, context } = useFloating({
     open: show,
@@ -102,6 +111,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
       {...getFloatingProps()}
     >
       <div
+        id={menuId}
         className="flex flex-col bg-surface-base-secondary rounded-lg border border-border-structural z-50 w-44 py-2 px-2"
         role="menu"
         aria-label="Options"
@@ -151,6 +161,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
     <div className={cn('flex items-center relative', className)}>
       <button
         type="button"
+        id={buttonId}
         ref={refs.setReference}
         className={cn(
           'm-1 p-1 rounded-md border border-transparent hover:bg-surface-specific-dropdown-hover transition',
@@ -158,12 +169,15 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
           buttonClassName
         )}
         {...getReferenceProps()}
-        aria-label={dataTooltipContent || 'More options'}
+        aria-label={contextId ? undefined : dataTooltipContent || 'More options'}
+        aria-labelledby={contextId ? `${buttonId} ${contextId}` : undefined}
         aria-haspopup="menu"
         aria-expanded={show}
+        aria-controls={show ? menuId : undefined}
         data-tooltip-id="react-tooltip"
         data-tooltip-content={dataTooltipContent}
       >
+        {contextId && <span className="sr-only">More options</span>}
         {customIcon || <NavigationMoreSvg />}
       </button>
 

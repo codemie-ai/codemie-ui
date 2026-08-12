@@ -44,7 +44,7 @@ const columnDefinitions: ColumnDefinition[] = [
   {
     key: 'name',
     label: 'Name',
-    type: DefinitionTypes.String,
+    type: DefinitionTypes.Custom,
     sortable: true,
     headClassNames: 'w-[25%]',
   },
@@ -62,6 +62,10 @@ const columnDefinitions: ColumnDefinition[] = [
   },
   { key: 'actions', label: 'Actions', type: DefinitionTypes.Custom, headClassNames: 'w-[6.6%]' },
 ]
+
+const renderCategoryNameCell = (item: Category) => (
+  <span id={`category-name-${item.id}`}>{item.name}</span>
+)
 
 const CategoriesManagementPage: FC = () => {
   const { categories, pagination, loading } = useSnapshot(categoriesStore)
@@ -163,6 +167,7 @@ const CategoriesManagementPage: FC = () => {
 
   const customRenderColumns = useMemo(
     () => ({
+      name: renderCategoryNameCell,
       description: (item: Category) => (
         <span className="text-text-quaternary line-clamp-2">{displayValue(item.description)}</span>
       ),
@@ -217,6 +222,7 @@ const CategoriesManagementPage: FC = () => {
         return (
           <div className="flex justify-end">
             <NavigationMore
+              contextId={`category-name-${item.id}`}
               items={[
                 {
                   title: 'Edit',

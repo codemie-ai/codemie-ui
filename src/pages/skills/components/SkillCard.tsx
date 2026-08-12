@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import React, { useMemo, useState } from 'react'
+import React, { useId, useMemo, useState } from 'react'
 
 import AttachmentSvg from '@/assets/icons/attachment.svg?react'
 import ThumbDownSvg from '@/assets/icons/thumb-down.svg?react'
@@ -49,6 +49,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
   isMarketplace = false,
 }) => {
   const [isFavoritesEnabled] = useFavoritesEnabled()
+  const titleId = useId()
   // Get author name from created_by field (matches assistant structure)
   const authorName = skill.created_by?.name ?? skill.created_by?.username ?? 'Unknown'
   const likesCount = skill.unique_likes_count ?? 0
@@ -158,6 +159,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
         >
           <SkillActions
             skill={skill}
+            nameId={titleId}
             page="list"
             onView={onView}
             onExport={onExport}
@@ -185,6 +187,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
       <Card
         id={skill.id}
         title={skill.name}
+        titleId={titleId}
         onClick={onView}
         subtitle={`by ${authorName}`}
         description={skill.description}

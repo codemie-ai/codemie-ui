@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "task": "EPMCDME-8420 — Add accessible name (aria-labelledby compound, aria-controls, aria-haspopup, aria-expanded) to the NavigationMore triple-dot button in the chat sidebar, wired via contextId in ChatListItem and FolderList.",
+  "generated": "2026-07-24T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "diffstat reports 10 files changed (7 listed src files + 3 inferred), spanning NavigationMore component directory, ChatList, FolderList, and ChatSidebar test directories — maps to L (4) per the 7–10 file range in actual-mode scoring."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "NavigationMore (shared component — new optional contextId prop, 4 ARIA attributes, useId hook), ChatListItem (wires contextId=chat-name-{id}), FolderList (wires contextId=folder-name-{index}): 3 UI components touched, bumped from S to M for touching a core shared utility."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S (2) to M (3): NavigationMore is a core shared UI component used across the sidebar — qualifies as touching core shared utilities.",
+    "Technical Risk bumped from XS (1) to S (2): WCAG/accessibility compliance requirement."
+  ],
+  "split_recommendation": null
+}

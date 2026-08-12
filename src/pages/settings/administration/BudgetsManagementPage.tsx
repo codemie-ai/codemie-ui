@@ -51,7 +51,7 @@ const columnDefinitions: ColumnDefinition[] = [
   {
     key: 'name',
     label: 'Name',
-    type: DefinitionTypes.String,
+    type: DefinitionTypes.Custom,
     headClassNames: 'w-[18%]',
   },
   {
@@ -96,6 +96,10 @@ const categoryFilterOptions = [{ label: 'All categories', value: '' }, ...BUDGET
 
 const formatCurrency = (value: number): string =>
   `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const renderBudgetNameCell = (item: Budget) => (
+  <span id={`budget-mgmt-name-${item.budget_id}`}>{item.name}</span>
+)
 
 const BudgetsManagementPage: FC = () => {
   const navigate = useNavigate()
@@ -190,6 +194,7 @@ const BudgetsManagementPage: FC = () => {
 
   const customRenderColumns = useMemo(
     () => ({
+      name: renderBudgetNameCell,
       budget_category: (item: Budget) => (
         <span className="text-text-primary">{getBudgetCategoryLabel(item.budget_category)}</span>
       ),
@@ -216,6 +221,7 @@ const BudgetsManagementPage: FC = () => {
           <div className="flex justify-end">
             <NavigationMore
               hideOnClickInside
+              contextId={`budget-mgmt-name-${item.budget_id}`}
               items={[{ title: 'Edit', icon: <EditSvg />, onClick: () => handleEdit(item) }]}
             />
           </div>

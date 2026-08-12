@@ -1,0 +1,72 @@
+{
+  "task": "Fix UserSettings tooltip regression — wire aria-labelledby on triple-dots NavigationMore buttons via contextId and alias cell ids",
+  "generated": "2026-08-05T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 2,
+      "label": "S",
+      "affected": "UserSettings, UserSettingActionsCell, IntegrationsTab, ChatListItem",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Accessibility/ARIA compliance; wrong aria-labelledby wiring could silently break screen-reader UX",
+      "mitigation": "Established NavigationMore contextId pattern already in codebase; new accessibility tests pin the contract"
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 3,
+      "modified_file_list": [
+        "src/pages/integrations/IntegrationsTab.tsx",
+        "src/pages/integrations/components/UserSettings/UserSettings.tsx",
+        "src/pages/chat/components/ChatSidebar/ChatList/__tests__/ChatListItem.test.tsx"
+      ],
+      "new_files": 1,
+      "new_file_list": [
+        "src/pages/integrations/components/UserSettings/__tests__/UserSettings.accessibility.test.tsx"
+      ],
+      "affected_dirs": [
+        "src/pages/integrations",
+        "src/pages/chat"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two production UI components touched (UserSettings + IntegrationsTab) plus one existing test file; changes are localized to alias span id and NavigationMore contextId prop"
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Accessibility compliance fix — incorrect ARIA wiring is a silent regression for screen readers; however NavigationMore contextId pattern is already established and the new test suite pins the ARIA contract"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

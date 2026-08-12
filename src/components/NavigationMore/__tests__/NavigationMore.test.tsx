@@ -102,3 +102,61 @@ describe('NavigationMore', () => {
     expect(container.querySelector('ul')).not.toBeInTheDocument()
   })
 })
+
+describe('NavigationMore accessibility attributes', () => {
+  it('trigger button has no aria-controls when closed and points to menu when open', () => {
+    render(<NavigationMore items={makeItems()} />)
+    const trigger = screen.getByRole('button', { name: 'More options' })
+    expect(trigger).not.toHaveAttribute('aria-controls')
+
+    fireEvent.click(trigger)
+    const menuId = trigger.getAttribute('aria-controls')
+    expect(menuId).toBeTruthy()
+    expect(document.getElementById(menuId!)).toBeInTheDocument()
+    expect(document.getElementById(menuId!)).toHaveAttribute('role', 'menu')
+  })
+
+  it('without contextId keeps aria-label and has no aria-labelledby', () => {
+    render(<NavigationMore items={makeItems()} />)
+    const trigger = screen.getByRole('button', { name: 'More options' })
+    expect(trigger).toHaveAttribute('aria-label', 'More options')
+    expect(trigger).not.toHaveAttribute('aria-labelledby')
+  })
+
+  it('with contextId adds compound aria-labelledby and sr-only More Options span', () => {
+    const { container } = render(
+      <div>
+        <button id="chat-name-abc">My Chat</button>
+        <NavigationMore contextId="chat-name-abc" items={makeItems()} />
+      </div>
+    )
+    const trigger = container.querySelector('button[aria-haspopup]') as HTMLElement
+    expect(trigger).toHaveAttribute('id')
+    const buttonId = trigger.getAttribute('id')!
+    expect(trigger).toHaveAttribute('aria-labelledby', `${buttonId} chat-name-abc`)
+    expect(trigger).not.toHaveAttribute('aria-label')
+    const srOnly = trigger.querySelector('.sr-only')
+    expect(srOnly).toBeInTheDocument()
+    expect(srOnly).toHaveTextContent('More options')
+  })
+
+  it('with contextId aria-controls still links trigger to menu after open', () => {
+    const { container } = render(
+      <div>
+        <button id="chat-name-xyz">Chat</button>
+        <NavigationMore contextId="chat-name-xyz" items={makeItems()} />
+      </div>
+    )
+    const trigger = container.querySelector('button[aria-haspopup]') as HTMLElement
+    fireEvent.click(trigger)
+    const menuId = trigger.getAttribute('aria-controls')!
+    expect(document.getElementById(menuId)).toHaveAttribute('role', 'menu')
+  })
+
+  it('with data-tooltip-content and no contextId sets aria-label to the tooltip content', () => {
+    render(<NavigationMore data-tooltip-content="Export diagram" items={makeItems()} />)
+    const trigger = screen.getByRole('button', { name: 'Export diagram' })
+    expect(trigger).toHaveAttribute('aria-label', 'Export diagram')
+    expect(trigger).not.toHaveAttribute('aria-labelledby')
+  })
+})

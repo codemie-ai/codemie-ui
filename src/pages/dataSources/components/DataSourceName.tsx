@@ -15,6 +15,7 @@
 
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { DataSource } from '@/types/entity/dataSource'
+import { dataSourceNameId } from '@/utils/ariaIds'
 
 interface DataSourceNameProps {
   dataSource: DataSource
@@ -26,9 +27,14 @@ const DataSourceName = ({ dataSource }: DataSourceNameProps) => {
     router.push({ name: 'data-source-details', params: { id: dataSource.id } })
 
   return (
-    <span className="font-bold hover:underline cursor-pointer" onClick={handleNavigationToDetails}>
+    <button
+      type="button"
+      id={dataSourceNameId(dataSource.id)}
+      className="font-bold hover:underline cursor-pointer"
+      onClick={handleNavigationToDetails}
+    >
       {dataSource.repo_name}
-    </span>
+    </button>
   )
 }
 

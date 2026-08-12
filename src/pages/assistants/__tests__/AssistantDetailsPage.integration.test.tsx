@@ -351,7 +351,7 @@ describe('AssistantDetailsPage - Integration', () => {
 
       renderPage('/assistants/asst-123')
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {
@@ -377,7 +377,7 @@ describe('AssistantDetailsPage - Integration', () => {
 
       renderPage('/assistants/asst-123')
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {
@@ -416,7 +416,7 @@ describe('AssistantDetailsPage - Integration', () => {
 
       renderPage('/assistants/asst-123')
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {
@@ -447,7 +447,7 @@ describe('AssistantDetailsPage - Integration', () => {
 
       renderPage('/assistants/asst-123')
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {
@@ -489,7 +489,7 @@ describe('AssistantDetailsPage - Integration', () => {
 
       renderPage('/assistants/asst-123')
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {
@@ -626,7 +626,7 @@ describe('AssistantDetailsPage - Integration', () => {
 
       renderPage('/assistants/asst-123')
 
-      const menuButton = await screen.findByRole('button', { name: 'More options' })
+      const menuButton = await screen.findByRole('button', { name: /^More options( |$)/ })
       await user.click(menuButton)
 
       await waitFor(() => {

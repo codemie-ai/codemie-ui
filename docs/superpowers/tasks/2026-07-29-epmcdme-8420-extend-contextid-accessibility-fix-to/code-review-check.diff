@@ -1,0 +1,47 @@
+diff --git a/src/pages/dataSources/components/DataSourceActions.tsx b/src/pages/dataSources/components/DataSourceActions.tsx
+index efc502271..34fdc25f2 100644
+--- a/src/pages/dataSources/components/DataSourceActions.tsx
++++ b/src/pages/dataSources/components/DataSourceActions.tsx
+@@ -223,7 +223,7 @@ const DataSourceActions: FC<Props> = ({ item }) => {
+   return (
+     <div className="flex justify-end">
+       <span id={datasourceNameId} className="sr-only">
+-        {item.repo_name || item.full_name}
++        {item.repo_name || item.full_name || 'Data source'}
+       </span>
+       <div data-onboarding="datasource-actions-menu">
+         <NavigationMore
+diff --git a/src/pages/skills/components/SkillDetailsActions.tsx b/src/pages/skills/components/SkillDetailsActions.tsx
+index 7609d5d0a..a792338b1 100644
+--- a/src/pages/skills/components/SkillDetailsActions.tsx
++++ b/src/pages/skills/components/SkillDetailsActions.tsx
+@@ -143,7 +143,16 @@ const SkillDetailsActions = ({
+           Export
+         </Button>
+         {visibleMenuActions.length > 0 && (
+-          <NavigationMore hideOnClickInside items={visibleMenuActions} />
++          <>
++            <span id={`skill-detail-name-${skill.id}`} className="sr-only">
++              {skill.name}
++            </span>
++            <NavigationMore
++              hideOnClickInside
++              items={visibleMenuActions}
++              contextId={`skill-detail-name-${skill.id}`}
++            />
++          </>
+         )}
+       </div>
+ 
+diff --git a/src/pages/workflows/components/WorkflowsList.tsx b/src/pages/workflows/components/WorkflowsList.tsx
+index 5631718da..377a76568 100644
+--- a/src/pages/workflows/components/WorkflowsList.tsx
++++ b/src/pages/workflows/components/WorkflowsList.tsx
+@@ -295,6 +295,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
+                   <NavigationMore
+                     hideOnClickInside
+                     renderInRoot
++                    data-tooltip-content={workflow.name}
+                     items={navigationActions(workflow)}
+                   />
+                 ) : undefined

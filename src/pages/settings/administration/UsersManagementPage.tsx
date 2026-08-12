@@ -221,7 +221,10 @@ const UsersManagementPage: FC = () => {
   const customRenderColumns = useMemo(
     () => ({
       name: (item: UserListItem) => (
-        <div className="min-w-0 max-w-full text-xs font-medium break-words">
+        <div
+          id={`user-name-${item.id}`}
+          className="min-w-0 max-w-full text-xs font-medium break-words"
+        >
           {item.name || item.username || '-'}
         </div>
       ),
@@ -293,6 +296,7 @@ const UsersManagementPage: FC = () => {
             hideOnClickInside
             className="justify-end"
             buttonClassName="ml-auto"
+            contextId={`user-name-${item.id}`}
             items={[
               {
                 title: 'View details',

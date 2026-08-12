@@ -58,6 +58,55 @@ interface Props {
   portalSidebarRef: React.RefObject<HTMLDivElement | null>
 }
 
+interface ProjectSettingActionsCellProps {
+  item: ProjectSetting
+  onEdit: (setting: ProjectSetting) => void
+  onDelete: (setting: ProjectSetting) => void
+}
+
+export const ProjectSettingActionsCell: FC<ProjectSettingActionsCellProps> = ({
+  item,
+  onEdit,
+  onDelete,
+}) => {
+  return (
+    <NavigationMore
+      childrenFirst
+      hideOnClickInside
+      contextId={`project-setting-name-${item.id}`}
+      items={[
+        {
+          title: 'Edit',
+          onClick: () => onEdit(item),
+          icon: <IconEdit />,
+        },
+        {
+          title: 'Delete',
+          onClick: () => onDelete(item),
+          icon: <IconDelete />,
+        },
+      ]}
+    >
+      {getTestableCredentialTypes().includes(item.credential_type.toLocaleLowerCase()) && (
+        <TestIntegration
+          label="Test"
+          inline
+          credentialType={item.credential_type}
+          settingId={item.id}
+          credentialValues={item.credential_values}
+          testIcon="connection"
+        />
+      )}
+    </NavigationMore>
+  )
+}
+
+const renderProjectSettingNameCell = (item: ProjectSetting) => (
+  <span id={`project-setting-name-${item.id}`}>
+    {item.alias || item.credential_type || 'Integration'}
+  </span>
+)
+
 const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
   const router = useVueRouter()
   const { projectSettings, projectSettingsPagination } = useSnapshot(projectSettingsStore)
@@ -162,34 +211,13 @@ const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
 
   const customTableColumns: TableProps<ProjectSetting>['customRenderColumns'] = {
     project_name: renderProjectNameCell,
+    alias: renderProjectSettingNameCell,
     actions: (item) => (
-      <NavigationMore
-        childrenFirst
-        hideOnClickInside
-        items={[
-          {
-            title: 'Edit',
-            onClick: () => editProjectSetting(item),
-            icon: <IconEdit />,
-          },
-          {
-            title: 'Delete',
-            onClick: () => setSettingToDelete(item),
-            icon: <IconDelete />,
-          },
-        ]}
-      >
-        {getTestableCredentialTypes().includes(item.credential_type.toLocaleLowerCase()) && (
-          <TestIntegration
-            label="Test"
-            inline
-            credentialType={item.credential_type}
-            settingId={item.id}
-            credentialValues={item.credential_values}
-            testIcon="connection"
-          />
-        )}
-      </NavigationMore>
+      <ProjectSettingActionsCell
+        item={item}
+        onEdit={editProjectSetting}
+        onDelete={setSettingToDelete}
+      />
     ),
     credential_type: (item) => humanize(item.credential_type),
     credential_values: (item) =>

@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Extend contextId accessibility fix to triple-dots buttons across all remaining pages in the application",
+  "generated": "2026-07-29T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 16,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "52 files changed per diffstat (16+ threshold = XXL); 26 explicit source files spanning assistants, chat, katas, settings/administration, skills, workflows, dataSources, integrations, and markdown feature domains"
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "26 React components touched across 9 distinct feature domains, but single architectural layer (UI only) with no new abstractions — wide breadth, shallow depth"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

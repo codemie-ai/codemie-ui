@@ -14,6 +14,7 @@
 //
 
 import { MCPConfig } from '@/types/entity/mcp'
+import { mcpServerNameId } from '@/utils/ariaIds'
 import { displayValue } from '@/utils/utils'
 
 import MCPServerActions from '../components/MCPServerActions'
@@ -31,6 +32,7 @@ export const createColumnRenderers = ({
 }: ColumnRenderersProps) => ({
   name: (item: MCPConfig) => (
     <button
+      id={mcpServerNameId(item.id)}
       onClick={() => handleViewDetails(item)}
       className="text-left text-text-primary hover:text-electric-main transition-colors cursor-pointer font-medium"
     >

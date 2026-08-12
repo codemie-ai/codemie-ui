@@ -310,4 +310,19 @@ describe('SkillCard', () => {
     const zeros = screen.getAllByText('0')
     expect(zeros.length).toBeGreaterThanOrEqual(2)
   })
+
+  describe('accessibility (contextId pattern)', () => {
+    it('More Options button aria-labelledby resolves to the same heading element Card renders the title in', () => {
+      render(<SkillCard skill={mockSkill} onView={mockOnView} onExport={mockOnExport} />)
+
+      const btn = screen.getByRole('button', { name: /^More options Test Skill$/ })
+      expect(btn).toBeInTheDocument()
+      expect(btn).not.toHaveAttribute('aria-label')
+
+      const parts = btn.getAttribute('aria-labelledby')!.split(/\s+/)
+      const titleEl = document.getElementById(parts[1])
+      expect(titleEl).toBeInTheDocument()
+      expect(titleEl).toHaveTextContent('Test Skill')
+    })
+  })
 })

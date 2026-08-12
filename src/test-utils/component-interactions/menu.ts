@@ -26,7 +26,7 @@ import type { InteractionOptions } from './types'
  * Useful for testing dropdown menus, context menus, and action menus in integration tests.
  * Waits for the menu to open before attempting to click the menu item.
  *
- * @param buttonName - The accessible name of the button that opens the menu
+ * @param buttonName - The accessible name of the button that opens the menu (string or RegExp)
  * @param menuItemName - The accessible name of the menu item to click
  * @param user - Optional userEvent instance (defaults to userEvent.setup())
  * @param options - Optional waitFor configuration
@@ -41,7 +41,7 @@ import type { InteractionOptions } from './types'
  * await clickMenuOption('Actions', 'Edit', user, { timeout: 5000 })
  */
 export async function clickMenuOption(
-  buttonName: string,
+  buttonName: string | RegExp,
   menuItemName: string,
   user?: ReturnType<typeof userEvent.setup>,
   options?: InteractionOptions

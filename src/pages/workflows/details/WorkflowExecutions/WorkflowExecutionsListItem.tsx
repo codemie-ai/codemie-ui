@@ -66,6 +66,7 @@ const WorkflowExecutionsListItem: React.FC<WorkflowExecutionsListItemProps> = ({
         hideOnClickInside
         className="absolute right-1 top-1"
         buttonClassName="hover:bg-surface-base-secondary"
+        data-tooltip-content="Remove execution"
         items={[
           {
             title: 'Remove',

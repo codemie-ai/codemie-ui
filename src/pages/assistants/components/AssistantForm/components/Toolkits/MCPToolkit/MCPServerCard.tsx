@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
@@ -56,6 +56,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
   const [imageError, setImageError] = useState(false)
   const categories = useMemo(() => mcpServer.categories ?? [], [mcpServer.categories])
   const cardRef = useRef<HTMLDivElement>(null)
+  const nameId = useId()
 
   const handleImageError = () => {
     setImageError(true)
@@ -116,7 +117,9 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
         {/* Name and Description */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h4 className="text-sm font-semibold text-text-primary truncate">{mcpServer.name}</h4>
+            <h4 id={nameId} className="text-sm font-semibold text-text-primary truncate">
+              {mcpServer.name}
+            </h4>
           </div>
           {mcpServer.description && (
             <p className="text-xs text-text-quaternary line-clamp-2">{mcpServer.description}</p>
@@ -147,6 +150,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
           renderInRoot
           alignment="end"
           hideOnClickInside
+          contextId={nameId}
           items={[
             {
               title: 'Edit',

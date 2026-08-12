@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 
 import CopySvg from '@/assets/icons/copy.svg?react'
 import Button from '@/components/Button'
@@ -39,6 +39,7 @@ interface SkillDetailsProps {
 }
 
 const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsProps) => {
+  const nameId = useId()
   // Get author info from created_by field (matches assistant structure)
   const authorName = skill.created_by?.name ?? skill.created_by?.username ?? 'Unknown'
   const assistantsCount = skill.assistants_count ?? 0
@@ -76,7 +77,9 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
             <span className="text-3xl">📚</span>
           </div>
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold text-text-primary">{skill.name}</h1>
+            <h1 id={nameId} className="text-2xl font-bold text-text-primary">
+              {skill.name}
+            </h1>
             <div className="flex items-center gap-2 text-sm text-text-secondary">
               <span>by {authorName}</span>
             </div>
@@ -86,6 +89,7 @@ const SkillDetails = ({ skill, onExport, exporting, reloadSkill }: SkillDetailsP
         {/* Actions */}
         <SkillDetailsActions
           skill={skill}
+          nameId={nameId}
           onExport={onExport}
           exporting={exporting}
           reloadSkill={reloadSkill}

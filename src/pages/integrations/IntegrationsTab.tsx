@@ -43,7 +43,7 @@ const IntegrationsTab: FC<IntegrationTabProps> = ({ portalSidebarRef, integratio
           shrink: true,
           semiBold: true,
         },
-        { label: 'Alias', key: 'alias', type: 'string', shrink: true },
+        { label: 'Alias', key: 'alias', type: 'custom', shrink: true },
         { label: 'Type', key: 'credential_type', type: 'custom' },
         ...(isUserColumns ? [{ label: 'Global', key: 'is_global', type: 'boolean' }] : []),
         { label: 'URL', key: 'credential_values', type: 'custom' },

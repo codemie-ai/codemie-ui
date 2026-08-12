@@ -23,6 +23,7 @@ import ConfirmationModal from '@/components/ConfirmationModal'
 import NavigationMore from '@/components/NavigationMore'
 import { ButtonType } from '@/constants'
 import { MCPConfig } from '@/types/entity/mcp'
+import { mcpServerNameId } from '@/utils/ariaIds'
 import { copyToClipboard } from '@/utils/utils'
 
 interface MCPServerActionsProps {
@@ -76,9 +77,11 @@ const MCPServerActions: FC<MCPServerActionsProps> = ({
     },
   ]
 
+  const serverNameId = mcpServerNameId(server.id)
+
   return (
     <div className="flex justify-end">
-      <NavigationMore hideOnClickInside renderInRoot items={menuActions} />
+      <NavigationMore hideOnClickInside renderInRoot items={menuActions} contextId={serverNameId} />
 
       <ConfirmationModal
         visible={isDeleteConfirmationVisible}

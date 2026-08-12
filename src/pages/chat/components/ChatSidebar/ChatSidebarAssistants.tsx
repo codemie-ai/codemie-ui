@@ -98,30 +98,40 @@ const ChatSidebarAssistants = () => {
   return (
     <ChatsSidebarSection title="Assistants">
       <div className="flex flex-col">
-        {recentAssistants.slice(0, MAX_RECENT_ASSISTANTS).map((assistant) => (
-          <div key={assistant.id} className="flex justify-between items-center h-9 px-1.5">
-            <button
-              type="button"
-              aria-label={`Start new chat with ${assistant.name}`}
-              onClick={() => createChat(assistant)}
-              className="flex justify-start items-center gap-2 cursor-pointer"
-            >
-              <Avatar
-                withTooltip
-                type={AvatarType.XS}
-                iconUrl={assistant.icon_url}
-                name={assistant.name}
-              />
-              <span className="block w-full truncate text-text-primary text-sm font-normal">
-                {truncateName(assistant)}
-              </span>
-            </button>
+        {recentAssistants.slice(0, MAX_RECENT_ASSISTANTS).map((assistant) => {
+          const assistantNameId = `sidebar-assistant-name-${assistant.id}`
+          return (
+            <div key={assistant.id} className="flex justify-between items-center h-9 px-1.5">
+              <button
+                type="button"
+                aria-label={`Start new chat with ${assistant.name}`}
+                onClick={() => createChat(assistant)}
+                className="flex justify-start items-center gap-2 cursor-pointer"
+              >
+                <Avatar
+                  withTooltip
+                  type={AvatarType.XS}
+                  iconUrl={assistant.icon_url}
+                  name={assistant.name}
+                />
+                <span
+                  id={assistantNameId}
+                  className="block w-full truncate text-text-primary text-sm font-normal"
+                >
+                  {truncateName(assistant)}
+                </span>
+              </button>
 
-            <div className="flex items-center">
-              <NavigationMore hideOnClickInside items={getMenuItems(assistant)} />
+              <div className="flex items-center">
+                <NavigationMore
+                  hideOnClickInside
+                  items={getMenuItems(assistant)}
+                  contextId={assistantNameId}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </ChatsSidebarSection>
   )

@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "task": "EPMCDME-8420 follow-up: consolidate NavigationMore contextId pattern",
+  "generated": "2026-08-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 17,
+  "size": "M",
+  "routing": "brainstorming",
+  "split_recommendation": null
+}

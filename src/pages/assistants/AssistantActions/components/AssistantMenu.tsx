@@ -27,9 +27,11 @@ export interface ActionItem {
 
 interface AssistantMenuProps {
   actions: ActionItem[]
+  contextId?: string
+  buttonLabel?: string
 }
 
-const AssistantMenu: React.FC<AssistantMenuProps> = ({ actions }) => {
+const AssistantMenu: React.FC<AssistantMenuProps> = ({ actions, contextId, buttonLabel }) => {
   const visibleActions = actions.filter((action) => action.isVisible)
 
   if (visibleActions.length === 0) {
@@ -44,7 +46,14 @@ const AssistantMenu: React.FC<AssistantMenuProps> = ({ actions }) => {
     }
   })
 
-  return <NavigationMore hideOnClickInside items={actionItems} />
+  return (
+    <NavigationMore
+      hideOnClickInside
+      items={actionItems}
+      contextId={contextId}
+      data-tooltip-content={buttonLabel}
+    />
+  )
 }
 
 export default AssistantMenu

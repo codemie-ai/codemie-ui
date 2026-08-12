@@ -70,33 +70,41 @@ const ChatSidebarWorkflows = () => {
   return (
     <ChatsSidebarSection title="Workflows">
       <div className="flex flex-col">
-        {recentWorkflows.slice(0, MAX_RECENT_WORKFLOWS).map((workflow) => (
-          <div key={workflow.id} className="flex justify-between items-center h-9 px-1.5">
-            <button
-              type="button"
-              onClick={() => createChat(workflow)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  createChat(workflow)
-                }
-              }}
-              className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-0 text-inherit"
-            >
-              <Avatar iconUrl={workflow.icon_url} name={workflow.name} type={AvatarType.XS} />
-              <span
-                className="block w-full truncate text-text-primary text-sm font-normal"
-                title="Start a new conversation with this Workflow"
+        {recentWorkflows.slice(0, MAX_RECENT_WORKFLOWS).map((workflow) => {
+          const workflowNameId = `sidebar-workflow-name-${workflow.id}`
+          return (
+            <div key={workflow.id} className="flex justify-between items-center h-9 px-1.5">
+              <button
+                type="button"
+                onClick={() => createChat(workflow)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    createChat(workflow)
+                  }
+                }}
+                className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-0 text-inherit"
               >
-                {truncateName(workflow.name)}
-              </span>
-            </button>
+                <Avatar iconUrl={workflow.icon_url} name={workflow.name} type={AvatarType.XS} />
+                <span
+                  id={workflowNameId}
+                  className="block w-full truncate text-text-primary text-sm font-normal"
+                  title="Start a new conversation with this Workflow"
+                >
+                  {truncateName(workflow.name)}
+                </span>
+              </button>
 
-            <div className="flex items-center">
-              <NavigationMore hideOnClickInside items={getMenuItems(workflow)} />
+              <div className="flex items-center">
+                <NavigationMore
+                  hideOnClickInside
+                  items={getMenuItems(workflow)}
+                  contextId={workflowNameId}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </ChatsSidebarSection>
   )

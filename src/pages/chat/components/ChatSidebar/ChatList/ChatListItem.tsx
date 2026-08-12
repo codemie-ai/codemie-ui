@@ -102,6 +102,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
           ) : (
             <button
               type="button"
+              id={`chat-name-${chat.id}`}
               onClick={select}
               aria-describedby={chat.pinned ? `pinned-icon-${chat.id}` : undefined}
               className="text-inherit hover:no-underline truncate pl-2 grow text-sm h-full text-left"
@@ -126,6 +127,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
             <NavigationMore
               renderInRoot
               hideOnClickInside
+              contextId={`chat-name-${chat.id}`}
               items={[
                 {
                   title: chat.pinned ? 'Unpin' : 'Pin',

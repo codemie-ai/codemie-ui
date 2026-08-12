@@ -59,6 +59,18 @@ All components must be keyboard-accessible, screen-reader-friendly, and pass con
 
 ---
 
+## Cross-component ARIA id sharing
+
+`NavigationMore`'s `contextId` prop links its icon-only button to a named-entity heading rendered by a *different* element via `aria-labelledby`. When the heading and the menu are NOT in the same file, never write the same id template string independently in both files — a rename in one silently breaks the accessible name with no compile error and no runtime error, only a screen-reader regression. Pick one of these based on structure:
+
+1. **Same file, single instance** — a local `const` computed once and used for both the heading's `id` and the menu's `contextId`, within one file. Sufficient whenever both elements are already rendered by the same component or the same render function. No cross-file risk exists because only one file could ever drift.
+
+2. **One component owns both, or is the sole caller of the consumer, with no `.map()` in the way** — generate the id with `useId()` in the owning component and thread it down as a prop to both the heading and the menu-rendering child. This is the preferred pattern when it's structurally available (see `MCPServerCard.tsx` / `MCPServerDetail.tsx` for the target shape). `useId()` cannot be called inside a `.map()` — if the owning component is a list row, extract the row into its own component first so `useId()` sits at that component's top level, not inside the iteration.
+
+3. **Split across independently-invoked renderers with no shared owning component** — e.g. a Table's `customRenderColumns`, where the "name" column and "actions" column are separate functions called per-row by the Table, with no component that renders both. Restructuring the Table to support row-level `useId()` is out of scope for a simple id-sharing fix. Instead, export a single narrowly-named builder function (e.g. `dataSourceNameId(id: string) => \`datasource-name-${id}\``) from a shared module, imported by both renderers. A rename becomes a compile error, and find-references answers "who depends on this id." Never write a generic `entityNameId(scope: string, id: string)` helper — a free-form string scope just relocates the magic string instead of removing it, and it defeats find-references' usefulness.
+
+---
+
 ## Form Field Accessibility
 
 ```tsx

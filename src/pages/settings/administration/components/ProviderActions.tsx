@@ -23,6 +23,7 @@ import ConfirmationModal from '@/components/ConfirmationModal'
 import NavigationMore from '@/components/NavigationMore'
 import { ButtonType } from '@/constants'
 import { Provider } from '@/types/entity/provider'
+import { providerNameId } from '@/utils/ariaIds'
 import { copyToClipboard } from '@/utils/utils'
 
 interface ProviderActionsProps {
@@ -71,9 +72,11 @@ const ProviderActions = ({ provider, onViewDetails, onEdit, onDelete }: Provider
     },
   ]
 
+  const contextId = providerNameId(provider.id)
+
   return (
     <div className="flex justify-end">
-      <NavigationMore hideOnClickInside renderInRoot items={menuActions} />
+      <NavigationMore hideOnClickInside renderInRoot items={menuActions} contextId={contextId} />
 
       <ConfirmationModal
         visible={isDeleteConfirmationVisible}

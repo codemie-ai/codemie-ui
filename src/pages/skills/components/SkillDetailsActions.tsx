@@ -37,6 +37,7 @@ import { getRootPath, copyToClipboard } from '@/utils/utils'
 
 interface SkillDetailsActionsProps {
   skill: Skill
+  nameId: string
   onExport: () => void
   exporting: boolean
   reloadSkill?: () => Promise<void>
@@ -44,6 +45,7 @@ interface SkillDetailsActionsProps {
 
 const SkillDetailsActions = ({
   skill,
+  nameId,
   onExport,
   exporting,
   reloadSkill,
@@ -143,7 +145,7 @@ const SkillDetailsActions = ({
           Export
         </Button>
         {visibleMenuActions.length > 0 && (
-          <NavigationMore hideOnClickInside items={visibleMenuActions} />
+          <NavigationMore hideOnClickInside items={visibleMenuActions} contextId={nameId} />
         )}
       </div>
 

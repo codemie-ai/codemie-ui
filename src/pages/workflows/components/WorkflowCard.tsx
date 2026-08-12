@@ -72,6 +72,7 @@ interface WorkflowCardProps {
   onCreateFromWorkflowTemplate?: (workflow: WorkflowTemplate) => void
   onViewWorkflow?: (workflow: Workflow) => void
   navigationSlot?: React.ReactNode
+  nameId?: string
   reloadWorkflows?: () => void
 }
 
@@ -98,6 +99,7 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
   onCreateFromWorkflowTemplate,
   onViewWorkflow,
   navigationSlot,
+  nameId,
   reloadWorkflows,
 }) => {
   // Hooks must be called before any early returns
@@ -210,6 +212,7 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
                 )}
               >
                 <div
+                  id={nameId}
                   ref={nameRef}
                   data-pr-tooltip={isNameTruncated ? workflow.name : ''}
                   data-pr-position="bottom"
