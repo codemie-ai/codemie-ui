@@ -16,7 +16,14 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { formatDateTime } from '@/utils/helpers'
+
 import ReleaseNotesPage from '../ReleaseNotesPage'
+
+// The rendered date depends on the machine's locale and timezone (e.g. en-US
+// "July 11, 2025" vs en-GB "11 July 2025"), so derive the expected string from
+// the same formatter the page uses instead of hardcoding an en-US literal.
+const RELEASE_DATE_TEXT = formatDateTime('2025-07-11', 'day')
 
 interface Issue {
   key: string
@@ -148,7 +155,7 @@ describe('ReleaseNotesPage', () => {
   describe('release date', () => {
     it('displays formatted date when release has a date', () => {
       render(<ReleaseNotesPage />)
-      expect(screen.getByText('July 11, 2025')).toBeInTheDocument()
+      expect(screen.getByText(RELEASE_DATE_TEXT)).toBeInTheDocument()
     })
 
     it('does not render date when release has no date', () => {
@@ -159,7 +166,7 @@ describe('ReleaseNotesPage', () => {
         },
       ]
       render(<ReleaseNotesPage />)
-      expect(screen.queryByText('July 11, 2025')).not.toBeInTheDocument()
+      expect(screen.queryByText(RELEASE_DATE_TEXT)).not.toBeInTheDocument()
     })
   })
 

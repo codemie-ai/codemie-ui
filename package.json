@@ -18,6 +18,7 @@
     "lint:fix": "npm run lint -- --fix",
     "all:fix": "npm run format && npm run lint:fix",
     "test-harness": "uvx codemie-test-harness --sanity-ui",
+    "test-harness:fast": "node scripts/test-harness-fast.mjs",
     "check:pre-commit": "npm run typecheck && npm run lint",
     "prepare": "husky",
     "build:keycloak": "VITE_ENTRY=keycloakify npm run build:prod && npx keycloakify build",

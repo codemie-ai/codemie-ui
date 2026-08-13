@@ -1,0 +1,110 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance is fully clean (11 pass, 1 correctly na) and standards adjudication found no concrete security issue, but the blind lens surfaced one real regression: the nginx /api block forwards the client Host instead of mirroring the Vite dev proxy's changeOrigin, so backend-generated absolute URLs differ between fast mode and the dev server and resolve to the SPA fallback in fast mode. The edge-case lens failed to return usable output across two dispatch attempts, so coverage is partial and confidence is forced to low. 11 of 12 blind concerns were dismissed as refuted or below the emission floor (notably the %VITE_SUFFIX% guard and the WebSocket and .env-secret concerns, each disproved against the repo); 0 findings deferred.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "npm run test-harness:fast builds, swaps, runs the suite, restores the dev server, and propagates the suite exit code",
+      "status": "pass",
+      "notes": "scripts/test-harness-fast.mjs: build (~line 117), stop codemie-ui + up -d codemie-ui-static (~122-124), uvx codemie-test-harness run sanity-ui (~160-166), finally block always stops static and starts dev UI (~172-182), process.exit(interrupted?130:exitCode) (line 184). All exit paths traced: missing docker-compose.yaml, invalid TEST_HARNESS_WORKERS, build failure, swap failure, readiness timeout, harness failure, SIGINT/SIGTERM. Restore is skipped only for pre-try failures, where nothing was swapped yet."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Documented in the onboarding README",
+      "status": "pass",
+      "notes": "codemie-onboarding/README.md: new blockquote under the pre-MR sanity-suite section covering the build/swap/run/restore flow, worker count, and pass-through args example."
+    },
+    {
+      "kind": "spec",
+      "item": "nginx location /api with proxy_pass to backend, proxy_buffering off for SSE",
+      "status": "pass",
+      "notes": "nginx.local-test.conf lines 26-40: location /api/ { proxy_pass http://codemie:8080/; proxy_buffering off; proxy_read_timeout 300s; }. Target matches the backend service and port in docker-compose.yaml. (Header handling within this block is the subject of CR-001.)"
+    },
+    {
+      "kind": "spec",
+      "item": "runtime /config.js defines window._env_ = { VITE_API_URL: '/api' }",
+      "status": "pass",
+      "notes": "Dockerfile.test line 48 writes dist/config.js. Verified end-to-end: index.html:21 loads %VITE_SUFFIX%/config.js (resolves to /config.js since .env sets VITE_SUFFIX=''), and src/utils/api.ts:126 reads window._env_.VITE_API_URL as BASE_URL."
+    },
+    {
+      "kind": "spec",
+      "item": "vite build needs ~3G Node heap",
+      "status": "pass",
+      "notes": "Dockerfile.test line 39: ENV NODE_OPTIONS=--max-old-space-size=3072, set before npm run build."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-ui): Dockerfile.test multi-stage build with nginx stage and /api proxy config",
+      "status": "pass",
+      "notes": "Dockerfile.test: node:20.19.6-alpine3.23 build stage then nginxinc/nginx-unprivileged:1.30-alpine serving stage; nginx.local-test.conf supplies the /api proxy."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-ui): orchestration script with automatic dev-server restore on all exit paths including Ctrl-C",
+      "status": "pass",
+      "notes": "SIGINT/SIGTERM handlers set a flag rather than calling process.exit, so control falls through to the try/finally and the restore runs before the final process.exit(130)."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-ui): package.json script",
+      "status": "pass",
+      "notes": "package.json: \"test-harness:fast\": \"node scripts/test-harness-fast.mjs\"."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-onboarding): compose service + dev UI memory limit 1G to 4G",
+      "status": "pass",
+      "notes": "docker-compose.yaml: codemie-ui-static added (profiles: [\"uitest\"], depends_on codemie, 5173, build via Dockerfile.test); codemie-ui memory limit 1G -> 4G with an explanatory comment. Mirrored in the runtime copy at the workspace root."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-onboarding): README note",
+      "status": "pass",
+      "notes": "Same README.md hunk as the documentation criterion above."
+    },
+    {
+      "kind": "spec",
+      "item": "Vite dev server remains the default for development",
+      "status": "pass",
+      "notes": "codemie-ui carries no profiles key so it starts on a plain docker compose up -d; codemie-ui-static is gated behind profiles: [\"uitest\"], and every script invocation passes --profile uitest explicitly."
+    },
+    {
+      "kind": "spec",
+      "item": "Accepted trade-off: no HMR / dist rebuild needed to pick up UI changes",
+      "status": "na",
+      "notes": "Explicitly listed in the spec as an accepted trade-off rather than a requirement; satisfied by design via the static nginx-served dist."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 6 commit subjects across both repos match the enforced regex in .ai-run/guides/standards/git-workflow.md (EPMCDME-13987: Capital sentence, no zero ID, no trailing period). Branch name EPMCDME-13987_fast-ui-test-mode and both MR titles also conform."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No standard evaluated: .ai-run/guides/standards/code-quality.md does not exist in codemie-ui and codemie-onboarding has no .ai-run/guides tree. Project standards were not invented in its absence."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No concrete security issue found; .ai-run/guides/development/security-patterns.md is absent, so this was adjudicated against general practice. Verified: only VITE_-prefixed vars can reach the client bundle (default envPrefix, no define block in vite.config.ts), so the empty non-VITE KC_ENTRA_* slots in the tracked .env cannot be inlined; the multi-stage build copies only /app/dist into the final image; nginx runs as the unprivileged user on port 5173 (>1024); no credentials appear in the diff."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "nginx.local-test.conf",
+      "line": 34,
+      "title": "Proxy Host header diverges from Vite dev proxy",
+      "problem": "The /api block sets proxy_set_header Host $host, forwarding the client's Host (localhost:5173). The Vite dev proxy it is meant to approximate uses changeOrigin: true against target http://localhost:8080, which rewrites Host to localhost:8080. The backend derives client-facing absolute URLs from that header, and the block's own comment documents only the percent-encoding divergence, not this one.",
+      "impact": "In fast mode, codemie/src/codemie/rest_api/routers/files.py:357 builds file_url from http_request.base_url.netloc, yielding http://localhost:5173/v1/files/<id>. That path carries no /api prefix, so nginx matches location / and try_files returns index.html instead of the file; under the dev server the same code yields http://localhost:8080/v1/files/<id>, which is reachable because the backend publishes 8080:8080. codemie/src/codemie/rest_api/a2a/utils.py:252 builds an agent-card URL the same way. Fast mode is therefore not a faithful substitute for the dev server: a green fast run can mask a real defect, or a test touching server-generated URLs can fail only in fast mode and look flaky.",
+      "recommendation": "Mirror the dev proxy explicitly with proxy_set_header Host localhost:8080; so backend-generated absolute URLs match dev-server behavior and stay reachable from the host browser. Optionally also set X-Forwarded-Proto and X-Forwarded-Host. Then re-run any sanity-ui test that exercises server-generated file URLs, and extend the block's divergence comment to cover Host handling."
+    }
+  ]
+}

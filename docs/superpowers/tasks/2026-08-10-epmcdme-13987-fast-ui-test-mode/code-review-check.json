@@ -1,0 +1,105 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 is resolved: the /api block now pins Host to localhost:8080, mirroring the Vite dev proxy's changeOrigin target, and the directive was verified inside the built image (line 44 of the baked conf) rather than only in source. The full sanity-ui suite passed against that image (71 passed, 2 xpassed, 3m52s, exit 0) with the dev server restored cleanly. The fix-up diff is a single proxy_set_header line plus explanatory comments, introduces no new high-risk surface, so no confirmation pass was needed; business_review and standards_review are carried forward unchanged from the final round.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "npm run test-harness:fast builds, swaps, runs the suite, restores the dev server, and propagates the suite exit code",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final. Additionally re-confirmed empirically this round: a full run built the image, swapped the container, ran the suite, restored the dev server, and exited 0."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Documented in the onboarding README",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final."
+    },
+    {
+      "kind": "spec",
+      "item": "nginx location /api with proxy_pass to backend, proxy_buffering off for SSE",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final; the header handling flagged as CR-001 within this block is now fixed."
+    },
+    {
+      "kind": "spec",
+      "item": "runtime /config.js defines window._env_ = { VITE_API_URL: '/api' }",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final."
+    },
+    {
+      "kind": "spec",
+      "item": "vite build needs ~3G Node heap",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-ui): Dockerfile.test multi-stage build with nginx stage and /api proxy config",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-ui): orchestration script with automatic dev-server restore on all exit paths including Ctrl-C",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-ui): package.json script",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-onboarding): compose service + dev UI memory limit 1G to 4G",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope (codemie-onboarding): README note",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final."
+    },
+    {
+      "kind": "spec",
+      "item": "Vite dev server remains the default for development",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final."
+    },
+    {
+      "kind": "spec",
+      "item": "Accepted trade-off: no HMR / dist rebuild needed to pick up UI changes",
+      "status": "na",
+      "notes": "Carried forward from code-review.final."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final. The fix-up commit subject 'EPMCDME-13987: Align test-proxy Host header with dev proxy' was validated against the enforced regex before this round."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Carried forward from code-review.final: .ai-run/guides/standards/code-quality.md is absent in codemie-ui and codemie-onboarding has no .ai-run/guides tree."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final. The fix-up diff adds no credential, secret, or input-handling surface; it pins one outbound proxy header to a fixed literal."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "nginx.local-test.conf now sets 'proxy_set_header Host localhost:8080' in place of 'Host $host', matching the Vite dev proxy's changeOrigin target so backend-generated absolute URLs (routers/files.py request.base_url.netloc, a2a/utils.py) resolve to the published backend port instead of this server's SPA catch-all. Verified three ways: the source change, the directive present at line 44 of the conf inside the built image, and a full sanity-ui run against that image (71 passed, 2 xpassed, 232.58s, exit 0). X-Forwarded-* was intentionally not added — the backend rate limiter keys on X-Forwarded-For and the dev proxy sends none, so adding it would have created a new divergence rather than closing one. The block's comment was extended to document the Host behavior."
+    }
+  ]
+}

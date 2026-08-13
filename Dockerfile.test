@@ -1,0 +1,58 @@
+# Copyright 2026 EPAM Systems, Inc. ("EPAM")
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Multi-stage image for the local fast UI-test mode (`npm run test-harness:fast`,
+# compose profile `uitest`): builds the production bundle and serves it via nginx
+# with an /api proxy to the backend. Sub-second page loads make the sanity-ui
+# suite run ~5x faster than against the Vite dev server, with fewer flakes.
+
+FROM node:20.19.6-alpine3.23 AS build
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+# --ignore-scripts: dependency lifecycle scripts are not needed for the vite
+# build (esbuild & co. ship platform binaries as optionalDependencies) and
+# skipping them also skips husky's prepare hook.
+RUN npm ci --ignore-scripts
+# Explicit build inputs only — no recursive COPY. The tracked .env is required
+# so vite bakes the same non-secret VITE_* values the dev server serves; it is
+# excluded by the main .dockerignore and re-included by
+# Dockerfile.test.dockerignore (BuildKit per-Dockerfile ignore), so on an
+# engine that does not honor that file this COPY fails loudly instead of
+# shipping a silently broken bundle.
+COPY .env index.html index-keycloak.html vite.config.ts tsconfig.json tsconfig.node.json postcss.config.js tailwind.config.ts ./
+COPY public ./public
+COPY src ./src
+# Vite needs more heap than Node's default for this bundle.
+ENV NODE_OPTIONS=--max-old-space-size=3072
+RUN npm run build
+# Belt-and-braces: fail if the env substitution did not happen.
+RUN if grep -q '%VITE_SUFFIX%' dist/index.html; then \
+      echo 'ERROR: VITE_* env vars were missing during the build. Refusing to' \
+           'ship a broken bundle.' >&2; \
+      exit 1; \
+    fi
+# Runtime config loaded by index.html; points the app at the /api proxy.
+RUN printf 'window._env_ = { VITE_API_URL: "/api" }\n' > dist/config.js
+
+# Official non-root nginx variant, pinned to the prod image's nginx line
+# (Dockerfile uses the hardened dhi.io registry, which local contributors may
+# not have access to). Runs as the unprivileged nginx user; port 5173 > 1024.
+FROM nginxinc/nginx-unprivileged:1.30-alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.local-test.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 5173
