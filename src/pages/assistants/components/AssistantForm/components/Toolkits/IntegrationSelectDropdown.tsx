@@ -70,6 +70,11 @@ export const IntegrationSelectDropdown = ({
 
   const buttonLabel = addButtonLabel ?? 'Add User Integration'
 
+  // Auto mode is checked first: the author selects no integration at all, so neither the select
+  // nor the "add integration" fallback below belongs on screen. Checking the empty list first
+  // would leave the add button under an enabled Automatic Credentials Lookup toggle.
+  if (isAutoMode) return null
+
   if (!selectOptions || !settingsDefinitions || settingsDefinitions.length === 0) {
     return (
       <div className={className}>
@@ -84,8 +89,6 @@ export const IntegrationSelectDropdown = ({
       </div>
     )
   }
-
-  if (isAutoMode) return null
 
   return (
     <div className={className}>

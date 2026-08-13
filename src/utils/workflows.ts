@@ -22,6 +22,7 @@ import { ConfigItem } from '@/types/entity/configuration'
 import { Setting } from '@/types/entity/setting'
 import { AssistantTool } from '@/types/workflowEditor'
 import { SETTING_TYPE_USER } from '@/utils/settings'
+import toaster from '@/utils/toaster'
 
 import { applyToolkitSettings } from './toolkit'
 
@@ -259,4 +260,22 @@ export const normalizeToolkitSettingsForToolForm = (
       tools: normalizedTools,
     }
   })
+}
+
+interface ConsumerSlotWarning {
+  tool_name: string
+  credential_type: string
+}
+
+/**
+ * Tell the author which tools carry no integration of their own: they will use the integration of
+ * whoever runs the workflow, or report a missing one for users without it. Saving is not blocked,
+ * so this is advisory only — and it applies to creating a workflow as much as to updating one.
+ */
+export const notifyAboutConsumerSlots = (body?: { warnings?: ConsumerSlotWarning[] }) => {
+  const warnings = body?.warnings
+  if (!warnings?.length) return
+
+  const tools = warnings.map((w) => `${w.tool_name} (${w.credential_type})`).join(', ')
+  toaster.info(`Saved. These tools will use each user's own integration: ${tools}.`)
 }

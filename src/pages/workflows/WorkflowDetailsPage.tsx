@@ -244,6 +244,7 @@ const WorkflowDetailsPage = () => {
               // (stale) assistant while the new one loads.
               key={selectedNodeId}
               assistantId={selectedAssistantId}
+              workflowId={workflowId}
               onClose={() => setSelectedNodeId(null)}
             />
           )}

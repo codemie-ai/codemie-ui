@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "note": "The change spans two repositories, so gates were run per repo with each repo's own runner instead of a single cached plan.",
+  "repos": [
+    {
+      "path": "codemie",
+      "runner": "poetry",
+      "gates": {
+        "lint": "poetry run ruff check src tests",
+        "license": "make license-check",
+        "test": "make test",
+        "migration_chain": "poetry run alembic -c src/external/alembic/alembic.ini heads"
+      }
+    },
+    {
+      "path": "codemie-ui",
+      "runner": "npm",
+      "gates": {
+        "types": "npx tsc --noEmit",
+        "unit": "npm run test:unit",
+        "integration": "npm run test:integration",
+        "build": "npm run build",
+        "lint": "npm run lint"
+      }
+    }
+  ],
+  "known_environment_issues": [
+    "codemie: tests/enterprise/** need the codemie_enterprise package; tests touching async SQLAlchemy need greenlet. Both are absent locally and fail identically on an untouched checkout.",
+    "codemie-ui: npm run lint fails repo-wide on the ESLint '@/' alias resolver, unrelated to this change; CI enforces frontend lint.",
+    "codemie: alembic migrations are not exercised by pytest (tests/conftest.py mocks the DB engine globally); manual verification required."
+  ],
+  "ui_globs": ["codemie-ui/src/pages/**", "codemie-ui/src/components/**"]
+}

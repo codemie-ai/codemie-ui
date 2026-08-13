@@ -23,6 +23,9 @@ import AssistantDetailsSidebarSections from './components/AssistantDetailsSideba
 interface AssistantDetailsEmbeddedProps {
   assistant: Assistant
   onNewIntegration?: (project: string, settingType: string, callback: () => void) => void
+  // Set when the view is embedded in a workflow screen: integration changes then default to that
+  // workflow instead of the assistant as a whole.
+  workflowId?: string
 }
 
 /**
@@ -36,6 +39,7 @@ interface AssistantDetailsEmbeddedProps {
 const AssistantDetailsEmbedded = ({
   assistant,
   onNewIntegration,
+  workflowId,
 }: AssistantDetailsEmbeddedProps) => {
   return (
     <div className="flex flex-col w-full">
@@ -43,7 +47,11 @@ const AssistantDetailsEmbedded = ({
 
       <div className="mt-8 flex flex-col gap-9 z-10">
         <div className="flex flex-col gap-6 min-w-0">
-          <AssistantDetailsMainSections assistant={assistant} onNewIntegration={onNewIntegration} />
+          <AssistantDetailsMainSections
+            assistant={assistant}
+            onNewIntegration={onNewIntegration}
+            workflowId={workflowId}
+          />
         </div>
 
         <DetailsSidebar fullWidth>

@@ -45,12 +45,16 @@ export function transformAssistantToCreateDTO(
           label: tool.label,
           settings_config: tool.settings_config,
           settings: tool.settings,
+          // Author's auto-lookup decision has to reach the backend, otherwise "lookup off with
+          // nothing pinned" would be lost on every save and silently become "lookup on".
+          auto_credentials_lookup: tool.auto_credentials_lookup,
           description: tool.description,
           user_description: tool.user_description,
         })),
         label: toolkit.label,
         settings_config: toolkit.settings_config,
         settings: toolkit.settings,
+        auto_credentials_lookup: toolkit.auto_credentials_lookup,
         is_external: toolkit.is_external,
       })),
     conversation_starters: assistant.conversation_starters,

@@ -27,7 +27,9 @@ vi.mock('../../hooks/useAssistantForNode', () => ({
 }))
 
 vi.mock('@/pages/assistants/components/AssistantDetails/AssistantDetailsEmbedded', () => ({
-  default: () => <div data-testid="assistant-details">AssistantDetailsEmbedded</div>,
+  default: ({ workflowId }: { workflowId?: string }) => (
+    <div data-testid="assistant-details">{workflowId ?? 'no-workflow'}</div>
+  ),
 }))
 
 vi.mock('@/components/Spinner', () => ({
@@ -82,5 +84,21 @@ describe('AssistantNodePanel', () => {
   it('renders the embedded assistant view once loaded', () => {
     const { queryByTestId } = setup({ assistant: { id: 'a-1' } as never })
     expect(queryByTestId('assistant-details')).not.toBeNull()
+  })
+  it('passes the workflow id to the embedded assistant view', () => {
+    // The presence of this prop is what switches "Your Integration Settings" into workflow scope.
+    mockUseAssistantForNode.mockReturnValue({ ...baseResult, assistant: { id: 'a-1' } })
+    const { getByTestId } = render(
+      <AssistantNodePanel assistantId="a-1" workflowId="w-1" onClose={vi.fn()} />
+    )
+
+    expect(getByTestId('assistant-details').textContent).toBe('w-1')
+  })
+
+  it('leaves the view assistant-scoped when there is no workflow', () => {
+    mockUseAssistantForNode.mockReturnValue({ ...baseResult, assistant: { id: 'a-1' } })
+    const { getByTestId } = render(<AssistantNodePanel assistantId="a-1" onClose={vi.fn()} />)
+
+    expect(getByTestId('assistant-details').textContent).toBe('no-workflow')
   })
 })

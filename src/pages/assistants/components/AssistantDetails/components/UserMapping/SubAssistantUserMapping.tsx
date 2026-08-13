@@ -21,7 +21,11 @@ import { AvatarType } from '@/constants/avatar'
 import { assistantsStore } from '@/store/assistants'
 import { userSettingsStore } from '@/store/userSettings'
 import { Assistant } from '@/types/entity/assistant'
-import { initializeUserMappingSettings } from '@/utils/assistants'
+import {
+  applyAutoResolvedIntegrations,
+  collectAutoLookupCredentialTypes,
+  initializeUserMappingSettings,
+} from '@/utils/assistants'
 import toaster from '@/utils/toaster'
 
 import { Toolkit } from './components/Toolkit'
@@ -35,6 +39,10 @@ interface SubAssistantUserMappingProps {
   onNewIntegrationRequest: (project: string, settingType: string, onComplete: () => void) => void
   toolsDescriptions: Record<string, Record<string, string | undefined>>
   settingsOptions: Record<string, UserSetting[]>
+  // Scope owned by the parent section: sub-assistant settings are saved together with the rest,
+  // so one checkbox governs the whole "Your Integration Settings" block.
+  workflowId?: string
+  applyToAssistant?: boolean
 }
 
 export const SubAssistantUserMapping: React.FC<SubAssistantUserMappingProps> = ({
@@ -45,24 +53,36 @@ export const SubAssistantUserMapping: React.FC<SubAssistantUserMappingProps> = (
   onNewIntegrationRequest,
   toolsDescriptions,
   settingsOptions,
+  workflowId,
+  applyToAssistant,
 }) => {
   const [userMappingSettings, setUserMappingSettings] = useState<UserMappingSettings>(
     initialUserMappingSettings
   )
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  // Slots the user actually touched. In workflow scope only these are sent, so an inherited value
+  // is never frozen into the workflow row — otherwise later assistant-page changes would stop
+  // reaching this workflow. Same rule as the orchestrator's own section.
+  const [changedKeys, setChangedKeys] = useState<Set<string>>(new Set())
 
   const fetchUserMappingSettings = useCallback(async () => {
     try {
-      const userMapping = await assistantsStore.getUserMapping(subAssistant.id)
+      const userMapping = await assistantsStore.getUserMapping(
+        subAssistant.id,
+        workflowId,
+        collectAutoLookupCredentialTypes(subAssistant)
+      )
       const settings = initializeUserMappingSettings(subAssistant, userMapping)
+      // Same rule as for the orchestrator: show what a run would pick where nothing was chosen.
+      applyAutoResolvedIntegrations(settings, userMapping?.auto_resolved)
       setUserMappingSettings(settings)
     } catch (error) {
       console.error('Error fetching user mapping settings:', error)
       const settings = initializeUserMappingSettings(subAssistant)
       setUserMappingSettings(settings)
     }
-  }, [subAssistant])
+  }, [subAssistant, workflowId])
 
   const handleUpdateSetting = (
     itemKey: string,
@@ -82,6 +102,7 @@ export const SubAssistantUserMapping: React.FC<SubAssistantUserMappingProps> = (
       }
       return prev
     })
+    setChangedKeys((prev) => new Set(prev).add(itemKey))
     setIsDirty(true)
   }
 
@@ -94,8 +115,27 @@ export const SubAssistantUserMapping: React.FC<SubAssistantUserMappingProps> = (
     setIsSaving(true)
 
     try {
-      await assistantsStore.saveUserMappingSettings(subAssistant.id, userMappingSettings)
-      toaster.info('Your integration settings have been successfully saved for this assistant.')
+      // Assistant scope keeps sending every displayed slot (unchanged behaviour). Workflow scope
+      // sends only what the user changed, so untouched slots keep following the assistant scope.
+      const settingsToSave =
+        workflowId && !applyToAssistant
+          ? Object.fromEntries(
+              Object.entries(userMappingSettings).filter(([key]) => changedKeys.has(key))
+            )
+          : userMappingSettings
+
+      await assistantsStore.saveUserMappingSettings(
+        subAssistant.id,
+        settingsToSave,
+        workflowId ? { workflowId, applyToAssistant: !!applyToAssistant } : undefined
+      )
+      // Name the scope the save actually landed in, so the user is never left guessing
+      // whether the change applies to this workflow only or to the assistant everywhere.
+      toaster.info(
+        workflowId && !applyToAssistant
+          ? 'Your integration settings have been successfully saved for this workflow.'
+          : 'Your integration settings have been successfully saved for this assistant.'
+      )
       await fetchUserMappingSettings()
     } catch (error) {
       console.error('Error saving user mapping settings:', error)
@@ -105,12 +145,14 @@ export const SubAssistantUserMapping: React.FC<SubAssistantUserMappingProps> = (
     } finally {
       setIsSaving(false)
       setIsDirty(false)
+      setChangedKeys(new Set())
     }
   }
 
   const handleCancelChanges = () => {
     fetchUserMappingSettings()
     setIsDirty(false)
+    setChangedKeys(new Set())
   }
 
   const getLatestSetting = (

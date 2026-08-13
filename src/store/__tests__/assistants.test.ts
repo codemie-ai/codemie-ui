@@ -77,6 +77,91 @@ describe('assistantsStore', () => {
         ],
       })
     })
+
+    it('posts the workflow scope when saving from a workflow panel', async () => {
+      mockPost.mockResolvedValue({ ok: true, json: async () => ({}) })
+
+      const userMappingSettings = {
+        Git: { originalName: 'Git', settingId: 'int-1' },
+      }
+
+      await assistantsStore.saveUserMappingSettings('a-1', userMappingSettings as never, {
+        workflowId: 'w-1',
+        applyToAssistant: false,
+      })
+
+      expect(mockPost).toHaveBeenCalledWith('v1/assistants/a-1/users/mapping', {
+        tools_config: [{ name: 'Git', integration_id: 'int-1' }],
+        workflow_id: 'w-1',
+        apply_to_assistant: false,
+      })
+    })
+
+    it('asks the backend to apply the selection to the whole assistant', async () => {
+      mockPost.mockResolvedValue({ ok: true, json: async () => ({}) })
+
+      await assistantsStore.saveUserMappingSettings(
+        'a-1',
+        { Git: { originalName: 'Git', settingId: 'int-1' } } as never,
+        { workflowId: 'w-1', applyToAssistant: true }
+      )
+
+      expect(mockPost).toHaveBeenCalledWith('v1/assistants/a-1/users/mapping', {
+        tools_config: [{ name: 'Git', integration_id: 'int-1' }],
+        workflow_id: 'w-1',
+        apply_to_assistant: true,
+      })
+    })
+
+    it('keeps the assistant-scoped payload when no scope is given', async () => {
+      mockPost.mockResolvedValue({ ok: true, json: async () => ({}) })
+
+      await assistantsStore.saveUserMappingSettings('a-1', {
+        Git: { originalName: 'Git', settingId: 'int-1' },
+      } as never)
+
+      expect(mockPost).toHaveBeenCalledWith('v1/assistants/a-1/users/mapping', {
+        tools_config: [{ name: 'Git', integration_id: 'int-1' }],
+      })
+    })
+  })
+
+  describe('getUserMapping', () => {
+    it('requests the effective mapping for a workflow', async () => {
+      mockGet.mockResolvedValue({ ok: true, json: async () => ({}) })
+
+      await assistantsStore.getUserMapping('a-1', 'w-1')
+
+      expect(mockGet).toHaveBeenCalledWith('v1/assistants/a-1/users/mapping?workflow_id=w-1')
+    })
+
+    it('asks what auto lookup would resolve for the displayed slots', async () => {
+      mockGet.mockResolvedValue({ ok: true, json: async () => ({}) })
+
+      await assistantsStore.getUserMapping('a-1', undefined, ['jira', 'git'])
+
+      expect(mockGet).toHaveBeenCalledWith(
+        'v1/assistants/a-1/users/mapping?credential_types=jira%2Cgit'
+      )
+    })
+
+    it('combines the workflow scope with the credential types', async () => {
+      mockGet.mockResolvedValue({ ok: true, json: async () => ({}) })
+
+      await assistantsStore.getUserMapping('a-1', 'w-1', ['jira'])
+
+      expect(mockGet).toHaveBeenCalledWith(
+        'v1/assistants/a-1/users/mapping?workflow_id=w-1&credential_types=jira'
+      )
+    })
+
+    it('requests the assistant-scoped mapping without a workflow', async () => {
+      mockGet.mockResolvedValue({ ok: true, json: async () => ({}) })
+
+      await assistantsStore.getUserMapping('a-1')
+
+      expect(mockGet).toHaveBeenCalledWith('v1/assistants/a-1/users/mapping')
+    })
   })
 
   describe('getAssistantBySlug', () => {

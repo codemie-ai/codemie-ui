@@ -77,14 +77,11 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
     return { label, value: option.id }
   })
 
-  // MCP slots expose two states: NO INTEGRATION (base config, no per-user creds) and EXPLICIT
-  // INTEGRATION (a real integration). The DEFAULT state's semantics/storage are unchanged (still
-  // saved as '' -> base config); only the label wording differs. Regular tool slots keep the single
-  // "None" option. Both leading options use the NO_INTEGRATION sentinel as their value so the
-  // control can render the selected label instead of the placeholder (see NO_INTEGRATION).
-  const leadingOptions = isMcpSlot
-    ? [{ label: 'No integration', value: NO_INTEGRATION }]
-    : [{ label: 'None', value: NO_INTEGRATION }]
+  // One wording for both kinds of slot: picking it means "no integration". For a regular tool the
+  // choice is remembered, so automatic lookup no longer overrides it; for MCP it keeps its shipped
+  // meaning of falling back to the author's base config. The NO_INTEGRATION sentinel is the option's
+  // value so the control renders its label instead of the placeholder (see NO_INTEGRATION).
+  const leadingOptions = [{ label: 'No integration', value: NO_INTEGRATION }]
 
   const allOptions = [...leadingOptions, ...selectOptions]
   const selectedValue = settingId ?? NO_INTEGRATION

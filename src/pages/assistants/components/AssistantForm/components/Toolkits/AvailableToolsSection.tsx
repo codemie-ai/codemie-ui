@@ -38,6 +38,8 @@ export interface ToolkitRenderProps {
   toggleAllTools: (toolkit: AssistantToolkit, allToolsSelected: boolean) => void
   updateToolSetting: (toolkit: AssistantToolkit, tool: Tool, setting?: Setting) => void
   updateToolkitSetting: (toolkit: AssistantToolkit, setting?: Setting) => void
+  updateToolkitAutoLookup: (toolkit: AssistantToolkit, enabled: boolean) => void
+  updateToolAutoLookup: (toolkit: AssistantToolkit, tool: Tool, enabled: boolean) => void
   singleToolSelection: boolean
   onAddSettingClick: (credentialType: string) => void
   isChatConfig?: boolean

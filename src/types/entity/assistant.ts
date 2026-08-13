@@ -220,6 +220,8 @@ export enum AssistantTab {
 export interface AssistantToolkit {
   toolkit: ToolkitType
   tools: Tool[]
+  // Author's automatic-credentials-lookup decision for the whole toolkit; absent means enabled.
+  auto_credentials_lookup?: boolean
   label: string
   settings_config: boolean
   settings?: Setting | null
@@ -227,6 +229,8 @@ export interface AssistantToolkit {
 }
 
 export interface Tool {
+  // Author's automatic-credentials-lookup decision; absent means enabled.
+  auto_credentials_lookup?: boolean
   name: string
   label: string
   settings?: Setting | null

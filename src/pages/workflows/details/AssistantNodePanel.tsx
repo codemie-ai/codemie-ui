@@ -25,6 +25,9 @@ import { useAssistantForNode } from '../hooks/useAssistantForNode'
 interface AssistantNodePanelProps {
   assistantId: string
   onClose: () => void
+  // Present on the executions page, which always shows a saved workflow. Its presence is what
+  // switches "Your Integration Settings" from assistant scope into workflow scope.
+  workflowId?: string
 }
 
 /**
@@ -34,7 +37,7 @@ interface AssistantNodePanelProps {
  * assistants the current user cannot read (403) fall back to a soft message instead of a
  * broken/empty panel.
  */
-const AssistantNodePanel = ({ assistantId, onClose }: AssistantNodePanelProps) => {
+const AssistantNodePanel = ({ assistantId, onClose, workflowId }: AssistantNodePanelProps) => {
   const {
     assistant,
     isLoading,
@@ -91,7 +94,11 @@ const AssistantNodePanel = ({ assistantId, onClose }: AssistantNodePanelProps) =
         )}
 
         {!isLoading && !isForbidden && !notFound && !loadFailed && assistant && (
-          <AssistantDetailsEmbedded assistant={assistant} onNewIntegration={onNewIntegration} />
+          <AssistantDetailsEmbedded
+            assistant={assistant}
+            onNewIntegration={onNewIntegration}
+            workflowId={workflowId}
+          />
         )}
       </div>
 

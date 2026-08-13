@@ -23,38 +23,50 @@ import { Assistant } from '@/types/entity/assistant'
 import { getCredentialType, SETTING_TYPE_PROJECT } from '@/utils/settings'
 
 // Whether an assistant exposes the per-user "Your Integration Settings" section.
-// Global (marketplace) assistants support the full mapping; other shared assistants
-// support it only when they have at least one non-pinned MCP server (matches the
-// backend gate). Kept in one place so the assistant details view and the workflow
-// executions side panel decide visibility identically.
+// Any shared assistant (marketplace or project-shared) exposes it as long as the author left at
+// least one slot unpinned — an MCP server or a configurable toolkit/tool. Private assistants have
+// no other users, so the section stays hidden. Kept in one place so the assistant details view and
+// the workflow executions side panel decide visibility identically.
 export const isUserMappingSupported = (assistant?: Assistant | null): boolean => {
   if (!assistant) return false
   const hasSelectableMcpServer = (assistant.mcp_servers ?? []).some(
     (server) => server.enabled && !server.settings
   )
-  return !!(assistant.is_global || (assistant.shared && hasSelectableMcpServer))
+  // A slot is selectable when the author left it unpinned; toolkits and MCP servers follow the
+  // same rule, and both are offered to any shared assistant, not just marketplace ones.
+  const hasSelectableToolkit = ((assistant as any).toolkits ?? []).some(
+    (toolkit: any) =>
+      (toolkit.settings_config && !toolkit.settings) ||
+      (toolkit.tools ?? []).some((tool: any) => tool.settings_config && !tool.settings)
+  )
+  return !!(
+    (assistant.is_global || assistant.shared) &&
+    (hasSelectableMcpServer || hasSelectableToolkit)
+  )
 }
 
 export const initializeUserMappingSettings = (assistant: any, userMapping: any = null) => {
   const userMappingSettings: Record<string, any> = {}
 
-  // Regular toolkit/tool slots are per-user mappable only for global (marketplace) assistants,
-  // matching the backend gate. Non-global shared assistants get MCP-only slots below.
-  if (assistant?.is_global && assistant?.toolkits) {
+  // Regular toolkit/tool slots are per-user mappable for every shared assistant, matching the
+  // backend, which resolves the same mapping regardless of `is_global`.
+  if (assistant?.toolkits) {
     assistant.toolkits.forEach((toolkit: any) => {
       const toolkitKey = toolkit.toolkit // Key for toolkit itself
 
-      // Handle toolkit-level user settings
-      if (toolkit.settings_config) {
+      // Handle toolkit-level user settings. A slot the author pinned (`settings`) is not
+      // user-selectable: the author's integration wins at runtime, exactly as for pinned MCP
+      // servers, so offering a dropdown would promise a choice the run ignores.
+      if (toolkit.settings_config && !toolkit.settings) {
         userMappingSettings[toolkitKey] = getToolkitSetting(toolkitKey, toolkit)
       }
 
       // Handle tool-level user settings
       if (toolkit.tools) {
         toolkit.tools.forEach((tool: any) => {
-          if (tool.settings_config) {
+          if (tool.settings_config && !tool.settings) {
             const toolKey = `${toolkitKey}_${tool.name}`
-            userMappingSettings[toolKey] = getToolSetting(toolkitKey, tool)
+            userMappingSettings[toolKey] = getToolSetting(toolkitKey, tool, toolkit)
           }
         })
       }
@@ -92,13 +104,17 @@ const getToolkitSetting = (toolkitKey: string, toolkit: any) => {
     setting: toolkit.user_settings || null,
     isToolkit: true,
     originalName: toolkitKey,
+    // Author's decision for this slot: with lookup off nothing is resolved, so the panel must not
+    // pre-select anything and the runtime reports a missing integration.
+    autoLookup: toolkit.auto_credentials_lookup !== false,
+    explicitNone: false,
   }
 }
 
 /**
  * Gets tool setting object
  */
-const getToolSetting = (toolkitKey: string, tool: any) => {
+const getToolSetting = (toolkitKey: string, tool: any, toolkit: any) => {
   const credentialType = getCredentialType(tool.name)
   return {
     credentialType,
@@ -107,6 +123,10 @@ const getToolSetting = (toolkitKey: string, tool: any) => {
     isToolkit: false,
     toolkitName: toolkitKey,
     originalName: tool.name,
+    // A tool inherits the toolkit's decision unless it carries its own.
+    autoLookup:
+      tool.auto_credentials_lookup !== false && toolkit?.auto_credentials_lookup !== false,
+    explicitNone: false,
   }
 }
 
@@ -134,11 +154,17 @@ const applyUserMapping = (userMappingSettings: Record<string, any>, toolsConfig:
       })
     }
 
-    // If we found a match, update the setting
-    if (matchingKey && integrationId) {
+    if (!matchingKey) return
+
+    if (integrationId) {
       userMappingSettings[matchingKey].settingId = integrationId
       // The actual setting object will be set when we load the settings options
+      return
     }
+
+    // A stored slot with no integration id is the user's explicit "no integration": the backend
+    // keeps it on purpose, so auto lookup must not override that decision.
+    userMappingSettings[matchingKey].explicitNone = true
   })
 }
 
@@ -154,17 +180,60 @@ const findMatchingKey = (userMappingSettings: Record<string, any>, toolName: str
 }
 
 /**
+ * Credential types of the slots that participate in auto lookup. MCP slots are excluded: without an
+ * explicit selection they run on the author's base config, so there is nothing to resolve for them.
+ */
+export const collectAutoLookupCredentialTypes = (assistant: any): string[] =>
+  Array.from(
+    new Set(
+      Object.values(initializeUserMappingSettings(assistant))
+        .filter((slot: any) => slot.autoLookup !== false)
+        .map((slot: any) => slot.credentialType)
+        .filter((type: unknown): type is string => !!type && type !== MCP_SETTINGS_TYPE_LABEL)
+    )
+  )
+
+/**
+ * Fills slots that carry no explicit selection with the integration auto lookup would resolve, and
+ * returns the keys it touched so the caller can persist them.
+ */
+export const applyAutoResolvedIntegrations = (
+  settings: Record<string, any>,
+  autoResolved?: Array<{ credential_type: string; integration_id: string }>
+): string[] => {
+  if (!autoResolved?.length) return []
+
+  const byType = new Map(autoResolved.map((item) => [item.credential_type, item.integration_id]))
+  const touched: string[] = []
+
+  Object.entries(settings).forEach(([key, slot]: [string, any]) => {
+    if (slot.settingId || !slot.credentialType) return
+    if (slot.explicitNone || slot.autoLookup === false) return
+    const integrationId = byType.get(slot.credentialType)
+    if (!integrationId) return
+    settings[key] = { ...slot, settingId: integrationId }
+    touched.push(key)
+  })
+
+  return touched
+}
+
+/**
  * Gets displayable toolkits (those with settings_config or tools with settings_config). Mcp servers always included if enabled.
  */
 export const getDisplayableToolkits = (assistant: any): Toolkit[] => {
   let result: Toolkit[] = []
 
-  // Regular toolkits participate in per-user mapping only for global (marketplace) assistants,
-  // matching the backend gate where regular tools stay marketplace-only. Non-global shared
-  // assistants expose only their MCP servers below.
-  if (assistant?.is_global && assistant?.toolkits) {
+  // Regular toolkits participate in per-user mapping for every shared assistant, matching the
+  // backend resolution, which never keyed this on `is_global`.
+  if (assistant?.toolkits) {
+    // Only slots the author left unpinned are user-selectable, same rule as for MCP servers
+    // below: a toolkit whose every configurable slot carries the author's `settings` has nothing
+    // for the user to choose and is left out entirely.
     const toolkits = assistant.toolkits.filter(
-      (tk: any) => tk.settings_config || (tk.tools && tk.tools.some((t: any) => t.settings_config))
+      (tk: any) =>
+        (tk.settings_config && !tk.settings) ||
+        tk.tools?.some((t: any) => t.settings_config && !t.settings)
     ) as Toolkit[]
     result = [...result, ...toolkits]
   }

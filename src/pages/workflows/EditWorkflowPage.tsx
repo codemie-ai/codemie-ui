@@ -35,7 +35,7 @@ import { WorkflowAIRefineResponse } from '@/types/entity/workflow'
 import API from '@/utils/api'
 import toaster from '@/utils/toaster'
 import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
-import { isVisualEditorEnabled } from '@/utils/workflows'
+import { isVisualEditorEnabled, notifyAboutConsumerSlots } from '@/utils/workflows'
 
 import RefineWorkflowPromptPopup from './components/RefineWorkflowPromptPopup'
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
@@ -83,10 +83,14 @@ const EditWorkflowPage: React.FC = () => {
       setIssues(null)
       formRef.current?.clearAllResolvedFields()
 
-      await workflowsStore.updateWorkflow(id, values, errorFormat)
+      const response = await workflowsStore.updateWorkflow(id, values, errorFormat)
       // Refinement is now the saved baseline — revert no longer makes sense
       setPreRefinementYaml(null)
       toaster.info('Workflow has been updated successfully!')
+
+      // Slots whose integration is left to whoever runs the workflow do not block saving, but the
+      // author should know they depend on each user's own setup.
+      notifyAboutConsumerSlots(await response?.json().catch(() => undefined))
 
       if (shouldOpenExecution) {
         await workflowsStore.fetchWorkflow(id)

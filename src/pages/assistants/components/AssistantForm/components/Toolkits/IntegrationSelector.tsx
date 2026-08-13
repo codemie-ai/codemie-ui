@@ -35,6 +35,9 @@ interface IntegrationSelectorProps {
   onChange: (value?: Setting) => void
   onAddSettingClick: () => void
   onAutoModeChange?: (isAuto: boolean) => void
+  // Current decision, owned by the caller. Passing it keeps the toggle in sync with stored data;
+  // without it the component falls back to deriving the mode from `value`.
+  autoMode?: boolean
   showAutoCredentials?: boolean
   short?: boolean
   error?: string
@@ -54,29 +57,38 @@ const IntegrationSelector = ({
   onChange,
   onAddSettingClick,
   onAutoModeChange,
+  autoMode,
   showAutoCredentials = false,
   short: _short,
   error,
 }: IntegrationSelectorProps) => {
-  const [isAutoMode, setIsAutoMode] = useState(!value)
+  const [derivedAutoMode, setDerivedAutoMode] = useState(!value)
+  // When the caller owns the decision, follow it; otherwise keep the legacy behaviour of deriving
+  // the mode from whether an integration is selected.
+  const isAutoMode = autoMode ?? derivedAutoMode
 
   useEffect(() => {
+    if (autoMode !== undefined) return
     const nextAuto = !value
-    setIsAutoMode(nextAuto)
+    setDerivedAutoMode(nextAuto)
     onAutoModeChange?.(nextAuto)
-  }, [value])
+  }, [value, autoMode])
 
   const handleToggle = (auto: boolean) => {
-    setIsAutoMode(auto)
+    setDerivedAutoMode(auto)
     onAutoModeChange?.(auto)
-    if (auto) onChange(undefined)
+    // A caller that persists the decision clears the integration within the same update. Calling
+    // onChange as well would rebuild the toolkit list from a stale snapshot and revert the flag that
+    // was just stored, which is how a slot ended up saved with lookup off.
+    if (auto && !onAutoModeChange) onChange(undefined)
   }
-
-  const hasOptions = (settingsDefinitions ?? []).length > 0
 
   return (
     <div className={cn('flex flex-col gap-2 w-full', className)}>
-      {hasOptions && showAutoCredentials && (
+      {/* The toggle decides whether credentials are looked up per consuming user, so the author's
+          own list of integrations must not gate it: with no integration of that type the author
+          still needs to say "each user brings their own". */}
+      {showAutoCredentials && (
         <AutoCredentialsSwitch isAutoMode={isAutoMode} onChange={handleToggle} />
       )}
       <IntegrationSelectDropdown

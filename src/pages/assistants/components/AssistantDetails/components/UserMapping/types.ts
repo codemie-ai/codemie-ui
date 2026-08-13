@@ -49,6 +49,12 @@ export interface UserMappingSetting {
   isToolkit: boolean
   originalName: string
   toolkitName?: string
+  // Author's automatic-credentials-lookup decision for this slot. With lookup off nothing is
+  // resolved for it, so the panel neither pre-selects nor asks the backend about it.
+  autoLookup?: boolean
+  // The user explicitly chose "no integration" for this slot and it is stored that way, so
+  // automatic lookup must not override the decision.
+  explicitNone?: boolean
 }
 
 export interface UserMappingSettings {

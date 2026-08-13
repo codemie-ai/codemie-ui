@@ -426,3 +426,106 @@ describe('useToolkitSelection', () => {
     })
   })
 })
+
+describe('useToolkitSelection — author auto credentials lookup', () => {
+  const onToolkitsChange = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('persists the toolkit-level decision', () => {
+    // The toggle used to be local form state only, so "lookup off, nothing pinned" could not be
+    // expressed at all — it was indistinguishable from "lookup on".
+    const tool = makeTool('generic_jira_tool')
+    const toolkit = makeToolkit('jira', [tool])
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolkitAutoLookup(toolkit, false)
+    })
+
+    const updated = onToolkitsChange.mock.calls[0][0]
+    expect(updated[0].auto_credentials_lookup).toBe(false)
+  })
+
+  it('persists the tool-level decision without touching its siblings', () => {
+    const jiraTool = makeTool('generic_jira_tool')
+    const otherTool = makeTool('generic_confluence_tool')
+    const toolkit = makeToolkit('mixed', [jiraTool, otherTool])
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolAutoLookup(toolkit, jiraTool, false)
+    })
+
+    const updated = onToolkitsChange.mock.calls[0][0]
+    const tools = updated[0].tools as Array<{ name: string; auto_credentials_lookup?: boolean }>
+    expect(tools.find((t) => t.name === 'generic_jira_tool')?.auto_credentials_lookup).toBe(false)
+    expect(tools.find((t) => t.name === 'generic_confluence_tool')?.auto_credentials_lookup).toBeUndefined()
+  })
+})
+
+describe('useToolkitSelection — enabling auto lookup clears the pinned integration atomically', () => {
+  const onToolkitsChange = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('sets the flag and drops the tool integration in one update', () => {
+    // Two separate updates would each rebuild the list from the same snapshot, so the second one
+    // silently reverted the first — that is how a slot ended up stored with lookup off.
+    const tool = { ...makeTool('generic_jira_tool'), settings: { id: 'int-1' } } as Tool
+    const toolkit = makeToolkit('jira', [tool])
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolAutoLookup(toolkit, tool, true)
+    })
+
+    expect(onToolkitsChange).toHaveBeenCalledTimes(1)
+    const updated = onToolkitsChange.mock.calls[0][0]
+    const stored = updated[0].tools.find((t: Tool) => t.name === 'generic_jira_tool')
+    expect(stored.auto_credentials_lookup).toBe(true)
+    expect(stored.settings).toBeFalsy()
+  })
+
+  it('keeps the integration when auto lookup is turned off', () => {
+    const tool = { ...makeTool('generic_jira_tool'), settings: { id: 'int-1' } } as Tool
+    const toolkit = makeToolkit('jira', [tool])
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolAutoLookup(toolkit, tool, false)
+    })
+
+    const stored = onToolkitsChange.mock.calls[0][0][0].tools[0]
+    expect(stored.auto_credentials_lookup).toBe(false)
+    expect(stored.settings).toEqual({ id: 'int-1' })
+  })
+
+  it('does the same for a toolkit-level slot', () => {
+    const toolkit = { ...makeToolkit('jira', [makeTool('t')]), settings: { id: 'int-1' } } as never
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolkitAutoLookup(toolkit, true)
+    })
+
+    expect(onToolkitsChange).toHaveBeenCalledTimes(1)
+    const updated = onToolkitsChange.mock.calls[0][0][0]
+    expect(updated.auto_credentials_lookup).toBe(true)
+    expect(updated.settings).toBeFalsy()
+  })
+})

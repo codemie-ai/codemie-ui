@@ -107,7 +107,7 @@ describe('IntegrationSelector — MCP two-state emits a string integration id', 
     expect(typeof onUpdate.mock.calls[0][1]).toBe('string')
   })
 
-  it('labels the non-MCP DEFAULT leading option "None" with the same non-empty sentinel', () => {
+  it('labels the non-MCP DEFAULT leading option "No integration" too', () => {
     render(
       <IntegrationSelector
         {...baseProps}
@@ -116,8 +116,9 @@ describe('IntegrationSelector — MCP two-state emits a string integration id', 
         onUpdate={vi.fn()}
       />
     )
-    expect(selectProps.options[0].label).toBe('None')
+    expect(selectProps.options[0].label).toBe('No integration')
     expect(selectProps.options[0].value).toBeTruthy()
     expect(selectProps.value).toBe(selectProps.options[0].value)
   })
 })
+

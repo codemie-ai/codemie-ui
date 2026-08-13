@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useContext, useState } from 'react'
+import { useContext } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import TooltipButton from '@/components/TooltipButton'
@@ -37,6 +37,8 @@ interface ToolkitProps {
   toggleAllTools: (toolkit: AssistantToolkit, allToolsSelected: boolean) => void
   updateToolSetting: (toolkit: AssistantToolkit, tool: Tool, setting?: Setting) => void
   updateToolkitSetting: (toolkit: AssistantToolkit, setting?: Setting) => void
+  updateToolkitAutoLookup?: (toolkit: AssistantToolkit, enabled: boolean) => void
+  updateToolAutoLookup?: (toolkit: AssistantToolkit, tool: Tool, enabled: boolean) => void
   singleToolSelection?: boolean
   onAddSettingClick: (credentialType: string) => void
   searchQuery?: string
@@ -51,6 +53,8 @@ const Toolkit = ({
   toggleAllTools,
   updateToolSetting,
   updateToolkitSetting,
+  updateToolkitAutoLookup,
+  updateToolAutoLookup,
   singleToolSelection = false,
   onAddSettingClick,
   searchQuery = '',
@@ -105,23 +109,25 @@ const Toolkit = ({
     })
   }
 
-  const [toolkitAutoMode, setToolkitAutoMode] = useState(!selectedToolkit?.settings)
+  // Derive the toggles from the form data instead of keeping them in local state: the form mounts
+  // before the assistant's toolkits arrive, so a state initialised once would stay on its initial
+  // value and a saved "lookup off" would keep showing as enabled.
+  const toolkitAutoMode =
+    (selectedToolkit as { auto_credentials_lookup?: boolean })?.auto_credentials_lookup !== false
 
-  const [toolAutoModes, setToolAutoModes] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(
-      toolkit.tools.map((tool) => [
-        tool.name,
-        !selectedToolkit?.tools.find((t) => t.name === tool.name)?.settings,
-      ])
-    )
-  )
+  const isToolAutoMode = (toolName: string) =>
+    (
+      selectedToolkit?.tools.find((t) => t.name === toolName) as
+        | { auto_credentials_lookup?: boolean }
+        | undefined
+    )?.auto_credentials_lookup !== false
 
   const handleToolAutoModeChange = (toolName: string, isAuto: boolean) => {
-    setToolAutoModes((prev) => ({ ...prev, [toolName]: isAuto }))
-    if (isAuto) {
-      const tool = toolkit.tools.find((t) => t.name === toolName)!
-      updateToolSetting(toolkit, tool, undefined)
-    }
+    const tool = toolkit.tools.find((t) => t.name === toolName)!
+    // Single update: it stores the decision and, when enabling lookup, clears the pinned
+    // integration in the same pass. Two calls would rebuild the list from one snapshot and the
+    // second would revert the first.
+    updateToolAutoLookup?.(toolkit, tool, isAuto)
   }
 
   return (
@@ -189,8 +195,7 @@ const Toolkit = ({
             const showIntegration =
               isToolSelected(tool) && tool.settings_config && !toolkit.is_external
             const toolValue = selectedToolkit?.tools.find((tl) => tool.name === tl.name)?.settings
-            const isAutoMode = toolAutoModes[tool.name] ?? !toolValue
-            const hasToolOptions = (settings[getCredentialType(tool.name)] ?? []).length > 0
+            const isAutoMode = isToolAutoMode(tool.name)
 
             return (
               <div key={tool.name} className="flex flex-col gap-3">
@@ -205,28 +210,17 @@ const Toolkit = ({
                       }}
                     />
                   </div>
-                  {showIntegration && !hasToolOptions && (
-                    <IntegrationSelectDropdown
-                      className="ml-auto"
-                      isAutoMode={isAutoMode}
-                      value={toolValue}
-                      settingsDefinitions={settings[getCredentialType(tool.name)]}
-                      onAddSettingClick={() => onAddSettingClick(getCredentialType(tool.name))}
-                      onChange={(setting) => {
-                        updateToolSetting(toolkit, tool, setting)
-                        integrationField?.onChange()
-                      }}
-                      error={integrationField?.error}
-                    />
-                  )}
                 </div>
-                {showIntegration && hasToolOptions && (
+                {/* Shown regardless of the author's own integrations: the toggle is about looking
+                    credentials up per consuming user, which does not depend on what the author
+                    happens to have. */}
+                {showIntegration && (
                   <AutoCredentialsSwitch
                     isAutoMode={isAutoMode}
                     onChange={(auto) => handleToolAutoModeChange(tool.name, auto)}
                   />
                 )}
-                {showIntegration && hasToolOptions && (
+                {showIntegration && (
                   <IntegrationSelectDropdown
                     isAutoMode={isAutoMode}
                     value={toolValue}
@@ -284,7 +278,8 @@ const Toolkit = ({
                         updateToolkitSetting(toolkit, setting)
                         field?.onChange()
                       }}
-                      onAutoModeChange={setToolkitAutoMode}
+                      autoMode={toolkitAutoMode}
+                      onAutoModeChange={(auto) => updateToolkitAutoLookup?.(toolkit, auto)}
                       error={field?.error}
                     />
                   </div>

@@ -152,6 +152,55 @@ export const useToolkitSelection = ({
     [selectedToolkits, updateSelectedToolkits]
   )
 
+  /**
+   * Persist the author's automatic-credentials-lookup decision for a whole toolkit. It has to be
+   * stored, not derived: "lookup off with nothing pinned" and "lookup on" both leave `settings`
+   * empty, and only a stored flag tells them apart.
+   */
+  const updateToolkitAutoLookup = useCallback(
+    (toolkit: AssistantToolkit, enabled: boolean) => {
+      // One update, not two: enabling lookup also drops the pinned integration, and doing that
+      // through a second call would rebuild the list from the same snapshot and revert this flag.
+      onToolkitsChange(
+        selectedToolkits.map((tk) =>
+          tk.toolkit === toolkit.toolkit
+            ? {
+                ...tk,
+                auto_credentials_lookup: enabled,
+                ...(enabled ? { settings: undefined } : {}),
+              }
+            : tk
+        )
+      )
+    },
+    [selectedToolkits, onToolkitsChange]
+  )
+
+  /** Same decision for a single tool inside a toolkit. */
+  const updateToolAutoLookup = useCallback(
+    (toolkit: AssistantToolkit, tool: Tool, enabled: boolean) => {
+      onToolkitsChange(
+        selectedToolkits.map((tk) =>
+          tk.toolkit === toolkit.toolkit
+            ? {
+                ...tk,
+                tools: tk.tools.map((t) =>
+                  t.name === tool.name
+                    ? {
+                        ...t,
+                        auto_credentials_lookup: enabled,
+                        ...(enabled ? { settings: undefined } : {}),
+                      }
+                    : t
+                ),
+              }
+            : tk
+        )
+      )
+    },
+    [selectedToolkits, onToolkitsChange]
+  )
+
   return {
     updateSelectedToolkits,
     toggleSingleTool,
@@ -159,5 +208,7 @@ export const useToolkitSelection = ({
     toggleAllTools,
     updateToolkitSetting,
     updateToolSetting,
+    updateToolkitAutoLookup,
+    updateToolAutoLookup,
   }
 }

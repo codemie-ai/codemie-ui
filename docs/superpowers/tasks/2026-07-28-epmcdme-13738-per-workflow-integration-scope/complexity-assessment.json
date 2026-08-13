@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "task": "Add a workflow-scoped (user + assistant + workflow) personal integration selection alongside the existing assistant-scoped one, exposed as an \"apply to the whole assistant\" checkbox, with a schema migration, an optional workflow reference in the mapping API, and workflow-execution resolution of the new scope.",
+  "generated": "2026-07-28",
+  "dimensions": {
+    "component_scope":      { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 5, "label": "XL" },
+    "technical_risk":       { "score": 6, "label": "XXL" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 6, "label": "XXL" }
+  },
+  "total": 30,
+  "size": "XL",
+  "routing": "split-required",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two codebases and a changed FE/BE contract. Backend: AssistantUserMappingSQL model + unique constraint, repository ABC and impl (4 method signatures each), mapping service merge logic, router plus request/response DTOs, the settings handler chain (AssistantUserMappingSettingsHandler), the resolution site in assistant_service (_apply_marketplace_tool_mappings / build_agent_for_workflow), three workflow-plumbing signatures (workflows/utils/utils.py initialize_assistant, agent_node, supervisor path), and a new alembic revision. Frontend: four component boundaries must gain an optional workflowId (AssistantNodePanel -> useAssistantForNode -> AssistantDetailsEmbedded -> AssistantDetailsMainSections -> UserMapping), plus the assistants store load/save and the checkbox UI, and possibly SubAssistantUserMapping."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "No user+workflow-scoped table exists anywhere in the codebase, so there is no template to copy. The existing UniqueConstraint('assistant_id','user_id') must be dropped and recreated, and Postgres NULL-distinctness means a naive nullable workflow_id will not enforce uniqueness for assistant-scoped rows (sentinel + backfill, or partial unique indexes). Both existing readers (settings_handler.py:62 and assistant_service.py:387) use .first() filtered only on assistant+user and would non-deterministically pick a workflow row the moment multi-scope rows exist, leaking a workflow selection into plain chat and the assistant page. The feature is credential-bearing, so a wrong access gate leaks integrations across users/projects. Migrations are untestable locally (tests/conftest.py:34 mocks the DB engine globally, zero alembic DDL tests), making the riskiest artefact unverifiable by the suite."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Roughly 12-16 backend files plus one migration and 6-9 frontend files before tests, with an additional 8-12 new or updated test files across both repos. Well past the 16-modified / 6-new XXL threshold, spanning models, repository, service, routers, settings, workflows, and two frontend feature directories."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "UI (React panel + checkbox) + API (router and both DTOs) + Service (mapping service, settings handler chain, assistant_service) + Repository + DB persistence with an alembic schema migration and a backfill + the workflow execution layer, across two separate repositories. Cross-codebase with a schema migration is the XXL profile for this dimension."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The 22 acceptance criteria are well written but three substantive decisions are still open. AC 11's resolution order puts the personal selection above the author-pinned integration, which directly inverts EPMCDME-13337's deliberate \"pinned is authoritative\" invariant enforced at mcp/toolkit_service.py:1046-1050 and pinned by existing isolation tests - a product decision, not an implementation detail. AC 14 describes the editor \"View Assistant\" tab, which was deleted in commit 0cdeefc01 and does not exist on this branch, so it is either vacuous or hidden extra scope. It is also undefined whether the access gate for a workflow-scoped save keys off the assistant's project/is_global or the workflow's, and whether the checkbox governs sub-assistants (which have their own independent save handler)."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XL (5) to XXL (6): affects multiple workflows and agents (every assistant node in every workflow execution, plus the supervisor path) and touches the shared credential-resolution chain used by chat and workflows alike.",
+    "Technical Risk bumped from L (4) to XL (5): security/credential-sensitive change - the feature governs which integration credentials are used at runtime, and AC 11 would modify fail-closed code paths.",
+    "Technical Risk bumped from XL (5) to XXL (6): changes database schema significantly - an existing unique constraint must be dropped and recreated, and a data backfill is required to keep existing personal selections assistant-scoped (AC 15).",
+    "File Change Estimate: data-migration red flag applies but the dimension was already at XXL (6) and is capped.",
+    "Affected Layers bumped from XL (5) to XXL (6): database schema change plus migration, on top of a cross-repository (backend + frontend) change surface.",
+    "Requirements Clarity bumped from L (4) to XL (5): AC 11 has multiple valid interpretations that conflict with an existing enforced invariant, and AC 14 references a UI surface that no longer exists - stakeholder alignment is needed before planning."
+  ],
+  "split_recommendation": "At 30/36 this is an XL story and should be split before planning. The dimension profile points to four natural seams, three of which are independently shippable:\n\n1. (Blocking, no code) Settle the AC 11 precedence question with the product owner: does the workflow-scoped personal selection really outrank the author-pinned integration, or is the intended order \"workflow personal > assistant personal\" with the existing pinned rules untouched below them? Also settle whether the access gate uses the assistant's or the workflow's project/is_global, and whether the checkbox governs sub-assistants. This is the difference between a mechanical scope addition and a change to security-sensitive fail-closed credential code.\n\n2. (Story A, ~L, by dependency) Backend storage and scoped reads only. Add the workflow dimension to AssistantUserMappingSQL with the alembic migration (constraint drop/recreate + backfill so existing rows stay assistant-scoped), thread the scope through the repository ABC and impl and the mapping service merge, and - critically, in the same change - make both existing readers (settings_handler.py:62, assistant_service.py:387) request an explicit assistant scope so their behaviour is provably unchanged. No API surface change, no behaviour change. This retires R2, R3 and R4, the highest-risk part of the story, behind a no-op.\n\n3. (Story B, ~M, by layer) API and execution resolution. Add the optional workflow reference to the mapping request/response DTOs and the router (including the access-gate decision from step 1), thread workflow_id through the three signatures from agent_node.py:239 / workflow.py:561 down to _apply_marketplace_tool_mappings, and implement the workflow-then-assistant fallback at the single resolution point. Testable end-to-end via the API without any UI.\n\n4. (Story C, ~M, by layer) Frontend. Thread the optional workflowId through the four component boundaries, add the checkbox with its default-state logic (pre-ticked when no personal assistant selection exists), and wire the store load/save. Includes the missing unit-test harness for UserMapping.tsx, which today has none.\n\nIf the AC 14 editor \"View Assistant\" tab is genuinely wanted, that is a fifth story - it means reinstating UI deleted in EPMCDME-13529, not extending what exists."
+}

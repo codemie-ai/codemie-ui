@@ -1,0 +1,128 @@
+{
+  "task": "Workflow-scoped personal integration selection for assistants (user + assistant + workflow) added alongside the existing assistant-wide scope, exposed as a single checkbox in the assistant side-panel on the workflow executions page.",
+  "generated": "2026-07-29",
+  "dimensions": {
+    "component_scope": {
+      "score": 6,
+      "label": "XXL",
+      "affected": "AssistantUserMapping model (new ASSISTANT_SCOPE sentinel, three-column unique constraint), SQLAssistantUserMappingRepository (scope predicate on every query, new delete_mapping and promote_to_assistant_scope), AssistantUserMappingService (per-slot merge, get_effective_tools_config), assistant_mapping router (workflow_id query param and request field, has_assistant_scope_selection), AssistantUserMappingSettingsHandler (credential-resolution chain), new workflow_context contextvar module, workflow engine (workflow.py, agent_node.py, workflows/utils/utils.py), assistant_service, alembic migration; frontend UserMapping section, SubAssistantUserMapping, AssistantDetailsEmbedded, AssistantDetailsMainSections, AssistantNodePanel, WorkflowDetailsPage, assistants store",
+      "layers": "UI, API, Service, Repository, DB-Persistence, Workflow orchestration"
+    },
+    "requirements_clarity": {
+      "score": 4,
+      "label": "L",
+      "status": "Partially Clear",
+      "gaps": "26 acceptance criteria were specified up front and 22 passed on the first review pass, but the semantics of clearing a slot at workflow scope were genuinely undefined and required a mid-flight product decision (CR-002, closed as 'None means no selection, so the override drops and inheritance resumes'). Three further defects (CR-003 inherited slots frozen into the workflow row, CR-004 checkbox default derived from the orchestrator only, CR-005 default never loaded for sub-assistant-only shapes) all traced back to under-specified inheritance and checkbox-default semantics rather than to coding errors, and each cost a rework cycle."
+    },
+    "technical_risk": {
+      "score": 6,
+      "label": "XXL",
+      "risk_factors": "Schema change on a live table: new NOT NULL workflow_id with an empty-string sentinel, the uix_assistant_user_mapping unique constraint dropped and recreated across three columns, plus a new index. Downgrade is inherently destructive — workflow-scoped rows cannot fit the two-column constraint (CR-007 originally deleted them outright; now archived into assistant_user_mapping_workflow_scope_backup, with the predicate widened to catch NULL from rolling deploys). Security-sensitive: the feature scopes personal credentials, so cross-user and cross-workflow leakage are correctness-critical, and the integration access gate had to keep applying to both scopes. A novel mechanism — a contextvar carrying the workflow id across LangGraph worker threads — was needed because integration resolution happens deep in the settings-handler chain, far from the workflow plumbing. Two divergent resolution paths shipped in the first round (CR-001, critical: the handler fell back per row while the service merged per slot, so the runtime and the panel disagreed about which credential was used).",
+      "mitigation": "Empty-string sentinel instead of a nullable column so a plain three-column unique constraint keeps working under Postgres NULL semantics; server_default '' leaves every existing row assistant-scoped so nobody re-selects after release; promote_to_assistant_scope performs the upsert and the workflow-row delete in one session and commit; downgrade archives before deleting; a dedicated scope-isolation suite pins cross-user, cross-workflow and chat-path non-leakage; repository scope tests assert bound parameters and were mutation-verified. Residual: the alembic migration cannot be exercised by the suite (DB engine globally mocked), so manual verification against a local Postgres is still outstanding at merge time."
+    },
+    "file_change_estimate": {
+      "score": 6,
+      "label": "XXL",
+      "modified_files": 24,
+      "modified_file_list": [
+        "codemie/src/codemie/repository/assistants/assistant_user_mapping_repository.py",
+        "codemie/src/codemie/rest_api/models/usage/assistant_user_mapping.py",
+        "codemie/src/codemie/rest_api/routers/assistant_mapping.py",
+        "codemie/src/codemie/service/assistant/assistant_user_mapping_service.py",
+        "codemie/src/codemie/service/assistant_service.py",
+        "codemie/src/codemie/service/settings/settings_handler.py",
+        "codemie/src/codemie/workflows/nodes/agent_node.py",
+        "codemie/src/codemie/workflows/utils/utils.py",
+        "codemie/src/codemie/workflows/workflow.py",
+        "codemie/tests/codemie/repository/assistants/test_assistant_user_mapping_repository.py",
+        "codemie/tests/codemie/rest_api/routers/test_assistant_mapping.py",
+        "codemie/tests/codemie/service/assistant/test_assistant_user_mapping_service.py",
+        "codemie/tests/codemie/service/settings/test_settings_handler.py",
+        "codemie/tests/codemie/service/test_assistant_service_methods.py",
+        "codemie-ui/src/pages/assistants/components/AssistantDetails/AssistantDetailsEmbedded.tsx",
+        "codemie-ui/src/pages/assistants/components/AssistantDetails/components/AssistantDetailsMainSections.tsx",
+        "codemie-ui/src/pages/assistants/components/AssistantDetails/components/UserMapping/SubAssistantUserMapping.tsx",
+        "codemie-ui/src/pages/assistants/components/AssistantDetails/components/UserMapping/UserMapping.tsx",
+        "codemie-ui/src/pages/assistants/components/AssistantDetails/components/UserMapping/__tests__/UserMapping.test.tsx",
+        "codemie-ui/src/pages/workflows/WorkflowDetailsPage.tsx",
+        "codemie-ui/src/pages/workflows/details/AssistantNodePanel.tsx",
+        "codemie-ui/src/pages/workflows/details/__tests__/AssistantNodePanel.test.tsx",
+        "codemie-ui/src/store/assistants.ts",
+        "codemie-ui/src/store/__tests__/assistants.test.ts"
+      ],
+      "new_files": 5,
+      "new_file_list": [
+        "codemie/src/codemie/rest_api/security/workflow_context.py",
+        "codemie/src/external/alembic/versions/w1o2r3k4f5l6_add_workflow_scope_to_assistant_user_mapping.py",
+        "codemie/tests/codemie/rest_api/security/test_workflow_context.py",
+        "codemie/tests/codemie/rest_api/models/test_assistant_user_mapping_model.py",
+        "codemie/tests/codemie/service/assistant/test_assistant_user_mapping_scope_isolation.py"
+      ],
+      "affected_dirs": [
+        "codemie/src/codemie/repository",
+        "codemie/src/codemie/rest_api",
+        "codemie/src/codemie/service",
+        "codemie/src/codemie/workflows",
+        "codemie/src/external/alembic",
+        "codemie/tests",
+        "codemie-ui/src/pages",
+        "codemie-ui/src/store"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 6,
+      "label": "XXL",
+      "layers_changed": [
+        "UI",
+        "API",
+        "Service",
+        "Repository",
+        "DB-Persistence",
+        "Workflow"
+      ],
+      "schema_migration": true,
+      "cross_system": false
+    }
+  },
+  "total": 29,
+  "size": "XL",
+  "band_range": "27-31",
+  "files_changed": 29,
+  "routing": "split-required",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Every layer of the mapping stack changed at once — model, repository, service, router, the shared settings-handler credential chain, the workflow engine, and the whole frontend selection UI across two repositories — plus two new abstractions (the ASSISTANT_SCOPE empty-string sentinel and the workflow-id contextvar) that did not exist before."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "A live-table constraint swap with an inherently destructive downgrade, credential-scoping semantics where a leak is a security defect, and a novel contextvar mechanism crossing LangGraph worker threads. The first review round found a critical correctness defect (two resolution paths disagreeing about which credential a run uses) and a data-loss hazard on rollback; the migration itself is still unverifiable by the suite."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "29 files and roughly 1818 insertions across two repositories (backend 19 files / 1234 insertions, frontend 10 files / 584 insertions), well past the 16-file XXL threshold, with 5 new files including a new security module and an alembic migration."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Six distinct layers including persistence with a real schema migration, and a cross-cutting concern (the workflow-scope contextvar) threaded from the workflow executor down into the settings-handler chain. Backend and frontend had to land together because the REST contract changed in both directions."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "26 acceptance criteria were written up front, yet the meaning of clearing a slot at workflow scope was undefined and needed a product ruling during review, and three further defects came from unstated inheritance and checkbox-default semantics rather than from coding errors."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XL (5) to XXL (6): touches core shared utilities — the AssistantUserMappingSettingsHandler credential-resolution chain that every tool and MCP path depends on.",
+    "Component Scope: 'affects multiple workflows or agents' also applies (every agent node and the supervisor path resolve integrations through the new scope key); dimension already capped at 6.",
+    "Technical Risk bumped from XL (5) to XXL (6): changes database schema significantly — drops and recreates the unique constraint on a live table and adds a NOT NULL column.",
+    "Technical Risk: 'security requirements' also applies (personal credential scoping, cross-user and cross-workflow isolation) and 'affects authorization' applies (the integration access gate had to cover both scopes); dimension already capped at 6.",
+    "Affected Layers bumped from XL (5) to XXL (6): changes database schema significantly (paired bump with Technical Risk per the schema red flag)."
+  ],
+  "split_recommendation": "Shipped whole by product-owner override because the feature could not be released in parts, and the actual score confirms the initial XL call (29 vs the estimated 30). Retrospectively the safest decomposition would have been: (1) schema and scope key — add workflow_id with the sentinel, the three-column constraint and the archiving downgrade, with the repository scope predicate, and no behaviour change; (2) read path — get_effective_tools_config plus the single merged resolution used by both the router and the settings handler, still assistant-scoped in practice; (3) workflow binding — the contextvar and its wiring through the workflow executor and agent nodes; (4) write path and UI — the workflow-scoped save, promote_to_assistant_scope, and the checkbox with its default-aggregation rules. Steps 2 and 4 are exactly where the critical CR-001 and the frontend CR-003/004/005 cluster landed, so splitting there would have caught them against a smaller surface."
+}

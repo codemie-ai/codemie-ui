@@ -19,8 +19,15 @@ import { ToolkitType } from '@/constants/assistants'
 import { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
 import { AssistantTool } from '@/types/workflowEditor'
+import toaster from '@/utils/toaster'
 
-import { getToolkitsFromConfiguration, hasUserIntegrationInYamlConfig } from '../workflows'
+import {
+  getToolkitsFromConfiguration,
+  hasUserIntegrationInYamlConfig,
+  notifyAboutConsumerSlots,
+} from '../workflows'
+
+vi.mock('@/utils/toaster', () => ({ default: { info: vi.fn(), error: vi.fn() } }))
 
 describe('getToolkitsFromConfiguration', () => {
   // Mock toolkit names (using string literals since TOOLKITS doesn't have all integration names)
@@ -399,5 +406,31 @@ tools:
 
     expect(result).toBe(false)
     expect(consoleSpy).toHaveBeenCalledWith('Failed to parse yaml config:', expect.any(Error))
+  })
+})
+
+describe('notifyAboutConsumerSlots', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('names the tools that will use each user own integration', () => {
+    notifyAboutConsumerSlots({
+      warnings: [
+        { tool_name: 'generic_confluence_tool', credential_type: 'Confluence' },
+        { tool_name: 'generic_jira_tool', credential_type: 'Jira' },
+      ],
+    })
+
+    expect(toaster.info).toHaveBeenCalledWith(
+      "Saved. These tools will use each user's own integration: generic_confluence_tool (Confluence), generic_jira_tool (Jira)."
+    )
+  })
+
+  it('says nothing when the save carried no warnings', () => {
+    notifyAboutConsumerSlots({ warnings: [] })
+    notifyAboutConsumerSlots(undefined)
+
+    expect(toaster.info).not.toHaveBeenCalled()
   })
 })

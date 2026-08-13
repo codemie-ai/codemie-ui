@@ -107,6 +107,11 @@ const LLMSelector = forwardRef<
     }, [loadModels])
 
     useEffect(() => {
+      // While the model list has not loaded yet every stored model looks invalid, and the branch
+      // below would wipe the form value via onChange(undefined). That write uses shouldDirty: false
+      // and does not repaint the field, so the UI kept showing the model while the form no longer
+      // had it, and saving the assistant failed with 422 "llm_model_type is required".
+      if (!models.length) return
       if (value) {
         const isValidModel = models.some((model) => model.value === value)
         if (!isValidModel) onChange(allowEmpty ? '' : defaultLlmModel?.value)

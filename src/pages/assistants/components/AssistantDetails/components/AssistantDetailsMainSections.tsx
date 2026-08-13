@@ -29,6 +29,9 @@ interface AssistantDetailsMainSectionsProps {
   assistant: Assistant
   isTemplate?: boolean
   onNewIntegration?: (project: string, settingType: string, callback: () => void) => void
+  // Only the workflow-embedded view passes this; on the assistant page it stays undefined and
+  // the mapping section keeps saving for the assistant as a whole.
+  workflowId?: string
 }
 
 /**
@@ -41,6 +44,7 @@ const AssistantDetailsMainSections = ({
   assistant,
   isTemplate,
   onNewIntegration,
+  workflowId,
 }: AssistantDetailsMainSectionsProps) => {
   const [showUserMappingSection, setShowUserMappingSection] = useState(false)
 
@@ -85,6 +89,7 @@ const AssistantDetailsMainSections = ({
           assistant={assistant}
           onNewIntegrationRequest={onNewIntegration}
           onSectionVisibilityChange={setShowUserMappingSection}
+          workflowId={workflowId}
         />
       )}
     </>

@@ -55,6 +55,16 @@ import { transformAssistantToCreateDTO } from './utils/assistants'
 const RECENT_ASSISTANTS_STORAGE_KEY = 'recentAssistants'
 const SHOW_NEW_ASST_AI_POPUP = 'codemie-new-asst-ai-popup'
 
+/**
+ * Scope of a personal integration save. Present only when the section was opened from a workflow
+ * screen: `workflowId` alone stores the selection for that workflow, `applyToAssistant` stores it
+ * for the assistant everywhere instead and drops the workflow-scoped one for that workflow.
+ */
+export interface UserMappingSaveScope {
+  workflowId?: string
+  applyToAssistant?: boolean
+}
+
 interface AssistantsStoreType {
   assistants: Assistant[]
   assistantCategories: AssistantCategory[]
@@ -134,8 +144,16 @@ interface AssistantsStoreType {
   updateAssistantsWithLikedStatus: () => Promise<any>
   reactToAssistant: (id: string, reaction: string) => Promise<any>
   removeReaction: (id: string) => Promise<any>
-  getUserMapping: (assistantId: string) => Promise<any>
-  saveUserMappingSettings: (assistantId: string, userMappingSettings: any) => Promise<any>
+  getUserMapping: (
+    assistantId: string,
+    workflowId?: string,
+    credentialTypes?: string[]
+  ) => Promise<any>
+  saveUserMappingSettings: (
+    assistantId: string,
+    userMappingSettings: any,
+    scope?: UserMappingSaveScope
+  ) => Promise<any>
 
   showEditRemoteAssistantModal: boolean
   assistantToEdit: Assistant | null
@@ -728,9 +746,17 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     }
   },
 
-  getUserMapping(assistantId) {
+  getUserMapping(assistantId, workflowId, credentialTypes) {
+    // With a workflow the backend answers with the selection effective there (the assistant-wide
+    // one overridden by the workflow-scoped one) plus has_assistant_scope_selection. Passing the
+    // displayed credential types additionally asks what auto lookup would resolve for slots the
+    // user never chose explicitly, so the panel can pre-select it.
+    const params = new URLSearchParams()
+    if (workflowId) params.set('workflow_id', workflowId)
+    if (credentialTypes?.length) params.set('credential_types', credentialTypes.join(','))
+    const query = params.size ? `?${params}` : ''
     return api
-      .get(`v1/assistants/${assistantId}/users/mapping`)
+      .get(`v1/assistants/${assistantId}/users/mapping${query}`)
       .then((response) => {
         if (response.ok) {
           return response.json()
@@ -743,7 +769,11 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       })
   },
 
-  saveUserMappingSettings(assistantId, userMappingSettings: Array<Record<string, any>>) {
+  saveUserMappingSettings(
+    assistantId,
+    userMappingSettings: Array<Record<string, any>>,
+    scope?: UserMappingSaveScope
+  ) {
     // Send every displayed slot with its current selection. A slot cleared to "None"
     // carries an empty integration_id so the backend removes its stored mapping and the
     // tool/server falls back to the author's base (inline) config.
@@ -751,8 +781,17 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       name: setting.originalName,
       integration_id: setting.settingId || '',
     }))
+    // Without a workflow the body stays exactly as before, so the assistant page and every
+    // existing API client keep their current, assistant-wide behaviour.
+    const payload = scope?.workflowId
+      ? {
+          tools_config,
+          workflow_id: scope.workflowId,
+          apply_to_assistant: !!scope.applyToAssistant,
+        }
+      : { tools_config }
     return api
-      .post(`v1/assistants/${assistantId}/users/mapping`, { tools_config })
+      .post(`v1/assistants/${assistantId}/users/mapping`, payload)
       .then((response) =>
         response.ok ? response.json() : Promise.reject(new Error('Failed to save mapping'))
       )

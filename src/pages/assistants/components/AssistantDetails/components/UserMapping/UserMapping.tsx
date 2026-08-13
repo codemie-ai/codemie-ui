@@ -18,10 +18,13 @@ import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
 import DetailsSidebarSection from '@/components/details/DetailsSidebar/components/DetailsSidebarSection'
+import { Checkbox } from '@/components/form/Checkbox'
 import { assistantsStore } from '@/store/assistants'
 import { userSettingsStore } from '@/store/userSettings'
 import { Assistant } from '@/types/entity/assistant'
 import {
+  applyAutoResolvedIntegrations,
+  collectAutoLookupCredentialTypes,
   getDisplayableToolkits,
   getScopedMappingIntegrationOptions,
   initializeUserMappingSettings,
@@ -36,6 +39,9 @@ interface UserMappingProps {
   assistant: Assistant
   onNewIntegrationRequest: (project: string, settingType: string, onComplete: () => void) => void
   onSectionVisibilityChange: (visible: boolean) => void
+  // Set when the section is opened from a workflow screen. Selections then default to that
+  // workflow; on the assistant page it is undefined and saves stay assistant-wide.
+  workflowId?: string
 }
 
 interface SubAssistantData {
@@ -43,12 +49,16 @@ interface SubAssistantData {
   displayableToolkits: any[]
   userMappingSettings: UserMappingSettings
   hasMapping: boolean
+  // Whether this sub-assistant already has an assistant-wide selection of its own. The section's
+  // single checkbox governs sub-assistant saves too, so its default must consider all of them.
+  hasAssistantScopeSelection: boolean
 }
 
 export const UserMapping: React.FC<UserMappingProps> = ({
   assistant,
   onNewIntegrationRequest,
   onSectionVisibilityChange,
+  workflowId,
 }) => {
   const { getAssistantToolkits } = useSnapshot(assistantsStore)
   const [userMappingSettings, setUserMappingSettings] = useState<UserMappingSettings>({})
@@ -60,6 +70,13 @@ export const UserMapping: React.FC<UserMappingProps> = ({
   const [isSaving, setIsSaving] = useState(false)
   const [subAssistantsData, setSubAssistantsData] = useState<SubAssistantData[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  // Governs the whole section (sub-assistants included): off saves for this workflow only, on
+  // saves for the assistant everywhere.
+  const [applyToAssistant, setApplyToAssistant] = useState(false)
+  // Slots the user actually touched. In workflow scope only these are sent, so inherited values
+  // are never written into the workflow row — otherwise later assistant-page changes would stop
+  // reaching this workflow.
+  const [changedKeys, setChangedKeys] = useState<Set<string>>(new Set())
 
   const displayableToolkits = useMemo(() => getDisplayableToolkits(assistant), [assistant])
   const hasOrchestratorMapping = displayableToolkits.length > 0
@@ -83,15 +100,31 @@ export const UserMapping: React.FC<UserMappingProps> = ({
 
   const fetchUserMappingSettings = useCallback(async () => {
     try {
-      const userMapping = await assistantsStore.getUserMapping(assistant.id)
+      // Ask about the credential types of the displayed slots as well, so the backend reports what
+      // auto lookup would resolve for the ones without an explicit choice. MCP slots are left out:
+      // without a selection they run on the author's base config, there is nothing to resolve.
+      const credentialTypes = collectAutoLookupCredentialTypes(assistant)
+
+      // Inside a workflow the backend answers with the effective selection: the assistant-wide
+      // one, overridden per slot by anything saved for this workflow.
+      const userMapping = await assistantsStore.getUserMapping(assistant.id, workflowId, credentialTypes)
       const initialSettings = initializeUserMappingSettings(assistant, userMapping)
+      // Pre-select what a run would pick for slots the user never chose. Marking them as changed
+      // makes the next save store them explicitly, which is the intended behaviour: from then on
+      // the slot is pinned to that integration instead of following auto lookup.
+      const autoResolvedKeys = applyAutoResolvedIntegrations(initialSettings, userMapping?.auto_resolved)
       setUserMappingSettings(initialSettings)
+      if (autoResolvedKeys.length) {
+        setChangedKeys((prev) => new Set([...prev, ...autoResolvedKeys]))
+      }
+      return !!userMapping?.has_assistant_scope_selection
     } catch (error) {
       console.error('Error fetching user mapping settings:', error)
       const initialSettings = initializeUserMappingSettings(assistant)
       setUserMappingSettings(initialSettings)
+      return false
     }
-  }, [assistant])
+  }, [assistant, workflowId])
 
   const fetchToolsDescriptions = async () => {
     try {
@@ -125,12 +158,18 @@ export const UserMapping: React.FC<UserMappingProps> = ({
             displayableToolkits: [],
             userMappingSettings: {},
             hasMapping: false,
+            hasAssistantScopeSelection: false,
           }
         }
 
         try {
-          const userMapping = await assistantsStore.getUserMapping(subAssistant.id)
+          const userMapping = await assistantsStore.getUserMapping(
+            subAssistant.id,
+            workflowId,
+            collectAutoLookupCredentialTypes(subAssistant)
+          )
           const initialSettings = initializeUserMappingSettings(subAssistant, userMapping)
+          applyAutoResolvedIntegrations(initialSettings, userMapping?.auto_resolved)
 
           const hasDefaultIntegrations =
             Object.keys(initialSettings).length === 0 ||
@@ -143,6 +182,7 @@ export const UserMapping: React.FC<UserMappingProps> = ({
             displayableToolkits,
             userMappingSettings: initialSettings,
             hasMapping: hasDefaultIntegrations,
+            hasAssistantScopeSelection: !!userMapping?.has_assistant_scope_selection,
           }
         } catch (error) {
           console.error('Error fetching mapping for sub-assistant:', subAssistant.id, error)
@@ -159,6 +199,7 @@ export const UserMapping: React.FC<UserMappingProps> = ({
             displayableToolkits,
             userMappingSettings: initialSettings,
             hasMapping: hasDefaultIntegrations,
+            hasAssistantScopeSelection: false,
           }
         }
       } catch (error) {
@@ -168,23 +209,34 @@ export const UserMapping: React.FC<UserMappingProps> = ({
           displayableToolkits: [],
           userMappingSettings: {},
           hasMapping: false,
+          hasAssistantScopeSelection: false,
         }
       }
     })
 
     return Promise.all(subAssistantsDataPromises)
-  }, [assistant.nested_assistants])
+  }, [assistant.nested_assistants, workflowId])
 
   useEffect(() => {
     const loadAllData = async () => {
       setIsLoading(true)
       try {
-        await Promise.all([
+        const [, , orchestratorHasSelection, subAssistants] = await Promise.all([
           loadIntegrations(),
           fetchToolsDescriptions(),
-          hasOrchestratorMapping && fetchUserMappingSettings(),
-          fetchSubAssistantsData().then(setSubAssistantsData),
+          // Load the orchestrator mapping whenever it has slots; inside a workflow also load it
+          // when it has none, because the checkbox default needs its selection flag.
+          hasOrchestratorMapping || workflowId ? fetchUserMappingSettings() : false,
+          fetchSubAssistantsData(),
         ])
+        setSubAssistantsData(subAssistants)
+        // Pre-tick only when the user has no assistant-wide selection anywhere in this section —
+        // the checkbox saves the orchestrator and every sub-assistant together, so a single
+        // existing selection must keep it off rather than silently widening that one.
+        const hasAnyAssistantScopeSelection =
+          !!orchestratorHasSelection ||
+          subAssistants.some((data) => data.hasAssistantScopeSelection)
+        setApplyToAssistant(!!workflowId && !hasAnyAssistantScopeSelection)
       } catch (error) {
         console.error('Error loading UserMapping data:', error)
       } finally {
@@ -223,6 +275,14 @@ export const UserMapping: React.FC<UserMappingProps> = ({
       }
       return prev
     })
+    setChangedKeys((prev) => new Set(prev).add(itemKey))
+    setIsDirty(true)
+  }
+
+  // Changing the scope is a change in its own right: promoting the current selection to the whole
+  // assistant must not require re-picking a slot just to reveal the save button.
+  const handleApplyToAssistantChange = (checked: boolean) => {
+    setApplyToAssistant(checked)
     setIsDirty(true)
   }
 
@@ -235,8 +295,27 @@ export const UserMapping: React.FC<UserMappingProps> = ({
     setIsSaving(true)
 
     try {
-      await assistantsStore.saveUserMappingSettings(assistant.id, userMappingSettings)
-      toaster.info('Your integration settings have been successfully saved for this assistant.')
+      // Assistant scope keeps sending every displayed slot (unchanged behaviour). Workflow scope
+      // sends only what the user changed, so untouched slots keep following the assistant scope.
+      const settingsToSave =
+        workflowId && !applyToAssistant
+          ? Object.fromEntries(
+              Object.entries(userMappingSettings).filter(([key]) => changedKeys.has(key))
+            )
+          : userMappingSettings
+
+      await assistantsStore.saveUserMappingSettings(
+        assistant.id,
+        settingsToSave,
+        workflowId ? { workflowId, applyToAssistant } : undefined
+      )
+      // Name the scope the save actually landed in, so the user is never left guessing
+      // whether the change applies to this workflow only or to the assistant everywhere.
+      toaster.info(
+        workflowId && !applyToAssistant
+          ? 'Your integration settings have been successfully saved for this workflow.'
+          : 'Your integration settings have been successfully saved for this assistant.'
+      )
       await fetchUserMappingSettings()
     } catch (error) {
       console.error('Error saving user mapping settings:', error)
@@ -246,12 +325,14 @@ export const UserMapping: React.FC<UserMappingProps> = ({
     } finally {
       setIsSaving(false)
       setIsDirty(false)
+      setChangedKeys(new Set())
     }
   }
 
   const handleCancelChanges = () => {
     fetchUserMappingSettings()
     setIsDirty(false)
+    setChangedKeys(new Set())
   }
 
   const getLatestSetting = (
@@ -305,6 +386,16 @@ export const UserMapping: React.FC<UserMappingProps> = ({
   return (
     <DetailsSidebarSection headline="Your Integration Settings">
       <div className="flex flex-col gap-6">
+        {workflowId && (
+          <Checkbox
+            id="user-mapping-apply-to-assistant"
+            checked={applyToAssistant}
+            onChange={handleApplyToAssistantChange}
+            label="Apply to the whole assistant, not just this workflow"
+            hint="Off: these integrations are used only when the assistant runs in this workflow. On: they are used everywhere this assistant runs, including chat."
+          />
+        )}
+
         {hasOrchestratorMapping && (
           <div>
             {showOrchestratorHeader && (
@@ -355,6 +446,8 @@ export const UserMapping: React.FC<UserMappingProps> = ({
                   onNewIntegrationRequest={onNewIntegrationRequest}
                   toolsDescriptions={toolsDescriptions}
                   settingsOptions={settingsOptions}
+                  workflowId={workflowId}
+                  applyToAssistant={applyToAssistant}
                 />
               ))}
           </div>

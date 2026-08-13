@@ -128,6 +128,8 @@ const ToolsConfiguration = ({
     toggleAllTools,
     updateToolkitSetting,
     updateToolSetting,
+    updateToolkitAutoLookup,
+    updateToolAutoLookup,
   } = useToolkitSelection({ selectedToolkits, onToolkitsChange })
 
   useEffect(() => {
@@ -190,6 +192,8 @@ const ToolsConfiguration = ({
       toggleAllTools,
       updateToolSetting,
       updateToolkitSetting,
+      updateToolkitAutoLookup,
+      updateToolAutoLookup,
       singleToolSelection,
       onAddSettingClick: (credentialType: string) =>
         showNewIntegrationPopup(project, credentialType),
@@ -205,6 +209,8 @@ const ToolsConfiguration = ({
       toggleAllTools,
       updateToolSetting,
       updateToolkitSetting,
+      updateToolkitAutoLookup,
+      updateToolAutoLookup,
       showNewIntegrationPopup,
       project,
       isChatConfig,
