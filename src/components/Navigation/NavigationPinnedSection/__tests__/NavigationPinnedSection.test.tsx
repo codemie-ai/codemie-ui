@@ -180,4 +180,21 @@ describe('NavigationPinnedSection', () => {
       expect(container.querySelector('ul')).not.toBeInTheDocument()
     })
   })
+
+  describe('data-onboarding="prebuilt-assistants" attribute', () => {
+    it('is absent when helpAssistantsFetched is false', () => {
+      mockAssistantsStore.helpAssistantsFetched = false
+      mockAssistantsStore.helpAssistants = [faqAssistant] as any
+      const { container } = render(<NavigationPinnedSection />)
+      expect(container.querySelector('[data-onboarding="prebuilt-assistants"]')).toBeNull()
+    })
+
+    it('is present when helpAssistantsFetched is true and items exist', async () => {
+      mockAssistantsStore.helpAssistantsFetched = true
+      mockAssistantsStore.helpAssistants = [faqAssistant] as any
+      const { container, findAllByTestId } = render(<NavigationPinnedSection />)
+      await findAllByTestId('pinned-row')
+      expect(container.querySelector('[data-onboarding="prebuilt-assistants"]')).not.toBeNull()
+    })
+  })
 })

@@ -351,6 +351,7 @@ const NavigationPinnedSection: React.FC = () => {
     <div ref={containerRef} className="h-full relative">
       {helpAssistantsFetched && allItems.length > 0 && (
         <div
+          data-onboarding="prebuilt-assistants"
           className={cn(
             'flex flex-col gap-1.5 overflow-hidden h-full justify-end pb-[18px]',
             !navigationExpanded && 'items-center'

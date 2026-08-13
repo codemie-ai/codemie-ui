@@ -40,12 +40,7 @@ export const OnboardingSpotlight = ({
     }
 
     const updatePosition = () => {
-      const elementPosition = getElementPosition(target)
-      // Only update when the element is actually found — avoids clearing the backdrop
-      // when the element is momentarily absent (e.g. between step transitions)
-      if (elementPosition) {
-        setPosition(elementPosition)
-      }
+      setPosition(getElementPosition(target))
     }
 
     updatePosition()

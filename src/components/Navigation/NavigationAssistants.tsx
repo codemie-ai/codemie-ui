@@ -104,7 +104,7 @@ const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded 
   if (assistantItems.length === 0) return null
 
   return (
-    <div data-onboarding="prebuilt-assistants" className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <div className="mt-2"></div>
       {assistantItems.map((assistant) => (
         <a

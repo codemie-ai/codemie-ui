@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "CR-002 and CR-003 are fully resolved. CR-001 was explicitly deferred by the user in the final round as a product decision; the check round carries that deferral forward. No new issues introduced by the fix-up diff — both changes are minimal and targeted.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "deferred",
+      "notes": "User explicitly accepted deferral: condition timing race is a product decision (silent skip vs lazy evaluation). Not re-checked in this round."
+    },
+    {
+      "id": "CR-002",
+      "status": "fixed",
+      "notes": "updatePosition now calls setPosition(getElementPosition(target)) atomically — null when absent, position when present. No intermediate null render; backdrop flash eliminated. Existing OnboardingSpotlight tests continue to pass with the new implementation."
+    },
+    {
+      "id": "CR-003",
+      "status": "fixed",
+      "notes": "data-onboarding=\"prebuilt-assistants\" removed from NavigationAssistants.tsx:107. Attribute is now canonical to NavigationPinnedSection only. document.querySelector will no longer match the wrong element when both components are active."
+    }
+  ]
+}

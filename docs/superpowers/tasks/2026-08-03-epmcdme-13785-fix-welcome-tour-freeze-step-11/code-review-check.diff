@@ -1,0 +1,32 @@
+diff --git a/src/components/Navigation/NavigationAssistants.tsx b/src/components/Navigation/NavigationAssistants.tsx
+index 33b57773b..07826ded4 100644
+--- a/src/components/Navigation/NavigationAssistants.tsx
++++ b/src/components/Navigation/NavigationAssistants.tsx
+@@ -104,7 +104,7 @@ const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded
+   if (assistantItems.length === 0) return null
+ 
+   return (
+-    <div data-onboarding="prebuilt-assistants" className="flex flex-col gap-2">
++    <div className="flex flex-col gap-2">
+       <div className="mt-2"></div>
+       {assistantItems.map((assistant) => (
+         <a
+diff --git a/src/components/Onboarding/OnboardingSpotlight.tsx b/src/components/Onboarding/OnboardingSpotlight.tsx
+index 15b141c5f..329e86d6d 100644
+--- a/src/components/Onboarding/OnboardingSpotlight.tsx
++++ b/src/components/Onboarding/OnboardingSpotlight.tsx
+@@ -39,13 +39,8 @@ export const OnboardingSpotlight = ({
+       return
+     }
+ 
+-    setPosition(null)
+-
+     const updatePosition = () => {
+-      const elementPosition = getElementPosition(target)
+-      if (elementPosition) {
+-        setPosition(elementPosition)
+-      }
++      setPosition(getElementPosition(target))
+     }
+ 
+     updatePosition()

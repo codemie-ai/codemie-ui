@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "Two major defects require resolution: a one-frame backdrop flash introduced by the unconditional setPosition(null) call (fixable with a one-line change), and a timing ambiguity in how the prebuilt-assistants condition is evaluated at startFlow time. One additional patch finding: the duplicate data-onboarding attribute in NavigationAssistants.tsx was not removed and could spotlight the wrong element when both components are active. Decision_needed on CR-001 drives low confidence; a human must confirm whether silent step-skipping on race is acceptable or whether lazy evaluation is required.",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Step 11 no longer freezes — backdrop disappears when prebuilt-assistants element is absent",
+      "status": "pass",
+      "notes": "setPosition(null) fires immediately on target change; when getElementPosition returns null the component returns null and the backdrop is gone."
+    },
+    {
+      "criterion": "Condition correctly reflects element presence — returns false when section not mounted",
+      "status": "pass",
+      "notes": "New condition () => !!document.querySelector('[data-onboarding=\"prebuilt-assistants\"]') is true only when the data attribute is present in the DOM."
+    },
+    {
+      "criterion": "data-onboarding attribute is on an element that is mounted only when assistants are available",
+      "status": "pass",
+      "notes": "NavigationPinnedSection renders the attribute inside helpAssistantsFetched && allItems.length > 0 guard. Note: NavigationAssistants.tsx:107 still carried the same attribute (CR-003, now fixed)."
+    },
+    {
+      "criterion": "Tests cover condition false/true cases",
+      "status": "pass",
+      "notes": "navigationIntroductionConditions.test.ts covers both absent and present DOM states."
+    },
+    {
+      "criterion": "Tests cover attribute presence/absence in NavigationPinnedSection",
+      "status": "pass",
+      "notes": "NavigationPinnedSection.test.tsx new describe block covers helpAssistantsFetched=false (absent) and true+items (present)."
+    },
+    {
+      "criterion": "OnboardingSpotlight clears stale position when target changes to missing selector",
+      "status": "pass",
+      "notes": "OnboardingSpotlight.test.tsx third test verifies stale-position clearing on target prop change."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "branch-naming",
+      "status": "pass",
+      "notes": "EPMCDME-13785_fix-welcome-tour-freeze-step-11 matches EPMCDME-XXXX_short-description pattern."
+    },
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "All 4 feature commits use EPMCDME-13785: Capital sentence format. Fix/Move/Apply/Add all pass regex."
+    },
+    {
+      "standard": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not present. No lint/type errors observed in pre-commit output."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No auth, secrets, injection, or unsafe handling in the diff. Changes are UI/DOM only."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "decision_needed",
+      "severity": "major",
+      "problem": "The prebuilt-assistants step condition is evaluated eagerly via Promise.all inside startFlow. The new condition checks document.querySelector('[data-onboarding=\"prebuilt-assistants\"]') which returns false if helpAssistants have not loaded yet at the moment startFlow is called. When false, the step is silently dropped from the flow.",
+      "impact": "If the welcome tour starts before helpAssistantsFetched becomes true, step 11 is silently omitted. Whether this is acceptable UX or a silent regression requires a product decision.",
+      "recommendation": "Accept silent skip with a comment (option A), or refactor to lazy per-step evaluation (option B). User chose to defer to a follow-up ticket."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "OnboardingSpotlight.useEffect calls setPosition(null) unconditionally then updatePosition() only sets position when element found. Produces two renders: null (backdrop gone) then found (backdrop back). Visible flash on normal step transitions.",
+      "impact": "Steps with present targets show a brief backdrop flicker on every step advance.",
+      "recommendation": "Use setPosition(getElementPosition(target)) atomically in updatePosition. Fixed in follow-up commit."
+    },
+    {
+      "id": "CR-003",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "NavigationAssistants.tsx:107 still carried data-onboarding=\"prebuilt-assistants\". When both NavigationAssistants and NavigationPinnedSection are active simultaneously, document.querySelector returns the first match — potentially the wrong element.",
+      "impact": "Spotlight could highlight NavigationAssistants instead of NavigationPinnedSection in configurations where both render.",
+      "recommendation": "Remove attribute from NavigationAssistants.tsx. Fixed in follow-up commit."
+    }
+  ]
+}

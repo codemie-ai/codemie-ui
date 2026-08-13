@@ -1,0 +1,4 @@
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"plan","status":"succeeded"}
+{"event":"decision.recorded","ts":"2026-08-04T00:00:00Z","actor":"decision-router","summary":"Decision recorded for code-review.final: request-changes","data":{"gate_id":"code-review.final","mode":"hitl","decision":"request-changes","source":"hitl","escalated":false}}
+{"event":"decision.recorded","ts":"2026-08-04T00:01:00Z","actor":"decision-router","summary":"Decision recorded for code-review.check: approve","data":{"gate_id":"code-review.check","mode":"hitl","decision":"approve","source":"hitl","escalated":false}}
+{"event":"lifecycle_emission","intent":"record_complexity_score","assessment_mode":"actual","status":"succeeded"}

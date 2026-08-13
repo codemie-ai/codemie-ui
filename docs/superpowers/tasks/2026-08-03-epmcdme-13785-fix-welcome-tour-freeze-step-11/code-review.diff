@@ -1,0 +1,203 @@
+diff --git a/src/components/Navigation/NavigationPinnedSection/NavigationPinnedSection.tsx b/src/components/Navigation/NavigationPinnedSection/NavigationPinnedSection.tsx
+index aec5eb0f7..f1cb2f52c 100644
+--- a/src/components/Navigation/NavigationPinnedSection/NavigationPinnedSection.tsx
++++ b/src/components/Navigation/NavigationPinnedSection/NavigationPinnedSection.tsx
+@@ -351,6 +351,7 @@ const NavigationPinnedSection: React.FC = () => {
+     <div ref={containerRef} className="h-full relative">
+       {helpAssistantsFetched && allItems.length > 0 && (
+         <div
++          data-onboarding="prebuilt-assistants"
+           className={cn(
+             'flex flex-col gap-1.5 overflow-hidden h-full justify-end pb-[18px]',
+             !navigationExpanded && 'items-center'
+diff --git a/src/components/Navigation/NavigationPinnedSection/__tests__/NavigationPinnedSection.test.tsx b/src/components/Navigation/NavigationPinnedSection/__tests__/NavigationPinnedSection.test.tsx
+index 9dced1506..f46191a22 100644
+--- a/src/components/Navigation/NavigationPinnedSection/__tests__/NavigationPinnedSection.test.tsx
++++ b/src/components/Navigation/NavigationPinnedSection/__tests__/NavigationPinnedSection.test.tsx
+@@ -180,4 +180,21 @@ describe('NavigationPinnedSection', () => {
+       expect(container.querySelector('ul')).not.toBeInTheDocument()
+     })
+   })
++
++  describe('data-onboarding="prebuilt-assistants" attribute', () => {
++    it('is absent when helpAssistantsFetched is false', () => {
++      mockAssistantsStore.helpAssistantsFetched = false
++      mockAssistantsStore.helpAssistants = [faqAssistant] as any
++      const { container } = render(<NavigationPinnedSection />)
++      expect(container.querySelector('[data-onboarding="prebuilt-assistants"]')).toBeNull()
++    })
++
++    it('is present when helpAssistantsFetched is true and items exist', async () => {
++      mockAssistantsStore.helpAssistantsFetched = true
++      mockAssistantsStore.helpAssistants = [faqAssistant] as any
++      const { container, findAllByTestId } = render(<NavigationPinnedSection />)
++      await findAllByTestId('pinned-row')
++      expect(container.querySelector('[data-onboarding="prebuilt-assistants"]')).not.toBeNull()
++    })
++  })
+ })
+diff --git a/src/components/Onboarding/OnboardingSpotlight.tsx b/src/components/Onboarding/OnboardingSpotlight.tsx
+index 609682151..15b141c5f 100644
+--- a/src/components/Onboarding/OnboardingSpotlight.tsx
++++ b/src/components/Onboarding/OnboardingSpotlight.tsx
+@@ -39,10 +39,10 @@ export const OnboardingSpotlight = ({
+       return
+     }
+ 
++    setPosition(null)
++
+     const updatePosition = () => {
+       const elementPosition = getElementPosition(target)
+-      // Only update when the element is actually found — avoids clearing the backdrop
+-      // when the element is momentarily absent (e.g. between step transitions)
+       if (elementPosition) {
+         setPosition(elementPosition)
+       }
+diff --git a/src/components/Onboarding/__tests__/OnboardingSpotlight.test.tsx b/src/components/Onboarding/__tests__/OnboardingSpotlight.test.tsx
+new file mode 100644
+index 000000000..ed13b391a
+--- /dev/null
++++ b/src/components/Onboarding/__tests__/OnboardingSpotlight.test.tsx
+@@ -0,0 +1,64 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { getElementPosition } from '@/utils/onboarding'
++
++import { OnboardingSpotlight } from '../OnboardingSpotlight'
++
++vi.mock('@/utils/onboarding', () => ({
++  getElementPosition: vi.fn(),
++}))
++vi.mock('@/utils/tailwindColors', () => ({
++  getTailwindColor: vi.fn(() => '#9E00FF'),
++}))
++
++const mockGetElementPosition = vi.mocked(getElementPosition)
++
++const FOUND_POSITION = { top: 10, left: 20, width: 100, height: 50 }
++
++describe('OnboardingSpotlight', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++  })
++
++  it('renders nothing when target element is not found', () => {
++    mockGetElementPosition.mockReturnValue(null)
++    const { container } = render(<OnboardingSpotlight target="[data-missing]" />)
++    expect(container.firstChild).toBeNull()
++  })
++
++  it('renders the spotlight div when target element is found', () => {
++    mockGetElementPosition.mockReturnValue(FOUND_POSITION)
++    const { container } = render(<OnboardingSpotlight target="[data-found]" />)
++    expect(container.firstChild).not.toBeNull()
++  })
++
++  it('clears stale position when target prop changes to a selector whose element is absent', () => {
++    // First render: element found → spotlight visible
++    mockGetElementPosition.mockReturnValue(FOUND_POSITION)
++    const { container, rerender } = render(<OnboardingSpotlight target="[data-analytics]" />)
++    expect(container.firstChild).not.toBeNull()
++
++    // Rerender with new target whose element is absent
++    mockGetElementPosition.mockReturnValue(null)
++    rerender(<OnboardingSpotlight target="[data-prebuilt-assistants]" />)
++
++    // Stale analytics spotlight must be gone
++    expect(container.firstChild).toBeNull()
++  })
++})
+diff --git a/src/configs/onboarding/__tests__/navigationIntroductionConditions.test.ts b/src/configs/onboarding/__tests__/navigationIntroductionConditions.test.ts
+new file mode 100644
+index 000000000..fec8fc9e7
+--- /dev/null
++++ b/src/configs/onboarding/__tests__/navigationIntroductionConditions.test.ts
+@@ -0,0 +1,54 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { afterEach, describe, expect, it, vi } from 'vitest'
++
++import { navigationIntroductionFlow } from '@/configs/onboarding/navigationIntroduction'
++
++vi.mock('@/components/Onboarding/FirstTimeWelcomeContent', () => ({ default: () => null }))
++vi.mock('@/store/appInfo', () => ({
++  appInfoStore: {
++    completeOnboarding: vi.fn(),
++    navigationExpanded: false,
++    toggleNavigationExpanded: vi.fn(),
++  },
++}))
++vi.mock('@/store/user', () => ({ userStore: { user: null } }))
++vi.mock('@/utils/enterpriseEdition', () => ({ isEnterpriseEdition: vi.fn(() => false) }))
++vi.mock('@/utils/onboarding', () => ({
++  findNavLinkByText: vi.fn(() => null),
++  getElementPosition: vi.fn(() => null),
++}))
++
++describe('navigationIntroductionFlow — prebuilt-assistants condition', () => {
++  const step = navigationIntroductionFlow.steps.find((s) => s.id === 'prebuilt-assistants')!
++  const condition = step.condition!
++
++  afterEach(() => {
++    document.body.innerHTML = ''
++  })
++
++  it('returns false when [data-onboarding="prebuilt-assistants"] is absent from DOM', () => {
++    expect(condition()).toBe(false)
++  })
++
++  it('returns true when [data-onboarding="prebuilt-assistants"] exists in DOM', () => {
++    const el = document.createElement('div')
++    el.setAttribute('data-onboarding', 'prebuilt-assistants')
++    document.body.appendChild(el)
++
++    expect(condition()).toBe(true)
++  })
++})
+diff --git a/src/configs/onboarding/navigationIntroduction.tsx b/src/configs/onboarding/navigationIntroduction.tsx
+index 42ddd9a1e..1925b1f86 100644
+--- a/src/configs/onboarding/navigationIntroduction.tsx
++++ b/src/configs/onboarding/navigationIntroduction.tsx
+@@ -292,12 +292,7 @@ These assistants are ready to use:
+ - Chatbot: General conversations and image generation with DALL-E
+ 
+ Click on any assistant to start using it right away!`,
+-      condition: () => {
+-        const assistantsSection = document.querySelector(
+-          'header nav[aria-label="bottom-nav-links"]'
+-        )
+-        return !!assistantsSection?.querySelector('div[class*="flex"]')
+-      },
++      condition: () => !!document.querySelector('[data-onboarding="prebuilt-assistants"]'),
+     },
+ 
+     // Step 14: Help Navigation Item

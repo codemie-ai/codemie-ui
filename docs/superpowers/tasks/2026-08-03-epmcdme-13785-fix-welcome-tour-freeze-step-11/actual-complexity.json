@@ -1,0 +1,76 @@
+{
+  "task": "Fix welcome tour freeze on step 11: correct prebuilt-assistants condition, move data-onboarding attribute to NavigationPinnedSection, atomically clear stale spotlight position in OnboardingSpotlight, remove duplicate attribute from NavigationAssistants.",
+  "generated": "2026-08-04T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 3,
+      "label": "M",
+      "affected": "navigationIntroductionFlow (config), NavigationPinnedSection, NavigationAssistants, OnboardingSpotlight",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "OnboardingSpotlight useEffect timing change affects all onboarding steps, not only step 11",
+      "mitigation": "Unit test added covering stale-position scenario; change is a one-line addition and trivially reversible"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M",
+      "modified_files": 5,
+      "modified_file_list": [
+        "src/configs/onboarding/navigationIntroduction.tsx",
+        "src/components/Navigation/NavigationPinnedSection/NavigationPinnedSection.tsx",
+        "src/components/Navigation/NavigationAssistants.tsx",
+        "src/components/Onboarding/OnboardingSpotlight.tsx",
+        "src/components/Navigation/NavigationPinnedSection/__tests__/NavigationPinnedSection.test.tsx"
+      ],
+      "new_files": 2,
+      "new_file_list": [
+        "src/components/Onboarding/__tests__/OnboardingSpotlight.test.tsx",
+        "src/configs/onboarding/__tests__/navigationIntroductionConditions.test.ts"
+      ],
+      "affected_dirs": [
+        "src/configs/onboarding",
+        "src/components/Navigation",
+        "src/components/Onboarding"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 11,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 7,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four source components required coordinated changes (navigationIntroductionFlow config, NavigationPinnedSection, NavigationAssistants, OnboardingSpotlight); all UI layer but the three-cooperating-bugs diagnosis demanded cross-component reasoning across three directories"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "7 total files (5 modified + 2 new test files) spanning 3 directories; source-code deltas are near-one-liners but adequate test coverage required 3 test files, placing this at the lower end of M"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
