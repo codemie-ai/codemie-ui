@@ -19,7 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import SettingsForm from '../SettingsForm'
 
 // Captures the onChange so tests can imperatively change the project value
-let triggerProjectChange: ((project: string) => void) = () => {}
+let triggerProjectChange: (project: string) => void = () => {}
 
 vi.mock('@/components/ProjectSelector', () => ({
   default: ({ onChange }: any) => {

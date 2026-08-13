@@ -17,6 +17,7 @@ import { FC } from 'react'
 
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
+import Tooltip from '@/components/Tooltip/Tooltip'
 import { useCliUserDetail } from '@/hooks/useCliUserDetail'
 import { AnalyticsQueryParams, TabularMetricType } from '@/types/analytics'
 import { getDeterministicChartColor } from '@/utils/chartColors'
@@ -27,6 +28,8 @@ import {
   getWorkflowIntentCards,
   getClassificationCards,
   renderRepositoryCell,
+  renderBranchCell,
+  renderClientCell,
   renderClassificationCell,
 } from './helpers'
 import DistributionBarWidget from '../widgets/DistributionBarWidget'
@@ -188,16 +191,35 @@ const CLIInsightsUserDetailsModal: FC<Props> = ({
           )}
 
           {repositoriesTable && (
-            <TableWidget
-              metricType={TabularMetricType.CLI_INSIGHTS_USER_REPOSITORIES}
-              title={`Repositories (${repositoriesTable.data.rows.length})`}
-              initialData={repositoriesTable}
-              hidePagination
-              customRenderColumns={{
-                repository: renderRepositoryCell,
-                classification: renderClassificationCell,
-              }}
-            />
+            <>
+              <Tooltip target=".repo-cell-tooltip" appendTo={() => document.body} />
+              <Tooltip target=".branch-cell-tooltip" appendTo={() => document.body} />
+              <TableWidget
+                metricType={TabularMetricType.CLI_INSIGHTS_USER_REPOSITORIES}
+                title={`Repositories (${repositoriesTable.data.rows.length})`}
+                initialData={repositoriesTable}
+                hidePagination
+                columnOrder={[
+                  'repository',
+                  'branch',
+                  'classification',
+                  'client',
+                  'sessions',
+                  'cost',
+                  'net_lines',
+                ]}
+                tableStyles={{
+                  className: 'repositories-table',
+                  columnWidths: { repository: '220px', branch: '220px' },
+                }}
+                customRenderColumns={{
+                  repository: renderRepositoryCell,
+                  branch: renderBranchCell,
+                  classification: renderClassificationCell,
+                  client: renderClientCell,
+                }}
+              />
+            </>
           )}
 
           {!!meta.data.branches_used.length && (

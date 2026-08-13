@@ -466,7 +466,9 @@ describe('useToolkitSelection — author auto credentials lookup', () => {
     const updated = onToolkitsChange.mock.calls[0][0]
     const tools = updated[0].tools as Array<{ name: string; auto_credentials_lookup?: boolean }>
     expect(tools.find((t) => t.name === 'generic_jira_tool')?.auto_credentials_lookup).toBe(false)
-    expect(tools.find((t) => t.name === 'generic_confluence_tool')?.auto_credentials_lookup).toBeUndefined()
+    expect(
+      tools.find((t) => t.name === 'generic_confluence_tool')?.auto_credentials_lookup
+    ).toBeUndefined()
   })
 })
 

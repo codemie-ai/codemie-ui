@@ -44,10 +44,7 @@ export function useResourceOptions(
       try {
         let mapped: ResourceOption[] = []
         if (resourceType === 'assistant') {
-          const data = await assistantsStore.getAssistantOptions(
-            search ?? '',
-            { project }
-          )
+          const data = await assistantsStore.getAssistantOptions(search ?? '', { project })
           mapped = data.map((item: { id: string; name: string }) => ({
             label: item.name,
             value: String(item.id),

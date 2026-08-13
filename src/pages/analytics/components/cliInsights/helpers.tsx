@@ -13,8 +13,10 @@
 // limitations under the License.
 //
 
-import { ReactNode } from 'react'
+import React, { ReactNode } from 'react'
 
+import ClaudeDesktopSvg from '@/assets/icons/claude-desktop.svg?react'
+import TerminalSvg from '@/assets/icons/terminal.svg?react'
 import { AnalyticsQueryParams, Metric } from '@/types/analytics'
 import { humanizeAnalyticsLabel } from '@/utils/analyticsFormatters'
 import { getDeterministicChartColor } from '@/utils/chartColors'
@@ -131,30 +133,51 @@ export const getClassificationCards = (metrics: Metric[] | undefined): MetricCar
   ])
 }
 
-const getRepositoryBranches = (item: Record<string, unknown>): string[] =>
-  Array.isArray(item.branches)
-    ? item.branches.filter((branch): branch is string => typeof branch === 'string' && !!branch)
-    : []
-
 export const renderRepositoryCell = (item: Record<string, unknown>) => {
-  const branches = getRepositoryBranches(item)
-
+  const repo = getPrimitiveString(item.repository, '-')
   return (
-    <div className="flex flex-col gap-3">
-      <div>{getPrimitiveString(item.repository, '-')}</div>
-      {!!branches.length && (
-        <div className="flex flex-wrap gap-2">
-          {branches.map((branch) => (
-            <span
-              key={branch}
-              className="rounded-full bg-surface-elevated px-3 py-1 text-sm text-text-secondary"
-            >
-              {branch}
-            </span>
-          ))}
-        </div>
-      )}
+    <div className="repo-cell-tooltip truncate" data-pr-tooltip={repo}>
+      {repo}
     </div>
+  )
+}
+
+export const renderBranchCell = (item: Record<string, unknown>) => {
+  const branch = getPrimitiveString(item.branch)
+  if (!branch) return <span className="text-text-secondary">-</span>
+  return (
+    <span
+      className="branch-cell-tooltip inline-block max-w-full truncate rounded-full bg-surface-elevated px-3 py-1 text-sm text-text-secondary"
+      data-pr-tooltip={branch}
+    >
+      {branch}
+    </span>
+  )
+}
+
+const CLIENT_CONFIG: Record<
+  string,
+  { label: string; Icon: React.FC<React.SVGProps<SVGSVGElement>> }
+> = {
+  CLI: { label: 'CLI', Icon: TerminalSvg },
+  'codemie-daemon': { label: 'CLI', Icon: TerminalSvg },
+  'codemie-claude': { label: 'CLI', Icon: TerminalSvg },
+  'codemie-claude-acp': { label: 'CLI', Icon: TerminalSvg },
+  'codemie-code': { label: 'CLI', Icon: TerminalSvg },
+  'claude-desktop': { label: 'Claude Desktop', Icon: ClaudeDesktopSvg },
+}
+
+export const renderClientCell = (item: Record<string, unknown>) => {
+  const client = getPrimitiveString(item.client)
+  if (!client) return <span className="text-text-secondary">-</span>
+  const config = CLIENT_CONFIG[client]
+  if (!config) return <span>{client}</span>
+  const { label, Icon } = config
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <Icon className="h-4 w-4 shrink-0" />
+      {label}
+    </span>
   )
 }
 

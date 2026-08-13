@@ -1,0 +1,74 @@
+{
+  "decision": "approve",
+  "rationale": "Two findings from self-review, both patch-class fixes with no design ambiguity, both fixed and included in the committed diff (commit d70c2ab59). No outstanding findings.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "The Repositories table in the CLI Insights user detail modal shows one row per (repository, branch, client) combination, matching the backend response.",
+      "status": "pass",
+      "notes": "columnOrder/customRenderColumns wire branch and client straight through from the backend row shape; no client-side re-aggregation."
+    },
+    {
+      "criterion": "Branch renders as a pill badge; empty branch renders '-'.",
+      "status": "pass",
+      "notes": "renderBranchCell returns '<span className=\"text-text-secondary\">-</span>' when item.branch is empty, pill badge otherwise."
+    },
+    {
+      "criterion": "Client renders as an icon + label (CLI / Claude Desktop); unrecognized client values render as plain text rather than breaking the row.",
+      "status": "pass",
+      "notes": "renderClientCell falls back to '<span>{client}</span>' when CLIENT_CONFIG has no entry for the value, so a new/unmapped client type from the backend degrades gracefully instead of throwing or rendering blank."
+    },
+    {
+      "criterion": "Hovering a truncated repository or branch cell shows exactly one tooltip, regardless of row count.",
+      "status": "pass",
+      "notes": "Fixed by CR-001 below. Verified by tracing Table.tsx -> TableCell.tsx customRender(value, index) invocation (once per cell) and confirming the two <Tooltip> mounts now live at the TableWidget call site, not inside the per-row renderers."
+    },
+    {
+      "criterion": "No dead code exported from helpers.tsx that assumes the pre-fix branches: string[] response shape.",
+      "status": "pass",
+      "notes": "Fixed by CR-002 below. transformRepositoriesTable removed; grep -rn confirmed zero remaining call sites before removal."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Both commits on branch follow 'EPMCDME-12687: Capital sentence' (EPMCDME-XXXX: Capital sentence, per .ai-run/guides/standards/git-workflow.md)."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "npx eslint and npx tsc --noEmit both clean on the two changed files after the fixes below were applied."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "na",
+      "notes": "No auth, secrets, or user-input handling in this change; display-only cell renderers over already-authorized analytics data."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "outcome": "fixed",
+      "problem": "renderRepositoryCell and renderBranchCell each returned a '<Tooltip target=\".repo-cell-tooltip\" />' / '<Tooltip target=\".branch-cell-tooltip\" />' inline. These are cell renderers invoked once per (row, column) by TableCell.tsx's 'customRender(value, index)' (confirmed by tracing Table.tsx items.map -> TableCell customRender prop), not once per table.",
+      "impact": "For an N-row table, N separate PrimeReact Tooltip instances mounted, each bound via CSS-selector target to every element matching that class in the DOM (not just its own row). Hovering any cell could trigger multiple overlapping tooltip popups, and every render paid the cost of N redundant selector re-bindings. Directly affects the Repositories table, which regularly renders 40+ rows per user.",
+      "recommendation": "Mount both '<Tooltip target=\".repo-cell-tooltip\" appendTo={() => document.body} />' and '<Tooltip target=\".branch-cell-tooltip\" appendTo={() => document.body} />' once, at the TableWidget call site in CLIInsightsUserDetailsModal.tsx, wrapped in a fragment. Cell renderers keep only the marker element with its data-pr-tooltip attribute.",
+      "file": "src/pages/analytics/components/cliInsights/helpers.tsx",
+      "line": 141
+    },
+    {
+      "id": "CR-002",
+      "severity": "minor",
+      "triage": "patch",
+      "outcome": "fixed",
+      "problem": "transformRepositoriesTable was exported from helpers.tsx but had zero call sites anywhere in the repo (confirmed via 'grep -rn \"transformRepositoriesTable\" src/'). It re-implemented row expansion from a 'row.branches: string[]' field — the exact shape the backend's (repository, branch, client) grouping change retired; the backend now sends one row per combination already.",
+      "impact": "Not a runtime bug (unreachable code), but a maintenance hazard: the function looks like a valid, exported utility. If wired up later on the assumption it's needed, it would double-expand rows the backend already expands, silently corrupting the table.",
+      "recommendation": "Delete the function along with the ColumnType/TabularResponse imports it required (confirmed unused elsewhere via 'grep -n \"ColumnType\\|TabularResponse\" helpers.tsx' after removal).",
+      "file": "src/pages/analytics/components/cliInsights/helpers.tsx",
+      "line": 191
+    }
+  ]
+}

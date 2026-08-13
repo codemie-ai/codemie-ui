@@ -67,7 +67,9 @@ vi.mock('../components/Toolkit', () => ({
         <button
           key={tool.name}
           type="button"
-          onClick={() => onUpdate(`MCP_${tool.name}`, `int-${tool.name}`, { id: `int-${tool.name}` })}
+          onClick={() =>
+            onUpdate(`MCP_${tool.name}`, `int-${tool.name}`, { id: `int-${tool.name}` })
+          }
         >
           change {tool.name}
         </button>
@@ -100,7 +102,10 @@ describe('UserMapping scope checkbox', () => {
     vi.clearAllMocks()
     mocks.getAssistantToolkits.mockResolvedValue([])
     mocks.saveUserMappingSettings.mockResolvedValue({})
-    mocks.getUserMapping.mockResolvedValue({ tools_config: [], has_assistant_scope_selection: true })
+    mocks.getUserMapping.mockResolvedValue({
+      tools_config: [],
+      has_assistant_scope_selection: true,
+    })
   })
 
   afterEach(cleanup)
@@ -116,13 +121,17 @@ describe('UserMapping scope checkbox', () => {
     renderSection()
 
     // The fixture assistant exposes only an MCP slot, so no credential types are asked about.
-    await waitFor(() => expect(mocks.getUserMapping).toHaveBeenCalledWith('assistant-1', undefined, []))
+    await waitFor(() =>
+      expect(mocks.getUserMapping).toHaveBeenCalledWith('assistant-1', undefined, [])
+    )
   })
 
   it('loads the effective mapping for the workflow', async () => {
     renderSection('workflow-1')
 
-    await waitFor(() => expect(mocks.getUserMapping).toHaveBeenCalledWith('assistant-1', 'workflow-1', []))
+    await waitFor(() =>
+      expect(mocks.getUserMapping).toHaveBeenCalledWith('assistant-1', 'workflow-1', [])
+    )
   })
 
   it('leaves the checkbox unticked when an assistant-scoped selection exists', async () => {
@@ -244,7 +253,10 @@ describe('SubAssistantUserMapping scope', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.saveUserMappingSettings.mockResolvedValue({})
-    mocks.getUserMapping.mockResolvedValue({ tools_config: [], has_assistant_scope_selection: true })
+    mocks.getUserMapping.mockResolvedValue({
+      tools_config: [],
+      has_assistant_scope_selection: true,
+    })
   })
 
   afterEach(cleanup)
@@ -310,7 +322,11 @@ describe('SubAssistantUserMapping scope', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Save' }))
 
     await waitFor(() =>
-      expect(mocks.saveUserMappingSettings).toHaveBeenCalledWith('sub-1', expect.anything(), undefined)
+      expect(mocks.saveUserMappingSettings).toHaveBeenCalledWith(
+        'sub-1',
+        expect.anything(),
+        undefined
+      )
     )
   })
 })
@@ -350,7 +366,10 @@ describe('UserMapping scope payload and defaults', () => {
     vi.clearAllMocks()
     mocks.getAssistantToolkits.mockResolvedValue([])
     mocks.saveUserMappingSettings.mockResolvedValue({})
-    mocks.getUserMapping.mockResolvedValue({ tools_config: [], has_assistant_scope_selection: true })
+    mocks.getUserMapping.mockResolvedValue({
+      tools_config: [],
+      has_assistant_scope_selection: true,
+    })
   })
 
   afterEach(cleanup)
@@ -406,7 +425,10 @@ describe('UserMapping scope payload and defaults', () => {
   })
 
   it('resolves the checkbox default when only sub-assistants have mappable slots', async () => {
-    mocks.getUserMapping.mockResolvedValue({ tools_config: [], has_assistant_scope_selection: false })
+    mocks.getUserMapping.mockResolvedValue({
+      tools_config: [],
+      has_assistant_scope_selection: false,
+    })
 
     renderFor(orchestratorWithoutOwnSlots, 'workflow-1')
 
@@ -420,7 +442,10 @@ describe('UserMapping save confirmation', () => {
     vi.clearAllMocks()
     mocks.getAssistantToolkits.mockResolvedValue([])
     mocks.saveUserMappingSettings.mockResolvedValue({})
-    mocks.getUserMapping.mockResolvedValue({ tools_config: [], has_assistant_scope_selection: true })
+    mocks.getUserMapping.mockResolvedValue({
+      tools_config: [],
+      has_assistant_scope_selection: true,
+    })
   })
 
   afterEach(cleanup)
@@ -501,7 +526,10 @@ describe('UserMapping auto-lookup pre-selection', () => {
     )
 
   it('asks the backend what auto lookup resolves for the displayed non-MCP slots', async () => {
-    mocks.getUserMapping.mockResolvedValue({ tools_config: [], has_assistant_scope_selection: false })
+    mocks.getUserMapping.mockResolvedValue({
+      tools_config: [],
+      has_assistant_scope_selection: false,
+    })
 
     renderWith()
 
@@ -522,7 +550,11 @@ describe('UserMapping auto-lookup pre-selection', () => {
 
     await waitFor(() => expect(mocks.getUserMapping).toHaveBeenCalled())
     // Save appears once something is dirty; the pre-selected slot must ride along with it.
-    await userEvent.click((await screen.findAllByRole('button', { name: /change integration/i }))[0])
+    await userEvent.click(
+      (
+        await screen.findAllByRole('button', { name: /change integration/i })
+      )[0]
+    )
     await userEvent.click(await screen.findByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(mocks.saveUserMappingSettings).toHaveBeenCalled())
@@ -540,11 +572,17 @@ describe('UserMapping auto-lookup pre-selection', () => {
     renderWith()
 
     await waitFor(() => expect(mocks.getUserMapping).toHaveBeenCalled())
-    await userEvent.click((await screen.findAllByRole('button', { name: /change integration/i }))[0])
+    await userEvent.click(
+      (
+        await screen.findAllByRole('button', { name: /change integration/i })
+      )[0]
+    )
     await userEvent.click(await screen.findByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(mocks.saveUserMappingSettings).toHaveBeenCalled())
     const [, settings] = mocks.saveUserMappingSettings.mock.calls[0]
-    expect((settings as Record<string, { settingId?: string }>).jira.settingId).toBe('explicit-jira')
+    expect((settings as Record<string, { settingId?: string }>).jira.settingId).toBe(
+      'explicit-jira'
+    )
   })
 })

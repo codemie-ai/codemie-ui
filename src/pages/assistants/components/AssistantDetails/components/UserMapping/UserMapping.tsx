@@ -107,12 +107,19 @@ export const UserMapping: React.FC<UserMappingProps> = ({
 
       // Inside a workflow the backend answers with the effective selection: the assistant-wide
       // one, overridden per slot by anything saved for this workflow.
-      const userMapping = await assistantsStore.getUserMapping(assistant.id, workflowId, credentialTypes)
+      const userMapping = await assistantsStore.getUserMapping(
+        assistant.id,
+        workflowId,
+        credentialTypes
+      )
       const initialSettings = initializeUserMappingSettings(assistant, userMapping)
       // Pre-select what a run would pick for slots the user never chose. Marking them as changed
       // makes the next save store them explicitly, which is the intended behaviour: from then on
       // the slot is pinned to that integration instead of following auto lookup.
-      const autoResolvedKeys = applyAutoResolvedIntegrations(initialSettings, userMapping?.auto_resolved)
+      const autoResolvedKeys = applyAutoResolvedIntegrations(
+        initialSettings,
+        userMapping?.auto_resolved
+      )
       setUserMappingSettings(initialSettings)
       if (autoResolvedKeys.length) {
         setChangedKeys((prev) => new Set([...prev, ...autoResolvedKeys]))

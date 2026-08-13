@@ -121,4 +121,3 @@ describe('IntegrationSelector — MCP two-state emits a string integration id', 
     expect(selectProps.value).toBe(selectProps.options[0].value)
   })
 })
-

@@ -142,7 +142,9 @@ describe('regular toolkits follow the same pinned rule as MCP servers', () => {
   })
 
   it('hides a toolkit whose every configurable slot is pinned', () => {
-    const displayable = getDisplayableToolkits(assistant).map((tk: { toolkit: string }) => tk.toolkit)
+    const displayable = getDisplayableToolkits(assistant).map(
+      (tk: { toolkit: string }) => tk.toolkit
+    )
 
     expect(displayable).toContain('jira')
     expect(displayable).toContain('vcs')
@@ -172,9 +174,9 @@ describe('project-shared assistants offer the same slots as marketplace ones', (
   })
 
   it('shows the toolkit for a project-shared assistant', () => {
-    expect(getDisplayableToolkits(projectShared).map((tk: { toolkit: string }) => tk.toolkit)).toEqual([
-      'jira',
-    ])
+    expect(
+      getDisplayableToolkits(projectShared).map((tk: { toolkit: string }) => tk.toolkit)
+    ).toEqual(['jira'])
   })
 
   it('renders the section for a project-shared assistant with no MCP servers', () => {

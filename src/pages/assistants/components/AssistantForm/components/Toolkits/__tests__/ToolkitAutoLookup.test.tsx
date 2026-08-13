@@ -56,7 +56,10 @@ describe('author Toolkit — auto lookup toggle reflects and persists the stored
 
   it('shows the toggle on when the flag is absent (assistants created before the field)', () => {
     render(
-      <Toolkit {...baseProps} selectedToolkits={[{ toolkit: 'Project Management', tools: [tool] } as never]} />
+      <Toolkit
+        {...baseProps}
+        selectedToolkits={[{ toolkit: 'Project Management', tools: [tool] } as never]}
+      />
     )
 
     expect(screen.getByRole('switch')).toBeChecked()
@@ -86,9 +89,7 @@ describe('author Toolkit — auto lookup toggle reflects and persists the stored
     // The form mounts before the assistant's toolkits are loaded. Reading the flag once, in a
     // useState initializer, left the toggle stuck on its initial value — which is exactly how a
     // saved "lookup off" kept showing as enabled.
-    const { rerender } = render(
-      <Toolkit {...baseProps} selectedToolkits={[] as never} />
-    )
+    const { rerender } = render(<Toolkit {...baseProps} selectedToolkits={[] as never} />)
 
     rerender(
       <Toolkit
