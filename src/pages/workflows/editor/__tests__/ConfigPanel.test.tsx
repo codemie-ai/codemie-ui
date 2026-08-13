@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, act } from '@testing-library/react'
+import { render, act, screen, fireEvent } from '@testing-library/react'
 import React, { createRef } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -226,7 +226,10 @@ const defaultProps = {
 
 const renderConfigPanel = (
   ref: React.RefObject<ConfigPanelRef | null>,
-  propsOverride: Partial<typeof defaultProps> = {}
+  propsOverride: Partial<typeof defaultProps> & {
+    isCollapsed?: boolean
+    onCollapsedChange?: (collapsed: boolean) => void
+  } = {}
 ) => {
   const props = { ...defaultProps, ...propsOverride }
 
@@ -476,5 +479,49 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
 
       expect(onActiveTabChange).toHaveBeenCalledWith(TAB_DATA.CONFIGURATION.ID)
     })
+  })
+})
+
+describe('ConfigPanel — collapse/expand button accessibility', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('collapse button has aria-expanded="true" when panel is not collapsed', () => {
+    const ref = createRef<ConfigPanelRef>()
+    renderConfigPanel(ref, { isCollapsed: false })
+    expect(screen.getByRole('button', { name: /collapse panel/i })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+  })
+
+  it('collapse button has aria-expanded="false" when panel is collapsed', () => {
+    const ref = createRef<ConfigPanelRef>()
+    renderConfigPanel(ref, { isCollapsed: true })
+    expect(screen.getByRole('button', { name: /expand panel/i })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
+  })
+
+  it('clicking the collapse button calls onCollapsedChange exactly once with true', () => {
+    const onCollapsedChange = vi.fn()
+    const ref = createRef<ConfigPanelRef>()
+    renderConfigPanel(ref, { isCollapsed: false, onCollapsedChange })
+    vi.clearAllMocks() // isolate from mount-time onCollapsedChange(false) fired by activeTab effect
+    fireEvent.click(screen.getByRole('button', { name: /collapse panel/i }))
+    expect(onCollapsedChange).toHaveBeenCalledTimes(1)
+    expect(onCollapsedChange).toHaveBeenCalledWith(true)
+  })
+
+  it('clicking the expand button calls onCollapsedChange exactly once with false', () => {
+    const onCollapsedChange = vi.fn()
+    const ref = createRef<ConfigPanelRef>()
+    renderConfigPanel(ref, { isCollapsed: true, onCollapsedChange })
+    vi.clearAllMocks() // isolate from mount-time onCollapsedChange(false) fired by activeTab effect
+    fireEvent.click(screen.getByRole('button', { name: /expand panel/i }))
+    expect(onCollapsedChange).toHaveBeenCalledTimes(1)
+    expect(onCollapsedChange).toHaveBeenCalledWith(false)
   })
 })

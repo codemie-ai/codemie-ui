@@ -553,38 +553,33 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       >
         <div
           className={cn(
-            // nosonar
-            'flex items-center justify-between px-4 py-3 sticky top-0 bg-surface-base-chat z-10 gap-2 cursor-pointer',
+            'flex items-center justify-between px-4 py-3 sticky top-0 bg-surface-base-chat z-10 gap-2',
             'border-b border-border-structural rounded-t-lg',
             {
               'rounded-lg border-none': isCollapsed,
             }
           )}
-          onClick={toggleCollapsed}
         >
-          <h3 className="text-sm font-semibold text-text-primary select-none">{panelHeader}</h3>
-          <div className="flex items-center gap-1">
-            <Button
-              type={ButtonType.TERTIARY}
-              aria-label={isCollapsed ? 'Expand panel' : 'Collapse panel'}
-              className="opacity-75"
-            >
-              <ChevronRightIconSvg
-                className={cn('w-4 h-4 transition-transform', {
-                  'rotate-90': !isCollapsed,
-                })}
-              />
-            </Button>
-            <Button
-              type={ButtonType.SECONDARY}
-              onClick={(e) => {
-                e.stopPropagation()
-                handleClose()
-              }}
-            >
-              <CrossIconSvg className="w-4 h-4" />
-            </Button>
-          </div>
+          <button
+            type="button"
+            aria-label={isCollapsed ? 'Expand panel' : 'Collapse panel'}
+            aria-expanded={!isCollapsed}
+            onClick={toggleCollapsed}
+            className="flex flex-1 items-center gap-2 cursor-pointer text-left bg-transparent p-0 border-0 min-w-0"
+          >
+            <h3 className="flex-1 text-sm font-semibold text-text-primary select-none">
+              {panelHeader}
+            </h3>
+            <ChevronRightIconSvg
+              aria-hidden="true"
+              className={cn('w-4 h-4 opacity-75 transition-transform', {
+                'rotate-90': !isCollapsed,
+              })}
+            />
+          </button>
+          <Button type={ButtonType.SECONDARY} onClick={() => handleClose()}>
+            <CrossIconSvg className="w-4 h-4" />
+          </Button>
         </div>
 
         <div

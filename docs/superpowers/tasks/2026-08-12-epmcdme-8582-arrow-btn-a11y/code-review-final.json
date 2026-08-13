@@ -1,0 +1,70 @@
+{
+  "decision": "request-changes",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "All four arrow/chevron interactive controls receive Tab focus",
+      "status": "met",
+      "note": "All four controls are now native <button> elements or existing <Button> components with onClick wired."
+    },
+    {
+      "criterion": "Screen readers announce button role, accessible name, and expanded state",
+      "status": "met",
+      "note": "Button component already forwarded aria-label before this diff; aria-expanded and aria-label added correctly on all toggle controls."
+    },
+    {
+      "criterion": "disabled buttons announced as disabled by screen readers",
+      "status": "met",
+      "note": "Native disabled attribute correctly replaces pointer-events-none; screen readers expose this automatically."
+    },
+    {
+      "criterion": "No visual regression",
+      "status": "partial",
+      "note": "ChatHistoryControls disabled buttons lose opacity-25 visual feedback (Tailwind Preflight removes browser defaults). ConfigPanel collapse button double-fires and is non-functional (CR-001)."
+    },
+    {
+      "criterion": "All new tests pass",
+      "status": "met",
+      "note": "29 new tests across 4 files; full suite of 4670 tests passes. Acceptance lens had an incomplete diff view and incorrectly reported no tests."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow: commit format",
+      "status": "pass",
+      "notes": "4 commits follow EPMCDME-NNNNN: Description format."
+    },
+    {
+      "standard": "code-quality: no debug artifacts",
+      "status": "pass",
+      "notes": "No console.log, no commented-out code introduced."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "Presentational-only changes; no auth, secrets, or injection surface touched."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/ConfigPanel.tsx:567-577",
+      "problem": "The collapse/expand Button now has onClick={toggleCollapsed}, but its parent <div> at line 563 also retains onClick={toggleCollapsed}. The Button does not call e.stopPropagation(), so a single click fires toggleCollapsed twice in the same event (once from the button, once from the bubbled div handler). Both calls see the same isCollapsed value, so both flip to the same target state and the net effect cancels out — the panel never collapses or expands.",
+      "impact": "Clicking the collapse button appears to respond visually but leaves the panel in its original state. The feature is non-functional for mouse users after this change.",
+      "recommendation": "Change the Button's onClick to `onClick={(e) => { e.stopPropagation(); toggleCollapsed() }}`, matching the pattern already used by the close Button at line 578-585. Also add `expect(onCollapsedChange).toHaveBeenCalledTimes(1)` to the two click tests in ConfigPanel.test.tsx to prevent future regression."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHistory/ChatHistoryControls.tsx:51-68",
+      "problem": "The new <button> wrappers have className=\"mr-2\" / className=\"ml-2\" only — no disabled-state visual classes. The original code applied opacity-25 via cn() when isFirstIndex/isLastIndex. Tailwind Preflight resets all browser default button styling including UA-stylesheet greying of disabled buttons, so the new disabled buttons are visually identical to enabled ones.",
+      "impact": "Users at the first or last message version see no visual difference between the active and boundary-state navigation arrows, breaking the affordance the original implementation provided.",
+      "recommendation": "Add disabled:opacity-25 disabled:cursor-not-allowed to both button classNames: className=\"mr-2 disabled:opacity-25 disabled:cursor-not-allowed\" and className=\"ml-2 disabled:opacity-25 disabled:cursor-not-allowed\"."
+    }
+  ],
+  "rationale": "Two real defects found across the blind and edge-case lenses. CR-001 is the most impactful: the ConfigPanel collapse button double-fires toggleCollapsed due to missing stopPropagation, rendering the collapse/expand feature completely non-functional after this change. CR-002 is a visual regression: disabled navigation buttons in ChatHistoryControls lost their opacity-25 visual feedback. Acceptance lens AC-005 and AC-004b findings dismissed as false positives (29 new tests exist; MappingRow hover class was already present in original code). EC-006 (handleSave no try/finally) is pre-existing code not touched by this diff. Three deferred items not in findings: aria-controls on disclosure buttons (EC-007, not required by WCAG 2.1 AA for this pattern), disabled-click non-call test (EC-004), and keyboard activation test (EC-005)."
+}

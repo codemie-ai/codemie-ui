@@ -68,12 +68,16 @@ const ConfigSection: FC<ConfigSectionProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border-primary">
         <button
+          type="button"
+          aria-expanded={isExpanded}
+          aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${title}`}
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-2 flex-1 text-left group transition hover:opacity-85"
         >
           {icon && <span className="text-xl">{icon}</span>}
           <h3 className="font-bold text-text-quaternary">{title}</h3>
           <ChevronDownSvg
+            aria-hidden="true"
             className={cn(
               'w-4 h-4 text-text-quaternary transition-transform ml-2 group-hover:opacity-85',
               isExpanded ? 'rotate-180' : ''

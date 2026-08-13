@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Fix keyboard accessibility for arrow/chevron buttons across ChatHistoryControls, MappingRow, ConfigPanel, and ConfigSection components by replacing raw SVG onClick handlers and div onClick patterns with proper button elements.",
+  "generated": "2026-08-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 13,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four distinct defective components across three product areas — ChatHistoryControls (chat), MappingRow and ConfigPanel (workflow editor), ConfigSection (settings/admin) — each requiring an independent fix. No shared utilities or cross-cutting concerns, but the breadth across 3 product areas puts this at L rather than M."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "4–5 source files modified (ChatHistoryControls, MappingRow, ConfigPanel, ConfigSection, possibly WorkflowDrawerWrapper) plus 4 new test files to be created from scratch, totalling 8–9 files across 3 directory trees (src/pages/chat, src/pages/workflows/editor, src/pages/settings/administration). This maps to L (8–10 files, 2–4 new files)."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The ticket's 'All pages' phrasing was initially vague, but the technical analysis resolved the scope to exactly four confirmed defective files. Acceptance criteria are fully implied by the established a11y pattern from EPMCDME-8417 and EPMCDME-8460. Only minor confirmation needed on aria-label strings."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

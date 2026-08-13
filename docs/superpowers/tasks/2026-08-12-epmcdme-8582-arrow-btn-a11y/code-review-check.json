@@ -1,0 +1,63 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "All four arrow/chevron interactive controls receive Tab focus",
+      "status": "met",
+      "note": "Carried forward from final round — unchanged."
+    },
+    {
+      "criterion": "Screen readers announce button role, accessible name, and expanded state",
+      "status": "met",
+      "note": "Carried forward from final round — unchanged."
+    },
+    {
+      "criterion": "disabled buttons announced as disabled by screen readers",
+      "status": "met",
+      "note": "Carried forward from final round — unchanged."
+    },
+    {
+      "criterion": "No visual regression",
+      "status": "met",
+      "note": "CR-001 resolved: ConfigPanel double-fire eliminated by removing div onClick and restructuring header as a standalone button. CR-002 resolved: disabled:opacity-25 disabled:cursor-not-allowed added to ChatHistoryControls navigation buttons."
+    },
+    {
+      "criterion": "All new tests pass",
+      "status": "met",
+      "note": "Carried forward from final round — full suite passes."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow: commit format",
+      "status": "pass",
+      "notes": "Fix-up commits follow EPMCDME-NNNNN: Description format."
+    },
+    {
+      "standard": "code-quality: no debug artifacts",
+      "status": "pass",
+      "notes": "None introduced."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "Presentational-only changes; no new surface."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "note": "The parent <div onClick={toggleCollapsed}> was removed entirely. The collapse button is now a standalone <button onClick={toggleCollapsed}> that wraps the panel title and chevron. A single click fires toggleCollapsed exactly once. Tests updated to assert toHaveBeenCalledTimes(1) after isolating mount-time side effects."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "note": "Both ChatHistoryControls navigation buttons now carry disabled:opacity-25 disabled:cursor-not-allowed in their className. Tests updated to assert the class is present on disabled buttons."
+    }
+  ],
+  "rationale": "Both blocking findings from the final round are confirmed resolved by the fix-up diff. CR-001: the div onClick handler is gone — no double-fire path exists. CR-002: disabled visual styling restored via Tailwind disabled: variant. The MappingRow nested-template-literal fix (Sonar S4624) is a purely syntactic change with identical runtime behaviour; no new risk introduced. No new high-risk issues found in the fix-up diff."
+}

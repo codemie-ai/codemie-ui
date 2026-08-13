@@ -17,7 +17,6 @@ import React, { useMemo } from 'react'
 
 import ChevronLeftSvg from '@/assets/icons/chevron-left.svg?react'
 import ChevronRightSvg from '@/assets/icons/chevron-right.svg?react'
-import { cn } from '@/utils/utils'
 
 interface ChatHistoryControlsProps {
   messageIndex: number
@@ -49,21 +48,25 @@ const ChatHistoryControls: React.FC<ChatHistoryControlsProps> = ({
 
   return (
     <div className="flex items-center ml-auto select-none text-xs text-text-quaternary">
-      <ChevronLeftSvg
+      <button
+        type="button"
+        aria-label="Previous version"
+        disabled={isFirstIndex}
         onClick={setPrevIndex}
-        className={cn(
-          'mr-2 cursor-pointer w-3 hover:opacity-100',
-          isFirstIndex && 'pointer-events-none opacity-25'
-        )}
-      />
+        className="mr-2 disabled:opacity-25 disabled:cursor-not-allowed"
+      >
+        <ChevronLeftSvg aria-hidden="true" className="w-3 hover:opacity-100" />
+      </button>
       {messageIndex + 1} / {totalMessages}
-      <ChevronRightSvg
+      <button
+        type="button"
+        aria-label="Next version"
+        disabled={isLastIndex}
         onClick={setNextIndex}
-        className={cn(
-          'ml-2 cursor-pointer w-3 hover:opacity-100',
-          isLastIndex && 'pointer-events-none opacity-25'
-        )}
-      />
+        className="ml-2 disabled:opacity-25 disabled:cursor-not-allowed"
+      >
+        <ChevronRightSvg aria-hidden="true" className="w-3 hover:opacity-100" />
+      </button>
     </div>
   )
 }
