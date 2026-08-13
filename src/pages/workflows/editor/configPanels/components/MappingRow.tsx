@@ -349,23 +349,24 @@ const MappingRow: React.FC<MappingRowProps> = ({
     >
       {/* Header */}
       <div // nosonar
-        className="flex items-center gap-2 p-3 bg-surface-base-chat cursor-pointer hover:bg-surface-elevated"
+        className="flex items-start gap-2 p-3 bg-surface-base-chat cursor-pointer hover:bg-surface-elevated"
         onClick={onToggle}
       >
         <ChevronUpSvg
-          className={cn('w-4 h-4 text-text-quaternary transition-transform', {
+          className={cn('w-4 h-4 mt-0.5 shrink-0 text-text-quaternary transition-transform', {
             'transform rotate-180': !isExpanded,
           })}
         />
-        <span className="text-sm font-medium text-text-primary flex-1">
-          {mapping.output_field || `Mapping #${index + 1}`}
-          <span className="ml-2 text-xs text-text-quaternary">
+        <span className="text-sm font-medium text-text-primary flex-1 min-w-0 break-words">
+          {mapping.output_field || `Mapping #${index + 1}`}{' '}
+          <span className="text-xs text-text-quaternary inline-block">
             ({MAPPING_TYPE_OPTIONS.find((o) => o.value === mapping.type)?.label ?? mapping.type})
           </span>
         </span>
         <Button
           type={ButtonType.DELETE}
           size={ButtonSize.SMALL}
+          className="mt-0.5 shrink-0"
           onClick={(e) => {
             e.stopPropagation()
             handleDelete()
