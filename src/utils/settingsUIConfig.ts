@@ -698,6 +698,9 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     testable: false,
     displayName: 'SharePoint',
     serverEnum: 'SharePoint',
+    // The authentication method radio group labels this section, so the default
+    // "Authentication" header would duplicate it.
+    fieldsSectionTitle: '',
     fields: {
       url: {
         label: 'URL',

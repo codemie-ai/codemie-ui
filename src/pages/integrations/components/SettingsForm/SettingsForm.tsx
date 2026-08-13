@@ -23,11 +23,17 @@ import * as Yup from 'yup'
 import Button from '@/components/Button'
 import Autocomplete from '@/components/form/Autocomplete'
 import Input from '@/components/form/Input'
+import RadioGroup from '@/components/form/RadioGroup/RadioGroup'
 import RecordInput from '@/components/form/RecordInput/RecordInput'
 import Switch from '@/components/form/Switch'
 import InfoMessage from '@/components/Message/Message'
 import ProjectSelector from '@/components/ProjectSelector'
-import { GOOGLE_OAUTH_CREDENTIAL_TYPE } from '@/constants/integration'
+import {
+  GOOGLE_OAUTH_CREDENTIAL_TYPE,
+  SHAREPOINT_AUTH_METHOD_OPTIONS,
+  SHAREPOINT_AUTH_METHODS,
+  SHAREPOINT_CREDENTIAL_TYPE,
+} from '@/constants/integration'
 import { useActiveHelpSegment } from '@/hooks/useActiveHelpSegment'
 import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
@@ -53,6 +59,7 @@ import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
 import TestIntegration from '../TestIntegration'
 import CredentialFields from './CredentialFields'
 import GoogleOAuthField from './GoogleOAuthField'
+import SharePointOAuthField from './SharePointOAuthField'
 
 export interface SettingsFormRef {
   submit: () => void
@@ -191,6 +198,25 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     return defaults
   }
 
+  // SharePoint supports two mutually exclusive authentication methods, so only the
+  // fields belonging to the selected one are shown - mirrors the SharePoint
+  // datasource form. Existing integrations open on whichever method they were saved with.
+  const isSharePoint = credentialType === SHAREPOINT_CREDENTIAL_TYPE
+  const [sharePointAuthMethod, setSharePointAuthMethod] = useState<string>(() => {
+    if (initialCredentialValues?.auth_type === SHAREPOINT_AUTH_METHODS.OAUTH) {
+      return SHAREPOINT_AUTH_METHODS.OAUTH
+    }
+    // Integrations saved before delegated auth existed carry no auth_type, so an
+    // existing one must stay on app auth rather than appear unauthenticated.
+    if (editing) return SHAREPOINT_AUTH_METHODS.APP
+    // New integrations default to signing in - it needs no Azure admin involvement.
+    return SHAREPOINT_AUTH_METHODS.OAUTH
+  })
+  const isSharePointOAuth = isSharePoint && sharePointAuthMethod === SHAREPOINT_AUTH_METHODS.OAUTH
+  // An integration already saved with delegated credentials stays authenticated
+  // without signing in again, so only a fresh sign-in has to be required.
+  const isSharePointSignedIn = initialCredentialValues?.auth_type === SHAREPOINT_AUTH_METHODS.OAUTH
+
   const formSchema = useMemo(() => {
     const schema: Record<string, Yup.Schema> = {
       alias: Yup.string().required(ALIAS_REQUIRED_ERR),
@@ -200,6 +226,14 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       if (!editing) {
         schema.oauth_state = Yup.string().required('Please sign in with Google before saving')
       }
+      return Yup.object(schema)
+    }
+
+    // Signing in is the only credential the delegated method collects, so without it
+    // the integration would save with no authentication at all and every later call
+    // would fail asking for the app-registration fields the user never saw.
+    if (isSharePointOAuth && !isSharePointSignedIn) {
+      schema.oauth_state = Yup.string().required('Please sign in with Microsoft before saving')
       return Yup.object(schema)
     }
 
@@ -213,7 +247,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     })
 
     return Yup.object(schema)
-  }, [CREDENTIAL_VALUES_MAPPING, credentialType, editing])
+  }, [CREDENTIAL_VALUES_MAPPING, credentialType, editing, isSharePointOAuth, isSharePointSignedIn])
 
   const {
     control,
@@ -221,6 +255,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     getValues,
     trigger,
     reset,
+    clearErrors,
     formState: { errors },
   } = useForm({
     mode: 'onChange',
@@ -233,6 +268,16 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   const mappingExists = useMemo(() => {
     return CREDENTIAL_VALUES_MAPPING[credentialType] !== undefined
   }, [CREDENTIAL_VALUES_MAPPING, credentialType])
+
+  const handleSharePointAuthMethodChange = (method: string) => {
+    setSharePointAuthMethod(method)
+    // Drop a sign-in captured before the user switched back to app auth, so the
+    // backend does not receive an oauth_state that would override the typed fields.
+    if (method === SHAREPOINT_AUTH_METHODS.APP) {
+      setFormValue('oauth_state', '')
+      clearErrors('oauth_state')
+    }
+  }
 
   const credentialTypeOptions = useMemo(() => {
     const options = CREDENTIAL_TYPES.map((type) => ({
@@ -392,6 +437,10 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
         Object.entries(fieldsCfg).forEach(([name, cfg]) => {
           if (cfg.virtual) delete rawValues[name]
         })
+        // Send the selected method explicitly. Without this the stale auth_type loaded
+        // with the integration is submitted, so switching to app registration would
+        // leave it marked delegated and the tool would keep using the old sign-in.
+        if (isSharePoint) rawValues.auth_type = sharePointAuthMethod
         credential_values = convertCredsToKeyValue(rawValues).filter(
           ({ value }) => value !== undefined
         )
@@ -405,6 +454,10 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       credential_values,
       is_global: isGlobal,
       ...(isGoogleOAuth && { oauth_state: getValues('oauth_state') || undefined }),
+      // Only sent when the user chose "Sign in with Microsoft"; the backend then
+      // replaces the auth fields with the delegated tokens.
+      ...(isSharePointOAuth &&
+        getValues('oauth_state') && { oauth_state: getValues('oauth_state') }),
     })
   }
 
@@ -516,46 +569,66 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
           />
         ) : (
           <div data-onboarding="integration-credential-fields" className="flex flex-col gap-y-6">
-            {CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration ? (
-              <RecordInput
-                id="manualFields"
-                value={manualCredentialValues}
-                onChange={setManualCredentialValues}
-                name="manualFields"
-                label={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.label}
-                sensitive={
-                  CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.sensitive
-                }
-                addText={
-                  CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.addText
-                }
-              />
-            ) : (
-              <>
-                {getSettingsFieldsSectionTitle(credentialType) && (
-                  <div className="-mt-3 -mb-2">
-                    <hr className="opacity-25 mb-6 border-border-structural" />
-                    <h4 className="text-sm font-medium">
-                      {getSettingsFieldsSectionTitle(credentialType)}
-                    </h4>
-                  </div>
-                )}
-                {CREDENTIAL_VALUES_MAPPING[credentialType] && (
-                  <CredentialFields
-                    key={credentialType}
-                    control={control}
-                    credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
-                    buildWebhookURL={buildWebhookURL}
-                    editing={editing}
-                    resetKey={resetCount}
-                    project={projectName}
-                    onManualFieldEdit={(fieldName) => {
-                      if (fieldName === 'webhook_id') webhookIdManuallyEdited.current = true
-                    }}
-                  />
-                )}
-              </>
+            {isSharePoint && (
+              <div>
+                <p className="mb-2 text-xs text-text-tertiary">Authentication Method:</p>
+                <RadioGroup
+                  name="sharePointAuthMethod"
+                  options={SHAREPOINT_AUTH_METHOD_OPTIONS}
+                  value={sharePointAuthMethod}
+                  onChange={(v) => handleSharePointAuthMethodChange(String(v))}
+                />
+              </div>
             )}
+            {isSharePointOAuth && (
+              <SharePointOAuthField
+                setValue={setFormValue}
+                formError={errors.oauth_state?.message as string | undefined}
+                signedIn={isSharePointSignedIn}
+                initialUsername={initialCredentialValues?.username}
+              />
+            )}
+            {!isSharePointOAuth &&
+              (CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration ? (
+                <RecordInput
+                  id="manualFields"
+                  value={manualCredentialValues}
+                  onChange={setManualCredentialValues}
+                  name="manualFields"
+                  label={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.label}
+                  sensitive={
+                    CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.sensitive
+                  }
+                  addText={
+                    CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.addText
+                  }
+                />
+              ) : (
+                <>
+                  {getSettingsFieldsSectionTitle(credentialType) && (
+                    <div className="-mt-3 -mb-2">
+                      <hr className="opacity-25 mb-6 border-border-structural" />
+                      <h4 className="text-sm font-medium">
+                        {getSettingsFieldsSectionTitle(credentialType)}
+                      </h4>
+                    </div>
+                  )}
+                  {CREDENTIAL_VALUES_MAPPING[credentialType] && (
+                    <CredentialFields
+                      key={credentialType}
+                      control={control}
+                      credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
+                      buildWebhookURL={buildWebhookURL}
+                      editing={editing}
+                      resetKey={resetCount}
+                      project={projectName}
+                      onManualFieldEdit={(fieldName) => {
+                        if (fieldName === 'webhook_id') webhookIdManuallyEdited.current = true
+                      }}
+                    />
+                  )}
+                </>
+              ))}
           </div>
         )}
 

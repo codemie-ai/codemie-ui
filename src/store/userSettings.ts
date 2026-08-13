@@ -52,6 +52,8 @@ interface UserSettingsStoreType {
   resetIsSettingsIndexed: () => void
   initiateGoogleDocsOAuth: () => Promise<OAuthInitiateResponse>
   getGoogleDocsOAuthStatus: (state: string) => Promise<GoogleOAuthStatusResponse>
+  initiateSharePointOAuth: () => Promise<OAuthInitiateResponse>
+  getSharePointOAuthStatus: (state: string) => Promise<GoogleOAuthStatusResponse>
 }
 
 export const userSettingsStore = proxy<UserSettingsStoreType>({
@@ -200,5 +202,24 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
       return { status: 'error', message: 'Authorization session expired. Please try again.' }
     }
     return response.json()
+  },
+
+  async initiateSharePointOAuth(): Promise<OAuthInitiateResponse> {
+    const response = await api.post('v1/sharepoint/oauth/initiate', {})
+    return response.json()
+  },
+
+  async getSharePointOAuthStatus(state: string): Promise<GoogleOAuthStatusResponse> {
+    const response = await api.get(`v1/sharepoint/oauth/status/${state}`, {
+      skipErrorHandling: true,
+    })
+    if (!response.ok) {
+      return { status: 'error', message: 'Authorization session expired. Please try again.' }
+    }
+    const data = await response.json()
+    // The shared useOAuth hook reads `email`; SharePoint reports the signed-in
+    // account as `username`. No token is read here - it is stored server-side
+    // when the integration is saved, using the oauth_state.
+    return { ...data, email: data.username }
   },
 })

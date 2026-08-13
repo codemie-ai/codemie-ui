@@ -21,6 +21,18 @@ export enum IntegrationOption {
 }
 
 export const GOOGLE_OAUTH_CREDENTIAL_TYPE = 'googleoauth'
+export const SHAREPOINT_CREDENTIAL_TYPE = 'sharepoint'
+
+/** Values match the `auth_type` stored on the SharePoint integration. */
+export const SHAREPOINT_AUTH_METHODS = {
+  OAUTH: 'oauth',
+  APP: 'app',
+} as const
+
+export const SHAREPOINT_AUTH_METHOD_OPTIONS = [
+  { label: 'Sign in with Microsoft', value: SHAREPOINT_AUTH_METHODS.OAUTH },
+  { label: 'Azure app registration', value: SHAREPOINT_AUTH_METHODS.APP },
+]
 
 export const INTEGRATION_STATE_ENABLED = 'Enabled'
 export const INTEGRATION_STATE_DISABLED = 'Disabled'
