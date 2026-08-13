@@ -293,8 +293,7 @@ export const chatsStore = proxy<ChatsStoreType>({
   },
 
   startNewChat: async (assistantId = '', folder = '', isWorkflow = false) => {
-    const trimmedFolder = folder?.trim()
-    const folderValue = trimmedFolder === DEFAULT_CHAT_FOLDER ? '' : trimmedFolder
+    const folderValue = folder === DEFAULT_CHAT_FOLDER ? '' : folder
 
     const params = new URLSearchParams()
     if (assistantId) params.set('initial_assistant_id', assistantId)
@@ -322,8 +321,7 @@ export const chatsStore = proxy<ChatsStoreType>({
       isWorkflow: false,
     }
 
-    const trimmedFolder = params.folder?.trim()
-    const folderValue = trimmedFolder === DEFAULT_CHAT_FOLDER ? '' : trimmedFolder
+    const folderValue = params.folder === DEFAULT_CHAT_FOLDER ? '' : params.folder
     const response = await api.post(`v1/conversations`, {
       initial_assistant_id: params.assistantId,
       folder: folderValue,
@@ -484,18 +482,7 @@ export const chatsStore = proxy<ChatsStoreType>({
   },
 
   createFolder: (folder) => {
-    const trimmedFolder = folder?.trim()
-    if (!trimmedFolder) {
-      toaster.error('Folder name cannot be empty')
-      return Promise.resolve()
-    }
-    if (trimmedFolder === DEFAULT_CHAT_FOLDER) {
-      toaster.error('Folder name is reserved')
-      return Promise.resolve()
-    }
-    return api
-      .post('v1/conversations/folder', { folder: trimmedFolder })
-      .then(() => chatsStore.getFolders())
+    return api.post('v1/conversations/folder', { folder }).then(() => chatsStore.getFolders())
   },
 
   getFolders: () => {
@@ -531,20 +518,8 @@ export const chatsStore = proxy<ChatsStoreType>({
   },
 
   renameChatFolder: (oldFolder, newFolder) => {
-    const trimmedOldFolder = oldFolder?.trim()
-    const trimmedNewFolder = newFolder?.trim()
-    if (!trimmedNewFolder) {
-      toaster.error('Folder name cannot be empty')
-      return Promise.resolve()
-    }
-    if (trimmedNewFolder === DEFAULT_CHAT_FOLDER) {
-      toaster.error('Folder name is reserved')
-      return Promise.resolve()
-    }
     return api
-      .put(`v1/conversations/folder/${encodeURIComponent(trimmedOldFolder)}`, {
-        folder: trimmedNewFolder,
-      })
+      .put(`v1/conversations/folder/${encodeURIComponent(oldFolder)}`, { folder: newFolder })
       .then(() => chatsStore.getFolders())
       .then(() => chatsStore.getChats())
   },
@@ -554,8 +529,7 @@ export const chatsStore = proxy<ChatsStoreType>({
 
     if (!chat) return
 
-    const trimmedTargetFolder = targetFolder?.trim()
-    const folderValue = trimmedTargetFolder === DEFAULT_CHAT_FOLDER ? '' : trimmedTargetFolder
+    const folderValue = targetFolder === DEFAULT_CHAT_FOLDER ? '' : targetFolder
     await api
       .put(`v1/conversations/${chatId}`, { folder: folderValue })
       .then((response) => {
@@ -563,10 +537,8 @@ export const chatsStore = proxy<ChatsStoreType>({
         return response.json()
       })
       .then(() => {
-        const displayName =
-          trimmedTargetFolder === DEFAULT_CHAT_FOLDER ? 'Chats section' : trimmedTargetFolder
-        if (options?.successMessage) toaster.success(options.successMessage)
-        else toaster.info(`Chat moved to ${displayName || 'Chats section'}`)
+        const displayName = targetFolder === DEFAULT_CHAT_FOLDER ? 'Chats section' : targetFolder
+        toaster.info(`Chat moved to ${displayName || 'Chats section'}`)
         return chatsStore.getChats()
       })
       .catch((error) => {

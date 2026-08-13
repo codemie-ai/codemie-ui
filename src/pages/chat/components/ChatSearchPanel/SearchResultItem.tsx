@@ -43,10 +43,10 @@ const SearchResultItem = ({ item, query, onSelect }: SearchResultItemProps) => {
           {highlightText(item.name, query ?? '')}
         </div>
 
-        {item.folder?.trim() && (
+        {item.folder && (
           <div className="flex items-center gap-1.5 text-xs text-text-quaternary min-w-0">
             <FolderIcon className="size-3 flex-shrink-0" />
-            <span className="truncate">{item.folder.trim()}</span>
+            <span className="truncate">{item.folder}</span>
           </div>
         )}
       </div>
