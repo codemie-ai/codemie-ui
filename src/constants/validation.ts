@@ -32,6 +32,9 @@ export const VALIDATION_CONSTRAINTS = {
   PASSWORD_REQUIREMENTS_TOTAL: 4,
   USERNAME_MIN_LENGTH: 3,
   USERNAME_MAX_LENGTH: 50,
+  TEMPERATURE_MIN: 0,
+  TEMPERATURE_MAX_STANDARD: 2,
+  TEMPERATURE_MAX_CLAUDE: 1,
 }
 
 // Validation error messages
@@ -49,6 +52,10 @@ export const VALIDATION_MESSAGES = {
     'Only English letters, digits and special characters ("-", "[", "]", ".", "\\s") are allowed',
   USERNAME_MIN_LENGTH: `Username must be at least ${VALIDATION_CONSTRAINTS.USERNAME_MIN_LENGTH} characters`,
   USERNAME_MAX_LENGTH: `Username must be at most ${VALIDATION_CONSTRAINTS.USERNAME_MAX_LENGTH} characters`,
+  TEMPERATURE_MIN: `Temperature must be at least ${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}`,
+  TEMPERATURE_MAX_STANDARD: `Temperature must be between ${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN} and ${VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_STANDARD}`,
+  TEMPERATURE_MAX_CLAUDE: `Temperature must be between ${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN} and ${VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_CLAUDE} for Claude models`,
+  TEMPERATURE_TYPE: 'Temperature must be a number',
 }
 
 // Password requirement labels for UI

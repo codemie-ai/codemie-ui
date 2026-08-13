@@ -724,8 +724,9 @@ describe('AssistantsListPage - Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Marketplace Assistant')).toBeInTheDocument()
-        expect(screen.getByText('SORT BY')).toBeInTheDocument()
-        expect(screen.getByText('SORT ORDER')).toBeInTheDocument()
+        // Prod renders labels via .toUpperCase() in the AccordionTab header.
+        expect(screen.getAllByText('SORT BY').length).toBeGreaterThan(0)
+        expect(screen.getAllByText('SORT ORDER').length).toBeGreaterThan(0)
       })
     })
 

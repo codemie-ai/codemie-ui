@@ -36,6 +36,7 @@ import ExpandableTextarea from '@/components/form/ExpandableTextarea/ExpandableT
 import Input from '@/components/form/Input'
 import SkillSelector from '@/components/SkillSelector'
 import { MAX_SKILLS_PER_ASSISTANT } from '@/constants/skills'
+import { VALIDATION_CONSTRAINTS } from '@/constants/validation'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { AssistantFormContext } from '@/pages/assistants/components/AssistantForm/AssistantForm'
 import ContextSelector from '@/pages/assistants/components/AssistantForm/components/ContextSelector'
@@ -44,6 +45,10 @@ import SystemPromptGenAIPopup from '@/pages/assistants/components/AssistantForm/
 import ToolsConfiguration, {
   ToolkitSection,
 } from '@/pages/assistants/components/AssistantForm/components/Toolkits/ToolsConfiguration'
+import {
+  buildTemperatureRule,
+  getTemperatureMax,
+} from '@/pages/assistants/utils/temperatureConstraints'
 import { assistantsStore } from '@/store'
 import { settingsStore } from '@/store/settings'
 import { isWorkflowAssistantToolIssue, isWorkflowAssistantMcpIssue } from '@/types/entity'
@@ -93,15 +98,10 @@ export interface VirtualAssistantFormRef {
   reset: () => void
 }
 
-const validationSchema = Yup.object().shape({
+export const virtualAssistantValidationSchema = Yup.object().shape({
   system_prompt: Yup.string().required('System instructions are required'),
   llm_model_type: Yup.string().optional(),
-  temperature: Yup.number()
-    .min(0, 'Temperature must be at least 0')
-    .max(2, 'Temperature must be at most 2')
-    .transform((value, originalValue) => (originalValue === '' ? undefined : value))
-    .typeError('Temperature must be a number')
-    .optional(),
+  temperature: buildTemperatureRule().optional(),
   top_p: Yup.number()
     .min(0, 'Top P must be at least 0')
     .max(1, 'Top P must be at most 1')
@@ -151,7 +151,9 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
       formState: { isDirty },
       reset,
     } = useForm<VirtualAssistantFormValues>({
-      resolver: yupResolver(validationSchema) as unknown as Resolver<VirtualAssistantFormValues>,
+      resolver: yupResolver(
+        virtualAssistantValidationSchema
+      ) as unknown as Resolver<VirtualAssistantFormValues>,
       mode: 'onChange',
       defaultValues: getDefaultValues(assistantConfig),
     })
@@ -161,6 +163,13 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
     const toolkits = watch('toolkits')
     const mcpServers = watch('mcp_servers')
     const systemPrompt = watch('system_prompt')
+    const selectedModel = watch('llm_model_type')
+    const temperatureMax = getTemperatureMax(selectedModel)
+    const temperaturePlaceholder = `${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}-${temperatureMax}`
+
+    useEffect(() => {
+      trigger('temperature')
+    }, [selectedModel, trigger])
 
     // eslint-disable-next-line consistent-return
     const defaultOpenToolkitSection = useMemo(() => {
@@ -342,9 +351,10 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
               render={({ field, fieldState }) => (
                 <Input
                   label="Temperature"
-                  placeholder="0-2"
+                  placeholder={temperaturePlaceholder}
                   rootClass="w-24"
                   error={fieldState.error?.message}
+                  data-testid="virtual-assistant-temperature-input"
                   {...field}
                 />
               )}

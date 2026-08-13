@@ -46,6 +46,7 @@ import {
   useMissingIntegrationsModal,
   SubmitResponse,
 } from '@/pages/assistants/hooks/useMissingIntegrationsModal'
+import { buildTemperatureRule } from '@/pages/assistants/utils/temperatureConstraints'
 import { assistantsStore, userStore } from '@/store'
 import { providersStore } from '@/store/providers'
 import {
@@ -128,11 +129,7 @@ const formSchema = Yup.object()
     nestedAssistants: Yup.array().of(
       Yup.object().shape({ id: Yup.string().required(), name: Yup.string().required() })
     ),
-    temperature: Yup.number()
-      .min(0, 'Temperature must be at least 0')
-      .max(2, 'Temperature must be at most 2')
-      .transform((value, originalValue) => (originalValue === '' ? undefined : value))
-      .typeError('Temperature must be a number'),
+    temperature: buildTemperatureRule(),
     top_p: Yup.number()
       .min(0, 'Top P must be at least 0')
       .max(1, 'Top P must be at most 1')
@@ -575,6 +572,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             control={control}
             errors={errors}
             setValue={setValue}
+            trigger={trigger}
             hasUserSettings={hasUserSettings}
             aiGeneratedFieldMarkers={aiGeneratedFieldMarkers}
             setAiGeneratedFieldMarkers={setAiGeneratedFieldMarkers}

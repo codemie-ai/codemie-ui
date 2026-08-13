@@ -13,7 +13,15 @@
 // limitations under the License.
 //
 
-import { Control, FieldErrors, UseFormSetValue, Controller } from 'react-hook-form'
+import { useEffect } from 'react'
+import {
+  Control,
+  FieldErrors,
+  UseFormSetValue,
+  UseFormTrigger,
+  Controller,
+  useWatch,
+} from 'react-hook-form'
 
 import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import Accordion from '@/components/Accordion'
@@ -21,6 +29,8 @@ import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import ProjectSelector from '@/components/ProjectSelector'
+import { VALIDATION_CONSTRAINTS } from '@/constants/validation'
+import { getTemperatureMax } from '@/pages/assistants/utils/temperatureConstraints'
 import { AssistantAIFieldMarkers, AssistantPromptVariable } from '@/types/entity/assistant'
 import { cn } from '@/utils/utils'
 
@@ -37,6 +47,7 @@ interface AssistantSetupSectionProps {
   control: Control<AssistantFormSchema>
   errors: FieldErrors<AssistantFormSchema>
   setValue: UseFormSetValue<AssistantFormSchema>
+  trigger: UseFormTrigger<AssistantFormSchema>
   hasUserSettings: boolean
   aiGeneratedFieldMarkers: AssistantAIFieldMarkers
   setAiGeneratedFieldMarkers: (
@@ -51,270 +62,285 @@ const AssistantSetupSection = ({
   control,
   errors,
   setValue,
+  trigger,
   hasUserSettings,
   aiGeneratedFieldMarkers,
   setAiGeneratedFieldMarkers,
   promptVariables,
   onNameChange,
   isCompactView = false,
-}: AssistantSetupSectionProps) => (
-  <div data-onboarding="assistant-setup-accordion">
-    <Accordion
-      title="Assistant Setup"
-      description="Define the assistant's name, project, and visibility."
-      defaultOpen={true}
-      className={cn(isCompactView && 'mt-5')}
-    >
-      <div className="px-4 pb-4 flex flex-col gap-6">
-        <div data-onboarding="assistant-basic-fields" className="flex flex-col gap-6">
-          <div className={isCompactView ? 'flex flex-col gap-4' : 'flex items-start gap-8'}>
-            <Controller
-              name="icon_url"
-              control={control}
-              render={({ field, fieldState }) => (
-                <LogoUploadPanel
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  error={fieldState.error?.message}
-                  className={isCompactView ? 'w-full' : 'flex-1'}
-                  isCompactView={isCompactView}
-                  name={field.name}
-                />
-              )}
-            />
+}: AssistantSetupSectionProps) => {
+  const selectedModel = useWatch({ control, name: 'llm_model_type' })
+  const temperatureMax = getTemperatureMax(selectedModel)
+  const temperaturePlaceholder = `${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}-${temperatureMax}`
 
-            {!isCompactView && <div className="w-px bg-border-secondary self-stretch" />}
+  useEffect(() => {
+    trigger('temperature')
+  }, [selectedModel, trigger])
 
-            <div
-              className={cn('flex flex-col gap-7 pt-3', isCompactView ? 'w-full' : 'flex-1 mr-6')}
-            >
-              <div className="flex flex-col gap-3.5 w-full">
-                <Controller
-                  name="project"
-                  control={control}
-                  render={({ field }) => (
-                    <ProjectSelector
-                      label="Project"
-                      className="w-full"
-                      value={field.value ?? ''}
-                      onChange={(value) =>
-                        setValue('project', Array.isArray(value) ? value[0] : value, {
-                          shouldDirty: false,
-                        })
-                      }
-                    />
-                  )}
-                />
-
-                <div className="flex items-center">
-                  <Controller
-                    name="shared"
-                    control={control}
-                    render={({ field }) => (
-                      <Switch
-                        label="Shared with project"
-                        labelClassName="font-mono text-sm leading-6"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                        disabled={hasUserSettings}
-                      />
-                    )}
-                  />
-                </div>
-
-                {hasUserSettings && (
-                  <InfoBox>
-                    Important note: You can&apos;t share an assistant that has personal integrations
-                    on one of it&apos;s tools.
-                  </InfoBox>
-                )}
-              </div>
-
+  return (
+    <div data-onboarding="assistant-setup-accordion">
+      <Accordion
+        title="Assistant Setup"
+        description="Define the assistant's name, project, and visibility."
+        defaultOpen={true}
+        className={cn(isCompactView && 'mt-5')}
+      >
+        <div className="px-4 pb-4 flex flex-col gap-6">
+          <div data-onboarding="assistant-basic-fields" className="flex flex-col gap-6">
+            <div className={isCompactView ? 'flex flex-col gap-4' : 'flex items-start gap-8'}>
               <Controller
-                name="name"
+                name="icon_url"
                 control={control}
                 render={({ field, fieldState }) => (
-                  <Input
-                    label="Name"
-                    placeholder="Name*"
-                    name={field.name}
-                    className="w-full"
-                    inputClass="font-mono text-sm leading-6 font-medium"
-                    rightIcon={aiGeneratedFieldMarkers.name && <AIFieldSvg />}
-                    error={fieldState.error?.message}
-                    value={field.value}
-                    onChange={(e) => {
-                      onNameChange(e.target.value, field.value)
-                      field.onChange(e)
-                    }}
-                  />
-                )}
-              />
-
-              {/* Slug powers the human-readable assistant URL (/{project}/assistants/{slug}).
-                  Placed next to Name: it auto-fills from Name until edited manually. */}
-              <Controller
-                name="slug"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <SlugField
+                  <LogoUploadPanel
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     error={fieldState.error?.message}
+                    className={isCompactView ? 'w-full' : 'flex-1'}
+                    isCompactView={isCompactView}
                     name={field.name}
                   />
                 )}
               />
-            </div>
-          </div>
 
-          <Controller
-            name="description"
-            control={control}
-            render={({ field, fieldState }) => (
-              <DescriptionField
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                error={fieldState.error?.message}
-                isAIGenerated={aiGeneratedFieldMarkers.description}
-                name={field.name}
-              />
-            )}
-          />
-        </div>
+              {!isCompactView && <div className="w-px bg-border-secondary self-stretch" />}
 
-        <div data-onboarding="assistant-conversation-starters-field">
-          <Controller
-            name="conversation_starters"
-            control={control}
-            render={({ field }) => (
-              <ConversationStartersField
-                value={field.value}
-                onChange={field.onChange}
-                error={errors.conversation_starters?.[0]?.message}
-                isAIGenerated={aiGeneratedFieldMarkers.conversation_starters}
-                onMarkAsManual={() =>
-                  setAiGeneratedFieldMarkers((prev) => ({
-                    ...prev,
-                    conversation_starters: false,
-                  }))
-                }
-                name={field.name}
-              />
-            )}
-          />
-        </div>
+              <div
+                className={cn('flex flex-col gap-7 pt-3', isCompactView ? 'w-full' : 'flex-1 mr-6')}
+              >
+                <div className="flex flex-col gap-3.5 w-full">
+                  <Controller
+                    name="project"
+                    control={control}
+                    render={({ field }) => (
+                      <ProjectSelector
+                        label="Project"
+                        className="w-full"
+                        value={field.value ?? ''}
+                        onChange={(value) =>
+                          setValue('project', Array.isArray(value) ? value[0] : value, {
+                            shouldDirty: false,
+                          })
+                        }
+                      />
+                    )}
+                  />
 
-        <div data-onboarding="assistant-categories-field">
-          <Controller
-            name="categories"
-            control={control}
-            render={({ field }) => (
-              <CategoriesField
-                value={field.value ?? []}
-                onChange={field.onChange}
-                isAIGenerated={aiGeneratedFieldMarkers.categories}
-              />
-            )}
-          />
-        </div>
-
-        <div data-onboarding="assistant-system-instructions-field">
-          <Controller
-            name="system_prompt"
-            control={control}
-            render={({ field, fieldState }) => (
-              <SystemPrompt
-                isAIGenerated={aiGeneratedFieldMarkers.system_prompt}
-                setIsAiGenerated={(value) =>
-                  setAiGeneratedFieldMarkers((pr) => ({ ...pr, system_prompt: value }))
-                }
-                promptVariables={promptVariables}
-                onUpdatePromptVariables={(values: AssistantPromptVariable[]) => {
-                  setValue('prompt_variables', values, { shouldValidate: false })
-                }}
-                error={fieldState.error?.message}
-                {...field}
-              />
-            )}
-          />
-        </div>
-
-        <div data-onboarding="assistant-extra-config-accordion">
-          <Accordion title="Extra configuration" defaultOpen={false}>
-            <div
-              className={cn('px-4 pb-4 flex gap-6', isCompactView ? 'flex-col' : 'flex-row gap-16')}
-            >
-              <div className={cn('flex flex-col gap-6', !isCompactView && 'w-72')}>
-                <Controller
-                  name="llm_model_type"
-                  control={control}
-                  render={({ field }) => (
-                    <LLMSelector
-                      label="LLM model"
-                      placeholder="LLM model"
-                      className="w-full"
-                      value={field.value ?? ''}
-                      onChange={(value) =>
-                        setValue('llm_model_type', value, { shouldDirty: false })
-                      }
+                  <div className="flex items-center">
+                    <Controller
+                      name="shared"
+                      control={control}
+                      render={({ field }) => (
+                        <Switch
+                          label="Shared with project"
+                          labelClassName="font-mono text-sm leading-6"
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          disabled={hasUserSettings}
+                        />
+                      )}
                     />
+                  </div>
+
+                  {hasUserSettings && (
+                    <InfoBox>
+                      Important note: You can&apos;t share an assistant that has personal
+                      integrations on one of it&apos;s tools.
+                    </InfoBox>
                   )}
-                />
+                </div>
+
                 <Controller
-                  name="tools_tokens_size_limit"
+                  name="name"
                   control={control}
                   render={({ field, fieldState }) => (
                     <Input
-                      label="Limit Tool Output Tokens"
-                      placeholder="30000"
+                      label="Name"
+                      placeholder="Name*"
+                      name={field.name}
                       className="w-full"
+                      inputClass="font-mono text-sm leading-6 font-medium"
+                      rightIcon={aiGeneratedFieldMarkers.name && <AIFieldSvg />}
                       error={fieldState.error?.message}
-                      {...field}
+                      value={field.value}
+                      onChange={(e) => {
+                        onNameChange(e.target.value, field.value)
+                        field.onChange(e)
+                      }}
+                    />
+                  )}
+                />
+
+                {/* Slug powers the human-readable assistant URL (/{project}/assistants/{slug}).
+                  Placed next to Name: it auto-fills from Name until edited manually. */}
+                <Controller
+                  name="slug"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <SlugField
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      error={fieldState.error?.message}
+                      name={field.name}
                     />
                   )}
                 />
               </div>
+            </div>
 
-              <div className={cn('flex flex-col gap-6', !isCompactView && 'flex-1')}>
-                <div className="flex gap-8">
+            <Controller
+              name="description"
+              control={control}
+              render={({ field, fieldState }) => (
+                <DescriptionField
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  error={fieldState.error?.message}
+                  isAIGenerated={aiGeneratedFieldMarkers.description}
+                  name={field.name}
+                />
+              )}
+            />
+          </div>
+
+          <div data-onboarding="assistant-conversation-starters-field">
+            <Controller
+              name="conversation_starters"
+              control={control}
+              render={({ field }) => (
+                <ConversationStartersField
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={errors.conversation_starters?.[0]?.message}
+                  isAIGenerated={aiGeneratedFieldMarkers.conversation_starters}
+                  onMarkAsManual={() =>
+                    setAiGeneratedFieldMarkers((prev) => ({
+                      ...prev,
+                      conversation_starters: false,
+                    }))
+                  }
+                  name={field.name}
+                />
+              )}
+            />
+          </div>
+
+          <div data-onboarding="assistant-categories-field">
+            <Controller
+              name="categories"
+              control={control}
+              render={({ field }) => (
+                <CategoriesField
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                  isAIGenerated={aiGeneratedFieldMarkers.categories}
+                />
+              )}
+            />
+          </div>
+
+          <div data-onboarding="assistant-system-instructions-field">
+            <Controller
+              name="system_prompt"
+              control={control}
+              render={({ field, fieldState }) => (
+                <SystemPrompt
+                  isAIGenerated={aiGeneratedFieldMarkers.system_prompt}
+                  setIsAiGenerated={(value) =>
+                    setAiGeneratedFieldMarkers((pr) => ({ ...pr, system_prompt: value }))
+                  }
+                  promptVariables={promptVariables}
+                  onUpdatePromptVariables={(values: AssistantPromptVariable[]) => {
+                    setValue('prompt_variables', values, { shouldValidate: false })
+                  }}
+                  error={fieldState.error?.message}
+                  {...field}
+                />
+              )}
+            />
+          </div>
+
+          <div data-onboarding="assistant-extra-config-accordion">
+            <Accordion title="Extra configuration" defaultOpen={false}>
+              <div
+                className={cn(
+                  'px-4 pb-4 flex gap-6',
+                  isCompactView ? 'flex-col' : 'flex-row gap-16'
+                )}
+              >
+                <div className={cn('flex flex-col gap-6', !isCompactView && 'w-72')}>
                   <Controller
-                    name="temperature"
+                    name="llm_model_type"
                     control={control}
-                    render={({ field, fieldState }) => (
-                      <Input
-                        label="Temperature"
-                        placeholder="0-2"
-                        rootClass="w-24"
-                        error={fieldState.error?.message}
-                        {...field}
+                    render={({ field }) => (
+                      <LLMSelector
+                        label="LLM model"
+                        placeholder="LLM model"
+                        className="w-full"
+                        value={field.value ?? ''}
+                        onChange={(value) =>
+                          setValue('llm_model_type', value, { shouldDirty: false })
+                        }
                       />
                     )}
                   />
                   <Controller
-                    name="top_p"
+                    name="tools_tokens_size_limit"
                     control={control}
                     render={({ field, fieldState }) => (
                       <Input
-                        label="Top P"
-                        placeholder="0-1"
-                        rootClass="w-24"
+                        label="Limit Tool Output Tokens"
+                        placeholder="30000"
+                        className="w-full"
                         error={fieldState.error?.message}
                         {...field}
                       />
                     )}
                   />
                 </div>
+
+                <div className={cn('flex flex-col gap-6', !isCompactView && 'flex-1')}>
+                  <div className="flex gap-8">
+                    <Controller
+                      name="temperature"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <Input
+                          label="Temperature"
+                          placeholder={temperaturePlaceholder}
+                          rootClass="w-24"
+                          error={fieldState.error?.message}
+                          data-testid="assistant-temperature-input"
+                          {...field}
+                        />
+                      )}
+                    />
+                    <Controller
+                      name="top_p"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <Input
+                          label="Top P"
+                          placeholder="0-1"
+                          rootClass="w-24"
+                          error={fieldState.error?.message}
+                          {...field}
+                        />
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </Accordion>
+            </Accordion>
+          </div>
         </div>
-      </div>
-    </Accordion>
-  </div>
-)
+      </Accordion>
+    </div>
+  )
+}
 
 export default AssistantSetupSection

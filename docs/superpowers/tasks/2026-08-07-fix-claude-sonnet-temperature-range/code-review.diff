@@ -1,0 +1,1151 @@
+diff --git a/src/constants/validation.ts b/src/constants/validation.ts
+index 8cbbf0134..f4cdb3a1f 100644
+--- a/src/constants/validation.ts
++++ b/src/constants/validation.ts
+@@ -32,6 +32,9 @@ export const VALIDATION_CONSTRAINTS = {
+   PASSWORD_REQUIREMENTS_TOTAL: 4,
+   USERNAME_MIN_LENGTH: 3,
+   USERNAME_MAX_LENGTH: 50,
++  TEMPERATURE_MIN: 0,
++  TEMPERATURE_MAX_STANDARD: 2,
++  TEMPERATURE_MAX_CLAUDE: 1,
+ }
+ 
+ // Validation error messages
+@@ -49,6 +52,10 @@ export const VALIDATION_MESSAGES = {
+     'Only English letters, digits and special characters ("-", "[", "]", ".", "\\s") are allowed',
+   USERNAME_MIN_LENGTH: `Username must be at least ${VALIDATION_CONSTRAINTS.USERNAME_MIN_LENGTH} characters`,
+   USERNAME_MAX_LENGTH: `Username must be at most ${VALIDATION_CONSTRAINTS.USERNAME_MAX_LENGTH} characters`,
++  TEMPERATURE_MIN: `Temperature must be at least ${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}`,
++  TEMPERATURE_MAX_STANDARD: `Temperature must be between ${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN} and ${VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_STANDARD}`,
++  TEMPERATURE_MAX_CLAUDE: `Temperature must be between ${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN} and ${VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_CLAUDE} for Claude models`,
++  TEMPERATURE_TYPE: 'Temperature must be a number',
+ }
+ 
+ // Password requirement labels for UI
+diff --git a/src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx b/src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx
+index 0df29ab3f..2463fec15 100644
+--- a/src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx
++++ b/src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx
+@@ -1174,7 +1174,7 @@ describe('NewAssistantPage - Integration', () => {
+       await user.type(screen.getByPlaceholderText(/description/i), 'A useful assistant')
+       await user.type(screen.getByPlaceholderText(/system instructions/i), 'You are helpful')
+ 
+-      await user.type(screen.getByPlaceholderText('0-2'), '0.7')
++      await user.type(screen.getByTestId('assistant-temperature-input'), '0.7')
+       await user.type(screen.getByPlaceholderText('0-1'), '0.9')
+ 
+       await user.click(screen.getByRole('button', { name: 'Save' }))
+@@ -1203,13 +1203,142 @@ describe('NewAssistantPage - Integration', () => {
+       await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
+ 
+       await waitFor(() => {
+-        expect(screen.getByPlaceholderText('0-2')).toBeInTheDocument()
++        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
+       })
+-      await user.type(screen.getByPlaceholderText('0-2'), '5')
++      await user.type(screen.getByTestId('assistant-temperature-input'), '5')
+       await user.click(screen.getByPlaceholderText('Name*'))
+ 
+       await waitFor(() => {
+-        expect(screen.getByText('Temperature must be at most 2')).toBeInTheDocument()
++        expect(screen.getByText('Temperature must be between 0 and 2')).toBeInTheDocument()
++      })
++    })
++
++    it('rejects temperature 1.5 for a Claude Sonnet model on Bedrock', async () => {
++      mockAPI('GET', 'v1/llm_models', [
++        {
++          base_name: 'claude-3-5-sonnet',
++          label: 'Bedrock Claude 3.5 Sonnet',
++          default: true,
++          provider: 'aws_bedrock',
++        },
++      ])
++
++      renderPage('/assistants/new')
++
++      await waitFor(() => {
++        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
++      })
++      await waitFor(() => {
++        expect(screen.getByRole('button', { name: /Extra configuration/i })).toBeInTheDocument()
++      })
++      await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
++
++      await waitFor(() => {
++        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
++      })
++      await user.type(screen.getByTestId('assistant-temperature-input'), '1.5')
++      await user.click(screen.getByPlaceholderText('Name*'))
++
++      await waitFor(() => {
++        expect(
++          screen.getByText('Temperature must be between 0 and 1 for Claude models')
++        ).toBeInTheDocument()
++      })
++    })
++
++    it('rejects temperature 1.5 for a Claude Sonnet model on Vertex', async () => {
++      mockAPI('GET', 'v1/llm_models', [
++        {
++          base_name: 'claude-sonnet-v2-vertex',
++          label: 'Vertex Claude Sonnet v2',
++          default: true,
++          provider: 'google_vertexai',
++        },
++      ])
++
++      renderPage('/assistants/new')
++
++      await waitFor(() => {
++        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
++      })
++      await waitFor(() => {
++        expect(screen.getByRole('button', { name: /Extra configuration/i })).toBeInTheDocument()
++      })
++      await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
++
++      await waitFor(() => {
++        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
++      })
++      await user.type(screen.getByTestId('assistant-temperature-input'), '1.5')
++      await user.click(screen.getByPlaceholderText('Name*'))
++
++      await waitFor(() => {
++        expect(
++          screen.getByText('Temperature must be between 0 and 1 for Claude models')
++        ).toBeInTheDocument()
++      })
++    })
++
++    it('accepts temperature 1.5 for a non-Claude model (regression)', async () => {
++      mockAPI('GET', 'v1/llm_models', [
++        {
++          base_name: 'gpt-4o-2024-08-06',
++          label: 'GPT-4o 2024-08-06',
++          default: true,
++          provider: 'azure_openai',
++        },
++      ])
++
++      renderPage('/assistants/new')
++
++      await waitFor(() => {
++        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
++      })
++      await waitFor(() => {
++        expect(screen.getByRole('button', { name: /Extra configuration/i })).toBeInTheDocument()
++      })
++      await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
++
++      await waitFor(() => {
++        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
++      })
++      await user.type(screen.getByTestId('assistant-temperature-input'), '1.5')
++      await user.click(screen.getByPlaceholderText('Name*'))
++
++      // Give the schema a chance to run; no error message should appear for a valid value.
++      await waitFor(() => {
++        expect(screen.queryByText(/Temperature must be between/)).not.toBeInTheDocument()
++      })
++    })
++
++    it('accepts temperature boundary value 1.0 for a Claude Sonnet model', async () => {
++      mockAPI('GET', 'v1/llm_models', [
++        {
++          base_name: 'claude-3-5-sonnet',
++          label: 'Bedrock Claude 3.5 Sonnet',
++          default: true,
++          provider: 'aws_bedrock',
++        },
++      ])
++
++      renderPage('/assistants/new')
++
++      await waitFor(() => {
++        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
++      })
++      await waitFor(() => {
++        expect(screen.getByRole('button', { name: /Extra configuration/i })).toBeInTheDocument()
++      })
++      await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
++
++      await waitFor(() => {
++        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
++      })
++      await user.type(screen.getByTestId('assistant-temperature-input'), '1')
++      await user.click(screen.getByPlaceholderText('Name*'))
++
++      await waitFor(() => {
++        expect(screen.queryByText(/Temperature must be between/)).not.toBeInTheDocument()
+       })
+     })
+   })
+diff --git a/src/pages/assistants/components/AssistantForm/AssistantForm.tsx b/src/pages/assistants/components/AssistantForm/AssistantForm.tsx
+index e84fcd5c4..a278a4d9a 100644
+--- a/src/pages/assistants/components/AssistantForm/AssistantForm.tsx
++++ b/src/pages/assistants/components/AssistantForm/AssistantForm.tsx
+@@ -46,6 +46,7 @@ import {
+   useMissingIntegrationsModal,
+   SubmitResponse,
+ } from '@/pages/assistants/hooks/useMissingIntegrationsModal'
++import { buildTemperatureRule } from '@/pages/assistants/utils/temperatureConstraints'
+ import { assistantsStore, userStore } from '@/store'
+ import { providersStore } from '@/store/providers'
+ import {
+@@ -128,11 +129,7 @@ const formSchema = Yup.object()
+     nestedAssistants: Yup.array().of(
+       Yup.object().shape({ id: Yup.string().required(), name: Yup.string().required() })
+     ),
+-    temperature: Yup.number()
+-      .min(0, 'Temperature must be at least 0')
+-      .max(2, 'Temperature must be at most 2')
+-      .transform((value, originalValue) => (originalValue === '' ? undefined : value))
+-      .typeError('Temperature must be a number'),
++    temperature: buildTemperatureRule(),
+     top_p: Yup.number()
+       .min(0, 'Top P must be at least 0')
+       .max(1, 'Top P must be at most 1')
+diff --git a/src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx b/src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx
+index 64de59634..845556109 100644
+--- a/src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx
++++ b/src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx
+@@ -13,7 +13,7 @@
+ // limitations under the License.
+ //
+ 
+-import { Control, FieldErrors, UseFormSetValue, Controller } from 'react-hook-form'
++import { Control, FieldErrors, UseFormSetValue, Controller, useWatch } from 'react-hook-form'
+ 
+ import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
+ import Accordion from '@/components/Accordion'
+@@ -21,6 +21,8 @@ import InfoBox from '@/components/form/InfoBox'
+ import Input from '@/components/form/Input'
+ import Switch from '@/components/form/Switch'
+ import ProjectSelector from '@/components/ProjectSelector'
++import { VALIDATION_CONSTRAINTS } from '@/constants/validation'
++import { getTemperatureMax } from '@/pages/assistants/utils/temperatureConstraints'
+ import { AssistantAIFieldMarkers, AssistantPromptVariable } from '@/types/entity/assistant'
+ import { cn } from '@/utils/utils'
+ 
+@@ -57,268 +59,278 @@ const AssistantSetupSection = ({
+   promptVariables,
+   onNameChange,
+   isCompactView = false,
+-}: AssistantSetupSectionProps) => (
+-  <div data-onboarding="assistant-setup-accordion">
+-    <Accordion
+-      title="Assistant Setup"
+-      description="Define the assistant's name, project, and visibility."
+-      defaultOpen={true}
+-      className={cn(isCompactView && 'max-w-sm mt-5')}
+-    >
+-      <div className="px-4 pb-4 flex flex-col gap-6">
+-        <div data-onboarding="assistant-basic-fields" className="flex flex-col gap-6">
+-          <div className={isCompactView ? 'flex flex-col gap-4' : 'flex items-start gap-8'}>
+-            <Controller
+-              name="icon_url"
+-              control={control}
+-              render={({ field, fieldState }) => (
+-                <LogoUploadPanel
+-                  value={field.value ?? ''}
+-                  onChange={field.onChange}
+-                  onBlur={field.onBlur}
+-                  error={fieldState.error?.message}
+-                  className={isCompactView ? 'w-full' : 'flex-1'}
+-                  isCompactView={isCompactView}
+-                  name={field.name}
+-                />
+-              )}
+-            />
+-
+-            {!isCompactView && <div className="w-px bg-border-secondary self-stretch" />}
+-
+-            <div
+-              className={cn('flex flex-col gap-7 pt-3', isCompactView ? 'w-full' : 'flex-1 mr-6')}
+-            >
+-              <div className="flex flex-col gap-3.5 w-full">
+-                <Controller
+-                  name="project"
+-                  control={control}
+-                  render={({ field }) => (
+-                    <ProjectSelector
+-                      label="Project"
+-                      className="w-full"
+-                      value={field.value ?? ''}
+-                      onChange={(value) =>
+-                        setValue('project', Array.isArray(value) ? value[0] : value, {
+-                          shouldDirty: false,
+-                        })
+-                      }
+-                    />
+-                  )}
+-                />
+-
+-                <div className="flex items-center">
+-                  <Controller
+-                    name="shared"
+-                    control={control}
+-                    render={({ field }) => (
+-                      <Switch
+-                        label="Shared with project"
+-                        labelClassName="font-mono text-sm leading-6"
+-                        value={field.value}
+-                        onChange={(e) => field.onChange(e.target.checked)}
+-                        disabled={hasUserSettings}
+-                      />
+-                    )}
+-                  />
+-                </div>
+-
+-                {hasUserSettings && (
+-                  <InfoBox>
+-                    Important note: You can&apos;t share an assistant that has personal integrations
+-                    on one of it&apos;s tools.
+-                  </InfoBox>
+-                )}
+-              </div>
++}: AssistantSetupSectionProps) => {
++  const selectedModel = useWatch({ control, name: 'llm_model_type' })
++  const temperatureMax = getTemperatureMax(selectedModel)
++  const temperaturePlaceholder = `${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}-${temperatureMax}`
+ 
++  return (
++    <div data-onboarding="assistant-setup-accordion">
++      <Accordion
++        title="Assistant Setup"
++        description="Define the assistant's name, project, and visibility."
++        defaultOpen={true}
++        className={cn(isCompactView && 'max-w-sm mt-5')}
++      >
++        <div className="px-4 pb-4 flex flex-col gap-6">
++          <div data-onboarding="assistant-basic-fields" className="flex flex-col gap-6">
++            <div className={isCompactView ? 'flex flex-col gap-4' : 'flex items-start gap-8'}>
+               <Controller
+-                name="name"
++                name="icon_url"
+                 control={control}
+                 render={({ field, fieldState }) => (
+-                  <Input
+-                    label="Name"
+-                    placeholder="Name*"
+-                    name={field.name}
+-                    className="w-full"
+-                    inputClass="font-mono text-sm leading-6 font-medium"
+-                    rightIcon={aiGeneratedFieldMarkers.name && <AIFieldSvg />}
+-                    error={fieldState.error?.message}
+-                    value={field.value}
+-                    onChange={(e) => {
+-                      onNameChange(e.target.value, field.value)
+-                      field.onChange(e)
+-                    }}
+-                  />
+-                )}
+-              />
+-
+-              {/* Slug powers the human-readable assistant URL (/{project}/assistants/{slug}).
+-                  Placed next to Name: it auto-fills from Name until edited manually. */}
+-              <Controller
+-                name="slug"
+-                control={control}
+-                render={({ field, fieldState }) => (
+-                  <SlugField
++                  <LogoUploadPanel
+                     value={field.value ?? ''}
+                     onChange={field.onChange}
+                     onBlur={field.onBlur}
+                     error={fieldState.error?.message}
++                    className={isCompactView ? 'w-full' : 'flex-1'}
++                    isCompactView={isCompactView}
+                     name={field.name}
+                   />
+                 )}
+               />
+-            </div>
+-          </div>
+ 
+-          <Controller
+-            name="description"
+-            control={control}
+-            render={({ field, fieldState }) => (
+-              <DescriptionField
+-                value={field.value}
+-                onChange={field.onChange}
+-                onBlur={field.onBlur}
+-                error={fieldState.error?.message}
+-                isAIGenerated={aiGeneratedFieldMarkers.description}
+-                name={field.name}
+-              />
+-            )}
+-          />
+-        </div>
++              {!isCompactView && <div className="w-px bg-border-secondary self-stretch" />}
+ 
+-        <div data-onboarding="assistant-conversation-starters-field">
+-          <Controller
+-            name="conversation_starters"
+-            control={control}
+-            render={({ field }) => (
+-              <ConversationStartersField
+-                value={field.value}
+-                onChange={field.onChange}
+-                error={errors.conversation_starters?.[0]?.message}
+-                isAIGenerated={aiGeneratedFieldMarkers.conversation_starters}
+-                onMarkAsManual={() =>
+-                  setAiGeneratedFieldMarkers((prev) => ({
+-                    ...prev,
+-                    conversation_starters: false,
+-                  }))
+-                }
+-                name={field.name}
+-              />
+-            )}
+-          />
+-        </div>
++              <div
++                className={cn('flex flex-col gap-7 pt-3', isCompactView ? 'w-full' : 'flex-1 mr-6')}
++              >
++                <div className="flex flex-col gap-3.5 w-full">
++                  <Controller
++                    name="project"
++                    control={control}
++                    render={({ field }) => (
++                      <ProjectSelector
++                        label="Project"
++                        className="w-full"
++                        value={field.value ?? ''}
++                        onChange={(value) =>
++                          setValue('project', Array.isArray(value) ? value[0] : value, {
++                            shouldDirty: false,
++                          })
++                        }
++                      />
++                    )}
++                  />
+ 
+-        <div data-onboarding="assistant-categories-field">
+-          <Controller
+-            name="categories"
+-            control={control}
+-            render={({ field }) => (
+-              <CategoriesField
+-                value={field.value ?? []}
+-                onChange={field.onChange}
+-                isAIGenerated={aiGeneratedFieldMarkers.categories}
+-              />
+-            )}
+-          />
+-        </div>
++                  <div className="flex items-center">
++                    <Controller
++                      name="shared"
++                      control={control}
++                      render={({ field }) => (
++                        <Switch
++                          label="Shared with project"
++                          labelClassName="font-mono text-sm leading-6"
++                          value={field.value}
++                          onChange={(e) => field.onChange(e.target.checked)}
++                          disabled={hasUserSettings}
++                        />
++                      )}
++                    />
++                  </div>
+ 
+-        <div data-onboarding="assistant-system-instructions-field">
+-          <Controller
+-            name="system_prompt"
+-            control={control}
+-            render={({ field, fieldState }) => (
+-              <SystemPrompt
+-                isAIGenerated={aiGeneratedFieldMarkers.system_prompt}
+-                setIsAiGenerated={(value) =>
+-                  setAiGeneratedFieldMarkers((pr) => ({ ...pr, system_prompt: value }))
+-                }
+-                promptVariables={promptVariables}
+-                onUpdatePromptVariables={(values: AssistantPromptVariable[]) => {
+-                  setValue('prompt_variables', values, { shouldValidate: false })
+-                }}
+-                error={fieldState.error?.message}
+-                {...field}
+-              />
+-            )}
+-          />
+-        </div>
++                  {hasUserSettings && (
++                    <InfoBox>
++                      Important note: You can&apos;t share an assistant that has personal
++                      integrations on one of it&apos;s tools.
++                    </InfoBox>
++                  )}
++                </div>
+ 
+-        <div data-onboarding="assistant-extra-config-accordion">
+-          <Accordion
+-            title="Extra configuration"
+-            defaultOpen={false}
+-            className={cn(isCompactView && 'max-w-sm')}
+-          >
+-            <div
+-              className={cn('px-4 pb-4 flex gap-6', isCompactView ? 'flex-col' : 'flex-row gap-16')}
+-            >
+-              <div className={cn('flex flex-col gap-6', !isCompactView && 'w-72')}>
+                 <Controller
+-                  name="llm_model_type"
++                  name="name"
+                   control={control}
+-                  render={({ field }) => (
+-                    <LLMSelector
+-                      label="LLM model"
+-                      placeholder="LLM model"
++                  render={({ field, fieldState }) => (
++                    <Input
++                      label="Name"
++                      placeholder="Name*"
++                      name={field.name}
+                       className="w-full"
+-                      value={field.value ?? ''}
+-                      onChange={(value) =>
+-                        setValue('llm_model_type', value, { shouldDirty: false })
+-                      }
++                      inputClass="font-mono text-sm leading-6 font-medium"
++                      rightIcon={aiGeneratedFieldMarkers.name && <AIFieldSvg />}
++                      error={fieldState.error?.message}
++                      value={field.value}
++                      onChange={(e) => {
++                        onNameChange(e.target.value, field.value)
++                        field.onChange(e)
++                      }}
+                     />
+                   )}
+                 />
++
++                {/* Slug powers the human-readable assistant URL (/{project}/assistants/{slug}).
++                  Placed next to Name: it auto-fills from Name until edited manually. */}
+                 <Controller
+-                  name="tools_tokens_size_limit"
++                  name="slug"
+                   control={control}
+                   render={({ field, fieldState }) => (
+-                    <Input
+-                      label="Limit Tool Output Tokens"
+-                      placeholder="30000"
+-                      className="w-full"
++                    <SlugField
++                      value={field.value ?? ''}
++                      onChange={field.onChange}
++                      onBlur={field.onBlur}
+                       error={fieldState.error?.message}
+-                      {...field}
++                      name={field.name}
+                     />
+                   )}
+                 />
+               </div>
++            </div>
+ 
+-              <div className={cn('flex flex-col gap-6', !isCompactView && 'flex-1')}>
+-                <div className="flex gap-8">
++            <Controller
++              name="description"
++              control={control}
++              render={({ field, fieldState }) => (
++                <DescriptionField
++                  value={field.value}
++                  onChange={field.onChange}
++                  onBlur={field.onBlur}
++                  error={fieldState.error?.message}
++                  isAIGenerated={aiGeneratedFieldMarkers.description}
++                  name={field.name}
++                />
++              )}
++            />
++          </div>
++
++          <div data-onboarding="assistant-conversation-starters-field">
++            <Controller
++              name="conversation_starters"
++              control={control}
++              render={({ field }) => (
++                <ConversationStartersField
++                  value={field.value}
++                  onChange={field.onChange}
++                  error={errors.conversation_starters?.[0]?.message}
++                  isAIGenerated={aiGeneratedFieldMarkers.conversation_starters}
++                  onMarkAsManual={() =>
++                    setAiGeneratedFieldMarkers((prev) => ({
++                      ...prev,
++                      conversation_starters: false,
++                    }))
++                  }
++                  name={field.name}
++                />
++              )}
++            />
++          </div>
++
++          <div data-onboarding="assistant-categories-field">
++            <Controller
++              name="categories"
++              control={control}
++              render={({ field }) => (
++                <CategoriesField
++                  value={field.value ?? []}
++                  onChange={field.onChange}
++                  isAIGenerated={aiGeneratedFieldMarkers.categories}
++                />
++              )}
++            />
++          </div>
++
++          <div data-onboarding="assistant-system-instructions-field">
++            <Controller
++              name="system_prompt"
++              control={control}
++              render={({ field, fieldState }) => (
++                <SystemPrompt
++                  isAIGenerated={aiGeneratedFieldMarkers.system_prompt}
++                  setIsAiGenerated={(value) =>
++                    setAiGeneratedFieldMarkers((pr) => ({ ...pr, system_prompt: value }))
++                  }
++                  promptVariables={promptVariables}
++                  onUpdatePromptVariables={(values: AssistantPromptVariable[]) => {
++                    setValue('prompt_variables', values, { shouldValidate: false })
++                  }}
++                  error={fieldState.error?.message}
++                  {...field}
++                />
++              )}
++            />
++          </div>
++
++          <div data-onboarding="assistant-extra-config-accordion">
++            <Accordion
++              title="Extra configuration"
++              defaultOpen={false}
++              className={cn(isCompactView && 'max-w-sm')}
++            >
++              <div
++                className={cn(
++                  'px-4 pb-4 flex gap-6',
++                  isCompactView ? 'flex-col' : 'flex-row gap-16'
++                )}
++              >
++                <div className={cn('flex flex-col gap-6', !isCompactView && 'w-72')}>
+                   <Controller
+-                    name="temperature"
++                    name="llm_model_type"
+                     control={control}
+-                    render={({ field, fieldState }) => (
+-                      <Input
+-                        label="Temperature"
+-                        placeholder="0-2"
+-                        rootClass="w-24"
+-                        error={fieldState.error?.message}
+-                        {...field}
++                    render={({ field }) => (
++                      <LLMSelector
++                        label="LLM model"
++                        placeholder="LLM model"
++                        className="w-full"
++                        value={field.value ?? ''}
++                        onChange={(value) =>
++                          setValue('llm_model_type', value, { shouldDirty: false })
++                        }
+                       />
+                     )}
+                   />
+                   <Controller
+-                    name="top_p"
++                    name="tools_tokens_size_limit"
+                     control={control}
+                     render={({ field, fieldState }) => (
+                       <Input
+-                        label="Top P"
+-                        placeholder="0-1"
+-                        rootClass="w-24"
++                        label="Limit Tool Output Tokens"
++                        placeholder="30000"
++                        className="w-full"
+                         error={fieldState.error?.message}
+                         {...field}
+                       />
+                     )}
+                   />
+                 </div>
++
++                <div className={cn('flex flex-col gap-6', !isCompactView && 'flex-1')}>
++                  <div className="flex gap-8">
++                    <Controller
++                      name="temperature"
++                      control={control}
++                      render={({ field, fieldState }) => (
++                        <Input
++                          label="Temperature"
++                          placeholder={temperaturePlaceholder}
++                          rootClass="w-24"
++                          error={fieldState.error?.message}
++                          data-testid="assistant-temperature-input"
++                          {...field}
++                        />
++                      )}
++                    />
++                    <Controller
++                      name="top_p"
++                      control={control}
++                      render={({ field, fieldState }) => (
++                        <Input
++                          label="Top P"
++                          placeholder="0-1"
++                          rootClass="w-24"
++                          error={fieldState.error?.message}
++                          {...field}
++                        />
++                      )}
++                    />
++                  </div>
++                </div>
+               </div>
+-            </div>
+-          </Accordion>
++            </Accordion>
++          </div>
+         </div>
+-      </div>
+-    </Accordion>
+-  </div>
+-)
++      </Accordion>
++    </div>
++  )
++}
+ 
+ export default AssistantSetupSection
+diff --git a/src/pages/assistants/utils/__tests__/temperatureConstraints.test.ts b/src/pages/assistants/utils/__tests__/temperatureConstraints.test.ts
+new file mode 100644
+index 000000000..9d60e7a62
+--- /dev/null
++++ b/src/pages/assistants/utils/__tests__/temperatureConstraints.test.ts
+@@ -0,0 +1,173 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect, beforeEach, vi } from 'vitest'
++import * as Yup from 'yup'
++
++import { appInfoStore } from '@/store/appInfo'
++import { ModelOption } from '@/types/entity/configuration'
++
++import {
++  isClaudeOnAnthropicProvider,
++  getTemperatureMax,
++  buildTemperatureRule,
++} from '../temperatureConstraints'
++
++vi.mock('@/store/appInfo', () => ({
++  appInfoStore: { llmModels: [] as ModelOption[] },
++}))
++
++const model = (over: Partial<ModelOption>): ModelOption => ({
++  value: 'model-value',
++  label: 'Model Label',
++  isDefault: false,
++  ...over,
++})
++
++describe('isClaudeOnAnthropicProvider', () => {
++  it.each<[string, ModelOption | undefined, boolean]>([
++    ['undefined model', undefined, false],
++    ['gpt-4o on azure_openai', model({ value: 'gpt-4o', provider: 'azure_openai' }), false],
++    [
++      'gpt-4o on aws_bedrock (defensive)',
++      model({ value: 'gpt-4o', provider: 'aws_bedrock' }),
++      false,
++    ],
++    [
++      'claude-3-5-sonnet on aws_bedrock',
++      model({ value: 'claude-3-5-sonnet', provider: 'aws_bedrock' }),
++      true,
++    ],
++    [
++      'claude-4-opus on aws_bedrock',
++      model({ value: 'claude-4-opus', provider: 'aws_bedrock' }),
++      true,
++    ],
++    [
++      'claude-sonnet-v2-vertex on google_vertexai',
++      model({ value: 'claude-sonnet-v2-vertex', provider: 'google_vertexai' }),
++      true,
++    ],
++    [
++      'claude-3-5-sonnet on azure_openai (wrong provider)',
++      model({ value: 'claude-3-5-sonnet', provider: 'azure_openai' }),
++      false,
++    ],
++    ['claude on aws_bedrock with no provider field', model({ value: 'claude-3-5-sonnet' }), false],
++    [
++      'case-insensitive CLAUDE-4-OPUS on aws_bedrock',
++      model({ value: 'CLAUDE-4-OPUS', provider: 'aws_bedrock' }),
++      true,
++    ],
++  ])('%s -> %s', (_desc, input, expected) => {
++    expect(isClaudeOnAnthropicProvider(input)).toBe(expected)
++  })
++})
++
++describe('getTemperatureMax', () => {
++  beforeEach(() => {
++    appInfoStore.llmModels = [
++      model({
++        value: 'claude-3-5-sonnet',
++        provider: 'aws_bedrock',
++        label: 'Bedrock Claude 3.5 Sonnet',
++      }),
++      model({
++        value: 'claude-sonnet-v2-vertex',
++        provider: 'google_vertexai',
++        label: 'Vertex Claude Sonnet v2',
++      }),
++      model({ value: 'gpt-4o-2024-08-06', provider: 'azure_openai', label: 'GPT-4o' }),
++    ]
++  })
++
++  it('returns 1 for a Claude Bedrock model', () => {
++    expect(getTemperatureMax('claude-3-5-sonnet')).toBe(1)
++  })
++
++  it('returns 1 for a Claude Vertex model', () => {
++    expect(getTemperatureMax('claude-sonnet-v2-vertex')).toBe(1)
++  })
++
++  it('returns 2 for a non-Claude model', () => {
++    expect(getTemperatureMax('gpt-4o-2024-08-06')).toBe(2)
++  })
++
++  it('returns 2 (safe default) for an unknown model value', () => {
++    expect(getTemperatureMax('does-not-exist')).toBe(2)
++  })
++
++  it('returns 2 for undefined model value', () => {
++    expect(getTemperatureMax(undefined)).toBe(2)
++  })
++})
++
++describe('buildTemperatureRule', () => {
++  beforeEach(() => {
++    appInfoStore.llmModels = [
++      model({
++        value: 'claude-3-5-sonnet',
++        provider: 'aws_bedrock',
++        label: 'Bedrock Claude 3.5 Sonnet',
++      }),
++      model({ value: 'gpt-4o-2024-08-06', provider: 'azure_openai', label: 'GPT-4o' }),
++    ]
++  })
++
++  const wrap = () =>
++    Yup.object({
++      llm_model_type: Yup.string(),
++      temperature: buildTemperatureRule(),
++    })
++
++  it('accepts 0.5 for any selected model', async () => {
++    await expect(
++      wrap().validate({ llm_model_type: 'gpt-4o-2024-08-06', temperature: 0.5 })
++    ).resolves.toBeDefined()
++    await expect(
++      wrap().validate({ llm_model_type: 'claude-3-5-sonnet', temperature: 0.5 })
++    ).resolves.toBeDefined()
++  })
++
++  it('accepts boundary 1.0 for Claude', async () => {
++    await expect(
++      wrap().validate({ llm_model_type: 'claude-3-5-sonnet', temperature: 1 })
++    ).resolves.toBeDefined()
++  })
++
++  it('rejects 1.5 for Claude with the Claude-specific message', async () => {
++    await expect(
++      wrap().validate({ llm_model_type: 'claude-3-5-sonnet', temperature: 1.5 })
++    ).rejects.toThrow(/between 0 and 1 for Claude models/)
++  })
++
++  it('accepts 1.5 for a non-Claude model', async () => {
++    await expect(
++      wrap().validate({ llm_model_type: 'gpt-4o-2024-08-06', temperature: 1.5 })
++    ).resolves.toBeDefined()
++  })
++
++  it('rejects 2.5 for a non-Claude model with the standard message', async () => {
++    await expect(
++      wrap().validate({ llm_model_type: 'gpt-4o-2024-08-06', temperature: 2.5 })
++    ).rejects.toThrow(/between 0 and 2/)
++  })
++
++  it('rejects negative values with the min message', async () => {
++    await expect(
++      wrap().validate({ llm_model_type: 'gpt-4o-2024-08-06', temperature: -0.1 })
++    ).rejects.toThrow(/at least 0/)
++  })
++})
+diff --git a/src/pages/assistants/utils/temperatureConstraints.ts b/src/pages/assistants/utils/temperatureConstraints.ts
+new file mode 100644
+index 000000000..fea402344
+--- /dev/null
++++ b/src/pages/assistants/utils/temperatureConstraints.ts
+@@ -0,0 +1,66 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import * as Yup from 'yup'
++
++import { VALIDATION_CONSTRAINTS, VALIDATION_MESSAGES } from '@/constants/validation'
++import { appInfoStore } from '@/store/appInfo'
++import { ModelOption } from '@/types/entity/configuration'
++
++/**
++ * Temperature constraints helper — single source of truth for the model-conditional temperature max.
++ *
++ * Anthropic Claude models on AWS Bedrock and Google Vertex cap temperature at 1.0
++ * per the Anthropic API contract. All other providers currently accept 0-2.
++ *
++ * `Yup.when(...)`'s callback runs at VALIDATION time, not schema-definition time, so
++ * reading `appInfoStore.llmModels` from inside `buildTemperatureRule` below is safe:
++ * both consumer forms live under app routes that fire `getLLMModels()` on mount, so
++ * the store is populated by the time any user-triggered validation runs. This is
++ * the only place schema code touches a store in this codebase — do not repeat this
++ * pattern elsewhere without the same justification.
++ */
++
++const CLAUDE_TEMPERATURE_PROVIDERS = new Set(['aws_bedrock', 'google_vertexai'])
++
++export function isClaudeOnAnthropicProvider(model: ModelOption | undefined): boolean {
++  if (!model?.provider) return false
++  if (!CLAUDE_TEMPERATURE_PROVIDERS.has(model.provider)) return false
++  return model.value.toLowerCase().includes('claude')
++}
++
++export function getTemperatureMax(modelValue: string | undefined): number {
++  if (!modelValue) return VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_STANDARD
++  const model = appInfoStore.llmModels.find((m) => m.value === modelValue)
++  return isClaudeOnAnthropicProvider(model)
++    ? VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_CLAUDE
++    : VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_STANDARD
++}
++
++export function buildTemperatureRule(): Yup.NumberSchema {
++  return Yup.number()
++    .min(VALIDATION_CONSTRAINTS.TEMPERATURE_MIN, VALIDATION_MESSAGES.TEMPERATURE_MIN)
++    .when('llm_model_type', (values: unknown[], schema: Yup.NumberSchema) => {
++      const modelValue = values[0] as string | undefined
++      const max = getTemperatureMax(modelValue)
++      const message =
++        max === VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_CLAUDE
++          ? VALIDATION_MESSAGES.TEMPERATURE_MAX_CLAUDE
++          : VALIDATION_MESSAGES.TEMPERATURE_MAX_STANDARD
++      return schema.max(max, message)
++    })
++    .transform((value, originalValue) => (originalValue === '' ? undefined : value))
++    .typeError(VALIDATION_MESSAGES.TEMPERATURE_TYPE)
++}
+diff --git a/src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx b/src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx
+index ba018b0cf..a8733fb28 100644
+--- a/src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx
++++ b/src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx
+@@ -36,6 +36,7 @@ import ExpandableTextarea from '@/components/form/ExpandableTextarea/ExpandableT
+ import Input from '@/components/form/Input'
+ import SkillSelector from '@/components/SkillSelector'
+ import { MAX_SKILLS_PER_ASSISTANT } from '@/constants/skills'
++import { VALIDATION_CONSTRAINTS } from '@/constants/validation'
+ import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+ import { AssistantFormContext } from '@/pages/assistants/components/AssistantForm/AssistantForm'
+ import ContextSelector from '@/pages/assistants/components/AssistantForm/components/ContextSelector'
+@@ -44,6 +45,10 @@ import SystemPromptGenAIPopup from '@/pages/assistants/components/AssistantForm/
+ import ToolsConfiguration, {
+   ToolkitSection,
+ } from '@/pages/assistants/components/AssistantForm/components/Toolkits/ToolsConfiguration'
++import {
++  buildTemperatureRule,
++  getTemperatureMax,
++} from '@/pages/assistants/utils/temperatureConstraints'
+ import { assistantsStore } from '@/store'
+ import { settingsStore } from '@/store/settings'
+ import { isWorkflowAssistantToolIssue, isWorkflowAssistantMcpIssue } from '@/types/entity'
+@@ -93,15 +98,10 @@ export interface VirtualAssistantFormRef {
+   reset: () => void
+ }
+ 
+-const validationSchema = Yup.object().shape({
++export const virtualAssistantValidationSchema = Yup.object().shape({
+   system_prompt: Yup.string().required('System instructions are required'),
+   llm_model_type: Yup.string().optional(),
+-  temperature: Yup.number()
+-    .min(0, 'Temperature must be at least 0')
+-    .max(2, 'Temperature must be at most 2')
+-    .transform((value, originalValue) => (originalValue === '' ? undefined : value))
+-    .typeError('Temperature must be a number')
+-    .optional(),
++  temperature: buildTemperatureRule().optional(),
+   top_p: Yup.number()
+     .min(0, 'Top P must be at least 0')
+     .max(1, 'Top P must be at most 1')
+@@ -151,7 +151,9 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
+       formState: { isDirty },
+       reset,
+     } = useForm<VirtualAssistantFormValues>({
+-      resolver: yupResolver(validationSchema) as unknown as Resolver<VirtualAssistantFormValues>,
++      resolver: yupResolver(
++        virtualAssistantValidationSchema
++      ) as unknown as Resolver<VirtualAssistantFormValues>,
+       mode: 'onChange',
+       defaultValues: getDefaultValues(assistantConfig),
+     })
+@@ -161,6 +163,9 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
+     const toolkits = watch('toolkits')
+     const mcpServers = watch('mcp_servers')
+     const systemPrompt = watch('system_prompt')
++    const selectedModel = watch('llm_model_type')
++    const temperatureMax = getTemperatureMax(selectedModel)
++    const temperaturePlaceholder = `${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}-${temperatureMax}`
+ 
+     // eslint-disable-next-line consistent-return
+     const defaultOpenToolkitSection = useMemo(() => {
+@@ -342,9 +347,10 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
+               render={({ field, fieldState }) => (
+                 <Input
+                   label="Temperature"
+-                  placeholder="0-2"
++                  placeholder={temperaturePlaceholder}
+                   rootClass="w-24"
+                   error={fieldState.error?.message}
++                  data-testid="virtual-assistant-temperature-input"
+                   {...field}
+                 />
+               )}
+diff --git a/src/pages/workflows/editor/configPanels/components/__tests__/VirtualAssistantForm.schema.test.ts b/src/pages/workflows/editor/configPanels/components/__tests__/VirtualAssistantForm.schema.test.ts
+new file mode 100644
+index 000000000..4eb0cc409
+--- /dev/null
++++ b/src/pages/workflows/editor/configPanels/components/__tests__/VirtualAssistantForm.schema.test.ts
+@@ -0,0 +1,72 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect, beforeEach, vi } from 'vitest'
++
++import { appInfoStore } from '@/store/appInfo'
++import { ModelOption } from '@/types/entity/configuration'
++
++import { virtualAssistantValidationSchema } from '../VirtualAssistantForm'
++
++vi.mock('@/store/appInfo', () => ({
++  appInfoStore: { llmModels: [] as ModelOption[] },
++}))
++
++const model = (over: Partial<ModelOption>): ModelOption => ({
++  value: 'model-value',
++  label: 'Model Label',
++  isDefault: false,
++  ...over,
++})
++
++const baseValues = {
++  system_prompt: 'You are helpful',
++  toolkits: [],
++  mcp_servers: [],
++  context: [],
++}
++
++describe('VirtualAssistantForm validation schema — temperature', () => {
++  beforeEach(() => {
++    appInfoStore.llmModels = [
++      model({
++        value: 'claude-3-5-sonnet',
++        provider: 'aws_bedrock',
++        label: 'Bedrock Claude 3.5 Sonnet',
++      }),
++      model({ value: 'gpt-4o-2024-08-06', provider: 'azure_openai', label: 'GPT-4o' }),
++    ]
++  })
++
++  it('rejects temperature 1.5 when a Claude model is selected', async () => {
++    await expect(
++      virtualAssistantValidationSchema.validate({
++        ...baseValues,
++        llm_model_type: 'claude-3-5-sonnet',
++        temperature: 1.5,
++      })
++    ).rejects.toThrow(/between 0 and 1 for Claude models/)
++  })
++
++  it('accepts temperature 1.5 when a non-Claude model is selected', async () => {
++    await expect(
++      virtualAssistantValidationSchema.validate({
++        ...baseValues,
++        llm_model_type: 'gpt-4o-2024-08-06',
++        temperature: 1.5,
++      })
++    ).resolves.toBeDefined()
++  })
++})
+diff --git a/src/store/appInfo.ts b/src/store/appInfo.ts
+index 92e141478..78536205e 100644
+--- a/src/store/appInfo.ts
++++ b/src/store/appInfo.ts
+@@ -262,6 +262,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
+         value: model.base_name,
+         label: model.label,
+         isDefault: model.default,
++        provider: model.provider,
+       }))
+       return appInfoStore.llmModels
+     } catch (error) {
+diff --git a/src/types/entity/configuration.ts b/src/types/entity/configuration.ts
+index d674633f8..685b51e88 100644
+--- a/src/types/entity/configuration.ts
++++ b/src/types/entity/configuration.ts
+@@ -35,6 +35,7 @@ export interface ModelOption {
+   value: string
+   label: string
+   isDefault: boolean
++  provider?: string
+ }
+ 
+ export interface SpeechConfig {

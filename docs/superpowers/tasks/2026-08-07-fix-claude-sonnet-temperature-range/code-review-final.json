@@ -1,0 +1,64 @@
+{
+  "decision": "request-changes",
+  "rationale": "3 lenses ran cleanly. Acceptance audit: all 16 in-diff criteria PASS (3 MR-description criteria are 'na' — not auditable from code). Blind lens raised 13 concerns; most were style/naming or coverage-depth notes and were dismissed. Edge-case lens surfaced 3 concrete defects that survive triage — 2 correctness gaps in the fix itself, 1 test-order fragility. Standards: all 9 commits pass the EPMCDME-XXXX: Capital-first format regex; no security issues.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "For any Claude model on Bedrock or Vertex, Temperature range is 0-1.", "status": "pass", "notes": "isClaudeOnAnthropicProvider + buildTemperatureRule enforce .max(TEMPERATURE_MAX_CLAUDE=1) in both AssistantForm and VirtualAssistantForm schemas." },
+    { "criterion": "The UI rejects values > 1 for those models with the Claude-specific message.", "status": "pass", "notes": "VALIDATION_MESSAGES.TEMPERATURE_MAX_CLAUDE wired through when() callback. Integration test asserts exact string." },
+    { "criterion": "Non-Claude models on any provider still accept 0-2.", "status": "pass", "notes": "getTemperatureMax returns TEMPERATURE_MAX_STANDARD (2) when predicate is false. Regression test covers GPT-4o at 1.5 accepted." },
+    { "criterion": "Placeholder text reflects the current model's range.", "status": "pass", "notes": "Both AssistantSetupSection (useWatch) and VirtualAssistantForm (watch) derive placeholder from getTemperatureMax(llm_model_type)." },
+    { "criterion": "Boundary values 0, in-range, 1 accepted for Claude; 0, in-range, 2 for non-Claude.", "status": "pass", "notes": "Helper unit tests cover 0.5 and 1.0 for Claude; integration test covers 1.0 boundary for Claude." },
+    { "criterion": "No provider-side 400 errors due to unsupported Claude temperature.", "status": "pass", "notes": "Yup validation runs before submission via react-hook-form onChange mode." },
+    { "criterion": "Unit tests for isClaudeOnAnthropicProvider (table-driven).", "status": "pass", "notes": "9 cases including undefined, wrong provider, no provider, and UPPERCASE variant." },
+    { "criterion": "Unit tests for getTemperatureMax (5 cases).", "status": "pass", "notes": "All 5 spec-required cases covered." },
+    { "criterion": "Unit tests for buildTemperatureRule (4+ scenarios).", "status": "pass", "notes": "6 cases covered including boundary and negative rejection." },
+    { "criterion": "Update existing integration 'out of range' test to data-testid + new message.", "status": "pass", "notes": "getByPlaceholderText('0-2') migrated to getByTestId; message updated to 'Temperature must be between 0 and 2'." },
+    { "criterion": "Claude Sonnet Bedrock rejects 1.5.", "status": "pass", "notes": "New integration test with aws_bedrock fixture." },
+    { "criterion": "Claude Sonnet Vertex rejects 1.5.", "status": "pass", "notes": "New integration test with google_vertexai fixture." },
+    { "criterion": "Non-Claude accepts 1.5 (regression).", "status": "pass", "notes": "New integration test with azure_openai GPT-4o." },
+    { "criterion": "Claude boundary 1.0 accepted.", "status": "pass", "notes": "New integration test." },
+    { "criterion": "VirtualAssistantForm two-scenario minimum (Claude reject, non-Claude accept).", "status": "pass", "notes": "Schema-level test file covers both. Deliberate deviation from spec's integration-test path (defended in Task 6 commit); the plan's schema-only trade-off preserves TDD RED->GREEN cleanliness without requiring Task 8 to land first." },
+    { "criterion": "mock-server/db.json provider field on Claude Bedrock, Claude Vertex, non-Claude.", "status": "pass", "notes": "Fixture already had provider fields on all entries pre-PR; no edit needed. Documented in plan's Global Constraints." },
+    { "criterion": "MR description: full test-harness log.", "status": "na", "notes": "Not auditable from diff." },
+    { "criterion": "MR description: scope-widening note.", "status": "na", "notes": "Not auditable from diff." },
+    { "criterion": "MR description: before/after screenshots.", "status": "na", "notes": "Not auditable from diff." }
+  ],
+  "standards_review": [
+    { "standard": "commit-format (EPMCDME-XXXX: Capital-first)", "status": "pass", "notes": "All 9 commits match the git-workflow.md regex." },
+    { "standard": "code-quality (constants-usage, form-patterns)", "status": "pass", "notes": "Named constants added to validation.ts per constants-usage guide; Yup.when pattern with lazy store read documented in helper's header comment per form-patterns guide." },
+    { "standard": "security (no secrets, no injection, no unsafe auth)", "status": "pass", "notes": "No auth/secret changes; helper is pure input validation." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "file": "src/pages/assistants/components/AssistantForm/AssistantForm.tsx",
+      "line": 131,
+      "severity": "major",
+      "triage": "patch",
+      "problem": "Cross-field re-validation gap: when the user changes llm_model_type AFTER typing a temperature value, the temperature field's Yup .when() callback is not re-run because react-hook-form does not automatically re-validate a field when a different field changes. Result: (a) false negative — user types 1.5 with GPT-4o (valid), switches to Claude, no error appears though placeholder updates to '0-1'; (b) false positive — user types 1.5 with Claude (error shown), switches to GPT-4o, stale Claude-specific error persists. Affects both AssistantForm and VirtualAssistantForm since both derive validation the same way.",
+      "impact": "Silent submission of temperature=1.5+ with a Claude model → provider 400 error. This is exactly the bug the ticket is trying to fix, reproducible via a common user flow (typing before finalizing model choice).",
+      "recommendation": "In both forms, wrap LLMSelector's onChange (or the setValue call for llm_model_type) to also call trigger('temperature') after the model changes. Example: `onChange={(v) => { field.onChange(v); trigger('temperature') }}` — or use RHF's `deps` in the schema resolver options."
+    },
+    {
+      "id": "CR-002",
+      "file": "src/pages/assistants/utils/temperatureConstraints.ts",
+      "line": 46,
+      "severity": "major",
+      "triage": "patch",
+      "problem": "getTemperatureMax silently falls back to TEMPERATURE_MAX_STANDARD (2) when the model is not found in appInfoStore.llmModels — including when the store is empty because getLLMModels() has not yet resolved OR because the fetch failed (the catch branch returns [] without setting the store). For the EditAssistantPage flow, defaultValues already contain llm_model_type='claude-...' before the store populates; if the user opens Extra config quickly, temperature=1.5 will be marked valid against the stale empty store and never re-checked when the store populates. On fetch failure the store stays empty for the entire session and no Claude constraint is ever applied.",
+      "impact": "Same failure mode as CR-001 (silent 400) but triggered by network conditions rather than user interaction. Narrow race window on fast networks; wide open on any getLLMModels failure.",
+      "recommendation": "Add a name-based safe-fallback: if the model is not found in the store but the modelValue string contains 'claude' (case-insensitive), return TEMPERATURE_MAX_CLAUDE. This degrades gracefully in both the in-flight and fetch-failure paths and stays consistent with the widened scope (all Claude names get the stricter cap by default). Add a unit test covering both scenarios."
+    },
+    {
+      "id": "CR-003",
+      "file": "src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx",
+      "line": 1193,
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The updated 'shows validation errors for temperature out of range' test does not stub mockAPI('GET', 'v1/llm_models', ...). It relies on the default-empty response producing max=2 and message 'Temperature must be between 0 and 2'. If test ordering ever changes (vitest runs tests in a different order after a refactor), or if a future test leaves appInfoStore.llmModels populated with a Claude model, this test will get the Claude-specific message and fail with a confusing 'expected between 0 and 2, got between 0 and 1' error.",
+      "impact": "Latent flakiness. Would surface as a random CI failure that's expensive to debug because it depends on test-order side effects rather than the test under scrutiny.",
+      "recommendation": "Add `mockAPI('GET', 'v1/llm_models', [{ base_name: 'gpt-4o-2024-08-06', label: 'GPT-4o', default: true, provider: 'azure_openai' }])` at the top of that test — mirrors what the new tests do — so the expected max is explicit and independent of ordering."
+    }
+  ]
+}

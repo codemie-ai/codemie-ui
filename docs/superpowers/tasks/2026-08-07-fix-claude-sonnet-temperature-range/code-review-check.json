@@ -1,0 +1,50 @@
+{
+  "decision": "approve",
+  "rationale": "Fix-up diff (176 lines, 6 files) addresses all three prior findings cleanly. CR-001 wires trigger('temperature') via useEffect keyed on selectedModel in both duplicate forms — AssistantSetupSection took trigger as a new prop from AssistantForm; VirtualAssistantForm already had trigger from useForm. CR-002 adds a name-based fallback in getTemperatureMax when the store lookup misses, with two new unit tests covering the EditAssistant in-flight and getLLMModels-failure paths. CR-003 stubs mockAPI GET v1/llm_models with a GPT-4o fixture in the pre-existing 'out of range' integration test, decoupling it from test order. No new high-risk issues introduced by the fix-up: the mount-time trigger is a no-op for undefined temperature; the substring 'claude' fallback errs on the safe side (over-cap rather than under-cap) and is only used when the store lookup misses.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "For any Claude model on Bedrock or Vertex, Temperature range is 0-1.", "status": "pass", "notes": "isClaudeOnAnthropicProvider + buildTemperatureRule enforce .max(TEMPERATURE_MAX_CLAUDE=1) in both AssistantForm and VirtualAssistantForm schemas." },
+    { "criterion": "The UI rejects values > 1 for those models with the Claude-specific message.", "status": "pass", "notes": "VALIDATION_MESSAGES.TEMPERATURE_MAX_CLAUDE wired through when() callback. Integration test asserts exact string." },
+    { "criterion": "Non-Claude models on any provider still accept 0-2.", "status": "pass", "notes": "getTemperatureMax returns TEMPERATURE_MAX_STANDARD (2) when predicate is false. Regression test covers GPT-4o at 1.5 accepted." },
+    { "criterion": "Placeholder text reflects the current model's range.", "status": "pass", "notes": "Both AssistantSetupSection (useWatch) and VirtualAssistantForm (watch) derive placeholder from getTemperatureMax(llm_model_type)." },
+    { "criterion": "Boundary values 0, in-range, 1 accepted for Claude; 0, in-range, 2 for non-Claude.", "status": "pass", "notes": "Helper unit tests cover 0.5 and 1.0 for Claude; integration test covers 1.0 boundary for Claude." },
+    { "criterion": "No provider-side 400 errors due to unsupported Claude temperature.", "status": "pass", "notes": "Yup validation runs before submission via react-hook-form onChange mode." },
+    { "criterion": "Unit tests for isClaudeOnAnthropicProvider (table-driven).", "status": "pass", "notes": "9 cases including undefined, wrong provider, no provider, and UPPERCASE variant." },
+    { "criterion": "Unit tests for getTemperatureMax (5 cases).", "status": "pass", "notes": "All 5 spec-required cases covered plus 2 new fallback cases." },
+    { "criterion": "Unit tests for buildTemperatureRule (4+ scenarios).", "status": "pass", "notes": "6 cases covered including boundary and negative rejection." },
+    { "criterion": "Update existing integration 'out of range' test to data-testid + new message.", "status": "pass", "notes": "getByPlaceholderText('0-2') migrated to getByTestId; message updated to 'Temperature must be between 0 and 2'." },
+    { "criterion": "Claude Sonnet Bedrock rejects 1.5.", "status": "pass", "notes": "New integration test with aws_bedrock fixture." },
+    { "criterion": "Claude Sonnet Vertex rejects 1.5.", "status": "pass", "notes": "New integration test with google_vertexai fixture." },
+    { "criterion": "Non-Claude accepts 1.5 (regression).", "status": "pass", "notes": "New integration test with azure_openai GPT-4o." },
+    { "criterion": "Claude boundary 1.0 accepted.", "status": "pass", "notes": "New integration test." },
+    { "criterion": "VirtualAssistantForm two-scenario minimum (Claude reject, non-Claude accept).", "status": "pass", "notes": "Schema-level test file covers both. Deliberate deviation from spec's integration-test path (defended in Task 6 commit); the plan's schema-only trade-off preserves TDD RED->GREEN cleanliness without requiring Task 8 to land first." },
+    { "criterion": "mock-server/db.json provider field on Claude Bedrock, Claude Vertex, non-Claude.", "status": "pass", "notes": "Fixture already had provider fields on all entries pre-PR; no edit needed. Documented in plan's Global Constraints." },
+    { "criterion": "MR description: full test-harness log.", "status": "na", "notes": "Not auditable from diff." },
+    { "criterion": "MR description: scope-widening note.", "status": "na", "notes": "Not auditable from diff." },
+    { "criterion": "MR description: before/after screenshots.", "status": "na", "notes": "Not auditable from diff." }
+  ],
+  "standards_review": [
+    { "standard": "commit-format (EPMCDME-XXXX: Capital-first)", "status": "pass", "notes": "Fix-up commit cf561aab9 matches the regex." },
+    { "standard": "code-quality (constants-usage, form-patterns)", "status": "pass", "notes": "No change to constant or schema conventions in fix-up." },
+    { "standard": "security (no secrets, no injection, no unsafe auth)", "status": "pass", "notes": "Fix-up is pure form-validation logic and test wiring." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Both forms now call trigger('temperature') via useEffect keyed on selectedModel. AssistantSetupSection took trigger as a new UseFormTrigger prop; AssistantForm passes it through. VirtualAssistantForm already destructured trigger from useForm. Effect deps [selectedModel, trigger] — trigger is stable per RHF; effect fires only on model change."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "getTemperatureMax now checks the store lookup first; on miss, falls back to looksLikeClaudeByName(modelValue) which returns true for any value containing 'claude' (case-insensitive) and maps to TEMPERATURE_MAX_CLAUDE. Two new unit tests cover the empty-store path for Claude and non-Claude names. Preserves the Claude cap on EditAssistant in-flight and getLLMModels-failure conditions."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Existing 'out of range' test now stubs GET /v1/llm_models with a single GPT-4o entry, decoupling the expected message from test ordering. Same mockAPI pattern used by the new integration tests."
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+
+> ai-assistant@0.0.0 test-harness
+> uvx codemie-test-harness --sanity-ui
+
+Suite pytest args: --ui-headless
+Running test suite: sanity-ui - UI sanity suite - stable UI tests without 
+external service credentials
+Running: 
+/Users/Evgenii_Kurdakov/.cache/uv/archive-v0/oagij-uMEflxRfK2/bin/python -m 
+pytest 
+/Users/Evgenii_Kurdakov/.cache/uv/archive-v0/oagij-uMEflxRfK2/lib/python3.12/sit
+e-packages/codemie_test_harness/tests -n 4 -m ui and sanity --reruns 2 --timeout
+300 --ui-headless 
+(cwd=/Users/Evgenii_Kurdakov/.cache/uv/archive-v0/oagij-uMEflxRfK2/lib/python3.1
+2/site-packages/codemie_test_harness)
+API Domain: http://localhost:8080
+AWS credentials: Not configured
+
+============================================================
+[pytest_configure] CODEMIE_API_DOMAIN: http://localhost:8080
+============================================================
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0 -- /Users/Evgenii_Kurdakov/.cache/uv/archive-v0/oagij-uMEflxRfK2/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/Evgenii_Kurdakov/.cache/uv/archive-v0/oagij-uMEflxRfK2/lib/python3.12/site-packages/codemie_test_harness
+configfile: pytest.ini
+plugins: repeat-0.9.4, xdist-3.8.0, timeout-2.4.0, anyio-4.14.2, rerunfailures-15.1, reportportal-5.6.1, base-url-2.1.0, langsmith-0.10.17, playwright-0.8.0
+timeout: 300.0s
+timeout method: signal
+timeout func_only: True
+created: 4/4 workers
+4 workers [73 items]
+
+scheduling tests via LoadScheduling
+
+tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_by_name_reorders_list[chromium] 
+tests/ui/assistants/test_assistant_marketplace.py::test_publish_assistant_to_marketplace[chromium] 
+tests/ui/assistants/test_assistant_lifecycle.py::test_delete_assistant_with_confirmation[chromium] 
+tests/ui/assistants/test_create_assistant.py::test_create_assistant_minimal_required_fields[chromium] 
+[gw3] [  1%] PASSED tests/ui/assistants/test_create_assistant.py::test_create_assistant_minimal_required_fields[chromium] 
+tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_form_field_interactions[chromium] 
+[gw2] [  2%] XPASS tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_by_name_reorders_list[chromium] 
+tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_with_search_preserves_results[chromium] 
+[gw0] [  4%] PASSED tests/ui/assistants/test_assistant_lifecycle.py::test_delete_assistant_with_confirmation[chromium] 
+tests/ui/assistants/test_assistant_lifecycle.py::test_cancel_assistant_deletion[chromium] 
+[gw2] [  5%] XFAIL tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_with_search_preserves_results[chromium] 
+tests/ui/assistants/test_create_assistant.py::test_create_assistant_page_elements_visibility[chromium] 
+[gw3] [  6%] PASSED tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_form_field_interactions[chromium] 
+tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_tools_interactions[chromium] 
+[gw0] [  8%] PASSED tests/ui/assistants/test_assistant_lifecycle.py::test_cancel_assistant_deletion[chromium] 
+tests/ui/assistants/test_assistant_lifecycle.py::test_clone_existing_assistant[chromium] 
+[gw2] [  9%] PASSED tests/ui/assistants/test_create_assistant.py::test_create_assistant_page_elements_visibility[chromium] 
+tests/ui/assistants/test_create_assistant.py::test_create_assistant_navigation_from_assistants_page[chromium] 
+[gw2] [ 10%] PASSED tests/ui/assistants/test_create_assistant.py::test_create_assistant_navigation_from_assistants_page[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_configuration_panel_visibility_and_access[chromium] 
+[gw0] [ 12%] PASSED tests/ui/assistants/test_assistant_lifecycle.py::test_clone_existing_assistant[chromium] 
+tests/ui/assistants/test_assistant_marketplace.py::test_assistants_marketplace_page_elements_visibility[chromium] 
+[gw2] [ 13%] PASSED tests/ui/chats/test_chat_configuration.py::test_configuration_panel_visibility_and_access[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_configuration_panel_structure_and_elements[chromium] 
+[gw0] [ 15%] PASSED tests/ui/assistants/test_assistant_marketplace.py::test_assistants_marketplace_page_elements_visibility[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_chat_page_elements_visibility[chromium] 
+[gw1] [ 16%] PASSED tests/ui/assistants/test_assistant_marketplace.py::test_publish_assistant_to_marketplace[chromium] 
+tests/ui/assistants/test_assistant_marketplace.py::test_marketplace_search_assistants_by_name[chromium] 
+[gw0] [ 17%] PASSED tests/ui/chats/test_chat_functionality.py::test_chat_page_elements_visibility[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_hover_sidebar_toggle_button_shows_and_hides_ctrl_b_tooltip[chromium] 
+[gw2] [ 19%] PASSED tests/ui/chats/test_chat_configuration.py::test_configuration_panel_structure_and_elements[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_configuration_panel_closing_functionality[chromium] 
+[gw0] [ 20%] PASSED tests/ui/chats/test_chat_functionality.py::test_hover_sidebar_toggle_button_shows_and_hides_ctrl_b_tooltip[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_message_sending_functionality[chromium] 
+[gw2] [ 21%] PASSED tests/ui/chats/test_chat_configuration.py::test_configuration_panel_closing_functionality[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_chat_configuration_llm_update[chromium] 
+[gw0] [ 23%] PASSED tests/ui/chats/test_chat_functionality.py::test_message_sending_functionality[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_stop_generation_button_css_state_and_halt_flow[chromium] 
+[gw2] [ 24%] PASSED tests/ui/chats/test_chat_configuration.py::test_chat_configuration_llm_update[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_save_button_functionality[chromium] 
+[gw0] [ 26%] PASSED tests/ui/chats/test_chat_functionality.py::test_stop_generation_button_css_state_and_halt_flow[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_stop_button_visible_after_resend_first_message_in_multi_message_chat[chromium] 
+[gw2] [ 27%] PASSED tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_save_button_functionality[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_cancel_button_functionality[chromium] 
+[gw3] [ 28%] PASSED tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_tools_interactions[chromium] 
+tests/ui/assistants/test_integration_verification.py::test_missing_integrations_dialog_displayed[chromium] 
+[gw2] [ 30%] PASSED tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_cancel_button_functionality[chromium] 
+tests/ui/datasource/test_create_datasource.py::test_open_create_datasource_page_and_elements[chromium] 
+[gw3] [ 31%] PASSED tests/ui/assistants/test_integration_verification.py::test_missing_integrations_dialog_displayed[chromium] 
+tests/ui/datasource/test_datasource_page.py::test_datasource_sidebar_hiding_elements[chromium] 
+[gw1] [ 32%] PASSED tests/ui/assistants/test_assistant_marketplace.py::test_marketplace_search_assistants_by_name[chromium] 
+tests/ui/assistants/test_assistant_marketplace_clone.py::test_clone_count_badge_visible_on_marketplace_card[chromium] 
+[gw0] [ 34%] PASSED tests/ui/chats/test_chat_functionality.py::test_stop_button_visible_after_resend_first_message_in_multi_message_chat[chromium] 
+tests/ui/chats/test_chat_input_field.py::test_chat_input_file_attachment[chromium] 
+[gw3] [ 35%] PASSED tests/ui/datasource/test_datasource_page.py::test_datasource_sidebar_hiding_elements[chromium] 
+tests/ui/datasource/test_datasource_page.py::test_datasource_page_elements_visibility[chromium] 
+[gw1] [ 36%] PASSED tests/ui/assistants/test_assistant_marketplace_clone.py::test_clone_count_badge_visible_on_marketplace_card[chromium] 
+tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_controls_are_visible[chromium] 
+[gw0] [ 38%] PASSED tests/ui/chats/test_chat_input_field.py::test_chat_input_file_attachment[chromium] 
+tests/ui/chats/test_chat_input_field.py::test_chat_input_dynamic_tools_adding_web_search[chromium] 
+[gw1] [ 39%] PASSED tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_controls_are_visible[chromium] 
+tests/ui/help/test_help_page.py::test_help_page_elements_persistence[chromium] 
+[gw1] [ 41%] PASSED tests/ui/help/test_help_page.py::test_help_page_elements_persistence[chromium] 
+tests/ui/integrations/test_alias_generation.py::test_alias_auto_generation_happy_path[chromium] 
+[gw3] [ 42%] PASSED tests/ui/datasource/test_datasource_page.py::test_datasource_page_elements_visibility[chromium] 
+tests/ui/datasource/test_zip_file_datasource.py::test_zip_file_datasource_shows_extracted_files_after_creation[chromium] 
+[gw1] [ 43%] PASSED tests/ui/integrations/test_alias_generation.py::test_alias_auto_generation_happy_path[chromium] 
+tests/ui/integrations/test_alias_generation.py::test_manual_alias_override_retained[chromium] 
+[gw0] [ 45%] PASSED tests/ui/chats/test_chat_input_field.py::test_chat_input_dynamic_tools_adding_web_search[chromium] 
+tests/ui/chats/test_chat_input_field.py::test_chat_input_default_model_changing[chromium] 
+[gw0] [ 46%] PASSED tests/ui/chats/test_chat_input_field.py::test_chat_input_default_model_changing[chromium] 
+tests/ui/chats/test_chat_prompt_draft.py::test_draft_persists_until_sent_across_chat_navigation[chromium] 
+[gw1] [ 47%] PASSED tests/ui/integrations/test_alias_generation.py::test_manual_alias_override_retained[chromium] 
+tests/ui/integrations/test_create_integration.py::test_alias_field_validation_message[chromium] 
+[gw2] [ 49%] PASSED tests/ui/datasource/test_create_datasource.py::test_open_create_datasource_page_and_elements[chromium] 
+tests/ui/datasource/test_create_datasource.py::test_datasource_creation_validation[chromium] 
+[gw3] [ 50%] PASSED tests/ui/datasource/test_zip_file_datasource.py::test_zip_file_datasource_shows_extracted_files_after_creation[chromium] 
+tests/ui/integrations/test_alias_generation.py::test_datasource_alias_auto_populated_without_collision[chromium] 
+[gw1] [ 52%] PASSED tests/ui/integrations/test_create_integration.py::test_alias_field_validation_message[chromium] 
+tests/ui/integrations/test_create_integration.py::test_credential_type_dropdown_shows_all_available_options[chromium] 
+[gw0] [ 53%] PASSED tests/ui/chats/test_chat_prompt_draft.py::test_draft_persists_until_sent_across_chat_navigation[chromium] 
+tests/ui/integrations/test_delete_integration.py::test_delete_integration_with_confirmation[chromium] 
+[gw3] [ 54%] PASSED tests/ui/integrations/test_alias_generation.py::test_datasource_alias_auto_populated_without_collision[chromium] 
+tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Git] 
+[gw1] [ 56%] PASSED tests/ui/integrations/test_create_integration.py::test_credential_type_dropdown_shows_all_available_options[chromium] 
+tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_defaults_to_all_actions_checked[chromium] 
+[gw2] [ 57%] PASSED tests/ui/datasource/test_create_datasource.py::test_datasource_creation_validation[chromium] 
+tests/ui/datasource/test_create_datasource.py::test_create_file_datasource[chromium] 
+[gw1] [ 58%] PASSED tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_defaults_to_all_actions_checked[chromium] 
+tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_selection_persists_after_save_and_reload[chromium] 
+[gw0] [ 60%] PASSED tests/ui/integrations/test_delete_integration.py::test_delete_integration_with_confirmation[chromium] 
+tests/ui/integrations/test_edit_integration.py::test_edit_integration_update_credentials[chromium] 
+[gw3] [ 61%] PASSED tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Git] 
+tests/ui/integrations/test_create_integration.py::test_form_reset_and_cancel_functionality[chromium] 
+[gw2] [ 63%] PASSED tests/ui/datasource/test_create_datasource.py::test_create_file_datasource[chromium] 
+tests/ui/datasource/test_datasource_page.py::test_datasource_sidebar_interaction[chromium] 
+[gw3] [ 64%] PASSED tests/ui/integrations/test_create_integration.py::test_form_reset_and_cancel_functionality[chromium] 
+tests/ui/skills/test_attach_skills_to_assistant.py::test_attach_skill_to_assistant[chromium] 
+[gw1] [ 65%] PASSED tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_selection_persists_after_save_and_reload[chromium] 
+tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_blocks_unchecking_last_action[chromium] 
+[gw0] [ 67%] PASSED tests/ui/integrations/test_edit_integration.py::test_edit_integration_update_credentials[chromium] 
+tests/ui/integrations/test_test_connection.py::test_test_connection_failure_with_error_message[chromium] 
+[gw2] [ 68%] PASSED tests/ui/datasource/test_datasource_page.py::test_datasource_sidebar_interaction[chromium] 
+tests/ui/skills/test_attach_skills_to_assistant.py::test_detach_skill_from_assistant[chromium] 
+[gw3] [ 69%] PASSED tests/ui/skills/test_attach_skills_to_assistant.py::test_attach_skill_to_assistant[chromium] 
+tests/ui/skills/test_create_skill.py::test_skills_page_elements_visibility[chromium] 
+[gw1] [ 71%] PASSED tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_blocks_unchecking_last_action[chromium] 
+tests/ui/skills/test_create_skill.py::test_create_skill_page_elements_visibility[chromium] 
+[gw0] [ 72%] PASSED tests/ui/integrations/test_test_connection.py::test_test_connection_failure_with_error_message[chromium] 
+tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_minimal_fields[chromium] 
+[gw3] [ 73%] PASSED tests/ui/skills/test_create_skill.py::test_skills_page_elements_visibility[chromium] 
+tests/ui/skills/test_import_skill.py::test_import_skill_from_markdown_and_verify_in_list[chromium] 
+[gw1] [ 75%] PASSED tests/ui/skills/test_create_skill.py::test_create_skill_page_elements_visibility[chromium] 
+tests/ui/skills/test_import_skill.py::test_import_zip_bundle_with_multiple_md_files_shows_friendly_error[chromium] 
+[gw1] [ 76%] PASSED tests/ui/skills/test_import_skill.py::test_import_zip_bundle_with_multiple_md_files_shows_friendly_error[chromium] 
+tests/ui/skills/test_skills_marketplace.py::test_publish_private_skill_to_marketplace[chromium] 
+[gw0] [ 78%] PASSED tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_minimal_fields[chromium] 
+tests/ui/skills/test_skill_validation.py::test_skill_required_fields_validation[chromium] 
+[gw3] [ 79%] PASSED tests/ui/skills/test_import_skill.py::test_import_skill_from_markdown_and_verify_in_list[chromium] 
+tests/ui/skills/test_skills_marketplace.py::test_skills_marketplace_page_elements_visibility[chromium] 
+[gw0] [ 80%] PASSED tests/ui/skills/test_skill_validation.py::test_skill_required_fields_validation[chromium] 
+tests/ui/skills/test_skills_navigation.py::test_skills_navigation_from_main_menu[chromium] 
+[gw3] [ 82%] PASSED tests/ui/skills/test_skills_marketplace.py::test_skills_marketplace_page_elements_visibility[chromium] 
+tests/ui/workflows/test_create_workflow.py::test_create_workflow_page_elements_visibility[chromium] 
+[gw0] [ 83%] PASSED tests/ui/skills/test_skills_navigation.py::test_skills_navigation_from_main_menu[chromium] 
+tests/ui/workflows/test_create_workflow.py::test_create_workflow_complete_workflow_creation[chromium] 
+[gw2] [ 84%] PASSED tests/ui/skills/test_attach_skills_to_assistant.py::test_detach_skill_from_assistant[chromium] 
+[gw3] [ 86%] PASSED tests/ui/workflows/test_create_workflow.py::test_create_workflow_page_elements_visibility[chromium] 
+tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_all_fields[chromium] 
+tests/ui/workflows/test_reset_context_keys.py::test_reset_context_keys_comma_entry_saved_to_yaml[chromium] 
+[gw1] [ 87%] PASSED tests/ui/skills/test_skills_marketplace.py::test_publish_private_skill_to_marketplace[chromium] 
+tests/ui/skills/test_skills_marketplace.py::test_marketplace_search_skills_by_name[chromium] 
+[gw3] [ 89%] PASSED tests/ui/workflows/test_reset_context_keys.py::test_reset_context_keys_comma_entry_saved_to_yaml[chromium] 
+tests/ui/workflows/test_workflows.py::test_workflow_filtering[chromium] 
+[gw0] [ 90%] PASSED tests/ui/workflows/test_create_workflow.py::test_create_workflow_complete_workflow_creation[chromium] 
+tests/ui/workflows/test_workflows.py::test_workflows_page_basic_functionality[chromium] 
+[gw2] [ 91%] PASSED tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_all_fields[chromium] 
+tests/ui/workflows/test_workflows.py::test_workflow_pagination[chromium] 
+[gw3] [ 93%] PASSED tests/ui/workflows/test_workflows.py::test_workflow_filtering[chromium] 
+tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Confluence] 
+[gw0] [ 94%] PASSED tests/ui/workflows/test_workflows.py::test_workflows_page_basic_functionality[chromium] 
+[gw1] [ 95%] PASSED tests/ui/skills/test_skills_marketplace.py::test_marketplace_search_skills_by_name[chromium] 
+tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Jira] 
+[gw2] [ 97%] PASSED tests/ui/workflows/test_workflows.py::test_workflow_pagination[chromium] 
+[gw3] [ 98%] PASSED tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Confluence] 
+[gw1] [100%] PASSED tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Jira] 
+
+============= 71 passed, 1 xfailed, 1 xpassed in 248.05s (0:04:08) =============

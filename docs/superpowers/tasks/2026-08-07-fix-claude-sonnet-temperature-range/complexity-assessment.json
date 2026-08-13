@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "task": "Make the Temperature field in CodeMie UI model-aware so Claude Sonnet models (Bedrock and Vertex) allow only 0–1 while other models keep their current 0–2 range, covering both AssistantForm and VirtualAssistantForm.",
+  "generated": "2026-08-07T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk": { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 3, "label": "M" }
+  },
+  "total": 18,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Six frontend components must change in lock-step: ModelOption type (configuration.ts), getLLMModels store (appInfo.ts), named constants (validation.ts), AssistantForm Yup schema, AssistantSetupSection Input render, and VirtualAssistantForm (independent duplicate of both schema and render). Bumped from M to L by the 'touches core shared utilities' red flag (configuration.ts and validation.ts are repo-wide shared utilities)."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "This is the first per-model conditional UI behavior in the codebase — no existing end-to-end pattern to follow. The implementer must choose between Yup.when() (requires accessing appInfoStore as a side-effect inside the schema callback) or Yup context option (cleaner but more wiring), without clear guidance from form-patterns.md. The existing integration test asserts the old message and old placeholder and will fail immediately, requiring a selector strategy change."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Seven modified files (configuration.ts, appInfo.ts, validation.ts, AssistantForm.tsx, AssistantSetupSection.tsx, VirtualAssistantForm.tsx, NewAssistantPage.integration.test.tsx) plus 1–2 new files (formSchema.ts if guide mandate is followed; new VirtualAssistantForm integration test). Spans 4–5 directories: src/types/entity/, src/store/, src/constants/, src/pages/assistants/, src/pages/workflows/editor/."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M (3) to L (4): touches core shared utilities — src/types/entity/configuration.ts and src/constants/validation.ts are repo-wide shared utilities consumed by multiple consumers."
+  ],
+  "split_recommendation": null
+}

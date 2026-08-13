@@ -1213,7 +1213,7 @@ describe('NewAssistantPage - Integration', () => {
       await user.type(screen.getByPlaceholderText(/description/i), 'A useful assistant')
       await user.type(screen.getByPlaceholderText(/system instructions/i), 'You are helpful')
 
-      await user.type(screen.getByPlaceholderText('0-2'), '0.7')
+      await user.type(screen.getByTestId('assistant-temperature-input'), '0.7')
       await user.type(screen.getByPlaceholderText('0-1'), '0.9')
 
       await user.click(screen.getByRole('button', { name: 'Save' }))
@@ -1230,6 +1230,18 @@ describe('NewAssistantPage - Integration', () => {
     })
 
     it('shows validation errors for temperature out of range', async () => {
+      // Pin the llm_models response so the expected message ("between 0 and 2") is
+      // independent of test ordering. Without a stub, appInfoStore.llmModels can
+      // hold Claude entries from a prior test's mock, silently flipping the max to 1.
+      mockAPI('GET', 'v1/llm_models', [
+        {
+          base_name: 'gpt-4o-2024-08-06',
+          label: 'GPT-4o 2024-08-06',
+          default: true,
+          provider: 'azure_openai',
+        },
+      ])
+
       renderPage('/assistants/new')
 
       await waitFor(() => {
@@ -1242,13 +1254,142 @@ describe('NewAssistantPage - Integration', () => {
       await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('0-2')).toBeInTheDocument()
+        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
       })
-      await user.type(screen.getByPlaceholderText('0-2'), '5')
+      await user.type(screen.getByTestId('assistant-temperature-input'), '5')
       await user.click(screen.getByPlaceholderText('Name*'))
 
       await waitFor(() => {
-        expect(screen.getByText('Temperature must be at most 2')).toBeInTheDocument()
+        expect(screen.getByText('Temperature must be between 0 and 2')).toBeInTheDocument()
+      })
+    })
+
+    it('rejects temperature 1.5 for a Claude Sonnet model on Bedrock', async () => {
+      mockAPI('GET', 'v1/llm_models', [
+        {
+          base_name: 'claude-3-5-sonnet',
+          label: 'Bedrock Claude 3.5 Sonnet',
+          default: true,
+          provider: 'aws_bedrock',
+        },
+      ])
+
+      renderPage('/assistants/new')
+
+      await waitFor(() => {
+        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+      })
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Extra configuration/i })).toBeInTheDocument()
+      })
+      await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
+      })
+      await user.type(screen.getByTestId('assistant-temperature-input'), '1.5')
+      await user.click(screen.getByPlaceholderText('Name*'))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Temperature must be between 0 and 1 for Claude models')
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('rejects temperature 1.5 for a Claude Sonnet model on Vertex', async () => {
+      mockAPI('GET', 'v1/llm_models', [
+        {
+          base_name: 'claude-sonnet-v2-vertex',
+          label: 'Vertex Claude Sonnet v2',
+          default: true,
+          provider: 'google_vertexai',
+        },
+      ])
+
+      renderPage('/assistants/new')
+
+      await waitFor(() => {
+        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+      })
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Extra configuration/i })).toBeInTheDocument()
+      })
+      await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
+      })
+      await user.type(screen.getByTestId('assistant-temperature-input'), '1.5')
+      await user.click(screen.getByPlaceholderText('Name*'))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Temperature must be between 0 and 1 for Claude models')
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('accepts temperature 1.5 for a non-Claude model (regression)', async () => {
+      mockAPI('GET', 'v1/llm_models', [
+        {
+          base_name: 'gpt-4o-2024-08-06',
+          label: 'GPT-4o 2024-08-06',
+          default: true,
+          provider: 'azure_openai',
+        },
+      ])
+
+      renderPage('/assistants/new')
+
+      await waitFor(() => {
+        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+      })
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Extra configuration/i })).toBeInTheDocument()
+      })
+      await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
+      })
+      await user.type(screen.getByTestId('assistant-temperature-input'), '1.5')
+      await user.click(screen.getByPlaceholderText('Name*'))
+
+      // Give the schema a chance to run; no error message should appear for a valid value.
+      await waitFor(() => {
+        expect(screen.queryByText(/Temperature must be between/)).not.toBeInTheDocument()
+      })
+    })
+
+    it('accepts temperature boundary value 1.0 for a Claude Sonnet model', async () => {
+      mockAPI('GET', 'v1/llm_models', [
+        {
+          base_name: 'claude-3-5-sonnet',
+          label: 'Bedrock Claude 3.5 Sonnet',
+          default: true,
+          provider: 'aws_bedrock',
+        },
+      ])
+
+      renderPage('/assistants/new')
+
+      await waitFor(() => {
+        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+      })
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Extra configuration/i })).toBeInTheDocument()
+      })
+      await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
+      })
+      await user.type(screen.getByTestId('assistant-temperature-input'), '1')
+      await user.click(screen.getByPlaceholderText('Name*'))
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Temperature must be between/)).not.toBeInTheDocument()
       })
     })
   })

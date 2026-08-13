@@ -1,0 +1,86 @@
+{
+  "task": "Make the temperature field model-aware so Claude models on Bedrock/Vertex are capped at 1.0 while all other models keep the existing 0-2 range, covering AssistantForm and VirtualAssistantForm with a shared utility module and full test coverage.",
+  "generated": "2026-08-07T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L",
+      "affected": "ModelOption type (configuration.ts), getLLMModels store (appInfo.ts), VALIDATION_CONSTRAINTS/VALIDATION_MESSAGES (validation.ts), temperatureConstraints utility module (new), AssistantForm Yup schema, AssistantSetupSection render, VirtualAssistantForm schema+render",
+      "layers": "UI-Component, UI-Schema, UI-State"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L",
+      "risk_factors": "First per-model conditional validation in the codebase; Yup.when() callback reads appInfoStore at validation time (novel pattern); cross-field revalidation gap (react-hook-form does not auto-re-run temperature validation on model change); empty-store race on EditAssistant path before getLLMModels resolves; test flakiness from stale store state across suites",
+      "mitigation": "Code review found all three defects; fixed with small +77/-3 patch before merge; fallback name-based heuristic added for empty-store path; useEffect trigger added to both forms; store mocked per describe block in tests"
+    },
+    "file_change_estimate": {
+      "score": 4,
+      "label": "L",
+      "modified_files": 7,
+      "modified_file_list": [
+        "src/constants/validation.ts",
+        "src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx",
+        "src/pages/assistants/components/AssistantForm/AssistantForm.tsx",
+        "src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx",
+        "src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx",
+        "src/store/appInfo.ts",
+        "src/types/entity/configuration.ts"
+      ],
+      "new_files": 3,
+      "new_file_list": [
+        "src/pages/assistants/utils/temperatureConstraints.ts",
+        "src/pages/assistants/utils/__tests__/temperatureConstraints.test.ts",
+        "src/pages/workflows/editor/configPanels/components/__tests__/VirtualAssistantForm.schema.test.ts"
+      ],
+      "affected_dirs": [
+        "src/constants",
+        "src/pages",
+        "src/store",
+        "src/types"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M",
+      "layers_changed": ["UI-Component", "UI-Schema/Validation", "UI-State (Valtio store)"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 18,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 10,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Seven code files across four distinct concerns: shared type (ModelOption in configuration.ts), shared constants (validation.ts), global Valtio store (appInfo.ts getLLMModels), new utility module (temperatureConstraints.ts), two independent form schemas (AssistantForm, VirtualAssistantForm), and two render components (AssistantSetupSection, VirtualAssistantForm). 'Touches core shared utilities' red flag applied — configuration.ts and validation.ts are repo-wide shared utilities, bumping from M to L."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The Yup.when()+store-read pattern was confirmed novel — temperatureConstraints.ts carries an explicit warning that it is the only place schema code reads a store. A code review found three real defects: (1) missing cross-field revalidation trigger after model change, (2) empty-store race on the EditAssistant path, (3) test flakiness from shared mutable store. All three required targeted fixes after the initial implementation, validating the L score."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "10 files total: 7 modified + 3 new. Spans 4 top-level directories under src/ (constants, pages, store, types). Prettier-reformatted 442 lines in AssistantSetupSection.tsx when the arrow function body form was introduced for the useWatch/useEffect additions, inflating the raw insertion count without adding net logic."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M (3) to L (4): touches core shared utilities — src/types/entity/configuration.ts and src/constants/validation.ts are repo-wide shared utilities consumed by multiple consumers outside the assistants feature area."
+  ],
+  "split_recommendation": null
+}

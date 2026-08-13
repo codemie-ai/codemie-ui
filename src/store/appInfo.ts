@@ -262,6 +262,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
         value: model.base_name,
         label: model.label,
         isDefault: model.default,
+        provider: model.provider,
       }))
       return appInfoStore.llmModels
     } catch (error) {

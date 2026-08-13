@@ -1,0 +1,176 @@
+diff --git a/src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx b/src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx
+index 2463fec15..9ecd334d0 100644
+--- a/src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx
++++ b/src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx
+@@ -1191,6 +1191,18 @@ describe('NewAssistantPage - Integration', () => {
+     })
+ 
+     it('shows validation errors for temperature out of range', async () => {
++      // Pin the llm_models response so the expected message ("between 0 and 2") is
++      // independent of test ordering. Without a stub, appInfoStore.llmModels can
++      // hold Claude entries from a prior test's mock, silently flipping the max to 1.
++      mockAPI('GET', 'v1/llm_models', [
++        {
++          base_name: 'gpt-4o-2024-08-06',
++          label: 'GPT-4o 2024-08-06',
++          default: true,
++          provider: 'azure_openai',
++        },
++      ])
++
+       renderPage('/assistants/new')
+ 
+       await waitFor(() => {
+diff --git a/src/pages/assistants/components/AssistantForm/AssistantForm.tsx b/src/pages/assistants/components/AssistantForm/AssistantForm.tsx
+index a278a4d9a..fb078a373 100644
+--- a/src/pages/assistants/components/AssistantForm/AssistantForm.tsx
++++ b/src/pages/assistants/components/AssistantForm/AssistantForm.tsx
+@@ -572,6 +572,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
+             control={control}
+             errors={errors}
+             setValue={setValue}
++            trigger={trigger}
+             hasUserSettings={hasUserSettings}
+             aiGeneratedFieldMarkers={aiGeneratedFieldMarkers}
+             setAiGeneratedFieldMarkers={setAiGeneratedFieldMarkers}
+diff --git a/src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx b/src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx
+index 845556109..b9d0c19dc 100644
+--- a/src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx
++++ b/src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx
+@@ -13,7 +13,15 @@
+ // limitations under the License.
+ //
+ 
+-import { Control, FieldErrors, UseFormSetValue, Controller, useWatch } from 'react-hook-form'
++import { useEffect } from 'react'
++import {
++  Control,
++  FieldErrors,
++  UseFormSetValue,
++  UseFormTrigger,
++  Controller,
++  useWatch,
++} from 'react-hook-form'
+ 
+ import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
+ import Accordion from '@/components/Accordion'
+@@ -39,6 +47,7 @@ interface AssistantSetupSectionProps {
+   control: Control<AssistantFormSchema>
+   errors: FieldErrors<AssistantFormSchema>
+   setValue: UseFormSetValue<AssistantFormSchema>
++  trigger: UseFormTrigger<AssistantFormSchema>
+   hasUserSettings: boolean
+   aiGeneratedFieldMarkers: AssistantAIFieldMarkers
+   setAiGeneratedFieldMarkers: (
+@@ -53,6 +62,7 @@ const AssistantSetupSection = ({
+   control,
+   errors,
+   setValue,
++  trigger,
+   hasUserSettings,
+   aiGeneratedFieldMarkers,
+   setAiGeneratedFieldMarkers,
+@@ -64,6 +74,16 @@ const AssistantSetupSection = ({
+   const temperatureMax = getTemperatureMax(selectedModel)
+   const temperaturePlaceholder = `${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}-${temperatureMax}`
+ 
++  // Re-validate temperature whenever the selected model changes: the Yup .when()
++  // callback keys off llm_model_type, but react-hook-form does not
++  // automatically re-run a field's validation when a different field changes.
++  // Without this trigger, a temperature typed under one model would keep its
++  // stale valid/invalid state after switching to a model with a different cap
++  // (e.g. GPT-4o -> Claude), silently letting temp > 1 through to the backend.
++  useEffect(() => {
++    trigger('temperature')
++  }, [selectedModel, trigger])
++
+   return (
+     <div data-onboarding="assistant-setup-accordion">
+       <Accordion
+diff --git a/src/pages/assistants/utils/__tests__/temperatureConstraints.test.ts b/src/pages/assistants/utils/__tests__/temperatureConstraints.test.ts
+index 9d60e7a62..0896179ce 100644
+--- a/src/pages/assistants/utils/__tests__/temperatureConstraints.test.ts
++++ b/src/pages/assistants/utils/__tests__/temperatureConstraints.test.ts
+@@ -105,13 +105,27 @@ describe('getTemperatureMax', () => {
+     expect(getTemperatureMax('gpt-4o-2024-08-06')).toBe(2)
+   })
+ 
+-  it('returns 2 (safe default) for an unknown model value', () => {
++  it('returns 2 (safe default) for a non-Claude model not in the store', () => {
+     expect(getTemperatureMax('does-not-exist')).toBe(2)
+   })
+ 
+   it('returns 2 for undefined model value', () => {
+     expect(getTemperatureMax(undefined)).toBe(2)
+   })
++
++  it('returns 1 by name when a Claude model is not (yet) in the store', () => {
++    // simulates the EditAssistant in-flight window and the getLLMModels-failure path
++    appInfoStore.llmModels = []
++    expect(getTemperatureMax('claude-3-5-sonnet')).toBe(1)
++    expect(getTemperatureMax('claude-sonnet-v2-vertex')).toBe(1)
++    expect(getTemperatureMax('CLAUDE-4-OPUS')).toBe(1)
++  })
++
++  it('returns 2 by name when a non-Claude model is not in the store', () => {
++    appInfoStore.llmModels = []
++    expect(getTemperatureMax('gpt-4o-2024-08-06')).toBe(2)
++    expect(getTemperatureMax('gemini-2.5-pro')).toBe(2)
++  })
+ })
+ 
+ describe('buildTemperatureRule', () => {
+diff --git a/src/pages/assistants/utils/temperatureConstraints.ts b/src/pages/assistants/utils/temperatureConstraints.ts
+index fea402344..d0065bc08 100644
+--- a/src/pages/assistants/utils/temperatureConstraints.ts
++++ b/src/pages/assistants/utils/temperatureConstraints.ts
+@@ -41,10 +41,28 @@ export function isClaudeOnAnthropicProvider(model: ModelOption | undefined): boo
+   return model.value.toLowerCase().includes('claude')
+ }
+ 
++/**
++ * When the model is not (yet) in the store — either because `getLLMModels()`
++ * has not resolved, or because it failed and left the store empty — fall back
++ * to a name-based check on the raw `modelValue`. This preserves the Claude
++ * cap on the EditAssistant path where `llm_model_type` arrives from server
++ * defaults before `LLMSelector` finishes loading the model list, and on the
++ * fetch-failure path where the store stays empty for the rest of the session.
++ * Non-Claude names keep the standard cap.
++ */
++function looksLikeClaudeByName(modelValue: string): boolean {
++  return modelValue.toLowerCase().includes('claude')
++}
++
+ export function getTemperatureMax(modelValue: string | undefined): number {
+   if (!modelValue) return VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_STANDARD
+   const model = appInfoStore.llmModels.find((m) => m.value === modelValue)
+-  return isClaudeOnAnthropicProvider(model)
++  if (model) {
++    return isClaudeOnAnthropicProvider(model)
++      ? VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_CLAUDE
++      : VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_STANDARD
++  }
++  return looksLikeClaudeByName(modelValue)
+     ? VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_CLAUDE
+     : VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_STANDARD
+ }
+diff --git a/src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx b/src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx
+index a8733fb28..29f75d4b1 100644
+--- a/src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx
++++ b/src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx
+@@ -167,6 +167,15 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
+     const temperatureMax = getTemperatureMax(selectedModel)
+     const temperaturePlaceholder = `${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}-${temperatureMax}`
+ 
++    // Re-validate temperature whenever the selected model changes: the Yup .when()
++    // callback keys off llm_model_type, but react-hook-form does not automatically
++    // re-run temperature validation when the model changes. Without this the
++    // stale valid/invalid state persists across model switches. See AssistantSetupSection
++    // for the paired fix on the other duplicate form.
++    useEffect(() => {
++      trigger('temperature')
++    }, [selectedModel, trigger])
++
+     // eslint-disable-next-line consistent-return
+     const defaultOpenToolkitSection = useMemo(() => {
+       if (activeIssue && isWorkflowAssistantMcpIssue(activeIssue)) {

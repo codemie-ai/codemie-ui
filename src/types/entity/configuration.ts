@@ -35,6 +35,7 @@ export interface ModelOption {
   value: string
   label: string
   isDefault: boolean
+  provider?: string
 }
 
 export interface SpeechConfig {
