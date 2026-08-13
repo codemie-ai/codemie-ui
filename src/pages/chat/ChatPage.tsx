@@ -99,7 +99,7 @@ const ChatPage: FC = () => {
     <ChatContext.Provider value={chatContextValue}>
       <Group orientation="horizontal" className="h-full">
         <Panel
-          id="chat-sidebar"
+          id="chat-sidebar-panel"
           panelRef={panelRef}
           defaultSize={initialWidth}
           minSize={CHAT_SIDEBAR_MIN_WIDTH}

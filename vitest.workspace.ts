@@ -47,10 +47,10 @@ export default defineWorkspace([
       environment: './vitest-env-integration.ts',
       include: ['**/__tests__/**/*.integration.test.?(c|m)[jt]s?(x)'],
       setupFiles: ['./src/setupTests', './src/setupTests.integration'],
-      // Integration tests run with coverage instrumentation in CI (vitest run --coverage),
-      // which adds ~3× per-test overhead vs the default 5 000 ms timeout. 15 000 ms keeps
-      // the suite reliable without masking genuinely broken tests.
-      testTimeout: 15000,
+      // Integration tests run with coverage instrumentation in CI (~3× per-test overhead);
+      // React 19 event work pushes the heaviest interaction tests past 15 000 ms there,
+      // while they finish in ~1 s locally. asyncUtilTimeout stays 15 000 ms per wait.
+      testTimeout: 30000,
     },
     server: {
       ws: false,

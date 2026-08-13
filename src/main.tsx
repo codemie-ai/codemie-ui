@@ -37,6 +37,6 @@ themeService.watchSystemTheme()
 removeTextFormattingOnCopy()
 setupGlobalTooltip()
 
-const root = document.getElementById('app')
+const root = document.getElementById('app')!
 
 ReactDOM.createRoot(root).render(<RouterProvider router={router} />)

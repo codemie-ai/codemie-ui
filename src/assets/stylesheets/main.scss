@@ -422,14 +422,14 @@ input[type="number"] {
 // initial paint snaps to the stored width; entering /chat from a page with a
 // differently-sized sidebar must not animate from the previous layout.
 [data-chat-sidebar-ready] {
-  #chat-sidebar[data-panel],
+  #chat-sidebar-panel[data-panel],
   #chat-main-content[data-panel] {
     transition: flex 150ms ease-in-out;
   }
 }
 
 [data-chat-sidebar-resizing] {
-  #chat-sidebar[data-panel],
+  #chat-sidebar-panel[data-panel],
   #chat-main-content[data-panel],
   [data-sidebar-toggle] {
     transition: none;

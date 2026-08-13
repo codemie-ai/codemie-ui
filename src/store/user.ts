@@ -111,6 +111,9 @@ interface UserStoreType {
   bulkResetBudgets: (userIds: string[], categories?: string[]) => Promise<void>
 }
 
+// In-flight GET v1/user; getProjects() awaits it so early callers see the real user record
+let userLoadPromise: Promise<void> | null = null
+
 export const userStore = proxy<UserStoreType>({
   isSessionExpired: false,
   isLoadingUser: false,
@@ -125,7 +128,7 @@ export const userStore = proxy<UserStoreType>({
 
   loadUser() {
     userStore.isLoadingUser = true
-    return api
+    userLoadPromise = api
       .get('v1/user')
       .then((response) => response.json())
       .then((apiUser: any) => {
@@ -148,6 +151,7 @@ export const userStore = proxy<UserStoreType>({
       .finally(() => {
         userStore.isLoadingUser = false
       })
+    return userLoadPromise
   },
 
   getUserData() {
@@ -331,6 +335,10 @@ export const userStore = proxy<UserStoreType>({
   },
 
   async getProjects(query = '', adminOnly = false) {
+    if (!userStore.user && userLoadPromise) {
+      await userLoadPromise.catch(() => {})
+    }
+
     if (userStore.user?.isAdmin) {
       return userStore.getAdminProjects(query)
     }

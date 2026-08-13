@@ -1,0 +1,53 @@
+{
+  "decision": "approve",
+  "rationale": "Reviewed the full branch diff (5 source files + lockfile). The upgrade is dependency-pinning plus two surgical code changes, verified by the complete regression suite rather than new tests (an upgrade must not change behavior, so the existing 4656-test suite is the specification). Blind pass: main.tsx non-null assertion mirrors the existing keycloakify entrypoint pattern and the #app element is statically present in index.html — safe. ProjectSelector change subscribes via useSnapshot(userStore) and re-runs loadProjects on user object identity change; the auto-select guard (!value) prevents onChange loops, handleFilter search flow is untouched, and extra reloads are cheap local reads. Edge-case pass: valtio snapshot identity changes on any user-subtree mutation, causing occasional redundant loadProjects calls - accepted (harmless, local). ChatPage panel id rename verified unreferenced: width persistence is keyed inside useChatSidebarResize, not by panel id; no selector/CSS references to the panel id exist; the harness page object targets the ChatSidebar aside which keeps the #chat-sidebar id. Dependency scope discipline held: only React-19-required bumps (react/react-dom 19.2.8, explicit @types 19.x, react-draggable 4.7.1, removal of deprecated @types/react-datepicker).",
+  "follow_ups": [
+    "Report the duplicate #chat-sidebar id root cause to EPMCDME-13270 owners (fixed here minimally by renaming the older panel id; the redesigned aside keeps the id the test harness targets)",
+    "Defer: vitest 1.6.1 -> 3.2.4 bump (EOL 1.x) as separate tech-debt; not required for React 19",
+    "Defer: primereact 10.9.5 -> 10.9.8 (final MIT patch; repo archived) - track PrimeReact v11 license change before any v11 adoption"
+  ],
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "id": "AC1",
+      "criterion": "react/react-dom upgraded to 19.x with @types pinned; incompatible dependencies bumped",
+      "status": "pass",
+      "notes": "react 19.2.8, react-dom 19.2.8, @types/react 19.2.18, @types/react-dom 19.2.4 explicit in devDependencies; react-draggable 4.7.1; deprecated @types/react-datepicker removed; lockfile has no duplicate @types/react majors."
+    },
+    {
+      "id": "AC2",
+      "criterion": "Application functionally unchanged: full test suite green, builds pass",
+      "status": "pass",
+      "notes": "vitest 395/395 files, 4656 passed, 1 skipped (suite time 309s -> 188s); tsc clean; SPA build clean; keycloak entrypoint vite build clean (jar packaging is CI-side/Maven)."
+    },
+    {
+      "id": "AC3",
+      "criterion": "UI regression pass on the running application",
+      "status": "pass",
+      "notes": "Manual browser pass against the local stack: login, chat, new-assistant form (ProjectSelector fix verified live), assistants list, workflows - 0 console errors; Ctrl+B sidebar tooltip visible on hover. Test harness sanity-ui: 65 passed; 3 failures triaged (2 env-flaky pass in isolation; 1 pre-existing duplicate-DOM-id regression from main, fixed in this branch)."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit format (EPMCDME-XXXX: Capital sentence)",
+      "status": "pass",
+      "notes": "Commits 'EPMCDME-13911: Upgrade React to 19 with dependency bumps', 'EPMCDME-13911: Fix duplicate chat-sidebar DOM id', 'EPMCDME-13911: Add review artifact and MR evidence' match the convention."
+    },
+    {
+      "standard": "Branch naming",
+      "status": "pass",
+      "notes": "Branch EPMCDME-13911 (plain ticket id per request - runs separately)."
+    },
+    {
+      "standard": "No secrets or sensitive data in diff",
+      "status": "pass",
+      "notes": "Diff contains dependency manifests, one assertion, one effect-dependency fix, one id rename and docs artifacts. No sensitive values."
+    },
+    {
+      "standard": "Scope discipline (no opportunistic bumps/refactors)",
+      "status": "pass",
+      "notes": "No forwardRef->ref refactor, no StrictMode introduction, no unrelated dependency updates; vitest/primereact bumps explicitly deferred."
+    }
+  ]
+}

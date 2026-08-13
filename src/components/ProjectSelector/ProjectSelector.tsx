@@ -15,6 +15,7 @@
 
 import { MultiSelect as PrimeMultiselect, MultiSelectChangeEvent } from 'primereact/multiselect'
 import { forwardRef, useEffect, useMemo, useState } from 'react'
+import { useSnapshot } from 'valtio'
 
 import MultiSelect from '@/components/form/MultiSelect'
 import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
@@ -104,9 +105,11 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
       loadProjects(searchValue)
     }
 
+    const { user } = useSnapshot(userStore)
     useEffect(() => {
       loadProjects()
-    }, [])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user])
 
     const handleChange = (e: MultiSelectChangeEvent) => {
       onChange(multiple ? e.value : e.target.value)
