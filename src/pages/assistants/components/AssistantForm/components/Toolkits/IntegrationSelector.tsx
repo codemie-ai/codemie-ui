@@ -41,6 +41,7 @@ interface IntegrationSelectorProps {
   showAutoCredentials?: boolean
   short?: boolean
   error?: string
+  disabled?: boolean
 }
 
 const IntegrationSelector = ({
@@ -61,6 +62,7 @@ const IntegrationSelector = ({
   showAutoCredentials = false,
   short: _short,
   error,
+  disabled,
 }: IntegrationSelectorProps) => {
   const [derivedAutoMode, setDerivedAutoMode] = useState(!value)
   // When the caller owns the decision, follow it; otherwise keep the legacy behaviour of deriving
@@ -105,6 +107,7 @@ const IntegrationSelector = ({
         onChange={onChange}
         onAddSettingClick={onAddSettingClick}
         error={error}
+        disabled={disabled}
       />
     </div>
   )

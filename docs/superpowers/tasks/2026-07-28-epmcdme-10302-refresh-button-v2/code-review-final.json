@@ -1,0 +1,35 @@
+{
+  "decision": "request-changes",
+  "rationale": "One major patch finding: handleRefresh has no catch block, so indexSettings failures are silently swallowed — the user gets no feedback when the refresh fails. All 11 acceptance criteria pass or are covered by the integration test suite. Concurrency and unmount edge cases raised by edge-case lens are real but pre-existing store-level concerns, deferred out of this PR's scope.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "State WITH integrations: enabled dropdown visible", "status": "pass"},
+    {"criterion": "State WITH integrations: Refresh button to the right of dropdown", "status": "pass"},
+    {"criterion": "State WITH integrations: helper text 'Choose an existing integration, or add a new one and refresh the list.'", "status": "pass"},
+    {"criterion": "State WITHOUT integrations: disabled dropdown visible (not interactive)", "status": "pass"},
+    {"criterion": "State WITHOUT integrations: Refresh button visible", "status": "pass"},
+    {"criterion": "State WITHOUT integrations: helper text 'Create a user integration, or refresh the list after one is added.'", "status": "pass"},
+    {"criterion": "Refresh calls resetIsSettingsIndexed() THEN indexSettings() as required pair", "status": "pass"},
+    {"criterion": "After refresh, component reflects new data (dropdown repopulates)", "status": "pass", "notes": "Covered end-to-end by integration test 'repopulates the dropdown after clicking Refresh when an integration becomes available'"},
+    {"criterion": "Refresh button disabled while refresh is in progress", "status": "pass"},
+    {"criterion": "showClear hidden when disabled", "status": "pass"},
+    {"criterion": "No 'Add User Integration' in panel footer when disabled", "status": "pass"}
+  ],
+  "standards_review": [
+    {"standard": "commit-format", "status": "pass", "notes": "Branch follows EPMCDME-<ticket>_<slug> format consistent with recent project commits"},
+    {"standard": "code-quality", "status": "pass", "notes": "TypeScript, Tailwind, React patterns consistent with codebase conventions"},
+    {"standard": "security", "status": "pass", "notes": "No security issues: no user input execution, no XSS vectors, no secret exposure"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/pages/dataSources/components/DataSourceForm/IndexTypeField/shared/IntegrationSection.tsx:62-70",
+      "problem": "handleRefresh uses try/finally but has no catch block. If userSettingsStore.indexSettings() rejects (network error, API 500, auth failure), the error is silently swallowed — isRefreshing resets to false so the button re-enables, but the user receives zero feedback.",
+      "impact": "User clicks Refresh, the operation fails silently, the UI appears unchanged, and the user may incorrectly believe the refresh succeeded or that no integrations exist when the real cause is a transient server error.",
+      "recommendation": "Add a catch block that calls toaster.error() (the project-standard notification mechanism already used in this file's test mock): catch (e) { toaster.error('Failed to refresh integrations. Please try again.') }"
+    }
+  ]
+}

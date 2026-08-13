@@ -37,6 +37,7 @@ export interface IntegrationSelectDropdownProps {
   onChange: (value?: Setting) => void
   onAddSettingClick: () => void
   error?: string
+  disabled?: boolean
 }
 
 export const IntegrationSelectDropdown = ({
@@ -54,6 +55,7 @@ export const IntegrationSelectDropdown = ({
   onChange,
   onAddSettingClick,
   error,
+  disabled,
 }: IntegrationSelectDropdownProps) => {
   const settingsDefinitions = settingsDefinitionsProp ?? []
   const selectRef = useRef<Dropdown>(null)
@@ -75,7 +77,7 @@ export const IntegrationSelectDropdown = ({
   // would leave the add button under an enabled Automatic Credentials Lookup toggle.
   if (isAutoMode) return null
 
-  if (!selectOptions || !settingsDefinitions || settingsDefinitions.length === 0) {
+  if (!disabled && (!selectOptions || !settingsDefinitions || settingsDefinitions.length === 0)) {
     return (
       <div className={className}>
         <Button
@@ -93,7 +95,7 @@ export const IntegrationSelectDropdown = ({
   return (
     <div className={className}>
       <Select
-        showClear
+        showClear={!disabled}
         ref={selectRef}
         tooltipPosition={tooltipPosition}
         value={settingsDefinitions.find((o) => o.id === value?.id)?.id}
@@ -103,20 +105,23 @@ export const IntegrationSelectDropdown = ({
         placeholder={placeholder ?? 'Select integration'}
         rootClassName={cn('w-full max-w-[300px]', selectClassName)}
         panelClassName={'max-w-[300px]'}
+        disabled={disabled}
         onChange={(e) => {
           const selected = settingsDefinitions.find((s) => s.id === e.target.value)!
           onChange(selected)
         }}
         error={error}
         panelFooterTemplate={
-          <Button
-            onClick={handleClick}
-            variant="secondary"
-            className="w-full rounded-t-sm rounded-b-none border-x-0 border-t-0 border-border-specific-panel-outline hover:border-border-specific-panel-outline"
-          >
-            <PlusSvg />
-            {buttonLabel}
-          </Button>
+          disabled ? undefined : (
+            <Button
+              onClick={handleClick}
+              variant="secondary"
+              className="w-full rounded-t-sm rounded-b-none border-x-0 border-t-0 border-border-specific-panel-outline hover:border-border-specific-panel-outline"
+            >
+              <PlusSvg />
+              {buttonLabel}
+            </Button>
+          )
         }
       />
     </div>

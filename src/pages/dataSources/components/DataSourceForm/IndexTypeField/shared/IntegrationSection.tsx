@@ -13,16 +13,17 @@
 // limitations under the License.
 //
 
-import { FC } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 import { Controller } from 'react-hook-form'
 
-import InfoSvg from '@/assets/icons/info.svg?react'
+import RefreshSvg from '@/assets/icons/refresh.svg?react'
 import Button from '@/components/Button'
 import { ButtonSize } from '@/constants'
-import { useTheme } from '@/hooks/useTheme'
 import IntegrationSelector from '@/pages/assistants/components/AssistantForm/components/Toolkits/IntegrationSelector'
 import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
+import { userSettingsStore } from '@/store/userSettings'
 import { Setting } from '@/types/entity/setting'
+import toaster from '@/utils/toaster'
 
 interface IntegrationSectionProps {
   hasNoSettings: boolean
@@ -59,76 +60,81 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
   credentialType,
   isRequired = true,
 }) => {
-  const { isDark } = useTheme()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      userSettingsStore.resetIsSettingsIndexed()
+      await userSettingsStore.indexSettings()
+    } catch {
+      if (isMountedRef.current) {
+        toaster.error('Failed to refresh integrations. Please try again.')
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsRefreshing(false)
+      }
+    }
+  }
 
   return (
     <>
-      {!isRequired && (
-        <div className="flex text-text-quaternary text-xs mt-3 mb-1">
-          <InfoSvg className="w-[18px] h-[18px] mr-2 flex-shrink-0 opacity-75" />
-          <span className="mt-0.5">
-            Integration is optional. Public repositories can be indexed without credentials. For
-            private repositories, select a Git integration below.
-          </span>
-        </div>
-      )}
+      <div className="mt-3 mb-4">
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <Controller
+              name="setting_id"
+              control={control}
+              render={({ field: settingField }) => {
+                const settingsDefinitions = filteredSettings[datasourceType] as Setting[]
+                const selectedSetting = settingsDefinitions?.find(
+                  (s) => s.id === settingField.value
+                )
 
-      {hasNoSettings && (
-        <div className="mt-3 mb-4">
-          {isRequired && (
-            <div className="flex text-text-quaternary text-xs">
-              <InfoSvg className="w-[18px] h-[18px] mr-2 flex-shrink-0 opacity-75" />
-              <span className="mt-0.5">
-                No integrations found for this datasource type. Add a user integration to continue.
-              </span>
-            </div>
-          )}
-          <div className="flex pt-3">
-            <Button
-              type={isDark ? 'primary' : 'secondary'}
-              size={ButtonSize.SMALL}
-              onClick={onOpenIntegrationPopup}
-              className="py-4 px-10"
-            >
-              Add User Integration
-            </Button>
-          </div>
-          {errors.setting_id && (
-            <div className="text-text-error text-sm mt-1">{errors.setting_id.message}</div>
-          )}
-        </div>
-      )}
-
-      {isDropdownShown && (
-        <div className="grid grid-cols-2 gap-3 mt-4 mb-4">
-          <Controller
-            name="setting_id"
-            control={control}
-            render={({ field: settingField }) => {
-              const settingsDefinitions = filteredSettings[datasourceType] as Setting[]
-              const selectedSetting = settingsDefinitions?.find((s) => s.id === settingField.value)
-
-              return (
-                <div>
+                return (
                   <IntegrationSelector
                     value={selectedSetting}
-                    settingsDefinitions={settingsDefinitions}
+                    settingsDefinitions={isDropdownShown ? settingsDefinitions : []}
                     label={integrationLabel}
                     placeholder={integrationPlaceholder}
                     addButtonLabel="Add User Integration"
                     selectClassName="max-w-full w-full"
                     onChange={(setting) => settingField.onChange(setting?.id)}
                     onAddSettingClick={onOpenIntegrationPopup}
+                    disabled={isRequired && hasNoSettings}
                   />
-                  {errors.setting_id && (
-                    <div className="text-text-error text-sm mt-1">{errors.setting_id.message}</div>
-                  )}
-                </div>
-              )
-            }}
-          />
+                )
+              }}
+            />
+          </div>
+          <Button
+            variant="secondary"
+            size={ButtonSize.MEDIUM}
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            aria-label="Refresh integrations"
+            className="!h-8 shrink-0"
+          >
+            <RefreshSvg /> Refresh
+          </Button>
         </div>
-      )}
+        <div className="text-xs text-text-quaternary mt-1">
+          {hasNoSettings
+            ? 'Create a user integration, or refresh the list after one is added.'
+            : 'Choose an existing integration, or add a new one and refresh the list.'}
+        </div>
+        {errors.setting_id && (
+          <div className="text-text-error text-sm mt-1">{errors.setting_id.message}</div>
+        )}
+      </div>
 
       <NewIntegrationPopup
         visible={showIntegrationPopup}

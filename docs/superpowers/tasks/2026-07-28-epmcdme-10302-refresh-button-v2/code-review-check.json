@@ -1,0 +1,16 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: catch block added to handleRefresh with toaster.error() notification; new rejection test passes. No new issues introduced by the fix-up. The .codemie config change in the diff is pre-existing unrelated dirty state.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "toaster import added; catch block calls toaster.error(); unit test added and passing"
+    }
+  ]
+}

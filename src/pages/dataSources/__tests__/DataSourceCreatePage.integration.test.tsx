@@ -17,6 +17,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
+import { userSettingsStore } from '@/store/userSettings'
 import { selectAutocompleteOption } from '@/test-utils/component-interactions'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 
@@ -52,6 +53,10 @@ const waitForFormReady = async () => {
 
 const selectGoogleDocsType = async (user: ReturnType<typeof userEvent.setup>) => {
   await selectAutocompleteOption('Datasource Type', 'Google', { user })
+}
+
+const selectConfluenceType = async (user: ReturnType<typeof userEvent.setup>) => {
+  await selectAutocompleteOption('Datasource Type', 'Confluence', { user })
 }
 
 describe('DataSourceCreatePage - Google Docs Integration', () => {
@@ -98,6 +103,65 @@ describe('DataSourceCreatePage - Google Docs Integration', () => {
     await waitFor(() => {
       expect(
         screen.getByText('Integration is required for this data source type')
+      ).toBeInTheDocument()
+    })
+  })
+})
+
+describe('DataSourceCreatePage - Confluence Refresh Button', () => {
+  beforeEach(() => {
+    mockFormInitAPIs()
+    mockAPI('GET', 'v1/settings/user/available', [])
+    userSettingsStore.isSettingsIndexed = false
+    userSettingsStore.settings = {}
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows no-integrations helper text and Refresh button after selecting Confluence type', async () => {
+    const user = userEvent.setup()
+    renderPage('/data-sources/create')
+    await waitForFormReady()
+    await selectConfluenceType(user)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/create a user integration, or refresh the list after one is added/i),
+      ).toBeInTheDocument()
+    })
+    expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument()
+  })
+
+  it('repopulates the dropdown after clicking Refresh when an integration becomes available', async () => {
+    const user = userEvent.setup()
+    renderPage('/data-sources/create')
+    await waitForFormReady()
+    await selectConfluenceType(user)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/create a user integration, or refresh the list after one is added/i),
+      ).toBeInTheDocument()
+    })
+
+    mockAPI('GET', 'v1/settings/user/available', [
+      {
+        id: 's-1',
+        alias: 'My Confluence',
+        credential_type: 'confluence',
+        setting_type: 'user',
+        project_name: null,
+        is_global: true,
+      },
+    ])
+
+    await user.click(screen.getByRole('button', { name: /refresh/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/choose an existing integration, or add a new one and refresh the list/i),
       ).toBeInTheDocument()
     })
   })

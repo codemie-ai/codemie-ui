@@ -19,6 +19,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { IntegrationSelectDropdown } from '../IntegrationSelectDropdown'
 
 const ADD_BUTTON = /add user integration/i
+const noop = vi.fn()
 
 describe('IntegrationSelectDropdown — auto mode outranks the empty-list branch', () => {
   afterEach(cleanup)
@@ -51,5 +52,42 @@ describe('IntegrationSelectDropdown — auto mode outranks the empty-list branch
     )
 
     expect(screen.getByRole('button', { name: ADD_BUTTON })).toBeTruthy()
+  })
+})
+
+describe('IntegrationSelectDropdown — disabled prop', () => {
+  afterEach(cleanup)
+
+  it('renders a disabled Select (not the add button) when disabled=true and settingsDefinitions is empty', () => {
+    render(
+      <IntegrationSelectDropdown
+        isAutoMode={false}
+        value={null}
+        settingsDefinitions={[]}
+        label="Integration"
+        placeholder="Select integration"
+        onChange={noop}
+        onAddSettingClick={noop}
+        disabled={true}
+      />
+    )
+    // The button-only fallback must NOT appear
+    expect(screen.queryByRole('button', { name: /add user integration/i })).not.toBeInTheDocument()
+    // A combobox (Select) must be present
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
+  })
+
+  it('still renders the add button (button-only view) when disabled=false and settingsDefinitions is empty', () => {
+    render(
+      <IntegrationSelectDropdown
+        isAutoMode={false}
+        value={null}
+        settingsDefinitions={[]}
+        onChange={noop}
+        onAddSettingClick={noop}
+      />
+    )
+    expect(screen.getByRole('button', { name: /add user integration/i })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 })
