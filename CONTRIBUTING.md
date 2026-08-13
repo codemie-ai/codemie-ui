@@ -6,7 +6,7 @@ Thank you for your interest in contributing to CodeMie UI! We welcome contributi
 
 1. Fork the repository
 2. Clone your fork locally
-3. Create a feature branch from `main`: `git checkout -b EPMCDME-XX-short-description` (e.g. `EPMCDME-123-add-dark-mode`), or `<type>/short-description` if no ticket is available (e.g. `fix/login-redirect`)
+3. Create a feature branch from `main`: `git checkout -b EPMCDME-XXXX_short-description` (e.g. `EPMCDME-1234_add-dark-mode`), or `<type>/short-description` if no ticket is available (e.g. `fix/login-redirect`)
 4. Make your changes following the guidelines below
 5. Commit your changes using the [commit message format](#commit-message-format) below
 6. Push to your fork
@@ -113,14 +113,14 @@ This project supports AI-assisted development via the [SDLC Factory](https://git
 /plugin install sdlc-factory@sdlc-factory
 ```
 
-### Option 1 — `sdlc-task` (small tasks, XS/S/M)
+### Option 1 — `sdlc-light` (small tasks)
 
 Best for: single-file changes, focused refactors, small features you have already classified as small.
 Claude completes all steps inline without stopping — spec → plan → TDD → code review → QA gates.
 
 ```
-/sdlc-task EPMCDME-1234
-/sdlc-task "add email validation to the signup form"
+/sdlc-light EPMCDME-1234
+/sdlc-light "add email validation to the signup form"
 ```
 
 When Claude finishes, create the MR:
@@ -131,14 +131,14 @@ When Claude finishes, create the MR:
 
 Typical duration: 5–15 minutes.
 
-### Option 2 — `sdlc-start` (larger tasks, you stay in control)
+### Option 2 — `sdlc-standard` (larger tasks, you stay in control)
 
 Best for: production work, brownfield changes, anything where you want to approve each step.
 Claude stops at every gate and asks for your confirmation — requirements → spec → plan → code → QA.
 
 ```
-/sdlc-start EPMCDME-1234
-/sdlc-start "add SAML SSO provider with admin onboarding flow"
+/sdlc-standard EPMCDME-1234
+/sdlc-standard "add SAML SSO provider with admin onboarding flow"
 ```
 
 When Claude reports "branch ready", create the MR:
@@ -167,10 +167,10 @@ When Claude reports "branch ready", create the MR:
 
 | Situation | Use |
 |-----------|-----|
-| Small, clearly scoped change (1–3 files) | `sdlc-task` |
-| Larger feature, want to review each step | `sdlc-start` |
+| Small, clearly scoped change (1–3 files) | `sdlc-light` |
+| Larger feature, want to review each step | `sdlc-standard` |
 | Larger feature, want minimal interruptions | `sdlc-autonomous` |
-| First time using SDLC Factory in this repo | Run `/knowledge-foundation` first, then `sdlc-start` |
+| First time using SDLC Factory in this repo | Run `/knowledge-foundation` first, then `sdlc-standard` |
 
 ### Keeping things up to date
 
@@ -188,7 +188,7 @@ Not needed for regular feature work.
 
 ### First-time setup for this repository
 
-The `.ai-run/guides/` foundation is already in place. If you clone the repo fresh, no additional setup is required — just install the plugins above and start with `sdlc-start` or `sdlc-task`.
+The `.ai-run/guides/` foundation is already in place. If you clone the repo fresh, no additional setup is required — just install the plugins above and start with `sdlc-standard` or `sdlc-light`.
 
 ---
 
