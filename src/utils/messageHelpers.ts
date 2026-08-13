@@ -18,19 +18,14 @@ import { marked } from 'marked'
 
 import { markedOptions } from '@/constants/chats'
 import api from '@/utils/api'
+import {
+  getMarkdownRenderer,
+  markdown2html,
+  sanitizeMessage,
+  unSanitizeMessage,
+} from '@/utils/htmlEscape'
 
-export const sanitizeMessage = (message: string): string => {
-  // We need to keep <br> as they are. <br> are used legitimately because \n breaks markdown parsing
-  let result = message.replace(/<br>/g, '___BR_PLACEHOLDER___')
-  result = result.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  result = result.replace(/___BR_PLACEHOLDER___/g, '<br>')
-
-  return result
-}
-
-export const unSanitizeMessage = (message = ''): string => {
-  return message.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-}
+export { getMarkdownRenderer, markdown2html, sanitizeMessage, unSanitizeMessage }
 
 export const getMarkdownTokens = (message: string): marked.Token[] => {
   return marked.lexer(
@@ -38,31 +33,6 @@ export const getMarkdownTokens = (message: string): marked.Token[] => {
     sanitizeMessage(message).replaceAll('sandbox:/v1/files/', `${api.BASE_URL}/v1/files/`),
     markedOptions
   )
-}
-
-export const markdown2html = (text: string): string => {
-  return marked
-    .parse(DOMPurify.sanitize(text), { renderer: getMarkdownRenderer(), breaks: true })
-    .trim()
-}
-
-export const getMarkdownRenderer = (): marked.Renderer => {
-  const renderer = new marked.Renderer()
-  const tableRenderer = renderer.table
-  const codespanRenderer = renderer.codespan
-  renderer.link = (href: string, title: string | null, text: string): string => {
-    const titleAttr = title ? `title="${title}"` : ''
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" ${titleAttr}>${text}</a>`
-  }
-  // Wrap table element to have horizontal scroll for tables
-  renderer.table = (...args: any[]): string =>
-    `<div class="overflow-x-auto">${tableRenderer(...args)}</div>`
-  // Almost any text containing ~ wraps in del. Removed it completely as agents don't seem to use it correctly anyway.
-  renderer.del = (text: string): string => text
-  renderer.codespan = (text: string): string =>
-    codespanRenderer(text.replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;'))
-
-  return renderer
 }
 
 export const getAssistantMentions = (rawText: string): (string | null)[] => {

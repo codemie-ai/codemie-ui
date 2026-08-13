@@ -13,12 +13,19 @@
 // limitations under the License.
 //
 
-import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 
 import api from '@/utils/api'
+import {
+  getMarkdownRenderer,
+  markdown2html,
+  sanitizeMessage,
+  unSanitizeMessage,
+} from '@/utils/htmlEscape'
 
 import { FileExtension } from '../CodeBlock/fileExtensions'
+
+export { getMarkdownRenderer, markdown2html, sanitizeMessage, unSanitizeMessage }
 
 export const TOKEN_TYPES = {
   space: 'space',
@@ -69,21 +76,6 @@ export const CHAT_MESSAGE_MARK = {
   WRONG: 'wrong',
 }
 
-export const sanitizeMessage = (message: string) => {
-  // We need to keep <br> as they are. <br> are used legitimately because \n breaks markdown parsing
-  let result = message.replace(/<br>/g, '___BR_PLACEHOLDER___')
-  // Replace already encoded `<` and `>` characters with different encoding, so unsanitize won't transform them to HTML tags later
-  result = result.replace(/&lt;/g, '&#60;').replace(/&gt;/g, '&#62;')
-  result = result.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  result = result.replace(/___BR_PLACEHOLDER___/g, '<br>')
-
-  return result
-}
-
-export const unSanitizeMessage = (message = '') => {
-  return message.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-}
-
 export const markedOptions = {
   async: false,
   baseUrl: null,
@@ -113,28 +105,4 @@ export const getMarkdownTokens = (message: string): MarkdownToken[] => {
     sanitizeMessage(message).replaceAll('sandbox:/v1/files/', `${api.BASE_URL}/v1/files/`),
     markedOptions
   )
-}
-
-export const markdown2html = (text) => {
-  return marked
-    .parse(DOMPurify.sanitize(text), { renderer: getMarkdownRenderer(), breaks: true })
-    .trim()
-}
-
-export const getMarkdownRenderer = () => {
-  const renderer = new marked.Renderer()
-  const tableRenderer = renderer.table
-  const codespanRenderer = renderer.codespan
-  renderer.link = (href, title, text) => {
-    const titleAttr = title ? `title="${title}"` : ''
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" ${titleAttr}>${text}</a>`
-  }
-  // Wrap table element to have horizontal scroll for tables
-  renderer.table = (...args) => `<div class="overflow-x-auto">${tableRenderer(...args)}</div>`
-  // Almost any text containing ~ wraps in del. Removed it completely as agents don't seem to use it correctly anyway.
-  renderer.del = (text) => text
-  renderer.codespan = (text) =>
-    codespanRenderer(text.replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;'))
-
-  return renderer
 }
