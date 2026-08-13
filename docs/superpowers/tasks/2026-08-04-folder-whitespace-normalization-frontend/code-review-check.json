@@ -1,0 +1,22 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted check of the fix-up diff against the three blocking findings from code-review-final.json. CR-001: FolderList.tsx now uses displayFolder (trimmed) for data-folder and both DOM-id slug expressions (aria-owns, ChatList id), while foldersToChatsMap[folder] and getMenuItems(folder) remain keyed on the raw folder — exactly the recommended fix. CR-002: createFolder and renameChatFolder both now reject a trimmed name equal to DEFAULT_CHAT_FOLDER via the same toaster.error + early-return pattern as the empty-name guard, with regression tests added for both. CR-003: SearchResultItem's visibility gate now checks item.folder?.trim() matching the rendered value, eliminating the empty-badge case. The fix-up diff is small and fully scoped to the three findings plus their tests; no new high-risk issue (security, public API, data loss, build/runtime correctness) is introduced.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"requirement": "Store layer: createFolder trims, guards empty, sends trimmed", "status": "satisfied", "reason": "Trimmed, guarded, posts trimmed value."},
+    {"requirement": "Store layer: renameChatFolder trims both oldFolder and newFolder", "status": "satisfied", "reason": "Both trimmed; empty-newFolder guard added."},
+    {"requirement": "Store layer: moveChatToFolder/startNewChat/createChat trim value (no reject — empty is valid no-folder state)", "status": "satisfied", "reason": "Trimmed per approved plan; empty-after-trim intentionally not rejected (Global Constraints in plan.md)."},
+    {"requirement": "Form layer: FolderFormPopup submit handler trims value before store call", "status": "satisfied", "reason": "Yup 1.6.1's .trim() already transforms the value via yupResolver before onSubmit fires; regression test added confirming the outcome, no source change needed."},
+    {"requirement": "Render layer: FolderList.tsx trim before .slice(), data-pr-tooltip, aria-label, data-folder, and before DOM-id slug logic (2 occurrences)", "status": "satisfied", "reason": "All six usages (.slice(), tooltip, aria-label, data-folder, aria-owns slug, ChatList id slug) now use trimmed displayFolder; functional lookups keyed on raw folder as intended."},
+    {"requirement": "Render layer: SearchResultItem.tsx trims item.folder before rendering", "status": "satisfied", "reason": "Rendered value and visibility gate both use the trimmed value."},
+    {"requirement": "Render layer: MoveChatPopup.tsx trims name for folderOptions label/value", "status": "satisfied", "reason": "trimmedName computed and used for both label and value (unchanged from final round)."}
+  ],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved"},
+    {"id": "CR-002", "status": "resolved"},
+    {"id": "CR-003", "status": "resolved"}
+  ]
+}

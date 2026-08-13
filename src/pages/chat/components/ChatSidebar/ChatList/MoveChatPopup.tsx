@@ -60,10 +60,13 @@ const MoveChatPopup = ({ isVisible, selectedChat, onHide, onMove }: MoveChatPopu
 
   const folderOptions = useMemo(() => {
     const options = chatFolders
-      .map(({ name }) => ({
-        label: name,
-        value: name,
-      }))
+      .map(({ name }) => {
+        const trimmedName = name.trim()
+        return {
+          label: trimmedName,
+          value: trimmedName,
+        }
+      })
       .sort((a, b) => a.label.localeCompare(b.label))
 
     const isDefaultOptIncluded = options.find((item) => item.value === DEFAULT_CHAT_FOLDER)

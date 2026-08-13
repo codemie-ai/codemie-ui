@@ -1,0 +1,67 @@
+{
+  "task": "Trim leading/trailing whitespace from chat folder names at store write points and defensively at render points, plus fix a sentinel-collision edge case surfaced in code review",
+  "generated": "2026-08-04T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 3,
+      "label": "M",
+      "affected": "chatsStore (createFolder, renameChatFolder, moveChatToFolder, startNewChat, createChat), FolderList, SearchResultItem, MoveChatPopup, FolderFormPopup (investigated, no-op)",
+      "layers": "Store (state/API boundary), UI render"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": "Initial pass missed 3 edge cases (DOM-id/data-folder slug trim, DEFAULT_CHAT_FOLDER sentinel-collision guard in createFolder/renameChatFolder, SearchResultItem visibility-gate trim) — surfaced and resolved in code review, not a requirements ambiguity"
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Trivial string normalization, no security/perf implications; only subtlety was DEFAULT_CHAT_FOLDER sentinel collision after trimming",
+      "mitigation": "Guarded sentinel-equality checks against the trimmed value in createFolder/renameChatFolder"
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 4,
+      "modified_file_list": [
+        "src/store/chats.ts",
+        "src/pages/chat/components/ChatSidebar/FolderList/FolderList.tsx",
+        "src/pages/chat/components/ChatSearchPanel/SearchResultItem.tsx",
+        "src/pages/chat/components/ChatSidebar/ChatList/MoveChatPopup.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/store",
+        "src/pages/chat/components/ChatSidebar/FolderList",
+        "src/pages/chat/components/ChatSearchPanel",
+        "src/pages/chat/components/ChatSidebar/ChatList"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 2,
+      "label": "S",
+      "layers_changed": ["Store", "UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 12,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Five components touched (one store, three render, one investigated-only) but all follow the same trim pattern with no architectural coordination" },
+    { "dimension": "requirements_clarity", "reason": "Requirement itself was unambiguous (trim whitespace); the 3 review findings were implementation edge cases, not requirement gaps" }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -112,8 +112,42 @@ const FolderList: FC<FolderListProps> = ({
         collapseIcon={() => null}
       >
         {folders.map((folder) => {
-          const isOverMaxLength = folder.length > MAX_CHAT_NAME_LENGTH
+          const displayFolder = folder.trim()
+          const isOverMaxLength = displayFolder.length > MAX_CHAT_NAME_LENGTH
           const folderKey = encodeURIComponent(folder)
+          const folderChats = foldersToChatsMap[folder] ?? []
+
+          const seen = new Set<string>()
+          const uniqueAvatarItems: ResolvedChatAvatar[] = []
+
+          for (const chat of folderChats) {
+            if (chat.isGroup && chat.assistantIds.length > 0) {
+              const avatars = resolveGroupChatAvatars(chat, avatarStores)
+              chat.assistantIds.forEach((id, i) => {
+                if (id && !seen.has(id)) {
+                  seen.add(id)
+                  uniqueAvatarItems.push(
+                    avatars[i] ?? { iconUrl: null, name: chat.assistantNames?.[i] }
+                  )
+                }
+              })
+            } else {
+              const key =
+                chat.initialAssistantId ?? `${chat.iconUrl ?? ''}:${chat.assistantNames?.[0] ?? ''}`
+              if (!seen.has(key)) {
+                seen.add(key)
+                uniqueAvatarItems.push(resolveChatAvatar(chat, avatarStores))
+              }
+            }
+          }
+
+          const getChatAssistantIds = (c: ChatListItemType): string[] => {
+            if (c.isGroup) return c.assistantIds ?? []
+            if (c.initialAssistantId) return [c.initialAssistantId]
+            return []
+          }
+          const uniqueAssistantIds = new Set(folderChats.flatMap(getChatAssistantIds))
+          const hasSingleAssistant = uniqueAssistantIds.size === 1
 
           return (
             <AccordionTab
@@ -122,12 +156,14 @@ const FolderList: FC<FolderListProps> = ({
                 headerAction: (opts) => ({
                   href: null,
                   tabIndex: 0,
-                  'aria-label': folder,
-                  'data-folder': folder,
+                  'aria-label': displayFolder,
+                  'data-folder': displayFolder,
                   'data-folder-open': opts?.context.selected,
                   role: 'treeitem',
                   'aria-expanded': opts?.context.selected ?? false,
-                  'aria-owns': `chat-tree-folder-group-${folderKey}`,
+                  'aria-owns': `chat-tree-folder-group-${displayFolder
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')}`,
                 }),
               }}
               header={() => (
@@ -136,10 +172,11 @@ const FolderList: FC<FolderListProps> = ({
                     <FolderIcon className="mr-2 h-8" />
                     <p
                       id={`folder-name-${folderKey}`}
-                      data-pr-tooltip={isOverMaxLength ? folder : ''}
+                      data-pr-tooltip={isOverMaxLength ? displayFolder : ''}
                       className="font-semibold whitespace-nowrap h-full flex items-center overflow-hidden text-ellipsis chat-sidebar-folder"
                     >
-                      {folder.slice(0, MAX_CHAT_NAME_LENGTH) + (isOverMaxLength ? '...' : '')}
+                      {displayFolder.slice(0, MAX_CHAT_NAME_LENGTH) +
+                        (isOverMaxLength ? '...' : '')}
                     </p>
                   </div>
 
@@ -164,7 +201,14 @@ const FolderList: FC<FolderListProps> = ({
                   chats={foldersToChatsMap[folder] ?? []}
                   chatActions={chatActions}
                   currentChatId={currentChatId}
+<<<<<<< HEAD
                   id={`chat-tree-folder-group-${folderKey}`}
+=======
+                  id={`chat-tree-folder-group-${displayFolder
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')}`}
+                  hideAvatar={hasSingleAssistant}
+>>>>>>> 154fe7f06 (fix(EPMCDME-13806): resolve code-review findings for folder whitespace trim)
                 />
               </div>
             </AccordionTab>

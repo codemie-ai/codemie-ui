@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import FolderFormPopup from '../FolderFormPopup'
 
@@ -37,5 +37,68 @@ describe('FolderFormPopup — accessibility', () => {
 
     const input = screen.getByRole('textbox')
     expect(input).toHaveAccessibleName('Folder name')
+  })
+})
+
+vi.mock('valtio', () => ({ useSnapshot: vi.fn((store) => store) }))
+
+const mockCreateFolder = vi.fn()
+const mockRenameChatFolder = vi.fn()
+vi.mock('@/store/chats', () => ({
+  chatsStore: {
+    createFolder: (...args: unknown[]) => mockCreateFolder(...args),
+    renameChatFolder: (...args: unknown[]) => mockRenameChatFolder(...args),
+  },
+}))
+
+vi.mock('@/components/Popup', () => ({
+  default: ({ children, onSubmit, submitText }: any) => (
+    <div>
+      {children}
+      <button onClick={onSubmit}>{submitText}</button>
+    </div>
+  ),
+}))
+
+vi.mock('@/components/form/Input', () => ({
+  default: ({ value, onChange, error }: any) => (
+    <div>
+      <input aria-label="folder-name-input" value={value ?? ''} onChange={onChange} />
+      {error && <span>{error}</span>}
+    </div>
+  ),
+}))
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+describe('FolderFormPopup — submit trim', () => {
+  it('trims the folder name before calling createFolder and onCreate', async () => {
+    const onCreate = vi.fn()
+    mockCreateFolder.mockResolvedValue(undefined)
+    render(<FolderFormPopup isVisible onHide={vi.fn()} onCreate={onCreate} />)
+
+    const input = screen.getByLabelText('folder-name-input')
+    fireEvent.change(input, { target: { value: '  FAQ  ' } })
+    fireEvent.click(screen.getByText('Create'))
+
+    await vi.waitFor(() => expect(mockCreateFolder).toHaveBeenCalledWith('FAQ'))
+    expect(onCreate).toHaveBeenCalledWith('FAQ')
+  })
+
+  it('trims both stored folder and submitted name before calling renameChatFolder', async () => {
+    const onCreate = vi.fn()
+    mockRenameChatFolder.mockResolvedValue(undefined)
+    render(
+      <FolderFormPopup isEditing folder="Old" isVisible onHide={vi.fn()} onCreate={onCreate} />
+    )
+
+    const input = screen.getByLabelText('folder-name-input')
+    fireEvent.change(input, { target: { value: '  New  ' } })
+    fireEvent.click(screen.getByText('Save'))
+
+    await vi.waitFor(() => expect(mockRenameChatFolder).toHaveBeenCalledWith('Old', 'New'))
+    expect(onCreate).toHaveBeenCalledWith('New')
   })
 })
