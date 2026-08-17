@@ -13,13 +13,15 @@
 // limitations under the License.
 //
 
-import { FC, useEffect, useMemo, useState } from 'react'
+import { FC, useEffect, useMemo, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import AiGenerateSvg from '@/assets/icons/ai-generate.svg?react'
 import CheckSvg from '@/assets/icons/check.svg?react'
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
+import PremiumModelBadge, { PREMIUM_MODEL_TOOLTIP } from '@/components/PremiumModelBadge'
 import SearchableCombobox, { ComboboxItem } from '@/components/SearchableCombobox'
+import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { appInfoStore } from '@/store/appInfo'
 import { chatsStore } from '@/store/chats'
 import { cn } from '@/utils/utils'
@@ -41,6 +43,21 @@ const optionIdForModel = (value: string) => `chat-llm-selector-option-${value}`
 
 const truncateLabel = (label: string) =>
   label.length > MAX_LABEL_LENGTH ? `${label.slice(0, MAX_LABEL_LENGTH)}…` : label
+
+const ModelOptionLabel: FC<{ label: string }> = ({ label }) => {
+  const labelRef = useRef<HTMLSpanElement>(null)
+  const isTruncated = useIsTruncated(labelRef)
+  return (
+    <span
+      ref={labelRef}
+      className="truncate"
+      data-tooltip-id="react-tooltip"
+      data-tooltip-content={isTruncated ? label : ''}
+    >
+      {label}
+    </span>
+  )
+}
 
 const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = false }) => {
   const [search, setSearch] = useState('')
@@ -94,6 +111,10 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
   }
 
   const triggerLabel = selectedModel ? truncateLabel(selectedModel.label) : 'Default'
+  const showPremiumBadge = selectedModel?.isPremium ?? false
+  const triggerTooltip = showPremiumBadge
+    ? PREMIUM_MODEL_TOOLTIP
+    : 'Select LLM model for this conversation'
 
   const renderTrigger = ({
     onClick,
@@ -105,7 +126,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
       onClick={onClick}
       disabled={disabled}
       data-tooltip-id="react-tooltip"
-      data-tooltip-content="Select LLM model for this conversation"
+      data-tooltip-content={triggerTooltip}
       data-onboarding="chat-llm-selector"
       className={cn(
         'flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
@@ -116,6 +137,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     >
       <AiGenerateSvg className="w-4 h-4 shrink-0" />
       <span className="text-xs font-medium">{triggerLabel}</span>
+      {showPremiumBadge && <PremiumModelBadge />}
       <ChevronDownSvg className="w-3 h-3 shrink-0 opacity-60" />
     </button>
   )
@@ -143,6 +165,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
             <span className="truncate">{defaultModel.label}</span>
             <span className="text-xs text-text-tertiary">Recommended</span>
           </div>
+          {defaultModel.isPremium && <PremiumModelBadge />}
           {state.selected && <CheckSvg className="w-4 h-4 shrink-0" />}
         </>
       )
@@ -151,7 +174,8 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     if (!model) return null
     return (
       <>
-        <span className="truncate">{model.label}</span>
+        <ModelOptionLabel label={model.label} />
+        {model.isPremium && <PremiumModelBadge />}
         {state.selected && <CheckSvg className="w-4 h-4 shrink-0" />}
       </>
     )
@@ -182,6 +206,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
         <p className="px-3 py-4 text-sm text-text-tertiary text-center">No models found</p>
       )}
       optionClassName={optionClassName}
+      contentClassName="min-w-64 max-w-96"
       disabled={disabled}
     />
   )

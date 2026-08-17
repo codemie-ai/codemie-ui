@@ -228,3 +228,53 @@ describe('appInfoStore.fetchToolConfigs', () => {
     expect(appInfoStore.toolFieldPlaceholders['jira.url']).toBe('https://jira.example.com/')
   })
 })
+
+describe('appInfoStore.getLLMModels', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    appInfoStore.llmModels = []
+  })
+
+  it('maps is_premium, cost and capability fields from the API response', async () => {
+    mockGet.mockResolvedValue(
+      okResponse([
+        {
+          base_name: 'claude-opus-4-1',
+          label: 'Claude Opus 4.1',
+          default: false,
+          provider: 'anthropic',
+          is_premium: true,
+          multimodal: true,
+          supports_image_generation: false,
+          default_for_categories: ['reasoning'],
+          cost: { input: 0.000015, output: 0.000075 },
+          features: { tools: true },
+        },
+        {
+          base_name: 'gpt-4o',
+          label: 'GPT-4o',
+          default: true,
+          provider: 'azure_openai',
+          features: { tools: true },
+        },
+      ])
+    )
+
+    const models = await appInfoStore.getLLMModels()
+
+    expect(models[0]).toEqual({
+      value: 'claude-opus-4-1',
+      label: 'Claude Opus 4.1',
+      isDefault: false,
+      provider: 'anthropic',
+      isPremium: true,
+      multimodal: true,
+      supportsImageGeneration: false,
+      supportsTools: true,
+      defaultForCategories: ['reasoning'],
+      cost: { input: 0.000015, output: 0.000075 },
+    })
+    expect(models[1].isPremium).toBeUndefined()
+    expect(models[1].cost).toBeUndefined()
+  })
+})

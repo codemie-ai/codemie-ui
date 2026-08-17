@@ -304,7 +304,8 @@ describe('HelpPage', () => {
       const sections = screen.getAllByRole('heading', { level: 2 })
       expect(sections[0]).toHaveTextContent('AI Help')
       expect(sections[1]).toHaveTextContent('Learning Resources')
-      expect(sections[2]).toHaveTextContent('Product Updates')
+      expect(sections[2]).toHaveTextContent('Platform')
+      expect(sections[3]).toHaveTextContent('Product Updates')
     })
 
     it('updates sections when configs change', () => {

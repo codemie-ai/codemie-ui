@@ -14,6 +14,7 @@
 //
 
 import { FC, useState } from 'react'
+import { Link } from 'react-router'
 
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
@@ -23,6 +24,7 @@ import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import { ButtonSize, ButtonType } from '@/constants'
+import { HELP_MODELS_ROUTE } from '@/pages/help/ModelsCatalog'
 import { getBudgetCategoryLabel, BudgetCategory } from '@/types/entity/budget'
 import { BudgetSyncStatus, ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
@@ -244,6 +246,15 @@ const AssignedCard: FC<ProjectBudgetCardAssignedProps & { mode?: 'manage' | 'vie
             )}
           </div>
         </div>
+
+        {budget.budget_category === 'premium_models' && (
+          <Link
+            to={HELP_MODELS_ROUTE}
+            className="text-xs text-aborted-primary hover:text-aborted-primary/80 transition-colors w-fit"
+          >
+            View covered premium models →
+          </Link>
+        )}
       </div>
 
       {mode === 'manage' ? (

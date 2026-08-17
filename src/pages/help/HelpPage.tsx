@@ -180,6 +180,22 @@ const HelpPage: FC = () => {
     })
 
     finalSections.push({
+      title: 'Platform',
+      description: 'Deployment-specific information',
+      items: [
+        {
+          name: 'Available Models',
+          description:
+            'Browse all models on this deployment, including premium models and their rates.',
+          type: 'link',
+          icon: PaperSvg,
+          link: resolvePath('help/models').pathname,
+          buttonText: 'View Models',
+        },
+      ],
+    })
+
+    finalSections.push({
       title: 'Product Updates',
       description: "Track what's new, and what's improved!",
       items: [

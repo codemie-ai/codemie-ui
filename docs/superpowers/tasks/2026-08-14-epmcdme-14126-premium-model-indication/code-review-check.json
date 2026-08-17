@@ -1,0 +1,82 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Premium badge visible at model-selection time",
+      "status": "met",
+      "note": "PremiumModelBadge rendered on every premium option row in ChatPromptLlmSelector and on the selector trigger. ModelOptionLabel component shows full-name tooltip only when the name is actually truncated — avoids spurious tooltips."
+    },
+    {
+      "criterion": "Premium indication visible during active chat",
+      "status": "met",
+      "note": "ChatPremiumModelTip portaled above the chat prompt with a ResizeObserver anchor. Tip re-arms on chat or model change (premiumTipKey). Amber ring on the input container while premium model is active."
+    },
+    {
+      "criterion": "User can dismiss the tip and navigate to the catalog",
+      "status": "met",
+      "note": "Dismiss button has aria-label. Link routes to HELP_MODELS_ROUTE (/help/models). Tip re-arms on next model or chat change; dismissal is scoped per (chatId, modelValue) key."
+    },
+    {
+      "criterion": "Models catalog lists all models with premium, provider, capabilities, and cost",
+      "status": "met",
+      "note": "ModelsCatalogPage renders a filterable table (search, provider dropdown, premium-only checkbox). Cost formatted as per-1M-token input/output pair. Unknown providers fall back to the raw key string (graceful degradation)."
+    },
+    {
+      "criterion": "Backward-compatible when is_premium absent on older backends",
+      "status": "met",
+      "note": "isPremium mapped with is_premium (undefined if field absent); all premium-conditional rendering uses isPremium ?? false. No UI change for non-premium models."
+    },
+    {
+      "criterion": "All new tests pass",
+      "status": "met",
+      "note": "4941 unit tests pass. E2E harness failures are environment-related (no live LLM provider, fresh DB artifacts); none touch components introduced by this MR."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow: commit format",
+      "status": "pass",
+      "notes": "All commits follow EPMCDME-14126: Description format."
+    },
+    {
+      "standard": "code-quality: Sonar quality gate",
+      "status": "pass",
+      "notes": "S6749 (redundant single-child fragment in ChatPrompt) and S6772 (ambiguous spacing after <input /> in ModelsCatalogPage) both fixed in the final commit."
+    },
+    {
+      "standard": "code-quality: no debug artifacts",
+      "status": "pass",
+      "notes": "No console.log, no commented-out code introduced."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No new API surface. Premium flag originates from the authenticated /v1/llm_models store. No user-supplied content rendered unsanitized."
+    },
+    {
+      "standard": "accessibility",
+      "status": "pass",
+      "notes": "Dismiss button has aria-label. Provider select has aria-label. Premium checkbox has aria-label. PremiumModelBadge tooltip uses the shared react-tooltip mechanism."
+    },
+    {
+      "standard": "license headers",
+      "status": "pass",
+      "notes": "All new files (PremiumModelBadge.tsx, ChatPremiumModelTip.tsx, ModelsCatalogPage.tsx) carry the Apache-2.0 copyright header."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "informational",
+      "triage": "defer",
+      "file": "src/pages/help/ModelsCatalog/ModelsCatalogPage.tsx:24-30",
+      "problem": "PROVIDER_LABELS maps five known provider keys. A backend deployment with an additional provider (e.g. a new cloud region) will display the raw key string in the Provider column.",
+      "impact": "Cosmetic — the catalog still lists the model and all data; only the provider label is less human-friendly. No user-facing breakage.",
+      "recommendation": "Acceptable for the initial release. If new providers are added on the backend, update PROVIDER_LABELS in the same PR as the backend change."
+    }
+  ],
+  "finding_status": [],
+  "rationale": "The implementation is clean and consistent. PremiumModelBadge is correctly composed from StatusBadge(Warning) and the tooltip constant is shared (re-used in ChatPrompt to avoid duplication). The dismissal logic is per (chatId, model) key and re-arms correctly. The ResizeObserver anchor approach is sound for the fixed-height resizable panel layout where overflow clipping would hide a sibling tip. The ModelsCatalogPage follows the existing page layout pattern (PageLayout wrapper, max-w-5xl container). All Sonar issues fixed. Only one informational finding about PROVIDER_LABELS fallback — deferred as cosmetic. No blocking issues."
+}

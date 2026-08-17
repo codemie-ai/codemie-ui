@@ -59,6 +59,8 @@ export interface SearchableComboboxProps<T> {
   optionClassName?: (item: ComboboxItem<T>, state: ComboboxOptionState) => string
   panelClassName?: string
   listClassName?: string
+  /** Overrides the panel content width constraints (default: min-w-56 max-w-72). */
+  contentClassName?: string
 
   disabled?: boolean
 }
@@ -80,6 +82,7 @@ const SearchableCombobox = <T,>({
   optionClassName,
   panelClassName,
   listClassName,
+  contentClassName,
   disabled = false,
 }: SearchableComboboxProps<T>) => {
   const overlayRef = useRef<OverlayPanel>(null)
@@ -153,7 +156,7 @@ const SearchableCombobox = <T,>({
           panelClassName
         )}
       >
-        <div className="flex flex-col min-w-56 max-w-72">
+        <div className={cn('flex flex-col min-w-56 max-w-72', contentClassName)}>
           <div className="px-3 pt-3 pb-2">
             <input
               ref={searchInputRef}

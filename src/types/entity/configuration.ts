@@ -36,6 +36,12 @@ export interface ModelOption {
   label: string
   isDefault: boolean
   provider?: string
+  isPremium?: boolean
+  multimodal?: boolean
+  supportsImageGeneration?: boolean
+  supportsTools?: boolean
+  defaultForCategories?: string[]
+  cost?: { input: number; output: number }
 }
 
 export interface SpeechConfig {

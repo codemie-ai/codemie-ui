@@ -17,6 +17,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import type { ModelOption } from '@/types/entity/configuration'
 import { Conversation } from '@/types/entity/conversation'
 
 import ChatPromptLlmSelector from '../ChatPromptLlmSelector'
@@ -35,7 +36,7 @@ const { mockChatsStore, mockAppInfoStore, mockOverlayHide } = vi.hoisted(() => {
         { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
         { label: 'Claude-2', value: 'claude-2', isDefault: false },
         { label: 'Llama-3', value: 'llama-3', isDefault: false },
-      ],
+      ] as ModelOption[],
       getLLMModels: vi.fn(),
     },
     mockOverlayHide: vi.fn(),
@@ -235,5 +236,47 @@ describe('ChatPromptLlmSelector — keyboard navigation', () => {
     const highlightedButton = document.getElementById(expectedId!)
     expect(highlightedButton).not.toBeNull()
     expect(highlightedButton?.getAttribute('role')).toBe('option')
+  })
+})
+
+describe('ChatPromptLlmSelector — premium badge', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatsStore.currentChat = mockChat
+    mockChatsStore.updateChat = vi.fn()
+    mockAppInfoStore.getLLMModels = vi.fn()
+    mockAppInfoStore.llmModels = [
+      { label: 'Claude Opus 4.1', value: 'claude-opus-4-1', isDefault: false, isPremium: true },
+      { label: 'GPT-4o', value: 'gpt-4o', isDefault: true },
+    ]
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
+  it('shows Premium badge on premium model options only', () => {
+    render(<ChatPromptLlmSelector />)
+
+    expect(screen.getByRole('option', { name: /Claude Opus 4.1/ })).toHaveTextContent('Premium')
+    expect(screen.getByRole('option', { name: /^GPT-4o$/ })).not.toHaveTextContent('Premium')
+  })
+
+  it('shows Premium badge in the trigger when a premium model is selected', () => {
+    mockChatsStore.currentChat = {
+      ...mockChat,
+      llmModel: 'claude-opus-4-1',
+    } as unknown as Conversation
+
+    render(<ChatPromptLlmSelector />)
+
+    const trigger = screen.getByRole('button', { name: /Claude Opus 4.1/ })
+    expect(trigger).toHaveTextContent('Premium')
+  })
+
+  it('does not show Premium badge in the trigger for a standard model', () => {
+    mockChatsStore.currentChat = { ...mockChat, llmModel: 'gpt-4o' } as unknown as Conversation
+
+    render(<ChatPromptLlmSelector />)
+
+    const trigger = screen.getByRole('button', { name: /GPT-4o/ })
+    expect(trigger).not.toHaveTextContent('Premium')
   })
 })

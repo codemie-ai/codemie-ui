@@ -66,14 +66,14 @@ export enum MultiSelectSize {
 
 export type MultiSelectOptionType = Record<
   string,
-  string | undefined | { label: string; value: string | number | boolean }
+  string | boolean | undefined | { label: string; value: string | number | boolean }
 >
 
 const getTextValue = (
-  value: string | undefined | { label: string; value: string | number | boolean }
+  value: string | boolean | undefined | { label: string; value: string | number | boolean }
 ) => {
   if (typeof value === 'string') return value
-  if (value === undefined) return ''
+  if (value === undefined || typeof value === 'boolean') return ''
   return value.label
 }
 

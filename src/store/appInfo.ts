@@ -263,6 +263,12 @@ export const appInfoStore = proxy<AppInfoStoreType>({
         label: model.label,
         isDefault: model.default,
         provider: model.provider,
+        isPremium: model.is_premium,
+        multimodal: model.multimodal,
+        supportsImageGeneration: model.supports_image_generation,
+        supportsTools: model.features?.tools,
+        defaultForCategories: model.default_for_categories,
+        cost: model.cost ? { input: model.cost.input, output: model.cost.output } : undefined,
       }))
       return appInfoStore.llmModels
     } catch (error) {

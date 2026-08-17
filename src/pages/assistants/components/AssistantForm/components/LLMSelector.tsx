@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
 
 import MultiSelect from '@/components/form/MultiSelect'
 import InfoWarning from '@/components/InfoWarning'
+import PremiumModelBadge from '@/components/PremiumModelBadge'
 import { InfoWarningType } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
 
@@ -90,7 +91,7 @@ const LLMSelector = forwardRef<
               },
             ]
           : []),
-        ...models.map(({ label, value }) => ({ label, value })),
+        ...models.map(({ label, value, isPremium }) => ({ label, value, isPremium })),
       ],
       [
         allowEmpty,
@@ -125,21 +126,43 @@ const LLMSelector = forwardRef<
       if (invalidModel && value !== defaultLlmModel?.value) setInvalidModel(null)
     }, [defaultLlmModel?.value, invalidModel, value])
 
+    const renderOption = (option: { label: string; isPremium?: boolean } | undefined) => {
+      if (!option) return null
+      return (
+        <span className="flex items-center gap-2 min-w-0">
+          <span className="truncate">{option.label}</span>
+          {option.isPremium && <PremiumModelBadge />}
+        </span>
+      )
+    }
+
+    const selectedIsPremium = models.find((model) => model.value === value)?.isPremium ?? false
+
     return (
       <div className="flex flex-col gap-2 grow">
-        <MultiSelect
-          singleValue
-          label={label}
-          hint={hint}
-          error={error}
-          placeholder={placeholder}
-          className={className}
-          value={value}
-          options={options}
-          onChange={(e) => onChange(e.target.value ?? '')}
-          onFilter={() => {}}
-          ref={selectRef}
-        />
+        <div className="relative">
+          <MultiSelect
+            singleValue
+            label={label}
+            hint={hint}
+            error={error}
+            placeholder={placeholder}
+            className={className}
+            value={value}
+            options={options}
+            onChange={(e) => onChange(e.target.value ?? '')}
+            onFilter={() => {}}
+            renderOption={renderOption}
+            ref={selectRef}
+          />
+          {selectedIsPremium && (
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 flex h-8 items-center justify-end pr-9">
+              <span className="pointer-events-auto">
+                <PremiumModelBadge />
+              </span>
+            </span>
+          )}
+        </div>
         {invalidModel && (
           <InfoWarning
             type={InfoWarningType.WARNING}

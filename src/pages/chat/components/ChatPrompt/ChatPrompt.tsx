@@ -15,6 +15,7 @@
 
 import './ChatPrompt.scss'
 import { FC, KeyboardEvent, MouseEvent, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useSnapshot } from 'valtio'
 
 import PlaySvg from '@/assets/icons/play.svg?react'
@@ -27,6 +28,7 @@ import {
   getMessageTextWithMentions,
 } from '@/components/Editor/quillModules'
 import { sanitizeMessage } from '@/components/markdown/Markdown.utils'
+import { PREMIUM_MODEL_TOOLTIP } from '@/components/PremiumModelBadge'
 import { ButtonSize } from '@/constants'
 import { FileMetadata, useFileUpload } from '@/hooks/useFileUpload'
 import { useTheme } from '@/hooks/useTheme'
@@ -36,11 +38,13 @@ import { useChatContext } from '@/pages/chat/hooks/useChatContext'
 import { useChatPromptDraft } from '@/pages/chat/hooks/useChatPromptDraft'
 import { useFilePaste } from '@/pages/chat/hooks/useFilePaste'
 import { assistantsStore, userStore } from '@/store'
+import { appInfoStore } from '@/store/appInfo'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
+import ChatPremiumModelTip from './ChatPremiumModelTip'
 import ChatPromptFileUpload from './ChatPromptFileUpload'
 import ChatPromptLlmSelector from './ChatPromptLlmSelector'
 import ChatPromptSkillsButton from './ChatPromptSkillsButton'
@@ -125,6 +129,50 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   const isInProgress = currentChat?.history.flat().some((m) => m.inProgress)
   const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
   const isInterrupted = currentChat?.isInterrupted
+
+  const { llmModels } = useSnapshot(appInfoStore)
+  const effectiveModel = currentChat?.llmModel
+    ? llmModels.find((m) => m.value === currentChat.llmModel)
+    : null
+  const isPremiumActive = effectiveModel?.isPremium ?? false
+  const premiumTipKey = `${currentChat?.id}:${effectiveModel?.value}`
+  const [dismissedPremiumTipKey, setDismissedPremiumTipKey] = useState<string | null>(null)
+
+  // Dismissal is per chat+model; any model/chat change re-arms the tip.
+  useEffect(() => {
+    setDismissedPremiumTipKey(null)
+  }, [premiumTipKey])
+
+  // The tip floats above the prompt without affecting its layout: the prompt lives in a
+  // fixed-height resizable panel with overflow clipping, so the tip is portaled to body
+  // and anchored to the prompt's measured top edge.
+  const promptContainerRef = useRef<HTMLDivElement>(null)
+  const [premiumTipAnchor, setPremiumTipAnchor] = useState<{
+    bottom: number
+    left: number
+    width: number
+  } | null>(null)
+
+  useEffect(() => {
+    const el = promptContainerRef.current
+    if (!el || !isPremiumActive) return () => undefined
+    const update = () => {
+      const rect = el.getBoundingClientRect()
+      setPremiumTipAnchor({
+        bottom: window.innerHeight - rect.top + 8,
+        left: rect.left,
+        width: rect.width,
+      })
+    }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    window.addEventListener('resize', update)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', update)
+    }
+  }, [isPremiumActive])
 
   let promptMode: PromptMode = PROMPT_MODES.DEFAULT
   if (isInterrupted) promptMode = PROMPT_MODES.WORKFLOW_INTERRUPTED
@@ -228,113 +276,136 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   }, [prompt, saveDraft])
 
   return (
-    <>
-      <div className={cn('relative w-full z-20', resizable && 'h-full flex flex-col')}>
-        {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
+    <div
+      ref={promptContainerRef}
+      className={cn('relative w-full z-20', resizable && 'h-full flex flex-col')}
+    >
+      {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
+      {isPremiumActive &&
+        dismissedPremiumTipKey !== premiumTipKey &&
+        premiumTipAnchor !== null &&
+        createPortal(
+          <div
+            className="fixed z-20"
+            style={{
+              bottom: premiumTipAnchor.bottom,
+              left: premiumTipAnchor.left,
+              width: premiumTipAnchor.width,
+            }}
+          >
+            <div className="px-6">
+              <ChatPremiumModelTip
+                modelLabel={effectiveModel!.label}
+                onDismiss={() => setDismissedPremiumTipKey(premiumTipKey)}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
+      <div
+        className={cn(
+          'w-full flex flex-col px-6 overflow-y-auto z-10',
+          resizable ? 'flex-1 min-h-0' : 'min-h-32 h-fit -translate-y-3 shrink-0'
+        )}
+      >
         <div
-          className={cn(
-            'w-full flex flex-col px-6 overflow-y-auto z-10',
-            resizable ? 'flex-1 min-h-0' : 'min-h-32 h-fit -translate-y-3 shrink-0'
+          className={getBorderWrapperClassName(
+            resizable,
+            !!isInterrupted,
+            isEditorFocused,
+            !!isInProgress
           )}
         >
           <div
-            className={getBorderWrapperClassName(
-              resizable,
-              !!isInterrupted,
-              isEditorFocused,
-              !!isInProgress
+            role="none"
+            onClick={focusEditor}
+            onMouseDown={handleMouseDown}
+            onKeyDown={handleKeyDown}
+            data-onboarding="chat-input"
+            {...(isPremiumActive && {
+              'data-tooltip-id': 'react-tooltip',
+              'data-tooltip-content': PREMIUM_MODEL_TOOLTIP,
+            })}
+            className={cn(
+              'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated cursor-text',
+              resizable ? 'h-full min-h-0' : 'min-h-32 max-h-64',
+              isPremiumActive && 'ring-1 ring-aborted-primary/60'
             )}
           >
+            <div className={cn('flex flex-col grow min-h-0', isInProgress && 'opacity-60')}>
+              <Editor
+                ref={editorRef}
+                value={prompt}
+                withMentions={!currentChat?.isWorkflow}
+                onChange={setPrompt}
+                onAddFiles={fileUpload.addFiles}
+                disabled={!!isInProgress}
+                onSubmit={handleSubmit}
+                onFocusChange={setIsEditorFocused}
+                onEditorLoad={setupPasteHandler}
+                placeholder={placeholder}
+              />
+            </div>
+
             <div
               role="none"
               onClick={focusEditor}
               onMouseDown={handleMouseDown}
               onKeyDown={handleKeyDown}
-              data-onboarding="chat-input"
-              className={cn(
-                'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated cursor-text',
-                resizable ? 'h-full min-h-0' : 'min-h-32 max-h-64'
-              )}
+              className="flex justify-between items-center pl-2"
             >
-              <div className={cn('flex flex-col grow min-h-0', isInProgress && 'opacity-60')}>
-                <Editor
-                  ref={editorRef}
-                  value={prompt}
-                  withMentions={!currentChat?.isWorkflow}
-                  onChange={setPrompt}
-                  onAddFiles={fileUpload.addFiles}
-                  disabled={!!isInProgress}
-                  onSubmit={handleSubmit}
-                  onFocusChange={setIsEditorFocused}
-                  onEditorLoad={setupPasteHandler}
-                  placeholder={placeholder}
-                />
+              <div className={cn('flex items-center gap-2', isInProgress && 'opacity-60')}>
+                {assistantFeatures.fileAttachment && (
+                  <ChatPromptFileUpload {...fileUpload} files={files} />
+                )}
+                {!currentChat?.isWorkflow && !isSharedPage && (
+                  <>
+                    {assistantFeatures.tools && <DynamicToolsSettings disabled={!!isInProgress} />}
+                    {assistantFeatures.modelSelector && (
+                      <ChatPromptLlmSelector disabled={!!isInProgress} />
+                    )}
+                    {assistantFeatures.skills && (
+                      <ChatPromptSkillsButton disabled={!!isInProgress} />
+                    )}
+                  </>
+                )}
               </div>
 
               <div
-                role="none"
-                onClick={focusEditor}
-                onMouseDown={handleMouseDown}
-                onKeyDown={handleKeyDown}
-                className="flex justify-between items-center pl-2"
+                className={cn('flex items-center ml-auto', isInProgress && 'pointer-events-auto')}
               >
-                <div className={cn('flex items-center gap-2', isInProgress && 'opacity-60')}>
-                  {assistantFeatures.fileAttachment && (
-                    <ChatPromptFileUpload {...fileUpload} files={files} />
-                  )}
-                  {!currentChat?.isWorkflow && !isSharedPage && (
-                    <>
-                      {assistantFeatures.tools && (
-                        <DynamicToolsSettings disabled={!!isInProgress} />
-                      )}
-                      {assistantFeatures.modelSelector && (
-                        <ChatPromptLlmSelector disabled={!!isInProgress} />
-                      )}
-                      {assistantFeatures.skills && (
-                        <ChatPromptSkillsButton disabled={!!isInProgress} />
-                      )}
-                    </>
-                  )}
-                </div>
+                {isVoiceRecorderVisible && (
+                  <ChatPromptVoiceRecorder
+                    onTextReady={(text) => setPrompt({ message: text, messageRaw: text })}
+                  />
+                )}
 
-                <div
-                  className={cn('flex items-center ml-auto', isInProgress && 'pointer-events-auto')}
-                >
-                  {isVoiceRecorderVisible && (
-                    <ChatPromptVoiceRecorder
-                      onTextReady={(text) => setPrompt({ message: text, messageRaw: text })}
-                    />
-                  )}
+                {isVoiceRecorderVisible && <div className="bg-border-primary h-4 w-px mr-4 ml-2" />}
 
-                  {isVoiceRecorderVisible && (
-                    <div className="bg-border-primary h-4 w-px mr-4 ml-2" />
-                  )}
-
-                  {isInProgress ? (
-                    <Button
-                      aria-label="Stop generation"
-                      size={ButtonSize.LARGE}
-                      onClick={handleStopGeneration}
-                    >
-                      <StopSvg className={cn(isDark && 'text-white')} />
-                    </Button>
-                  ) : (
-                    <Button
-                      disabled={!canSubmit}
-                      onClick={handleSubmit}
-                      size={ButtonSize.LARGE}
-                      className="select-none"
-                    >
-                      {submitLabel}
-                    </Button>
-                  )}
-                </div>
+                {isInProgress ? (
+                  <Button
+                    aria-label="Stop generation"
+                    size={ButtonSize.LARGE}
+                    onClick={handleStopGeneration}
+                  >
+                    <StopSvg className={cn(isDark && 'text-white')} />
+                  </Button>
+                ) : (
+                  <Button
+                    disabled={!canSubmit}
+                    onClick={handleSubmit}
+                    size={ButtonSize.LARGE}
+                    className="select-none"
+                  >
+                    {submitLabel}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

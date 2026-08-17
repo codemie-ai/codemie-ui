@@ -49,6 +49,7 @@ import DataSourcesPage from '@/pages/dataSources/DataSourcesPage'
 import ErrorPage from '@/pages/error/ErrorPage'
 import FavoritesPage from '@/pages/favorites/FavoritesPage'
 import HelpPage from '@/pages/help/HelpPage'
+import ModelsCatalogPage from '@/pages/help/ModelsCatalog'
 import EditProjectIntegrationPage from '@/pages/integrations/EditProjectIntegrationPage'
 import EditUserIntegrationPage from '@/pages/integrations/EditUserIntegrationPage'
 import IntegrationsPage from '@/pages/integrations/IntegrationsPage'
@@ -636,6 +637,11 @@ const otherRoutes: RouteObject[] = [
     id: 'help',
     path: 'help',
     Component: HelpPage,
+  },
+  {
+    id: 'help-models',
+    path: 'help/models',
+    Component: ModelsCatalogPage,
   },
   {
     id: 'terms-and-conditions',
