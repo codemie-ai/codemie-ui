@@ -348,23 +348,23 @@ const MappingRow: React.FC<MappingRowProps> = ({
       )}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 p-3 bg-surface-base-chat hover:bg-surface-elevated">
+      <div className="flex items-start gap-2 p-3 bg-surface-base-chat hover:bg-surface-elevated">
         <button
           type="button"
           aria-expanded={isExpanded}
           aria-label={`Toggle ${mapping.output_field || 'Mapping #' + (index + 1)}`}
           onClick={onToggle}
-          className="flex items-center gap-2 flex-1 cursor-pointer text-left bg-transparent p-0 border-0 min-w-0"
+          className="flex items-start gap-2 flex-1 cursor-pointer text-left bg-transparent p-0 border-0 min-w-0"
         >
           <ChevronUpSvg
             aria-hidden="true"
-            className={cn('w-4 h-4 text-text-quaternary transition-transform shrink-0', {
+            className={cn('w-4 h-4 mt-0.5 text-text-quaternary transition-transform shrink-0', {
               'transform rotate-180': !isExpanded,
             })}
           />
-          <span className="text-sm font-medium text-text-primary flex-1 min-w-0">
-            {mapping.output_field || `Mapping #${index + 1}`}
-            <span className="ml-2 text-xs text-text-quaternary">
+          <span className="text-sm font-medium text-text-primary flex-1 min-w-0 break-words">
+            {mapping.output_field || `Mapping #${index + 1}`}{' '}
+            <span className="text-xs text-text-quaternary inline-block">
               ({MAPPING_TYPE_OPTIONS.find((o) => o.value === mapping.type)?.label ?? mapping.type})
             </span>
           </span>

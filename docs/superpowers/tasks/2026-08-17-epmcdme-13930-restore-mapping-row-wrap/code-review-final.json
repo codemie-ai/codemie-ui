@@ -1,0 +1,62 @@
+{
+  "decision": "approve",
+  "rationale": "CSS-only restore of the EPMCDME-13930 wrap classes inside the EPMCDME-8582 toggle button. All three lenses ran. Acceptance: 15/15 pass. Blind lens raised 8 layout nits (inline-block wrap unit, ml-2 spacing, items-start optical alignment, tall wrapped rows) that match the original approved plan and are dismissed or deferred. Edge-case: whitespace-only output_field is pre-existing and dismissed; long type-label overflow is dismissed because mapping type labels are bounded option strings and inline-block is the spec-prescribed wrap unit. 0 blocking findings. 8 dismissed, 1 deferred (line-clamp / max height for very long names, out of scope).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Mapping row header text must not overlap the delete (trash) icon.",
+      "status": "pass",
+      "notes": "Header and toggle use items-start; field span has flex-1 min-w-0 break-words; delete Button retains shrink-0."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Long output field names and the mapping type suffix must wrap within the row instead of overflowing on the right.",
+      "status": "pass",
+      "notes": "break-words on the field-name span; type suffix is inline-block with a leading space (ml-2 removed)."
+    },
+    {
+      "kind": "story-ac",
+      "item": "The keyboard-accessible toggle button (type=button, aria-expanded, aria-label) introduced by EPMCDME-8582 must be preserved.",
+      "status": "pass",
+      "notes": "Existing toggle button attributes unchanged; only items-center → items-start on className."
+    },
+    {
+      "kind": "spec",
+      "item": "Prevent chevron and delete icons from being compressed; wrap long output_field names; align icons to the first line.",
+      "status": "pass",
+      "notes": "Chevron keeps shrink-0 and gains mt-0.5; delete Button already has shrink-0 and mt-0.5; items-start on header and toggle."
+    },
+    {
+      "kind": "spec",
+      "item": "Tailwind-only styling with semantic theme tokens and cn() for conditional classes.",
+      "status": "pass",
+      "notes": "Diff only changes Tailwind className strings; tokens unchanged; chevron still uses cn() for rotate."
+    },
+    {
+      "kind": "spec",
+      "item": "Type label is inline-block with a space before it (not ml-2); text span has min-w-0 break-words.",
+      "status": "pass",
+      "notes": "Matches original plan Steps 2 and 5."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "EPMCDME-13930: Restore mapping row text wrapping around the delete icon"
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "Tailwind-only class restore; no custom CSS, inline styles, or raw palette tokens."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Presentational layout classes only; no auth, secrets, or injection surface."
+    }
+  ],
+  "findings": []
+}
