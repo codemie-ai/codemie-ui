@@ -1,0 +1,41 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "guide": ".ai-run/guides/standards/git-workflow.md",
+      "status": "pass",
+      "notes": "Fix-up commit a2c6e5b89 also matches the required `EPMCDME-XXXX: Capital sentence` pattern."
+    },
+    {
+      "standard": "code-quality",
+      "guide": ".ai-run/guides/standards/code-quality.md",
+      "status": "na",
+      "notes": "Guide not present in repository."
+    },
+    {
+      "standard": "security",
+      "guide": ".ai-run/guides/development/security-patterns.md",
+      "status": "na",
+      "notes": "Guide not present in repository. Fix-up diff has no security implications."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "Fix-up commit a2c6e5b89 extends useChatScroll to accept a `layoutDeps: DependencyList` parameter. The stick-to-bottom effect now includes `...layoutDeps` in its dependency array (src/pages/chat/components/ChatHistory/hooks/useChatScroll.tsx:63). ChatHistory passes `[tipIsVisible]` to it (src/pages/chat/components/ChatHistory/ChatHistory.tsx:63), so a tip appearance/dismissal now triggers scrollToBottom when shouldStickToBottom.current is true — the ~40px layout shift no longer strands the user above the visual bottom."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "evidence": "Fix-up commit a2c6e5b89 guards premiumTipKey against null-chat: it is only computed when both currentChat?.id and effectiveModel?.value exist (ChatHistory.tsx:51-52), otherwise it is null. The reset effect early-returns when premiumTipKey is null (ChatHistory.tsx:56), preserving dismissedPremiumTipKey across brief unmount/remount cycles. tipIsVisible also gates on premiumTipKey !== null to avoid rendering on transient null states."
+    }
+  ],
+  "findings": [],
+  "rationale": "Fix-up commit a2c6e5b89 addresses both blocking findings from the final round exactly as recommended. Verified locally: `npm run typecheck` clean, `npm run lint` clean (only React-version config warning), `ChatHistory.scrollbar.test.tsx` still passes, local Sonar quality gate PASSED on the resulting SHA. No new high-risk issues in the fix-up diff (only touched files: ChatHistory.tsx, hooks/useChatScroll.tsx — small, targeted, no security or public-API surface). Confidence medium rather than high because the acceptance lens is not applicable (no-spec follow-up) so no user-story cross-check was performed."
+}

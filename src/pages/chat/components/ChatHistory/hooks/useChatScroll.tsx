@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { RefObject, useEffect, useRef } from 'react'
+import { DependencyList, RefObject, useEffect, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import { chatsStore } from '@/store/chats'
@@ -22,8 +22,10 @@ const STICK_TO_BOTTOM_GAP = 50
 
 export const useChatScroll = ({
   scrollContainerRef,
+  layoutDeps = [],
 }: {
   scrollContainerRef: RefObject<HTMLDivElement | null>
+  layoutDeps?: DependencyList
 }) => {
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
   const shouldStickToBottom = useRef(true)
@@ -57,5 +59,6 @@ export const useChatScroll = ({
 
   useEffect(() => {
     if (shouldStickToBottom.current) scrollToBottom()
-  }, [currentChat?.history])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChat?.history, ...layoutDeps])
 }

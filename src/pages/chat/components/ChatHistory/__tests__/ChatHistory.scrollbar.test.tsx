@@ -38,8 +38,9 @@ vi.mock('../hooks/useChatInfiniteScroll', () => ({
 describe('ChatHistory scrollbar classes', () => {
   it('uses scrollbar-gutter-edge (not scrollbar-gutter) on the scroll container', () => {
     const { container } = render(<ChatHistory />)
-    const scrollDiv = container.firstChild as HTMLElement
+    const scrollDiv = container.querySelector('.overflow-y-auto') as HTMLElement
 
+    expect(scrollDiv).not.toBeNull()
     expect(scrollDiv.classList.contains('scrollbar-gutter-edge')).toBe(true)
     expect(scrollDiv.classList.contains('scrollbar-gutter')).toBe(false)
   })

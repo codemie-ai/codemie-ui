@@ -13,9 +13,14 @@
 // limitations under the License.
 //
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSnapshot } from 'valtio'
+
+import { appInfoStore } from '@/store/appInfo'
+import { chatsStore } from '@/store/chats'
 
 import ChatHistoryGroup from './ChatHistoryGroup'
+import ChatPremiumModelTip from '../ChatPrompt/ChatPremiumModelTip'
 import { useChatInfiniteScroll } from './hooks/useChatInfiniteScroll'
 import { useChatScroll } from './hooks/useChatScroll'
 
@@ -27,7 +32,6 @@ export interface ChatIndexes {
 const ChatHistory = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  useChatScroll({ scrollContainerRef })
   const { refs, visibleHistory, hasMoreMessages, lastMessageIndex } = useChatInfiniteScroll()
 
   const scrollContainerRefSetter = useCallback(
@@ -38,19 +42,48 @@ const ChatHistory = () => {
     [refs.rootRef]
   )
 
-  return (
-    <div
-      ref={scrollContainerRefSetter}
-      className="h-full w-full pt-8 pb-12 px-6 overflow-y-auto scrollbar-gutter-edge"
-    >
-      <div className="flex flex-col gap-6 grow max-w-5xl mx-auto px-0.5">
-        {hasMoreMessages && <div ref={refs.sentryRef} />}
+  const { currentChat } = useSnapshot(chatsStore)
+  const { llmModels } = useSnapshot(appInfoStore)
+  const effectiveModel = currentChat?.llmModel
+    ? llmModels.find((m) => m.value === currentChat.llmModel)
+    : null
+  const isPremiumActive = effectiveModel?.isPremium ?? false
+  const premiumTipKey =
+    currentChat?.id && effectiveModel?.value ? `${currentChat.id}:${effectiveModel.value}` : null
+  const [dismissedPremiumTipKey, setDismissedPremiumTipKey] = useState<string | null>(null)
 
-        {visibleHistory.map((group, visibleIndex) => {
-          const actualIndex = Math.max(0, lastMessageIndex) + visibleIndex
-          return <ChatHistoryGroup key={actualIndex} group={group} historyIndex={actualIndex} />
-        })}
+  useEffect(() => {
+    if (premiumTipKey) setDismissedPremiumTipKey(null)
+  }, [premiumTipKey])
+
+  const tipIsVisible =
+    isPremiumActive && premiumTipKey !== null && dismissedPremiumTipKey !== premiumTipKey
+
+  useChatScroll({ scrollContainerRef, layoutDeps: [tipIsVisible] })
+
+  return (
+    <div className="h-full w-full flex flex-col overflow-hidden">
+      <div
+        ref={scrollContainerRefSetter}
+        className="flex-1 min-h-0 pt-8 pb-6 px-6 overflow-y-auto scrollbar-gutter-edge"
+      >
+        <div className="flex flex-col gap-6 grow max-w-5xl mx-auto px-0.5">
+          {hasMoreMessages && <div ref={refs.sentryRef} />}
+
+          {visibleHistory.map((group, visibleIndex) => {
+            const actualIndex = Math.max(0, lastMessageIndex) + visibleIndex
+            return <ChatHistoryGroup key={actualIndex} group={group} historyIndex={actualIndex} />
+          })}
+        </div>
       </div>
+      {tipIsVisible && effectiveModel && (
+        <div className="shrink-0 px-6 py-2">
+          <ChatPremiumModelTip
+            modelLabel={effectiveModel.label}
+            onDismiss={() => setDismissedPremiumTipKey(premiumTipKey)}
+          />
+        </div>
+      )}
     </div>
   )
 }

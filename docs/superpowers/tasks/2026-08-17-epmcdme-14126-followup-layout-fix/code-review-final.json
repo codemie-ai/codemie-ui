@@ -1,0 +1,52 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "low",
+  "risk_flags": ["ux-regression"],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "guide": ".ai-run/guides/standards/git-workflow.md",
+      "status": "pass",
+      "notes": "Both commits (efb074f0b, 08f3ecb73) match the required `EPMCDME-XXXX: Capital sentence` pattern."
+    },
+    {
+      "standard": "code-quality",
+      "guide": ".ai-run/guides/standards/code-quality.md",
+      "status": "na",
+      "notes": "Guide not present in repository."
+    },
+    {
+      "standard": "security",
+      "guide": ".ai-run/guides/development/security-patterns.md",
+      "status": "na",
+      "notes": "Guide not present in repository. Diff scanned for concrete security concerns: `.claude/settings.json` change removes a permission (reduces surface); layout/scroll changes in ChatHistory/ChatPrompt have no security implications."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "file": "src/pages/chat/components/ChatHistory/ChatHistory.tsx",
+      "line": 73,
+      "severity": "major",
+      "triage": "patch",
+      "problem": "Scroll position is not re-anchored when the premium tip transitions from hidden to visible mid-chat.",
+      "impact": "User is scrolled to the bottom of a long chat (shouldStickToBottom.current === true), opens the LLM selector, switches to a premium model. tipIsVisible flips true, the shrink-0 tip div steals ~40px from the flex-1 scroll area, so scrollHeight - scrollTop - clientHeight jumps from ~0 to ~40. The user is no longer at the visual bottom until the next incoming message. useChatScroll only fires scrollToBottom on currentChat?.id / currentChat?.history changes; a model switch triggers neither.",
+      "recommendation": "Add a useEffect keyed on tipIsVisible that calls scrollContainerRef.current?.scrollTo({ top: scrollContainerRef.current.scrollHeight, behavior: 'instant' }) when shouldStickToBottom is true, so the scroll position is re-anchored after the layout shift.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-002",
+      "file": "src/pages/chat/components/ChatHistory/ChatHistory.tsx",
+      "line": 56,
+      "severity": "major",
+      "triage": "patch",
+      "problem": "premiumTipKey resolves to the string 'undefined:undefined' when currentChat or effectiveModel is null, so a transient null-chat state between navigations re-arms a previously-dismissed tip.",
+      "impact": "User dismisses the premium tip in a chat. The user navigates away and back (or the app briefly clears currentChat during a reload), producing key transitions 'chatId:modelId' → 'undefined:undefined' → 'chatId:modelId'. The reset effect fires on the second transition and clears dismissedPremiumTipKey, so the tip reappears despite prior dismissal.",
+      "recommendation": "Guard premiumTipKey: `const premiumTipKey = currentChat?.id && effectiveModel?.value ? \\`${currentChat.id}:${effectiveModel.value}\\` : null;` and skip the useEffect reset when premiumTipKey is null (early-return inside the effect).",
+      "sources": ["edge-case"]
+    }
+  ],
+  "rationale": "No-spec follow-up review (no story/spec artifact for this hotfix), so acceptance lens skipped and confidence forced low. Blind and edge-case lenses ran successfully in parallel. Two blocking findings survive triage as `patch` (both real UX regressions introduced by the layout rework). Non-blocking / deferred items (recorded here rather than emitted): (a) ChatHistory.scrollbar.test.tsx lacks the store/valtio/ChatPremiumModelTip mocks that its sibling ChatPrompt.scrollbar.test.tsx uses — test-hygiene defer; (b) duplicate `effectiveModel` derivation across ChatHistory and ChatPrompt is a theoretical flicker (low-confidence race) — defer; (c) `pb-12` → `pb-6` change on the scroll container reduces bottom breathing room by 24px for the non-premium case — likely intentional given the tip is now sibling-outside the scroll, defer as design intent. Two dismissed findings: (d) blind flagged `isPremiumActive` as potential dead code — verified live (line 261/268 amber ring) and Sonar Quality Gate already PASSED on this SHA; (e) test uses `.overflow-y-auto` class selector rather than data-testid — style/naming, out of scope."
+}

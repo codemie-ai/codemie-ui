@@ -4,14 +4,14 @@
       "Bash(git *)",
       "Bash(glab *)",
       "Bash(mkdir -p *)",
-      "Write(.codemie/reviews/**)",
       "Edit(.codemie/reviews/**)",
       "Read(.codemie/reviews/**)"
     ]
   },
   "attribution": {
     "commit": "Generated with AI\n\nCo-Authored-By: codemie-ai <codemie.ai@gmail.com>",
-    "pr": ""
+    "pr": "",
+    "sessionUrl": false
   },
   "hooks": {
     "PostToolUse": [

@@ -15,7 +15,6 @@
 
 import './ChatPrompt.scss'
 import { FC, KeyboardEvent, MouseEvent, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useSnapshot } from 'valtio'
 
 import PlaySvg from '@/assets/icons/play.svg?react'
@@ -44,7 +43,6 @@ import { chatsStore } from '@/store/chats'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
-import ChatPremiumModelTip from './ChatPremiumModelTip'
 import ChatPromptFileUpload from './ChatPromptFileUpload'
 import ChatPromptLlmSelector from './ChatPromptLlmSelector'
 import ChatPromptSkillsButton from './ChatPromptSkillsButton'
@@ -135,44 +133,6 @@ const ChatPrompt: FC<ChatPromptProps> = ({
     ? llmModels.find((m) => m.value === currentChat.llmModel)
     : null
   const isPremiumActive = effectiveModel?.isPremium ?? false
-  const premiumTipKey = `${currentChat?.id}:${effectiveModel?.value}`
-  const [dismissedPremiumTipKey, setDismissedPremiumTipKey] = useState<string | null>(null)
-
-  // Dismissal is per chat+model; any model/chat change re-arms the tip.
-  useEffect(() => {
-    setDismissedPremiumTipKey(null)
-  }, [premiumTipKey])
-
-  // The tip floats above the prompt without affecting its layout: the prompt lives in a
-  // fixed-height resizable panel with overflow clipping, so the tip is portaled to body
-  // and anchored to the prompt's measured top edge.
-  const promptContainerRef = useRef<HTMLDivElement>(null)
-  const [premiumTipAnchor, setPremiumTipAnchor] = useState<{
-    bottom: number
-    left: number
-    width: number
-  } | null>(null)
-
-  useEffect(() => {
-    const el = promptContainerRef.current
-    if (!el || !isPremiumActive) return () => undefined
-    const update = () => {
-      const rect = el.getBoundingClientRect()
-      setPremiumTipAnchor({
-        bottom: window.innerHeight - rect.top + 8,
-        left: rect.left,
-        width: rect.width,
-      })
-    }
-    update()
-    const observer = new ResizeObserver(update)
-    observer.observe(el)
-    window.addEventListener('resize', update)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', update)
-    }
-  }, [isPremiumActive])
 
   let promptMode: PromptMode = PROMPT_MODES.DEFAULT
   if (isInterrupted) promptMode = PROMPT_MODES.WORKFLOW_INTERRUPTED
@@ -276,32 +236,8 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   }, [prompt, saveDraft])
 
   return (
-    <div
-      ref={promptContainerRef}
-      className={cn('relative w-full z-20', resizable && 'h-full flex flex-col')}
-    >
+    <div className={cn('relative w-full z-20', resizable && 'h-full flex flex-col')}>
       {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
-      {isPremiumActive &&
-        dismissedPremiumTipKey !== premiumTipKey &&
-        premiumTipAnchor !== null &&
-        createPortal(
-          <div
-            className="fixed z-20"
-            style={{
-              bottom: premiumTipAnchor.bottom,
-              left: premiumTipAnchor.left,
-              width: premiumTipAnchor.width,
-            }}
-          >
-            <div className="px-6">
-              <ChatPremiumModelTip
-                modelLabel={effectiveModel!.label}
-                onDismiss={() => setDismissedPremiumTipKey(premiumTipKey)}
-              />
-            </div>
-          </div>,
-          document.body
-        )}
       <div
         className={cn(
           'w-full flex flex-col px-6 overflow-y-auto z-10',
