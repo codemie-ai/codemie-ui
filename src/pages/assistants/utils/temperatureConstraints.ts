@@ -30,7 +30,12 @@ interface TemperatureRule {
 
 const TEMPERATURE_RULES: TemperatureRule[] = [
   {
-    providers: new Set(['aws_bedrock', 'google_vertexai']),
+    // Anthropic caps Claude temperature at 1.0. Claude is served under three
+    // provider strings (backend LLMProvider enum): `aws_bedrock` (Bedrock),
+    // and on Vertex both `google_vertexai` and the canonical
+    // `vertex_ai-anthropic_models` (LLMProvider.VERTEX_AI_ANTHROPIC). DIAL/Azure
+    // Claude (`azure_openai`) is not provider-capped and keeps the standard 0-2.
+    providers: new Set(['aws_bedrock', 'google_vertexai', 'vertex_ai-anthropic_models']),
     nameMatch: /claude/i,
     max: VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_CLAUDE,
     message: VALIDATION_MESSAGES.TEMPERATURE_MAX_CLAUDE,

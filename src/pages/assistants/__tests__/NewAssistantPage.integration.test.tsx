@@ -1330,6 +1330,41 @@ describe('NewAssistantPage - Integration', () => {
       })
     })
 
+    it('rejects temperature 1.5 for a Claude Sonnet model on Vertex (vertex_ai-anthropic_models)', async () => {
+      // EPMCDME-13882 reopened: Vertex Claude is served under the
+      // `vertex_ai-anthropic_models` provider, not `google_vertexai`.
+      mockAPI('GET', 'v1/llm_models', [
+        {
+          base_name: 'claude-sonnet-4',
+          label: 'Vertex Claude Sonnet 4',
+          default: true,
+          provider: 'vertex_ai-anthropic_models',
+        },
+      ])
+
+      renderPage('/assistants/new')
+
+      await waitFor(() => {
+        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+      })
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Extra configuration/i })).toBeInTheDocument()
+      })
+      await user.click(screen.getByRole('button', { name: /Extra configuration/i }))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
+      })
+      await user.type(screen.getByTestId('assistant-temperature-input'), '1.5')
+      await user.click(screen.getByPlaceholderText('Name*'))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Temperature must be between 0 and 1 for Claude models')
+        ).toBeInTheDocument()
+      })
+    })
+
     it('accepts temperature 1.5 for a non-Claude model (regression)', async () => {
       mockAPI('GET', 'v1/llm_models', [
         {

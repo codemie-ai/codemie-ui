@@ -1,0 +1,21 @@
+{
+  "decision": "approve",
+  "rationale": "Reopened defect EPMCDME-13882: the temperature cap did not fire for Vertex Claude. Root cause verified against backend source — Claude-on-Vertex is served under LLMProvider.VERTEX_AI_ANTHROPIC = \"vertex_ai-anthropic_models\" (configs/llm_config.py:42, resolved in core/dependecies.py:269 and enterprise/litellm/models.py:80), a distinct string from google_vertexai (Gemini). The fix adds that one provider string to the capped-provider Set in temperatureConstraints.ts; azure_openai (DIAL Claude) is correctly left uncapped, so name-only matching would be wrong and the provider set is the right discriminator. Change is minimal (3 files, +67/-2), fully covered by 3 new unit cases and 1 new integration case, and verified live in the UI for both Bedrock and Vertex Claude (placeholder 0-1, 1.5 rejected with the Claude message, 1.0 accepted) plus a non-Claude regression (0-2, 1.5 accepted). 0 critical findings, 0 blocking findings.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "Bedrock Claude Sonnet models allow Temperature 0-1 only", "status": "pass", "notes": "provider aws_bedrock already in the rule; unchanged, still capped. Verified live (Bedrock Claude Sonnet 4.6: placeholder 0-1, 1.5 rejected)." },
+    { "criterion": "Vertex Claude Sonnet models allow Temperature 0-1 only (the reopened gap)", "status": "pass", "notes": "vertex_ai-anthropic_models added to TEMPERATURE_RULES[0].providers. Verified live (Vertex Claude Sonnet 4.6: placeholder 0-1, 1.5 rejected)." },
+    { "criterion": "UI no longer shows 0-2 for Claude Sonnet models", "status": "pass", "notes": "placeholder computed from getTemperatureMax(selectedModel); shows 0-1 for both Bedrock and Vertex Claude." },
+    { "criterion": "Invalid value shows a clear validation message before submit", "status": "pass", "notes": "\"Temperature must be between 0 and 1 for Claude models\" rendered inline; react-hook-form blocks submit while invalid." },
+    { "criterion": "Values 0, 0-1, 1 accepted for Claude", "status": "pass", "notes": "boundary 1.0 accepted live; unit tests cover 0/0.5/1." },
+    { "criterion": "Regression: non-Claude models keep 0-2", "status": "pass", "notes": "GPT-4.1 (azure_openai): placeholder 0-2, 1.5 accepted live; falls through to DEFAULT_RULE." }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "EPMCDME-13882: capitalized imperative subject, single logical change." },
+    { "standard": "code-quality", "status": "pass", "notes": "One-line data change plus tests; rule table left extensible; comment documents all three provider strings and why azure_openai stays at 0-2. typecheck, lint, license-headers, gitleaks all pass." },
+    { "standard": "test-coverage", "status": "pass", "notes": "Unit: predicate, getTemperatureMax, and Yup rejection for vertex_ai-anthropic_models. Integration: end-to-end reject-1.5 on a Vertex-Claude model. 86 targeted tests green." },
+    { "standard": "security", "status": "na", "notes": "Client-side validation data only; no security surface." }
+  ],
+  "findings": []
+}

@@ -61,6 +61,11 @@ describe('isClaudeOnAnthropicProvider', () => {
       true,
     ],
     [
+      'claude-sonnet-4 on vertex_ai-anthropic_models (canonical Vertex-Claude provider)',
+      model({ value: 'claude-sonnet-4', provider: 'vertex_ai-anthropic_models' }),
+      true,
+    ],
+    [
       'claude-3-5-sonnet on azure_openai (wrong provider)',
       model({ value: 'claude-3-5-sonnet', provider: 'azure_openai' }),
       false,
@@ -89,6 +94,11 @@ describe('getTemperatureMax', () => {
         provider: 'google_vertexai',
         label: 'Vertex Claude Sonnet v2',
       }),
+      model({
+        value: 'claude-sonnet-4',
+        provider: 'vertex_ai-anthropic_models',
+        label: 'Vertex Claude Sonnet 4',
+      }),
       model({ value: 'gpt-4o-2024-08-06', provider: 'azure_openai', label: 'GPT-4o' }),
     ]
   })
@@ -97,8 +107,12 @@ describe('getTemperatureMax', () => {
     expect(getTemperatureMax('claude-3-5-sonnet')).toBe(1)
   })
 
-  it('returns 1 for a Claude Vertex model', () => {
+  it('returns 1 for a Claude Vertex model on google_vertexai', () => {
     expect(getTemperatureMax('claude-sonnet-v2-vertex')).toBe(1)
+  })
+
+  it('returns 1 for a Claude Vertex model on vertex_ai-anthropic_models', () => {
+    expect(getTemperatureMax('claude-sonnet-4')).toBe(1)
   })
 
   it('returns 2 for a non-Claude model', () => {
@@ -136,6 +150,11 @@ describe('buildTemperatureRule', () => {
         provider: 'aws_bedrock',
         label: 'Bedrock Claude 3.5 Sonnet',
       }),
+      model({
+        value: 'claude-sonnet-4',
+        provider: 'vertex_ai-anthropic_models',
+        label: 'Vertex Claude Sonnet 4',
+      }),
       model({ value: 'gpt-4o-2024-08-06', provider: 'azure_openai', label: 'GPT-4o' }),
     ]
   })
@@ -164,6 +183,12 @@ describe('buildTemperatureRule', () => {
   it('rejects 1.5 for Claude with the Claude-specific message', async () => {
     await expect(
       wrap().validate({ llm_model_type: 'claude-3-5-sonnet', temperature: 1.5 })
+    ).rejects.toThrow(/between 0 and 1 for Claude models/)
+  })
+
+  it('rejects 1.5 for Vertex Claude on vertex_ai-anthropic_models', async () => {
+    await expect(
+      wrap().validate({ llm_model_type: 'claude-sonnet-4', temperature: 1.5 })
     ).rejects.toThrow(/between 0 and 1 for Claude models/)
   })
 
