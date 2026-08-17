@@ -14,6 +14,7 @@
 //
 
 import { ReactNode } from 'react'
+import { Link } from 'react-router'
 
 import { cn } from '@/utils/utils'
 
@@ -22,20 +23,31 @@ interface DetailsBadgeProps {
   icon?: ReactNode
   filled?: boolean
   className?: string
+  href?: string
 }
 
-const DetailsBadge = ({ value, icon, filled = false, className }: DetailsBadgeProps) => {
-  return (
-    <div
-      className={cn(
-        'py-1.5 px-2 flex items-center gap-2 rounded-lg border border-border-specific-panel-outline font-semibold bg-surface-base-secondary',
-        filled && 'bg-surface-base-secondary-tertiary',
-        className
-      )}
-    >
-      {icon} {String(value)}
-    </div>
+const DetailsBadge = ({ value, icon, filled = false, className, href }: DetailsBadgeProps) => {
+  const badgeClassName = cn(
+    'py-1.5 px-2 flex items-center gap-2 rounded-lg border border-border-specific-panel-outline font-semibold bg-surface-base-secondary',
+    filled && 'bg-surface-base-secondary',
+    className
   )
+
+  const content = (
+    <>
+      {icon} {String(value)}
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link to={href} className={badgeClassName}>
+        {content}
+      </Link>
+    )
+  }
+
+  return <div className={badgeClassName}>{content}</div>
 }
 
 export default DetailsBadge

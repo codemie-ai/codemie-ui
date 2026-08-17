@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
 import Button from '@/components/Button'
 import Spinner from '@/components/Spinner'
 import { ButtonSize } from '@/constants'
+import { PROJECTS_MANAGEMENT_DETAIL } from '@/constants/routes'
 import { useFeatureFlag, useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import ProjectModal, {
@@ -31,6 +32,7 @@ import { userStore } from '@/store/user'
 import { ProjectType } from '@/types/entity/project'
 import { ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
+import { formatCurrency } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
@@ -38,11 +40,9 @@ import { displayValue } from '@/utils/utils'
 
 import ProjectBudgetsSection from './projectsManagement/ProjectBudgetsSection'
 import ProjectMembersManager from './projectsManagement/ProjectMembersManager'
+import { goBackProjectDetails } from './utils/goBackAdministration'
 
 const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
-
-const formatCurrency = (value: number | null | undefined) =>
-  value == null ? '-' : `$${value.toFixed(2)}`
 
 const ProjectDetailsPage = () => {
   const router = useVueRouter()
@@ -83,8 +83,8 @@ const ProjectDetailsPage = () => {
   }, [loadProject])
 
   const handleBack = useCallback(() => {
-    router.push({ name: 'projects-management' })
-  }, [router])
+    goBackProjectDetails()
+  }, [])
 
   const handleCostCenterOpen = useCallback(() => {
     if (!project?.cost_center_id) return
@@ -117,7 +117,7 @@ const ProjectDetailsPage = () => {
 
       if (updatedProject.name !== project.name) {
         router.push({
-          name: 'projects-management-detail',
+          name: PROJECTS_MANAGEMENT_DETAIL,
           params: { projectName: updatedProject.name },
         })
       } else {

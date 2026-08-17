@@ -17,6 +17,8 @@ import {
   useFloating,
   offset,
   shift,
+  flip,
+  size,
   useHover,
   useDismiss,
   useInteractions,
@@ -32,11 +34,12 @@ import DetailsBadge from './DetailsBadge'
 
 export interface BadgeValue {
   value: string | number | boolean
+  href?: string
   icon?: ReactNode
   onClick?: () => void
 }
 
-type BadgeItem = string | number | boolean | BadgeValue
+export type BadgeItem = string | number | boolean | BadgeValue
 
 interface DetailsBadgesProps {
   label?: string
@@ -74,7 +77,17 @@ const DetailsBadges = ({
     open: isOpen,
     onOpenChange: setIsOpen,
     placement: 'top',
-    middleware: [offset(8), shift({ padding: 8 })],
+    middleware: [
+      offset(8),
+      flip({ padding: 8 }),
+      shift({ padding: 8 }),
+      size({
+        padding: 8,
+        apply: ({ availableHeight, elements }) => {
+          elements.floating.style.maxHeight = `${Math.max(availableHeight, 0)}px`
+        },
+      }),
+    ],
     whileElementsMounted: autoUpdate,
   })
 
@@ -107,7 +120,7 @@ const DetailsBadges = ({
           {displayedItems.map((item, index) => {
             const badgeProps = isBadgeValue(item)
               ? item
-              : { value: item, icon: undefined, onClick: undefined }
+              : { value: item, icon: undefined, href: undefined, onClick: undefined }
 
             return (
               <DetailsBadge
@@ -116,6 +129,7 @@ const DetailsBadges = ({
                 className={badgeClassName}
                 value={badgeProps.value}
                 icon={badgeProps.icon}
+                href={badgeProps.href}
               />
             )
           })}
@@ -136,7 +150,7 @@ const DetailsBadges = ({
                     ref={refs.setFloating}
                     style={floatingStyles}
                     {...getFloatingProps()}
-                    className="flex flex-col gap-1 bg-surface-base-secondary border border-border-structural rounded-lg shadow-lg p-2"
+                    className="flex flex-col gap-1 overflow-y-auto bg-surface-base-secondary border border-border-structural rounded-lg shadow-lg p-2"
                   >
                     {remainingItems.map((item, index) => {
                       const badgeProps = isBadgeValue(item)
@@ -144,17 +158,14 @@ const DetailsBadges = ({
                         : { value: item, icon: undefined, onClick: undefined }
 
                       return (
-                        <div
+                        <DetailsBadge
                           key={index}
-                          className={cn(
-                            'py-1.5 px-2 flex items-center gap-2 rounded-lg border border-border-specific-panel-outline font-semibold text-xs',
-                            filled
-                              ? 'bg-surface-base-secondary-tertiary'
-                              : 'bg-surface-base-secondary'
-                          )}
-                        >
-                          {badgeProps.icon} {String(badgeProps.value)}
-                        </div>
+                          filled={filled}
+                          className="text-xs"
+                          value={badgeProps.value}
+                          icon={badgeProps.icon}
+                          href={badgeProps.href}
+                        />
                       )
                     })}
                   </div>

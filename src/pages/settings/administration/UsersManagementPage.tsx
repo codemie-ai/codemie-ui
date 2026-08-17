@@ -19,12 +19,14 @@ import { useSnapshot } from 'valtio'
 import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
 import RefreshSvg from '@/assets/icons/refresh.svg?react'
-import DetailsBadges from '@/components/details/DetailsBadges'
+import DetailsBadges, { BadgeItem } from '@/components/details/DetailsBadges'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Spinner from '@/components/Spinner'
 import Table from '@/components/Table'
 import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
+import { PROJECTS_MANAGEMENT_DETAIL } from '@/constants/routes'
 import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
+import { useRouter } from '@/hooks/useRouter'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import BudgetSpendCell from '@/pages/settings/administration/components/BudgetSpendCell'
 import { MAX_DISPLAYED_PROJECTS } from '@/pages/settings/administration/usersManagement/constants'
@@ -39,6 +41,9 @@ import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import BudgetAssignmentsModal from './components/BudgetAssignmentsModal'
 import ResetBudgetPopup from './usersManagement/components/popups/ResetBudgetPopup'
 import UserDetailsPopup from './usersManagement/components/popups/UserDetailsPopup'
+import UserProjectSpendingTable, {
+  clearSpendingCache,
+} from './usersManagement/components/UserProjectSpendingTable'
 import UsersManagementBulkActions from './usersManagement/components/UsersManagementBulkActions'
 import UsersManagementFilters from './usersManagement/components/UsersManagementFilters'
 import { useUsersManagementFilters } from './usersManagement/hooks/useUsersManagementFilters'
@@ -63,6 +68,7 @@ const BASE_COLUMN_DEFINITIONS: ColumnDefinition[] = [
 ]
 
 const UsersManagementPage: FC = () => {
+  const router = useRouter()
   const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const { user: currentUser } = useSnapshot(userStore)
   const { filters, handleFilterChange } = useUsersManagementFilters()
@@ -139,6 +145,7 @@ const UsersManagementPage: FC = () => {
   const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false)
   const [budgetUser, setBudgetUser] = useState<UserListItem | null>(null)
   const [resetBudgetUser, setResetBudgetUser] = useState<UserListItem | null>(null)
+  const [expandedRowIds, setExpandedRowIds] = useState<string[]>([])
 
   const handleOpenDetailsPopup = useCallback((user: UserListItem) => {
     setSelectedUser(user)
@@ -149,6 +156,15 @@ const UsersManagementPage: FC = () => {
     setIsDetailsPopupOpen(false)
     setSelectedUser(null)
   }, [])
+
+  const handleToggleExpand = useCallback((id: string) => {
+    setExpandedRowIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }, [])
+
+  const renderExpandedRow = useCallback(
+    (user: UserListItem) => <UserProjectSpendingTable userEmail={user.email} />,
+    []
+  )
 
   const loadUsers = useCallback(
     async (page: number, perPage: number, currentFilters: Record<string, any> = {}) => {
@@ -173,6 +189,7 @@ const UsersManagementPage: FC = () => {
   )
 
   const refresh = useCallback(() => {
+    clearSpendingCache()
     loadUsers(pagination.page, pagination.perPage, effectiveFilters)
     clearSelection()
   }, [pagination.page, pagination.perPage, effectiveFilters, loadUsers, clearSelection])
@@ -202,6 +219,7 @@ const UsersManagementPage: FC = () => {
   )
 
   const refreshFromFirstPage = useCallback(() => {
+    clearSpendingCache()
     loadUsers(0, pagination.perPage, effectiveFilters)
     clearSelection()
   }, [pagination.perPage, effectiveFilters, loadUsers, clearSelection])
@@ -257,8 +275,12 @@ const UsersManagementPage: FC = () => {
       },
 
       projects: (item: UserListItem) => {
-        const projectNames = item.projects.map((p) => ({
+        const projectNames: BadgeItem[] = item.projects.map((p) => ({
           value: `${p.name} (${p.is_project_admin ? 'admin' : 'user'})`,
+          href: router.resolve({
+            name: PROJECTS_MANAGEMENT_DETAIL,
+            params: { projectName: p.name },
+          }).fullPath,
         }))
 
         return (
@@ -368,6 +390,9 @@ const UsersManagementPage: FC = () => {
               onPaginationChange={handlePageChange}
               perPageOptions={DECIMAL_PAGINATION_OPTIONS}
               tableClassName="table-fixed"
+              expandedRowIds={canManageBudgets ? expandedRowIds : undefined}
+              onToggleExpand={canManageBudgets ? handleToggleExpand : undefined}
+              renderExpandedRow={canManageBudgets ? renderExpandedRow : undefined}
             />
             {isAdmin && isSelectAllLoading && (
               <div className="absolute top-0 left-0 right-0 bottom-[80px] flex items-center justify-center bg-surface-base-primary/80 backdrop-blur-sm rounded-lg z-[60]">

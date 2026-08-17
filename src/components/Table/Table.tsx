@@ -18,13 +18,35 @@ import React, { memo, MouseEvent, useCallback, useMemo } from 'react'
 
 import Spinner from '@/components/Spinner'
 import { useSidebarOffsetClass } from '@/hooks/useSidebarOffsetClass'
-import { ColumnDefinition, SortState, TableItem } from '@/types/table'
+import {
+  ColumnDefinition,
+  DefinitionTypes,
+  SortState,
+  TableItem,
+  TableVariant,
+} from '@/types/table'
 
 import EmptyList from './EmptyList'
 import TableCell from './TableCell'
 import TableColHeader, { SelectionProps, SortProps } from './TableColHeader'
 import { propsAreEqual } from './utils'
 import Pagination, { PaginationProps } from '../Pagination/Pagination'
+
+const NESTED_CLASSES = [
+  '!mt-0 !mb-0 table-fixed',
+  // Header: same colour as a row, knocked back, and stripped of the card's outer edges.
+  '[&_thead]:bg-transparent [&_th]:bg-surface-base-secondary/70 [&_th]:rounded-none',
+  '[&_th]:border-t-0 [&_th]:border-l-0 [&_th]:border-r-0 [&_th]:!py-3',
+  '[&_th]:border-b-border-structural/60',
+  // Body: transparent so the expansion panel's own background shows through uniformly.
+  '[&_td]:bg-transparent [&_td]:border-l-0 [&_td]:border-r-0 [&_td]:!py-3',
+  '[&_td]:border-b-border-structural/50 [&_tr:last-child_td]:border-b-0',
+].join(' ')
+
+const TABLE_VARIANT_CLASSES: Record<TableVariant, string> = {
+  default: '',
+  nested: NESTED_CLASSES,
+}
 
 export interface TableProps<T = TableItem> {
   items: Array<T> | ReadonlyArray<T>
@@ -43,11 +65,16 @@ export interface TableProps<T = TableItem> {
   footer?: React.ReactNode
   className?: string
   tableClassName?: string
+  variant?: TableVariant
 
   selected?: T[] | null
   onSelectRow?: (value: T[]) => void
   isAllSelected?: boolean
   onSelectAllChange?: (checked: boolean) => void
+
+  expandedRowIds?: ReadonlyArray<string>
+  onToggleExpand?: (id: string) => void
+  renderExpandedRow?: (item: T) => React.ReactNode
 }
 
 const Table = <T,>({
@@ -67,11 +94,16 @@ const Table = <T,>({
   footer,
   className,
   tableClassName,
+  variant = 'default',
 
   selected,
   onSelectRow,
   isAllSelected = false,
   onSelectAllChange,
+
+  expandedRowIds,
+  onToggleExpand,
+  renderExpandedRow,
 }: TableProps<T>): React.ReactNode => {
   const isLazyMode = !!pagination?.totalCount && !!onSelectAllChange
 
@@ -93,6 +125,19 @@ const Table = <T,>({
   const sortProps: SortProps | undefined = useMemo(
     () => (sort ? { sort, onSort } : undefined),
     [sort, onSort]
+  )
+
+  const isExpandable = !!onToggleExpand && !!renderExpandedRow
+
+  const renderedColumns: Array<ColumnDefinition> = useMemo(
+    () =>
+      isExpandable
+        ? [
+            { key: 'expand', type: DefinitionTypes.Expand, headClassNames: 'w-[40px]' },
+            ...columnDefinitions,
+          ]
+        : columnDefinitions,
+    [isExpandable, columnDefinitions]
   )
 
   const paginationProps = {
@@ -142,19 +187,19 @@ const Table = <T,>({
         <table
           className={cn(
             'mt-4 border-separate border-spacing-0 w-full text-[12px] leading-tight',
-            {},
+            TABLE_VARIANT_CLASSES[variant],
             tableClassName,
             className
           )}
         >
           <thead className="bg-surface-base-tertiary text-text-primary sticky top-0 z-20">
             <tr className="font-semibold border-y">
-              {columnDefinitions.map((column, i) => (
+              {renderedColumns.map((column, i) => (
                 <TableColHeader
                   key={column.key}
                   column={column}
                   isFirst={i === 0}
-                  isLast={i === columnDefinitions.length - 1}
+                  isLast={i === renderedColumns.length - 1}
                   selectionProps={selectionProps}
                   sortProps={sortProps}
                 />
@@ -163,7 +208,7 @@ const Table = <T,>({
           </thead>
           <tbody>
             {!items.length ? (
-              <EmptyList colSpan={columnDefinitions.length} />
+              <EmptyList colSpan={renderedColumns.length} />
             ) : (
               items.map((value, rowIndex) => {
                 const idField = idPath ?? 'id'
@@ -173,35 +218,55 @@ const Table = <T,>({
 
                 if (value._meta?.customRender) return value._meta?.customRender(value)
 
+                const isExpanded = isExpandable && !!expandedRowIds?.includes(String(idValue))
+                const isLastRow = items.length - 1 === rowIndex
+                const isExpansionLast = isLastRow && isExpanded && !footer
+
                 return (
-                  <tr
-                    onClick={(e) => handleRowClick(value, e)}
-                    key={rowKey}
-                    className={cn(
-                      onSelectRow &&
-                        !isSelected &&
-                        '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
-                      isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer'
+                  <React.Fragment key={rowKey}>
+                    <tr
+                      onClick={(e) => handleRowClick(value, e)}
+                      className={cn(
+                        onSelectRow &&
+                          !isSelected &&
+                          '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
+                        isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer'
+                      )}
+                    >
+                      {renderedColumns.map((definition, colIndex) => (
+                        <TableCell
+                          value={value}
+                          index={isExpandable ? colIndex - 1 : colIndex}
+                          key={definition.key}
+                          definition={definition}
+                          colIndex={colIndex}
+                          isLastRow={isLastRow && !isExpanded}
+                          hasFooter={!!footer}
+                          columnsLength={renderedColumns.length}
+                          customRender={customRenderColumns[definition.key]}
+                          shrink={definition.shrink}
+                          noWrap={noWrap}
+                          isSelected={isSelected}
+                          onSelect={() => handleRowSelect(value)}
+                          isExpanded={isExpanded}
+                          onToggleExpand={() => onToggleExpand?.(String(idValue))}
+                        />
+                      ))}
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td
+                          colSpan={renderedColumns.length}
+                          className={cn(
+                            'bg-surface-base-secondary/40 border-b border-l border-r border-border-structural p-0',
+                            isExpansionLast && 'rounded-b-lg overflow-hidden'
+                          )}
+                        >
+                          {renderExpandedRow?.(value)}
+                        </td>
+                      </tr>
                     )}
-                  >
-                    {columnDefinitions.map((definition, colIndex) => (
-                      <TableCell
-                        value={value}
-                        index={colIndex}
-                        key={definition.key}
-                        definition={definition}
-                        colIndex={colIndex}
-                        isLastRow={items.length - 1 === rowIndex}
-                        hasFooter={!!footer}
-                        columnsLength={columnDefinitions.length}
-                        customRender={customRenderColumns[definition.key]}
-                        shrink={definition.shrink}
-                        noWrap={noWrap}
-                        isSelected={isSelected}
-                        onSelect={() => handleRowSelect(value)}
-                      />
-                    ))}
-                  </tr>
+                  </React.Fragment>
                 )
               })
             )}

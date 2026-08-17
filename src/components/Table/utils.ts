@@ -45,6 +45,30 @@ function areItemsPrimitiveEqual<T>(a: T[], b: T[]): boolean {
   return true
 }
 
+// Props compared by reference. Callers are expected to memoize callbacks.
+const referenceKeys = [
+  'innerPagination',
+  'loading',
+  'perPageOptions',
+  'idPath',
+  'customRenderColumns',
+  'onSort',
+  'onPaginationChange',
+  'selected',
+  'isAllSelected',
+  'onToggleExpand',
+  'renderExpandedRow',
+  'variant',
+] as const satisfies ReadonlyArray<keyof TableProps<unknown>>
+
+// Props compared by value, since callers commonly pass a fresh object/array each render.
+const deepKeys = [
+  'sort',
+  'pagination',
+  'columnDefinitions',
+  'expandedRowIds',
+] as const satisfies ReadonlyArray<keyof TableProps<unknown>>
+
 export const propsAreEqual = <T extends Record<string, unknown>>(
   prevProps: Readonly<TableProps<unknown>>,
   nextProps: Readonly<TableProps<unknown>>
@@ -56,17 +80,35 @@ export const propsAreEqual = <T extends Record<string, unknown>>(
     return false
   }
 
-  if (!isEqual(prevProps.sort, nextProps.sort)) return false
-  if (prevProps.innerPagination !== nextProps.innerPagination) return false
-  if (prevProps.loading !== nextProps.loading) return false
-  if (!isEqual(prevProps.pagination, nextProps.pagination)) return false
-  if (prevProps.perPageOptions !== nextProps.perPageOptions) return false
-  if (prevProps.idPath !== nextProps.idPath) return false
-  if (!isEqual(prevProps.columnDefinitions, nextProps.columnDefinitions)) return false
-  if (prevProps.customRenderColumns !== nextProps.customRenderColumns) return false
-  if (prevProps.onSort !== nextProps.onSort) return false
-  if (prevProps.onPaginationChange !== nextProps.onPaginationChange) return false
-  if (prevProps.selected !== nextProps.selected) return false
-  if (prevProps.isAllSelected !== nextProps.isAllSelected) return false
+  if (referenceKeys.some((key) => prevProps[key] !== nextProps[key])) return false
+
+  if (deepKeys.some((key) => !isEqual(prevProps[key], nextProps[key]))) return false
+
   return true
 }
+
+// Props deliberately excluded from the comparison above. `items` is compared
+// specially at the top of propsAreEqual; the rest are static per call site in
+// practice. Listing them explicitly is what makes the guard below meaningful.
+const ignoredKeys = [
+  'items',
+  'embedded',
+  'noWrap',
+  'footer',
+  'className',
+  'tableClassName',
+  'onSelectRow',
+  'onSelectAllChange',
+] as const satisfies ReadonlyArray<keyof TableProps<unknown>>
+
+// Exhaustiveness guard. propsAreEqual compares props against an explicit
+// whitelist, so any prop missing from all three lists is silently treated as
+// "equal" and can block re-renders — a bug that is invisible at runtime.
+// If you add a prop to TableProps, add it to referenceKeys, deepKeys, or
+// ignoredKeys above, or this line fails to compile.
+type ComparedKeys =
+  | (typeof referenceKeys)[number]
+  | (typeof deepKeys)[number]
+  | (typeof ignoredKeys)[number]
+type MissingKeys = Exclude<keyof TableProps<unknown>, ComparedKeys>
+export type AssertAllPropsHandled<K extends never = MissingKeys> = K

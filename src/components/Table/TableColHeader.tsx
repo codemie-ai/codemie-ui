@@ -50,7 +50,8 @@ const TableColHeader = <T,>({
   sortProps,
 }: TableColHeaderProps<T>) => {
   const isSelectionColumn = column.type === DefinitionTypes.Selection
-  const isSortableColumn = sortProps && column.sortable
+  const isExpandColumn = column.type === DefinitionTypes.Expand
+  const isSortableColumn = sortProps && column.sortable && !isExpandColumn
 
   const getIsAllPageSelected = () => {
     if (!selectionProps || selectionProps.items.length === 0) return false
@@ -82,14 +83,17 @@ const TableColHeader = <T,>({
 
   const headerClassName = cn(
     column.headClassNames,
-    'text-left px-4 py-2.5 border-border-structural border-t border-b',
+    'text-left border-border-structural border-t border-b',
+    'px-4 py-2.5',
     column.headerNoWrap !== false ? 'text-nowrap' : 'whitespace-normal break-words',
     {
       'rounded-tl-lg border-l': isFirst,
       'rounded-tr-lg border-r': isLast,
-      'pr-0.5 w-[1%]': isSelectionColumn,
+      'pr-0.5 w-[1%]': isSelectionColumn || isExpandColumn,
     }
   )
+
+  if (isExpandColumn) return <th key={column.key} className={headerClassName} />
 
   return (
     <th key={column.key} className={headerClassName}>

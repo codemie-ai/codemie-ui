@@ -28,6 +28,7 @@ import { HELP_MODELS_ROUTE } from '@/pages/help/ModelsCatalog'
 import { getBudgetCategoryLabel, BudgetCategory } from '@/types/entity/budget'
 import { BudgetSyncStatus, ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
+import { formatCurrency } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 
 import { calculateHardLimitPercentage, getHardLimitSpendColor } from './budgetSpending'
@@ -82,14 +83,6 @@ const SYNC_STATUS_CONFIG: Record<
     tooltip: 'Provider sync failed — budget limits may not be enforced',
     className: 'text-text-error',
   },
-}
-
-const formatCurrency = (value: number | null | undefined): string => {
-  if (value == null) return '-'
-  return `$${value.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
 }
 
 const SyncStatusBadge: FC<{ status: BudgetSyncStatus | null | undefined }> = ({ status }) => {

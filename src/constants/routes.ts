@@ -64,6 +64,11 @@ export const EDIT_SKILL = 'edit-skill'
 export const SETTINGS_TEAMS_BOT = 'teams-bot'
 export const SETTINGS_TEAMS_BOT_PROJECT = 'teams-bot-project'
 
+export const PROJECTS_MANAGEMENT = 'projects-management'
+export const PROJECTS_MANAGEMENT_DETAIL = 'projects-management-detail'
+export const ADMINISTRATION_USERS = 'administration-users'
+export const COST_CENTERS_MANAGEMENT_DETAIL = 'cost-centers-management-detail'
+
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES = 'aws-agentcore-runtimes-settings'
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES_LIST = 'aws-agentcore-runtimes-settings-detail'
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES_RUNTIME = 'aws-agentcore-runtimes-settings-runtime'

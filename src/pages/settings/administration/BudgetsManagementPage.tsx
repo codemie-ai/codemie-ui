@@ -37,6 +37,7 @@ import {
   getBudgetCategoryLabel,
 } from '@/types/entity/budget'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import { formatCurrency } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
@@ -93,9 +94,6 @@ const columnDefinitions: ColumnDefinition[] = [
 ]
 
 const categoryFilterOptions = [{ label: 'All categories', value: '' }, ...BUDGET_CATEGORY_OPTIONS]
-
-const formatCurrency = (value: number): string =>
-  `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const renderBudgetNameCell = (item: Budget) => (
   <span id={`budget-mgmt-name-${item.budget_id}`}>{item.name}</span>

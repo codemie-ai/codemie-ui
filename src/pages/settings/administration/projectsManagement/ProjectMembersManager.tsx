@@ -32,6 +32,7 @@ import AddUserModal, {
 } from '@/pages/settings/administration/components/AddUserModal'
 import ProjectMembersBulkActions from '@/pages/settings/administration/components/projectsManagement/ProjectMembersBulkActions'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
+import { analyticsStore } from '@/store/analytics'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { userStore } from '@/store/user'
 import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
@@ -43,7 +44,9 @@ import {
 } from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { UserListItem } from '@/types/entity/user'
+import { getCategorySpend, ProjectMemberSpendingRow } from '@/types/entity/userProjectSpending'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import { formatCurrency, formatSpend } from '@/utils/currency'
 import toaster from '@/utils/toaster'
 
 import MemberAllocationOverrideModal from './components/MemberAllocationOverrideModal'
@@ -55,26 +58,20 @@ import ProjectMembersFilters, {
 
 const BUDGET_CATEGORIES: BudgetCategory[] = ['platform', 'cli', 'premium_models']
 
-const formatCurrency = (value: number | null | undefined): string => {
-  if (value == null) return '-'
-  return `$${value.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
-}
-
 interface UserBudgetsCellProps {
   user: UserListItem
   budgetAllocationLookup: Record<
     string,
     Record<BudgetCategory, ProjectBudgetMemberAllocation>
   > | null
+  spendingRow: ProjectMemberSpendingRow | undefined
   onOverride: (userId: string, category: BudgetCategory) => void
 }
 
 const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
   user,
   budgetAllocationLookup,
+  spendingRow,
   onOverride,
 }) => {
   if (!budgetAllocationLookup) return null
@@ -104,6 +101,7 @@ const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
               {getBudgetCategoryLabel(cat)}
             </span>
             <span className={isFixed ? 'text-text-warning' : 'text-text-primary'}>
+              {formatSpend(spendingRow ? getCategorySpend(spendingRow, cat) : null)} /{' '}
               {formatCurrency(alloc.allocated_max_budget)}
               {isFixed && <span className="ml-1 text-text-warning">★</span>}
             </span>
@@ -151,7 +149,7 @@ const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnD
 
   let roleColumnWidth = 'w-[48%]'
   if (canManage && showBudgets) {
-    roleColumnWidth = 'w-[18%]'
+    roleColumnWidth = 'w-[22%]'
   } else if (canManage) {
     roleColumnWidth = 'w-[28%]'
   } else if (showBudgets) {
@@ -173,13 +171,16 @@ const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnD
     }
   )
 
+  let actionsColumnWidth = 'w-[12%]'
+
   if (showBudgets) {
     columns.push({
       key: 'budgets',
       label: 'Budget Allocations',
       type: DefinitionTypes.Custom,
-      headClassNames: canManage ? 'w-[42%]' : 'w-[48%]',
+      headClassNames: canManage ? 'w-[44%]' : 'w-[48%]',
     })
+    actionsColumnWidth = 'w-[6%]'
   }
 
   if (canManage) {
@@ -187,7 +188,7 @@ const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnD
       key: 'actions',
       label: '',
       type: DefinitionTypes.Custom,
-      headClassNames: 'w-[12%]',
+      headClassNames: actionsColumnWidth,
     })
   }
 
@@ -227,6 +228,10 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     userName: string | null
     category: BudgetCategory
   } | null>(null)
+  const [spendingByUserId, setSpendingByUserId] = useState<
+    Record<string, ProjectMemberSpendingRow>
+  >({})
+  const [spendingLoading, setSpendingLoading] = useState(false)
 
   const tableContainerRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -337,6 +342,38 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   useEffect(() => {
     loadUsers()
   }, [loadUsers])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!showBudgets) {
+      setSpendingLoading(false)
+      return () => {
+        cancelled = true
+      }
+    }
+
+    setSpendingLoading(true)
+
+    const loadSpending = async () => {
+      try {
+        const result = await analyticsStore.fetchProjectMemberSpending(project.name)
+        if (cancelled) return
+        const rows = (result?.data?.rows as unknown as ProjectMemberSpendingRow[]) ?? []
+        setSpendingByUserId(Object.fromEntries(rows.map((row) => [row.user_id, row])))
+      } catch (error) {
+        console.error('Failed to fetch project member spending:', error)
+        if (!cancelled) setSpendingByUserId({})
+      } finally {
+        if (!cancelled) setSpendingLoading(false)
+      }
+    }
+
+    loadSpending()
+    return () => {
+      cancelled = true
+    }
+  }, [project.name, showBudgets])
 
   const handlePageChange = useCallback(
     async (page: number, newPerPage?: number) => {
@@ -527,6 +564,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         <UserBudgetsCell
           user={user}
           budgetAllocationLookup={budgetAllocationLookup}
+          spendingRow={spendingByUserId[user.id]}
           onOverride={(userId, category) =>
             setOverrideContext({ userId, userName: user.name, category })
           }
@@ -572,6 +610,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       handleRoleChange,
       handleDeleteUser,
       budgetAllocationLookup,
+      spendingByUserId,
     ]
   )
 
@@ -625,7 +664,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         </div>
 
         <div ref={tableContainerRef} className="overflow-y-auto show-scroll min-h-0 mb-5 relative">
-          {loading ? (
+          {loading || spendingLoading ? (
             <div className="flex items-center justify-center min-h-[220px]">
               <Spinner inline rootClassName="min-h-0" />
             </div>

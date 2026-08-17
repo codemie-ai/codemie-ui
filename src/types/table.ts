@@ -21,7 +21,10 @@ export enum DefinitionTypes {
   RadioGroup = 'radioGroup',
   Custom = 'custom',
   Selection = 'selection',
+  Expand = 'expand',
 }
+
+export type TableVariant = 'default' | 'nested'
 
 export interface SortState {
   sortKey?: string

@@ -126,6 +126,8 @@ interface Analytics {
     type: TabularMetricType,
     params?: AnalyticsPaginatedRequestParams & { config?: AiAdoptionConfig }
   ) => Promise<TabularResponse | null>
+  fetchUserProjectSpending: (userEmail: string) => Promise<TabularResponse | null>
+  fetchProjectMemberSpending: (projectName: string) => Promise<TabularResponse | null>
   fetchLeaderboardSeasons: (
     view: Exclude<LeaderboardView, 'current'>
   ) => Promise<LeaderboardSeason[]>
@@ -486,6 +488,25 @@ export const analyticsStore = proxy<Analytics>({
       `Failed to fetch ${type} data`,
       { withCancellation: true }
     )
+  },
+
+  async fetchUserProjectSpending(userEmail: string) {
+    const type = TabularMetricType.USER_PROJECT_SPENDING
+
+    return fetchWithState<TabularResponse>(
+      this,
+      `${type}:${userEmail}`,
+      `v1/analytics/${type}`,
+      { users: [userEmail] },
+      `Failed to fetch ${type} data`
+    )
+  },
+
+  /** Per-member spending inside one project (project details Spending column). */
+  async fetchProjectMemberSpending(projectName: string) {
+    return this.fetchTabularData(TabularMetricType.PROJECT_MEMBER_SPENDING, {
+      projects: [projectName],
+    })
   },
 
   async fetchLeaderboardProjects() {

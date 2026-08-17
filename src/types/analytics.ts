@@ -243,6 +243,8 @@ export enum TabularMetricType {
   LEADERBOARD_DIMENSIONS = 'leaderboard/dimensions',
   LEADERBOARD_TOP_PERFORMERS = 'leaderboard/top-performers',
   LEADERBOARD_SNAPSHOTS = 'leaderboard/snapshots',
+  USER_PROJECT_SPENDING = 'user-project-spending',
+  PROJECT_MEMBER_SPENDING = 'project-member-spending',
 }
 
 export enum OverviewMetricType {

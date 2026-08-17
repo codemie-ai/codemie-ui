@@ -17,6 +17,7 @@ import { FC } from 'react'
 
 import { getHardLimitSpendColor } from '@/pages/settings/administration/projectsManagement/components/budgetSpending'
 import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
+import { formatCurrency, formatSpend } from '@/utils/currency'
 
 const BUDGET_CATEGORY_ORDER: BudgetCategory[] = ['platform', 'cli', 'premium_models']
 
@@ -31,15 +32,6 @@ export interface BudgetSpendCellItem {
 interface BudgetSpendCellProps {
   items?: BudgetSpendCellItem[] | null
 }
-
-const formatCurrency = (value: number): string =>
-  `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-
-const formatSpend = (value: number | null | undefined): string =>
-  value == null ? '-' : formatCurrency(value)
-
-const formatBudget = (value: number | null | undefined): string =>
-  value == null ? '-' : formatCurrency(value)
 
 const BudgetSpendCell: FC<BudgetSpendCellProps> = ({ items }) => {
   const budgets = [...(items ?? [])].sort(
@@ -73,7 +65,7 @@ const BudgetSpendCell: FC<BudgetSpendCellProps> = ({ items }) => {
           className="whitespace-nowrap text-text-primary"
           style={totalColor ? { color: totalColor } : undefined}
         >
-          {totalSpend} / {formatBudget(hasBudgetLimit ? totalBudgetRaw : null)}
+          {totalSpend} / {formatSpend(hasBudgetLimit ? totalBudgetRaw : null)}
         </span>
       </div>
       {budgets.map((budget) => {
@@ -96,7 +88,7 @@ const BudgetSpendCell: FC<BudgetSpendCellProps> = ({ items }) => {
               className="text-text-primary whitespace-nowrap"
               style={budgetColor ? { color: budgetColor } : undefined}
             >
-              {formatSpend(budget.current_spending)} / {formatBudget(budget.max_budget)}
+              {formatSpend(budget.current_spending)} / {formatSpend(budget.max_budget)}
             </span>
           </div>
         )

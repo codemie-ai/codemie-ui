@@ -46,6 +46,7 @@ import { userStore } from '@/store/user'
 import { BudgetCategory, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
 import { Project, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
+import { formatCurrency, formatSpend } from '@/utils/currency'
 import { formatProjectLabel } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
@@ -79,12 +80,6 @@ const budgetCategoryFilterOptions = [
   { label: 'All categories', value: '' },
   ...BUDGET_CATEGORY_OPTIONS,
 ]
-
-const formatCurrency = (value: number): string =>
-  `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-
-const formatSpend = (value: number | null | undefined): string =>
-  value == null ? '-' : formatCurrency(value)
 
 const calculateTotalAssignments = (project: Project): number => {
   const c = project.counters
