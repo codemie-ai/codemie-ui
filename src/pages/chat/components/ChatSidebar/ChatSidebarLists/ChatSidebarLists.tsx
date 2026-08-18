@@ -168,6 +168,12 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
       type="button"
       title="Create Folder"
       className="flex items-center cursor-pointer"
+      onKeyDown={(e) => {
+        // This button renders inside the accordion's header action, which
+        // preventDefault()s Enter/Space to toggle the tab — that also cancels the
+        // button's own activation, so the key must not reach it.
+        if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
+      }}
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
