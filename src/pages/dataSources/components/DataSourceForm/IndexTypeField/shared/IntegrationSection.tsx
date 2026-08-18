@@ -24,6 +24,7 @@ import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationP
 import { userSettingsStore } from '@/store/userSettings'
 import { Setting } from '@/types/entity/setting'
 import toaster from '@/utils/toaster'
+import { cn } from '@/utils/utils'
 
 interface IntegrationSectionProps {
   hasNoSettings: boolean
@@ -62,6 +63,9 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const isMountedRef = useRef(true)
+  // When IntegrationSelectDropdown renders the "Add User Integration" button path the
+  // flex-1 wrapper must not fill all remaining width — that pushes Refresh far right.
+  const showAddButton = !isDropdownShown && !(isRequired && hasNoSettings)
 
   useEffect(() => {
     return () => {
@@ -89,7 +93,7 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
     <>
       <div className="mt-3 mb-4">
         <div className="flex items-end gap-2">
-          <div className="flex-1">
+          <div className={cn(!showAddButton && 'flex-1')}>
             <Controller
               name="setting_id"
               control={control}
@@ -107,6 +111,7 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
                     placeholder={integrationPlaceholder}
                     addButtonLabel="Add User Integration"
                     selectClassName="max-w-full w-full"
+                    buttonClassName="h-8 ml-0"
                     onChange={(setting) => settingField.onChange(setting?.id)}
                     onAddSettingClick={onOpenIntegrationPopup}
                     disabled={isRequired && hasNoSettings}
@@ -121,7 +126,7 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
             onClick={handleRefresh}
             disabled={isRefreshing}
             aria-label="Refresh integrations"
-            className="!h-8 shrink-0"
+            className="h-8 shrink-0"
           >
             <RefreshSvg /> Refresh
           </Button>

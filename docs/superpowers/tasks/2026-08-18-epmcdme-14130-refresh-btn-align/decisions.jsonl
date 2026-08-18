@@ -1,0 +1,3 @@
+{"gate_id":"spec.approved","decision":"approve","mode":"hitl","timestamp":"2026-08-18T00:00:00Z","artifact":{"kind":"spec","path":"docs/superpowers/tasks/2026-08-18-epmcdme-14130-refresh-btn-align/spec.md"}}
+{"gate_id":"plan.approved","decision":"approve","mode":"hitl","timestamp":"2026-08-18T00:00:00Z","artifact":{"kind":"plan","path":"docs/superpowers/tasks/2026-08-18-epmcdme-14130-refresh-btn-align/plan.md"}}
+{"gate_id":"code-review.final","decision":"approve","mode":"hitl","timestamp":"2026-08-18T00:00:00Z","artifact":{"kind":"diff","path":"docs/superpowers/tasks/2026-08-18-epmcdme-14130-refresh-btn-align/code-review.diff"}}

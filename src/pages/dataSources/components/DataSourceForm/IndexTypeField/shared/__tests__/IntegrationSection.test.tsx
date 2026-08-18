@@ -167,4 +167,26 @@ describe('IntegrationSection', () => {
       })
     })
   })
+
+  describe('button alignment heights', () => {
+    it('Refresh button carries h-8 class (not !h-8) for items-end alignment', () => {
+      render(<TestWrapper hasNoSettings={true} isDropdownShown={false} settings={[]} />)
+      const refreshBtn = screen.getByRole('button', { name: /refresh/i })
+      expect(refreshBtn).toHaveClass('h-8')
+      expect(refreshBtn).not.toHaveClass('!h-8')
+    })
+
+    it('Add User Integration button carries h-8 class to match Refresh button height', () => {
+      render(
+        <TestWrapper
+          hasNoSettings={true}
+          isDropdownShown={false}
+          settings={[]}
+          isRequired={false}
+        />
+      )
+      const addBtn = screen.getByRole('button', { name: /add user integration/i })
+      expect(addBtn).toHaveClass('h-8')
+    })
+  })
 })

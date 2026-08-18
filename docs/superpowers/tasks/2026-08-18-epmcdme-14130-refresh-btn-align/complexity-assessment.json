@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix Refresh button alignment regression in IntegrationSection caused by EPMCDME-10302 layout refactor, ensuring the button aligns correctly with IntegrationSelectDropdown across both render paths.",
+  "generated": "2026-08-18T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Root cause is well-identified (CSS specificity race between h-7 from ButtonSize.MEDIUM and !h-8 override, plus IntegrationSelectDropdown variable-height render paths), but the fix approach has two valid options: fix the !h-8 specificity or restructure the flex container for consistent alignment. One lightweight decision needed before coding."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The !h-8 Tailwind important override is the only such pattern in the codebase and is documented as fragile (once already required a size change from SMALL to MEDIUM). The two render paths in IntegrationSelectDropdown (label+dropdown vs button-only) mean the chosen fix must handle both without introducing a new visual inconsistency. Change is purely CSS/layout and trivially reversible."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

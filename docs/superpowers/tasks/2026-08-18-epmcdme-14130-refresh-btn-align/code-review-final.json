@@ -1,0 +1,41 @@
+{
+  "decision": "approve",
+  "rationale": "Two-line CSS class change in IntegrationSection.tsx fixing a visual regression from EPMCDME-10302. Blind lens: no logic changes, no state, no API surface — pure Tailwind class adjustments. Edge-case lens: showAddButton condition mirrors IntegrationSelectDropdown's render condition exactly (!isDropdownShown && !(isRequired && hasNoSettings)), so flex-1 is applied on the correct paths. ml-0 correctly overrides ml-auto via tailwind-merge v3 conflict resolution (confirmed by node -e test). h-8 (no !) correctly overrides h-7 via tailwind-merge v3. Acceptance lens: both buttons left-aligned and same height in the Add button path; Select path layout unchanged. No regressions: 416 unit test files (4 516 tests) and 36 integration files (479 tests) green.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Add User Integration and Refresh buttons are left-aligned",
+      "status": "pass",
+      "notes": "showAddButton=true removes flex-1 from wrapper; ml-0 overrides ml-auto on Add button. Both buttons sit together at the left edge."
+    },
+    {
+      "criterion": "Both buttons have the same height (32 px)",
+      "status": "pass",
+      "notes": "h-8 on Refresh button (tailwind-merge resolves h-7 h-8 → h-8); buttonClassName='h-8 ml-0' forwarded to Add button (same resolution)."
+    },
+    {
+      "criterion": "Select/dropdown path (all non-Git datasources) unaffected",
+      "status": "pass",
+      "notes": "showAddButton=false keeps flex-1; dropdown fills row width as before. No visual change for Confluence, Jira, SharePoint, etc."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit format (EPMCDME-XXXX: Capital sentence)",
+      "status": "pass",
+      "notes": "All commits follow the pattern enforced by CI."
+    },
+    {
+      "standard": "No !important antipattern",
+      "status": "pass",
+      "notes": "!h-8 replaced with h-8; tailwind-merge v3 handles the h-7/h-8 conflict correctly without !important."
+    },
+    {
+      "standard": "Lint, typecheck, tests",
+      "status": "pass",
+      "notes": "npm run lint: 0 errors. npm run typecheck: 0 errors. All test suites green."
+    }
+  ],
+  "findings": []
+}
