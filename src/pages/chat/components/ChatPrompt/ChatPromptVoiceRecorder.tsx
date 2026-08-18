@@ -117,12 +117,20 @@ const ChatPromptVoiceRecorder: FC<ChatPromptVoiceRecorderProps> = ({ onTextReady
   return (
     <button
       type="button"
+      aria-label={isUserSpeaking ? 'Stop listening' : 'Use voice'}
       onClick={toggleRecording}
       className="relative focus:outline-none w-[30px] h-[30px] flex items-center justify-center"
     >
-      {isUserSpeaking ? <StopSvg className="text-text-accent" /> : <RecordSvg />}
+      {isUserSpeaking ? (
+        <StopSvg aria-hidden="true" className="text-text-accent" />
+      ) : (
+        <RecordSvg aria-hidden="true" />
+      )}
       {isUserSpeaking && (
-        <div className="absolute left-0 border-4 border-text-accent rounded-full pulse-ring bg-transparent size-[30px]" />
+        <div
+          aria-hidden="true"
+          className="absolute left-0 border-4 border-text-accent rounded-full pulse-ring bg-transparent size-[30px]"
+        />
       )}
     </button>
   )

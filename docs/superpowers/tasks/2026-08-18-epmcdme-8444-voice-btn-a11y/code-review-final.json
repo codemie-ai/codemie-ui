@@ -1,0 +1,51 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three acceptance criteria pass. One major finding (CR-001): the pulse-ring animation <div> inside the button is not marked aria-hidden=\"true\". The diff correctly added aria-hidden to both SVG icons but missed this decorative element, leaving it inconsistent. While aria-label on the parent button overrides accessible-name computation in most screen readers, adding aria-hidden to the div is consistent with the approach used for the sibling SVGs and eliminates any residual AT noise. The fix is a one-liner. Three pre-existing issues are deferred (optimistic mic state before getUserMedia resolves, double-activation window during the async call, no aria-live for auto-stop after timeout) — all predate this diff and are out of scope for this accessibility ticket. 2 dismissed; 3 deferred.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "The 'Use voice' button has an accessible name: 'Use voice'",
+      "status": "pass",
+      "notes": "aria-label='Use voice' when isUserSpeaking is false; confirmed by test getByRole('button', { name: 'Use voice' })."
+    },
+    {
+      "criterion": "After activation, the screen reader announces 'Stop listening'",
+      "status": "pass",
+      "notes": "aria-label switches to 'Stop listening' when isUserSpeaking is true; confirmed by test findByRole('button', { name: 'Stop listening' })."
+    },
+    {
+      "criterion": "SVG icons inside the button are hidden from assistive technology",
+      "status": "pass",
+      "notes": "Both StopSvg and RecordSvg receive aria-hidden=\"true\", preventing double-announcement alongside the button label."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit format (git-workflow.md)",
+      "status": "pass",
+      "notes": "Commit subject 'EPMCDME-8444: Add accessible name to voice recorder button' follows the ticket-prefix convention."
+    },
+    {
+      "standard": "Accessibility patterns (accessibility-patterns.md)",
+      "status": "partial",
+      "notes": "aria-label on icon button and aria-hidden on decorative SVGs are correct per guide. Pulse-ring div is missing aria-hidden (see CR-001)."
+    },
+    {
+      "standard": "Security patterns",
+      "status": "na",
+      "notes": "No security-relevant changes in this diff."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/pages/chat/components/ChatPrompt/ChatPromptVoiceRecorder.tsx:~131",
+      "problem": "The pulse-ring animation <div> rendered inside the button when isUserSpeaking is true is not aria-hidden. The diff added aria-hidden to both SVG icons but missed this decorative element.",
+      "impact": "Some AT may traverse the button's accessible subtree despite the explicit aria-label, announcing an unlabelled child element or producing an extra pause. Inconsistent with the aria-hidden treatment applied to the sibling SVG icons in the same change.",
+      "recommendation": "Add aria-hidden=\"true\" to the pulse-ring div: <div aria-hidden=\"true\" className=\"absolute left-0 border-4 border-text-accent rounded-full pulse-ring bg-transparent size-[30px]\" />"
+    }
+  ]
+}

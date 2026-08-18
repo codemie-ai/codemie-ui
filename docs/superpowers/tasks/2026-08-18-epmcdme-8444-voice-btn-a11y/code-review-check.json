@@ -1,0 +1,48 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: aria-hidden=\"true\" added to the pulse-ring animation div. Fix-up diff is a targeted one-attribute addition with no logic changes, no new risk surface, and no new high-risk issues. All prior acceptance criteria remain passing.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "The 'Use voice' button has an accessible name: 'Use voice'",
+      "status": "pass",
+      "notes": "aria-label='Use voice' when idle."
+    },
+    {
+      "criterion": "After activation, the screen reader announces 'Stop listening'",
+      "status": "pass",
+      "notes": "aria-label='Stop listening' when isUserSpeaking is true."
+    },
+    {
+      "criterion": "SVG icons inside the button are hidden from assistive technology",
+      "status": "pass",
+      "notes": "Both SVGs have aria-hidden=\"true\"."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit format",
+      "status": "pass",
+      "notes": "Follows ticket-prefix convention."
+    },
+    {
+      "standard": "Accessibility patterns",
+      "status": "partial",
+      "notes": "Pulse-ring div was missing aria-hidden (CR-001) — now resolved in fix-up commit."
+    },
+    {
+      "standard": "Security patterns",
+      "status": "na",
+      "notes": "No security-relevant changes."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "aria-hidden=\"true\" added to the pulse-ring div in the fix-up commit."
+    }
+  ]
+}
