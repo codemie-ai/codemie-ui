@@ -168,6 +168,7 @@ export const getCredentialType = (name: string): string => {
   if (name === 'generic_confluence_tool') return 'confluence'
   if (type.includes('xwiki')) return 'xwiki'
   if (type.includes('xray')) return 'xray'
+  if (type.includes('sharepoint')) return 'sharepoint'
   if (name === 'github' || name === 'gitlab') return 'git'
   if (name === 'azure_devops_git' || type.includes('azure devops')) return 'azuredevops'
   if (name.startsWith('servicenow')) return 'servicenow'

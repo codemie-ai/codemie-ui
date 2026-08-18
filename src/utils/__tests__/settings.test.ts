@@ -361,6 +361,11 @@ describe('getCredentialType', () => {
     expect(getCredentialType('ReportPortal')).toBe('reportportal')
   })
 
+  it('returns sharepoint for tools containing sharepoint', () => {
+    expect(getCredentialType('sharepoint_site')).toBe('sharepoint')
+    expect(getCredentialType('SharePoint')).toBe('sharepoint')
+  })
+
   it('returns lowercase type for unrecognized tools', () => {
     expect(getCredentialType('CustomTool')).toBe('customtool')
   })
