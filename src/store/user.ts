@@ -79,7 +79,8 @@ interface UserStoreType {
       budgets?: string[]
       search?: string
       user_type?: UserType | null
-      platform_role?: ProjectRoleBE | null
+      platform_role?: ProjectRoleBE | 'auditor' | null
+      is_auditor?: boolean | null
       is_active?: boolean | null
     }
   }) => Promise<GetUsersResponse>
@@ -139,6 +140,7 @@ export const userStore = proxy<UserStoreType>({
           username: apiUser.username,
           isAdmin: apiUser.is_admin,
           isMaintainer: apiUser.is_maintainer ?? false,
+          isAuditor: apiUser.is_auditor ?? false,
           isAuthenticated: true,
           user_type: apiUser.user_type,
           applications: apiUser.applications || [],
@@ -175,6 +177,7 @@ export const userStore = proxy<UserStoreType>({
           username: apiUser.username,
           isAdmin: apiUser.is_admin,
           isMaintainer: apiUser.is_maintainer ?? false,
+          isAuditor: apiUser.is_auditor ?? false,
           isAuthenticated: true,
           user_type: apiUser.user_type,
           applications: apiUser.applications || [],
@@ -339,7 +342,7 @@ export const userStore = proxy<UserStoreType>({
       await userLoadPromise.catch(() => {})
     }
 
-    if (userStore.user?.isAdmin) {
+    if (userStore.user?.isAdmin || userStore.user?.isAuditor) {
       return userStore.getAdminProjects(query)
     }
 
@@ -427,7 +430,13 @@ export const userStore = proxy<UserStoreType>({
     if (filters.projects?.length) filtersJson.projects = filters.projects
     if (filters.budgets?.length) filtersJson.budgets = filters.budgets
     if (filters.user_type != null) filtersJson.user_type = filters.user_type
-    if (filters.platform_role != null) filtersJson.platform_role = filters.platform_role
+    if (filters.is_auditor != null) {
+      filtersJson.is_auditor = filters.is_auditor
+    } else if (filters.platform_role === 'auditor') {
+      filtersJson.is_auditor = true
+    } else if (filters.platform_role != null) {
+      filtersJson.platform_role = filters.platform_role
+    }
     if (filters.is_active != null) filtersJson.is_active = filters.is_active
     if (Object.keys(filtersJson).length > 0) {
       queryParams.append('filters', JSON.stringify(filtersJson))

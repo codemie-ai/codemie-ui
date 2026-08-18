@@ -56,7 +56,7 @@ function TestWrapper({
 }: Readonly<{
   hasNoSettings: boolean
   isDropdownShown: boolean
-  settings: typeof confluenceSetting[]
+  settings: (typeof confluenceSetting)[]
   isRequired?: boolean
 }>) {
   const {
@@ -94,12 +94,19 @@ describe('IntegrationSection', () => {
       const combobox = screen.getByRole('combobox')
       expect(combobox).toBeInTheDocument()
       expect(combobox.closest('.p-dropdown')).toHaveClass('p-disabled')
-      expect(screen.queryByRole('button', { name: /add user integration/i })).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /add user integration/i })
+      ).not.toBeInTheDocument()
     })
 
     it('keeps Add User Integration button accessible for optional integrations when no settings exist', () => {
       render(
-        <TestWrapper hasNoSettings={true} isDropdownShown={false} settings={[]} isRequired={false} />,
+        <TestWrapper
+          hasNoSettings={true}
+          isDropdownShown={false}
+          settings={[]}
+          isRequired={false}
+        />
       )
       expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: /add user integration/i })).toBeInTheDocument()
@@ -108,7 +115,7 @@ describe('IntegrationSection', () => {
     it('shows the no-integrations helper text', () => {
       render(<TestWrapper hasNoSettings={true} isDropdownShown={false} settings={[]} />)
       expect(
-        screen.getByText(/create a user integration, or refresh the list after one is added/i),
+        screen.getByText(/create a user integration, or refresh the list after one is added/i)
       ).toBeInTheDocument()
     })
 
@@ -121,11 +128,7 @@ describe('IntegrationSection', () => {
   describe('isDropdownShown state', () => {
     it('renders an enabled combobox and a Refresh button', () => {
       render(
-        <TestWrapper
-          hasNoSettings={false}
-          isDropdownShown={true}
-          settings={[confluenceSetting]}
-        />,
+        <TestWrapper hasNoSettings={false} isDropdownShown={true} settings={[confluenceSetting]} />
       )
       expect(screen.getByRole('combobox')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument()
@@ -133,14 +136,10 @@ describe('IntegrationSection', () => {
 
     it('shows the has-integrations helper text', () => {
       render(
-        <TestWrapper
-          hasNoSettings={false}
-          isDropdownShown={true}
-          settings={[confluenceSetting]}
-        />,
+        <TestWrapper hasNoSettings={false} isDropdownShown={true} settings={[confluenceSetting]} />
       )
       expect(
-        screen.getByText(/choose an existing integration, or add a new one and refresh the list/i),
+        screen.getByText(/choose an existing integration, or add a new one and refresh the list/i)
       ).toBeInTheDocument()
     })
   })

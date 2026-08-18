@@ -73,11 +73,71 @@ const getEnterpriseAdminItems = (
     : []),
 ]
 
+interface AdminChildrenContext {
+  isAdmin: boolean
+  isAuditor: boolean
+  isMaintainer: boolean
+  isProjectAdmin: boolean
+  isMcpFeatureEnabled: boolean
+  isCostCentersFeatureEnabled: boolean
+  isUserMgmtEnabled: boolean
+  isTeamsBotEnabled: boolean
+  isEnterprise: boolean
+  projectsTab: LayoutTab
+  activityEventsTab: LayoutTab[]
+  usersManagementTab: LayoutTab[]
+  budgetsManagementTab: LayoutTab[]
+}
+
+const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => {
+  const teamsTab: LayoutTab = {
+    id: SettingsTab.TEAMS_BOT_INTEGRATION,
+    name: 'Teams bot integration',
+    title: 'Teams bot integration',
+    url: '/settings/administration/teams',
+  }
+  if (ctx.isAdmin) {
+    return [
+      ...ctx.activityEventsTab,
+      ...(ctx.isCostCentersFeatureEnabled
+        ? [
+            {
+              id: SettingsTab.COST_CENTERS_MANAGEMENT,
+              name: 'Cost centers management',
+              title: 'Cost centers management',
+              url: '/settings/administration/cost-centers',
+            },
+          ]
+        : []),
+      ctx.projectsTab,
+      ...(ctx.isEnterprise
+        ? getEnterpriseAdminItems(
+            ctx.isMcpFeatureEnabled,
+            ctx.isUserMgmtEnabled,
+            ctx.budgetsManagementTab
+          )
+        : []),
+      ...(ctx.isTeamsBotEnabled ? [teamsTab] : []),
+    ].sort((a, b) => a.name.localeCompare(b.name))
+  }
+  if (ctx.isAuditor) {
+    return [ctx.projectsTab, ...ctx.usersManagementTab, ...ctx.budgetsManagementTab].sort((a, b) =>
+      a.name.localeCompare(b.name)
+    )
+  }
+  return [
+    ...ctx.activityEventsTab,
+    ctx.projectsTab,
+    ...(ctx.isTeamsBotEnabled && ctx.isProjectAdmin ? [teamsTab] : []),
+  ]
+}
+
 export const getNavigationTabs = (
   isAdmin: boolean,
   awsSupported = false,
   isMaintainer = false,
-  isProjectAdmin = false
+  isProjectAdmin = false,
+  isAuditor = false
 ): LayoutTab[] => {
   const isMcpFeatureEnabled = isMcpEnabled()
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
@@ -86,14 +146,26 @@ export const getNavigationTabs = (
   const isTeamsBotEnabled = isTeamsEnabled()
   const isEnterprise = isEnterpriseEdition()
 
-  const budgetsManagementTab =
-    isBudgetMgmtEnabled && (isAdmin || isMaintainer)
+  const budgetsManagementTab: LayoutTab[] =
+    isBudgetMgmtEnabled && (isAdmin || isMaintainer || isAuditor)
       ? [
           {
             id: SettingsTab.BUDGETS_MANAGEMENT,
             name: 'Budgets management',
             title: 'Budgets management',
             url: '/settings/administration/budgets',
+          },
+        ]
+      : []
+
+  const usersManagementTab: LayoutTab[] =
+    isUserMgmtEnabled && (isAdmin || isAuditor)
+      ? [
+          {
+            id: SettingsTab.USERS_MANAGEMENT,
+            name: 'Users management',
+            title: 'Users management',
+            url: '/settings/administration/users',
           },
         ]
       : []
@@ -109,59 +181,28 @@ export const getNavigationTabs = (
       ]
     : []
 
-  // Build administration children and sort alphabetically
-  const administrationChildren = isAdmin
-    ? [
-        ...activityEventsTab,
-        ...(isCostCentersFeatureEnabled
-          ? [
-              {
-                id: SettingsTab.COST_CENTERS_MANAGEMENT,
-                name: 'Cost centers management',
-                title: 'Cost centers management',
-                url: '/settings/administration/cost-centers',
-              },
-            ]
-          : []),
-        {
-          id: SettingsTab.PROJECTS_MANAGEMENT,
-          name: 'Projects management',
-          title: 'Projects management',
-          url: '/settings/administration/projects',
-        },
-        ...(isEnterprise
-          ? getEnterpriseAdminItems(isMcpFeatureEnabled, isUserMgmtEnabled, budgetsManagementTab)
-          : []),
-        ...(isTeamsBotEnabled
-          ? [
-              {
-                id: SettingsTab.TEAMS_BOT_INTEGRATION,
-                name: 'Teams bot integration',
-                title: 'Teams bot integration',
-                url: '/settings/administration/teams',
-              },
-            ]
-          : []),
-      ].sort((a, b) => a.name.localeCompare(b.name))
-    : [
-        ...activityEventsTab,
-        {
-          id: SettingsTab.PROJECTS_MANAGEMENT,
-          name: 'Projects management',
-          title: 'Projects management',
-          url: '/settings/administration/projects',
-        },
-        ...(isTeamsBotEnabled && isProjectAdmin
-          ? [
-              {
-                id: SettingsTab.TEAMS_BOT_INTEGRATION,
-                name: 'Teams bot integration',
-                title: 'Teams bot integration',
-                url: '/settings/administration/teams',
-              },
-            ]
-          : []),
-      ]
+  const projectsTab: LayoutTab = {
+    id: SettingsTab.PROJECTS_MANAGEMENT,
+    name: 'Projects management',
+    title: 'Projects management',
+    url: '/settings/administration/projects',
+  }
+
+  const administrationChildren = buildAdministrationChildren({
+    isAdmin,
+    isAuditor,
+    isMaintainer,
+    isProjectAdmin,
+    isMcpFeatureEnabled,
+    isCostCentersFeatureEnabled,
+    isUserMgmtEnabled,
+    isTeamsBotEnabled,
+    isEnterprise,
+    projectsTab,
+    activityEventsTab,
+    usersManagementTab,
+    budgetsManagementTab,
+  })
 
   const administrationTab: LayoutTab = {
     id: SettingsTab.ADMINISTRATION,

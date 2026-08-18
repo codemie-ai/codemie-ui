@@ -502,7 +502,7 @@ Available pages:
 - Providers management: Register and configure AI model providers (e.g. OpenAI, Azure OpenAI) and manage their API credentials
 
 Use these tools to customize and govern CodeMie for your entire organization.`,
-      condition: () => !!userStore.user?.isAdmin,
+      condition: () => !!(userStore.user?.isAdmin || userStore.user?.isAuditor),
     },
 
     // Step 26: Navigation Expansion Control

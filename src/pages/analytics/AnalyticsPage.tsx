@@ -43,10 +43,11 @@ const AnalyticsPage: FC = () => {
   const { aiAdoptionConfig } = useSnapshot(analyticsStore)
   const { user } = useSnapshot(userStore)
   const isAdmin = user?.isAdmin ?? false
-  const isAdoptionEnabled = isAdmin
+  const isAuditor = user?.isAuditor ?? false
+  const isAdoptionEnabled = isAdmin || isAuditor
   const [isCustomizationEnabled] = useFeatureFlag('feature:dashboardCustomization')
   const [isLeaderboardConfigEnabled] = useFeatureFlag('aiChampionsLeaderboard')
-  const isLeaderboardEnabled = isAdmin && isLeaderboardConfigEnabled
+  const isLeaderboardEnabled = (isAdmin || isAuditor) && isLeaderboardConfigEnabled
 
   const [searchParams] = useSearchParams()
   const { filters, handleFilterChange } = useAnalyticsFilters()

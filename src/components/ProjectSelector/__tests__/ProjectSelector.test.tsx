@@ -14,7 +14,7 @@
 //
 
 import { render, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const mockGetProjects = vi.fn()
 const mockOnChange = vi.fn()
@@ -30,23 +30,39 @@ vi.mock('@/hooks/useProjectDisplayNames', () => ({
   useProjectDisplayNames: () => mockDisplayNames,
 }))
 
+let capturedOnFilter: ((value: string) => void) | undefined
+
 // Stub out the heavy PrimeReact MultiSelect with something inspectable
 vi.mock('@/components/form/MultiSelect', () => ({
-  default: ({ options }: { options: Array<{ label: string; value: string }> }) => (
-    <div data-testid="multiselect">
-      {options.map((o) => (
-        <span key={o.value} data-testid={`option-${o.value}`}>
-          {o.label}
-        </span>
-      ))}
-    </div>
-  ),
+  default: ({
+    options,
+    onFilter,
+  }: {
+    options: Array<{ label: string; value: string }>
+    onFilter?: (value: string) => void
+  }) => {
+    capturedOnFilter = onFilter
+    return (
+      <div data-testid="multiselect">
+        {options.map((o) => (
+          <span key={o.value} data-testid={`option-${o.value}`}>
+            {o.label}
+          </span>
+        ))}
+      </div>
+    )
+  },
 }))
 
 describe('ProjectSelector', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockDisplayNames.clear()
+    capturedOnFilter = undefined
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('shows "name (display_name)" as option label when display_name is available', async () => {
@@ -151,5 +167,36 @@ describe('ProjectSelector', () => {
       // optionLabel-based filtering matches it without any filterBy override.
       expect(getByTestId('option-epm-fdeg').textContent).toBe('epm-fdeg (FDE Group)')
     })
+  })
+
+  it('debounces search input instead of calling getProjects on every keystroke', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    mockGetProjects.mockResolvedValue([])
+
+    const { default: ProjectSelector } = await import('../ProjectSelector')
+    render(<ProjectSelector onChange={mockOnChange} />)
+
+    // Initial mount load
+    await waitFor(() => {
+      expect(mockGetProjects).toHaveBeenCalledTimes(1)
+    })
+    expect(capturedOnFilter).toBeDefined()
+
+    // Simulate fast typing: three keystrokes within the debounce window
+    capturedOnFilter?.('a')
+    await vi.advanceTimersByTimeAsync(100)
+    capturedOnFilter?.('ab')
+    await vi.advanceTimersByTimeAsync(100)
+    capturedOnFilter?.('abc')
+
+    // Still only the initial mount call — debounce hasn't fired yet
+    expect(mockGetProjects).toHaveBeenCalledTimes(1)
+
+    // Let the debounce window elapse
+    await vi.advanceTimersByTimeAsync(300)
+
+    // Exactly one more call, with the final search term
+    expect(mockGetProjects).toHaveBeenCalledTimes(2)
+    expect(mockGetProjects).toHaveBeenLastCalledWith('abc', false)
   })
 })

@@ -128,7 +128,7 @@ describe('DataSourceCreatePage - Confluence Refresh Button', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/create a user integration, or refresh the list after one is added/i),
+        screen.getByText(/create a user integration, or refresh the list after one is added/i)
       ).toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument()
@@ -142,7 +142,7 @@ describe('DataSourceCreatePage - Confluence Refresh Button', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/create a user integration, or refresh the list after one is added/i),
+        screen.getByText(/create a user integration, or refresh the list after one is added/i)
       ).toBeInTheDocument()
     })
 
@@ -161,7 +161,7 @@ describe('DataSourceCreatePage - Confluence Refresh Button', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/choose an existing integration, or add a new one and refresh the list/i),
+        screen.getByText(/choose an existing integration, or add a new one and refresh the list/i)
       ).toBeInTheDocument()
     })
   })

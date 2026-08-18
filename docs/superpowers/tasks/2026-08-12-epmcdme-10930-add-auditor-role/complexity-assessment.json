@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "task": "Add is_auditor boolean role flag granting read-only platform-wide visibility into Analytics, Projects, Users, and Budgets across codemie-ui (frontend) and codemie (backend).",
+  "generated": "2026-08-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 6, "label": "XXL" }
+  },
+  "total": 26,
+  "size": "XL",
+  "routing": "split-required",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Cross-repo change spanning codemie-ui (types, Valtio store, settings navigation factory, analytics page, 5 administration page components, filter component, onboarding) and codemie backend (UserDB + 4 Pydantic schemas, core UserResponse, auth User + UserContext, permissions module with new dependency, 5 routers). Shared API contracts — UserResponse and AdminUserListItem — change in both repos simultaneously."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "24+ files modified across two repos: 15 frontend (user.ts types, user.ts store, tabs.tsx, SettingsLayout.tsx, AnalyticsPage.tsx, AnalyticsFilters.tsx, BudgetsManagementPage.tsx, UsersManagementPage.tsx, ProjectsManagementPage.tsx, ProjectsManagementFull.tsx, ProjectDetailsPage.tsx, UserDetailsPopup.tsx, navigationIntroduction.tsx, UsersManagementFilters.tsx, constants.ts) plus 9 backend (user_management.py, models.py, user.py, permissions.py, user_management_router.py, budget_router.py, project_budget_router.py, analytics.py, projects.py), plus 1 new Alembic migration and 4-6 new test files — well into the 16+ modified threshold."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Six distinct architectural layers across two codebases: codemie-ui UI layer (React components), State/Store layer (Valtio), and TypeScript types layer; codemie FastAPI API layer (5 routers), auth/permissions service layer (permissions.py, user.py), and DB-persistence layer (Alembic migration to users table). Guide XXL criterion 'changes span multiple services or codebases' is met unambiguously."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Auth/authz red flag applied — new role flag controls cross-platform read access to sensitive data. Three execution-specific risks: (1) resolve_is_admin copy-paste trap at user.py:67-68 silently grants full write access if replicated for is_auditor; (2) six separate analytics.py guards (lines 593, 2406, 2496, 2582, 2670, 3216) require individual audit to avoid both under-opening and over-opening auditor data access; (3) cross-repo hard deployment dependency — backend must expose is_auditor before frontend integration is testable end-to-end."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M (3) to L (4): affects authentication and authorization — new is_auditor role flag controls access to sensitive platform-wide data across Analytics, Projects, Users, and Budgets",
+    "Borderline rule applied at total score 26 (maximum of L band 21-26): Component Scope at XXL (6) triggers lean-higher guidance, classifying as XL"
+  ],
+  "split_recommendation": "Split into 4 stories: Story 1 — Backend foundation (S/M): add is_auditor to UserDB, UserCreateRequest, UserUpdateRequest, CodeMieUserDetail, AdminUserListItem (user_management.py), core UserResponse (models.py), auth User + UserContext (user.py), and Alembic migration; expose is_auditor in GET /v1/user and GET /v1/admin/users responses. Story 2 — Backend permissions + router guards (M): add admin_or_maintainer_or_auditor_access dependency in permissions.py; add auditor fast-path in project_admin_or_admin_user_detail_access; update GET /v1/budgets, GET /v1/budgets/{id}, GET /v1/project-budgets read endpoints; change targeted user_management_router GET guards; implement GET /{user_id}/budgets for auditors (resolved open question a); audit and update the six analytics.py cross-user filter guards; add 5 is_admin→effective_admin fixes in projects.py for project list/detail/spending visibility (all in router, no service/repository signature changes needed). Story 3 — Frontend core + navigation (M): extend User, UserListItem, UserUpdatePayload types; update loadUser() and getCurrentUser() mappings in user.ts store; add isAuditor parameter to getNavigationTabs and update SettingsLayout.tsx call site; add isAuditor guards to BudgetsManagementPage, UsersManagementPage, ProjectsManagementPage, ProjectsManagementFull, ProjectDetailsPage; add 'auditor' sentinel to PlatformRole union type in constants.ts; add Auditor filter option to UsersManagementFilters.tsx and special-case mapping in getUsers() store method. Story 4 — Frontend analytics + user detail write control (M): update AnalyticsPage.tsx and AnalyticsFilters.tsx cross-user filter guards; add Auditor Switch and widen Platform Roles visibility gate in UserDetailsPopup.tsx; update navigationIntroduction.tsx onboarding condition; add auditor fixture and coverage tests across all changed pages."
+}

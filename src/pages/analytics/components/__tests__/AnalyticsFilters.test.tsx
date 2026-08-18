@@ -196,6 +196,53 @@ describe('AnalyticsFilters - Race Condition Fix', () => {
   })
 })
 
+describe('AnalyticsFilters - Auditor role (EPMCDME-10930)', () => {
+  const mockOnFiltersChange = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    capturedOnSearchChange = undefined
+    mockStore.user = { isAdmin: false, isMaintainer: false, isAuditor: true } as any
+    vi.mocked(userStore.getAnalyticsUsers).mockResolvedValue([])
+  })
+
+  afterEach(() => {
+    mockStore.user = null
+  })
+
+  it('auditor gets server-side user search (isAdminSearch = true)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+
+    render(<AnalyticsFilters filters={DEFAULT_FILTERS} onFiltersChange={mockOnFiltersChange} />)
+
+    await waitFor(() => {
+      expect(capturedOnSearchChange).toBeDefined()
+    })
+
+    capturedOnSearchChange!('al')
+    await vi.advanceTimersByTimeAsync(600)
+
+    await waitFor(() => {
+      expect(vi.mocked(userStore.getAnalyticsUsers)).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'al' }),
+        expect.anything()
+      )
+    })
+
+    vi.useRealTimers()
+  })
+
+  it('auditor does not load all users on initial render (empty list until search)', async () => {
+    render(<AnalyticsFilters filters={DEFAULT_FILTERS} onFiltersChange={mockOnFiltersChange} />)
+
+    await waitFor(() => {
+      expect(capturedOnSearchChange).toBeDefined()
+    })
+
+    expect(vi.mocked(userStore.getAnalyticsUsers)).not.toHaveBeenCalled()
+  })
+})
+
 describe('AnalyticsFilters - Admin Server-Side Search', () => {
   const mockOnFiltersChange = vi.fn()
 

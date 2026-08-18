@@ -27,6 +27,7 @@ export interface User {
   name?: string
   isAdmin: boolean
   isMaintainer?: boolean
+  isAuditor?: boolean
   isAuthenticated: boolean
   user_type?: string
   applications?: string[]
@@ -55,6 +56,7 @@ export interface UserListItem {
   email: string
   is_admin: boolean
   is_maintainer?: boolean
+  is_auditor?: boolean
   is_active: boolean
   user_type: UserType
   auth_source: string
@@ -70,6 +72,7 @@ export interface UserUpdatePayload {
   budget_assignments?: BudgetAssignmentsPayload
   is_admin?: boolean
   is_maintainer?: boolean
+  is_auditor?: boolean
 }
 
 export interface PaginationInfo {

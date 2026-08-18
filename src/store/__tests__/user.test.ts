@@ -399,6 +399,34 @@ describe('userStore', () => {
       expect(Array.isArray(result)).toBe(true)
     })
 
+    it('delegates to getAdminProjects when user is auditor (EPMCDME-10930)', async () => {
+      const { userStore } = await import('@/store/user')
+      userStore.user = {
+        userId: 'u1',
+        email: 'a@b.com',
+        name: 'Alice',
+        username: 'alice',
+        isAdmin: false,
+        isMaintainer: false,
+        isAuditor: true,
+        isAuthenticated: true,
+        user_type: 'regular',
+        applications: [],
+        applicationsAdmin: [],
+        projects: [],
+        picture: null,
+      } as any
+
+      mockGet.mockResolvedValue({
+        json: async () => ({ applications: [{ name: 'admin-proj', display_name: null }] }),
+      })
+
+      const result = await userStore.getProjects('admin')
+
+      expect(mockGet).toHaveBeenCalled()
+      expect(Array.isArray(result)).toBe(true)
+    })
+
     it('delegates to getUserProjects when user is not admin', async () => {
       const { userStore } = await import('@/store/user')
       userStore.user = {
@@ -448,6 +476,52 @@ describe('userStore', () => {
       expect(mockGet).not.toHaveBeenCalled()
       expect(result).toHaveLength(1)
       expect(result[0].name).toBe('epm-fdeg')
+    })
+  })
+
+  describe('getUsers — is_auditor filter mapping (EPMCDME-10930)', () => {
+    it('sends is_auditor=true when platform_role is "auditor"', async () => {
+      mockGet.mockResolvedValue({
+        json: () => Promise.resolve({ data: [], pagination: { total: 0, page: 1, per_page: 20 } }),
+      })
+
+      const { userStore } = await import('@/store/user')
+      await userStore.getUsers({ filters: { platform_role: 'auditor' } })
+
+      const callUrl = mockGet.mock.calls[0][0] as string
+      const filtersParam = new URLSearchParams(callUrl.split('?')[1]).get('filters')
+      const parsed = JSON.parse(filtersParam ?? '{}')
+      expect(parsed.is_auditor).toBe(true)
+      expect(parsed.platform_role).toBeUndefined()
+    })
+
+    it('passes is_auditor directly when set explicitly', async () => {
+      mockGet.mockResolvedValue({
+        json: () => Promise.resolve({ data: [], pagination: { total: 0, page: 1, per_page: 20 } }),
+      })
+
+      const { userStore } = await import('@/store/user')
+      await userStore.getUsers({ filters: { is_auditor: true } })
+
+      const callUrl = mockGet.mock.calls[0][0] as string
+      const filtersParam = new URLSearchParams(callUrl.split('?')[1]).get('filters')
+      const parsed = JSON.parse(filtersParam ?? '{}')
+      expect(parsed.is_auditor).toBe(true)
+    })
+
+    it('sends platform_role (not is_auditor) for other role values', async () => {
+      mockGet.mockResolvedValue({
+        json: () => Promise.resolve({ data: [], pagination: { total: 0, page: 1, per_page: 20 } }),
+      })
+
+      const { userStore } = await import('@/store/user')
+      await userStore.getUsers({ filters: { platform_role: 'admin' } })
+
+      const callUrl = mockGet.mock.calls[0][0] as string
+      const filtersParam = new URLSearchParams(callUrl.split('?')[1]).get('filters')
+      const parsed = JSON.parse(filtersParam ?? '{}')
+      expect(parsed.platform_role).toBe('admin')
+      expect(parsed.is_auditor).toBeUndefined()
     })
   })
 })

@@ -58,11 +58,14 @@ const ProjectDetailsPage = () => {
   const isPersonalProject = project?.project_type === ProjectType.PERSONAL
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
+  const isAuditor = currentUser?.isAuditor ?? false
   const isProjectAdmin = currentUser?.applicationsAdmin?.includes(project?.name ?? '') ?? false
   const canManageProject = !isPersonalProject && (isAdmin || isProjectAdmin)
   const canManageBudgets = isBudgetManagementEnabled && isMaintainer
   const canViewBudgets =
-    isBudgetManagementEnabled && !isPersonalProject && (isAdmin || isMaintainer || isProjectAdmin)
+    isBudgetManagementEnabled &&
+    !isPersonalProject &&
+    (isAdmin || isMaintainer || isAuditor || isProjectAdmin)
   const budgetMode = canManageBudgets ? 'manage' : 'view'
 
   const loadProject = useCallback(async () => {

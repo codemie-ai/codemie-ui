@@ -74,21 +74,23 @@ const UsersManagementPage: FC = () => {
   const { filters, handleFilterChange } = useUsersManagementFilters()
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
-  const canManageBudgets = isBudgetManagementEnabled && isMaintainer
+  const isAuditor = currentUser?.isAuditor ?? false
+  const canViewBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer || isAuditor)
+  const canManageBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer)
   const effectiveFilters = useMemo(
     () => ({
       ...filters,
-      budgets: canManageBudgets ? filters.budgets : [],
+      budgets: canViewBudgets ? filters.budgets : [],
       platform_role: (filters.platform_role ?? null) as ProjectRoleBE | null,
     }),
-    [canManageBudgets, filters]
+    [canViewBudgets, filters]
   )
   const columnDefinitions = useMemo(
     () =>
-      canManageBudgets
+      canViewBudgets
         ? BASE_COLUMN_DEFINITIONS
         : BASE_COLUMN_DEFINITIONS.filter((c) => c.key !== 'budget_assignments'),
-    [canManageBudgets]
+    [canViewBudgets]
   )
 
   const perPageRef = useRef(10)

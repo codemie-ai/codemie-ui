@@ -105,7 +105,8 @@ const BudgetsManagementPage: FC = () => {
   const { budgets, pagination, loading, syncing } = useSnapshot(budgetsStore)
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
-  const canViewBudgets = isAdmin || isMaintainer
+  const isAuditor = currentUser?.isAuditor ?? false
+  const canViewBudgets = isAdmin || isMaintainer || isAuditor
   const canManageBudgets = isMaintainer
   const [category, setCategory] = useState<BudgetCategory | ''>('')
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
@@ -113,7 +114,7 @@ const BudgetsManagementPage: FC = () => {
 
   useEffect(() => {
     if (currentUser && !canViewBudgets) {
-      toaster.error('Access denied. Only admins and maintainers can view budgets.')
+      toaster.error('Access denied. Only admins, maintainers, and auditors can view budgets.')
       navigate('/settings/administration')
     }
   }, [canViewBudgets, currentUser, navigate])

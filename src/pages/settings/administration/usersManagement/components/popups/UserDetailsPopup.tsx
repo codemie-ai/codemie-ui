@@ -23,6 +23,7 @@ import Select from '@/components/form/Select/Select'
 import Switch from '@/components/form/Switch'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
+import Tooltip from '@/components/Tooltip'
 import { USER_TYPES } from '@/constants/user'
 import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import BudgetAssignmentsEditor from '@/pages/settings/administration/components/BudgetAssignmentsEditor'
@@ -55,14 +56,21 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   const [isBudgetEditing, setIsBudgetEditing] = useState(false)
   const [editedAssignments, setEditedAssignments] = useState<BudgetAssignment[]>([])
   const [isSavingBudgets, setIsSavingBudgets] = useState(false)
-  const [roleFlags, setRoleFlags] = useState({ is_admin: false, is_maintainer: false })
+  const [roleFlags, setRoleFlags] = useState({
+    is_admin: false,
+    is_maintainer: false,
+    is_auditor: false,
+  })
   const [isUpdatingRoles, setIsUpdatingRoles] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const { user: currentUser } = useSnapshot(userStore)
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
-  const canManageBudgets = isBudgetManagementEnabled && isMaintainer
+  const isAuditorUser = currentUser?.isAuditor ?? false
+  const canViewBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer || isAuditorUser)
+  const canManageBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer)
   const canEditPlatformRoles = isMaintainer && currentUser?.userId !== userId
+  const canAssignAuditor = (isAdmin || isMaintainer) && currentUser?.userId !== userId
 
   const fetchUserDetails = async () => {
     if (!userId) return
@@ -71,7 +79,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     try {
       const [details, budgets] = await Promise.all([
         userStore.getUserById(userId),
-        canManageBudgets ? userStore.getUserBudgets(userId) : Promise.resolve([]),
+        canViewBudgets ? userStore.getUserBudgets(userId) : Promise.resolve([]),
       ])
       setUser(details)
       setUserType(details.user_type)
@@ -79,6 +87,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
       setRoleFlags({
         is_admin: details.is_admin,
         is_maintainer: details.is_maintainer ?? false,
+        is_auditor: details.is_auditor ?? false,
       })
     } catch (error) {
       console.error('Failed to fetch user details:', error)
@@ -93,7 +102,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
       setHasChanges(false)
       setIsBudgetEditing(false)
     }
-  }, [canManageBudgets, isOpen, userId])
+  }, [canViewBudgets, isOpen, userId])
 
   const handleProjectsChange = () => {
     setHasChanges(true)
@@ -138,7 +147,10 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     }
   }
 
-  const handleRoleChange = async (key: 'is_admin' | 'is_maintainer', value: boolean) => {
+  const handleRoleChange = async (
+    key: 'is_admin' | 'is_maintainer' | 'is_auditor',
+    value: boolean
+  ) => {
     if (!user || !userId || !canEditPlatformRoles || isUpdatingRoles) return
 
     const previousFlags = roleFlags
@@ -150,6 +162,10 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
     if (key === 'is_admin' && !value && roleFlags.is_maintainer) {
       return
+    }
+
+    if ((key === 'is_admin' || key === 'is_maintainer') && value) {
+      nextFlags.is_auditor = false
     }
 
     setRoleFlags(nextFlags)
@@ -216,6 +232,28 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
               <div className="flex flex-col gap-3 rounded-lg border border-border-structural p-4">
                 <span className="text-xs font-medium text-text-primary">Platform Roles</span>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
+                  <span
+                    className="user-auditor-role-tooltip"
+                    data-pr-tooltip={
+                      roleFlags.is_admin || roleFlags.is_maintainer
+                        ? 'Admin and Maintainer already include full platform access — the Auditor flag has no effect for this user.'
+                        : undefined
+                    }
+                  >
+                    <Switch
+                      id="user-auditor-role"
+                      label="Auditor"
+                      value={roleFlags.is_auditor}
+                      disabled={
+                        !canAssignAuditor ||
+                        isUpdatingRoles ||
+                        roleFlags.is_admin ||
+                        roleFlags.is_maintainer
+                      }
+                      onChange={(e) => handleRoleChange('is_auditor', e.target.checked)}
+                    />
+                  </span>
+                  <Tooltip target=".user-auditor-role-tooltip" appendTo={document.body} />
                   <Switch
                     id="user-admin-role"
                     label="Admin"
@@ -236,7 +274,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
             <DetailsCopyField label="Email:" value={user.email} className="mb-2" />
 
-            {canManageBudgets && (
+            {canViewBudgets && (
               <>
                 <div className="bg-border-structural h-px" />
 

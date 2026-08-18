@@ -37,6 +37,7 @@ const PLATFORM_ROLE_OPTIONS: FilterOption[] = [
   { label: 'User', value: ProjectRoleBE.USER },
   { label: 'Project Admin', value: ProjectRoleBE.PLATFORM_ADMIN },
   { label: 'Super Admin', value: ProjectRoleBE.SUPER_ADMIN },
+  { label: 'Auditor', value: 'auditor' },
 ]
 
 interface UsersManagementFiltersProps {

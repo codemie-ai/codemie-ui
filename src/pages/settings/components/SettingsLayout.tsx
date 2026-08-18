@@ -44,7 +44,8 @@ const SettingsLayout: FC<Props> = ({ contentTitle, content, onBack, rightContent
         user?.isAdmin || user?.isMaintainer || false,
         isConfigItemEnabled(configs, 'vendorIntegrationAWS'),
         user?.isMaintainer ?? false,
-        (user?.applicationsAdmin?.length ?? 0) > 0
+        (user?.applicationsAdmin?.length ?? 0) > 0,
+        user?.isAuditor ?? false
       )}
       content={content}
       title="Settings"

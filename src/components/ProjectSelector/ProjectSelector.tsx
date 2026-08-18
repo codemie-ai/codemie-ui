@@ -13,8 +13,9 @@
 // limitations under the License.
 //
 
+import { debounce } from 'lodash'
 import { MultiSelect as PrimeMultiselect, MultiSelectChangeEvent } from 'primereact/multiselect'
-import { forwardRef, useEffect, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import MultiSelect from '@/components/form/MultiSelect'
@@ -23,6 +24,8 @@ import { userStore } from '@/store/user'
 import { formatProjectLabel } from '@/utils/projectDisplayName'
 
 import { MultiSelectSize } from '../form/MultiSelect/MultiSelect'
+
+const PROJECT_SEARCH_DEBOUNCE_MS = 300
 
 interface ProjectSelectorProps {
   value?: string | string[] | null
@@ -71,6 +74,23 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
       }
     }
 
+    const loadProjectsRef = useRef(loadProjects)
+    useEffect(() => {
+      loadProjectsRef.current = loadProjects
+    })
+
+    const debouncedLoadProjects = useMemo(
+      () =>
+        debounce((search: string) => loadProjectsRef.current(search), PROJECT_SEARCH_DEBOUNCE_MS),
+      []
+    )
+
+    useEffect(() => {
+      return () => {
+        debouncedLoadProjects.cancel()
+      }
+    }, [debouncedLoadProjects])
+
     const projectOptions = useMemo(
       () =>
         rawProjects.map((project) => ({
@@ -102,7 +122,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
 
     const handleFilter = (value: string) => {
       const searchValue = value.trim().toLowerCase()
-      loadProjects(searchValue)
+      debouncedLoadProjects(searchValue)
     }
 
     const { user } = useSnapshot(userStore)
