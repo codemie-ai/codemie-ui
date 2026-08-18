@@ -93,7 +93,7 @@ Two independent auth paths share zero code:
 | Path | Entry | Use case |
 |---|---|---|
 | Local auth | `src/authentication/local/SignInPage`, `SignUpPage` | Dev/standalone deployments |
-| Keycloak SSO | `src/keycloakify.tsx` (separate Vite entry) | Production; EPAM SSO via Azure Entra ID |
+| Keycloak SSO | `src/authentication/keycloak-theme/keycloakify.tsx` (separate Vite entry) | Production; EPAM SSO via Azure Entra ID |
 
 For Keycloak builds, set `VITE_ENTRY=keycloakify`; the `keycloak-entry` plugin in
 `vite.config.ts:18` swaps the HTML entry to `index-keycloak.html` which renders only

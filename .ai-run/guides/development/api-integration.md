@@ -254,4 +254,4 @@ backend behavior — treat it as a cross-repo change, not a UI tweak.
 
 - `src/utils/api.ts` — fetch wrapper implementation
 - `src/store/` — all store files follow the pattern above
-- `state-management.md` — Valtio store conventions
+- [`../patterns/state-management.md`](../patterns/state-management.md) — Valtio store conventions

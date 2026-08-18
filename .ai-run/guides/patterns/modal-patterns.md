@@ -34,7 +34,7 @@ All modals MUST use the `Popup` component from `src/components/Popup/`.
 
 ## Popup Props Reference
 
-`src/components/Popup/index.tsx` (see file for full interface)
+`src/components/Popup/Popup.tsx` — `PopupProps` is exported there; `index.ts` is a bare re-export
 
 **Visibility & control**
 - `visible?: boolean` — show/hide
@@ -216,7 +216,7 @@ useEffect(() => {
 
 | File | Purpose |
 |------|---------|
-| `src/components/Popup/index.tsx` | Popup wrapper (wraps PrimeReact Dialog) |
+| `src/components/Popup/Popup.tsx` | Popup wrapper (wraps PrimeReact Dialog) |
 | `src/components/ConfirmationModal/` | Reusable confirmation dialog |
 | `src/hooks/useEscapeKey.ts` | ESC key handler hook |
 | `src/hooks/useFocusOnVisible.ts` | Auto-focus hook |

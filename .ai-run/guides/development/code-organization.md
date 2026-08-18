@@ -281,4 +281,4 @@ return <div>{renderHeader()}{renderBody()}</div>
 - `src/utils/helpers.ts` — `formatDateTime` and other utilities
 - `src/hooks/` — custom hook examples
 - `refactoring-patterns.md` — how to split large components
-- `custom-hooks.md` — hook extraction patterns
+- [`../patterns/custom-hooks.md`](../patterns/custom-hooks.md) — hook extraction patterns

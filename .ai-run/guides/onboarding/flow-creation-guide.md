@@ -20,7 +20,7 @@
 
 ### File Naming
 
-Format: `##-descriptive-name.md` — e.g., `01-navigation-introduction.md`, `02-chat-basics.md`
+Format: `##-descriptive-name.md` — e.g., `01-navigation-introduction.md`, `02-chat-interface-basics.md`
 
 ### Header Template
 
@@ -261,6 +261,13 @@ Each suggestion: emoji + title + one-sentence description + duration estimate.
 ---
 
 ## Conditional Steps
+
+Conditions fall into four kinds: a **feature flag** ("only if Skills is enabled"),
+**data availability** ("only if applications are configured"), **user state**
+("only if the user has no previous chats"), and a **variant set**, where the
+message changes with what exists rather than the step being skipped. Skip the
+step entirely when the variant set is empty — do not show an empty-state message
+inside a tour.
 
 Mark conditional steps with `(Conditional)` in the heading:
 

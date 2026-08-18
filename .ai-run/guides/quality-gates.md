@@ -32,6 +32,36 @@ Run gates in this order (fastest to slowest). All must pass before opening an MR
 
 ---
 
+### License check
+
+**Run**: `npm run license-check`
+
+**Pass**: A licence summary table, exit code 0. Exits 0 on the current tree.
+
+**Fail**: `license-checker` names the offending package and its licence. The allow list is inline in the script in `package.json` — a dependency whose licence falls outside it is not admissible, whatever its version.
+
+**Auto-fix**: None. Either the dependency is replaced or the allow list changes, and changing the allow list is a decision, not a fix.
+
+**Skip if**: No dependency was added, removed, or moved. This gate is not in the pre-commit hook, so it only runs when you run it.
+
+---
+
+### Secret detection
+
+**Run**: `npm run secrets:check`
+
+**Pass**: `no leaks found`, exit code 0.
+
+**Fail**: gitleaks prints the rule and the file for each finding.
+
+**Auto-fix**: None. A credential that reached a commit is compromised and must be rotated by a human — deleting the line is not the fix.
+
+**Skip if**: Never skip; it also runs automatically in the pre-commit hook and server-side as the MR pipeline's `gitleaks-scan` task.
+
+> **Read the output, not the exit code.** The script pulls the gitleaks image at run time (tag in `package.json`) and prints `Secrets detected! Please remove sensitive data before committing.` whenever the child exits non-zero — including when the image could not be pulled. It also scans the working tree only, never git history. Both traps: [`security/verification.md`](security/verification.md).
+
+---
+
 ### Unit Tests
 
 **Run**: `npm run test:unit`

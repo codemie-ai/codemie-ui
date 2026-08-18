@@ -201,7 +201,7 @@ type StatusColor = typeof STATUS_COLORS[keyof typeof STATUS_COLORS]
 
 ### Forms (Yup schemas)
 
-`src/pages/assistants/AssistantForm.tsx` — import `VALIDATION_RULES` and `AssistantType` from `@/constants` to build the Yup schema. Never hardcode length limits in the schema file.
+`src/pages/assistants/components/AssistantForm/AssistantForm.tsx` — import `VALIDATION_RULES` and `AssistantType` from `@/constants` to build the Yup schema. Never hardcode length limits in the schema file.
 
 ### Routing
 

@@ -62,6 +62,38 @@
 - **Reporters**: `text`, `lcov`
 - **Coverage excludes**: `**/__tests__/**`, `**/assets/**`, `**/*config.ts`, `**/*.cjs`, `**/main.ts`, `**/api.ts`, `**/setupTests*`
 
+## Finding what is untested
+
+Derive it; never read it from a document. A committed coverage snapshot is wrong
+within weeks and reads as authoritative while it is wrong — that is why no such
+file exists here.
+
+```bash
+# What coverage actually says
+npm run test:coverage
+
+# How many test files exist, and how many are integration
+git ls-files | grep -cE '__tests__/.*\.(test|spec)\.tsx?$'
+git ls-files | grep -c 'integration.test'
+
+# Product areas with no test at all
+for d in $(git ls-files 'src/pages/*' | awk -F/ 'NF>2{print $3}' | sort -u); do
+  [ "$(git ls-files "src/pages/$d/*" | grep -cE '\.(test|spec)\.tsx?$')" = 0 ] && echo "$d"
+done
+
+# Stores with no test
+comm -23 \
+  <(git ls-files 'src/store/' | grep -v __tests__ | xargs -n1 basename | sort -u) \
+  <(git ls-files 'src/store/' | grep __tests__ | xargs -n1 basename | sed 's/\.test\././' | sort -u)
+
+# What changed under test recently
+git log --oneline -15 -- 'src/**/__tests__/**'
+```
+
+**No coverage threshold is configured**, so a regression inside an already-tested
+area does not fail CI. Treat a green run as "the tests that exist passed", not as
+a coverage guarantee.
+
 ## Conventions
 
 ### Current repo (Vitest)

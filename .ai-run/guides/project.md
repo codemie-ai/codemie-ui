@@ -1,28 +1,47 @@
-# Project Settings
+# Project Context
 
-**Work Item Key Prefix**: EPMCDME
-**Project Name**: codemie-ui-next
-**MR Target Branch**: main
+## Project Identity
+
+| Field | Value | Source |
+|---|---|---|
+| Project name | CodeMie UI | `README.md` |
+| Repository/package | `codemie-ui` (npm name `ai-assistant`) | `package.json`, `git remote -v` |
+| Project code/key | EPMCDME | `CONTRIBUTING.md` |
+
+## Work Item Tracker
+
+| Field | Value |
+|---|---|
+| Provider | Jira |
+| Key/prefix | EPMCDME |
+
+> Adapter configuration belongs exclusively in `## Ticket Adapter`. Do not duplicate adapter status or instructions in the Work Item Tracker table.
 
 ## Ticket Adapter
 
 **Status**: configured
-**Adapter**: Jira via `codemie-jira-assistant` skill (invoke via the `codemie-jira-assistant` skill) or the `mcp__jira` MCP server. The skill handles story/task/bug lookup and creation in the EPM-CDME Jira project. The `jira` MCP server is enabled in `.claude/settings.local.json` and provides direct Jira tool access.
+**Adapter**: Invoke the `codemie-jira-assistant` skill via the Skill tool.
+**Lookup**: Invoke the `codemie-jira-assistant` skill with the ticket key and a request for summary, description, acceptance criteria, and links.
+**Create**: Invoke the `codemie-jira-assistant` skill with the complete ticket payload or approved story file as the argument.
+**Output**: Ticket key and URL returned by the skill.
 
-## Lifecycle Intent Handling
+## Source Control And Review
 
-### record_complexity_score
-Invoke the `codemie-jira-assistant` skill and ask it to update the ticket's complexity score (Total Score) with the value from `data.complexity_total`.
-Ticket ID: extract from the current branch name (pattern `EPMCDME-\d+`) or from the run work item.
+| Field | Value |
+|---|---|
+| Provider | GitLab |
+| Repository remote | `git remote -v` |
+| Default target branch | main |
+| Review artifact type | MR |
 
-### artifact_published
-Invoke the `codemie-jira-assistant` skill and attach the artifact file using the `--file` flag:
+## MR Adapter
 
-```bash
-codemie assistants chat "289d2751-afd9-4c77-a272-90df7cd71702" \
-  "Attach this file to Jira ticket EPMCDME-<ID> as the approved <kind> artifact." \
-  --file "<path-to-artifact>"
-```
+**Status**: configured
+**Adapter**: `glab` CLI, authenticated against the GitLab host in `git remote -v`.
+**Instructions**: Open the MR against `main`. The description must carry the full `npm run test-harness` log and must ask a reviewer to post `/sanity`; requirements are in `standards/git-workflow.md` and `security/README.md` § MR handoff.
 
-Ticket ID: extract from the current branch name (pattern `EPMCDME-\d+`) or from the run work item.
-`<path-to-artifact>`: use `data.artifact_path`, or the path to `spec.md` / `plan.md` in the run directory.
+## Complexity Scoring
+
+**Status**: configured
+**Field**: Total Score
+**Format**: numeric

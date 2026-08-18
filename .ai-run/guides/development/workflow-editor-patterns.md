@@ -110,7 +110,7 @@ Keep `editorState` (React Flow format) separate from `currentWorkflow` (backend 
 
 ### Deleting a node
 
-`src/utils/workflowEditor/actions/states/deleteState.ts`
+`src/utils/workflowEditor/actions/states/removeState.ts` — exports `removeStateAction`
 
 Always remove connected edges before removing the node:
 1. `getConnectedEdges(stateId)` → `deleteConnection(edge.id)` for each.

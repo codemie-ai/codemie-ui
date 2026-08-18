@@ -19,29 +19,24 @@ Never bypass a layer — components must not catch API errors directly.
 
 ## Error Boundaries
 
-`src/components/ErrorBoundary/ErrorBoundary.tsx` — class component implementing `getDerivedStateFromError` and `componentDidCatch`.
+There is **no app-wide error boundary**. The repo has exactly one, scoped to a
+single surface: `src/components/InteractiveElements/InteractiveErrorBoundary.tsx`.
+Copy its shape rather than inventing a generic one.
 
-Key implementation points:
-- `state: { hasError: boolean; error: Error | null }`
-- `getDerivedStateFromError` sets `hasError: true`.
-- `componentDidCatch` calls `console.error` for debugging.
-- Fallback UI: red-tinted container, error message, "Try Again" button that resets state.
-- Accept optional `fallback?: ReactNode` prop for custom fallback.
+What that boundary actually does:
+- `state: { hasError: boolean }` — it does not retain the error object.
+- `static getDerivedStateFromError()` returns `{ hasError: true }`.
+- `componentDidCatch(error, info)` logs through `console.error` with a
+  bracketed source tag, behind an `eslint-disable-next-line no-console`.
+- Fallback is a bordered notice using theme tokens (`border-border-primary/40`,
+  `text-text-secondary`) and a `data-testid` so tests can assert the degraded state.
+- No `fallback` prop, no retry button. Degrade quietly; do not offer an action
+  the boundary cannot perform.
 
-Usage patterns:
-```tsx
-// Wrap risky sections
-<ErrorBoundary>
-  <WorkflowEditor />
-</ErrorBoundary>
-
-// Custom fallback
-<ErrorBoundary fallback={<ErrorMessage />}>
-  <ComplexComponent />
-</ErrorBoundary>
-```
-
-**When to add boundaries**: workflow editor canvas, complex data visualizations, any third-party widget that may throw during render.
+**When to add one**: around a surface rendered from data you do not control —
+agent-authored payloads, third-party widgets, anything that can throw during
+render. Give each boundary its own log tag and `data-testid`; a shared boundary
+tells you nothing about which surface failed.
 
 ---
 
@@ -119,22 +114,28 @@ function AssistantsList() {
 
 ## Form Validation Errors
 
-`src/pages/assistants/utils/validation.ts` — Yup schema:
+Schemas live **next to the form that uses them**, not in a shared `validation.ts`.
+The reference implementation is `src/pages/assistants/components/AssistantForm/AssistantForm.tsx`:
+`formSchema` is declared at module scope with `Yup.object()`, and the form's value
+type is derived from it rather than hand-written:
 
 ```typescript
-export const assistantSchema = yup.object({
-  name: yup.string().required('Name is required')
-    .min(VALIDATION_RULES.ASSISTANT_NAME.MIN_LENGTH, 'Name must be at least 3 characters'),
-  systemPrompt: yup.string().required('System prompt is required'),
-})
+const formSchema = Yup.object().shape({ /* fields */ })
+export type AssistantFormSchema = Yup.InferType<typeof formSchema>
 ```
 
-In the form component, wire up `react-hook-form` with `yupResolver`:
+Deriving the type with `Yup.InferType` is the point — a hand-written interface
+drifts from the schema silently, and the compiler never notices.
+
+Compose shared field groups instead of duplicating them. `AssistantForm` pulls
+its guardrail fields in via `.shape(guardrailAssignmentsSchema)`, imported from
+the component that owns them.
+
+Wire the schema with `yupResolver`, typing `useForm` on the inferred type:
 
 ```typescript
-const { register, handleSubmit, formState: { errors } } = useForm({
-  resolver: yupResolver(assistantSchema),
-})
+const { register, handleSubmit, formState: { errors } } =
+  useForm<AssistantFormSchema>({ resolver: yupResolver(formSchema) })
 ```
 
 Display inline error below each field:
@@ -237,7 +238,7 @@ const fetchWithRetry = async (endpoint: string, retries = 3) => {
 
 | Problem | Fix |
 |---------|-----|
-| Entire page crashes on render error | Wrap section in `<ErrorBoundary>` |
+| Entire page crashes on render error | Add a surface-scoped boundary modelled on `InteractiveErrorBoundary` — there is no generic one to reuse |
 | `loading` stuck on `true` after error | Add `finally { this.loading = false }` |
 | No user feedback on failure | Always `toaster.error` + set `error` in store |
 | Double-notification on form errors | `toaster` in store only; component just logs |
