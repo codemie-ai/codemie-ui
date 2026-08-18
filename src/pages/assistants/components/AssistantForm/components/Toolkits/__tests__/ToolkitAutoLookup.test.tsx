@@ -85,6 +85,48 @@ describe('author Toolkit — auto lookup toggle reflects and persists the stored
     expect(updateToolAutoLookup).toHaveBeenCalledWith(expect.anything(), expect.anything(), true)
   })
 
+  it('shows a pinned tool integration even when the stored flag says automatic', () => {
+    // The API defaults the flag to enabled for assistants saved before it existed, and a workflow
+    // tool configuration carries no flag at all. The pin is what the author actually chose.
+    render(
+      <Toolkit
+        {...baseProps}
+        selectedToolkits={[
+          {
+            toolkit: 'Project Management',
+            tools: [
+              {
+                ...tool,
+                auto_credentials_lookup: true,
+                settings: { id: 'int-1', alias: 'My Jira', setting_type: 'USER' },
+              },
+            ],
+          } as never,
+        ]}
+      />
+    )
+
+    expect(screen.getByRole('switch')).not.toBeChecked()
+    expect(document.querySelector('.p-dropdown-label')).toHaveTextContent('My Jira (USER)')
+  })
+
+  it('shows a pinned tool integration when no flag is stored', () => {
+    render(
+      <Toolkit
+        {...baseProps}
+        selectedToolkits={[
+          {
+            toolkit: 'Project Management',
+            tools: [{ ...tool, settings: { id: 'int-1', alias: 'My Jira', setting_type: 'USER' } }],
+          } as never,
+        ]}
+      />
+    )
+
+    expect(screen.getByRole('switch')).not.toBeChecked()
+    expect(document.querySelector('.p-dropdown-label')).toHaveTextContent('My Jira (USER)')
+  })
+
   it('reflects the flag that arrives after the first render', () => {
     // The form mounts before the assistant's toolkits are loaded. Reading the flag once, in a
     // useState initializer, left the toggle stuck on its initial value — which is exactly how a
@@ -104,5 +146,69 @@ describe('author Toolkit — auto lookup toggle reflects and persists the stored
     )
 
     expect(screen.getByRole('switch')).not.toBeChecked()
+  })
+})
+
+describe('author Toolkit — a pinned toolkit integration outranks the stored flag', () => {
+  afterEach(cleanup)
+
+  const toolkitTool = { name: 'generic_jira_tool', label: 'Generic Jira', settings_config: false }
+
+  const toolkitLevelProps = {
+    ...baseProps,
+    // Toolkit-level options are keyed by the toolkit's own credential type, not the tool's.
+    settings: {
+      'project management': [{ id: 'int-1', alias: 'My Jira', setting_type: 'USER' }],
+    } as never,
+    toolkit: {
+      toolkit: 'Project Management',
+      label: 'Project Management',
+      settings_config: true,
+      tools: [toolkitTool],
+    } as never,
+  }
+
+  const pinnedToolkit = (extra: Record<string, unknown>) =>
+    [
+      {
+        toolkit: 'Project Management',
+        settings_config: true,
+        settings: { id: 'int-1', alias: 'My Jira', setting_type: 'USER' },
+        tools: [toolkitTool],
+        ...extra,
+      },
+    ] as never
+
+  it('shows the toolkit integration and the switch off when the flag says automatic', () => {
+    render(
+      <Toolkit {...toolkitLevelProps} selectedToolkits={pinnedToolkit({ auto_credentials_lookup: true })} />
+    )
+
+    expect(screen.getByRole('switch')).not.toBeChecked()
+    expect(document.querySelector('.p-dropdown-label')).toHaveTextContent('My Jira (USER)')
+  })
+
+  it('shows the toolkit integration and the switch off when no flag is stored', () => {
+    render(<Toolkit {...toolkitLevelProps} selectedToolkits={pinnedToolkit({})} />)
+
+    expect(screen.getByRole('switch')).not.toBeChecked()
+    expect(document.querySelector('.p-dropdown-label')).toHaveTextContent('My Jira (USER)')
+  })
+
+  it('records the decision when the toolkit integration is cleared', async () => {
+    const updateToolkitSetting = vi.fn()
+    render(
+      <Toolkit
+        {...toolkitLevelProps}
+        updateToolkitSetting={updateToolkitSetting}
+        selectedToolkits={pinnedToolkit({})}
+      />
+    )
+
+    await userEvent.click(document.querySelector('.p-dropdown-clear-icon') as Element)
+
+    expect(updateToolkitSetting).toHaveBeenCalledWith(expect.anything(), undefined, {
+      recordAutoLookup: true,
+    })
   })
 })

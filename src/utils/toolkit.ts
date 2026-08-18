@@ -37,6 +37,28 @@ export const extractToolkitSettings = (
   }
 }
 
+/** A tool or toolkit slot, as far as the automatic-lookup decision is concerned. */
+export type AutoLookupSlot = {
+  auto_credentials_lookup?: boolean
+  settings?: Setting | null
+}
+
+/**
+ * Whether the slot resolves its integration per consuming user.
+ *
+ * A pinned integration answers the question on its own: the two states are mutually exclusive, and
+ * runtime resolution already treats the pin as decisive. Reading the flag alone would misreport
+ * every slot whose flag cannot describe it — a workflow tool configuration stores no flag, and the
+ * API defaults it to enabled for assistants saved before the field existed.
+ */
+export const isAutoLookupEnabled = (slot?: AutoLookupSlot | null): boolean => {
+  if (slot?.settings) {
+    return false
+  }
+
+  return slot?.auto_credentials_lookup !== false
+}
+
 export type ToolRecommendationInput = {
   toolkitName: string
   name: string

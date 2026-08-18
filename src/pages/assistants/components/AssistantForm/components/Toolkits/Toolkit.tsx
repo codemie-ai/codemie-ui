@@ -17,11 +17,13 @@ import { useContext } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import TooltipButton from '@/components/TooltipButton'
+import type { SettingUpdateOptions } from '@/hooks/useToolkitSelection'
 import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowContext'
 import { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
 import { getCredentialType } from '@/utils/settings'
 import { highlightText } from '@/utils/textUtils'
+import { isAutoLookupEnabled } from '@/utils/toolkit'
 import { cn } from '@/utils/utils'
 
 import { AutoCredentialsSwitch } from './AutoCredentialsSwitch'
@@ -35,8 +37,17 @@ interface ToolkitProps {
   settings: Record<string, Setting[]>
   toggleTool: (toolkit: AssistantToolkit, tool: Tool) => void
   toggleAllTools: (toolkit: AssistantToolkit, allToolsSelected: boolean) => void
-  updateToolSetting: (toolkit: AssistantToolkit, tool: Tool, setting?: Setting) => void
-  updateToolkitSetting: (toolkit: AssistantToolkit, setting?: Setting) => void
+  updateToolSetting: (
+    toolkit: AssistantToolkit,
+    tool: Tool,
+    setting?: Setting,
+    options?: SettingUpdateOptions
+  ) => void
+  updateToolkitSetting: (
+    toolkit: AssistantToolkit,
+    setting?: Setting,
+    options?: SettingUpdateOptions
+  ) => void
   updateToolkitAutoLookup?: (toolkit: AssistantToolkit, enabled: boolean) => void
   updateToolAutoLookup?: (toolkit: AssistantToolkit, tool: Tool, enabled: boolean) => void
   singleToolSelection?: boolean
@@ -111,16 +122,12 @@ const Toolkit = ({
 
   // Derive the toggles from the form data instead of keeping them in local state: the form mounts
   // before the assistant's toolkits arrive, so a state initialised once would stay on its initial
-  // value and a saved "lookup off" would keep showing as enabled.
-  const toolkitAutoMode =
-    (selectedToolkit as { auto_credentials_lookup?: boolean })?.auto_credentials_lookup !== false
+  // value and a saved "lookup off" would keep showing as enabled. A pinned integration decides on
+  // its own — see isAutoLookupEnabled.
+  const toolkitAutoMode = isAutoLookupEnabled(selectedToolkit)
 
   const isToolAutoMode = (toolName: string) =>
-    (
-      selectedToolkit?.tools.find((t) => t.name === toolName) as
-        | { auto_credentials_lookup?: boolean }
-        | undefined
-    )?.auto_credentials_lookup !== false
+    isAutoLookupEnabled(selectedToolkit?.tools.find((t) => t.name === toolName))
 
   const handleToolAutoModeChange = (toolName: string, isAuto: boolean) => {
     const tool = toolkit.tools.find((t) => t.name === toolName)!
@@ -227,7 +234,9 @@ const Toolkit = ({
                     settingsDefinitions={settings[getCredentialType(tool.name)]}
                     onAddSettingClick={() => onAddSettingClick(getCredentialType(tool.name))}
                     onChange={(setting) => {
-                      updateToolSetting(toolkit, tool, setting)
+                      // This surface shows the switch, so a pick or a clear here settles the
+                      // automatic-lookup question for the slot.
+                      updateToolSetting(toolkit, tool, setting, { recordAutoLookup: true })
                       integrationField?.onChange()
                     }}
                     error={integrationField?.error}
@@ -275,7 +284,7 @@ const Toolkit = ({
                         onAddSettingClick(getCredentialType(toolkit.toolkit))
                       }
                       onChange={(setting) => {
-                        updateToolkitSetting(toolkit, setting)
+                        updateToolkitSetting(toolkit, setting, { recordAutoLookup: true })
                         field?.onChange()
                       }}
                       autoMode={toolkitAutoMode}

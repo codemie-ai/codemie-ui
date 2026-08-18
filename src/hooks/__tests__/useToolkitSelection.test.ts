@@ -531,3 +531,103 @@ describe('useToolkitSelection — enabling auto lookup clears the pinned integra
     expect(updated.settings).toBeFalsy()
   })
 })
+
+describe('pinning an integration records the auto-lookup decision', () => {
+  let onToolkitsChange: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    onToolkitsChange = vi.fn()
+  })
+
+  const setting = { id: 'int-1', alias: 'My Jira' } as never
+
+  it('disables automatic lookup on the tool when an integration is pinned', () => {
+    const tool = makeTool('generic_jira_tool')
+    const toolkit = makeToolkit('Project Management', [tool])
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolSetting(toolkit, tool, setting, { recordAutoLookup: true })
+    })
+
+    expect(onToolkitsChange).toHaveBeenCalledWith([
+      expect.objectContaining({
+        tools: [expect.objectContaining({ settings: setting, auto_credentials_lookup: false })],
+      }),
+    ])
+  })
+
+  it('disables automatic lookup on the toolkit when an integration is pinned', () => {
+    const toolkit = makeToolkit('Project Management', [makeTool('generic_jira_tool')])
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolkitSetting(toolkit, setting, { recordAutoLookup: true })
+    })
+
+    expect(onToolkitsChange).toHaveBeenCalledWith([
+      expect.objectContaining({ settings: setting, auto_credentials_lookup: false }),
+    ])
+  })
+
+  it('records the decision when a tool integration is cleared from a surface with the switch', () => {
+    // Clearing the dropdown means "no integration", not "resolve one for me". The slot may carry no
+    // flag at all (rebuilt from a workflow configuration) or a legacy true, so the decision has to
+    // be written rather than assumed to be there already.
+    const tool = makeTool('generic_jira_tool')
+    const toolkit = makeToolkit('Project Management', [tool])
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolSetting(toolkit, tool, null, { recordAutoLookup: true })
+    })
+
+    expect(onToolkitsChange).toHaveBeenCalledWith([
+      expect.objectContaining({
+        tools: [expect.objectContaining({ settings: undefined, auto_credentials_lookup: false })],
+      }),
+    ])
+  })
+
+  it('records the decision when a toolkit integration is cleared from a surface with the switch', () => {
+    const toolkit = {
+      ...makeToolkit('Project Management', [makeTool('generic_jira_tool')]),
+      auto_credentials_lookup: true,
+    } as never
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolkitSetting(toolkit, null, { recordAutoLookup: true })
+    })
+
+    expect(onToolkitsChange).toHaveBeenCalledWith([
+      expect.objectContaining({ settings: undefined, auto_credentials_lookup: false }),
+    ])
+  })
+
+  it('leaves the flag untouched for surfaces that offer no automatic-lookup switch', () => {
+    // The plugin panel shares these callbacks but renders no switch, so it must not record a
+    // decision the user was never offered and cannot undo there.
+    const tool = makeTool('generic_jira_tool')
+    const toolkit = makeToolkit('Plugin', [tool])
+    const { result } = renderHook(() =>
+      useToolkitSelection({ selectedToolkits: [toolkit], onToolkitsChange })
+    )
+
+    act(() => {
+      result.current.updateToolSetting(toolkit, tool, setting)
+    })
+
+    const updatedTool = onToolkitsChange.mock.calls[0][0][0].tools[0]
+    expect(updatedTool.settings).toEqual(setting)
+    expect('auto_credentials_lookup' in updatedTool).toBe(false)
+  })
+})

@@ -23,6 +23,21 @@ interface UseToolkitSelectionProps {
   onToolkitsChange: (toolkits: AssistantToolkit[]) => void
 }
 
+export interface SettingUpdateOptions {
+  /**
+   * Whether choosing an integration on this surface also settles the automatic-lookup question.
+   *
+   * Only surfaces that show the switch may set it: picking an integration there means manual mode,
+   * and so does clearing it — an empty slot the user emptied is "no integration", not "resolve one
+   * per user". Surfaces without the switch (the plugin panel) stay flag-neutral, because they offer
+   * no way to undo a decision they would be recording on the user's behalf.
+   */
+  recordAutoLookup?: boolean
+}
+
+const recordedAutoLookup = (options?: SettingUpdateOptions) =>
+  options?.recordAutoLookup ? { auto_credentials_lookup: false } : {}
+
 export const useToolkitSelection = ({
   selectedToolkits,
   onToolkitsChange,
@@ -124,13 +139,15 @@ export const useToolkitSelection = ({
   )
 
   const updateToolkitSetting = useCallback(
-    (toolkit: AssistantToolkit, setting?: Setting | null) => {
+    (toolkit: AssistantToolkit, setting?: Setting | null, options?: SettingUpdateOptions) => {
       const existingToolkit = selectedToolkits.find((tk) => tk.toolkit === toolkit.toolkit)
 
       if (existingToolkit) {
         onToolkitsChange(
           selectedToolkits.map((tk) =>
-            tk.toolkit === toolkit.toolkit ? { ...tk, settings: setting || undefined } : tk
+            tk.toolkit === toolkit.toolkit
+              ? { ...tk, settings: setting || undefined, ...recordedAutoLookup(options) }
+              : tk
           )
         )
       }
@@ -139,12 +156,19 @@ export const useToolkitSelection = ({
   )
 
   const updateToolSetting = useCallback(
-    (toolkit: AssistantToolkit, tool: Tool, settings?: Setting | null) => {
+    (
+      toolkit: AssistantToolkit,
+      tool: Tool,
+      settings?: Setting | null,
+      options?: SettingUpdateOptions
+    ) => {
       const existingToolkit = selectedToolkits.find((tk) => tk.toolkit === toolkit.toolkit)
 
       if (existingToolkit) {
         const updatedTools = existingToolkit.tools.map((t) =>
-          t.name === tool.name ? { ...t, settings: settings || undefined } : t
+          t.name === tool.name
+            ? { ...t, settings: settings || undefined, ...recordedAutoLookup(options) }
+            : t
         )
         updateSelectedToolkits(toolkit, updatedTools)
       }

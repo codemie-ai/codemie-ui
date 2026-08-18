@@ -1,0 +1,30 @@
+{
+  "decision": "approve",
+  "rationale": "All four findings from the final round are resolved. CR-001 and CR-002 were resolved together by making the auto-lookup write an explicit opt-in from the call site: clearing now records the decision on surfaces that show the switch, while the plugin panel stays flag-neutral. Every caller of both setters was traced — ToolsConfiguration forwards to Toolkit, ExternalToolsSection renders only is_external toolkits whose integration UI is gated off entirely, the MCP path does not use these setters — so no switch-bearing surface omits the opt-in and no switchless surface passes it. CR-003 is resolved: the toolkit-level fixture is keyed by the toolkit's own credential type, the dropdown half is genuinely asserted, and the missing no-flag and clear cases are added. CR-004 was resolved in code and then deliberately reverted: the check round found the fix's own guard could block form initialisation permanently when the integrations index legitimately resolves empty (settingsStore.indexSettings has no catch and leaves an empty object for a user with no integrations), ending in silent loss of the node's tool on save, and that its first population could overwrite edits made in the meantime. Both are worse than the pre-existing race they guarded, so the human chose to revert that scope to its own ticket; the two workflow form files are byte-identical to main again. The check round therefore introduces no new findings against the shipped diff. Manual verification on a running stack confirms the ticket symptom no longer reproduces after the fix.",
+  "confidence": "high",
+  "risk_flags": ["credentials-resolution"],
+  "business_review": [
+    {"criterion": "1. Pinned slot renders switch OFF and dropdown showing that integration, with the flag true or absent", "status": "pass", "notes": "Carried forward; toolkit level now asserted too (ToolkitAutoLookup.test.tsx:188,195)"},
+    {"criterion": "2. Reopening a saved configuration shows the pinned integration", "status": "pass", "notes": "The derivation is correct for restored slots; the separate pre-existing index race is recorded as its own ticket and is not a regression of this change. Confirmed manually on a running stack"},
+    {"criterion": "3. No pin and no stored flag renders switch ON and no dropdown", "status": "pass", "notes": "Carried forward"},
+    {"criterion": "4. No pin and lookup stored disabled renders switch OFF", "status": "pass", "notes": "Carried forward"},
+    {"criterion": "5. Pinning records automatic lookup as disabled", "status": "pass", "notes": "Now via the explicit opt-in; useToolkitSelection.test.ts covers both levels"},
+    {"criterion": "6. Clearing a pin leaves automatic lookup disabled", "status": "pass", "notes": "Resolved by CR-001: clearing records the decision for flagless and legacy-true slots at both levels"},
+    {"criterion": "7. Enabling automatic lookup still clears the pin in one change", "status": "pass", "notes": "Untouched paths, still covered"},
+    {"criterion": "8. Both slot levels follow all of the above", "status": "pass", "notes": "Resolved by CR-003: toolkit level now has the pinned-with-flag, pinned-without-flag and clear cases, and asserts the dropdown"}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow.md — commit subject format", "status": "pass", "notes": "All four subjects match EPMCDME-XXXXX: Capital sentence"},
+    {"standard": "quality-gates.md — typecheck", "status": "pass", "notes": "Clean after the revert"},
+    {"standard": "quality-gates.md — lint", "status": "na", "notes": "Local ESLint alias resolver broken; reproduces on untouched main. CI is the real gate"},
+    {"standard": "quality-gates.md — unit tests", "status": "pass", "notes": "2792 tests pass across the touched areas"},
+    {"standard": "project rule — no ticket ids or internal URLs in source", "status": "pass", "notes": "Verified over the added lines"}
+  ],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "evidence": "useToolkitSelection.ts:38-39 recordedAutoLookup depends on the option, not on the value's truthiness; spread after settings at the toolkit and tool setters. Toolkit.tsx passes {recordAutoLookup: true} on both dropdowns, and PrimeReact fires onChange with undefined on the clear icon, so a clear writes false. Covered by a real clear-icon click test"},
+    {"id": "CR-002", "status": "resolved", "evidence": "PluginToolkit.tsx:175,212 still call the setters without options, so the plugin panel stays flag-neutral; asserted by a hook test that the key is absent. Every other caller traced: ExternalToolsSection renders only is_external toolkits, whose integration UI is gated off at Toolkit.tsx:203,256,264"},
+    {"id": "CR-003", "status": "resolved", "evidence": "ToolkitAutoLookup.test.tsx toolkit-level fixture keyed 'project management' (matching getCredentialType), dropdown asserted at :188,:195, plus the no-flag pinned case and the toolkit-level clear case"},
+    {"id": "CR-004", "status": "superseded", "evidence": "Reverted by commit 15ff2c8db; ToolForm.tsx and VirtualAssistantForm.tsx are identical to origin/main. The pre-existing race moves to its own ticket, together with the two failure modes the attempted guard exposed (indexSettings has no catch and leaves {} for a user with no integrations; the first index population can overwrite in-flight edits)"}
+  ],
+  "findings": []
+}

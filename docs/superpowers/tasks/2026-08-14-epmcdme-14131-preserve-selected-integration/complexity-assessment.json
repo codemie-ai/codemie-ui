@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "task": "Fix EPMCDME-14131 so a workflow tool slot keeps the integration the author selected instead of reverting to Automatic Credentials Lookup on reopen, a regression from EPMCDME-13738 (50e8b9325) which derives auto-mode solely from a stored auto_credentials_lookup flag that the workflow configuration has no place to store.",
+  "generated": "2026-08-14",
+  "scored_against": "Fix shape B — carry the auto-lookup flag through the workflow YAML contract (frontend types + serializer + backend WorkflowTool/WorkflowAssistantTool models). This is the largest plausible shape named in technical-analysis.md §6 and §7. Scores for the two smaller shapes are given in key_reasoning and split_recommendation.",
+  "dimensions": {
+    "component_scope":      { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 5, "label": "XL" },
+    "technical_risk":       { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 5, "label": "XL" }
+  },
+  "total": 27,
+  "size": "XL",
+  "routing": "split-required",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Shape B spans two codebases and a shared wire contract. Frontend: the shared author-side toolkit tree (Toolkit.tsx, IntegrationSelector.tsx, IntegrationSelectDropdown.tsx), useToolkitSelection, the workflow editor panels (ToolTab, ToolForm, ToolSelector, AssistantTab, VirtualAssistantForm), the shared utils utils/toolkit.ts and utils/workflows.ts, plus types/workflowEditor/configuration.ts and the YAML serializer. Backend: WorkflowTool and WorkflowAssistantTool in core/workflow_models/workflow_models.py:47,99, which today carry only integration_alias and structurally cannot express the third state. Base XL (full-stack, 4+ components, multiple subsystems), bumped to XXL by the shared-utilities red flag."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The ticket's acceptance criteria are crisp, but the fix shape is an unmade architectural decision with cross-repo consequences, and technical-analysis.md §6 flags an unresolved product question underneath it: backend tool_service.py:71 builds workflow toolkits with defaults, so 'lookup disabled' is not executable for a workflow tool node at all — the switch may not belong on that surface. Also undecided: which of the three author-side surfaces the reporter actually used (Tool node, MCP node, inline virtual-assistant node), and whether the blast radius to all pre-13738 assistants (candidate 6) is in scope. Shape B additionally needs backend-team alignment before planning, which is the XL criterion."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "No precedent exists for a three-state slot in the workflow YAML; back-compat is required for every workflow already saved under the two-state format. Three separate source comments record the trap that two updates each rebuild the toolkit list from the same snapshot and silently revert each other, and the 13738 review cycle produced nine findings before converging. Existing tests encode the current behaviour (ToolkitAutoLookup.test.tsx asserts the switch defaults ON when the flag is absent), so a correct fix reads as a broken suite. The entire save/reopen path is untested (ToolsConfiguration, ToolTab, ToolForm, ToolSelector have no tests; no backend test round-trips integration_alias), and ToolsConfiguration.tsx:154-181 has a timing-dependent re-render race that may make the defect intermittent. Bumped from L by the security red flag: the flag decides whose credentials resolve at run time, and the ticket itself states workflows may execute with an unexpected integration."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Shape B is roughly 10 frontend source files (Toolkit.tsx, IntegrationSelectDropdown.tsx, useToolkitSelection.ts, types/workflowEditor/configuration.ts, utils/toolkit.ts, utils/workflows.ts, ToolTab.tsx, AssistantTab.tsx, ToolForm.tsx, the YAML serializer) plus 3-5 backend files in the codemie repo, plus 3-5 new or rewritten test files covering paths that have none today. 13-15 modified and 4-6 new lands squarely in XL."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "UI components, form/serialization utils, the frontend type contract, the workflow YAML wire format, the backend pydantic workflow models and the backend tool service — five distinct layers across two repositories. No DB schema migration is needed (the flag lives in YAML and in the assistant toolkits JSONB), which is the only reason this is not XXL. cross_system is true: a frontend-only merge of shape B ships a YAML field the backend discards."
+    },
+    {
+      "dimension": "fix_shape_comparison",
+      "reason": "Score depends heavily on the shape chosen. Shape A (frontend-only: derive auto-mode as 'flag if present, otherwise pinned-integration-means-lookup-off', stop unmounting a populated dropdown, and pair updateToolSetting/updateToolkitSetting with auto_credentials_lookup:false) scores approximately component_scope 4, clarity 3, risk 3, files 3, deps 1, layers 2 = 16, size M, routing brainstorming — 2-3 source files plus 3-4 test files, single repo, and it also repairs every legacy assistant at no backend cost, at the price of re-coupling the two signals 13738 deliberately separated. Shape C (hide the auto-lookup switch on workflow tool nodes, where the backend cannot honour 'lookup disabled' anyway) scores approximately component_scope 2, clarity 3, risk 2, files 2, deps 1, layers 2 = 12, size S — the smallest and arguably the most semantically correct change, but it needs the product question answered first."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XL (5) to XXL (6): touches core shared utilities — utils/toolkit.ts and the shared Toolkit/IntegrationSelector component tree are consumed by the assistant form and by both workflow surfaces, so the blast radius reaches every pre-13738 assistant, beyond the ticket's stated scope.",
+    "Component Scope: 'affects multiple workflows or agents' also applies (workflow Tool node, workflow inline virtual-assistant node, and the assistant form all render the same components) — no further effect, the dimension is already capped at 6.",
+    "Technical Risk bumped from L (4) to XL (5): credentials-resolution sensitivity — the auto_credentials_lookup decision determines whose integration credentials a workflow executes with, and the ticket states workflows 'may use an unexpected integration during configuration or execution'.",
+    "Requirements Clarity bumped from L (4) to XL (5): the fix shape is explicitly TBD in technical-analysis.md §6 ('This is a product question that should be settled before implementation'), and shape B requires a backend contract decision that no one has taken."
+  ],
+  "split_recommendation": "Do not attempt shape B as a single EPMCDME-14131 bug. It spans two repositories and changes a wire contract, which is not deliverable inside a Frontend-labelled Major bug targeting Prod 2.44.0. Split by phase and by shape:\n\n1. EPMCDME-14131 itself — ship shape A, frontend-only, size M (~16). Make the auto-mode derivation fall back to 'a pinned integration means lookup is off' when auto_credentials_lookup is absent (Toolkit.tsx:115-123), stop IntegrationSelectDropdown.tsx:78 unmounting a dropdown that holds a value, and pair useToolkitSelection.updateToolSetting/updateToolkitSetting with auto_credentials_lookup:false so state 1' becomes unrepresentable. Cover both the tool-level and toolkit-level slots (H8) and the H4 toggle-off-then-on data-loss path. Rewrite the ToolkitAutoLookup.test.tsx assertion that encodes the current default, and add the missing save/reopen regression test. This also repairs every pre-13738 assistant.\n\n2. Product spike (do this first, it can eliminate story 3) — decide whether a workflow tool node should offer 'Automatic Credentials Lookup' at all, given that backend tool_service.py:71 builds workflow toolkits with defaults and cannot honour 'lookup disabled'. If the answer is no, shape C (~12, S) removes the switch on that surface and story 3 is never needed.\n\n3. Follow-up cross-repo story (only if the spike says workflows genuinely need three states) — carry the flag through ToolConfiguration and AssistantTool, the YAML serializer, and the backend WorkflowTool/WorkflowAssistantTool models, with back-compat for workflows already stored in the two-state format. Needs its own backend ticket and deploy-ordering plan.\n\n4. Separate defect ticket — consumer-panel candidates 9-12 in technical-analysis.md §2.7 (UserMapping changedKeys wipe, applyAutoResolvedIntegrations overwrite, duplicate tool-name collision). Same story's fallout, different component tree and API; scoping them into this bug would inflate it further.\n\nPrerequisite for all of the above: reproduce with the network tab open to confirm which of the three author-side surfaces is affected and whether integration_alias actually survives in the PUT /v1/workflows/{id} body (technical-analysis.md §2.10 lists two unruled-out backend contract traps). That single step may collapse the scope to shape A or C outright."
+}

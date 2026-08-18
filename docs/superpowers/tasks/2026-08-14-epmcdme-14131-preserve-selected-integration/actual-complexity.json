@@ -1,0 +1,88 @@
+{
+  "task": "Derive a tool/toolkit slot's automatic-credentials-lookup mode from its pinned integration rather than from the stored flag alone, and record the decision on write from the surfaces that show the switch.",
+  "generated": "2026-08-14",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L",
+      "affected": "isAutoLookupEnabled + AutoLookupSlot in utils/toolkit.ts, updateToolSetting/updateToolkitSetting and the new SettingUpdateOptions contract in useToolkitSelection.ts, the Toolkit.tsx prop types and both dropdown call sites, plus the three test suites covering them",
+      "layers": "UI component (Toolkit.tsx), shared form-state hook (useToolkitSelection), shared pure utils (utils/toolkit.ts)"
+    },
+    "requirements_clarity": {
+      "score": 3,
+      "label": "M",
+      "status": "Clear",
+      "gaps": "The eight acceptance criteria were crisp and all ultimately passed, but two boundaries only resolved during review: whether clearing a pin re-enables automatic lookup for slots that never carried an explicit false (criterion 6, initially half-implemented), and whether the pre-existing one-shot-effect race in ToolForm/VirtualAssistantForm sat inside the ticket's acceptance or outside the approved spec. The latter needed a human decision and was resolved by reverting to a separate ticket."
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L",
+      "risk_factors": "Credentials resolution — the derived predicate and the recorded flag together decide whose integration credentials a slot executes with, and both review rounds carry the credentials-resolution risk flag. No precedent existed for deriving the mode instead of reading the flag. Widening the write to the shared hook silently reached PluginToolkit and ExternalToolsSection, surfaces that render no switch and could not undo a flag written on the author's behalf. The attempted fix for the adjacent form-init race introduced two worse failure modes (a guard that could block form initialisation permanently when the integrations index legitimately resolves empty, and a re-run that could overwrite in-flight edits).",
+      "mitigation": "The write was gated behind an explicit opt-in options argument passed only from the switch-bearing surface, and every caller of both setters was traced. Runtime precedence was verified directly against the backend resolver rather than assumed. The risky adjacent scope was reverted so the two workflow form files are byte-identical to main. Frontend-only and trivially reversible; no schema or wire-format change. Manual verification on a running stack confirmed the symptom is gone."
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M",
+      "modified_files": 5,
+      "modified_file_list": [
+        "src/utils/toolkit.ts",
+        "src/hooks/useToolkitSelection.ts",
+        "src/hooks/__tests__/useToolkitSelection.test.ts",
+        "src/pages/assistants/components/AssistantForm/components/Toolkits/Toolkit.tsx",
+        "src/pages/assistants/components/AssistantForm/components/Toolkits/__tests__/ToolkitAutoLookup.test.tsx"
+      ],
+      "new_files": 1,
+      "new_file_list": ["src/utils/__tests__/toolkit.test.ts"],
+      "affected_dirs": [
+        "src/utils/",
+        "src/hooks/",
+        "src/pages/assistants/components/AssistantForm/components/Toolkits/"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 2,
+      "label": "S",
+      "layers_changed": ["UI", "Shared hooks / form state", "Shared utils"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 17,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 6,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three components across two tiers — a pure util, a shared form-state hook, and one component — which is base M. Bumped to L because both the util and the hook are core shared code: useToolkitSelection's setters are also called by PluginToolkit and ExternalToolsSection, and Toolkit.tsx renders on the assistant page and on every workflow surface. That blast radius is what the review round was mostly about, and it is why the fix needed an opt-in options argument rather than an unconditional write."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Base M for a new derivation with no exact precedent, bumped to L by the credentials red flag: the slot's mode decides whose credentials resolve at run time. The review demonstrated the risk was not theoretical — the first implementation would have permanently excluded cleared plugin slots from automatic resolution with no author-visible control to undo it. Offsetting factors kept it off XL: frontend-only, no wire-format or schema change, trivially revertible, and 2792 unit tests plus manual stack verification behind it."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "6 files, 320 insertions / 16 deletions, spanning three directories. 5 modified and 1 new (the util test suite) lands in the M band; the directory spread leans L but the counts do not."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "S rather than M: everything sits in the frontend presentation tier. The spec explicitly excluded the workflow YAML contract, any backend change, and the consumer-facing settings panel, so no API, persistence, or cross-repo layer was touched."
+    },
+    {
+      "dimension": "estimate_vs_actual",
+      "reason": "The initial assessment's headline of XL (27) was scored against fix shape B — carrying the flag through the workflow YAML contract and the backend workflow models across two repositories. That shape was never built. The same assessment scored the shape actually chosen (shape A, frontend-only derivation) at approximately 16 / M, which is within one point of this actual of 17 / M. The estimate was accurate for the shape that shipped; the split recommendation did its job by steering away from the cross-repo shape, and item 4 of that recommendation (the separate defect ticket) is where the reverted form-init race landed."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M (3) to L (4): touches core shared utilities — utils/toolkit.ts and useToolkitSelection are consumed by the assistant form, the plugin panel, the external-tools section, and the workflow tool and inline-assistant nodes.",
+    "Technical Risk bumped from M (3) to L (4): security sensitivity — the auto-lookup decision determines whose integration credentials a slot executes with; both code-review artifacts carry the credentials-resolution risk flag."
+  ],
+  "split_recommendation": null
+}

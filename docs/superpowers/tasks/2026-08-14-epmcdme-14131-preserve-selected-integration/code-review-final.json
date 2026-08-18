@@ -1,0 +1,69 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three lenses ran. Two independently converged on the same real defect: the clear path leaves the stored flag untouched, which satisfies the spec only for slots that already carry false — and the two populations this fix exists for (workflow-restored slots with no flag, legacy assistants with the flag defaulted to true) flip back to automatic lookup the moment the author clears a pin, which the predicate now makes reachable for the first time. The edge-case lens added that the same two setters are shared by PluginToolkit and ExternalToolsSection, which render no auto-lookup switch, so writing the decision from the hook records a state those surfaces cannot express or undo. The acceptance audit passes criteria 1, 3, 4, 5, 7 and marks 2, 6, 8 partial. One finding is decision_needed rather than a defect in this diff: a pre-existing one-shot-effect race in the workflow tool forms that intermittently reproduces the ticket's own symptom — in scope for the ticket's acceptance, out of scope for the approved spec, so the human decides. 3 blind findings dismissed: the runtime-precedence concern is refuted (toolkit_service.py:841 resolves author_pinned before consulting the flag, verified directly), the AutoLookupSlot structural-permissiveness and toolkit-to-tool inheritance concerns describe behaviour this diff did not change. Confidence is low because of the open decision_needed finding. Lint could not be evaluated: the local ESLint alias resolver is broken and reports 8636 errors on untouched main, all of them import/no-unresolved or import/extensions — recorded as na, not pass. Typecheck clean; 1712 unit tests pass across the touched areas.",
+  "confidence": "low",
+  "risk_flags": ["credentials-resolution", "regression-fix"],
+  "business_review": [
+    {"criterion": "1. Pinned slot renders switch OFF and dropdown showing that integration, with the flag true or absent", "status": "pass", "notes": "src/utils/toolkit.ts:54-60 feeds Toolkit.tsx:117,120; dropdown genuinely renders (IntegrationSelectDropdown.tsx:78 bails only on auto mode); asserted with the real label at ToolkitAutoLookup.test.tsx:109-110,126-127"},
+    {"criterion": "2. Reopening a saved configuration shows the pinned integration", "status": "partial", "notes": "Derivation is correct for restored slots (workflows.ts:113-137), but ToolForm.tsx:305-343 and VirtualAssistantForm.tsx:254-279 rebuild toolkits in a one-shot effect that reads the integrations index once and never re-runs; when settings resolve after toolkits the alias does not match and the slot is built unpinned"},
+    {"criterion": "3. No pin and no stored flag renders switch ON and no dropdown", "status": "pass", "notes": "src/utils/toolkit.ts:59; ToolkitAutoLookup.test.tsx:57-66; toolkit.test.ts:33-37"},
+    {"criterion": "4. No pin and lookup stored disabled renders switch OFF", "status": "pass", "notes": "src/utils/toolkit.ts:59; toolkit.test.ts:34; ToolkitAutoLookup.test.tsx:39-55"},
+    {"criterion": "5. Pinning records automatic lookup as disabled", "status": "pass", "notes": "useToolkitSelection.ts:136-139 (toolkit) and 158-159 (tool); useToolkitSelection.test.ts:549-573"},
+    {"criterion": "6. Clearing a pin leaves automatic lookup disabled", "status": "partial", "notes": "Only holds for slots already carrying false; flagless and legacy-true slots flip back to automatic. The added test covers only the already-false case (useToolkitSelection.test.ts:576-593)"},
+    {"criterion": "7. Enabling automatic lookup still clears the pin in one change", "status": "pass", "notes": "Unchanged paths useToolkitSelection.ts:174-216, covered at both levels by useToolkitSelection.test.ts:482-532"},
+    {"criterion": "8. Both slot levels follow all of the above", "status": "partial", "notes": "Reading and pin-recording are symmetric; criterion 6's gap has no toolkit-level test, and the toolkit-level render test cannot assert its dropdown because its settings fixture is keyed 'jira' while getCredentialType('Project Management') returns 'project management' (settings.ts:165-176)"}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow.md — commit subject format", "status": "pass", "notes": "Both subjects match EPMCDME-XXXXX: Capital sentence"},
+    {"standard": "quality-gates.md — typecheck", "status": "pass", "notes": "npm run typecheck exits clean"},
+    {"standard": "quality-gates.md — lint", "status": "na", "notes": "Local ESLint alias resolver is broken: 8636 errors, exclusively import/no-unresolved and import/extensions, reproducing on untouched main. Could not be evaluated locally; CI is the real gate"},
+    {"standard": "quality-gates.md — unit tests", "status": "pass", "notes": "1712 tests across 102 files pass in the touched areas"},
+    {"standard": "project rule — no ticket ids or internal URLs in source", "status": "pass", "notes": "grep over the added lines finds none"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/hooks/useToolkitSelection.ts",
+      "line": 139,
+      "problem": "The clear branch skips the flag write, resting on the invariant 'the dropdown is only reachable with lookup already disabled' — an invariant this same change removed. The dropdown is now rendered for slots whose stored flag is not false: legacy assistants the API returns with auto_credentials_lookup true beside a pinned settings, and every workflow slot rebuilt by getToolkitsFromConfiguration, which stores no flag at all. Same hole at line 159 for the per-tool path.",
+      "impact": "Clearing a pinned integration flips the switch back ON and unmounts the dropdown mid-edit, so the author cannot pick a replacement without noticing and re-toggling, and the workflow's required-integration error rendered inside that dropdown disappears with it. The slot silently changes from a specific integration to per-user automatic lookup and is saved that way — the same class of silent whose-credentials change this ticket exists to fix. Contradicts spec criterion 6 directly.",
+      "recommendation": "Record the decision on clear as well, but only from surfaces that actually show the switch (see CR-002): the enable path in updateToolAutoLookup / updateToolkitAutoLookup must remain the only writer of true. Add tests for clearing a slot with no stored flag and one with true, at both levels.",
+      "sources": ["blind", "edge-case", "acceptance"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/PluginToolkit.tsx",
+      "line": 212,
+      "problem": "PluginToolkit shares updateToolkitSetting / updateToolSetting with the assistant form but renders IntegrationSelector without showAutoCredentials and without autoMode (lines 170-176 and 205-214), so no switch is ever shown there. The hook's new write therefore records auto_credentials_lookup false on Plugin slots from a surface that exposes no control to set it back.",
+      "impact": "A cleared Plugin slot is left unpinned yet permanently excluded from automatic resolution: it is still offered in Your Integration Settings (utils/assistants.tsx:60,67) but filtered out of auto resolution (utils/assistants.tsx:190,211), so consuming users' own credentials stop resolving and the tool runs with no integration until each user maps one by hand, with nothing in the author UI explaining why. Before this diff no path could write the flag from the plugin panel.",
+      "recommendation": "Gate the auto-lookup write behind an explicit opt-in from the call site (an options argument or a separate callback) used only by Toolkit.tsx, leaving PluginToolkit and ExternalToolsSection writes flag-neutral as before.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/__tests__/ToolkitAutoLookup.test.tsx",
+      "line": 165,
+      "problem": "The toolkit-level test is named 'shows the toolkit integration and the switch off' but asserts only the switch. Its settings fixture is keyed 'jira' while the toolkit-level lookup uses getCredentialType('Project Management'), which returns 'project management' (settings.ts:165-176), so that render has no options and the dropdown half of the assertion is never exercised. There is also no toolkit-level clear case and no toolkit-level no-flag-pinned case.",
+      "impact": "The visible half of criterion 1 is unverified at toolkit level, so a future regression in the toolkit-level branch of Toolkit.tsx:266-281 would pass the suite. A test asserting less than its name claims is worse than a missing test.",
+      "recommendation": "Key the toolkit-level fixture by getCredentialType(toolkit.toolkit) and assert the dropdown label as the tool-level tests do; add the no-flag pinned toolkit case and the toolkit-level clear case.",
+      "sources": ["acceptance"]
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/pages/workflows/editor/configPanels/components/ToolForm.tsx",
+      "line": 305,
+      "problem": "ToolForm rebuilds toolkits from the stored tool configuration inside an effect guarded by hasInitialized with deps [availableToolkits?.length], reading the settings snapshot at that instant, while getAssistantToolkits() and indexSettings() are fired together on mount (lines 345-352). VirtualAssistantForm.tsx:241-279 has the same shape via a ref. If the toolkits response wins the race, the alias lookup returns undefined and the slot is built with no settings.",
+      "impact": "The ticket's own symptom still reproduces intermittently on a workflow tool node and an inline assistant: the node reopens as Automatic lookup with no dropdown while the runtime still executes with the pinned alias. Non-deterministic, so it will read as a flaky regression rather than a fix. This is pre-existing — the diff neither introduced nor touched it — but it sits squarely inside the ticket's acceptance criterion 2 while sitting outside the approved spec, which scopes the change to reading the flag.",
+      "recommendation": "Human decision: either widen this change to re-run the rebuild once the index is populated (add settings or an isSettingsIndexed check to the effect deps, and set hasInitialized only after a populated lookup), or record it as a separate ticket and ship the current scope. Note the sibling precedent: the same class of stale-index defect was fixed for the integration dropdown by resetting the indexed flag on create/update.",
+      "sources": ["acceptance"]
+    }
+  ]
+}
