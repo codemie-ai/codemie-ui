@@ -44,8 +44,7 @@ const cleanMermaidCode = (code: string): string => {
   const mermaidEnd = /\n?```$/m
   cleanedCode = cleanedCode.replace(mermaidEnd, '')
 
-  // Do NOT call unSanitizeMessage here: CodeBlock calls it internally.
-  // Calling it twice makes unSanitizeMessage non-idempotent (&#38; -> &amp; -> &).
+  cleanedCode = unSanitizeMessage(cleanedCode)
   return cleanedCode.trim()
 }
 
@@ -132,10 +131,8 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code }) => {
           throw new Error('Empty diagram code')
         }
 
-        // Clean and unescape the code before passing to the mermaid renderer.
-        // unSanitizeMessage is called here (not inside cleanMermaidCode) so the
-        // CodeBlock error-fallback path, which unescapes internally, does not double-decode.
-        const cleanedCode = unSanitizeMessage(cleanMermaidCode(code))
+        // Clean the code before rendering
+        const cleanedCode = cleanMermaidCode(code)
 
         const svg = await filesStore.getMermaidFile(cleanedCode)
         setRenderedSvg(svg)
@@ -296,7 +293,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code }) => {
       <MermaidCodePopup
         visible={showCodePopup}
         onClose={() => setShowCodePopup(false)}
-        code={unSanitizeMessage(cleanMermaidCode(code))}
+        code={cleanMermaidCode(code)}
       />
     </div>
   )
