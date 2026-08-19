@@ -58,7 +58,7 @@ describe('IntegrationSelectDropdown — auto mode outranks the empty-list branch
 describe('IntegrationSelectDropdown — disabled prop', () => {
   afterEach(cleanup)
 
-  it('renders a disabled Select (not the add button) when disabled=true and settingsDefinitions is empty', () => {
+  it('shows the Add User Integration button even when disabled=true and settingsDefinitions is empty', () => {
     render(
       <IntegrationSelectDropdown
         isAutoMode={false}
@@ -71,10 +71,10 @@ describe('IntegrationSelectDropdown — disabled prop', () => {
         disabled={true}
       />
     )
-    // The button-only fallback must NOT appear
-    expect(screen.queryByRole('button', { name: /add user integration/i })).not.toBeInTheDocument()
-    // A combobox (Select) must be present
-    expect(screen.getByRole('combobox')).toBeInTheDocument()
+    // The button-only fallback must appear — it is the only way to add an integration
+    expect(screen.getByRole('button', { name: /add user integration/i })).toBeInTheDocument()
+    // No select/combobox when there are no options
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
   it('still renders the add button (button-only view) when disabled=false and settingsDefinitions is empty', () => {

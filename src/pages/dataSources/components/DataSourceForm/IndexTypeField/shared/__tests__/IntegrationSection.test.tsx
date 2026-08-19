@@ -89,14 +89,10 @@ describe('IntegrationSection', () => {
   })
 
   describe('hasNoSettings state', () => {
-    it('renders a disabled dropdown instead of the standalone add button', () => {
+    it('shows Add User Integration button for required integrations when no settings exist', () => {
       render(<TestWrapper hasNoSettings={true} isDropdownShown={false} settings={[]} />)
-      const combobox = screen.getByRole('combobox')
-      expect(combobox).toBeInTheDocument()
-      expect(combobox.closest('.p-dropdown')).toHaveClass('p-disabled')
-      expect(
-        screen.queryByRole('button', { name: /add user integration/i })
-      ).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /add user integration/i })).toBeInTheDocument()
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     })
 
     it('keeps Add User Integration button accessible for optional integrations when no settings exist', () => {

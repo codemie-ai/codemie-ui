@@ -1,0 +1,42 @@
+{
+  "verdict": "approve",
+  "decision": "approved",
+  "confidence": "high",
+  "round": "final",
+  "reviewed_at": "2026-08-18T18:45:00Z",
+  "lenses": ["blind", "edge-case", "acceptance"],
+  "diff_stat": "1 production line removed, 2 test files corrected, 4 docs files added",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "note",
+      "status": "acknowledged",
+      "disposition": "future-caller risk, not a current bug — no current caller triggers this path",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/IntegrationSelectDropdown.tsx",
+      "line": 83,
+      "summary": "Empty-state branch renders the Add button without a `disabled` prop; non-empty branch hides it when disabled=true — asymmetric behaviour across the two render paths",
+      "failure_scenario": "A future caller that passes disabled=true with a non-empty list and then clears the list (e.g. after a failed refresh) would see the Add button appear even though disabled=true. No current caller reaches this path: the only passer of disabled=true is IntegrationSection with disabled={isRequired && hasNoSettings}, and hasNoSettings=false whenever the list is non-empty."
+    },
+    {
+      "id": "F2",
+      "severity": "note",
+      "status": "acknowledged",
+      "disposition": "pre-existing, out of scope for this fix",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/IntegrationSelectDropdown.tsx",
+      "line": 80,
+      "summary": "Dead sub-conditions: `!selectOptions` and `!settingsDefinitions` are always false",
+      "failure_scenario": "settingsDefinitions is coerced to [] on line 60 (never null/undefined); selectOptions is derived via .map() (always an array). Both guards are unreachable — the condition reduces to settingsDefinitions.length === 0. No bug, but the dead checks mask intent and could mislead future readers."
+    },
+    {
+      "id": "F3",
+      "severity": "note",
+      "status": "acknowledged",
+      "disposition": "pre-existing, out of scope for this fix",
+      "file": "src/pages/dataSources/components/DataSourceForm/IndexTypeField/shared/IntegrationSection.tsx",
+      "line": 112,
+      "summary": "disabled={isRequired && hasNoSettings} is now a no-op after this fix",
+      "failure_scenario": "When hasNoSettings=true the empty-state branch in IntegrationSelectDropdown fires regardless of disabled. When hasNoSettings=false, disabled evaluates to false anyway. The prop has no observable effect with any current caller. Future maintainers may be confused about its purpose. Cleanup opportunity: remove or rename the prop to reflect its true intent."
+    }
+  ],
+  "summary": "Fix correctly removes the !disabled guard that was suppressing the Add User Integration button for all required-integration datasource types when no integrations were configured. All three acceptance criteria pass. Three pre-existing notes surfaced (asymmetric disabled handling, dead conditions, no-op disabled prop in IntegrationSection) — none blocking, none introduced by this diff. Approved."
+}

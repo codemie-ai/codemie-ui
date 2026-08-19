@@ -77,7 +77,7 @@ export const IntegrationSelectDropdown = ({
   // would leave the add button under an enabled Automatic Credentials Lookup toggle.
   if (isAutoMode) return null
 
-  if (!disabled && (!selectOptions || !settingsDefinitions || settingsDefinitions.length === 0)) {
+  if (!selectOptions || !settingsDefinitions || settingsDefinitions.length === 0) {
     return (
       <div className={className}>
         <Button
