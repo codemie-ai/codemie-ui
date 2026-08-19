@@ -1,5 +1,125 @@
 [
   {
+    "version": "2.44.0",
+    "date": "2026-08-19",
+    "issues": [
+      {
+        "title": "Add `Refresh` Button to Integrations Select Field in Data Source Creation Form",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10302",
+        "key": "EPMCDME-10302"
+      },
+      {
+        "title": "Add \"Auditor\" Role to Allow Viewing Other Users' Workflow Runs",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-10930",
+        "key": "EPMCDME-10930"
+      },
+      {
+        "title": "Add \"SharePoint\" Tool—Enable Agents to Create/Edit Items on SharePoint Sites",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-11721",
+        "key": "EPMCDME-11721"
+      },
+      {
+        "title": "Migrate scheduler functionality to use PostgreSQL lock instead of Elasticsearch",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-12231",
+        "key": "EPMCDME-12231"
+      },
+      {
+        "title": "Scheduler Data Source does not work directly or when created via Integration for Data Source",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13171",
+        "key": "EPMCDME-13171"
+      },
+      {
+        "title": "Chat displays misleading TOKEN LIMIT EXCEEDED message when the user is not out of tokens",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13459",
+        "key": "EPMCDME-13459"
+      },
+      {
+        "title": "Per-workflow scope for personal integration settings in the assistant panel",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13738",
+        "key": "EPMCDME-13738"
+      },
+      {
+        "title": "Workflows: Conditional node does not evaluate inline set membership expression `value in {1,2,3,4}`",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13762",
+        "key": "EPMCDME-13762"
+      },
+      {
+        "title": "Cron day-of-week value is not parsed correctly",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13782",
+        "key": "EPMCDME-13782"
+      },
+      {
+        "title": "Welcome tour freezes on step 11 when the Analytics section is highlighted",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13785",
+        "key": "EPMCDME-13785"
+      },
+      {
+        "title": "Scheduler integration: display UTC offset together with timezone names in timezone selector",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13800",
+        "key": "EPMCDME-13800"
+      },
+      {
+        "title": "Extra configuration: invalid temperature range allowed for Bedrock and Vertex Claude Sonnet models",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13882",
+        "key": "EPMCDME-13882"
+      },
+      {
+        "title": "Workflow editor: Transform mapping action icons shrink for long output field names",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13930",
+        "key": "EPMCDME-13930"
+      },
+      {
+        "title": "CodeMie backend silently maps LiteLLM bedrock_converse provider to azure_openai",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14015",
+        "key": "EPMCDME-14015"
+      },
+      {
+        "title": "Ability to add EPAM MCP servers to Claude Desktop when connected through CodeMie CLI",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14057",
+        "key": "EPMCDME-14057"
+      },
+      {
+        "title": "DeepSeek V4 Pro is now available in CodeMie; DeepSeek R1 is retired",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14067",
+        "key": "EPMCDME-14067"
+      },
+      {
+        "title": "Extend managed MCP catalog to expose per-server OAuth client configuration",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14072",
+        "key": "EPMCDME-14072"
+      },
+      {
+        "title": "Add Gemini 3.7 Flash model to CodeMie environments",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14123",
+        "key": "EPMCDME-14123"
+      },
+      {
+        "title": "Premium model indication in chat and model selection UX",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14126",
+        "key": "EPMCDME-14126"
+      }
+    ]
+  },
+  {
     "version": "2.43.0",
     "date": "2026-08-12",
     "issues": [
