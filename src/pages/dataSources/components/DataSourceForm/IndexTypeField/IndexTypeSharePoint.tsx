@@ -15,7 +15,6 @@
 import { FC, useCallback, useEffect, useRef, useState } from 'react'
 import { Control, Controller, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 
-import FormAutocomplete from '@/components/form/FormAutocomplete'
 import Input from '@/components/form/Input'
 import RadioGroup from '@/components/form/RadioGroup/RadioGroup'
 import { SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
@@ -25,6 +24,7 @@ import { OAuthStatus } from '@/types/entity/dataSource'
 
 import { FormValues } from '../hooks/useEditPopupForm'
 import { useSharePointOAuth } from '../hooks/useSharePointOAuth'
+import EmbeddingsModelField from './shared/EmbeddingsModelField'
 import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
 import SharePointContentTypesSection from './SharePointContentTypesSection'
@@ -174,7 +174,9 @@ const IndexTypeSharePoint: FC<Props> = ({
 
       <SharePointContentTypesSection control={control} />
 
-      <div className="mb-4">
+      <EmbeddingsModelField control={control} embeddingModels={embeddingModels} />
+
+      <div className="mb-4 mt-4">
         <p className="mb-2 text-xs text-text-tertiary">Authentication Method:</p>
         <RadioGroup
           name="sharepointAuthMethod"
@@ -256,15 +258,6 @@ const IndexTypeSharePoint: FC<Props> = ({
           )}
         </>
       )}
-
-      <FormAutocomplete
-        name="embeddingsModel"
-        control={control}
-        id="embeddingsModel"
-        label="Model used for embeddings"
-        options={embeddingModels}
-        placeholder="Embeddings Model Type"
-      />
     </div>
   )
 }

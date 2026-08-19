@@ -16,10 +16,10 @@
 import { FC } from 'react'
 import { Controller } from 'react-hook-form'
 
-import FormAutocomplete from '@/components/form/FormAutocomplete'
 import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 
+import EmbeddingsModelField from './shared/EmbeddingsModelField'
 import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
 
@@ -94,6 +94,8 @@ const IndexTypeAzureDevOpsWiki: FC<Props> = ({
         text='The page path should not include "/Overview/Wiki" and must start from the page level. For example, if your Azure DevOps breadcrumbs show "ProjectName/WikiName/Overview/Wiki/Page1/Page2", use "/Page1/*" as the path. Build the path using breadcrumb values, not the page URL.'
       />
 
+      <EmbeddingsModelField control={control} embeddingModels={embeddingModels} />
+
       <IntegrationSection
         hasNoSettings={hasNoSettings(value)}
         isDropdownShown={isDropdownShown(value)}
@@ -109,15 +111,6 @@ const IndexTypeAzureDevOpsWiki: FC<Props> = ({
         integrationLabel="Integration for Azure DevOps Wiki"
         integrationPlaceholder="Integration for Azure DevOps Wiki"
         credentialType="azuredevops"
-      />
-
-      <FormAutocomplete
-        name="embeddingsModel"
-        control={control}
-        id="embeddingsModel"
-        label="Model used for embeddings"
-        options={embeddingModels}
-        placeholder="Embeddings Model Type"
       />
     </div>
   )

@@ -1,0 +1,20 @@
+{
+  "decision": "approve",
+  "rationale": "All three review lenses (blind, edge-case, acceptance) returned no findings. All 5 acceptance criteria are satisfied. The change is a pure JSX reordering — FormAutocomplete moved before IntegrationSection in 6 files — with no logic, prop, state, hook, or style changes. Commit messages conform to the required format. No security surface touched.",
+  "follow_ups": [],
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "AC-1", "status": "satisfied", "notes": "Jira, Confluence, Xray, AzureDevOpsWorkItem, AzureDevOpsWiki: FormAutocomplete now appears before IntegrationSection in all five files." },
+    { "criterion": "AC-2", "status": "satisfied", "notes": "SharePoint: FormAutocomplete moved above auth RadioGroup; IntegrationSection renders after it inside the INTEGRATION conditional." },
+    { "criterion": "AC-3", "status": "satisfied", "notes": "IndexTypeGit.tsx and IndexTypeSvn.tsx are not in the diff — unchanged." },
+    { "criterion": "AC-4", "status": "satisfied", "notes": "IndexTypeGoogle.tsx is not in the diff — unchanged." },
+    { "criterion": "AC-5", "status": "satisfied", "notes": "The diff is exclusively block moves of the existing FormAutocomplete JSX with identical props. No elements added, removed, or altered beyond the 6 listed files." }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "Both commits match EPMCDME-XXXX: Capital sentence — 'EPMCDME-14276: Move embeddingsModel field above IntegrationSection in Jira, Confluence, Xray, AzureDevOps' and 'EPMCDME-14276: Move embeddingsModel field above auth RadioGroup in SharePoint'." },
+    { "standard": "security-patterns", "status": "pass", "notes": "No security-sensitive code touched. No HTML sinks, no redirects, no secrets, no cross-window messages, no config changes." },
+    { "standard": "code-quality", "status": "pass", "notes": "Pure JSX reordering. All props identical between removed and inserted blocks. No new logic, no dead code." }
+  ],
+  "findings": []
+}

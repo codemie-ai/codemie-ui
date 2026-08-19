@@ -16,9 +16,9 @@
 import { FC } from 'react'
 import { Controller } from 'react-hook-form'
 
-import FormAutocomplete from '@/components/form/FormAutocomplete'
 import Input from '@/components/form/Input'
 
+import EmbeddingsModelField from './shared/EmbeddingsModelField'
 import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
 
@@ -71,6 +71,8 @@ const IndexTypeJira: FC<Props> = ({
         )}
       />
 
+      <EmbeddingsModelField control={control} embeddingModels={embeddingModels} />
+
       <IntegrationSection
         hasNoSettings={hasNoSettings(value)}
         isDropdownShown={isDropdownShown(value)}
@@ -85,15 +87,6 @@ const IndexTypeJira: FC<Props> = ({
         onIntegrationCancel={handleIntegrationCancel}
         integrationLabel="Integration for Jira"
         integrationPlaceholder="Integration for Jira"
-      />
-
-      <FormAutocomplete
-        name="embeddingsModel"
-        control={control}
-        id="embeddingsModel"
-        label="Model used for embeddings"
-        options={embeddingModels}
-        placeholder="Embeddings Model Type"
       />
     </div>
   )

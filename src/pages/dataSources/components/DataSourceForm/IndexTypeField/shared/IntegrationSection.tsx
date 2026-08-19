@@ -63,9 +63,6 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const isMountedRef = useRef(true)
-  // When IntegrationSelectDropdown renders the "Add User Integration" button path the
-  // flex-1 wrapper must not fill all remaining width — that pushes Refresh far right.
-  const showAddButton = !isDropdownShown && !(isRequired && hasNoSettings)
 
   useEffect(() => {
     return () => {
@@ -93,7 +90,7 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
     <>
       <div className="mt-3 mb-4">
         <div className="flex items-end gap-2">
-          <div className={cn(!showAddButton && 'flex-1')}>
+          <div className={cn(isDropdownShown && 'flex-1')}>
             <Controller
               name="setting_id"
               control={control}

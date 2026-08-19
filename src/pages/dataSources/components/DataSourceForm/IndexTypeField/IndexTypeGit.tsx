@@ -17,13 +17,14 @@ import { FC } from 'react'
 import { Controller } from 'react-hook-form'
 
 import Autocomplete from '@/components/form/Autocomplete'
-import FormAutocomplete from '@/components/form/FormAutocomplete'
 import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import { REPO_INDEX_TYPE_OPTIONS } from '@/constants/dataSources'
+import { cn } from '@/utils/utils'
 
+import EmbeddingsModelField from './shared/EmbeddingsModelField'
 import FilesFilterField from './shared/FilesFilterField'
 import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
@@ -131,15 +132,11 @@ const IndexTypeGit: FC<Props> = ({
       <div className="form-wrapper">
         <FilesFilterField control={control} errors={errors} />
 
-        <div className="grid grid-cols-2 gap-3 mt-3">
+        <div className={cn('grid gap-3 mt-3', isCodeSummarization ? 'grid-cols-2' : 'grid-cols-1')}>
           <div className="flex flex-col gap-2">
-            <FormAutocomplete
-              name="embeddingsModel"
+            <EmbeddingsModelField
               control={control}
-              id="embeddingsModel"
-              label="Model used for embeddings"
-              options={embeddingModels}
-              placeholder="Embeddings Model Type"
+              embeddingModels={embeddingModels}
               className=""
             />
           </div>
