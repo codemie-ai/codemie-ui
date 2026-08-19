@@ -89,8 +89,10 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
   return (
     <>
       <div className="mt-3 mb-4">
-        <div className="flex items-end gap-2">
-          <div className={cn(isDropdownShown && 'flex-1')}>
+        <div
+          className={cn('items-end', isDropdownShown ? 'grid grid-cols-2 gap-3' : 'flex gap-2')}
+        >
+          <div>
             <Controller
               name="setting_id"
               control={control}
@@ -123,7 +125,7 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
             onClick={handleRefresh}
             disabled={isRefreshing}
             aria-label="Refresh integrations"
-            className="h-8 shrink-0"
+            className="h-8 shrink-0 justify-self-start"
           >
             <RefreshSvg /> Refresh
           </Button>

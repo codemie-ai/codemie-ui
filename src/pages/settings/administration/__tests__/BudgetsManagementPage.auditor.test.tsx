@@ -45,6 +45,9 @@ vi.mock('valtio', () => ({
   subscribe: vi.fn(),
 }))
 
+vi.mock('@/router', () => ({ router: { state: { matches: [] }, navigate: vi.fn() } }))
+vi.mock('@/hooks/useVueRouter', () => ({ router: { push: vi.fn() }, findRouteObject: vi.fn() }))
+
 vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
 vi.mock('@/store/budgets', () => ({ budgetsStore: mockBudgetsStore }))
 
