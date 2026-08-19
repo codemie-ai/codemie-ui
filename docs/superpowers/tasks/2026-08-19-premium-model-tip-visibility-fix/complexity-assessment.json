@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "task": "Fix two premium-model tip defects in the chat UI: the tip does not re-appear for a new chat after dismissal, and the premium tooltip is shown constantly on hover across the whole prompt container.",
+  "generated": "2026-08-19",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 19,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four coordinating components: ChatHistory (owns premiumTipKey / dismissedPremiumTipKey / tipIsVisible), ChatPrompt (duplicate isPremiumActive derivation plus the container-level tooltip anchor), ChatPage (hasHistory mount gate and the key={currentChat?.id} remount boundary), and the premium hover surfaces shared with PremiumModelBadge and ChatPromptLlmSelector. Cross-cutting concerns include the global react-tooltip instance in src/utils/tooltip.ts (openEvents mouseover bubbling, clickable) and the useChatScroll layoutDeps coupling."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Symptoms are concrete but the target semantics are not settled: the dismissal scope (per chat, per (chatId, modelValue), per session, or persisted per (userId, chatId) via chatStorageUtils) is an open design decision, and the two recorded review artifacts conflict — the 2026-08-14 check records re-arm on chat or model change while CR-002 in the 2026-08-17 review records that dismissal must be preserved across brief unmount/remount cycles. New chats have id='' and empty history, so the intended tip behaviour for the unsaved-chat phase must be defined before implementation."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "No exact precedent for re-arming in-memory tip state across the deliberate ChatPage remount keys; the previous two attempts in this area each introduced a regression (CR-001 scroll re-anchor, CR-002 undefined key). Fixing the constant-hover symptom may require touching the single global react-tooltip config used by ~40 components, and tipIsVisible feeds useChatScroll layoutDeps behind an eslint-disable, so a visibility change can shift scroll behaviour. Zero test coverage exists on premiumTipKey, the re-arm guard, chat-switch flows, or the prompt-container tooltip attribute, so both defects are currently invisible to CI."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M (3) to L (4): touches core shared utilities — the global react-tooltip instance in src/utils/tooltip.ts serves ~40 components, and the PREMIUM_MODEL_TOOLTIP constant is shared across PremiumModelBadge, ChatPromptLlmSelector, and the ChatPrompt container anchor.",
+    "Requirements Clarity bumped from M (3) to L (4): vague acceptance criteria — the desired dismissal persistence scope and new-chat re-arm semantics are undefined, and the two recorded code-review artifacts state expectations that are not obviously compatible."
+  ],
+  "split_recommendation": null
+}

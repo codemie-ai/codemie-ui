@@ -20,6 +20,10 @@ import { AUTH_CALLBACK_TIMEOUT_MESSAGE } from '@/hooks/useAuthCallbackListener'
 import type { Conversation } from '@/types/entity/conversation'
 
 import ChatPage from '../ChatPage'
+import {
+  CHAT_HISTORY_MIN_HEIGHT,
+  PREMIUM_TIP_SLOT_MAX_HEIGHT,
+} from '../components/ChatPrompt/premiumTipLayout'
 
 vi.hoisted(() => vi.resetModules())
 
@@ -38,6 +42,14 @@ const mockChatConfiguration = {
   attemptToggleConfigVisibility: vi.fn(),
   openConfigForm: vi.fn(),
 }
+
+const { mockPremiumTip } = vi.hoisted(() => ({
+  mockPremiumTip: { tipIsVisible: false },
+}))
+
+vi.mock('@/pages/chat/hooks/usePremiumModelTip', () => ({
+  usePremiumModelTip: () => mockPremiumTip,
+}))
 
 const { mockChatsStore, mockChatGenerationStore, mockUseAuthCallbackListener } = vi.hoisted(() => ({
   mockChatsStore: {
@@ -122,6 +134,10 @@ vi.mock('../components/ChatPrompt/ChatPrompt', () => ({
   default: () => <div data-testid="chat-prompt" />,
 }))
 
+vi.mock('../components/ChatPrompt/ChatPremiumModelTipSlot', () => ({
+  default: () => <div data-testid="premium-tip-slot" />,
+}))
+
 vi.mock('../components/ChatConfiguration/ChatConfiguration', () => ({
   default: () => <div data-testid="chat-configuration" />,
 }))
@@ -147,7 +163,11 @@ vi.mock('@/pages/integrations/components/NewIntegrationPopup', () => ({
 
 vi.mock('react-resizable-panels', () => ({
   Group: ({ children }: any) => <div data-testid="panel-group">{children}</div>,
-  Panel: ({ children }: any) => <div data-testid="panel">{children}</div>,
+  Panel: ({ id, minSize, children }: any) => (
+    <div data-testid="panel" data-panel-id={id} data-min-size={minSize}>
+      {children}
+    </div>
+  ),
   Separator: ({ children }: any) => <div data-testid="panel-separator">{children}</div>,
 }))
 
@@ -167,6 +187,78 @@ describe('ChatPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockChatsStore.currentChat = null
+    mockPremiumTip.tipIsVisible = false
+  })
+
+  // CR-004: the tip is a non-shrinkable row inside the history panel, so at the
+  // panel's own floor the conversation was squeezed toward zero behind it. The
+  // floor has to know the tip is there.
+  describe('history panel floor', () => {
+    const historyPanelMinSize = () =>
+      screen.getAllByTestId('panel').find((panel) => panel.dataset.panelId === 'chat-history')!
+        .dataset.minSize
+
+    beforeEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [[{ createdAt: '2026-04-29T00:00:00Z' }]],
+        assistantIds: ['assistant-1'],
+        assistantData: [],
+        initialAssistantId: 'assistant-1',
+        isWorkflow: false,
+      } as unknown as Conversation
+    })
+
+    it('keeps the bare floor while no tip is showing', () => {
+      render(<ChatPage />)
+
+      expect(historyPanelMinSize()).toBe(String(CHAT_HISTORY_MIN_HEIGHT))
+    })
+
+    it('raises the floor by the tip height while the tip is showing', () => {
+      mockPremiumTip.tipIsVisible = true
+
+      render(<ChatPage />)
+
+      expect(historyPanelMinSize()).toBe(
+        String(CHAT_HISTORY_MIN_HEIGHT + PREMIUM_TIP_SLOT_MAX_HEIGHT)
+      )
+    })
+  })
+
+  // The whole fix is where this slot sits: outside the history/starters branch,
+  // so it survives a brand-new chat. Nesting it back inside the branch — the
+  // reported bug — must fail here, in the page, not only in the slot's own test.
+  it('mounts the premium tip slot on a chat with no messages', () => {
+    mockChatsStore.currentChat = {
+      id: 'chat-1',
+      history: [],
+      assistantIds: ['assistant-1'],
+      assistantData: [],
+      initialAssistantId: 'assistant-1',
+      isWorkflow: false,
+    } as unknown as Conversation
+
+    render(<ChatPage />)
+
+    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
+    expect(screen.getByTestId('premium-tip-slot')).toBeInTheDocument()
+  })
+
+  it('mounts the premium tip slot on a chat with history', () => {
+    mockChatsStore.currentChat = {
+      id: 'chat-1',
+      history: [[{ createdAt: '2026-04-29T00:00:00Z' }]],
+      assistantIds: ['assistant-1'],
+      assistantData: [],
+      initialAssistantId: 'assistant-1',
+      isWorkflow: false,
+    } as unknown as Conversation
+
+    render(<ChatPage />)
+
+    expect(screen.getByTestId('chat-history')).toBeInTheDocument()
+    expect(screen.getByTestId('premium-tip-slot')).toBeInTheDocument()
   })
 
   it('loads the chat and keeps the composer available', async () => {

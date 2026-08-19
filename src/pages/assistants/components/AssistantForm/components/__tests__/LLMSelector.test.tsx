@@ -13,10 +13,16 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { render as rtlRender, screen } from '@testing-library/react'
+import { ReactElement } from 'react'
+import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 
 import LLMSelector from '../LLMSelector'
+
+// The premium note links to the models catalog, so the selector needs the router
+// context the app always provides.
+const render = (ui: ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>)
 
 const { mockAppInfoStore } = vi.hoisted(() => ({
   mockAppInfoStore: {
@@ -37,16 +43,19 @@ vi.mock('valtio', () => ({
 }))
 vi.mock('@/store/appInfo', () => ({ appInfoStore: mockAppInfoStore }))
 
-describe('LLMSelector premium badge', () => {
-  it('renders Premium badge on the selected premium model', () => {
+// The indication itself is unchanged — a premium selection says so on the closed
+// surface and a standard one says nothing. Only the wording moved: the badge
+// became a `Premium model` note under the field.
+describe('LLMSelector premium indication', () => {
+  it('names the selected premium model on the closed surface', () => {
     render(<LLMSelector value="claude-opus-4-1" onChange={vi.fn()} allowEmpty />)
 
-    expect(screen.getAllByText('Premium').length).toBeGreaterThan(0)
+    expect(screen.getByText('Premium model')).toBeInTheDocument()
   })
 
-  it('renders no Premium badge for a standard selection', () => {
+  it('renders no premium indication for a standard selection', () => {
     render(<LLMSelector value="gpt-4o" onChange={vi.fn()} allowEmpty />)
 
-    expect(screen.queryByText('Premium')).not.toBeInTheDocument()
+    expect(screen.queryByText('Premium model')).not.toBeInTheDocument()
   })
 })

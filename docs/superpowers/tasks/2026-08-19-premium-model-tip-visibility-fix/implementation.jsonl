@@ -1,0 +1,15 @@
+{"task_id":"1","status":"done","commit":"46072bdb3","test_command":"npx vitest run --project unit src/store/__tests__/premiumModelTip.test.ts"}
+{"task_id":"2","status":"done","commit":"83c1deb25","test_command":"npx vitest run --project unit src/pages/chat/hooks/__tests__/usePremiumModelTip.test.ts"}
+{"task_id":"3","status":"done","commit":"30b109f51","test_command":"npx vitest run --project unit src/store/__tests__/chats.premiumTipDismissal.test.ts"}
+{"task_id":"4","status":"done","commit":"1d324ec59","test_command":"npx vitest run --project unit src/pages/chat/components/ChatPrompt/__tests__/ChatPremiumModelTipSlot.test.tsx"}
+{"task_id":"5","status":"done","commit":"548088eac","test_command":"npx vitest run --project unit src/pages/chat/components/ChatPrompt/__tests__"}
+{"task_id":"6","status":"done","commit":"404caa8fe","test_command":"npx vitest run --project unit src/pages/chat/components/ChatPrompt/__tests__/ChatPromptLlmSelector.test.tsx"}
+{"task_id":"7","status":"done","commit":"9ca03bd28","test_command":"npx vitest run --project unit src/pages/assistants/components/AssistantForm/components/__tests__/LLMSelector.premiumLayout.test.tsx"}
+{"task_id":"8","status":"done","commit":"614b94e5c","test_command":"npx vitest run --project unit src/components/PremiumModelBadge src/pages/chat/components/ChatPrompt/__tests__ src/pages/assistants/components/AssistantForm/components/__tests__"}
+{"task_id":"9","status":"done","commit":"f11e3f00d","test_command":"npx vitest run --project unit src/components/PremiumModelBadge src/pages/chat/components/ChatPrompt/__tests__ src/pages/assistants/components/AssistantForm/components/__tests__"}
+{"task_id":"10","status":"done","commit":"c9571257a","test_command":"npx vitest run --project unit src/utils/__tests__/tooltip.test.ts"}
+{"task_id":"11","status":"done","commit":"0c91d6088","test_command":"npx vitest run --project unit src/pages/chat/components/ChatPrompt/__tests__/ChatPromptLlmSelector.test.tsx"}
+{"task_id":"12","status":"done","commit":"d893bcec3","test_command":"npx vitest run --project unit src/components/PremiumModelBadge src/pages/chat/components/ChatPrompt/__tests__ src/pages/assistants/components/AssistantForm/components/__tests__ src/utils/__tests__/tooltip.test.ts"}
+{"task_id":"13","status":"done","commit":"7846cef71","test_command":"npx vitest run --project unit src/pages/assistants src/pages/chat/components/ChatPrompt/__tests__ src/components/PremiumModelBadge src/utils/__tests__/tooltip.test.ts"}
+{"task_id":"14","status":"done","commit":"224753371","test_command":"npx vitest run --project unit src/pages/assistants src/pages/chat/components/ChatPrompt/__tests__ src/components/PremiumModelBadge src/utils/__tests__/tooltip.test.ts"}
+{"task_id":"15","status":"done","commit":"4c84dd5dc","test_command":"npx vitest run --project unit src/pages/assistants src/pages/chat src/components/PremiumModelBadge src/utils/__tests__/tooltip.test.ts"}

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useEffect, useMemo, useRef, useState } from 'react'
+import { FC, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import AiGenerateSvg from '@/assets/icons/ai-generate.svg?react'
@@ -24,6 +24,7 @@ import SearchableCombobox, { ComboboxItem } from '@/components/SearchableCombobo
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { appInfoStore } from '@/store/appInfo'
 import { chatsStore } from '@/store/chats'
+import { composeRowTooltip } from '@/utils/tooltipContent'
 import { cn } from '@/utils/utils'
 
 interface ChatPromptLlmSelectorProps {
@@ -41,21 +42,92 @@ const OPTION_ID_DEFAULT = 'chat-llm-selector-option-default'
 const OPTION_ID_RECOMMENDED = 'chat-llm-selector-option-recommended'
 const optionIdForModel = (value: string) => `chat-llm-selector-option-${value}`
 
+// Back to the pre-Task-11 sizing. The wide floor existed only to feed the
+// badge's container query, and the containment that query needed was itself what
+// made rows contribute zero intrinsic width. With premium on a meta line the
+// name owns the row's full width, so the panel can shrink to its content again
+// and the cap merely stops it running away.
+const PANEL_CONTENT_CLASS = 'min-w-64 max-w-96'
+
 const truncateLabel = (label: string) =>
   label.length > MAX_LABEL_LENGTH ? `${label.slice(0, MAX_LABEL_LENGTH)}…` : label
 
-const ModelOptionLabel: FC<{ label: string }> = ({ label }) => {
+// The combobox row is `justify-between`, so mounting the check mark only on the
+// selected row shifts everything before it. Reserving the slot on every row —
+// hidden, not unmounted — keeps each premium badge at the same offset whichever
+// row is selected.
+const OptionCheckSlot: FC<{ selected: boolean }> = ({ selected }) => (
+  <span
+    data-testid="llm-option-check"
+    aria-hidden={!selected}
+    className={cn('flex shrink-0 items-center', !selected && 'invisible')}
+  >
+    <CheckSvg className="w-4 h-4 shrink-0" />
+  </span>
+)
+
+// Left group: the name on the first line, the meta line under it. `min-w-0` is
+// what lets the name truncate instead of pushing the reserved check slot out.
+const OptionMain: FC<{ children: ReactNode }> = ({ children }) => (
+  <span data-testid="llm-option-main" className="flex min-w-0 flex-1 flex-col text-left">
+    {children}
+  </span>
+)
+
+// The row is the single tooltip anchor of its subtree: nothing nested inside it
+// anchors, so the pointer never crosses between two same-id anchors (which is
+// what made the tooltip flicker). One content string per row.
+const OptionRow: FC<{ content: string; children: ReactNode }> = ({ content, children }) => (
+  <span
+    data-testid="llm-option-row"
+    className="flex w-full items-center justify-between gap-2"
+    {...(content ? { 'data-tooltip-id': 'react-tooltip', 'data-tooltip-content': content } : {})}
+  >
+    {children}
+  </span>
+)
+
+// Premium reads on the second line the recommended row already uses, so it never
+// competes with the model name for horizontal width — the race the badge kept
+// losing in one panel and winning in the other. A model that is both gets one
+// line, not two. The amber token carries the premium signal the badge used to.
+const OptionMeta: FC<{ recommended: boolean; isPremium: boolean }> = ({
+  recommended,
+  isPremium,
+}) => {
+  if (!recommended && !isPremium) return null
+  return (
+    <span data-testid="llm-option-meta" className="truncate text-xs text-text-tertiary">
+      {recommended && 'Recommended'}
+      {recommended && isPremium && ' · '}
+      {isPremium && <span className="text-aborted-primary">Premium</span>}
+    </span>
+  )
+}
+
+// The meta line names the state; the hover still explains the rate consequence.
+// Full name when the row truncates it, the premium sentence when the model is
+// premium, both joined when both.
+const ModelOptionRow: FC<{
+  label: string
+  isPremium: boolean
+  selected: boolean
+  recommended?: boolean
+}> = ({ label, isPremium, selected, recommended = false }) => {
   const labelRef = useRef<HTMLSpanElement>(null)
   const isTruncated = useIsTruncated(labelRef)
+  const content = composeRowTooltip([isTruncated && label, isPremium && PREMIUM_MODEL_TOOLTIP])
+
   return (
-    <span
-      ref={labelRef}
-      className="truncate"
-      data-tooltip-id="react-tooltip"
-      data-tooltip-content={isTruncated ? label : ''}
-    >
-      {label}
-    </span>
+    <OptionRow content={content}>
+      <OptionMain>
+        <span ref={labelRef} className="truncate">
+          {label}
+        </span>
+        <OptionMeta recommended={recommended} isPremium={isPremium} />
+      </OptionMain>
+      <OptionCheckSlot selected={selected} />
+    </OptionRow>
   )
 }
 
@@ -112,9 +184,16 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
 
   const triggerLabel = selectedModel ? truncateLabel(selectedModel.label) : 'Default'
   const showPremiumBadge = selectedModel?.isPremium ?? false
-  const triggerTooltip = showPremiumBadge
-    ? PREMIUM_MODEL_TOOLTIP
-    : 'Select LLM model for this conversation'
+  // When the badge is shown it already anchors the premium tooltip; a second
+  // anchor on the surrounding button made the tooltip flicker as the pointer
+  // crossed between them. Omit the attributes entirely rather than passing an
+  // empty string, matching the ModelOptionLabel precedent.
+  const triggerTooltipProps = showPremiumBadge
+    ? {}
+    : {
+        'data-tooltip-id': 'react-tooltip',
+        'data-tooltip-content': 'Select LLM model for this conversation',
+      }
 
   const renderTrigger = ({
     onClick,
@@ -125,8 +204,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
       type="button"
       onClick={onClick}
       disabled={disabled}
-      data-tooltip-id="react-tooltip"
-      data-tooltip-content={triggerTooltip}
+      {...triggerTooltipProps}
       data-onboarding="chat-llm-selector"
       className={cn(
         'flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
@@ -152,32 +230,31 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
   const renderOption = (item: ComboboxItem<LlmValue>, state: { selected: boolean }) => {
     if (item.id === OPTION_ID_DEFAULT) {
       return (
-        <>
-          <span>{ASSISTANT_DEFAULT_LABEL}</span>
-          {state.selected && <CheckSvg className="w-4 h-4 shrink-0" />}
-        </>
+        <ModelOptionRow
+          label={ASSISTANT_DEFAULT_LABEL}
+          isPremium={false}
+          selected={state.selected}
+        />
       )
     }
     if (item.id === OPTION_ID_RECOMMENDED && defaultModel) {
       return (
-        <>
-          <div className="flex flex-col min-w-0">
-            <span className="truncate">{defaultModel.label}</span>
-            <span className="text-xs text-text-tertiary">Recommended</span>
-          </div>
-          {defaultModel.isPremium && <PremiumModelBadge />}
-          {state.selected && <CheckSvg className="w-4 h-4 shrink-0" />}
-        </>
+        <ModelOptionRow
+          label={defaultModel.label}
+          recommended
+          isPremium={defaultModel.isPremium ?? false}
+          selected={state.selected}
+        />
       )
     }
     const model = llmModels.find((m) => m.value === item.value)
     if (!model) return null
     return (
-      <>
-        <ModelOptionLabel label={model.label} />
-        {model.isPremium && <PremiumModelBadge />}
-        {state.selected && <CheckSvg className="w-4 h-4 shrink-0" />}
-      </>
+      <ModelOptionRow
+        label={model.label}
+        isPremium={model.isPremium ?? false}
+        selected={state.selected}
+      />
     )
   }
 
@@ -206,7 +283,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
         <p className="px-3 py-4 text-sm text-text-tertiary text-center">No models found</p>
       )}
       optionClassName={optionClassName}
-      contentClassName="min-w-64 max-w-96"
+      contentClassName={PANEL_CONTENT_CLASS}
       disabled={disabled}
     />
   )

@@ -33,6 +33,7 @@ import storage from '@/utils/storage'
 import toaster from '@/utils/toaster'
 import { getRootPath } from '@/utils/utils'
 
+import { premiumModelTipStore } from './premiumModelTip'
 import { recentChatsStore } from './recentChats'
 import { userStore } from './user'
 import {
@@ -308,6 +309,9 @@ export const chatsStore = proxy<ChatsStoreType>({
     newConversation.id = ''
 
     chatsStore.isNewChat = true
+    // Every new chat re-arms the premium tip: a dismissal on the previous
+    // unsaved chat must not carry over to this one.
+    premiumModelTipStore.clearPendingDismissals()
     chatsStore.newChatParams = { assistantId, folder: folderValue, isWorkflow }
     chatsStore.currentChat = newConversation
 
@@ -341,6 +345,10 @@ export const chatsStore = proxy<ChatsStoreType>({
 
     chatsStore.isNewChat = false
     chatsStore.newChatParams = null
+
+    // The chat the user dismissed the tip on has just acquired a real id;
+    // carry the dismissal across so the tip does not pop back on promotion.
+    premiumModelTipStore.promotePendingDismissals(newChat.id)
 
     router.replace({ name: 'chats', params: { id: newChat.id } })
 

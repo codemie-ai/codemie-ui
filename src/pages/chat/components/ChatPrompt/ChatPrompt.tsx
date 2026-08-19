@@ -27,7 +27,6 @@ import {
   getMessageTextWithMentions,
 } from '@/components/Editor/quillModules'
 import { sanitizeMessage } from '@/components/markdown/Markdown.utils'
-import { PREMIUM_MODEL_TOOLTIP } from '@/components/PremiumModelBadge'
 import { ButtonSize } from '@/constants'
 import { FileMetadata, useFileUpload } from '@/hooks/useFileUpload'
 import { useTheme } from '@/hooks/useTheme'
@@ -36,8 +35,8 @@ import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { useChatContext } from '@/pages/chat/hooks/useChatContext'
 import { useChatPromptDraft } from '@/pages/chat/hooks/useChatPromptDraft'
 import { useFilePaste } from '@/pages/chat/hooks/useFilePaste'
+import { usePremiumModelTip } from '@/pages/chat/hooks/usePremiumModelTip'
 import { assistantsStore, userStore } from '@/store'
-import { appInfoStore } from '@/store/appInfo'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
 import toaster from '@/utils/toaster'
@@ -128,11 +127,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
   const isInterrupted = currentChat?.isInterrupted
 
-  const { llmModels } = useSnapshot(appInfoStore)
-  const effectiveModel = currentChat?.llmModel
-    ? llmModels.find((m) => m.value === currentChat.llmModel)
-    : null
-  const isPremiumActive = effectiveModel?.isPremium ?? false
+  const { isPremiumActive } = usePremiumModelTip()
 
   let promptMode: PromptMode = PROMPT_MODES.DEFAULT
   if (isInterrupted) promptMode = PROMPT_MODES.WORKFLOW_INTERRUPTED
@@ -258,10 +253,6 @@ const ChatPrompt: FC<ChatPromptProps> = ({
             onMouseDown={handleMouseDown}
             onKeyDown={handleKeyDown}
             data-onboarding="chat-input"
-            {...(isPremiumActive && {
-              'data-tooltip-id': 'react-tooltip',
-              'data-tooltip-content': PREMIUM_MODEL_TOOLTIP,
-            })}
             className={cn(
               'flex flex-col gap-2 p-2 rounded-xl bg-surface-elevated cursor-text',
               resizable ? 'h-full min-h-0' : 'min-h-32 max-h-64',

@@ -13,10 +13,13 @@
 // limitations under the License.
 //
 
-export * from './assistants'
-export * from './chats'
-export * from './user'
-export * from './vendor'
-export * from './mcp'
-export * from './katas'
-export { premiumModelTipStore, PENDING_CHAT_KEY } from './premiumModelTip'
+/**
+ * Joins the parts a dropdown row wants to say into the single `data-tooltip-content`
+ * string it is allowed to carry — the full name when the row truncates it, the
+ * premium rate sentence when the model is premium, both when both.
+ *
+ * One content string per row is the invariant: two same-id anchors in one
+ * subtree make the tooltip flicker as the pointer crosses between them.
+ */
+export const composeRowTooltip = (parts: (string | false | null | undefined)[]) =>
+  parts.filter(Boolean).join(' · ')

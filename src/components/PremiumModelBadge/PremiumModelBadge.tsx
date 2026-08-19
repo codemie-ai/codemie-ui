@@ -19,6 +19,12 @@ import StatusBadge, { StatusEnum } from '@/components/StatusBadge'
 
 export const PREMIUM_MODEL_TOOLTIP = 'Premium model — higher usage rates apply'
 
+/**
+ * The badge marks the *selected* model — the chat prompt trigger, the assistant
+ * form trigger and the models catalog. Dropdown rows no longer render it: they
+ * say "Premium" on a meta line under the model name, so premium never competes
+ * with the name for the row's width.
+ */
 const PremiumModelBadge: FC = () => (
   <span
     className="inline-flex shrink-0"

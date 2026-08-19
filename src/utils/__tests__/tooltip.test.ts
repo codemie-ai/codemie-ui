@@ -16,6 +16,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { setupGlobalTooltip } from '@/utils/tooltip'
+import { setupTooltipCloseBehavior } from '@/utils/tooltipCloseBehavior'
 
 const mockRender = vi.fn()
 
@@ -27,23 +28,54 @@ vi.mock('react-tooltip', () => ({
   Tooltip: vi.fn(() => null),
 }))
 
+vi.mock('@/utils/tooltipCloseBehavior', () => ({
+  setupTooltipCloseBehavior: vi.fn(() => vi.fn()),
+}))
+
+const renderedTooltipProps = () => {
+  setupGlobalTooltip()
+  return mockRender.mock.calls[0][0].props
+}
+
 describe('setupGlobalTooltip', () => {
   beforeEach(() => {
-    mockRender.mockClear()
+    vi.clearAllMocks()
     document.body.innerHTML = ''
   })
 
   it('renders the tooltip singleton with clickable: true so it stays visible when hovered', () => {
-    setupGlobalTooltip()
-
-    const element = mockRender.mock.calls[0][0]
-    expect(element.props.clickable).toBe(true)
+    expect(renderedTooltipProps().clickable).toBe(true)
   })
 
   it('renders the tooltip singleton with globalCloseEvents.escape so Esc dismisses it', () => {
-    setupGlobalTooltip()
+    expect(renderedTooltipProps().globalCloseEvents.escape).toBe(true)
+  })
 
-    const element = mockRender.mock.calls[0][0]
-    expect(element.props.globalCloseEvents).toEqual({ escape: true })
+  it('closes the tooltip on resize', () => {
+    expect(renderedTooltipProps().globalCloseEvents.resize).toBe(true)
+  })
+
+  // The library's own scroll close fires on any scroll of the anchor's scroll
+  // parent, which the chat history performs by itself on every streamed token.
+  // Scroll close is scoped in setupTooltipCloseBehavior instead — leaving this
+  // flag on would close tooltips during streaming regardless of that scoping.
+  it('leaves the library-wide scroll close off for the ~40 global anchors', () => {
+    expect(renderedTooltipProps().globalCloseEvents.scroll).toBeFalsy()
+  })
+
+  it('installs the scoped close behaviour against the rendered tooltip instance', () => {
+    const props = renderedTooltipProps()
+
+    expect(setupTooltipCloseBehavior).toHaveBeenCalledTimes(1)
+
+    const getTooltip = vi.mocked(setupTooltipCloseBehavior).mock.calls[0][0]
+    const handle = { isOpen: true, activeAnchor: null, close: vi.fn() }
+    props.ref.current = handle
+
+    expect(getTooltip()).toBe(handle)
+  })
+
+  it('keeps hover as the only open event', () => {
+    expect(renderedTooltipProps().openEvents).toEqual({ mouseover: true })
   })
 })

@@ -30,4 +30,36 @@ describe('PremiumModelBadge', () => {
       'Premium model — higher usage rates apply'
     )
   })
+
+  // Premium moved out of the horizontal race: dropdown rows say it on a meta
+  // line under the model name, so the badge has exactly one shape again — the
+  // full pill, on triggers and the models catalog. The legacy variant props are
+  // gone; passing them must not resurrect a dot.
+  it('renders the full pill and no dot, whatever legacy variant props are passed', () => {
+    const legacyProps = { compact: true, adaptive: true, anchorTooltip: false } as Record<
+      string,
+      unknown
+    >
+
+    render(<PremiumModelBadge {...legacyProps} />)
+
+    expect(screen.getByRole('status', { name: 'Premium' })).toBeInTheDocument()
+    expect(screen.queryByTestId('premium-model-dot')).toBeNull()
+    expect(screen.queryByTestId('premium-model-text')).toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+
+  // The container query was what made dropdown rows contribute zero intrinsic
+  // width — inline-size containment collapsed the chat panel onto its floor.
+  // The rule can only come back through these classes, so the badge is asserted
+  // as rendered rather than by reading main.scss: a file-wide text assertion
+  // bound to the process CWD failed on any unrelated future container query and
+  // threw at collection time from any other working directory. The row-level
+  // counterparts live in ChatPromptLlmSelector.test and LLMSelector.premiumLayout.test.
+  it('renders no container-query hooks on the badge itself', () => {
+    const { container } = render(<PremiumModelBadge />)
+
+    expect(container.innerHTML).not.toContain('premium-badge-container')
+    expect(container.innerHTML).not.toContain('premium-badge-text')
+  })
 })

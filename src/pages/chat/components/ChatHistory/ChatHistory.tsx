@@ -13,14 +13,11 @@
 // limitations under the License.
 //
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useSnapshot } from 'valtio'
+import { useCallback, useRef } from 'react'
 
-import { appInfoStore } from '@/store/appInfo'
-import { chatsStore } from '@/store/chats'
+import { usePremiumModelTip } from '@/pages/chat/hooks/usePremiumModelTip'
 
 import ChatHistoryGroup from './ChatHistoryGroup'
-import ChatPremiumModelTip from '../ChatPrompt/ChatPremiumModelTip'
 import { useChatInfiniteScroll } from './hooks/useChatInfiniteScroll'
 import { useChatScroll } from './hooks/useChatScroll'
 
@@ -42,22 +39,10 @@ const ChatHistory = () => {
     [refs.rootRef]
   )
 
-  const { currentChat } = useSnapshot(chatsStore)
-  const { llmModels } = useSnapshot(appInfoStore)
-  const effectiveModel = currentChat?.llmModel
-    ? llmModels.find((m) => m.value === currentChat.llmModel)
-    : null
-  const isPremiumActive = effectiveModel?.isPremium ?? false
-  const premiumTipKey =
-    currentChat?.id && effectiveModel?.value ? `${currentChat.id}:${effectiveModel.value}` : null
-  const [dismissedPremiumTipKey, setDismissedPremiumTipKey] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (premiumTipKey) setDismissedPremiumTipKey(null)
-  }, [premiumTipKey])
-
-  const tipIsVisible =
-    isPremiumActive && premiumTipKey !== null && dismissedPremiumTipKey !== premiumTipKey
+  // The tip itself renders from ChatPremiumModelTipSlot, one level up, but it
+  // still changes the height available to this scroll container — so keep
+  // feeding its visibility to useChatScroll to preserve the re-anchor (CR-001).
+  const { tipIsVisible } = usePremiumModelTip()
 
   useChatScroll({ scrollContainerRef, layoutDeps: [tipIsVisible] })
 
@@ -76,14 +61,6 @@ const ChatHistory = () => {
           })}
         </div>
       </div>
-      {tipIsVisible && effectiveModel && (
-        <div className="shrink-0 px-6 py-2">
-          <ChatPremiumModelTip
-            modelLabel={effectiveModel.label}
-            onDismiss={() => setDismissedPremiumTipKey(premiumTipKey)}
-          />
-        </div>
-      )}
     </div>
   )
 }

@@ -34,8 +34,10 @@ import {
 import { useChatConfigResize } from './components/ChatConfiguration/useChatConfigResize'
 import ChatHeader from './components/ChatHeader/ChatHeader'
 import ChatHistory from './components/ChatHistory/ChatHistory'
+import ChatPremiumModelTipSlot from './components/ChatPrompt/ChatPremiumModelTipSlot'
 import ChatPrompt from './components/ChatPrompt/ChatPrompt'
 import ChatPromptStarters from './components/ChatPrompt/ChatPromptStarters'
+import { chatHistoryPanelMinSize } from './components/ChatPrompt/premiumTipLayout'
 import ChatResizableSeparator from './components/ChatResizableSeparator'
 import ChatSidebar from './components/ChatSidebar/ChatSidebar'
 import {
@@ -49,6 +51,7 @@ import { ChatContext, ChatContextValue } from './hooks/useChatContext'
 import { useChatInitialPrompt } from './hooks/useChatInitialPrompt'
 import { useChatNavigation } from './hooks/useChatNavigation'
 import { useChatPromptResize } from './hooks/useChatPromptResize'
+import { usePremiumModelTip } from './hooks/usePremiumModelTip'
 
 const ChatPage: FC = () => {
   const {
@@ -79,6 +82,8 @@ const ChatPage: FC = () => {
 
   const { defaultLayout, debouncedOnLayoutChanged, userId } = useChatPromptResize()
   const hasHistory = !!currentChat?.history.length
+  // Only read for the panel floor: the tip row itself renders from the slot.
+  const { tipIsVisible } = usePremiumModelTip()
 
   const [starterPrompt, setStarterPrompt] = useState<string | null>(null)
   const handleStarterClick = useCallback((text: string) => setStarterPrompt(text), [])
@@ -127,14 +132,21 @@ const ChatPage: FC = () => {
                       onLayoutChanged={debouncedOnLayoutChanged}
                       className="flex-1 min-h-0"
                     >
-                      <Panel id="chat-history" minSize={80}>
-                        {hasHistory ? (
-                          <ChatHistory />
-                        ) : (
-                          <div className="h-full flex flex-col">
-                            <ChatPromptStarters onStarterClick={handleStarterClick} />
+                      <Panel id="chat-history" minSize={chatHistoryPanelMinSize(tipIsVisible)}>
+                        {/* The tip slot lives outside the history/starters branch so it
+                            is present in both page states, directly above the prompt. */}
+                        <div className="h-full flex flex-col">
+                          <div className="flex-1 min-h-0">
+                            {hasHistory ? (
+                              <ChatHistory />
+                            ) : (
+                              <div className="h-full flex flex-col">
+                                <ChatPromptStarters onStarterClick={handleStarterClick} />
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <ChatPremiumModelTipSlot />
+                        </div>
                       </Panel>
                       <ChatResizableSeparator />
                       <Panel id="chat-prompt" defaultSize={130} minSize={130}>

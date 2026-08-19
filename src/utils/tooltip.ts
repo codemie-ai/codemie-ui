@@ -15,9 +15,16 @@
 
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { Tooltip } from 'react-tooltip'
+import { Tooltip, type TooltipRefProps } from 'react-tooltip'
+
+import { setupTooltipCloseBehavior } from './tooltipCloseBehavior'
 
 export const TOOLTIP_CONTAINER_ID = 'react-tooltip-container'
+
+// The imperative handle of the single global instance, so the scoped close
+// behaviour can hide it without owning its render.
+const globalTooltipRef = React.createRef<TooltipRefProps>()
+let teardownCloseBehavior: (() => void) | null = null
 
 export function setupGlobalTooltip() {
   if (typeof document === 'undefined') return
@@ -35,14 +42,24 @@ export function setupGlobalTooltip() {
     const root = createRoot(tooltipContainer)
     root.render(
       React.createElement(Tooltip, {
+        ref: globalTooltipRef,
         id: 'react-tooltip',
         arrowColor: 'transparent',
         openEvents: { mouseover: true },
         clickable: true,
-        globalCloseEvents: { escape: true },
+        // react-tooltip only enables the close events it is handed, so naming
+        // `escape` alone left resize OFF. `scroll` is deliberately NOT enabled
+        // here: the library closes on any scroll of the anchor's scroll parent,
+        // and the chat history scrolls itself to the bottom on every streamed
+        // token — which would dismiss any tooltip anchored inside it mid-read.
+        // setupTooltipCloseBehavior below closes on user-driven scrolls only.
+        globalCloseEvents: { escape: true, resize: true },
         className:
           'z-[10000] max-w-[500px] !bg-surface-base-secondary break-words border border-border-structural whitespace-pre-line !text-text-primary !px-3.5 !py-1.5 leading-2 !rounded-lg !opacity-100 !transition-none',
       })
     )
+
+    teardownCloseBehavior?.()
+    teardownCloseBehavior = setupTooltipCloseBehavior(() => globalTooltipRef.current)
   }
 }
