@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useEffect, useState } from 'react'
+import { FC, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 
 import InfoWarning from '@/components/InfoWarning'
@@ -50,6 +50,8 @@ const columnDefinitions: ColumnDefinition[] = [
   })),
 ]
 
+const projectLabel = (row: UserProjectSpendingRow): string => row.display_name || row.project_name
+
 interface ProjectLinkCellProps {
   row: UserProjectSpendingRow
 }
@@ -63,7 +65,7 @@ const ProjectLinkCell: FC<ProjectLinkCellProps> = ({ row }) => {
 
   return (
     <Link to={href} className="text-text-primary break-all min-w-0 hover:underline">
-      {row.display_name || row.project_name}
+      {projectLabel(row)}
     </Link>
   )
 }
@@ -138,6 +140,11 @@ const UserProjectSpendingTable: FC<UserProjectSpendingTableProps> = ({ userEmail
     }
   }, [userEmail])
 
+  const sortedRows = useMemo(
+    () => [...rows].sort((a, b) => projectLabel(a).localeCompare(projectLabel(b))),
+    [rows]
+  )
+
   let content
 
   if (isLoading) {
@@ -169,7 +176,7 @@ const UserProjectSpendingTable: FC<UserProjectSpendingTableProps> = ({ userEmail
       embedded
       variant="nested"
       idPath="project_name"
-      items={rows}
+      items={sortedRows}
       columnDefinitions={columnDefinitions}
       customRenderColumns={customRenderColumns}
     />
