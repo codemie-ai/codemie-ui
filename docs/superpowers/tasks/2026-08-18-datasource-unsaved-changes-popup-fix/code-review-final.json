@@ -1,0 +1,37 @@
+{
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "Two major test-coverage gaps found. (1) The normalization intentionally silences user-typed name changes when initial.name is empty — an accepted trade-off per the plan — but no unit test documents or pins this boundary, so a future narrowing of the condition would be undetected. (2) The new integration test only asserts the popup does NOT appear on an untouched form; no complementary test verifies the popup DOES appear when the user genuinely edits the form, meaning a fully disabled unsaved-changes guard would pass the suite. No-spec mode (no story/spec artifact): acceptance criteria audit not run; confidence forced to low. Commit subjects pass EPMCDME-XXXX format. No security issues. 2 dismiss (redundant condition style, fragile navigation target — low risk).",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Both commits match EPMCDME-14129: Capital sentence — 'Exclude auto-generated name from datasource form dirty comparison' and 'Add regression test — no unsaved-changes popup on fresh datasource form'."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No secrets, injection surfaces, or auth-related changes in the diff."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "No unit test pins the accepted trade-off that normalization silences user-typed name changes when initial.name is empty. The test file covers 'initial empty + auto-generated name → false' but not 'initial empty + user-typed name → false', leaving the boundary undocumented.",
+      "impact": "A future change narrowing the condition (e.g. only matching timestamp-format names) would break the bug fix without a failing test. More importantly, the data-loss scenario — user types a name on the create form then navigates away, no popup appears — is silent in the test suite.",
+      "recommendation": "Add a unit test to compareFormData.test.ts: compareFormData({ ...base, name: '' }, { ...base, name: 'user-typed-name' }) === false, with a comment naming the accepted trade-off (same as the plan's risk note)."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "The new integration test only checks the negative case (popup must NOT appear on untouched form). No test verifies the popup DOES appear when the user has made a genuine edit. The guard correctness is unverified from the integration-test level.",
+      "impact": "A regression that disables useUnsavedChangesWarning or useBlocker entirely would pass the complete new test suite without any failure. The fix is correct but the safety net is one-sided.",
+      "recommendation": "Add a companion integration test in the 'Unsaved Changes Guard' describe block: user edits a field (e.g. types in the description input), navigates away via router.navigate, and asserts the 'Unsaved Changes' heading IS in the document."
+    }
+  ]
+}

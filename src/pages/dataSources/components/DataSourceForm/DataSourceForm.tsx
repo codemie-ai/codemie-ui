@@ -153,10 +153,16 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
 
   const formId = FormIDs.DATA_SOURCE_FORM
 
+  const comparator = useCallback(
+    (initial: any, current: any) =>
+      compareFormData(initial, current, { skipNameCheck: !nameManuallyEdited.current }),
+    []
+  )
+
   const { attemptFormClose, unblockTransition, blockTransition } = useUnsavedChanges({
     formId,
     getCurrentValues: () => getValues(),
-    comparator: compareFormData,
+    comparator,
   })
 
   const handleClose = () => {

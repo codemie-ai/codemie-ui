@@ -21,7 +21,11 @@ import isEqual from 'lodash/isEqual'
  * @param current - Current form data
  * @returns True if data has changed, false otherwise
  */
-export const compareFormData = (initial: any, current: any) => {
+export const compareFormData = (
+  initial: any,
+  current: any,
+  options?: { skipNameCheck?: boolean }
+) => {
   if (!initial || !current) return false
 
   const normalizedInitial = { ...initial }
@@ -41,6 +45,13 @@ export const compareFormData = (initial: any, current: any) => {
 
   if (!initial.setting_id || initial.setting_id === '') {
     normalizedInitial.setting_id = normalizedCurrent.setting_id
+  }
+
+  // Skip name comparison when the name was auto-generated and the user has not
+  // manually edited it — the auto-generated value filled in after the initial
+  // snapshot was taken and should not be treated as a user change.
+  if (options?.skipNameCheck && (!initial.name || initial.name === '')) {
+    normalizedInitial.name = normalizedCurrent.name
   }
 
   delete normalizedInitial.indexMetadata

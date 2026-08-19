@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, render, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { createMemoryRouter, RouterProvider } from 'react-router'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
+import { routes } from '@/router'
 import { userSettingsStore } from '@/store/userSettings'
 import { selectAutocompleteOption } from '@/test-utils/component-interactions'
 import { renderPage, mockAPI } from '@/test-utils/integration'
@@ -164,5 +166,66 @@ describe('DataSourceCreatePage - Confluence Refresh Button', () => {
         screen.getByText(/choose an existing integration, or add a new one and refresh the list/i)
       ).toBeInTheDocument()
     })
+  })
+})
+
+describe('DataSourceCreatePage — Unsaved Changes Guard', () => {
+  beforeEach(() => {
+    mockFormInitAPIs()
+    mockAPI('GET', 'v1/settings/user/available', [])
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('does not show unsaved-changes popup when navigating away from an untouched form', async () => {
+    // The form defaults indexType to GIT and auto-generates a name on mount.
+    // Before the fix, the auto-generated name made the form appear dirty even
+    // though the user had not typed anything (regression: EPMCDME-14129).
+    const router = createMemoryRouter(routes, {
+      initialEntries: ['/data-sources/create'],
+    })
+    render(<RouterProvider router={router} />)
+
+    await waitForFormReady()
+
+    // Wait for the auto-generated name — signals name-fill is complete
+    await waitFor(
+      () => {
+        expect(screen.getByRole('textbox', { name: 'Name' })).not.toHaveValue('')
+      },
+      { timeout: 10000 }
+    )
+
+    // Navigate away without touching any form field
+    await act(async () => {
+      await router.navigate('/chats')
+    })
+
+    // The "Unsaved Changes" popup must NOT have appeared
+    expect(screen.queryByRole('heading', { name: 'Unsaved Changes' })).not.toBeInTheDocument()
+  })
+
+  it('shows unsaved-changes popup when navigating away after editing the form', async () => {
+    const user = userEvent.setup()
+    const router = createMemoryRouter(routes, {
+      initialEntries: ['/data-sources/create'],
+    })
+    render(<RouterProvider router={router} />)
+
+    await waitForFormReady()
+
+    // Edit the description field so the form is genuinely dirty
+    const descInput = screen.getByRole('textbox', { name: 'Description' })
+    await user.type(descInput, 'user-entered description')
+
+    // Navigate away with a dirty form
+    await act(async () => {
+      await router.navigate('/chats')
+    })
+
+    // The "Unsaved Changes" popup MUST have appeared
+    expect(screen.queryByRole('heading', { name: 'Unsaved Changes' })).toBeInTheDocument()
   })
 })
