@@ -178,6 +178,159 @@ describe('useAuthCallbackListener', () => {
     expect(onTimeout).toHaveBeenCalledWith('auth-1')
   })
 
+  it('sends a timeout diagnostics beacon exactly once on timeout', async () => {
+    const sendBeacon = vi.fn((_url: string, _data?: BodyInit | null) => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    const onTimeout = vi.fn()
+    renderHook(() =>
+      useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'], timeoutMs: 1000, onTimeout })
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    expect(sendBeacon).toHaveBeenCalledTimes(1)
+    const [url, body] = sendBeacon.mock.calls[0]
+    expect(url).toBe('https://api.example.com/v1/v1/mcp-auth/oauth2/callback-diagnostics')
+
+    // Switch to real timers so the Blob's FileReader-based read can resolve;
+    // the timeout itself already fired above under fake timers.
+    vi.useRealTimers()
+    const bodyText =
+      typeof body === 'string'
+        ? body
+        : await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsText(body as unknown as Blob)
+          })
+    const parsedBody = JSON.parse(bodyText)
+    expect(parsedBody).toEqual({
+      result: 'timeout',
+      auth_config_id: 'auth-1',
+      opener_present: false,
+      waited_ms: 1000,
+      phase: 'awaiting_callback',
+    })
+
+    vi.unstubAllGlobals()
+  })
+
+  it('does not change timeout behaviour when the beacon transport throws', async () => {
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      sendBeacon: vi.fn(() => {
+        throw new Error('beacon failed')
+      }),
+    })
+
+    const onTimeout = vi.fn()
+    const { result } = renderHook(() =>
+      useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'], timeoutMs: 1000, onTimeout })
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    expect(result.current.authFlows['auth-1']).toEqual({
+      status: 'authentication_required',
+      message: AUTH_CALLBACK_TIMEOUT_MESSAGE,
+    })
+    expect(onTimeout).toHaveBeenCalledWith('auth-1')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('does not send a diagnostics beacon on the success path', async () => {
+    const sendBeacon = vi.fn(() => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    const onSuccess = vi.fn()
+    renderHook(() =>
+      useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'], timeoutMs: 1000, onSuccess })
+    )
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('does not send a diagnostics beacon on the identity-provider error path', async () => {
+    const sendBeacon = vi.fn(() => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    const onError = vi.fn()
+    renderHook(() =>
+      useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'], timeoutMs: 1000, onError })
+    )
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'error',
+        auth_config_id: 'auth-1',
+        error: 'session_expired',
+      })
+    })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('clamps waited_ms to the backend ceiling for a timeout longer than an hour', async () => {
+    // The backend rejects waited_ms above 3_600_000 with a 422, and the beacon swallows its own
+    // failures - so an unclamped value would silently drop exactly the long-wait record this
+    // beacon exists to produce.
+    const sendBeacon = vi.fn((_url: string, _data?: BodyInit | null) => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    renderHook(() =>
+      useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'], timeoutMs: 7_200_000 })
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(7_200_000)
+    })
+
+    expect(sendBeacon).toHaveBeenCalledTimes(1)
+    const [, body] = sendBeacon.mock.calls[0]
+
+    vi.useRealTimers()
+    const bodyText =
+      typeof body === 'string'
+        ? body
+        : await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsText(body as unknown as Blob)
+          })
+    expect(JSON.parse(bodyText).waited_ms).toBe(3_600_000)
+
+    vi.unstubAllGlobals()
+  })
+
   it('removes untracked ids and clears their timers on rerender', async () => {
     const { result, rerender } = renderHook(
       ({ trackedAuthConfigIds }) =>

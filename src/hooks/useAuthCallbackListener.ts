@@ -103,6 +103,43 @@ const getAuthCallbackTimeoutSeconds = (): number =>
 // Keep the UI timeout <= the backend PKCE lifetime.
 const getAuthCallbackTimeoutMs = (): number => getAuthCallbackTimeoutSeconds() * 1000
 
+// Mirrors the OAuth2CallbackDiagnostics.waited_ms ceiling on the backend model.
+const DIAGNOSTICS_MAX_WAITED_MS = 3_600_000
+
+// Fire-and-forget diagnostics beacon: best-effort only, must never affect the
+// timeout flow it reports on. Any failure here is swallowed by design.
+const reportCallbackTimeoutDiagnostics = (authConfigId: string, waitedMs: number): void => {
+  try {
+    const url = `${api.BASE_URL}/v1/mcp-auth/oauth2/callback-diagnostics`
+    const body = JSON.stringify({
+      result: 'timeout',
+      auth_config_id: authConfigId,
+      opener_present: false,
+      // The backend rejects waited_ms above its one-hour ceiling; the timeout is
+      // admin-configurable and unbounded, and a 422 here would drop exactly the
+      // long-wait record this beacon exists to produce.
+      waited_ms: Math.min(waitedMs, DIAGNOSTICS_MAX_WAITED_MS),
+      phase: 'awaiting_callback',
+    })
+
+    if (typeof navigator.sendBeacon === 'function') {
+      navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }))
+      return
+    }
+
+    fetch(url, {
+      method: 'POST',
+      keepalive: true,
+      headers: { 'content-type': 'application/json' },
+      body,
+    }).catch(() => {
+      // Diagnostics must never surface a transport failure to the user.
+    })
+  } catch {
+    // Diagnostics must never affect the timeout behavior they report on.
+  }
+}
+
 export const useAuthCallbackListener = ({
   trackedAuthConfigIds = EMPTY_AUTH_CONFIG_IDS,
   timeoutMs,
@@ -133,6 +170,7 @@ export const useAuthCallbackListener = ({
         authConfigId,
       })
       delete timeoutsRef.current[authConfigId]
+      reportCallbackTimeoutDiagnostics(authConfigId, resolvedTimeoutMs)
       setAuthFlows((current) => ({
         ...current,
         [authConfigId]: {
