@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "flow": "sdlc-standard",
+  "slug": "epmcdme-14054-sticky-code-block-header",
+  "branch": "EPMCDME-14054_add-copy-code-block",
+  "phase": "maintenance",
+  "started_at": "2026-08-17T00:00:00Z",
+  "completed_at": "2026-08-17T11:25:00Z",
+  "last_sync_commit": "4968f1dc4e9ef837babb63d526a813c77fcd5626"
+}

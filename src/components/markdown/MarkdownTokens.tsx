@@ -68,40 +68,42 @@ const MarkdownTokens: FC<MarkdownTokensProps> = ({ tokens = [] }) => {
   const normalizedTokens = Array.isArray(tokens) ? tokens : [tokens]
 
   return normalizedTokens.map((token, i) => {
-    if (inlineTokens.includes(token.type)) return <span key={i} {...getInlineProps(token)} />
+    const key = `${token.type}-${i}-${token.raw.slice(0, 32)}`
+
+    if (inlineTokens.includes(token.type)) return <span key={key} {...getInlineProps(token)} />
 
     if (token.type === TOKEN_TYPES.table) {
       return (
         <TableBlock
-          key={i} // nosonar
+          key={key}
           html={DOMPurify.sanitize(Parser.parse([token], options), { ADD_ATTR: ['target'] })}
           raw={token.raw}
         />
       )
     }
 
-    if (blockTokens.includes(token.type)) return <div key={i} {...getBlockProps(token)} />
+    if (blockTokens.includes(token.type)) return <div key={key} {...getBlockProps(token)} />
 
-    if (token.type === TOKEN_TYPES.paragraph) return <p key={i} {...getBlockProps(token)} />
-    if (token.type === TOKEN_TYPES.space) return <span key={i} {...getBlockProps(token)} />
-    if (token.type === TOKEN_TYPES.text) return <span key={i} {...getBlockProps(token)} />
-    if (token.type === TOKEN_TYPES.list) return <ListToken key={i} token={token} />
+    if (token.type === TOKEN_TYPES.paragraph) return <p key={key} {...getBlockProps(token)} />
+    if (token.type === TOKEN_TYPES.space) return <span key={key} {...getBlockProps(token)} />
+    if (token.type === TOKEN_TYPES.text) return <span key={key} {...getBlockProps(token)} />
+    if (token.type === TOKEN_TYPES.list) return <ListToken key={key} token={token} />
     if (token.type === TOKEN_TYPES.blockquote) {
       return (
-        <blockquote key={i}>
+        <blockquote key={key}>
           <MarkdownTokens tokens={token.tokens} />
         </blockquote>
       )
     }
 
     if (token.type === TOKEN_TYPES.code) {
-      if (token.lang === 'mermaid') return <MermaidDiagram key={i} code={token.text ?? ''} />
+      if (token.lang === 'mermaid') return <MermaidDiagram key={key} code={token.text ?? ''} />
 
       if (token.lang === 'md' && !token.text?.includes('```') && token.text?.trim()?.length) {
-        return <Markdown key={i} content={token.text} />
+        return <Markdown key={key} content={token.text} />
       }
 
-      return <CodeBlock key={i} text={token.text ?? ''} language={token.lang} />
+      return <CodeBlock key={key} text={token.text ?? ''} language={token.lang} stickyHeader />
     }
 
     return null

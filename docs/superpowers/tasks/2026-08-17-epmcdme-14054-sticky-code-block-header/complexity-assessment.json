@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "task": "Make code block headers sticky so Copy/Download buttons remain accessible when scrolling through long code blocks (Approach C / Codex Desktop style).",
+  "generated": "2026-08-17T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches CodeBlock.tsx (sticky class or new stickyHeader prop), optionally MarkdownTokens.tsx (1-line prop pass), and CodeBlock.scss (container-type interaction check). All within the same CodeBlock component directory — no cross-cutting concerns, no stores, no API."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Approach C (CSS sticky header) is decided and unambiguous. Two minor open decisions remain — whether sticky is unconditional vs. opt-in via prop, and whether to handle the rounded-t-lg visual artifact when stuck — but neither blocks implementation start."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The sticky top-0 z-10 pattern is established in at least 6 codebase locations (Table thead, ConfigPanel, FormSection, etc.). The one nuance is container-type: inline-size on .code-block-header potentially conflicting with position: sticky in some browsers; mitigation (outer wrapper div) is documented in the technical analysis."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "3–4 files total: CodeBlock.tsx (1–3 line change), CodeBlock.scss (possible wrapper adjustment), MarkdownTokens.tsx (optional 1-line prop pass), CodeBlock.integration.test.tsx (new class-presence assertions). All within 2 directories."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

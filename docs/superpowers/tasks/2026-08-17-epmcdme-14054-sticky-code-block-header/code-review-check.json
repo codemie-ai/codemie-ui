@@ -1,0 +1,36 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "rationale": "CR-001 (commit message capitalization) resolved: both commits now use the correct EPMCDME-XXXX: Capital sentence format, verified by git log. Fix was commit-message-only with zero code changes, so no new code was introduced. All prior business_review and standards_review findings carry forward from the final round. No new high-risk issues to check.",
+  "business_review": [
+    {"criterion": "stickyHeader?: boolean prop added to CodeBlockProps (default false)", "status": "met", "evidence": "Unchanged from final review."},
+    {"criterion": "Wrapper div with sticky top-0 z-10 on stickyHeader=true", "status": "met", "evidence": "Unchanged from final review."},
+    {"criterion": "Inner .code-block-header div unchanged", "status": "met", "evidence": "Unchanged from final review."},
+    {"criterion": "MarkdownTokens passes stickyHeader to all code tokens", "status": "met", "evidence": "Unchanged from final review."},
+    {"criterion": "Pure CSS, no JS listeners", "status": "met", "evidence": "Unchanged from final review."},
+    {"criterion": "No new buttons added", "status": "met", "evidence": "Unchanged from final review."},
+    {"criterion": "Non-chat contexts unaffected", "status": "met", "evidence": "Unchanged from final review."},
+    {"criterion": "2 integration tests added", "status": "met", "evidence": "Unchanged from final review."}
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit message format (EPMCDME-XXXX: Capital sentence)",
+      "status": "pass",
+      "notes": "Both commits now comply: 'EPMCDME-14054: Add stickyHeader prop to CodeBlock with sticky wrapper div' and 'EPMCDME-14054: Enable stickyHeader on code blocks in markdown chat messages'."
+    },
+    {
+      "standard": "Branch naming (EPMCDME-XXXX_short-description)",
+      "status": "pass",
+      "notes": "Branch EPMCDME-14054_add-copy-code-block matches the required pattern."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "git log shows both commits now use uppercase first word: 'Add...' and 'Enable...'. Commit message format matches EPMCDME-XXXX: Capital sentence pattern enforced by Tekton CI."
+    }
+  ]
+}

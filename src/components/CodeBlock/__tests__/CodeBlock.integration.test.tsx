@@ -16,8 +16,8 @@
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
-import { render } from '@testing-library/react'
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest'
+import { render, cleanup } from '@testing-library/react'
+import { describe, it, expect, beforeEach, beforeAll, afterEach } from 'vitest'
 
 import CodeBlock from '../CodeBlock'
 
@@ -128,5 +128,23 @@ describe('CodeBlock.scss font-family wiring', () => {
     fontFamilyDeclarations?.forEach((decl) => {
       expect(decl).toContain('GeistMono')
     })
+  })
+})
+
+describe('CodeBlock stickyHeader prop', () => {
+  afterEach(cleanup)
+
+  it('does not apply sticky positioning by default', () => {
+    const { container } = render(<CodeBlock text="const x = 1;" language="js" />)
+    const wrapper = container.querySelector('.code-block-header')?.parentElement
+    expect(wrapper?.classList.contains('sticky')).toBe(false)
+  })
+
+  it('applies sticky -top-8 z-10 to the wrapper when stickyHeader is true', () => {
+    const { container } = render(<CodeBlock text="const x = 1;" language="js" stickyHeader />)
+    const wrapper = container.querySelector('.code-block-header')?.parentElement
+    expect(wrapper?.classList.contains('sticky')).toBe(true)
+    expect(wrapper?.classList.contains('-top-8')).toBe(true)
+    expect(wrapper?.classList.contains('z-10')).toBe(true)
   })
 })

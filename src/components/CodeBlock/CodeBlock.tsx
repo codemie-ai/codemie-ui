@@ -15,7 +15,7 @@
 
 import './CodeBlock.scss'
 import Prism from 'prismjs'
-import { FC, ReactNode, useEffect, useMemo, useState } from 'react'
+import { FC, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 import CopySvg from '@/assets/icons/copy.svg?react'
 import DownloadSvg from '@/assets/icons/download.svg?react'
@@ -40,6 +40,7 @@ interface CodeBlockProps {
   downloadFilename?: string
   className?: string
   headerClassName?: string
+  stickyHeader?: boolean
   contentClassName?: string
   headerActionsLast?: boolean
   headerActionsTemplate?: ReactNode
@@ -55,6 +56,7 @@ const CodeBlock: FC<CodeBlockProps> = ({
   downloadFilename,
   className,
   headerClassName,
+  stickyHeader,
   contentClassName,
   headerActionsLast,
   headerActionsTemplate,
@@ -63,6 +65,8 @@ const CodeBlock: FC<CodeBlockProps> = ({
 }) => {
   const [isHtmlPopupVisible, setIsHtmlPopupVisible] = useState(false)
   const [isExpandPopupVisible, setIsExpandPopupVisible] = useState(false)
+  const [isStuck, setIsStuck] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const isHTML = useMemo(() => language === 'html' || HTML_REGEX.exec(text), [language, text])
 
@@ -78,6 +82,22 @@ const CodeBlock: FC<CodeBlockProps> = ({
     Prism.highlightAll()
   }, [text, language])
 
+  useEffect(() => {
+    let cleanup: (() => void) | undefined
+    if (stickyHeader && wrapperRef.current) {
+      const el = wrapperRef.current
+      const scrollEl = el.closest<HTMLElement>('.overflow-y-auto')
+      if (scrollEl) {
+        const handleScroll = () => {
+          setIsStuck(el.getBoundingClientRect().top <= scrollEl.getBoundingClientRect().top + 1)
+        }
+        scrollEl.addEventListener('scroll', handleScroll, { passive: true })
+        cleanup = () => scrollEl.removeEventListener('scroll', handleScroll)
+      }
+    }
+    return cleanup
+  }, [stickyHeader])
+
   return (
     <div
       className={cn(
@@ -87,65 +107,69 @@ const CodeBlock: FC<CodeBlockProps> = ({
         className
       )}
     >
-      <div
-        className={cn(
-          'flex justify-between code-block-header items-center gap-x-4 gap-y-2 flex-wrap py-2 !pl-4 !pr-2 !m-0 bg-surface-base-tertiary shadow-block border border-border-specific-panel-outline rounded-t-lg',
-          expandable && 'code-block-header--has-expand',
-          headerClassName
-        )}
-      >
-        <p className="text-sm">{title ?? language.toLowerCase()}</p>
+      <div ref={wrapperRef} className={cn(stickyHeader && 'sticky -top-8 z-10')}>
+        <div
+          className={cn(
+            'flex justify-between code-block-header items-center gap-x-4 gap-y-2 flex-wrap py-2 !pl-4 !pr-2 !m-0 bg-surface-base-tertiary shadow-block border border-border-specific-panel-outline',
+            (!stickyHeader || !isStuck) && 'rounded-t-lg',
+            expandable && 'code-block-header--has-expand',
+            headerClassName
+          )}
+        >
+          <p className="text-sm">{title ?? language.toLowerCase()}</p>
 
-        <div className="flex flex-wrap gap-2">
-          {expandable && (
+          <div className="flex flex-wrap gap-2">
+            {expandable && (
+              <Button
+                variant="secondary"
+                className="!px-2"
+                aria-label="Expand"
+                data-tooltip-id="react-tooltip"
+                data-tooltip-content="Expand"
+                onClick={() => setIsExpandPopupVisible(true)}
+              >
+                <ExpandSvg /> <span className="code-block-header-btn-label">Expand</span>
+              </Button>
+            )}
+
+            {isHTML && (
+              <Button
+                variant="secondary"
+                className="!px-2"
+                data-tooltip-id="react-tooltip"
+                data-tooltip-content="Preview HTML document"
+                onClick={() => setIsHtmlPopupVisible(!isHtmlPopupVisible)}
+              >
+                <EyeSvg /> <span className="code-block-header-btn-label">Preview</span>
+              </Button>
+            )}
+
+            {!headerActionsLast && headerActionsTemplate}
+
             <Button
               variant="secondary"
               className="!px-2"
-              aria-label="Expand"
               data-tooltip-id="react-tooltip"
-              data-tooltip-content="Expand"
-              onClick={() => setIsExpandPopupVisible(true)}
+              data-tooltip-content="Copy to buffer"
+              onClick={() => copyToClipboard(outputText, 'Copied to clipboard')}
             >
-              <ExpandSvg /> <span className="code-block-header-btn-label">Expand</span>
+              <CopySvg className="mr-0.5" />{' '}
+              <span className="code-block-header-btn-label">Copy</span>
             </Button>
-          )}
 
-          {isHTML && (
             <Button
-              variant="secondary"
+              type="secondary"
               className="!px-2"
               data-tooltip-id="react-tooltip"
-              data-tooltip-content="Preview HTML document"
-              onClick={() => setIsHtmlPopupVisible(!isHtmlPopupVisible)}
+              data-tooltip-place="top"
+              data-tooltip-content={`Download as ${displayLanguage}`}
+              onClick={downloadCode}
             >
-              <EyeSvg /> <span className="code-block-header-btn-label">Preview</span>
+              <DownloadSvg /> <span className="code-block-header-btn-label">Download</span>
             </Button>
-          )}
 
-          {!headerActionsLast && headerActionsTemplate}
-
-          <Button
-            variant="secondary"
-            className="!px-2"
-            data-tooltip-id="react-tooltip"
-            data-tooltip-content="Copy to buffer"
-            onClick={() => copyToClipboard(outputText, 'Copied to clipboard')}
-          >
-            <CopySvg className="mr-0.5" /> <span className="code-block-header-btn-label">Copy</span>
-          </Button>
-
-          <Button
-            type="secondary"
-            className="!px-2"
-            data-tooltip-id="react-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-content={`Download as ${displayLanguage}`}
-            onClick={downloadCode}
-          >
-            <DownloadSvg /> <span className="code-block-header-btn-label">Download</span>
-          </Button>
-
-          {headerActionsLast && headerActionsTemplate}
+            {headerActionsLast && headerActionsTemplate}
+          </div>
         </div>
       </div>
 
