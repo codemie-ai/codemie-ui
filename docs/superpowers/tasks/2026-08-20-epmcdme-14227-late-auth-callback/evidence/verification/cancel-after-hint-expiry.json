@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "feature_id": "cancel-after-hint-expiry",
+  "tool": "playwright",
+  "coverage_source": "none",
+  "test_command": null,
+  "app_url": "http://localhost:5173/chats",
+  "screenshot_path": "evidence/screenshots/chats-route-no-backend.png",
+  "console_errors": ["Error fetching config: Response", "Failed to load resource: 500 (Internal Server Error)"],
+  "network_failures": ["500 /api/v1/config", "500 /api/v1/user"],
+  "result": "INCONCLUSIVE",
+  "user_visible_behaviour": "Cancelling after hint expiry ends the flow: no late callback is accepted and no diagnostics beacon is sent.",
+  "why_not_verified": "The negative assertion (no beacon to /v1/mcp-auth/oauth2/callback-diagnostics) needs a live session to be meaningful; the endpoint is never called because the app never authenticates.",
+  "non_browser_evidence": "Not browser-observed. Beacon endpoint at src/hooks/useAuthCallbackListener.ts:157."
+}

@@ -64,7 +64,9 @@ describe('AssistantAuthGateRow', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Authenticate' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Re-authenticate' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Waiting for browser sign-in')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Waiting for browser sign-in — a long sign-in is normal.')
+    ).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Continue' }))
     await user.click(screen.getByRole('button', { name: 'Cancel' }))

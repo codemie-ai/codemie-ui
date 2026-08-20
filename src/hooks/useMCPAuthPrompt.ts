@@ -16,12 +16,16 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 
 import {
-  AUTH_CALLBACK_TIMEOUT_MESSAGE,
+  AUTH_CALLBACK_HINT_MESSAGE,
   useAuthCallbackListener,
 } from '@/hooks/useAuthCallbackListener'
 import { MCPAuthGateServer, MCPAuthInitiateResponse } from '@/types/entity/mcpAuth'
 import api from '@/utils/api'
-import { parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
+import {
+  getLiveAuthConfigIds,
+  isAuthenticatingGateRow,
+  parseMCPAuthRequiredErrorPayload,
+} from '@/utils/mcpAuth'
 import {
   getPendingInitiate,
   getRecoverableAuthStatus,
@@ -199,12 +203,11 @@ export const useMCPAuthPrompt = ({
   const clearRows = useCallback(() => setRows([]), [])
 
   const trackedAuthConfigIds = useMemo(
-    () =>
-      rows
-        .filter((row) => row.status === 'authenticating' && row.auth_config_id)
-        .map((row) => row.auth_config_id as string),
+    () => rows.filter(isAuthenticatingGateRow).map((row) => row.auth_config_id as string),
     [rows]
   )
+
+  const liveAuthConfigIds = useMemo(() => getLiveAuthConfigIds(rows), [rows])
 
   const onSuccess = useCallback((authConfigId: string) => {
     setRows((current) => {
@@ -240,12 +243,18 @@ export const useMCPAuthPrompt = ({
       updateRowByAuthConfigId(current, authConfigId, (row) => ({
         ...row,
         status: getRecoverableAuthStatus(row),
-        error_context: AUTH_CALLBACK_TIMEOUT_MESSAGE,
+        error_context: AUTH_CALLBACK_HINT_MESSAGE,
       }))
     )
   }, [])
 
-  useAuthCallbackListener({ trackedAuthConfigIds, onSuccess, onError, onTimeout })
+  useAuthCallbackListener({
+    trackedAuthConfigIds,
+    liveAuthConfigIds,
+    onSuccess,
+    onError,
+    onTimeout,
+  })
 
   return { rows, handleAuthRequiredError, initiate, continue: continueAuth, cancel, clearRows }
 }

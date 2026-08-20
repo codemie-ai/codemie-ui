@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "generated": "2026-08-20",
+  "dimensions": {
+    "component_scope": { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk": { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 4, "label": "L" }
+  },
+  "total": 25,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 16,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Six production files across four areas: the shared useAuthCallbackListener hook (two-stage timers, retention set, flow-origin map, two new declarative options), both of its consumers (useMCPAuthPrompt, useChatAuthCallbacks), the chatGeneration Valtio store (isLateCallbackTarget matcher on both success and rollback paths), the shared src/utils/mcpAuth.ts (new getLiveAuthConfigIds helper with three call sites) and the AssistantAuthGateRow presentation copy. The hook gained a new abstraction rather than a parameter tweak: each flow now records its originating context and the handlers captured at track time."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The approved plan did not survive contact with review. Round 1 returned four findings including one critical; round 2 left a critical residual that forced an unplanned design extension (liveAuthConfigIds and contextKey), and a separate user decision overrode the approved spec by widening the rollback matcher to a single status !== 'authenticated' predicate. Real rework from open design decisions, which is the L criterion exactly."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Novel two-stage timer with no in-repo precedent, sitting on the MCP OAuth2 authorization path. The postMessage id gate now accepts tracked-or-retained ids, so the window in which a cross-window auth callback is applied widens from 60 s to 600 s; the 600 s value is not derivable in this repo but mirrors _PKCE_TTL_SECONDS and _CALLBACK_STATE_MAX_AGE in two backend repos, so it silently drifts if either moves. Feature verification could not run (no backend in the environment), leaving unit and integration tests as the only behavioural evidence."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "16 files changed, 1680 insertions — the 16+ band. Weight is heavily on tests: roughly 1400 of the 1680 inserted lines are test code across 10 test files, three of them brand new for consumers that had no coverage before (workflow details page callback path, chat AI auth prompt, assistant auth gate row). Production surface is 6 files."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Four distinct frontend layers plus an external boundary: UI component, hooks/behaviour, Valtio store state, shared utils, and the cross-window postMessage origin check with the fire-and-forget diagnostics beacon POST. No backend, no schema, no migration — cross-system coupling is behavioural (backend TTL constants) rather than a code change in another system."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): touches core shared utilities — useAuthCallbackListener and src/utils/mcpAuth.ts are consumed by chat, the assistant auth gate and the workflows page.",
+    "Technical Risk bumped from L (4) to XL (5): affects authentication — the MCP OAuth2 sign-in callback acceptance path and its origin-verified postMessage gate."
+  ],
+  "split_recommendation": null
+}

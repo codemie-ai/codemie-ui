@@ -51,7 +51,8 @@ vi.mock('@/hooks/useNewIntegrationPopup', () => ({
 }))
 
 vi.mock('@/hooks/useAuthCallbackListener', () => ({
-  AUTH_CALLBACK_TIMEOUT_MESSAGE: "Authentication didn't complete.",
+  AUTH_CALLBACK_HINT_MESSAGE:
+    'Sign-in is taking longer than usual. It can still complete — or click to try again.',
   useAuthCallbackListener: vi.fn(() => ({ authFlows: {} })),
 }))
 

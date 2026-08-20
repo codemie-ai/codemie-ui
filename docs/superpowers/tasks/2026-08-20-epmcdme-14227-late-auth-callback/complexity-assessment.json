@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "task": "Apply a late-arriving MCP auth callback after the UI wait timer expires and align the UI callback timeout with backend PKCE/callback-state lifetimes, across useAuthCallbackListener, its three consumers, and the chatGeneration Valtio store.",
+  "generated": "2026-08-20",
+  "dimensions": {
+    "component_scope": { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk": { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies": { "score": 2, "label": "S" },
+    "affected_layers": { "score": 4, "label": "L" }
+  },
+  "total": 23,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "One semantic change fans out across six components in three subsystems: the shared listener useAuthCallbackListener, all three of its consumers (useMCPAuthPrompt with local state, useChatAuthCallbacks with store delegation, WorkflowDetailsPage with no handlers at all), the chatGeneration Valtio store, and the shared AssistantAuthGateRow presentation reused by chat, the assistant gate and the MCP toolkit test. The three consumers have divergent contracts, so changing tracking semantics changes all of them."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Five acceptance criteria exist and the ticket names the files, but two criteria are directional rather than concrete: AC #2 asks for a timeout 'derived from, or explicitly aligned with' backend lifetimes without fixing the value (600 s PKCE / 600 s callback state / 900 s discovered flow are cross-repo facts unverifiable from this tree), and AC #4 names no copy. The ticket also explicitly defers a real design decision to implementation — a single long timeout versus a two-stage timer (hint at ~60 s, hard expiry at the backend lifetime), the latter costing a new row field, an initiate() guard relaxation and row UI work."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The change sits on an authentication path (OAuth/PKCE MCP sign-in delivered over cross-window postMessage behind an origin gate). No exact precedent exists for retaining tracking past timeout: the untracking effect currently serves two behaviours at once — tearing down the spinner and dropping late callbacks — and must be split. The 'row is still authenticating' predicate is duplicated in five places that must move together. Test posture is uneven: useAuthCallbackListener.test.tsx pins current timeout behaviour in 16 cases including the 60 s fallback (behaviour change lands as test churn), while useChatAuthCallbacks and WorkflowDetailsPage have no coverage and useMCPAuthPrompt.test.tsx stubs the listener so no callback ever reaches it. Rollback is cheap in practice — mcpAuthTimeoutSeconds is an admin runtime setting needing no redeploy. Entanglement risk with EPMCDME-14226, which last touched the same file and whose beacon is asserted in five tests."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Roughly 10-12 files across five directories: 5-6 source files (useAuthCallbackListener.ts, useMCPAuthPrompt.ts, useChatAuthCallbacks.ts, chatGeneration.ts, AssistantAuthGateRow.tsx, plus verify-only WorkflowDetailsPage.tsx) and 4-5 modified suites (useAuthCallbackListener.test.tsx, useMCPAuthPrompt.test.tsx, AssistantAuthGateRow.test.tsx, ChatAiAuthPrompt.test.tsx, chatGeneration tests), with 1-3 new suites for the currently uncovered consumers and the prompt-auth store methods. All files already exist; no new module, endpoint or type is implied."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Four distinct layers plus an external boundary, with no persistence: presentation (AssistantAuthGateRow waiting copy, shared by three surfaces), page-level hooks and pages (useChatAuthCallbacks, ChatPage, WorkflowDetailsPage), global shared hooks (useAuthCallbackListener, useMCPAuthPrompt), and the Valtio store layer (chatGeneration, appInfo config accessors). The external surface is the cross-window postMessage from the backend callback page, the callback-diagnostics beacon and GET /v1/config — none newly built, and no backend change is in scope."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): touches a core shared utility — useAuthCallbackListener is the single cross-window listener behind three divergent consumers, and the 'still authenticating' predicate is duplicated across five sites that must change in step.",
+    "Requirements Clarity bumped from M (3) to L (4): vague acceptance criteria — AC #2 leaves the target timeout value directional and AC #4 specifies no copy, and the ticket defers the single-timer versus two-stage-timer design decision to implementation.",
+    "Technical Risk bumped from M (3) to L (4): affects authentication — the OAuth/PKCE MCP sign-in flow and its cross-window origin-gated callback."
+  ],
+  "split_recommendation": null
+}

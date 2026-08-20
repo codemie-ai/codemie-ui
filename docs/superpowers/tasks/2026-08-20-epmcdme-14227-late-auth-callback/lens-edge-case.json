@@ -1,0 +1,64 @@
+[
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:211-227",
+    "trigger_condition": "Id untracked before hint expiry: cancel, clearRows, chat switch, execution resolved",
+    "guard_snippet": "if (!retainedIdsRef.current.has(id)) { clearTimeout(acceptanceTimeoutsRef.current[id]); delete acceptanceTimeoutsRef.current[id] }",
+    "potential_consequence": "Abandoned flow still fires a false 'timeout' beacon 10 minutes later"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:229-242",
+    "trigger_condition": "Same auth_config_id re-tracked on retry while its first acceptance timer still pending",
+    "guard_snippet": "clearTimeout(acceptanceTimeoutsRef.current[authConfigId]); acceptanceTimeoutsRef.current[authConfigId] = setTimeout(...)",
+    "potential_consequence": "Orphan timer purges retention mid-retry, beacons falsely, leaves new timer unclearable"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:201-209",
+    "trigger_condition": "Acceptance expiry while the id is still in trackedIdsRef (WorkflowDetailsPage never untracks)",
+    "guard_snippet": "if (!trackedIdsRef.current.has(authConfigId)) reportCallbackTimeoutDiagnostics(authConfigId, resolvedAcceptanceMs)",
+    "potential_consequence": "Diagnostics records a timeout for a flow the page is still awaiting"
+  },
+  {
+    "location": "src/store/chatGeneration.ts:301,955-961",
+    "trigger_condition": "Late error callback arrives during retention, after hint expiry rolled the row back",
+    "guard_snippet": "const isAuthRollbackTarget = (row) => row.status === 'authenticating' || isRecoverableStatus(row.status)",
+    "potential_consequence": "IdP error code never lands; user keeps the stale 'taking longer' hint"
+  },
+  {
+    "location": "src/store/chatGeneration.ts:299",
+    "trigger_condition": "Newer row for same auth_config_id sits in config_error or discovery_failed",
+    "guard_snippet": "const isAuthSuccessTarget = (row) => row.status === 'authenticating' || isRecoverableStatus(row.status)",
+    "potential_consequence": "Config error silently flipped to authenticated; real in-flight row stuck authenticating"
+  },
+  {
+    "location": "src/pages/chat/hooks/useChatAuthCallbacks.ts:43-61",
+    "trigger_condition": "User switches chats after hint expiry; late success arrives during retention",
+    "guard_snippet": "const chatIdByAuthId = useRef<Record<string,string>>({}); markPromptAuthSuccess(chatIdByAuthId.current[authConfigId] ?? currentChat.id, authConfigId)",
+    "potential_consequence": "Originating chat's row stays authentication_required; another chat's row flipped instead"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:180-181",
+    "trigger_condition": "mcpAuthTimeoutSeconds configured at or above 600 seconds",
+    "guard_snippet": "const resolvedAcceptanceMs = resolvedHintMs + AUTH_CALLBACK_ACCEPTANCE_MS",
+    "potential_consequence": "Both timers coincide; retention window is zero, late-callback acceptance silently disabled"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:117-118",
+    "trigger_condition": "mcpAuthTimeoutSeconds configured above the backend 600s PKCE/callback-state TTL",
+    "guard_snippet": "const resolvedAcceptanceMs = Math.min(Math.max(hintMs, ACCEPTANCE_MS), BACKEND_CALLBACK_STATE_TTL_MS)",
+    "potential_consequence": "UI promises completion for a flow the backend already invalidated; user waits indefinitely"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:98-118,181",
+    "trigger_condition": "mcpAuthTimeoutSeconds above 2147483 seconds; getPositiveInteger imposes no upper bound",
+    "guard_snippet": "const MAX_TIMER_MS = 2_147_483_647; return Math.min(resolvedMs, MAX_TIMER_MS)",
+    "potential_consequence": "setTimeout overflows and fires immediately; hint and acceptance expire before any callback"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:~170 (removed reportCallbackTimeoutDiagnostics call in onIdTimeout)",
+    "trigger_condition": "Beacon fired on every hint-timeout at 60s, guaranteeing a diagnostics sample",
+    "guard_snippet": "Re-report at hint expiry, or flush pending acceptance beacons on unmount/pagehide",
+    "potential_consequence": "Tab close or navigation before 600s drops the timeout metric entirely",
+    "kind": "deletion",
+    "confidence": "high"
+  }
+]

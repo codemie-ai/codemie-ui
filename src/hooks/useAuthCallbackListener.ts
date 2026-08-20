@@ -19,9 +19,22 @@ import { appInfoStore } from '@/store/appInfo'
 import api from '@/utils/api'
 
 const AUTH_CALLBACK_EVENT_TYPE = 'mcp_auth_callback'
-const AUTH_CALLBACK_TIMEOUT_SECONDS = 60
-const AUTH_CALLBACK_TIMEOUT_MS = AUTH_CALLBACK_TIMEOUT_SECONDS * 1000
-const AUTH_CALLBACK_TIMEOUT_MESSAGE = "Authentication didn't complete. Click to try again."
+
+// Stage 1 — presentation only: how long the spinner shows before the row
+// returns to an actionable state. Overridable via `mcpAuthTimeoutSeconds`.
+const AUTH_CALLBACK_HINT_SECONDS = 60
+
+// Stage 2 — how long a callback is still applied. Mirrors the shorter of the
+// backend lifetimes gating this flow, each verified at its own definition site:
+//   _PKCE_TTL_SECONDS 600 s — `codemie-enterprise`, mcp_auth/redis_pkce_store.py
+//   _CALLBACK_STATE_MAX_AGE 10 min — `codemie`, enterprise/mcp_auth/_constants.py
+// The 900 s DISCOVERED_FLOW_TTL_SECONDS (`codemie-enterprise`,
+// mcp_auth/discovered_flow.py) is the looser bound and does not gate this value.
+const AUTH_CALLBACK_ACCEPTANCE_SECONDS = 600
+const AUTH_CALLBACK_ACCEPTANCE_MS = AUTH_CALLBACK_ACCEPTANCE_SECONDS * 1000
+
+const AUTH_CALLBACK_HINT_MESSAGE =
+  'Sign-in is taking longer than usual. It can still complete — or click to try again.'
 const EMPTY_AUTH_CONFIG_IDS: string[] = []
 
 type AuthCallbackMessageStatus = 'success' | 'error'
@@ -42,6 +55,15 @@ interface AuthFlowState {
 
 interface UseAuthCallbackListenerOptions {
   trackedAuthConfigIds?: string[]
+  // Every auth_config_id the caller still holds a row for, whatever its status - a
+  // superset of the tracked ids. Losing one is how a cancel, a clearRows or a dropped
+  // turn ends an acceptance window the hint expiry already untracked. Omit it (as a
+  // caller with a single, never-cancelled flow does) to leave that window open.
+  liveAuthConfigIds?: string[]
+  // Identifies the caller context these ids belong to - a chat id, say. Only the
+  // context that started a flow may end it, so switching context never cancels the
+  // flow the previous one is still waiting on.
+  contextKey?: string
   timeoutMs?: number
   onSuccess?: (authConfigId: string) => void
   onError?: (authConfigId: string, errorCode: string | undefined) => void
@@ -50,6 +72,15 @@ interface UseAuthCallbackListenerOptions {
 
 interface UseAuthCallbackListenerResult {
   authFlows: Record<string, AuthFlowState>
+}
+
+// Where a flow came from, captured when tracking begins. A late callback is dispatched
+// through these handlers rather than the current ones, so it reaches the context that
+// opened the sign-in instead of whichever one happens to be on screen when it lands.
+interface AuthFlowOrigin {
+  contextKey: string
+  onSuccess?: UseAuthCallbackListenerOptions['onSuccess']
+  onError?: UseAuthCallbackListenerOptions['onError']
 }
 
 const getApiOrigin = (): string | null => {
@@ -97,11 +128,26 @@ const getPositiveInteger = (value: unknown): number | null => {
   return parsedValue
 }
 
-const getAuthCallbackTimeoutSeconds = (): number =>
-  getPositiveInteger(appInfoStore.getMcpAuthTimeoutSeconds()) ?? AUTH_CALLBACK_TIMEOUT_SECONDS
+const getAuthCallbackHintSeconds = (): number =>
+  getPositiveInteger(appInfoStore.getMcpAuthTimeoutSeconds()) ?? AUTH_CALLBACK_HINT_SECONDS
 
-// Keep the UI timeout <= the backend PKCE lifetime.
-const getAuthCallbackTimeoutMs = (): number => getAuthCallbackTimeoutSeconds() * 1000
+const getAuthCallbackHintMs = (): number => getAuthCallbackHintSeconds() * 1000
+
+// The acceptance window never shortens the spinner lifetime: a hint configured
+// beyond the backend floor widens it instead.
+const getAuthCallbackAcceptanceMs = (hintMs: number): number =>
+  Math.max(hintMs, AUTH_CALLBACK_ACCEPTANCE_MS)
+
+const clearTrackedTimeout = (
+  timeouts: Record<string, ReturnType<typeof setTimeout>>,
+  authConfigId: string
+): void => {
+  const handle = timeouts[authConfigId]
+  if (!handle) return
+
+  clearTimeout(handle)
+  delete timeouts[authConfigId]
+}
 
 // Mirrors the OAuth2CallbackDiagnostics.waited_ms ceiling on the backend model.
 const DIAGNOSTICS_MAX_WAITED_MS = 3_600_000
@@ -142,14 +188,19 @@ const reportCallbackTimeoutDiagnostics = (authConfigId: string, waitedMs: number
 
 export const useAuthCallbackListener = ({
   trackedAuthConfigIds = EMPTY_AUTH_CONFIG_IDS,
+  liveAuthConfigIds,
+  contextKey = '',
   timeoutMs,
   onSuccess,
   onError,
   onTimeout,
 }: UseAuthCallbackListenerOptions = {}): UseAuthCallbackListenerResult => {
   const [authFlows, setAuthFlows] = useState<Record<string, AuthFlowState>>({})
-  const timeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const hintTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const acceptanceTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
   const trackedIdsRef = useRef<Set<string>>(new Set())
+  const retainedIdsRef = useRef<Set<string>>(new Set())
+  const flowOriginsRef = useRef<Map<string, AuthFlowOrigin>>(new Map())
   const onSuccessRef = useRef<UseAuthCallbackListenerOptions['onSuccess']>(undefined)
   const onErrorRef = useRef<UseAuthCallbackListenerOptions['onError']>(undefined)
   const onTimeoutRef = useRef<UseAuthCallbackListenerOptions['onTimeout']>(undefined)
@@ -161,33 +212,50 @@ export const useAuthCallbackListener = ({
   }, [onError, onSuccess, onTimeout])
 
   useEffect(() => {
-    const resolvedTimeoutMs = timeoutMs ?? getAuthCallbackTimeoutMs()
+    const resolvedHintMs = timeoutMs ?? getAuthCallbackHintMs()
+    const resolvedAcceptanceMs = getAuthCallbackAcceptanceMs(resolvedHintMs)
     const nextTrackedIds = new Set(trackedAuthConfigIds.filter(Boolean))
     const previousTrackedIds = trackedIdsRef.current
 
-    const onIdTimeout = (authConfigId: string) => {
-      console.warn(`[mcp-auth] Timed out waiting for auth callback after ${resolvedTimeoutMs}ms`, {
+    const onIdHintExpiry = (authConfigId: string) => {
+      console.warn(`[mcp-auth] Timed out waiting for auth callback after ${resolvedHintMs}ms`, {
         authConfigId,
       })
-      delete timeoutsRef.current[authConfigId]
-      reportCallbackTimeoutDiagnostics(authConfigId, resolvedTimeoutMs)
+      delete hintTimeoutsRef.current[authConfigId]
+      retainedIdsRef.current.add(authConfigId)
       setAuthFlows((current) => ({
         ...current,
         [authConfigId]: {
           status: 'authentication_required',
-          message: AUTH_CALLBACK_TIMEOUT_MESSAGE,
+          message: AUTH_CALLBACK_HINT_MESSAGE,
         },
       }))
       onTimeoutRef.current?.(authConfigId)
     }
 
+    const onIdAcceptanceExpiry = (authConfigId: string) => {
+      console.warn(
+        `[mcp-auth] Auth callback acceptance window elapsed after ${resolvedAcceptanceMs}ms`,
+        { authConfigId }
+      )
+      delete acceptanceTimeoutsRef.current[authConfigId]
+      retainedIdsRef.current.delete(authConfigId)
+      flowOriginsRef.current.delete(authConfigId)
+      reportCallbackTimeoutDiagnostics(authConfigId, resolvedAcceptanceMs)
+    }
+
     previousTrackedIds.forEach((authConfigId) => {
       if (nextTrackedIds.has(authConfigId)) return
 
-      const timeoutHandle = timeoutsRef.current[authConfigId]
-      if (timeoutHandle) {
-        clearTimeout(timeoutHandle)
-        delete timeoutsRef.current[authConfigId]
+      clearTrackedTimeout(hintTimeoutsRef.current, authConfigId)
+
+      // Untracking a retained id is the consumer reacting to the hint expiry, so the
+      // acceptance stage stays armed and a late callback is still applied. Untracking
+      // for any other reason - cancel, clearRows, chat switch, a replaced row - tears
+      // both stages down, so an abandoned flow never beacons a false timeout.
+      if (!retainedIdsRef.current.has(authConfigId)) {
+        clearTrackedTimeout(acceptanceTimeoutsRef.current, authConfigId)
+        flowOriginsRef.current.delete(authConfigId)
       }
 
       setAuthFlows((current) => {
@@ -199,15 +267,51 @@ export const useAuthCallbackListener = ({
       })
     })
 
+    // A flow the hint expiry already untracked has no untrack transition left to hook:
+    // its rollback dropped the id from `trackedAuthConfigIds` on the very next render, so
+    // a later cancel, clearRows or dropped turn would otherwise be invisible here. The id
+    // leaving its own context's live set is that missing signal - it ends the acceptance
+    // stage, so an abandoned sign-in neither beacons a false timeout nor applies a late
+    // callback. Another context's render reports only its own ids and so ends nothing.
+    if (liveAuthConfigIds) {
+      const nextLiveIds = new Set(liveAuthConfigIds.filter(Boolean))
+
+      retainedIdsRef.current.forEach((authConfigId) => {
+        if (nextLiveIds.has(authConfigId)) return
+        if (flowOriginsRef.current.get(authConfigId)?.contextKey !== contextKey) return
+
+        clearTrackedTimeout(acceptanceTimeoutsRef.current, authConfigId)
+        retainedIdsRef.current.delete(authConfigId)
+        flowOriginsRef.current.delete(authConfigId)
+      })
+    }
+
     nextTrackedIds.forEach((authConfigId) => {
       if (previousTrackedIds.has(authConfigId)) return
 
-      console.info(`[mcp-auth] Awaiting auth callback (timeout ${resolvedTimeoutMs}ms)`, {
+      console.info(`[mcp-auth] Awaiting auth callback (timeout ${resolvedHintMs}ms)`, {
         authConfigId,
       })
-      const timeoutHandle = setTimeout(() => onIdTimeout(authConfigId), resolvedTimeoutMs)
+      // A retry re-tracks an id whose acceptance timer is still armed from the previous
+      // attempt; drop it so one id can never hold two timers - and with it the previous
+      // retention, which this attempt's own tracking now supersedes.
+      clearTrackedTimeout(hintTimeoutsRef.current, authConfigId)
+      clearTrackedTimeout(acceptanceTimeoutsRef.current, authConfigId)
+      retainedIdsRef.current.delete(authConfigId)
+      flowOriginsRef.current.set(authConfigId, {
+        contextKey,
+        onSuccess: onSuccessRef.current,
+        onError: onErrorRef.current,
+      })
 
-      timeoutsRef.current[authConfigId] = timeoutHandle
+      hintTimeoutsRef.current[authConfigId] = setTimeout(
+        () => onIdHintExpiry(authConfigId),
+        resolvedHintMs
+      )
+      acceptanceTimeoutsRef.current[authConfigId] = setTimeout(
+        () => onIdAcceptanceExpiry(authConfigId),
+        resolvedAcceptanceMs
+      )
       setAuthFlows((current) => ({
         ...current,
         [authConfigId]: {
@@ -217,7 +321,7 @@ export const useAuthCallbackListener = ({
     })
 
     trackedIdsRef.current = nextTrackedIds
-  }, [timeoutMs, trackedAuthConfigIds])
+  }, [contextKey, liveAuthConfigIds, timeoutMs, trackedAuthConfigIds])
 
   useEffect(() => {
     const apiOrigin = getApiOrigin()
@@ -242,6 +346,9 @@ export const useAuthCallbackListener = ({
           tracked: observed.auth_config_id
             ? trackedIdsRef.current.has(observed.auth_config_id)
             : false,
+          retained: observed.auth_config_id
+            ? retainedIdsRef.current.has(observed.auth_config_id)
+            : false,
         })
       }
 
@@ -256,10 +363,14 @@ export const useAuthCallbackListener = ({
         })
         return
       }
-      if (!trackedIdsRef.current.has(event.data.auth_config_id)) {
+      if (
+        !trackedIdsRef.current.has(event.data.auth_config_id) &&
+        !retainedIdsRef.current.has(event.data.auth_config_id)
+      ) {
         console.warn('[mcp-auth] Ignoring auth callback for untracked auth_config_id', {
           authConfigId: event.data.auth_config_id,
           tracked: Array.from(trackedIdsRef.current),
+          retained: Array.from(retainedIdsRef.current),
         })
         return
       }
@@ -270,11 +381,16 @@ export const useAuthCallbackListener = ({
         error: event.data.error,
       })
 
-      const timeoutHandle = timeoutsRef.current[event.data.auth_config_id]
-      if (timeoutHandle) {
-        clearTimeout(timeoutHandle)
-        delete timeoutsRef.current[event.data.auth_config_id]
-      }
+      // A retained flow is one its own context has stopped waiting on, so it is dispatched
+      // through the handlers captured when it started rather than the current ones.
+      const lateFlowOrigin = retainedIdsRef.current.has(event.data.auth_config_id)
+        ? flowOriginsRef.current.get(event.data.auth_config_id)
+        : undefined
+
+      clearTrackedTimeout(hintTimeoutsRef.current, event.data.auth_config_id)
+      clearTrackedTimeout(acceptanceTimeoutsRef.current, event.data.auth_config_id)
+      retainedIdsRef.current.delete(event.data.auth_config_id)
+      flowOriginsRef.current.delete(event.data.auth_config_id)
 
       setAuthFlows((current) => ({
         ...current,
@@ -288,11 +404,14 @@ export const useAuthCallbackListener = ({
       }))
 
       if (event.data.status === 'success') {
-        onSuccessRef.current?.(event.data.auth_config_id)
+        ;(lateFlowOrigin?.onSuccess ?? onSuccessRef.current)?.(event.data.auth_config_id)
         return
       }
 
-      onErrorRef.current?.(event.data.auth_config_id, event.data.error)
+      ;(lateFlowOrigin?.onError ?? onErrorRef.current)?.(
+        event.data.auth_config_id,
+        event.data.error
+      )
     }
 
     window.addEventListener('message', handleMessage)
@@ -304,9 +423,15 @@ export const useAuthCallbackListener = ({
 
   useEffect(
     () => () => {
-      Object.values(timeoutsRef.current).forEach((timeoutHandle) => clearTimeout(timeoutHandle))
-      timeoutsRef.current = {}
+      Object.values(hintTimeoutsRef.current).forEach((timeoutHandle) => clearTimeout(timeoutHandle))
+      Object.values(acceptanceTimeoutsRef.current).forEach((timeoutHandle) =>
+        clearTimeout(timeoutHandle)
+      )
+      hintTimeoutsRef.current = {}
+      acceptanceTimeoutsRef.current = {}
       trackedIdsRef.current = new Set()
+      retainedIdsRef.current = new Set()
+      flowOriginsRef.current = new Map()
     },
     []
   )
@@ -316,8 +441,9 @@ export const useAuthCallbackListener = ({
 
 export {
   AUTH_CALLBACK_EVENT_TYPE,
-  AUTH_CALLBACK_TIMEOUT_MESSAGE,
-  AUTH_CALLBACK_TIMEOUT_MS,
-  getAuthCallbackTimeoutMs,
+  AUTH_CALLBACK_HINT_MESSAGE,
+  AUTH_CALLBACK_ACCEPTANCE_MS,
+  getAuthCallbackHintMs,
+  getAuthCallbackAcceptanceMs,
 }
 export type { AuthFlowState, AuthFlowStatus, AuthCallbackMessage }

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "feature_id": "late-callback-acceptance",
+  "tool": "playwright",
+  "coverage_source": "none",
+  "test_command": null,
+  "app_url": "http://localhost:5173/chats",
+  "screenshot_path": "evidence/screenshots/chats-route-no-backend.png",
+  "console_errors": ["Error fetching config: Response", "Failed to load resource: 500 (Internal Server Error)"],
+  "network_failures": ["500 /api/v1/config", "500 /api/v1/user"],
+  "result": "INCONCLUSIVE",
+  "user_visible_behaviour": "A callback arriving after hint expiry but before the 600 s acceptance deadline still authenticates the row and the blocked action proceeds.",
+  "why_not_verified": "Requires a real MCP server plus an external IdP to emit a genuine late callback; the postMessage origin check (useAuthCallbackListener.ts:356) ties the callback window to the API origin. Neither exists here.",
+  "non_browser_evidence": "The 600 s acceptance deadline was cross-checked against the backends it claims to mirror and is CORRECT: _PKCE_TTL_SECONDS = 600 (codemie-enterprise/src/codemie_enterprise/mcp_auth/redis_pkce_store.py:31), _CALLBACK_STATE_MAX_AGE = timedelta(minutes=10) (codemie/src/codemie/enterprise/mcp_auth/_constants.py:83), DISCOVERED_FLOW_TTL_SECONDS = 900 (codemie-enterprise/.../discovered_flow.py:48) is indeed the looser bound. Static cross-repo check only."
+}

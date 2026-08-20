@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "result": "BLOCKED",
+  "reason": "UI surface changed and a browser is available, but the application cannot be driven to the feature. With no backend on :8080 the app fails to bootstrap: /api/v1/config and /api/v1/user return 500 and both / and /chats render an empty body. The MCP auth gate is never mounted, so no locator for it can resolve. Beyond the backend, this feature also needs a live MCP server requiring OAuth2 and an external identity provider, neither of which exists here.",
+  "remediation": "Run this verification against a deployed CodeMie environment with an MCP toolkit whose auth_config requires OAuth2, or hand these six scenarios to the pytest+Playwright harness in ../codemie-sdk/test-harness where a live environment and CredentialsManager already exist.",
+  "evidence": [
+    "evidence/screenshots/app-state-root.png",
+    "evidence/screenshots/chats-route-no-backend.png"
+  ]
+}

@@ -16,7 +16,7 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AUTH_CALLBACK_TIMEOUT_MESSAGE } from '@/hooks/useAuthCallbackListener'
+import { AUTH_CALLBACK_HINT_MESSAGE } from '@/hooks/useAuthCallbackListener'
 import type { Conversation } from '@/types/entity/conversation'
 
 import ChatPage from '../ChatPage'
@@ -79,7 +79,8 @@ vi.mock('@/hooks/useNewIntegrationPopup', () => ({
 }))
 
 vi.mock('@/hooks/useAuthCallbackListener', () => ({
-  AUTH_CALLBACK_TIMEOUT_MESSAGE: "Authentication didn't complete. Click to try again.",
+  AUTH_CALLBACK_HINT_MESSAGE:
+    'Sign-in is taking longer than usual. It can still complete — or click to try again.',
   useAuthCallbackListener: (options?: any) => mockUseAuthCallbackListener(options),
 }))
 
@@ -368,7 +369,7 @@ describe('ChatPage', () => {
       2,
       'chat-1',
       'auth-2',
-      AUTH_CALLBACK_TIMEOUT_MESSAGE
+      AUTH_CALLBACK_HINT_MESSAGE
     )
   })
 

@@ -47,6 +47,18 @@ const isMCPAuthGateStatus = (value: unknown): value is MCPAuthGateStatus =>
 const isRecoverableStatus = (value: unknown): value is MCPAuthRecoverableStatus =>
   typeof value === 'string' && RECOVERABLE_STATUSES.includes(value as MCPAuthRecoverableStatus)
 
+export const isAuthenticatingGateRow = (row: {
+  status: MCPAuthGateStatus
+  auth_config_id?: string | null
+}): boolean => row.status === 'authenticating' && Boolean(row.auth_config_id)
+
+// Wider than the tracking filter on purpose: a row the hint expiry rolled back is no
+// longer authenticating, yet its sign-in may still complete and needs somewhere to land.
+// Losing the row - a cancel, a cleared prompt, a dropped turn - is what ends that window.
+export const getLiveAuthConfigIds = (rows: { auth_config_id?: string | null }[]): string[] => [
+  ...new Set(rows.map((row) => row.auth_config_id).filter(Boolean) as string[]),
+]
+
 const getNonEmptyString = (value: unknown): string | null =>
   typeof value === 'string' && value ? value : null
 

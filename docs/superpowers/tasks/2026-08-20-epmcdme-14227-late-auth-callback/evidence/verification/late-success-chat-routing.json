@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "feature_id": "late-success-chat-routing",
+  "tool": "playwright",
+  "coverage_source": "none",
+  "test_command": null,
+  "app_url": "http://localhost:5173/chats",
+  "screenshot_path": "evidence/screenshots/chats-route-no-backend.png",
+  "console_errors": ["Error fetching config: Response", "Failed to load resource: 500 (Internal Server Error)"],
+  "network_failures": ["500 /api/v1/config", "500 /api/v1/user"],
+  "result": "INCONCLUSIVE",
+  "user_visible_behaviour": "A late success is applied to the chat that STARTED the flow even if the user has since switched chats.",
+  "why_not_verified": "Needs a genuine late callback plus a multi-chat session behind login; unreachable without the stack.",
+  "non_browser_evidence": "Not browser-observed. Store-level behaviour lives in src/store/chatGeneration.ts updatePromptAuthRow."
+}

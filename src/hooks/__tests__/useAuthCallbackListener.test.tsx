@@ -19,8 +19,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { appInfoStore } from '@/store/appInfo'
 
 import {
-  AUTH_CALLBACK_TIMEOUT_MESSAGE,
-  getAuthCallbackTimeoutMs,
+  AUTH_CALLBACK_ACCEPTANCE_MS,
+  AUTH_CALLBACK_HINT_MESSAGE,
+  getAuthCallbackAcceptanceMs,
+  getAuthCallbackHintMs,
   useAuthCallbackListener,
 } from '../useAuthCallbackListener'
 
@@ -126,7 +128,7 @@ describe('useAuthCallbackListener', () => {
     expect(result.current.authFlows['auth-1']).toEqual({ status: 'authentication_required' })
     expect(result.current.authFlows['auth-2']).toEqual({
       status: 'authentication_required',
-      message: AUTH_CALLBACK_TIMEOUT_MESSAGE,
+      message: AUTH_CALLBACK_HINT_MESSAGE,
     })
   })
 
@@ -173,12 +175,12 @@ describe('useAuthCallbackListener', () => {
 
     expect(result.current.authFlows['auth-1']).toEqual({
       status: 'authentication_required',
-      message: AUTH_CALLBACK_TIMEOUT_MESSAGE,
+      message: AUTH_CALLBACK_HINT_MESSAGE,
     })
     expect(onTimeout).toHaveBeenCalledWith('auth-1')
   })
 
-  it('sends a timeout diagnostics beacon exactly once on timeout', async () => {
+  it('sends no beacon at hint expiry and exactly one beacon at acceptance expiry', async () => {
     const sendBeacon = vi.fn((_url: string, _data?: BodyInit | null) => true)
     vi.stubGlobal('navigator', { ...navigator, sendBeacon })
 
@@ -187,8 +189,17 @@ describe('useAuthCallbackListener', () => {
       useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'], timeoutMs: 1000, onTimeout })
     )
 
+    // Hint expiry (1000ms): the spinner clears but no diagnostics are sent yet.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+
+    // Acceptance expiry (600_000ms total, mirroring the 600s backend PKCE/callback-state TTL):
+    // exactly one beacon, carrying the full acceptance wait.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600_000 - 1000)
     })
 
     expect(sendBeacon).toHaveBeenCalledTimes(1)
@@ -212,7 +223,7 @@ describe('useAuthCallbackListener', () => {
       result: 'timeout',
       auth_config_id: 'auth-1',
       opener_present: false,
-      waited_ms: 1000,
+      waited_ms: 600_000,
       phase: 'awaiting_callback',
     })
 
@@ -220,12 +231,10 @@ describe('useAuthCallbackListener', () => {
   })
 
   it('does not change timeout behaviour when the beacon transport throws', async () => {
-    vi.stubGlobal('navigator', {
-      ...navigator,
-      sendBeacon: vi.fn(() => {
-        throw new Error('beacon failed')
-      }),
+    const sendBeacon = vi.fn(() => {
+      throw new Error('beacon failed')
     })
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
 
     const onTimeout = vi.fn()
     const { result } = renderHook(() =>
@@ -238,9 +247,22 @@ describe('useAuthCallbackListener', () => {
 
     expect(result.current.authFlows['auth-1']).toEqual({
       status: 'authentication_required',
-      message: AUTH_CALLBACK_TIMEOUT_MESSAGE,
+      message: AUTH_CALLBACK_HINT_MESSAGE,
     })
     expect(onTimeout).toHaveBeenCalledWith('auth-1')
+
+    // Acceptance expiry throws inside the beacon transport; the throw is swallowed
+    // and does not surface as an unhandled error or change the already-settled state.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600_000 - 1000)
+    })
+
+    expect(sendBeacon).toHaveBeenCalledTimes(1)
+    expect(onTimeout).toHaveBeenCalledTimes(1)
+    expect(result.current.authFlows['auth-1']).toEqual({
+      status: 'authentication_required',
+      message: AUTH_CALLBACK_HINT_MESSAGE,
+    })
 
     vi.unstubAllGlobals()
   })
@@ -331,6 +353,375 @@ describe('useAuthCallbackListener', () => {
     vi.unstubAllGlobals()
   })
 
+  it('accepts a success delivered after the hint timer fires but before the acceptance deadline', async () => {
+    const onSuccess = vi.fn()
+    const { rerender } = renderHook(
+      ({ trackedAuthConfigIds }) =>
+        useAuthCallbackListener({ trackedAuthConfigIds, timeoutMs: 1000, onSuccess }),
+      { initialProps: { trackedAuthConfigIds: ['auth-1'] } }
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    // A consumer rolls the row back out of trackedAuthConfigIds once it sees the hint expire.
+    rerender({ trackedAuthConfigIds: [] })
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    expect(onSuccess).toHaveBeenCalledTimes(1)
+    expect(onSuccess).toHaveBeenCalledWith('auth-1')
+  })
+
+  it('sends no beacon and clears both timers when a success arrives during retention', async () => {
+    const sendBeacon = vi.fn(() => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    const onSuccess = vi.fn()
+    const { rerender } = renderHook(
+      ({ trackedAuthConfigIds }) =>
+        useAuthCallbackListener({ trackedAuthConfigIds, timeoutMs: 1000, onSuccess }),
+      { initialProps: { trackedAuthConfigIds: ['auth-1'] } }
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    rerender({ trackedAuthConfigIds: [] })
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    // If the acceptance timer survived the success, it would fire here and send a beacon.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600_000 - 1000)
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('drops a callback dispatched after the acceptance deadline as untracked', async () => {
+    const onSuccess = vi.fn()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { rerender } = renderHook(
+      ({ trackedAuthConfigIds }) =>
+        useAuthCallbackListener({ trackedAuthConfigIds, timeoutMs: 1000, onSuccess }),
+      { initialProps: { trackedAuthConfigIds: ['auth-1'] } }
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    rerender({ trackedAuthConfigIds: [] })
+
+    // Reach the acceptance deadline (600_000ms total) so retention is purged.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600_000 - 1000)
+    })
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    expect(onSuccess).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[mcp-auth] Ignoring auth callback for untracked auth_config_id',
+      expect.objectContaining({ authConfigId: 'auth-1' })
+    )
+
+    warnSpy.mockRestore()
+  })
+
+  it('invokes nothing for a callback dispatched after unmount, even during retention', async () => {
+    const onSuccess = vi.fn()
+    const { unmount, rerender } = renderHook(
+      ({ trackedAuthConfigIds }) =>
+        useAuthCallbackListener({ trackedAuthConfigIds, timeoutMs: 1000, onSuccess }),
+      { initialProps: { trackedAuthConfigIds: ['auth-1'] } }
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    rerender({ trackedAuthConfigIds: [] })
+
+    unmount()
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    expect(onSuccess).not.toHaveBeenCalled()
+  })
+
+  it('sends no beacon and accepts nothing once a flow is untracked before its hint fires', async () => {
+    const sendBeacon = vi.fn(() => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    const onSuccess = vi.fn()
+    const { rerender } = renderHook(
+      ({ trackedAuthConfigIds }) =>
+        useAuthCallbackListener({ trackedAuthConfigIds, timeoutMs: 1000, onSuccess }),
+      { initialProps: { trackedAuthConfigIds: ['auth-1'] } }
+    )
+
+    // Cancelled, cleared or switched away from while the spinner was still up:
+    // both stages are torn down, so no flow is left to beacon about or to accept.
+    rerender({ trackedAuthConfigIds: [] })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_CALLBACK_ACCEPTANCE_MS + 1000)
+    })
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+    expect(onSuccess).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('sends no beacon and accepts nothing once a hint-expired flow is cancelled', async () => {
+    const sendBeacon = vi.fn(() => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    const onSuccess = vi.fn()
+    const { rerender } = renderHook(
+      ({ trackedAuthConfigIds, liveAuthConfigIds }) =>
+        useAuthCallbackListener({
+          trackedAuthConfigIds,
+          liveAuthConfigIds,
+          contextKey: 'chat-a',
+          timeoutMs: 1000,
+          onSuccess,
+        }),
+      { initialProps: { trackedAuthConfigIds: ['auth-1'], liveAuthConfigIds: ['auth-1'] } }
+    )
+
+    // The hint expires and the consumer rolls the row back: the id leaves the tracked
+    // set, but its row - and with it the acceptance window - is still on screen.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+    rerender({ trackedAuthConfigIds: [], liveAuthConfigIds: ['auth-1'] })
+
+    // The user then cancels. The rollback already consumed the untrack transition, so
+    // losing the row from its own context is the only signal that the flow is abandoned.
+    rerender({ trackedAuthConfigIds: [], liveAuthConfigIds: [] })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_CALLBACK_ACCEPTANCE_MS + 1000)
+    })
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+    expect(onSuccess).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('applies a late success to the originating chat after a chat switch', async () => {
+    const onSuccessForOriginatingChat = vi.fn()
+    const onSuccessForCurrentChat = vi.fn()
+
+    const { rerender } = renderHook(
+      ({ trackedAuthConfigIds, liveAuthConfigIds, contextKey, onSuccess }) =>
+        useAuthCallbackListener({
+          trackedAuthConfigIds,
+          liveAuthConfigIds,
+          contextKey,
+          timeoutMs: 1000,
+          onSuccess,
+        }),
+      {
+        initialProps: {
+          trackedAuthConfigIds: ['auth-1'],
+          liveAuthConfigIds: ['auth-1'],
+          contextKey: 'chat-a',
+          onSuccess: onSuccessForOriginatingChat,
+        },
+      }
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+    rerender({
+      trackedAuthConfigIds: [],
+      liveAuthConfigIds: ['auth-1'],
+      contextKey: 'chat-a',
+      onSuccess: onSuccessForOriginatingChat,
+    })
+
+    // The user switches chats, which rebinds the handlers to the chat now on screen.
+    rerender({
+      trackedAuthConfigIds: [],
+      liveAuthConfigIds: [],
+      contextKey: 'chat-b',
+      onSuccess: onSuccessForCurrentChat,
+    })
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    expect(onSuccessForOriginatingChat).toHaveBeenCalledTimes(1)
+    expect(onSuccessForOriginatingChat).toHaveBeenCalledWith('auth-1')
+    expect(onSuccessForCurrentChat).not.toHaveBeenCalled()
+  })
+
+  it('keeps a retried id accepted past the first attempt acceptance deadline', async () => {
+    const sendBeacon = vi.fn(() => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    const onSuccess = vi.fn()
+    const { rerender } = renderHook(
+      ({ trackedAuthConfigIds }) =>
+        useAuthCallbackListener({ trackedAuthConfigIds, timeoutMs: 1000, onSuccess }),
+      { initialProps: { trackedAuthConfigIds: ['auth-1'] } }
+    )
+
+    // First attempt: the hint expires and the consumer rolls the row back.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+    rerender({ trackedAuthConfigIds: [] })
+
+    // The user retries the same server; that attempt's hint expires too.
+    rerender({ trackedAuthConfigIds: ['auth-1'] })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+    rerender({ trackedAuthConfigIds: [] })
+
+    // Past the first attempt's deadline: re-tracking replaced its timer instead of
+    // orphaning it, so nothing fires and the retry's retention is still intact.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_CALLBACK_ACCEPTANCE_MS - 1500)
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+
+    act(() => {
+      dispatchMessage('https://api.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    expect(onSuccess).toHaveBeenCalledTimes(1)
+    expect(onSuccess).toHaveBeenCalledWith('auth-1')
+
+    // The retry's own deadline passes with the flow already settled.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_CALLBACK_ACCEPTANCE_MS)
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('sends exactly one beacon for an id retried after a hint expiry', async () => {
+    const sendBeacon = vi.fn(() => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    const { rerender } = renderHook(
+      ({ trackedAuthConfigIds }) =>
+        useAuthCallbackListener({ trackedAuthConfigIds, timeoutMs: 1000 }),
+      { initialProps: { trackedAuthConfigIds: ['auth-1'] } }
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+    rerender({ trackedAuthConfigIds: [] })
+    rerender({ trackedAuthConfigIds: ['auth-1'] })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+    rerender({ trackedAuthConfigIds: [] })
+
+    // Both attempts' deadlines elapse; only the live attempt may report.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_CALLBACK_ACCEPTANCE_MS + 2000)
+    })
+
+    expect(sendBeacon).toHaveBeenCalledTimes(1)
+
+    vi.unstubAllGlobals()
+  })
+
+  it('leaves no acceptance timer armed after unmount, including for a retried id', async () => {
+    const sendBeacon = vi.fn(() => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    const { rerender, unmount } = renderHook(
+      ({ trackedAuthConfigIds }) =>
+        useAuthCallbackListener({ trackedAuthConfigIds, timeoutMs: 1000 }),
+      { initialProps: { trackedAuthConfigIds: ['auth-1'] } }
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+    rerender({ trackedAuthConfigIds: [] })
+    rerender({ trackedAuthConfigIds: ['auth-1'] })
+
+    unmount()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_CALLBACK_ACCEPTANCE_MS + 2000)
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
   it('removes untracked ids and clears their timers on rerender', async () => {
     const { result, rerender } = renderHook(
       ({ trackedAuthConfigIds }) =>
@@ -370,14 +761,48 @@ describe('useAuthCallbackListener', () => {
 
     expect(result.current.authFlows['auth-1']).toEqual({
       status: 'authentication_required',
-      message: AUTH_CALLBACK_TIMEOUT_MESSAGE,
+      message: AUTH_CALLBACK_HINT_MESSAGE,
     })
   })
 
   it('falls back to 60 seconds when runtime-config timeout is invalid', () => {
     vi.mocked(appInfoStore.getMcpAuthTimeoutSeconds).mockReturnValue('0')
 
-    expect(getAuthCallbackTimeoutMs()).toBe(60_000)
+    expect(getAuthCallbackHintMs()).toBe(60_000)
+  })
+
+  it('uses the backend acceptance minimum by default', () => {
+    expect(getAuthCallbackAcceptanceMs(getAuthCallbackHintMs())).toBe(600_000)
+  })
+
+  it('widens, never clamps, the acceptance deadline to match a longer configured hint', () => {
+    vi.mocked(appInfoStore.getMcpAuthTimeoutSeconds).mockReturnValue('900')
+
+    expect(getAuthCallbackAcceptanceMs(getAuthCallbackHintMs())).toBe(900_000)
+  })
+
+  it('arms the acceptance deadline the helper derives from the runtime-config hint', async () => {
+    vi.mocked(appInfoStore.getMcpAuthTimeoutSeconds).mockReturnValue('900')
+    const sendBeacon = vi.fn(() => true)
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon })
+
+    renderHook(() => useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'] }))
+
+    // A 900s configured hint widens the window, so the 600s floor passes silently.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_CALLBACK_ACCEPTANCE_MS)
+    })
+
+    expect(sendBeacon).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300_000)
+    })
+
+    expect(sendBeacon).toHaveBeenCalledTimes(1)
+
+    vi.mocked(appInfoStore.getMcpAuthTimeoutSeconds).mockReturnValue(null)
+    vi.unstubAllGlobals()
   })
 
   it('clears pending timeouts on unmount', async () => {

@@ -1,0 +1,52 @@
+[
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:232-234",
+    "trigger_condition": "User cancels or clearRows fires after the hint expiry retained the id",
+    "guard_snippet": "if (!retainedIdsRef.current.has(id) || abandonedIdsRef.current.has(id)) clearTrackedTimeout(acceptanceTimeoutsRef.current, id)",
+    "potential_consequence": "Abandoned flow still beacons result:'timeout'; late callback flips a dismissed row"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:232-234",
+    "trigger_condition": "Chat switched after hint expiry; retained flow's callback arrives later",
+    "guard_snippet": "retainedFlowsRef.current.set(id, { onSuccess: onSuccessRef.current, chatId })",
+    "potential_consequence": "Late success applied to the newly opened chat; origin chat's row stays spinning"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:339-348",
+    "trigger_condition": "Callback accepted via retention for an id already removed from tracked ids",
+    "guard_snippet": "if (!trackedIdsRef.current.has(event.data.auth_config_id)) { onSuccessRef.current?.(id); return }",
+    "potential_consequence": "authFlows entry resurrected for an untracked id and never cleaned until unmount"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:118-119",
+    "trigger_condition": "Caller passes NaN, zero or negative hintMs to the newly parameterized helper",
+    "guard_snippet": "Math.max(getPositiveInteger(hintMs) ?? 0, AUTH_CALLBACK_ACCEPTANCE_MS)",
+    "potential_consequence": "Math.max yields NaN; setTimeout fires immediately, beaconing an instant false timeout"
+  },
+  {
+    "location": "src/hooks/useAuthCallbackListener.ts:245-256",
+    "trigger_condition": "Retry re-flags the row authenticating before any render drops it from tracked ids",
+    "guard_snippet": "if (previousTrackedIds.has(authConfigId) && !retainedIdsRef.current.has(authConfigId)) return",
+    "potential_consequence": "Retry gets no hint timer; spinner never rolls back, stale retention and deadline persist"
+  },
+  {
+    "location": "src/store/chatGeneration.ts:274-291 via 947,958",
+    "trigger_condition": "Same auth_config_id present on two prompt messages, newest one not authenticating",
+    "guard_snippet": "const isTarget = (row) => row.status === 'authenticating' || retainedRowMatches(row, authConfigId)",
+    "potential_consequence": "Callback lands on the newest idle row; the authenticating row stays stuck spinning"
+  },
+  {
+    "location": "src/store/chatGeneration.ts:296-301 (removed isAuthRollbackTarget, status === 'authenticating')",
+    "trigger_condition": "Rollback previously touched only rows actively authenticating, never terminal ones",
+    "guard_snippet": "const isRollbackTarget = (row) => row.status !== 'authenticated' && row.status !== 'config_error' && row.status !== 'discovery_failed'",
+    "potential_consequence": "config_error/discovery_failed rows rewritten to authentication_required, offering sign-in that cannot succeed",
+    "kind": "deletion",
+    "confidence": "medium"
+  },
+  {
+    "location": "docs/superpowers/runs/20260528-2121-EPMCDME-12240_agentcore/meta.json:12-16",
+    "trigger_condition": "Run status set to aborted while phases.0 and current_phase stay running",
+    "guard_snippet": "\"0\": {\"status\": \"aborted\", \"started_at\": \"...\", \"ended_at\": \"...\"}",
+    "potential_consequence": "Ledger tooling counts a running phase inside an aborted run; resume logic misfires"
+  }
+]

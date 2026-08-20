@@ -160,7 +160,8 @@ describe('ChatAiAuthPrompt', () => {
             mcp_server_name: 'Azure',
             auth_config_id: 'auth-timeout',
             status: 'authentication_required',
-            error_context: "Authentication didn't complete. Click to try again.",
+            error_context:
+              'Sign-in is taking longer than usual. It can still complete — or click to try again.',
           }),
           createPromptRow({
             mcp_config_id: 'mcp-expired',
@@ -199,10 +200,14 @@ describe('ChatAiAuthPrompt', () => {
       screen.getByText('Complete sign-in for the affected MCP server, then resend the failed turn.')
     ).toBeInTheDocument()
     expect(
-      screen.getByText("Authentication didn't complete. Click to try again.")
+      screen.getByText(
+        'Sign-in is taking longer than usual. It can still complete — or click to try again.'
+      )
     ).toBeInTheDocument()
     expect(screen.getByText('idp_denied')).toBeInTheDocument()
-    expect(screen.getByText('Waiting for browser sign-in')).toBeInTheDocument()
+    expect(
+      screen.getByText('Waiting for browser sign-in — a long sign-in is normal.')
+    ).toBeInTheDocument()
     expect(screen.getByText(/Client secret is missing\./)).toBeInTheDocument()
     expect(screen.getAllByRole('button')).toHaveLength(2)
 

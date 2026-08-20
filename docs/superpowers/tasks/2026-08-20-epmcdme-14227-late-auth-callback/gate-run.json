@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14227",
+  "runner": "npm",
+  "started_at": "2026-08-20T17:24:49.079Z",
+  "completed_at": "2026-08-20T17:41:12.326Z",
+  "status": "PASSED",
+  "drift_detected": true,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29143,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "No findings. Pre-existing eslint-plugin-react settings warning only, not a rule violation."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 21391,
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "notes": "tsc --noEmit silent."
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide Skip if satisfied literally: no dependency added, removed, or moved (git diff origin/main...HEAD touches 0 of package.json, package-lock.json). To run locally: npm run license-check (npx fetches license-checker; not in node_modules/.bin)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 11802,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Genuinely ran, not a self-skip: docker daemon reachable, gitleaks v8.30.1 image pulled, output \"scanned ~89518492 bytes (89.52 MB) in 11.3s\" then \"no leaks found\". Scans the working tree only, never git history - the MR pipeline gitleaks-scan task is the history-covering check."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 159128,
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "notes": "Test Files  431 passed (431) / Tests  4682 passed (4682). Known RecordInput aria-live flake did not reproduce; no retry needed."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 81510,
+      "command": "npm run test:integration",
+      "exit_code": 0,
+      "notes": "Test Files  37 passed (37) / Tests  485 passed | 1 skipped (486). The 1 skipped is pre-existing in AssistantsListPage.integration.test.tsx (35 tests | 1 skipped), unrelated to this branch. Unit+integration = 468 files / 5167 passed / 1 skipped, independently reproducing the implementer figure."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 170,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 1851 files, 0 missing license headers. Hook-enforced, absent from the guide gate list."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 560103,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Genuinely ran against the live server, not a self-skip: 1991 source files analysed, report uploaded, QUALITY GATE STATUS: PASSED for branch EPMCDME-14227 (sonar.core.kuberocketci.io, merge base 4d41f398d). Hook-enforced, absent from the guide gate list. Warning only: 52 unresolved coverage paths in coverage/lcov.info (stale lcov, e.g. public/keycloakify-dev-resources/...), pre-existing."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Nothing staged (git diff --cached is empty; all 16 branch files are committed across 8 commits), and it mutates files via prettier --write / eslint --fix. Its checks are supersets-covered here: eslint by the lint gate and tsc --noEmit by the typecheck gate, both run repo-wide."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (8 .tsx files under src/pages and src/hooks match ui_globs) but no configured UI test script exists in package.json; feature-verification must provide browser evidence. React Testing Library component coverage rides in the unit and integration gates and is not a browser substitute."
+    },
+    {
+      "id": "ci-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "Not runnable locally. .gitlab-ci.yml only defines a pre-ci-guard (wait-ci-init) that blocks on external contexts; the ci-pipeline job itself is defined server-side in epm-cdme/codemie-gitlab-templates and runs only on merge_request_event. Only CI can settle this."
+    },
+    {
+      "id": "compliance-report",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "Not runnable locally, same server-side pre-ci-guard context. Per AGENTS.md the compliance bot that checks for the harness log is label-suppressible, so the harness log in the MR description remains the only regression evidence that reliably reaches a reviewer."
+    }
+  ],
+  "failures": {},
+  "drift_notes": "spec.md Consumers names updateAuthenticatingPromptRow (chatGeneration.ts:266-294); that symbol no longer exists anywhere in src/. It was renamed and generalised to updatePromptAuthRow(chat, authConfigId, isTarget, updater) at chatGeneration.ts:266. spec.md states the rollback path \"keeps requiring authenticating so it cannot clobber an authenticated row\". Implementation passes the same widened predicate isLateCallbackTarget (row.status !== \"authenticated\", chatGeneration.ts:301) to BOTH call sites - success at :947 and rollback at :958. The in-code comment documents this as deliberate, to match the sibling consumer useMCPAuthPrompt which applies the same callback. Behaviourally defensible and fully covered by green tests; flagged because the spec text no longer describes the code. Either spec.md Consumers is updated to the predicate form, or the rollback narrowing is restored."
+}

@@ -1,0 +1,9 @@
+{"task_id":"1","status":"done","commit":"d5c991c5e","test_command":"npm run test:unit -- src/utils/__tests__/mcpAuth.test.ts"}
+{"task_id":"2","status":"done","commit":"626408f64","test_command":"npx vitest run --project unit src/hooks/__tests__/useAuthCallbackListener.test.tsx"}
+{"task_id":"3","status":"done","commit":"5ca63c58a","test_command":"npx vitest run --project unit src/store/__tests__/chatGeneration.promptAuth.test.ts"}
+{"task_id":"4","status":"done","commit":"5c02584b6","test_command":"npx vitest run --project unit src/hooks/__tests__ src/pages/chat/components/AssistantAuthGate src/pages/chat/components/ChatHistory"}
+{"task_id":"5","status":"done","commit":"2459110f8","test_command":"npx vitest run --project unit src/hooks/__tests__/useMCPAuthPrompt.test.tsx"}
+{"task_id":"6","status":"done","commit":"2459110f8","test_command":"npx vitest run --project unit src/pages/chat/hooks/__tests__/useChatAuthCallbacks.test.ts"}
+{"task_id":"7","status":"done","commit":"ec4e15e2c","test_command":"npx vitest run --project integration src/pages/workflows/__tests__/WorkflowDetailsPage.authCallback.integration.test.tsx"}
+{"task_id":"review-fixup-CR-001-CR-002-CR-003-CR-004","status":"done","commit":"29359c919","test_command":"npx vitest run --project unit src/hooks/__tests__/useAuthCallbackListener.test.tsx src/store/__tests__/chatGeneration.promptAuth.test.ts"}
+{"task_id":"CR-002-fixup-2","status":"done","commit":"5b2914332","test_command":"npx vitest run --project unit src/hooks/__tests__/useAuthCallbackListener.test.tsx src/hooks/__tests__/useMCPAuthPrompt.test.tsx src/pages/chat/hooks/__tests__/useChatAuthCallbacks.test.ts src/utils/__tests__/mcpAuth.test.ts"}

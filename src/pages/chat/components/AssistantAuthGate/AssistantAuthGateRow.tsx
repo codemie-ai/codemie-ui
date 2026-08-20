@@ -159,7 +159,7 @@ const AssistantAuthGateRow: React.FC<AssistantAuthGateRowProps> = ({
           {row.status === 'authenticating' && !hasPendingInitiate && (
             <div className="flex items-center gap-2 text-xs text-text-secondary">
               <Spinner inline className="h-4 w-4" rootClassName="min-h-0 pt-0" />
-              <span>Waiting for browser sign-in</span>
+              <span>Waiting for browser sign-in — a long sign-in is normal.</span>
             </div>
           )}
         </div>

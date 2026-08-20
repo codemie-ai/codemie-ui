@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "ticket": "EPMCDME-14227",
+  "branch": "EPMCDME-14227",
+  "merge_base": "origin/main",
+  "surface_change_detected": true,
+  "surface_change_files": [
+    "src/pages/chat/components/AssistantAuthGate/AssistantAuthGateRow.tsx",
+    "src/pages/chat/hooks/useChatAuthCallbacks.ts",
+    "src/hooks/useAuthCallbackListener.ts",
+    "src/hooks/useMCPAuthPrompt.ts",
+    "src/store/chatGeneration.ts",
+    "src/utils/mcpAuth.ts"
+  ],
+  "tool_resolution": {
+    "resolved": "unconfigured",
+    "playwright_config": false,
+    "cypress_config": false,
+    "storybook_test_runner": false,
+    "sdlc_factory_config": ".ai-run/sdlc-factory/config.json absent",
+    "note": "playwright@1.56.1 is installed globally on this machine and google-chrome is present, so the browser TOOL is available. The blocker is the application STACK, not the tooling."
+  },
+  "existing_e2e_coverage": {
+    "location": "../codemie-sdk/test-harness/codemie_test_harness/tests/ui/",
+    "framework": "pytest 8.4.1 + pytest-playwright, runs against a live environment",
+    "mcp_ui_tests_found": [
+      "tests/ui/assistants/test_assistant_mcp_servers.py::test_mcp_server_configuration_panel_visibility",
+      "tests/ui/assistants/test_assistant_mcp_servers.py::test_add_mcp_server_from_browse_catalog",
+      "tests/ui/assistants/test_assistant_mcp_servers.py::test_add_mcp_server_using_manual_setup",
+      "tests/ui/assistants/test_assistant_mcp_servers.py::test_remove_mcp_server_from_assistant",
+      "tests/ui/assistants/test_assistant_mcp_servers.py::test_add_global_mcp_from_catalog_preserves_inheritance"
+    ],
+    "covers_this_feature": false,
+    "reuse_verdict": "NOT REUSABLE. All five harness MCP UI tests cover MCP server CRUD on the assistant form. None enters the OAuth sign-in flow. grep across the whole harness for the auth-gate copy ('Waiting for browser sign-in', \"didn't complete\", 'Click to try again', 'Authenticate') returns zero matches. There is no existing e2e coverage of the MCP auth gate to reuse."
+  },
+  "generation_verdict": {
+    "generated": false,
+    "reason": "Driving this feature end to end requires the full CodeMie stack plus two external systems that do not exist in this environment. Any Playwright test written here would have had to stub the backend, the MCP server, the identity provider AND the callback postMessage - i.e. assert against its own fixtures. That is the same surface the already-green Vitest integration tests cover (real Valtio, real stores, real hooks, fetch stubbed), restaged in Chromium, and would have been a fabricated pass."
+  },
+  "stack_probe": {
+    "app_started": "npm run dev (vite 5.4.21) on http://localhost:5173 - served 200",
+    "backend": "vite proxies /api -> http://localhost:8080; nothing listening",
+    "observed": "/ and /chats both render an EMPTY body. /api/v1/config and /api/v1/user return 500. Console: 'Error fetching config: Response'. The app cannot bootstrap, so no route past the shell is reachable.",
+    "auth_gate_row_locator_count": 0,
+    "authenticate_button_locator_count": 0,
+    "workspace_stack": "codemie-onboarding/docker-compose.yaml has 51 unresolved ${VAR} interpolations and no .env; it cannot be brought up as-is. scripts/test-harness-fast.mjs additionally expects docker-compose.yaml at the workspace root, which does not exist.",
+    "running_containers": "portainer, postgres only"
+  },
+  "missing_prerequisites": [
+    "A running CodeMie backend on :8080 (plus postgres, redis, nats, elasticsearch, clickhouse, minio, litellm)",
+    "Keycloak/SSO credentials to reach an authenticated session",
+    "An assistant configured with an MCP toolkit whose auth_config requires OAuth2",
+    "A live MCP server that demands OAuth2 sign-in",
+    "An external identity provider account able to complete that sign-in",
+    "The ability to hold that IdP sign-in open past 60 s and complete it before 600 s"
+  ],
+  "created_at": "2026-08-20"
+}

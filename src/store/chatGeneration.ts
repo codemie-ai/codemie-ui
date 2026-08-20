@@ -32,7 +32,7 @@ import { transformChatHistoryFEtoBE } from '@/utils/chatHelpers'
 import { DEFAULT_TOOLS_CONFIG, saveChatSkills, saveChatTools } from '@/utils/chatStorageUtils'
 import { isChatContextualNamingEnabled } from '@/utils/featureFlags'
 import { fileToBase64 } from '@/utils/helpers'
-import { parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
+import { isAuthenticatingGateRow, parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
 import {
   getPendingInitiate,
   getRecoverableAuthStatus,
@@ -263,9 +263,10 @@ const updatePromptRowsAtIndexes = (
   return true
 }
 
-const updateAuthenticatingPromptRow = (
+const updatePromptAuthRow = (
   chat: Conversation,
   authConfigId: string,
+  isTarget: (row: MCPAuthGateServer) => boolean,
   updater: (row: MCPAuthGateServer) => MCPAuthGateServer
 ): boolean => {
   if (!authConfigId) return false
@@ -277,7 +278,7 @@ const updateAuthenticatingPromptRow = (
       const message = group[messageIndex]
       const rows = getPromptRows(message)
       const targetIndex = rows.findIndex(
-        (row) => row.auth_config_id === authConfigId && row.status === 'authenticating'
+        (row) => row.auth_config_id === authConfigId && isTarget(row)
       )
 
       if (targetIndex === -1) continue
@@ -293,14 +294,20 @@ const updateAuthenticatingPromptRow = (
   return false
 }
 
+// A late callback may arrive after the hint expiry rolled the row back, so both the
+// success and the rollback path accept any row for this id that is not already
+// authenticated - a completed sign-in is the one state neither may clobber. Rollback
+// matches the sibling consumer, useMCPAuthPrompt, which applies the same callback.
+const isLateCallbackTarget = (row: MCPAuthGateServer): boolean => row.status !== 'authenticated'
+
 const getAuthenticatingPromptIdsFromChat = (chat: Conversation): string[] => {
   const authConfigIds = new Set<string>()
 
   chat.history.forEach((group) => {
     group.forEach((message) => {
       getPromptRows(message).forEach((row) => {
-        if (row.status === 'authenticating' && row.auth_config_id) {
-          authConfigIds.add(row.auth_config_id)
+        if (isAuthenticatingGateRow(row)) {
+          authConfigIds.add(row.auth_config_id as string)
         }
       })
     })
@@ -937,7 +944,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const chat = getCurrentChatById(chatId)
     if (!chat || chat.isWorkflow) return
 
-    updateAuthenticatingPromptRow(chat, authConfigId, (row) => ({
+    updatePromptAuthRow(chat, authConfigId, isLateCallbackTarget, (row) => ({
       ...row,
       status: 'authenticated',
       error_context: null,
@@ -948,7 +955,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const chat = getCurrentChatById(chatId)
     if (!chat || chat.isWorkflow) return
 
-    updateAuthenticatingPromptRow(chat, authConfigId, (row) => ({
+    updatePromptAuthRow(chat, authConfigId, isLateCallbackTarget, (row) => ({
       ...row,
       status: getPromptRecoverableStatus(row),
       error_context: errorContext,

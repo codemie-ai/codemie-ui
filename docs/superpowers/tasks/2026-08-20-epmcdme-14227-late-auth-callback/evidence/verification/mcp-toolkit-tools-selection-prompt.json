@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "feature_id": "mcp-toolkit-tools-selection-prompt",
+  "tool": "playwright",
+  "coverage_source": "none",
+  "test_command": null,
+  "app_url": "http://localhost:5173/chats",
+  "screenshot_path": "evidence/screenshots/chats-route-no-backend.png",
+  "console_errors": ["Error fetching config: Response", "Failed to load resource: 500 (Internal Server Error)"],
+  "network_failures": ["500 /api/v1/config", "500 /api/v1/user"],
+  "result": "INCONCLUSIVE",
+  "user_visible_behaviour": "The MCP toolkit tools-selection step in the assistant form (useMCPAuthPrompt, local state) shows the same two-stage behaviour.",
+  "why_not_verified": "Assistant form is behind login; app never bootstraps. The five existing harness MCP UI tests stop short of the OAuth flow.",
+  "non_browser_evidence": "Not browser-observed."
+}

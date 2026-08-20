@@ -16,18 +16,37 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { AUTH_CALLBACK_HINT_MESSAGE } from '@/hooks/useAuthCallbackListener'
+
 import { useMCPAuthPrompt } from '../useMCPAuthPrompt'
 
-const { listenerCalls, mockPost, mockToasterError } = vi.hoisted(() => ({
-  listenerCalls: [] as Array<{ trackedAuthConfigIds: string[] }>,
+interface ListenerHandlers {
+  onSuccess?: (authConfigId: string) => void
+  onError?: (authConfigId: string, errorCode: string | undefined) => void
+  onTimeout?: (authConfigId: string) => void
+}
+
+const { listenerCalls, listenerHandlers, mockPost, mockToasterError } = vi.hoisted(() => ({
+  listenerCalls: [] as Array<{ trackedAuthConfigIds: string[]; liveAuthConfigIds?: string[] }>,
+  listenerHandlers: {} as {
+    onSuccess?: (authConfigId: string) => void
+    onError?: (authConfigId: string, errorCode: string | undefined) => void
+    onTimeout?: (authConfigId: string) => void
+  },
   mockPost: vi.fn(),
   mockToasterError: vi.fn(),
 }))
 
 vi.mock('@/hooks/useAuthCallbackListener', () => ({
-  AUTH_CALLBACK_TIMEOUT_MESSAGE: "Authentication didn't complete. Click to try again.",
-  useAuthCallbackListener: (args: { trackedAuthConfigIds: string[] }) => {
+  AUTH_CALLBACK_HINT_MESSAGE:
+    'Sign-in is taking longer than usual. It can still complete — or click to try again.',
+  useAuthCallbackListener: (
+    args: { trackedAuthConfigIds: string[]; liveAuthConfigIds?: string[] } & ListenerHandlers
+  ) => {
     listenerCalls.push(args)
+    listenerHandlers.onSuccess = args.onSuccess
+    listenerHandlers.onError = args.onError
+    listenerHandlers.onTimeout = args.onTimeout
   },
 }))
 
@@ -65,6 +84,9 @@ describe('useMCPAuthPrompt', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     listenerCalls.length = 0
+    listenerHandlers.onSuccess = undefined
+    listenerHandlers.onError = undefined
+    listenerHandlers.onTimeout = undefined
     vi.spyOn(window, 'open').mockImplementation(() => null)
   })
 
@@ -97,6 +119,24 @@ describe('useMCPAuthPrompt', () => {
       })
     )
     expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual([])
+  })
+
+  it('reports rows as live in any status and drops them all when the prompt is cleared', async () => {
+    const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+
+    await act(async () => {
+      await result.current.handleAuthRequiredError(authRequiredResponse([oauth2Server]))
+    })
+
+    // Not authenticating yet, so untracked - but its acceptance window has somewhere to land.
+    expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual([])
+    expect(listenerCalls.at(-1)?.liveAuthConfigIds).toEqual(['auth-1'])
+
+    act(() => {
+      result.current.clearRows()
+    })
+
+    expect(listenerCalls.at(-1)?.liveAuthConfigIds).toEqual([])
   })
 
   it('fails OAuth2 initiate closed when redirect metadata is missing', async () => {
@@ -311,5 +351,158 @@ describe('useMCPAuthPrompt', () => {
     )
 
     infoSpy.mockRestore()
+  })
+
+  it('authenticates a row when success is delivered after the hint expiry (AC 5)', async () => {
+    const onAllAuthenticated = vi.fn()
+    const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated }))
+
+    await act(async () => {
+      await result.current.handleAuthRequiredError(
+        authRequiredResponse([
+          {
+            ...oauth2Server,
+            auth_type: 'saml',
+            initiate_url: '/v1/mcp-auth/saml/initiate',
+            status: 'session_expired',
+          },
+        ])
+      )
+    })
+    mockPost.mockResolvedValueOnce({
+      json: async () => ({ auth_url: 'https://idp.example.com/saml/start' }),
+    })
+    vi.mocked(window.open).mockReturnValue(window)
+
+    await act(async () => {
+      await result.current.initiate('mcp-1')
+    })
+
+    expect(result.current.rows[0].status).toBe('authenticating')
+    expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual(['auth-1'])
+
+    act(() => {
+      listenerHandlers.onTimeout?.('auth-1')
+    })
+
+    expect(result.current.rows[0]).toEqual(
+      expect.objectContaining({
+        status: 'session_expired',
+        error_context: AUTH_CALLBACK_HINT_MESSAGE,
+      })
+    )
+    expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual([])
+
+    await act(async () => {
+      listenerHandlers.onSuccess?.('auth-1')
+      await Promise.resolve()
+    })
+
+    expect(onAllAuthenticated).toHaveBeenCalledTimes(1)
+    expect(result.current.rows).toEqual([])
+  })
+
+  it('retries via initiate after a hint expiry without reusing the consumed pending_initiate (AC 6)', async () => {
+    const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+
+    await act(async () => {
+      await result.current.handleAuthRequiredError(authRequiredResponse([oauth2Server]))
+    })
+    mockPost.mockResolvedValueOnce({
+      json: async () => ({
+        auth_url: 'https://idp.example.com/start',
+        redirect_uri_hostname: 'api.example.com',
+      }),
+    })
+
+    await act(async () => {
+      await result.current.initiate('mcp-1')
+    })
+
+    vi.mocked(window.open).mockReturnValue(window)
+    await act(async () => {
+      result.current.continue('mcp-1')
+    })
+
+    expect(result.current.rows[0]).toEqual(
+      expect.objectContaining({ status: 'authenticating', pending_initiate: null })
+    )
+    expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual(['auth-1'])
+    expect(window.open).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      listenerHandlers.onTimeout?.('auth-1')
+    })
+
+    expect(result.current.rows[0]).toEqual(
+      expect.objectContaining({
+        status: 'authentication_required',
+        pending_initiate: null,
+        error_context: AUTH_CALLBACK_HINT_MESSAGE,
+      })
+    )
+    expect(mockPost).toHaveBeenCalledTimes(1)
+
+    mockPost.mockResolvedValueOnce({
+      json: async () => ({
+        auth_url: 'https://idp.example.com/start-2',
+        redirect_uri_hostname: 'api.example.com',
+      }),
+    })
+
+    await act(async () => {
+      await result.current.initiate('mcp-1')
+    })
+
+    expect(mockPost).toHaveBeenCalledTimes(2)
+    expect(mockPost).toHaveBeenLastCalledWith('v1/mcp-auth/oauth2/initiate', {
+      mcp_config_id: 'mcp-1',
+    })
+    expect(result.current.rows[0]).toEqual(
+      expect.objectContaining({
+        pending_initiate: {
+          auth_url: 'https://idp.example.com/start-2',
+          redirect_uri_hostname: 'api.example.com',
+          localhost_warning: false,
+        },
+      })
+    )
+    // The retry only re-fetches pending metadata; it must not re-open the popup itself.
+    expect(window.open).toHaveBeenCalledTimes(1)
+  })
+
+  it('lands an error context on the row when onError arrives after a hint expiry', async () => {
+    const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+
+    await act(async () => {
+      await result.current.handleAuthRequiredError(
+        authRequiredResponse([
+          { ...oauth2Server, auth_type: 'saml', initiate_url: '/v1/mcp-auth/saml/initiate' },
+        ])
+      )
+    })
+    mockPost.mockResolvedValueOnce({
+      json: async () => ({ auth_url: 'https://idp.example.com/saml/start' }),
+    })
+    vi.mocked(window.open).mockReturnValue(window)
+
+    await act(async () => {
+      await result.current.initiate('mcp-1')
+    })
+
+    act(() => {
+      listenerHandlers.onTimeout?.('auth-1')
+    })
+
+    act(() => {
+      listenerHandlers.onError?.('auth-1', 'access_denied')
+    })
+
+    expect(result.current.rows[0]).toEqual(
+      expect.objectContaining({
+        status: 'authentication_required',
+        error_context: 'access_denied',
+      })
+    )
   })
 })

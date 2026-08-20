@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "feature_id": "workflow-details-unaffected",
+  "tool": "playwright",
+  "coverage_source": "none",
+  "test_command": null,
+  "app_url": "http://localhost:5173/chats",
+  "screenshot_path": "evidence/screenshots/chats-route-no-backend.png",
+  "console_errors": [],
+  "network_failures": [],
+  "result": "INCONCLUSIVE",
+  "user_visible_behaviour": "VERIFY-ONLY. WorkflowDetailsPage passes no success/error handlers by design and must be unaffected by the change.",
+  "why_not_verified": "Not browser-observed - the app never bootstraps without a backend.",
+  "non_browser_evidence": "Static check CONFIRMS the contract: src/pages/workflows/WorkflowDetailsPage.tsx:64 calls useAuthCallbackListener({ trackedAuthConfigIds }) with no onSuccess, no onError and no liveAuthConfigIds. Per the hook's own comment, omitting liveAuthConfigIds leaves the acceptance window open, which is the documented single-flow behaviour. No handler was added. This is a source-level confirmation, not browser evidence."
+}
