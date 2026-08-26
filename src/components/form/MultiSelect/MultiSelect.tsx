@@ -323,8 +323,12 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           checkboxContainer: {
             className: '!hidden',
           },
-          root: {
-            className: rootClassName,
+          root: (options) => {
+            const base =
+              typeof ptPreset?.root === 'function' ? ptPreset.root(options) : ptPreset?.root
+            return {
+              className: cn(base?.className, rootClassName),
+            }
           },
         }
       }
@@ -339,8 +343,12 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
         label: {
           className: labelClassName,
         },
-        root: {
-          className: rootClassName,
+        root: (options) => {
+          const base =
+            typeof ptPreset?.root === 'function' ? ptPreset.root(options) : ptPreset?.root
+          return {
+            className: cn(base?.className, rootClassName),
+          }
         },
       }
     }, [showCheckbox, display, error, disabled, hiddenInputValue])

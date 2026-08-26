@@ -47,4 +47,49 @@ describe('MultiSelect', () => {
 
     consoleError.mockRestore()
   })
+
+  it('renders a visible focus indicator class on the root element when focused', () => {
+    const options = [{ label: 'Option 1', value: 'opt1' }]
+    const { container } = render(
+      <MultiSelect value="" options={options} onChange={vi.fn()} singleValue />
+    )
+
+    const combobox = screen.getByRole('combobox')
+    const rootEl = container.querySelector('.p-multiselect')
+
+    expect(rootEl).toHaveClass('focus-within:border-border-secondary')
+    combobox.focus()
+    expect(document.activeElement).toBe(combobox)
+  })
+
+  it('applies error and disabled classes correctly on the root element', () => {
+    const options = [{ label: 'Option 1', value: 'opt1' }]
+    const { container, rerender } = render(
+      <MultiSelect value="" options={options} onChange={vi.fn()} error="Required" singleValue />
+    )
+
+    const rootEl = container.querySelector('.p-multiselect')
+    expect(rootEl).toHaveClass('!border-failed-secondary')
+
+    rerender(
+      <MultiSelect value="" options={options} onChange={vi.fn()} disabled singleValue />
+    )
+    expect(rootEl).toHaveClass('opacity-60')
+    expect(rootEl).toHaveClass('pointer-events-none')
+    expect(rootEl).toHaveClass('cursor-default')
+
+    rerender(
+      <MultiSelect
+        value=""
+        options={options}
+        onChange={vi.fn()}
+        error="Required"
+        disabled
+        singleValue
+      />
+    )
+    expect(rootEl).toHaveClass('!border-failed-secondary')
+    expect(rootEl).toHaveClass('opacity-60')
+    expect(rootEl).toHaveClass('focus-within:border-border-secondary')
+  })
 })

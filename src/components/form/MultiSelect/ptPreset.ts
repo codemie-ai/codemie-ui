@@ -44,8 +44,9 @@ const preset: PrimeReactPTOptions['multiselect'] = {
       'duration-50',
 
       // States
+      'focus-within:border-border-secondary',
       { 'hover:border-border-secondary': !props.invalid },
-      { 'outline-none outline-offset-0': state.focused },
+      { '!border-border-secondary': state.focused && !props.invalid },
 
       // Misc
       'cursor-pointer',
