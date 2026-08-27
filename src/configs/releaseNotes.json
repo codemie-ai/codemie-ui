@@ -1,5 +1,83 @@
 [
   {
+    "version": "2.45.0",
+    "date": "2026-08-28",
+    "issues": [
+      {
+        "title": "Integration action buttons are positioned inconsistently across integration types",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14276",
+        "key": "EPMCDME-14276"
+      },
+      {
+        "title": "Budget reset value is not populated to PostgreSQL DB from LiteLLM",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-13320",
+        "key": "EPMCDME-13320"
+      },
+      {
+        "title": "Managed MCP catalog cannot express an OAuth issuer, so every Claude Desktop connector fails RFC 9207 validation",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14305",
+        "key": "EPMCDME-14305"
+      },
+      {
+        "title": "Claude Desktop MCP connectors fail OAuth authorization on macOS",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14383",
+        "key": "EPMCDME-14383"
+      },
+      {
+        "title": "Spend collector double-counts member spend by scoring member budgets against the parent project budget reset schedule",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14334",
+        "key": "EPMCDME-14334"
+      },
+      {
+        "title": "Backend: Monthly budget reset calculation uses hardcoded 30 days instead of actual month length",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14335",
+        "key": "EPMCDME-14335"
+      },
+      {
+        "title": "MCP auth UI discards a callback that arrives after its 60 s timeout",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14227",
+        "key": "EPMCDME-14227"
+      },
+      {
+        "title": "External users and service accounts are automatically assigned personal projects, causing incorrect spend attribution and budget bypass",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14413",
+        "key": "EPMCDME-14413"
+      },
+      {
+        "title": "Add copy and download controls to the bottom of long code blocks in assistant outputs",
+        "type": "STORY",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14054",
+        "key": "EPMCDME-14054"
+      },
+      {
+        "title": "Project budget period spending mismatch between user spendings total and Key spending",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14380",
+        "key": "EPMCDME-14380"
+      },
+      {
+        "title": "Infinite loop occurs during Confluence datasource indexing when processed sources exceed total count",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14246",
+        "key": "EPMCDME-14246"
+      },
+      {
+        "title": "CodeMie UI: per-user spending does not match total key spending",
+        "type": "BUG",
+        "link": "https://jiraeu.epam.com/browse/EPMCDME-14316",
+        "key": "EPMCDME-14316"
+      }
+    ]
+  },
+  {
     "version": "2.44.0",
     "date": "2026-08-19",
     "issues": [
