@@ -78,6 +78,21 @@ describe('HelpItem', () => {
     expect(screen.getByText('Get Started')).toBeInTheDocument()
   })
 
+  it('button has descriptive aria-label combining button text and item name for chat type', () => {
+    renderWithRouter(<HelpItem {...defaultProps} type="chat" />)
+    expect(screen.getByRole('button', { name: 'Chat Now Test Assistant' })).toBeInTheDocument()
+  })
+
+  it('button has descriptive aria-label combining button text and item name for link type', () => {
+    renderWithRouter(<HelpItem {...defaultProps} type="link" />)
+    expect(screen.getByRole('button', { name: 'Explore Test Assistant' })).toBeInTheDocument()
+  })
+
+  it('button has descriptive aria-label with custom button text', () => {
+    renderWithRouter(<HelpItem {...defaultProps} buttonText="Get Started" />)
+    expect(screen.getByRole('button', { name: 'Get Started Test Assistant' })).toBeInTheDocument()
+  })
+
   it('renders icons', () => {
     renderWithRouter(<HelpItem {...defaultProps} type="chat" />)
     expect(screen.getByTestId('chat-icon')).toBeInTheDocument()
