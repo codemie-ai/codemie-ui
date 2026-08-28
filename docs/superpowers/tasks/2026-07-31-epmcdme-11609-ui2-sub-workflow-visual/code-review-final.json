@@ -1,0 +1,116 @@
+{
+  "decision": "request-changes",
+  "confidence": "medium",
+  "risk_flags": [],
+  "rationale": "Seven actionable findings across the new components: one critical data-loss defect (silent duplicate-key collision in InputMappingEditor.toRecord), one major stale-state defect (InputMappingEditor rows not re-synced on external RHF reset), plus five major patches (project prop not forwarded to WorkflowSelector, stale useImperativeHandle closure, blank workflow label for pre-populated selector, key={index} anti-pattern in row list, missing ConfigAccordion wrapper). D1–D9, D11, D12 acceptance criteria pass; D10 is partial. Commit format, security checks pass. All three review lenses ran successfully.",
+  "business_review": [
+    { "criterion": "D1: SVG icon 32×32 fill-based violet background", "status": "pass", "notes": "node-sub-workflow.svg is 32×32, fill='#8B5CF6' on rounded-rect, all interior paths fill='white', no stroke attributes." },
+    { "criterion": "D2: Promote SUB_WORKFLOW from HIDDEN to ACTION in nodeTemplates", "status": "pass", "notes": "base.ts: category=ACTION, label='Sub-Workflow', icon=React.createElement(NodeSubWorkflowSvg). Import present." },
+    { "criterion": "D3: Sidebar feature-flag filtering", "status": "pass", "notes": "actionNodes at module level unchanged. useSubWorkflowEnabled inside component body, visibleActionNodes filter, JSX uses visibleActionNodes.map." },
+    { "criterion": "D4: SubWorkflowNode ReactFlow card", "status": "pass", "notes": "Named export, ToolNode pattern: BaseNode + Handle(target,Left) + NodeHeader(SUB_WORKFLOW, title=id) + Handle(source,Right). isConnected from state._meta.is_connected." },
+    { "criterion": "D5: Register SubWorkflowNode in nodes/index.tsx", "status": "pass", "notes": "[NodeTypes.SUB_WORKFLOW]: SubWorkflowNode present at line 39." },
+    { "criterion": "D6: getSelectableWorkflows store method", "status": "pass", "notes": "Interface and implementation correct. GET v1/workflows/selectable?per_page=12&filters=..., returns response.data ?? response." },
+    { "criterion": "D7: WorkflowSelector getOptions prop", "status": "pass", "notes": "Optional getOptions prop added. fetchWorkflowOptions uses const fetcher = getOptions ?? workflowsStore.getWorkflowOptions. No breaking changes." },
+    { "criterion": "D8: InputMappingEditor component", "status": "pass", "notes": "Props (value, onChange, disabled) correct. add/remove/edit rows all call onChange(toRecord(rows)). Disabled propagated." },
+    { "criterion": "D9: subWorkflowFormSchema.ts", "status": "pass", "notes": "workflow_id nullable + required (intentional improvement over spec's nullable-only). input_mapping: Yup.object().optional(). SubWorkflowFormValues exported." },
+    { "criterion": "D10: SubWorkflowTab config panel", "status": "partial", "notes": "All functional requirements met (registerFields, forwardRef, yupResolver, WorkflowSelector singleValue, InputMappingEditor via Controller, saveData without actors, CommonStateFields+TabFooter, if(!state) guard). Missing: fields not wrapped in ConfigAccordion — every peer tab (TransformTab, CustomTab, ToolTab, IteratorTab) uses ConfigAccordion for its node-specific fields." },
+    { "criterion": "D11: ConfigPanel registration", "status": "pass", "notes": "Direct import, [NodeTypes.SUB_WORKFLOW]: SubWorkflowTab in nodeConfigPanels, SUB_WORKFLOW in max-w-96 CSS condition." },
+    { "criterion": "D12: WorkflowStateIcon wiring", "status": "pass", "notes": "Import NodeSubWorkflowSvg, [NodeTypes.SUB_WORKFLOW]: NodeSubWorkflowSvg in nodeIconsMap." }
+  ],
+  "standards_review": [
+    {
+      "standard": "git_commit_format",
+      "status": "pass",
+      "notes": "All 6 Story 2 commits follow EPMCDME-11609: Capital sentence format. Verified against the ^(EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.* regex in git-workflow.md."
+    },
+    {
+      "standard": "code_quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not present in repository; no blocking code-quality standards to check."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No secrets, tokens, or credentials in diff. URL parameters properly encoded via encodeURIComponent(JSON.stringify(...)). No dangerouslySetInnerHTML, no eval, no injection vectors. Security patterns guide absent; no concrete security issues found."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/components/InputMappingEditor.tsx",
+      "line": 18,
+      "problem": "toRecord uses Object.fromEntries(rows.map(r => [r.key, r.value])): if two rows share the same key, the earlier entry is silently dropped.",
+      "impact": "The caller receives fewer entries than the user entered — irreversible data loss in input_mapping with no error feedback.",
+      "recommendation": "Validate for duplicate keys before calling onChange; show a per-row inline error when a duplicate is detected so the user can correct it before the value propagates.",
+      "sources": ["blind"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/components/InputMappingEditor.tsx",
+      "line": 18,
+      "problem": "rows is initialised once via useState(() => toRows(value)) and never re-synced when the controlled value prop is externally replaced (e.g. when the parent RHF form is reset to a different input_mapping value).",
+      "impact": "After an external reset (discard flow, keep-mounted reuse), the editor shows stale key-value rows while RHF's field value holds the correct data — the user sees mappings that do not match what will be saved.",
+      "recommendation": "Add useEffect(() => { setRows(toRows(value)) }, [value]) with a stable dependency (deep-compare or serialize) so rows is synchronised whenever value is externally replaced.",
+      "sources": ["blind", "edge-case"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/SubWorkflowTab.tsx",
+      "line": 57,
+      "problem": "The project prop is declared in SubWorkflowTabProps and received from ConfigPanel but is never destructured from the component's parameter list and therefore never forwarded to WorkflowSelector.",
+      "impact": "getSelectableWorkflows is always called with project: undefined, so the dropdown lists selectable workflows from all projects — a user in Project A can silently bind a sub-workflow owned by Project B.",
+      "recommendation": "Destructure project from the component props alongside the other fields and pass it as the project prop of WorkflowSelector, mirroring the pattern in AssistantTab and ToolTab.",
+      "sources": ["blind", "edge-case"]
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/SubWorkflowTab.tsx",
+      "line": 120,
+      "problem": "useImperativeHandle deps are [isFormDirty, state, stateId, config, onConfigChange] but saveData closes over validationError and onClearStateError which are absent from the array.",
+      "impact": "If validationError changes (a new error arrives) without any listed dep changing, the ref's save() call operates on stale validationError === undefined, so the clear-error side effect never fires and the error banner persists after a successful save.",
+      "recommendation": "Add validationError and onClearStateError to the useImperativeHandle dependency array.",
+      "sources": ["blind"]
+    },
+    {
+      "id": "CR-005",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/SubWorkflowTab.tsx",
+      "line": 153,
+      "problem": "WorkflowSelector is seeded with value={field.value ? [{ id: field.value, name: '' }] : []} — an empty string as the name of the pre-selected workflow.",
+      "impact": "When editing an existing node, the selected workflow chip renders with a blank label until the user manually interacts with the selector, making the existing configuration appear unconfigured.",
+      "recommendation": "Either (a) look up the workflow name from the state object (if available) and pass it as name, or (b) pass initialOptions={[{ id: field.value, name: state?.workflow_name ?? field.value }]} so the selector can display the name before options load.",
+      "sources": ["blind"]
+    },
+    {
+      "id": "CR-006",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/components/InputMappingEditor.tsx",
+      "line": 55,
+      "problem": "Rows are rendered with key={index}. When a row is deleted from any position except the last, React reuses existing DOM input elements by index.",
+      "impact": "Deleting a row from the middle causes the wrong DOM input to retain focus and browser-internal state (cursor position, autofill state) for the render cycle, degrading the editing experience.",
+      "recommendation": "Assign each row a stable unique key on creation (e.g., a uuid or an incrementing counter in state) so React correctly mounts/unmounts the affected input on deletion.",
+      "sources": ["blind"]
+    },
+    {
+      "id": "CR-007",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/SubWorkflowTab.tsx",
+      "line": 146,
+      "problem": "WorkflowSelector and InputMappingEditor Controllers are rendered directly inside the form without a ConfigAccordion wrapper. Every comparable peer tab (TransformTab, CustomTab, ToolTab, IteratorTab) wraps its node-specific fields in <ConfigAccordion title=\"... Configuration\" defaultExpanded={true}>.",
+      "impact": "Sub-Workflow configuration fields are always fully expanded with no collapsible section, creating an inconsistent UX relative to all other config panels.",
+      "recommendation": "Wrap the workflow_id and input_mapping Controller blocks in <ConfigAccordion title=\"Sub-Workflow Configuration\" defaultExpanded={true}>...</ConfigAccordion>, matching the pattern in TransformTab and CustomTab.",
+      "sources": ["acceptance"]
+    }
+  ]
+}

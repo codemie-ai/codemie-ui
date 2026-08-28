@@ -18,8 +18,14 @@ import React, { useState } from 'react'
 import SidebarSVG from '@/assets/icons/sidebar.svg?react'
 import Button from '@/components/Button'
 import { ButtonType } from '@/constants'
+import { useSubWorkflowEnabled } from '@/hooks/useFeatureFlags'
 import { useDnD } from '@/hooks/useReactFlowDnD'
-import { NodeType, NodeTemplateCategory, nodeTemplates } from '@/types/workflowEditor/base'
+import {
+  NodeType,
+  NodeTemplateCategory,
+  NodeTypes,
+  nodeTemplates,
+} from '@/types/workflowEditor/base'
 import { cn } from '@/utils/utils'
 
 import DragGhost from './DragGhost'
@@ -69,6 +75,10 @@ const ToggleButton: React.FC<ToggleButtonProps> = ({ isCollapsed, onClick }) => 
 
 const Sidebar: React.FC<NodeEditorSidebarProps> = ({ createState, disabled = false }) => {
   const { onDragStart, isDragging } = useDnD()
+  const [isSubWorkflowEnabled] = useSubWorkflowEnabled()
+  const visibleActionNodes = actionNodes.filter(
+    (t) => t.type !== NodeTypes.SUB_WORKFLOW || isSubWorkflowEnabled
+  )
   const [ghostType, setGhostType] = useState<NodeType>()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -129,7 +139,7 @@ const Sidebar: React.FC<NodeEditorSidebarProps> = ({ createState, disabled = fal
 
             <div className="text-xs font-semibold mt-2 mb-3">Action</div>
 
-            {actionNodes.map((template) => (
+            {visibleActionNodes.map((template) => (
               <SidebarNode
                 key={`${template.type}-${template.label}`}
                 template={template}

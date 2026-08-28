@@ -32,9 +32,13 @@ export const isMetaState = (state: StateConfiguration | null): boolean => {
 
 export const isExecutionState = (state: StateConfiguration | null): boolean => {
   if (!state?._meta?.type) return false
-  return [NodeTypes.ASSISTANT, NodeTypes.TOOL, NodeTypes.CUSTOM, NodeTypes.TRANSFORM].includes(
-    state._meta.type as any
-  )
+  return [
+    NodeTypes.ASSISTANT,
+    NodeTypes.TOOL,
+    NodeTypes.CUSTOM,
+    NodeTypes.TRANSFORM,
+    NodeTypes.SUB_WORKFLOW,
+  ].includes(state._meta.type as any)
 }
 
 export const isDecisionState = (state: StateConfiguration): boolean => {

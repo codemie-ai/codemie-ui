@@ -1,0 +1,9 @@
+---
+states:
+  - id: kick_off
+    workflow_id: child-workflow-abc
+    next:
+      state_id: summarize
+  - id: summarize
+    assistant_id: summarizer
+    task: Summarize results

@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "runner": "npm",
+  "gates": [
+    {"id": "lint",        "command": "npm run lint",             "available": true,  "source": "guide"},
+    {"id": "typecheck",   "command": "npm run typecheck",        "available": true,  "source": "guide"},
+    {"id": "unit",        "command": "npm run test:unit -- --run","available": true,  "source": "guide"},
+    {"id": "integration", "command": "npm run test:integration", "available": true,  "source": "guide"},
+    {"id": "ui",          "command": "(none configured)",        "available": false, "source": "guide"},
+    {"id": "lint-staged", "command": "npx lint-staged",          "available": true,  "source": "hook"},
+    {"id": "license-headers", "command": "npm run license-headers:check", "available": true, "source": "hook"},
+    {"id": "secrets",     "command": "npm run secrets:check",    "available": true,  "source": "hook"},
+    {"id": "sonar-local", "command": "npm run sonar-local",      "available": true,  "source": "hook"}
+  ],
+  "ui_globs": ["\\.tsx$", "\\.jsx$", "\\.css$", "\\.html$", "src/(components|pages)/"],
+  "detected_at": "2026-08-04T17:15:00Z"
+}

@@ -30,7 +30,7 @@ import { isIteratorNode } from '@/utils/workflowEditor/helpers/nodes'
 import { findParents, getStateNext } from '@/utils/workflowEditor/helpers/states'
 
 const ERROR_MESSAGE =
-  'Only execution nodes (Assistant, Tool, Custom, Transform) can be dropped into an Iterator'
+  'Only execution nodes (Assistant, Tool, Custom, Transform, Sub-Workflow) can be dropped into an Iterator'
 const ERROR_MULTIPLE_PARENTS = 'Cannot add node with multiple parents to an iterator'
 const ERROR_NO_PARENTS = 'Cannot add node to iterator: node must have a parent connection first'
 const ERROR_HAS_SIBLINGS =
@@ -52,7 +52,8 @@ const isNodeIterable = (node: WorkflowNode): boolean => {
     node.type === NodeTypes.ASSISTANT ||
     node.type === NodeTypes.TOOL ||
     node.type === NodeTypes.CUSTOM ||
-    node.type === NodeTypes.TRANSFORM
+    node.type === NodeTypes.TRANSFORM ||
+    node.type === NodeTypes.SUB_WORKFLOW
   )
 }
 

@@ -1,0 +1,111 @@
+{
+  "task": "Build sub-workflow node visual layer end-to-end: SVG icon, SubWorkflowNode ReactFlow card, nodeTemplates promotion HIDDEN→ACTION, Sidebar feature-flag filter, SubWorkflowTab config panel (forwardRef + react-hook-form + yup), InputMappingEditor key-value editor, subWorkflowFormSchema, getSelectableWorkflows store method, WorkflowSelector getOptions extension, WorkflowStateIcon wiring, nodes/index registration, ConfigPanel registration — plus 7 post-review patches.",
+  "generated": "2026-08-04T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 5,
+      "label": "XL",
+      "affected": "SubWorkflowNode, SubWorkflowTab, InputMappingEditor, subWorkflowFormSchema, getSelectableWorkflows (store), nodeTemplates (base.ts), nodes/index registry, ConfigPanel registry, Sidebar feature-flag filter, WorkflowSelector (getOptions prop), WorkflowStateIcon, node-sub-workflow.svg",
+      "layers": "Editor/Node-Canvas, Editor/ConfigPanel-Forms, Editor/ConfigPanel-Components, Store/State, Shared-UI-Components, Types/Base, Assets/Icons"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 3,
+      "label": "M",
+      "risk_factors": "Custom controlled-component state management in InputMappingEditor (stale closure fix, controlled-value sync via isUserEditRef, stable uid-keyed rows); forwardRef + useImperativeHandle pattern across SubWorkflowTab and CommonStateFields refs; feature-flag gating in Sidebar",
+      "mitigation": "isSubWorkflowEnabled feature flag for staged rollout; established ReactFlow node and react-hook-form config-panel patterns cover the majority of the implementation; 7 code-review patches resolved edge cases before merge"
+    },
+    "file_change_estimate": {
+      "score": 6,
+      "label": "XXL",
+      "modified_files": 10,
+      "modified_file_list": [
+        "src/types/workflowEditor/base.ts",
+        "src/pages/workflows/editor/nodes/index.tsx",
+        "src/pages/workflows/editor/ConfigPanel.tsx",
+        "src/pages/workflows/editor/Sidebar.tsx",
+        "src/pages/workflows/components/WorkflowSelector.tsx",
+        "src/pages/workflows/details/WorkflowStateIcon.tsx",
+        "src/store/workflows.ts",
+        "src/pages/workflows/editor/__tests__/Sidebar.test.tsx",
+        "src/pages/workflows/editor/__tests__/ConfigPanel.test.tsx",
+        "src/pages/workflows/editor/__tests__/WorkflowSelector.test.tsx"
+      ],
+      "new_files": 10,
+      "new_file_list": [
+        "src/assets/icons/node-sub-workflow.svg",
+        "src/pages/workflows/editor/nodes/SubWorkflowNode.tsx",
+        "src/pages/workflows/editor/configPanels/SubWorkflowTab.tsx",
+        "src/pages/workflows/editor/configPanels/components/InputMappingEditor.tsx",
+        "src/pages/workflows/editor/configPanels/subWorkflowFormSchema.ts",
+        "src/pages/workflows/editor/nodes/__tests__/SubWorkflowNode.test.tsx",
+        "src/pages/workflows/editor/configPanels/__tests__/SubWorkflowTab.test.tsx",
+        "src/pages/workflows/editor/configPanels/components/__tests__/InputMappingEditor.test.tsx",
+        "src/pages/workflows/editor/configPanels/__tests__/SubWorkflowFormSchema.test.ts",
+        "src/store/__tests__/workflows.getSelectableWorkflows.test.ts"
+      ],
+      "affected_dirs": [
+        "src/assets/icons",
+        "src/pages/workflows/editor/nodes",
+        "src/pages/workflows/editor/configPanels",
+        "src/pages/workflows/editor/configPanels/components",
+        "src/pages/workflows/editor",
+        "src/pages/workflows/components",
+        "src/pages/workflows/details",
+        "src/store",
+        "src/types/workflowEditor"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 5,
+      "label": "XL",
+      "layers_changed": [
+        "Editor/Node-Canvas",
+        "Editor/ConfigPanel-Forms",
+        "Editor/ConfigPanel-Components",
+        "Store/State",
+        "Shared-UI-Components",
+        "Types/Base",
+        "Assets/Icons"
+      ],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 22,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 20,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "12 distinct components/files touched across 7 frontend subsystems: new ReactFlow node card (SubWorkflowNode), new config panel tab with forwardRef+useImperativeHandle (SubWorkflowTab), new controlled key-value editor (InputMappingEditor), new Yup schema (subWorkflowFormSchema), store method addition (getSelectableWorkflows), nodeTemplates category promotion in base.ts, registration in nodes/index.tsx and ConfigPanel.tsx nodeConfigPanels map, feature-flag filter in Sidebar, getOptions prop extension in WorkflowSelector, icon mapping in WorkflowStateIcon, and new SVG asset. XL: 4+ components, multiple subsystems, new abstractions."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "20 total files changed per diffstat (18 source + 2 patch-related), confirmed from git branch. ~10 new files (5 source + 5 test) and ~10 modified files spanning 9 distinct directories. New file count of 10 exceeds the XXL threshold (6+); total count of 20 exceeds the XXL threshold (16+) when reading 'files modified' as total files changed in the diff."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "7 distinct frontend subsystems touched: Node-Canvas layer (SubWorkflowNode, nodes/index), ConfigPanel-Forms layer (SubWorkflowTab, subWorkflowFormSchema), ConfigPanel-Components layer (InputMappingEditor), Store layer (workflows.ts), Shared-UI-Components layer (WorkflowSelector, WorkflowStateIcon), Types/Base layer (base.ts nodeTemplates), Assets/Icons layer (svg). Feature flag adds a cross-cutting gating concern. Scores XL on account of 5+ distinct sub-layers plus cross-cutting concern."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Established ReactFlow node and react-hook-form/yup config-panel patterns cover the majority of the implementation, keeping risk at M. The 7 post-review patches addressed non-trivial React state subtleties in InputMappingEditor (stale closure via isUserEditRef, controlled-value sync, stable uid-keyed rows) and forwardRef dependency array in SubWorkflowTab — real implementation friction but not architectural novelty."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

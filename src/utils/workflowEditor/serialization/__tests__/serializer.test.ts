@@ -17,7 +17,10 @@ import yaml from 'js-yaml'
 import { describe, it, expect, beforeAll } from 'vitest'
 
 import { NodeTypes } from '@/types/workflowEditor/base'
-import { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
+import {
+  WorkflowConfiguration,
+  SubWorkflowStateConfiguration,
+} from '@/types/workflowEditor/configuration'
 
 import { START_NODE_ID, END_NODE_ID } from '../../constants'
 import { serialize } from '../serializer'
@@ -206,5 +209,54 @@ describe('serialize', () => {
     expect(typeof serializedYaml).toBe('string')
     expect(serializedYaml.length).toBeGreaterThan(0)
     expect(() => yaml.load(serializedYaml)).not.toThrow()
+  })
+})
+
+describe('serialize - sub-workflow state pass-through', () => {
+  it('preserves workflow_id in serialized output', () => {
+    const config: WorkflowConfiguration = {
+      states: [
+        {
+          id: START_NODE_ID,
+          _meta: { type: NodeTypes.START, is_connected: true },
+        },
+        {
+          id: 'call_child',
+          workflow_id: 'child-workflow-id',
+          next: { state_id: END_NODE_ID },
+          _meta: { type: NodeTypes.SUB_WORKFLOW, is_connected: true, position: { x: 100, y: 100 } },
+        } as SubWorkflowStateConfiguration,
+        {
+          id: END_NODE_ID,
+          _meta: { type: NodeTypes.END, is_connected: true },
+        },
+      ],
+    }
+
+    const serializedYaml = serialize(config)
+    const parsedYaml = yaml.load(serializedYaml) as any
+
+    const callChild = parsedYaml.states.find((s: any) => s.id === 'call_child')
+    expect(callChild).toBeDefined()
+    expect(callChild.workflow_id).toBe('child-workflow-id')
+    expect(callChild).not.toHaveProperty('input_mapping')
+    expect(callChild._meta).toBeUndefined()
+  })
+
+  it('preserves pool_config and max_nesting_level at top-level in serialized output', () => {
+    const config: WorkflowConfiguration = {
+      states: [
+        { id: START_NODE_ID, _meta: { type: NodeTypes.START, is_connected: true } },
+        { id: END_NODE_ID, _meta: { type: NodeTypes.END, is_connected: true } },
+      ],
+      pool_config: { enabled: true, min_size: 2, max_size: 5 },
+      max_nesting_level: 3,
+    }
+
+    const serializedYaml = serialize(config)
+    const parsedYaml = yaml.load(serializedYaml) as any
+
+    expect(parsedYaml.pool_config).toEqual({ enabled: true, min_size: 2, max_size: 5 })
+    expect(parsedYaml.max_nesting_level).toBe(3)
   })
 })

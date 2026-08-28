@@ -1,0 +1,71 @@
+{
+  "task": "Register NodeTypes.SUB_WORKFLOW in connectionValidator.ts and handleIteratorDrop.ts to fix 'Invalid connection: unknown node type' bug",
+  "generated": "2026-08-04T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 2,
+      "label": "S",
+      "affected": "connectionValidator, handleIteratorDrop",
+      "layers": "Workflow editor utility/helper layer"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 4,
+      "modified_file_list": [
+        "src/utils/workflowEditor/helpers/connections/connectionValidator.ts",
+        "src/utils/workflowEditor/helpers/connections/__tests__/connectionValidator.test.ts",
+        "src/utils/workflowEditor/actions/nodes/handleIteratorDrop.ts",
+        "src/utils/workflowEditor/actions/nodes/__tests__/handleIteratorDrop.test.ts"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/utils/workflowEditor/helpers/connections",
+        "src/utils/workflowEditor/actions/nodes"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["Workflow"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 8,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two utility components touched (connectionValidator and handleIteratorDrop), both within the same workflow editor subsystem. Changes are purely additive — no new abstractions, no new cross-cutting concerns."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "4 files modified (2 production, 2 test), 0 new files. Production changes are minimal: +6 lines to add SUB_WORKFLOW to EXECUTION_NODES array and NODE_VALIDATION_RULES record; +2 lines to add SUB_WORKFLOW to isNodeIterable. Files span 2 adjacent subdirectories under workflowEditor."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

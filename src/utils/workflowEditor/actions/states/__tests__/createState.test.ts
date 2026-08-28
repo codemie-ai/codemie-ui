@@ -22,6 +22,7 @@ import {
   CustomNodeStateConfiguration,
   AssistantStateConfiguration,
   ToolStateConfiguration,
+  SubWorkflowStateConfiguration,
 } from '@/types/workflowEditor/configuration'
 
 import { createStateAction } from '../createState'
@@ -422,6 +423,36 @@ describe('createState', () => {
       expect(config.states[config.states.length - 1]._meta?.type).toBe('note')
 
       expect(config.states).toHaveLength(8) // 1 base + 7 new
+    })
+  })
+
+  describe('sub-workflow node creation', () => {
+    it('creates a sub_workflow state with a workflow_id default', () => {
+      const emptyConfig: WorkflowConfiguration = { states: [] }
+      const result = createStateAction(NodeTypes.SUB_WORKFLOW, testPosition, emptyConfig)
+      const newState = result.config.states[0] as SubWorkflowStateConfiguration
+
+      expect(newState.id).toMatch(/^sub_workflow_/)
+      expect(newState.workflow_id).toBe('')
+      expect(newState).not.toHaveProperty('input_mapping')
+      expect(newState._meta?.type).toBe(NodeTypes.SUB_WORKFLOW)
+      expect(newState._meta?.is_connected).toBe(false)
+      expect(newState._meta?.selected).toBe(true)
+      expect(newState._meta?.position).toEqual(testPosition)
+    })
+
+    it('increments state ID for multiple sub_workflow states', () => {
+      const emptyConfig: WorkflowConfiguration = { states: [] }
+      const firstResult = createStateAction(NodeTypes.SUB_WORKFLOW, testPosition, emptyConfig)
+      const secondResult = createStateAction(
+        NodeTypes.SUB_WORKFLOW,
+        testPosition,
+        firstResult.config
+      )
+
+      const ids = secondResult.config.states.map((s) => s.id)
+      expect(ids).toContain('sub_workflow_1')
+      expect(ids).toContain('sub_workflow_2')
     })
   })
 })

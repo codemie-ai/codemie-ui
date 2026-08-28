@@ -288,3 +288,43 @@ states:
     expect(yamlOut).toContain('2023-01-15T10:30:00+05:00')
   })
 })
+
+describe('deserialize - workflow with sub-workflow state', () => {
+  let loadedConfig
+
+  beforeAll(() => {
+    const yamlContent = loadFixture('workflow-with-sub-workflow.yaml')
+    loadedConfig = deserialize(yamlContent)
+  })
+
+  it('infers sub_workflow node type from workflow_id field', () => {
+    const { states } = loadedConfig
+    const kickOff = states.find((s) => s.id === 'kick_off')
+    expect(kickOff).toBeDefined()
+    expect(kickOff._meta.type).toBe(NodeTypes.SUB_WORKFLOW)
+  })
+
+  it('preserves workflow_id on the deserialized state', () => {
+    const { states } = loadedConfig
+    const kickOff = states.find((s) => s.id === 'kick_off')
+    expect(kickOff.workflow_id).toBe('child-workflow-abc')
+  })
+
+  it('does not misidentify sub_workflow state as custom when workflow_id is set', () => {
+    const { states } = loadedConfig
+    const kickOff = states.find((s) => s.id === 'kick_off')
+    expect(kickOff._meta.type).not.toBe(NodeTypes.CUSTOM)
+  })
+
+  it('infers sub_workflow type for state with empty workflow_id (unconfigured node)', () => {
+    const yaml = `
+states:
+  - id: unconfigured_sub
+    workflow_id: ''
+`
+    const config = deserialize(yaml)
+    const state = config.states.find((s) => s.id === 'unconfigured_sub')
+    expect(state).toBeDefined()
+    expect(state?._meta?.type).toBe(NodeTypes.SUB_WORKFLOW)
+  })
+})

@@ -67,20 +67,9 @@ const MarkdownTokens: FC<MarkdownTokensProps> = ({ tokens = [] }) => {
 
   const normalizedTokens = Array.isArray(tokens) ? tokens : [tokens]
 
-  // Key each token by its content instead of its array index (S6479). Markdown here can stream and
-  // update in place, so content-based keys let React reconcile correctly where positional keys would
-  // reuse the wrong node. A per-key occurrence counter disambiguates repeated identical tokens
-  // (e.g. two blank lines) so keys stay unique across the list.
-  const keyOccurrences = new Map<string, number>()
-  const keyFor = (token: MarkdownToken): string => {
-    const base = `${token.type}:${token.raw ?? ''}`
-    const seen = keyOccurrences.get(base) ?? 0
-    keyOccurrences.set(base, seen + 1)
-    return `${base}#${seen}`
-  }
+  return normalizedTokens.map((token, i) => {
+    const key = `${token.type}-${i}-${token.raw.slice(0, 32)}`
 
-  return normalizedTokens.map((token) => {
-    const key = keyFor(token)
     if (inlineTokens.includes(token.type)) return <span key={key} {...getInlineProps(token)} />
 
     if (token.type === TOKEN_TYPES.table) {

@@ -1,0 +1,44 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two major findings require fixes before merge: (1) isNodeIterable in handleIteratorDrop.ts omits NodeTypes.SUB_WORKFLOW, leaving a behavioural split with the now-updated EXECUTION_NODES in connectionValidator.ts; (2) the new test suite covers conditional→sub-workflow and switch→sub-workflow but not the symmetric reverse directions, leaving a regression gap. No story/spec artifact was available for acceptance-criteria audit (no-spec degradation). Commit format and security clean. One deferred finding (iterator-child test for sub-workflow node) and two dismissed findings (blind-lens false positive on test stubs, missing allowedSources/allowedTargets architectural concern).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "check": "commit-format",
+      "status": "pass",
+      "notes": "Commit 'EPMCDME-11609: Register SUB_WORKFLOW in connection validator' matches the EPMCDME-XXXX: Capital sentence pattern enforced by CI."
+    },
+    {
+      "check": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not found; check skipped."
+    },
+    {
+      "check": "security",
+      "status": "pass",
+      "notes": "No user-controlled execution paths, no secrets, no injection surfaces in the changed files."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "location": "src/utils/workflowEditor/actions/nodes/handleIteratorDrop.ts:50-55 — isNodeIterable",
+      "problem": "isNodeIterable enumerates ASSISTANT, TOOL, CUSTOM, TRANSFORM but not SUB_WORKFLOW. EXECUTION_NODES in connectionValidator.ts now includes SUB_WORKFLOW after this fix, creating a split: the connection validator accepts sub-workflow nodes as execution nodes but the iterator-drop handler silently rejects dragging one into an iterator.",
+      "impact": "Users cannot drag a sub-workflow node into an iterator container in the editor UI even though the rest of the system (EXECUTION_NODES, isExecutionState in stateTypeCheckers.ts, checkTargetIteratorConstraint) treats it as a full execution node. Either the intent is to allow it (in which case handleIteratorDrop must be updated) or to explicitly disallow it (in which case a comment and a test asserting the rejection are needed so the decision is visible and stable).",
+      "recommendation": "Add NodeTypes.SUB_WORKFLOW to the isNodeIterable predicate (lines 52-55 of handleIteratorDrop.ts) and update the associated error message string to include 'Sub-Workflow'. If sub-workflow inside iterators is intentionally out of scope for this ticket, add a TODO comment and open a follow-up ticket — but document the decision so future changes to EXECUTION_NODES know to check handleIteratorDrop too."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "location": "src/utils/workflowEditor/helpers/connections/__tests__/connectionValidator.test.ts:766 — sub-workflow node connections describe block",
+      "problem": "The new describe block covers conditional→sub-workflow and switch→sub-workflow (sub-workflow as target) but not the reverse directions sub-workflow→conditional and sub-workflow→switch (sub-workflow as source). Because SUB_WORKFLOW has no validTargets restriction, both reverse directions are allowed by checkConnectionRules, but this is untested.",
+      "impact": "A future change that mistakenly adds validTargets to the SUB_WORKFLOW rule (e.g. restricting it to only END targets) or sets canBeTarget: false on CONDITIONAL/SWITCH would silently break sub-workflow→conditional and sub-workflow→switch connections without any failing test.",
+      "recommendation": "Add two test cases to the sub-workflow describe block: 'should allow sub-workflow to conditional connection' and 'should allow sub-workflow to switch connection', mirroring the existing 'should allow assistant to conditional connection' and 'should allow assistant to switch connection' tests in the execution-nodes block."
+    }
+  ]
+}

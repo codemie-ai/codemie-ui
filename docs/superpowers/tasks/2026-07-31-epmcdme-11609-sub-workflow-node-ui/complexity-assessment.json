@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "task": "Add Sub-Workflow node type to workflow editor with config panel, serialization, feature flag, store API method, and workflow form fields for pool_config/max_nesting_level",
+  "generated": "2026-07-31T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 5, "label": "XL" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 5, "label": "XL" }
+  },
+  "total": 27,
+  "size": "XL",
+  "routing": "split-required",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches every layer of the workflow editor simultaneously: NodeTypes enum (base.ts), StateConfiguration union (configuration.ts), createState switch (action layer), stateTypeCheckers helper, ACTOR_FIELD_MAP constants, serialization types, inferNodeType in deserializer, ConfigPanel dispatch map, nodes/index.tsx registry, visual field registry, Valtio store, feature flag constants, and workflow form — 12+ components modified or created at once; shared core utility red flag applied"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Architecture table yields 17 existing files to modify (2 feature-flag, 1 store, 3 type, 3 serialization, 2 action/helper, 2 node+panel index wiring, 1 field registry, 2 workflow form) plus 6+ new files (SubWorkflowNode.tsx, SubWorkflowTab.tsx, formSchema.ts, YAML fixture, 2 test files); crosses the 16+ modified / 6+ new XXL threshold"
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Three unresolved design decisions: (1) input_mapping key-value editor — no existing UI widget and no design specification; (2) pool_config/max_nesting_level placement is ambiguous — task says 'workflow create/edit form' but AdvancedConfigTab.tsx is the established location for scalar workflow-level config; (3) feature flag gating strategy not specified — unclear whether each component (sidebar, config panel, form fields, store method) is individually gated or a single flag controls all; vague acceptance criteria red flag applied"
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Five distinct layers in the UI stack: Presentation (SubWorkflowNode, SubWorkflowTab, WorkflowFormFields), State Management (Valtio workflows store with new getSelectableWorkflows method), Data Transformation (serializer/deserializer/serialization types), Configuration (feature flag constants, NodeTypes enum, ACTOR_FIELD_MAP), External API Integration (new GET /v1/workflows/selectable call)"
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Iterator node provides a proven wiring pattern for most of the task, reducing risk for the majority of changes; two novel elements remain: (1) input_mapping Record<string,string> key-value editor — no existing UI component to clone; (2) pool_config Yup schema requires cross-field validation (min_size <= max_size) with a nested object shape; serializer actor-path behavior for workflow_id/input_mapping via ...rest spread also requires explicit verification"
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XL (5) to XXL (6): touches core shared utilities — featureFlags.ts (application-wide), workflowEditor/constants.ts, stateTypeCheckers.ts, and NodeTypes in base.ts (discriminated union anchor for all editor switch statements)",
+    "Requirements Clarity bumped from L (4) to XL (5): vague acceptance criteria — input_mapping key-value editor UI design unspecified, pool_config/max_nesting_level form placement ambiguous between WorkflowFormFields and AdvancedConfigTab, feature flag per-component vs. single-gate strategy undefined"
+  ],
+  "split_recommendation": "Recommended split into 3 stories: Story 1 (M) — Core type wiring: add NodeTypes.SUB_WORKFLOW to base.ts, SubWorkflowStateConfiguration to configuration.ts, createState switch case, stateTypeCheckers isExecutionState entry, ACTOR_FIELD_MAP/NODE_TYPE_TO_CONFIG_ARRAY/ISSUE_FIELD_MAP entries in constants.ts, serialization types (workflow_id/input_mapping in SerializedState), inferNodeType branch in deserializer, and feature flag constant (featureFlags.ts + useFeatureFlags.ts hook). Story 2 (L) — Node UI and config panel: SubWorkflowNode component, SubWorkflowTab config panel with WorkflowSelector (workflow_id) and a new input_mapping key-value editor widget, add getSelectableWorkflows to workflowsStore, wire both into nodes/index.tsx and ConfigPanel.tsx, register fields in visualEditorFieldRegistry. Story 3 (S) — Workflow form fields: add pool_config (nested object with cross-field min/max validation) and max_nesting_level to workflowSchema.ts and WorkflowFormFields.tsx or AdvancedConfigTab.tsx (resolve placement with ticket owner first)."
+}

@@ -183,6 +183,20 @@ const buildState = (
     } as StateConfiguration
   }
 
+  if (nodeType === NodeTypes.SUB_WORKFLOW) {
+    return {
+      id,
+      workflow_id: '',
+      next: {},
+      _meta: {
+        position,
+        type: nodeType,
+        is_connected: false,
+        selected: true,
+      },
+    } as StateConfiguration
+  }
+
   return {
     id,
     next: {},

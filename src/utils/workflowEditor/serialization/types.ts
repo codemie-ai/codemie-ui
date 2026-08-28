@@ -23,6 +23,7 @@ import {
   NextState,
   AssistantTool,
   CustomNodeConfigurationValues,
+  WorkflowPoolConfig,
 } from '@/types/workflowEditor/configuration'
 
 export interface SerializedState {
@@ -60,6 +61,9 @@ export interface SerializedState {
   // Custom
   custom_node_id?: string
   config?: CustomNodeConfigurationValues
+
+  // Sub-workflow
+  workflow_id?: string
 }
 
 export interface SerializedMetaState {
@@ -91,4 +95,6 @@ export interface SerializedWorkflowConfig {
   verbose?: boolean
   max_iteration_key_output_limit?: number
   retry_policy?: RetryPolicy
+  pool_config?: WorkflowPoolConfig
+  max_nesting_level?: number
 }

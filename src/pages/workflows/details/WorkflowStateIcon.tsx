@@ -22,12 +22,13 @@ import NodeEndSvg from '@/assets/icons/node-end.svg?react'
 import NodeIteratorSvg from '@/assets/icons/node-iterator.svg?react'
 import NodeNoteSvg from '@/assets/icons/node-note.svg?react'
 import NodeStartSvg from '@/assets/icons/node-start.svg?react'
+import NodeSubWorkflowSvg from '@/assets/icons/node-sub-workflow.svg?react'
 import NodeSwitchSvg from '@/assets/icons/node-switch.svg?react'
 import NodeToolSvg from '@/assets/icons/node-tool.svg?react'
 import NodeTransformSvg from '@/assets/icons/node-transform.svg?react'
 import { NodeType, NodeTypes } from '@/types/workflowEditor'
 
-const nodeIconsMap: Record<NodeType, FC<SVGProps<SVGSVGElement>>> = {
+const nodeIconsMap: Partial<Record<NodeType, FC<SVGProps<SVGSVGElement>>>> = {
   [NodeTypes.ASSISTANT]: NodeAssistantSvg,
   [NodeTypes.CONDITIONAL]: NodeConditionalSvg,
   [NodeTypes.CUSTOM]: NodeCustomSvg,
@@ -37,6 +38,7 @@ const nodeIconsMap: Record<NodeType, FC<SVGProps<SVGSVGElement>>> = {
   [NodeTypes.START]: NodeStartSvg,
   [NodeTypes.SWITCH]: NodeSwitchSvg,
   [NodeTypes.TOOL]: NodeToolSvg,
+  [NodeTypes.SUB_WORKFLOW]: NodeSubWorkflowSvg,
   [NodeTypes.TRANSFORM]: NodeTransformSvg,
 }
 
@@ -47,6 +49,7 @@ interface WorkflowStateIconProps {
 
 const WorkflowStateIcon = ({ type, className }: WorkflowStateIconProps) => {
   const Comp = nodeIconsMap[type]
+  if (!Comp) return <span className={className} aria-hidden />
   return <Comp className={className} />
 }
 

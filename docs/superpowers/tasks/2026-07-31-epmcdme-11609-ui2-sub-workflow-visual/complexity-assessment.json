@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Build SubWorkflowNode ReactFlow component and SubWorkflowTab config panel with WorkflowSelector and InputMappingEditor, add getSelectableWorkflows store method, wire into nodes registry and ConfigPanel, update Sidebar feature-flag gating, add SVG icon, and move nodeTemplate category from HIDDEN to ACTION.",
+  "generated": "2026-07-31T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 18,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four or more distinct components required: SubWorkflowNode (canvas node), SubWorkflowTab + InputMappingEditor (config panel), getSelectableWorkflows (store method), plus two wiring registrations (nodes/index.tsx, ConfigPanel.tsx) and a Sidebar structural change — spanning canvas presentation, config-panel form, store/API-call, and metadata subsystems within the workflow editor."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Technical analysis estimates 8–10 modified files (nodes/index.tsx, ConfigPanel.tsx, Sidebar.tsx, base.ts, workflows.ts, ConfigPanel.test.tsx, plus store/type/test ancillaries) and 3–4 new source files (SubWorkflowNode.tsx, SubWorkflowTab.tsx, InputMappingEditor.tsx, node-sub-workflow.svg) across editor/nodes/, editor/configPanels/, store/, types/, and assets/ directories — matching the L (8–10 modified, 2–4 new, 3+ dirs) criterion."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -83,6 +83,7 @@ interface WorkflowsStore {
   getWorkflowTemplate: (slug: string) => Promise<void>
   getWorkflowTemplateBySlug: (slug: string) => Promise<WorkflowTemplate>
   getWorkflowOptions: (params?: { search?: string; project?: string }) => Promise<Workflow>
+  getSelectableWorkflows: (params?: { search?: string; project?: string }) => Promise<Workflow[]>
   createWorkflow: (values: any, errorFormat?: ErrorFormat) => Promise<any>
   updateWorkflow: (id: string | number, values: any, errorFormat?: ErrorFormat) => Promise<any>
   deleteWorkflow: (id: string | number) => Promise<void>
@@ -276,6 +277,17 @@ export const workflowsStore = proxy<WorkflowsStore>({
     } finally {
       this.workflowTemplateLoading = false
     }
+  },
+
+  async getSelectableWorkflows({ search, project } = {}) {
+    const url =
+      `v1/workflows/sub-workflow-candidates?per_page=12` +
+      `&filters=${encodeURIComponent(JSON.stringify(cleanObject({ search, project })))}`
+
+    return api
+      .get(url)
+      .then((response) => response.json())
+      .then((response) => response.data ?? response)
   },
 
   async getWorkflowOptions({ search, project } = {}) {

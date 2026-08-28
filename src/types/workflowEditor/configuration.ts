@@ -244,6 +244,17 @@ export interface IteratorStateConfiguration extends CommonStateConfiguration {
   _meta: StateMeta
 }
 
+export interface WorkflowPoolConfig {
+  enabled: boolean
+  min_size?: number
+  max_size?: number
+  refill_interval_seconds?: number
+}
+
+export interface SubWorkflowStateConfiguration extends CommonStateConfiguration {
+  workflow_id: string
+}
+
 export type StateConfiguration =
   | AssistantStateConfiguration
   | ToolStateConfiguration
@@ -253,6 +264,7 @@ export type StateConfiguration =
   | CustomNodeStateConfiguration
   | TransformStateConfiguration
   | IteratorStateConfiguration
+  | SubWorkflowStateConfiguration
 
 export interface WorkflowConfiguration {
   // States
@@ -273,4 +285,6 @@ export interface WorkflowConfiguration {
   verbose?: boolean
   max_iteration_key_output_limit?: number
   retry_policy?: RetryPolicy
+  pool_config?: WorkflowPoolConfig
+  max_nesting_level?: number
 }

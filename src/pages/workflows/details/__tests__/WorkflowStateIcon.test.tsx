@@ -80,6 +80,12 @@ vi.mock('@/assets/icons/node-transform.svg?react', () => ({
   ),
 }))
 
+vi.mock('@/assets/icons/node-sub-workflow.svg?react', () => ({
+  default: ({ className }: { className?: string }) => (
+    <svg data-testid="icon-sub-workflow" className={className} />
+  ),
+}))
+
 describe('WorkflowStateIcon', () => {
   it('renders assistant icon', () => {
     const { getByTestId } = render(<WorkflowStateIcon type={NodeTypes.ASSISTANT} />)
@@ -109,6 +115,11 @@ describe('WorkflowStateIcon', () => {
   it('renders tool icon', () => {
     const { getByTestId } = render(<WorkflowStateIcon type={NodeTypes.TOOL} />)
     expect(getByTestId('icon-tool')).toBeInTheDocument()
+  })
+
+  it('renders sub-workflow icon', () => {
+    const { getByTestId } = render(<WorkflowStateIcon type={NodeTypes.SUB_WORKFLOW} />)
+    expect(getByTestId('icon-sub-workflow')).toBeInTheDocument()
   })
 
   it('applies custom className', () => {

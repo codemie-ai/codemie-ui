@@ -14,7 +14,7 @@
 //
 
 import { NodeType } from '../workflowEditor'
-import { WorkflowConfiguration } from '../workflowEditor/configuration'
+import { WorkflowConfiguration, WorkflowPoolConfig } from '../workflowEditor/configuration'
 
 import type { Thought } from './conversation'
 import type { CreatedBy } from '../common'
@@ -43,6 +43,8 @@ export interface Workflow {
   is_favorited?: boolean
   is_global?: boolean
   unique_users_count?: number
+  pool_config?: WorkflowPoolConfig
+  max_nesting_level?: number
   [key: string]: any
 }
 

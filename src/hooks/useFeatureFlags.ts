@@ -112,3 +112,7 @@ export const useTeamsEnabled = (): FeatureFlagResult => {
 export const useWorkflowAIEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.WORKFLOW_AI)
 }
+
+export const useSubWorkflowEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.SUB_WORKFLOW)
+}

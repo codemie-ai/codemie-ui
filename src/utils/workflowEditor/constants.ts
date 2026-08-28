@@ -121,4 +121,5 @@ export const ISSUE_FIELD_MAP = {
   tool: 'tool_id',
   custom: 'custom_node_id',
   transform: 'custom_node_id',
+  sub_workflow: 'workflow_id',
 } as const

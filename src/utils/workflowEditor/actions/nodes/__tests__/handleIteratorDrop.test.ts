@@ -257,7 +257,7 @@ describe('handleIteratorDrop', () => {
       expect(result.changes[0].position).toEqual({ x: 400, y: 100 })
       expect(result.parentChanges).toHaveLength(0)
       expect(toaster.error).toHaveBeenCalledWith(
-        'Only execution nodes (Assistant, Tool, Custom, Transform) can be dropped into an Iterator'
+        'Only execution nodes (Assistant, Tool, Custom, Transform, Sub-Workflow) can be dropped into an Iterator'
       )
     })
 

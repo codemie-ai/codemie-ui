@@ -23,6 +23,7 @@ import {
   CustomNodeStateConfiguration,
   TransformStateConfiguration,
   ConditionalStateConfiguration,
+  SubWorkflowStateConfiguration,
 } from '@/types/workflowEditor/configuration'
 
 import {
@@ -275,6 +276,16 @@ describe('stateTypeCheckers', () => {
     it('returns false for state without type', () => {
       const state = { id: 'test', _meta: {} } as StateConfiguration
       expect(isExecutionState(state)).toBe(false)
+    })
+
+    it('returns true for SUB_WORKFLOW node', () => {
+      const state: SubWorkflowStateConfiguration = {
+        id: 'sub_workflow_1',
+        workflow_id: 'child-workflow-abc',
+        _meta: { type: NodeTypes.SUB_WORKFLOW },
+      } as SubWorkflowStateConfiguration
+
+      expect(isExecutionState(state)).toBe(true)
     })
   })
 

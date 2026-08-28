@@ -29,6 +29,7 @@ export const FEATURE_FLAGS = {
   TEAMS_BOT_INTEGRATION: 'features:teamsBotIntegration',
   WORKFLOW_AI: 'features:workflowAI',
   CHAT_CONTEXTUAL_NAMING: 'features:chatContextualNaming',
+  SUB_WORKFLOW: 'features:subWorkflow',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

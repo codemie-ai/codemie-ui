@@ -44,6 +44,7 @@ describe('connectionValidator', () => {
       { id: 'custom1', type: NodeTypes.CUSTOM, position: { x: 0, y: 0 }, data: {} },
       { id: 'conditional1', type: NodeTypes.CONDITIONAL, position: { x: 0, y: 0 }, data: {} },
       { id: 'switch1', type: NodeTypes.SWITCH, position: { x: 0, y: 0 }, data: {} },
+      { id: 'subworkflow1', type: NodeTypes.SUB_WORKFLOW, position: { x: 0, y: 0 }, data: {} },
     ]
 
     config = {
@@ -56,6 +57,7 @@ describe('connectionValidator', () => {
         { id: 'custom1', _meta: { type: NodeTypes.CUSTOM }, next: {} },
         { id: 'conditional1', _meta: { type: NodeTypes.CONDITIONAL }, next: {} },
         { id: 'switch1', _meta: { type: NodeTypes.SWITCH }, next: {} },
+        { id: 'subworkflow1', _meta: { type: NodeTypes.SUB_WORKFLOW }, next: {} },
       ],
     }
   })
@@ -762,6 +764,108 @@ describe('connectionValidator', () => {
       }
 
       expect(isValidConnection(connection, nodes, configWithoutNext)).toBe(true)
+    })
+  })
+
+  describe('sub-workflow node connections', () => {
+    it('should allow sub-workflow as source to assistant', () => {
+      const connection: Connection = {
+        source: 'subworkflow1',
+        target: 'assistant1',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(true)
+    })
+
+    it('should allow assistant as source to sub-workflow', () => {
+      const connection: Connection = {
+        source: 'assistant1',
+        target: 'subworkflow1',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(true)
+    })
+
+    it('should allow start to sub-workflow connection', () => {
+      const connection: Connection = {
+        source: 'start',
+        target: 'subworkflow1',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(true)
+    })
+
+    it('should allow sub-workflow to end connection', () => {
+      const connection: Connection = {
+        source: 'subworkflow1',
+        target: 'end',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(true)
+    })
+
+    it('should allow conditional to sub-workflow connection', () => {
+      const connection: Connection = {
+        source: 'conditional1',
+        target: 'subworkflow1',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(true)
+    })
+
+    it('should allow switch to sub-workflow connection', () => {
+      const connection: Connection = {
+        source: 'switch1',
+        target: 'subworkflow1',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(true)
+    })
+
+    it('should allow sub-workflow to conditional connection', () => {
+      const connection: Connection = {
+        source: 'subworkflow1',
+        target: 'conditional1',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(true)
+    })
+
+    it('should allow sub-workflow to switch connection', () => {
+      const connection: Connection = {
+        source: 'subworkflow1',
+        target: 'switch1',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(true)
+    })
+
+    it('should reject end node as source to sub-workflow', () => {
+      const connection: Connection = {
+        source: 'end',
+        target: 'subworkflow1',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(false)
+    })
+
+    it('should reject sub-workflow to start connection', () => {
+      const connection: Connection = {
+        source: 'subworkflow1',
+        target: 'start',
+        sourceHandle: null,
+        targetHandle: null,
+      }
+      expect(isValidConnection(connection, nodes, config)).toBe(false)
     })
   })
 })

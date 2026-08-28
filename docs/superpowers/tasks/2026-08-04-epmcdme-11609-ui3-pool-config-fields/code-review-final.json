@@ -1,0 +1,94 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two confirmed implementation gaps require fixes before merge: (1) cleanFormValues is never applied on the save path — pool_config objects with enabled:false and residual numeric values from a prior toggle can be submitted to onConfigChange, violating the spec's pruning contract; (2) the max_size >= min_size cross-field constraint is not re-triggered when min_size changes, leaving a visually stale error state until max_size is touched or Save is clicked. A third finding is a missing unit test for AC criterion 8 (auto-expand on validation issue).",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Accordion absent when flag is off or not yet loaded",
+      "status": "PASS",
+      "notes": "isSubWorkflowEnabled && isSubWorkflowLoaded double-guard; tested for [false,true] and [true,false]."
+    },
+    {
+      "criterion": "Accordion present when flag is on",
+      "status": "PASS",
+      "notes": "Renders correctly when both booleans are true; tested."
+    },
+    {
+      "criterion": "Enable Pool toggle shows/hides min_size, max_size, refill_interval_seconds",
+      "status": "PASS",
+      "notes": "watchPoolEnabled conditional wraps all three fields; tested for hidden-by-default and show-after-toggle."
+    },
+    {
+      "criterion": "max_nesting_level always visible when flag is on",
+      "status": "PASS",
+      "notes": "Placed outside the watchPoolEnabled guard but inside the accordion; tested."
+    },
+    {
+      "criterion": "max_size < min_size shows inline error and blocks save",
+      "status": "PASS",
+      "notes": "yup .when cross-field constraint fires at save-time trigger(); tested. CR-002 flags a visual-lag UX gap when min_size changes without touching max_size first."
+    },
+    {
+      "criterion": "Values round-trip via onConfigChange and repopulate on re-open",
+      "status": "PARTIAL",
+      "notes": "getDefaultValues round-trip logic is correct. However saveData never calls cleanFormValues, so an empty/disabled pool_config object (enabled:false, sizes null) may reach onConfigChange when the spec requires it to be pruned (CR-001)."
+    },
+    {
+      "criterion": "Form not dirty on initial render when no pool config set",
+      "status": "PASS",
+      "notes": "getDefaultValues hasAnyValue guard prevents pool_config from entering defaultValues; cleanFormValues used in isDirty normalization; tested."
+    },
+    {
+      "criterion": "Validation issue on pool_config.* or max_nesting_level auto-expands accordion",
+      "status": "PASS",
+      "notes": "activeIssueAccordion memo and auto-expand useEffect implement this correctly. No unit test coverage (CR-003)."
+    }
+  ],
+  "standards_review": [
+    {
+      "check": "commit-format",
+      "status": "pass",
+      "notes": "All commits in range use EPMCDME-11609: prefix per git-workflow.md."
+    },
+    {
+      "check": "code-quality",
+      "status": "pass",
+      "notes": "Sonarjs no-duplicate-string rule satisfied via MSG_POSITIVE / MSG_INTEGER module-level constants. No other blocking quality violations."
+    },
+    {
+      "check": "security",
+      "status": "pass",
+      "notes": "No user-controlled server-side execution, no raw SQL, no secrets in diff. All inputs validated via yup schema with numeric range bounds."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "location": "AdvancedConfigTab.tsx: saveData — calls onConfigChange(schema.cast(getValues())) without cleanFormValues",
+      "problem": "cleanFormValues is only invoked inside isDirty() for comparison purposes. The actual save path never runs it.",
+      "impact": "When the user enables pool, fills in min_size/max_size, then toggles pool back off, the form retains {enabled:false, min_size:5, max_size:10, ...} in form state. The all-null/empty/false guard in cleanFormValues would prune this, but since saveData skips cleanFormValues, the partially-filled disabled pool_config is submitted to onConfigChange. The spec requirement that pool_config is absent when unconfigured is not enforced at the save boundary.",
+      "recommendation": "In saveData, apply cleanFormValues before calling onConfigChange: const cleaned = cleanFormValues(schema.cast(getValues())); reset(cleaned); onConfigChange(cleaned);"
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "location": "AdvancedConfigTab.tsx: pool_config.max_size .when('min_size', ...) — sibling constraint not re-triggered on min_size change",
+      "problem": "react-hook-form's onChange mode validates each field in isolation. When min_size changes, max_size's yup .when('min_size', ...) dependency is not re-evaluated until max_size itself changes or trigger() is called globally.",
+      "impact": "User sets max_size=5, then raises min_size to 10. The max_size field shows no error until they touch it again or click Save. A user who doesn't revisit max_size after raising min_size sees a visually valid form but gets a save-time error on click.",
+      "recommendation": "Watch pool_config.min_size and call trigger('pool_config.max_size') when it changes: const watchMinSize = watch('pool_config.min_size'); useEffect(() => { if (watchPoolEnabled) trigger('pool_config.max_size') }, [watchMinSize])."
+    },
+    {
+      "id": "CR-003",
+      "triage": "patch",
+      "severity": "major",
+      "location": "AdvancedConfigTab.test.tsx: AC criterion 8 — auto-expand on validation issue has no unit test",
+      "problem": "The activeIssueAccordion memo and auto-expand useEffect implement criterion 8 correctly, but no test exercises this path.",
+      "impact": "If the 'max_nesting_level' or 'pool_config.*' mapping is accidentally removed from activeIssueAccordion, no test will fail.",
+      "recommendation": "Add a test that renders with mockWorkflowContextValue.activeIssue = { path: 'pool_config.min_size' } and asserts that accordion-Sub-workflow Pool is present in the DOM (i.e., poolConfigExpanded was set to true by the auto-expand effect)."
+    }
+  ]
+}

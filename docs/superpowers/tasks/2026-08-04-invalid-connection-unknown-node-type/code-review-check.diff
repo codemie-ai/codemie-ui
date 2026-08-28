@@ -1,0 +1,80 @@
+diff --git a/src/utils/workflowEditor/actions/nodes/__tests__/handleIteratorDrop.test.ts b/src/utils/workflowEditor/actions/nodes/__tests__/handleIteratorDrop.test.ts
+index 355b7e107..778eab572 100644
+--- a/src/utils/workflowEditor/actions/nodes/__tests__/handleIteratorDrop.test.ts
++++ b/src/utils/workflowEditor/actions/nodes/__tests__/handleIteratorDrop.test.ts
+@@ -257,7 +257,7 @@ describe('handleIteratorDrop', () => {
+       expect(result.changes[0].position).toEqual({ x: 400, y: 100 })
+       expect(result.parentChanges).toHaveLength(0)
+       expect(toaster.error).toHaveBeenCalledWith(
+-        'Only execution nodes (Assistant, Tool, Custom, Transform) can be dropped into an Iterator'
++        'Only execution nodes (Assistant, Tool, Custom, Transform, Sub-Workflow) can be dropped into an Iterator'
+       )
+     })
+ 
+diff --git a/src/utils/workflowEditor/actions/nodes/handleIteratorDrop.ts b/src/utils/workflowEditor/actions/nodes/handleIteratorDrop.ts
+index 992d64bac..6ebbf7136 100644
+--- a/src/utils/workflowEditor/actions/nodes/handleIteratorDrop.ts
++++ b/src/utils/workflowEditor/actions/nodes/handleIteratorDrop.ts
+@@ -30,7 +30,7 @@ import { isIteratorNode } from '@/utils/workflowEditor/helpers/nodes'
+ import { findParents, getStateNext } from '@/utils/workflowEditor/helpers/states'
+ 
+ const ERROR_MESSAGE =
+-  'Only execution nodes (Assistant, Tool, Custom, Transform) can be dropped into an Iterator'
++  'Only execution nodes (Assistant, Tool, Custom, Transform, Sub-Workflow) can be dropped into an Iterator'
+ const ERROR_MULTIPLE_PARENTS = 'Cannot add node with multiple parents to an iterator'
+ const ERROR_NO_PARENTS = 'Cannot add node to iterator: node must have a parent connection first'
+ const ERROR_HAS_SIBLINGS =
+@@ -52,7 +52,8 @@ const isNodeIterable = (node: WorkflowNode): boolean => {
+     node.type === NodeTypes.ASSISTANT ||
+     node.type === NodeTypes.TOOL ||
+     node.type === NodeTypes.CUSTOM ||
+-    node.type === NodeTypes.TRANSFORM
++    node.type === NodeTypes.TRANSFORM ||
++    node.type === NodeTypes.SUB_WORKFLOW
+   )
+ }
+ 
+diff --git a/src/utils/workflowEditor/helpers/connections/__tests__/connectionValidator.test.ts b/src/utils/workflowEditor/helpers/connections/__tests__/connectionValidator.test.ts
+index 4b1190904..09e099d23 100644
+--- a/src/utils/workflowEditor/helpers/connections/__tests__/connectionValidator.test.ts
++++ b/src/utils/workflowEditor/helpers/connections/__tests__/connectionValidator.test.ts
+@@ -828,6 +828,26 @@ describe('connectionValidator', () => {
+       expect(isValidConnection(connection, nodes, config)).toBe(true)
+     })
+ 
++    it('should allow sub-workflow to conditional connection', () => {
++      const connection: Connection = {
++        source: 'subworkflow1',
++        target: 'conditional1',
++        sourceHandle: null,
++        targetHandle: null,
++      }
++      expect(isValidConnection(connection, nodes, config)).toBe(true)
++    })
++
++    it('should allow sub-workflow to switch connection', () => {
++      const connection: Connection = {
++        source: 'subworkflow1',
++        target: 'switch1',
++        sourceHandle: null,
++        targetHandle: null,
++      }
++      expect(isValidConnection(connection, nodes, config)).toBe(true)
++    })
++
+     it('should reject end node as source to sub-workflow', () => {
+       const connection: Connection = {
+         source: 'end',
+diff --git a/vite.config.ts b/vite.config.ts
+index 45aed2a5c..3c0468035 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -77,7 +77,7 @@ export default defineConfig(({ mode }) => {
+       host: true,
+       proxy: {
+         '/api': {
+-          target: 'http://localhost:8080',
++          target: 'http://codemie:8080' || 'http://localhost:8080',
+           changeOrigin: true,
+           rewrite: (p) => p.replace(/^\/api/, ''),
+         },

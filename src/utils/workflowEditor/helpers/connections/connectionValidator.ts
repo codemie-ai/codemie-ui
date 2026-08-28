@@ -72,6 +72,7 @@ const EXECUTION_NODES: readonly string[] = [
   NodeTypes.CUSTOM,
   NodeTypes.TOOL,
   NodeTypes.TRANSFORM,
+  NodeTypes.SUB_WORKFLOW,
 ]
 
 /* Node validation configuration */
@@ -123,6 +124,11 @@ const NODE_VALIDATION_RULES: Record<string, NodeValidationRule> = {
   },
   [NodeTypes.TRANSFORM]: {
     displayName: 'Transform',
+    canBeSource: true,
+    canBeTarget: true,
+  },
+  [NodeTypes.SUB_WORKFLOW]: {
+    displayName: 'Sub-Workflow',
     canBeSource: true,
     canBeTarget: true,
   },

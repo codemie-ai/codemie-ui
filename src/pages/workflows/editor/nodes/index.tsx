@@ -22,6 +22,7 @@ import { EndNode } from './EndNode'
 import { IteratorNode } from './IteratorNode'
 import { NoteNode } from './NoteNode'
 import { StartNode } from './StartNode'
+import { SubWorkflowNode } from './SubWorkflowNode'
 import { SwitchNode } from './SwitchNode'
 import { ToolNode } from './ToolNode'
 import { TransformNode } from './TransformNode'
@@ -35,6 +36,7 @@ export const nodeTypeComponents = {
   [NodeTypes.NOTE]: NoteNode,
 
   [NodeTypes.ASSISTANT]: AssistantNode,
+  [NodeTypes.SUB_WORKFLOW]: SubWorkflowNode,
   [NodeTypes.TOOL]: ToolNode,
   [NodeTypes.CUSTOM]: CustomNode,
   [NodeTypes.TRANSFORM]: TransformNode,

@@ -1,0 +1,56 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two major findings: (1) inferNodeType uses a truthiness check on workflow_id that silently drops unconfigured sub_workflow nodes to CUSTOM type on deserialization; (2) WorkflowStateIcon returns null for sub_workflow nodes, breaking execution-drawer layout for any existing workflow with workflow_id states. All 19 acceptance criteria pass. No security or critical issues. 1 deferred: ISSUE_FIELD_MAP/NODE_TYPE_TO_CONFIG_ARRAY asymmetry, low impact while feature is hidden.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "FEATURE_FLAGS.SUB_WORKFLOW = 'features:subWorkflow'", "status": "pass" },
+    { "criterion": "useSubWorkflowEnabled hook exported", "status": "pass" },
+    { "criterion": "NodeTypes.SUB_WORKFLOW = 'sub_workflow'", "status": "pass" },
+    { "criterion": "SUB_WORKFLOW NOT in MetaNodeTypes", "status": "pass" },
+    { "criterion": "nodeTemplates entry: HIDDEN category, icon null", "status": "pass" },
+    { "criterion": "WorkflowPoolConfig interface", "status": "pass" },
+    { "criterion": "SubWorkflowStateConfiguration interface", "status": "pass" },
+    { "criterion": "SubWorkflowStateConfiguration in StateConfiguration union", "status": "pass" },
+    { "criterion": "pool_config/max_nesting_level on WorkflowConfiguration", "status": "pass" },
+    { "criterion": "pool_config/max_nesting_level on Workflow entity", "status": "pass" },
+    { "criterion": "workflow_id/input_mapping on SerializedState", "status": "pass" },
+    { "criterion": "pool_config/max_nesting_level on SerializedWorkflowConfig", "status": "pass" },
+    { "criterion": "inferNodeType returns SUB_WORKFLOW for workflow_id (after tool_id, before custom_node_id)", "status": "pass" },
+    { "criterion": "workflow_id/input_mapping survive serialize()", "status": "pass" },
+    { "criterion": "createState SUB_WORKFLOW case with correct shape", "status": "pass" },
+    { "criterion": "ISSUE_FIELD_MAP gets sub_workflow: 'workflow_id'", "status": "pass" },
+    { "criterion": "ACTOR_FIELD_MAP and NODE_TYPE_TO_CONFIG_ARRAY unchanged", "status": "pass" },
+    { "criterion": "isExecutionState includes NodeTypes.SUB_WORKFLOW", "status": "pass" },
+    { "criterion": "All required tests added", "status": "pass" }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit message format (EPMCDME-XXXX: Capital sentence)",
+      "status": "partial",
+      "notes": "Branch commits use conventional format 'feat(EPMCDME-11609): lowercase' — does not match required regex pattern. Resolved at squash merge where MR title follows the required format."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/utils/workflowEditor/serialization/deserializer/deserializer.ts",
+      "line": 69,
+      "problem": "inferNodeType uses a truthiness check: `if (state.workflow_id)`. An empty string is falsy, so any sub_workflow state created with the default workflow_id: '' (from createStateAction) falls through to NodeTypes.CUSTOM on deserialization.",
+      "impact": "An unconfigured sub_workflow node (workflow_id = '') round-trips as CUSTOM type after serialize/deserialize, permanently losing its type on any save-reload cycle.",
+      "recommendation": "Change to: `if (state.workflow_id !== undefined) return NodeTypes.SUB_WORKFLOW` — also update the test fixture to cover the empty-string case."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/workflows/details/WorkflowStateIcon.tsx",
+      "line": 50,
+      "problem": "WorkflowStateIcon returns null for NodeTypes.SUB_WORKFLOW. The execution drawer caller (WorkflowDrawerListItem) renders it inline in a flex row with size/margin CSS classes. When null is returned those classes apply to nothing — no icon slot, no margins, the node name renders flush against the leading chevron.",
+      "impact": "Any existing backend workflow with workflow_id states that appears in the execution drawer renders with broken spacing. The HIDDEN category only prevents new nodes being added in the editor; it does not prevent existing YAML workflows with sub_workflow states from being displayed in the execution drawer.",
+      "recommendation": "In WorkflowStateIcon return a sized placeholder instead of null: `if (!Comp) return <span className={className} aria-hidden />`. Alternatively wrap the call site in WorkflowDrawerListItem with a null-safe fallback."
+    }
+  ]
+}

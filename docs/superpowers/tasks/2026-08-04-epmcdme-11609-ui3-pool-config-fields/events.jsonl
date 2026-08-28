@@ -1,0 +1,7 @@
+{"event":"lifecycle_emission","intent":"record_complexity_score","assessment_mode":"initial","status":"succeeded"}
+{"event":"decision.recorded","ts":"2026-08-04T00:00:00Z","gate_id":"spec.approved","mode":"hitl","decision":"approve","source":"hitl","escalated":false,"phase":3}
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"spec","status":"succeeded"}
+{"event":"decision.recorded","ts":"2026-08-04T00:00:00Z","gate_id":"plan.approved","mode":"hitl","decision":"approve","source":"hitl","escalated":false,"phase":4}
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"plan","status":"succeeded"}
+{"event":"decision.recorded","ts":"2026-08-04T00:00:00Z","gate_id":"code-review.final","mode":"hitl","decision":"request-changes","source":"hitl","escalated":false,"phase":6}
+{"event":"decision.recorded","ts":"2026-08-04T00:00:00Z","gate_id":"code-review.check","mode":"hitl","decision":"approve","source":"hitl","escalated":false,"phase":6}

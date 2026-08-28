@@ -101,6 +101,12 @@ describe('isBudgetManagementEnabled', () => {
   })
 })
 
+describe('FEATURE_FLAGS.SUB_WORKFLOW', () => {
+  it('has value features:subWorkflow', () => {
+    expect(FEATURE_FLAGS.SUB_WORKFLOW).toBe('features:subWorkflow')
+  })
+})
+
 describe('isTeamsEnabled', () => {
   beforeEach(() => {
     vi.mocked(appInfoStore).configs = []

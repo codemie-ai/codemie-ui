@@ -48,6 +48,7 @@ import ConnectionTab from './configPanels/ConnectionTab'
 import CustomTab from './configPanels/CustomTab'
 import GeneralConfigTab from './configPanels/GeneralConfigTab'
 import IteratorTab from './configPanels/IteratorTab'
+import SubWorkflowTab from './configPanels/SubWorkflowTab'
 import SwitchTab from './configPanels/SwitchTab'
 import ToolTab from './configPanels/ToolTab'
 import TransformTab from './configPanels/TransformTab'
@@ -112,6 +113,7 @@ const nodeConfigPanels = {
   [NodeTypes.CONDITIONAL]: ConditionalTab,
   [NodeTypes.SWITCH]: SwitchTab,
   [NodeTypes.ITERATOR]: IteratorTab,
+  [NodeTypes.SUB_WORKFLOW]: SubWorkflowTab,
 }
 
 const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
@@ -544,9 +546,13 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
             'max-w-96 w-96':
               !isCollapsed &&
               selectedNode &&
-              [NodeTypes.ASSISTANT, NodeTypes.CUSTOM, NodeTypes.TOOL, NodeTypes.TRANSFORM].includes(
-                selectedNode.type as any
-              ),
+              [
+                NodeTypes.ASSISTANT,
+                NodeTypes.CUSTOM,
+                NodeTypes.TOOL,
+                NodeTypes.TRANSFORM,
+                NodeTypes.SUB_WORKFLOW,
+              ].includes(selectedNode.type as any),
             'w-80 max-w-80': isCollapsed,
           }
         )}

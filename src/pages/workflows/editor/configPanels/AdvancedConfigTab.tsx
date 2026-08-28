@@ -24,6 +24,7 @@ import * as yup from 'yup'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import TooltipButton from '@/components/TooltipButton'
+import { useSubWorkflowEnabled } from '@/hooks/useFeatureFlags'
 import { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 import { cleanObject } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
@@ -32,6 +33,9 @@ import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import ConfigAccordion from './components/ConfigAccordion'
 import FieldController from './components/FieldController'
 import TabFooter from './components/TabFooter'
+
+const MSG_POSITIVE = 'Must be a positive number'
+const MSG_INTEGER = 'Must be an integer'
 
 const transformToInteger = (_value: any, originalValue: any) => {
   if (originalValue === '' || originalValue == null) return null
@@ -50,32 +54,32 @@ const schema = yup.object().shape({
     .nullable()
     .optional()
     .transform(transformToInteger)
-    .positive('Must be a positive number')
-    .integer('Must be an integer')
+    .positive(MSG_POSITIVE)
+    .integer(MSG_INTEGER)
     .max(1000000000, 'Must be at most 1000000000'),
   messages_limit_before_summarization: yup
     .number()
     .nullable()
     .optional()
     .transform(transformToInteger)
-    .positive('Must be a positive number')
-    .integer('Must be an integer')
+    .positive(MSG_POSITIVE)
+    .integer(MSG_INTEGER)
     .max(10000, 'Must be at most 10000'),
   max_concurrency: yup
     .number()
     .nullable()
     .optional()
     .transform(transformToInteger)
-    .positive('Must be a positive number')
-    .integer('Must be an integer')
+    .positive(MSG_POSITIVE)
+    .integer(MSG_INTEGER)
     .max(100, 'Must be at most 100'),
   recursion_limit: yup
     .number()
     .nullable()
     .optional()
     .transform(transformToInteger)
-    .positive('Must be a positive number')
-    .integer('Must be an integer')
+    .positive(MSG_POSITIVE)
+    .integer(MSG_INTEGER)
     .max(5000, 'Must be at most 5000'),
   retry_policy: yup
     .object()
@@ -85,22 +89,22 @@ const schema = yup.object().shape({
         .nullable()
         .optional()
         .transform(transformToInteger)
-        .positive('Must be a positive number')
-        .integer('Must be an integer')
+        .positive(MSG_POSITIVE)
+        .integer(MSG_INTEGER)
         .max(100, 'Must be at most 100'),
       initial_interval: yup
         .number()
         .nullable()
         .optional()
         .transform(transformToNumber)
-        .positive('Must be a positive number')
+        .positive(MSG_POSITIVE)
         .max(3600000, 'Must be at most 3600000'),
       max_interval: yup
         .number()
         .nullable()
         .optional()
         .transform(transformToNumber)
-        .positive('Must be a positive number')
+        .positive(MSG_POSITIVE)
         .max(3600000, 'Must be at most 3600000')
         .when('initial_interval', (initial_interval, schema) => {
           return initial_interval[0]
@@ -115,10 +119,18 @@ const schema = yup.object().shape({
         .nullable()
         .optional()
         .transform(transformToNumber)
-        .positive('Must be a positive number')
+        .positive(MSG_POSITIVE)
         .max(10, 'Must be at most 10'),
     })
     .optional(),
+  max_nesting_level: yup
+    .number()
+    .nullable()
+    .optional()
+    .transform(transformToInteger)
+    .positive(MSG_POSITIVE)
+    .integer(MSG_INTEGER)
+    .max(10, 'Must be at most 10'),
 })
 
 interface AdvancedConfigTabProps {
@@ -152,6 +164,7 @@ const getDefaultValues = (
       undefined,
     max_concurrency: config?.max_concurrency ?? workflow?.max_concurrency ?? undefined,
     recursion_limit: config?.recursion_limit ?? workflow?.recursion_limit ?? undefined,
+    max_nesting_level: config?.max_nesting_level ?? workflow?.max_nesting_level ?? undefined,
   }
 
   // Only include retry_policy if it has at least one non-null value
@@ -205,6 +218,8 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
     const [summarizationExpanded, setSummarizationExpanded] = useState(true)
     const [performanceExpanded, setPerformanceExpanded] = useState(false)
     const [retryPolicyExpanded, setRetryPolicyExpanded] = useState(false)
+    const [subWorkflowExpanded, setSubWorkflowExpanded] = useState(false)
+    const [isSubWorkflowEnabled, isSubWorkflowLoaded] = useSubWorkflowEnabled()
 
     const activeIssueAccordion = useMemo(() => {
       if (!activeIssue?.path) return null
@@ -223,6 +238,9 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
       if (path.startsWith('retry_policy.') || path === 'retry_policy') {
         return 'retryPolicy'
       }
+      if (path === 'max_nesting_level') {
+        return 'subWorkflow'
+      }
       return null
     }, [activeIssue?.path])
 
@@ -233,13 +251,21 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
         setPerformanceExpanded(true)
       } else if (activeIssueAccordion === 'retryPolicy' && !retryPolicyExpanded) {
         setRetryPolicyExpanded(true)
+      } else if (activeIssueAccordion === 'subWorkflow' && !subWorkflowExpanded) {
+        setSubWorkflowExpanded(true)
       }
-    }, [activeIssueAccordion, summarizationExpanded, performanceExpanded, retryPolicyExpanded])
+    }, [
+      activeIssueAccordion,
+      summarizationExpanded,
+      performanceExpanded,
+      retryPolicyExpanded,
+      subWorkflowExpanded,
+    ])
 
     const saveData = async (): Promise<boolean> => {
       const isValid = await trigger()
       if (isValid) {
-        const data = schema.cast(getValues()) as Partial<WorkflowConfiguration>
+        const data = cleanFormValues(schema.cast(getValues()) as Partial<WorkflowConfiguration>)
         reset(data)
         onConfigChange(data)
         return true
@@ -477,6 +503,34 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
               />
             </div>
           </ConfigAccordion>
+
+          {isSubWorkflowEnabled && isSubWorkflowLoaded && (
+            <ConfigAccordion
+              title="Sub-workflow"
+              expanded={subWorkflowExpanded}
+              onExpandedChange={setSubWorkflowExpanded}
+            >
+              <div className="flex flex-col gap-4">
+                <FieldController
+                  name="max_nesting_level"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Input
+                      id="max_nesting_level"
+                      type="number"
+                      label="Max Nesting Level"
+                      orientation="horizontal"
+                      hint="Maximum sub-workflow nesting depth. Empty = server default. Range: 1–10."
+                      placeholder=""
+                      inputClass="w-12"
+                      error={fieldState.error?.message}
+                      {...field}
+                    />
+                  )}
+                />
+              </div>
+            </ConfigAccordion>
+          )}
         </form>
 
         <TabFooter onCancel={() => onClose(true)} onSave={handleSave} />

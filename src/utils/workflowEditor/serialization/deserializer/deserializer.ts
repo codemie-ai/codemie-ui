@@ -69,6 +69,7 @@ const inferNodeType = (state: SerializedState): string => {
   if (state.assistant_id) return NodeTypes.ASSISTANT
   if (state.tool_id) return NodeTypes.TOOL
   if (state.custom_node_id === TRANSFORM_CUSTOM_ACTOR_ID) return NodeTypes.TRANSFORM
+  if (state.workflow_id !== undefined) return NodeTypes.SUB_WORKFLOW
   if (state.custom_node_id) return NodeTypes.CUSTOM
   return NodeTypes.CUSTOM
 }

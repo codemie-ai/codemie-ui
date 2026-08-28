@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Add pool_config and max_nesting_level form fields to AdvancedConfigTab.tsx, gated behind useSubWorkflowEnabled(), following the existing max_concurrency/recursion_limit pattern.",
+  "generated": "2026-08-04T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single component (AdvancedConfigTab.tsx) with internal additions — Yup schema extension, getDefaultValues, activeIssueAccordion mapping, and feature-flag JSX block — all confined to one file; WorkflowFormFields.tsx is explicitly deferred."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Pattern is named explicitly (max_concurrency/recursion_limit accordion), types are fully ready from UI-1, and the hook is already wired; one open item (WorkflowFormFields scope) is explicitly deferred and does not block primary delivery."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

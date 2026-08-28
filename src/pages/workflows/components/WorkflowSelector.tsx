@@ -45,6 +45,7 @@ export interface WorkflowSelectorProps {
 
   project?: string
   initialOptions?: WorkflowSelectorOption[]
+  getOptions?: (params: { search?: string; project?: string }) => Promise<any[]>
 
   error?: string
 }
@@ -64,6 +65,7 @@ const WorkflowSelector = forwardRef<TMultiSelect, WorkflowSelectorProps>(
       onChange,
       project,
       initialOptions,
+      getOptions,
       error,
     },
     ref
@@ -73,13 +75,14 @@ const WorkflowSelector = forwardRef<TMultiSelect, WorkflowSelectorProps>(
 
     const fetchWorkflowOptions = async (search: string = '') => {
       try {
-        const formattedOptions: WorkflowSelectorOption[] = (
-          await workflowsStore.getWorkflowOptions({ search, project })
-        ).map((workflow) => ({
-          id: workflow.id,
-          name: workflow.name,
-          iconUrl: workflow.icon_url ?? '',
-        }))
+        const fetcher = getOptions ?? workflowsStore.getWorkflowOptions
+        const formattedOptions: WorkflowSelectorOption[] = (await fetcher({ search, project })).map(
+          (workflow) => ({
+            id: workflow.id,
+            name: workflow.name,
+            iconUrl: workflow.icon_url ?? '',
+          })
+        )
 
         setOptions(formattedOptions)
       } catch (error) {
