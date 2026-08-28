@@ -254,6 +254,8 @@ describe('projectsStore', () => {
           cost_center_id: undefined,
           clear_cost_center: undefined,
           enforce_member_spend_limits: undefined,
+          chargeback_enabled: undefined,
+          chargeback_attribution: undefined,
         },
         { skipErrorHandling: true }
       )
@@ -319,7 +321,34 @@ describe('projectsStore', () => {
           cost_center_id: undefined,
           clear_cost_center: undefined,
           enforce_member_spend_limits: true,
+          chargeback_enabled: undefined,
+          chargeback_attribution: undefined,
         },
+        { skipErrorHandling: true }
+      )
+    })
+
+    it('includes chargeback fields in the update payload (EPMCDME-14404)', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({
+          name: 'my-project',
+          chargeback_enabled: true,
+          chargeback_attribution: 'cost_center',
+        }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateProject('my-project', {
+        chargeback_enabled: true,
+        chargeback_attribution: 'cost_center',
+      })
+
+      expect(mockPatch).toHaveBeenCalledWith(
+        'v1/projects/my-project',
+        expect.objectContaining({
+          chargeback_enabled: true,
+          chargeback_attribution: 'cost_center',
+        }),
         { skipErrorHandling: true }
       )
     })

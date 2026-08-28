@@ -73,6 +73,17 @@ vi.mock('@/utils/toaster', () => ({
   },
 }))
 
+const { chargebackFlag, costCentersFlag } = vi.hoisted(() => ({
+  chargebackFlag: vi.fn(() => [false, true] as [boolean, boolean]),
+  costCentersFlag: vi.fn(() => [true, true] as [boolean, boolean]),
+}))
+
+vi.mock('@/hooks/useFeatureFlags', () => ({
+  useFeatureFlag: () => costCentersFlag(),
+  useBudgetManagementEnabled: () => [false, true],
+  useProjectChargebackEnabled: () => chargebackFlag(),
+}))
+
 const mockProject: ProjectDetail = {
   name: 'Test Project',
   description: 'Project description',
@@ -90,10 +101,65 @@ const mockProject: ProjectDetail = {
 describe('ProjectDetailsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    chargebackFlag.mockReturnValue([false, true])
+    costCentersFlag.mockReturnValue([true, true])
     projectsStore.getProject = vi.fn().mockResolvedValue(mockProject)
     projectsStore.updateProject = vi.fn().mockResolvedValue(mockProject)
     userStore.getCurrentUser = vi.fn().mockResolvedValue(userStore.user)
     projectDisplayNamesStore.invalidate = vi.fn()
+  })
+
+  it('shows chargeback enabled and attributed to a cost center in the details card', async () => {
+    chargebackFlag.mockReturnValue([true, true])
+    projectsStore.getProject = vi.fn().mockResolvedValue({
+      ...mockProject,
+      chargeback_enabled: true,
+      chargeback_attribution: 'cost_center',
+    })
+
+    render(<ProjectDetailsPage />)
+
+    expect(await screen.findByText('Chargeback')).toBeInTheDocument()
+    expect(screen.getByText('Enabled, attributed to a cost center')).toBeInTheDocument()
+  })
+
+  it('does not surface cost-center attribution when cost centers are disabled', async () => {
+    chargebackFlag.mockReturnValue([true, true])
+    costCentersFlag.mockReturnValue([false, true])
+    projectsStore.getProject = vi.fn().mockResolvedValue({
+      ...mockProject,
+      chargeback_enabled: true,
+      chargeback_attribution: 'cost_center',
+      enforce_member_spend_limits: false,
+    })
+
+    render(<ProjectDetailsPage />)
+
+    expect(await screen.findByText('Chargeback')).toBeInTheDocument()
+    // Cost centers are off, so the label degrades to a plain "Enabled".
+    expect(screen.getByText('Enabled')).toBeInTheDocument()
+    expect(screen.queryByText('Enabled, attributed to a cost center')).not.toBeInTheDocument()
+  })
+
+  it('shows chargeback disabled in the details card when off', async () => {
+    chargebackFlag.mockReturnValue([true, true])
+    projectsStore.getProject = vi.fn().mockResolvedValue({
+      ...mockProject,
+      chargeback_enabled: false,
+      enforce_member_spend_limits: false,
+    })
+
+    render(<ProjectDetailsPage />)
+
+    expect(await screen.findByText('Chargeback')).toBeInTheDocument()
+    expect(screen.getAllByText('Disabled').length).toBeGreaterThan(0)
+  })
+
+  it('hides the chargeback field when the feature flag is off', async () => {
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => expect(projectsStore.getProject).toHaveBeenCalled())
+    expect(screen.queryByText('Chargeback')).not.toBeInTheDocument()
   })
 
   it('renders ProjectMembersManager with the loaded project', async () => {

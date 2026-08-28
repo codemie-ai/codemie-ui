@@ -1,0 +1,6 @@
+{"task_id":"1","status":"done","commit":"f577c8c4b","test_command":"npx vitest run src/store/__tests__/projects.test.ts --project unit"}
+{"task_id":"2","status":"done","commit":"6ce1a8944","test_command":"npx vitest run src/utils/__tests__/featureFlags.test.ts --project unit"}
+{"task_id":"3","status":"done","commit":"d7c7fdf1b","test_command":"npx vitest run src/pages/settings/administration/components/__tests__/ChargebackSettings.test.tsx --project unit"}
+{"task_id":"4","status":"done","commit":"ba3657e76","test_command":"npx vitest run src/pages/settings/administration/components/__tests__/ChargebackSettings.inlineCreate.test.tsx --project unit"}
+{"task_id":"5","status":"done","commit":"8d4d5191b","test_command":"npx vitest run src/pages/settings/administration/components/__tests__/UnifiedProjectBudgetModal.chargeback.test.tsx --project unit"}
+{"task_id":"6","status":"done","commit":"n/a","test_command":"n/a — verify-live-first: ProjectBudgetModal dead (self-ref only); BudgetAssignmentsModal user-scoped (userStore.updateUserBudgets, no project context), not a valid chargeback host; neither wired"}

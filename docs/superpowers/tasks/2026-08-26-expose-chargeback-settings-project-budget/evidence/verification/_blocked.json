@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "head": "659188f3f819adf57333808a121c2aca057fa628",
+  "result": "BLOCKED",
+  "feature_id": "project-chargeback-settings",
+  "reason": "UI surface changed and a dev server + backend are reachable, but the feature cannot be exercised in this environment: features:projectChargeback is disabled/absent on the backend (/api/v1/config) so the chargeback UI does not render, and the project budget flow is Keycloak-gated (/api/v1/projects -> 401) with no editor credentials available. AC10 (focus-trap/z-index of the nested CostCenterFormPopup) specifically requires a real browser reaching this flow.",
+  "environment_probe": {
+    "app": "http://localhost:5173 (HTTP 200, title 'EPAM AI/Run CodeMie')",
+    "config_endpoint": "/api/v1/config -> 200; flag features:projectChargeback NOT present",
+    "projects_endpoint": "/api/v1/projects -> 401 Authentication required"
+  },
+  "remediation": "Provide a reachable app URL where (1) features:projectChargeback is enabled server-side, (2) an authenticated session/credentials with editor rights on a project are available, and (3) a separate non-editor account for the read-only case. Then this verification can install Playwright and exercise the flow."
+}

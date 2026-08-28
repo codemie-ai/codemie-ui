@@ -1,0 +1,9 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "5 subjects in range all match the documented EPMCDME-XXXX: Capital sentence format (non-zero ID, uppercase first word, no trailing period): Wire/Add/Add/Add/Persist"},
+    {"kind": "code-quality", "status": "na", "notes": "no code-quality guide in repo: .ai-run/guides/standards/code-quality.md absent and no ref passed; absent standard, not a coverage gap"},
+    {"kind": "security", "status": "pass", "notes": "security-patterns.md requirements met across the change: no dangerouslySetInnerHTML/innerHTML sink added (cost-center name rendered as escaped text content), no navigation from untrusted input, no postMessage/message listener, no import.meta.env/window._env_ secret or config exposure, no nosonar suppression, no nginx.conf change; feature flag, typed ProjectRequest/ProjectUpdatePayload fields, and cost-center creation via costCentersStore follow existing patterns"}
+  ],
+  "blocking_findings": [],
+  "coverage_gap": false
+}

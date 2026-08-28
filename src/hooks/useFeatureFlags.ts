@@ -97,6 +97,10 @@ export const useBudgetManagementEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.BUDGET_MANAGEMENT)
 }
 
+export const useProjectChargebackEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.PROJECT_CHARGEBACK)
+}
+
 export const useEnterpriseEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.ENTERPRISE_EDITION)
 }

@@ -461,12 +461,20 @@ const settingsRoutes: RouteObject[] = [
   {
     id: 'cost-centers-management',
     path: '/settings/administration/cost-centers',
-    Component: CostCentersManagementPage,
+    element: (
+      <FeatureGuard featureFlag={FEATURE_FLAGS.COST_CENTERS}>
+        <CostCentersManagementPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: 'cost-centers-management-detail',
     path: '/settings/administration/cost-centers/:costCenterId',
-    Component: CostCenterDetailsPage,
+    element: (
+      <FeatureGuard featureFlag={FEATURE_FLAGS.COST_CENTERS}>
+        <CostCenterDetailsPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: 'activity-events',

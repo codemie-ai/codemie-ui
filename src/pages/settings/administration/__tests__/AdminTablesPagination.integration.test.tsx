@@ -17,6 +17,7 @@ import { screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { useUserManagementEnabled } from '@/hooks/useFeatureFlags'
+import { appInfoStore } from '@/store/appInfo'
 import { requestRegistry } from '@/test-utils/_mock-state'
 import { mockAPI, renderPage } from '@/test-utils/integration'
 
@@ -192,6 +193,12 @@ const TABLE_CONFIGS: TableConfig[] = [
     },
     page0Text: 'Alpha Cost Center',
     page1Text: 'Beta Cost Center',
+    // The cost-centers route is gated behind features:costCenters via FeatureGuard,
+    // which reads appInfoStore.configs. Enable it so the page renders instead of 404ing.
+    setup: () => {
+      appInfoStore.configs = [{ id: 'features:costCenters', settings: { enabled: true } }]
+      appInfoStore.isConfigFetched = true
+    },
   },
 
   // ── Categories ───────────────────────────────────────────────────────────

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Expose feature-flag-gated chargeback settings (enable toggle, project-vs-cost_center attribution, inline cost center creation, read-only rendering for non-editors) in the existing project budget configuration modals.",
+  "generated": "2026-08-26",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 19,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Breadth across five layers but shallow, additive touches: types (projectManagement.ts, project.ts), the three-file feature-flag stack (constants/utils/hook), UnifiedProjectBudgetModal + ProjectBudgetsSection, CostCenterFormPopup reuse, ProjectDetailsPage host, and up to three stores (projects, costCenters, projectBudgets). A clear existing pattern backs each piece, so most work is composition rather than new abstraction — L, not XL." },
+    { "dimension": "technical_risk", "reason": "No precedent for the multi-step save orchestration (create cost center -> PATCH project link -> save budget) spanning two stores with inconsistent error conventions (createCostCenter uses skipErrorHandling, budget-group calls toast internally) plus AC 7's user-visible partial-failure handling with no existing test template. Nested CostCenterFormPopup opens inside a budget modal where all masks are forced to !z-50 with focusOnShow={false} — no nested-popup precedent (AC 10). Host modal carries a delicate soft/hard budget-scaling effect ordering that must not be disturbed. Feature-flag gating provides staged rollout. No security-sensitivity, so held at L rather than XL — calibrated against the bundle L example (22) whose tr=4 covered credential-storage security plus config migration." },
+    { "dimension": "file_change_estimate", "reason": "Roughly 8-12 source files modified (types, 3 feature-flag files, budget modal(s), section, page, stores) across 3+ directories, plus new test scaffolding — none of the four budget modals nor CostCenterFormPopup has existing test coverage, so AC 9 stands up new test files. Fits L (8-10 modified, 2-4 new, 3+ dirs)." },
+    { "dimension": "requirements_clarity", "reason": "Ten detailed acceptance criteria, but one genuine design gap: whether chargeback persists as a project attribute (projectsStore PATCH whitelist) or a budget-group attribute (projectBudgetsStore) is unresolved by the code, and the save path in AC 7 spans two stores. Backend support is a soft precondition ('available or coordinated'). Core defined with 1-2 open questions — M." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

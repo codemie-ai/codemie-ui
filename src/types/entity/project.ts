@@ -59,7 +59,11 @@ export interface Project {
   enforce_member_spend_limits?: boolean
   spending?: ProjectSpendingSummaryCompact | null
   budgets?: ProjectAssignedBudgetSummary[] | null
+  chargeback_enabled?: boolean
+  chargeback_attribution?: ChargebackAttribution
 }
+
+export type ChargebackAttribution = 'project' | 'cost_center'
 
 export interface ProjectRequest {
   name?: string
@@ -69,6 +73,8 @@ export interface ProjectRequest {
   cost_center_id?: string | null
   clear_cost_center?: boolean
   enforce_member_spend_limits?: boolean
+  chargeback_enabled?: boolean
+  chargeback_attribution?: ChargebackAttribution
 }
 
 export enum ProjectType {

@@ -17,6 +17,7 @@ import { AutoComplete } from 'primereact/autocomplete'
 import React, { useState, useEffect, useRef, useImperativeHandle, ReactNode } from 'react'
 
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
+import CrossSvg from '@/assets/icons/cross.svg?react'
 import { useInputWidth } from '@/hooks/useInputWidth'
 import { FilterOption } from '@/types/filters'
 import { cn } from '@/utils/utils'
@@ -35,6 +36,8 @@ export interface AutocompleteProps {
   disabled?: boolean
   allowNew?: boolean
   allowEmpty?: boolean
+  /** Show a clear (×) button that empties the selection, matching the integration selects. */
+  showClear?: boolean
   label?: string
   hint?: string
   error?: string
@@ -59,6 +62,7 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
       disabled = false,
       allowNew = false,
       allowEmpty = true,
+      showClear = false,
       label,
       hint,
       error,
@@ -172,6 +176,46 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
       }
     }
 
+    const autocompleteElement = (
+      <AutoComplete
+        ref={autocompleteEl}
+        id={id}
+        name={name}
+        value={textValue}
+        suggestions={filteredOptions}
+        completeMethod={search}
+        onChange={(e) => setTextValue(e.value as unknown as string)}
+        onSelect={(e) => updateValue(e.value)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        onShow={() => {
+          isPanelOpen.current = true
+        }}
+        onHide={() => {
+          isPanelOpen.current = false
+        }}
+        onDropdownClick={handleDropdownClick}
+        field="label"
+        dropdown
+        panelFooterTemplate={panelFooterTemplate}
+        panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}
+        forceSelection={!allowNew}
+        disabled={disabled}
+        placeholder={placeholder}
+        minLength={0}
+        invalid={!!error}
+        pt={{
+          ...ptPreset,
+          loadingIcon: { className: isLoadingIconVisible ? '' : 'hidden' },
+        }}
+        emptyMessage="No results found"
+        dropdownIcon={<ChevronDownSvg />}
+        showEmptyMessage
+        itemTemplate={itemTemplate}
+      />
+    )
+
     return (
       <div className={cn('flex flex-col gap-1.5 text-text-tertiary w-full', className)}>
         {label && (
@@ -181,43 +225,23 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
           </label>
         )}
 
-        <AutoComplete
-          ref={autocompleteEl}
-          id={id}
-          name={name}
-          value={textValue}
-          suggestions={filteredOptions}
-          completeMethod={search}
-          onChange={(e) => setTextValue(e.value as unknown as string)}
-          onSelect={(e) => updateValue(e.value)}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          onShow={() => {
-            isPanelOpen.current = true
-          }}
-          onHide={() => {
-            isPanelOpen.current = false
-          }}
-          onDropdownClick={handleDropdownClick}
-          field="label"
-          dropdown
-          panelFooterTemplate={panelFooterTemplate}
-          panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}
-          forceSelection={!allowNew}
-          disabled={disabled}
-          placeholder={placeholder}
-          minLength={0}
-          invalid={!!error}
-          pt={{
-            ...ptPreset,
-            loadingIcon: { className: isLoadingIconVisible ? '' : 'hidden' },
-          }}
-          emptyMessage="No results found"
-          dropdownIcon={<ChevronDownSvg />}
-          showEmptyMessage
-          itemTemplate={itemTemplate}
-        />
+        {showClear ? (
+          <div className="relative flex flex-col">
+            {autocompleteElement}
+            {value && !disabled && (
+              <button
+                type="button"
+                aria-label="Clear"
+                onClick={() => onChange?.('')}
+                className="absolute right-9 top-1/2 flex -translate-y-1/2 text-text-tertiary transition hover:text-text-primary"
+              >
+                <CrossSvg className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ) : (
+          autocompleteElement
+        )}
 
         {error && <div className="text-text-error text-sm">{error}</div>}
       </div>

@@ -14,6 +14,7 @@
 //
 
 import { BudgetCategory } from '@/types/entity/budget'
+import { ChargebackAttribution } from '@/types/entity/project'
 
 export interface ProjectAssignedBudgetSummary {
   budget_id: string
@@ -41,6 +42,8 @@ export interface ProjectListItem {
   cost_center_id?: string | null
   cost_center_name?: string | null
   enforce_member_spend_limits?: boolean
+  chargeback_enabled?: boolean
+  chargeback_attribution?: ChargebackAttribution
   budgets?: ProjectAssignedBudgetSummary[] | null
 }
 
@@ -102,4 +105,6 @@ export interface ProjectUpdatePayload {
   cost_center_id?: string | null
   clear_cost_center?: boolean
   enforce_member_spend_limits?: boolean
+  chargeback_enabled?: boolean
+  chargeback_attribution?: ChargebackAttribution
 }

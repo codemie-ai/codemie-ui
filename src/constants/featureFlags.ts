@@ -30,6 +30,8 @@ export const FEATURE_FLAGS = {
   WORKFLOW_AI: 'features:workflowAI',
   CHAT_CONTEXTUAL_NAMING: 'features:chatContextualNaming',
   SUB_WORKFLOW: 'features:subWorkflow',
+  PROJECT_CHARGEBACK: 'features:projectChargeback',
+  COST_CENTERS: 'features:costCenters',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

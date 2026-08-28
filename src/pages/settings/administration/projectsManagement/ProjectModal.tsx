@@ -27,7 +27,7 @@ import Popup from '@/components/Popup'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { costCentersStore } from '@/store/costCenters'
 import { userStore } from '@/store/user'
-import { Project } from '@/types/entity/project'
+import { ChargebackAttribution, Project } from '@/types/entity/project'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { FilterOption } from '@/types/filters'
 
@@ -46,6 +46,7 @@ export interface ProjectFormData {
   cost_center_id?: string | null
   clear_cost_center?: boolean
   enforce_member_spend_limits?: boolean
+  chargeback_attribution?: ChargebackAttribution
 }
 
 interface ProjectModalFormValues {
@@ -133,14 +134,21 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
 
   const handleFormSubmit: SubmitHandler<ProjectModalFormValues> = async (data) => {
     const trimmedDisplayName = data.display_name?.trim()
+    const clearingCostCenter = !!project && !data.cost_center_id
+    // Attributing spend to a cost center that no longer exists on the project is an
+    // invalid combination the backend rejects — reset attribution to the project
+    // whenever the clear removes the cost center it was attributed to.
+    const needsAttributionReset =
+      clearingCostCenter && project?.chargeback_attribution === 'cost_center'
     await onSubmit({
       name: isNameDisabled ? undefined : data.name,
       display_name: trimmedDisplayName || undefined,
       clear_display_name: !!project && !trimmedDisplayName,
       description: data.description,
       cost_center_id: data.cost_center_id || null,
-      clear_cost_center: !!project && !data.cost_center_id,
+      clear_cost_center: clearingCostCenter,
       enforce_member_spend_limits: project ? data.enforce_member_spend_limits : undefined,
+      chargeback_attribution: needsAttributionReset ? 'project' : undefined,
     })
     reset()
   }
@@ -232,6 +240,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
                 options={costCenterOptions}
                 placeholder="Search cost center"
                 allowEmpty
+                showClear
                 localFilter={false}
                 onSearch={handleCostCenterSearch}
               />

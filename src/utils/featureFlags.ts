@@ -55,7 +55,7 @@ export const isMcpEnabled = (): boolean => {
 }
 
 export const isCostCentersEnabled = (): boolean => {
-  return isFeatureEnabled('features:costCenters')
+  return isFeatureEnabled(FEATURE_FLAGS.COST_CENTERS)
 }
 
 export const isFavoritesEnabled = (): boolean => {
@@ -84,6 +84,10 @@ export const isUserManagementEnabled = (): boolean => {
 
 export const isBudgetManagementEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.BUDGET_MANAGEMENT)
+}
+
+export const isProjectChargebackEnabled = (): boolean => {
+  return isFeatureEnabled(FEATURE_FLAGS.PROJECT_CHARGEBACK)
 }
 
 /**

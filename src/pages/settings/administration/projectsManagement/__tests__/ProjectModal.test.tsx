@@ -16,14 +16,19 @@
 import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import ProjectModal from '../ProjectModal'
 
 // ─── Module mocks ──────────────────────────────────────────────────────────────
 
+const { useFeatureFlagMock, userStoreMock } = vi.hoisted(() => ({
+  useFeatureFlagMock: vi.fn(() => [false, true] as [boolean, boolean]),
+  userStoreMock: { user: { isAdmin: false, isMaintainer: false } },
+}))
+
 vi.mock('@/store/user', () => ({
-  userStore: { user: { isAdmin: false, isMaintainer: false } },
+  userStore: userStoreMock,
 }))
 
 vi.mock('@/store/costCenters', () => ({
@@ -33,7 +38,7 @@ vi.mock('@/store/costCenters', () => ({
 }))
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
-  useFeatureFlag: () => [false, true],
+  useFeatureFlag: () => useFeatureFlagMock(),
 }))
 
 vi.mock('@/components/Popup', () => ({
@@ -104,7 +109,16 @@ vi.mock('@/components/form/Switch', () => ({
 }))
 
 vi.mock('@/components/form/Autocomplete', () => ({
-  default: () => null,
+  default: ({ id, value, onChange, showClear }: any) => (
+    <div>
+      <input data-testid={id} value={value ?? ''} readOnly />
+      {showClear && value ? (
+        <button type="button" data-testid={`${id}-clear`} onClick={() => onChange('')}>
+          clear
+        </button>
+      ) : null}
+    </div>
+  ),
 }))
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -277,6 +291,53 @@ describe('ProjectModal — display_name validation', () => {
 
     await vi.waitFor(() => {
       expect(screen.getByTestId('display_name-error')).toBeTruthy()
+    })
+  })
+})
+
+describe('ProjectModal — cost center removal', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useFeatureFlagMock.mockReturnValue([true, true])
+    userStoreMock.user.isAdmin = true
+  })
+
+  afterEach(() => {
+    useFeatureFlagMock.mockReturnValue([false, true])
+    userStoreMock.user.isAdmin = false
+  })
+
+  it('removes a linked cost center and submits clear_cost_center in edit mode', async () => {
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({
+      project: {
+        id: 'proj-1',
+        name: 'existing-project',
+        display_name: 'Existing Project',
+        description: 'desc',
+        project_type: 'shared',
+        user_count: 2,
+        admin_count: 1,
+        cost_center_id: 'cc-1',
+        cost_center_name: 'eng-ops',
+      } as any,
+    })
+
+    // The cost-center picker exposes a clear (×) affordance for the linked value.
+    const clearButton = screen.getByTestId('cost_center_id-clear')
+    await user.click(clearButton)
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Submit' }).click()
+    })
+
+    await vi.waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cost_center_id: null,
+          clear_cost_center: true,
+        })
+      )
     })
   })
 })

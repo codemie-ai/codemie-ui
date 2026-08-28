@@ -22,7 +22,7 @@ import UnifiedProjectBudgetModal from '@/pages/settings/administration/component
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { BudgetCategory } from '@/types/entity/budget'
 import { ProjectBudget } from '@/types/entity/projectBudget'
-import { ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
+import { ProjectDetail, ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
 import toaster from '@/utils/toaster'
 
 import ProjectBudgetCard from './components/ProjectBudgetCard'
@@ -33,14 +33,21 @@ interface ProjectBudgetsSectionProps {
   projectName: string
   spendingRows?: ProjectSpendingWidgetRow[]
   onBudgetsChanged?: (budgets: ProjectBudget[]) => void
+  /** Reload the project after a save — chargeback settings live on the project, not the budget. */
+  onProjectChanged?: () => void
   mode: 'manage' | 'view'
+  project?: ProjectDetail | null
+  canManageBudgets?: boolean
 }
 
 const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
   projectName,
   spendingRows,
   onBudgetsChanged,
+  onProjectChanged,
   mode,
+  project = null,
+  canManageBudgets = false,
 }) => {
   const isManageMode = mode === 'manage'
   const [budgets, setBudgets] = useState<ProjectBudget[]>([])
@@ -71,6 +78,13 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
       setLoading(false)
     }
   }, [projectName, onBudgetsChanged])
+
+  // After a save the budget modal may have changed both the budget and the
+  // project's chargeback settings, so refresh both.
+  const handleBudgetSaved = useCallback(async () => {
+    await loadBudgets()
+    onProjectChanged?.()
+  }, [loadBudgets, onProjectChanged])
 
   useEffect(() => {
     loadBudgets()
@@ -200,8 +214,10 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
         visible={unifiedModalVisible}
         onHide={() => setUnifiedModalVisible(false)}
         projectName={projectName}
-        onSaved={loadBudgets}
+        onSaved={handleBudgetSaved}
         forceCreate={budgets.length === 0}
+        project={project}
+        canManageBudgets={canManageBudgets}
       />
 
       {isManageMode && (

@@ -18,7 +18,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FEATURE_FLAGS } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
 
-import { isUserManagementEnabled, isBudgetManagementEnabled, isTeamsEnabled } from '../featureFlags'
+import {
+  isUserManagementEnabled,
+  isBudgetManagementEnabled,
+  isTeamsEnabled,
+  isProjectChargebackEnabled,
+} from '../featureFlags'
 
 vi.mock('@/store/appInfo', () => ({
   appInfoStore: {
@@ -104,6 +109,37 @@ describe('isBudgetManagementEnabled', () => {
 describe('FEATURE_FLAGS.SUB_WORKFLOW', () => {
   it('has value features:subWorkflow', () => {
     expect(FEATURE_FLAGS.SUB_WORKFLOW).toBe('features:subWorkflow')
+  })
+})
+
+describe('isProjectChargebackEnabled', () => {
+  beforeEach(() => {
+    vi.mocked(appInfoStore).configs = []
+    vi.mocked(appInfoStore).isConfigFetched = false
+  })
+
+  it('should return true when features:projectChargeback is enabled', () => {
+    vi.mocked(appInfoStore).configs = [
+      { id: 'features:projectChargeback', settings: { enabled: true } },
+    ]
+    vi.mocked(appInfoStore).isConfigFetched = true
+
+    expect(isProjectChargebackEnabled()).toBe(true)
+  })
+
+  it('should return false when features:projectChargeback is disabled', () => {
+    vi.mocked(appInfoStore).configs = [
+      { id: 'features:projectChargeback', settings: { enabled: false } },
+    ]
+    vi.mocked(appInfoStore).isConfigFetched = true
+
+    expect(isProjectChargebackEnabled()).toBe(false)
+  })
+
+  it('should return false when config not fetched', () => {
+    vi.mocked(appInfoStore).isConfigFetched = false
+
+    expect(isProjectChargebackEnabled()).toBe(false)
   })
 })
 

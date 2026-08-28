@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "head": "659188f3f819adf57333808a121c2aca057fa628",
+  "branch": "EPMCDME-14404_chargeback-settings",
+  "merge_base": "origin/main",
+  "required": true,
+  "surface_changed": true,
+  "changed_ui_files": [
+    "src/pages/settings/administration/ProjectDetailsPage.tsx",
+    "src/pages/settings/administration/components/ChargebackSettings.tsx",
+    "src/pages/settings/administration/components/UnifiedProjectBudgetModal.tsx",
+    "src/pages/settings/administration/components/useInlineCostCenterCreate.ts",
+    "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx"
+  ],
+  "tool_resolution": "unconfigured",
+  "tool_notes": "No playwright.config.* / @playwright/test / cypress / storybook / feature_verification.command. A dynamic Playwright path is theoretically possible but is blocked upstream by environment gating (see below), so it was not generated.",
+  "running_environment": {
+    "dev_server": "http://localhost:5173 (vite, LISTEN, serves the app, HTTP 200)",
+    "backend_proxy": "/api reachable via vite proxy (/api/v1/config -> 200)",
+    "flag_projectChargeback": "ABSENT from /api/v1/config -> evaluates disabled; chargeback surface does not render",
+    "flags_present": ["features:costCenters=true", "features:budgetManagement=true"],
+    "auth": "/api/v1/projects -> 401 Authentication required (Keycloak-gated)"
+  },
+  "features_planned": [
+    "chargeback-toggle-visibility",
+    "chargeback-attribution-choice",
+    "cost-center-create-single-action",
+    "inline-cost-center-popup-stacking",
+    "nested-popup-focus-trap-zindex-AC10",
+    "readonly-non-editor-rendering"
+  ],
+  "result": "BLOCKED",
+  "blocking_reasons": [
+    "features:projectChargeback is not enabled on the reachable backend, so the feature under test does not render",
+    "the project budget flow is behind Keycloak authentication and no editor credentials were provided",
+    "the read-only case additionally requires a separate non-editor account"
+  ],
+  "existing_non_browser_coverage": [
+    "src/pages/settings/administration/components/__tests__/ChargebackSettings.test.tsx",
+    "src/pages/settings/administration/components/__tests__/ChargebackSettings.inlineCreate.test.tsx",
+    "src/pages/settings/administration/components/__tests__/UnifiedProjectBudgetModal.chargeback.test.tsx",
+    "src/pages/settings/administration/projectsManagement/__tests__/ProjectBudgetsSection.test.tsx"
+  ],
+  "coverage_gap": "AC10 focus-trap and z-index of the nested CostCenterFormPopup requires a real browser and cannot be satisfied by the jsdom unit/integration tests above."
+}

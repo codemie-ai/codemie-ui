@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14404_chargeback-settings",
+  "head": "2304014450eb60438a82a733906bcf2929119e9d",
+  "runner": "npm",
+  "started_at": "2026-08-27T09:15:20Z",
+  "completed_at": "2026-08-27T09:23:51Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19439,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Clean. Only a non-blocking eslint-plugin-react 'React version not specified' warning; no lint errors."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9665,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide 'Skip if': no dependency was added, removed, or moved. Diff (origin/main...HEAD) touches no package.json or package-lock.json. Server-side licence gate is unaffected."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19204,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks ran for real (container engine, image pulled): 'no leaks found' after scanning ~91.63 MB in 18.1s. Working tree only, not git history. The gitignored .scannerwork/ SonarScanner temp dir was removed before scanning to avoid a generated-artifact false positive; server-side gitleaks-scan still runs in CI."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 57059,
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "notes": "Test Files 435 passed (435); Tests 4710 passed (4710). Run after npm ci. Gained 1 test vs prior run (4709) from the latest chargeback UI refinements. stderr lines are intentional error-path assertions inside passing tests."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 35859,
+      "command": "npm run test:integration",
+      "exit_code": 0,
+      "notes": "Test Files 37 passed (37); Tests 487 passed | 1 skipped (488). Run after npm ci. stderr lines are intentional error-path assertions inside passing tests."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (.tsx components under src/pages/settings/administration, including the existing-cost-center dropdown, empty-state styling, project-name label, optional description, and inline dropdown layout) but no configured local UI test script; test-harness (--sanity-ui) runs against a deployed environment, not the working tree. The reworked components are covered by their unit + integration suites (all PASS). Browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 407,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 1857 files, 0 missing license headers. Enforced by Husky pre-commit hook."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 277738,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Scan ran for real via connected mode against sonar.core.kuberocketci.io (not the self-skip path): 2019 files analyzed. Scanner SCM revision '2304014450eb60438a82a733906bcf2929119e9d' matches current HEAD; QUALITY GATE STATUS: PASSED on branch EPMCDME-14404_chargeback-settings. This is the SAST gate that normally skips locally."
+    },
+    {
+      "id": "wait-ci-init",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": ".gitlab-ci.yml wait-ci-init (pre-ci-guard template)",
+      "exit_code": null,
+      "notes": "The only job in .gitlab-ci.yml waits for external GitLab CI contexts (ci-pipeline, compliance-report) and cannot run outside a merge_request_event pipeline. The KubeRocketCI review pipeline (sonar, gitleaks-scan, dockerfile-lint, dockerbuild-verify) is defined outside the repo in epm-cdme/codemie-gitlab-templates. sonar is covered locally by sonar-local (PASS); gitleaks by secrets (PASS); dockerfile-lint/dockerbuild-verify require CI infra and only CI can settle them."
+    }
+  ],
+  "failures": {}
+}

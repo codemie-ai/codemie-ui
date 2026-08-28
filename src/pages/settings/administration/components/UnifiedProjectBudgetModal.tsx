@@ -24,12 +24,16 @@ import Select from '@/components/form/Select/Select'
 import Textarea from '@/components/form/Textarea/Textarea'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner/Spinner'
+import { useFeatureFlag, useProjectChargebackEnabled } from '@/hooks/useFeatureFlags'
 import { projectBudgetsStore } from '@/store/projectBudgets'
+import { projectsStore } from '@/store/projects'
 import { BudgetCategory } from '@/types/entity/budget'
 import { CategoryBudgetSpec, ProjectBudgetGroup } from '@/types/entity/projectBudgetGroup'
+import { ProjectDetail } from '@/types/entity/projectManagement'
 import toaster from '@/utils/toaster'
 
 import BudgetCategoryTable from './BudgetCategoryTable'
+import ChargebackSettings, { ChargebackSettingsValue } from './ChargebackSettings'
 import UnifiedBudgetDragBar, { PctMap } from './UnifiedBudgetDragBar'
 
 const CATS: BudgetCategory[] = ['platform', 'cli', 'premium_models']
@@ -39,6 +43,8 @@ const DURATION_OPTIONS = [
   { label: 'Weekly (7d)', value: '7d' },
   { label: 'Monthly (30d)', value: '30d' },
 ]
+
+const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
 
 const DEFAULT_PCTS: PctMap = { platform: 30, cli: 60, premium_models: 10 }
 const ZERO_PCTS: PctMap = { platform: 0, cli: 0, premium_models: 0 }
@@ -64,7 +70,7 @@ const schema = Yup.object({
     .typeError('Must be a number')
     .positive('Must be greater than 0')
     .required('Total budget is required'),
-  description: Yup.string().trim().required('Description is required'),
+  description: Yup.string().trim().max(500).default(''),
 })
 
 export interface UnifiedProjectBudgetModalProps {
@@ -73,6 +79,8 @@ export interface UnifiedProjectBudgetModalProps {
   projectName: string
   onSaved?: () => void
   forceCreate?: boolean
+  project?: ProjectDetail | null
+  canManageBudgets?: boolean
 }
 
 const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
@@ -81,12 +89,37 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   projectName,
   onSaved,
   forceCreate = false,
+  project = null,
+  canManageBudgets = false,
 }) => {
   const [pcts, setPcts] = useState<PctMap>({ ...DEFAULT_PCTS })
   const [softs, setSofts] = useState<PctMap>({ ...ZERO_PCTS })
   const [existingGroup, setExistingGroup] = useState<ProjectBudgetGroup | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [dataLoading, setDataLoading] = useState(false)
+
+  const [isChargebackFeatureEnabled] = useProjectChargebackEnabled()
+  const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
+  const [chargeback, setChargeback] = useState<ChargebackSettingsValue>({
+    chargeback_enabled: false,
+    chargeback_attribution: 'project',
+  })
+  const [chargebackError, setChargebackError] = useState<string | null>(null)
+
+  // Seed chargeback state from the project on the open transition ONLY. Keying
+  // on `visible` alone (not the project reference) prevents a parent re-render
+  // that passes a new project object identity from re-seeding and wiping edits.
+  const prevVisibleRef = useRef(false)
+  useEffect(() => {
+    const justOpened = visible && !prevVisibleRef.current
+    prevVisibleRef.current = visible
+    if (!justOpened) return
+    setChargeback({
+      chargeback_enabled: project?.chargeback_enabled ?? false,
+      chargeback_attribution: project?.chargeback_attribution ?? 'project',
+    })
+    setChargebackError(null)
+  }, [visible, project])
 
   // Snapshot of soft/hard amounts captured at the start of an interaction
   // (drag, typed change, button press) so soft scaling stays exact.
@@ -131,6 +164,12 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
 
   const sumPctError =
     Math.abs(round2(pcts.platform) + round2(pcts.cli) + round2(pcts.premium_models) - 100) > 0.5
+
+  // Chargeback (enable + attribution) is only persisted when the feature is on
+  // and the user can edit. The cost center itself is linked on the project edit
+  // form, not here; the "attribute to a cost center" toggle is disabled until one
+  // is linked, so cost_center attribution can never be saved without a center.
+  const chargebackWritable = isChargebackFeatureEnabled && canManageBudgets
 
   const populateFromGroup = useCallback(
     (plan: ProjectBudgetGroup) => {
@@ -294,6 +333,32 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   const onFormSubmit: SubmitHandler<FormValues> = async (data) => {
     if (hasSoftError || sumPctError) return
     setSubmitting(true)
+    setChargebackError(null)
+
+    // Save order is fail-fast with no rollback: persist chargeback first, then save
+    // the budget. A failure here stops before the budget is written, leaving the modal
+    // open with the entered values so the user can retry. Only the chargeback
+    // enable/attribution is written here; the cost center link is a project-edit concern.
+    if (chargebackWritable) {
+      try {
+        await projectsStore.updateProject(projectName, {
+          chargeback_enabled: chargeback.chargeback_enabled,
+          // Cost centers gate attribution: with the feature off, the concept does not
+          // exist, so spend can only be attributed to the project itself.
+          chargeback_attribution: isCostCentersEnabled
+            ? chargeback.chargeback_attribution
+            : 'project',
+        })
+      } catch (error: any) {
+        const message =
+          error?.parsedError?.message ||
+          'Could not save chargeback settings. Your budget was not saved — please retry.'
+        setChargebackError(message)
+        setSubmitting(false)
+        return
+      }
+    }
+
     try {
       const categories: Record<BudgetCategory, CategoryBudgetSpec> = {
         platform: { pct: round2(pcts.platform), soft_budget: Math.round(softs.platform) },
@@ -400,7 +465,6 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
                 {...field}
                 id="description"
                 label="Description"
-                required
                 placeholder="What this budget is used for"
                 error={errors.description?.message}
                 rows={3}
@@ -462,6 +526,16 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
             onHardInputChange={onHardInputChange}
             onSoftInputChange={onSoftInputChange}
           />
+
+          <ChargebackSettings
+            value={chargeback}
+            hasCostCenter={Boolean(project?.cost_center_id)}
+            costCentersEnabled={isCostCentersEnabled}
+            canEdit={canManageBudgets}
+            onChange={setChargeback}
+          />
+
+          {chargebackError && <p className="text-sm text-failed-secondary">{chargebackError}</p>}
         </form>
       )}
     </Popup>

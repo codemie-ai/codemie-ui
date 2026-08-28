@@ -1,0 +1,81 @@
+{
+  "decision": "approve",
+  "rationale": "All 4 prior blocking code findings are resolved and confirmed against HEAD source. CR-001: seed effect now keyed on the open transition via prevVisibleRef (dep array still [visible, project] but a mid-open project-identity change no longer re-seeds). CR-002: submit is both disabled and guarded when chargeback_enabled && attribution==='cost_center' && no linked center, with an inline message. CR-003: clear_cost_center:true is sent when attribution leaves cost_center and a center was previously linked, matching the projects.ts mapping (clear_cost_center ? undefined : cost_center_id). CR-004: new ProjectBudgetsSection.test.tsx asserts project/canManageBudgets prop threading (present and null-default cases). No new blocking issue: the clear logic only clears when project.cost_center_id was already persisted, consistent with the deferred inline-link flow.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "ProjectRequest carries chargeback_enabled and chargeback_attribution", "status": "pass", "notes": "ChargebackAttribution type + both fields added to ProjectRequest in src/types/entity/project.ts" },
+    { "kind": "spec", "item": "projectsStore.updateProject PATCH whitelist extended with chargeback fields", "status": "pass", "notes": "projects.ts adds chargeback_enabled/chargeback_attribution to the PATCH body; covered by projects.test.ts EPMCDME-14404 case" },
+    { "kind": "spec", "item": "AC1: chargeback fields on ProjectDetail and ProjectUpdatePayload", "status": "pass", "notes": "added to ProjectListItem (ProjectDetail extends it, projectManagement.ts:57) and to ProjectUpdatePayload:109-110" },
+    { "kind": "spec", "item": "AC2: features:projectChargeback in constants, util, and hook layers", "status": "pass", "notes": "PROJECT_CHARGEBACK flag; isProjectChargebackEnabled util; useProjectChargebackEnabled hook; util covered by featureFlags.test.ts" },
+    { "kind": "spec", "item": "AC3: chargeback toggle hosted by the approved modal(s), gated by the flag", "status": "pass", "notes": "gating correct (ChargebackSettings returns null when off); scope limited to UnifiedProjectBudgetModal, verified: ProjectBudgetModal has no importers (dead), BudgetAssignmentsModal is user-scoped" },
+    { "kind": "spec", "item": "AC4: attribution choice with project default and cost_center alternative", "status": "pass", "notes": "ChargebackSettings radiogroup, ATTRIBUTION_OPTIONS project/cost_center, handleToggle defaults to project; covered by ChargebackSettings.test.tsx" },
+    { "kind": "spec", "item": "AC5: cost_center with no link shows single Create action, no picker", "status": "pass", "notes": "renders only the Create Cost Center button when no linked name; test asserts no combobox" },
+    { "kind": "spec", "item": "AC6: inline create links the new cost center before saving the budget", "status": "pass", "notes": "useInlineCostCenterCreate.submit creates then onCreated links; save PATCHes cost_center_id before budget save; covered by tests" },
+    { "kind": "spec", "item": "AC7: create->link->save-budget, fail-fast, no-rollback naming failed step, retry", "status": "pass", "notes": "onFormSubmit PATCHes chargeback first; catch sets chargebackError, returns before budget save, keeps modal open; ordering/fail-fast covered" },
+    { "kind": "spec", "item": "AC8: non-editors see toggle and attribution in a read-only state", "status": "pass", "notes": "canEdit={canManageBudgets} threaded; Switch/RadioButton disabled; covered by ChargebackSettings + Unified non-editor tests" },
+    { "kind": "spec", "item": "AC9: Vitest coverage of modal state, flag branching, attribution, inline-create, read-only", "status": "pass", "notes": "three test files cover these for the wired modal; prop-threading path now covered by ProjectBudgetsSection.test.tsx (CR-004)" },
+    { "kind": "spec", "item": "AC10: nested cost-center popup focus-trap and z-index behavior", "status": "pending-stage-7", "notes": "jsdom test asserts name-field focusability only; focus-trap/z-index stacking are browser-only, runtime proof owned by Stage 7" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "5 subjects in range match EPMCDME-XXXX: Capital sentence format (non-zero ID, uppercase first word, no trailing period)" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide in repo (.ai-run/guides/standards/code-quality.md absent, no ref passed); absent standard, not a coverage gap" },
+    { "kind": "security", "status": "pass", "notes": "no new HTML sink (cost-center name rendered as escaped text), no untrusted navigation, no postMessage, no env/config secret exposure, no nosonar/nginx change; typed fields and costCentersStore follow existing patterns" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/UnifiedProjectBudgetModal.tsx",
+      "line": 120,
+      "title": "Seed effect re-runs on project prop change, wiping edits",
+      "problem": "The chargeback seed effect's dependency array is [visible, project], so it re-seeds not only on open but on every change of the project prop identity, resetting chargeback, linkedCostCenter (including an inline-created center) and chargebackError.",
+      "impact": "A parent re-render passing a new project object while the modal is open silently discards in-progress chargeback edits and an inline-created/linked cost center. Reachability depends on the parent passing a new project identity while the modal stays visible, which was not confirmed in the diff.",
+      "recommendation": "Key the seed on the open transition only (e.g. track previous visible) instead of the project reference, or guard the re-seed so it does not run while the modal is already open with unsaved edits."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/UnifiedProjectBudgetModal.tsx",
+      "line": 346,
+      "title": "Cost-center attribution can be saved with no linked center",
+      "problem": "onFormSubmit computes costCenterId = attribution==='cost_center' ? linkedCostCenter?.id : undefined and PATCHes with no validation; enabling chargeback, choosing 'Cost center' and never creating/linking one submits chargeback_attribution:'cost_center' with cost_center_id: undefined. The submit button is never disabled for this state.",
+      "impact": "An inconsistent chargeback configuration (cost_center attribution with no cost center) is persisted to the project. Whether the backend rejects or stores it is unverified.",
+      "recommendation": "Block submit (or show a validation error) when chargeback_enabled && attribution==='cost_center' && !linkedCostCenter?.id, requiring a linked or created cost center before save."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/UnifiedProjectBudgetModal.tsx",
+      "line": 346,
+      "title": "Switching attribution away leaves a stale cost-center link",
+      "problem": "When the user switches attribution from 'cost_center' back to 'project', costCenterId resolves to undefined and clear_cost_center is never set; projectsStore maps cost_center_id: data.clear_cost_center ? undefined : data.cost_center_id, so the PATCH carries cost_center_id: undefined with no clear flag.",
+      "impact": "A previously linked cost center is likely left in place on the backend after the user visibly deselected cost_center attribution, leaving a stale link. The exact backend PATCH semantics for an undefined cost_center_id were not observable in the diff.",
+      "recommendation": "Send clear_cost_center: true (or an explicit null) when attribution is 'project' and a cost center was previously linked, so the deselection is persisted."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx",
+      "line": 206,
+      "title": "Chargeback prop wiring is untested end to end",
+      "problem": "project and canManageBudgets are threaded ProjectDetailsPage -> ProjectBudgetsSection -> UnifiedProjectBudgetModal to seed and persist chargeback, but no test exercises the threading: the modal tests pass props directly, ProjectDetailsPage.test asserts nothing about the budget section props (its mockProject omits chargeback fields), and ProjectBudgetsSection has no test file.",
+      "impact": "A future dropped or mis-wired prop (project=null seeds disabled and overwrites saved settings; canManageBudgets=false skips the chargeback block) would not be caught by any test. The wiring in this diff is correct; the gap is coverage of changed behavior (AC9).",
+      "recommendation": "Add a test rendering ProjectDetailsPage or ProjectBudgetsSection with a project carrying chargeback_enabled/attribution/cost_center_id and asserting the modal seeds those values and updateProject is called with them."
+    }
+  ],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "HEAD UnifiedProjectBudgetModal.tsx:122-137 adds prevVisibleRef; seed runs only on the false->true visible transition (justOpened), so a new project prop identity while open no longer re-seeds. New test asserts an in-progress attribution edit survives a parent re-render." },
+    { "id": "CR-002", "status": "resolved", "notes": "HEAD:187-192 derives chargebackMissingCostCenter; onFormSubmit (355-358) blocks with an inline message and submitDisabled (450) disables the button when cost_center attribution has no linked center. New test asserts updateProject is not called and the message shows." },
+    { "id": "CR-003", "status": "resolved", "notes": "HEAD:370-380 sends clear_cost_center:true when attribution leaves cost_center and project.cost_center_id was set; projects.ts:262-263 maps clear_cost_center to an explicit clear (cost_center_id undefined). New test asserts the exact PATCH payload with clear_cost_center:true." },
+    { "id": "CR-004", "status": "resolved", "notes": "New ProjectBudgetsSection.test.tsx asserts project/canManageBudgets are threaded to the modal (present case) and default to null/false; ProjectBudgetsSection.tsx:203-211 wires both props into UnifiedProjectBudgetModal." }
+  ]
+}
