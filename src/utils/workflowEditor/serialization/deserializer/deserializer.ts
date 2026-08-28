@@ -49,7 +49,10 @@ import { SerializedWorkflowConfig, SerializedState, SerializedMetaState } from '
 /** Parses YAML string into SerializedWorkflowConfig */
 const parseYaml = (yamlString: string): SerializedWorkflowConfig => {
   try {
-    const config = yaml.load(yamlString, { json: true }) as SerializedWorkflowConfig // json: true allows duplicate keys
+    const config = yaml.load(yamlString, {
+      json: true,
+      schema: yaml.CORE_SCHEMA,
+    }) as SerializedWorkflowConfig // json: true allows duplicate keys; CORE_SCHEMA keeps date-like strings as strings (matching serializer)
 
     if (!config || !isObject(config)) {
       return { states: [] }

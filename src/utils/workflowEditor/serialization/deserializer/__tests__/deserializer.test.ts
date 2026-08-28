@@ -19,8 +19,10 @@ import { join } from 'node:path'
 import { describe, it, expect, beforeAll } from 'vitest'
 
 import { NodeTypes } from '@/types/workflowEditor/base'
+import { ToolStateConfiguration } from '@/types/workflowEditor/configuration'
 import { START_NODE_ID, END_NODE_ID } from '@/utils/workflowEditor/constants'
 
+import { serialize } from '../../serializer'
 import { deserialize } from '../deserializer'
 
 const loadFixture = (filename: string): string => {
@@ -239,5 +241,50 @@ describe('deserialize - workflow with same iter_key on different parents', () =>
       (s) => s._meta.type === NodeTypes.ITERATOR && s._meta.data.next?.iter_key === 'items'
     )
     expect(iteratorNodes.length).toBe(1)
+  })
+})
+
+describe('deserialize - YAML with date-like scalars in tool_args', () => {
+  it('keeps unquoted date-only value as a string through the round-trip', () => {
+    const yamlWithDate = `
+states:
+  - id: fetch_data
+    tool_id: my-tool
+    tool_args:
+      start_date: 2023-01-15
+      label: some-string
+`.trim()
+
+    const config = deserialize(yamlWithDate)
+
+    const fetchState = config.states.find((s) => s.id === 'fetch_data') as ToolStateConfiguration
+    expect(typeof fetchState?.tool_args?.start_date).toBe('string')
+    expect(fetchState?.tool_args?.start_date).toBe('2023-01-15')
+
+    expect(() => serialize(config)).not.toThrow()
+
+    const yamlOut = serialize(config)
+    expect(yamlOut).toContain('2023-01-15')
+  })
+
+  it('keeps datetime-with-timezone value as the exact original string through the round-trip', () => {
+    const yamlWithTzDate = `
+states:
+  - id: fetch_data
+    tool_id: my-tool
+    tool_args:
+      start_date: 2023-01-15T10:30:00+05:00
+`.trim()
+
+    const config = deserialize(yamlWithTzDate)
+
+    const fetchState = config.states.find((s) => s.id === 'fetch_data') as ToolStateConfiguration
+    expect(typeof fetchState?.tool_args?.start_date).toBe('string')
+    expect(fetchState?.tool_args?.start_date).toBe('2023-01-15T10:30:00+05:00')
+
+    expect(() => serialize(config)).not.toThrow()
+
+    const yamlOut = serialize(config)
+    expect(yamlOut).toContain('2023-01-15T10:30:00+05:00')
   })
 })
