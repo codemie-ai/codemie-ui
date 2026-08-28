@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "task": "Fix workflow chat intro to display the workflow's configured description, mirroring existing assistant chat behavior, instead of silently failing when the shared ChatPromptStarters component queries the wrong (assistant) endpoint for workflow chats.",
+  "generated": "2026-08-17",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 11,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Fix is fully localized to one component, src/pages/chat/components/ChatPrompt/ChatPromptStarters.tsx, which needs a new branch on the already-established currentChat?.isWorkflow discriminator (precedent in ChatHeader.tsx and ChatConfigAssistants.tsx) to call the existing workflowsStore.getWorkflow() instead of assistantsStore.getAssistant(). No new store methods, types, or endpoints are required." },
+    { "dimension": "technical_risk", "reason": "The branching and fetch-then-cache patterns being extended are both established idioms elsewhere in the same feature area, keeping novelty low. The main risk factor is zero existing test coverage for the component being changed (parent test fully stubs it out), which means new tests must be written from scratch to guard the acceptance criterion that existing assistant-chat behavior stays unchanged." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

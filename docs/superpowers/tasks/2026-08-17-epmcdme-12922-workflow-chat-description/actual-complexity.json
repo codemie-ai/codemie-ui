@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "task": "Workflow chat now displays the workflow's configured description on the intro/start screen, mirroring assistant chat's description display, by branching on currentChat?.isWorkflow inside ChatPromptStarters and adding an optional skipErrorHandling param to workflowsStore.getWorkflow.",
+  "generated": "2026-08-17",
+  "mode": "actual",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 12,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "The actual diff touched two coordinated components, not one: the UI component ChatPromptStarters.tsx (added the workflow branch reading workflowsStore.workflows cache / calling getWorkflow) and the store module src/store/workflows.ts (added an optional skipErrorHandling param to getWorkflow, threaded to the api client). This is 2 components across 2 layers with a clear, pre-existing analog (assistantsStore.getAssistant already took skipErrorHandling), placing it at M rather than a single self-contained S-tier change." },
+    { "dimension": "affected_layers", "reason": "Exactly 2 layers changed: UI (ChatPromptStarters.tsx) and Store/state (workflowsStore.getWorkflow signature). No API route, schema, or external service was touched — a simple handoff over an already-established interface." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null,
+  "delta_from_initial": {
+    "initial_total": 11,
+    "initial_size": "S",
+    "actual_total": 12,
+    "actual_size": "S",
+    "size_changed": false,
+    "dimension_deltas": [
+      {
+        "dimension": "component_scope",
+        "initial_score": 2,
+        "actual_score": 3,
+        "explanation": "Initial estimate assumed the fix was fully localized to ChatPromptStarters.tsx alone ('no new store methods... required'). The actual implementation also modified src/store/workflows.ts to add the skipErrorHandling parameter to getWorkflow, so the change spanned 2 coordinated components instead of 1."
+      }
+    ],
+    "unchanged_dimensions": ["requirements_clarity", "technical_risk", "file_change_estimate", "dependencies", "affected_layers"],
+    "summary": "Total score rose by 1 point (11 -> 12) driven entirely by Component Scope (S -> M) once the actual store-layer change was accounted for; the overall size stayed S in both estimate and actual, so the estimate was directionally accurate and only slightly optimistic on scope."
+  }
+}

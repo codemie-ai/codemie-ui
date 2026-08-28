@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "All three review lenses ran and returned parseable output. Acceptance lens audited all 11 criterion rows against spec.md and the Jira AC and returned pass on every row, with no fail/partial findings. Blind and edge-case lenses raised 9 distinct concerns (pre-existing async/cache patterns mirrored unchanged from the assistant branch, an untested cache-hit branch, and a getWorkflow signature change); none reached critical/major severity as a new regression introduced by this diff. 6 findings deferred (pre-existing patterns not worsened by this change, or a real-but-optional test-coverage gap outside the spec's 5 named test scenarios) and 3 dismissed (intentional silent-degradation design per spec, and the getWorkflow signature change verified via grep against all 3 existing call sites plus api.ts's `!skipErrorHandling` check as not altering behavior for existing callers). No blocking standards violations: git-workflow.md commit-format compliance confirmed via precedent match against git log; code-quality.md and security-patterns.md guides are absent from this repo, so no coverage gap is claimed against them.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "Workflow chat displays the workflow description when the workflow has a configured description", "status": "pass" },
+    { "criterion": "Description is shown via the cached workflow entry when already loaded in workflowsStore.workflows", "status": "pass" },
+    { "criterion": "Description is fetched via workflowsStore.getWorkflow(id, true) when not cached", "status": "pass" },
+    { "criterion": "Description shown in the same location/style used for assistant chat (shared JSX, no new render branch)", "status": "pass" },
+    { "criterion": "If no workflow description is configured, no empty placeholder or broken layout is shown", "status": "pass" },
+    { "criterion": "Workflow fetch failures degrade silently to no description (no thrown error, no broken UI)", "status": "pass" },
+    { "criterion": "Existing assistant chat description behavior (cache-hit and fetch paths) is unchanged", "status": "pass" },
+    { "criterion": "assistantsStore.getAssistant is not called for workflow chats", "status": "pass" },
+    { "criterion": "workflowsStore.getWorkflow is not called for assistant chats", "status": "pass" },
+    { "criterion": "Works for existing workflows (has description) and newly created workflows (has description)", "status": "pass" },
+    { "criterion": "getWorkflow's new skipErrorHandling param defaults to false and does not change behavior for its 3 existing call sites", "status": "pass" }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow.md — commit message format (EPMCDME-XXXX: Capital sentence)", "status": "pass", "notes": "Both commits (2f362e195, 0e236fd1e) match the documented pattern; confirmed via precedent match against git log of prior commits on this branch." },
+    { "standard": "code-quality.md", "status": "na", "notes": "Guide not present in this repo; not a coverage gap per project convention of not inventing standards when guides are absent." },
+    { "standard": "security-patterns.md", "status": "na", "notes": "Guide not present in this repo; no concrete security issue was found in the diff regardless." }
+  ],
+  "findings": []
+}

@@ -76,7 +76,7 @@ interface WorkflowsStore {
   clearWorkflowsFilters: () => void
   setWorkflowsPagination: (page?: number, perPage?: number) => void
   fetchWorkflow: (id: string | number) => Promise<Workflow>
-  getWorkflow: (id: string | number) => Promise<Workflow>
+  getWorkflow: (id: string | number, skipErrorHandling?: boolean) => Promise<Workflow>
   workflowTemplatesPagination: Pagination
   indexWorkflowTemplates: (page?: number, perPage?: number, name?: string) => Promise<void>
 
@@ -222,8 +222,8 @@ export const workflowsStore = proxy<WorkflowsStore>({
     }
   },
 
-  async getWorkflow(id: string | number): Promise<Workflow> {
-    const response = await api.get(`v1/workflows/id/${id}`)
+  async getWorkflow(id: string | number, skipErrorHandling = false): Promise<Workflow> {
+    const response = await api.get(`v1/workflows/id/${id}`, { skipErrorHandling })
     return response.json()
   },
 

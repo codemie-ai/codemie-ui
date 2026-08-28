@@ -23,6 +23,7 @@ import { AvatarType } from '@/constants/avatar'
 import { useTheme } from '@/hooks/useTheme'
 import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
+import { workflowsStore } from '@/store/workflows'
 
 interface ChatPromptStartersProps {
   onStarterClick: (prompt: string) => void
@@ -31,6 +32,7 @@ interface ChatPromptStartersProps {
 const ChatPromptStarters: FC<ChatPromptStartersProps> = ({ onStarterClick }) => {
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
   const { assistants } = useSnapshot(assistantsStore) as typeof assistantsStore
+  const { workflows } = useSnapshot(workflowsStore)
   const [description, setDescription] = useState<string | null>(null)
   const { appearance } = useTheme()
 
@@ -44,17 +46,38 @@ const ChatPromptStarters: FC<ChatPromptStartersProps> = ({ onStarterClick }) => 
       return
     }
 
-    const cached = assistants.find((a) => a.id === lastAssistant.id)
-    if (cached?.description) {
-      setDescription(cached.description)
-      return
+    const applyWorkflowDescription = () => {
+      const cachedWorkflow = workflows.find((w) => w.id === lastAssistant.id)
+      if (cachedWorkflow?.description) {
+        setDescription(cachedWorkflow.description)
+        return
+      }
+
+      workflowsStore
+        .getWorkflow(lastAssistant.id, true)
+        .then((workflow) => setDescription(workflow.description ?? null))
+        .catch(() => setDescription(null))
     }
 
-    assistantsStore
-      .getAssistant(lastAssistant.id, true)
-      .then((assistant) => setDescription(assistant.description ?? null))
-      .catch(() => setDescription(null))
-  }, [lastAssistant?.id])
+    const applyAssistantDescription = () => {
+      const cached = assistants.find((a) => a.id === lastAssistant.id)
+      if (cached?.description) {
+        setDescription(cached.description)
+        return
+      }
+
+      assistantsStore
+        .getAssistant(lastAssistant.id, true)
+        .then((assistant) => setDescription(assistant.description ?? null))
+        .catch(() => setDescription(null))
+    }
+
+    if (currentChat?.isWorkflow) {
+      applyWorkflowDescription()
+    } else {
+      applyAssistantDescription()
+    }
+  }, [lastAssistant?.id, currentChat?.isWorkflow])
 
   const title = lastAssistant
     ? 'Hi there, how can we help today?'
