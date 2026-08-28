@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "rationale": "All three review lenses ran successfully. Blind lens flagged that aria-hidden propagation to the real SVG root was unverified from the diff alone; the edge-case lens confirmed by reading vite.config.ts and package.json that vite-plugin-svgr 4.3.0 defaults to expandProps: 'end', so aria-hidden does reach the rendered <svg> element, refuting the concern. Acceptance lens checked every criterion and constraint in plan.md against the diff: all pass (sentence-case aria-label, aria-hidden on the icon, title removed, ChatSidebarAccordion.tsx untouched, test mock and assertions match the plan). Two process-only criteria (test-first red/green sequence, full-suite regression run) are marked n/a — not verifiable from a static diff; these are covered by qa-gates in Stage 6. Commit message 'EPMCDME-8426: Fix duplicate role announcement on create folder button' matches the project's git-workflow.md format. No security, correctness, or blocking standards issues found. 2 findings dismissed, 2 deferred (see below) — none block.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "aria-label uses sentence case 'Create folder', matching project convention", "status": "pass", "notes": "aria-label=\"Create folder\" (lowercase f)"},
+    {"criterion": "Icon-only button gets aria-label; decorative icon gets aria-hidden='true'", "status": "pass", "notes": "Matches the project's documented Icon Button Pattern"},
+    {"criterion": "title=\"Create Folder\" is removed from the button", "status": "pass", "notes": "Replaced, not supplemented, by aria-label"},
+    {"criterion": "ChatSidebarAccordion.tsx and PrimeReact pt overrides not modified", "status": "pass", "notes": "Diff touches only ChatSidebarLists.tsx and its test file"},
+    {"criterion": "Test mock extended to render headerContentTemplate so the button is actually rendered in tests", "status": "pass", "notes": "Mock now renders headerContentTemplate alongside children"},
+    {"criterion": "SVG mock updated to forward props so aria-hidden is assertable", "status": "pass", "notes": "Mock changed from () => <span> to (props) => <span {...props}>"},
+    {"criterion": "New test asserts button found by role with accessible name 'Create folder'", "status": "pass", "notes": "screen.getByRole('button', { name: 'Create folder' })"},
+    {"criterion": "New test asserts no title attribute on the button", "status": "pass", "notes": "expect(...).not.toHaveAttribute('title')"},
+    {"criterion": "New test asserts icon has aria-hidden='true'", "status": "pass", "notes": "expect(icon).toHaveAttribute('aria-hidden', 'true')"},
+    {"criterion": "Commit message matches required format/subject", "status": "pass", "notes": "b6f3f5f1e: 'EPMCDME-8426: Fix duplicate role announcement on create folder button'"},
+    {"criterion": "Test-first red/green sequence actually followed", "status": "na", "notes": "Process step, not verifiable from a static diff"},
+    {"criterion": "Full ChatSidebar suite run for regressions", "status": "na", "notes": "Process step; covered by qa-gates at Stage 6"}
+  ],
+  "standards_review": [
+    {"standard": "Commit message format (.ai-run/guides/standards/git-workflow.md)", "status": "pass", "notes": "Matches 'EPMCDME-XXXX: Capital sentence' pattern"}
+  ],
+  "findings": []
+}

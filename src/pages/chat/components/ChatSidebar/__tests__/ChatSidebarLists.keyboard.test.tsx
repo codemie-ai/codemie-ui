@@ -78,7 +78,7 @@ describe('ChatSidebarLists — keyboard activation of the Create Folder trigger'
     const user = userEvent.setup()
     render(<ChatSidebarLists />)
 
-    const trigger = screen.getByTitle('Create Folder')
+    const trigger = screen.getByRole('button', { name: 'Create folder' })
     const expandedBefore = foldersHeader().getAttribute('aria-expanded')
 
     trigger.focus()
@@ -93,7 +93,7 @@ describe('ChatSidebarLists — keyboard activation of the Create Folder trigger'
     const user = userEvent.setup()
     render(<ChatSidebarLists />)
 
-    const trigger = screen.getByTitle('Create Folder')
+    const trigger = screen.getByRole('button', { name: 'Create folder' })
     const expandedBefore = foldersHeader().getAttribute('aria-expanded')
 
     trigger.focus()

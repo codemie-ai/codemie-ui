@@ -1,0 +1,4 @@
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"plan","status":"succeeded"}
+{"schema":1,"ts":"2026-08-17T07:27:23Z","event":"decision.recorded","run_id":"epmcdme-8426-fix-duplicate-btn-role-announcement","phase":5,"actor":"decision-router","summary":"Decision recorded for code-review.final: approve","artifacts":["decisions.jsonl"],"data":{"gate_id":"code-review.final","mode":"hitl","decision":"approve","source":"hitl","escalated":false,"prior_context":{"question":"Code review approve, high confidence, 0 blocking findings. Approve and move to Stage 6?","options":["Approve","Request changes"],"phase":5,"risk_flags":[]}}}
+{"event":"lifecycle_emission","intent":"record_complexity_score","mode":"actual","status":"skipped"}
+{"event":"work_item.adapter_receipt","intent":"attach_complexity_artifact","status":"failed","note":"codemie-jira-assistant CLI not registered locally (codemie setup assistants required); PBI comment not posted"}

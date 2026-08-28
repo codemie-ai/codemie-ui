@@ -166,7 +166,10 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
   const createFolderButton = (
     <button
       type="button"
-      title="Create Folder"
+      aria-label="Create folder"
+      data-tooltip-id="react-tooltip"
+      data-tooltip-content="Create folder"
+      data-tooltip-place="top"
       className="flex items-center cursor-pointer"
       onKeyDown={(e) => {
         // This button renders inside the accordion's header action, which
@@ -180,7 +183,7 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
         setActivePopup('folder-form')
       }}
     >
-      <AddFolderSvg className="opacity-80 hover:opacity-100" />
+      <AddFolderSvg aria-hidden="true" className="opacity-80 hover:opacity-100" />
     </button>
   )
 

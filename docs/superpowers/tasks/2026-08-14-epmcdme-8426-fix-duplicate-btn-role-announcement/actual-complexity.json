@@ -1,0 +1,69 @@
+{
+  "task": "Fix duplicate screen-reader role announcement on the create-folder button by replacing title with aria-label and marking the decorative SVG aria-hidden (EPMCDME-8426).",
+  "generated": "2026-08-17T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "ChatSidebarLists",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 2,
+      "modified_file_list": [
+        "src/pages/chat/components/ChatSidebar/ChatSidebarLists/ChatSidebarLists.tsx",
+        "src/pages/chat/components/ChatSidebar/__tests__/ChatSidebarLists.test.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/pages/chat/components/ChatSidebar/ChatSidebarLists/",
+        "src/pages/chat/components/ChatSidebar/__tests__/"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 7,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "2 files changed per diffstat — both are modifications to existing files (component + test); Step 3 mapping rule places 2–3 files at S (2), the only dimension above XS."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Single component (ChatSidebarLists) with a two-attribute change: title removed, aria-label added to the button, aria-hidden added to its SVG child. No cross-cutting concerns."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

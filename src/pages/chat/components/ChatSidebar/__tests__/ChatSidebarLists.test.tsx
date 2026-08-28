@@ -34,8 +34,11 @@ vi.mock('@/store/chats', () => ({
 }))
 
 vi.mock('../ChatSidebarLists/ChatSidebarAccordion', () => ({
-  default: ({ children, title }: any) => (
-    <div data-testid={`accordion-${title.toLowerCase()}`}>{children}</div>
+  default: ({ children, title, headerContentTemplate }: any) => (
+    <div data-testid={`accordion-${title.toLowerCase()}`}>
+      {headerContentTemplate}
+      {children}
+    </div>
   ),
 }))
 
@@ -64,7 +67,7 @@ vi.mock('@/components/Spinner', () => ({
 }))
 
 vi.mock('@/assets/icons/folder-add.svg?react', () => ({
-  default: () => <span data-testid="folder-add-icon" />,
+  default: (props: any) => <span data-testid="folder-add-icon" {...props} />,
 }))
 
 describe('ChatSidebarLists', () => {
@@ -73,5 +76,18 @@ describe('ChatSidebarLists', () => {
     const tree = screen.getByRole('tree')
     expect(tree).toBeInTheDocument()
     expect(tree).toHaveAttribute('aria-label', 'Chats')
+  })
+
+  it('renders the create folder button following the shared icon-button pattern', () => {
+    render(<ChatSidebarLists />)
+    const createFolderButton = screen.getByRole('button', { name: 'Create folder' })
+    expect(createFolderButton).toBeInTheDocument()
+    // aria-label + shared react-tooltip instead of a native title tooltip
+    expect(createFolderButton).not.toHaveAttribute('title')
+    expect(createFolderButton).toHaveAttribute('data-tooltip-id', 'react-tooltip')
+    expect(createFolderButton).toHaveAttribute('data-tooltip-content', 'Create folder')
+
+    const icon = screen.getByTestId('folder-add-icon')
+    expect(icon).toHaveAttribute('aria-hidden', 'true')
   })
 })
