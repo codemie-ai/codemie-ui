@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Add workflow.description display to WorkflowExecutionConfigDetails component on the Workflow details page without any data layer changes.",
+  "generated": "2026-08-06T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single UI leaf component (WorkflowExecutionConfigDetails.tsx) plus a minor local interface update in the same file; workflow.description is already available as a prop — no cross-component or cross-layer coordination needed."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Target component is explicitly named and the implementation path is obvious; the only genuine ambiguity is AC5 ('documentation updated') which may require external coordination beyond this codebase, and a minor open question about whether to also surface description via PageLayout.subtitle (analysis rules this out as unsuitable for multi-line text)."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

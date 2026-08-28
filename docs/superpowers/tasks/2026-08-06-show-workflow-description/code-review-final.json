@@ -1,0 +1,79 @@
+{
+  "decision": "request-changes",
+  "rationale": "All 5 acceptance criteria pass. Three major findings require attention before handoff: (1) an unrelated vite.config.ts proxy change that breaks non-Docker development setups is included in the branch and must be reverted; (2) the falsy guard on `description` does not filter whitespace-only strings, which would render an empty padded/bordered div for blank descriptions; (3) the 'no description' integration test is vacuous — it checks for a string absent from its own fixture, so it cannot catch a regression where the description div renders without content. 0 deferred findings, 0 dismissed findings.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "AC1",
+      "status": "pass",
+      "notes": "PageLayout renders the description div between header and content with no permission gate. WorkflowDetailsPage passes description={workflow?.description}, visible to all users."
+    },
+    {
+      "criterion": "AC2",
+      "status": "pass",
+      "notes": "Plain <div> with break-words whitespace-pre-wrap. No input element. WorkflowExecutionConfigDetails renders no description."
+    },
+    {
+      "criterion": "AC3",
+      "status": "pass",
+      "notes": "ViewWorkflowConfiguration and WorkflowExecutionConfigDetails are unchanged. Unit test guards against accidental description rendering in the sidebar card."
+    },
+    {
+      "criterion": "AC4",
+      "status": "pass",
+      "notes": "Conditional render on workflow?.description; absent when undefined. Both cases covered by integration tests."
+    },
+    {
+      "criterion": "AC5",
+      "status": "na",
+      "notes": "Marked out of scope in the spec; external docs team follow-up required."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Both commits follow EPMCDME-XXXX: Capital sentence pattern."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "TypeScript types correct (ReactNode prop, optional chaining at call site). React patterns consistent with codebase."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No auth, secrets, injection, or unsafe handling. Description rendered as plain text within a React div (XSS not a concern for string values; ReactNode type allows arbitrary elements but that is consistent with how subtitle/title/rightContent props work on the same component)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "location": "vite.config.ts:180",
+      "problem": "Proxy target changed from `http://localhost:8080` to `http://host.docker.internal:8080`. This is a local developer environment change unrelated to EPMCDME-8251.",
+      "impact": "`host.docker.internal` only resolves inside a Docker container or Docker Desktop (macOS/Windows). Any developer running the Vite dev server directly on their host gets DNS-resolution failures on every proxied API call, silently breaking all backend connectivity. This would block other team members when merged to main.",
+      "recommendation": "Revert `vite.config.ts` to `http://localhost:8080` on this branch, or move Docker-specific proxy configuration to a gitignored `.env.local` override."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "location": "src/components/Layouts/Layout/PageLayout.tsx:113",
+      "problem": "The guard `{description && <div>}` does not filter whitespace-only strings. A `workflow.description` value of `\"   \"` is truthy, so the description div (with visible padding and a bottom border) renders with no visible content.",
+      "impact": "Blank or whitespace-only descriptions stored in the backend would produce an empty styled band below the page header, degrading the UI without conveying any information.",
+      "recommendation": "Trim at the call site in WorkflowDetailsPage: `description={workflow?.description?.trim() || undefined}`. This keeps PageLayout generic (it accepts any ReactNode) while ensuring only meaningful string values are passed."
+    },
+    {
+      "id": "CR-003",
+      "triage": "patch",
+      "severity": "major",
+      "location": "src/pages/workflows/__tests__/WorkflowDetailsPage.integration.test.tsx:149",
+      "problem": "The 'does not render a description element when workflow has no description' test asserts that the string 'Automates the nightly report pipeline' is absent. That string is only present in the first test's fixture, not in this test's fixture (description is undefined). The assertion therefore passes vacuously regardless of whether the description container is actually suppressed.",
+      "impact": "A regression removing the `&&` guard (causing the description div to always render, even when empty) would still pass this test, providing false confidence.",
+      "recommendation": "Add a `data-testid=\"page-description\"` attribute to the description div in PageLayout, then assert `expect(screen.queryByTestId('page-description')).not.toBeInTheDocument()`. Update the positive test to match: `expect(screen.getByTestId('page-description')).toHaveTextContent('Automates the nightly report pipeline')`."
+    }
+  ]
+}

@@ -37,6 +37,7 @@ describe('WorkflowDetailsPage - Integration', () => {
     yaml_config_history: [],
     update_date: '2026-01-01T00:00:00Z',
     user_abilities: ['read', 'write', 'delete'],
+    description: undefined,
     ...overrides,
   })
 
@@ -124,6 +125,46 @@ describe('WorkflowDetailsPage - Integration', () => {
     await waitFor(() => expect(screen.getByText('My Workflow')).toBeInTheDocument())
     await waitFor(() => expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument())
   }
+
+  describe('Workflow Description', () => {
+    it('shows description in the configuration panel when workflow has a description', async () => {
+      const execution = createExecutionFixture()
+      mockAPI(
+        'GET',
+        'v1/workflows/id/wf-123',
+        createWorkflowFixture({ description: 'Automates the nightly report pipeline' })
+      )
+      mockAPI('GET', 'v1/workflows/wf-123/executions', createExecutionsResponse([execution]))
+      mockAPI('GET', 'v1/workflows/wf-123/executions/exec-1', execution)
+      mockAPI('GET', 'v1/workflows/wf-123/executions/exec-1/states', {
+        data: [],
+        pagination: { page: 0, pages: 0, total: 0 },
+      })
+      renderPage('/workflows/wf-123/workflow-executions/exec-1')
+
+      await waitForPageLoaded()
+      await user.click(screen.getByRole('button', { name: /configuration/i }))
+      expect(screen.getByTestId('workflow-description')).toHaveTextContent(
+        'Automates the nightly report pipeline'
+      )
+    })
+
+    it('does not render a description element when workflow has no description', async () => {
+      const execution = createExecutionFixture()
+      mockAPI('GET', 'v1/workflows/id/wf-123', createWorkflowFixture({ description: undefined }))
+      mockAPI('GET', 'v1/workflows/wf-123/executions', createExecutionsResponse([execution]))
+      mockAPI('GET', 'v1/workflows/wf-123/executions/exec-1', execution)
+      mockAPI('GET', 'v1/workflows/wf-123/executions/exec-1/states', {
+        data: [],
+        pagination: { page: 0, pages: 0, total: 0 },
+      })
+      renderPage('/workflows/wf-123/workflow-executions/exec-1')
+
+      await waitForPageLoaded()
+      await user.click(screen.getByRole('button', { name: /configuration/i }))
+      expect(screen.queryByTestId('workflow-description')).not.toBeInTheDocument()
+    })
+  })
 
   describe('Initial Page Load', () => {
     it('shows sidebar heading, active execution and marks it as current', async () => {

@@ -13,7 +13,8 @@
 // limitations under the License.
 //
 
-import { FC } from 'react'
+import { FC, useLayoutEffect, useRef, useState } from 'react'
+
 
 import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import CopySvg from '@/assets/icons/copy.svg?react'
@@ -21,9 +22,10 @@ import Avatar from '@/components/Avatar/Avatar'
 import Button from '@/components/Button'
 import { ButtonSize } from '@/constants'
 import { AvatarType } from '@/constants/avatar'
+import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { Workflow } from '@/types/entity/workflow'
 import { canEdit } from '@/utils/entity'
-import { copyToClipboard } from '@/utils/utils'
+import { cn, copyToClipboard } from '@/utils/utils'
 
 interface WorkflowExecutionConfigDetailsProps {
   workflow: Workflow
@@ -34,6 +36,18 @@ const WorkflowExecutionConfigDetails: FC<WorkflowExecutionConfigDetailsProps> = 
   workflow,
   onConfigureClick,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+  const nameRef = useRef<HTMLHeadingElement>(null)
+  const isNameTruncated = useIsTruncated(nameRef)
+  const descRef = useRef<HTMLParagraphElement>(null)
+
+  useLayoutEffect(() => {
+    const el = descRef.current
+    if (!el) return
+    setIsOverflowing(el.scrollHeight > el.clientHeight)
+  }, [workflow.description])
+
   const handleCopyId = () => {
     copyToClipboard(workflow.id, 'Workflow ID copied')
   }
@@ -44,7 +58,14 @@ const WorkflowExecutionConfigDetails: FC<WorkflowExecutionConfigDetailsProps> = 
         <Avatar iconUrl={workflow.icon_url} name={workflow.name} type={AvatarType.CHAT} />
 
         <div className="flex flex-col mt-2 gap-1 min-w-0">
-          <h4 className="font-medium">{workflow.name}</h4>
+          <h4
+            ref={nameRef}
+            className="font-medium truncate"
+            data-tooltip-id="react-tooltip"
+            data-tooltip-content={isNameTruncated ? workflow.name : ''}
+          >
+            {workflow.name}
+          </h4>
 
           <div className="flex gap-1 items-center text-xs">
             <p
@@ -60,6 +81,32 @@ const WorkflowExecutionConfigDetails: FC<WorkflowExecutionConfigDetailsProps> = 
           </div>
         </div>
       </div>
+
+      {workflow.description && (
+        <div className="flex flex-col gap-1">
+          <p
+            ref={descRef}
+            className={cn(
+              'text-sm text-text-quaternary break-words whitespace-pre-wrap',
+              !isExpanded && 'line-clamp-4'
+            )}
+            data-testid="workflow-description"
+          >
+            {workflow.description}
+          </p>
+
+          {(isOverflowing || isExpanded) && (
+            <button
+              type="button"
+              className="self-start text-xs text-text-link cursor-pointer hover:underline focus-visible:outline-none"
+              data-testid="description-toggle"
+              onClick={() => setIsExpanded((prev) => !prev)}
+            >
+              {isExpanded ? 'Show less' : 'Show more'}
+            </button>
+          )}
+        </div>
+      )}
 
       {canEdit(workflow) && (
         <Button
