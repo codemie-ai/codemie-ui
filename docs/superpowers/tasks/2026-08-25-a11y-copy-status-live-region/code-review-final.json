@@ -1,0 +1,58 @@
+{
+  "decision": "request-changes",
+  "confidence": "high",
+  "risk_flags": [],
+  "gate_id": "code-review.final",
+  "artifacts_reviewed": {
+    "plan": "docs/superpowers/tasks/2026-08-25-a11y-copy-status-live-region/plan.md",
+    "diff": "docs/superpowers/tasks/2026-08-25-a11y-copy-status-live-region/code-review.diff"
+  },
+  "business_review": [
+    {"id": "T1-impl", "status": "pass", "notes": "setToasterAnnouncer exported; each toast method invokes announcer?.(text)"},
+    {"id": "T1-tests", "status": "partial", "notes": "New announcer tests present, but pre-existing XSS regression suite was dropped from the same file"},
+    {"id": "T2-impl", "status": "pass", "notes": "ToasterAnnouncer component matches plan; correct Announcement prop, useAnnouncementQueue, mount/unmount register/deregister"},
+    {"id": "T2-tests", "status": "pass", "notes": "4 tests: live region attrs, success + error mirroring, unmount deregistration"},
+    {"id": "T3-impl", "status": "pass", "notes": "Mounted above RouterProvider in main.tsx; single instance covers App and StandaloneLayout trees"},
+    {"id": "non-goal-css", "status": "pass", "notes": "No CSS diff"},
+    {"id": "non-goal-clipboard-consolidation", "status": "pass", "notes": "utils.ts / helpers.ts untouched"},
+    {"id": "non-goal-assertive", "status": "pass", "notes": "Error toasts stay polite, no role=alert added"}
+  ],
+  "standards_review": [
+    {"standard": "commit-format", "status": "pass", "notes": "Commit subject follows EPMCDME-NNNN: <desc> pattern"},
+    {"standard": "code-quality", "status": "pass", "notes": "Lint clean, typecheck clean"},
+    {"standard": "security", "status": "partial", "notes": "Pre-existing XSS regression tests were dropped alongside the new toaster suite; announcer forwards raw text with <br> tokens to live region (screen reader hears literal tag)"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/__tests__/toaster.test.ts",
+      "line": null,
+      "problem": "Pre-existing 'toaster XSS prevention' describe block was deleted when the file was rewritten to add the announcer suite. That block covered prepareText() sanitisation of <script> and <img onerror> payloads and was added under EPMCDME-12881.",
+      "impact": "Security regression coverage lost — a future change to prepareText or the Toastify call chain could silently break sanitisation with no failing test to catch it.",
+      "recommendation": "Restore the two XSS tests inside a separate describe block alongside the new announcer describe."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/appLevel/ToasterAnnouncer/ToasterAnnouncer.tsx",
+      "line": 35,
+      "problem": "useEffect cleanup unconditionally calls setToasterAnnouncer(null). If two ToasterAnnouncer instances briefly coexist (HMR hot-swap, accidental double mount), the first one's unmount evicts the second's registration.",
+      "impact": "In HMR sessions every toast is silently swallowed during the hot-reload window; a future double-mount would silently disable announcements entirely.",
+      "recommendation": "Add an `expected` parameter to setToasterAnnouncer that only clears when the current slot value matches; pass `announce` from the cleanup so a stale unmount is a no-op."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/toaster.ts",
+      "line": 109,
+      "problem": "announcer?.(text) forwards the raw text argument, including the <br> convention token used in multi-part error messages, to the live region. Announcement renders it as React text children (safe from XSS) but a screen reader announces the literal '<br>' string.",
+      "impact": "UX degradation for every multi-part status/error message using the header/content <br> convention (documented pattern throughout the app).",
+      "recommendation": "Add a toAnnouncement helper that strips <br> and any residual tags before invoking announcer."
+    }
+  ],
+  "rationale": "Three-lens fan-out (blind + edge-case + acceptance) on 415-line diff. Blind and acceptance converge on the dropped XSS test suite (CR-001). Edge-case surfaces the unconditional cleanup race (CR-002) and the literal-<br> screen-reader UX regression (CR-003). All three are actionable, small, non-speculative. Zero dismissed findings; zero deferred. Full unit suite (4689 tests) plus the new 9 announcer tests all green pre-fix. Findings block approve; fixes follow in check round."
+}

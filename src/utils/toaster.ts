@@ -91,21 +91,77 @@ interface Toaster {
   error: (text: string) => void
 }
 
+// Toastify writes its DOM directly into #toast-container, which screen readers do not reliably
+// pick up even with aria-live on the container. A React-owned announcer element (mounted once by
+// <ToasterAnnouncer />) registers itself through setToasterAnnouncer; each toast call routes its
+// plain text here in parallel with the visual toast (WCAG 4.1.3).
+let announcer: ((message: string) => void) | null = null
+
+/**
+ * Registers or clears the callback that mirrors toast text into the screen-reader live region.
+ *
+ * Pass a function to install it as the active announcer, or `null` to clear the slot — but a
+ * `null` call clears only when the current announcer is `expected`. That guard matters if two
+ * `<ToasterAnnouncer />` instances briefly coexist (HMR hot-swap, mistaken double-mount): the old
+ * instance's unmount cleanup must not evict the new instance's registration and silently swallow
+ * every subsequent toast.
+ */
+export const setToasterAnnouncer = (
+  fn: ((message: string) => void) | null,
+  expected?: ((message: string) => void) | null
+): void => {
+  if (fn === null && expected !== undefined && announcer !== expected) return
+  announcer = fn
+}
+
+// Toast messages use a `<header><br><content>` convention (see prepareText). The visual toast
+// renders sanitized HTML, but a screen reader must hear a plain sentence — otherwise the literal
+// `<br>` string is announced. Parse the source as HTML, swap <br> nodes for spaces so header and
+// content stay separated, then read textContent. Everything walks the input in linear time and
+// touches no regex — no ReDoS surface, and Sonar has no hotspot to review.
+const WHITESPACE_CHARS = new Set([' ', '\t', '\n', '\r', '\f', '\v'])
+
+const collapseWhitespace = (input: string): string => {
+  let out = ''
+  let prevWasSpace = true
+  for (const ch of input) {
+    if (WHITESPACE_CHARS.has(ch)) {
+      if (!prevWasSpace) {
+        out += ' '
+        prevWasSpace = true
+      }
+    } else {
+      out += ch
+      prevWasSpace = false
+    }
+  }
+  return prevWasSpace ? out.slice(0, -1) : out
+}
+
+const toAnnouncement = (text: string): string => {
+  const doc = new DOMParser().parseFromString(text, 'text/html')
+  doc.body.querySelectorAll('br').forEach((br) => br.replaceWith(' '))
+  return collapseWhitespace(doc.body.textContent ?? '')
+}
+
 const toaster: Toaster = {
   info: (text: string) => {
     if (!text) return
     Toastify({ ...defaultOpts, ...infoOpts, text: prepareText(text) }).showToast()
     fixCloseButton()
+    announcer?.(toAnnouncement(text))
   },
   success: (text: string) => {
     if (!text) return
     Toastify({ ...defaultOpts, ...successOpts, text: prepareText(text) }).showToast()
     fixCloseButton()
+    announcer?.(toAnnouncement(text))
   },
   error: (text: string) => {
     if (!text) return
     Toastify({ ...defaultOpts, ...errOpts, text: prepareText(text) }).showToast()
     fixCloseButton()
+    announcer?.(toAnnouncement(text))
   },
 }
 

@@ -19,6 +19,7 @@ import 'quill-mention/autoregister'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router/dom'
 
+import ToasterAnnouncer from '@/components/appLevel/ToasterAnnouncer/ToasterAnnouncer'
 import { redirectHashRoutes } from '@/utils/redirectHashRoutes'
 import { themeService } from '@/utils/themeService'
 import { setupGlobalTooltip } from '@/utils/tooltip'
@@ -39,4 +40,12 @@ setupGlobalTooltip()
 
 const root = document.getElementById('app')!
 
-ReactDOM.createRoot(root).render(<RouterProvider router={router} />)
+// Mounted above the router (not in App.tsx like the other appLevel components)
+// so the live region also covers the sign-in/sign-up routes, which render
+// outside App but still emit toasts.
+ReactDOM.createRoot(root).render(
+  <>
+    <ToasterAnnouncer />
+    <RouterProvider router={router} />
+  </>
+)

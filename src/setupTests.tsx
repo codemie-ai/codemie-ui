@@ -150,6 +150,10 @@ vi.mock('@/utils/toaster', () => ({
     success: vi.fn(),
     warning: vi.fn(),
   },
+  // Named export used by <ToasterAnnouncer /> — the app-root live region wiring. Any suite that
+  // renders a broad tree containing that component would throw TypeError inside its effect if this
+  // export were absent from the mock.
+  setToasterAnnouncer: vi.fn(),
 }))
 
 // ─── URL helpers ──────────────────────────────────────────────────────────────

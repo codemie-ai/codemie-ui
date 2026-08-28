@@ -1,0 +1,469 @@
+.../plan.md                                        |  56 +++++++++
+ .../technical-analysis.md                          | 134 +++++++++++++++++++++
+ .../appLevel/ToasterAnnouncer/ToasterAnnouncer.tsx |  43 +++++++
+ .../__tests__/ToasterAnnouncer.test.tsx            |  65 ++++++++++
+ src/main.tsx                                       |   8 +-
+ src/setupTests.tsx                                 |   4 +
+ src/utils/__tests__/toaster.test.ts                |  76 +++++++++++-
+ src/utils/toaster.ts                               |  37 ++++++
+ 8 files changed, 418 insertions(+), 5 deletions(-)
+
+Changes:
+
+docs/superpowers/tasks/2026-08-25-a11y-copy-status-live-region/plan.md
+  @@ -0,0 +1,56 @@
+  +# Plan — EPMCDME-8584 · a11y copy-status live-region
+  +
+  +## Context
+  +
+  +`src/utils/toaster.ts` wraps `toastify-js` and is the single funnel every status/copy toast flows through (Profile, Chat, Workflow, Data Sources, Configuration, Integrations). Toastify injects content via direct DOM writes into `<div id="toast-container" aria-live="polite">` — screen readers do not reliably pick those up. The established codebase pattern from EPMCDME-8489 is `src/components/Announcement/Announcement.tsx` + `src/hooks/useAnnouncementQueue.ts` (a React-controlled `<output aria-live="polite" aria-atomic="true" class="sr-only">` that owns its own state writes).
+  +
+  +## Approach
+  +
+  +One singleton bridge between `toaster.ts` (imperative, non-React) and one React-mounted `<Announcement>` element:
+  +
+  +1. `toaster.ts` gets a module-level announcer callback slot: `let announce: ((msg: string) => void) | null = null` and an exported `setToasterAnnouncer(fn)`. Every `info`/`success`/`error` call invokes `announce?.(text)` in addition to `Toastify().showToast()`.
+  +2. A tiny React component `ToasterAnnouncer` mounts `<Announcement>` via `useAnnouncementQueue`, and on mount calls `setToasterAnnouncer(queue.enqueue)`; on unmount clears it.
+  +3. Mount `<ToasterAnnouncer />` at the app root (renders exactly once, covers both `ToastContainer` and `StandaloneLayout` paths without duplication).
+  +
+  +`role="alert"` for errors is not needed here — copy confirmations are status messages (polite). Errors already have their own visual channel; upgrading to assertive is out of scope (a follow-up ticket if wanted).
+  +
+  +## Tasks
+  +
+  +### T1 — Add announcer callback to `toaster.ts`
+  +
+  +- Add `let announce: ((msg: string) => void) | null = null` module-level slot.
+  +- Export `setToasterAnnouncer(fn: ((msg: string) => void) | null): void`.
+  +- In each of `info`, `success`, `error` methods, call `announce?.(message)` before/after `.showToast()`.
+  +- Test-first: **yes** — new `src/utils/__tests__/toaster.test.ts`: register a spy via `setToasterAnnouncer`, call `Toaster.getInstance().success('copied')`, assert the spy was called with `'copied'`; call `setToasterAnnouncer(null)` and verify no throw and no invocation on next call.
+  +
+  +### T2 — Create `ToasterAnnouncer` component
+  +
+  +- New file `src/components/appLevel/ToasterAnnouncer/ToasterAnnouncer.tsx`.
+  +- Uses `useAnnouncementQueue()` → `{ message, enqueue }`.
+  +- Renders `<Announcement message={message} />`.
+  +- `useEffect(() => { setToasterAnnouncer(enqueue); return () => setToasterAnnouncer(null); }, [enqueue])`.
+  +- Test-first: **yes** — `src/components/appLevel/ToasterAnnouncer/__tests__/ToasterAnnouncer.test.tsx`: render `<ToasterAnnouncer />`, call `Toaster.getInstance().success('User name copied to clipboard')`, `await waitFor(() => expect(getByRole('status')).toHaveTextContent('User name copied to clipboard'))`. Reference: `src/components/form/RecordInput/__tests__/RecordInput.test.tsx`.
+  +
+  +### T3 — Mount `<ToasterAnnouncer />` once at app root
+  +
+  +- Add `<ToasterAnnouncer />` alongside/above the existing `<ToastContainer />` mount at the app root (find current mount site — likely `src/App.tsx` or `src/main.tsx` where the current `<ToastContainer />` lives).
+  +- Do NOT add a second `<ToasterAnnouncer />` in `StandaloneLayout` — the app-root mount covers standalone routes too (both share the same React tree). If routing splits the tree such that `StandaloneLayout` does not descend from the root mount, mount an additional instance inside `StandaloneLayout` **or** hoist the mount site higher. Verify by inspecting the render tree before deciding.
+  +- Test-first: **no** (integration wiring; unit tests for T1/T2 cover the mechanism, and Playwright/manual sr smoke covers the mount).
+  +
+  +## Non-goals
+  +
+  +- Consolidating the duplicate `copyToClipboard` in `src/utils/utils.ts` and `src/utils/helpers.ts` — cleanup opportunity but not required to fix the bug; both funnel through `toaster.ts` anyway.
+  +- Upgrading error toasts from `aria-live="polite"` to `role="alert"`/`assertive` — separate WCAG concern, follow-up ticket if wanted.
+  +- Visual/CSS changes — none. This is pure ARIA plumbing.
+  +
+  +## Verification
+  +
+  +- Unit tests (T1, T2) — Vitest + RTL, `getByRole('status')` + `waitFor`.
+  +- Manual: local compose stack, browser DevTools → confirm `<output role="status" aria-live="polite" aria-atomic="true" class="sr-only">` element exists at app root; trigger a copy action; DOM inspection shows the message text lands in that element.
+  +- No CSS diff (visual state unchanged — same toast visuals as before).
+  +
+  +## Risks / edge cases
+  +
+  +- Rapid identical toasts: `useAnnouncementQueue` already handles this via gap-and-clear cycle (proven from EPMCDME-8489).
+  +- Coexistence with per-instance `<Announcement>` from `RecordInput`/`FilesDropzone`: two live regions may both announce, but neither duplicates the other (different write sources). Acceptable.
+  +- `Toaster.getInstance()` singleton persists across tests — call `setToasterAnnouncer(null)` in `afterEach` to avoid cross-test leakage.
+  +56 -0
+
+docs/superpowers/tasks/2026-08-25-a11y-copy-status-live-region/technical-analysis.md
+  @@ -0,0 +1,134 @@
+  +# Technical Research
+  +
+  +**Task**: toast notifications copy-to-clipboard aria-live
+  +**Generated**: 2026-08-25T00:00:00Z
+  +**Research path**: codegraph
+  +
+  +---
+  +
+  +## 1. Original Context
+  +
+  +EPMCDME-8584 — Bug: "Status message about successful copied is not announced" (WCAG 4.1.3). Copy-to-clipboard success toasts (e.g. "User name copied to clipboard") are visually shown but not announced by screen readers. Affects many places per ticket: Profile (Copy User ID, Delete All Conversations), Chat (copy, export), Workflow/Database error messages, Data Sources ("View Details", "Copy ID", "Delete" statuses), Configuration sidebar Copy ID, Integration status messages, Workflow status messages. Family: same live-region announcement pattern as just-merged EPMCDME-8489. Look for shared toast/notification component and wire aria-live/role="status" once.
+  +
+  +---
+  +
+  +## 2. Codebase Findings
+  +
+  +### Existing Implementations
+  +
+  +All toast output is funneled through a single singleton:
+  +
+  +- `src/utils/toaster.ts` — `Toaster` singleton wrapping `toastify-js`; exposes `info`, `success`, and `error` methods; every copy-to-clipboard and status message call site uses this object
+  +- `src/components/appLevel/ToastContainer.tsx` — app-level mount point; renders `<div id="toast-container" role="region" aria-live="polite" />`; **this live region is not reliable** because `toastify-js` injects children via direct DOM manipulation, not React state
+  +- `src/components/StandaloneLayout.tsx` — duplicates the `toast-container` div with identical aria attributes; covers Keycloak theme routes
+  +- `src/utils/utils.ts` — `copyToClipboard` and `copyRichTextToClipboard`; called by `CodeBlock`, `InputCopy`, `ChatAiMessageActions`
+  +- `src/utils/helpers.ts` — second `copyToClipboard` implementation (duplicate); called by `useMCPServerModal`
+  +- `src/components/details/DetailsCopyField/DetailsCopyField.tsx` — "Copy ID" pattern used across Data Sources and Configuration sidebar
+  +- `src/components/form/InputCopy/InputCopy.tsx` — copy-input widget; calls `copyToClipboard` from `utils.ts`
+  +- `src/components/Announcement/Announcement.tsx` — `<output aria-live="polite" aria-atomic="true" className="sr-only">`; the working live-region primitive introduced in EPMCDME-8489
+  +- `src/hooks/useAnnouncementQueue.ts` — serializes messages with a gap-and-clear cycle so repeated identical strings re-announce; the proven safe pattern
+  +
+  +**Root cause**: `ToastContainer.tsx` and `StandaloneLayout.tsx` already carry `aria-live="polite"`, but `toastify-js` writes into those containers via direct DOM insertion (`Toastify().showToast()`). Screen readers do not reliably pick up content injected this way into a live region. The `Announcement` + `useAnnouncementQueue` mechanism owns its own React state write and is the safe path.
+  +
+  +### Architecture and Layers Affected
+  +
+  +- **Utility layer** — `src/utils/toaster.ts` (single funnel), `src/utils/utils.ts` (copyToClipboard), `src/utils/helpers.ts` (duplicate copyToClipboard)
+  +- **Component layer** — `DetailsCopyField`, `InputCopy`, `CodeBlock`, `ChatAiMessageActions` (callers; no change required if toaster.ts is patched)
+  +- **App-level infrastructure** — `ToastContainer.tsx`, `StandaloneLayout.tsx` (toast DOM mount; announcement element must be added here or alongside)
+  +- **Shared accessibility primitives** — `Announcement`, `useAnnouncementQueue` (proven pattern; reuse or extend)
+  +
+  +### Integration Points
+  +
+  +- Internal: `toaster.ts` ← called by every feature area named in the ticket (Profile, Chat, Workflow, Data Sources, Configuration, Integrations)
+  +- Internal: `Announcement` ↔ `useAnnouncementQueue` ← already integrated in `RecordInput` and `FilesDropzone`
+  +- External: `toastify-js` — controls visual rendering and DOM insertion; cannot be made reliably accessible without a supplementary live region
+  +
+  +### Patterns and Conventions
+  +
+  +- Singleton service (`toaster.ts`) as the single point through which all status messages flow — one patch covers all callers
+  +- `Announcement` + `useAnnouncementQueue` is the established codebase standard for accessible live-region announcements (EPMCDME-8489)
+  +- `role="alert"` for errors, `aria-live="polite"` for status messages — documented in accessibility guide
+  +- `sr-only` CSS class for visually hidden but screen-reader-visible elements
+  +
+  +---
+  +
+  +## 3. Documentation Findings
+  +
+  +### Guides and Architecture Docs
+  +
+  +- `/Users/oleg_sotnichenko/codemie-dev/codemie-ui/.ai-run/guides/patterns/accessibility-patterns.md` — documents `aria-live="polite"` for status messages and `role="alert"` for errors; directly governs this fix
+  +- `/Users/oleg_sotnichenko/codemie-dev/codemie-ui/.ai-run/guides/patterns/form-patterns.md` — notes `role="alert"` on error spans
+  +
+  +### Architectural Decisions
+  +
+  +- EPMCDME-8489 established the `Announcement` + `useAnnouncementQueue` pattern as the project standard for live-region announcements; this ticket is explicitly in the same family
+  +- The accessibility guide prescribes `aria-live="polite"` for non-urgent status messages (copy confirmations fall into this category) and `role="alert"` for errors
+  +
+  +### Derived Conventions
+  +
+  +- A supplementary controlled live region (not relying on the library's DOM writes) is the required approach when `toastify-js` is in use
+  +- The announcement element must be present in both `ToastContainer.tsx` and `StandaloneLayout.tsx` paths, or extracted to a shared singleton rendered once at the root
+  +
+  +### External Documentation Findings
+  +
+  +Not applicable — no new third-party library is introduced by this fix.
+  +
+  +---
+  +
+  +## 4. Testing Landscape
+  +
+  +### Existing Coverage
+  +
+  +- `src/components/form/RecordInput/__tests__/RecordInput.test.tsx` — tests `useAnnouncementQueue` via `getByRole('status')` and `waitFor`; reference model for new tests
+  +- `src/components/form/FilesDropzone/__tests__/FilesDropzone.test.tsx` — covers `Announcement` component indirectly using the same pattern
+  +
+  +### Testing Framework and Patterns
+  +
+  +- Framework: Vitest + React Testing Library
+  +- Workspace config: `vitest.workspace.ts` (two projects: `unit` and `integration`)
+  +- Pattern: `getByRole('status')` to assert the hidden output element; `waitFor` for async queue drain; no snapshot testing for accessibility assertions
+  +
+  +### Coverage Gaps
+  +
+  +- `src/utils/toaster.ts` — no tests exist
+  +- `src/utils/utils.ts` `copyToClipboard` — no tests exist
+  +- `src/utils/helpers.ts` `copyToClipboard` — no tests exist
+  +- `src/components/details/DetailsCopyField/DetailsCopyField.tsx` — no tests exist
+  +- `src/components/form/InputCopy/InputCopy.tsx` — no tests exist
+  +- New announcement wiring in `toaster.ts` must ship with unit tests asserting the live region receives the toast message text
+  +
+  +---
+  ... (34 lines truncated)
+  +134 -0
+
+src/components/appLevel/ToasterAnnouncer/ToasterAnnouncer.tsx
+  @@ -0,0 +1,43 @@
+  +// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+  +//
+  +// Licensed under the Apache License, Version 2.0 (the "License");
+  +// you may not use this file except in compliance with the License.
+  +// You may obtain a copy of the License at
+  +//
+  +//     http://www.apache.org/licenses/LICENSE-2.0
+  +//
+  +// Unless required by applicable law or agreed to in writing, software
+  +// distributed under the License is distributed on an "AS IS" BASIS,
+  +// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  +// See the License for the specific language governing permissions and
+  +// limitations under the License.
+  +//
+  +
+  +import { FC, useEffect } from 'react'
+  +
+  +import Announcement from '@/components/Announcement/Announcement'
+  +import { useAnnouncementQueue } from '@/hooks/useAnnouncementQueue'
+  +import { setToasterAnnouncer } from '@/utils/toaster'
+  +
+  +/**
+  + * Mounts a single polite live region and routes every toast the app emits into it.
+  + *
+  + * Toastify writes the visual toast directly into #toast-container via DOM insertion, which screen
+  + * readers do not reliably announce. This component wires `toaster` into a React-owned
+  + * <Announcement> so the same text also reaches assistive tech (WCAG 4.1.3). Mount once, above
+  + * every route path that produces toasts.
+  + */
+  +const ToasterAnnouncer: FC = () => {
+  +  const { announcement, announce } = useAnnouncementQueue()
+  +
+  +  useEffect(() => {
+  +    setToasterAnnouncer(announce)
+  +    // Clear only if the slot still holds this instance's `announce` — a stale unmount (HMR,
+  +    // accidental second mount) must not evict a fresher registration.
+  +    return () => setToasterAnnouncer(null, announce)
+  +  }, [announce])
+  +
+  +  return <Announcement announcement={announcement} />
+  +}
+  +
+  +export default ToasterAnnouncer
+  +43 -0
+
+src/components/appLevel/ToasterAnnouncer/__tests__/ToasterAnnouncer.test.tsx
+  @@ -0,0 +1,65 @@
+  +// Copyright 2026 EPAM Systems, Inc. ("EPAM")
+  +//
+  +// Licensed under the Apache License, Version 2.0 (the "License");
+  +// you may not use this file except in compliance with the License.
+  +// You may obtain a copy of the License at
+  +//
+  +//     http://www.apache.org/licenses/LICENSE-2.0
+  +//
+  +// Unless required by applicable law or agreed to in writing, software
+  +// distributed under the License is distributed on an "AS IS" BASIS,
+  +// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  +// See the License for the specific language governing permissions and
+  +// limitations under the License.
+  +//
+  +
+  +import { render, screen, waitFor } from '@testing-library/react'
+  +import { describe, expect, it, vi } from 'vitest'
+  +
+  +import ToasterAnnouncer from '../ToasterAnnouncer'
+  +
+  +// The global setupTests mock stubs @/utils/toaster; we need the real one for this suite so the
+  +// component's registration actually plugs into the module's announcer slot.
+  +vi.unmock('@/utils/toaster')
+  +
+  +vi.mock('toastify-js', () => ({
+  +  default: vi.fn(() => ({ showToast: vi.fn() })),
+  +}))
+  +
+  +const { default: toaster } = await vi.importActual<typeof import('@/utils/toaster')>(
+  +  '@/utils/toaster'
+  +)
+  +
+  +describe('<ToasterAnnouncer />', () => {
+  +  it('renders a polite live region', () => {
+  +    render(<ToasterAnnouncer />)
+  +    const live = screen.getByRole('status')
+  +    expect(live).toHaveAttribute('aria-live', 'polite')
+  +    expect(live).toHaveAttribute('aria-atomic', 'true')
+  +  })
+  +
+  +  it('mirrors a success toast into the live region', async () => {
+  +    render(<ToasterAnnouncer />)
+  +    toaster.success('User name copied to clipboard')
+  +    await waitFor(() => {
+  +      expect(screen.getByRole('status')).toHaveTextContent('User name copied to clipboard')
+  +    })
+  +  })
+  +
+  +  it('mirrors error toasts as status announcements', async () => {
+  +    render(<ToasterAnnouncer />)
+  +    toaster.error('Failed to save')
+  +    await waitFor(() => {
+  +      expect(screen.getByRole('status')).toHaveTextContent('Failed to save')
+  +    })
+  +  })
+  +
+  +  it('deregisters the announcer on unmount', () => {
+  +    const { unmount } = render(<ToasterAnnouncer />)
+  +    unmount()
+  +    // After unmount there is no live region left in the DOM.
+  +    expect(screen.queryByRole('status')).toBeNull()
+  +    // And a subsequent toast call must not throw (announcer slot cleared).
+  +    expect(() => toaster.success('after unmount')).not.toThrow()
+  +  })
+  +})
+  +65 -0
+
+src/main.tsx
+  @@ -19,6 +19,7 @@ import 'quill-mention/autoregister'
+  +import ToasterAnnouncer from '@/components/appLevel/ToasterAnnouncer/ToasterAnnouncer'
+   import { redirectHashRoutes } from '@/utils/redirectHashRoutes'
+   import { themeService } from '@/utils/themeService'
+   import { setupGlobalTooltip } from '@/utils/tooltip'
+  @@ -39,4 +40,9 @@ setupGlobalTooltip()
+  -ReactDOM.createRoot(root).render(<RouterProvider router={router} />)
+  +ReactDOM.createRoot(root).render(
+  +  <>
+  +    <ToasterAnnouncer />
+  +    <RouterProvider router={router} />
+  +  </>
+  +)
+  +7 -1
+
+src/setupTests.tsx
+  @@ -150,6 +150,10 @@ vi.mock('@/utils/toaster', () => ({
+  +  // Named export used by <ToasterAnnouncer /> — the app-root live region wiring. Any suite that
+  +  // renders a broad tree containing that component would throw TypeError inside its effect if this
+  +  // export were absent from the mock.
+  +  setToasterAnnouncer: vi.fn(),
+   }))
+   
+   // ─── URL helpers ──────────────────────────────────────────────────────────────
+  +4 -0
+
+src/utils/__tests__/toaster.test.ts
+  @@ -14,16 +14,20 @@
+  -import { beforeEach, describe, expect, it, vi } from 'vitest'
+  +import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+   
+  -import toaster from '@/utils/toaster'
+  -
+  -// Hoisted by Vitest before module initialization: use real toaster, mock Toastify.
+  +// setupTests.tsx mocks the whole toaster module for every other suite. Undo it here — this suite
+  +// exercises the real toaster implementation.
+   vi.unmock('@/utils/toaster')
+  +
+   vi.mock('toastify-js', () => ({
+     default: vi.fn().mockReturnValue({ showToast: vi.fn() }),
+   }))
+   
+  +const { default: toaster, setToasterAnnouncer } = await vi.importActual<
+  +  typeof import('../toaster')
+  +>('../toaster')
+  +
+   describe('toaster XSS prevention', () => {
+     beforeEach(() => {
+       vi.clearAllMocks()
+  @@ -45,3 +49,67 @@ describe('toaster XSS prevention', () => {
+  +
+  +describe('toaster announcer', () => {
+  +  const announcer = vi.fn()
+  +
+  +  beforeEach(() => {
+  +    announcer.mockClear()
+  +    setToasterAnnouncer(announcer)
+  +  })
+  +
+  +  afterEach(() => {
+  +    setToasterAnnouncer(null)
+  +  })
+  +
+  +  it('announces the plain text of a success toast', () => {
+  +    toaster.success('User name copied to clipboard')
+  +    expect(announcer).toHaveBeenCalledWith('User name copied to clipboard')
+  +  })
+  +
+  +  it('announces the plain text of an info toast', () => {
+  +    toaster.info('Ready')
+  +    expect(announcer).toHaveBeenCalledWith('Ready')
+  +  })
+  +
+  +  it('announces the plain text of an error toast', () => {
+  +    toaster.error('Failed to save')
+  +    expect(announcer).toHaveBeenCalledWith('Failed to save')
+  +  })
+  +
+  +  it('does not announce empty text', () => {
+  +    toaster.success('')
+  +    expect(announcer).not.toHaveBeenCalled()
+  +  })
+  +
+  +  it('does not throw and does not announce after the announcer is cleared', () => {
+  +    setToasterAnnouncer(null)
+  +    expect(() => toaster.success('after unmount')).not.toThrow()
+  +    expect(announcer).not.toHaveBeenCalled()
+  +  })
+  +
+  +  it('strips the <br> separator and residual tags before announcing', () => {
+  +    toaster.error('Error title<br>Error details <script>x</script>')
+  +    expect(announcer).toHaveBeenCalledWith('Error title Error details x')
+  +  })
+  +
+  +  it('guarded clear does not evict a fresher announcer registration', () => {
+  +    const stale = vi.fn()
+  +    const fresh = vi.fn()
+  +    setToasterAnnouncer(stale)
+  +    setToasterAnnouncer(fresh)
+  +    // Simulate the stale instance's cleanup: it should not evict `fresh`.
+  +    setToasterAnnouncer(null, stale)
+  +    toaster.success('should reach fresh')
+  +    expect(fresh).toHaveBeenCalledWith('should reach fresh')
+  +    expect(stale).not.toHaveBeenCalled()
+  +  })
+  +
+  +  it('guarded clear clears when the current announcer matches', () => {
+  +    const fn = vi.fn()
+  +    setToasterAnnouncer(fn)
+  +    setToasterAnnouncer(null, fn)
+  +    toaster.success('should not reach fn')
+  +    expect(fn).not.toHaveBeenCalled()
+  +  })
+  +})
+  +72 -4
+
+src/utils/toaster.ts
+  @@ -91,21 +91,58 @@ interface Toaster {
+  +// Toastify writes its DOM directly into #toast-container, which screen readers do not reliably
+  +// pick up even with aria-live on the container. A React-owned announcer element (mounted once by
+  +// <ToasterAnnouncer />) registers itself through setToasterAnnouncer; each toast call routes its
+  +// plain text here in parallel with the visual toast (WCAG 4.1.3).
+  +let announcer: ((message: string) => void) | null = null
+  +
+  +/**
+  + * Registers or clears the callback that mirrors toast text into the screen-reader live region.
+  + *
+  + * Pass a function to install it as the active announcer, or `null` to clear the slot — but a
+  + * `null` call clears only when the current announcer is `expected`. That guard matters if two
+  + * `<ToasterAnnouncer />` instances briefly coexist (HMR hot-swap, mistaken double-mount): the old
+  + * instance's unmount cleanup must not evict the new instance's registration and silently swallow
+  + * every subsequent toast.
+  + */
+  +export const setToasterAnnouncer = (
+  +  fn: ((message: string) => void) | null,
+  +  expected?: ((message: string) => void) | null
+  +): void => {
+  +  if (fn === null && expected !== undefined && announcer !== expected) return
+  +  announcer = fn
+  +}
+  +
+  +// Toast messages use a `<header><br><content>` convention (see prepareText). The visual toast
+  +// renders sanitized HTML, but a screen reader must hear a plain sentence — otherwise the literal
+  +// `<br>` string is announced. Strip the separator and any residual tags before handing text to the
+  +// live region.
+  +const toAnnouncement = (text: string): string =>
+  +  text
+  +    .replace(/<br\s*\/?>/gi, ' ')
+  +    .replace(/<[^>]+>/g, '')
+  +    .replace(/\s+/g, ' ')
+  +    .trim()
+  +
+   const toaster: Toaster = {
+     info: (text: string) => {
+       if (!text) return
+       Toastify({ ...defaultOpts, ...infoOpts, text: prepareText(text) }).showToast()
+       fixCloseButton()
+  +    announcer?.(toAnnouncement(text))
+     },
+     success: (text: string) => {
+       if (!text) return
+       Toastify({ ...defaultOpts, ...successOpts, text: prepareText(text) }).showToast()
+       fixCloseButton()
+  +    announcer?.(toAnnouncement(text))
+     },
+     error: (text: string) => {
+       if (!text) return
+       Toastify({ ...defaultOpts, ...errOpts, text: prepareText(text) }).showToast()
+       fixCloseButton()
+  +    announcer?.(toAnnouncement(text))
+     },
+   }
+   
+  +37 -0
+[full diff: rtk git diff --no-compact]

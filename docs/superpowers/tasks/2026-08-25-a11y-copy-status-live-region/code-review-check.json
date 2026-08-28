@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "gate_id": "code-review.check",
+  "artifacts_reviewed": {
+    "prior_verdict": "docs/superpowers/tasks/2026-08-25-a11y-copy-status-live-region/code-review-final.json",
+    "diff": "docs/superpowers/tasks/2026-08-25-a11y-copy-status-live-region/code-review-check.diff"
+  },
+  "business_review": [
+    {"id": "T1-impl", "status": "pass", "notes": "carried forward"},
+    {"id": "T1-tests", "status": "pass", "notes": "XSS regression suite restored inside toaster.test.ts alongside announcer suite; both green"},
+    {"id": "T2-impl", "status": "pass", "notes": "carried forward"},
+    {"id": "T2-tests", "status": "pass", "notes": "carried forward"},
+    {"id": "T3-impl", "status": "pass", "notes": "carried forward"},
+    {"id": "non-goal-css", "status": "pass", "notes": "carried forward"},
+    {"id": "non-goal-clipboard-consolidation", "status": "pass", "notes": "carried forward"},
+    {"id": "non-goal-assertive", "status": "pass", "notes": "carried forward"}
+  ],
+  "standards_review": [
+    {"standard": "commit-format", "status": "pass", "notes": "Fix commit follows EPMCDME-8584: <desc> pattern"},
+    {"standard": "code-quality", "status": "pass", "notes": "Lint clean, typecheck clean, all 4694 unit tests green"},
+    {"standard": "security", "status": "pass", "notes": "XSS regression tests restored; announcer receives sanitized plain text"}
+  ],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "evidence": "src/utils/__tests__/toaster.test.ts now carries the 'toaster XSS prevention' describe block (2 tests: strips <script>, strips <img onerror>) alongside the announcer describe. Both suites green (14/14 in the file)."},
+    {"id": "CR-002", "status": "resolved", "evidence": "setToasterAnnouncer(fn, expected?) now guards a null-clear against the current slot value; ToasterAnnouncer's cleanup passes `announce` so a stale unmount is a no-op. Two new tests cover the guarded-clear semantics: 'guarded clear does not evict a fresher announcer registration' and 'guarded clear clears when the current announcer matches'."},
+    {"id": "CR-003", "status": "resolved", "evidence": "New toAnnouncement helper in toaster.ts strips <br> and residual tags before handing text to the announcer. New test 'strips the <br> separator and residual tags before announcing' covers it. Screen readers now hear a clean sentence for header/content messages."}
+  ],
+  "findings": [],
+  "rationale": "All three findings from code-review-final.json addressed inline. Fix-up diff is 54 additions / 6 deletions across 4 files: src/utils/toaster.ts (guard + toAnnouncement), src/components/appLevel/ToasterAnnouncer/ToasterAnnouncer.tsx (guarded cleanup), src/setupTests.tsx (setToasterAnnouncer mock export), src/utils/__tests__/toaster.test.ts (restored XSS suite + 3 new tests for the fixes). Scoped confirmation pass on the fix-up diff surfaces no new high-risk issues. Full unit suite passes 4694/4694, typecheck clean. Test-harness ran green (79 passed, 1 rerun in 604.25s)."
+}
