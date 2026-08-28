@@ -1,0 +1,13 @@
+diff --git a/tailwind.config.ts b/tailwind.config.ts
+index 0dc2a03b1..85926b2bc 100644
+--- a/tailwind.config.ts
++++ b/tailwind.config.ts
+@@ -277,7 +277,7 @@ const themeTokens: ThemeConfig = {
+         },
+       },
+       'dropdown-hover': [c['neutral']['725'], c['blue']['50']],
+-      'dropdown-focused': [c['neutral']['600'], c['blue']['50']],
++      'dropdown-focused': [c['neutral']['525'], c['blue']['400']],
+       switcher: {
+         active: {
+           from: [c['brand']['a99'], c['blue']['400']],

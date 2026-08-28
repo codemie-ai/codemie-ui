@@ -53,7 +53,7 @@ const preset: PrimeReactPTOptions['autocomplete'] = {
     className: [
       'text-sm rounded-lg py-1.5 pl-2.5 mx-2 text-text-primary cursor-pointer hover:bg-surface-specific-dropdown-hover hover:text-text-accent transition',
       'overflow-hidden whitespace-nowrap truncate',
-      { 'bg-white/5': context.selected },
+      { 'bg-surface-base-navigation text-text-primary': context.selected },
     ],
   }),
   list: { className: 'show-scroll max-h-[200px] overflow-auto' },

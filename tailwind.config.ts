@@ -277,6 +277,7 @@ const themeTokens: ThemeConfig = {
         },
       },
       'dropdown-hover': [c['neutral']['725'], c['blue']['50']],
+      'dropdown-focused': [c['neutral']['525'], c['blue']['400']],
       switcher: {
         active: {
           from: [c['brand']['a99'], c['blue']['400']],

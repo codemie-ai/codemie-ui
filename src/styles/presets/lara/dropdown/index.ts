@@ -161,7 +161,8 @@ const preset: PrimeReactPTOptions['dropdown'] = {
         'text-text-tertiary': !context.focused && !context.selected && context.disabled,
       },
       {
-        'bg-surface-interactive-active text-text-primary': context.focused && !context.selected,
+        'bg-surface-specific-dropdown-focused text-text-primary':
+          context.focused && !context.selected,
       },
       {
         'bg-surface-base-primary text-text-primary': context.focused && context.selected,
@@ -175,7 +176,7 @@ const preset: PrimeReactPTOptions['dropdown'] = {
         'hover:bg-surface-interactive-hover': !context.focused && !context.selected,
       },
       {
-        'hover:text-text-primary hover:bg-surface-interactive-hover':
+        'hover:text-text-primary hover:bg-surface-specific-dropdown-hover':
           context.focused && !context.selected,
       },
       'focus-visible:outline-none focus-visible:outline-offset-0 focus-visible:ring focus-visible:ring-inset focus-visible:ring-border-subtle/50',

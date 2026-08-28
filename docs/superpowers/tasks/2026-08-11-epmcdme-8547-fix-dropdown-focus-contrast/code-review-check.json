@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "medium",
+  "rationale": "Both blocking findings resolved. CR-001: dropdown-focused light-mode value raised from blue['50'] (#D5E7FC, ~1.18:1 against white) to blue['400'] (#007AFF, 3.82:1 against #FFFFFF) — WCAG 1.4.11 3:1 threshold met in light mode. CR-002: dark-mode value raised from neutral['600'] (#707070, 2.74:1 against #2E2E2E) to neutral['525'] (#888888, 3.83:1 against #2E2E2E and 4.47:1 against #212224) — passes regardless of which background bg-surface-elevated0 resolves to. No new high-risk issues introduced by the one-line fix-up.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow commit format",
+      "status": "pass",
+      "notes": "Fix-up commit follows EPMCDME-8547: Capital sentence format. Branch name unchanged."
+    },
+    {
+      "standard": "styling guide — semantic tokens only",
+      "status": "pass",
+      "notes": "Fix-up changes only token values in tailwind.config.ts using palette entries already defined (neutral['525'], blue['400']). No raw colors or inline styles introduced."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "na",
+      "notes": "CSS/styling change only. No security surface."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "dropdown-focused light-mode value changed from blue['50'] (#D5E7FC, ~1.18:1 against #FFFFFF) to blue['400'] (#007AFF, 3.82:1 against #FFFFFF). WCAG 1.4.11 requires ≥3:1; threshold now met in light mode."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "evidence": "dropdown-focused dark-mode value changed from neutral['600'] (#707070, 2.74:1 against #2E2E2E) to neutral['525'] (#888888, 3.83:1 against #2E2E2E, 4.47:1 against #212224). Passes 3:1 against all plausible panel backgrounds; bg-surface-elevated0 token ambiguity no longer blocks approval."
+    }
+  ]
+}

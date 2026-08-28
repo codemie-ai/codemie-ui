@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix dropdown focus contrast by adding a dedicated surface-specific-dropdown-focused color token and applying it across Autocomplete, MultiSelect, and Dropdown PrimeReact pass-through presets.",
+  "generated": "2026-08-11T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three PrimeReact pass-through preset files (Autocomplete, MultiSelect, Dropdown) plus tailwind.config.ts — all within the same UI styling domain, no cross-cutting concerns"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "4 files changed (diffstat: 4 files changed, 8 insertions, 5 deletions), 0 new files created, changes span src/components/form and src/styles/presets directories"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

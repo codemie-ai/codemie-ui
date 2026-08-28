@@ -1,0 +1,71 @@
+diff --git a/src/components/form/Autocomplete/ptPreset.ts b/src/components/form/Autocomplete/ptPreset.ts
+index d922a7746..a48c5f67b 100644
+--- a/src/components/form/Autocomplete/ptPreset.ts
++++ b/src/components/form/Autocomplete/ptPreset.ts
+@@ -53,7 +53,7 @@ const preset: PrimeReactPTOptions['autocomplete'] = {
+     className: [
+       'text-sm rounded-lg py-1.5 pl-2.5 mx-2 text-text-primary cursor-pointer hover:bg-surface-specific-dropdown-hover hover:text-text-accent transition',
+       'overflow-hidden whitespace-nowrap truncate',
+-      { 'bg-white/5': context.selected },
++      { 'bg-surface-base-navigation text-text-primary': context.selected },
+     ],
+   }),
+   list: { className: 'show-scroll max-h-[200px] overflow-auto' },
+diff --git a/src/components/form/MultiSelect/ptPreset.ts b/src/components/form/MultiSelect/ptPreset.ts
+index d2fa76417..4d46799dd 100644
+--- a/src/components/form/MultiSelect/ptPreset.ts
++++ b/src/components/form/MultiSelect/ptPreset.ts
+@@ -375,7 +375,8 @@ const preset: PrimeReactPTOptions['multiselect'] = {
+       // Color
+       { 'text-text-primary': !context.focused && !context.selected },
+       {
+-        'bg-surface-interactive-active text-text-primary': context.focused && !context.selected,
++        'bg-surface-specific-dropdown-focused text-text-primary':
++          context.focused && !context.selected,
+       },
+       {
+         'bg-surface-base-primary text-text-primary': context.focused && context.selected,
+@@ -392,7 +393,7 @@ const preset: PrimeReactPTOptions['multiselect'] = {
+         'hover:bg-surface-base-primary': !context.focused && context.selected,
+       },
+       {
+-        'hover:text-text-primary hover:bg-surface-interactive-hover':
++        'hover:text-text-primary hover:bg-surface-specific-dropdown-hover':
+           context.focused && !context.selected,
+       },
+ 
+diff --git a/src/styles/presets/lara/dropdown/index.ts b/src/styles/presets/lara/dropdown/index.ts
+index b7b8edcc3..8628af198 100644
+--- a/src/styles/presets/lara/dropdown/index.ts
++++ b/src/styles/presets/lara/dropdown/index.ts
+@@ -161,7 +161,8 @@ const preset: PrimeReactPTOptions['dropdown'] = {
+         'text-text-tertiary': !context.focused && !context.selected && context.disabled,
+       },
+       {
+-        'bg-surface-interactive-active text-text-primary': context.focused && !context.selected,
++        'bg-surface-specific-dropdown-focused text-text-primary':
++          context.focused && !context.selected,
+       },
+       {
+         'bg-surface-base-primary text-text-primary': context.focused && context.selected,
+@@ -175,7 +176,7 @@ const preset: PrimeReactPTOptions['dropdown'] = {
+         'hover:bg-surface-interactive-hover': !context.focused && !context.selected,
+       },
+       {
+-        'hover:text-text-primary hover:bg-surface-interactive-hover':
++        'hover:text-text-primary hover:bg-surface-specific-dropdown-hover':
+           context.focused && !context.selected,
+       },
+       'focus-visible:outline-none focus-visible:outline-offset-0 focus-visible:ring focus-visible:ring-inset focus-visible:ring-border-subtle/50',
+diff --git a/tailwind.config.ts b/tailwind.config.ts
+index 904a5b0c5..0dc2a03b1 100644
+--- a/tailwind.config.ts
++++ b/tailwind.config.ts
+@@ -277,6 +277,7 @@ const themeTokens: ThemeConfig = {
+         },
+       },
+       'dropdown-hover': [c['neutral']['725'], c['blue']['50']],
++      'dropdown-focused': [c['neutral']['600'], c['blue']['50']],
+       switcher: {
+         active: {
+           from: [c['brand']['a99'], c['blue']['400']],

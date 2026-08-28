@@ -375,7 +375,8 @@ const preset: PrimeReactPTOptions['multiselect'] = {
       // Color
       { 'text-text-primary': !context.focused && !context.selected },
       {
-        'bg-surface-interactive-active text-text-primary': context.focused && !context.selected,
+        'bg-surface-specific-dropdown-focused text-text-primary':
+          context.focused && !context.selected,
       },
       {
         'bg-surface-base-primary text-text-primary': context.focused && context.selected,
@@ -392,7 +393,7 @@ const preset: PrimeReactPTOptions['multiselect'] = {
         'hover:bg-surface-base-primary': !context.focused && context.selected,
       },
       {
-        'hover:text-text-primary hover:bg-surface-interactive-hover':
+        'hover:text-text-primary hover:bg-surface-specific-dropdown-hover':
           context.focused && !context.selected,
       },
 

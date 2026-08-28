@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "Two major findings. CR-001 (blocking/patch): the new `dropdown-focused` light-mode value is identical to the old `surface-interactive-active` light-mode value (`blue['50']`), so the WCAG 1.4.11 fix is dark-mode-only and light-theme users remain unaddressed. CR-002 (decision_needed): the dark-mode contrast calculation depends on which background colour the dropdown panel actually renders — `bg-surface-elevated0` in the PT preset does not appear to match the `surface-elevated` (`neutral['800']`, #2E2E2E) token the edge-case lens used; against the alternative panel background (`surface-elevated0` / #212224 assumed by the technical-analysis) the contrast is ~3.26:1 (passes), but this cannot be confirmed without resolving the token. Confidence is low because no acceptance spec exists (no-spec round) and CR-002 remains ambiguous.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow commit format",
+      "status": "pass",
+      "notes": "Branch `EPMCDME-8547_fix-dropdown-focus-contrast` and commit prefix `EPMCDME-8547: ...` match the documented pattern."
+    },
+    {
+      "standard": "styling guide — semantic tokens only",
+      "status": "pass",
+      "notes": "All changed classes use semantic tokens from `themeTokens`. No raw palette values, no inline styles, no arbitrary Tailwind values introduced."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "na",
+      "notes": "CSS/styling change only. No security surface."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "location": "tailwind.config.ts:280",
+      "problem": "The new `dropdown-focused` token's light-mode value is `blue['50']`, which is identical to the old `surface-interactive-active` light-mode value. The WCAG 1.4.11 fix is therefore dark-mode only; light-theme users see no improvement and the focus indicator still fails the 3:1 contrast requirement in light mode.",
+      "impact": "All light-mode users continue to experience non-compliant focus contrast on Dropdown and MultiSelect keyboard navigation. The ticket goal (WCAG 1.4.11 compliance) is only half-met.",
+      "recommendation": "Choose a light-mode value with ≥3:1 contrast against the light panel background. `blue['150']` or `blue['200']` are candidates — verify the exact value against the `surface-elevated0` light-mode background before landing."
+    },
+    {
+      "id": "CR-002",
+      "triage": "decision_needed",
+      "severity": "major",
+      "location": "tailwind.config.ts:280 / src/styles/presets/lara/dropdown/index.ts:164 / src/components/form/MultiSelect/ptPreset.ts:378",
+      "problem": "The dark-mode contrast of `neutral['600']` (#707070) against the dropdown panel background is uncertain. Against `surface-elevated` (`neutral['800']`, #2E2E2E) it is ~2.70:1, which fails WCAG 1.4.11. The panel PT slot uses `bg-surface-elevated0`, which does not appear in the theme config as a named token — if this class applies no background, the effective background may be from a parent element (#212224 per technical-analysis, giving ~3.26:1 which passes). The correct background cannot be determined from the diff alone.",
+      "impact": "If the panel background is darker than assumed, the fix passes in dark mode; if it is #2E2E2E, the fix falls 0.30 ratio points short and dark mode also remains non-compliant.",
+      "recommendation": "Resolve `surface-elevated0`: either confirm it is a valid token with value #212224 (passing) or replace the PT panel class with a defined token. If the panel is lighter than #212224, raise the focused token to `neutral['550']` (#888, ~3.80:1 against #2E2E2E)."
+    }
+  ]
+}
