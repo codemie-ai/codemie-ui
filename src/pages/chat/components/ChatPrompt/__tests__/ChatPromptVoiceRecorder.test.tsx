@@ -14,6 +14,7 @@
 //
 
 import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import ChatPromptVoiceRecorder from '../ChatPromptVoiceRecorder'
@@ -31,6 +32,13 @@ describe('ChatPromptVoiceRecorder', () => {
     render(<ChatPromptVoiceRecorder onTextReady={vi.fn()} />)
 
     expect(screen.getByRole('button', { name: 'Use voice' })).toBeInTheDocument()
+  })
+
+  it('receives keyboard focus when tabbed to', async () => {
+    const user = userEvent.setup()
+    render(<ChatPromptVoiceRecorder onTextReady={vi.fn()} />)
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Use voice' })).toHaveFocus()
   })
 
   it('has accessible name "Stop listening" while recording', async () => {
