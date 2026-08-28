@@ -300,3 +300,31 @@ describe('ChatAiMessage — tool outputs visibility', () => {
     expect(screen.queryByTestId('thought')).not.toBeInTheDocument()
   })
 })
+
+describe('ChatAiMessage auth prompt', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatsStore.currentChat.history = []
+  })
+
+  it('renders the auth prompt instead of Markdown when the message carries MCP auth rows', () => {
+    renderMessage(
+      createMessage({
+        response: 'This markdown should not render',
+        mcpAuthPromptRows: [
+          {
+            mcp_config_id: 'mcp-1',
+            mcp_config_name: 'GitHub',
+            mcp_server_name: 'GitHub',
+            auth_config_id: 'auth-1',
+            status: 'authentication_required',
+            initiate_url: '/v1/mcp-auth/oauth2/initiate',
+          },
+        ],
+      } as Partial<ChatMessage>)
+    )
+
+    expect(screen.getByTestId('chat-ai-auth-prompt')).toBeInTheDocument()
+    expect(screen.queryByTestId('markdown')).not.toBeInTheDocument()
+  })
+})

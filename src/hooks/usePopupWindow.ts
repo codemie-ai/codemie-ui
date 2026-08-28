@@ -33,6 +33,7 @@ interface UsePopupWindowReturn {
   open: (url: string, features?: PopupFeatures) => boolean
   close: () => void
   isOpen: boolean
+  matchesSource: (source: MessageEventSource | null) => boolean
 }
 
 const DEFAULT_WIDTH = 600
@@ -88,6 +89,10 @@ export const usePopupWindow = ({
   closeDetectionInterval = DEFAULT_CLOSE_DETECTION_INTERVAL,
 }: UsePopupWindowOptions = {}): UsePopupWindowReturn => {
   const popupRef = useRef<Window | null>(null)
+  // Identity of the last window we opened, kept for postMessage source verification. Unlike
+  // `popupRef` (nulled the moment closure is detected), this survives closure so a callback message
+  // that arrives right before the popup closes itself can still be matched to the window we opened.
+  const openedWindowRef = useRef<Window | null>(null)
   const [isOpen, setIsOpen] = useState(false)
 
   const onCloseRef = useRef(onClose)
@@ -109,9 +114,19 @@ export const usePopupWindow = ({
       return false
     }
     popupRef.current = popup
+    openedWindowRef.current = popup
     setIsOpen(true)
     return true
   }, [])
+
+  // True when `source` is the window this hook most recently opened. Lets a caller correlate a
+  // postMessage to its own popup without the hook exposing the raw `Window` reference — a stronger,
+  // origin-independent check than matching `event.origin` when the callback host varies.
+  const matchesSource = useCallback(
+    (source: MessageEventSource | null): boolean =>
+      source != null && source === openedWindowRef.current,
+    []
+  )
 
   const close = useCallback(() => {
     popupRef.current?.close()
@@ -132,8 +147,9 @@ export const usePopupWindow = ({
     return () => {
       popupRef.current?.close()
       popupRef.current = null
+      openedWindowRef.current = null
     }
   }, [])
 
-  return { open, close, isOpen }
+  return { open, close, isOpen, matchesSource }
 }

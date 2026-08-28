@@ -1,0 +1,74 @@
+{
+  "decision": "approve",
+  "rationale": "Frontend for per-user OAuth (GitLab, Jira, Confluence) reviewed against the spec. The change is additive and follows one consistent, already-established pattern per provider (store methods, a connect hook mirroring the proven useOAuth popup/poll flow, a chat connect-gate driven by a typed run signal, and a settings-form sign-in field). No behavior of existing OAuth integrations (Google, SharePoint) is touched. Type-check (tsc --noEmit) is clean, eslint is clean on all changed files, and the vitest suites for the parsers, connect hooks, chat prompts, and store methods pass. Secrets are handled correctly (client_secret is a sensitive/masked field; no token material is rendered; connection-status is scoped to the caller). The connect-required parsers fail closed — they return null for any payload that is not the exact { error: '<provider>_auth_required', setting_id } shape — so unrelated run errors are not misclassified as auth gates. No correctness, security, contract, or accessibility blockers found.",
+  "findings": [],
+  "finding_status": [],
+  "business_review": [
+    {
+      "id": "AC-1",
+      "text": "gitlaboauth / jiraoauth / confluenceoauth are selectable with accessType = ALL and map to the backend serverEnum.",
+      "status": "pass",
+      "rationale": "settingsUIConfig.ts adds the three entries with accessType: CredentialAccessType.ALL and serverEnum GitLabOAuth/JiraOAuth/ConfluenceOAuth."
+    },
+    {
+      "id": "AC-2",
+      "text": "App-credential inputs (client_id, client_secret sensitive, callback_base_url; GitLab instance_url) render with the provider Sign-in button.",
+      "status": "pass",
+      "rationale": "Each type's fields config declares the inputs (client_secret sensitive:true); SettingsForm renders the matching *OAuthField sign-in component per credential type."
+    },
+    {
+      "id": "AC-3",
+      "text": "Create sign-in opens a popup, polls status, writes oauth_state, and oauth_state is required to save.",
+      "status": "pass",
+      "rationale": "The *OAuthField components use useOAuth (popup + poll) and write oauth_state via setValue; SettingsForm adds a Yup required('Please sign in with <provider> before saving') for each OAuth type on create and forwards oauth_state in submit."
+    },
+    {
+      "id": "AC-4",
+      "text": "A run needing a not-connected integration surfaces a chat connect gate parsed from { error: '<provider>_auth_required', setting_id, integration_name }.",
+      "status": "pass",
+      "rationale": "parse{GitLab,Jira,Confluence}ConnectRequired detect the signal; chatGeneration attaches the prompt to the AI turn and clears it on retry; ChatAiMessage renders the matching ChatAi*AuthPrompt."
+    },
+    {
+      "id": "AC-5",
+      "text": "The connect gate authorizes an existing integration by setting_id (no re-entered secrets) and persists tokens via connect/complete; connection-status and disconnect exist.",
+      "status": "pass",
+      "rationale": "use*Connect calls connect*OAuth(settingId) -> popup -> poll -> complete*Connect(settingId, state); store exposes get*ConnectionStatus and disconnect*OAuth per provider."
+    },
+    {
+      "id": "AC-6",
+      "text": "Jira and Confluence share one Atlassian callback so only one Callback URL is registered.",
+      "status": "pass",
+      "rationale": "Store routes Jira OAuth calls under /v1/atlassian-oauth/* and Confluence under /v1/confluence-oauth/*; the shared callback is handled backend-side (out of this repo's scope), and the UI never invokes the callback directly."
+    },
+    {
+      "id": "AC-7",
+      "text": "Secrets are not leaked; connection status is caller-scoped.",
+      "status": "pass",
+      "rationale": "client_secret is sensitive/masked; no token material is rendered; get*ConnectionStatus returns only { status, username } for the caller and falls back to not_connected on a non-ok response."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Commits use the project 'EPMCDME-13527: <description>' convention, split per provider (store/hook/gate, then chat wiring)."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "tsc --noEmit clean; eslint clean on changed files. Providers follow one consistent pattern; connect hooks reuse the proven useOAuth mechanics rather than duplicating popup/poll logic ad hoc."
+    },
+    {
+      "standard": "test-coverage",
+      "status": "pass",
+      "notes": "Vitest suites cover parsers (incl. null for unrelated payloads), connect hooks (WAITING/SUCCESS/refreshStatus), chat prompts (render + post-connect success note), and store method endpoint/shape assertions."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No secrets rendered; sensitive field masking preserved; auth-required parsers fail closed so unrelated errors are not treated as auth gates."
+    }
+  ],
+  "risk_flags": [],
+  "confidence": "high"
+}

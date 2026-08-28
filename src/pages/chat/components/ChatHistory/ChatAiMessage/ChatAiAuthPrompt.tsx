@@ -15,71 +15,59 @@
 
 import { FC } from 'react'
 
-import AssistantAuthGateRow from '@/pages/chat/components/AssistantAuthGate/AssistantAuthGateRow'
-import { chatGenerationStore } from '@/store/chatGeneration'
+import { OAuthProvider } from '@/types/entity/dataSource'
 import { MCPAuthGateServer } from '@/types/entity/mcpAuth'
-import { cn } from '@/utils/utils'
+
+import ChatAiMcpAuthPrompt from './ChatAiMcpAuthPrompt'
+import ChatAiOAuthPrompt, { OAuthConnectPrompt } from './ChatAiOAuthPrompt'
+
+/** Every auth gate a single assistant turn can surface, mapped under one parent. */
+export interface ChatAuthPrompt {
+  mcpRows?: MCPAuthGateServer[]
+  gitlab?: OAuthConnectPrompt
+  jira?: OAuthConnectPrompt
+  confluence?: OAuthConnectPrompt
+}
 
 interface ChatAiAuthPromptProps {
+  authPrompt: ChatAuthPrompt
+  /** MCP action context — only used by the MCP branch. */
   chatId: string
   historyIndex: number
   messageIndex: number
-  rows: MCPAuthGateServer[]
 }
 
-const getPromptHeading = (rows: MCPAuthGateServer[]): string =>
-  rows.some((row) => row.status === 'session_expired')
-    ? 'Re-authentication required'
-    : 'Authentication required'
-
+/**
+ * Decides which auth gate to render for a turn. MCP auth (its own multi-row, status-driven UI with
+ * per-row actions) takes precedence; otherwise the per-user OAuth connect gates are stacked, since
+ * the aggregate gate can surface several providers at once (e.g. GitLab + Jira).
+ */
 const ChatAiAuthPrompt: FC<ChatAiAuthPromptProps> = ({
+  authPrompt,
   chatId,
   historyIndex,
   messageIndex,
-  rows,
 }) => {
-  if (!rows.length) return null
+  const { mcpRows, gitlab, jira, confluence } = authPrompt
 
-  const allAuthenticated = rows.every((row) => row.status === 'authenticated')
-
-  if (allAuthenticated) {
+  if (mcpRows?.length) {
     return (
-      <div
-        className={cn(
-          'mt-4 rounded-xl border border-success-primary/30 bg-success-secondary/15 px-4 py-3',
-          'text-sm text-text-primary'
-        )}
-        data-testid="chat-ai-auth-prompt-success"
-      >
-        Re-authenticated successfully. Resend the failed turn or continue the conversation.
-      </div>
+      <ChatAiMcpAuthPrompt
+        chatId={chatId}
+        historyIndex={historyIndex}
+        messageIndex={messageIndex}
+        rows={mcpRows}
+      />
     )
   }
 
-  return (
-    <div className="mt-4 flex flex-col gap-3" data-testid="chat-ai-auth-prompt">
-      <div className="flex flex-col gap-1">
-        <div className="text-sm font-semibold text-text-primary">{getPromptHeading(rows)}</div>
-        <div className="text-xs text-text-secondary">
-          Complete sign-in for the affected MCP server, then resend the failed turn.
-        </div>
-      </div>
+  if (!gitlab && !jira && !confluence) return null
 
-      {rows.map((row) => (
-        <AssistantAuthGateRow
-          key={`${row.mcp_config_id}-${row.status}`}
-          row={row}
-          onAuthenticate={(mcpConfigId) =>
-            chatGenerationStore.initiatePromptAuth(chatId, historyIndex, messageIndex, mcpConfigId)
-          }
-          onContinue={(mcpConfigId) =>
-            chatGenerationStore.continuePromptAuth(chatId, historyIndex, messageIndex, mcpConfigId)
-          }
-          onCancel={(mcpConfigId) =>
-            chatGenerationStore.cancelPromptAuth(chatId, historyIndex, messageIndex, mcpConfigId)
-          }
-        />
-      ))}
+  return (
+    <div className="flex flex-col gap-2">
+      {gitlab && <ChatAiOAuthPrompt provider={OAuthProvider.GITLAB} prompt={gitlab} />}
+      {jira && <ChatAiOAuthPrompt provider={OAuthProvider.JIRA} prompt={jira} />}
+      {confluence && <ChatAiOAuthPrompt provider={OAuthProvider.CONFLUENCE} prompt={confluence} />}
     </div>
   )
 }

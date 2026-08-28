@@ -19,6 +19,9 @@
 import type { UserAbility } from '@/types//common'
 import type { InteractiveRequest, InteractiveResponse } from '@/types/entity/interactive'
 import type { MCPAuthGateServer } from '@/types/entity/mcpAuth'
+import type { ConfluenceConnectRequired } from '@/utils/confluenceAuth'
+import type { GitLabConnectRequired } from '@/utils/gitlabAuth'
+import type { JiraConnectRequired } from '@/utils/jiraAuth'
 
 export const messageFeedbackMark = {
   correct: 'correct',
@@ -159,6 +162,9 @@ export interface ChatMessage {
   messageIndex?: number
   stream?: Stream | null
   mcpAuthPromptRows?: MCPAuthGateServer[] | null
+  gitlabAuthPrompt?: GitLabConnectRequired | null
+  jiraAuthPrompt?: JiraConnectRequired | null
+  confluenceAuthPrompt?: ConfluenceConnectRequired | null
   executionId: string | null
   stateId?: string | null
   interactiveRequest?: InteractiveRequest | null

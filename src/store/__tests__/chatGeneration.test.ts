@@ -211,6 +211,50 @@ describe('chatGenerationStore', () => {
     expect(chat.history[0][0].request).toBe('Hello')
   })
 
+  it('converts a provider connect-required failure into the matching auth prompt', async () => {
+    const historyItem = createHistoryItem()
+    const chat = createChat(historyItem)
+    mockChatsStore.currentChat = chat
+
+    mockStream.mockRejectedValueOnce({
+      error: 'jira_auth_required',
+      setting_id: 's1',
+      integration_name: 'Team Jira',
+    })
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    await chatGenerationStore._sendRequest(chat, 0, 0, createRequest())
+
+    expect(historyItem.response).toBeUndefined()
+    expect(historyItem.jiraAuthPrompt).toEqual({ settingId: 's1', integrationName: 'Team Jira' })
+    expect(historyItem.inProgress).toBe(false)
+  })
+
+  it('clears any stale auth prompt fields when a new provider gate is applied', async () => {
+    // A stale higher-priority prompt must not mask the current one (ChatAiMessage renders by
+    // priority mcp -> gitlab -> jira -> confluence).
+    const historyItem = createHistoryItem({
+      gitlabAuthPrompt: { settingId: 'old', integrationName: 'Old GitLab' },
+      mcpAuthPromptRows: [],
+    })
+    const chat = createChat(historyItem)
+    mockChatsStore.currentChat = chat
+
+    mockStream.mockRejectedValueOnce({
+      error: 'jira_auth_required',
+      setting_id: 's1',
+      integration_name: 'Team Jira',
+    })
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    await chatGenerationStore._sendRequest(chat, 0, 0, createRequest())
+
+    expect(historyItem.jiraAuthPrompt).toEqual({ settingId: 's1', integrationName: 'Team Jira' })
+    expect(historyItem.gitlabAuthPrompt).toBeNull()
+    expect(historyItem.confluenceAuthPrompt).toBeNull()
+    expect(historyItem.mcpAuthPromptRows).toBeNull()
+  })
+
   it('keeps non-auth failures on the generic error path', async () => {
     const historyItem = createHistoryItem()
     const chat = createChat(historyItem)

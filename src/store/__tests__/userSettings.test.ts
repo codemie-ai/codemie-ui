@@ -165,3 +165,127 @@ describe('userSettingsStore mutations — invalidate the scope-aware cache', () 
     expect(mockGet).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('userSettingsStore — per-user GitLab connect', () => {
+  const mockDelete = api.delete as unknown as ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('connectGitLabOAuth posts setting_id and returns the initiate payload', async () => {
+    mockPost.mockResolvedValueOnce(
+      okResponse({
+        auth_url: 'https://gl/auth',
+        state: 'st',
+        instance_url: 'https://gl',
+        setting_id: 's1',
+      })
+    )
+    const res = await userSettingsStore.connectGitLabOAuth('s1')
+    expect(mockPost).toHaveBeenCalledWith('v1/gitlab-oauth/connect', { setting_id: 's1' })
+    expect(res.state).toBe('st')
+    expect(res.setting_id).toBe('s1')
+  })
+
+  it('getGitLabConnectionStatus reads the caller status', async () => {
+    mockGet.mockResolvedValueOnce({
+      ok: true,
+      ...okResponse({ status: 'connected', username: 'groot' }),
+    })
+    const res = await userSettingsStore.getGitLabConnectionStatus('s1')
+    expect(mockGet).toHaveBeenCalledWith('v1/gitlab-oauth/connection?setting_id=s1', {
+      skipErrorHandling: true,
+    })
+    expect(res).toEqual({ status: 'connected', username: 'groot' })
+  })
+
+  it('getGitLabConnectionStatus falls back to not_connected on a failed response', async () => {
+    mockGet.mockResolvedValueOnce({ ok: false })
+    const res = await userSettingsStore.getGitLabConnectionStatus('s1')
+    expect(res).toEqual({ status: 'not_connected', username: '' })
+  })
+
+  it('disconnectGitLabOAuth deletes the caller row', async () => {
+    mockDelete.mockResolvedValueOnce(okResponse({ status: 'disconnected' }))
+    await userSettingsStore.disconnectGitLabOAuth('s1')
+    expect(mockDelete).toHaveBeenCalledWith('v1/gitlab-oauth/connection?setting_id=s1')
+  })
+})
+
+describe('userSettingsStore — per-user Jira connect', () => {
+  const mockDelete = api.delete as unknown as ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('connectJiraOAuth posts setting_id and returns the initiate payload', async () => {
+    mockPost.mockResolvedValueOnce(
+      okResponse({ auth_url: 'https://a', state: 'st', setting_id: 's1' })
+    )
+    const res = await userSettingsStore.connectJiraOAuth('s1')
+    expect(mockPost).toHaveBeenCalledWith('v1/atlassian-oauth/connect', { setting_id: 's1' })
+    expect(res.state).toBe('st')
+    expect(res.setting_id).toBe('s1')
+  })
+
+  it('getJiraConnectionStatus reads the caller status', async () => {
+    mockGet.mockResolvedValueOnce({
+      ok: true,
+      ...okResponse({ status: 'connected', username: 'groot' }),
+    })
+    const res = await userSettingsStore.getJiraConnectionStatus('s1')
+    expect(mockGet).toHaveBeenCalledWith('v1/atlassian-oauth/connection?setting_id=s1', {
+      skipErrorHandling: true,
+    })
+    expect(res).toEqual({ status: 'connected', username: 'groot' })
+  })
+
+  it('getJiraConnectionStatus falls back to not_connected on a failed response', async () => {
+    mockGet.mockResolvedValueOnce({ ok: false })
+    const res = await userSettingsStore.getJiraConnectionStatus('s1')
+    expect(res).toEqual({ status: 'not_connected', username: '' })
+  })
+
+  it('disconnectJiraOAuth deletes the caller row', async () => {
+    mockDelete.mockResolvedValueOnce(okResponse({ status: 'disconnected' }))
+    await userSettingsStore.disconnectJiraOAuth('s1')
+    expect(mockDelete).toHaveBeenCalledWith('v1/atlassian-oauth/connection?setting_id=s1')
+  })
+})
+
+describe('userSettingsStore — per-user Confluence connect', () => {
+  const mockDelete = api.delete as unknown as ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('connectConfluenceOAuth posts setting_id and returns the initiate payload', async () => {
+    mockPost.mockResolvedValueOnce(
+      okResponse({ auth_url: 'https://a', state: 'st', setting_id: 's1' })
+    )
+    const res = await userSettingsStore.connectConfluenceOAuth('s1')
+    expect(mockPost).toHaveBeenCalledWith('v1/confluence-oauth/connect', { setting_id: 's1' })
+    expect(res.state).toBe('st')
+  })
+
+  it('getConfluenceConnectionStatus reads the caller status', async () => {
+    mockGet.mockResolvedValueOnce({
+      ok: true,
+      ...okResponse({ status: 'connected', username: 'groot' }),
+    })
+    const res = await userSettingsStore.getConfluenceConnectionStatus('s1')
+    expect(mockGet).toHaveBeenCalledWith('v1/confluence-oauth/connection?setting_id=s1', {
+      skipErrorHandling: true,
+    })
+    expect(res).toEqual({ status: 'connected', username: 'groot' })
+  })
+
+  it('disconnectConfluenceOAuth deletes the caller row', async () => {
+    mockDelete.mockResolvedValueOnce(okResponse({ status: 'disconnected' }))
+    await userSettingsStore.disconnectConfluenceOAuth('s1')
+    expect(mockDelete).toHaveBeenCalledWith('v1/confluence-oauth/connection?setting_id=s1')
+  })
+})

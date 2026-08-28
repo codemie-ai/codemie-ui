@@ -30,8 +30,11 @@ import {
 import api, { ABORT_ERROR, DEFAULT_ERROR_MESSAGE } from '@/utils/api'
 import { transformChatHistoryFEtoBE } from '@/utils/chatHelpers'
 import { DEFAULT_TOOLS_CONFIG, saveChatSkills, saveChatTools } from '@/utils/chatStorageUtils'
+import { ConfluenceConnectRequired, parseConfluenceConnectRequired } from '@/utils/confluenceAuth'
 import { isChatContextualNamingEnabled } from '@/utils/featureFlags'
+import { GitLabConnectRequired, parseGitLabConnectRequired } from '@/utils/gitlabAuth'
 import { fileToBase64 } from '@/utils/helpers'
+import { JiraConnectRequired, parseJiraConnectRequired } from '@/utils/jiraAuth'
 import { isAuthenticatingGateRow, parseMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
 import {
   getPendingInitiate,
@@ -39,6 +42,7 @@ import {
   MISSING_REDIRECT_HOSTNAME_MESSAGE,
   POPUP_BLOCKED_AUTH_MESSAGE,
 } from '@/utils/mcpAuthInitiate'
+import { OAuthConnectAggregate, parseOAuthConnectRequired } from '@/utils/oauthConnectAggregate'
 import Stream, { streamChunkToObject } from '@/utils/stream'
 import toaster from '@/utils/toaster'
 
@@ -235,13 +239,72 @@ const finalizeFailedRequest = (historyItem: ChatMessage, startTime: Date): void 
   historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
 }
 
+// Auth prompts (MCP + the three provider connect gates) are mutually exclusive on a message.
+// ChatAiMessage renders them by priority (mcp → gitlab → jira → confluence), so a stale
+// higher-priority field would mask the current one — clear all of them before setting one.
+const clearAuthPrompts = (historyItem: ChatMessage): void => {
+  historyItem.mcpAuthPromptRows = null
+  historyItem.gitlabAuthPrompt = null
+  historyItem.jiraAuthPrompt = null
+  historyItem.confluenceAuthPrompt = null
+}
+
 const applyPromptRows = (
   historyItem: ChatMessage,
   promptRows: MCPAuthGateServer[],
   startTime: Date
 ): void => {
   historyItem.response = undefined
+  clearAuthPrompts(historyItem)
   historyItem.mcpAuthPromptRows = promptRows
+  finalizeFailedRequest(historyItem, startTime)
+}
+
+const applyGitlabAuthPrompt = (
+  historyItem: ChatMessage,
+  prompt: GitLabConnectRequired,
+  startTime: Date
+): void => {
+  historyItem.response = undefined
+  clearAuthPrompts(historyItem)
+  historyItem.gitlabAuthPrompt = prompt
+  finalizeFailedRequest(historyItem, startTime)
+}
+
+const applyJiraAuthPrompt = (
+  historyItem: ChatMessage,
+  prompt: JiraConnectRequired,
+  startTime: Date
+): void => {
+  historyItem.response = undefined
+  clearAuthPrompts(historyItem)
+  historyItem.jiraAuthPrompt = prompt
+  finalizeFailedRequest(historyItem, startTime)
+}
+
+const applyConfluenceAuthPrompt = (
+  historyItem: ChatMessage,
+  prompt: ConfluenceConnectRequired,
+  startTime: Date
+): void => {
+  historyItem.response = undefined
+  clearAuthPrompts(historyItem)
+  historyItem.confluenceAuthPrompt = prompt
+  finalizeFailedRequest(historyItem, startTime)
+}
+
+// MCP-style aggregate: several per-user OAuth providers can be unconnected at once, so set every
+// prompt present in one shot (ChatAiMessage stacks them) instead of one provider at a time.
+const applyOAuthConnectPrompts = (
+  historyItem: ChatMessage,
+  aggregate: OAuthConnectAggregate,
+  startTime: Date
+): void => {
+  historyItem.response = undefined
+  clearAuthPrompts(historyItem)
+  historyItem.gitlabAuthPrompt = aggregate.gitlab
+  historyItem.jiraAuthPrompt = aggregate.jira
+  historyItem.confluenceAuthPrompt = aggregate.confluence
   finalizeFailedRequest(historyItem, startTime)
 }
 
@@ -1009,6 +1072,35 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         return
       }
 
+      // Aggregate OAuth gate throws { error: 'oauth_connect_required', providers: [...] } — one or
+      // more of GitLab/Jira/Confluence at once. Handle before the single-provider cases below.
+      const oauthAggregate = parseOAuthConnectRequired(error)
+      if (oauthAggregate) {
+        applyOAuthConnectPrompts(historyItem, oauthAggregate, startTime)
+        return
+      }
+
+      // GitLab connect-required throws { error: 'gitlab_auth_required', setting_id, integration_name }.
+      const gitlabPrompt = parseGitLabConnectRequired(error)
+      if (gitlabPrompt) {
+        applyGitlabAuthPrompt(historyItem, gitlabPrompt, startTime)
+        return
+      }
+
+      // Jira connect-required throws { error: 'jira_auth_required', setting_id, integration_name }.
+      const jiraPrompt = parseJiraConnectRequired(error)
+      if (jiraPrompt) {
+        applyJiraAuthPrompt(historyItem, jiraPrompt, startTime)
+        return
+      }
+
+      // Confluence connect-required throws { error: 'confluence_auth_required', setting_id, integration_name }.
+      const confluencePrompt = parseConfluenceConnectRequired(error)
+      if (confluencePrompt) {
+        applyConfluenceAuthPrompt(historyItem, confluencePrompt, startTime)
+        return
+      }
+
       chatGenerationStore._handleRequestError(historyItem, error, startTime)
       return
     }
@@ -1070,6 +1162,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     historyItem.response = errorText
     historyItem.loginUrl = error?.error?.login_url ?? error?.login_url
     historyItem.mcpAuthPromptRows = null
+    historyItem.gitlabAuthPrompt = null
+    historyItem.jiraAuthPrompt = null
+    historyItem.confluenceAuthPrompt = null
     finalizeFailedRequest(historyItem, startTime)
   },
 

@@ -271,9 +271,22 @@ export const chatsStore = proxy<ChatsStoreType>({
 
   setOpenChat: (newChat, saveToOpenedChatsHistory = true) => {
     const existingChat = chatsStore.openedChatsHistory.find((chat) => chat.id === newChat.id)
+    const isMessagePending = (message: any): boolean =>
+      // A turn that is still streaming, OR one that finalized into an auth gate. The gate
+      // fields (gitlab/jira/confluence/mcp) are reconstructed client-side from a
+      // `*_connect_required` / `authentication_required` error and are never persisted, so a
+      // late `getChat` refetch would return a gate-less history and silently drop the prompt
+      // the user still has to act on. Treat a pending gate like in-progress: keep the local copy.
+      Boolean(
+        message.inProgress ||
+          message.gitlabAuthPrompt ||
+          message.jiraAuthPrompt ||
+          message.confluenceAuthPrompt ||
+          message.mcpAuthPromptRows?.length
+      )
     const hasMessagesInProgress =
       existingChat?.history.reduce(
-        (acc: boolean, messages: any[]) => acc || messages.some((message) => message.inProgress),
+        (acc: boolean, messages: any[]) => acc || messages.some(isMessagePending),
         false
       ) ?? false
 

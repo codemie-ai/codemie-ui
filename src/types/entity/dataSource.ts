@@ -29,6 +29,9 @@ export enum OAuthStatus {
 export enum OAuthProvider {
   GOOGLE = 'Google',
   MICROSOFT = 'Microsoft',
+  GITLAB = 'GitLab',
+  JIRA = 'Jira',
+  CONFLUENCE = 'Confluence',
 }
 
 export interface OAuthInitiateResponse {
@@ -48,6 +51,83 @@ export interface GoogleOAuthStatusResponse extends OAuthStatusResponse {
 export interface SharePointOAuthStatusResponse extends OAuthStatusResponse {
   access_token?: string
   username?: string
+}
+
+export interface GitLabOAuthStatusResponse extends OAuthStatusResponse {
+  instance_url?: string
+  username?: string
+  email?: string
+}
+
+export interface GitLabOAuthInitiateResponse extends OAuthInitiateResponse {
+  instance_url?: string
+}
+
+/** Response of `connect` for an existing shared integration — carries the setting it targets. */
+export interface GitLabOAuthConnectResponse extends GitLabOAuthInitiateResponse {
+  setting_id: string
+}
+
+/** The calling user's own connection state for a shared GitLab integration. */
+export interface GitLabConnectionStatusResponse {
+  status: 'connected' | 'not_connected'
+  username: string
+}
+
+/** App credentials the admin enters in the Jira OAuth integration form. */
+export interface JiraOAuthInitiatePayload {
+  client_id?: string
+  client_secret?: string
+  callback_base_url?: string
+}
+
+export type JiraOAuthInitiateResponse = OAuthInitiateResponse
+
+export interface JiraOAuthConnectResponse extends OAuthInitiateResponse {
+  setting_id: string
+}
+
+export interface JiraOAuthStatusResponse extends OAuthStatusResponse {
+  username?: string
+  email?: string
+}
+
+/** The calling user's own connection state for a shared Jira integration. */
+export interface JiraConnectionStatusResponse {
+  status: 'connected' | 'not_connected'
+  username: string
+}
+
+/** App credentials the admin enters in the Confluence OAuth integration form. */
+export interface ConfluenceOAuthInitiatePayload {
+  client_id?: string
+  client_secret?: string
+  callback_base_url?: string
+}
+
+export type ConfluenceOAuthInitiateResponse = OAuthInitiateResponse
+
+export interface ConfluenceOAuthConnectResponse extends OAuthInitiateResponse {
+  setting_id: string
+}
+
+export interface ConfluenceOAuthStatusResponse extends OAuthStatusResponse {
+  username?: string
+  email?: string
+}
+
+/** The calling user's own connection state for a shared Confluence integration. */
+export interface ConfluenceConnectionStatusResponse {
+  status: 'connected' | 'not_connected'
+  username: string
+}
+
+/** App credentials the admin enters in the integration form, forwarded to `initiate`. */
+export interface GitLabOAuthInitiatePayload {
+  client_id?: string
+  client_secret?: string
+  callback_base_url?: string
+  instance_url?: string
 }
 
 export type SharePointOAuthInitiateResponse = OAuthInitiateResponse

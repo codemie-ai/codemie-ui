@@ -15,7 +15,12 @@
 
 import * as Yup from 'yup'
 
-import { GOOGLE_OAUTH_CREDENTIAL_TYPE } from '@/constants/integration'
+import {
+  CONFLUENCE_OAUTH_CREDENTIAL_TYPE,
+  GITLAB_OAUTH_CREDENTIAL_TYPE,
+  GOOGLE_OAUTH_CREDENTIAL_TYPE,
+  JIRA_OAUTH_CREDENTIAL_TYPE,
+} from '@/constants/integration'
 import { MCP_SETTINGS_TYPE } from '@/constants/settings'
 import { appInfoStore } from '@/store/appInfo'
 import {
@@ -970,5 +975,76 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     serverEnum: 'GoogleOAuth',
     accessType: CredentialAccessType.USER_ONLY,
     fields: {},
+  },
+  [GITLAB_OAUTH_CREDENTIAL_TYPE]: {
+    displayName: 'GitLab (OAuth)',
+    serverEnum: 'GitLabOAuth',
+    accessType: CredentialAccessType.ALL,
+    fields: {
+      instance_url: {
+        placeholder: 'https://gitlab.com',
+        defaultValue: 'https://gitlab.com',
+        help: 'GitLab instance URL (gitlab.com or a self-hosted instance).',
+      },
+      client_id: {
+        placeholder: 'GitLab OAuth Application ID',
+        help: 'https://docs.gitlab.com/ee/integration/oauth_provider.html',
+      },
+      client_secret: {
+        placeholder: 'GitLab OAuth Application Secret',
+        sensitive: true,
+        help: 'https://docs.gitlab.com/ee/integration/oauth_provider.html',
+      },
+      callback_base_url: {
+        placeholder: 'https://your-codemie-host',
+        help:
+          'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
+          'must match the Redirect URI registered on the GitLab OAuth application.',
+      },
+    },
+  },
+  [JIRA_OAUTH_CREDENTIAL_TYPE]: {
+    displayName: 'Jira (OAuth)',
+    serverEnum: 'JiraOAuth',
+    accessType: CredentialAccessType.ALL,
+    fields: {
+      client_id: {
+        placeholder: 'Atlassian OAuth Client ID',
+        help: 'https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/',
+      },
+      client_secret: {
+        placeholder: 'Atlassian OAuth Client Secret',
+        sensitive: true,
+        help: 'https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/',
+      },
+      callback_base_url: {
+        placeholder: 'https://your-codemie-host',
+        help:
+          'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
+          'must match the Callback URL registered on the Atlassian OAuth (3LO) app.',
+      },
+    },
+  },
+  [CONFLUENCE_OAUTH_CREDENTIAL_TYPE]: {
+    displayName: 'Confluence (OAuth)',
+    serverEnum: 'ConfluenceOAuth',
+    accessType: CredentialAccessType.ALL,
+    fields: {
+      client_id: {
+        placeholder: 'Atlassian OAuth Client ID',
+        help: 'https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/',
+      },
+      client_secret: {
+        placeholder: 'Atlassian OAuth Client Secret',
+        sensitive: true,
+        help: 'https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/',
+      },
+      callback_base_url: {
+        placeholder: 'https://your-codemie-host',
+        help:
+          'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
+          'must match the Callback URL registered on the Atlassian OAuth (3LO) app.',
+      },
+    },
   },
 }

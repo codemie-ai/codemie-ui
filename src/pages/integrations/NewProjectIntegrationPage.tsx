@@ -26,6 +26,7 @@ import { navigateBack } from '@/utils/helpers'
 import { getTestableCredentialTypes } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 
+import OAuthTestAction from './components/OAuthTestAction'
 import SettingsForm, { SettingsFormRef } from './components/SettingsForm/SettingsForm'
 import TestIntegration from './components/TestIntegration'
 import { getErrorMessage } from './utils/getErrorMessage'
@@ -78,6 +79,10 @@ const NewProjectIntegrationPage = () => {
                   label="Test"
                 />
               )}
+            <OAuthTestAction
+              credentialType={credentialType.toLowerCase()}
+              credentialValues={credentialValues}
+            />
             <Button type={ButtonType.PRIMARY} onClick={() => formRef.current?.submit()}>
               Save
             </Button>

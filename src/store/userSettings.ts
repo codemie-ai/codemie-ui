@@ -16,7 +16,22 @@
 import { proxy } from 'valtio'
 
 import { Pagination } from '@/types/common'
-import { GoogleOAuthStatusResponse, OAuthInitiateResponse } from '@/types/entity/dataSource'
+import {
+  ConfluenceConnectionStatusResponse,
+  ConfluenceOAuthConnectResponse,
+  ConfluenceOAuthInitiatePayload,
+  ConfluenceOAuthInitiateResponse,
+  GitLabConnectionStatusResponse,
+  GitLabOAuthConnectResponse,
+  GitLabOAuthInitiatePayload,
+  GitLabOAuthInitiateResponse,
+  GoogleOAuthStatusResponse,
+  JiraConnectionStatusResponse,
+  JiraOAuthConnectResponse,
+  JiraOAuthInitiatePayload,
+  JiraOAuthInitiateResponse,
+  OAuthInitiateResponse,
+} from '@/types/entity/dataSource'
 import { UserSetting } from '@/types/entity/setting'
 import api from '@/utils/api'
 
@@ -54,6 +69,22 @@ interface UserSettingsStoreType {
   getGoogleDocsOAuthStatus: (state: string) => Promise<GoogleOAuthStatusResponse>
   initiateSharePointOAuth: () => Promise<OAuthInitiateResponse>
   getSharePointOAuthStatus: (state: string) => Promise<GoogleOAuthStatusResponse>
+  initiateGitLabOAuth: (
+    payload?: GitLabOAuthInitiatePayload
+  ) => Promise<GitLabOAuthInitiateResponse>
+  connectGitLabOAuth: (settingId: string) => Promise<GitLabOAuthConnectResponse>
+  getGitLabConnectionStatus: (settingId: string) => Promise<GitLabConnectionStatusResponse>
+  disconnectGitLabOAuth: (settingId: string) => Promise<{ status: string }>
+  initiateJiraOAuth: (payload?: JiraOAuthInitiatePayload) => Promise<JiraOAuthInitiateResponse>
+  connectJiraOAuth: (settingId: string) => Promise<JiraOAuthConnectResponse>
+  getJiraConnectionStatus: (settingId: string) => Promise<JiraConnectionStatusResponse>
+  disconnectJiraOAuth: (settingId: string) => Promise<{ status: string }>
+  initiateConfluenceOAuth: (
+    payload?: ConfluenceOAuthInitiatePayload
+  ) => Promise<ConfluenceOAuthInitiateResponse>
+  connectConfluenceOAuth: (settingId: string) => Promise<ConfluenceOAuthConnectResponse>
+  getConfluenceConnectionStatus: (settingId: string) => Promise<ConfluenceConnectionStatusResponse>
+  disconnectConfluenceOAuth: (settingId: string) => Promise<{ status: string }>
 }
 
 export const userSettingsStore = proxy<UserSettingsStoreType>({
@@ -221,5 +252,101 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
     // account as `username`. No token is read here - it is stored server-side
     // when the integration is saved, using the oauth_state.
     return { ...data, email: data.username }
+  },
+
+  async initiateGitLabOAuth(
+    payload: GitLabOAuthInitiatePayload = {}
+  ): Promise<GitLabOAuthInitiateResponse> {
+    const response = await api.post('v1/gitlab-oauth/initiate', payload)
+    return response.json()
+  },
+
+  // Per-user connect to an existing shared integration: app credentials are loaded server-side
+  // from `settingId`, so the member never re-enters client_id / client_secret.
+  async connectGitLabOAuth(settingId: string): Promise<GitLabOAuthConnectResponse> {
+    const response = await api.post('v1/gitlab-oauth/connect', { setting_id: settingId })
+    return response.json()
+  },
+
+  async getGitLabConnectionStatus(settingId: string): Promise<GitLabConnectionStatusResponse> {
+    const response = await api.get(
+      `v1/gitlab-oauth/connection?setting_id=${encodeURIComponent(settingId)}`,
+      { skipErrorHandling: true }
+    )
+    if (!response.ok) {
+      return { status: 'not_connected', username: '' }
+    }
+    return response.json()
+  },
+
+  async disconnectGitLabOAuth(settingId: string): Promise<{ status: string }> {
+    const response = await api.delete(
+      `v1/gitlab-oauth/connection?setting_id=${encodeURIComponent(settingId)}`
+    )
+    return response.json()
+  },
+
+  async initiateJiraOAuth(
+    payload: JiraOAuthInitiatePayload = {}
+  ): Promise<JiraOAuthInitiateResponse> {
+    const response = await api.post('v1/atlassian-oauth/initiate', payload)
+    return response.json()
+  },
+
+  // Per-user connect to an existing shared Jira integration: app credentials are loaded server-side
+  // from `settingId`, so the member never re-enters client_id / client_secret.
+  async connectJiraOAuth(settingId: string): Promise<JiraOAuthConnectResponse> {
+    const response = await api.post('v1/atlassian-oauth/connect', { setting_id: settingId })
+    return response.json()
+  },
+
+  async getJiraConnectionStatus(settingId: string): Promise<JiraConnectionStatusResponse> {
+    const response = await api.get(
+      `v1/atlassian-oauth/connection?setting_id=${encodeURIComponent(settingId)}`,
+      { skipErrorHandling: true }
+    )
+    if (!response.ok) {
+      return { status: 'not_connected', username: '' }
+    }
+    return response.json()
+  },
+
+  async disconnectJiraOAuth(settingId: string): Promise<{ status: string }> {
+    const response = await api.delete(
+      `v1/atlassian-oauth/connection?setting_id=${encodeURIComponent(settingId)}`
+    )
+    return response.json()
+  },
+
+  async initiateConfluenceOAuth(
+    payload: ConfluenceOAuthInitiatePayload = {}
+  ): Promise<ConfluenceOAuthInitiateResponse> {
+    const response = await api.post('v1/confluence-oauth/initiate', payload)
+    return response.json()
+  },
+
+  async connectConfluenceOAuth(settingId: string): Promise<ConfluenceOAuthConnectResponse> {
+    const response = await api.post('v1/confluence-oauth/connect', { setting_id: settingId })
+    return response.json()
+  },
+
+  async getConfluenceConnectionStatus(
+    settingId: string
+  ): Promise<ConfluenceConnectionStatusResponse> {
+    const response = await api.get(
+      `v1/confluence-oauth/connection?setting_id=${encodeURIComponent(settingId)}`,
+      { skipErrorHandling: true }
+    )
+    if (!response.ok) {
+      return { status: 'not_connected', username: '' }
+    }
+    return response.json()
+  },
+
+  async disconnectConfluenceOAuth(settingId: string): Promise<{ status: string }> {
+    const response = await api.delete(
+      `v1/confluence-oauth/connection?setting_id=${encodeURIComponent(settingId)}`
+    )
+    return response.json()
   },
 })

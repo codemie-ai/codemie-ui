@@ -16,14 +16,31 @@
 import { saveAs } from 'file-saver'
 
 import { ENV, HTTP_STATUS } from '@/constants'
+import { isConfluenceConnectRequired } from '@/utils/confluenceAuth'
+import { isGitLabConnectRequired } from '@/utils/gitlabAuth'
 import { HttpError } from '@/utils/handleMultipartError'
+import { isJiraConnectRequired } from '@/utils/jiraAuth'
 import { isMCPAuthRequiredErrorPayload } from '@/utils/mcpAuth'
+import { isOAuthConnectRequired } from '@/utils/oauthConnectAggregate'
 import { savePostLoginRedirect } from '@/utils/postLoginRedirect'
 import toaster from '@/utils/toaster'
 import { getMode, getIsLocalAuth } from '@/utils/utils'
 
 export const ABORT_ERROR = 'AbortError'
 export const DEFAULT_ERROR_MESSAGE = 'Oops! Something went wrong'
+
+/**
+ * True for any run error payload the caller renders as an in-chat auth/connect gate — MCP
+ * `authentication_required` or a provider OAuth connect-required (`gitlab_auth_required` /
+ * `jira_auth_required` / `confluence_auth_required`). For these we suppress the generic
+ * "Failed to generate answer" toast and the session-expired redirect so the gate renders instead.
+ */
+const isAuthGatePayload = (payload: unknown): boolean =>
+  isMCPAuthRequiredErrorPayload(payload) ||
+  isOAuthConnectRequired(payload) ||
+  isGitLabConnectRequired(payload) ||
+  isJiraConnectRequired(payload) ||
+  isConfluenceConnectRequired(payload)
 
 export function parseContentDispositionFilename(header: string | null): string | undefined {
   let result: string | undefined
@@ -223,7 +240,7 @@ class API {
         throw error
       }
 
-      if (!isMCPAuthRequiredErrorPayload(parsedResponse)) {
+      if (!isAuthGatePayload(parsedResponse)) {
         toaster.error('Failed to generate answer')
       }
 
@@ -361,12 +378,12 @@ class API {
             const isBrokerAuthRequired =
               (authRequiredBody as Record<string, Record<string, unknown>> | null)?.error
                 ?.login_url != null
-            if (!isMCPAuthRequiredErrorPayload(authRequiredBody) && !isBrokerAuthRequired) {
+            if (!isAuthGatePayload(authRequiredBody) && !isBrokerAuthRequired) {
               this.handleSessionExpired(url)
               return reject(response) // NOSONAR - callers use instanceof Response to detect API errors
             }
-            // MCP authentication_required 401 or broker auth required: fall through so the
-            // caller receives a ResponseWithParsedError and can render the auth prompt.
+            // MCP authentication_required 401, a provider OAuth connect-required, or broker auth:
+            // fall through so the caller receives a ResponseWithParsedError and renders the gate.
           }
 
           const responseClone = response.clone() as ResponseWithParsedError

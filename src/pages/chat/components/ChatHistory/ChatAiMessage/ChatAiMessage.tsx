@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useMemo, useState, useRef, KeyboardEvent, useLayoutEffect } from 'react'
+import { FC, useMemo, useState, useRef, KeyboardEvent, useLayoutEffect, ReactNode } from 'react'
 import { useSnapshot } from 'valtio'
 
 import ProcessingCompleteSvg from '@/assets/icons/processing-status.svg?react'
@@ -32,7 +32,7 @@ import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
 import './ChatAiMessage.scss'
-import ChatAiAuthPrompt from './ChatAiAuthPrompt'
+import ChatAiAuthPrompt, { ChatAuthPrompt } from './ChatAiAuthPrompt'
 import ChatAiInteractiveBlock from './ChatAiInteractiveBlock'
 import ChatAiMessageActions from './ChatAiMessageActions'
 import ThinkingLoader from './ThinkingLoader'
@@ -161,7 +161,6 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   }
 
   const isInProgress = message.inProgress
-  const hasMcpAuthPrompt = Boolean(message.mcpAuthPromptRows?.length)
 
   const processingTime = useMemo(() => {
     return message.processingTime == null ? null : message.processingTime.toFixed(2)
@@ -184,6 +183,26 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'
     }
   }, [isEditing, newResponse])
+
+  // Map every possible auth gate for this turn under one object; ChatAiAuthPrompt decides what to
+  // render (MCP takes precedence, otherwise the set per-user OAuth prompts are stacked).
+  const authPrompt: ChatAuthPrompt = {
+    mcpRows: message.mcpAuthPromptRows ?? undefined,
+    gitlab: message.gitlabAuthPrompt ?? undefined,
+    jira: message.jiraAuthPrompt ?? undefined,
+    confluence: message.confluenceAuthPrompt ?? undefined,
+  }
+  const hasAuthPrompt = Boolean(
+    authPrompt.mcpRows?.length || authPrompt.gitlab || authPrompt.jira || authPrompt.confluence
+  )
+  const authPromptElement: ReactNode = hasAuthPrompt ? (
+    <ChatAiAuthPrompt
+      authPrompt={authPrompt}
+      chatId={currentChat?.id ?? ''}
+      historyIndex={indexes.historyIndex}
+      messageIndex={indexes.messageIndex}
+    />
+  ) : null
 
   return (
     <div className="flex gap-4 min-w-0" data-onboarding="chat-ai-message">
@@ -233,14 +252,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
 
         {!isEditing && (
           <div ref={messageElementRef}>
-            {hasMcpAuthPrompt ? (
-              <ChatAiAuthPrompt
-                chatId={currentChat?.id ?? ''}
-                historyIndex={indexes.historyIndex}
-                messageIndex={indexes.messageIndex}
-                rows={message.mcpAuthPromptRows ?? []}
-              />
-            ) : (
+            {authPromptElement ?? (
               <>
                 <Markdown
                   className="mt-4"

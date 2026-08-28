@@ -29,7 +29,10 @@ import Switch from '@/components/form/Switch'
 import InfoMessage from '@/components/Message/Message'
 import ProjectSelector from '@/components/ProjectSelector'
 import {
+  getBaseTypeForOAuthVariant,
   GOOGLE_OAUTH_CREDENTIAL_TYPE,
+  OAUTH_VARIANT_BY_BASE_TYPE,
+  OAUTH_VARIANT_CREDENTIAL_TYPES,
   SHAREPOINT_AUTH_METHOD_OPTIONS,
   SHAREPOINT_AUTH_METHODS,
   SHAREPOINT_CREDENTIAL_TYPE,
@@ -55,6 +58,7 @@ import {
   slugifyType,
 } from '@/utils/settings'
 
+import OAuthTestAction from '../OAuthTestAction'
 import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
 import TestIntegration from '../TestIntegration'
 import CredentialFields from './CredentialFields'
@@ -237,6 +241,9 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       return Yup.object(schema)
     }
 
+    // GitLab / Jira / Confluence OAuth integrations are saved with app credentials only; each user
+    // connects their own token afterwards via the per-user OAuth flow, so there is no sign-in
+    // (oauth_state) to require here. Their app-credential fields are still validated below.
     const config = CREDENTIAL_VALUES_MAPPING[credentialType]
     if (!config) return Yup.object(schema)
 
@@ -279,8 +286,26 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     }
   }
 
+  // OAuth-variant folding: Jira/Confluence expose their OAuth flavour through an in-form toggle
+  // rather than a separate select item, so the effective credentialType can be the base type
+  // ('jira') or its OAuth variant ('jiraoauth'). The select always shows the base type.
+  const baseCredentialType = getBaseTypeForOAuthVariant(credentialType) ?? credentialType
+  const oauthVariantType = OAUTH_VARIANT_BY_BASE_TYPE[baseCredentialType]
+  const isOAuthVariantSelected = !!oauthVariantType && credentialType === oauthVariantType
+  // Only offer the toggle when the OAuth variant is actually available in this context
+  // (role/enterprise/feature-flag gating already applied to CREDENTIAL_VALUES_MAPPING).
+  const showOAuthToggle =
+    !!oauthVariantType && CREDENTIAL_VALUES_MAPPING[oauthVariantType] !== undefined
+
+  const handleOAuthToggle = (useOAuth: boolean) => {
+    if (!oauthVariantType) return
+    handleCredentialTypeChange(useOAuth ? oauthVariantType : baseCredentialType)
+  }
+
   const credentialTypeOptions = useMemo(() => {
-    const options = CREDENTIAL_TYPES.map((type) => ({
+    const options = CREDENTIAL_TYPES.filter(
+      (type) => !OAUTH_VARIANT_CREDENTIAL_TYPES.has(type)
+    ).map((type) => ({
       label: CREDENTIAL_VALUES_MAPPING[type]?.displayName || getOriginalCredentialType(type),
       value: type,
     }))
@@ -320,7 +345,10 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
 
   useEffect(() => {
     if (editing || aliasManuallyEdited.current || !credentialType) return
-    const defaultAlias = generateDefaultAlias(credentialType)
+    // Use the base type so toggling OAuth on/off keeps a stable "jira-…"/"confluence-…" alias.
+    const defaultAlias = generateDefaultAlias(
+      getBaseTypeForOAuthVariant(credentialType) ?? credentialType
+    )
     if (defaultAlias) setFormValue('alias', defaultAlias)
   }, [credentialType])
 
@@ -441,6 +469,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
         // with the integration is submitted, so switching to app registration would
         // leave it marked delegated and the tool would keep using the old sign-in.
         if (isSharePoint) rawValues.auth_type = sharePointAuthMethod
+        // oauth_state is forwarded as a top-level field, not stored as a credential value.
+        delete rawValues.oauth_state
         credential_values = convertCredsToKeyValue(rawValues).filter(
           ({ value }) => value !== undefined
         )
@@ -453,7 +483,9 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       credential_type: getOriginalCredentialType(credentialType),
       credential_values,
       is_global: isGlobal,
-      ...(isGoogleOAuth && { oauth_state: getValues('oauth_state') || undefined }),
+      ...(isGoogleOAuth && {
+        oauth_state: getValues('oauth_state') || undefined,
+      }),
       // Only sent when the user chose "Sign in with Microsoft"; the backend then
       // replaces the auth fields with the delegated tokens.
       ...(isSharePointOAuth &&
@@ -523,7 +555,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
         <div data-onboarding="integration-credential-type-field">
           <Autocomplete
             id="credentialType"
-            value={credentialType}
+            value={baseCredentialType}
             name="credentialType"
             placeholder="Credential Type"
             label="Credential Type"
@@ -533,6 +565,20 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
             onChange={handleCredentialTypeChange}
           />
         </div>
+
+        {showOAuthToggle && (
+          <div data-onboarding="integration-oauth-toggle">
+            <Switch
+              id="useOAuth"
+              value={isOAuthVariantSelected}
+              onChange={(e) => handleOAuthToggle(e.target.checked)}
+              disabled={editing || disableType}
+              styledDisabled
+              label="Use OAuth 2.0 sign-in"
+              hint="Authorize with your own account through a browser sign-in instead of a shared API token. Each user connects individually."
+            />
+          </div>
+        )}
 
         <div data-onboarding="integration-alias-field">
           <Controller
@@ -565,7 +611,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
             setValue={setFormValue}
             editing={editing}
             formError={errors.oauth_state?.message as string | undefined}
-            initialUserEmail={initialCredentialValues?.email as string | undefined}
+            initialUserEmail={initialCredentialValues?.email}
           />
         ) : (
           <div data-onboarding="integration-credential-fields" className="flex flex-col gap-y-6">
@@ -662,6 +708,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                 label="Test Integration"
               />
             )}
+
+            <OAuthTestAction credentialType={credentialType} credentialValues={getValues()} />
 
             <Button onClick={submit}>{submitText || 'Save'}</Button>
           </div>
