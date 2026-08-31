@@ -39,6 +39,7 @@ const WorkflowStateInput = ({ text, className }: WorkflowStateInputProps) => {
       className="!px-2"
       data-tooltip-id="react-tooltip"
       data-tooltip-content="Expand"
+      aria-label="Expand prompt"
       onClick={handleExpand}
     >
       <ExpandSvg className="size-4 test2" />

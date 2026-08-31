@@ -90,6 +90,7 @@ const WorkflowExecutionHeader: React.FC<WorkflowExecutionHeaderProps> = ({
             onClick={() => setShowExportPopup(true)}
             data-tooltip-id="react-tooltip"
             data-tooltip-content="Export as .md or .html"
+            aria-label="Export as .md or .html"
           >
             <DownloadSvg />
           </Button>

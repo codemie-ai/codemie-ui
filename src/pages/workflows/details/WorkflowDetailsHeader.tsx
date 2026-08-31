@@ -69,6 +69,7 @@ const WorkflowDetailsHeader = ({
           onClick={() => setIsPopupVisible(true)}
           data-tooltip-id="react-tooltip"
           data-tooltip-content="Clear all executions"
+          aria-label="Clear all executions"
         >
           <SweepSvg />
         </Button>

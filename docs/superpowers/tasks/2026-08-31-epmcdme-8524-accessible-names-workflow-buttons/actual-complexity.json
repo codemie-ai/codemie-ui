@@ -1,0 +1,75 @@
+{
+  "task": "Add explicit programmatic accessible names (aria-labels) to four icon-only buttons on the workflow details, execution, and state drawer views to comply with WCAG 2.1 SC 4.1.2.",
+  "generated": "2026-08-31T15:30:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "WorkflowDetailsHeader, WorkflowExecutionHeader, WorkflowStateInput, WorkflowStateOutput (modified)",
+      "layers": "UI/Component"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 7,
+      "modified_file_list": [
+        "src/pages/workflows/details/WorkflowDetailsHeader.tsx",
+        "src/pages/workflows/details/WorkflowExecutionHeader.tsx",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerState/WorkflowStateInput.tsx",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerState/WorkflowStateOutput.tsx",
+        "src/pages/workflows/details/__tests__/WorkflowExecutionHeader.test.tsx",
+        "src/pages/workflows/details/__tests__/WorkflowHeader.test.tsx",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerState/__tests__/WorkflowStateOutput.test.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/pages/workflows/details"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": [
+        "UI/Component"
+      ],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "band_range": "1-5",
+  "files_changed": 7,
+  "routing": "straight-to-impl",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Modified 4 UI components to add aria-labels and 3 corresponding unit test files to verify them."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Completely restricted to isolated React button attributes in the UI layer with zero side effects."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

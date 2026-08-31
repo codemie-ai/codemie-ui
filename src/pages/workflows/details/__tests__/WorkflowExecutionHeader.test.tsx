@@ -189,6 +189,8 @@ describe('WorkflowExecutionHeader', () => {
       wrapper: Wrapper,
     })
 
+    const exportButton = screen.getByRole('button', { name: 'Export as .md or .html' })
+    expect(exportButton).toBeInTheDocument()
     expect(screen.getByTestId('download-icon')).toBeInTheDocument()
   })
 

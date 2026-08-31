@@ -175,6 +175,8 @@ describe('WorkflowStateOutput', () => {
     renderWithContext(<WorkflowStateOutput {...defaultProps} />)
 
     await waitFor(() => {
+      const expandButton = screen.getByRole('button', { name: 'Expand output' })
+      expect(expandButton).toBeInTheDocument()
       expect(screen.getByTestId('expand-icon')).toBeInTheDocument()
     })
   })

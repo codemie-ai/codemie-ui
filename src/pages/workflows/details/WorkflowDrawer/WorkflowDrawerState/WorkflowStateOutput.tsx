@@ -70,6 +70,7 @@ const WorkflowStateOutput = ({
       className="!px-2"
       data-tooltip-id="react-tooltip"
       data-tooltip-content="Expand"
+      aria-label="Expand output"
       onClick={handleExpand}
     >
       <ExpandSvg className="size-4" />

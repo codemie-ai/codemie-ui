@@ -144,6 +144,8 @@ describe('WorkflowHeader', () => {
   it('renders clear executions button', () => {
     renderWithContext(<WorkflowDetailsHeader {...defaultProps} />)
 
+    const clearButton = screen.getByRole('button', { name: 'Clear all executions' })
+    expect(clearButton).toBeInTheDocument()
     expect(screen.getByTestId('sweep-icon')).toBeInTheDocument()
   })
 
