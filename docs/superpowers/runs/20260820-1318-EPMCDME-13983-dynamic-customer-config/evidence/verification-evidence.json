@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "required": true,
+  "verified": true,
+  "blocking": false,
+  "tool": "chrome + live local stack",
+  "environment": "docker compose stack with src/ and config/ mounted into the codemie container; frontend dev server on 5173",
+  "results": [
+    {"feature_id": "FR-7a/7b/7c", "name": "Admin page renders from declarations", "status": "pass", "evidence": "Customer Configuration tab present; card shows label, description, a switch and a textarea, all generated from the declaration payload"},
+    {"feature_id": "FR-7e", "name": "Override/default marker and reset control", "status": "pass", "evidence": "marker read 'Default from config' with no reset control before the first write, 'Overridden' with 'Reset to default' after"},
+    {"feature_id": "FR-4a", "name": "Save persists the declared fields", "status": "pass", "evidence": "PUT stored {enabled:true, text:...}; dynamic_config row CUSTOMER_CONFIG__CHAT_DISCLAIMER, value_type STRING, JSON payload"},
+    {"feature_id": "FR-7g", "name": "Change visible without a manual reload", "status": "pass", "evidence": "navigating to Chat in the same tab, without F5, showed the new disclaimer"},
+    {"feature_id": "FR-3a", "name": "Override applied before the enabled filter", "status": "pass", "evidence": "chatDisclaimer is disabled in YAML yet appeared in the anonymous GET /v1/config once enabled from the admin page"},
+    {"feature_id": "FR-3d", "name": "Public endpoint stays anonymous", "status": "pass", "evidence": "GET /v1/config returned the merged result with no credentials"},
+    {"feature_id": "FR-8b/8c", "name": "Disclaimer shown below the chat input, non-dismissible", "status": "pass", "evidence": "rendered under the composer, no dismiss control, banner untouched"},
+    {"feature_id": "FR-8d", "name": "Links render as clickable", "status": "pass", "evidence": "two anchors with href to example.com, target=_blank, rel='noopener noreferrer'"},
+    {"feature_id": "FR-8f", "name": "Truncation with ellipsis and full-text tooltip", "status": "pass", "evidence": "423-character text clamped to two lines (line-clamp-2, scrollHeight > clientHeight) with data-tooltip-content carrying the full text"},
+    {"feature_id": "FR-8g", "name": "Block markup flattened inline", "status": "pass", "evidence": "input containing a heading, a list and a blockquote produced only STRONG and A elements, offsetHeight 16px, no block tags"},
+    {"feature_id": "FR-4b", "name": "Reset restores the deployment default", "status": "pass", "evidence": "'Reset to default' removed the row (0 rows in dynamic_config), the marker returned to 'Default from config' and the component left the public config"},
+    {"feature_id": "FR-6a", "name": "Write guard", "status": "pass", "evidence": "GET /v1/config/declarations without credentials returned 401"},
+    {"feature_id": "FR-6b", "name": "Audit trail", "status": "pass", "evidence": "with ACTIVITY_EVENTS_ENABLED on, an update and a reset each produced a row with old/new value and a non-null actor_id (FK to users resolved); rows removed afterwards"},
+    {"feature_id": "FR-6c / CR-002", "name": "Sanitisation on write", "status": "pass", "evidence": "javascript: link rejected 400; the same link hidden behind java&#115;cript: also rejected 400; 'AT&T' stored and displayed verbatim, not HTML-escaped"},
+    {"feature_id": "FR-4a (negative)", "name": "Invalid payloads store nothing", "status": "pass", "evidence": "undeclared field 'name' rejected 400; undeclared component features:webSearch rejected 404; the previously stored value survived both"}
+  ],
+  "console_errors": [],
+  "cleanup": "override row deleted, audit rows from the verification removed, .env restored byte-identical, container restarted"
+}

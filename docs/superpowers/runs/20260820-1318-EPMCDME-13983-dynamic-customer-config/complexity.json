@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "source": "heuristic",
+  "score": 24,
+  "routing": "brainstorming",
+  "signals": {
+    "affected_file_estimate": 20,
+    "keyword_signals": {
+      "security": true,
+      "auth": true,
+      "migration": true,
+      "breaking": false,
+      "provider": false,
+      "integration": true,
+      "refactor": true
+    },
+    "multi_repo": true,
+    "rationale": "Two repos, a new declaration/resolution layer on top of two existing APIs, a public anonymous endpoint whose merge semantics change, admin-guarded writes, audit logging, input sanitisation and a cross-pod cache. Multi-system integration plus security keywords force the brainstorming route."
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "task_id": "B1-B8,F1-F5",
+  "test_first": true,
+  "failing_test_command": "poetry run pytest tests/codemie/service/test_customer_config_declarations.py -x -q (and the per-task equivalents)",
+  "failure_excerpt": "ModuleNotFoundError: No module named 'codemie.service.customer_config_declarations' — each task began with a red test before implementation",
+  "implementation_summary": "Declaration registry, per-field resolver with TTL cache and degradation, validation and sanitisation, dedicated write guard, audit emission and router endpoints on the backend; SchemaForm renderer, customer configuration store, admin page and chat disclaimer on the frontend.",
+  "passing_command": "poetry run pytest <feature suites> -q ; npx vitest run <changed areas> ; npx vitest run --project integration",
+  "passing_excerpt": "backend 215 passed across the feature suites; frontend 1085 unit and 7 integration tests passed",
+  "files_touched": ["src/codemie/service/customer_config_declarations.py", "src/codemie/service/customer_config_service.py", "src/codemie/service/dynamic_config_service.py", "src/codemie/rest_api/routers/customer_config.py", "src/codemie/rest_api/models/customer_config.py", "src/codemie/rest_api/security/authentication.py", "src/codemie/service/activity/activity_models.py", "src/codemie/configs/config.py", "src/codemie/configs/customer_config.py", "config/customer/customer-config.yaml", "codemie-ui/src/components/SchemaForm/*", "codemie-ui/src/store/customerConfiguration.ts", "codemie-ui/src/store/appInfo.ts", "codemie-ui/src/pages/settings/administration/CustomerConfigurationPage.tsx", "codemie-ui/src/pages/settings/administration/components/SettingCard.tsx", "codemie-ui/src/pages/chat/components/ChatDisclaimer/*"]
+}

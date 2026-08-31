@@ -25,6 +25,7 @@ vi.mock('@/utils/api', () => ({
 
 // Import after mock so the store picks up the mocked api
 const { appInfoStore } = await import('@/store/appInfo')
+const { getConfigItemSettings } = await import('@/utils/settings')
 
 const okResponse = (data: unknown) => ({
   json: () => Promise.resolve(data),
@@ -276,5 +277,44 @@ describe('appInfoStore.getLLMModels', () => {
     })
     expect(models[1].isPremium).toBeUndefined()
     expect(models[1].cost).toBeUndefined()
+  })
+})
+
+describe('appInfoStore customer config refetch', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    appInfoStore.configs = []
+    appInfoStore.isConfigFetched = false
+  })
+
+  it('serves the cached config on a second fetch', async () => {
+    mockGet.mockResolvedValue(okResponse([{ id: 'chatDisclaimer', settings: { enabled: true, text: 'hi' } }]))
+
+    await appInfoStore.fetchCustomerConfig()
+    await appInfoStore.fetchCustomerConfig()
+
+    expect(mockGet).toHaveBeenCalledTimes(1)
+  })
+
+  it('refetch bypasses the fetched flag so a saved change is visible without a reload', async () => {
+    mockGet.mockResolvedValue(okResponse([{ id: 'chatDisclaimer', settings: { enabled: true, text: 'first' } }]))
+    await appInfoStore.fetchCustomerConfig()
+
+    mockGet.mockResolvedValue(okResponse([{ id: 'chatDisclaimer', settings: { enabled: true, text: 'second' } }]))
+    await appInfoStore.refetchCustomerConfig()
+
+    expect(mockGet).toHaveBeenCalledTimes(2)
+    expect(getConfigItemSettings(appInfoStore.configs, 'chatDisclaimer')).toMatchObject({
+      enabled: true,
+      text: 'second',
+    })
+  })
+
+  it('reports no disclaimer settings when the component is absent from config', async () => {
+    mockGet.mockResolvedValue(okResponse([]))
+
+    await appInfoStore.fetchCustomerConfig()
+
+    expect(getConfigItemSettings(appInfoStore.configs, 'chatDisclaimer')).toBeNull()
   })
 })

@@ -1,0 +1,67 @@
+{
+  "run_id": "20260820-1318-EPMCDME-13983-dynamic-customer-config",
+  "mode": "hitl",
+  "started_at": "2026-08-20T13:18:00Z",
+  "task_input": "https://jiraeu.epam.com/browse/EPMCDME-13983 + customer-config-dynamic-decisions.md",
+  "branch": "feature/EPMCDME-13983-dynamic-customer-config",
+  "repos": {
+    "backend": "/Users/evgeniikvasiuk/Projects/codemie/codemie",
+    "frontend": "/Users/evgeniikvasiuk/Projects/codemie/codemie-ui"
+  },
+  "work_item": {
+    "canonical_path": "docs/superpowers/work-items/EPMCDME-13983.md",
+    "run_mirror": "docs/superpowers/runs/20260820-1318-EPMCDME-13983-dynamic-customer-config/work-item.md",
+    "event_ledger": "docs/superpowers/runs/20260820-1318-EPMCDME-13983-dynamic-customer-config/work-item-events.jsonl"
+  },
+  "current_phase": 10,
+  "status": "completed",
+  "escalate_on": [
+    "security",
+    "breaking-change"
+  ],
+  "branch_guard": {
+    "current_branch": "feature/EPMCDME-13983-dynamic-customer-config",
+    "base_branch": "main",
+    "target_branch": "feature/EPMCDME-13983-dynamic-customer-config",
+    "working_tree": "clean",
+    "upstream": "in-sync",
+    "target_branch_exists": true,
+    "base_refreshed": true,
+    "decision": "continue"
+  },
+  "phases": {
+    "0": {
+      "status": "completed"
+    },
+    "1": {
+      "status": "completed"
+    },
+    "2": {
+      "status": "completed"
+    },
+    "3": {
+      "status": "completed"
+    },
+    "4": {
+      "status": "completed"
+    },
+    "5": {
+      "status": "completed"
+    },
+    "6": {
+      "status": "completed"
+    },
+    "7": {
+      "status": "completed"
+    },
+    "8": {
+      "status": "completed"
+    },
+    "9": {
+      "status": "completed"
+    },
+    "10": {
+      "status": "completed"
+    }
+  }
+}

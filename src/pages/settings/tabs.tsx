@@ -96,9 +96,16 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
     title: 'Teams bot integration',
     url: '/settings/administration/teams',
   }
+  const customerConfigurationTab: LayoutTab = {
+    id: SettingsTab.CUSTOMER_CONFIGURATION,
+    name: 'Customer Configuration',
+    title: 'Customer Configuration',
+    url: '/settings/administration/customer-configuration',
+  }
   if (ctx.isAdmin) {
     return [
       ...ctx.activityEventsTab,
+      customerConfigurationTab,
       ...(ctx.isCostCentersFeatureEnabled
         ? [
             {
@@ -127,6 +134,8 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
   }
   return [
     ...ctx.activityEventsTab,
+    // the write guard admits maintainers too, so the tab must reach them
+    ...(ctx.isMaintainer ? [customerConfigurationTab] : []),
     ctx.projectsTab,
     ...(ctx.isTeamsBotEnabled && ctx.isProjectAdmin ? [teamsTab] : []),
   ]

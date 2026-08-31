@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "mode": "actual",
+  "size": "L",
+  "total": 26,
+  "initial_total": 24,
+  "delta": 2,
+  "diffstat": {
+    "backend": "16 files changed, 1738 insertions(+), 21 deletions(-)",
+    "frontend": "25 files changed, 1323 insertions(+), 1 deletion(-)",
+    "combined_files": 41
+  },
+  "breakdown": {
+    "scope": 5,
+    "integration": 5,
+    "risk": 5,
+    "unknowns": 3,
+    "testing": 5,
+    "coordination": 3
+  },
+  "notes": "Two repositories, 41 files, a new business layer over two existing APIs, an anonymous public endpoint whose merge semantics changed, admin-guarded writes, audit emission and input sanitisation. Slightly above the initial estimate of 24: the review surfaced a whole class of work the estimate did not carry — the format constraint closing FR-1b, the admin read path bypassing the cache, the YAML-missing-component case, and four adversarially verified regression guards."
+}

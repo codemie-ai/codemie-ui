@@ -83,6 +83,7 @@ export enum SettingsTab {
   BUDGETS_MANAGEMENT = 'budgets_management',
   COST_CENTERS_MANAGEMENT = 'cost_centers_management',
   PROJECTS_MANAGEMENT = 'projects_management',
+  CUSTOMER_CONFIGURATION = 'customer_configuration',
   USERS_MANAGEMENT = 'users_management',
   CATEGORIES_MANAGEMENT = 'categories_management',
   MCP_MANAGEMENT = 'mcp_management',

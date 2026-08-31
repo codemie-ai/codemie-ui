@@ -1,0 +1,40 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "FR-1b declaration carries constraints (length, format, permitted markup)", "status": "pass", "notes": "pattern/pattern_message added to FieldDeclaration, enforced on write, surfaced in the response model and mirrored in the frontend validator"},
+    {"criterion": "FR-5b consumers do not cache", "status": "partial", "notes": "unchanged by design; the toast no longer claims a guarantee the frontend does not provide"},
+    {"criterion": "FR-6 write guard rejects a project admin", "status": "pass", "notes": "tests/codemie/rest_api/security/test_customer_config_write_guard.py exercises the real dependency"},
+    {"criterion": "FR-7h page reachable by everyone the write guard admits", "status": "pass", "notes": "tab registered for maintainers; covered by tabs.customerConfiguration.test.tsx"},
+    {"criterion": "FR-1a/1c/1d, FR-2a-d, FR-3a-d, FR-4a-d, FR-5a/5c/5d, FR-6a/6b/6c, FR-7a-g, FR-8a-g, D1-D4, out-of-scope", "status": "pass", "notes": "carried forward from the final round"}
+  ],
+  "standards_review": [
+    {"standard": "code-quality: modern type hints (X | None over typing.Optional) in new code", "status": "pass", "notes": "all new modules converted"},
+    {"standard": "code-quality: ruff gate", "status": "pass", "notes": "ruff check src tests passes"},
+    {"standard": "code-quality: license headers", "status": "pass", "notes": "make license-check reports 0 missing"},
+    {"standard": "security: central authenticate dependency and role helpers", "status": "pass", "notes": "read and write now share require_customer_config_write"},
+    {"standard": "security: no secrets in logs", "status": "pass", "notes": "unchanged"},
+    {"standard": "security: strict parsing of untrusted input, fail closed", "status": "pass", "notes": "character references canonicalised before the scheme check; covered by parametrised tests"},
+    {"standard": "git-workflow: commit format", "status": "na", "notes": "no commits created yet"}
+  ],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "body passed directly; guarded by an integration test driving the real client against a stubbed fetch, verified to fail on the original call shape"},
+    {"id": "CR-002", "status": "resolved", "notes": "html.unescape before the scheme check and after bleach; 8 new parametrised cases cover character references and bare ampersands"},
+    {"id": "CR-003", "status": "resolved", "notes": "list_settings loads overrides directly; test asserts the admin sees a write made after a stale cache read"},
+    {"id": "CR-004", "status": "resolved", "notes": "declaration-level defaults plus a synthesised component; three tests cover the YAML-missing case"},
+    {"id": "CR-005", "status": "resolved", "notes": "audit write wrapped so it cannot invert a committed write"},
+    {"id": "CR-006", "status": "resolved", "notes": "declarations GET moved to require_customer_config_write; the router test now asserts the shared guard"},
+    {"id": "CR-007", "status": "superseded", "notes": "DISMISSED as not reproducible. A render-counting probe against the real valtio proxy shows the component re-renders (1 -> 2) even when the useSnapshot result is discarded, so the reported bug does not exist. The component was still rewritten to read through the snapshot as the idiomatic form, and three integration tests now cover the reactivity the finding claimed was broken."},
+    {"id": "CR-008", "status": "resolved", "notes": "refresh() moved inside the try in both handlers"},
+    {"id": "CR-009", "status": "resolved", "notes": "tab registered for maintainers; four-case visibility test added"},
+    {"id": "CR-010", "status": "resolved", "notes": "toast reworded to the guarantee the system provides"},
+    {"id": "CR-011", "status": "resolved", "notes": "real dependency tested for admin, maintainer, project admin and plain user; the fixture pins a deployed-like config because ENV=local resolves every user to admin and would have made the test pass for the wrong reason"},
+    {"id": "CR-012", "status": "resolved", "notes": "pattern constraint added end to end with backend and frontend tests"},
+    {"id": "CR-013", "status": "resolved", "notes": "runtime exclusion derived from CONFIG_IDS, as get_enabled_components does"}
+  ],
+  "findings": [],
+  "rationale": "All 12 genuine findings are resolved; CR-007 was dismissed after an experiment refuted its premise rather than being fixed on the reviewer's word. Two fixes were verified adversarially by reintroducing the original defect and confirming the new test fails: the request-body shape (CR-001) and, for CR-007, the render probe that refuted it. No new high-risk issue appeared in the fix-up diff, so no confirmation pass was needed. Verification after the fixes: backend 5179 passed with 2 pre-existing failures unrelated to this change (codemie_enterprise is not installed locally), ruff clean, license headers clean; frontend 1085 unit tests and 7 new integration tests pass, tsc clean, eslint clean apart from the repository's known broken alias resolver.",
+  "gates": {"lenses_run": [], "lenses_failed": []}
+}

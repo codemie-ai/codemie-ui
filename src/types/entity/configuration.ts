@@ -27,6 +27,7 @@ export interface ConfigItem {
     url?: string
     slug?: string
     maxProjects?: number
+    text?: string
     content?: string
   }
 }
@@ -46,4 +47,9 @@ export interface ModelOption {
 
 export interface SpeechConfig {
   [key: string]: any
+}
+
+export interface ChatDisclaimer {
+  enabled: boolean
+  text: string
 }

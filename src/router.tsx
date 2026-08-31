@@ -67,6 +67,7 @@ import BudgetsManagementPage from '@/pages/settings/administration/BudgetsManage
 import CategoriesManagementPage from '@/pages/settings/administration/CategoriesManagementPage'
 import CostCenterDetailsPage from '@/pages/settings/administration/CostCenterDetailsPage'
 import CostCentersManagementPage from '@/pages/settings/administration/CostCentersManagementPage'
+import CustomerConfigurationPage from '@/pages/settings/administration/CustomerConfigurationPage'
 import MCPManagementPage from '@/pages/settings/administration/MCPManagementPage'
 import ProjectDetailsPage from '@/pages/settings/administration/ProjectDetailsPage'
 import ProjectsManagementPage from '@/pages/settings/administration/ProjectsManagementPage'
@@ -452,6 +453,11 @@ const settingsRoutes: RouteObject[] = [
     id: 'projects-management',
     path: '/settings/administration/projects',
     Component: ProjectsManagementPage,
+  },
+  {
+    id: 'customer-configuration',
+    path: '/settings/administration/customer-configuration',
+    Component: CustomerConfigurationPage,
   },
   {
     id: 'projects-management-detail',

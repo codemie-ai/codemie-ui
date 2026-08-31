@@ -13,17 +13,4 @@
 // limitations under the License.
 //
 
-/**
- * Config item IDs for non-boolean runtime config values from GET /v1/config
- */
-export const CONFIG_KEYS = {
-  IDP_PROVIDER: 'idpProvider',
-  MCP_AUTH_ORIGIN: 'mcpAuthOrigin',
-  MCP_AUTH_TIMEOUT_SECONDS: 'mcpAuthTimeoutSeconds',
-  BANNER_MESSAGE: 'bannerMessage',
-  BANNER_LINK_LABEL: 'bannerLinkLabel',
-  BANNER_LINK_ROUTE: 'bannerLinkRoute',
-  CHAT_DISCLAIMER: 'chatDisclaimer',
-} as const
-
-export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS]
+export { default } from './ChatDisclaimer'

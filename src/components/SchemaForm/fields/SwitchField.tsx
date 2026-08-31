@@ -13,17 +13,20 @@
 // limitations under the License.
 //
 
-/**
- * Config item IDs for non-boolean runtime config values from GET /v1/config
- */
-export const CONFIG_KEYS = {
-  IDP_PROVIDER: 'idpProvider',
-  MCP_AUTH_ORIGIN: 'mcpAuthOrigin',
-  MCP_AUTH_TIMEOUT_SECONDS: 'mcpAuthTimeoutSeconds',
-  BANNER_MESSAGE: 'bannerMessage',
-  BANNER_LINK_LABEL: 'bannerLinkLabel',
-  BANNER_LINK_ROUTE: 'bannerLinkRoute',
-  CHAT_DISCLAIMER: 'chatDisclaimer',
-} as const
+import { FC } from 'react'
 
-export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS]
+import Switch from '@/components/form/Switch'
+
+import { FieldComponentProps } from '../fieldRegistry'
+
+const SwitchField: FC<FieldComponentProps> = ({ field, value, onChange }) => (
+  <Switch
+    id={field.name}
+    label={field.label}
+    hint={field.description ?? undefined}
+    value={Boolean(value)}
+    onChange={(event) => onChange(event.target.checked)}
+  />
+)
+
+export default SwitchField

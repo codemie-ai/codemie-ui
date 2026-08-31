@@ -55,6 +55,7 @@ export interface AppInfoStoreType {
   configs: ConfigItem[]
   isConfigFetched: boolean
   fetchCustomerConfig: () => Promise<ConfigItem[]>
+  refetchCustomerConfig: () => Promise<ConfigItem[]>
   getIdpProvider: () => string
   getMcpAuthOrigin: () => string | null
   getMcpAuthTimeoutSeconds: () => string | null
@@ -159,6 +160,12 @@ export const appInfoStore = proxy<AppInfoStoreType>({
 
   getBannerLinkRoute(): string {
     return this.configs.find((c) => c.id === CONFIG_KEYS.BANNER_LINK_ROUTE)?.settings.value ?? ''
+  },
+
+  // Config is fetched once per tab, so a saved change needs an explicit refetch to become visible
+  async refetchCustomerConfig() {
+    this.isConfigFetched = false
+    return this.fetchCustomerConfig()
   },
 
   async fetchCustomerConfig() {

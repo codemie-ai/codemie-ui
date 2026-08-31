@@ -32,6 +32,7 @@ import {
   CHAT_CONFIG_MIN_WIDTH,
 } from './components/ChatConfiguration/chatConfigWidth'
 import { useChatConfigResize } from './components/ChatConfiguration/useChatConfigResize'
+import ChatDisclaimer from './components/ChatDisclaimer'
 import ChatHeader from './components/ChatHeader/ChatHeader'
 import ChatHistory from './components/ChatHistory/ChatHistory'
 import ChatPremiumModelTipSlot from './components/ChatPrompt/ChatPremiumModelTipSlot'
@@ -157,6 +158,10 @@ const ChatPage: FC = () => {
                         />
                       </Panel>
                     </Group>
+
+                    {/* Outside the resizable group so it never competes with the
+                        composer panel's minSize or the resize handlers. */}
+                    <ChatDisclaimer />
                   </div>
                 )}
               </Panel>
