@@ -507,4 +507,14 @@ describe('OAuth switchers commented out (EPMCDME-14586)', () => {
     const types = getAvailableCredentialsTypes({ settingType: SETTING_TYPE_USER, user: null })
     expect(types).not.toContain('gitlaboauth')
   })
+
+  it('does not expose the Jira/Confluence OAuth types (hidden from the type filter too)', () => {
+    expect(CREDENTIAL_UI_MAPPING.jiraoauth).toBeUndefined()
+    expect(CREDENTIAL_UI_MAPPING.confluenceoauth).toBeUndefined()
+    const types = getAvailableCredentialsTypes({ settingType: SETTING_TYPE_USER, user: null })
+    expect(types).not.toContain('jiraoauth')
+    expect(types).not.toContain('confluenceoauth')
+    // Base token types remain.
+    expect(types).toEqual(expect.arrayContaining(['jira', 'confluence']))
+  })
 })

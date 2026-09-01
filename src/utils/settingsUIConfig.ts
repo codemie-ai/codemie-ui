@@ -16,11 +16,11 @@
 import * as Yup from 'yup'
 
 import {
-  CONFLUENCE_OAUTH_CREDENTIAL_TYPE,
-  // EPMCDME-14586: GitLab OAuth type temporarily hidden — do not delete (see entry below).
+  // EPMCDME-14586: Jira/Confluence/GitLab OAuth types temporarily hidden — do not delete (see entries below).
+  // CONFLUENCE_OAUTH_CREDENTIAL_TYPE,
   // GITLAB_OAUTH_CREDENTIAL_TYPE,
   GOOGLE_OAUTH_CREDENTIAL_TYPE,
-  JIRA_OAUTH_CREDENTIAL_TYPE,
+  // JIRA_OAUTH_CREDENTIAL_TYPE,
 } from '@/constants/integration'
 import { MCP_SETTINGS_TYPE } from '@/constants/settings'
 import { appInfoStore } from '@/store/appInfo'
@@ -1006,48 +1006,52 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
   //     },
   //   },
   // },
-  [JIRA_OAUTH_CREDENTIAL_TYPE]: {
-    displayName: 'Jira (OAuth)',
-    serverEnum: 'JiraOAuth',
-    accessType: CredentialAccessType.ALL,
-    fields: {
-      client_id: {
-        placeholder: 'Atlassian OAuth Client ID',
-        help: 'https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/',
-      },
-      client_secret: {
-        placeholder: 'Atlassian OAuth Client Secret',
-        sensitive: true,
-        help: 'https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/',
-      },
-      callback_base_url: {
-        placeholder: 'https://your-codemie-host',
-        help:
-          'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
-          'must match the Callback URL registered on the Atlassian OAuth (3LO) app.',
-      },
-    },
-  },
-  [CONFLUENCE_OAUTH_CREDENTIAL_TYPE]: {
-    displayName: 'Confluence (OAuth)',
-    serverEnum: 'ConfluenceOAuth',
-    accessType: CredentialAccessType.ALL,
-    fields: {
-      client_id: {
-        placeholder: 'Atlassian OAuth Client ID',
-        help: 'https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/',
-      },
-      client_secret: {
-        placeholder: 'Atlassian OAuth Client Secret',
-        sensitive: true,
-        help: 'https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/',
-      },
-      callback_base_url: {
-        placeholder: 'https://your-codemie-host',
-        help:
-          'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
-          'must match the Callback URL registered on the Atlassian OAuth (3LO) app.',
-      },
-    },
-  },
+  // EPMCDME-14586: Jira OAuth credential type temporarily hidden from the integration form and the
+  // TYPE filter. Do NOT delete — uncomment (and the JIRA_OAUTH_CREDENTIAL_TYPE import above) to re-enable.
+  // [JIRA_OAUTH_CREDENTIAL_TYPE]: {
+  //   displayName: 'Jira (OAuth)',
+  //   serverEnum: 'JiraOAuth',
+  //   accessType: CredentialAccessType.ALL,
+  //   fields: {
+  //     client_id: {
+  //       placeholder: 'Atlassian OAuth Client ID',
+  //       help: 'https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/',
+  //     },
+  //     client_secret: {
+  //       placeholder: 'Atlassian OAuth Client Secret',
+  //       sensitive: true,
+  //       help: 'https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/',
+  //     },
+  //     callback_base_url: {
+  //       placeholder: 'https://your-codemie-host',
+  //       help:
+  //         'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
+  //         'must match the Callback URL registered on the Atlassian OAuth (3LO) app.',
+  //     },
+  //   },
+  // },
+  // EPMCDME-14586: Confluence OAuth credential type temporarily hidden from the integration form and
+  // the TYPE filter. Do NOT delete — uncomment (and the CONFLUENCE_OAUTH_CREDENTIAL_TYPE import above).
+  // [CONFLUENCE_OAUTH_CREDENTIAL_TYPE]: {
+  //   displayName: 'Confluence (OAuth)',
+  //   serverEnum: 'ConfluenceOAuth',
+  //   accessType: CredentialAccessType.ALL,
+  //   fields: {
+  //     client_id: {
+  //       placeholder: 'Atlassian OAuth Client ID',
+  //       help: 'https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/',
+  //     },
+  //     client_secret: {
+  //       placeholder: 'Atlassian OAuth Client Secret',
+  //       sensitive: true,
+  //       help: 'https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/',
+  //     },
+  //     callback_base_url: {
+  //       placeholder: 'https://your-codemie-host',
+  //       help:
+  //         'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
+  //         'must match the Callback URL registered on the Atlassian OAuth (3LO) app.',
+  //     },
+  //   },
+  // },
 }
