@@ -58,12 +58,6 @@
         "key": "EPMCDME-13983"
       },
       {
-        "title": "Codex CLI requests fail because Azure Responses receives rs_* item references while store=false",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-14025",
-        "key": "EPMCDME-14025"
-      },
-      {
         "title": "Workflow editor shows an unexpected error when opening a previously working client workflow",
         "type": "BUG",
         "link": "https://jiraeu.epam.com/browse/EPMCDME-14041",

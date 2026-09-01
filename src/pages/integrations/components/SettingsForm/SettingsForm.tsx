@@ -60,10 +60,10 @@ import {
 } from '@/utils/settings'
 
 import OAuthTestAction from '../OAuthTestAction'
-import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
-import TestIntegration from '../TestIntegration'
 import CredentialFields from './CredentialFields'
 import GoogleOAuthField from './GoogleOAuthField'
+import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
+import TestIntegration from '../TestIntegration'
 import SharePointOAuthField from './SharePointOAuthField'
 
 export interface SettingsFormRef {
