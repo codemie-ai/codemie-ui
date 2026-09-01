@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "mode": "actual",
+  "task": "EPMCDME-13212 configurable File Datasource upload limit",
+  "generated": "2026-08-05T00:00:00Z",
+  "baseline": {
+    "merge_base": "origin/main",
+    "commits": [
+      "80bb29224 EPMCDME-13212: Configure file datasource upload limit",
+      "777f42da2 EPMCDME-13212: Cover configurable file limit boundaries"
+    ],
+    "changed_files": 9,
+    "diffstat": "9 files changed, 438 insertions(+), 224 deletions(-)"
+  },
+  "initial_assessment": {
+    "total": 24,
+    "size": "L"
+  },
+  "dimensions": {
+    "component_scope": {
+      "score": 3,
+      "label": "M",
+      "reason": "The delivered UI change touches app-info state, the shared file dropzone, the File Datasource form binding, and Yup schemas; it does not change transport or backend services."
+    },
+    "requirements_clarity": {
+      "score": 4,
+      "label": "L",
+      "reason": "The final decision was precise: the backend advertises the effective positive-integer limit through GET /v1/info, and the UI falls back to 10."
+    },
+    "technical_risk": {
+      "score": 3,
+      "label": "M",
+      "reason": "Schema-factory typing and retained-plus-new edit validation required care, but the deployed backend contract removed the initial staged-upload and partial-failure risks."
+    },
+    "file_change_estimate": {
+      "score": 4,
+      "label": "L",
+      "reason": "Nine files changed: five production files and four focused test files. The larger hook diff is a contained factory refactor of existing validation."
+    },
+    "dependencies": {
+      "score": 3,
+      "label": "M",
+      "reason": "The UI depends on the externally deployed optional InfoResponse field, while safe fallback retains compatibility with older or malformed responses. No new endpoint, client request, or transport dependency was added."
+    },
+    "affected_layers": {
+      "score": 4,
+      "label": "L",
+      "reason": "The feature crosses startup state, form presentation, create/edit validation, and unit-test coverage, while preserving the existing multipart submission layer unchanged."
+    }
+  },
+  "total": 21,
+  "size": "L",
+  "delta_from_initial": -3,
+  "within_scope": true,
+  "scope_outcome": {
+    "delivered": [
+      "Consumes file_datasource_max_upload_count from GET /v1/info with a finite positive-integer guard and a default of 10.",
+      "Propagates the effective maximum through File Datasource selection capacity, overflow feedback, disabled state, and selected-file count.",
+      "Enforces the same maximum for create files and for the combined retained-plus-new file total in edit mode.",
+      "Preserves the FormValues export through ReturnType inference and retains dynamic provider-field validation.",
+      "Covers valid and invalid app-info values plus configured-limit selection, drag/drop, create, and edit overflow boundaries."
+    ],
+    "intentionally_not_delivered": [
+      "Client request chunking, staged uploads, resumable upload, per-batch retry, or progress reporting.",
+      "Changes to create/update multipart request shape or request count.",
+      "Backend implementation, which was confirmed deployed outside this repository."
+    ]
+  },
+  "evidence": [
+    "git diff origin/main...HEAD lists 9 changed files and the two ticket-prefixed implementation commits.",
+    "appInfoStore normalizes missing or invalid advertised values to 10 before form consumers use them.",
+    "FilesDropzone and FileDropArea use the resolved limit for both input selection and drag/drop feedback.",
+    "makeBaseValidationSchema(maxFiles) and makeEditingSchema(maxFiles) apply matching create and combined edit limits.",
+    "Focused review-fix coverage passed: 24 tests in the affected dropzone and schema suites."
+  ],
+  "residual_risks": [
+    "Increasing the configured maximum still increases the size and duration of the single multipart request; infrastructure body and timeout limits remain server-side concerns.",
+    "The backend response contract was user-confirmed as deployed but is external to this UI repository, so it is not exercised by this branch's unit tests.",
+    "Future multi-request uploads require a dedicated backend staging or index-scoped batching contract to define idempotency, cleanup, and partial-failure behavior."
+  ],
+  "routing": "completed-within-single-ticket"
+}

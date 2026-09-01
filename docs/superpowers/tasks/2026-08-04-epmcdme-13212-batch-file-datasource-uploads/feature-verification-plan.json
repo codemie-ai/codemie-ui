@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "tool": "custom",
+  "ui_surface_changed": true,
+  "changed_ui_files": [
+    "src/components/form/FilesDropzone/FilesDropzone.tsx",
+    "src/components/form/FilesDropzone/components/FileDropArea.tsx",
+    "src/pages/dataSources/components/DataSourceForm/IndexTypeField/IndexTypeFile.tsx",
+    "src/pages/dataSources/components/DataSourceForm/hooks/useEditPopupForm.ts"
+  ],
+  "command": "npm run test-harness",
+  "resolved_at": "2026-08-05T19:47:53Z"
+}

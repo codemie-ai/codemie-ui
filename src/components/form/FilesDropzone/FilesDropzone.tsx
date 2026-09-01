@@ -35,6 +35,7 @@ type Props = {
   showErrors?: boolean
   uploadedFiles?: string[]
   onUploadedFileRemove?: (name: string, itemIndex: number) => void
+  maxFiles?: number
 }
 
 const FilesDropzone: FC<Props> = ({
@@ -45,6 +46,7 @@ const FilesDropzone: FC<Props> = ({
   showErrors = false,
   uploadedFiles = [],
   onUploadedFileRemove,
+  maxFiles = MAX_FILES,
 }) => {
   const reactId = useId()
   const errorId = `${name}-${reactId}-errors`
@@ -79,10 +81,10 @@ const FilesDropzone: FC<Props> = ({
     if (previousFilesCount.current !== filesCount) {
       previousFilesCount.current = filesCount
       announce(
-        filesCount === 0 ? 'No files selected' : `${filesCount} of ${MAX_FILES} files selected`
+        filesCount === 0 ? 'No files selected' : `${filesCount} of ${maxFiles} files selected`
       )
     }
-  }, [announce, filesCount])
+  }, [announce, filesCount, maxFiles])
 
   return (
     <div className="flex flex-col gap-3">
@@ -92,6 +94,7 @@ const FilesDropzone: FC<Props> = ({
         uploadedFilesCount={uploadedFiles.length}
         onChange={onChange}
         errorId={hasErrors ? errorId : undefined}
+        maxFiles={maxFiles}
       />
       <FileList
         files={files}
@@ -100,7 +103,7 @@ const FilesDropzone: FC<Props> = ({
         onUploadedFileRemove={onUploadedFileRemove}
       />
       <InfoBox
-        text={`${SUPPORTED_FILE_FORMATS_MESSAGE_BASE} Max file size: ${MAX_FILE_SIZE_MB}Mb (images: ${MAX_IMAGE_FILE_SIZE_MB}Mb).`}
+        text={`${SUPPORTED_FILE_FORMATS_MESSAGE_BASE} Maximum files: ${maxFiles}. Max file size: ${MAX_FILE_SIZE_MB}Mb (images: ${MAX_IMAGE_FILE_SIZE_MB}Mb).`}
       />
       <FileDropzoneErrors errorId={errorId} messages={errorsMessages} />
       <Announcement announcement={announcement} />

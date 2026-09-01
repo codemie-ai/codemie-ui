@@ -15,12 +15,14 @@
 
 import { FC, useMemo } from 'react'
 import { Controller, useController } from 'react-hook-form'
+import { useSnapshot } from 'valtio'
 
 import Autocomplete from '@/components/form/Autocomplete'
 import FilesDropzone from '@/components/form/FilesDropzone'
 import FormAutocomplete from '@/components/form/FormAutocomplete'
 import Input from '@/components/form/Input'
 import { CSV_SEPARATORS } from '@/constants/dataSources'
+import { appInfoStore } from '@/store/appInfo'
 import { cn } from '@/utils/utils'
 
 interface Props {
@@ -45,6 +47,7 @@ const IndexTypeFile: FC<Props> = ({
     () => (Array.isArray(errors.files) ? errors.files : [errors.files]),
     [errors.files]
   )
+  const { fileDatasourceMaxUploadCount } = useSnapshot(appInfoStore)
 
   const { field: uploadedFilesField } = useController({ name: 'uploadedFiles', control })
 
@@ -63,6 +66,7 @@ const IndexTypeFile: FC<Props> = ({
             files={filesField.value as File[]}
             errors={fileListErrors}
             showErrors={isSubmitted}
+            maxFiles={fileDatasourceMaxUploadCount}
             uploadedFiles={uploadedFilesField.value as string[]}
             onUploadedFileRemove={(name: string, itemIndex: number) => {
               uploadedFilesField.onChange(

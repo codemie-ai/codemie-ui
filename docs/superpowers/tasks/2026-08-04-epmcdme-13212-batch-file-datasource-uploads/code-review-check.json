@@ -1,0 +1,80 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted check against the 69-line test-only fix-up diff (SHA-256 f9bf1c374f3fd1e5faca49348acf0c981f55160fda4aee2c8797144662d2f5c7). CR-001 is resolved by the user's confirmation that the documented backend /v1/info contract is deployed; no UI-repository change is needed. CR-002 is resolved by focused tests for configured drop overflow feedback, configured create-form overflow, and configured retained-plus-new edit overflow. The fix-up changes no production behavior or public API, and the three affected suites pass (24 tests). No new high-risk issue appears in the check diff.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Default file limit remains 10 for absent or invalid configuration.",
+      "status": "pass",
+      "notes": "The app-info resolver accepts only positive integers and falls back to 10; focused tests cover absent, string, fractional, zero, negative, and infinite values."
+    },
+    {
+      "kind": "story-ac",
+      "item": "A backend configured with FILE_DATASOURCE_MAX_UPLOAD_COUNT=N exposes N from GET /v1/info.",
+      "status": "partial",
+      "notes": "The UI consumes the documented optional field, but this UI-only diff cannot implement or verify the external backend InfoResponse change."
+    },
+    {
+      "kind": "story-ac",
+      "item": "The UI uses an advertised positive integer instead of a hard-coded ten-file limit in create and edit flows.",
+      "status": "pass",
+      "notes": "The startup store, IndexTypeFile, FilesDropzone, and both validation-schema factories consume the resolved maximum."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Absent or invalid API values keep the UI at a 10-file limit.",
+      "status": "pass",
+      "notes": "The strict resolver result is supplied to selection and validation paths."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Retained and newly selected edit files together cannot exceed the effective limit.",
+      "status": "pass",
+      "notes": "Dropzone capacity and makeEditingSchema both count retained plus new files."
+    },
+    {
+      "kind": "spec",
+      "item": "Create and update remain one multipart request; no batching or extra request is added.",
+      "status": "pass",
+      "notes": "No submission or transport path changed in the diff."
+    },
+    {
+      "kind": "spec",
+      "item": "Regression tests cover dynamic selection, edit capacity, and configured create/edit validation boundaries.",
+      "status": "partial",
+      "notes": "Tests cover configured input selection, retained capacity, default edit overflow, and configured create success, but not drag-and-drop or configured-limit overflow for both create and edit."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "80bb29224 uses the required EPMCDME-13212 commit subject format."
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "Pre-commit Prettier, ESLint, and tsc checks passed; npm run typecheck also passed."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "The Docker-backed Gitleaks secret scan completed with no leaks."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "The user confirmed the backend /v1/info field is deployed. This UI-only repository consumes the optional field and preserves the fallback for older backend versions."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "FilesDropzone.test.tsx verifies a 13-file drop honors maxFiles=12 and reports the configured overflow; useEditPopupForm.test.ts rejects 13 files at advertised limit 12; useEditPopupForm.validation.test.ts rejects 10 retained plus 3 new files against makeEditingSchema(12)."
+    }
+  ]
+}

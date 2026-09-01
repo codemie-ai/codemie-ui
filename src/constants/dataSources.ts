@@ -78,6 +78,12 @@ export const FILTER_INITIAL_STATE = {
 } as const
 
 export const MAX_FILE_SIZE = 104_857_600 // 100MB
+export const DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT = 10
+
+export const getFileDatasourceMaxUploadCount = (value: unknown): number =>
+  typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT
 
 export const FILE_SIZE_ERR = 'File size is too big, max 100MB allowed'
 export const FILE_FILTER_PLACEHOLDER = `*.py

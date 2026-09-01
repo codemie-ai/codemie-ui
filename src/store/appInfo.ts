@@ -17,6 +17,10 @@ import { proxy } from 'valtio'
 
 import releaseNotes from '@/configs/releaseNotes.json'
 import { CONFIG_KEYS } from '@/constants/configKeys'
+import {
+  DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT,
+  getFileDatasourceMaxUploadCount,
+} from '@/constants/dataSources'
 import { ModelOption, SpeechConfig, ConfigItem } from '@/types/entity/configuration'
 import api from '@/utils/api'
 
@@ -50,6 +54,7 @@ const getStoredSidebarExpanded = () =>
   (localStorage.getItem(SIDEBAR_EXPANDED_KEY) ?? 'true') === 'true'
 
 const APP_VERSION = '0.0.1'
+export { DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT, getFileDatasourceMaxUploadCount }
 
 export interface AppInfoStoreType {
   configs: ConfigItem[]
@@ -66,6 +71,7 @@ export interface AppInfoStoreType {
   description?: string
   appVersion: string
   apiVersion: string | null
+  fileDatasourceMaxUploadCount: number
   appReleases: any[]
   viewedAppReleaseVersion: string
   llmModels: ModelOption[]
@@ -187,6 +193,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
 
   appVersion: APP_VERSION,
   apiVersion: null,
+  fileDatasourceMaxUploadCount: DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT,
   appReleases: [],
   viewedAppReleaseVersion: '',
   llmModels: [],
@@ -220,6 +227,9 @@ export const appInfoStore = proxy<AppInfoStoreType>({
       const data = await response.json()
       this.apiVersion = data.version
       this.description = data.description
+      this.fileDatasourceMaxUploadCount = getFileDatasourceMaxUploadCount(
+        data.fileDatasourceMaxUploadCount
+      )
     } catch (error) {
       console.error('Error loading app info:', error)
     }

@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "task": "Make the default 10-file cap for File-based Datasources configurable while retaining 10 by default and supporting higher limits; upload and process large create/edit selections in performance-safe batches.",
+  "generated": "2026-08-04T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 5, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 4, "label": "L" },
+    "affected_layers":      { "score": 4, "label": "L" }
+  },
+  "total": 24,
+  "size": "L",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "The change spans runtime customer configuration, the shared FilesDropzone selection UI, datasource form binding and Yup validation, and the create/update submission boundary. The same shared dropzone is used by both creation and editing, so configured capacity must consistently account for retained server files and newly selected files."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Product intent is clear: preserve 10 as the default, allow a client-configured higher maximum, and protect performance for large selections. Important details remain unresolved: the exact configuration ID and whether the configured maximum applies to an edit's combined retained-plus-new count, batch size, progress semantics, and retry/partial-failure behavior."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The existing index create and update APIs accept all raw File objects in one multipart request. Splitting a create request into batches can create multiple datasources or duplicate indexing work. Safe batching therefore depends on a backend contract such as staged uploads plus one final create/update, or an index upload-session/batch protocol with idempotency and cleanup rules."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Expected work touches approximately seven to ten production files: configuration key/accessor, FilesDropzone and FileDropArea, IndexTypeFile, form schema/binding, create-index hook, and datasource transport. Focused tests are also needed for configuration fallback, limits, schema parity, chunking/order, and failed-batch handling."
+    },
+    {
+      "dimension": "dependencies",
+      "reason": "The UI can consume GET v1/config only after the customer configuration key/value is defined, and transport batching cannot be correctly implemented in this repository without backend API ownership confirming the transaction, idempotency, partial-failure, and processing contract. This dependency is material but belongs to the same product capability rather than a separate user story."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "The feature crosses configuration/state, presentation and accessibility, client validation, form submission orchestration, and HTTP multipart transport. It also requires preserving current edit-only parameters such as uploaded_files, reindex options, CSV settings, project rename, embedding model, and guardrails."
+    }
+  ],
+  "red_flags_applied": [
+    "Backend batching contract required before changing create/update transport; do not issue multiple index-create requests for one selection.",
+    "Partial batch failure needs defined retry, cleanup/rollback, and user-visible outcome semantics.",
+    "Configuration must safely fall back to 10 for missing, malformed, zero, or negative values and must align with backend limits."
+  ],
+  "split_recommendation": null
+}

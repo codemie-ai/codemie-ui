@@ -17,11 +17,7 @@ import { FC, useCallback, useRef } from 'react'
 
 import ImportSvg from '@/assets/icons/export.svg?react'
 import DropzoneArea from '@/components/form/DropzoneArea'
-import {
-  MAX_FILE_SIZE_BYTES,
-  MAX_FILE_SIZE_MB,
-  MAX_FILES,
-} from '@/components/form/FilesDropzone/constants'
+import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from '@/components/form/FilesDropzone/constants'
 import toaster from '@/utils/toaster'
 
 type FileDropArea = {
@@ -30,6 +26,7 @@ type FileDropArea = {
   files: File[]
   onChange: (updatedFiles: File[]) => void
   errorId?: string
+  maxFiles: number
 }
 export const FileDropArea: FC<FileDropArea> = ({
   name,
@@ -37,6 +34,7 @@ export const FileDropArea: FC<FileDropArea> = ({
   uploadedFilesCount,
   onChange,
   errorId,
+  maxFiles,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const addFiles = useCallback(
@@ -54,13 +52,13 @@ export const FileDropArea: FC<FileDropArea> = ({
         )
       }
 
-      const remaining = MAX_FILES - files.length - uploadedFilesCount
+      const remaining = maxFiles - files.length - uploadedFilesCount
       const skipped = validFiles.slice(remaining)
       const filesToAdd = validFiles.slice(0, remaining)
 
       if (skipped.length > 0) {
         toaster.error(
-          `Max ${MAX_FILES} files allowed. ${skipped.length} file${
+          `Max ${maxFiles} files allowed. ${skipped.length} file${
             skipped.length > 1 ? 's were' : ' was'
           } not added`
         )
@@ -70,7 +68,7 @@ export const FileDropArea: FC<FileDropArea> = ({
         onChange([...files, ...filesToAdd])
       }
     },
-    [files, uploadedFilesCount, onChange]
+    [files, uploadedFilesCount, onChange, maxFiles]
   )
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +79,7 @@ export const FileDropArea: FC<FileDropArea> = ({
     }
   }
   const filesNumber = files.length + uploadedFilesCount
-  const isAtLimit = filesNumber >= MAX_FILES
+  const isAtLimit = filesNumber >= maxFiles
 
   return (
     <>
@@ -112,7 +110,7 @@ export const FileDropArea: FC<FileDropArea> = ({
             </span>
             {(files.length > 0 || Boolean(uploadedFilesCount)) && (
               <span className="text-xs text-text-quaternary">
-                {files.length + uploadedFilesCount} / {MAX_FILES} files selected
+                {files.length + uploadedFilesCount} / {maxFiles} files selected
               </span>
             )}
           </>

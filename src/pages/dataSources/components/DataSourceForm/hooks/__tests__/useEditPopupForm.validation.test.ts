@@ -17,7 +17,7 @@ import { describe, it, expect } from 'vitest'
 
 import { INDEX_TYPES } from '@/constants/dataSources'
 
-import { editingSchema } from '../useEditPopupForm'
+import { editingSchema, makeEditingSchema } from '../useEditPopupForm'
 
 const baseValidObject = {
   indexType: INDEX_TYPES.FILE,
@@ -66,6 +66,34 @@ describe('editingSchema — uploadedFiles validation', () => {
     }
     await expect(editingSchema.validate(values, { abortEarly: false })).rejects.toThrow(
       'At least one file is required'
+    )
+  })
+
+  it('fails when retained and new files exceed the default total limit', async () => {
+    const values = {
+      ...baseValidObject,
+      uploadedFiles: Array.from({ length: 10 }, (_, index) => `stored-${index}.pdf`),
+      files: [new File(['content'], 'new.txt')],
+    }
+
+    await expect(editingSchema.validate(values, { abortEarly: false })).rejects.toThrow(
+      'Files field must have less than or equal to 10 items'
+    )
+  })
+
+  it('fails when retained and new files exceed a configured total limit', async () => {
+    const values = {
+      ...baseValidObject,
+      uploadedFiles: Array.from({ length: 10 }, (_, index) => `stored-${index}.pdf`),
+      files: [
+        new File(['content'], 'new-a.txt'),
+        new File(['content'], 'new-b.txt'),
+        new File(['content'], 'new-c.txt'),
+      ],
+    }
+
+    await expect(makeEditingSchema(12).validate(values, { abortEarly: false })).rejects.toThrow(
+      'Files field must have less than or equal to 12 items'
     )
   })
 

@@ -13,9 +13,11 @@
 // limitations under the License.
 //
 
-import { renderHook } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 
+import { INDEX_TYPES } from '@/constants/dataSources'
+import { DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT, appInfoStore } from '@/store/appInfo'
 import { getBrowserTimezone } from '@/utils/timezone'
 
 import { useEditPopupForm } from '../useEditPopupForm'
@@ -51,6 +53,10 @@ vi.mock('@/utils/timezone', () => ({
   getIANATimezoneOptions: vi.fn(() => []),
 }))
 
+afterEach(() => {
+  appInfoStore.fileDatasourceMaxUploadCount = DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT
+})
+
 describe('useEditPopupForm — timezone default values', () => {
   it('create form: timezone defaults to getBrowserTimezone()', () => {
     const { result } = renderHook(() => useEditPopupForm({}, false))
@@ -75,5 +81,39 @@ describe('useEditPopupForm — timezone default values', () => {
     const defaults = { id: '1', timezone: null } as any
     const { result } = renderHook(() => useEditPopupForm(defaults, true))
     expect(result.current.getValues('timezone')).toBe('America/New_York')
+  })
+})
+
+describe('useEditPopupForm — configurable File Datasource limit', () => {
+  it('accepts eleven files when the backend advertises a limit of twelve', async () => {
+    appInfoStore.fileDatasourceMaxUploadCount = 12
+    const { result } = renderHook(() => useEditPopupForm({}, false))
+    const files = Array.from(
+      { length: 11 },
+      (_, index) => new File(['content'], `file-${index}.txt`, { type: 'text/plain' })
+    )
+
+    act(() => {
+      result.current.setValue('indexType', INDEX_TYPES.FILE)
+      result.current.setValue('files', files)
+    })
+
+    await expect(result.current.trigger('files')).resolves.toBe(true)
+  })
+
+  it('rejects thirteen files when the backend advertises a limit of twelve', async () => {
+    appInfoStore.fileDatasourceMaxUploadCount = 12
+    const { result } = renderHook(() => useEditPopupForm({}, false))
+    const files = Array.from(
+      { length: 13 },
+      (_, index) => new File(['content'], `file-${index}.txt`, { type: 'text/plain' })
+    )
+
+    act(() => {
+      result.current.setValue('indexType', INDEX_TYPES.FILE)
+      result.current.setValue('files', files)
+    })
+
+    await expect(result.current.trigger('files')).resolves.toBe(false)
   })
 })

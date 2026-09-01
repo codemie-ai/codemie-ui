@@ -13,8 +13,10 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import toaster from '@/utils/toaster'
 
 import FilesDropzone from '../FilesDropzone'
 
@@ -23,22 +25,95 @@ const expectAnnouncement = (expected: string) =>
   waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(expected))
 
 vi.mock('@/components/form/DropzoneArea', () => ({
-  default: ({ children }: any) => <div>{children(false)}</div>,
+  default: ({ children, onFilesDrop }: any) => (
+    <div>
+      <button
+        type="button"
+        onClick={() =>
+          onFilesDrop(
+            Array.from(
+              { length: 13 },
+              (_, index) =>
+                new File(['file content'], `dropped-${index}.txt`, { type: 'text/plain' })
+            )
+          )
+        }
+      >
+        Drop test files
+      </button>
+      {children(false)}
+    </div>
+  ),
 }))
 
 vi.mock('@/components/form/InfoBox', () => ({
-  default: () => <div />,
+  default: ({ text }: { text: string }) => <div>{text}</div>,
+}))
+
+vi.mock('@/utils/toaster', () => ({
+  default: { error: vi.fn() },
 }))
 
 const noop = vi.fn()
+const createFile = (name: string) => new File(['file content'], name, { type: 'text/plain' })
 
 const makeFile = (name: string) => new File(['x'], name, { type: 'text/plain' })
 
 afterEach(() => {
+  cleanup()
   vi.clearAllMocks()
 })
 
 describe('FilesDropzone', () => {
+  it('shows the configured maximum before files are selected', () => {
+    render(<FilesDropzone name="files" files={[]} onChange={noop} maxFiles={12} />)
+
+    expect(screen.getByText(/Maximum files: 12\./)).toBeInTheDocument()
+  })
+
+  it('uses the configured maximum when selecting more files than allowed', () => {
+    const onChange = vi.fn()
+    const selectedFiles = Array.from({ length: 13 }, (_, index) => createFile(`file-${index}.txt`))
+
+    render(<FilesDropzone name="files" files={[]} onChange={onChange} maxFiles={12} />)
+
+    fireEvent.change(screen.getByLabelText('Select files to upload'), {
+      target: { files: selectedFiles },
+    })
+
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.calls[0][0]).toHaveLength(12)
+  })
+
+  it('limits dropped files and reports the configured overflow limit', () => {
+    const onChange = vi.fn()
+
+    render(<FilesDropzone name="files" files={[]} onChange={onChange} maxFiles={12} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drop test files' }))
+
+    expect(onChange.mock.calls[0][0]).toHaveLength(12)
+    expect(toaster.error).toHaveBeenCalledWith('Max 12 files allowed. 1 file was not added')
+  })
+
+  it('counts retained files against the configured edit limit', () => {
+    render(
+      <FilesDropzone
+        name="files"
+        files={[createFile('new-a.txt'), createFile('new-b.txt')]}
+        uploadedFiles={Array.from({ length: 10 }, (_, index) => `stored-${index}.txt`)}
+        onChange={noop}
+        maxFiles={12}
+      />
+    )
+
+    expect(screen.getByText('12 / 12 files selected')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Select files to upload'), {
+      target: { files: [createFile('one-too-many.txt')] },
+    })
+    expect(noop).not.toHaveBeenCalled()
+  })
+
   describe('error association', () => {
     it('links the file input to a single error wrapper via aria-describedby', () => {
       render(

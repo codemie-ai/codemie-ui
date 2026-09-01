@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "applies": true,
+  "tool": "codemie-test-harness",
+  "coverage_source": "manual-command",
+  "test_command": "npm run test-harness",
+  "result": "PASS",
+  "reason": "The supported sanity-UI harness completed successfully against http://localhost:8080. It ran 69 browser scenarios with two configured reruns and reported no unrecovered failures, including the File Datasource creation scenario.",
+  "console_errors": [],
+  "network_failures": [],
+  "captured_at": "2026-08-06T08:03:56Z",
+  "duration_ms": 834320,
+  "summary": "69 passed, 2 rerun in 834.32s"
+}

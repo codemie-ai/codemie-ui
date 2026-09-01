@@ -1,0 +1,89 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three review lenses completed. The UI implementation satisfies the configurable-limit behavior, but the required backend contract is an unverified external dependency and focused tests do not yet cover all configured-limit boundaries and drop interactions.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Default file limit remains 10 for absent or invalid configuration.",
+      "status": "pass",
+      "notes": "The app-info resolver accepts only positive integers and falls back to 10; focused tests cover absent, string, fractional, zero, negative, and infinite values."
+    },
+    {
+      "kind": "story-ac",
+      "item": "A backend configured with FILE_DATASOURCE_MAX_UPLOAD_COUNT=N exposes N from GET /v1/info.",
+      "status": "partial",
+      "notes": "The UI consumes the documented optional field, but this UI-only diff cannot implement or verify the external backend InfoResponse change."
+    },
+    {
+      "kind": "story-ac",
+      "item": "The UI uses an advertised positive integer instead of a hard-coded ten-file limit in create and edit flows.",
+      "status": "pass",
+      "notes": "The startup store, IndexTypeFile, FilesDropzone, and both validation-schema factories consume the resolved maximum."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Absent or invalid API values keep the UI at a 10-file limit.",
+      "status": "pass",
+      "notes": "The strict resolver result is supplied to selection and validation paths."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Retained and newly selected edit files together cannot exceed the effective limit.",
+      "status": "pass",
+      "notes": "Dropzone capacity and makeEditingSchema both count retained plus new files."
+    },
+    {
+      "kind": "spec",
+      "item": "Create and update remain one multipart request; no batching or extra request is added.",
+      "status": "pass",
+      "notes": "No submission or transport path changed in the diff."
+    },
+    {
+      "kind": "spec",
+      "item": "Regression tests cover dynamic selection, edit capacity, and configured create/edit validation boundaries.",
+      "status": "partial",
+      "notes": "Tests cover configured input selection, retained capacity, default edit overflow, and configured create success, but not drag-and-drop or configured-limit overflow for both create and edit."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "80bb29224 uses the required EPMCDME-13212 commit subject format."
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "Pre-commit Prettier, ESLint, and tsc checks passed; npm run typecheck also passed."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "The Docker-backed Gitleaks secret scan completed with no leaks."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "docs/superpowers/tasks/2026-08-04-epmcdme-13212-batch-file-datasource-uploads/spec.md",
+      "title": "Backend contract remains unverified",
+      "problem": "The approved specification requires the backend to expose FILE_DATASOURCE_MAX_UPLOAD_COUNT through GET /v1/info, but no backend implementation or deployment evidence is available in this UI repository.",
+      "impact": "The UI will safely fall back to 10 and cannot deliver a configured higher limit until the backend field is available.",
+      "recommendation": "Confirm the backend change is deployed and identify its validating change or ticket before approving the UI handoff."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/dataSources/components/DataSourceForm/hooks/__tests__/useEditPopupForm.test.ts",
+      "title": "Dynamic-limit boundary coverage is incomplete",
+      "problem": "The new tests do not exercise drag-and-drop or dynamic overflow feedback, and they do not prove configured-limit overflow rejection in both create and edit forms.",
+      "impact": "A future change could break a second selection path or one of the two validation modes without detection.",
+      "recommendation": "Add focused tests for drag-and-drop/overflow feedback and configured create/edit overflow boundaries before the review check."
+    }
+  ]
+}

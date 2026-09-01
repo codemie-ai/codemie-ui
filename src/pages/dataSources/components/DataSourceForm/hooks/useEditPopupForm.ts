@@ -28,8 +28,11 @@ import {
   FILE_SIZE_ERR,
   DEFAULT_DOCUMENTATION_PROMPT,
   SHAREPOINT_AUTH_TYPES,
+  DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT,
+  getFileDatasourceMaxUploadCount,
 } from '@/constants/dataSources'
 import { useSearchParams } from '@/hooks/useSearchParams'
+import { appInfoStore } from '@/store/appInfo'
 import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { validateCronExpression } from '@/utils/cronValidator'
@@ -48,213 +51,226 @@ const CQL_REQUIRED_ERR = 'CQL is required'
 const JQL_REQUIRED_ERR = 'JQL is required'
 const FILE_REQUIRED_ERR = 'At least one file is required'
 const ALL_FILES_REQUIRED_ERR = 'All file slots must be filled'
-const FILES_MAX_COUNT_ERR = 'Files field must have less than or equal to 10 items'
+const filesMaxCountError = (maxFiles: number) =>
+  `Files field must have less than or equal to ${maxFiles} items`
 
-const baseValidationSchema = Yup.object({
-  name: Yup.string()
-    .required('Data source name is required')
-    .matches(INDEX_VALIDATION_REGEX_PATTERN.beginsWith, {
-      message: INDEX_ERROR_MSGS.beginsWithSpecialChars,
-      excludeEmptyString: true,
-    })
-    .matches(INDEX_VALIDATION_REGEX_PATTERN.containsChars, {
-      message: INDEX_ERROR_MSGS.containsSpecialChars,
-      excludeEmptyString: true,
-    })
-    .max(50)
-    .min(4),
-  description: Yup.string().required(DESCRIPTION_REQUIRED_ERR).max(500),
-  projectSpaceVisible: Yup.boolean().required(),
-  indexType: Yup.string().required(),
+export const makeBaseValidationSchema = (maxFiles: number) =>
+  Yup.object({
+    name: Yup.string()
+      .required('Data source name is required')
+      .matches(INDEX_VALIDATION_REGEX_PATTERN.beginsWith, {
+        message: INDEX_ERROR_MSGS.beginsWithSpecialChars,
+        excludeEmptyString: true,
+      })
+      .matches(INDEX_VALIDATION_REGEX_PATTERN.containsChars, {
+        message: INDEX_ERROR_MSGS.containsSpecialChars,
+        excludeEmptyString: true,
+      })
+      .max(50)
+      .min(4),
+    description: Yup.string().required(DESCRIPTION_REQUIRED_ERR).max(500),
+    projectSpaceVisible: Yup.boolean().required(),
+    indexType: Yup.string().required(),
 
-  // TODO: add validation regex from BE error response
-  // ^https?:\\/\\/[A-Za-z0-9][A-Za-z0-9\\-\\.]*[A-Za-z0-9]\\.[A-Za-z]{2,}(?:\\/.*)?$
-  repoLink: Yup.string().when('indexType', {
-    is: (indexType) => indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN,
-    then: (schema) => schema.required('Repo Link is required'),
-  }),
-  branch: Yup.string().when('indexType', {
-    is: (indexType) => indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN,
-    then: (schema) => schema.required('Branch is required'),
-  }),
-
-  filesFilter: Yup.string().notRequired(),
-  docsGeneration: Yup.string().notRequired(),
-
-  googleDoc: Yup.string().when(['indexType', 'isEditing'], {
-    is: (indexType, isEditing) => indexType === INDEX_TYPES.GOOGLE && isEditing === false,
-    then: (schema) =>
-      schema
-        .required('Google Docs link is required')
-        .test('googleDoc', 'Invalid Google Docs link', googleDocLinkValidator),
-  }),
-
-  // SharePoint fields
-  siteUrl: Yup.string().when('indexType', {
-    is: INDEX_TYPES.SHAREPOINT,
-    then: (schema) => schema.required('SharePoint Site URL is required').url('Must be a valid URL'),
-  }),
-  includePages: Yup.boolean().notRequired(),
-  includeDocuments: Yup.boolean().notRequired(),
-  includeLists: Yup.boolean().notRequired(),
-  sharepointAuthType: Yup.string().notRequired(),
-  sharepointCustomClientId: Yup.string().when(['indexType', 'sharepointAuthType'], {
-    is: (indexType: string, sharepointAuthType: string) =>
-      indexType === INDEX_TYPES.SHAREPOINT &&
-      sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
-    then: (schema) =>
-      schema
-        .required('Azure Application (client) ID is required')
-        .matches(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-          'Must be a valid GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)'
-        ),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  sharepointTenantId: Yup.string().when(['indexType', 'sharepointAuthType'], {
-    is: (indexType: string, sharepointAuthType: string) =>
-      indexType === INDEX_TYPES.SHAREPOINT &&
-      sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
-    then: (schema) =>
-      schema
-        .required('Azure Directory (tenant) ID is required')
-        .matches(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-          'Must be a valid GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)'
-        ),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  sharepointAccessToken: Yup.string().when(['indexType', 'sharepointAuthType', 'isEditing'], {
-    is: (indexType: string, sharepointAuthType: string, isEditing: boolean) =>
-      indexType === INDEX_TYPES.SHAREPOINT &&
-      sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION &&
-      isEditing === false,
-    then: (schema) => schema.required('Please sign in with Microsoft before saving'),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  sharepointFilesFilter: Yup.string().notRequired(),
-
-  files: Yup.array().when(['indexType'], {
-    is: (indexType) => indexType === INDEX_TYPES.FILE,
-    then: (schema) =>
-      schema
-        .min(1, FILE_REQUIRED_ERR)
-        .max(10, FILES_MAX_COUNT_ERR)
-        .of(
-          Yup.mixed<File>()
-            .test('file-required', function (value) {
-              const { parent } = this
-              const message = parent.length > 1 ? ALL_FILES_REQUIRED_ERR : FILE_REQUIRED_ERR
-              return value instanceof File || this.createError({ message })
-            })
-            .test('file-size', FILE_SIZE_ERR, fileSizeValidator)
-        ),
-  }),
-  uploadedFiles: Yup.array().when(['indexType'], {
-    is: (indexType) => indexType === INDEX_TYPES.FILE,
-    then: (schema) => schema.of(Yup.string().required()).nullable(),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-
-  csvSeparator: Yup.string().when(['indexType', 'files', 'isEditing'], {
-    is: (indexType, files, isEditing) =>
-      indexType === INDEX_TYPES.FILE &&
-      Array.isArray(files) &&
-      files.some((file) => file?.type === 'text/csv') &&
-      isEditing === false,
-    then: (schema) => schema.required('CSV separator is required'),
-  }),
-
-  csvStartRow: Yup.number().when(['indexType', 'files', 'isEditing'], {
-    is: (indexType, files, isEditing) =>
-      indexType === INDEX_TYPES.FILE &&
-      Array.isArray(files) &&
-      files.some((file) => file?.type === 'text/csv') &&
-      isEditing === false,
-    then: (schema) => schema.required('CSV start line is required'),
-  }),
-
-  cql: Yup.string().when('indexType', {
-    is: (indexType) => indexType === INDEX_TYPES.CONFLUENCE,
-    then: (schema) => schema.required(CQL_REQUIRED_ERR),
-  }),
-
-  jql: Yup.string().when('indexType', {
-    is: (indexType) => indexType === INDEX_TYPES.JIRA || indexType === INDEX_TYPES.XRAY,
-    then: (schema) => schema.required(JQL_REQUIRED_ERR),
-  }),
-
-  wikiQuery: Yup.string().optional(),
-
-  wikiName: Yup.string().optional(),
-
-  wiqlQuery: Yup.string().optional(),
-
-  setting_id: Yup.string().when(['indexType', 'sharepointAuthType'], {
-    is: (indexType, sharepointAuthType) => {
-      if (indexType === INDEX_TYPES.SHAREPOINT) {
-        return !sharepointAuthType || sharepointAuthType === SHAREPOINT_AUTH_TYPES.INTEGRATION
-      }
-      return [
-        INDEX_TYPES.JIRA,
-        INDEX_TYPES.XRAY,
-        INDEX_TYPES.CONFLUENCE,
-        INDEX_TYPES.AZURE_DEVOPS_WIKI,
-        INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM,
-        INDEX_TYPES.GOOGLE,
-      ].includes(indexType)
-    },
-    then: (schema) => schema.required('Integration is required for this data source type'),
-  }),
-
-  repoIndexType: Yup.string().optional(),
-  csvRowsPerDocument: Yup.number().optional(),
-
-  projectName: Yup.string().required(),
-  new_project_name: Yup.string().notRequired(),
-  reindexOnEdit: Yup.string().notRequired(),
-  isEditing: Yup.boolean().required(),
-  embeddingsModel: Yup.string().notRequired(),
-  summarizationModel: Yup.string().notRequired(),
-  enableCustomPrompts: Yup.boolean().notRequired(),
-  promptTemplate: Yup.string().notRequired(),
-  indexMetadata: Yup.object({ schema: Yup.string() }).notRequired(),
-  cronExpression: Yup.string()
-    .notRequired()
-    .test('valid-cron', function (value) {
-      if (!value || value.trim() === '') return true
-      const error = validateCronExpression(value)
-      if (error) {
-        return this.createError({ message: error })
-      }
-      return true
+    // TODO: add validation regex from BE error response
+    // ^https?:\\/\\/[A-Za-z0-9][A-Za-z0-9\\-\\.]*[A-Za-z0-9]\\.[A-Za-z]{2,}(?:\\/.*)?$
+    repoLink: Yup.string().when('indexType', {
+      is: (indexType) => indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN,
+      then: (schema) => schema.required('Repo Link is required'),
     }),
-  timezone: Yup.string().optional(),
-}).shape(guardrailAssignmentsSchema)
+    branch: Yup.string().when('indexType', {
+      is: (indexType) => indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN,
+      then: (schema) => schema.required('Branch is required'),
+    }),
 
-export const editingSchema = baseValidationSchema.omit(['name']).shape({
-  files: Yup.array().when(['indexType'], {
-    is: (indexType) => indexType === INDEX_TYPES.FILE,
-    then: (schema) =>
-      schema.of(Yup.mixed<File>().test('file-size', FILE_SIZE_ERR, fileSizeValidator)),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  uploadedFiles: Yup.array().when(['indexType'], {
-    is: (indexType: string) => indexType === INDEX_TYPES.FILE,
-    then: (schema) =>
-      schema
-        .of(Yup.string().required())
-        .nullable()
-        .test('min-one-file', 'At least one file is required', function (uploadedFiles) {
-          const files = this.parent.files as File[] | undefined
-          const totalFiles = (uploadedFiles?.length ?? 0) + (files?.length ?? 0)
-          return totalFiles >= 1
-        }),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-})
+    filesFilter: Yup.string().notRequired(),
+    docsGeneration: Yup.string().notRequired(),
 
-export type FormValues = Yup.InferType<typeof baseValidationSchema>
+    googleDoc: Yup.string().when(['indexType', 'isEditing'], {
+      is: (indexType, isEditing) => indexType === INDEX_TYPES.GOOGLE && isEditing === false,
+      then: (schema) =>
+        schema
+          .required('Google Docs link is required')
+          .test('googleDoc', 'Invalid Google Docs link', googleDocLinkValidator),
+    }),
+
+    // SharePoint fields
+    siteUrl: Yup.string().when('indexType', {
+      is: INDEX_TYPES.SHAREPOINT,
+      then: (schema) =>
+        schema.required('SharePoint Site URL is required').url('Must be a valid URL'),
+    }),
+    includePages: Yup.boolean().notRequired(),
+    includeDocuments: Yup.boolean().notRequired(),
+    includeLists: Yup.boolean().notRequired(),
+    sharepointAuthType: Yup.string().notRequired(),
+    sharepointCustomClientId: Yup.string().when(['indexType', 'sharepointAuthType'], {
+      is: (indexType: string, sharepointAuthType: string) =>
+        indexType === INDEX_TYPES.SHAREPOINT &&
+        sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
+      then: (schema) =>
+        schema
+          .required('Azure Application (client) ID is required')
+          .matches(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+            'Must be a valid GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)'
+          ),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+    sharepointTenantId: Yup.string().when(['indexType', 'sharepointAuthType'], {
+      is: (indexType: string, sharepointAuthType: string) =>
+        indexType === INDEX_TYPES.SHAREPOINT &&
+        sharepointAuthType === SHAREPOINT_AUTH_TYPES.OAUTH_CUSTOM,
+      then: (schema) =>
+        schema
+          .required('Azure Directory (tenant) ID is required')
+          .matches(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+            'Must be a valid GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)'
+          ),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+    sharepointAccessToken: Yup.string().when(['indexType', 'sharepointAuthType', 'isEditing'], {
+      is: (indexType: string, sharepointAuthType: string, isEditing: boolean) =>
+        indexType === INDEX_TYPES.SHAREPOINT &&
+        sharepointAuthType !== SHAREPOINT_AUTH_TYPES.INTEGRATION &&
+        isEditing === false,
+      then: (schema) => schema.required('Please sign in with Microsoft before saving'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+    sharepointFilesFilter: Yup.string().notRequired(),
+
+    files: Yup.array().when(['indexType'], {
+      is: (indexType) => indexType === INDEX_TYPES.FILE,
+      then: (schema) =>
+        schema
+          .min(1, FILE_REQUIRED_ERR)
+          .max(maxFiles, filesMaxCountError(maxFiles))
+          .of(
+            Yup.mixed<File>()
+              .test('file-required', function (value) {
+                const { parent } = this
+                const message = parent.length > 1 ? ALL_FILES_REQUIRED_ERR : FILE_REQUIRED_ERR
+                return value instanceof File || this.createError({ message })
+              })
+              .test('file-size', FILE_SIZE_ERR, fileSizeValidator)
+          ),
+    }),
+    uploadedFiles: Yup.array().when(['indexType'], {
+      is: (indexType) => indexType === INDEX_TYPES.FILE,
+      then: (schema) => schema.of(Yup.string().required()).nullable(),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+
+    csvSeparator: Yup.string().when(['indexType', 'files', 'isEditing'], {
+      is: (indexType, files, isEditing) =>
+        indexType === INDEX_TYPES.FILE &&
+        Array.isArray(files) &&
+        files.some((file) => file?.type === 'text/csv') &&
+        isEditing === false,
+      then: (schema) => schema.required('CSV separator is required'),
+    }),
+
+    csvStartRow: Yup.number().when(['indexType', 'files', 'isEditing'], {
+      is: (indexType, files, isEditing) =>
+        indexType === INDEX_TYPES.FILE &&
+        Array.isArray(files) &&
+        files.some((file) => file?.type === 'text/csv') &&
+        isEditing === false,
+      then: (schema) => schema.required('CSV start line is required'),
+    }),
+
+    cql: Yup.string().when('indexType', {
+      is: (indexType) => indexType === INDEX_TYPES.CONFLUENCE,
+      then: (schema) => schema.required(CQL_REQUIRED_ERR),
+    }),
+
+    jql: Yup.string().when('indexType', {
+      is: (indexType) => indexType === INDEX_TYPES.JIRA || indexType === INDEX_TYPES.XRAY,
+      then: (schema) => schema.required(JQL_REQUIRED_ERR),
+    }),
+
+    wikiQuery: Yup.string().optional(),
+
+    wikiName: Yup.string().optional(),
+
+    wiqlQuery: Yup.string().optional(),
+
+    setting_id: Yup.string().when(['indexType', 'sharepointAuthType'], {
+      is: (indexType, sharepointAuthType) => {
+        if (indexType === INDEX_TYPES.SHAREPOINT) {
+          return !sharepointAuthType || sharepointAuthType === SHAREPOINT_AUTH_TYPES.INTEGRATION
+        }
+        return [
+          INDEX_TYPES.JIRA,
+          INDEX_TYPES.XRAY,
+          INDEX_TYPES.CONFLUENCE,
+          INDEX_TYPES.AZURE_DEVOPS_WIKI,
+          INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM,
+          INDEX_TYPES.GOOGLE,
+        ].includes(indexType)
+      },
+      then: (schema) => schema.required('Integration is required for this data source type'),
+    }),
+
+    repoIndexType: Yup.string().optional(),
+    csvRowsPerDocument: Yup.number().optional(),
+
+    projectName: Yup.string().required(),
+    new_project_name: Yup.string().notRequired(),
+    reindexOnEdit: Yup.string().notRequired(),
+    isEditing: Yup.boolean().required(),
+    embeddingsModel: Yup.string().notRequired(),
+    summarizationModel: Yup.string().notRequired(),
+    enableCustomPrompts: Yup.boolean().notRequired(),
+    promptTemplate: Yup.string().notRequired(),
+    indexMetadata: Yup.object({ schema: Yup.string() }).notRequired(),
+    cronExpression: Yup.string()
+      .notRequired()
+      .test('valid-cron', function (value) {
+        if (!value || value.trim() === '') return true
+        const error = validateCronExpression(value)
+        if (error) {
+          return this.createError({ message: error })
+        }
+        return true
+      }),
+    timezone: Yup.string().optional(),
+  }).shape(guardrailAssignmentsSchema)
+
+export const makeEditingSchema = (maxFiles: number) =>
+  makeBaseValidationSchema(maxFiles)
+    .omit(['name'])
+    .shape({
+      files: Yup.array().when(['indexType'], {
+        is: (indexType) => indexType === INDEX_TYPES.FILE,
+        then: (schema) =>
+          schema.of(Yup.mixed<File>().test('file-size', FILE_SIZE_ERR, fileSizeValidator)),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+      uploadedFiles: Yup.array().when(['indexType'], {
+        is: (indexType: string) => indexType === INDEX_TYPES.FILE,
+        then: (schema) =>
+          schema
+            .of(Yup.string().required())
+            .nullable()
+            .test('min-one-file', 'At least one file is required', function (uploadedFiles) {
+              const files = this.parent.files as File[] | undefined
+              const totalFiles = (uploadedFiles?.length ?? 0) + (files?.length ?? 0)
+              return totalFiles >= 1
+            })
+            .test('max-total-files', filesMaxCountError(maxFiles), function (uploadedFiles) {
+              const files = this.parent.files as File[] | undefined
+              const totalFiles = (uploadedFiles?.length ?? 0) + (files?.length ?? 0)
+              return totalFiles <= maxFiles
+            }),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    })
+
+export const editingSchema = makeEditingSchema(DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT)
+
+export type FormValues = Yup.InferType<ReturnType<typeof makeBaseValidationSchema>>
 
 export const useEditPopupForm = (
   defaults: Partial<DataSourceDetailsResponse>,
@@ -262,12 +278,14 @@ export const useEditPopupForm = (
 ) => {
   const [searchParams] = useSearchParams()
   const { indexProviderSchemas } = useSnapshot(dataSourceStore) as typeof dataSourceStore
+  const { fileDatasourceMaxUploadCount } = useSnapshot(appInfoStore)
   const defaultQueryProject = searchParams.get('addToProject')
+  const maxFiles = getFileDatasourceMaxUploadCount(fileDatasourceMaxUploadCount)
 
   const validationSchema = Yup.lazy((values) => {
-    let schema: typeof baseValidationSchema = baseValidationSchema
+    let schema = makeBaseValidationSchema(maxFiles)
 
-    if (isEditing) schema = editingSchema as typeof baseValidationSchema
+    if (isEditing) schema = makeEditingSchema(maxFiles) as typeof schema
 
     if (values?.indexMetadata?.base_schema?.parameters) {
       const providerFields = [

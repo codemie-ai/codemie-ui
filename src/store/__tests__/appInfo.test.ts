@@ -24,11 +24,51 @@ vi.mock('@/utils/api', () => ({
 }))
 
 // Import after mock so the store picks up the mocked api
-const { appInfoStore } = await import('@/store/appInfo')
+const { appInfoStore, DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT } = await import('@/store/appInfo')
 const { getConfigItemSettings } = await import('@/utils/settings')
 
 const okResponse = (data: unknown) => ({
   json: () => Promise.resolve(data),
+})
+
+describe('appInfoStore.loadAppInfo file datasource upload limit', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    appInfoStore.fileDatasourceMaxUploadCount = DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT
+  })
+
+  it('stores a positive integer limit advertised by v1/info', async () => {
+    mockGet.mockResolvedValue(
+      okResponse({
+        message: 'Codemie',
+        version: '1.2.3',
+        description: 'Test instance',
+        fileDatasourceMaxUploadCount: 25,
+      })
+    )
+
+    await appInfoStore.loadAppInfo()
+
+    expect(appInfoStore.fileDatasourceMaxUploadCount).toBe(25)
+  })
+
+  it.each([undefined, '25', 10.5, 0, -1, Number.POSITIVE_INFINITY])(
+    'falls back to 10 when v1/info provides %p',
+    async (fileDatasourceMaxUploadCount) => {
+      mockGet.mockResolvedValue(
+        okResponse({
+          message: 'Codemie',
+          version: '1.2.3',
+          description: 'Test instance',
+          fileDatasourceMaxUploadCount,
+        })
+      )
+
+      await appInfoStore.loadAppInfo()
+
+      expect(appInfoStore.fileDatasourceMaxUploadCount).toBe(10)
+    }
+  )
 })
 
 describe('appInfoStore.fetchToolConfigs', () => {
