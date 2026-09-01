@@ -18,6 +18,7 @@ import React, { ReactNode, useEffect, useId } from 'react'
 
 import CloseSvg from '@/assets/icons/cross.svg?react'
 import gradientModal from '@/assets/images/gradient-modal.png'
+import ModalAnnouncerHost from '@/components/appLevel/ToasterAnnouncer/ModalAnnouncerHost'
 import CustomButton from '@/components/Button'
 import { ButtonType } from '@/constants'
 import { cn } from '@/utils/utils'
@@ -192,6 +193,9 @@ const Popup: React.FC<PopupProps> = ({
         },
       }}
     >
+      {/* Hosts the app's live region while this dialog is open — assistive tech is scoped to the
+          dialog, so a region left outside it is silent. */}
+      <ModalAnnouncerHost active={visible} />
       {children}
     </Dialog>
   )

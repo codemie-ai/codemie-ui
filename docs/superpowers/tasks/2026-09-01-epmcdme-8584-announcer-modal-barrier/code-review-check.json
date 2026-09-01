@@ -1,0 +1,47 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "gate_id": "code-review.check",
+  "artifacts_reviewed": {
+    "prior_verdict": "docs/superpowers/tasks/2026-09-01-epmcdme-8584-announcer-modal-barrier/code-review-final.json",
+    "diff": "docs/superpowers/tasks/2026-09-01-epmcdme-8584-announcer-modal-barrier/code-review-check.diff"
+  },
+  "business_review": [
+    {"id": "AC1", "status": "pass", "notes": "carried forward"},
+    {"id": "AC2", "status": "pass", "notes": "carried forward; re-verified in-browser after the fix-up — region still lands in #nav-profile-dialog"},
+    {"id": "AC3", "status": "pass", "notes": "carried forward"},
+    {"id": "AC4", "status": "pass", "notes": "carried forward"},
+    {"id": "AC5", "status": "pass", "notes": "carried forward"}
+  ],
+  "standards_review": [
+    {"id": "git-workflow", "status": "pass", "notes": "carried forward; fix-up commit carries the ticket key"},
+    {"id": "code-quality", "status": "pass", "notes": "typecheck and eslint clean after fixing two no-promise-executor-return errors introduced by the new tests"},
+    {"id": "security", "status": "pass", "notes": "carried forward"},
+    {"id": "testing", "status": "pass", "notes": "CR-001 resolved; announcer suite 11/11, run three times to confirm the re-announce test is no longer timing-flaky"}
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "afterEach removes every host a test appended; the fallback test now asserts zero modal nodes remain and that the container's parent is exactly document.body. One new test was also found vacuous while fixing this (assertions ran before the observer had placed anything) and was made deterministic."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "MODAL_SELECTOR now requires a dialog/alertdialog role with aria-modal, or a native dialog[open]. isReachable() drops hosts that are disconnected, inert, under aria-hidden, or failing checkVisibility, and findHost() prefers the host containing document.activeElement. Covered by two tests (hidden/inert host ignored; focused host wins over later document order)."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "place() re-emits the current announcement after an actual re-parent. The test records every value the region takes and asserts the message appears again after the host is removed."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "The observer inspects MutationRecords first: records originating inside the announcer's own container are ignored, and node additions/removals only trigger a scan when the node or its subtree matches MODAL_SELECTOR. Test spies on document.querySelectorAll and asserts an unrelated DOM insert triggers no modal scan."
+    }
+  ],
+  "findings": [],
+  "rationale": "All four blocking findings are resolved and each carries a test that fails without the fix. No new high-risk issue in the fix-up diff: the added surface is DOM placement only — no network, storage, auth, HTML sink, or public API is touched. One deliberate accepted detail: announcementRef is mirrored during render rather than in an effect, so the re-parent path reads the current text rather than a post-paint value; the write is idempotent, so a discarded or double-invoked render cannot corrupt it. Verified after the fix-up: announcer suite 11/11 across three consecutive runs, unit 463 files / 4920 tests, integration 39 files / 496 passed 1 skipped, typecheck and lint clean, and a CDP accessibility-tree capture on the running app confirming the region still moves into #nav-profile-dialog and back to <body>. Deferred items from the final round remain deferred (container identifying attribute and display:contents; copyToClipboard duplication)."
+}

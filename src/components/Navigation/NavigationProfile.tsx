@@ -21,6 +21,7 @@ import SettingsSvg from '@/assets/icons/configuration.svg?react'
 import CopySvg from '@/assets/icons/copy.svg?react'
 import LogoutSvg from '@/assets/icons/logout.svg?react'
 import avatarDefault from '@/assets/images/avatar.jpg'
+import ModalAnnouncerHost from '@/components/appLevel/ToasterAnnouncer/ModalAnnouncerHost'
 import { APP_VERSION } from '@/constants'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { FOCUSABLE_SELECTOR, useFocusTrap } from '@/hooks/useFocusTrap'
@@ -184,6 +185,11 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
           aria-label="User profile"
           data-onboarding="profile-expand-content"
         >
+          {/* Hosts the app's live region while this panel is open: it marks #app aria-hidden, so a
+              region left out there is dropped from the accessibility tree. The copy buttons below
+              are exactly the toasts that must still be heard. */}
+          <ModalAnnouncerHost active={isVisible} />
+
           <div className="flex items-center w-full p-4">
             <img
               src={avatarSrc}

@@ -19,6 +19,7 @@ import 'quill-mention/autoregister'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router/dom'
 
+import { AnnouncerHostProvider } from '@/components/appLevel/ToasterAnnouncer/AnnouncerHostContext'
 import ToasterAnnouncer from '@/components/appLevel/ToasterAnnouncer/ToasterAnnouncer'
 import { redirectHashRoutes } from '@/utils/redirectHashRoutes'
 import { themeService } from '@/utils/themeService'
@@ -44,8 +45,8 @@ const root = document.getElementById('app')!
 // so the live region also covers the sign-in/sign-up routes, which render
 // outside App but still emit toasts.
 ReactDOM.createRoot(root).render(
-  <>
+  <AnnouncerHostProvider>
     <ToasterAnnouncer />
     <RouterProvider router={router} />
-  </>
+  </AnnouncerHostProvider>
 )

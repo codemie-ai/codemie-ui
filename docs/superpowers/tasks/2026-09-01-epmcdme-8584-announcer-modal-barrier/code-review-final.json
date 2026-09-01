@@ -1,0 +1,67 @@
+{
+  "decision": "request-changes",
+  "confidence": "high",
+  "risk_flags": ["a11y-regression"],
+  "gate_id": "code-review.final",
+  "artifacts_reviewed": {
+    "plan": "docs/superpowers/tasks/2026-09-01-epmcdme-8584-announcer-modal-barrier/plan.md",
+    "technical_analysis": "docs/superpowers/tasks/2026-09-01-epmcdme-8584-announcer-modal-barrier/technical-analysis.md",
+    "diff": "docs/superpowers/tasks/2026-09-01-epmcdme-8584-announcer-modal-barrier/code-review.diff"
+  },
+  "business_review": [
+    {"id": "AC1", "status": "pass", "notes": "Copy control on /settings/profile announces; path unchanged and not regressed"},
+    {"id": "AC2", "status": "pass", "notes": "NavigationProfile panel is div[role=dialog][aria-modal=true] portalled to body; MODAL_SELECTOR matches, container moves in before the copy button is reachable"},
+    {"id": "AC3", "status": "pass", "notes": "Reporter confirmed announcement with a screen reader on the rebuilt local stack (2026-09-01); CDP AX-tree capture is supporting evidence"},
+    {"id": "AC4", "status": "pass", "notes": "Coverage is structural: every Notes-list surface funnels into utils/toaster.ts and one registered announcer; both copyToClipboard copies (helpers.ts:144, utils.ts:119) end in toaster; PrimeReact Popup passes modal -> aria-modal, so modal-hosted toasts match too"},
+    {"id": "AC5", "status": "pass", "notes": "NavigationProfile aria-hidden lifecycle and CR-001/CR-002 assertions untouched; diff is limited to ToasterAnnouncer and its test file"}
+  ],
+  "standards_review": [
+    {"id": "git-workflow", "status": "pass", "notes": "Branch EPMCDME-8584_announcer-outside-app-root and both commit subjects carry the ticket key"},
+    {"id": "code-quality", "status": "pass", "notes": "typecheck and eslint clean; licence header preserved; no new dependency"},
+    {"id": "security", "status": "pass", "notes": "No untrusted HTML sink, redirect, secret or config surface touched; announcement text is plain textContent"},
+    {"id": "testing", "status": "fail", "notes": "See CR-001 — leaked DOM nodes make one new test vacuous"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "sources": ["edge-case"],
+      "location": "src/components/appLevel/ToasterAnnouncer/__tests__/ToasterAnnouncer.test.tsx:79-138",
+      "problem": "The new tests append nodes to document.body (an #app div with aria-hidden, and an aria-modal dialog) and never remove them. Testing Library's cleanup only unmounts containers it created, so the stale aria-modal node from the second test is still present during the third.",
+      "impact": "'returns the live region to the body once the modal closes' passes vacuously: the container is re-parented into the leftover dialog, yet both assertions still hold because that dialog is itself inside body. The test would stay green if the fallback-to-body logic were deleted.",
+      "recommendation": "Remove the appended nodes in afterEach, and assert the concrete fallback host (container's parent is document.body) rather than mere containment."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "sources": ["blind", "acceptance", "edge-case"],
+      "location": "src/components/appLevel/ToasterAnnouncer/ToasterAnnouncer.tsx:31,38-43",
+      "problem": "MODAL_SELECTOR matches on attributes alone and 'topmost' is decided by document order. A dialog kept in the DOM while hidden (PrimeReact's ~100-150ms leave transition, or any host retaining an aria-modal node), an inert or aria-hidden dialog, and non-dialog widgets that emit aria-modal (PrimeReact Calendar/Galleria) all capture the region.",
+      "impact": "The region can park inside a hidden or non-active host, in which case every toast in the app goes silent — a wider regression than the bug being fixed, and invisible to the current tests.",
+      "recommendation": "Require a dialog/alertdialog role together with aria-modal (or a native dialog[open]), skip candidates that are not visible, are inert, or sit under aria-hidden, and prefer the candidate containing document.activeElement over last-in-document-order."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "sources": ["blind", "acceptance", "edge-case"],
+      "location": "src/components/appLevel/ToasterAnnouncer/ToasterAnnouncer.tsx:37-58",
+      "problem": "Placement is not sequenced against the announcement queue. useAnnouncementQueue writes '' and then the text one animation frame later; a toast raised by the same interaction that opens or closes a modal is written into a region that was just re-parented.",
+      "impact": "Confirm-then-toast flows named in the ticket — Delete All Conversations, Delete in Data Sources — can stay silent, reproducing the partial-fix pattern that caused the reopen.",
+      "recommendation": "After an actual re-parent, re-emit the current announcement so the content change happens strictly after the move."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "sources": ["blind", "edge-case"],
+      "location": "src/components/appLevel/ToasterAnnouncer/ToasterAnnouncer.tsx:46-52",
+      "problem": "The observer watches childList+subtree on document.body and runs a whole-document querySelectorAll for every mutation batch, including the batches its own region produces. This app streams chat tokens and re-renders markdown continuously.",
+      "impact": "A full-document attribute-selector query on the hottest rendering path, for a placement that changes only when a modal opens or closes.",
+      "recommendation": "Inspect the MutationRecords first and bail unless a record could plausibly concern a modal; ignore records originating inside the announcer's own container."
+    }
+  ],
+  "rationale": "Three lenses ran (blind, edge-case, acceptance); none failed. Acceptance confirms all five criteria including the Notes list, which is covered structurally because every toast funnels through utils/toaster.ts. Four blocking findings survive triage, all bucketed patch: one confirmed test defect (CR-001, high confidence, verified against the test file) and three robustness gaps in the placement logic that all three lenses raised independently (CR-002, CR-003, CR-004). Deferred, not emitted: give the injected container an identifying attribute and take it out of host layout (display:contents) to avoid a latent flex/gap regression in future modals; de-duplicate copyToClipboard across utils/helpers.ts and utils/utils.ts. Dismissed (4): SSR-safety of document.createElement during render (Vite SPA, no SSR path), multiple concurrent announcer instances (single mount point in main.tsx, and the registration slot already guards stale unmounts), StrictMode double-mount (container identity outlives the effect by construction), and modal libraries aria-hiding body siblings (measured not to occur — the body-level region reported ignored:false with the PrimeReact tour dialog open)."
+}
