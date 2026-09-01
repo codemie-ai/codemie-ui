@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
-import { createRef, forwardRef, useImperativeHandle } from 'react'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import { createRef, forwardRef, useEffect, useImperativeHandle } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import type { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
@@ -58,9 +58,14 @@ vi.mock('../CommonStateFields', () => ({
 }))
 
 vi.mock('@/pages/workflows/components/WorkflowSelector', () => ({
-  default: forwardRef(({ singleValue }: any, _ref: any) => (
-    <div data-testid="workflow-selector" data-single-value={String(singleValue)} />
-  )),
+  default: forwardRef(({ singleValue, value = [], onChange }: any, _ref: any) => {
+    useEffect(() => {
+      // Simulate the project-prop useEffect in WorkflowSelector that fires on initial mount,
+      // calling resetValue() → onChange(initialValue).
+      onChange(value)
+    }, [])
+    return <div data-testid="workflow-selector" data-single-value={String(singleValue)} />
+  }),
 }))
 
 vi.mock('../components/TabFooter', () => ({
@@ -148,5 +153,20 @@ describe('SubWorkflowTab', () => {
     await waitFor(() => {
       expect(screen.getByTestId('workflow-selector')).toBeInTheDocument()
     })
+  })
+
+  it('isDirty() returns false on initial mount when workflow_id is empty (regression EPMCDME-14620)', async () => {
+    const ref = createRef<SubWorkflowTabRef>()
+    const emptyConfig: WorkflowConfiguration = {
+      states: [
+        {
+          id: 'state-1',
+          workflow_id: '',
+        } as any,
+      ],
+    }
+    render(<SubWorkflowTab {...defaultProps} config={emptyConfig} ref={ref} />)
+    await act(async () => {})
+    expect(ref.current!.isDirty()).toBe(false)
   })
 })

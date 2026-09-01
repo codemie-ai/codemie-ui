@@ -80,7 +80,7 @@ const SubWorkflowTab = forwardRef<SubWorkflowTabRef, SubWorkflowTabProps>(
       resolver: yupResolver(subWorkflowFormSchema as any),
       mode: 'onChange',
       defaultValues: {
-        workflow_id: state?.workflow_id ?? null,
+        workflow_id: state?.workflow_id || null,
       },
     })
 

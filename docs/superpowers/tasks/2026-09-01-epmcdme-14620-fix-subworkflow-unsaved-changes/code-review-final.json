@@ -1,0 +1,20 @@
+{
+  "decision": "approve",
+  "rationale": "Single-line correctness fix: changing `??` to `||` in SubWorkflowTab defaultValues ensures an empty-string workflow_id produced by createState.ts becomes null in react-hook-form's baseline, matching the null that WorkflowSelector's onChange emits on mount. All three lenses raised concerns; none survived cross-check against the actual code. TypeScript types exclude non-string falsy values. The mock correctly propagates the value prop through the Controller onChange handler. The regression test properly reproduces the bug scenario (isDirty true before fix, false after) and all five unit tests pass. No security, breaking-change, or correctness issues found. Standards: commit format, branch naming, and code quality all pass.",
+  "follow_ups": [],
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "Dropping a Sub-Workflow node does not show the Unsaved Changes popup.", "status": "satisfied", "evidence": "Root cause addressed: defaultValues.workflow_id now initialised to null (matching WorkflowSelector onChange output), isDirty stays false on mount."},
+    {"criterion": "The node is added to the canvas and the workflow is marked modified.", "status": "satisfied", "evidence": "Canvas/drop logic and dirty-marking path untouched by this diff; existing behaviour preserved."},
+    {"criterion": "The popup still appears when the user navigates away or closes the editor with unsaved changes.", "status": "satisfied", "evidence": "No change to navigate-away guards or the isDirty signalling path for genuine edits."},
+    {"criterion": "No regression in Unsaved Changes behaviour for other node types or editing actions.", "status": "satisfied", "evidence": "Change scoped to SubWorkflowTab.tsx only. All four existing tests pass with the updated mock."}
+  ],
+  "standards_review": [
+    {"standard": "Commit message format", "status": "pass", "notes": "EPMCDME-14620: Fix Sub-workflow node triggering unsaved changes popup on drop — matches EPMCDME-XXXX: Capital sentence pattern."},
+    {"standard": "Branch naming", "status": "pass", "notes": "EPMCDME-14620_fix-subworkflows — matches required pattern."},
+    {"standard": "Security patterns", "status": "pass", "notes": "No HTML sinks, redirects, secrets, or injection surfaces changed."},
+    {"standard": "Code quality", "status": "pass", "notes": "One-line production change; test change follows existing patterns; no new dependencies."}
+  ],
+  "findings": []
+}
