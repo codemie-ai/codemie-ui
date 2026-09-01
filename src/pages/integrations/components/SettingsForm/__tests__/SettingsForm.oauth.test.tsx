@@ -17,6 +17,8 @@ import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { getAvailableCredentialsTypes } from '@/utils/settings'
+
 import SettingsForm from '../SettingsForm'
 
 vi.mock('@/utils/settings', async (importOriginal) => {
@@ -44,6 +46,7 @@ vi.mock('@/store/appInfo', () => ({
     api: { BASE_URL: 'https://test' },
     fetchCustomerConfig: vi.fn().mockResolvedValue(null),
     toolFieldDefaults: {},
+    toolFieldPlaceholders: {},
   },
 }))
 vi.mock('@/utils/onboarding', () => ({ registerCredentialTypeCallback: vi.fn(() => () => {}) }))
@@ -54,7 +57,10 @@ vi.mock('../../TestIntegration', () => ({ default: () => null }))
 vi.mock('../../OAuthTestAction', () => ({ default: () => null }))
 vi.mock('../../SettingFormMessage/SettingFormMessage', () => ({ default: () => null }))
 
-describe('SettingsForm — tool OAuth save no longer requires oauth_state', () => {
+// EPMCDME-14586: the GitLab OAuth credential type is temporarily hidden (its CREDENTIAL_UI_MAPPING
+// entry is commented out), so this save flow can't render. Skipped — do NOT delete; unskip when the
+// GitLab OAuth type is re-enabled.
+describe.skip('SettingsForm — tool OAuth save no longer requires oauth_state', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -89,5 +95,27 @@ describe('SettingsForm — tool OAuth save no longer requires oauth_state', () =
     expect(payload.credential_values).toEqual(
       expect.arrayContaining([{ key: 'client_id', value: 'cid' }])
     )
+  })
+})
+
+describe('SettingsForm — OAuth sign-in toggle commented out (EPMCDME-14586)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Make jira/jiraoauth available so the toggle would render if it were still enabled.
+    vi.mocked(getAvailableCredentialsTypes).mockReturnValue(['jira', 'jiraoauth'])
+  })
+
+  it('does not render the "Use OAuth 2.0 sign-in" toggle', () => {
+    render(
+      <SettingsForm
+        credentialType="jira"
+        settingType="user"
+        onSubmit={vi.fn()}
+        onClose={vi.fn()}
+        submitText="Save"
+        editing={false}
+      />
+    )
+    expect(screen.queryByText('Use OAuth 2.0 sign-in')).toBeNull()
   })
 })

@@ -500,3 +500,11 @@ describe('generateDefaultAlias', () => {
     expect(generateDefaultAlias(INDEX_TYPES.FILE)).toBe('file-2026-05-31_16-45')
   })
 })
+
+describe('OAuth switchers commented out (EPMCDME-14586)', () => {
+  it('does not expose the GitLab OAuth credential type', () => {
+    expect(CREDENTIAL_UI_MAPPING.gitlaboauth).toBeUndefined()
+    const types = getAvailableCredentialsTypes({ settingType: SETTING_TYPE_USER, user: null })
+    expect(types).not.toContain('gitlaboauth')
+  })
+})

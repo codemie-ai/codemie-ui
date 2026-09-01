@@ -31,7 +31,8 @@ import ProjectSelector from '@/components/ProjectSelector'
 import {
   getBaseTypeForOAuthVariant,
   GOOGLE_OAUTH_CREDENTIAL_TYPE,
-  OAUTH_VARIANT_BY_BASE_TYPE,
+  // EPMCDME-14586: used only by the temporarily-hidden OAuth sign-in toggle — do not delete.
+  // OAUTH_VARIANT_BY_BASE_TYPE,
   OAUTH_VARIANT_CREDENTIAL_TYPES,
   SHAREPOINT_AUTH_METHOD_OPTIONS,
   SHAREPOINT_AUTH_METHODS,
@@ -290,17 +291,19 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   // rather than a separate select item, so the effective credentialType can be the base type
   // ('jira') or its OAuth variant ('jiraoauth'). The select always shows the base type.
   const baseCredentialType = getBaseTypeForOAuthVariant(credentialType) ?? credentialType
-  const oauthVariantType = OAUTH_VARIANT_BY_BASE_TYPE[baseCredentialType]
-  const isOAuthVariantSelected = !!oauthVariantType && credentialType === oauthVariantType
-  // Only offer the toggle when the OAuth variant is actually available in this context
-  // (role/enterprise/feature-flag gating already applied to CREDENTIAL_VALUES_MAPPING).
-  const showOAuthToggle =
-    !!oauthVariantType && CREDENTIAL_VALUES_MAPPING[oauthVariantType] !== undefined
-
-  const handleOAuthToggle = (useOAuth: boolean) => {
-    if (!oauthVariantType) return
-    handleCredentialTypeChange(useOAuth ? oauthVariantType : baseCredentialType)
-  }
+  // EPMCDME-14586: Jira/Confluence OAuth sign-in toggle temporarily hidden — do NOT delete.
+  // Uncomment these consts (and the toggle JSX + OAUTH_VARIANT_BY_BASE_TYPE import) to re-enable.
+  // const oauthVariantType = OAUTH_VARIANT_BY_BASE_TYPE[baseCredentialType]
+  // const isOAuthVariantSelected = !!oauthVariantType && credentialType === oauthVariantType
+  // // Only offer the toggle when the OAuth variant is actually available in this context
+  // // (role/enterprise/feature-flag gating already applied to CREDENTIAL_VALUES_MAPPING).
+  // const showOAuthToggle =
+  //   !!oauthVariantType && CREDENTIAL_VALUES_MAPPING[oauthVariantType] !== undefined
+  //
+  // const handleOAuthToggle = (useOAuth: boolean) => {
+  //   if (!oauthVariantType) return
+  //   handleCredentialTypeChange(useOAuth ? oauthVariantType : baseCredentialType)
+  // }
 
   const credentialTypeOptions = useMemo(() => {
     const options = CREDENTIAL_TYPES.filter(
@@ -566,6 +569,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
           />
         </div>
 
+        {/* EPMCDME-14586: Jira/Confluence "Use OAuth 2.0 sign-in" toggle temporarily hidden.
+            Do NOT delete — uncomment this block and the supporting consts/import above to re-enable.
         {showOAuthToggle && (
           <div data-onboarding="integration-oauth-toggle">
             <Switch
@@ -579,6 +584,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
             />
           </div>
         )}
+        */}
 
         <div data-onboarding="integration-alias-field">
           <Controller

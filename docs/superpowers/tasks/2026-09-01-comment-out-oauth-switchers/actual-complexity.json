@@ -1,0 +1,14 @@
+{
+  "schema": 1, "mode": "actual",
+  "assessed_by": "inline (reversible two-spot comment-out + tests; proportionate to scope)",
+  "size": "XS", "total": 8,
+  "breakdown": {
+    "component_scope": {"score": 2, "label": "S", "note": "Two files (settingsUIConfig entry + SettingsForm toggle)."},
+    "requirements_clarity": {"score": 1, "label": "XS", "note": "Team-directed, precise."},
+    "technical_risk": {"score": 2, "label": "S", "note": "UI-hide only; must avoid orphan symbols (typecheck-verified); reversible."},
+    "file_change_estimate": {"score": 1, "label": "XS", "note": "4 files incl. tests, mostly comments."},
+    "dependencies": {"score": 1, "label": "XS", "note": "None."},
+    "affected_layers": {"score": 1, "label": "XS", "note": "config + one component."}
+  },
+  "red_flags": [], "split_recommendation": null
+}

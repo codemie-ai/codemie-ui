@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "rationale": "Temporary comment-out hotfix (4 files) matching the team's request: the GitLab OAuth CREDENTIAL_UI_MAPPING entry and its import are commented out (removing gitlaboauth from the type dropdown), and the Jira/Confluence 'Use OAuth 2.0 sign-in' toggle JSX + its supporting consts (oauthVariantType/isOAuthVariantSelected/showOAuthToggle/handleOAuthToggle) + the now-orphaned OAUTH_VARIANT_BY_BASE_TYPE import are commented out. baseCredentialType (used by the type select) is kept. Every site carries an EPMCDME-14586 marker and 'do not delete' note for easy revert. No orphaned symbols (typecheck clean). The pre-existing gitlaboauth save test is describe.skip'd (kept, marked) since its functionality is intentionally hidden. jiraoauth/confluenceoauth config entries and token flows are untouched; OAuthTestAction/connect hooks key off the credential-type string, not these config entries, so they are dead-but-not-broken. Covered by tests: gitlaboauth absent from CREDENTIAL_UI_MAPPING/getAvailableCredentialsTypes, and the toggle not rendered in SettingsForm. Reviewed inline, proportionate to a reversible comment-out.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "GitLab OAuth type removed from form", "status": "pass", "notes": "config entry + import commented; test asserts absence."},
+    {"criterion": "Jira/Confluence sign-in toggle removed", "status": "pass", "notes": "toggle JSX + consts commented; render test asserts absence."},
+    {"criterion": "code kept (revertable)", "status": "pass", "notes": "block/line comments + EPMCDME-14586 markers; skipped test kept."},
+    {"criterion": "no regression to other types/token flows", "status": "pass", "notes": "only the two switchers touched; jiraoauth/confluenceoauth entries kept; gates green."}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow commit format", "status": "pass", "notes": "two EPMCDME-14586: commits."},
+    {"standard": "code-quality", "status": "pass", "notes": "no orphaned symbols (typecheck clean); clear revert markers."}
+  ],
+  "findings": []
+}

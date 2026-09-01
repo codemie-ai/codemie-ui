@@ -17,7 +17,8 @@ import * as Yup from 'yup'
 
 import {
   CONFLUENCE_OAUTH_CREDENTIAL_TYPE,
-  GITLAB_OAUTH_CREDENTIAL_TYPE,
+  // EPMCDME-14586: GitLab OAuth type temporarily hidden — do not delete (see entry below).
+  // GITLAB_OAUTH_CREDENTIAL_TYPE,
   GOOGLE_OAUTH_CREDENTIAL_TYPE,
   JIRA_OAUTH_CREDENTIAL_TYPE,
 } from '@/constants/integration'
@@ -976,33 +977,35 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     accessType: CredentialAccessType.USER_ONLY,
     fields: {},
   },
-  [GITLAB_OAUTH_CREDENTIAL_TYPE]: {
-    displayName: 'GitLab (OAuth)',
-    serverEnum: 'GitLabOAuth',
-    accessType: CredentialAccessType.ALL,
-    fields: {
-      instance_url: {
-        placeholder: 'https://gitlab.com',
-        defaultValue: 'https://gitlab.com',
-        help: 'GitLab instance URL (gitlab.com or a self-hosted instance).',
-      },
-      client_id: {
-        placeholder: 'GitLab OAuth Application ID',
-        help: 'https://docs.gitlab.com/ee/integration/oauth_provider.html',
-      },
-      client_secret: {
-        placeholder: 'GitLab OAuth Application Secret',
-        sensitive: true,
-        help: 'https://docs.gitlab.com/ee/integration/oauth_provider.html',
-      },
-      callback_base_url: {
-        placeholder: 'https://your-codemie-host',
-        help:
-          'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
-          'must match the Redirect URI registered on the GitLab OAuth application.',
-      },
-    },
-  },
+  // EPMCDME-14586: GitLab OAuth credential type temporarily hidden from the integration form.
+  // Do NOT delete — uncomment (and the GITLAB_OAUTH_CREDENTIAL_TYPE import above) to re-enable.
+  // [GITLAB_OAUTH_CREDENTIAL_TYPE]: {
+  //   displayName: 'GitLab (OAuth)',
+  //   serverEnum: 'GitLabOAuth',
+  //   accessType: CredentialAccessType.ALL,
+  //   fields: {
+  //     instance_url: {
+  //       placeholder: 'https://gitlab.com',
+  //       defaultValue: 'https://gitlab.com',
+  //       help: 'GitLab instance URL (gitlab.com or a self-hosted instance).',
+  //     },
+  //     client_id: {
+  //       placeholder: 'GitLab OAuth Application ID',
+  //       help: 'https://docs.gitlab.com/ee/integration/oauth_provider.html',
+  //     },
+  //     client_secret: {
+  //       placeholder: 'GitLab OAuth Application Secret',
+  //       sensitive: true,
+  //       help: 'https://docs.gitlab.com/ee/integration/oauth_provider.html',
+  //     },
+  //     callback_base_url: {
+  //       placeholder: 'https://your-codemie-host',
+  //       help:
+  //         'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
+  //         'must match the Redirect URI registered on the GitLab OAuth application.',
+  //     },
+  //   },
+  // },
   [JIRA_OAUTH_CREDENTIAL_TYPE]: {
     displayName: 'Jira (OAuth)',
     serverEnum: 'JiraOAuth',
