@@ -71,6 +71,55 @@ describe('appInfoStore.loadAppInfo file datasource upload limit', () => {
   )
 })
 
+describe('appInfoStore.loadReleaseNotes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    appInfoStore.appReleases = []
+  })
+
+  it('uses deployedAt from endpoint when version matches', async () => {
+    mockGet.mockResolvedValue(
+      okResponse({ deployments: [{ version: '2.46.0', deployedAt: '2026-09-01T10:00:00Z' }] })
+    )
+
+    await appInfoStore.loadReleaseNotes()
+
+    const release = appInfoStore.appReleases.find((r) => r.version === '2.46.0')
+    expect(release?.date).toBe('2026-09-01T10:00:00Z')
+  })
+
+  it('keeps JSON date as fallback when deployments array is empty', async () => {
+    mockGet.mockResolvedValue(okResponse({ deployments: [] }))
+
+    await appInfoStore.loadReleaseNotes()
+
+    const release = appInfoStore.appReleases.find((r) => r.version === '2.46.0')
+    expect(release?.date).toBe('2026-09-01')
+  })
+
+  it('overrides only versions present in deployments, leaves others unchanged', async () => {
+    mockGet.mockResolvedValue(
+      okResponse({ deployments: [{ version: '2.46.0', deployedAt: '2026-09-01T10:00:00Z' }] })
+    )
+
+    await appInfoStore.loadReleaseNotes()
+
+    const v246 = appInfoStore.appReleases.find((r) => r.version === '2.46.0')
+    const v245 = appInfoStore.appReleases.find((r) => r.version === '2.45.0')
+    expect(v246?.date).toBe('2026-09-01T10:00:00Z')
+    expect(v245?.date).toBe('2026-08-28')
+  })
+
+  it('keeps JSON dates on network error (graceful degradation)', async () => {
+    mockGet.mockRejectedValue(new Error('network down'))
+
+    await appInfoStore.loadReleaseNotes()
+
+    const release = appInfoStore.appReleases.find((r) => r.version === '2.46.0')
+    expect(release?.date).toBe('2026-09-01')
+  })
+})
+
 describe('appInfoStore.fetchToolConfigs', () => {
   beforeEach(() => {
     vi.clearAllMocks()

@@ -1,0 +1,84 @@
+diff --git a/src/store/__tests__/appInfo.test.ts b/src/store/__tests__/appInfo.test.ts
+index 4d2dcf342..cc988f5be 100644
+--- a/src/store/__tests__/appInfo.test.ts
++++ b/src/store/__tests__/appInfo.test.ts
+@@ -30,6 +30,50 @@ const okResponse = (data: unknown) => ({
+   json: () => Promise.resolve(data),
+ })
+ 
++describe('appInfoStore.loadReleaseNotes', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++    appInfoStore.appReleases = []
++  })
++
++  it('uses deployedAt from endpoint when version matches', async () => {
++    mockGet.mockResolvedValue(
++      okResponse({ deployments: [{ version: '2.42.0', deployedAt: '2026-07-20T12:34:56Z' }] })
++    )
++
++    await appInfoStore.loadReleaseNotes()
++
++    expect(appInfoStore.appReleases[0].date).toBe('2026-07-20T12:34:56Z')
++  })
++
++  it('keeps JSON date as fallback when deployments array is empty', async () => {
++    mockGet.mockResolvedValue(okResponse({ deployments: [] }))
++
++    await appInfoStore.loadReleaseNotes()
++
++    expect(appInfoStore.appReleases[0].date).toBe('2026-08-03')
++  })
++
++  it('overrides only versions present in deployments, leaves others unchanged', async () => {
++    mockGet.mockResolvedValue(
++      okResponse({ deployments: [{ version: '2.42.0', deployedAt: '2026-07-20T12:34:56Z' }] })
++    )
++
++    await appInfoStore.loadReleaseNotes()
++
++    expect(appInfoStore.appReleases[0].date).toBe('2026-07-20T12:34:56Z')
++    expect(appInfoStore.appReleases[1].date).toBe('2026-07-24')
++  })
++
++  it('keeps JSON dates on network error (graceful degradation)', async () => {
++    mockGet.mockRejectedValue(new Error('network down'))
++
++    await appInfoStore.loadReleaseNotes()
++
++    expect(appInfoStore.appReleases[0].date).toBe('2026-08-03')
++  })
++})
++
+ describe('appInfoStore.fetchToolConfigs', () => {
+   beforeEach(() => {
+     vi.clearAllMocks()
+diff --git a/src/store/appInfo.ts b/src/store/appInfo.ts
+index 92e141478..da29c83e4 100644
+--- a/src/store/appInfo.ts
++++ b/src/store/appInfo.ts
+@@ -221,7 +221,23 @@ export const appInfoStore = proxy<AppInfoStoreType>({
+   async loadReleaseNotes() {
+     this.appReleases = releaseNotes
+     this.viewedAppReleaseVersion = localStorage.getItem(VIEWED_RN_VERSION_KEY) ?? ''
+-    return releaseNotes
++    try {
++      const response = await api.get('v1/deployment-versions')
++      const data = await response.json()
++      const deployedAtByVersion = new Map<string, string>(
++        (data.deployments ?? []).map((d: { version: string; deployedAt: string }) => [
++          d.version,
++          d.deployedAt,
++        ])
++      )
++      this.appReleases = releaseNotes.map((release) => ({
++        ...release,
++        date: deployedAtByVersion.get(release.version) ?? release.date,
++      }))
++    } catch (error) {
++      console.error('Error fetching deployment versions:', error)
++    }
++    return this.appReleases
+   },
+ 
+   async loadSpeechConfig() {

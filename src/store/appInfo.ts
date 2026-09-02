@@ -238,7 +238,23 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   async loadReleaseNotes() {
     this.appReleases = releaseNotes
     this.viewedAppReleaseVersion = localStorage.getItem(VIEWED_RN_VERSION_KEY) ?? ''
-    return releaseNotes
+    try {
+      const response = await api.get('v1/deployment-versions')
+      const data = await response.json()
+      const deployedAtByVersion = new Map<string, string>(
+        (data.deployments ?? []).map((d: { version: string; deployedAt: string }) => [
+          d.version,
+          d.deployedAt,
+        ])
+      )
+      this.appReleases = releaseNotes.map((release) => ({
+        ...release,
+        date: deployedAtByVersion.get(release.version) ?? release.date,
+      }))
+    } catch (error) {
+      console.error('Error fetching deployment versions:', error)
+    }
+    return this.appReleases
   },
 
   async loadSpeechConfig() {
