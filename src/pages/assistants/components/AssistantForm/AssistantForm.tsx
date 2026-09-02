@@ -176,13 +176,7 @@ const formSchema = Yup.object()
     })
       .nullable()
       .default(null),
-    interactive_features: Yup.object({
-      action_buttons: Yup.boolean().default(false),
-      choice: Yup.boolean().default(false),
-      short_forms: Yup.boolean().default(false),
-    })
-      .nullable()
-      .default(null),
+    interactive_enabled: Yup.boolean().default(false),
     skill_ids: Yup.array()
       .of(Yup.string())
       .max(MAX_SKILLS_PER_ASSISTANT, `Maximum ${MAX_SKILLS_PER_ASSISTANT} skills allowed`)
@@ -304,7 +298,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           prompt_variables: assistant?.prompt_variables ?? [],
           smart_tool_selection_enabled: assistant?.smart_tool_selection_enabled ?? false,
           hedging_config: assistant?.hedging_config ?? null,
-          interactive_features: assistant?.interactive_features ?? null,
+          interactive_enabled: assistant?.interactive_enabled ?? false,
           guardrail_assignments: assistant?.guardrail_assignments ?? [],
           skill_ids: assistant?.skills?.map((s) => s.id) ?? [],
           enabled_builtin_subagents: assistant?.enabled_builtin_subagents ?? [],

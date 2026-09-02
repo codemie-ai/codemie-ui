@@ -1,0 +1,155 @@
+{
+  "catalogId": "https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json",
+  "protocolVersion": "v0.9.1",
+  "components": [
+    "AudioPlayer",
+    "Button",
+    "Card",
+    "CheckBox",
+    "ChoicePicker",
+    "Column",
+    "DateTimeInput",
+    "Divider",
+    "Icon",
+    "Image",
+    "List",
+    "Modal",
+    "Row",
+    "Slider",
+    "Tabs",
+    "Text",
+    "TextField",
+    "Video"
+  ],
+  "componentProperties": {
+    "AudioPlayer": [
+      "accessibility",
+      "description",
+      "url",
+      "weight"
+    ],
+    "Button": [
+      "accessibility",
+      "action",
+      "checks",
+      "child",
+      "variant",
+      "weight"
+    ],
+    "Card": [
+      "accessibility",
+      "child",
+      "weight"
+    ],
+    "CheckBox": [
+      "accessibility",
+      "checks",
+      "label",
+      "value",
+      "weight"
+    ],
+    "ChoicePicker": [
+      "accessibility",
+      "checks",
+      "displayStyle",
+      "filterable",
+      "label",
+      "options",
+      "value",
+      "variant",
+      "weight"
+    ],
+    "Column": [
+      "accessibility",
+      "align",
+      "children",
+      "justify",
+      "weight"
+    ],
+    "DateTimeInput": [
+      "accessibility",
+      "checks",
+      "enableDate",
+      "enableTime",
+      "label",
+      "max",
+      "min",
+      "value",
+      "weight"
+    ],
+    "Divider": [
+      "accessibility",
+      "axis",
+      "weight"
+    ],
+    "Icon": [
+      "accessibility",
+      "name",
+      "weight"
+    ],
+    "Image": [
+      "accessibility",
+      "description",
+      "fit",
+      "url",
+      "variant",
+      "weight"
+    ],
+    "List": [
+      "accessibility",
+      "align",
+      "children",
+      "direction",
+      "listStyle",
+      "weight"
+    ],
+    "Modal": [
+      "accessibility",
+      "content",
+      "trigger",
+      "weight"
+    ],
+    "Row": [
+      "accessibility",
+      "align",
+      "children",
+      "justify",
+      "weight"
+    ],
+    "Slider": [
+      "accessibility",
+      "checks",
+      "label",
+      "max",
+      "min",
+      "value",
+      "weight"
+    ],
+    "Tabs": [
+      "accessibility",
+      "tabs",
+      "weight"
+    ],
+    "Text": [
+      "accessibility",
+      "text",
+      "variant",
+      "weight"
+    ],
+    "TextField": [
+      "accessibility",
+      "checks",
+      "label",
+      "validationRegexp",
+      "value",
+      "variant",
+      "weight"
+    ],
+    "Video": [
+      "accessibility",
+      "url",
+      "weight"
+    ]
+  },
+  "compositionHash": "20dfeb7b"
+}

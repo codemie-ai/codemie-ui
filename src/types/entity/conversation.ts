@@ -16,8 +16,8 @@
 /**
  * Chat entity types from backend API
  */
+import type { A2uiActionEnvelope, A2uiDataModel, A2uiEnvelope } from '@/a2ui/types'
 import type { UserAbility } from '@/types//common'
-import type { InteractiveRequest, InteractiveResponse } from '@/types/entity/interactive'
 import type { MCPAuthGateServer } from '@/types/entity/mcpAuth'
 import type { ConfluenceConnectRequired } from '@/utils/confluenceAuth'
 import type { GitLabConnectRequired } from '@/utils/gitlabAuth'
@@ -167,8 +167,11 @@ export interface ChatMessage {
   confluenceAuthPrompt?: ConfluenceConnectRequired | null
   executionId: string | null
   stateId?: string | null
-  interactiveRequest?: InteractiveRequest | null
-  interactiveResponse?: InteractiveResponse | null
+  /** A2UI envelopes emitted with this assistant turn (streamed or from history). */
+  a2uiEnvelopes?: A2uiEnvelope[] | null
+  /** Structured A2UI answer carried by this user turn. */
+  a2uiAction?: A2uiActionEnvelope | null
+  a2uiDataModel?: A2uiDataModel | null
 }
 
 export type ChatHistoryGroup = ChatMessage[]
@@ -281,8 +284,9 @@ export interface HistoryItemBackend {
   userMark?: any
   executionId: string | null
   stateId?: string | null
-  interactiveRequest?: InteractiveRequest | null
-  interactiveResponse?: InteractiveResponse | null
+  a2uiEnvelopes?: A2uiEnvelope[] | null
+  a2uiAction?: A2uiActionEnvelope | null
+  a2uiDataModel?: A2uiDataModel | null
 }
 
 export interface ChatBackend {
@@ -309,7 +313,7 @@ export interface StreamChunk {
   last?: boolean
   generated?: string
   debug?: any
-  interactive_request?: InteractiveRequest
+  a2ui?: A2uiEnvelope
 }
 
 export interface StreamChunkParseResult {

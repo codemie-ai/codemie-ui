@@ -28,10 +28,13 @@
     "license-headers:check": "node scripts/license_headers/check_license_headers.mjs --check",
     "license-headers:fix": "node scripts/license_headers/check_license_headers.mjs --fix",
     "license-headers": "npm run license-headers:fix && npm run license-headers:check",
+    "a2ui:manifest": "vite-node scripts/generate-a2ui-manifest.ts",
     "secrets:check": "node scripts/validate-secrets.mjs",
     "sonar-local": "node scripts/sonar/run-local-sonar.mjs"
   },
   "dependencies": {
+    "@a2ui/react": "0.10.2",
+    "@a2ui/web_core": "0.10.6",
     "@dnd-kit/abstract": "0.3.2",
     "@dnd-kit/helpers": "0.3.0",
     "@dnd-kit/react": "0.3.0",
@@ -91,7 +94,8 @@
     "valtio": "2.1.5",
     "vee-validate": "4.15.0",
     "vite-plugin-prismjs": "0.0.8",
-    "yup": "1.6.1"
+    "yup": "1.6.1",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.3.1",

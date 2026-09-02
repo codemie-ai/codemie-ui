@@ -16,6 +16,24 @@
 import { AssistantType } from '@/constants/assistants'
 import { Assistant, CreateAssistantDto } from '@/types/entity/assistant'
 
+/**
+ * Reads the interactive switch with backwards compatibility.
+ *
+ * `interactive_enabled` replaced the per-group `interactive_features` object. An
+ * assistant loaded from a backend, cache or exported JSON that predates the new
+ * field would otherwise read as "off" and every save would silently turn
+ * interactivity off for it. Any enabled group in the legacy object therefore
+ * still counts as enabled, while an explicit `interactive_enabled` always wins.
+ *
+ * Temporary: remove once the new field is rolled out everywhere.
+ */
+function readInteractiveEnabled(assistant: Assistant): boolean {
+  if (typeof assistant.interactive_enabled === 'boolean') return assistant.interactive_enabled
+  const legacy = (assistant as { interactive_features?: unknown }).interactive_features
+  if (!legacy || typeof legacy !== 'object') return false
+  return Object.values(legacy as Record<string, unknown>).some((enabled) => enabled === true)
+}
+
 export function transformAssistantToCreateDTO(
   assistant: Assistant,
   sourceAssistantId?: string
@@ -77,7 +95,8 @@ export function transformAssistantToCreateDTO(
     prompt_variables: assistant.prompt_variables,
     smart_tool_selection_enabled: assistant.smart_tool_selection_enabled,
     hedging_config: assistant.hedging_config ?? null,
-    interactive_features: assistant.interactive_features ?? null,
+    // Plain boolean switch enabling the A2UI catalog for this assistant.
+    interactive_enabled: readInteractiveEnabled(assistant),
     guardrail_assignments: assistant.guardrail_assignments,
     skill_ids: skillIds,
     ...(sourceAssistantId ? { source_assistant_id: sourceAssistantId } : {}),

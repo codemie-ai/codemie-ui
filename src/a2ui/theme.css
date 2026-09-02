@@ -1,0 +1,321 @@
+/*
+ * Copyright 2026 EPAM Systems, Inc. ("EPAM")
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * Dresses the A2UI catalog components in the product's design tokens.
+ *
+ * The catalog's own components are themed through CSS custom properties, and they
+ * cascade: the ~70 per-component properties all fall back to the twelve base ones
+ * defined here, so this is the whole mapping rather than a per-component stylesheet.
+ *
+ * `tailwindcss-themer` publishes our design tokens as custom properties that it
+ * redefines per theme, which is why nothing here mentions light or dark: switching the
+ * product theme rebinds `--colors-*` and these follow. The tokens hold an "R G B"
+ * triplet rather than a colour, hence the `rgb()` wrapper on every line.
+ */
+
+.a2ui-scope {
+  /*
+   * Accent. `text-accent-status` rather than `border-accent`: the latter is white in the
+   * dark theme (it is a border colour, not a brand fill), so anything filled with it and
+   * labelled in inverse text disappeared. This one is genuinely accent-coloured in both
+   * themes, and `surface-base-primary` is its contrast partner in both directions —
+   * dark-on-light in the dark theme, light-on-blue in the light one.
+   */
+  --a2ui-color-primary: rgb(var(--colors-text-accent-status));
+  --a2ui-color-primary-hover: rgb(var(--colors-text-accent-hover));
+  --a2ui-color-on-primary: rgb(var(--colors-surface-base-primary));
+
+  /* Secondary — quieter controls, e.g. a modal's dismiss. */
+  --a2ui-color-secondary: rgb(var(--colors-surface-base-secondary));
+  --a2ui-color-secondary-hover: rgb(var(--colors-surface-interactive-hover));
+  --a2ui-color-on-secondary: rgb(var(--colors-text-primary));
+
+  /* Surfaces — cards and modals sit on these. */
+  --a2ui-color-surface: rgb(var(--colors-surface-base-primary));
+  --a2ui-color-on-surface: rgb(var(--colors-text-primary));
+  --a2ui-color-on-background: rgb(var(--colors-text-primary));
+
+  /* Inputs. */
+  --a2ui-color-input: rgb(var(--colors-surface-base-content));
+  --a2ui-color-on-input: rgb(var(--colors-text-primary));
+
+  /*
+   * The border every component falls back to. Referenced by the card and the checkbox and
+   * never defined by the catalog itself, so without this their `border` declaration
+   * resolves to nothing and they render with the browser's default.
+   */
+  --a2ui-border: 1px solid rgb(var(--colors-border-primary));
+
+  /*
+   * Component margins default to a spacing step, which insets a checkbox or a slider from
+   * everything around it — visible as a field that does not line up with its neighbours.
+   * Spacing between fields is the Column's job, so these are cleared.
+   */
+  --a2ui-checkbox-margin: 0;
+  --a2ui-slider-margin: 0;
+  --a2ui-card-margin: 0;
+
+  --a2ui-checkbox-size: 1rem;
+  --a2ui-checkbox-border-radius: 0.25rem;
+
+  /* Blocks read as blocks: a card sits a step above the surface it is on. */
+  --a2ui-card-background: rgb(var(--colors-surface-base-secondary));
+  --a2ui-card-box-shadow: none;
+
+  /* The catalog paints every validation message with this one. */
+  --a2ui-checkbox-color-error: rgb(var(--colors-failed-secondary));
+
+  /* Structure. */
+  --a2ui-color-border: rgb(var(--colors-border-primary));
+  --a2ui-color-border-hover: rgb(var(--colors-border-secondary));
+
+  /*
+   * Geometry and type scale are not derived from the twelve, so the few that decide
+   * how "ours" a form looks are set to match the chat's own rhythm.
+   */
+  --a2ui-border-radius: 0.5rem;
+  --a2ui-border-width: 1px;
+  --a2ui-font-size-xs: 0.75rem;
+  --a2ui-font-size-s: 0.875rem;
+  --a2ui-font-size-xl: 1.125rem;
+  --a2ui-spacing-xs: 0.25rem;
+  --a2ui-spacing-s: 0.5rem;
+  --a2ui-spacing-m: 0.75rem;
+  --a2ui-spacing-l: 1rem;
+
+  font-family: inherit;
+}
+
+/*
+ * Layout for the catalog's own components.
+ *
+ * The published @a2ui/react build ships its component stylesheet as CSS modules whose
+ * class maps came out empty — every element renders `class="undefined"`, so none of the
+ * packaged rules can match. Card, Row and Column survive because they style themselves
+ * inline (with the variables above), but inputs fall back to browser defaults: a label
+ * and its field share a line, radio options run together, nothing has spacing.
+ *
+ * So the layout is supplied here, by structure rather than by class. That is a deliberate
+ * trade: it depends on the markup of a pinned version, and it must be re-checked on an SDK
+ * upgrade — which is cheaper than re-implementing eighteen components to get spacing back.
+ */
+
+/*
+ * A field group. Metrics and colours are taken from the design system's own Input so a
+ * catalog field sits at the same height and reads with the same weight as a native one:
+ * 2rem tall, rounded-lg, content background, border-primary settling on border-secondary
+ * when hovered or focused.
+ */
+.a2ui-scope label[for]:not(.a2ui-own *) {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: var(--a2ui-font-size-xs);
+  color: rgb(var(--colors-text-quaternary));
+}
+
+.a2ui-scope input:not([type='radio']):not([type='checkbox']):not(.a2ui-own *),
+.a2ui-scope textarea:not(.a2ui-own *),
+.a2ui-scope select:not(.a2ui-own *) {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 2rem;
+  padding: 0.3125rem 0.5rem;
+  border: 1px solid rgb(var(--colors-border-primary));
+  border-radius: 0.5rem;
+  background: rgb(var(--colors-surface-base-content));
+  color: rgb(var(--colors-text-primary));
+  font: inherit;
+  font-size: var(--a2ui-font-size-s);
+  transition: border-color 0.15s ease;
+}
+
+.a2ui-scope input::placeholder,
+.a2ui-scope textarea::placeholder {
+  color: rgb(var(--colors-text-specific-input-placeholder));
+}
+
+.a2ui-scope input:not([type='radio']):not([type='checkbox']):not(.a2ui-own *):hover,
+.a2ui-scope textarea:not(.a2ui-own *):hover,
+.a2ui-scope input:not([type='radio']):not([type='checkbox']):not(.a2ui-own *):focus-visible,
+.a2ui-scope textarea:not(.a2ui-own *):focus-visible {
+  outline: none;
+  border-color: rgb(var(--colors-border-secondary));
+}
+
+/* A choice picker labels itself with <strong> and lists its options in the next block. */
+.a2ui-scope strong {
+  display: block;
+  margin-bottom: var(--a2ui-spacing-xs);
+  font-size: var(--a2ui-font-size-xs);
+  font-weight: 600;
+  color: rgb(var(--colors-text-quaternary));
+}
+
+.a2ui-scope strong + div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s);
+}
+
+/*
+ * A checkbox labels itself AFTER its control, so the block-label rule above would push it
+ * onto its own line and break the row the catalog already centres. The line height is
+ * pinned to the control's own size so the two share a box and centre exactly, rather than
+ * depending on the font's default leading.
+ */
+.a2ui-scope input + label[for] {
+  display: inline;
+  margin-bottom: 0;
+  font-size: var(--a2ui-font-size-s);
+  line-height: var(--a2ui-checkbox-size);
+  font-weight: 500;
+  color: rgb(var(--colors-text-primary));
+  cursor: pointer;
+}
+
+/*
+ * One option: the control and its text on a line, which is the one place they belong.
+ * Excluded from our own components — their labels are also `<label>` without `for`, and
+ * centring a column-flex label puts its caption in the middle of the field.
+ */
+.a2ui-scope label:not([for]):not(.a2ui-own *) {
+  display: flex;
+  align-items: center;
+  gap: var(--a2ui-spacing-s);
+  font-size: var(--a2ui-font-size-s);
+  color: rgb(var(--colors-text-primary));
+  cursor: pointer;
+}
+
+.a2ui-scope input[type='radio'],
+.a2ui-scope input[type='checkbox'] {
+  flex: none;
+  align-self: center;
+  margin: 0;
+  accent-color: rgb(var(--colors-text-accent-status));
+  cursor: pointer;
+}
+
+/* The option's own text, so the box and the words share a baseline box. */
+.a2ui-scope label:not([for]):not(.a2ui-own *) > span {
+  line-height: 1.25;
+}
+
+/*
+ * Chips. Two of the catalog's class names survive its broken module map because they are
+ * written literally next to it — `chip` and `selected` — so these can be styled by class.
+ * The container is found through its children instead, since the class marking a chip list
+ * does not survive. The packaged stylesheet is deliberately NOT imported: its selectors are
+ * bare words like `.button`, `.label` and `.input`, and our own design-system button
+ * already carries `button`, so importing it would restyle the whole application.
+ */
+.a2ui-scope div:has(> .chip) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--a2ui-spacing-s);
+}
+
+.a2ui-scope .chip {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid rgb(var(--colors-border-structural));
+  border-radius: 999px;
+  background: rgb(var(--colors-surface-base-secondary));
+  color: rgb(var(--colors-text-primary));
+  font: inherit;
+  font-size: var(--a2ui-font-size-s);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.a2ui-scope .chip:hover {
+  background: rgb(var(--colors-surface-interactive-hover));
+}
+
+/*
+ * Selection is carried by three things at once — accent border, accent text and a tick —
+ * because the chip is a bare <button> whose only child is its label, and colour alone has
+ * already proved ambiguous once here.
+ */
+.a2ui-scope .chip.selected {
+  border-color: rgb(var(--colors-text-accent-status));
+  background: rgb(var(--colors-surface-interactive-hover));
+  color: rgb(var(--colors-text-accent-status));
+  font-weight: 600;
+}
+
+.a2ui-scope .chip.selected::before {
+  content: '✓ ';
+}
+
+/*
+ * A validation message. The catalog renders it as a bare `<span>` right after the field —
+ * no inline colour, and its class is one of the empty ones — so it inherits body text and
+ * reads as a paragraph rather than an error. Matched by position, and narrowed to
+ * text-like inputs so it cannot catch a choice option, whose label is also a span after
+ * an input.
+ */
+.a2ui-scope input:not([type='radio']):not([type='checkbox']):not(.a2ui-own *) + span,
+.a2ui-scope textarea:not(.a2ui-own *) + span {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: var(--a2ui-font-size-xs);
+  color: rgb(var(--colors-failed-secondary));
+}
+
+.a2ui-scope input[type='range'] {
+  width: 100%;
+  accent-color: rgb(var(--colors-border-accent));
+}
+
+/*
+ * A Modal's trigger. It is an ordinary Button, and an agent that names no `variant` gets
+ * the quietest one we have — which on a dark surface reads as body text with a hairline
+ * around it, so nobody notices there is a dialog to open. The catalog wraps the trigger in
+ * a class of its own, one of the few that survived its broken module map, so the affordance
+ * can be raised here without touching how Buttons look anywhere else.
+ */
+.a2ui-scope .a2ui-modal-trigger button {
+  border-color: rgb(var(--colors-text-accent-status));
+  color: rgb(var(--colors-text-accent-status));
+}
+
+.a2ui-scope .a2ui-modal-trigger button:hover {
+  background: rgb(var(--colors-surface-interactive-hover));
+}
+
+/* The dialog itself: the catalog gives the overlay no elevation of its own. */
+.a2ui-scope + .a2ui-modal-overlay,
+.a2ui-modal-overlay > div {
+  border: var(--a2ui-border);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+}
+
+/*
+ * The button an answered surface was submitted with. The surface is read-only by then, so
+ * this is the only thing left that says which action was taken — a form offering several
+ * would otherwise look identical afterwards whichever one was pressed.
+ */
+.a2ui-scope .a2ui-answered {
+  border-color: rgb(var(--colors-text-accent-status)) !important;
+  color: rgb(var(--colors-text-accent-status)) !important;
+  font-weight: 600;
+}
+
+.a2ui-scope .a2ui-answered::before {
+  content: '✓ ';
+}

@@ -15,6 +15,9 @@
 
 import { proxy, ref } from 'valtio'
 
+import { A2UI_PROTOCOL_VERSION, CATALOG_ID } from '@/a2ui/config'
+import { envelopesContainSurface } from '@/a2ui/envelopes'
+import type { A2uiActionEnvelope, A2uiDataModel } from '@/a2ui/types'
 import { ROLE_USER } from '@/constants'
 import { GENERATION_CANCELLED_MESSAGE } from '@/constants/chats'
 import { WORKFLOW_STATE_EVENT_INTERRUPTED, WORKFLOW_STATUSES } from '@/constants/workflows'
@@ -26,7 +29,6 @@ import {
 } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
 import { Conversation, ChatMessage, Thought } from '@/types/entity/conversation'
-import type { InteractiveResponse } from '@/types/entity/interactive'
 import {
   MCPAuthGateServer,
   MCPAuthInitiateResponse,
@@ -94,12 +96,15 @@ interface ChatGenerationStoreType {
   deleteChatMessage: (chatId: string, historyIndex: number) => Promise<void>
 
   stopChatGeneration: (chatId: string) => void
-  submitInteractiveResponse: (
-    response: InteractiveResponse,
+  resumeToolCall: (thoughtId: string, action: ToolCallAction) => Promise<void>
+  submitA2uiAction: (
+    surfaceId: string,
+    actionName: string,
+    sourceComponentId: string | undefined,
+    dataModel: A2uiDataModel | null,
     displayText: string,
     replaceHistoryIndex?: number
   ) => Promise<void>
-  resumeToolCall: (thoughtId: string, action: ToolCallAction) => Promise<void>
   resumeWorkflowExecution: (userInput?: string, fileNames?: string[]) => Promise<void>
   abortWorkflowChat: (chatId: string) => Promise<void>
   updateWorkflowChatOutput: (chatId: string, output: string) => Promise<{ message: string } | void>
@@ -406,7 +411,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       files = [],
       skillIds,
       dynamicToolsConfig,
-      interactiveResponse,
+      a2uiAction,
+      a2uiDataModel,
     } = options
     const fileNames = files?.length ? files : null
     let { historyIndex = null, messageIndex = null } = options
@@ -462,7 +468,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       skill_ids: skillIds?.length ? skillIds : undefined,
       enable_web_search: dynamicToolsConfig?.enableWebSearch ?? undefined,
       enable_code_interpreter: dynamicToolsConfig?.enableCodeInterpreter ?? undefined,
-      ...(interactiveResponse ? { interactiveResponse } : {}),
+      ...(a2uiAction ? { a2uiAction, a2uiDataModel: a2uiDataModel ?? null } : {}),
     }
 
     const historyItem = chatGenerationStore._createHistoryItem(
@@ -472,7 +478,10 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       fileNames,
       assistant
     )
-    if (interactiveResponse) historyItem.interactiveResponse = interactiveResponse
+    if (a2uiAction) {
+      historyItem.a2uiAction = a2uiAction
+      historyItem.a2uiDataModel = a2uiDataModel ?? null
+    }
 
     const indexes = chatGenerationStore._addMessageToHistory(
       chat,
@@ -762,39 +771,56 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   /**
-   * Sends a structured response to an interactive request as a normal chat turn.
-   * The display text becomes the compact user "chip" message in the feed.
-   *
-   * Re-answering a form works exactly like editing the previous user request:
-   * pass `replaceHistoryIndex` (the turn that carried the earlier answer) so the
-   * turn is replaced/re-run instead of appending a duplicate answer.
+   * Sends a structured A2UI answer (action envelope + surface data model) as a
+   * normal chat turn: optimistic user chip, owner attribution by the surface id found in a message's a2uiEnvelopes, and
+   * `replaceHistoryIndex` for the re-answer (turn replacement) path.
    */
-  async submitInteractiveResponse(
-    response: InteractiveResponse,
+  async submitA2uiAction(
+    surfaceId: string,
+    actionName: string,
+    sourceComponentId: string | undefined,
+    dataModel: A2uiDataModel | null,
     displayText: string,
     replaceHistoryIndex?: number
   ) {
     const chat = chatsStore.currentChat
-    if (!chat) return Promise.resolve()
+    if (!chat) return
 
-    // Attribute the follow-up turn to the assistant that ISSUED this request, not
-    // merely the last message (which may be a user chip or, in multi-assistant
-    // chats, a different assistant). Fall back to the last message with an id.
+    // Attribute the follow-up turn to the assistant that ISSUED this surface, not
+    // merely the last message. Fall back to the last message with an id.
     const flat = chat.history.flat()
-    const owningMessage = flat.find(
-      (message) => message.interactiveRequest?.request_id === response.request_id
+    const owningMessage = flat.find((message) =>
+      envelopesContainSurface(message.a2uiEnvelopes ?? [], surfaceId)
     )
     const assistantId =
       owningMessage?.assistantId ??
       flat.filter((message) => message.assistantId).at(-1)?.assistantId
 
-    return chatGenerationStore.createChatGeneration({
-      message: displayText,
-      messageRaw: displayText,
-      assistantId,
-      interactiveResponse: response,
-      ...(Number.isInteger(replaceHistoryIndex) ? { historyIndex: replaceHistoryIndex } : {}),
-    })
+    const a2uiAction: A2uiActionEnvelope = {
+      version: A2UI_PROTOCOL_VERSION,
+      action: {
+        name: actionName,
+        surfaceId,
+        ...(sourceComponentId ? { sourceComponentId } : {}),
+      },
+    }
+
+    try {
+      await chatGenerationStore.createChatGeneration({
+        message: displayText,
+        messageRaw: displayText,
+        assistantId,
+        a2uiAction,
+        a2uiDataModel: dataModel,
+        ...(Number.isInteger(replaceHistoryIndex) ? { historyIndex: replaceHistoryIndex } : {}),
+      })
+    } catch (error) {
+      // `_handleRequestError` only covers failures once the optimistic chip
+      // exists; anything thrown before that (e.g. the assistant lookup) has no
+      // turn to roll back, so it is reported the same way and swallowed rather
+      // than surfacing as an unhandled rejection in the surface handler.
+      toaster.error(chatGenerationStore._handleGenerationStreamError(error))
+    }
   },
 
   async resumeWorkflowExecution(userInput?: string, fileNames?: string[]) {
@@ -1188,7 +1214,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     if (!chat.isWorkflow) {
       return {
         endpoint: `v1/assistants/${entityId}/model`,
-        requestData: data,
+        // Unconditional capability declaration: without it the backend never
+        // hands the agent the A2UI tool for this turn (spec §5).
+        requestData: { ...data, a2uiSupportedCatalogs: [CATALOG_ID] },
       }
     }
 
@@ -1222,11 +1250,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
   _handleRequestError(historyItem, error, startTime) {
     const errorText = chatGenerationStore._handleGenerationStreamError(error)
-    // A rejected interactive submission has its own retry affordance — the form
+    // A rejected A2UI submission has its own retry affordance — the surface
     // re-activates (or can be re-unlocked via Edit). Remove the optimistic chip turn
-    // entirely rather than nulling its interactiveResponse (which would leave a stray
+    // entirely rather than nulling its structured answer (which would leave a stray
     // plain-text ghost message), and surface the error via a toast instead.
-    if (historyItem.interactiveResponse) {
+    if (historyItem.a2uiAction) {
       chatGenerationStore._removeOptimisticTurn(historyItem)
       toaster.error(errorText)
       return
@@ -1241,7 +1269,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   /** Remove an optimistically-added turn (by identity) from the current chat, and
-   *  drop its group if it becomes empty. Used to roll back a failed interactive
+   *  drop its group if it becomes empty. Used to roll back a failed A2UI
    *  submission cleanly. */
   _removeOptimisticTurn(historyItem: ChatMessage): void {
     const chat = chatsStore.currentChat
@@ -1281,7 +1309,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const endTime = new Date()
 
     // Assigned for every finalized turn, not only for the ones that produced text: an
-    // interactive-only response has no text but still needs its "Processed in" metadata,
+    // A2UI-only response has no text but still needs its "Processed in" metadata,
     // and its terminal chunk carries `last`. A stream that ended without a terminal chunk
     // (server-side cut, proxy timeout) never finished, so it stays unlabelled.
     if (response?.last || response?.generated || response?.capturedStreamText) {
@@ -1419,8 +1447,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const { chunkObjects, incompleteChunk } = streamChunkToObject(value)
 
     for (const chunk of chunkObjects) {
-      if (chunk.interactive_request) {
-        historyItem.interactiveRequest = chunk.interactive_request
+      if (chunk.a2ui) {
+        // A2UI envelopes stream after the turn's text chunks (2-3 per surface);
+        // accumulate them in arrival order for the renderer's replay.
+        if (!historyItem.a2uiEnvelopes) historyItem.a2uiEnvelopes = []
+        historyItem.a2uiEnvelopes.push(chunk.a2ui)
       } else if (chunk.thought) {
         chatGenerationStore._handleThought(historyItem, chunk.thought)
       } else {
@@ -1428,7 +1459,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       }
 
       // Termination is decided by the chunk's `last` flag alone, independently of what the
-      // chunk carries — a terminal chunk that also holds an interactive request still ends
+      // chunk carries — a terminal chunk that also holds an A2UI envelope still ends
       // the stream.
       if (chunk.last) {
         const streamRef = historyItem.stream as Stream | null

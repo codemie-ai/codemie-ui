@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
+import type { A2uiActionEnvelope, A2uiDataModel } from '@/a2ui/types'
 import { Thought } from '@/types/entity/conversation'
-import type { InteractiveResponse } from '@/types/entity/interactive'
 
 export type { Thought }
 
@@ -86,8 +86,12 @@ export interface ChatRequest {
   resumeExecutionFileNames?: string[]
   executionId?: string
   workflowId?: string
-  interactiveResponse?: InteractiveResponse
   toolCallAction?: ToolCallAction
+  /** A2UI catalog ids this client can render — injected into every assistant chat request. */
+  a2uiSupportedCatalogs?: string[]
+  /** Structured A2UI answer (action envelope + surface data model). */
+  a2uiAction?: A2uiActionEnvelope
+  a2uiDataModel?: A2uiDataModel | null
 }
 
 export interface ChatRequestInput {
@@ -123,5 +127,6 @@ export interface ChatGenerationOptions {
   dynamicToolsConfig?: DynamicToolsConfig
   resumeExecution?: boolean
   executionId?: string
-  interactiveResponse?: InteractiveResponse
+  a2uiAction?: A2uiActionEnvelope
+  a2uiDataModel?: A2uiDataModel | null
 }

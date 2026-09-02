@@ -159,8 +159,9 @@ function transformHistoryGroup(
       stream: null,
       executionId: assistantItem.executionId,
       stateId: assistantItem.stateId,
-      interactiveRequest: assistantItem.interactiveRequest ?? null,
-      interactiveResponse: userItem.interactiveResponse ?? null,
+      a2uiEnvelopes: assistantItem.a2uiEnvelopes ?? null,
+      a2uiAction: userItem.a2uiAction ?? null,
+      a2uiDataModel: userItem.a2uiDataModel ?? null,
     }
   })
 }

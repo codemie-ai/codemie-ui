@@ -15,55 +15,48 @@
 
 import { FC } from 'react'
 
+import { SUPPORTED_COMPONENTS } from '@/a2ui/config'
 import InfoBox from '@/components/form/InfoBox'
 import Switch from '@/components/form/Switch'
-import { catalogElementLabels } from '@/components/InteractiveElements/registry'
-import type { InteractiveFeaturesConfig } from '@/types/entity/interactive'
 
-// A single toggle enables ALL interactive element types at once — every feature
-// flag on. (The config keeps its granular shape for the backend/API, but the UI
-// no longer exposes per-feature switches.)
-const ALL_ENABLED: InteractiveFeaturesConfig = {
-  action_buttons: true,
-  choice: true,
-  short_forms: true,
-}
-
-// The full catalog of interactive elements, derived from the element registry (single
-// source of truth) so adding an element type updates this list automatically.
-const ELEMENTS = catalogElementLabels()
+// Size of the rendered A2UI catalog, derived from the dependency-free component
+// list (single source of truth, asserted against the registry by its own test)
+// so adding a component updates the copy without pulling the A2UI runtime and
+// every design-system icon into the assistant form bundle.
+const CATALOG_SIZE = SUPPORTED_COMPONENTS.length
 
 interface InteractiveFeaturesSectionProps {
-  value: InteractiveFeaturesConfig | null | undefined
-  onChange: (value: InteractiveFeaturesConfig | null) => void
+  value: boolean | null | undefined
+  onChange: (value: boolean) => void
   onBlur: () => void
 }
 
 /**
  * "Interactive features" assistant config block. A single switch turns the whole
- * interactive-element catalog on or off; when off the elements are removed from
- * the catalog exposed to the agent server-side, not merely hidden.
+ * A2UI component catalog on or off; when off the catalog is not exposed to the
+ * agent server-side, so it cannot request interactive input at all.
  */
 const InteractiveFeaturesSection: FC<InteractiveFeaturesSectionProps> = ({
   value,
   onChange,
   onBlur,
 }) => {
-  const isEnabled = value !== null && value !== undefined
+  const isEnabled = Boolean(value)
 
   return (
     <>
       <Switch
         label="Enable interactive features"
         value={isEnabled}
-        onChange={(e) => onChange(e.target.checked ? { ...ALL_ENABLED } : null)}
+        onChange={(e) => onChange(e.target.checked)}
         onBlur={onBlur}
       />
       {isEnabled && (
         <InfoBox>
-          The assistant can request structured input directly in chat using: {ELEMENTS.join(', ')}.
-          When disabled, these elements are removed from the catalog exposed to the agent, not just
-          hidden.
+          The assistant can request structured input directly in chat by rendering an A2UI surface —
+          text, inputs, choices, media and layout from the A2UI Basic Catalog ({CATALOG_SIZE}{' '}
+          components). When disabled, the catalog is not exposed to the agent at all, so no
+          interactive UI can be requested.
         </InfoBox>
       )}
     </>

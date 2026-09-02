@@ -159,6 +159,68 @@ describe('transformChatBEtoFE', () => {
       }),
     ])
   })
+
+  it('maps a2ui envelopes, action and data model from backend history', () => {
+    const envelopes = [
+      { version: 'v0.9.1', createSurface: { surfaceId: 's1', catalogId: 'catalog' } },
+      {
+        version: 'v0.9.1',
+        updateComponents: { surfaceId: 's1', components: [{ id: 'root', component: 'Text' }] },
+      },
+    ]
+    const action = { version: 'v0.9.1', action: { name: 'approve', surfaceId: 's1' } }
+    const dataModel = { name: 'Ada' }
+    const chat = {
+      id: '1',
+      conversation_name: 'Test',
+      assistant_ids: [],
+      initial_assistant_id: '',
+      assistant_data: [],
+      history: [
+        {
+          historyIndex: 0,
+          message: 'name: Ada',
+          date: '2026-05-12T10:00:00.000Z',
+          executionId: null,
+          a2uiAction: action,
+          a2uiDataModel: dataModel,
+        },
+        {
+          historyIndex: 0,
+          message: '',
+          date: '2026-05-12T10:00:01.000Z',
+          executionId: null,
+          a2uiEnvelopes: envelopes,
+        },
+      ],
+    }
+
+    const result = transformChatBEtoFE(chat as any)
+
+    expect(result.history[0][0].a2uiEnvelopes).toEqual(envelopes)
+    expect(result.history[0][0].a2uiAction).toEqual(action)
+    expect(result.history[0][0].a2uiDataModel).toEqual(dataModel)
+  })
+
+  it('defaults a2ui fields to null when the backend sends none', () => {
+    const chat = {
+      id: '1',
+      conversation_name: 'Test',
+      assistant_ids: [],
+      initial_assistant_id: '',
+      assistant_data: [],
+      history: [
+        { historyIndex: 0, message: 'hi', date: '2026-05-12T10:00:00.000Z', executionId: null },
+        { historyIndex: 0, message: 'hello', date: '2026-05-12T10:00:01.000Z', executionId: null },
+      ],
+    }
+
+    const result = transformChatBEtoFE(chat as any)
+
+    expect(result.history[0][0].a2uiEnvelopes).toBeNull()
+    expect(result.history[0][0].a2uiAction).toBeNull()
+    expect(result.history[0][0].a2uiDataModel).toBeNull()
+  })
 })
 
 describe('getChatBEMessageIndex', () => {

@@ -17,7 +17,6 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { ChatMessage, Thought as ThoughtType, ThoughtAuthorType } from '@/types/entity/conversation'
-import type { InteractiveRequest } from '@/types/entity/interactive'
 
 import ChatAiMessage from '../ChatAiMessage'
 
@@ -46,7 +45,6 @@ vi.mock('valtio', () => ({
 
 vi.mock('@/store/chatGeneration', () => ({
   chatGenerationStore: {
-    submitInteractiveResponse: vi.fn(),
     editChatGeneration: vi.fn(),
     initiatePromptAuth: vi.fn(),
     continuePromptAuth: vi.fn(),
@@ -187,29 +185,6 @@ describe('ChatAiMessage processing metadata', () => {
     renderMessage(createMessage({ processingTime: undefined }))
     expect(screen.queryByText(/Processed in:/)).not.toBeInTheDocument()
     expect(screen.getByText(/Apr 30/)).toBeInTheDocument()
-  })
-
-  it('renders the processing duration for a checkbox-only response with no assistant text', () => {
-    const checkboxRequest: InteractiveRequest = {
-      request_id: 'r1',
-      surface: [
-        { type: 'text', content: 'Select one or more checkboxes:' },
-        { type: 'checkbox', id: 'newsletter', label: 'Subscribe to newsletter' },
-        { type: 'checkbox', id: 'terms', label: 'I agree to the terms' },
-        { type: 'button', id: 'submit', label: 'Submit' },
-      ],
-    }
-    const message = createMessage({
-      response: undefined,
-      processingTime: 1.5,
-      interactiveRequest: checkboxRequest,
-    })
-    mockChatsStore.currentChat.history = [[message]]
-
-    renderMessage(message)
-
-    expect(screen.getByText(/Processed in: 1\.50s/)).toBeInTheDocument()
-    expect(screen.getByLabelText('I agree to the terms')).toBeInTheDocument()
   })
 
   it('renders Allow/Deny buttons when a thought is interrupted and chat is not a workflow', () => {

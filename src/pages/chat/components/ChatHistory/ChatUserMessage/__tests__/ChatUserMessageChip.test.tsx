@@ -107,24 +107,28 @@ const renderMessage = (message: ChatMessage) =>
     />
   )
 
-describe('ChatUserMessage interactive response chip', () => {
+describe('ChatUserMessage a2ui response chip', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('renders a compact chip instead of the raw message for structured responses', () => {
+  it('renders a compact chip for an a2ui answer turn', () => {
     const message = createMessage({
-      request: 'Approve',
-      requestRaw: 'Approve',
-      interactiveResponse: { request_id: 'r1', kind: 'action', payload: { action: 'approve' } },
+      request: 'name: Ada',
+      requestRaw: 'name: Ada',
+      a2uiAction: {
+        version: 'v0.9.1',
+        action: { name: 'approve', surfaceId: 's1', sourceComponentId: 'approve' },
+      },
+      a2uiDataModel: { name: 'Ada' },
     })
     renderMessage(message)
-    expect(screen.getByTestId('interactive-response-chip')).toHaveTextContent('✓ Approve')
+    expect(screen.getByTestId('a2ui-response-chip')).toHaveTextContent('✓ name: Ada')
   })
 
   it('renders the normal message body without a structured response', () => {
     renderMessage(createMessage())
-    expect(screen.queryByTestId('interactive-response-chip')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('a2ui-response-chip')).not.toBeInTheDocument()
     expect(screen.getByText('Hello')).toBeInTheDocument()
   })
 })

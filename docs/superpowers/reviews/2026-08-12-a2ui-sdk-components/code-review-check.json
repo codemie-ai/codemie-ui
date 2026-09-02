@@ -1,0 +1,186 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "All 11 blocking findings from the a2ui-sdk-components round are resolved and confirmed against the fix-up diff (codemie 81a2e7c65..HEAD, codemie-ui 5185d848c..HEAD, 2133 lines). Each code finding carries a test written to the failure it describes, and the three documentation findings are corrected in the spec text rather than dropped. One suspicion was raised and refuted by reading the code: the CR-004 fix filters the seed by top-level key, which would leave a nested refusal in place \u2014 unanswerable_seed_paths returns top-level keys and validates the whole subtree beneath each, so the filter matches what it is given. The fix-up diff also carries the config-module consolidation and the manifest rename; both are moves of existing constants with the backend suite green (10955 passed) and ruff clean, and introduce no new high-risk behaviour. Confidence is medium rather than high because this round verified the fixes by reading code and tests, not by executing the frontend suite itself.",
+  "confidence": "medium",
+  "risk_flags": [
+    "public-api"
+  ],
+  "business_review": [
+    {
+      "criterion": "2.1 Emission, turn-end, rejection notice, answerability, root naming, error text",
+      "status": "pass",
+      "notes": "Verified in the tool and catalog modules; covered by tests."
+    },
+    {
+      "criterion": "2.1 Wire names in exactly one module per side",
+      "status": "partial",
+      "notes": "CR-007: backend is clean and test-enforced; the frontend spells the kinds out in envelopes.ts and useA2uiSurface.ts, not config.ts."
+    },
+    {
+      "criterion": "2.1 Seeded data-model key nothing binds is dropped",
+      "status": "partial",
+      "notes": "CR-004: only top-level keys are inspected; a nested unbound key survives."
+    },
+    {
+      "criterion": "2.2 Four gating conditions; intake not flag-gated",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.3 Catalog, prompt section, schema-block pointer",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.4 SDK components draw the surface; six are ours with reasons",
+      "status": "pass",
+      "notes": "registry.tsx records each exception."
+    },
+    {
+      "criterion": "2.4 Design tokens and supplied layout",
+      "status": "pass",
+      "notes": "theme.css; twelve base variables mapped to the app's own theme variables."
+    },
+    {
+      "criterion": "2.4 Normalization before the renderer",
+      "status": "fail",
+      "notes": "CR-001, CR-002, CR-003: nested paths flattened, sets shared across surfaces, option membership no longer filtered."
+    },
+    {
+      "criterion": "2.4 accessibility and validationRegexp supplied; three SDK gaps pinned",
+      "status": "pass",
+      "notes": "Confirmed by running the property suite."
+    },
+    {
+      "criterion": "2.4 Media sanitized, consent-gated, no referrer",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.4 Modal trigger opens the dialog",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.5 Answer flow, optimistic chip, rollback, four states",
+      "status": "partial",
+      "notes": "CR-009 (sendDataModel is not sent) and CR-010 (pressed button is marked only by a test id)."
+    },
+    {
+      "criterion": "2.6 A2uiValidator validates every answer",
+      "status": "fail",
+      "notes": "CR-006: the SDK validator runs on emission only; the answer envelope is checked by a hand-rolled allow-list."
+    },
+    {
+      "criterion": "2.6 Semantic and anti-tampering checks, ownership before disclosure",
+      "status": "pass",
+      "notes": "Verified by execution that a forged or unnormalized answer is refused."
+    },
+    {
+      "criterion": "2.7 History, persistence, LLM continuity",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.8 Assistant flag migration; history not migrated, old records still load",
+      "status": "pass",
+      "notes": "Pinned by TestConversationsFromTheOldProtocol."
+    },
+    {
+      "criterion": "3 BE/FE synchronization and the contract gate",
+      "status": "fail",
+      "notes": "CR-008: the described derivation direction, the e2e harness and the schema-hash comparison do not exist."
+    },
+    {
+      "criterion": "4 Wire format",
+      "status": "partial",
+      "notes": "CR-009: the documented version is v0.9; v0.9.1 ships."
+    },
+    {
+      "criterion": "5 Catalog capability declaration",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "6 Nothing of the old protocol outlives the release",
+      "status": "fail",
+      "notes": "CR-011: the frontend still reads interactive_features as a compatibility fallback."
+    }
+  ],
+  "standards_review": [
+    {
+      "check": "commit-format",
+      "status": "pass",
+      "notes": "51 backend commits; the two non-matching subjects are permitted Revert forms."
+    },
+    {
+      "check": "code-quality",
+      "status": "partial",
+      "notes": "ruff clean; license headers present across 2020 files. The guide asks for X | None over Optional[X]; new A2UI code uses Optional in 11 places. Not marked blocking by the guide, so recorded rather than raised."
+    },
+    {
+      "check": "security",
+      "status": "pass",
+      "notes": "Verified by execution that client-side normalization cannot widen server acceptance: a scalar, a forged multi-selection and an option outside the list are all refused, and only the correct answer passes. The guide's rule against lossy repair before a security decision is therefore not breached \u2014 the decision is made server-side on strictly validated data."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "codemie-ui/src/a2ui/envelopes.ts: paths are split into segments (pathSegments) and read/written structurally (readAt/writeAt); keyOf is gone. Three tests in normalizeToCatalog.test.ts cover nested seeding, an already-filled branch and a nested choice coercion."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Bindings are collected into a Map<surfaceId, Binding[]> and seedDataModel patches each data model only from its own surface, appending one missing envelope per surface. Two tests cover cross-surface isolation and per-surface appends."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "declaredOptionValues collects each picker's option values; asSelection filters against them and dedupes, and sameSelection compares element-wise rather than by length. Three tests: drops an unoffered value, drops duplicates, leaves a valid selection alone."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "prune_data_model is gone. request_user_input now asks the intake itself via unanswerable_seed_paths(envelopes, data_model), which walks the seed against the bound-path set and runs the same per-component value validation, then re-builds the envelopes without the refused keys. Both directions share one rule set, which is what the finding asked for."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "RequestUserInputTool._parse_input wraps the framework's argument parsing, streams the same rejection notice and raises ToolException(SURFACE_REJECTED_NOTICE), so a schema-refused call no longer ends the turn on a raw pydantic error. Covered in tests/codemie/agents/tools/test_request_user_input.py."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "spec 2.6 now states that the answer envelope is checked structurally against the documented wire contract plus semantic checks, that the SDK ships no client-to-server schema for 0.9.1, and that A2uiValidator covers emission only."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "CREATE_SURFACE / UPDATE_COMPONENTS / UPDATE_DATA_MODEL are exported from a2ui/config.ts and used through the module; envelopes.test.ts adds the mirror of the backend guard test that fails if any other file in src/a2ui spells a kind out."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "spec 3 now describes the vendored snapshot honestly: the numbered copy procedure, that the currency test skips in CI, the consequence of forgetting the copy, and that no hash is compared (compositionHash is read by nobody). The schema-hash clause is gone."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "notes": "spec 4 states the wire version as v0.9.1 and explains the v0_9 family segment in the catalog id; 2.5 documents the separate a2uiDataModel request field instead of the catalog's sendDataModel flag, with the reason."
+    },
+    {
+      "id": "CR-010",
+      "status": "resolved",
+      "notes": "Decision taken: style it. ButtonRenderer puts .a2ui-answered on the submitted action and sets aria-pressed; theme.css gives it the accent border, accent text and a check mark. The existing test now asserts the class and the aria state, not only the test id."
+    },
+    {
+      "id": "CR-011",
+      "status": "resolved",
+      "notes": "spec 6 no longer claims nothing reads the legacy field: it names readInteractiveEnabled's fallback for cached assistants, why it exists and the condition for removing it."
+    }
+  ]
+}

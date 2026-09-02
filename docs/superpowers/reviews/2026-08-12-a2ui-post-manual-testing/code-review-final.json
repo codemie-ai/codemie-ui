@@ -1,0 +1,269 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "Three lenses ran (blind, edge-case, acceptance); none failed. Edge-case verified its findings by executing the real code in the project venv; the orchestrator independently reproduced two blind-lens hypotheses and corrected a third. 13 blocking findings survive triage: 1 critical, 12 major. Confidence is low because four findings are decision_needed (they turn on product intent, not code), not because coverage was thin. 4 findings dismissed as duplicates across lenses; 1 deferred (tool-argument parse failures produce the same empty turn as CR-003 but pre-date this diff and need a different hook). CORRECTION (post-assembly): CR-002 was first recorded as critical on the claim that pruning turns a renderable surface into a refusal. Re-testing disproved the causal claim \u2014 the component was already invalid before pruning \u2014 so it is downgraded to major and restated as a diagnosability defect. Pruning cannot cause a refusal: a catalog-valid component carries no prunable property. RESOLUTION (11 of 13 closed): every patch-bucket finding is fixed with tests; CR-005 and CR-009 were closed by implementing the renderer behaviour rather than by narrowing the claim, which removed the decision they carried. CR-008 and CR-010 were held open as product decisions and closed on 2026-08-13: the gated option is removed rather than un-gated, and the worked example is removed from the prompt. All 13 findings are now fixed.",
+  "risk_flags": [
+    "security",
+    "public-api"
+  ],
+  "business_review": [
+    {
+      "criterion": "2.1 Emission, turn-end, rejection notice, answerability, size bounds",
+      "status": "pass",
+      "notes": "One LLM call pinned by test; SURFACE_REJECTED_NOTICE and reachability walk covered by 7 tests."
+    },
+    {
+      "criterion": "2.1 Envelope assembly/parsing isolated in one adapter per side",
+      "status": "fail",
+      "notes": "CR-012: wire names parsed in catalog.py and a2ui_intake.py."
+    },
+    {
+      "criterion": "2.1 Unknown property dropped, surface still emitted",
+      "status": "pass",
+      "notes": "Verified that pruning cannot invalidate a catalog-valid component. CR-002 remains against the error text only."
+    },
+    {
+      "criterion": "2.2 Four gating conditions; intake not gated by platform flag",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.3 Nothing about components described in our own words",
+      "status": "partial",
+      "notes": "CR-010: hand-authored EXAMPLE_SURFACE plus a component rule in the role text."
+    },
+    {
+      "criterion": "2.3 Tool argument points at an existing schema block",
+      "status": "pass",
+      "notes": "Guarded by test; literals duplicated from the SDK but drift is closed."
+    },
+    {
+      "criterion": "2.4 SDK owns rendering; media consent, placeholders, modal trigger, checks",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.4 ChoicePicker normalization written back to the data model",
+      "status": "partial",
+      "notes": "CR-004 (defect) and CR-013 (undocumented)."
+    },
+    {
+      "criterion": "2.5 Answer flow and four surface states",
+      "status": "pass",
+      "notes": "Untouched this round."
+    },
+    {
+      "criterion": "2.6 Server re-validation against the stored surface",
+      "status": "partial",
+      "notes": "CR-006 unhandled kinds unchecked; CR-007 date bounds skippable; CR-008 pruned disabled becomes legitimate."
+    },
+    {
+      "criterion": "2.6 validationRegexp is a client-enforced nicety",
+      "status": "fail",
+      "notes": "CR-005: no client implements it; the migration manufactures it from a previously server-enforced pattern."
+    },
+    {
+      "criterion": "2.7 History, persistence, LLM continuity",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.8 Migration deterministic, reversible, idempotent",
+      "status": "pass",
+      "notes": "Downgrade ordering correct and tested."
+    },
+    {
+      "criterion": "3 BE/FE synchronization, property-by-property invariant",
+      "status": "fail",
+      "notes": "CR-009 invariant compares packages, not renderers; CR-011 spec names symbols that do not exist."
+    },
+    {
+      "criterion": "4 Wire format; 5 catalog capability declaration",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "6 All old-protocol code deleted after the switch",
+      "status": "partial",
+      "notes": "CR-013: legacy history fields deliberately retained, undocumented."
+    }
+  ],
+  "standards_review": [
+    {
+      "check": "commit-format",
+      "status": "pass",
+      "notes": "All 33 commits follow EPMCDME-13912: Description."
+    },
+    {
+      "check": "code-quality",
+      "status": "pass",
+      "notes": "ruff clean; license headers present. Optional[dict] used where the guide prefers X | None \u2014 non-blocking."
+    },
+    {
+      "check": "security",
+      "status": "partial",
+      "notes": "Agent-authored content is validated, but three server-side gaps remain: CR-006, CR-007, CR-008."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "title": "A seeded data_model key the surface binds to nothing makes the form permanently unanswerable",
+      "file": "src/codemie/agents/tools/interactive/request_user_input.py:110",
+      "problem": "execute() validates the component tree but passes data_model through unchecked, while the intake rejects any data-model key the surface does not bind. The client always submits the full stored data model, so the unbound seed is echoed on every attempt.",
+      "impact": "HTTP 422 'Unknown A2UI data model key' on every submit, replayed from the stored seed; the user cannot remove the key and cannot answer the form. The repo's own test emits exactly this shape.",
+      "recommendation": "Validate (or prune) the seeded data_model against the surface bindings at emit time with the same rules the intake applies. Nothing the intake will refuse should be streamed and persisted.",
+      "outcome": "fixed",
+      "resolution": "Seeded data-model keys the surface binds nothing under are pruned at emit time, from the same binding-depth constant the intake uses."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Pruning strips the property that made the validation error actionable, leaving an error that names nothing",
+      "file": "src/codemie/core/a2ui/catalog.py",
+      "problem": "prune_to_catalog drops properties outside the catalog before validate_envelopes runs. When the unknown property is what the model got wrong, the validator no longer sees it and can no longer name it.",
+      "impact": "Reproduced with a Button authored as {component:Button, label:'Send'}: before pruning the error reads \"does not define ['label']\"; after pruning it reads only \"component 'go' (Button) does not match the catalog\". The surface is refused either way \u2014 the missing required 'child' is the real cause, not the pruning \u2014 but the diagnostic that would explain the refusal is destroyed, the dropped property is logged on a separate line, and the turn ends, so nothing can self-correct.",
+      "recommendation": "Validate before pruning as well and, when the pre-prune error is more specific, report that one; or have _explain name the missing required properties alongside the dropped ones.",
+      "outcome": "fixed",
+      "resolution": "Validation errors now name missing required properties as well as undefined ones, so pruning can no longer remove the only clue."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Non-ValueError exceptions from the new normalizers bypass the rejection notice and end the turn empty",
+      "file": "src/codemie/core/a2ui/catalog.py:285",
+      "problem": "execute() guards with 'except ValueError', but name_the_root iterates component['children']/['tabs'] and prune_to_catalog hashes component['component'] without type guards. Malformed model output raises TypeError, which the guard does not catch.",
+      "impact": "Verified by execution: children=3 \u2192 TypeError, zero chunks sent, blank assistant message \u2014 the exact failure the notice was added to prevent. Before this diff these inputs reached validate_envelopes and produced a clean ValueError, so it is a regression in the error path being added.",
+      "recommendation": "Type-guard the traversals and widen the handler to 'except Exception' so any rejection still streams the notice before re-raising.",
+      "outcome": "fixed",
+      "resolution": "The rejection notice is streamed for any exception, and the traversals are type-guarded."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "title": "ChoicePicker normalization guard is length-only, so a multi-value seed on a single-select picker renders one option and submits several",
+      "file": "src/codemie-ui/src/a2ui/registry.tsx:656",
+      "problem": "isNormalised compares lengths only, and values is never capped to one entry for a mutuallyExclusive picker even though the renderer displays values[0]. An array seed of several valid options is treated as normalized, so nothing is written back.",
+      "impact": "Verified: seed ['a','b'] renders A selected; submitting untouched returns 422 'accepts at most one selection, got 2' \u2014 describing state invisible in the UI. Re-clicking the shown option fires no onChange, so recovery requires selecting the other option first.",
+      "recommendation": "Make the guard content-based and apply the single-select cap while normalizing, so any seed the server would reject is rewritten before the user can submit.",
+      "outcome": "fixed",
+      "resolution": "The normalisation guard compares content, and a single-select picker is capped to one selection."
+    },
+    {
+      "id": "CR-005",
+      "severity": "major",
+      "triage": "decision_needed",
+      "title": "validationRegexp is enforced by neither side, and the migration manufactures it from patterns the old protocol did enforce",
+      "file": "src/codemie/service/conversation/a2ui_intake.py",
+      "problem": "Server-side evaluation was removed on the stated grounds that the client enforces it for UX. TextFieldRenderer never reads the property; only the SDK's demo TextField does, and that is explicitly unused. legacy_history_migration.py:260 creates validationRegexp from legacy validation.regex, which the old protocol checked server-side.",
+      "impact": "A documented protocol property does nothing anywhere; migrated forms silently lose a validation they previously had. The spec's risk argument rests on a premise that is false for this client.",
+      "recommendation": "Decide: implement it in TextFieldRenderer as the client-side nicety the spec describes, or state plainly that it is unenforced and say what migrated legacy patterns now mean.",
+      "outcome": "fixed",
+      "resolution": "Implemented in the renderer, where it also blocks submission; migrated legacy patterns are enforced again without changing the migration."
+    },
+    {
+      "id": "CR-006",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Bound values of unhandled component kinds are accepted entirely unchecked",
+      "file": "src/codemie/service/conversation/a2ui_intake.py:239",
+      "problem": "_validate_bound_value dispatches on ChoicePicker, TextField, CheckBox and DateTimeInput; everything else falls through on the comment that other kinds declare no server-checkable contract. Slider does: the catalog gives it min and max.",
+      "impact": "A Slider-bound key accepts any JSON value, ignores its declared min/max, and has no per-field length cap \u2014 bounded only by the 64 kB payload cap, sixteen times what a TextField may carry. The agent receives out-of-contract values as if validated.",
+      "recommendation": "Add a Slider branch checking numeric type and min/max, and apply a default type/length check to any bound key whose component kind has no specific branch.",
+      "outcome": "fixed",
+      "resolution": "Slider is checked for type and declared bounds, and a bound key of any other component kind is refused rather than waved through."
+    },
+    {
+      "id": "CR-007",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Date bounds are skipped whenever the submitted value parses as a different temporal type",
+      "file": "src/codemie/service/conversation/a2ui_intake.py:229",
+      "problem": "The bound check continues when type(limit) is not type(moment). The inline comment calls this an authoring mismatch rather than a user-controlled bypass, but the value side is exactly what the user controls.",
+      "impact": "A DateTimeInput declaring min/max as dates accepts a bare time-of-day string such as '12:30': it parses, the types differ, both bounds are skipped, and the agent receives it as a validated date.",
+      "recommendation": "Reject a value whose temporal type does not match the declared bounds instead of skipping the check, and correct the comment.",
+      "outcome": "fixed",
+      "resolution": "A value whose temporal kind differs from the declared bounds is refused instead of skipping both checks."
+    },
+    {
+      "id": "CR-008",
+      "severity": "major",
+      "triage": "decision_needed",
+      "title": "Pruning 'disabled' makes gated options selectable and the server then confirms the answer as legitimate",
+      "file": "src/codemie/core/a2ui/catalog.py",
+      "problem": "Pruning is recursive \u2014 verified that pick.options[1].disabled is dropped. The stored surface no longer records the gate, so _validate_choice_value finds the option among those the surface offered and accepts it.",
+      "impact": "An option the agent marked unavailable is selectable, and server-side re-validation vouches for it. This follows directly from the deliberate decision that the form must render rather than be refused; the consequence on the validation side was not part of that decision.",
+      "recommendation": "Product call: either keep the option and drop it from the rendered list at prune time, or accept the behaviour and record in the spec that gating is not enforceable in this catalog.",
+      "outcome": "fixed",
+      "resolution": "Product decision pending: drop the gated option at prune time, or record in the spec that gating is not expressible in this catalog.",
+      "outcome_note": "Decision taken: fix it. prune_to_catalog removes an option marked unavailable instead of stripping the marking, so it is no longer offered and the intake refuses the value. A picker left with no options is refused by _check_surface_is_answerable, the same rule as a form with no submit control. Recorded in spec section 2.4."
+    },
+    {
+      "id": "CR-009",
+      "severity": "major",
+      "triage": "decision_needed",
+      "title": "The property-by-property invariant compares two packages, not the renderer, so it cannot catch the failure it claims to",
+      "file": "src/codemie-ui/src/a2ui/manifest.ts",
+      "problem": "catalogProperties() derives the list from @a2ui/web_core's zod schemas, not from the binding registry the spec names as the single source.",
+      "impact": "The exact failure mode the invariant claims to catch is present today and passes: accessibility, weight, displayStyle and validationRegexp are advertised to the model and ignored by every renderer. Green CI reads as 'everything advertised renders', which is false.",
+      "recommendation": "Either derive componentProperties from the renderer bindings, or narrow the spec to say the gate detects SDK-package drift and does not certify renderer implementation.",
+      "outcome": "fixed",
+      "resolution": "All four ignored properties are implemented and pinned by behavioural tests; the spec now states what the package-level gate does and does not prove."
+    },
+    {
+      "id": "CR-010",
+      "severity": "major",
+      "triage": "decision_needed",
+      "title": "The prompt section carries hand-authored component content the spec and the stated constraint forbid",
+      "file": "src/codemie/core/a2ui/catalog.py",
+      "problem": "render_prompt_section() returns four parts, not the two the spec allows: role, transport, a hand-written EXAMPLE_SURFACE showing component/variant/value.path/checks syntax, and the catalog description. _ROLE_DESCRIPTION also states a component rule.",
+      "impact": "This is the second, hand-maintained description of components that the constraint exists to prevent. The example is validated so it cannot become invalid, but it can drift from idiomatic usage while the spec claims no such text exists.",
+      "recommendation": "Decide: declare the worked example as a legitimate third part in the spec with the validated-by-test rationale, or remove it and rely on the catalog description alone.",
+      "outcome": "wont_fix",
+      "resolution": "Product decision pending: remove the hand-authored example, or declare it in the spec as a third part with its rationale.",
+      "outcome_note": "Decision taken (remove the example), implemented, and REVERTED the same day after it broke the feature: with the example gone the model emitted every input with a literal `value` (3, false, []) instead of a {\"path\": ...} binding, so forms rendered and could not be filled in. Measured on one assistant within three hours: 13/13 inputs bound with the example, 0/13 without. The finding's premise \u2014 that the schemas alone teach component authoring \u2014 is disproved for the one property that matters. The example stays, its role is now stated in spec section 2.3, and a test fails if any of its inputs loses its binding."
+    },
+    {
+      "id": "CR-011",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Spec section 3 names a backend module and constant that do not exist",
+      "file": "docs/superpowers/tasks/2026-08-04-epmcdme-13910-a2ui-migration/spec.md",
+      "problem": "Section 3 specifies 'one module \u2014 CatalogConfig with ENABLED_COMPONENTS'. Neither symbol occurs anywhere in the backend; the real surface is catalog.CATALOG_ID and catalog.component_names(), and there is no enabled-subset mechanism.",
+      "impact": "The one section reviewers use to verify the BE/FE contract points at ungreppable symbols and implies a subset concept that does not exist.",
+      "recommendation": "Reword to core/a2ui/catalog.py with CATALOG_ID / component_names(), and restate the invariant as catalog components (BE) subset of registry (FE).",
+      "outcome": "fixed",
+      "resolution": "Section 3 now names codemie/core/a2ui/catalog.py with CATALOG_ID / component_names() and drops the non-existent enabled-subset concept."
+    },
+    {
+      "id": "CR-012",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Adapter isolation is contradicted and this diff widens the breach",
+      "file": "src/codemie/core/a2ui/catalog.py",
+      "problem": "_component_at hard-codes the path prefix updateComponents.components.N, _explain reasons over the envelope oneOf branch names, and a2ui_intake._surface_components reads envelope['updateComponents']['components'] \u2014 all outside adapter.py.",
+      "impact": "The v1.0 envelope rename the spec promises to confine to the adapters would now have to touch the catalog module and the intake service.",
+      "recommendation": "Move envelope destructuring into adapter.py and have catalog/intake call it, or amend the criterion to state that read-side destructuring lives outside the adapter.",
+      "outcome": "fixed",
+      "resolution": "Message-kind names moved to core/a2ui/envelopes.py, which sits below adapter and catalog; a test fails on any hand-written occurrence elsewhere."
+    },
+    {
+      "id": "CR-013",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Four shipped behaviours have no spec coverage",
+      "file": "docs/superpowers/tasks/2026-08-04-epmcdme-13910-a2ui-migration/spec.md",
+      "problem": "name_the_root rewrites an agent-authored id (repair, which section 2.1 says the tool never does); the ChoicePicker write-back mutates the data model before the user acts and drops selections matching no option; the new 422 for a data model without an action is a client-visible contract absent from the intake list; GeneratedMessage retains interactive_request/interactive_response against section 6's commitment to delete old-protocol code.",
+      "impact": "Four deliberate decisions live only in code comments. A reader of section 2.1 would conclude the root-naming surface must be refused, and the retention has no documented removal trigger.",
+      "recommendation": "Add a bullet each: root naming (with the several-orphans refusal), scalar-seed normalization and write-back, the 422, and the legacy-field retention with its rollback-window condition.",
+      "outcome": "fixed",
+      "resolution": "Root naming, data-model pruning, ChoicePicker normalisation, the 422 and the retained legacy fields are all described in the spec."
+    }
+  ]
+}

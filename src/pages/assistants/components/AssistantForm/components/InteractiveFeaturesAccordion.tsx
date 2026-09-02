@@ -43,7 +43,7 @@ const InteractiveFeaturesAccordion: FC<InteractiveFeaturesAccordionProps> = ({ c
       >
         <div className="px-4 pb-4 flex flex-col gap-4">
           <Controller
-            name="interactive_features"
+            name="interactive_enabled"
             control={control}
             render={({ field }) => (
               <InteractiveFeaturesSection

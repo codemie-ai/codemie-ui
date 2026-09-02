@@ -15,8 +15,9 @@
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+import { SUPPORTED_COMPONENTS } from '@/a2ui/config'
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 
@@ -72,7 +73,7 @@ describe('AssistantForm Interactive features section - Integration', () => {
     })
   })
 
-  it('lists the available interactive elements (incl. Date picker and Dropdown)', async () => {
+  it('describes the A2UI catalog once enabled', async () => {
     mockAPI('GET', 'v1/config', [INTERACTIVE_FLAG])
 
     renderPage('/assistants/new')
@@ -84,12 +85,11 @@ describe('AssistantForm Interactive features section - Integration', () => {
     await user.click(screen.getByText('Interactive features'))
     await user.click(screen.getByLabelText('Enable interactive features'))
 
-    const info = screen.getByText(/request structured input directly in chat using/i)
-    expect(info).toHaveTextContent('Dropdown')
-    expect(info).toHaveTextContent('Date picker')
+    const info = screen.getByText(/A2UI Basic Catalog/i)
+    expect(info).toHaveTextContent(`${SUPPORTED_COMPONENTS.length} components`)
   })
 
-  it('enabling interactive features turns on the whole element catalog', async () => {
+  it('enabling interactive features sends the boolean switch on', async () => {
     mockAPI('GET', 'v1/user', userWithProject)
     mockAPI('GET', 'v1/config', [INTERACTIVE_FLAG])
     mockAPI('POST', 'v1/assistants', { id: 'new-assistant-id', assistantId: 'new-assistant-id' })
@@ -114,9 +114,44 @@ describe('AssistantForm Interactive features section - Integration', () => {
         expect.stringContaining('v1/assistants'),
         expect.objectContaining({
           method: 'POST',
-          body: expect.stringContaining(
-            '"interactive_features":{"action_buttons":true,"choice":true,"short_forms":true}'
-          ),
+          body: expect.stringContaining('"interactive_enabled":true'),
+        })
+      )
+    })
+
+    // The deprecated per-group payload is no longer sent by this client.
+    const body = (global.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
+      .map(([, init]) => (init as RequestInit | undefined)?.body)
+      .find((candidate): candidate is string => typeof candidate === 'string')
+    expect(body).not.toContain('interactive_features')
+  })
+
+  it('leaves the switch off by default and saves it disabled', async () => {
+    mockAPI('GET', 'v1/user', userWithProject)
+    mockAPI('GET', 'v1/config', [INTERACTIVE_FLAG])
+    mockAPI('POST', 'v1/assistants', { id: 'new-assistant-id', assistantId: 'new-assistant-id' })
+
+    renderPage('/assistants/new')
+
+    await waitFor(() => {
+      expect(screen.getByText('test-project')).toBeInTheDocument()
+    })
+
+    await user.type(screen.getByPlaceholderText('Name*'), 'Plain Assistant')
+    await user.type(screen.getByPlaceholderText(/description/i), 'Plain one')
+    await user.type(screen.getByPlaceholderText(/system instructions/i), 'You are plain')
+
+    await user.click(screen.getByText('Interactive features'))
+    expect(screen.getByLabelText('Enable interactive features')).not.toBeChecked()
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('v1/assistants'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"interactive_enabled":false'),
         })
       )
     })

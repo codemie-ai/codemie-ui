@@ -44,8 +44,9 @@ import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
 import './ChatAiMessage.scss'
+
+import ChatA2uiBlock from './ChatA2uiBlock'
 import ChatAiAuthPrompt, { ChatAuthPrompt } from './ChatAiAuthPrompt'
-import ChatAiInteractiveBlock from './ChatAiInteractiveBlock'
 import ChatAiMessageActions from './ChatAiMessageActions'
 import ThinkingLoader from './ThinkingLoader'
 import { useChatContext } from '../../../hooks/useChatContext'
@@ -115,7 +116,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   const handleStartEditing = () => {
     // Editing a widget message re-answers its form (unlock it) rather than opening
     // the plain-text editor.
-    if (message.interactiveRequest) {
+    if (message.a2uiEnvelopes?.length) {
       setIsFormEditing(true)
       return
     }
@@ -304,7 +305,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
                     Login to MCP Server
                   </Button>
                 )}
-                <ChatAiInteractiveBlock
+                <ChatA2uiBlock
                   message={message}
                   indexes={indexes}
                   isFormEditing={isFormEditing}

@@ -134,6 +134,60 @@ describe('transformAssistantToCreateDTO', () => {
     })
   })
 
+  describe('interactive_enabled', () => {
+    it('forwards the boolean switch', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        interactive_enabled: true,
+      } as Assistant)
+
+      expect(dto.interactive_enabled).toBe(true)
+    })
+
+    it('defaults to false when the switch is absent', () => {
+      const dto = transformAssistantToCreateDTO(baseAssistant as Assistant)
+
+      expect(dto.interactive_enabled).toBe(false)
+    })
+
+    it('derives the switch from the legacy per-group config when the new field is missing', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        interactive_features: { action_buttons: false, choice: true, short_forms: false },
+      } as unknown as Assistant)
+
+      expect(dto.interactive_enabled).toBe(true)
+    })
+
+    it('stays false when the legacy config has every group disabled', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        interactive_features: { action_buttons: false, choice: false, short_forms: false },
+      } as unknown as Assistant)
+
+      expect(dto.interactive_enabled).toBe(false)
+    })
+
+    it('prefers an explicit false switch over an enabled legacy config', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        interactive_enabled: false,
+        interactive_features: { action_buttons: true, choice: true, short_forms: true },
+      } as unknown as Assistant)
+
+      expect(dto.interactive_enabled).toBe(false)
+    })
+
+    it('ignores a legacy config that is not an object', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        interactive_features: null,
+      } as unknown as Assistant)
+
+      expect(dto.interactive_enabled).toBe(false)
+    })
+  })
+
   describe('source_assistant_id', () => {
     it('sets source_assistant_id when a source id is passed', () => {
       const dto = transformAssistantToCreateDTO(baseAssistant as Assistant, 'source-assistant-1')

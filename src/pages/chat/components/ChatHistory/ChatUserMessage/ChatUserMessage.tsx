@@ -196,16 +196,17 @@ const ChatUserMessage: FC<ChatUserMessageProps> = ({ message, indexes, onSubmit 
           />
         )}
 
-        {!isEditing && message.interactiveResponse && (
+        {/* A2UI answer turn: the request text is the surface's display summary. */}
+        {!isEditing && message.a2uiAction && (
           <span
             className="inline-flex items-center gap-1 text-sm text-text-primary"
-            data-testid="interactive-response-chip"
+            data-testid="a2ui-response-chip"
           >
             ✓ {request}
           </span>
         )}
 
-        {!isEditing && !message.interactiveResponse && (
+        {!isEditing && !message.a2uiAction && (
           <p
             ref={messageElementRef}
             className="chat-editor chat-editor-message text-sm text-wrap break-word"

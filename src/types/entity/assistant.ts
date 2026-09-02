@@ -19,7 +19,6 @@ import { DynamicFormFieldSchema } from '@/types/dynamicForm'
 
 import { EntityGuardrailAssignment } from './guardrail'
 
-import type { InteractiveFeaturesConfig } from './interactive'
 import type { MCPServerDetails } from './mcp'
 import type { Setting } from './setting'
 import type { Skill } from './skill'
@@ -134,7 +133,8 @@ export interface Assistant {
   prompt_variables?: AssistantPromptVariable[]
   smart_tool_selection_enabled?: boolean
   hedging_config?: HedgingConfig | null
-  interactive_features?: InteractiveFeaturesConfig | null
+  /** Single switch enabling the A2UI interactive catalog for this assistant. */
+  interactive_enabled?: boolean
   system_prompt_history: {
     date: string
     system_prompt: string
@@ -475,7 +475,8 @@ export interface CreateAssistantDto {
   categories?: AssistantCategory[]
   smart_tool_selection_enabled?: boolean
   hedging_config?: HedgingConfig | null
-  interactive_features?: InteractiveFeaturesConfig | null
+  /** Single switch enabling the A2UI interactive catalog for this assistant. */
+  interactive_enabled?: boolean
   prompt_variables?: AssistantPromptVariable[]
   guardrail_assignments: EntityGuardrailAssignment[]
   skip_integration_validation?: boolean

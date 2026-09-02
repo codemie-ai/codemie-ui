@@ -1,0 +1,262 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "Three lenses ran over the whole branch in both repos; none failed. The blind and edge-case lenses independently found the same class of defect, and the orchestrator reproduced every code finding by executing the real code before recording it. 11 blocking findings: 2 critical, 9 major. Confidence is low for two compounding reasons: the diff is 18837 lines (74 backend files, 64 frontend), beyond what one pass reviews with even attention, so coverage is honestly partial; and one finding is decision_needed. 4 findings were dismissed as duplicates across lenses; 1 deferred (schema-level tool-argument rejection predates this branch's most recent work and needs a different hook than the notice path). Note on scope: three committed *.diff run artifacts (16480 lines of diffs-of-diffs) were excluded from the reviewed diff deliberately; no source was truncated. Also still open from the previous round and not re-raised here: pruning `options[].disabled` makes a gated option selectable and the server then confirms it (a product decision). RESOLUTION: all 11 findings fixed. The two criticals and CR-003 were confirmed by executing the real code before and after; CR-004 was resolved by deleting the second implementation rather than repairing it.",
+  "risk_flags": [
+    "public-api"
+  ],
+  "business_review": [
+    {
+      "criterion": "2.1 Emission, turn-end, rejection notice, answerability, root naming, error text",
+      "status": "pass",
+      "notes": "Verified in the tool and catalog modules; covered by tests."
+    },
+    {
+      "criterion": "2.1 Wire names in exactly one module per side",
+      "status": "partial",
+      "notes": "CR-007: backend is clean and test-enforced; the frontend spells the kinds out in envelopes.ts and useA2uiSurface.ts, not config.ts."
+    },
+    {
+      "criterion": "2.1 Seeded data-model key nothing binds is dropped",
+      "status": "partial",
+      "notes": "CR-004: only top-level keys are inspected; a nested unbound key survives."
+    },
+    {
+      "criterion": "2.2 Four gating conditions; intake not flag-gated",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.3 Catalog, prompt section, schema-block pointer",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.4 SDK components draw the surface; six are ours with reasons",
+      "status": "pass",
+      "notes": "registry.tsx records each exception."
+    },
+    {
+      "criterion": "2.4 Design tokens and supplied layout",
+      "status": "pass",
+      "notes": "theme.css; twelve base variables mapped to the app's own theme variables."
+    },
+    {
+      "criterion": "2.4 Normalization before the renderer",
+      "status": "fail",
+      "notes": "CR-001, CR-002, CR-003: nested paths flattened, sets shared across surfaces, option membership no longer filtered."
+    },
+    {
+      "criterion": "2.4 accessibility and validationRegexp supplied; three SDK gaps pinned",
+      "status": "pass",
+      "notes": "Confirmed by running the property suite."
+    },
+    {
+      "criterion": "2.4 Media sanitized, consent-gated, no referrer",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.4 Modal trigger opens the dialog",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.5 Answer flow, optimistic chip, rollback, four states",
+      "status": "partial",
+      "notes": "CR-009 (sendDataModel is not sent) and CR-010 (pressed button is marked only by a test id)."
+    },
+    {
+      "criterion": "2.6 A2uiValidator validates every answer",
+      "status": "fail",
+      "notes": "CR-006: the SDK validator runs on emission only; the answer envelope is checked by a hand-rolled allow-list."
+    },
+    {
+      "criterion": "2.6 Semantic and anti-tampering checks, ownership before disclosure",
+      "status": "pass",
+      "notes": "Verified by execution that a forged or unnormalized answer is refused."
+    },
+    {
+      "criterion": "2.7 History, persistence, LLM continuity",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "2.8 Assistant flag migration; history not migrated, old records still load",
+      "status": "pass",
+      "notes": "Pinned by TestConversationsFromTheOldProtocol."
+    },
+    {
+      "criterion": "3 BE/FE synchronization and the contract gate",
+      "status": "fail",
+      "notes": "CR-008: the described derivation direction, the e2e harness and the schema-hash comparison do not exist."
+    },
+    {
+      "criterion": "4 Wire format",
+      "status": "partial",
+      "notes": "CR-009: the documented version is v0.9; v0.9.1 ships."
+    },
+    {
+      "criterion": "5 Catalog capability declaration",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "criterion": "6 Nothing of the old protocol outlives the release",
+      "status": "fail",
+      "notes": "CR-011: the frontend still reads interactive_features as a compatibility fallback."
+    }
+  ],
+  "standards_review": [
+    {
+      "check": "commit-format",
+      "status": "pass",
+      "notes": "51 backend commits; the two non-matching subjects are permitted Revert forms."
+    },
+    {
+      "check": "code-quality",
+      "status": "partial",
+      "notes": "ruff clean; license headers present across 2020 files. The guide asks for X | None over Optional[X]; new A2UI code uses Optional in 11 places. Not marked blocking by the guide, so recorded rather than raised."
+    },
+    {
+      "check": "security",
+      "status": "pass",
+      "notes": "Verified by execution that client-side normalization cannot widen server acceptance: a scalar, a forged multi-selection and an option outside the list are all refused, and only the correct answer passes. The guide's rule against lossy repair before a security decision is therefore not breached — the decision is made server-side on strictly validated data."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "title": "A nested binding path is flattened into one key, making the surface permanently unanswerable",
+      "file": "codemie-ui/src/a2ui/envelopes.ts:173",
+      "problem": "keyOf() strips the leading slash and uses the remainder as a single top-level key, so a binding of /profile/name seeds the literal key \"profile/name\" at the data-model root. The SDK stores the pointer nested, and the intake splits bound paths into segments, so the two halves disagree about the key the client itself wrote.",
+      "impact": "Reproduced: the browser submits {\"profile\":{\"name\":\"Ada\"},\"profile/name\":\"\"} and the server answers 422 Unknown A2UI data model key: 'profile/name'. The seed is part of the stored surface, so every retry fails identically and the form can never be sent. Nested paths are explicitly supported server-side (MAX_BINDING_DEPTH = 16) and the backend's own test emits /profile/name.",
+      "recommendation": "Read and write binding paths structurally (walk the segments) instead of treating them as one key, in both the empty-text seeding and the choice normalization.",
+      "outcome": "fixed",
+      "resolution": "Binding paths are walked as pointers now, in both seeding and choice normalization; nested seeds land in the branch they name."
+    },
+    {
+      "id": "CR-002",
+      "severity": "critical",
+      "triage": "patch",
+      "title": "Binding paths are collected across all surfaces in a message, so surfaces poison each other's data models",
+      "file": "codemie-ui/src/a2ui/envelopes.ts:192",
+      "problem": "normalizeToCatalog builds one set of paths over every updateComponents envelope with no surfaceId scoping, and seedDataModel applies it to every updateDataModel envelope. A message may legitimately carry several surfaces — the code elsewhere is built for exactly that.",
+      "impact": "Reproduced with two surfaces: A ends up with {\"alpha\":\"x\",\"beta\":\"\"} and B with {\"beta\":\"y\",\"alpha\":\"\"}. Each then submits a key its own surface binds nothing under, and the intake refuses both — neither form can be answered. The appended data-model envelope, when a surface seeds none, is also addressed only to the first surface id.",
+      "recommendation": "Scope the collected paths per surfaceId and seed each data model only from its own surface, appending a missing envelope per surface rather than once.",
+      "outcome": "fixed",
+      "resolution": "Bindings are collected per surfaceId and each data model is seeded only from its own surface; a missing envelope is appended per surface."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Choice normalization no longer drops values the surface never offered",
+      "file": "codemie-ui/src/a2ui/envelopes.ts",
+      "problem": "asSelection filters non-strings and caps single-choice, but never sees the component's options, so a seeded value outside them survives. The behaviour existed in the hand-written ChoicePickerRenderer and was not carried over when the SDK's component replaced it. The write-back guard also compares lengths where the spec says content.",
+      "impact": "Reproduced: a seed of [\"sso\",\"legacy_vpn\"] against options sso/api passes through unchanged; the SDK picker cannot show or remove the stray value, and the untouched field is refused with \"has values the surface never offered\". No interaction clears it. The spec still claims this is fixed.",
+      "recommendation": "Pass each ChoicePicker's options into the normalization and filter and dedupe against them, then compare element-wise rather than by length.",
+      "outcome": "fixed",
+      "resolution": "Each picker's declared options are carried into the normalization: values outside them are dropped, duplicates removed, and the write-back compares content."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "title": "prune_data_model inspects only top-level keys and no values, so a seed the intake will refuse is still emitted",
+      "file": "codemie/src/codemie/core/a2ui/catalog.py:313",
+      "problem": "The function's stated contract is that nothing is emitted the server would later refuse, but it matches only the first segment of each bound path against each top-level key and never descends, and it never checks seeded values against the per-component rules the intake applies.",
+      "impact": "Verified: a seed of {'user': {'name': '', 'nickname': 'x'}} against a binding of /user/name is kept whole and then refused on submit as Unknown A2UI data model key: 'user/nickname'; a ChoicePicker seeded with a value outside its options passes emission and is refused as \"never offered\". Both are permanent, since the seed is stored with the surface.",
+      "recommendation": "Walk the seed against the full bound-path set the way the intake does, and run it through the same per-component value validation before emitting, dropping and logging whatever would be refused.",
+      "outcome": "fixed",
+      "resolution": "Replaced by asking the intake itself (unanswerable_seed_paths) what it would refuse, so the two directions cannot drift; prune_data_model and bound_paths deleted."
+    },
+    {
+      "id": "CR-005",
+      "severity": "major",
+      "triage": "patch",
+      "title": "A tool call rejected by its arguments schema still ends the turn with an empty message",
+      "file": "codemie/src/codemie/agents/tools/interactive/request_user_input.py",
+      "problem": "The rejection notice is streamed from the except block inside execute(), but the arguments are validated by the tool framework before execute runs. Only one shape (a stray id string) is repaired by a field validator; every other malformed shape dies before the notice can be sent.",
+      "impact": "A components argument that is an object rather than a list, or a data_model that is a list, raises before execute; nothing is streamed and the turn ends with a blank assistant message — the outcome the notice exists to prevent. The existing test calls execute() directly and so bypasses the path.",
+      "recommendation": "Widen the declared argument types and do the shape checking inside execute, or stream the notice from the framework's validation-error path; add a test that drives the tool through its args_schema.",
+      "outcome": "fixed",
+      "resolution": "_parse_input is hooked: the notice is streamed and the raw pydantic error is replaced by it, so nothing internal reaches the user. Pinned by a test driven through run()."
+    },
+    {
+      "id": "CR-006",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Section 2.6 says answers are validated with A2uiValidator; they are not",
+      "file": "docs/superpowers/tasks/2026-08-04-epmcdme-13910-a2ui-migration/spec.md",
+      "problem": "A2uiValidator runs only on the outgoing surface. The incoming action envelope goes through validate_action_envelope, a hand-maintained structural allow-list, because the SDK ships no client-to-server schema for 0.9.1 and pins version to v0.9.",
+      "impact": "A reader concludes the client-to-server half is schema-validated by the SDK and would not look for the allow-list that actually guards it — the list that must be updated by hand at v1.0.",
+      "recommendation": "Correct the spec: the answer envelope is validated structurally against the documented wire contract plus the semantic checks; A2uiValidator covers emission only. The code's reasoning is sound and documented.",
+      "outcome": "fixed",
+      "resolution": "Spec corrected: the answer envelope is checked against a maintained allow-list, not A2uiValidator, and the reason is named."
+    },
+    {
+      "id": "CR-007",
+      "severity": "major",
+      "triage": "patch",
+      "title": "The frontend does not centralize wire message names, though the spec says config.ts does",
+      "file": "codemie-ui/src/a2ui/envelopes.ts",
+      "problem": "config.ts declares the version, the catalog id and SDK re-exports, but no message kinds. createSurface, updateComponents and updateDataModel are string literals across envelopes.ts and useA2uiSurface.ts. The backend has both the invariant and a test enforcing it; the frontend has neither.",
+      "impact": "The stated v1.0-readiness property holds on one side only: a rename touches roughly ten frontend sites and nothing fails if one is missed.",
+      "recommendation": "Move the names into config.ts and add the mirror of the backend's guard test — cheap, and what the spec already promises.",
+      "outcome": "fixed",
+      "resolution": "Message kinds moved into a2ui/config.ts; a mirror of the backend's guard test fails if a literal reappears."
+    },
+    {
+      "id": "CR-008",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Section 3 describes a BE/FE gate that does not exist in the form written",
+      "file": "docs/superpowers/tasks/2026-08-04-epmcdme-13910-a2ui-migration/spec.md",
+      "problem": "Three mismatches: SUPPORTED_COMPONENTS and the catalog id are hand-written literals that the registry consumes (the described direction is inverted, though a test asserts equality); the manifest is produced by an explicit npm script and reaches the backend as a hand-copied file whose freshness test skips unless both repos are checked out side by side; and no hash is compared anywhere.",
+      "impact": "A reader believes CI detects SDK package drift between the halves. In CI the comparison is against a snapshot that can be arbitrarily stale, and drift is caught only if someone remembers to re-copy the file.",
+      "recommendation": "Describe the vendored-snapshot mechanism and its skip condition honestly and drop the schema-hash clause, or implement the hash check — the cheaper guarantee to actually gain.",
+      "outcome": "fixed",
+      "resolution": "Spec corrected to describe the vendored snapshot, the skipping freshness test and the absence of any hash comparison."
+    },
+    {
+      "id": "CR-009",
+      "severity": "major",
+      "triage": "patch",
+      "title": "The documented wire differs from the one that ships",
+      "file": "docs/superpowers/tasks/2026-08-04-epmcdme-13910-a2ui-migration/spec.md",
+      "problem": "Section 2.5 says the data model is sent via a sendDataModel flag on the surface; nothing sets it, and the client reads surface.dataModel.get('/') directly and says so. Section 4 documents version v0.9; WIRE_VERSION is v0.9.1.",
+      "impact": "Anyone implementing another A2UI client from these sections — the IDE chat, or the A2A exposure named as a future extension — would look for a flag that is never sent and stamp the wrong version.",
+      "recommendation": "Correct the spec on both points. The code's choice is right: the SDK's flagged path would require the flag on every surface for no gain.",
+      "outcome": "fixed",
+      "resolution": "Spec corrected: the data model travels as the a2uiDataModel request field, and the wire version is v0.9.1."
+    },
+    {
+      "id": "CR-010",
+      "severity": "major",
+      "triage": "decision_needed",
+      "title": "The pressed button on an answered surface is marked only by a test id",
+      "file": "codemie-ui/src/a2ui/renderers.tsx:305",
+      "problem": "Section 2.5 lists \"pressed button marked\" as part of the submitted state, but the only effect of the match is a data-testid. No class, no variant, no icon — an answered surface renders every button identically.",
+      "impact": "On a surface with several actions (Approve / Reject / Defer) the user cannot tell from the form which one they pressed; the chip above carries the answer, and for a data-model answer it shows field values rather than the action name.",
+      "recommendation": "Product call: style the matched button (the test id already identifies the element), or drop the clause from the spec.",
+      "outcome": "fixed",
+      "resolution": "Product decision taken: the submitted button now carries an accent outline, a tick and aria-pressed."
+    },
+    {
+      "id": "CR-011",
+      "severity": "major",
+      "triage": "patch",
+      "title": "The frontend still reads the legacy interactive_features field, which section 6 says nothing does",
+      "file": "codemie-ui/src/store/utils/assistants.ts",
+      "problem": "readInteractiveEnabled falls back to the legacy field and treats any truthy group as enabled; five tests pin the behaviour, and the code marks itself temporary.",
+      "impact": "Section 6 reads as a completed-removal guarantee, so nobody schedules the removal — while the backend has already dropped the column, so the fallback can only fire on cached or exported JSON.",
+      "recommendation": "Correct the spec: acknowledge one deliberate compatibility read for cached assistants and state the condition for removing it. The code is defensible; the absolute claim is what is wrong.",
+      "outcome": "fixed",
+      "resolution": "Spec corrected: one deliberate frontend compatibility read is acknowledged, with the condition for removing it."
+    }
+  ]
+}
