@@ -1,0 +1,22 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "partial", "notes": "All 21 commit subjects in the range match the documented 'EPMCDME-13903: Capital sentence' format (no zero ID, capitalized first word, no trailing period). However two commits (c2e1d7bb9, 4a05a8d00) also carry unrelated changes -- a personal .codemie/codemie-cli.config.json profile rewrite and 3 docs/codemie/analytics/*.json local session logs -- violating git-workflow.md's Anti-Patterns row 'Mixing unrelated changes in one commit'."},
+    {"kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md exists in the repo and no code_quality ArtifactRef was passed by the caller; no documented code-quality standard exists to adjudicate this change against."},
+    {"kind": "security", "status": "partial", "notes": "security-patterns.md's checklist (HTML sinks/dangerouslySetInnerHTML, redirects built from untrusted input, cross-window postMessage, secrets/config) is fully satisfied across every changed src/ file in this range -- no dangerouslySetInnerHTML/innerHTML, location.href/assign/replace, window.open, postMessage, or new secret was introduced. The apiKey value in .codemie/codemie-cli.config.json is the pre-existing literal 'sso-provided', not a credential. However docs/codemie/analytics/*.json, added by commits 4a05a8d00 and c2e1d7bb9, are local AI-tooling telemetry logs containing the developer's email address (andriy_lukashchuk@epam.com) and local absolute filesystem path (/Users/Andriy_Lukashchuk/Dev/code-assistant-ui) -- a concrete personal-information disclosure into shared repo history, independent of any documented checklist item."}
+  ],
+  "blocking_findings": [
+    {
+      "location": ".codemie/codemie-cli.config.json (introduced by commit c2e1d7bb9)",
+      "violation": "git-workflow.md Anti-Patterns forbids 'Mixing unrelated changes in one commit'; this commit rewrites the developer's personal CLI profile (activeProfile, profile name, model aliases, codemieAssistants list) with no relation to the tool-call-confirmation feature.",
+      "why_blocking": "Unrelated personal tooling config churn obscures the feature diff for reviewers and risks merging one developer's local environment settings into main.",
+      "remedy": "git checkout de6104d7337c8b77d2f3582e32775c7fa526c142 -- .codemie/codemie-cli.config.json (or drop the file from the branch) before merge."
+    },
+    {
+      "location": "docs/codemie/analytics/codemie-analytics-andriy-lukashchuk-epam-com-*.json (added by commits 4a05a8d00, c2e1d7bb9)",
+      "violation": "Three local AI-assistant analytics session logs, unrelated to EPMCDME-13903, were committed as part of feature commits; they carry the developer's email address and local absolute filesystem path. This both violates the 'one logical change per commit' anti-pattern in git-workflow.md and discloses personal information into shared repo history.",
+      "why_blocking": "Publishes personal identifying information (email, local machine path) into the repository's permanent git history and mixes unrelated generated artifacts into the feature branch.",
+      "remedy": "git rm the three docs/codemie/analytics/*.json files from this branch and add the analytics output directory to .gitignore if it is meant to stay local-only."
+    }
+  ],
+  "coverage_gap": false
+}

@@ -253,4 +253,45 @@ describe('ChatPrompt', () => {
       expect(mockEditorFocus).toHaveBeenCalledOnce()
     })
   })
+        
+  describe('tool call pending state', () => {
+    beforeEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+        history: [
+          [
+            {
+              inProgress: false,
+              thoughts: [
+                {
+                  id: 'thought-1',
+                  author_name: 'search_confluence',
+                  interrupted: true,
+                  in_progress: false,
+                },
+              ],
+            } as any,
+          ],
+        ],
+      }
+    })
+
+    afterEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [[{ inProgress: true }]],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+    })
+
+    it('hides the send button when the last thought is interrupted', () => {
+      render(<ChatPrompt />)
+      expect(screen.queryByRole('button', { name: /send/i })).not.toBeInTheDocument()
+    })
+  })
 })

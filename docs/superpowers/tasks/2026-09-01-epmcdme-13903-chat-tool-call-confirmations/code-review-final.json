@@ -1,0 +1,153 @@
+{
+  "decision": "request-changes",
+  "rationale": "1 critical broken-access-control finding (Allow/Deny controls reachable on shared/read-only pages) and 10 major findings — a fail-open policy default, a policy-persistence field-name mismatch, a dropped hideToolOutputs feature, several unguarded resumeToolCall paths, and personal CLI/analytics artifacts committed with the feature — force request-changes; standards audit ran and is partial (commit-format, security) with code-quality na (no guide). 12 acceptance-lens 'fail' items were re-verified against the shipped frontend handoff docs and transformChatBEtoFE and found functionally satisfied by an alternate implementation (thought.interrupted reuse, a 3-state ToolCallPolicyDropdown per the tri-state backend contract) rather than genuine gaps, so they were dismissed along with 3 blind-lens doc-drift/false-positive items (15 dismissed total). No findings were deferred.",
+  "confidence": "medium",
+  "risk_flags": ["security", "breaking-change"],
+  "business_review": [
+    { "kind": "spec", "item": "Detect a paused tool call and render inline Allow/Deny controls", "status": "pass", "notes": "ChatAiMessage.tsx renders Allow/Deny when thought.interrupted && !isWorkflow" },
+    { "kind": "spec", "item": "Disable chat prompt while a tool call is pending", "status": "pass", "notes": "ChatPrompt.tsx isToolCallPending folds into isPromptDisabled" },
+    { "kind": "spec", "item": "Resume the conversation via the tool-call resume endpoint", "status": "partial", "notes": "Mechanism works but resumeToolCall never defensively clears interrupted and has no guard for empty/ambiguous history — see CR-008/009/010" },
+    { "kind": "spec", "item": "Page-refresh recovery of a pending tool call from the conversation endpoint", "status": "pass", "notes": "Achieved generically via thought.interrupted through transformChatBEtoFE, not a dedicated pending_tool_call field" },
+    { "kind": "spec", "item": "Tool Call Policy dropdown, feature flag, ToolCallPolicy enum", "status": "pass", "notes": "3-state ToolCallPolicyDropdown (Manual/Guarded/Auto) matches the tri-state backend contract" },
+    { "kind": "spec", "item": "Conversation-level tool call policy persists across reloads", "status": "fail", "notes": "camelCase/snake_case field mismatch means the PUT never updates the backend value — CR-011" },
+    { "kind": "spec", "item": "Assistant-level tool_permissions scoped to CodeMie assistants + feature flag", "status": "fail", "notes": "Payload sent unconditionally for every assistant type/flag state — CR-002" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "partial", "notes": "All 21 subjects match the format, but 2 commits mix in an unrelated personal CLI-config rewrite and local analytics logs." },
+    { "kind": "code-quality", "status": "na", "notes": "No documented code-quality standard or ArtifactRef exists to adjudicate against." },
+    { "kind": "security", "status": "partial", "notes": "Checklist items (sinks, redirects, postMessage, secrets) fully satisfied, but committed analytics logs disclose a developer's email and local filesystem path." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": ".codemie/codemie-cli.config.json",
+      "title": "Personal CLI/analytics artifacts committed",
+      "problem": "Commits c2e1d7bb9 and 4a05a8d00 rewrite the developer's personal CLI profile (.codemie/codemie-cli.config.json) and add three docs/codemie/analytics/*.json session logs, none related to EPMCDME-13903.",
+      "impact": "Publishes personal identifying information (email, local absolute filesystem path) into permanent shared repo history and obscures the feature diff with unrelated churn.",
+      "recommendation": "git checkout the original .codemie/codemie-cli.config.json and git rm the three docs/codemie/analytics/*.json files from this branch before merge; add the analytics output directory to .gitignore."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/AssistantForm.tsx",
+      "line": 352,
+      "title": "tool_permissions payload sent unconditionally",
+      "problem": "The Tool Permissions UI is gated on isCodemieAssistant && toolPermissionsEnabled, but prepareFormData() always spreads tool_permissions: {tool_call_policy, allow_override} into the save payload, and preparedValues still carries the same two fields at the top level from the earlier `...values` spread.",
+      "impact": "Every assistant save — including non-CodeMie assistants and tenants with the feature flag off — sends a tool_permissions object (plus duplicate top-level fields) the user never saw or set, which can silently overwrite intended defaults on the backend.",
+      "recommendation": "Only include tool_permissions when isCodemieAssistant && toolPermissionsEnabled (else pass through assistant?.tool_permissions unchanged), and delete the duplicate top-level tool_call_policy/allow_override keys before returning preparedValues."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx",
+      "line": 233,
+      "title": "hideToolOutputs guard removed entirely",
+      "problem": "The prior `{!hideToolOutputs && !!message?.thoughts?.length && (...)}` gate around the thoughts block was deleted along with the hideToolOutputs destructure; thoughts now always render. The matching test was rewritten from 'hides thoughts' to 'renders thoughts even when hideToolOutputs is true' with no comment explaining the removal.",
+      "impact": "The user-facing 'Hide tool outputs' Switch (ChatConfigHideToolOutputs.tsx, still wired and persisted via chatStorageUtils) becomes a dead no-op control — users who enable it still see every tool call thought.",
+      "recommendation": "Restore the hideToolOutputs gate around the thoughts block, special-casing only the interrupted/pending thought so Allow/Deny controls stay visible when the setting is on."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx",
+      "line": 236,
+      "title": "Allow/Deny buttons ignore isSharedPage",
+      "problem": "The Allow/Deny block is gated only on `thought.interrupted && !currentChat?.isWorkflow`. `isSharedPage` — already destructured from useChatContext and used elsewhere in this file (line 304) to hide message actions — is never checked here.",
+      "impact": "An anonymous viewer on a public/shared read-only conversation can still click Allow/Deny, calling chatGenerationStore.resumeToolCall and resuming or denying someone else's pending tool call — a broken access control on a live backend action.",
+      "recommendation": "Add `&& !isSharedPage` to the Allow/Deny render condition, matching the existing pattern used elsewhere in this file and in ChatUserMessage.tsx/ChatPrompt.tsx."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/useToolPermissions.ts",
+      "line": 42,
+      "title": "Assistant-fetch failure defaults to auto-approve",
+      "problem": "reduceAssistantPolicies() falls back to ToolCallPolicy.AUTO_APPROVE whenever every fetched assistant is undefined, which happens whenever every assistantsStore.getAssistant(id) call fails (errors are silently swallowed via `.catch(() => undefined)`).",
+      "impact": "A transient network error while resolving assistant policy silently widens tool-call auto-approval to the least restrictive setting instead of failing closed to the most conservative policy.",
+      "recommendation": "On a transient fetch failure, keep the previous resolved policy (or default to ASK_FOR_APPROVAL) rather than folding failures into the same reduction as a genuinely empty/auto-approve policy set."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/useToolPermissions.ts",
+      "line": 80,
+      "title": "No stale-fetch guard on policy resolution",
+      "problem": "The effect that resolves assistantResolved via Promise.all(assistantIds.map(getAssistant)) has no cancellation flag; if assistantIds changes again before the in-flight fetch resolves, the older Promise.all's `.then` still calls setAssistantResolved unconditionally.",
+      "impact": "Switching conversations quickly can apply a stale/previous conversation's resolved tool-call policy and allowOverride to the currently displayed chat.",
+      "recommendation": "Add a `cancelled` flag (or AbortController) set in the effect's cleanup, and skip setAssistantResolved when the effect has already been superseded."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/useToolPermissions.ts",
+      "line": 105,
+      "title": "Unvalidated cast of conversation policy",
+      "problem": "`currentChat?.toolCallPolicy as ToolCallPolicy | null | undefined` casts the backend's plain `string | null` field without checking it is one of the three known ToolCallPolicy members; ToolCallPolicyDropdown's `POLICY_OPTIONS.find(...)` has no fallback for a value it can't match.",
+      "impact": "A legacy or unexpected backend value flows straight into the dropdown, which then renders blank (no icon/label) via valueTemplate, silently breaking the policy control's display.",
+      "recommendation": "Validate the conversation's toolCallPolicy against the ToolCallPolicy enum before use (falling back to a known default), and give ToolCallPolicyDropdown a defined fallback when no option matches."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chatGeneration.ts",
+      "line": 846,
+      "title": "resumeToolCall never clears interrupted flag",
+      "problem": "Unlike resumeWorkflowExecution (line ~809), which explicitly sets `thought.interrupted = false` before resuming, resumeToolCall leaves the flag untouched and relies entirely on a later streamed chunk to explicitly send `interrupted: false` for _handleThought to clear it (chatGeneration.ts:1465).",
+      "impact": "If the backend's resume response never re-sends that specific thought with interrupted:false (e.g. it just continues with new thoughts), the flag stays true forever, keeping isToolCallPending — and the disabled chat prompt — stuck even though the call was actually resolved.",
+      "recommendation": "Have resumeToolCall optimistically clear thought.interrupted (and in_progress) on the target thought before sending, mirroring resumeWorkflowExecution, rather than depending solely on the stream to echo it back."
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chatGeneration.ts",
+      "line": 850,
+      "title": "resumeToolCall indexes history with no guard",
+      "problem": "`const lastHistoryIndex = chat.history.length - 1` followed by `chat.history[lastHistoryIndex].length` has no check for an empty/stale history array.",
+      "impact": "If resumeToolCall is invoked while chat.history is empty (e.g. a stale click after the chat state was reset or swapped), this throws a TypeError reading .length of undefined, crashing the click handler.",
+      "recommendation": "Return early (`if (lastHistoryIndex < 0 || !chat.history[lastHistoryIndex]?.length) return`) before indexing, matching the defensive pattern used elsewhere in this file."
+    },
+    {
+      "id": "CR-010",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chatGeneration.ts",
+      "line": 854,
+      "title": "resumeToolCall resolves the wrong pending call",
+      "problem": "resumeToolCall always resolves `lastHistoryItem.thoughts?.findLast((t) => t.interrupted)` — the last interrupted thought in the last history item — with no check that exactly one thought is actually pending. Meanwhile ChatAiMessage renders an Allow/Deny button pair for every interrupted thought found while mapping message.thoughts.",
+      "impact": "If more than one thought is interrupted at once, every button pair's click targets the same last interrupted thought, so clicking Allow/Deny next to an earlier interrupted thought silently resolves the wrong one (or nothing distinguishable); a click on an already-resolved/stale button also still sends a resume request with nothing genuinely pending.",
+      "recommendation": "Pass the specific thought id being resolved into resumeToolCall, and no-op (rather than send a resume request) when no matching interrupted thought remains for that id."
+    },
+    {
+      "id": "CR-011",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chats.ts",
+      "line": 46,
+      "title": "toolCallPolicy sent camelCase, backend expects snake_case",
+      "problem": "mapConversationUpdatePayload() special-cases llmModel/enableImageGeneration/imageGenerationModel but has no case for toolCallPolicy, so it falls through to `payload.toolCallPolicy = value` — camelCase — while docs/tasks/2026-08-17-conversation-tools-config-handoff.md documents the PATCH body field as snake_case `tool_call_policy`.",
+      "impact": "When useToolPermissions.setPolicy calls chatsStore.updateChat({toolCallPolicy: next}), the PUT to /v1/conversations/{id} carries the wrong field name; the backend silently ignores it, so a user's chosen policy override never persists across reloads even though the dropdown shows it as selected.",
+      "recommendation": "Add a `case 'toolCallPolicy': payload.tool_call_policy = value; break` branch to mapConversationUpdatePayload, and add a test asserting the PUT payload uses the snake_case key."
+    }
+  ]
+}

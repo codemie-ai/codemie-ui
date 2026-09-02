@@ -977,6 +977,13 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     accessType: CredentialAccessType.USER_ONLY,
     fields: {},
   },
+  msteams: {
+    displayName: 'MSTeams',
+    serverEnum: 'MSTeams',
+    accessType: CredentialAccessType.PROJECT_ONLY,
+    testable: false,
+    fields: {},
+  },
   // EPMCDME-14586: GitLab OAuth credential type temporarily hidden from the integration form.
   // Do NOT delete — uncomment (and the GITLAB_OAUTH_CREDENTIAL_TYPE import above) to re-enable.
   // [GITLAB_OAUTH_CREDENTIAL_TYPE]: {

@@ -203,6 +203,7 @@ export interface Conversation {
   history: ChatHistoryGroup[]
   assistantID?: string
   assistantName?: string
+  toolCallPolicy?: string | null
 }
 
 export interface ChatFolder {
@@ -299,6 +300,7 @@ export interface ChatBackend {
   history: HistoryItemBackend[]
   is_workflow?: boolean
   is_workflow_conversation?: boolean
+  tool_call_policy?: string | null
 }
 
 export interface StreamChunk {

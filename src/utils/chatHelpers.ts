@@ -35,6 +35,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
     folder: chatBE.folder,
     assistantIds: chatBE.assistant_ids ?? [],
     initialAssistantId: chatBE.initial_assistant_id,
+    toolCallPolicy: chatBE.tool_call_policy ?? null,
     assistantData:
       chatBE.assistant_data?.map((data) => ({
         id: data.assistant_id,

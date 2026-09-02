@@ -96,6 +96,11 @@ vi.mock('../../ChatUserMessage/EditMessageModal', () => ({
   default: () => null,
 }))
 
+vi.mock('../ChatToolConfirmation', () => ({
+  default: ({ message }: { message: any }) =>
+    message.toolCallPending ? <div data-testid="tool-confirmation" /> : null,
+}))
+
 vi.mock('@/utils/helpers', () => ({
   formatDateTime: vi.fn(() => 'Apr 30'),
 }))
@@ -165,6 +170,7 @@ describe('ChatAiMessage processing metadata', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockChatsStore.currentChat.history = []
+    mockChatContext.isSharedPage = false
   })
 
   it('renders the processing duration for a completed message', () => {
@@ -205,12 +211,72 @@ describe('ChatAiMessage processing metadata', () => {
     expect(screen.getByText(/Processed in: 1\.50s/)).toBeInTheDocument()
     expect(screen.getByLabelText('I agree to the terms')).toBeInTheDocument()
   })
+
+  it('renders Allow/Deny buttons when a thought is interrupted and chat is not a workflow', () => {
+    const message: ChatMessage = {
+      role: 'Assistant',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      inProgress: false,
+      assistant: { id: 'a1', name: 'A' },
+      executionId: null,
+      thoughts: [
+        {
+          id: 'thought-1',
+          author_name: 'search_confluence',
+          author_type: 'Tool',
+          message: 'Tool call is waiting for user approval.',
+          in_progress: false,
+          error: false,
+          interrupted: true,
+          aborted: false,
+        },
+      ],
+    }
+    mockChatsStore.currentChat.isWorkflow = false
+    mockChatsStore.currentChat.history = [[message]]
+
+    renderMessage(message)
+
+    expect(screen.getByRole('button', { name: /allow/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /deny/i })).toBeInTheDocument()
+  })
+
+  it('hides Allow/Deny buttons on a shared/read-only page even when a thought is interrupted', () => {
+    const message: ChatMessage = {
+      role: 'Assistant',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      inProgress: false,
+      assistant: { id: 'a1', name: 'A' },
+      executionId: null,
+      thoughts: [
+        {
+          id: 'thought-1',
+          author_name: 'search_confluence',
+          author_type: 'Tool',
+          message: 'Tool call is waiting for user approval.',
+          in_progress: false,
+          error: false,
+          interrupted: true,
+          aborted: false,
+        },
+      ],
+    }
+    mockChatsStore.currentChat.isWorkflow = false
+    mockChatsStore.currentChat.history = [[message]]
+    mockChatContext.isSharedPage = true
+
+    renderMessage(message)
+
+    expect(screen.queryByRole('button', { name: /allow/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /deny/i })).not.toBeInTheDocument()
+  })
 })
 
 describe('ChatAiMessage — tool outputs visibility', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockChatContext.hideToolOutputs = false
+    mockChatContext.isSharedPage = false
   })
 
   it('renders thoughts when hideToolOutputs is false (default)', () => {
@@ -248,6 +314,24 @@ describe('ChatAiMessage — tool outputs visibility', () => {
     )
 
     expect(screen.queryByTestId('thought')).not.toBeInTheDocument()
+  })
+
+  it('still renders an interrupted thought when hideToolOutputs is true', () => {
+    mockChatContext.hideToolOutputs = true
+    const message = createMockMessage({
+      thoughts: [{ ...createMockThought('t1'), interrupted: true }],
+    })
+
+    render(
+      <ChatAiMessage
+        indexes={defaultIndexes}
+        message={message}
+        totalMessages={1}
+        onChangeMessageIndex={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByTestId('thought')).toBeInTheDocument()
   })
 
   it('does not render the thoughts container when thoughts array is empty', () => {

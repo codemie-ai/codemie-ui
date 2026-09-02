@@ -158,6 +158,8 @@ export interface Assistant {
 
   // Built-in subagents
   enabled_builtin_subagents?: string[]
+
+  tool_permissions?: { tool_call_policy?: string; allow_override?: boolean }
 }
 
 export interface AgentCardCapabilities {
@@ -482,6 +484,8 @@ export interface CreateAssistantDto {
 
   // Built-in subagents
   enabled_builtin_subagents?: string[]
+
+  tool_permissions?: { tool_call_policy?: string; allow_override?: boolean }
 }
 
 // Tool schema types

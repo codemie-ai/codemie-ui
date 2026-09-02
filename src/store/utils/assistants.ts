@@ -85,5 +85,7 @@ export function transformAssistantToCreateDTO(
     // Built-in subagents
     enabled_builtin_subagents: assistant.enabled_builtin_subagents ?? [],
     // agent_card: assistant.agent_cards
+
+    tool_permissions: assistant.tool_permissions ?? undefined,
   }
 }

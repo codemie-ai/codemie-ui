@@ -15,6 +15,8 @@
 
 import { describe, it, expect, vi } from 'vitest'
 
+import { ToolCallAction } from '@/types/chatGeneration'
+
 import { chatGenerationStore } from '../chatGeneration'
 
 vi.mock('valtio', () => ({
@@ -98,5 +100,39 @@ describe('chatGenerationStore._prepareRequestData resume branch', () => {
     const result = chatGenerationStore._prepareRequestData(workflowChat, 'wf-1', data)
 
     expect(result.requestData).toEqual({ file_names: ['encoded-url-1'] })
+  })
+})
+
+describe('chatGenerationStore._prepareRequestData toolCallAction branch', () => {
+  it('routes to the tool-call resume endpoint when toolCallAction is set', () => {
+    const chat = { id: 'chat-1', isWorkflow: false, history: [] } as any
+    const data = {
+      conversationId: 'chat-1',
+      toolCallAction: ToolCallAction.ALLOW,
+      pendingToolCallId: 'call_abc',
+    } as any
+
+    const result = chatGenerationStore._prepareRequestData(chat, 'assistant-1', data)
+
+    expect(result.endpoint).toBe('v1/assistants/assistant-1/model/tool-call/resume')
+    expect(result.requestData).toEqual({
+      conversation_id: 'chat-1',
+      action: 'allow',
+      stream: true,
+    })
+  })
+
+  it('routes deny action correctly', () => {
+    const chat = { id: 'chat-1', isWorkflow: false, history: [] } as any
+    const data = {
+      conversationId: 'chat-1',
+      toolCallAction: ToolCallAction.DENY,
+      pendingToolCallId: 'call_xyz',
+    } as any
+
+    const result = chatGenerationStore._prepareRequestData(chat, 'assistant-2', data)
+
+    expect(result.endpoint).toBe('v1/assistants/assistant-2/model/tool-call/resume')
+    expect(result.requestData).toMatchObject({ action: 'deny' })
   })
 })

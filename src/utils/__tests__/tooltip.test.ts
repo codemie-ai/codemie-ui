@@ -64,13 +64,14 @@ describe('setupGlobalTooltip', () => {
   })
 
   it('installs the scoped close behaviour against the rendered tooltip instance', () => {
-    const props = renderedTooltipProps()
+    setupGlobalTooltip()
 
     expect(setupTooltipCloseBehavior).toHaveBeenCalledTimes(1)
 
     const getTooltip = vi.mocked(setupTooltipCloseBehavior).mock.calls[0][0]
     const handle = { isOpen: true, activeAnchor: null, close: vi.fn() }
-    props.ref.current = handle
+    // In React 18, ref is on the element, not in element.props
+    mockRender.mock.calls[0][0].ref.current = handle
 
     expect(getTooltip()).toBe(handle)
   })

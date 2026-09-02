@@ -57,6 +57,9 @@ const mapConversationUpdatePayload = (data: Partial<Conversation>) => {
       case 'imageGenerationModel':
         payload.image_generation_model = value
         break
+      case 'toolCallPolicy':
+        payload.tool_call_policy = value
+        break
       default:
         payload[key] = value
     }

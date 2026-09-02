@@ -835,7 +835,14 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       const data = await response.json()
       assistantsStore.updateRecentAssistant(id, values)
       assistantsStore.assistants = assistantsStore.assistants.map((a) =>
-        a.id === id ? { ...a, name: values.name, icon_url: values.icon_url ?? a.icon_url } : a
+        a.id === id
+          ? {
+              ...a,
+              name: values.name,
+              icon_url: values.icon_url ?? a.icon_url,
+              tool_permissions: values.tool_permissions,
+            }
+          : a
       )
       const pinned = assistantsStore.pinnedAssistants.find((p) => p.id === id)
       if (pinned) {

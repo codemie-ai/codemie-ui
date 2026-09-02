@@ -36,6 +36,7 @@ import { useChatContext } from '@/pages/chat/hooks/useChatContext'
 import { useChatPromptDraft } from '@/pages/chat/hooks/useChatPromptDraft'
 import { useFilePaste } from '@/pages/chat/hooks/useFilePaste'
 import { usePremiumModelTip } from '@/pages/chat/hooks/usePremiumModelTip'
+import { useToolPermissions } from '@/pages/chat/hooks/useToolPermissions'
 import { assistantsStore, userStore } from '@/store'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
@@ -45,6 +46,7 @@ import { cn } from '@/utils/utils'
 import ChatPromptFileUpload from './ChatPromptFileUpload'
 import ChatPromptLlmSelector from './ChatPromptLlmSelector'
 import ChatPromptSkillsButton from './ChatPromptSkillsButton'
+import ChatPromptToolCallPolicy from './ChatPromptToolCallPolicy'
 import ChatPromptVoiceRecorder from './ChatPromptVoiceRecorder'
 import DynamicToolsSettings from './DynamicToolsSettings'
 
@@ -108,7 +110,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
 }) => {
   const editorRef = useRef<EditorRef>(null)
   const { isDark } = useTheme()
-  const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
+  const { currentChat } = useSnapshot(chatsStore)
   const { userData, user } = useSnapshot(userStore)
   const { defaultAssistant } = useSnapshot(assistantsStore)
   const { selectedSkills, isSharedPage, dynamicToolsConfig, canAttachFiles } = useChatContext()
@@ -135,14 +137,22 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   const isInProgress = currentChat?.history.flat().some((m) => m.inProgress)
   const isInterrupted = currentChat?.isInterrupted
   const onAddFiles = resolveFileHandler(canAttachFiles, fileUpload.addFiles)
-
-  const { isPremiumActive } = usePremiumModelTip()
+  const isToolCallPending =
+    !currentChat?.isWorkflow &&
+    !!currentChat?.history
+      .at(-1)
+      ?.at(-1)
+      ?.thoughts?.some((t) => t.interrupted)
+  const isPromptDisabled = !!isInProgress || isToolCallPending
 
   useEffect(() => {
     if (!canAttachFiles && files.length > 0) {
       setFiles([])
     }
   }, [canAttachFiles, files.length])
+
+  const toolPermissions = useToolPermissions()
+  const { isPremiumActive } = usePremiumModelTip()
 
   let promptMode: PromptMode = PROMPT_MODES.DEFAULT
   if (isInterrupted) promptMode = PROMPT_MODES.WORKFLOW_INTERRUPTED
@@ -229,7 +239,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
       editorRef.current?.focus()
   }
 
-  const isVoiceRecorderVisible = !!userData?.stt_support && !isInProgress && !isInterrupted
+  const isVoiceRecorderVisible = !!userData?.stt_support && !isPromptDisabled && !isInterrupted
 
   useEffect(() => {
     editorRef.current?.focus()
@@ -258,7 +268,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
         <div
           className={getBorderWrapperClassName(
             resizable,
-            !!isInterrupted,
+            !!isInterrupted || isToolCallPending,
             isEditorFocused,
             !!isInProgress
           )}
@@ -282,7 +292,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
                 withMentions={!currentChat?.isWorkflow}
                 onChange={setPrompt}
                 onAddFiles={onAddFiles}
-                disabled={!!isInProgress}
+                disabled={isPromptDisabled}
                 onSubmit={handleSubmit}
                 onFocusChange={setIsEditorFocused}
                 onEditorLoad={setupPasteHandler}
@@ -297,19 +307,30 @@ const ChatPrompt: FC<ChatPromptProps> = ({
               onKeyDown={handleKeyDown}
               className="flex justify-between items-center pl-2"
             >
-              <div className={cn('flex items-center gap-2', isInProgress && 'opacity-60')}>
-                {canAttachFiles && (
+              <div className={cn('flex items-center gap-2', isPromptDisabled && 'opacity-60')}>
+                {assistantFeatures.fileAttachment && canAttachFiles && (
                   <ChatPromptFileUpload {...fileUpload} files={files} />
                 )}
                 {!currentChat?.isWorkflow && !isSharedPage && (
                   <>
-                    {assistantFeatures.tools && <DynamicToolsSettings disabled={!!isInProgress} />}
+                    {assistantFeatures.tools && (
+                      <DynamicToolsSettings disabled={isPromptDisabled} />
+                    )}
                     {assistantFeatures.modelSelector && (
-                      <ChatPromptLlmSelector disabled={!!isInProgress} />
+                      <ChatPromptLlmSelector disabled={isPromptDisabled} />
                     )}
                     {assistantFeatures.skills && (
-                      <ChatPromptSkillsButton disabled={!!isInProgress} />
+                      <ChatPromptSkillsButton disabled={isPromptDisabled} />
                     )}
+                    {assistantFeatures.tools &&
+                      toolPermissions.loaded &&
+                      toolPermissions.allowOverride && (
+                        <ChatPromptToolCallPolicy
+                          policy={toolPermissions.policy}
+                          disabled={isPromptDisabled}
+                          onChange={toolPermissions.setPolicy}
+                        />
+                      )}
                   </>
                 )}
               </div>
@@ -325,7 +346,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
 
                 {isVoiceRecorderVisible && <div className="bg-border-primary h-4 w-px mr-4 ml-2" />}
 
-                {isInProgress ? (
+                {isInProgress && (
                   <Button
                     aria-label="Stop generation"
                     size={ButtonSize.LARGE}
@@ -333,7 +354,8 @@ const ChatPrompt: FC<ChatPromptProps> = ({
                   >
                     <StopSvg className={cn(isDark && 'text-white')} />
                   </Button>
-                ) : (
+                )}
+                {!isInProgress && !isToolCallPending && (
                   <Button
                     disabled={!canSubmit}
                     onClick={handleSubmit}

@@ -18,6 +18,11 @@ import type { InteractiveResponse } from '@/types/entity/interactive'
 
 export type { Thought }
 
+export enum ToolCallAction {
+  ALLOW = 'allow',
+  DENY = 'deny',
+}
+
 export interface StreamChunk {
   timeElapsed: number | null
   tokensUsed: number | null
@@ -82,6 +87,7 @@ export interface ChatRequest {
   executionId?: string
   workflowId?: string
   interactiveResponse?: InteractiveResponse
+  toolCallAction?: ToolCallAction
 }
 
 export interface ChatRequestInput {

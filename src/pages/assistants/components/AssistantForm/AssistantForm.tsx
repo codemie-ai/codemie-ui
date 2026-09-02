@@ -35,8 +35,12 @@ import Switch from '@/components/form/Switch'
 import GuardrailAssignmentPanel from '@/components/guardrails/GuardrailAssignmentPanel/GuardrailAssignmentPanel'
 import { guardrailAssignmentsSchema } from '@/components/guardrails/GuardrailAssignmentPanel/schemas/guardrailAssignmentSchema'
 import SkillSelector from '@/components/SkillSelector'
+import ToolCallPolicyDropdown, {
+  ToolCallPolicy,
+} from '@/components/ToolCallPolicyDropdown/ToolCallPolicyDropdown'
 import { SYSTEM_PROMPT_VARIABLES } from '@/constants'
-import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
+import { ASSISTANT_INDEX_SCOPES, AssistantType } from '@/constants/assistants'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { FormIDs } from '@/constants/formIds'
 import { MAX_SKILLS_PER_ASSISTANT } from '@/constants/skills'
 import { useFeatureFlag, useRequestHedgingEnabled } from '@/hooks/useFeatureFlags'
@@ -62,6 +66,7 @@ import {
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { Provider } from '@/types/entity/provider'
+import { isFeatureEnabled } from '@/utils/featureFlags'
 import { SETTING_TYPE_USER } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
@@ -77,6 +82,7 @@ import HedgingConfigField from './components/HedgingConfig'
 import InteractiveFeaturesAccordion from './components/InteractiveFeaturesAccordion'
 import RefineWithAIPromptPopup from './components/RefineWithAIPromptPopup'
 import ToolsConfiguration from './components/Toolkits/ToolsConfiguration'
+import { TOOL_PERMISSIONS_LABEL } from './constants'
 import { useRefineAIRecommendations } from './hooks/useRefineAIRecommendations'
 
 export const MAX_CATEGORIES = 3
@@ -183,6 +189,8 @@ const formSchema = Yup.object()
       .default([]),
 
     enabled_builtin_subagents: Yup.array().of(Yup.string()).default([]),
+    tool_call_policy: Yup.string().default(ToolCallPolicy.AUTO_APPROVE),
+    allow_override: Yup.boolean().default(false),
   })
   .shape(guardrailAssignmentsSchema)
 
@@ -218,7 +226,9 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     ref
   ) => {
     const [isRequestHedgingEnabled] = useRequestHedgingEnabled()
+    const isCodemieAssistant = !assistant?.type || assistant.type === AssistantType.CODEMIE
     const { builtinSubagentsCatalog, getBuiltinSubagentsCatalog } = useSnapshot(assistantsStore)
+    const toolPermissionsEnabled = isFeatureEnabled(FEATURE_FLAGS.TOOL_PERMISSIONS)
     const [toolkits, setToolkits] = useState<AssistantToolkit[]>(assistant?.toolkits ?? [])
     const [mcpServers, setMcpServers] = useState<MCPServerDetails[]>(assistant?.mcp_servers ?? [])
     const [hedgeableToolkits, setHedgeableToolkits] = useState<AssistantToolkit[]>([])
@@ -298,6 +308,9 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           guardrail_assignments: assistant?.guardrail_assignments ?? [],
           skill_ids: assistant?.skills?.map((s) => s.id) ?? [],
           enabled_builtin_subagents: assistant?.enabled_builtin_subagents ?? [],
+          tool_call_policy:
+            assistant?.tool_permissions?.tool_call_policy ?? ToolCallPolicy.AUTO_APPROVE,
+          allow_override: assistant?.tool_permissions?.allow_override ?? false,
         },
       })
     const { errors } = formState
@@ -337,7 +350,16 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         delete preparedValues.tools_tokens_size_limit
       else preparedValues.tools_tokens_size_limit = Number(preparedValues.tools_tokens_size_limit)
 
-      return preparedValues
+      return {
+        ...preparedValues,
+        tool_permissions:
+          isCodemieAssistant && toolPermissionsEnabled
+            ? {
+                tool_call_policy: values.tool_call_policy,
+                allow_override: !!values.allow_override,
+              }
+            : assistant?.tool_permissions,
+      }
     }
 
     const { attemptFormClose, unblockTransition, blockTransition } = useUnsavedChanges({
@@ -469,6 +491,47 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         context: false,
       })
     }
+
+    const renderRequireConfirmation = () => (
+      // role="none" removes implicit div semantics; onClick/onKeyDown only stop
+      // propagation to the parent accordion item, not for user interaction.
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+      <div
+        role="none"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2"
+      >
+        <Controller
+          name="tool_call_policy"
+          control={control}
+          render={({ field }) => (
+            <div className="flex flex-nowrap items-center gap-2">
+              <span className="text-sm text-text-tertiary shrink-0">{TOOL_PERMISSIONS_LABEL}</span>
+              <ToolCallPolicyDropdown
+                value={field.value as ToolCallPolicy}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            </div>
+          )}
+        />
+        <Controller
+          name="allow_override"
+          control={control}
+          render={({ field }) => (
+            <Switch
+              label="Allow to override"
+              hint="When enabled, users can change the tool call policy for this assistant in their chat session."
+              value={!!field.value}
+              onChange={(e) => field.onChange(e.target.checked)}
+              onBlur={field.onBlur}
+              labelClassName="text-sm"
+            />
+          )}
+        />
+      </div>
+    )
 
     const handleRefineWithAI = () => {
       setShowRefinePromptPopup(true)
@@ -810,6 +873,9 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             onMcpServersChange={handleMcpServersChange}
             showNewIntegrationPopup={showNewIntegrationPopup}
             isAIGenerated={aiGeneratedFieldMarkers.toolkits}
+            renderTitleExtra={
+              isCodemieAssistant && toolPermissionsEnabled ? renderRequireConfirmation : undefined
+            }
           />
 
           {isRequestHedgingEnabled && (

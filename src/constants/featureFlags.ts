@@ -32,6 +32,7 @@ export const FEATURE_FLAGS = {
   PROJECT_CHARGEBACK: 'features:projectChargeback',
   SUB_WORKFLOW: 'features:subWorkflow',
   COST_CENTERS: 'features:costCenters',
+  TOOL_PERMISSIONS: 'features:tool_permissions',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

@@ -111,7 +111,7 @@ const Switch = forwardRef<HTMLInputElement, SwitchProps>(
           <span className="flex items-center gap-1">
             <span
               className={cn(
-                'text-xs text-text-tertiary group-hover:text-border-accent group-has-[*:focus-visible]:text-border-accent transition',
+                'text-xs text-text-tertiary group-hover:text-border-accent group-has-[*:focus-visible]:text-border-accent transition select-none',
                 styledDisabled &&
                   disabled &&
                   'opacity-65 group-hover:text-text-tertiary group-has-[*:focus-visible]:text-text-tertiary',

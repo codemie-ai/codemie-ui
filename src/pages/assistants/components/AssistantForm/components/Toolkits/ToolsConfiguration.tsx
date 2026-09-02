@@ -60,6 +60,7 @@ interface ToolsConfigurationProps {
   showMcpServers?: boolean
   isAIGenerated?: boolean
   renderHint?: () => React.ReactNode
+  renderTitleExtra?: () => React.ReactNode
   description?: string
   availableToolsDescription?: string
   showWrapper?: boolean
@@ -78,6 +79,7 @@ const ToolsConfiguration = ({
   showMcpServers = true,
   isAIGenerated = false,
   renderHint,
+  renderTitleExtra,
   description = DEFAULT_TOOLS_DESCRIPTION,
   availableToolsDescription,
   showWrapper = true,
@@ -270,7 +272,16 @@ const ToolsConfiguration = ({
     <div data-onboarding="assistant-tools-configuration-accordion">
       <Accordion
         title={<span className="flex items-center gap-2">Tools configuration{renderHint?.()}</span>}
-        description={description}
+        description={
+          renderTitleExtra ? (
+            <>
+              <p className="text-sm text-text-quaternary">{description}</p>
+              {renderTitleExtra()}
+            </>
+          ) : (
+            description
+          )
+        }
         defaultOpen={true}
         isAIGenerated={isAIGenerated}
       >

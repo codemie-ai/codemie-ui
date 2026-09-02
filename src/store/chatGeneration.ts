@@ -18,7 +18,12 @@ import { proxy, ref } from 'valtio'
 import { ROLE_USER } from '@/constants'
 import { GENERATION_CANCELLED_MESSAGE } from '@/constants/chats'
 import { WORKFLOW_STATE_EVENT_INTERRUPTED, WORKFLOW_STATUSES } from '@/constants/workflows'
-import { ChatRequest, HistoryMessage, ChatGenerationOptions } from '@/types/chatGeneration'
+import {
+  ChatRequest,
+  HistoryMessage,
+  ChatGenerationOptions,
+  ToolCallAction,
+} from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
 import { Conversation, ChatMessage, Thought } from '@/types/entity/conversation'
 import type { InteractiveResponse } from '@/types/entity/interactive'
@@ -94,6 +99,7 @@ interface ChatGenerationStoreType {
     displayText: string,
     replaceHistoryIndex?: number
   ) => Promise<void>
+  resumeToolCall: (thoughtId: string, action: ToolCallAction) => Promise<void>
   resumeWorkflowExecution: (userInput?: string, fileNames?: string[]) => Promise<void>
   abortWorkflowChat: (chatId: string) => Promise<void>
   updateWorkflowChatOutput: (chatId: string, output: string) => Promise<{ message: string } | void>
@@ -379,6 +385,16 @@ const getAuthenticatingPromptIdsFromChat = (chat: Conversation): string[] => {
   return [...authConfigIds]
 }
 
+const buildPendingChatUpdates = (
+  llmModel: Conversation['llmModel'],
+  toolCallPolicy: Conversation['toolCallPolicy']
+): Partial<Conversation> => {
+  const updates: Partial<Conversation> = {}
+  if (llmModel) updates.llmModel = llmModel
+  if (toolCallPolicy) updates.toolCallPolicy = toolCallPolicy
+  return updates
+}
+
 export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   chatAbortControllers: {},
 
@@ -403,6 +419,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
     if (chatsStore.isNewChat) {
       const pendingLlmModel = chat.llmModel
+      const pendingToolCallPolicy = chat.toolCallPolicy
       await chatsStore.createChat()
       const newId = chatsStore.currentChat!.id
       const userId = userStore.user?.userId
@@ -410,7 +427,10 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         saveChatTools(userId, newId, dynamicToolsConfig ?? DEFAULT_TOOLS_CONFIG)
         saveChatSkills(userId, newId, skillIds ?? [])
       }
-      if (pendingLlmModel) await chatsStore.updateChat(newId, { llmModel: pendingLlmModel })
+      const pendingUpdates = buildPendingChatUpdates(pendingLlmModel, pendingToolCallPolicy)
+      if (Object.keys(pendingUpdates).length) {
+        await chatsStore.updateChat(newId, pendingUpdates)
+      }
       return chatGenerationStore.createChatGeneration(options)
     }
 
@@ -824,6 +844,46 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     return chatGenerationStore._sendRequest(chat, lastHistoryIndex, lastMessageIndex, data)
   },
 
+  async resumeToolCall(thoughtId: string, action: ToolCallAction): Promise<void> {
+    const chat = chatsStore.currentChat
+    if (!chat) return Promise.resolve()
+
+    const lastHistoryIndex = chat.history.length - 1
+    if (lastHistoryIndex < 0 || !chat.history[lastHistoryIndex]?.length) return Promise.resolve()
+    const lastMessageIndex = chat.history[lastHistoryIndex].length - 1
+    const lastHistoryItem = chat.history[lastHistoryIndex][lastMessageIndex]
+
+    const targetThought = lastHistoryItem.thoughts?.find((t) => t.id === thoughtId && t.interrupted)
+    if (!targetThought) return Promise.resolve()
+
+    targetThought.interrupted = false
+    targetThought.in_progress = true
+
+    lastHistoryItem.inProgress = true
+
+    const data: ChatRequest = {
+      conversationId: chat.id,
+      toolCallAction: action,
+      text: null,
+      contentRaw: '',
+      file_names: [],
+      llmModel: null,
+      history: [],
+      historyIndex: null,
+      mcpServerSingleUsage: false,
+      workflowExecutionId: null,
+      stream: true,
+      topK: 10,
+      systemPrompt: '',
+      backgroundTask: false,
+      metadata: null,
+      toolsConfig: [],
+      outputSchema: null,
+    }
+
+    return chatGenerationStore._sendRequest(chat, lastHistoryIndex, lastMessageIndex, data)
+  },
+
   async abortWorkflowChat(chatId) {
     try {
       const chat = chatsStore.currentChat
@@ -1114,6 +1174,17 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   _prepareRequestData(chat, entityId, data) {
+    if (data.toolCallAction) {
+      return {
+        endpoint: `v1/assistants/${entityId}/model/tool-call/resume`,
+        requestData: {
+          conversation_id: data.conversationId,
+          action: data.toolCallAction,
+          stream: true,
+        },
+      }
+    }
+
     if (!chat.isWorkflow) {
       return {
         endpoint: `v1/assistants/${entityId}/model`,
@@ -1380,7 +1451,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const existingThought = chatGenerationStore._findThought(historyItem.thoughts, thought.id!)
 
     if (existingThought) {
-      existingThought.message += thought.message ?? ''
+      if (existingThought.interrupted) {
+        existingThought.message = thought.message ?? ''
+      } else {
+        existingThought.message += thought.message ?? ''
+      }
       existingThought.input_text = thought.input_text ?? existingThought.input_text
       existingThought.author_name = thought.author_name ?? existingThought.author_name
       existingThought.tool_name = thought.tool_name ?? existingThought.tool_name

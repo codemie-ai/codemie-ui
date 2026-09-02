@@ -13,9 +13,20 @@
 // limitations under the License.
 //
 
-import { FC, useMemo, useState, useRef, KeyboardEvent, useLayoutEffect, ReactNode } from 'react'
+import {
+  FC,
+  Fragment,
+  useMemo,
+  useState,
+  useRef,
+  KeyboardEvent,
+  useLayoutEffect,
+  ReactNode,
+} from 'react'
 import { useSnapshot } from 'valtio'
 
+import CheckSvg from '@/assets/icons/check.svg?react'
+import CrossSvg from '@/assets/icons/cross.svg?react'
 import ProcessingCompleteSvg from '@/assets/icons/processing-status.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import Button from '@/components/Button'
@@ -26,6 +37,7 @@ import { AvatarType } from '@/constants/avatar'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
+import { ToolCallAction } from '@/types/chatGeneration'
 import { ChatMessage } from '@/types/entity/conversation'
 import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
@@ -227,13 +239,37 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
           {isInProgress && <ThinkingLoader />}
         </div>
 
-        {!hideToolOutputs && !!message?.thoughts?.length && (
-          <div className="flex flex-col gap-2 mt-2">
-            {message.thoughts.map((thought) => (
-              <Thought key={thought.id} thought={thought} />
-            ))}
-          </div>
-        )}
+        <div className="flex flex-col gap-2 mt-2">
+          {message?.thoughts?.map((thought) => (
+            <Fragment key={thought.id}>
+              {(!hideToolOutputs || thought.interrupted) && <Thought thought={thought} />}
+              {thought.interrupted && !currentChat?.isWorkflow && !isSharedPage && (
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type={ButtonType.DELETE}
+                    size={ButtonSize.MEDIUM}
+                    onClick={() =>
+                      chatGenerationStore.resumeToolCall(thought.id, ToolCallAction.DENY)
+                    }
+                  >
+                    <CrossSvg className="w-4 h-4" />
+                    Deny
+                  </Button>
+                  <Button
+                    type={ButtonType.PRIMARY}
+                    size={ButtonSize.MEDIUM}
+                    onClick={() =>
+                      chatGenerationStore.resumeToolCall(thought.id, ToolCallAction.ALLOW)
+                    }
+                  >
+                    <CheckSvg className="w-4 h-4" />
+                    Allow
+                  </Button>
+                </div>
+              )}
+            </Fragment>
+          ))}
+        </div>
 
         {isEditing && (
           <textarea
