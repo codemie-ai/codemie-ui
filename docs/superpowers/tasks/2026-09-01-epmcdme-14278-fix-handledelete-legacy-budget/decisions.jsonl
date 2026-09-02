@@ -1,0 +1,1 @@
+{"ts":"2026-09-01T10:49:37Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"User accepted generic store error toast; partial-failure reload already covered by currentGroupId guard in finally","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

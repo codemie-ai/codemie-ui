@@ -107,19 +107,26 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
   }, [currentGroupId, loadBudgets])
 
   const handleDelete = useCallback(async () => {
-    if (!currentGroupId) return
     setGroupActionRunning(true)
+    let deletionOk = false
     try {
-      await projectBudgetsStore.deleteProjectBudgetGroup(currentGroupId)
+      if (currentGroupId) {
+        await projectBudgetsStore.deleteProjectBudgetGroup(currentGroupId)
+      } else {
+        await Promise.all(budgets.map((b) => projectBudgetsStore.deleteProjectBudget(b.budget_id)))
+      }
+      deletionOk = true
       toaster.info('Project budget deleted')
-      await loadBudgets()
     } catch {
       // error already handled by store
     } finally {
+      if (deletionOk || !currentGroupId) {
+        await loadBudgets()
+      }
       setGroupActionRunning(false)
       setGroupConfirmAction(null)
     }
-  }, [currentGroupId, loadBudgets])
+  }, [currentGroupId, budgets, loadBudgets])
 
   const handleGroupRebalance = useCallback(async () => {
     if (!currentGroupId) return

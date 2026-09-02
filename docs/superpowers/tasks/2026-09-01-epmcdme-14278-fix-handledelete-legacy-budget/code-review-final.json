@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "One patch finding: Promise.all fails fast on the new per-budget legacy deletion path, silently leaving earlier deletions committed while later ones are skipped, with no partial-success signal for the user. One edge candidate dismissed (empty-budgets no-group scenario is unreachable through the UI — the Delete menu item is gated by budgets.length > 0). No spec; no standards check (intentional for this profile).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Not checked — standards_expected: false for this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Not checked — standards_expected: false for this profile." },
+    { "kind": "security", "status": "na", "notes": "Not checked — standards_expected: false for this profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx",
+      "line": 115,
+      "title": "Promise.all fails fast on partial per-budget deletion",
+      "problem": "The legacy deletion path calls Promise.all(budgets.map(...deleteProjectBudget...)). If any individual deletion rejects, Promise.all short-circuits: budgets already deleted are not reversed and budgets not yet started are never attempted, producing a split state with no record of which deletions succeeded.",
+      "impact": "On partial failure the UI reloads correctly (the !currentGroupId guard in finally ensures loadBudgets runs and the list reflects reality), but the user receives only the store's generic error toast. There is no indication of how many budgets were deleted versus how many failed, making recovery guesswork for a project with multiple legacy budgets.",
+      "recommendation": "Replace Promise.all with Promise.allSettled. After settlement, separate fulfilled from rejected results and emit a toast indicating how many budgets were deleted and how many failed. The loadBudgets() call in finally already handles the UI refresh."
+    }
+  ]
+}

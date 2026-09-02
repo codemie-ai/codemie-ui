@@ -1,0 +1,12 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 (Promise.all partial-failure UX) accepted as-is. The UI reloads correctly via the !currentGroupId guard in finally; the store's generic error toast is sufficient for this edge case. No fix-up round was needed.",
+  "confidence": "low",
+  "findings": [
+    {
+      "id": "CR-001",
+      "outcome": "accepted",
+      "notes": "User accepted generic store error toast; partial-failure reload already covered by !currentGroupId guard in finally."
+    }
+  ]
+}

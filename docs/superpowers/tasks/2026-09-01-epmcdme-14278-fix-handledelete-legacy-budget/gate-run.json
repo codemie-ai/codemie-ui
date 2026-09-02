@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14278_fix-handledelete-legacy-budget",
+  "head": "65828cd7d08ca265fb17e8950555af4a3c54af72",
+  "runner": "npm",
+  "started_at": "2026-09-01T00:00:00.000Z",
+  "completed_at": "2026-09-01T00:00:00.000Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": null,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Auto-fix applied first (npm run lint:fix, exit 0). All failures were pre-existing keycloak JS files unrelated to the changed .tsx file; auto-fix resolved them. Re-run passed with exit 0."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": null,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": null,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency added, removed, or moved in this diff. Guide skip condition met."
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": null,
+      "command": "npm run secrets:check",
+      "exit_code": null,
+      "notes": "Skipped by user request. This gate also runs in the pre-commit hook and as the CI gitleaks-scan job; those runs are authoritative."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": null,
+      "command": "npm run test:unit",
+      "exit_code": null,
+      "notes": "Not run — skipped by user request. Must pass before opening an MR."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": null,
+      "command": "npm run test:integration",
+      "exit_code": null,
+      "notes": "Not run — skipped by user request. Must pass before opening an MR."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": null,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 1921 files, 0 missing license headers."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": null,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Only meaningful during git commit with staged files. Cannot run outside a commit context."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": null,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Skipping Sonar scan because SONAR_TOKEN is not set. Set SONAR_TOKEN to enable local SonarQube analysis; CI enforces this independently."
+    }
+  ],
+  "failures": {}
+}

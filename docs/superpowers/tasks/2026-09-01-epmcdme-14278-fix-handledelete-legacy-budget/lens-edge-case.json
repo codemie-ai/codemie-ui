@@ -1,0 +1,22 @@
+[
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx:115",
+    "trigger_condition": "handleDelete called when !currentGroupId and budgets is empty array",
+    "guard_snippet": "if (!currentGroupId && !budgets.length) return",
+    "potential_consequence": "Promise.all([]) resolves; success toast fires with no actual deletion"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx:115",
+    "trigger_condition": "one deleteProjectBudget call rejects while earlier calls already resolved",
+    "guard_snippet": "const results = await Promise.allSettled(budgets.map(...)); handle rejections separately",
+    "potential_consequence": "Some budgets silently deleted; user sees only generic error, no partial-success signal"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx:109 (removed)",
+    "trigger_condition": "early-return guard `if (!currentGroupId) return` enforced no-op when no group present",
+    "guard_snippet": "add `if (!currentGroupId && !budgets.length) return` before setGroupActionRunning",
+    "potential_consequence": "Spinner activates and loadBudgets fires even when there is nothing to delete",
+    "kind": "deletion",
+    "confidence": "medium"
+  }
+]
