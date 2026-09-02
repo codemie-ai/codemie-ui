@@ -32,7 +32,7 @@ import { userStore } from '@/store/user'
 import {
   BUDGET_CATEGORY_OPTIONS,
   Budget,
-  BudgetCategory,
+  BudgetCategoryFilter,
   BudgetPayload,
   getBudgetCategoryLabel,
 } from '@/types/entity/budget'
@@ -93,7 +93,10 @@ const columnDefinitions: ColumnDefinition[] = [
   },
 ]
 
-const categoryFilterOptions = [{ label: 'All categories', value: '' }, ...BUDGET_CATEGORY_OPTIONS]
+const categoryFilterOptions = [
+  { label: 'All categories', value: 'all' },
+  ...BUDGET_CATEGORY_OPTIONS,
+]
 
 const renderBudgetNameCell = (item: Budget) => (
   <span id={`budget-mgmt-name-${item.budget_id}`}>{item.name}</span>
@@ -108,7 +111,7 @@ const BudgetsManagementPage: FC = () => {
   const isAuditor = currentUser?.isAuditor ?? false
   const canViewBudgets = isAdmin || isMaintainer || isAuditor
   const canManageBudgets = isMaintainer
-  const [category, setCategory] = useState<BudgetCategory | ''>('')
+  const [category, setCategory] = useState<BudgetCategoryFilter>('all')
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [showModal, setShowModal] = useState(false)
 
@@ -125,7 +128,7 @@ const BudgetsManagementPage: FC = () => {
         .listBudgets({
           page: page ?? budgetsStore.pagination.page,
           perPage: perPage ?? budgetsStore.pagination.perPage,
-          category: category || null,
+          category: category === 'all' ? null : category,
         })
         .catch((error) => {
           console.error('Failed to load budgets:', error)
@@ -266,7 +269,7 @@ const BudgetsManagementPage: FC = () => {
           label="Category"
           value={category}
           options={categoryFilterOptions}
-          onChangeValue={(value) => setCategory((value || '') as BudgetCategory | '')}
+          onChangeValue={(value) => setCategory((value ?? 'all') as BudgetCategoryFilter)}
         />
       </div>
 

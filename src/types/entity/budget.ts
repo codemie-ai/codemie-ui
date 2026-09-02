@@ -14,6 +14,7 @@
 //
 
 export type BudgetCategory = 'platform' | 'cli' | 'premium_models'
+export type BudgetCategoryFilter = BudgetCategory | 'all'
 
 export interface Budget {
   budget_id: string

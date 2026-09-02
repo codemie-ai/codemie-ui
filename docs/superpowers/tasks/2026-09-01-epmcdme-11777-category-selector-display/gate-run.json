@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-11777-category-selector-display",
+  "head": "e167dd2793d224ca7b0a3bb6713bb37ea2df3191",
+  "runner": "npm",
+  "started_at": "2026-09-01T00:00:00.000Z",
+  "completed_at": "2026-09-01T00:05:00.000Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 15000,
+      "command": "npm run lint",
+      "exit_code": 1,
+      "notes": "690 errors in pre-existing Keycloak theme JS files (menu-button-links.js, rfc4648.js, kcMultivalued.js, etc.) that are NOT changed by this branch. Running ESLint on only the 5 changed src/ files exits 0 with no issues. Auto-fix (npm run lint:fix) ran and re-lint still exits 1 — errors are non-auto-fixable logic rules (no-var, vars-on-top, no-bitwise, etc.). Pre-existing failure unrelated to this branch."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 18000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependencies added, removed, or moved in this branch diff."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run secrets:check",
+      "exit_code": null,
+      "notes": "Skipped per user scope reduction request. Runs automatically in pre-commit hook and as gitleaks-scan in CI pipeline."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test:unit",
+      "exit_code": null,
+      "notes": "Skipped per user scope reduction request."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test:integration",
+      "exit_code": null,
+      "notes": "Skipped per user scope reduction request."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Skipped per user scope reduction request. No staged files present; runs automatically on git commit via Husky pre-commit hook."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run license-headers:check",
+      "exit_code": null,
+      "notes": "Skipped per user scope reduction request. Runs automatically on git commit via Husky pre-commit hook."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Skipped per user scope reduction request. Requires running SonarQube instance. Runs automatically on git commit via Husky pre-commit hook."
+    }
+  ],
+  "failures": {
+    "lint": "ESLint: 690 errors, 4 warnings in 12 files\nTop rules: @stylistic/semi (412x), quotes (155x), no-var (26x), vars-on-top (25x), no-bitwise (18x)\nTop files: menu-button-links.js (177 issues), rfc4648.js (160 issues), kcMultivalued.js (73 issues), webauthnRegister.js (69 issues), webauthnAuthenticate.js (54 issues)\nNOTE: All failures are in Keycloak theme JS files not touched by this branch. Changed src/ files: ESLint exits 0 with no issues."
+  }
+}

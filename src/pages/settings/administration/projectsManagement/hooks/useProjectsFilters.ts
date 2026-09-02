@@ -15,7 +15,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-import { BudgetCategory, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
+import {
+  BudgetCategory,
+  BudgetCategoryFilter,
+  BUDGET_CATEGORY_OPTIONS,
+} from '@/types/entity/budget'
 import { FILTER_ENTITY, FilterKeys, getFilters, setFilters } from '@/utils/filters'
 
 const PROJECT_FILTER_KEYS: FilterKeys = {
@@ -33,8 +37,8 @@ interface StoredProjectFilters {
 const parseBudgetAssignment = (value: unknown): 'all' | 'assigned' =>
   value === 'assigned' ? 'assigned' : 'all'
 
-const parseBudgetCategory = (value: unknown): BudgetCategory | '' =>
-  BUDGET_CATEGORY_OPTIONS.some((o) => o.value === value) ? (value as BudgetCategory) : ''
+const parseBudgetCategory = (value: unknown): BudgetCategoryFilter =>
+  BUDGET_CATEGORY_OPTIONS.some((o) => o.value === value) ? (value as BudgetCategory) : 'all'
 
 const getInitialFilters = () => {
   const saved = getFilters<StoredProjectFilters>(FILTER_ENTITY.PROJECTS, PROJECT_FILTER_KEYS)
@@ -58,7 +62,7 @@ export const useProjectsFilters = () => {
   const [budgetAssignmentFilter, setBudgetAssignmentFilter] = useState<'all' | 'assigned'>(
     initialAssignment
   )
-  const [budgetCategory, setBudgetCategory] = useState<BudgetCategory | ''>(initialCategory)
+  const [budgetCategory, setBudgetCategory] = useState<BudgetCategoryFilter>(initialCategory)
 
   const isMounted = useRef(false)
 
@@ -70,7 +74,7 @@ export const useProjectsFilters = () => {
     const toStore: StoredProjectFilters = {}
     if (search) toStore.search = search
     if (budgetAssignmentFilter === 'assigned') toStore.budget_assignment = budgetAssignmentFilter
-    if (budgetCategory) toStore.budget_category = budgetCategory
+    if (budgetCategory !== 'all') toStore.budget_category = budgetCategory
     setFilters(FILTER_ENTITY.PROJECTS, toStore)
   }, [search, budgetAssignmentFilter, budgetCategory])
 
@@ -80,7 +84,7 @@ export const useProjectsFilters = () => {
     []
   )
   const handleSetBudgetCategory = useCallback(
-    (value: BudgetCategory | '') => setBudgetCategory(value),
+    (value: BudgetCategoryFilter) => setBudgetCategory(value),
     []
   )
 

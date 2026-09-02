@@ -47,7 +47,7 @@ describe('useProjectsFilters', () => {
     const { result } = renderHook(() => useProjectsFilters())
     expect(result.current.search).toBe('')
     expect(result.current.budgetAssignmentFilter).toBe('all')
-    expect(result.current.budgetCategory).toBe('')
+    expect(result.current.budgetCategory).toBe('all')
   })
 
   it('restores search from localStorage', () => {

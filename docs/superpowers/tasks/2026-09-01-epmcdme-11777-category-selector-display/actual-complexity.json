@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-09-01T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 5,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three components modified: BudgetsManagementPage (new category Select + state), ProjectsManagementFull (new budget-category Select in filter bar), and useProjectsFilters hook (new budgetCategory state + localStorage persistence). Pattern is clear and self-contained within the administration feature area."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "5 files changed (2 modified page components, 1 modified hook, 2 new test files); 81 insertions and 14 deletions. Lands in the M bracket (4-6 files). Calibration anchor epmcdme-10102 scored S at 3 files; 5 files with 2 new test files is one step wider, placing this at M for this dimension."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

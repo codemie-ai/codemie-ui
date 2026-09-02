@@ -1,0 +1,14 @@
+[
+  {
+    "location": "src/pages/settings/administration/BudgetsManagementPage.tsx:269",
+    "trigger_condition": "onChangeValue receives '' (falsy non-null string); ?? 'all' does not intercept it",
+    "guard_snippet": "setCategory((value == null || value === '' ? 'all' : value) as BudgetCategory | 'all')",
+    "potential_consequence": "'' reaches API as category value; old '|| null' boundary guard was removed at line 131"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx:149",
+    "trigger_condition": "onChangeValue receives '' (falsy non-null string); ?? 'all' does not intercept it",
+    "guard_snippet": "setBudgetCategory((value == null || value === '' ? 'all' : value) as BudgetCategory | 'all')",
+    "potential_consequence": "'' reaches API as budgetCategory; old '|| null' boundary guard was removed at line 185"
+  }
+]

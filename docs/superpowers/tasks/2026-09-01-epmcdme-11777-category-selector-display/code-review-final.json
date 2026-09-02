@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Both edge-case candidates flag the `?? 'all'` guard not intercepting '' (empty string), but the path is unreachable: no option carries value '' post-fix, Select's extractValue normalises null/undefined before the handler fires, showClear is absent on both selects, and useProjectsFilters.parseBudgetCategory normalises any persisted '' to 'all' on load. 2 candidates dismissed as noise; no spec present, confidence capped at low.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "standards not expected — compact profile, no guide" },
+    { "kind": "code-quality", "status": "na", "notes": "standards not expected — compact profile, no guide" },
+    { "kind": "security", "status": "na", "notes": "standards not expected — compact profile, no guide" }
+  ],
+  "findings": []
+}

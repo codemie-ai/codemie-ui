@@ -43,7 +43,7 @@ import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
-import { BudgetCategory, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
+import { BudgetCategoryFilter, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
 import { Project, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import { formatCurrency, formatSpend } from '@/utils/currency'
@@ -77,7 +77,7 @@ const budgetAssignmentFilterOptions = [
 ]
 
 const budgetCategoryFilterOptions = [
-  { label: 'All categories', value: '' },
+  { label: 'All categories', value: 'all' },
   ...BUDGET_CATEGORY_OPTIONS,
 ]
 
@@ -164,7 +164,7 @@ const ProjectsManagementFull: FC = () => {
   const skipPaginationReloadRef = useRef(false)
   const previousBudgetFiltersRef = useRef({
     budgetAssignmentFilter: 'all' as 'all' | 'assigned',
-    budgetCategory: '' as BudgetCategory | '',
+    budgetCategory: 'all' as BudgetCategoryFilter,
   })
 
   const [isUserManagementEnabled] = useUserManagementEnabled()
@@ -182,7 +182,7 @@ const ProjectsManagementFull: FC = () => {
         ? {
             includeBudgets: true,
             hasAssignedBudgets: budgetAssignmentFilter === 'assigned',
-            budgetCategory: budgetCategory || null,
+            budgetCategory: budgetCategory === 'all' ? null : budgetCategory,
           }
         : undefined,
     [isBudgetManagementEnabled, budgetAssignmentFilter, budgetCategory]
@@ -575,7 +575,9 @@ const ProjectsManagementFull: FC = () => {
                   name="budget-category-filter"
                   label="Budget category"
                   value={budgetCategory}
-                  onChangeValue={(value) => setBudgetCategory((value ?? '') as BudgetCategory | '')}
+                  onChangeValue={(value) =>
+                    setBudgetCategory((value ?? 'all') as BudgetCategoryFilter)
+                  }
                   options={budgetCategoryFilterOptions}
                   appendTo={document.body}
                 />
