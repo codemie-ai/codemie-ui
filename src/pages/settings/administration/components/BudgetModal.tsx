@@ -288,6 +288,7 @@ const BudgetModal: FC<BudgetModalProps> = ({ visible, budget, onHide, onSubmit }
             )}
           />
         </div>
+
       </form>
     </Popup>
   )

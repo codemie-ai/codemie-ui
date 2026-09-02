@@ -1,0 +1,52 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two major findings: whitespace-only queries bypass the minimum-length guard and fire unnecessary API calls (CR-001); BudgetModal integration tests are missing for edit pre-population, empty-to-null mapping, and Yup validation in form context (CR-002). All three lenses ran successfully with full parseable output. One deferred finding (unmounted-component setState — pre-existing pattern in the codebase). Eight findings dismissed as noise, speculative, or pre-existing.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "spec", "item": "Budget owner email field added to Budget create/edit modal", "status": "pass", "notes": "BudgetModal.tsx adds <UserEmailAutocomplete id='notification_owner_email' label='Budget owner (soft limit notification)' />"},
+    {"kind": "spec", "item": "Field supports typeahead search over platform user directory (GET /v1/admin/users?search=)", "status": "pass", "notes": "UserEmailAutocomplete calls userStore.searchUsers with 300ms debounce and requestId race-condition guard"},
+    {"kind": "spec", "item": "Free-form email entry allowed (group alias support)", "status": "pass", "notes": "allowNew and allowEmpty passed to Autocomplete; user can commit any typed text on blur"},
+    {"kind": "spec", "item": "Empty string submission clears the owner (sends null to API)", "status": "pass", "notes": "BudgetModal.tsx: ownerEmail = data.notification_owner_email?.trim() || null passed in onSubmit payload"},
+    {"kind": "spec", "item": "Yup validation: valid email format or empty", "status": "pass", "notes": "Yup.string().trim().email('Enter a valid email address').default('').defined() — no .required() so empty string passes the email check"},
+    {"kind": "spec", "item": "Budget and BudgetPayload TypeScript types extended with notification_owner_email?: string | null", "status": "pass", "notes": "Both interfaces updated in src/types/entity/budget.ts"},
+    {"kind": "spec", "item": "On edit, existing notification_owner_email value pre-populated", "status": "pass", "notes": "BudgetModal.tsx initialises form field as budget.notification_owner_email ?? ''"},
+    {"kind": "spec", "item": "Tests cover FE component selection and search scenarios", "status": "partial", "notes": "UserEmailAutocomplete.test.tsx covers standalone component (label, error, min-length, search, suggestions, error-state). No BudgetModal-level tests for pre-populate on edit, empty-to-null mapping, or Yup validation in modal context."},
+    {"kind": "story-ac", "item": "Budget owner selectable from platform users", "status": "pass", "notes": "UserEmailAutocomplete wires userStore.searchUsers with debounce, race-condition guard, name+email row itemTemplate"},
+    {"kind": "story-ac", "item": "Owner stored and returned through budget APIs", "status": "na", "notes": "Backend scope — notification_owner_email on BudgetCreateRequest/BudgetUpdateRequest/BudgetResponse already implemented in merged backend MR"},
+    {"kind": "story-ac", "item": "Owner can be updated by authorized user", "status": "na", "notes": "Backend scope — BudgetUpdateRequest PATCH semantics and maintainer_access_only guard already implemented"},
+    {"kind": "story-ac", "item": "Owner notified when soft limit reached", "status": "na", "notes": "Backend scope — budget_notification_service + EmailService already implemented"},
+    {"kind": "story-ac", "item": "Notification contains context (budget name/id/spend/limit + link)", "status": "na", "notes": "Backend scope — email subject/body construction already implemented"},
+    {"kind": "story-ac", "item": "No owner configured → graceful fallback, existing metric preserved", "status": "na", "notes": "Backend scope — notifier returns silently; send_log_metric unchanged"},
+    {"kind": "story-ac", "item": "Existing soft-limit alerting not broken", "status": "na", "notes": "Backend scope — notifier is additive; no change to metric emission path"},
+    {"kind": "story-ac", "item": "Tests cover selection, update, notification, missing-owner scenarios", "status": "partial", "notes": "FE component tests exist; BudgetModal integration tests (edit pre-populate, empty→null, Yup validation in form context) are absent from diff. Backend test coverage already implemented."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "na", "notes": "Commit messages not available in this review context"},
+    {"kind": "code-quality", "status": "pass", "notes": "TypeScript types correct, React hooks patterns followed, eslint-disable-next-line comments accompanied by explanatory comments"},
+    {"kind": "security", "status": "pass", "notes": "Admin-only form; email values rendered as text content, no unsafe HTML injection; no secrets or credentials in diff"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/UserEmailAutocomplete/UserEmailAutocomplete.tsx",
+      "line": 113,
+      "title": "Whitespace-only query bypasses min-length guard",
+      "problem": "handleSearch checks query.length < MIN_SEARCH_LENGTH but a whitespace-only string like '  ' (length >= 2) passes the guard and triggers runSearch with a semantically empty query.",
+      "impact": "Unnecessary API call to the user search endpoint; the server may return all users or error, and the loading spinner fires for an empty input.",
+      "recommendation": "Replace query.length < MIN_SEARCH_LENGTH with query.trim().length < MIN_SEARCH_LENGTH on the early-return check."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/BudgetModal.tsx",
+      "title": "BudgetModal integration tests missing for notification_owner_email",
+      "problem": "No integration tests cover the three BudgetModal-level behaviors added in this diff: (1) pre-population of notification_owner_email when opening the edit modal for a budget that already has an owner set; (2) the empty-string to null mapping in handleFormSubmit; (3) Yup email validation error displayed in the modal form context.",
+      "impact": "Regressions in edit pre-population, null-clearing on submit, or validation error display will not be caught by CI.",
+      "recommendation": "Add BudgetModal tests (or extend an existing BudgetModal.test.tsx) covering: open edit modal with budget.notification_owner_email set and confirm field is pre-populated; submit with empty field and confirm onSubmit receives notification_owner_email: null; submit with invalid email and confirm validation error message is shown."
+    }
+  ]
+}

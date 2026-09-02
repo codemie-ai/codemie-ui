@@ -19,11 +19,13 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form'
 import * as Yup from 'yup'
 
 import Button from '@/components/Button'
+import { Checkbox } from '@/components/form/Checkbox'
 import Input from '@/components/form/Input'
 import Select from '@/components/form/Select/Select'
 import Textarea from '@/components/form/Textarea/Textarea'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner/Spinner'
+import UserEmailAutocomplete from '@/components/UserEmailAutocomplete'
 import { useFeatureFlag, useProjectChargebackEnabled } from '@/hooks/useFeatureFlags'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { projectsStore } from '@/store/projects'
@@ -61,6 +63,8 @@ interface FormValues {
   budget_duration: string
   total_budget: number
   description: string
+  notification_owner_email: string
+  soft_limit_notify_once: boolean
 }
 
 const schema = Yup.object({
@@ -71,6 +75,12 @@ const schema = Yup.object({
     .positive('Must be greater than 0')
     .required('Total budget is required'),
   description: Yup.string().trim().max(500).default(''),
+  notification_owner_email: Yup.string()
+    .trim()
+    .email('Enter a valid email address')
+    .default('')
+    .defined(),
+  soft_limit_notify_once: Yup.boolean().default(false).defined(),
 })
 
 export interface UnifiedProjectBudgetModalProps {
@@ -138,7 +148,14 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: yupResolver(schema),
-    defaultValues: { name: '', budget_duration: '30d', total_budget: 1000, description: '' },
+    defaultValues: {
+      name: '',
+      budget_duration: '30d',
+      total_budget: 1000,
+      description: '',
+      notification_owner_email: '',
+      soft_limit_notify_once: false,
+    },
   })
 
   const totalBudget = Number(watch('total_budget')) || 0
@@ -207,6 +224,8 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
         budget_duration: plan.budget_duration ?? '30d',
         total_budget: total ?? 1000,
         description: plan.description ?? '',
+        notification_owner_email: plan.notification_owner_email ?? '',
+        soft_limit_notify_once: plan.soft_limit_notify_once ?? false,
       })
       setExistingGroup(plan)
     },
@@ -218,7 +237,14 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     setPcts({ ...DEFAULT_PCTS })
     setSofts({ ...ZERO_PCTS })
     setExistingGroup(null)
-    reset({ name: '', budget_duration: '30d', total_budget: 1000, description: '' })
+    reset({
+      name: '',
+      budget_duration: '30d',
+      total_budget: 1000,
+      description: '',
+      notification_owner_email: '',
+      soft_limit_notify_once: false,
+    })
     if (!projectName || forceCreate) return
     setDataLoading(true)
     projectBudgetsStore
@@ -359,6 +385,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       }
     }
 
+    const ownerEmail = data.notification_owner_email?.trim() || null
     try {
       const categories: Record<BudgetCategory, CategoryBudgetSpec> = {
         platform: { pct: round2(pcts.platform), soft_budget: Math.round(softs.platform) },
@@ -376,6 +403,8 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
           budget_duration: data.budget_duration,
           description: data.description,
           categories,
+          notification_owner_email: ownerEmail,
+          soft_limit_notify_once: data.soft_limit_notify_once,
         })
         toaster.info('Project budget saved')
       } else {
@@ -386,6 +415,8 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
           budget_duration: data.budget_duration,
           description: data.description,
           categories,
+          notification_owner_email: ownerEmail,
+          soft_limit_notify_once: data.soft_limit_notify_once,
         })
         toaster.info('Project budget created')
       }
@@ -490,6 +521,35 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
                   onTotalBlur()
                 }}
                 error={errors.total_budget?.message}
+              />
+            )}
+          />
+
+          <Controller
+            name="notification_owner_email"
+            control={control}
+            render={({ field }) => (
+              <UserEmailAutocomplete
+                id="notification_owner_email"
+                label="Budget owner"
+                hint="Notified by email when this budget reaches its soft limit. Search for a platform user or type any address, including a group alias. Leave empty to disable notifications."
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                error={errors.notification_owner_email?.message}
+              />
+            )}
+          />
+
+          <Controller
+            name="soft_limit_notify_once"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="soft_limit_notify_once"
+                label="Notify only once"
+                labelHint="When enabled, the soft-limit notification email is sent only once per budget edit cycle. It resets when you save the budget."
+                checked={field.value}
+                onChange={field.onChange}
               />
             )}
           />

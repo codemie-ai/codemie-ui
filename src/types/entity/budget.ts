@@ -24,6 +24,10 @@ export interface Budget {
   budget_duration: string
   budget_category: BudgetCategory
   budget_reset_at?: string | null
+  /** Email notified when the soft limit is reached. May be a group alias. */
+  notification_owner_email?: string | null
+  /** When true, the soft-limit email fires only once per budget edit cycle. */
+  soft_limit_notify_once?: boolean
   is_preconfigured?: boolean
   created_by?: string | null
   created_at?: string | null
@@ -38,6 +42,10 @@ export interface BudgetPayload {
   max_budget: number
   budget_duration: string
   budget_category: BudgetCategory
+  /** Email notified when the soft limit is reached. `null` clears it. */
+  notification_owner_email?: string | null
+  /** When true, the soft-limit email fires only once per budget edit cycle. */
+  soft_limit_notify_once?: boolean
 }
 
 export interface BudgetAssignment {

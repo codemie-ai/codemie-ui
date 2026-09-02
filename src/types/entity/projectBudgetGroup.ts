@@ -29,6 +29,8 @@ export interface ProjectBudgetGroupCreatePayload {
   budget_duration: string
   description?: string | null
   categories: Record<BudgetCategory, CategoryBudgetSpec>
+  notification_owner_email?: string | null
+  soft_limit_notify_once?: boolean
 }
 
 export interface CategoryBudgetSpecUpdate {
@@ -43,6 +45,8 @@ export interface ProjectBudgetGroupUpdatePayload {
   budget_duration?: string | null
   description?: string | null
   categories?: Partial<Record<BudgetCategory, CategoryBudgetSpecUpdate>>
+  notification_owner_email?: string | null
+  soft_limit_notify_once?: boolean | null
 }
 
 export interface CategoryBudgetDetail {
@@ -65,6 +69,8 @@ export interface ProjectBudgetGroup {
   budget_duration: string
   total_amount: number
   description?: string | null
+  notification_owner_email?: string | null
+  soft_limit_notify_once?: boolean
   created_by: string
   created_at?: string | null
   updated_at?: string | null

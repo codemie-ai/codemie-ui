@@ -88,13 +88,25 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
       setFilteredOptions(options)
     }, [options])
 
-    // Set initial text value based on selected option.
+    // A change to `value` is authoritative: reset the visible text to match it.
     // When allowNew is enabled, a value that is not one of the options is a
     // valid custom entry, so display it as-is instead of clearing the field.
     useEffect(() => {
       const selectedOption = options.find((option) => option.value === value)
       setTextValue(selectedOption?.label ?? (allowNew ? value ?? '' : ''))
-    }, [value, options, allowNew])
+      // `options` is deliberately excluded — see the effect below.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value, allowNew])
+
+    // Options that arrive later (a remote search, or an async options load) may
+    // resolve the label for an already-selected value, but must NEVER clear the
+    // field: with localFilter={false} the results land while the user is still
+    // typing, and blanking the text would wipe their query mid-search.
+    useEffect(() => {
+      const selectedOption = options.find((option) => option.value === value)
+      if (selectedOption) setTextValue(selectedOption.label)
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [options])
 
     const search = (event: { query: string }) => {
       const query = event.query.toLowerCase()
