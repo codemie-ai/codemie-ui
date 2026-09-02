@@ -32,6 +32,7 @@ export const FEATURE_FLAGS = {
   PROJECT_CHARGEBACK: 'features:projectChargeback',
   SUB_WORKFLOW: 'features:subWorkflow',
   COST_CENTERS: 'features:costCenters',
+  BUDGET_SOFT_LIMIT_NOTIFICATION: 'features:budgetSoftLimitNotification',
   TOOL_PERMISSIONS: 'features:tool_permissions',
 } as const
 

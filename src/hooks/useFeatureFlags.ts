@@ -120,3 +120,7 @@ export const useWorkflowAIEnabled = (): FeatureFlagResult => {
 export const useSubWorkflowEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.SUB_WORKFLOW)
 }
+
+export const useBudgetSoftLimitNotificationEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.BUDGET_SOFT_LIMIT_NOTIFICATION)
+}

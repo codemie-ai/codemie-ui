@@ -26,7 +26,11 @@ import Textarea from '@/components/form/Textarea/Textarea'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner/Spinner'
 import UserEmailAutocomplete from '@/components/UserEmailAutocomplete'
-import { useFeatureFlag, useProjectChargebackEnabled } from '@/hooks/useFeatureFlags'
+import {
+  useBudgetSoftLimitNotificationEnabled,
+  useFeatureFlag,
+  useProjectChargebackEnabled,
+} from '@/hooks/useFeatureFlags'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { projectsStore } from '@/store/projects'
 import { BudgetCategory } from '@/types/entity/budget'
@@ -120,6 +124,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
 
   const [isChargebackFeatureEnabled] = useProjectChargebackEnabled()
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
+  const [isNotificationEnabled] = useBudgetSoftLimitNotificationEnabled()
   const [chargeback, setChargeback] = useState<ChargebackSettingsValue>({
     chargeback_enabled: false,
     chargeback_attribution: 'project',
@@ -545,7 +550,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
             )}
           />
 
-          {!distributionOnly && (
+          {isNotificationEnabled && !distributionOnly && (
             <>
               <Controller
                 name="notification_owner_email"
