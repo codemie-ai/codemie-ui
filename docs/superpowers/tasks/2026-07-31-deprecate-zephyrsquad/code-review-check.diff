@@ -1,0 +1,97 @@
+diff --git a/src/pages/integrations/NewProjectIntegrationPage.tsx b/src/pages/integrations/NewProjectIntegrationPage.tsx
+index 99cfffc38..514968744 100644
+--- a/src/pages/integrations/NewProjectIntegrationPage.tsx
++++ b/src/pages/integrations/NewProjectIntegrationPage.tsx
+@@ -13,7 +13,7 @@
+ // limitations under the License.
+ //
+ 
+-import { useState, useRef } from 'react'
++import { useState, useRef, useEffect } from 'react'
+ 
+ import Button from '@/components/Button'
+ import PageLayout from '@/components/Layouts/Layout'
+@@ -23,7 +23,7 @@ import { INTEGRATIONS } from '@/constants/routes'
+ import { useVueRouter } from '@/hooks/useVueRouter'
+ import { projectSettingsStore } from '@/store/projectSettings'
+ import { navigateBack } from '@/utils/helpers'
+-import { getTestableCredentialTypes } from '@/utils/settings'
++import { getTestableCredentialTypes, isDeprecatedCredentialType } from '@/utils/settings'
+ import toaster from '@/utils/toaster'
+ 
+ import SettingsForm, { SettingsFormRef } from './components/SettingsForm/SettingsForm'
+@@ -32,11 +32,26 @@ import { getErrorMessage } from './utils/getErrorMessage'
+ 
+ const NewProjectIntegrationPage = () => {
+   const router = useVueRouter()
++  const {
++    currentRoute: { value: route },
++  } = router
++  const { query } = route
+ 
+   const formRef = useRef<SettingsFormRef>(null)
+   const [credentialType, setCredentialType] = useState('')
+   const [credentialValues, setCredentialValues] = useState<Record<string, string>>({})
+ 
++  const isDeprecatedRequested = isDeprecatedCredentialType(
++    query.credentialType as string | undefined
++  )
++  useEffect(() => {
++    if (isDeprecatedRequested) {
++      navigateBack(INTEGRATIONS)
++    }
++  }, [isDeprecatedRequested])
++
++  if (isDeprecatedRequested) return null
++
+   const createProjectSetting = async (values: Record<string, unknown>) => {
+     try {
+       await projectSettingsStore.createProjectSetting(values)
+diff --git a/src/pages/integrations/NewUserIntegrationPage.tsx b/src/pages/integrations/NewUserIntegrationPage.tsx
+index 924c77233..c56664852 100644
+--- a/src/pages/integrations/NewUserIntegrationPage.tsx
++++ b/src/pages/integrations/NewUserIntegrationPage.tsx
+@@ -41,11 +41,16 @@ const NewUserIntegrationPage = () => {
+   const [credentialType, setCredentialType] = useState('')
+   const [credentialValues, setCredentialValues] = useState<Record<string, string>>({})
+ 
++  const isDeprecatedRequested = isDeprecatedCredentialType(
++    query.credentialType as string | undefined
++  )
+   useEffect(() => {
+-    if (isDeprecatedCredentialType(query.credentialType as string | undefined)) {
++    if (isDeprecatedRequested) {
+       navigateBack(INTEGRATIONS)
+     }
+-  }, [query.credentialType])
++  }, [isDeprecatedRequested])
++
++  if (isDeprecatedRequested) return null
+ 
+   const createUserSetting = async (values: Record<string, unknown>) => {
+     try {
+diff --git a/src/utils/settings.ts b/src/utils/settings.ts
+index feecd6d58..80422bd32 100644
+--- a/src/utils/settings.ts
++++ b/src/utils/settings.ts
+@@ -57,9 +57,6 @@ export const getCredentialUIMapping = ({
+   const filteredCredentials: CredentialUIMap = {}
+ 
+   Object.entries(CREDENTIAL_UI_MAPPING).forEach(([key, config]) => {
+-    if (config.deprecated) {
+-      return
+-    }
+     const accessType = config.accessType ?? CREDENTIAL_DEFAULTS.accessType
+     const roleRestriction = config.roleRestrictionType ?? CREDENTIAL_DEFAULTS.roleRestrictionType
+     const enterpriseOnly = config.enterpriseOnly ?? false
+@@ -102,7 +99,9 @@ export const getAvailableCredentialsTypes = ({
+   checkIfAdminOfAnyProject = false,
+   ...params
+ }: GetCredentialsMappingParams): string[] => {
+-  return Object.keys(getCredentialUIMapping({ checkIfAdminOfAnyProject, ...params }))
++  return Object.keys(getCredentialUIMapping({ checkIfAdminOfAnyProject, ...params })).filter(
++    (key) => !CREDENTIAL_UI_MAPPING[key]?.deprecated
++  )
+ }
+ 
+ export const getOriginalCredentialType = (value: string): string => {

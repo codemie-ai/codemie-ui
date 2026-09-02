@@ -23,6 +23,8 @@ import {
   convertCredsToKeyValue,
   getCredentialType,
   generateDefaultAlias,
+  getTestableCredentialTypes,
+  isDeprecatedCredentialType,
   SETTING_TYPE_PROJECT,
   SETTING_TYPE_USER,
 } from '@/utils/settings'
@@ -516,5 +518,56 @@ describe('OAuth switchers commented out (EPMCDME-14586)', () => {
     expect(types).not.toContain('confluenceoauth')
     // Base token types remain.
     expect(types).toEqual(expect.arrayContaining(['jira', 'confluence']))
+  })
+})
+
+describe('deprecated credential type filtering', () => {
+  const adminUser = { isAdmin: true, applicationsAdmin: ['demo'], applications: ['demo'] } as any
+
+  it('marks zephyrsquad as deprecated in the config', () => {
+    expect(CREDENTIAL_UI_MAPPING.zephyrsquad.deprecated).toBe(true)
+    expect(CREDENTIAL_UI_MAPPING.zephyrsquad.message?.type).toBe('warn')
+  })
+
+  it('does not mark comparable non-deprecated credential types', () => {
+    for (const key of ['jira', 'confluence', 'xray', 'zephyrscale']) {
+      expect(CREDENTIAL_UI_MAPPING[key]?.deprecated).toBeFalsy()
+    }
+  })
+
+  it('excludes deprecated credentials from the user-settings picker', () => {
+    const types = getAvailableCredentialsTypes({
+      settingType: SETTING_TYPE_USER,
+      user: adminUser,
+      project: 'demo',
+    })
+    expect(types).not.toContain('zephyrsquad')
+    expect(types).toContain('zephyrscale')
+  })
+
+  it('excludes deprecated credentials from the project-settings picker', () => {
+    const types = getAvailableCredentialsTypes({
+      settingType: SETTING_TYPE_PROJECT,
+      user: adminUser,
+      project: 'demo',
+    })
+    expect(types).not.toContain('zephyrsquad')
+    expect(types).toContain('zephyrscale')
+  })
+
+  it('excludes deprecated credentials from the testable list', () => {
+    const testable = getTestableCredentialTypes()
+    expect(testable).not.toContain('zephyrsquad')
+  })
+
+  it('isDeprecatedCredentialType returns true for ZephyrSquad (any case)', () => {
+    expect(isDeprecatedCredentialType('ZephyrSquad')).toBe(true)
+    expect(isDeprecatedCredentialType('zephyrsquad')).toBe(true)
+  })
+
+  it('isDeprecatedCredentialType returns false for non-deprecated types', () => {
+    expect(isDeprecatedCredentialType('Jira')).toBe(false)
+    expect(isDeprecatedCredentialType('ZephyrScale')).toBe(false)
+    expect(isDeprecatedCredentialType('unknown-type')).toBe(false)
   })
 })

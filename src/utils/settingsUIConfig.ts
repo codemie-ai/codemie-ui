@@ -615,6 +615,13 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     testable: true,
     displayName: 'ZephyrSquad',
     serverEnum: 'ZephyrSquad',
+    deprecated: true,
+    message: {
+      type: 'warn',
+      title: 'ZephyrSquad integration is deprecated',
+      message:
+        'Existing configurations are read-only — you cannot save changes here. Please migrate to Zephyr Scale or another supported integration.',
+    },
     fields: {
       account_id: {
         placeholder: 'Jira Accout ID',

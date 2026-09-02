@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "run_dir": "docs/superpowers/tasks/2026-07-31-deprecate-zephyrsquad/",
+  "generated": "2026-07-31T00:00:00Z",
+  "decision": "request-changes",
+  "confidence": "high",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    { "id": "AC1", "status": "pass", "note": "getCredentialUIMapping (the picker source) skips deprecated entries — but see CR-001." },
+    { "id": "AC2", "status": "partial", "note": "User-scope page redirects on deprecated URL. Project-scope page has no guard." },
+    { "id": "AC3", "status": "pass", "note": "Zephyrsquad entry given warn-type message; renders via existing SettingsForm → getCredentialMessage → SettingFormMessage pipeline (uses CREDENTIAL_UI_MAPPING directly, not the filtered mapping — so unaffected by CR-001)." },
+    { "id": "AC4", "status": "partial", "note": "Save and Test hidden on deprecated forms. Field-disable was explicitly out of scope this MR (see rationale)." },
+    { "id": "AC5", "status": "pass", "note": "Delete affordance untouched." },
+    { "id": "AC6", "status": "pass", "note": "7 new tests; broader test tree (650 tests across 34 files) still green." },
+    { "id": "AC7", "status": "pass", "note": "getAvailableCredentialsTypes deprecated-exclusion branch is unit-tested." }
+  ],
+  "standards_review": [
+    { "check": "commit-format", "status": "pass", "note": "`EPMCDME-10913: Deprecate ZephyrSquad integration (UI)` matches project convention." },
+    { "check": "code-quality", "status": "pass", "note": "eslint clean; tsc --noEmit clean; gitleaks clean." },
+    { "check": "security", "status": "pass", "note": "No credential-value paths altered; deprecation is presentational + guard-only." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "critical",
+      "file": "src/utils/settings.ts",
+      "problem": "Filtering `deprecated` out of getCredentialUIMapping breaks the edit view. SettingsForm's CREDENTIAL_VALUES_MAPPING is derived from getCredentialUIMapping and is the source of truth for field rendering, defaults, and mappingExists. With ZephyrSquad filtered out, mappingExists=false and the form renders the 'Not implemented yet 😔' fallback in place of the credential fields on every existing ZephyrSquad Edit page.",
+      "impact": "Existing ZephyrSquad settings become unviewable — the deprecation banner shows above a broken form. Direct regression of AC3/AC4 for existing users.",
+      "recommendation": "Move the `deprecated` filter from getCredentialUIMapping (rendering) to getAvailableCredentialsTypes (picker list) so both concerns are satisfied."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/integrations/NewUserIntegrationPage.tsx",
+      "problem": "The useEffect redirect fires after the first render, so users see a visible flash of the new-integration form before navigation.",
+      "impact": "Minor UX defect; users may briefly interact with a form that is about to be discarded.",
+      "recommendation": "Compute isDeprecatedRequested at render time and return null before rendering the form (keep useEffect for navigation)."
+    },
+    {
+      "id": "CR-003",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/integrations/NewProjectIntegrationPage.tsx",
+      "problem": "NewProjectIntegrationPage lacks the URL guard that NewUserIntegrationPage has. Although the page does not currently read query.credentialType, adding a symmetric guard matches spec AC2 (\"redirects or blocks\") and prevents drift if the page later starts consuming the query param.",
+      "impact": "Inconsistent behavior between user and project scopes.",
+      "recommendation": "Mirror the isDeprecatedCredentialType guard from NewUserIntegrationPage."
+    }
+  ],
+  "rationale": "Multi-lens review returned 3 patchable findings across all three lenses: one critical rendering regression (CR-001, edge-case lens) caught before merge, plus two minor UX consistency issues (CR-002 blind, CR-003 acceptance). Non-blocking findings (T6 fields-disabled scope trim, blind #4 message-type-untyped false-positive since CredentialMessage type already exists, blind #5 casing false-positive since lookup lowercases correctly, edge-case notes on autocomplete display name unaffected) triaged to dismiss/defer with reasoning. Decision: request-changes — CR-001 is a hard regression blocker. CR-002/CR-003 bundled in the same fix-up. AC4 field-disable stays out of scope: Save+Test are the only mutation paths, both hidden; a follow-up MR can add field-level disabled if UX asks. Total blocking findings: 1 critical + 2 major."
+}

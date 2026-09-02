@@ -119,6 +119,7 @@ export type CredentialTypeConfig = {
   fieldsSectionTitle?: string // Defaults to 'Authentication'
   fieldsManualConfiguration?: FieldsManualConfiguration // If present, use RecordInput instead of CredentialFields
   personalFeatureFlag?: string
+  deprecated?: boolean // If true, hide from new-integration picker and render existing settings read-only.
 }
 
 export type CredentialUIMap = Record<string, CredentialTypeConfig>

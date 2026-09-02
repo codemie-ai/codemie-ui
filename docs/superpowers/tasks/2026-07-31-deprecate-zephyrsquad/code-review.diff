@@ -1,0 +1,236 @@
+diff --git a/src/pages/integrations/EditProjectIntegrationPage.tsx b/src/pages/integrations/EditProjectIntegrationPage.tsx
+index a5cc04815..5210bce95 100644
+--- a/src/pages/integrations/EditProjectIntegrationPage.tsx
++++ b/src/pages/integrations/EditProjectIntegrationPage.tsx
+@@ -25,7 +25,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
+ import { projectSettingsStore } from '@/store/projectSettings'
+ import { ProjectSetting } from '@/types/entity/setting'
+ import { navigateBack } from '@/utils/helpers'
+-import { getTestableCredentialTypes } from '@/utils/settings'
++import { getTestableCredentialTypes, isDeprecatedCredentialType } from '@/utils/settings'
+ import toaster from '@/utils/toaster'
+ 
+ import SettingsForm, { SettingsFormRef } from './components/SettingsForm/SettingsForm'
+@@ -107,6 +107,7 @@ const EditProjectIntegrationPage = () => {
+               Cancel
+             </Button>
+             {setting &&
++              !isDeprecatedCredentialType(setting.credential_type) &&
+               getTestableCredentialTypes().includes(setting.credential_type.toLowerCase()) && (
+                 <TestIntegration
+                   credentialType={setting.credential_type.toLowerCase()}
+@@ -115,9 +116,11 @@ const EditProjectIntegrationPage = () => {
+                   label="Test"
+                 />
+               )}
+-            <Button type={ButtonType.PRIMARY} onClick={() => formRef.current?.submit()}>
+-              Save
+-            </Button>
++            {setting && !isDeprecatedCredentialType(setting.credential_type) && (
++              <Button type={ButtonType.PRIMARY} onClick={() => formRef.current?.submit()}>
++                Save
++              </Button>
++            )}
+           </div>
+         }
+       >
+diff --git a/src/pages/integrations/EditUserIntegrationPage.tsx b/src/pages/integrations/EditUserIntegrationPage.tsx
+index b45efa749..5ecffa708 100644
+--- a/src/pages/integrations/EditUserIntegrationPage.tsx
++++ b/src/pages/integrations/EditUserIntegrationPage.tsx
+@@ -24,7 +24,7 @@ import { INTEGRATIONS } from '@/constants/routes'
+ import { useVueRouter } from '@/hooks/useVueRouter'
+ import { userSettingsStore } from '@/store/userSettings'
+ import { navigateBack } from '@/utils/helpers'
+-import { getTestableCredentialTypes } from '@/utils/settings'
++import { getTestableCredentialTypes, isDeprecatedCredentialType } from '@/utils/settings'
+ import toaster from '@/utils/toaster'
+ 
+ import SettingsForm, { SettingsFormRef } from './components/SettingsForm/SettingsForm'
+@@ -116,6 +116,7 @@ const EditUserIntegrationPage = () => {
+               Cancel
+             </Button>
+             {setting &&
++              !isDeprecatedCredentialType(setting.credential_type) &&
+               getTestableCredentialTypes().includes(setting.credential_type.toLowerCase()) && (
+                 <TestIntegration
+                   credentialType={setting.credential_type.toLowerCase()}
+@@ -124,9 +125,11 @@ const EditUserIntegrationPage = () => {
+                   label="Test"
+                 />
+               )}
+-            <Button type={ButtonType.PRIMARY} onClick={() => formRef.current?.submit()}>
+-              Save
+-            </Button>
++            {setting && !isDeprecatedCredentialType(setting.credential_type) && (
++              <Button type={ButtonType.PRIMARY} onClick={() => formRef.current?.submit()}>
++                Save
++              </Button>
++            )}
+           </div>
+         }
+       >
+diff --git a/src/pages/integrations/NewUserIntegrationPage.tsx b/src/pages/integrations/NewUserIntegrationPage.tsx
+index c75254256..924c77233 100644
+--- a/src/pages/integrations/NewUserIntegrationPage.tsx
++++ b/src/pages/integrations/NewUserIntegrationPage.tsx
+@@ -13,7 +13,7 @@
+ // limitations under the License.
+ //
+ 
+-import { useState, useRef } from 'react'
++import { useState, useRef, useEffect } from 'react'
+ 
+ import Button from '@/components/Button'
+ import PageLayout from '@/components/Layouts/Layout'
+@@ -23,7 +23,7 @@ import { INTEGRATIONS } from '@/constants/routes'
+ import { useVueRouter } from '@/hooks/useVueRouter'
+ import { userSettingsStore } from '@/store/userSettings'
+ import { navigateBack } from '@/utils/helpers'
+-import { getTestableCredentialTypes } from '@/utils/settings'
++import { getTestableCredentialTypes, isDeprecatedCredentialType } from '@/utils/settings'
+ import toaster from '@/utils/toaster'
+ 
+ import SettingsForm, { SettingsFormRef } from './components/SettingsForm/SettingsForm'
+@@ -41,6 +41,12 @@ const NewUserIntegrationPage = () => {
+   const [credentialType, setCredentialType] = useState('')
+   const [credentialValues, setCredentialValues] = useState<Record<string, string>>({})
+ 
++  useEffect(() => {
++    if (isDeprecatedCredentialType(query.credentialType as string | undefined)) {
++      navigateBack(INTEGRATIONS)
++    }
++  }, [query.credentialType])
++
+   const createUserSetting = async (values: Record<string, unknown>) => {
+     try {
+       await userSettingsStore.createUserSetting(values)
+diff --git a/src/types/settingsUI.ts b/src/types/settingsUI.ts
+index 95d25e844..e99226ef1 100644
+--- a/src/types/settingsUI.ts
++++ b/src/types/settingsUI.ts
+@@ -109,6 +109,7 @@ export type CredentialTypeConfig = {
+   fieldsSectionTitle?: string // Defaults to 'Authentication'
+   fieldsManualConfiguration?: FieldsManualConfiguration // If present, use RecordInput instead of CredentialFields
+   personalFeatureFlag?: string
++  deprecated?: boolean // If true, hide from new-integration picker and render existing settings read-only.
+ }
+ 
+ export type CredentialUIMap = Record<string, CredentialTypeConfig>
+diff --git a/src/utils/__tests__/settings.test.ts b/src/utils/__tests__/settings.test.ts
+index e0e712294..7069e9b5f 100644
+--- a/src/utils/__tests__/settings.test.ts
++++ b/src/utils/__tests__/settings.test.ts
+@@ -23,6 +23,8 @@ import {
+   convertCredsToKeyValue,
+   getCredentialType,
+   generateDefaultAlias,
++  getTestableCredentialTypes,
++  isDeprecatedCredentialType,
+   SETTING_TYPE_PROJECT,
+   SETTING_TYPE_USER,
+ } from '@/utils/settings'
+@@ -495,3 +497,54 @@ describe('generateDefaultAlias', () => {
+     expect(generateDefaultAlias(INDEX_TYPES.FILE)).toBe('file-2026-05-31_16-45')
+   })
+ })
++
++describe('deprecated credential type filtering', () => {
++  const adminUser = { isAdmin: true, applicationsAdmin: ['demo'], applications: ['demo'] } as any
++
++  it('marks zephyrsquad as deprecated in the config', () => {
++    expect(CREDENTIAL_UI_MAPPING.zephyrsquad.deprecated).toBe(true)
++    expect(CREDENTIAL_UI_MAPPING.zephyrsquad.message?.type).toBe('warn')
++  })
++
++  it('does not mark comparable non-deprecated credential types', () => {
++    for (const key of ['jira', 'confluence', 'xray', 'zephyrscale']) {
++      expect(CREDENTIAL_UI_MAPPING[key]?.deprecated).toBeFalsy()
++    }
++  })
++
++  it('excludes deprecated credentials from the user-settings picker', () => {
++    const types = getAvailableCredentialsTypes({
++      settingType: SETTING_TYPE_USER,
++      user: adminUser,
++      project: 'demo',
++    })
++    expect(types).not.toContain('zephyrsquad')
++    expect(types).toContain('zephyrscale')
++  })
++
++  it('excludes deprecated credentials from the project-settings picker', () => {
++    const types = getAvailableCredentialsTypes({
++      settingType: SETTING_TYPE_PROJECT,
++      user: adminUser,
++      project: 'demo',
++    })
++    expect(types).not.toContain('zephyrsquad')
++    expect(types).toContain('zephyrscale')
++  })
++
++  it('excludes deprecated credentials from the testable list', () => {
++    const testable = getTestableCredentialTypes()
++    expect(testable).not.toContain('zephyrsquad')
++  })
++
++  it('isDeprecatedCredentialType returns true for ZephyrSquad (any case)', () => {
++    expect(isDeprecatedCredentialType('ZephyrSquad')).toBe(true)
++    expect(isDeprecatedCredentialType('zephyrsquad')).toBe(true)
++  })
++
++  it('isDeprecatedCredentialType returns false for non-deprecated types', () => {
++    expect(isDeprecatedCredentialType('Jira')).toBe(false)
++    expect(isDeprecatedCredentialType('ZephyrScale')).toBe(false)
++    expect(isDeprecatedCredentialType('unknown-type')).toBe(false)
++  })
++})
+diff --git a/src/utils/settings.ts b/src/utils/settings.ts
+index 8dc0d1f0a..feecd6d58 100644
+--- a/src/utils/settings.ts
++++ b/src/utils/settings.ts
+@@ -57,6 +57,9 @@ export const getCredentialUIMapping = ({
+   const filteredCredentials: CredentialUIMap = {}
+ 
+   Object.entries(CREDENTIAL_UI_MAPPING).forEach(([key, config]) => {
++    if (config.deprecated) {
++      return
++    }
+     const accessType = config.accessType ?? CREDENTIAL_DEFAULTS.accessType
+     const roleRestriction = config.roleRestrictionType ?? CREDENTIAL_DEFAULTS.roleRestrictionType
+     const enterpriseOnly = config.enterpriseOnly ?? false
+@@ -112,10 +115,16 @@ export const getOriginalCredentialType = (value: string): string => {
+ // Get all testable credential types
+ export const getTestableCredentialTypes = (): string[] => {
+   return Object.entries(CREDENTIAL_UI_MAPPING)
++    .filter(([, config]) => !config.deprecated)
+     .filter(([, config]) => config.testable ?? CREDENTIAL_DEFAULTS.testable)
+     .map(([key]) => key)
+ }
+ 
++export const isDeprecatedCredentialType = (credentialType: string | undefined | null): boolean => {
++  if (!credentialType) return false
++  return !!CREDENTIAL_UI_MAPPING[credentialType.toLowerCase()]?.deprecated
++}
++
+ // Get message for a specific credential type
+ export const getCredentialMessage = (credentialType: string) => {
+   const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
+diff --git a/src/utils/settingsUIConfig.ts b/src/utils/settingsUIConfig.ts
+index 730e4c7d5..7fcd41808 100644
+--- a/src/utils/settingsUIConfig.ts
++++ b/src/utils/settingsUIConfig.ts
+@@ -609,6 +609,13 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
+     testable: true,
+     displayName: 'ZephyrSquad',
+     serverEnum: 'ZephyrSquad',
++    deprecated: true,
++    message: {
++      type: 'warn',
++      title: 'ZephyrSquad integration is deprecated',
++      message:
++        'Existing configurations are read-only — you cannot save changes here. Please migrate to Zephyr Scale or another supported integration.',
++    },
+     fields: {
+       account_id: {
+         placeholder: 'Jira Accout ID',

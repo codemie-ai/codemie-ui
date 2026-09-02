@@ -99,7 +99,9 @@ export const getAvailableCredentialsTypes = ({
   checkIfAdminOfAnyProject = false,
   ...params
 }: GetCredentialsMappingParams): string[] => {
-  return Object.keys(getCredentialUIMapping({ checkIfAdminOfAnyProject, ...params }))
+  return Object.keys(getCredentialUIMapping({ checkIfAdminOfAnyProject, ...params })).filter(
+    (key) => !CREDENTIAL_UI_MAPPING[key]?.deprecated
+  )
 }
 
 export const getOriginalCredentialType = (value: string): string => {
@@ -112,8 +114,14 @@ export const getOriginalCredentialType = (value: string): string => {
 // Get all testable credential types
 export const getTestableCredentialTypes = (): string[] => {
   return Object.entries(CREDENTIAL_UI_MAPPING)
+    .filter(([, config]) => !config.deprecated)
     .filter(([, config]) => config.testable ?? CREDENTIAL_DEFAULTS.testable)
     .map(([key]) => key)
+}
+
+export const isDeprecatedCredentialType = (credentialType: string | undefined | null): boolean => {
+  if (!credentialType) return false
+  return !!CREDENTIAL_UI_MAPPING[credentialType.toLowerCase()]?.deprecated
 }
 
 // Get message for a specific credential type

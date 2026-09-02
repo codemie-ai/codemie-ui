@@ -29,6 +29,7 @@ import toaster from '@/utils/toaster'
 import OAuthTestAction from './components/OAuthTestAction'
 import SettingsForm, { SettingsFormRef } from './components/SettingsForm/SettingsForm'
 import TestIntegration from './components/TestIntegration'
+import { useDeprecationRedirect } from './hooks/useDeprecationRedirect'
 import { getErrorMessage } from './utils/getErrorMessage'
 
 const NewUserIntegrationPage = () => {
@@ -41,6 +42,9 @@ const NewUserIntegrationPage = () => {
   const formRef = useRef<SettingsFormRef>(null)
   const [credentialType, setCredentialType] = useState('')
   const [credentialValues, setCredentialValues] = useState<Record<string, string>>({})
+
+  const deprecated = useDeprecationRedirect(query.credentialType as string | undefined)
+  if (deprecated) return null
 
   const createUserSetting = async (values: Record<string, unknown>) => {
     try {

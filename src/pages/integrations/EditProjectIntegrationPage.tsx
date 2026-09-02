@@ -25,12 +25,10 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import { projectSettingsStore } from '@/store/projectSettings'
 import { ProjectSetting } from '@/types/entity/setting'
 import { navigateBack } from '@/utils/helpers'
-import { getTestableCredentialTypes } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 
-import OAuthTestAction from './components/OAuthTestAction'
+import EditIntegrationActions from './components/EditIntegrationActions'
 import SettingsForm, { SettingsFormRef } from './components/SettingsForm/SettingsForm'
-import TestIntegration from './components/TestIntegration'
 import { getErrorMessage } from './utils/getErrorMessage'
 
 const EditProjectIntegrationPage = () => {
@@ -107,24 +105,14 @@ const EditProjectIntegrationPage = () => {
             <Button type={ButtonType.SECONDARY} onClick={handleBack}>
               Cancel
             </Button>
-            {setting &&
-              getTestableCredentialTypes().includes(setting.credential_type.toLowerCase()) && (
-                <TestIntegration
-                  credentialType={setting.credential_type.toLowerCase()}
-                  credentialValues={credentialValues}
-                  settingId={setting.id}
-                  label="Test"
-                />
-              )}
             {setting && (
-              <OAuthTestAction
-                credentialType={setting.credential_type.toLowerCase()}
+              <EditIntegrationActions
+                credentialType={setting.credential_type}
                 credentialValues={credentialValues}
+                settingId={setting.id}
+                onSave={() => formRef.current?.submit()}
               />
             )}
-            <Button type={ButtonType.PRIMARY} onClick={() => formRef.current?.submit()}>
-              Save
-            </Button>
           </div>
         }
       >

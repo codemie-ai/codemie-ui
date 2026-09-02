@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "task": "Deprecate ZephyrSquad integration in codemie-ui by adding a deprecated flag to the credential-type registry, filtering it from new-integration pickers, enforcing read-only mode on edit forms, and guarding direct URL navigation.",
+  "generated": "2026-07-31T00:00:00Z",
+  "mode": "actual",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 17,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three frontend sub-layers touched: Config/Data (settingsUI.ts type field + settingsUIConfig.ts registry entry), Utility/Service (settings.ts — getAvailableCredentialsTypes filtered, getTestableCredentialTypes filtered, isDeprecatedCredentialType added), and Page layer (EditProjectIntegrationPage, EditUserIntegrationPage, NewProjectIntegrationPage, NewUserIntegrationPage). Core shared utilities settingsUIConfig.ts and settings.ts are imported by all integration pages — 'touches core shared utilities' red flag bumps from L (4) to XL (5). SettingsForm.tsx was NOT modified (initial plan expected it would be); the deprecated guard was implemented at the page level instead."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "8 source+test files changed across 4 directories: src/types/ (settingsUI.ts), src/utils/ (settings.ts, settingsUIConfig.ts), src/utils/__tests__/ (settings.test.ts), src/pages/integrations/ (4 page files). Guide: 8–10 files = L (4), 3+ directories = L (4). Matches initial estimate exactly."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Three frontend sub-layers: Config/Data (type definition + registry), Service/Utility (filter functions), Page/Component (4 integration pages with guards). No API client, no DB, no external service integration touched."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): settingsUIConfig.ts and settings.ts are core shared utilities imported by all integration pages — 'touches core shared utilities' red flag applied."
+  ],
+  "split_recommendation": null,
+  "delta_vs_initial": {
+    "summary": "No changes from initial assessment — all 6 dimension scores are identical (17/36, M). The initial estimate was fully accurate. The only structural difference: SettingsForm.tsx was not modified (initial predicted it would be), offset by settings.test.ts being written, keeping source file count at 8 and all dimension scores unchanged."
+  }
+}

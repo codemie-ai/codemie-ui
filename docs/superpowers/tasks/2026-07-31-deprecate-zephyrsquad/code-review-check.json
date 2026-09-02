@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "run_dir": "docs/superpowers/tasks/2026-07-31-deprecate-zephyrsquad/",
+  "generated": "2026-07-31T00:00:00Z",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "id": "AC1", "status": "pass", "note": "Filter moved to getAvailableCredentialsTypes; picker still excludes ZephyrSquad." },
+    { "id": "AC2", "status": "pass", "note": "Both NewUserIntegrationPage and NewProjectIntegrationPage now carry the isDeprecatedCredentialType guard + early-return + navigateBack." },
+    { "id": "AC3", "status": "pass", "note": "Rendering restored — CREDENTIAL_VALUES_MAPPING now includes deprecated entries so mappingExists=true on ZephyrSquad edit; banner renders via existing pipeline." },
+    { "id": "AC4", "status": "partial", "note": "Save+Test hidden as intended. Field-level disable remains deferred to a follow-up (documented)." },
+    { "id": "AC5", "status": "pass", "note": "Delete affordance unchanged." },
+    { "id": "AC6", "status": "pass", "note": "166 tests in settings.test.ts green after fix-up; broader tree still passes." },
+    { "id": "AC7", "status": "pass", "note": "Deprecated-exclusion branch still unit-tested (filter moved, tests still assert exclusion from picker)." }
+  ],
+  "standards_review": [
+    { "check": "commit-format", "status": "pass", "note": "Fix-up commit uses `EPMCDME-10913: UI fix-ups after code review`." },
+    { "check": "code-quality", "status": "pass", "note": "eslint + tsc + gitleaks clean; test suite green." },
+    { "check": "security", "status": "pass", "note": "No credential-path changes." }
+  ],
+  "finding_status": {
+    "CR-001": "resolved",
+    "CR-002": "resolved",
+    "CR-003": "resolved"
+  },
+  "findings": [],
+  "rationale": "Fix-up diff (97 lines, 3 files) addresses all three findings from the final round. CR-001 fix moves the `deprecated` filter from getCredentialUIMapping to getAvailableCredentialsTypes — verified: SettingsForm's CREDENTIAL_VALUES_MAPPING now contains the zephyrsquad entry so mappingExists resolves true; picker's CREDENTIAL_TYPES still excludes it. CR-002 fix adds a synchronous early-return before render, keeping the useEffect for the actual navigation call. CR-003 fix mirrors the guard on NewProjectIntegrationPage with identical pattern. No new high-risk issues introduced in the fix-up (script-only defensive additions + one filter-move that is covered by the pre-existing exclusion tests)."
+}

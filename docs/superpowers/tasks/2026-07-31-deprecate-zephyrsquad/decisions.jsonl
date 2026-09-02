@@ -1,0 +1,4 @@
+{"gate_id":"spec.approved","mode":"hitl","decision":"approve","confidence":"high","ts":"2026-07-31T00:00:00Z"}
+{"gate_id":"plan.approved","mode":"hitl","decision":"approve","confidence":"high","ts":"2026-07-31T00:00:00Z"}
+{"gate_id":"code-review.final","mode":"hitl","decision":"request-changes","confidence":"high","rationale":"CR-001 critical rendering regression from deprecated filter placement; CR-002/CR-003 minor UX; all three fixed in the same fix-up commit.","ts":"2026-07-31T00:00:00Z"}
+{"gate_id":"code-review.check","mode":"hitl","decision":"approve","confidence":"high","rationale":"All 3 findings resolved; verified against reviewed_head.","ts":"2026-07-31T00:00:00Z"}

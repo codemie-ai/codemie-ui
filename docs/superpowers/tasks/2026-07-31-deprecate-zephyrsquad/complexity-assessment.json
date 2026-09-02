@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "task": "Deprecate ZephyrSquad integration in codemie-ui by adding a deprecated flag to the credential-type registry, filtering it from new-integration pickers, enforcing read-only mode on edit forms, and guarding direct URL navigation.",
+  "generated": "2026-07-31T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 17,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches 5 distinct UI areas: CredentialTypeConfig type (settingsUI.ts), credential-type registry (settingsUIConfig.ts), utility filter function (settings.ts), shared SettingsForm component, and 4 integration page files (NewUser, NewProject, EditUser, EditProject). settingsUIConfig.ts is the single source of truth for all credential type UI — a core shared utility imported by all integration pages — triggering the 'touches core shared utilities' red flag that bumped the score from L (4) to XL (5)."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "8-9 files modified: settingsUIConfig.ts, settingsUI.ts, settings.ts, SettingsForm.tsx, constants/integration.ts (optional deprecated badge), plus 4 page files (NewUserIntegrationPage, NewProjectIntegrationPage, EditUserIntegrationPage, EditProjectIntegrationPage). Plus 1-2 new test files (SettingsForm.test.tsx has zero existing tests; New page tests needed for URL guard). Spans 5 directories (src/utils/, src/types/, src/pages/integrations/, src/pages/integrations/components/, src/constants/)."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Three frontend UI sub-layers touched: Config/Data layer (settingsUIConfig.ts, settingsUI.ts types, settings.ts filter), Component layer (SettingsForm.tsx, CredentialFields.tsx), and Page layer (4 integration pages). No DB, no API client, no external service changes — purely frontend."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): settingsUIConfig.ts and settings.ts are core shared utilities imported by all integration pages — 'touches core shared utilities' red flag applied."
+  ],
+  "split_recommendation": null
+}
