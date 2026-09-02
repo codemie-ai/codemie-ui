@@ -33,6 +33,7 @@ import {
   CredentialFieldConfig,
 } from '@/types/settingsUI'
 
+import AssistantMultiSelectField from './AssistantMultiSelectField'
 import { useResourceOptions } from './hooks/useResourceOptions'
 import MultiSelectCheckboxGroup from './MultiSelectCheckboxGroup'
 import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
@@ -123,12 +124,7 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
   const formValues = useWatch({ control })
   const formState = useFormState({ control })
   const [passwordVisibility, setPasswordVisibility] = useState<Record<string, boolean>>({})
-  const hasAssistantMultiSelect = Object.values(credentialFields).some(
-    (config) => config.type === CredentialComponentType.assistantMultiSelect
-  )
-  const resourceType = hasAssistantMultiSelect
-    ? 'assistant'
-    : String(formValues.resource_type ?? '')
+  const resourceType = String(formValues.resource_type ?? '')
 
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -151,8 +147,7 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
   const { options: resourceOptions, loading: resourceLoading } = useResourceOptions(
     resourceType,
     project,
-    debouncedSearch,
-    hasAssistantMultiSelect ? 100 : undefined
+    debouncedSearch
   )
 
   const togglePasswordVisibility = (fieldName: string) => {
@@ -347,17 +342,12 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
               )}
 
               {type === CredentialComponentType.assistantMultiSelect && (
-                <MultiSelect
-                  id={name}
+                <AssistantMultiSelectField
                   label={typeof label === 'string' ? label : 'Assistants'}
-                  options={resourceOptions}
-                  disabled={resourceLoading}
-                  loading={resourceLoading}
-                  showCheckbox
-                  filterPlaceholder="Search…"
-                  onFilter={handleSearchFilter}
+                  project={project}
                   value={(value as string[]) ?? []}
-                  onChange={(e) => field.onChange((e.value as string[]) ?? [])}
+                  error={error}
+                  onChange={field.onChange}
                 />
               )}
 

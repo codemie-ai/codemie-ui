@@ -287,6 +287,8 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       const labelClassName =
         display === 'chip' ? 'flex flex-wrap gap-2 text-text-unfocused' : 'text-text-unfocused'
       const errorBorderClass = error ? '!border-failed-secondary' : ''
+      const disabledClass = disabled ? 'opacity-60 pointer-events-none cursor-default' : ''
+      const rootClassName = cn(errorBorderClass, disabledClass)
       const basePreset = {
         ...ptPreset!,
         input: {
@@ -304,7 +306,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
             className: '!hidden',
           },
           root: {
-            className: errorBorderClass,
+            className: rootClassName,
           },
         }
       }
@@ -320,10 +322,10 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           className: labelClassName,
         },
         root: {
-          className: errorBorderClass,
+          className: rootClassName,
         },
       }
-    }, [showCheckbox, display, error, hiddenInputValue])
+    }, [showCheckbox, display, error, disabled, hiddenInputValue])
 
     const preparedSelectedItemTemplate = useMemo(() => {
       if (display !== 'chip') return selectedItemTemplate

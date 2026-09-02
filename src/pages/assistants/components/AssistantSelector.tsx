@@ -49,6 +49,9 @@ interface AssistantSelectorProps {
   disabled?: boolean
   singleValue?: boolean
   hideHeader?: boolean
+  // Rendered by the inner MultiSelect itself (same label markup as every other form field).
+  // Ignored when hideHeader is false — the "Sub-Assistants" header takes over that slot.
+  label?: string
   placeholder?: string
 
   value?: AssistantOption[]
@@ -67,6 +70,10 @@ interface AssistantSelectorProps {
   // Allows injecting extra "virtual" assistant options (e.g. built-in subagents)
   // directly into the dropdown list. These will be placed at the top.
   extraOptionsTop?: AssistantOption[]
+
+  // When false, a project change reloads options but leaves `value` alone — for callers
+  // that own their own clear-on-project-change behavior (e.g. a shared form-level effect).
+  resetOnProjectChange?: boolean
 }
 
 const BUILTIN_SUBAGENT_META =
@@ -113,6 +120,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
       disabled,
       singleValue = false,
       hideHeader,
+      label,
       placeholder,
       value = [],
       onChange,
@@ -126,6 +134,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
 
       extraOptionsTop = [],
       scrollHeight,
+      resetOnProjectChange = true,
     },
     ref
   ) => {
@@ -193,8 +202,9 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
 
     useEffect(() => {
       // Reset selected value and reload options from page 0 whenever the project changes
-      resetValue()
+      if (resetOnProjectChange) resetValue()
       loadOptions()
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [project])
 
     // Custom option renderer for MultiSelect
@@ -243,7 +253,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
           value={preparedValue}
           onChange={handleChange}
           options={getMultiselectOptions()}
-          label=""
+          label={label ?? ''}
           className="flex-1 max-w-full"
           inputClassName={selectClassName}
           errorClassName={errorClassName}

@@ -43,6 +43,7 @@ import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
 import { CredentialComponentPosition, CredentialComponentType } from '@/types/settingsUI'
 import api from '@/utils/api'
+import { ASSISTANT_IDS_KEY } from '@/utils/msTeamsSettings'
 import { registerCredentialTypeCallback } from '@/utils/onboarding'
 import {
   getConfigItem,
@@ -384,6 +385,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     prevProjectName.current = projectName
     if (prev && prev !== projectName) {
       setFormValue('resource_id', '', { shouldDirty: false, shouldTouch: false })
+      setFormValue(ASSISTANT_IDS_KEY, [], { shouldDirty: false, shouldTouch: false })
     }
   }, [projectName])
 
