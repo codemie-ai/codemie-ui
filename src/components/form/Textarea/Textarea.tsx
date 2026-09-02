@@ -123,7 +123,7 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
             error && 'border-border-error',
             !error && 'focus:border-border-secondary hover:border-border-secondary',
             className,
-            disabled && 'bg-surface-base-chat !text-text-secondary hover:border-border-primary'
+            disabled && 'bg-surface-base-chat opacity-60 hover:border-border-primary'
           )}
           readOnly={readonly}
           autoComplete={sensitive ? 'off' : undefined}

@@ -42,7 +42,9 @@ import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
-import ProjectBudgetsSection from './projectsManagement/ProjectBudgetsSection'
+import ProjectBudgetsSection, {
+  ProjectBudgetsAccess,
+} from './projectsManagement/ProjectBudgetsSection'
 import ProjectMembersManager from './projectsManagement/ProjectMembersManager'
 import { goBackProjectDetails } from './utils/goBackAdministration'
 
@@ -60,6 +62,20 @@ function chargebackStatusLabel(
   return costCentersEnabled && attribution === 'cost_center'
     ? 'Enabled, attributed to a cost center'
     : 'Enabled'
+}
+
+const resolveBudgetsAccess = ({
+  isMaintainer,
+  isAdmin,
+  isProjectAdmin,
+}: {
+  isMaintainer: boolean
+  isAdmin: boolean
+  isProjectAdmin: boolean
+}): ProjectBudgetsAccess => {
+  if (isMaintainer) return 'full'
+  if (isAdmin || isProjectAdmin) return 'distribution'
+  return 'view'
 }
 
 const ProjectDetailsPage = () => {
@@ -81,12 +97,11 @@ const ProjectDetailsPage = () => {
   const isAuditor = currentUser?.isAuditor ?? false
   const isProjectAdmin = currentUser?.applicationsAdmin?.includes(project?.name ?? '') ?? false
   const canManageProject = !isPersonalProject && (isAdmin || isProjectAdmin)
-  const canManageBudgets = isBudgetManagementEnabled && isMaintainer
   const canViewBudgets =
     isBudgetManagementEnabled &&
     !isPersonalProject &&
     (isAdmin || isMaintainer || isAuditor || isProjectAdmin)
-  const budgetMode = canManageBudgets ? 'manage' : 'view'
+  const budgetsAccess = resolveBudgetsAccess({ isMaintainer, isAdmin, isProjectAdmin })
 
   const loadProject = useCallback(async () => {
     setLoading(true)
@@ -289,11 +304,10 @@ const ProjectDetailsPage = () => {
                 <ProjectBudgetsSection
                   projectName={project.name}
                   spendingRows={project.spending_widget?.data?.rows}
-                  onBudgetsChanged={canManageBudgets ? setBudgets : undefined}
+                  onBudgetsChanged={isMaintainer ? setBudgets : undefined}
                   onProjectChanged={loadProject}
-                  mode={budgetMode}
+                  access={budgetsAccess}
                   project={project}
-                  canManageBudgets={canManageBudgets}
                 />
               </section>
             )}
@@ -303,8 +317,8 @@ const ProjectDetailsPage = () => {
                 <ProjectMembersManager
                   project={project}
                   onMembersChanged={loadProject}
-                  budgets={canManageBudgets ? budgets : undefined}
-                  onBudgetsChanged={canManageBudgets ? setBudgets : undefined}
+                  budgets={isMaintainer ? budgets : undefined}
+                  onBudgetsChanged={isMaintainer ? setBudgets : undefined}
                 />
               </section>
             )}

@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Widen canManageBudgets in ProjectDetailsPage.tsx to include isProjectAdmin with !isPersonalProject guard and add unit tests for the new access path",
+  "generated": "2026-08-18T00:00:00.000Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "technical_risk",
+      "reason": "Authorization gating change: widening canManageBudgets to include isProjectAdmin touches access-control logic; bumped from S to M by the authorization red flag. The implementation pattern is exact and already present at line 62 of ProjectDetailsPage.tsx, and the !isPersonalProject guard is copied directly from canManageProject — so the bump does not rise above M."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Two components touched: ProjectDetailsPage.tsx (the boolean expression at line 64) and its existing test file for new unit test cases. No changes needed in ProjectBudgetsSection, UnifiedProjectBudgetModal, ProjectBudgetCard, or the store — the existing mode prop mechanism handles all downstream presentation."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S(2) to M(3): change affects authorization gating (canManageBudgets access-control expression)"
+  ],
+  "split_recommendation": null
+}

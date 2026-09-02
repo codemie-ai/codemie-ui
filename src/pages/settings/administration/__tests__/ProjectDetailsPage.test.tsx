@@ -24,6 +24,36 @@ import { ProjectDetail } from '@/types/entity/projectManagement'
 
 const pushMock = vi.fn()
 const projectMembersManagerMock = vi.fn()
+const projectBudgetsSectionMock = vi.fn()
+
+const { mockUserStore } = vi.hoisted(() => ({
+  mockUserStore: {
+    user: null as null | {
+      isAdmin: boolean
+      isMaintainer: boolean
+      isAuditor: boolean
+      applicationsAdmin: string[]
+    },
+    getCurrentUser: vi.fn(),
+  },
+}))
+
+vi.mock('valtio', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('valtio')>()
+  return {
+    ...actual,
+    useSnapshot: vi.fn((store: unknown) => store),
+  }
+})
+
+vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
+
+vi.mock('@/pages/settings/administration/projectsManagement/ProjectBudgetsSection', () => ({
+  default: (props: any) => {
+    projectBudgetsSectionMock(props)
+    return <div data-testid="project-budgets-section" data-access={props.access} />
+  },
+}))
 
 vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: () => ({
@@ -73,14 +103,15 @@ vi.mock('@/utils/toaster', () => ({
   },
 }))
 
-const { chargebackFlag, costCentersFlag } = vi.hoisted(() => ({
+const { chargebackFlag, costCentersFlag, budgetManagementFlag } = vi.hoisted(() => ({
   chargebackFlag: vi.fn(() => [false, true] as [boolean, boolean]),
   costCentersFlag: vi.fn(() => [true, true] as [boolean, boolean]),
+  budgetManagementFlag: vi.fn(() => [false, true] as [boolean, boolean]),
 }))
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
   useFeatureFlag: () => costCentersFlag(),
-  useBudgetManagementEnabled: () => [false, true],
+  useBudgetManagementEnabled: () => budgetManagementFlag(),
   useProjectChargebackEnabled: () => chargebackFlag(),
 }))
 
@@ -273,5 +304,144 @@ describe('ProjectDetailsPage', () => {
     })
 
     expect(toaster.info).toHaveBeenCalledWith(expect.stringContaining('Test Project'))
+  })
+})
+
+describe('budgetsAccess — project-admin access control (EPMCDME-13962)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    projectsStore.getProject = vi.fn().mockResolvedValue(mockProject)
+    budgetManagementFlag.mockReturnValue([true, true])
+  })
+
+  it('project admin of this project gets distribution access when flag is on and project is not personal', async () => {
+    mockUserStore.user = {
+      isAdmin: false,
+      isMaintainer: false,
+      isAuditor: false,
+      applicationsAdmin: ['Test Project'],
+    }
+
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectBudgetsSectionMock).toHaveBeenCalled()
+    })
+
+    expect(projectBudgetsSectionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ access: 'distribution' })
+    )
+  })
+
+  it('project admin of this project does not see the budget section when project is personal', async () => {
+    mockUserStore.user = {
+      isAdmin: false,
+      isMaintainer: false,
+      isAuditor: false,
+      applicationsAdmin: ['Test Project'],
+    }
+    projectsStore.getProject = vi.fn().mockResolvedValue({
+      ...mockProject,
+      project_type: 'personal',
+    })
+
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectsStore.getProject).toHaveBeenCalled()
+    })
+
+    expect(screen.queryByTestId('project-budgets-section')).not.toBeInTheDocument()
+  })
+
+  it('project admin of a different project does not see the budget section', async () => {
+    mockUserStore.user = {
+      isAdmin: false,
+      isMaintainer: false,
+      isAuditor: false,
+      applicationsAdmin: ['Other Project'],
+    }
+
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectsStore.getProject).toHaveBeenCalled()
+    })
+
+    expect(screen.queryByTestId('project-budgets-section')).not.toBeInTheDocument()
+  })
+
+  it('platform admin gets distribution access', async () => {
+    mockUserStore.user = {
+      isAdmin: true,
+      isMaintainer: false,
+      isAuditor: false,
+      applicationsAdmin: [],
+    }
+
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectBudgetsSectionMock).toHaveBeenCalled()
+    })
+
+    expect(projectBudgetsSectionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ access: 'distribution' })
+    )
+  })
+
+  it('maintainer gets full access', async () => {
+    mockUserStore.user = {
+      isAdmin: false,
+      isMaintainer: true,
+      isAuditor: false,
+      applicationsAdmin: [],
+    }
+
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectBudgetsSectionMock).toHaveBeenCalled()
+    })
+
+    expect(projectBudgetsSectionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ access: 'full' })
+    )
+  })
+
+  it('auditor gets view access', async () => {
+    mockUserStore.user = {
+      isAdmin: false,
+      isMaintainer: false,
+      isAuditor: true,
+      applicationsAdmin: [],
+    }
+
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectBudgetsSectionMock).toHaveBeenCalled()
+    })
+
+    expect(projectBudgetsSectionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ access: 'view' })
+    )
+  })
+
+  it('regular user does not see the budget section', async () => {
+    mockUserStore.user = {
+      isAdmin: false,
+      isMaintainer: false,
+      isAuditor: false,
+      applicationsAdmin: [],
+    }
+
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectsStore.getProject).toHaveBeenCalled()
+    })
+
+    expect(screen.queryByTestId('project-budgets-section')).not.toBeInTheDocument()
   })
 })

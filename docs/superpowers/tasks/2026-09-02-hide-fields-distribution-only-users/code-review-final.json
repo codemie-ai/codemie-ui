@@ -1,0 +1,33 @@
+{
+  "decision": "approve",
+  "rationale": "CR-002 fixed (guard against distributionOnly create path). CR-001 deferred by author. 3 dismissed as noise.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/__tests__/ProjectDetailsPage.test.tsx",
+      "title": "Missing test: isProjectAdmin with budget flag off",
+      "problem": "No test covers isProjectAdmin=true combined with isBudgetManagementEnabled=false. The isProjectAdmin term is newly added to canViewBudgets and has no test confirming the feature flag correctly gates it.",
+      "impact": "A regression that shows the budget section to project admins when the flag is disabled would not be caught by the test suite.",
+      "recommendation": "Add a test with applicationsAdmin: ['test-project'] and useBudgetManagementEnabled mocked to [false, false], asserting the budget section (project-budgets-section) is not rendered."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/UnifiedProjectBudgetModal.tsx",
+      "line": 330,
+      "title": "distributionOnly submit falls through to create on absent group",
+      "problem": "In onFormSubmit, when distributionOnly=true and existingGroup is null (group deleted after the modal opened, leaving the async load returning no active plan), execution falls to the else branch and calls createProjectBudgetGroup with name='', budget_duration='30d', total_budget=1000 — the hidden-field defaults.",
+      "impact": "Creates a blank-named budget group. Triggered only by the race condition of a concurrent group deletion while the modal is open, but no client-side guard prevents it.",
+      "recommendation": "In the else branch, add an early return for the distributionOnly case: if (distributionOnly) { toaster.error('Budget group no longer exists. Please refresh.'); return; }"
+    }
+  ]
+}

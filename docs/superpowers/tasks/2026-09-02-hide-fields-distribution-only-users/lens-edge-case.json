@@ -1,0 +1,32 @@
+[
+  {
+    "location": "src/pages/settings/administration/ProjectDetailsPage.tsx:44-61",
+    "trigger_condition": "isProjectAdmin=true with a personal project passed to resolveBudgetsAccess",
+    "guard_snippet": "resolveBudgetsAccess({ isMaintainer, isAdmin, isProjectAdmin, isPersonalProject }): if (isPersonalProject) return 'view'",
+    "potential_consequence": "Function returns 'distribution' for personal-project admins; safety relies solely on canViewBudgets guard"
+  },
+  {
+    "location": "src/pages/settings/administration/components/UnifiedProjectBudgetModal.tsx:316-340",
+    "trigger_condition": "distributionOnly=true, forceCreate=false, active budget group deleted between page load and modal submit",
+    "guard_snippet": "if (distributionOnly && !existingGroup) { toaster.error('Budget no longer exists'); return; }",
+    "potential_consequence": "createProjectBudgetGroup called with name='' and default values, creating a blank-named group"
+  },
+  {
+    "location": "src/pages/settings/administration/components/UnifiedProjectBudgetModal.tsx:331-339",
+    "trigger_condition": "distributionOnly=true and forceCreate=true (modal opened programmatically or future UI change)",
+    "guard_snippet": "if (distributionOnly && !existingGroup) return; // or disable submit when distributionOnly && forceCreate",
+    "potential_consequence": "createProjectBudgetGroup receives name='', budget_duration='30d', total_budget=1000 from hidden defaults"
+  },
+  {
+    "location": "src/components/form/Textarea/Textarea.tsx:126",
+    "trigger_condition": "disabled Textarea rendered on a non-white or colored parent background",
+    "guard_snippet": "disabled && 'bg-surface-base-chat opacity-60 !text-text-secondary hover:border-border-primary'",
+    "potential_consequence": "opacity-60 makes textarea background semi-transparent; parent color bleeds through in all disabled Textarea usages"
+  },
+  {
+    "location": "src/pages/settings/administration/__tests__/ProjectDetailsPage.test.tsx:406-543",
+    "trigger_condition": "isBudgetManagementEnabled=false with isProjectAdmin=true — not covered by any test case",
+    "guard_snippet": "it('project admin does not see budget section when flag is off', async () => { vi.mocked(useBudgetManagementEnabled).mockReturnValue([false, false]); ... })",
+    "potential_consequence": "Budget section visible to project admin with flag disabled would not be caught by the test suite"
+  }
+]

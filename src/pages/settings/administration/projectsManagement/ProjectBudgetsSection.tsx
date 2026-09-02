@@ -29,27 +29,28 @@ import ProjectBudgetCard from './components/ProjectBudgetCard'
 
 const BUDGET_CATEGORIES: BudgetCategory[] = ['platform', 'cli', 'premium_models']
 
+export type ProjectBudgetsAccess = 'view' | 'distribution' | 'full'
+
 interface ProjectBudgetsSectionProps {
   projectName: string
   spendingRows?: ProjectSpendingWidgetRow[]
   onBudgetsChanged?: (budgets: ProjectBudget[]) => void
+  access: ProjectBudgetsAccess
   /** Reload the project after a save — chargeback settings live on the project, not the budget. */
   onProjectChanged?: () => void
-  mode: 'manage' | 'view'
   project?: ProjectDetail | null
-  canManageBudgets?: boolean
 }
 
 const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
   projectName,
   spendingRows,
   onBudgetsChanged,
+  access,
   onProjectChanged,
-  mode,
   project = null,
-  canManageBudgets = false,
 }) => {
-  const isManageMode = mode === 'manage'
+  const hasFullAccess = access === 'full'
+  const isDistributionOnly = access === 'distribution'
   const [budgets, setBudgets] = useState<ProjectBudget[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -135,23 +136,26 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     }
   }, [currentGroupId, loadBudgets])
 
+  const hasBudgets = budgets.length > 0
+  const showBudgetActions = hasFullAccess || (isDistributionOnly && hasBudgets)
+
   const manageItems = useMemo(
     () => [
       {
-        label: budgets.length > 0 ? 'Edit Budget' : 'Create Budget',
+        label: hasBudgets ? 'Edit Budget' : 'Create Budget',
         onClick: () => setUnifiedModalVisible(true),
       },
-      ...(currentGroupId
+      ...(hasFullAccess && currentGroupId
         ? [
             { label: 'Reset', onClick: () => setGroupConfirmAction('reset' as const) },
             { label: 'Rebalance', onClick: () => setGroupConfirmAction('rebalance' as const) },
           ]
         : []),
-      ...(budgets.length > 0
+      ...(hasFullAccess && hasBudgets
         ? [{ label: 'Delete', onClick: () => setGroupConfirmAction('delete' as const) }]
         : []),
     ],
-    [currentGroupId, budgets.length]
+    [hasFullAccess, currentGroupId, hasBudgets]
   )
 
   const spendingByBudgetId = (spendingRows ?? []).reduce<Record<string, ProjectSpendingWidgetRow>>(
@@ -174,9 +178,9 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm font-medium text-text-primary">Budgets</div>
-        {isManageMode && (
+        {showBudgetActions && (
           <DropdownButton
-            label={budgets.length > 0 ? 'Manage Budget' : 'Create Budget'}
+            label={hasBudgets ? 'Manage Budget' : 'Create Budget'}
             size="medium"
             items={manageItems}
             disabled={groupActionRunning}
@@ -215,12 +219,13 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
         onHide={() => setUnifiedModalVisible(false)}
         projectName={projectName}
         onSaved={handleBudgetSaved}
-        forceCreate={budgets.length === 0}
+        forceCreate={!hasBudgets}
+        distributionOnly={isDistributionOnly}
         project={project}
-        canManageBudgets={canManageBudgets}
+        canManageBudgets={hasFullAccess}
       />
 
-      {isManageMode && (
+      {hasFullAccess && (
         <>
           <ConfirmationModal
             visible={groupConfirmAction === 'reset'}

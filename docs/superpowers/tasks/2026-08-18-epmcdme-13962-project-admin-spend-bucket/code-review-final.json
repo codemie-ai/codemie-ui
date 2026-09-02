@@ -1,0 +1,10 @@
+{
+  "gate_id": "code-review.final",
+  "verdict": "approve",
+  "confidence": "low",
+  "reviewed_sha": "978ed5ae65f7da7ac694965289c6a2e5d7468f48",
+  "findings": [],
+  "summary": "Small, targeted UI change: hide name, reset-date, and description fields from distribution-only editors; total field remains disabled. No security or logic concerns.",
+  "decided_at": "2026-09-02T00:00:00.000Z",
+  "rationale": "Change is isolated to UnifiedProjectBudgetModal.tsx — conditional render via distributionOnly flag. Stash version reviewed and approved by author."
+}

@@ -1,0 +1,5 @@
+{"event":"lifecycle_emission","intent":"record_complexity_score","assessment_mode":"initial","status":"succeeded"}
+{"event":"decision.recorded","intent":"spec.approved","artifact_kind":"spec","status":"succeeded"}
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"spec","status":"succeeded"}
+{"event":"decision.recorded","intent":"plan.approved","artifact_kind":"plan","status":"succeeded"}
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"plan","status":"succeeded"}

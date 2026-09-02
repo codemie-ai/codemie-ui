@@ -62,9 +62,7 @@ describe('ProjectBudgetsSection chargeback prop wiring', () => {
   })
 
   it('threads project and canManageBudgets to the budget modal (CR-004)', async () => {
-    render(
-      <ProjectBudgetsSection projectName="p1" mode="manage" project={project} canManageBudgets />
-    )
+    render(<ProjectBudgetsSection projectName="p1" access="full" project={project} />)
 
     await waitFor(() => expect(modalProps).toHaveBeenCalled())
 
@@ -75,7 +73,7 @@ describe('ProjectBudgetsSection chargeback prop wiring', () => {
   })
 
   it('passes null project and canManageBudgets=false through by default (CR-004)', async () => {
-    render(<ProjectBudgetsSection projectName="p1" mode="manage" />)
+    render(<ProjectBudgetsSection projectName="p1" access="distribution" />)
 
     await waitFor(() => expect(modalProps).toHaveBeenCalled())
 
@@ -89,9 +87,8 @@ describe('ProjectBudgetsSection chargeback prop wiring', () => {
     render(
       <ProjectBudgetsSection
         projectName="p1"
-        mode="manage"
+        access="full"
         project={project}
-        canManageBudgets
         onProjectChanged={onProjectChanged}
       />
     )

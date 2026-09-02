@@ -83,12 +83,21 @@ const schema = Yup.object({
   soft_limit_notify_once: Yup.boolean().default(false).defined(),
 })
 
+const distributionOnlySchema = schema.shape({
+  name: Yup.string().defined(),
+  budget_duration: Yup.string().defined(),
+  total_budget: Yup.number().defined(),
+  description: Yup.string().default('').defined(),
+  notification_owner_email: Yup.string().default('').defined(),
+})
+
 export interface UnifiedProjectBudgetModalProps {
   visible: boolean
   onHide: () => void
   projectName: string
   onSaved?: () => void
   forceCreate?: boolean
+  distributionOnly?: boolean
   project?: ProjectDetail | null
   canManageBudgets?: boolean
 }
@@ -99,6 +108,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   projectName,
   onSaved,
   forceCreate = false,
+  distributionOnly = false,
   project = null,
   canManageBudgets = false,
 }) => {
@@ -147,7 +157,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     reset,
     formState: { errors },
   } = useForm<FormValues>({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(distributionOnly ? distributionOnlySchema : schema),
     defaultValues: {
       name: '',
       budget_duration: '30d',
@@ -397,17 +407,22 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       }
 
       if (existingGroup) {
-        await projectBudgetsStore.updateProjectBudgetGroup(existingGroup.group_id, {
-          name: data.name,
-          total_amount: data.total_budget,
-          budget_duration: data.budget_duration,
-          description: data.description,
-          categories,
-          notification_owner_email: ownerEmail,
-          soft_limit_notify_once: data.soft_limit_notify_once,
-        })
+        await projectBudgetsStore.updateProjectBudgetGroup(
+          existingGroup.group_id,
+          distributionOnly
+            ? { categories }
+            : {
+                name: data.name,
+                total_amount: data.total_budget,
+                budget_duration: data.budget_duration,
+                description: data.description,
+                categories,
+                notification_owner_email: ownerEmail,
+                soft_limit_notify_once: data.soft_limit_notify_once,
+              }
+        )
         toaster.info('Project budget saved')
-      } else {
+      } else if (!distributionOnly) {
         await projectBudgetsStore.createProjectBudgetGroup({
           project_name: projectName,
           name: data.name,
@@ -456,52 +471,56 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
         <Spinner inline rootClassName="py-12" />
       ) : (
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Controller
-              name="name"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  id="name"
-                  label="Name"
-                  required
-                  placeholder="Budget name"
-                  error={errors.name?.message}
+          {!distributionOnly && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Controller
+                  name="name"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="name"
+                      label="Name"
+                      required
+                      placeholder="Budget name"
+                      error={errors.name?.message}
+                    />
+                  )}
                 />
-              )}
-            />
-            <Controller
-              name="budget_duration"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  id="budget_duration"
-                  label="Reset Period"
-                  required
-                  value={field.value}
-                  options={DURATION_OPTIONS}
-                  onChangeValue={(value) => field.onChange(value)}
-                  error={errors.budget_duration?.message}
+                <Controller
+                  name="budget_duration"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      id="budget_duration"
+                      label="Reset Period"
+                      required
+                      value={field.value}
+                      options={DURATION_OPTIONS}
+                      onChangeValue={(value) => field.onChange(value)}
+                      error={errors.budget_duration?.message}
+                    />
+                  )}
                 />
-              )}
-            />
-          </div>
+              </div>
 
-          <Controller
-            name="description"
-            control={control}
-            render={({ field }) => (
-              <Textarea
-                {...field}
-                id="description"
-                label="Description"
-                placeholder="What this budget is used for"
-                error={errors.description?.message}
-                rows={3}
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    id="description"
+                    label="Description"
+                    placeholder="What this budget is used for"
+                    error={errors.description?.message}
+                    rows={3}
+                  />
+                )}
               />
-            )}
-          />
+            </>
+          )}
 
           <Controller
             name="total_budget"
@@ -515,6 +534,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
                 type="number"
                 min="0"
                 step="any"
+                disabled={distributionOnly}
                 onFocus={onTotalFocus}
                 onBlur={() => {
                   field.onBlur()
@@ -525,34 +545,38 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
             )}
           />
 
-          <Controller
-            name="notification_owner_email"
-            control={control}
-            render={({ field }) => (
-              <UserEmailAutocomplete
-                id="notification_owner_email"
-                label="Budget owner"
-                hint="Notified by email when this budget reaches its soft limit. Search for a platform user or type any address, including a group alias. Leave empty to disable notifications."
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                error={errors.notification_owner_email?.message}
+          {!distributionOnly && (
+            <>
+              <Controller
+                name="notification_owner_email"
+                control={control}
+                render={({ field }) => (
+                  <UserEmailAutocomplete
+                    id="notification_owner_email"
+                    label="Budget owner"
+                    hint="Notified by email when this budget reaches its soft limit. Search for a platform user or type any address, including a group alias. Leave empty to disable notifications."
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    error={errors.notification_owner_email?.message}
+                  />
+                )}
               />
-            )}
-          />
 
-          <Controller
-            name="soft_limit_notify_once"
-            control={control}
-            render={({ field }) => (
-              <Checkbox
-                id="soft_limit_notify_once"
-                label="Notify only once"
-                labelHint="When enabled, the soft-limit notification email is sent only once per budget edit cycle. It resets when you save the budget."
-                checked={field.value}
-                onChange={field.onChange}
+              <Controller
+                name="soft_limit_notify_once"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="soft_limit_notify_once"
+                    label="Notify only once"
+                    labelHint="When enabled, the soft-limit notification email is sent only once per budget edit cycle. It resets when you save the budget."
+                    checked={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
               />
-            )}
-          />
+            </>
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -587,15 +611,21 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
             onSoftInputChange={onSoftInputChange}
           />
 
-          <ChargebackSettings
-            value={chargeback}
-            hasCostCenter={Boolean(project?.cost_center_id)}
-            costCentersEnabled={isCostCentersEnabled}
-            canEdit={canManageBudgets}
-            onChange={setChargeback}
-          />
+          {!distributionOnly && (
+            <>
+              <ChargebackSettings
+                value={chargeback}
+                hasCostCenter={Boolean(project?.cost_center_id)}
+                costCentersEnabled={isCostCentersEnabled}
+                canEdit={canManageBudgets}
+                onChange={setChargeback}
+              />
 
-          {chargebackError && <p className="text-sm text-failed-secondary">{chargebackError}</p>}
+              {chargebackError && (
+                <p className="text-sm text-failed-secondary">{chargebackError}</p>
+              )}
+            </>
+          )}
         </form>
       )}
     </Popup>
