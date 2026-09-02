@@ -18,12 +18,14 @@ import { useSnapshot } from 'valtio'
 
 import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
+import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import RefreshSvg from '@/assets/icons/refresh.svg?react'
+import Button from '@/components/Button'
 import DetailsBadges, { BadgeItem } from '@/components/details/DetailsBadges'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Spinner from '@/components/Spinner'
 import Table from '@/components/Table'
-import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
+import { ButtonSize, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import { PROJECTS_MANAGEMENT_DETAIL } from '@/constants/routes'
 import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import { useRouter } from '@/hooks/useRouter'
@@ -31,6 +33,7 @@ import { useTableSelection } from '@/hooks/useTableSelection'
 import BudgetSpendCell from '@/pages/settings/administration/components/BudgetSpendCell'
 import { MAX_DISPLAYED_PROJECTS } from '@/pages/settings/administration/usersManagement/constants'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
+import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
 import { Pagination } from '@/types/common'
 import { BudgetAssignment } from '@/types/entity/budget'
@@ -39,6 +42,7 @@ import { UserListItem } from '@/types/entity/user'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 
 import BudgetAssignmentsModal from './components/BudgetAssignmentsModal'
+import CreateUserPopup from './usersManagement/components/popups/CreateUserPopup'
 import ResetBudgetPopup from './usersManagement/components/popups/ResetBudgetPopup'
 import UserDetailsPopup from './usersManagement/components/popups/UserDetailsPopup'
 import UserProjectSpendingTable, {
@@ -71,12 +75,16 @@ const UsersManagementPage: FC = () => {
   const router = useRouter()
   const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const { user: currentUser } = useSnapshot(userStore)
+  useSnapshot(appInfoStore)
   const { filters, handleFilterChange } = useUsersManagementFilters()
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
   const isAuditor = currentUser?.isAuditor ?? false
+  const isLocalAuth = appInfoStore.getIdpProvider() === 'local'
   const canViewBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer || isAuditor)
   const canManageBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer)
+  const canCreateUser = (isAdmin || isMaintainer) && isLocalAuth
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false)
   const effectiveFilters = useMemo(
     () => ({
       ...filters,
@@ -357,9 +365,21 @@ const UsersManagementPage: FC = () => {
     return columnDefinitions.filter((column) => column.key !== 'select')
   }, [columnDefinitions, isAdmin])
 
+  const renderHeaderActions = useMemo(() => {
+    if (!canCreateUser) return null
+
+    return (
+      <Button onClick={() => setIsCreateUserOpen(true)} size={ButtonSize.MEDIUM}>
+        <PlusFilledSvg />
+        Create
+      </Button>
+    )
+  }, [canCreateUser])
+
   return (
     <SettingsLayout
       contentTitle="Users management"
+      rightContent={renderHeaderActions}
       content={
         <div className="flex flex-col h-full">
           <div className="mt-4 flex items-end justify-between gap-4 pr-4 h-[68px]">
@@ -369,14 +389,16 @@ const UsersManagementPage: FC = () => {
               hasSelection={isAdmin && selected.length > 0}
               canManageBudgets={canManageBudgets}
             />
-            {isAdmin && (
-              <UsersManagementBulkActions
-                selectedUsers={selected}
-                refresh={refreshFromFirstPage}
-                onClearSelection={clearSelection}
-                canManageBudgets={canManageBudgets}
-              />
-            )}
+            <div className="flex items-center gap-4">
+              {isAdmin && (
+                <UsersManagementBulkActions
+                  selectedUsers={selected}
+                  refresh={refreshFromFirstPage}
+                  onClearSelection={clearSelection}
+                  canManageBudgets={canManageBudgets}
+                />
+              )}
+            </div>
           </div>
 
           <div className="relative">
@@ -411,6 +433,15 @@ const UsersManagementPage: FC = () => {
             userId={selectedUser?.id}
             onClose={handleCloseDetailsPopup}
             onSave={refresh}
+          />
+
+          <CreateUserPopup
+            isOpen={isCreateUserOpen}
+            onClose={() => setIsCreateUserOpen(false)}
+            onCreated={() => {
+              setIsCreateUserOpen(false)
+              refreshFromFirstPage()
+            }}
           />
 
           {canManageBudgets && (

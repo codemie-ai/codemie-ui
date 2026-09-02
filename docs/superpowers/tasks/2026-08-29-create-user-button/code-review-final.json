@@ -1,0 +1,102 @@
+{
+  "decision": "request-changes",
+  "rationale": "Required story AC on failure-toast content is unmet: createUser's catch always shows a fixed string instead of the backend's message (CR-006, critical). The role interdependency 'mirror UserDetailsPopup.tsx' requirement is only half-implemented: nothing disables Admin while Maintainer is on or Auditor while Admin/Maintainer is on, so an invalid role combination can be submitted (CR-004, CR-005, major). The form is never reset on close, so stale values resurface on reopen (CR-002, major), and there is no in-flight submit guard, unlike the sibling ResetBudgetPopup (CR-003, major). Test coverage is partial: no auditor-hidden or admin+local case (CR-001, major). All 6 candidates from the edge-case and acceptance lenses were verified against the live source and confirmed reachable; 0 deferred, 0 dismissed. Standards audit ran clean (commit-format pass, security pass, code-quality na — no guide/ArtifactRef); no coverage gap.",
+  "confidence": "high",
+  "risk_flags": ["security"],
+  "business_review": [
+    { "kind": "story-ac", "item": "Create user button appears in UsersManagementPage top bar, in the existing role-gated control slot", "status": "pass", "notes": "Added inside the existing top-bar controls div alongside UsersManagementBulkActions — UsersManagementPage.tsx:379-391" },
+    { "kind": "story-ac", "item": "Button visible only when isAdmin || isMaintainer; never visible to auditors", "status": "pass", "notes": "canCreateUser = (isAdmin || isMaintainer) && isLocalAuth — UsersManagementPage.tsx:79-85" },
+    { "kind": "story-ac", "item": "Button hidden entirely (not disabled) when IDP provider is not 'local'", "status": "pass", "notes": "canCreateUser gates on appInfoStore.getIdpProvider()==='local'; rendered via {canCreateUser && <Button/>} — UsersManagementPage.tsx:82,388-390" },
+    { "kind": "story-ac", "item": "Clicking the button opens a Popup-based modal with email, username, password, name, and three Switch role toggles", "status": "pass", "notes": "CreateUserPopup.tsx wraps Popup with Controller-bound email/username/password/name Inputs and is_auditor/is_admin/is_maintainer Switches" },
+    { "kind": "story-ac", "item": "Password input uses type=\"password\"; no visibility toggle and no confirm-password field", "status": "pass", "notes": "CreateUserPopup.tsx:131 sets type=\"password\"; no toggle or confirm field present" },
+    { "kind": "story-ac", "item": "Enabling is_maintainer forces is_admin on; enabling is_admin or is_maintainer clears is_auditor", "status": "pass", "notes": "Verified for the enable direction only (CreateUserPopup.tsx:176-205). The reverse guards (disable Admin while Maintainer on; enable Auditor while Admin/Maintainer on) are missing — CR-004, CR-005" },
+    { "kind": "story-ac", "item": "Form validation (Yup): email format/presence, username 3-50 chars, password required, name optional", "status": "pass", "notes": "Schema at CreateUserPopup.tsx:43-55 matches exactly" },
+    { "kind": "story-ac", "item": "Submitting a valid form calls a new userStore.createUser performing POST /v1/admin/users with a UserCreatePayload body", "status": "pass", "notes": "CreateUserPopup.tsx:75 calls userStore.createUser(data); user.ts:470-483 posts to 'v1/admin/users' with skipErrorHandling:true" },
+    { "kind": "story-ac", "item": "On success: modal closes, a success toast is shown, and the users list refreshes without a manual reload", "status": "pass", "notes": "user.ts:475 toasts info; onCreated() (CreateUserPopup.tsx:76) triggers UsersManagementPage.tsx:431-434 to close and refresh" },
+    { "kind": "story-ac", "item": "On failure: an error toast surfaces the backend's message and the modal stays open with entered values intact", "status": "fail", "notes": "catch always toasts hardcoded 'Failed to create user', never error?.parsedError?.message — user.ts:478-481. See CR-006" },
+    { "kind": "story-ac", "item": "New tests cover button visibility (admin/maintainer/auditor/non-local combinations), role-switch interdependency, and success/failure submission", "status": "partial", "notes": "createUserButton.test.tsx covers hidden-non-privileged, hidden-non-local-admin, visible-maintainer-local; missing auditor-hidden and admin-visible-local cases. See CR-001" },
+    { "kind": "spec", "item": "Modal built on Popup (never PrimeReact Dialog directly), using RHF + @hookform/resolvers/yup + Controller, following ChangeRolePopup.tsx", "status": "pass", "notes": "CreateUserPopup.tsx uses Popup, useForm/Controller/yupResolver mirroring ChangeRolePopup.tsx's shape" },
+    { "kind": "spec", "item": "The page owns the modal's open/closed boolean state", "status": "pass", "notes": "isCreateUserOpen state lives in UsersManagementPage.tsx:86, passed as isOpen/onClose/onCreated props" },
+    { "kind": "spec", "item": "No changes to UserDetailsPopup.tsx or the existing edit-user flow (Non-goal)", "status": "pass", "notes": "Diff does not touch UserDetailsPopup.tsx or updateUser" },
+    { "kind": "spec", "item": "No new or changed feature-flag gating (useUserManagementEnabled()) (Non-goal)", "status": "pass", "notes": "No feature-flag hook touched; only local-auth and role gating added" },
+    { "kind": "spec", "item": "No changes to backend authorization or the POST /v1/admin/users contract itself (Non-goal)", "status": "pass", "notes": "Frontend-only diff: UsersManagementPage.tsx, CreateUserPopup.tsx, user.ts, types/entity/user.ts, tests" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 3 commit subjects match the documented EPMCDME-XXXX: Capital sentence pattern." },
+    { "kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md exists and no code_quality ArtifactRef was passed; no documented standard to adjudicate against." },
+    { "kind": "security", "status": "pass", "notes": "No dangerouslySetInnerHTML/innerHTML sinks, no untrusted-input navigation, no postMessage listeners, no VITE_*/window._env_ exposure; catch blocks never log the payload (plaintext password)." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/__tests__/UsersManagementPage.createUserButton.test.tsx",
+      "title": "Missing auditor-hidden and admin+local test cases",
+      "problem": "The test file covers hidden-for-non-privileged, hidden-for-admin-non-local, and visible-for-maintainer-local, but never asserts that an auditor (isAuditor: true) cannot see the button, nor that an admin (as opposed to a maintainer) sees it on a local-auth deployment.",
+      "impact": "Two of the acceptance criteria's explicitly-named role/mode combinations have no regression coverage; a future change could silently expose the button to auditors or hide it from admins without any test failing.",
+      "recommendation": "Add two cases to createUserButton.test.tsx: isAuditor:true + local auth renders no button, and isAdmin:true (non-maintainer) + local auth renders and opens it."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/usersManagement/components/popups/CreateUserPopup.tsx",
+      "line": 68,
+      "title": "Form values not reset on popup close/reopen",
+      "problem": "useForm() only destructures control/handleSubmit/setValue — no reset is called, no useEffect keys off isOpen, and UsersManagementPage.tsx mounts CreateUserPopup once with no remount key.",
+      "impact": "Closing the popup (cancel or after a successful create) and reopening it resurfaces the previous attempt's email/username/password and role-switch state, risking an admin unintentionally submitting stale role selections for a different user.",
+      "recommendation": "Destructure reset from useForm and call it in a useEffect keyed on isOpen (reset to defaultValues when isOpen becomes false), matching the reset-on-close pattern used elsewhere in this popup family."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/usersManagement/components/popups/CreateUserPopup.tsx",
+      "line": 73,
+      "title": "No guard against duplicate submit while in flight",
+      "problem": "onSubmit is async but nothing disables the Create button while the request is pending: formState.isSubmitting is not read and Popup's submitDisabled prop is not passed, unlike the sibling ResetBudgetPopup.tsx which tracks isSubmitting and passes submitDisabled={isSubmitting}.",
+      "impact": "A double-click or repeated Enter before the first POST /v1/admin/users resolves fires a duplicate create request.",
+      "recommendation": "Read isSubmitting from useForm's formState (or track local submitting state) and pass submitDisabled={isSubmitting} to Popup, mirroring ResetBudgetPopup.tsx."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/usersManagement/components/popups/CreateUserPopup.tsx",
+      "line": 157,
+      "title": "Auditor switch not disabled when Admin/Maintainer is on",
+      "problem": "The is_auditor Switch (lines 157-168) has no disabled prop. UserDetailsPopup.tsx disables its equivalent Auditor switch whenever roleFlags.is_admin || roleFlags.is_maintainer is true, but CreateUserPopup lets it be turned on regardless, and turning it on does not clear is_admin/is_maintainer.",
+      "impact": "A user can be created with is_auditor:true alongside is_admin:true or is_maintainer:true, an invalid role combination the edit flow (UserDetailsPopup) prevents by construction.",
+      "recommendation": "Disable the Auditor Switch when is_admin || is_maintainer is true, mirroring UserDetailsPopup.tsx's handleRoleChange/disabled logic."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/usersManagement/components/popups/CreateUserPopup.tsx",
+      "line": 169,
+      "title": "Admin switch not disabled when Maintainer is on",
+      "problem": "The is_admin Switch (lines 169-186) has no disabled prop. UserDetailsPopup.tsx disables its equivalent Admin switch whenever roleFlags.is_maintainer is true (an early-return in handleRoleChange enforces the same rule), but CreateUserPopup lets Admin be toggled off directly while Maintainer remains on.",
+      "impact": "A user can be created with is_maintainer:true and is_admin:false, an invalid role combination the edit flow forbids, and other code may assume the is_maintainer-implies-is_admin invariant holds.",
+      "recommendation": "Disable the Admin Switch when is_maintainer is true, mirroring UserDetailsPopup.tsx's handleRoleChange/disabled logic."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/store/user.ts",
+      "line": 478,
+      "title": "createUser error toast ignores backend message",
+      "problem": "userStore.createUser's catch always calls toaster.error('Failed to create user') and never reads error?.parsedError?.message, so a specific backend validation reason (e.g. a password-policy violation) never reaches the admin/maintainer.",
+      "impact": "Fails the required story AC that a failure toast must surface the backend's message; the sibling UserProjectsTable.tsx:173 already establishes the correct pattern (toaster.error(error?.parsedError?.message || 'Failed to update role')) elsewhere in this same page area.",
+      "recommendation": "Change the catch to toaster.error(error?.parsedError?.message || 'Failed to create user'), matching UserProjectsTable.tsx's pattern."
+    }
+  ]
+}

@@ -75,6 +75,16 @@ export interface UserUpdatePayload {
   is_auditor?: boolean
 }
 
+export interface UserCreatePayload {
+  email: string
+  username: string
+  password: string
+  name?: string
+  is_admin: boolean
+  is_maintainer: boolean
+  is_auditor: boolean
+}
+
 export interface PaginationInfo {
   total: number
   page: number

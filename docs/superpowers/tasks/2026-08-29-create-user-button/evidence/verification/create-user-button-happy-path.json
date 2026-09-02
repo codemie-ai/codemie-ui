@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "head": "4491fcabddd0a68f9a2e59339bbdd9260eccca3b",
+  "feature_id": "create-user-button-happy-path",
+  "tool": "playwright",
+  "coverage_source": "generated-test",
+  "test_command": "npx playwright test create-user-button.spec.ts --config=playwright.config.ts",
+  "test_file": "dynamic-tests/create-user-button.spec.ts",
+  "app_url": "http://localhost:5173/settings/administration/users",
+  "screenshot_path": "evidence/screenshots/create-user-button-happy-path.png",
+  "console_errors": [],
+  "network_failures": [],
+  "result": "PASS",
+  "notes": "Logged in as the local-auth bootstrapped superadmin (admin@codemie.ai, is_admin=true, is_maintainer=true, IDP_PROVIDER=local). Verified: Create user button visible on /settings/administration/users; opens a modal with email/username/password/name fields and Auditor/Admin/Maintainer switches; role interdependency matches spec (enabling Admin clears+disables Auditor, enabling Maintainer forces Admin on and disables both Admin and Auditor, disabling Maintainer restores Admin to editable); submitting a valid unique user calls POST /v1/admin/users, closes the modal, shows the success toast ('User created successfully', rendered via toaster.info -> .codemie-toast-info), and refreshes the list to show the new user. Zero console errors and zero HTTP >=400 responses were observed once past the post-login landing page (see below)."
+}

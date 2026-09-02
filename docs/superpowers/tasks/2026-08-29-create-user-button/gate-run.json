@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14535_create-user-button",
+  "head": "4c6bd757c782d151c13af01bd097556caf729053",
+  "runner": "npm",
+  "started_at": "2026-08-29T20:38:00Z",
+  "completed_at": "2026-08-29T20:47:15Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 11612,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Rerun from clean HEAD after a prior gate-run.json (head 4478cc106) was superseded by 2 new commits (chore: fix import order in SettingsForm.tsx; EPMCDME-14535 label alignment). The untracked docs/superpowers/.../dynamic-tests/*.spec.ts files that previously caused 4 lint errors no longer exist on disk, so no auto-fix was needed this run."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8599,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency added/removed/moved. `git diff --name-only origin/main...HEAD -- package.json package-lock.json` is empty."
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 20960,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks scanned ~96.11 MB, \"no leaks found\"."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 53954,
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "notes": "460 test files, 4879 tests passed."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 32767,
+      "command": "npm run test:integration",
+      "exit_code": 0,
+      "notes": "37 test files, 489 tests passed, 1 skipped (pre-existing, unrelated to this branch)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (UsersManagementPage.tsx, CreateUserPopup.tsx, tabs.tsx match ui_globs) but no configured UI test script (no `test:ui` in package.json, guide defines no UI gate); browser verification is a separate caller decision (feature-verification)."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 417,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: output was exactly \"→ No staged files found.\" No files are currently staged in the working tree (only an unstaged vite.config.ts edit and an untracked docs/ dir). To exercise this gate locally, `git add` the changed files first, matching what happens automatically at commit time."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 210,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 1904 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 252389,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Ran clean on the first attempt (no transient ENOENT this time). SONAR_TOKEN was available, so this ran the full scan rather than self-skipping. SCM revision ID in the scan log matched HEAD (4c6bd757c...). QUALITY GATE STATUS: PASSED per https://sonar.core.kuberocketci.io/dashboard?id=codemie-ui&branch=EPMCDME-14535_create-user-button. Scanner logged one \"Missing blame information\" warning, for the unstaged vite.config.ts edit (expected for uncommitted content, unrelated to this branch's feature diff)."
+    }
+  ],
+  "failures": {}
+}

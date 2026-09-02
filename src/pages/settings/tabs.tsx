@@ -27,9 +27,11 @@ import {
   isTeamsEnabled,
 } from '@/utils/featureFlags'
 
+// Enterprise-only admin items. Users management is intentionally NOT part of this list —
+// it is available to Admin, Maintainer, and Auditor regardless of Enterprise Edition,
+// gated only by the `features:userManagement` flag (see `usersManagementTab` below).
 const getEnterpriseAdminItems = (
   isMcpFeatureEnabled: boolean,
-  isUserMgmtEnabled: boolean,
   budgetsManagementTab: LayoutTab[]
 ): LayoutTab[] => [
   {
@@ -61,16 +63,6 @@ const getEnterpriseAdminItems = (
     title: 'Providers management',
     url: '/settings/administration/providers',
   },
-  ...(isUserMgmtEnabled
-    ? [
-        {
-          id: SettingsTab.USERS_MANAGEMENT,
-          name: 'Users management',
-          title: 'Users management',
-          url: '/settings/administration/users',
-        },
-      ]
-    : []),
 ]
 
 interface AdminChildrenContext {
@@ -80,7 +72,6 @@ interface AdminChildrenContext {
   isProjectAdmin: boolean
   isMcpFeatureEnabled: boolean
   isCostCentersFeatureEnabled: boolean
-  isUserMgmtEnabled: boolean
   isTeamsBotEnabled: boolean
   isEnterprise: boolean
   projectsTab: LayoutTab
@@ -117,12 +108,9 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
           ]
         : []),
       ctx.projectsTab,
+      ...ctx.usersManagementTab,
       ...(ctx.isEnterprise
-        ? getEnterpriseAdminItems(
-            ctx.isMcpFeatureEnabled,
-            ctx.isUserMgmtEnabled,
-            ctx.budgetsManagementTab
-          )
+        ? getEnterpriseAdminItems(ctx.isMcpFeatureEnabled, ctx.budgetsManagementTab)
         : []),
       ...(ctx.isTeamsBotEnabled ? [teamsTab] : []),
     ].sort((a, b) => a.name.localeCompare(b.name))
@@ -168,7 +156,7 @@ export const getNavigationTabs = (
       : []
 
   const usersManagementTab: LayoutTab[] =
-    isUserMgmtEnabled && (isAdmin || isAuditor)
+    isUserMgmtEnabled && (isAdmin || isMaintainer || isAuditor)
       ? [
           {
             id: SettingsTab.USERS_MANAGEMENT,
@@ -204,7 +192,6 @@ export const getNavigationTabs = (
     isProjectAdmin,
     isMcpFeatureEnabled,
     isCostCentersFeatureEnabled,
-    isUserMgmtEnabled,
     isTeamsBotEnabled,
     isEnterprise,
     projectsTab,

@@ -1,0 +1,3 @@
+{"task_id":"task-1-user-create-payload-and-store","status":"done","commit":"c2448e2f6","test_command":"npx vitest run src/store/__tests__/user.createUser.test.ts"}
+{"task_id":"task-2-create-user-popup","status":"done","commit":"c7fcf024e","test_command":"npx vitest run src/pages/settings/administration/usersManagement/components/popups/__tests__/CreateUserPopup.test.tsx"}
+{"task_id":"task-3-wire-create-user-button","status":"done","commit":"25d210b04","test_command":"npx vitest run src/pages/settings/administration/__tests__/UsersManagementPage.createUserButton.test.tsx"}

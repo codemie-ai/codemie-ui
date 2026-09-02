@@ -41,6 +41,8 @@ public/keycloakify-dev-resources
 .agents/memory/sdlc/daily/
 docs/superpowers/runs/
 docs/superpowers/tasks/*/.state.json
+docs/superpowers/tasks/*/gate-plan.json
+docs/superpowers/tasks/*/*.diff
 .superpowers
 .codemie/claude-templates
 .codemie/virtual_assistants

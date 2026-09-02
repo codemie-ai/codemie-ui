@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "task": "Add a role-gated \"Create user\" button and modal to the CodeMie UI Users Management page that calls the existing backend POST /v1/admin/users endpoint.",
+  "generated": "2026-08-29T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 17,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Task description is directionally clear (button, modal, existing POST /v1/admin/users), but technical-analysis.md documents four unresolved design decisions: no existing password-field pattern to imitate, the ticket says 'checkboxes' while the closest analog (UserDetailsPopup) uses Switch for the same three role flags, whether the button/form should also gate on getIdpProvider()==='local' (backend 400s otherwise) is unconfirmed, and whether the edit-flow's role-interdependency rules (maintainer implies admin; admin/maintainer clears auditor) should carry over to create is undecided." },
+    { "dimension": "technical_risk", "reason": "Base risk is low — a near-identical modal+form template exists (ChangeRolePopup.tsx: Popup + react-hook-form + yup + Controller calling a userStore method) and every userStore admin method shares one call shape. Bumped to L because the new work is security-sensitive in a way the precedent does not cover: this form creates local accounts with privilege flags (is_admin/is_maintainer/is_auditor) and a password field, and the codebase has zero existing password-input pattern (masking, min-length feedback, visibility toggle) and zero test coverage for any create-flow to extend." },
+    { "dimension": "component_scope", "reason": "Three components change, mostly within one clear pattern: UsersManagementPage.tsx (add role-gated button), a new popup component under usersManagement/components/popups/ (following the ChangeRolePopup template), and src/store/user.ts (one new method matching the uniform api.post(...).then(r.json()).catch(toaster.error+throw) shape already used by every other admin method there). Effectively 2 layers (UI, Store/Service) with a well-established pattern, not new abstractions." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: user creation introduces a secret-handling surface (password field) and privilege-assignment flags (is_admin/is_maintainer) with no existing reusable pattern for either in this codebase."
+  ],
+  "split_recommendation": null
+}

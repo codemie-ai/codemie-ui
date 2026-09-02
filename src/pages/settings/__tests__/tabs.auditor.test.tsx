@@ -61,12 +61,43 @@ describe('getNavigationTabs — auditor role', () => {
     expect(childIds).not.toContain('budgets_management')
   })
 
-  it('admin branch is unchanged — admin still sees all enterprise tabs (non-regression)', async () => {
+  it('admin sees Users management even without Enterprise Edition', async () => {
     const { getNavigationTabs } = await import('@/pages/settings/tabs')
     const tabs = getNavigationTabs(true, false, false, false, false)
     const adminTab = tabs.find((t) => t.id === 'administration')
     const childIds = adminTab?.children?.map((c) => c.id) ?? []
     expect(childIds).toContain('projects_management')
-    expect(childIds).not.toContain('users_management')
+    expect(childIds).toContain('users_management')
+  })
+
+  it('maintainer sees Users management even without Enterprise Edition', async () => {
+    const { getNavigationTabs } = await import('@/pages/settings/tabs')
+    // isMaintainer=true; SettingsLayout also ORs isMaintainer into the isAdmin param
+    const tabs = getNavigationTabs(true, false, true, false, false)
+    const adminTab = tabs.find((t) => t.id === 'administration')
+    const childIds = adminTab?.children?.map((c) => c.id) ?? []
+    expect(childIds).toContain('users_management')
+  })
+
+  it('Users management is hidden for all roles when the feature flag is off', async () => {
+    vi.resetModules()
+    vi.doMock('@/utils/featureFlags', () => ({
+      isBudgetManagementEnabled: () => true,
+      isUserManagementEnabled: () => false,
+      isMcpEnabled: () => false,
+      isCostCentersEnabled: () => false,
+      isTeamsEnabled: () => false,
+    }))
+    const { getNavigationTabs } = await import('@/pages/settings/tabs')
+    const adminChildIds =
+      getNavigationTabs(true, false, false, false, false)
+        .find((t) => t.id === 'administration')
+        ?.children?.map((c) => c.id) ?? []
+    const auditorChildIds =
+      getNavigationTabs(false, false, false, false, true)
+        .find((t) => t.id === 'administration')
+        ?.children?.map((c) => c.id) ?? []
+    expect(adminChildIds).not.toContain('users_management')
+    expect(auditorChildIds).not.toContain('users_management')
   })
 })

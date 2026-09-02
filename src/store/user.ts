@@ -26,6 +26,7 @@ import {
   UserListItem,
   UserType,
   UserUpdatePayload,
+  UserCreatePayload,
 } from '@/types/entity/user'
 import api from '@/utils/api'
 import { isFeatureEnabled } from '@/utils/featureFlags'
@@ -85,6 +86,7 @@ interface UserStoreType {
     }
   }) => Promise<GetUsersResponse>
   getUserById: (userId: string) => Promise<UserListItem>
+  createUser: (payload: UserCreatePayload) => Promise<UserListItem>
   updateUser: (userId: string, data: UserUpdatePayload) => Promise<void>
   getUserBudgets: (userId: string) => Promise<BudgetAssignment[]>
   updateUserBudgets: (userId: string, assignments: BudgetAssignment[]) => Promise<void>
@@ -461,6 +463,20 @@ export const userStore = proxy<UserStoreType>({
       .catch((error) => {
         console.error('Failed to fetch user:', error)
         toaster.error('Failed to fetch user')
+        throw error
+      })
+  },
+
+  createUser(payload) {
+    return api
+      .post('v1/admin/users', payload, { skipErrorHandling: true })
+      .then((response) => response.json())
+      .then((data) => {
+        toaster.info('User created successfully')
+        return data
+      })
+      .catch((error) => {
+        toaster.error(error?.parsedError?.message || 'Failed to create user')
         throw error
       })
   },

@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "head": "4491fcabddd0a68f9a2e59339bbdd9260eccca3b",
+  "feature_id": "create-user-button-error-handling",
+  "tool": "playwright",
+  "coverage_source": "generated-test",
+  "test_command": "npx playwright test create-user-error-handling.spec.ts --config=playwright.config.ts",
+  "test_file": "dynamic-tests/create-user-error-handling.spec.ts",
+  "app_url": "http://localhost:5173/settings/administration/users",
+  "screenshot_path": "evidence/screenshots/create-user-button-error-handling.png",
+  "console_errors": [
+    "Failed to create user: [object Object]"
+  ],
+  "network_failures": [],
+  "result": "FAIL",
+  "notes": "All functional assertions passed: with POST /v1/admin/users mocked to return 409 {\"error\":{\"message\":\"A user with this email already exists\"}}, the error toast displayed exactly that backend message (.codemie-toast-err), and the modal stayed open with email/username/name values intact. The test is marked FAIL only because of this skill's hard 'any console error is a hard fail' rule: src/store/user.ts createUser()'s catch block calls console.error('Failed to create user:', error) before toasting, by the same established pattern already used by every other admin mutation in that file (assignUserToProject, updateUserProjectRole, unassignUserFromProject, searchUsers, etc.) -- so this is pre-existing, codebase-wide convention, not a regression introduced by this feature. Flagging for human judgment rather than silently downgrading the result."
+}

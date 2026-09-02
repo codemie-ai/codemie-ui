@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "head": "4491fcabddd0a68f9a2e59339bbdd9260eccca3b",
+  "surface_changed": true,
+  "changed_files": [
+    "src/pages/settings/administration/UsersManagementPage.tsx",
+    "src/pages/settings/administration/usersManagement/components/popups/CreateUserPopup.tsx",
+    "src/store/user.ts",
+    "src/types/entity/user.ts"
+  ],
+  "tool": "playwright",
+  "tool_source": "npx (no project devDependency; resolved via npx cache, chromium already installed at ~/Library/Caches/ms-playwright)",
+  "coverage_source": "generated-test",
+  "existing_e2e_dir": null,
+  "dynamic_tests_dir": "dynamic-tests",
+  "app_url": "http://localhost:5173",
+  "login": {
+    "route": "/auth/sign-in",
+    "account": "admin@codemie.ai (bootstrapped superadmin, IDP_PROVIDER=local, from codemie/.env SUPERADMIN_EMAIL/SUPERADMIN_PASSWORD)"
+  },
+  "features": [
+    {
+      "feature_id": "create-user-button-happy-path",
+      "test_command": "npx playwright test create-user-button.spec.ts --config=playwright.config.ts",
+      "test_file": "dynamic-tests/create-user-button.spec.ts"
+    },
+    {
+      "feature_id": "create-user-button-error-handling",
+      "test_command": "npx playwright test create-user-error-handling.spec.ts --config=playwright.config.ts",
+      "test_file": "dynamic-tests/create-user-error-handling.spec.ts"
+    }
+  ]
+}
