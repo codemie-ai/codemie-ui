@@ -72,7 +72,7 @@ describe('SettingsForm — resource_id reset on project change', () => {
   })
 
   it('clears resource_id when the project changes', async () => {
-    const capturedValues: Record<string, string>[] = []
+    const capturedValues: Record<string, unknown>[] = []
 
     render(
       <SettingsForm
@@ -99,7 +99,7 @@ describe('SettingsForm — resource_id reset on project change', () => {
   })
 
   it('does not clear resource_id on initial mount even when project is set', async () => {
-    const capturedValues: Record<string, string>[] = []
+    const capturedValues: Record<string, unknown>[] = []
 
     render(
       <SettingsForm

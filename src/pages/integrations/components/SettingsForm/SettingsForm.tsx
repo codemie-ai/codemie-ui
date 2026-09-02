@@ -80,13 +80,13 @@ interface SettingsFormProps {
   settingAlias?: string
   credentialType?: string
   credentialKey?: string
-  credentialValues?: Record<string, string>
+  credentialValues?: Record<string, unknown>
   isGlobal?: boolean
   hideActions?: boolean
   settingType?: 'user' | 'project'
   disableProject?: boolean
   disableType?: boolean
-  onCredentialValuesChange?: (values: Record<string, string>) => void
+  onCredentialValuesChange?: (values: Record<string, unknown>) => void
   onCredentialTypeChange?: (type: string) => void
   shouldAutofocusInput?: boolean
 }
@@ -155,7 +155,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   >(() => {
     const hasManualConfig = CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration
     return hasManualConfig && initialCredentialValues
-      ? convertCredsToKeyValue(initialCredentialValues)
+      ? (convertCredsToKeyValue(initialCredentialValues) as { key: string; value: string }[])
       : []
   })
 
@@ -401,12 +401,13 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   }
 
   useEffect(() => {
+    if (!customerConfig) return
     if (!CREDENTIAL_TYPES.includes(credentialType) && CREDENTIAL_TYPES.length > 0) {
       handleCredentialTypeChange(CREDENTIAL_TYPES[0])
     }
     // handleCredentialTypeChange intentionally uses current form state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [CREDENTIAL_TYPES, credentialType])
+  }, [CREDENTIAL_TYPES, credentialType, customerConfig])
 
   useEffect(() => {
     return registerCredentialTypeCallback(handleCredentialTypeChange)
@@ -617,7 +618,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
             setValue={setFormValue}
             editing={editing}
             formError={errors.oauth_state?.message as string | undefined}
-            initialUserEmail={initialCredentialValues?.email}
+            initialUserEmail={initialCredentialValues?.email as string | undefined}
           />
         ) : (
           <div data-onboarding="integration-credential-fields" className="flex flex-col gap-y-6">
@@ -637,7 +638,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                 setValue={setFormValue}
                 formError={errors.oauth_state?.message as string | undefined}
                 signedIn={isSharePointSignedIn}
-                initialUsername={initialCredentialValues?.username}
+                initialUsername={initialCredentialValues?.username as string | undefined}
               />
             )}
             {!isSharePointOAuth &&

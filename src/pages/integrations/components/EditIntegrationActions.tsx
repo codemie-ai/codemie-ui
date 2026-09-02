@@ -22,7 +22,7 @@ import TestIntegration from './TestIntegration'
 
 type Props = {
   credentialType: string
-  credentialValues: Record<string, string>
+  credentialValues: Record<string, unknown>
   settingId: string
   onSave: () => void
 }

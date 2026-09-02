@@ -24,7 +24,8 @@ type ResourceOption = { label: string; value: string }
 export function useResourceOptions(
   resourceType: string,
   project?: string,
-  search?: string
+  search?: string,
+  perPage?: number
 ): {
   options: ResourceOption[]
   loading: boolean
@@ -44,7 +45,10 @@ export function useResourceOptions(
       try {
         let mapped: ResourceOption[] = []
         if (resourceType === 'assistant') {
-          const data = await assistantsStore.getAssistantOptions(search ?? '', { project })
+          const data = await assistantsStore.getAssistantOptions(search ?? '', {
+            project,
+            ...(perPage ? { per_page: perPage } : {}),
+          })
           mapped = data.map((item: { id: string; name: string }) => ({
             label: item.name,
             value: String(item.id),
@@ -73,7 +77,7 @@ export function useResourceOptions(
     return () => {
       cancelled = true
     }
-  }, [resourceType, project, search])
+  }, [resourceType, project, search, perPage])
 
   return { options, loading }
 }

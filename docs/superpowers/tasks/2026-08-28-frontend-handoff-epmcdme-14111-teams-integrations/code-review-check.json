@@ -1,0 +1,21 @@
+{
+  "decision": "approve",
+  "rationale": "HUMAN OVERRIDE — not an automated check round. The 9 findings in code-review-final.json (CR-001 through CR-009) were NOT fixed in source; git status confirms no code changes were made beyond the pre-existing TS2322 fixes already on this branch. The accountable reviewer (Andriy Lukashchuk) explicitly reviewed the 9 findings and the pre-existing standards finding, and directed that the MR be approved as-is without a fix-up round. See decisions.jsonl for the recorded HITL decision and code-review-override.md for the full finding-by-finding rationale.",
+  "confidence": "high",
+  "source": "hitl-override",
+  "risk_flags": [
+    "9 kind:code findings from code-review-final.json (CR-001..CR-009) remain unresolved in source",
+    "this file records a human approval decision, not a re-run automated review"
+  ],
+  "finding_status": [
+    { "id": "CR-001", "status": "accepted-risk" },
+    { "id": "CR-002", "status": "accepted-risk" },
+    { "id": "CR-003", "status": "accepted-risk" },
+    { "id": "CR-004", "status": "accepted-risk" },
+    { "id": "CR-005", "status": "accepted-risk" },
+    { "id": "CR-006", "status": "accepted-risk" },
+    { "id": "CR-007", "status": "accepted-risk" },
+    { "id": "CR-008", "status": "accepted-risk" },
+    { "id": "CR-009", "status": "accepted-risk" }
+  ]
+}

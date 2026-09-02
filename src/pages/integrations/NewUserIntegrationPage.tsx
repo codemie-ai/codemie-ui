@@ -41,7 +41,7 @@ const NewUserIntegrationPage = () => {
 
   const formRef = useRef<SettingsFormRef>(null)
   const [credentialType, setCredentialType] = useState('')
-  const [credentialValues, setCredentialValues] = useState<Record<string, string>>({})
+  const [credentialValues, setCredentialValues] = useState<Record<string, unknown>>({})
 
   const deprecated = useDeprecationRedirect(query.credentialType as string | undefined)
   if (deprecated) return null

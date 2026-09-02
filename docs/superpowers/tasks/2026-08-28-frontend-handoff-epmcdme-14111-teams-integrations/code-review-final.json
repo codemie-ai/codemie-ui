@@ -1,0 +1,133 @@
+{
+  "decision": "request-changes",
+  "rationale": "No spec/story artifact was present, so acceptance did not run and business_review is empty (confidence capped low). 9 blocking findings survived triage in the MS Teams assistant-picker wiring (stale selection on project switch, missing project scoping, duplicated parallel fetches, a hard 100-item cap with no pagination, silent fetch-error handling, broad type widening backed by unchecked casts, and two missing-test gaps) plus 1 pre-existing standards finding (SettingsForm.tsx 731, CredentialFields.tsx 409, ProjectSettings.tsx 305 lines, none extracted despite being touched again). 7 lens findings were dismissed as noise (already-verified call sites, established fieldsSectionTitle/defaultUrl conventions, cosmetic trailing-newline, and dead-code observations with no live consequence); no findings were pre-existing-and-out-of-scope, so nothing was deferred.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "all 6 commit subjects in range match ^EPMCDME-14111: [A-Z] with no zero ID, no trailing period, capitalized first word after colon"
+    },
+    {
+      "kind": "code-quality",
+      "status": "partial",
+      "notes": "3 pre-existing oversized files (SettingsForm.tsx 731, CredentialFields.tsx 409, ProjectSettings.tsx 305 lines) touched without extraction; useIntegrationTypeOptions.ts:53 uses || instead of ?? for a default value."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No dangerouslySetInnerHTML/innerHTML, no postMessage listeners, no window.location navigation, no secret/credential logging in changed files; deleted Teams-bot files leave no dangling references."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/components/SettingsForm/CredentialFields.tsx",
+      "line": 126,
+      "title": "Duplicate parallel assistant fetch",
+      "problem": "`hasAssistantMultiSelect` and the resulting `useResourceOptions('assistant', ...)` call are computed unconditionally from the full `credentialFields` map passed into every `CredentialFields` instance, not filtered by `position`. SettingsForm renders `CredentialFields` twice (position=top at SettingsForm.tsx:526 and position=fieldsSection at SettingsForm.tsx:670) with the same `CREDENTIAL_VALUES_MAPPING[credentialType].fields` object, so both instances detect the msteams `assistant_ids` field and both fire `assistantsStore.getAssistantOptions`, even though only the fieldsSection instance actually renders the MultiSelect (assistant_ids has no `position` override, defaulting to fieldsSection).",
+      "impact": "Every project change, mount, or debounced search keystroke issues two identical assistant-list requests instead of one, doubling backend load for no benefit and adding an unnecessary race between the two fetches.",
+      "recommendation": "Gate the `useResourceOptions` call (or `hasAssistantMultiSelect` detection) on fields that actually match `position`, not the full unfiltered `credentialFields` map."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/components/SettingsForm/CredentialFields.tsx",
+      "line": 151,
+      "title": "Hardcoded 100-item assistant cap, no pagination",
+      "problem": "`useResourceOptions` is called with a hardcoded `perPage` of 100 for the assistant multi-select, and there is no pagination/\"load more\" wired for this list. Confirmed in `MultiSelect.tsx`'s `hiddenInputValue` (lines 272-284): it resolves a selected value's label via `options.find(...)` and falls back to the raw id string when the option isn't present in the currently-fetched page.",
+      "impact": "An org with more than 100 assistants cannot select the ones beyond the first page unless the admin already knows a matching search term, and a previously-selected assistant outside that page renders as a raw id instead of its name when the setting is re-opened for editing.",
+      "recommendation": "Add pagination/\"load more\" (or merge selected ids into the fetched options by id) so every selected assistant resolves to a label regardless of page position."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/components/SettingsForm/CredentialFields.tsx",
+      "line": 349,
+      "title": "No test covers the assistantMultiSelect branch",
+      "problem": "Confirmed no test exercises `hasAssistantMultiSelect` detection, the forced `resourceType`, the `perPage=100` override, or the MultiSelect's `onChange` wiring (`grep -rn 'assistantMultiSelect' CredentialFields.test.tsx` matches nothing; `CredentialFields.test.tsx` only covers resourceSelect, multiselect, webhookUrl and sectionHeader).",
+      "impact": "A regression such as `hasAssistantMultiSelect` always evaluating false, the `per_page` override being dropped, or `onChange` serializing the wrong shape (e.g. a single string instead of `string[]`) would ship silently and only surface for real MS Teams customers.",
+      "recommendation": "Add a CredentialFields render test with an `assistantMultiSelect` field config asserting `resourceType` resolves to `'assistant'`, `useResourceOptions` receives `perPage=100`, and selecting options calls `field.onChange` with a `string[]`."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/components/SettingsForm/CredentialFields.tsx",
+      "line": 354,
+      "title": "Assistant picker has no project-scoping guard",
+      "problem": "The `assistantMultiSelect` MultiSelect is only disabled via `resourceLoading`, unlike the sibling `resourceSelect` MultiSelect which is also disabled via `!resourceType`. Confirmed `useResourceOptions` (hooks/useResourceOptions.ts:44-51) forwards `project` to `assistantsStore.getAssistantOptions` unconditionally, so when `project` is empty the call runs unscoped rather than being blocked.",
+      "impact": "An admin can pick assistants before choosing a project, fetching and selecting assistants outside any project scope for a credential type that is project-scoped (`accessType: PROJECT_ONLY`).",
+      "recommendation": "Disable the assistantMultiSelect (and skip the fetch) until a project is selected, mirroring the `!resourceType` guard already used for resourceSelect."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/components/SettingsForm/SettingsForm.tsx",
+      "line": 382,
+      "title": "assistant_ids not cleared on project change",
+      "problem": "The project-change effect at SettingsForm.tsx:382-388 only clears `resource_id` when the project changes; it does not clear `assistant_ids`, the field bound to the msteams assistantMultiSelect.",
+      "impact": "Switching the project after picking assistants leaves the previously-selected assistant ids in the form, which can be submitted against the new project even though those assistants may not belong to it.",
+      "recommendation": "Also clear `assistant_ids` (or any assistantMultiSelect-bound field) in this effect when the project changes, the same way `resource_id` is cleared."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/components/SettingsForm/SettingsForm.tsx",
+      "title": "Oversized components touched without extraction",
+      "problem": "code-organization.md sets a 300-line hard limit for components. This change edits SettingsForm.tsx (731 lines), CredentialFields.tsx (409 lines) and ProjectSettings.tsx (305 lines) to add the new resource-options/assistant-id wiring without extracting toward sub-components, hooks, or helpers as the guide's split priority prescribes.",
+      "impact": "Code-quality is a blocking standard for this review gate; adding new integration behavior to already-oversized files compounds a violation this change had the opportunity to correct.",
+      "recommendation": "Extract the newly-added logic (resource-option handling, assistant-id credential wiring, project-settings list rendering) into the sub-components/hooks/helpers the guide's priority list names, bringing each file back toward the 300-line limit."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/components/SettingsForm/hooks/useResourceOptions.ts",
+      "line": 70,
+      "title": "Assistant fetch failure is swallowed silently",
+      "problem": "`useResourceOptions`'s `catch` block sets `options` to `[]` and clears `loading` with no error state exposed, and the assistantMultiSelect render only reflects `disabled`/`loading` from `resourceLoading` with no error indicator.",
+      "impact": "If the assistants request fails (network error, backend outage), the picker just shows an empty or stale list with no indication anything went wrong, and an admin could save an MS Teams integration believing no assistants were available rather than that the fetch failed.",
+      "recommendation": "Surface a fetch error from `useResourceOptions` (e.g. an `error` return value) and render a visible error/retry state in the assistantMultiSelect."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/types/entity/setting.ts",
+      "line": 18,
+      "title": "Broad type widening backed by unchecked casts",
+      "problem": "`SettingCredentialValue.value` widened from `string` to `string | boolean | number | string[]`, and several `credentialValues` state hooks widened from `Record<string, string>` to `Record<string, unknown>` (EditProjectIntegrationPage.tsx, EditUserIntegrationPage.tsx, NewProjectIntegrationPage.tsx, NewUserIntegrationPage.tsx, SettingsForm.tsx). The wider type is then forced back to a narrower shape with unchecked casts: SettingsForm.tsx:155-157 casts `convertCredsToKeyValue(...)` to `{ key: string; value: string }[]` even though it can legitimately return a `string[]` value, and SettingsForm.tsx:637-638 casts `initialCredentialValues?.username` straight to `string | undefined` with no runtime check.",
+      "impact": "Any code downstream of these casts that still assumes a string (e.g. calling `.trim()`/`.toLowerCase()` on a credential value) compiles without error but can fail at runtime if the value happens to be the new array shape, and the compiler can no longer catch a mismatch at either cast site.",
+      "recommendation": "Replace the two `as` casts with a runtime type check (or a narrower discriminated type per credential field) so a non-string value at those call sites is not silently accepted."
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/settings.ts",
+      "line": 79,
+      "title": "No test covers the featureFlag gate in getCredentialUIMapping",
+      "problem": "Confirmed no test in `src/utils/__tests__/settings.test.ts` references `featureFlag`, `msteams` or `TEAMS_BOT_INTEGRATION` — the new `if (config.featureFlag && !isConfigItemEnabled(...)) return` gate that hides feature-flagged credential types (msteams today, any future flagged type) is untested.",
+      "impact": "If this branch were inverted, dropped, or the featureFlag id mismatched, msteams would either be permanently hidden (feature unusable) or shown to every customer regardless of entitlement, and no existing test would catch it.",
+      "recommendation": "Add a `getCredentialUIMapping`/`getAvailableCredentialsTypes` test that sets `config.featureFlag` and asserts the type is excluded when `isConfigItemEnabled` returns false and included when true."
+    }
+  ]
+}

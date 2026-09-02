@@ -39,7 +39,7 @@ const EditProjectIntegrationPage = () => {
   const { query } = route
 
   const [setting, setSetting] = useState<ProjectSetting | null>(null)
-  const [credentialValues, setCredentialValues] = useState<Record<string, string>>({})
+  const [credentialValues, setCredentialValues] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(true)
   const formRef = useRef<SettingsFormRef>(null)
 

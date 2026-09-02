@@ -24,7 +24,6 @@ import {
   isMcpEnabled,
   isUserManagementEnabled,
   isBudgetManagementEnabled,
-  isTeamsEnabled,
 } from '@/utils/featureFlags'
 
 // Enterprise-only admin items. Users management is intentionally NOT part of this list —
@@ -72,7 +71,7 @@ interface AdminChildrenContext {
   isProjectAdmin: boolean
   isMcpFeatureEnabled: boolean
   isCostCentersFeatureEnabled: boolean
-  isTeamsBotEnabled: boolean
+  isUserMgmtEnabled: boolean
   isEnterprise: boolean
   projectsTab: LayoutTab
   activityEventsTab: LayoutTab[]
@@ -81,12 +80,6 @@ interface AdminChildrenContext {
 }
 
 const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => {
-  const teamsTab: LayoutTab = {
-    id: SettingsTab.TEAMS_BOT_INTEGRATION,
-    name: 'Teams bot integration',
-    title: 'Teams bot integration',
-    url: '/settings/administration/teams',
-  }
   const customerConfigurationTab: LayoutTab = {
     id: SettingsTab.CUSTOMER_CONFIGURATION,
     name: 'Customer Configuration',
@@ -112,7 +105,6 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
       ...(ctx.isEnterprise
         ? getEnterpriseAdminItems(ctx.isMcpFeatureEnabled, ctx.budgetsManagementTab)
         : []),
-      ...(ctx.isTeamsBotEnabled ? [teamsTab] : []),
     ].sort((a, b) => a.name.localeCompare(b.name))
   }
   if (ctx.isAuditor) {
@@ -125,7 +117,6 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
     // the write guard admits maintainers too, so the tab must reach them
     ...(ctx.isMaintainer ? [customerConfigurationTab] : []),
     ctx.projectsTab,
-    ...(ctx.isTeamsBotEnabled && ctx.isProjectAdmin ? [teamsTab] : []),
   ]
 }
 
@@ -140,7 +131,6 @@ export const getNavigationTabs = (
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
   const isUserMgmtEnabled = isUserManagementEnabled()
   const isBudgetMgmtEnabled = isBudgetManagementEnabled()
-  const isTeamsBotEnabled = isTeamsEnabled()
   const isEnterprise = isEnterpriseEdition()
 
   const budgetsManagementTab: LayoutTab[] =
@@ -192,7 +182,7 @@ export const getNavigationTabs = (
     isProjectAdmin,
     isMcpFeatureEnabled,
     isCostCentersFeatureEnabled,
-    isTeamsBotEnabled,
+    isUserMgmtEnabled,
     isEnterprise,
     projectsTab,
     activityEventsTab,

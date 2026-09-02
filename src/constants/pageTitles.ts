@@ -104,8 +104,6 @@ export const ROUTE_ID_TO_TITLE: Record<string, string> = {
   'activity-events': 'Activity Events',
   'budgets-management': 'Budgets',
   'administration-users': 'Users',
-  'teams-bot': 'Teams Bot',
-  'teams-bot-project': 'Teams Bot',
 
   // Settings — providers
   'providers-management': 'Providers',

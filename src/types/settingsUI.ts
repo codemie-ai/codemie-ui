@@ -31,6 +31,7 @@ export enum CredentialComponentType {
   sectionHeader = 'sectionHeader',
   webhookUrl = 'webhookUrl',
   resourceSelect = 'resourceSelect',
+  assistantMultiSelect = 'assistantMultiSelect',
 }
 
 export enum CredentialComponentPosition {
@@ -120,6 +121,7 @@ export type CredentialTypeConfig = {
   fieldsManualConfiguration?: FieldsManualConfiguration // If present, use RecordInput instead of CredentialFields
   personalFeatureFlag?: string
   deprecated?: boolean // If true, hide from new-integration picker and render existing settings read-only.
+  featureFlag?: string // Gates visibility of this credential type
 }
 
 export type CredentialUIMap = Record<string, CredentialTypeConfig>

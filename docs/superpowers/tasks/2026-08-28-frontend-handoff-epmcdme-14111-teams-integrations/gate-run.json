@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14111-move-teams-to-integrations",
+  "head": "96bf74422eb54cfe53f93f55e74cfd1ca277fa6e",
+  "runner": "npm",
+  "started_at": "2026-09-02T11:27:41Z",
+  "completed_at": "2026-09-02T11:33:03Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "install",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29315,
+      "command": "npm ci",
+      "exit_code": 0,
+      "notes": "1236 packages installed; npm audit reports 31 pre-existing vulnerabilities (4 low, 7 moderate, 18 high, 2 critical), unrelated to this gate run."
+    },
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 22906,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16290,
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "notes": "Retry after fix: SettingsForm.tsx:621 now casts initialCredentialValues?.email as string | undefined, resolving the previous TS2322 blocker."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 148260,
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "notes": "468 test files passed, 4968 tests passed, 1 skipped."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 64570,
+      "command": "npm run test:integration",
+      "exit_code": 0,
+      "notes": "39 test files passed, 496 tests passed, 1 skipped."
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "N/A",
+      "command": "npm run license-check",
+      "notes": "Outside requested scope (install, lint, type-check, unit, integration only). Also satisfies guide's own skip condition: no dependency added/removed/moved in this branch's diff vs main (package.json/package-lock.json unchanged since detection)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "N/A",
+      "command": "npm run secrets:check",
+      "notes": "Outside requested scope. Guide says never skip in general, but this run was explicitly scoped to install/lint/type-check/unit/integration; secrets:check also runs automatically in the pre-commit hook and the MR pipeline's gitleaks-scan task — still owed before merge."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "N/A",
+      "command": "npm run license-headers:check",
+      "notes": "Outside requested scope. Enforced automatically by the Husky pre-commit hook on every commit; not re-run here."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "command": "npm run sonar-local",
+      "notes": "Outside requested scope. Enforced automatically by the Husky pre-commit hook on every commit; not re-run here."
+    }
+  ],
+  "failures": {}
+}

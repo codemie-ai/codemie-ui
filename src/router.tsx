@@ -23,8 +23,6 @@ import {
   ANALYTICS,
   ANALYTICS_EDIT_DASHBOARD,
   ANALYTICS_NEW_DASHBOARD,
-  SETTINGS_TEAMS_BOT,
-  SETTINGS_TEAMS_BOT_PROJECT,
   VIEW_WORKFLOW,
   WOKRFLOW_EXECUTIONS,
 } from '@/constants/routes'
@@ -75,8 +73,6 @@ import ProvidersCreatePage from '@/pages/settings/administration/ProvidersCreate
 import ProvidersEditPage from '@/pages/settings/administration/ProvidersEditPage'
 import ProvidersManagementPage from '@/pages/settings/administration/ProvidersManagementPage'
 import ProvidersViewPage from '@/pages/settings/administration/ProvidersViewPage'
-import TeamsBotPage from '@/pages/settings/administration/TeamsBotPage'
-import TeamsBotProjectPage from '@/pages/settings/administration/TeamsBotProjectPage'
 import UsersManagementPage from '@/pages/settings/administration/UsersManagementPage'
 import AdministrationPage from '@/pages/settings/AdministrationPage'
 import {
@@ -500,16 +496,6 @@ const settingsRoutes: RouteObject[] = [
   {
     path: '/settings/administration/mcps',
     Component: MCPManagementPage,
-  },
-  {
-    id: SETTINGS_TEAMS_BOT,
-    path: '/settings/administration/teams',
-    Component: TeamsBotPage,
-  },
-  {
-    id: SETTINGS_TEAMS_BOT_PROJECT,
-    path: '/settings/administration/teams/:projectName',
-    Component: TeamsBotProjectPage,
   },
   {
     path: '/settings/administration/categories',

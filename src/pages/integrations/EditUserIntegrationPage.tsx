@@ -48,7 +48,7 @@ const EditUserIntegrationPage = () => {
   const { query } = route
 
   const [setting, setSetting] = useState<UserSetting | null>(null)
-  const [credentialValues, setCredentialValues] = useState<Record<string, string>>({})
+  const [credentialValues, setCredentialValues] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(true)
   const formRef = useRef<SettingsFormRef>(null)
 

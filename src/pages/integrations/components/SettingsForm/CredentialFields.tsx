@@ -123,7 +123,12 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
   const formValues = useWatch({ control })
   const formState = useFormState({ control })
   const [passwordVisibility, setPasswordVisibility] = useState<Record<string, boolean>>({})
-  const resourceType = String(formValues.resource_type ?? '')
+  const hasAssistantMultiSelect = Object.values(credentialFields).some(
+    (config) => config.type === CredentialComponentType.assistantMultiSelect
+  )
+  const resourceType = hasAssistantMultiSelect
+    ? 'assistant'
+    : String(formValues.resource_type ?? '')
 
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -146,7 +151,8 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
   const { options: resourceOptions, loading: resourceLoading } = useResourceOptions(
     resourceType,
     project,
-    debouncedSearch
+    debouncedSearch,
+    hasAssistantMultiSelect ? 100 : undefined
   )
 
   const togglePasswordVisibility = (fieldName: string) => {
@@ -337,6 +343,21 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
                   onFilter={handleSearchFilter}
                   value={field.value ?? ''}
                   onChange={(e) => field.onChange((e.target.value as string) ?? null)}
+                />
+              )}
+
+              {type === CredentialComponentType.assistantMultiSelect && (
+                <MultiSelect
+                  id={name}
+                  label={typeof label === 'string' ? label : 'Assistants'}
+                  options={resourceOptions}
+                  disabled={resourceLoading}
+                  loading={resourceLoading}
+                  showCheckbox
+                  filterPlaceholder="Search…"
+                  onFilter={handleSearchFilter}
+                  value={(value as string[]) ?? []}
+                  onChange={(e) => field.onChange((e.value as string[]) ?? [])}
                 />
               )}
 

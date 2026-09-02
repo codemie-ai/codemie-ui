@@ -76,6 +76,10 @@ export const getCredentialUIMapping = ({
       return
     }
 
+    if (config.featureFlag && !isConfigItemEnabled(customerConfig ?? [], config.featureFlag)) {
+      return
+    }
+
     // For user settings, only include USER access type
     if (
       settingType === SETTING_TYPE_USER &&
@@ -131,15 +135,21 @@ export const getCredentialMessage = (credentialType: string) => {
 }
 
 export const convertCredsToKeyValue = (
-  credentialValues: Record<string, string> | undefined
-): { key: string; value: string }[] => {
+  credentialValues: Record<string, unknown> | undefined
+): SettingCredentialValue[] => {
   if (!credentialValues) return []
 
   return Object.entries(credentialValues).map(([key, value]) => {
-    if (typeof value === 'object' && value && 'key' in value && 'value' in value) {
-      return value as { key: string; value: string }
+    if (
+      typeof value === 'object' &&
+      value &&
+      !Array.isArray(value) &&
+      'key' in value &&
+      'value' in value
+    ) {
+      return value as SettingCredentialValue
     }
-    return { key, value }
+    return { key, value } as SettingCredentialValue
   })
 }
 

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "generated": "2026-09-02",
+  "dimensions": {
+    "component_scope":      { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 22,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 32,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Removes the dedicated MS Teams Bot admin subsystem (TeamsBotPage, TeamsBotProjectPage, AddAssistantModal, assistantsProjectMapping store/type) and re-wires the feature through the shared Integrations/SettingsForm flow — new abstractions (assistantMultiSelect field type, useResourceOptions hook) plus edits to core shared utilities (settings.ts, settingsUIConfig.ts) used by every credential type."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Two compounding risk factors: (1) a data-model migration moving assistant_ids from a dedicated store/type into generic credential_values via a new msTeamsSettings util, and (2) the affected credential type is guarded by ADMIN_ONLY role restriction and PROJECT_ONLY access type, i.e. an authorization-sensitive integration."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Diffstat reports 32 files changed (149 insertions, 1222 deletions) spanning routing, constants, store, types, utils, and pages/integrations + pages/settings/administration — well past the 16+ XXL threshold, dominated by deletions consistent with a consolidation/removal of the standalone admin pages."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped (capped at XXL): 'refactor/migrate large subsystem' — TeamsBot admin pages and store folded into the generic Integrations/SettingsForm flow, touching core shared utilities.",
+    "Technical Risk bumped: 'requires data migration' — assistant_ids moved from assistantsProjectMapping store into generic credential_values.",
+    "Technical Risk bumped further: 'affects authentication or authorization' — MS Teams credential type is ADMIN_ONLY / PROJECT_ONLY restricted."
+  ],
+  "split_recommendation": null
+}

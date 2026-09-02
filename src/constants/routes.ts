@@ -61,9 +61,6 @@ export const NEW_SKILL = 'new-skill'
 export const SKILL_DETAILS = 'skill-details'
 export const EDIT_SKILL = 'edit-skill'
 
-export const SETTINGS_TEAMS_BOT = 'teams-bot'
-export const SETTINGS_TEAMS_BOT_PROJECT = 'teams-bot-project'
-
 export const PROJECTS_MANAGEMENT = 'projects-management'
 export const PROJECTS_MANAGEMENT_DETAIL = 'projects-management-detail'
 export const ADMINISTRATION_USERS = 'administration-users'

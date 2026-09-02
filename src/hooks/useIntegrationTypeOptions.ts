@@ -14,7 +14,9 @@
 //
 
 import { useMemo } from 'react'
+import { useSnapshot } from 'valtio'
 
+import { appInfoStore } from '@/store/appInfo'
 import { User } from '@/types/entity/user'
 import { FilterOption } from '@/types/filters'
 import { getCredentialUIMapping, getOriginalCredentialType } from '@/utils/settings'
@@ -34,11 +36,14 @@ export const useIntegrationTypeOptions = ({
   user,
   checkIfAdminOfAnyProject = false,
 }: UseIntegrationTypeOptionsParams): FilterOption[] => {
+  const { configs } = useSnapshot(appInfoStore)
+
   return useMemo(() => {
     const mapping = getCredentialUIMapping({
       settingType,
       user,
       checkIfAdminOfAnyProject,
+      customerConfig: configs,
     })
     return Object.keys(mapping)
       .sort((a, b) => {
@@ -48,5 +53,5 @@ export const useIntegrationTypeOptions = ({
         label: mapping[key]?.displayName || getOriginalCredentialType(key),
         value: getOriginalCredentialType(key),
       }))
-  }, [settingType, user, checkIfAdminOfAnyProject])
+  }, [settingType, user, checkIfAdminOfAnyProject, configs])
 }

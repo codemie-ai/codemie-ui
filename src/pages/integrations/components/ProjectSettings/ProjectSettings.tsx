@@ -140,7 +140,7 @@ const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
     }
   }, [])
 
-  const editProjectSetting = (setting) => {
+  const editProjectSetting = (setting: ProjectSetting) => {
     router.push({
       name: 'edit-project-integration',
       query: {
