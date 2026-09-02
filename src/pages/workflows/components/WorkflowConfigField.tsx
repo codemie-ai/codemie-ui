@@ -13,111 +13,54 @@
 // limitations under the License.
 //
 
-import React, { useState } from 'react'
+import React from 'react'
 import { useSnapshot } from 'valtio'
 
-import ExternalSvg from '@/assets/icons/external.svg?react'
 import AceEditor from '@/components/AceEditor/AceEditor'
-import Button from '@/components/Button'
-import VersionedField, {
-  VERSIONED_FIELD_TAB_ID,
-  VersionedFieldTabId,
-} from '@/components/form/VersionedField/VersionedField'
-import { VersionedFieldOption } from '@/components/form/VersionedField/VersionedFieldHistoryTab'
-import { ButtonType } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
-import { createdBy, formatDateTime } from '@/utils/helpers'
 import { isConfigItemEnabled, getConfigItemSettings } from '@/utils/settings'
 import { cn } from '@/utils/utils'
+
+import WorkflowYamlHeaderActions from './WorkflowYamlHeaderActions'
 
 interface WorkflowConfigFieldProps {
   value: string
   onChange: (value: string) => void
-  workflow: any
-  isEditing?: boolean
   onlyConfiguration?: boolean
-  history?: any[]
-  onRestore?: (workflow: any) => void
+  onShowVersionHistory?: (visibleYaml: string) => void
 }
 
 const WorkflowConfigField: React.FC<WorkflowConfigFieldProps> = ({
   value,
   onChange,
-  workflow,
-  isEditing = false,
   onlyConfiguration = false,
-  history = [],
-  onRestore,
+  onShowVersionHistory,
 }) => {
   const { configs } = useSnapshot(appInfoStore)
-  const [activeTab, setActiveTab] = useState<VersionedFieldTabId>(VERSIONED_FIELD_TAB_ID.current)
-  const [selectedHistoryOption, setSelectedHistoryOption] = useState<string | null>(null)
 
   const isDocumentationEnabled = isConfigItemEnabled(configs, 'workflowYamlDocumentation')
   const documentationUrl = getConfigItemSettings(configs, 'workflowYamlDocumentation')?.url
 
-  const historyOptions: VersionedFieldOption[] = history.map((item) => {
-    let label = formatDateTime(item.date, 'short')
-    label += ` - ${createdBy(item.created_by)}`
-    return { label, value: item.yaml_config }
-  })
-
-  const handleRestore = () => {
-    if (selectedHistoryOption && onRestore) {
-      onRestore({ ...workflow, yaml_config: selectedHistoryOption })
-    }
-  }
-
-  const headerContent =
-    isDocumentationEnabled && documentationUrl ? (
-      <a
-        href={documentationUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="hover:no-underline"
-      >
-        <Button variant={ButtonType.SECONDARY} size="medium" className="!text-sm !font-bold">
-          <ExternalSvg />
-          Documentation
-        </Button>
-      </a>
-    ) : null
-
-  const currentTab = (
+  return (
     <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-3">
+        {!onlyConfiguration && (
+          <span className="shrink-0 whitespace-nowrap text-sm text-text-quaternary">
+            YAML Configuration
+          </span>
+        )}
+        <WorkflowYamlHeaderActions
+          showDocumentation={isDocumentationEnabled}
+          documentationUrl={documentationUrl}
+          onShowVersionHistory={onShowVersionHistory}
+          getVisibleYaml={() => value}
+          versionHistoryAriaLabel="Version History (legacy editor)"
+        />
+      </div>
       <div className={cn(onlyConfiguration ? 'h-[500px]' : 'h-96')}>
         <AceEditor value={value} onChange={onChange} lang="yaml" name="yaml_config" />
       </div>
     </div>
-  )
-
-  const historyTab = selectedHistoryOption ? (
-    <div className={cn(onlyConfiguration ? 'h-[500px]' : 'h-96')}>
-      <AceEditor
-        value={selectedHistoryOption}
-        onChange={() => {}}
-        lang="yaml"
-        readonly
-        name="yaml_config_history"
-      />
-    </div>
-  ) : null
-
-  return (
-    <VersionedField
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      historyOptions={historyOptions}
-      selectedHistoryOption={selectedHistoryOption}
-      onHistoryOptionChange={setSelectedHistoryOption}
-      headerContent={headerContent}
-      currentTab={currentTab}
-      historyTab={historyTab}
-      label={onlyConfiguration ? '' : 'YAML Configuration'}
-      isLoading={false}
-      isEditing={isEditing}
-      onRestore={handleRestore}
-    />
   )
 }
 

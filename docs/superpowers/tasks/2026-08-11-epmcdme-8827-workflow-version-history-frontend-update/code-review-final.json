@@ -1,0 +1,199 @@
+{
+  "decision": "request-changes",
+  "rationale": "Core Assistant-style history UX, WRITE-gated Restore, shared extraction, and API contract mostly land, but three required-spec gaps remain (Current baseline from visual YAML buffer, Previous-detail Retry, 400 summary refresh) plus rollback partial-failure and double-submit risks. Blind/edge/acceptance lenses all ran; dismissed 11 noise items (UI-only WRITE with backend auth, default canRestore for Assistant, limit=1000 per contract, AC11 gate-run evidence, READ loader matching Assistant shared tab, success summary refetch with closed popup, empty-string Previous, URL encoding, Button type/variant, a11y focus-return without modal support, detail-race as lower-impact).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "1. Version History is absent from the Edit Workflow page header",
+      "status": "pass",
+      "notes": "EditWorkflowPage rightContent has Refine/Cancel/Save only"
+    },
+    {
+      "kind": "story-ac",
+      "item": "2. Both Workflow YAML editor paths show Version History beside Documentation",
+      "status": "pass",
+      "notes": "WorkflowYamlHeaderActions used by YamlPanel and WorkflowConfigField"
+    },
+    {
+      "kind": "story-ac",
+      "item": "3. Neither YAML editor contains a legacy Version History tab",
+      "status": "pass",
+      "notes": "YamlPanel and WorkflowConfigField history tabs removed"
+    },
+    {
+      "kind": "story-ac",
+      "item": "4. One popup provides a version selector and inline side-by-side YAML diff",
+      "status": "pass",
+      "notes": "Single page-owned WorkflowVersionHistoryPopup"
+    },
+    {
+      "kind": "story-ac",
+      "item": "5. Diff behavior and visual structure match Assistant System Instructions history",
+      "status": "pass",
+      "notes": "Shared VersionHistoryDiffView + VersionedFieldHistoryTab"
+    },
+    {
+      "kind": "story-ac",
+      "item": "6. Tags, notes, table selection, and the separate compare popup are removed",
+      "status": "pass",
+      "notes": "No tags/notes/table/compare; no PATCH metadata types"
+    },
+    {
+      "kind": "story-ac",
+      "item": "7. READ users can browse history; only WRITE users can restore",
+      "status": "pass",
+      "notes": "canRestore={canWrite} via canEdit/WRITE; popup tests cover READ"
+    },
+    {
+      "kind": "story-ac",
+      "item": "8. Restore requires confirmation, immediately calls backend rollback, and discards unsaved edits",
+      "status": "partial",
+      "notes": "Confirm + rollback present; confirmDisabled not wired; see CR-004"
+    },
+    {
+      "kind": "story-ac",
+      "item": "9. Successful rollback reloads a clean editor with the new current server version",
+      "status": "partial",
+      "notes": "Happy path reinit/resetBaseline works; partial failure after rollback not handled; see CR-005"
+    },
+    {
+      "kind": "story-ac",
+      "item": "10. Assistant behavior remains unchanged after shared-component extraction",
+      "status": "pass",
+      "notes": "SystemPromptVersionHistoryView re-exports shared VersionHistoryDiffView"
+    },
+    {
+      "kind": "story-ac",
+      "item": "11. All updated frontend tests and required quality gates pass",
+      "status": "na",
+      "notes": "Not verifiable from diff alone; deferred to QA gates stage"
+    },
+    {
+      "kind": "spec",
+      "item": "Current baseline = YAML currently visible in the editor, including unsaved edits captured on open",
+      "status": "fail",
+      "notes": "Captures form yaml_config only; YamlPanel local buffer not flushed — CR-001"
+    },
+    {
+      "kind": "spec",
+      "item": "Previous detail failure: Current baseline remains usable; Previous shows its own Retry state",
+      "status": "fail",
+      "notes": "Previous errors swallowed; Previous tab disabled with no Retry — CR-002"
+    },
+    {
+      "kind": "spec",
+      "item": "Rollback target became current concurrently: surface backend 400 and refresh version summaries",
+      "status": "fail",
+      "notes": "Toaster only; no fetchVersions refresh — CR-003"
+    },
+    {
+      "kind": "spec",
+      "item": "API contract: GET list/detail + POST rollback; limit=1000; no PATCH/tags/descriptions",
+      "status": "pass",
+      "notes": "workflowVersionsStore and types match handoff-contract.md"
+    },
+    {
+      "kind": "spec",
+      "item": "Legacy YAML entry-point tests (VH beside Documentation, no tab, docs-hidden still shows VH)",
+      "status": "partial",
+      "notes": "YamlPanel tests present; WorkflowConfigField/legacy path coverage missing — CR-006"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All six branch commits match EPMCDME-8827: Capital sentence (git-workflow.md)"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not present in this frontend repo"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Restore hidden when !canWrite (canEdit/WRITE); rollback is WRITE-backed API; no secrets/injection in changed code. security-patterns.md guide absent here."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 171,
+      "title": "Current baseline misses YamlPanel buffer",
+      "problem": "handleShowVersionHistory captures formRef.getFormValues()?.yaml_config, but YamlPanel keeps unsaved edits in local state until panel Save/onUpdate. Opening Version History from the visual YAML tab therefore diffs against stale form YAML, not the YAML currently visible in the editor.",
+      "impact": "Violates the required Current-baseline behavior (unsaved editor YAML) and shows a misleading side-by-side diff for the primary visual-editor entry point.",
+      "recommendation": "Flush the active YamlPanel (saveCurrentTab / pass local value) before capturing currentEditorYaml, or change onShowVersionHistory to supply the visible YAML from YamlPanel."
+    },
+    {
+      "id": "CR-002",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVersionHistoryPopup.tsx",
+      "line": 102,
+      "title": "Previous-detail failure has no Retry",
+      "problem": "loadSelectedAndPrevious catches previous-detail errors, sets previousDetail=null, and does not surface error/Retry. The Previous Version tab becomes disabled as if no previous version exists.",
+      "impact": "Required edge-case behavior fails: Current remains usable but Previous has no Retry path; users cannot recover a failed previous baseline fetch.",
+      "recommendation": "Track previousDetailError separately, keep Previous enabled with a Retry control, and leave Current baseline working."
+    },
+    {
+      "id": "CR-003",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 192,
+      "title": "400 already-current skips summary refresh",
+      "problem": "handleRollbackConfirm catch only shows a toaster error. Spec/handoff require surfacing 400 already-current and refreshing version summaries so the target is no longer offered.",
+      "impact": "After a concurrent restore, users can keep retrying the same already-current version with a stale selector.",
+      "recommendation": "On rollback failure (especially 400), refetch versions (and refresh popup historical list) while keeping the history popup open."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 289,
+      "title": "Restore confirm missing confirmDisabled",
+      "problem": "ConfirmationModal supports confirmDisabled, but Restore wiring only changes confirmText to Restoring… and relies on rollbackLoading inside the async handler. Rapid double-clicks can issue duplicate rollback POSTs before state commits.",
+      "impact": "Duplicate rollbacks create extra audit versions and race the refresh/reinit path.",
+      "recommendation": "Pass confirmDisabled={rollbackLoading} (and/or an inFlight ref) so the confirm control cannot re-fire while restoring."
+    },
+    {
+      "id": "CR-005",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 180,
+      "title": "Partial rollback leaves editor stale",
+      "problem": "If rollbackVersion succeeds and fetchWorkflow fails, restoreTarget stays set, history/confirm remain available, and the editor is not reinitialized. Retry can POST rollback again against an already-changed server current.",
+      "impact": "Server YAML is restored while the UI keeps old/unsaved content; retry can create another version.",
+      "recommendation": "On rollback success, reinitialize from the rollback response yaml_config even if fetchWorkflow fails; clear restoreTarget / close confirm; surface refresh failure separately."
+    },
+    {
+      "id": "CR-006",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowConfigField.tsx",
+      "title": "Missing legacy editor entry-point tests",
+      "problem": "Spec requires entry-point coverage for both visual and legacy editors (VH beside Documentation, no legacy tab, docs-hidden still shows VH, create mode hides VH). Diff adds YamlPanel tests only; no WorkflowConfigField/legacy-path coverage.",
+      "impact": "Legacy path regressions (callback plumbing, docs-hidden VH, create-mode hide) can ship undetected.",
+      "recommendation": "Add WorkflowConfigField (or WorkflowFormFields legacy-mode) tests covering the shared header-actions entry-point cases."
+    },
+    {
+      "id": "CR-007",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 59,
+      "title": "AI preRefinementYaml survives restore",
+      "problem": "Successful rollback does not clear preRefinementYaml. If Refine-with-AI was active, Revert to Previous remains and can overwrite the restored server baseline with stale pre-refine YAML.",
+      "impact": "Post-restore editor can be silently reverted to pre-AI content, undoing the rollback UX.",
+      "recommendation": "Clear setPreRefinementYaml(null) on successful rollback reinit."
+    }
+  ]
+}

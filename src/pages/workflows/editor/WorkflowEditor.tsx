@@ -104,6 +104,7 @@ interface WorkflowEditorProps {
   // When provided, ReactFlow's onNodeClick is wired without enabling node selection/drag.
   onExecutionNodeClick?: (nodeId: string) => void
   highlightedNodeIds?: string[]
+  onShowVersionHistory?: (visibleYaml: string) => void
 }
 
 enum ColorMode {
@@ -163,6 +164,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       executionOverallStatus,
       onExecutionNodeClick,
       highlightedNodeIds,
+      onShowVersionHistory,
     },
     ref
   ) => {
@@ -708,6 +710,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
               onUpdateAdvancedConfig={editor.updateAdvancedConfig}
               pendingAction={pendingAction}
               setPendingAction={setPendingAction}
+              onShowVersionHistory={onShowVersionHistory}
             />
           )}
         </div>

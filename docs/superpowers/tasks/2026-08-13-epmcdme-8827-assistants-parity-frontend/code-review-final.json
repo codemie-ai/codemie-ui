@@ -1,0 +1,116 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance criteria for Assistants parity all pass (embedded yaml_config_history, client Restore, no versions/rollback API). One major regression remains: Restore does not clear an active AI-refine snapshot, so Revert to Previous can overwrite restored YAML. Other lens items were dismissed as spec-intentional (no confirm, editor toast copy matching Assistants, dirty tracking via replaceYamlConfig/blockTransition) or deferred (null yaml_config on a typed-required string, route-id change while popup open). Official vs-main diff was large because of prior branch work; this-run src delta was fully reviewed. Dismissed 17, deferred 3.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "History UI driven by workflow.yaml_config_history, not GET /versions",
+      "status": "pass",
+      "notes": "Popup takes history props; versions store deleted."
+    },
+    {
+      "kind": "spec",
+      "item": "FE labels [NN] - date - author with length - index",
+      "status": "pass",
+      "notes": "WorkflowVersionHistoryPopup maps versionNumber = history.length - index."
+    },
+    {
+      "kind": "spec",
+      "item": "Option value unique per entry (date + index)",
+      "status": "pass",
+      "notes": "optionValue is `${entry.date}::${index}`."
+    },
+    {
+      "kind": "spec",
+      "item": "Diff selected history YAML vs current editor YAML; no detail GET",
+      "status": "pass",
+      "notes": "VersionHistoryDiffView uses embedded yaml_config and currentEditorYaml."
+    },
+    {
+      "kind": "spec",
+      "item": "Restore writes into form only; no POST rollback; persist via Save",
+      "status": "pass",
+      "notes": "replaceYamlConfig; rollback modal and store removed."
+    },
+    {
+      "kind": "spec",
+      "item": "Toast describes editor restore, not server restore",
+      "status": "pass",
+      "notes": "toaster.info('Workflow YAML has been restored successfully!')."
+    },
+    {
+      "kind": "spec",
+      "item": "Hide Restore for READ-only users",
+      "status": "pass",
+      "notes": "canRestore={canWrite} from canEdit."
+    },
+    {
+      "kind": "spec",
+      "item": "Remove workflowVersions store, tests, and workflowVersion types",
+      "status": "pass",
+      "notes": "All three files deleted; no remaining imports."
+    },
+    {
+      "kind": "spec",
+      "item": "Remove EditWorkflowPage server rollback orchestration",
+      "status": "pass",
+      "notes": "rollbackLoading, restoreTarget, handleRollbackConfirm, listRefreshToken removed."
+    },
+    {
+      "kind": "spec",
+      "item": "Remove popup paging / Load more / is_current / fetchVersionDetail / onRestoreRequest(summary)",
+      "status": "pass",
+      "notes": "Popup is props-driven; onRestore(yamlConfig)."
+    },
+    {
+      "kind": "spec",
+      "item": "Keep YAML header Version History chrome and shared tab/diff; single page-owned popup",
+      "status": "pass",
+      "notes": "Header files unchanged this run; popup still uses shared components."
+    },
+    {
+      "kind": "spec",
+      "item": "After Save, rely on normal workflow reload; no versions-store invalidation",
+      "status": "pass",
+      "notes": "Save path unchanged; store deleted."
+    },
+    {
+      "kind": "spec",
+      "item": "Do not change useWorkflowData",
+      "status": "pass",
+      "notes": "Not in this-run diff."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "This-run commits match EPMCDME-8827: Capital sentence."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md is not present in this repo."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No secrets; Restore gated by canWrite; no new HTTP surface."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 172,
+      "title": "Restore does not clear AI refine snapshot",
+      "problem": "handleRestoreFromHistory writes history YAML into the editor but leaves preRefinementYaml set. The previous server-rollback path called setPreRefinementYaml(null).",
+      "impact": "After Refine with AI then Restore from history, Revert to Previous overwrites the restored YAML with the pre-refinement snapshot.",
+      "recommendation": "Call setPreRefinementYaml(null) inside handleRestoreFromHistory, matching the old rollback success path."
+    }
+  ]
+}

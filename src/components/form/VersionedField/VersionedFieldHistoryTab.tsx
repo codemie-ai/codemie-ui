@@ -13,9 +13,11 @@
 // limitations under the License.
 //
 
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 
 import LoaderSvg from '@/assets/icons/loader.svg?react'
+import ConfirmationModal from '@/components/ConfirmationModal'
+import { ButtonType } from '@/constants'
 
 import Button from '../../Button'
 import Autocomplete from '../Autocomplete'
@@ -34,6 +36,7 @@ interface VersionedFieldHistoryTabProps {
   headerContent?: ReactNode
   onRestore: () => void
   onOptionChange: (optionValue: string) => void
+  canRestore?: boolean
 }
 
 const VersionedFieldHistoryTab = ({
@@ -45,8 +48,17 @@ const VersionedFieldHistoryTab = ({
   headerContent,
   onRestore,
   onOptionChange,
+  canRestore = true,
 }: VersionedFieldHistoryTabProps) => {
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false)
   const isHistoryAvailable = options.length > 0
+
+  const handleRestoreClick = () => setShowRestoreConfirm(true)
+  const handleRestoreCancel = () => setShowRestoreConfirm(false)
+  const handleRestoreConfirm = () => {
+    setShowRestoreConfirm(false)
+    onRestore()
+  }
 
   return (
     <div className="flex flex-col gap-2 h-full">
@@ -57,15 +69,19 @@ const VersionedFieldHistoryTab = ({
               placeholder="Select a version"
               options={options}
               value={selectedOption ?? ''}
-              onChange={(value) => onOptionChange(value)}
+              onChange={(value) => {
+                setShowRestoreConfirm(false)
+                onOptionChange(value)
+              }}
             />
 
             <div className="flex gap-4 items-center">
-              {isLoading ? (
-                <LoaderSvg className="w-[66.3px] animate-spin" />
-              ) : (
-                <Button onClick={onRestore}>Restore</Button>
-              )}
+              {canRestore &&
+                (isLoading ? (
+                  <LoaderSvg className="w-[66.3px] animate-spin" />
+                ) : (
+                  <Button onClick={handleRestoreClick}>Restore</Button>
+                ))}
               {headerContent}
             </div>
           </div>
@@ -84,6 +100,17 @@ const VersionedFieldHistoryTab = ({
       ) : (
         <h1 className="text-md text-center">{emptyPlaceholder ?? 'Value was not yet modified'}</h1>
       )}
+
+      <ConfirmationModal
+        visible={showRestoreConfirm}
+        header="Restore this version?"
+        message="This will replace the current editor content with the selected version. Unsaved changes will be lost. You will still need to save to persist the change."
+        confirmText="Restore"
+        confirmButtonType={ButtonType.PRIMARY}
+        limitWidth
+        onConfirm={handleRestoreConfirm}
+        onCancel={handleRestoreCancel}
+      />
     </div>
   )
 }

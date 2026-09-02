@@ -71,6 +71,10 @@ vi.mock('../WorkflowFormFields', async () => {
   }
 })
 
+vi.mock('@/pages/workflows/editor/WorkflowEditor', () => ({
+  default: () => <div data-testid="visual-editor" />,
+}))
+
 vi.mock('@/components/guardrails/GuardrailAssignmentPanel/GuardrailAssignmentPanel', () => ({
   default: () => null,
 }))

@@ -25,19 +25,19 @@ const TABS: { id: HistoryViewTab; label: string }[] = [
   { id: 'current', label: 'Current Version' },
 ]
 
-interface SystemPromptVersionHistoryViewProps {
+export interface VersionHistoryDiffViewProps {
   historyText: string
   currentText: string
   previousHistoryText?: string
   title: string
 }
 
-const SystemPromptVersionHistoryView = ({
+const VersionHistoryDiffView = ({
   historyText,
   currentText,
   previousHistoryText,
   title,
-}: SystemPromptVersionHistoryViewProps) => {
+}: VersionHistoryDiffViewProps) => {
   const [activeTab, setActiveTab] = useState<HistoryViewTab>('current')
 
   const oldText = activeTab === 'current' ? currentText : previousHistoryText ?? ''
@@ -89,4 +89,4 @@ const SystemPromptVersionHistoryView = ({
   )
 }
 
-export default SystemPromptVersionHistoryView
+export default VersionHistoryDiffView

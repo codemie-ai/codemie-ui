@@ -88,6 +88,7 @@ interface ConfigPanelProps {
 
   issues?: WorkflowIssue[]
   setIssues?: Dispatch<SetStateAction<WorkflowIssue[]>>
+  onShowVersionHistory?: (visibleYaml: string) => void
 }
 
 export interface ConfigPanelRef {
@@ -141,6 +142,7 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       onCollapsedChange,
       pendingAction,
       setPendingAction,
+      onShowVersionHistory,
     },
     ref
   ) => {
@@ -460,13 +462,13 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
             ref={activeTabRef as any}
             key={yamlConfig}
             yaml={yamlConfig ?? ''}
-            history={workflow?.yaml_config_history || []}
             onUpdate={onUpdateYaml}
             onClose={handleClose}
+            onShowVersionHistory={onShowVersionHistory}
           />
         ),
       }),
-      [yamlConfig, workflow?.yaml_config_history, onUpdateYaml, handleClose]
+      [yamlConfig, onUpdateYaml, handleClose, onShowVersionHistory]
     )
 
     const renderIssuesTab = useCallback((): PanelTab => {

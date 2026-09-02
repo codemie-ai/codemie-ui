@@ -22,13 +22,13 @@ import VersionedField, {
   VERSIONED_FIELD_TAB_ID,
   VersionedFieldTabId,
 } from '@/components/form/VersionedField/VersionedField'
+import VersionHistoryDiffView from '@/components/form/VersionedField/VersionHistoryDiffView'
 import Popup from '@/components/Popup'
 import { Assistant, AssistantPromptVariable } from '@/types/entity/assistant'
 import { formatDateTime, createdBy } from '@/utils/helpers'
 import { cn } from '@/utils/utils'
 
 import SystemPromptCurrentTab from './SystemPromptCurrentTab'
-import SystemPromptVersionHistoryView from './SystemPromptVersionHistoryView'
 
 interface SystemPromptExpandedModalProps {
   isExpanded: boolean
@@ -156,7 +156,7 @@ export const SystemPromptExpandedModal = ({
                 )
                 const previousEntry = history[selectedIndex + 1]
                 return (
-                  <SystemPromptVersionHistoryView
+                  <VersionHistoryDiffView
                     key={selectedHistoryOption.date}
                     historyText={selectedHistoryOption.system_prompt}
                     currentText={value}

@@ -1,0 +1,159 @@
+{
+  "decision": "approve",
+  "rationale": "Fix-up diff resolves all seven prior blockers (CR-001–CR-007): visible YAML flush from YamlPanel/legacy editors, Previous-detail Retry, 400 summary refresh via listRefreshToken, confirmDisabled double-submit guard, partial-rollback reinit from rollback response, legacy WorkflowConfigField entry-point tests, and preRefinementYaml clear on restore. No new high-risk issues in the scoped confirmation pass; incidental vite proxy host tweak is out of feature scope and non-blocking.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "1. Version History is absent from the Edit Workflow page header",
+      "status": "pass",
+      "notes": "EditWorkflowPage rightContent has Refine/Cancel/Save only"
+    },
+    {
+      "kind": "story-ac",
+      "item": "2. Both Workflow YAML editor paths show Version History beside Documentation",
+      "status": "pass",
+      "notes": "WorkflowYamlHeaderActions used by YamlPanel and WorkflowConfigField"
+    },
+    {
+      "kind": "story-ac",
+      "item": "3. Neither YAML editor contains a legacy Version History tab",
+      "status": "pass",
+      "notes": "YamlPanel and WorkflowConfigField history tabs removed"
+    },
+    {
+      "kind": "story-ac",
+      "item": "4. One popup provides a version selector and inline side-by-side YAML diff",
+      "status": "pass",
+      "notes": "Single page-owned WorkflowVersionHistoryPopup"
+    },
+    {
+      "kind": "story-ac",
+      "item": "5. Diff behavior and visual structure match Assistant System Instructions history",
+      "status": "pass",
+      "notes": "Shared VersionHistoryDiffView + VersionedFieldHistoryTab"
+    },
+    {
+      "kind": "story-ac",
+      "item": "6. Tags, notes, table selection, and the separate compare popup are removed",
+      "status": "pass",
+      "notes": "No tags/notes/table/compare; no PATCH metadata types"
+    },
+    {
+      "kind": "story-ac",
+      "item": "7. READ users can browse history; only WRITE users can restore",
+      "status": "pass",
+      "notes": "canRestore={canWrite} via canEdit/WRITE; popup tests cover READ"
+    },
+    {
+      "kind": "story-ac",
+      "item": "8. Restore requires confirmation, immediately calls backend rollback, and discards unsaved edits",
+      "status": "pass",
+      "notes": "Confirm + rollback present; confirmDisabled={rollbackLoading} wired (CR-004 resolved)"
+    },
+    {
+      "kind": "story-ac",
+      "item": "9. Successful rollback reloads a clean editor with the new current server version",
+      "status": "pass",
+      "notes": "Happy path reinit works; fetchWorkflow failure falls back to rolledBack.yaml_config (CR-005 resolved)"
+    },
+    {
+      "kind": "story-ac",
+      "item": "10. Assistant behavior remains unchanged after shared-component extraction",
+      "status": "pass",
+      "notes": "SystemPromptVersionHistoryView re-exports shared VersionHistoryDiffView"
+    },
+    {
+      "kind": "story-ac",
+      "item": "11. All updated frontend tests and required quality gates pass",
+      "status": "na",
+      "notes": "Not verifiable from diff alone; deferred to QA gates stage"
+    },
+    {
+      "kind": "spec",
+      "item": "Current baseline = YAML currently visible in the editor, including unsaved edits captured on open",
+      "status": "pass",
+      "notes": "getVisibleYaml passes YamlPanel/legacy buffer into handleShowVersionHistory (CR-001 resolved)"
+    },
+    {
+      "kind": "spec",
+      "item": "Previous detail failure: Current baseline remains usable; Previous shows its own Retry state",
+      "status": "pass",
+      "notes": "previousDetailError + Retry Previous; Current still renders (CR-002 resolved)"
+    },
+    {
+      "kind": "spec",
+      "item": "Rollback target became current concurrently: surface backend 400 and refresh version summaries",
+      "status": "pass",
+      "notes": "Rollback catch increments versionListRefreshToken; popup refetches list (CR-003 resolved)"
+    },
+    {
+      "kind": "spec",
+      "item": "API contract: GET list/detail + POST rollback; limit=1000; no PATCH/tags/descriptions",
+      "status": "pass",
+      "notes": "workflowVersionsStore and types match handoff-contract.md"
+    },
+    {
+      "kind": "spec",
+      "item": "Legacy YAML entry-point tests (VH beside Documentation, no tab, docs-hidden still shows VH)",
+      "status": "pass",
+      "notes": "WorkflowConfigField.test.tsx covers VH, no tab, docs-hidden, create-mode hide, visible yaml (CR-006 resolved)"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All six branch commits match EPMCDME-8827: Capital sentence (git-workflow.md)"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not present in this frontend repo"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Restore hidden when !canWrite (canEdit/WRITE); rollback is WRITE-backed API; no secrets/injection in changed code. security-patterns.md guide absent here."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "YamlPanel/WorkflowConfigField pass getVisibleYaml={() => value}; header actions invoke onShowVersionHistory(visibleYaml)."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "previousDetailError + previousVersionId + Retry Previous; selected Current baseline still loads independently."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Rollback failure bumps versionListRefreshToken; popup useEffect refetches summaries while history stays open."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "confirmDisabled={rollbackLoading} plus ConfirmationModal disabled + early-return onConfirm guard."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "After rollback success, fetchWorkflow failure reinitializes from rolledBack.yaml_config, clears restoreTarget/history, surfaces refresh error."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "Added WorkflowConfigField.test.tsx for legacy VH entry points (no tab, docs-hidden, create hide, visible yaml)."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "setPreRefinementYaml(null) on successful rollback path before closing history."
+    }
+  ]
+}

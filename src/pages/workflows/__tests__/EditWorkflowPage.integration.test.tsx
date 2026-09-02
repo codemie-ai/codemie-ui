@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -22,41 +22,51 @@ import { mockAPI, renderPage } from '@/test-utils/integration'
 import type { Workflow } from '@/types/entity/workflow'
 import toaster from '@/utils/toaster'
 
+// `@/router` pulls in MarkdownEditor → react-syntax-highlighter, which crashes
+// under this environment's ESM/CJS setup (same pattern as WorkflowCard tests).
+vi.mock('react-syntax-highlighter', () => ({
+  Prism: () => null,
+}))
+vi.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({
+  dracula: {},
+  prism: {},
+}))
+
+const user = userEvent.setup()
+
+const createWorkflowFixture = (overrides: Partial<Workflow> = {}): Workflow => ({
+  id: 'wf-edit-1',
+  slug: 'edit-workflow',
+  name: 'Edit Workflow',
+  yaml_config: 'states: []',
+  yaml_config_history: [
+    {
+      date: '2026-01-01T00:00:00Z',
+      yaml_config: 'states: []\n# v1',
+      created_by: { user_id: 'u1', username: 'alice', name: 'Alice' },
+    },
+  ],
+  update_date: '2026-01-02T00:00:00Z',
+  user_abilities: ['read', 'write', 'delete'],
+  guardrail_assignments: [],
+  ...overrides,
+})
+
+beforeEach(() => {
+  ;(mockRouterState as any).params = { id: 'wf-edit-1' }
+  mockRouterState.push.mockClear()
+  mockRouterState.replace.mockClear()
+  mockAPI('GET', 'v1/workflows/id/wf-edit-1', createWorkflowFixture())
+  appInfoStore.configs = [{ id: 'features:workflowAI', settings: { enabled: true } } as any]
+  appInfoStore.isConfigFetched = true
+})
+
+afterEach(() => {
+  vi.clearAllMocks()
+  ;(mockRouterState as any).params = {}
+})
+
 describe('EditWorkflowPage - AI Refine and Revert', () => {
-  const user = userEvent.setup()
-
-  const createWorkflowFixture = (overrides: Partial<Workflow> = {}): Workflow => ({
-    id: 'wf-edit-1',
-    slug: 'edit-workflow',
-    name: 'Edit Workflow',
-    yaml_config: 'states: []',
-    yaml_config_history: [
-      {
-        date: '2026-01-01T00:00:00Z',
-        yaml_config: 'states: []\n# v1',
-        created_by: { user_id: 'u1', username: 'alice', name: 'Alice' },
-      },
-    ],
-    update_date: '2026-01-02T00:00:00Z',
-    user_abilities: ['read', 'write', 'delete'],
-    guardrail_assignments: [],
-    ...overrides,
-  })
-
-  beforeEach(() => {
-    ;(mockRouterState as any).params = { id: 'wf-edit-1' }
-    mockRouterState.push.mockClear()
-    mockRouterState.replace.mockClear()
-    mockAPI('GET', 'v1/workflows/id/wf-edit-1', createWorkflowFixture())
-    appInfoStore.configs = [{ id: 'features:workflowAI', settings: { enabled: true } } as any]
-    appInfoStore.isConfigFetched = true
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-    ;(mockRouterState as any).params = {}
-  })
-
   it('renders "Refine with AI" button and hides "Revert to Previous" by default', async () => {
     renderPage('/workflows/wf-edit-1/edit')
     await waitFor(() => {
@@ -176,5 +186,77 @@ describe('EditWorkflowPage - AI Refine and Revert', () => {
       expect(toaster.info).toHaveBeenCalledWith('Workflow has been updated successfully!')
     })
     expect(screen.queryByText('Revert to Previous')).not.toBeInTheDocument()
+  })
+})
+
+describe('EditWorkflowPage - Version History restore', () => {
+  const restoredYaml = 'states:\n  - id: restored-from-history\n# keep-me\n'
+
+  const historyWorkflow = () =>
+    createWorkflowFixture({
+      yaml_config_history: [
+        {
+          date: '2026-01-01T00:00:00Z',
+          yaml_config: restoredYaml,
+          created_by: { user_id: 'u1', username: 'alice', name: 'Alice' },
+        },
+      ],
+    })
+
+  it('restores history YAML into the editor without calling rollback', async () => {
+    mockAPI('GET', 'v1/workflows/id/wf-edit-1', historyWorkflow())
+    mockAPI('PUT', 'v1/workflows/wf-edit-1', historyWorkflow())
+    renderPage('/workflows/wf-edit-1/edit')
+
+    await user.click(await screen.findByRole('button', { name: 'YAML' }))
+
+    await user.click(
+      await screen.findByRole('button', { name: /Version History \(visual editor\)/i })
+    )
+    await screen.findByRole('heading', { name: 'Version History' })
+    await user.click(screen.getByRole('button', { name: 'Restore' }))
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Restore this version?' })).getByRole(
+        'button',
+        { name: 'Restore' }
+      )
+    )
+
+    await waitFor(() => {
+      expect(toaster.info).toHaveBeenCalledWith('Workflow YAML has been restored successfully!')
+    })
+    expect(screen.queryByText(/Rollback creates a new current version/i)).not.toBeInTheDocument()
+    expect(toaster.success).not.toHaveBeenCalled()
+    expect(global.fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/rollback'),
+      expect.anything()
+    )
+
+    const headerSave = within(
+      screen.getByRole('button', { name: /Save and Run/i }).parentElement as HTMLElement
+    ).getByRole('button', { name: 'Save' })
+    await user.click(headerSave)
+    await waitFor(() => {
+      const putCall = vi.mocked(global.fetch).mock.calls.find(([input, init]) => {
+        let path: string
+        if (typeof input === 'string') {
+          path = input
+        } else if (input instanceof URL) {
+          path = input.href
+        } else {
+          path = input.url
+        }
+        const method = (init?.method ?? 'GET').toUpperCase()
+        return method === 'PUT' && path.includes('v1/workflows/wf-edit-1')
+      })
+      expect(putCall).toBeDefined()
+      const rawBody = putCall?.[1]?.body
+      if (typeof rawBody !== 'string') {
+        throw new Error('Expected PUT body to be a string')
+      }
+      const body = JSON.parse(rawBody)
+      expect(body.yaml_config).toContain('restored-from-history')
+      expect(body.yaml_config).not.toContain('# keep-me')
+    })
   })
 })

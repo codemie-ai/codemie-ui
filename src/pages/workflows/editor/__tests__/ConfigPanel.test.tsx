@@ -122,8 +122,13 @@ vi.mock('../configPanels/ConnectionTab', () => ({
   default: (_props: any) => <div data-testid="connection-tab">ConnectionTab</div>,
 }))
 
+const capturedYamlPanelProps = vi.hoisted(() => ({
+  current: null as Record<string, unknown> | null,
+}))
+
 vi.mock('../configPanels/YamlPanel', () => ({
-  default: React.forwardRef((_props: any, ref: any) => {
+  default: React.forwardRef((props: any, ref: any) => {
+    capturedYamlPanelProps.current = props
     React.useImperativeHandle(ref, () => ({
       isDirty: () => mockYamlDirty,
       save: mockYamlSave,
@@ -251,6 +256,7 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
     mockAdvancedConfigDirty = false
     mockNodeTabDirty = false
     mockYamlDirty = false
+    capturedYamlPanelProps.current = null
     mockGeneralConfigSave.mockResolvedValue(true)
     mockAdvancedConfigSave.mockResolvedValue(true)
     mockNodeTabSave.mockResolvedValue(true)
@@ -459,6 +465,19 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
       const fields = ref.current?.getWorkflowFields()
 
       expect(fields).toBeNull()
+    })
+  })
+
+  describe('YAML tab source', () => {
+    it('feeds YamlPanel from the serialized visual-editor config', () => {
+      const ref = createRef<ConfigPanelRef>()
+      renderConfigPanel(ref, {
+        visibleTabs: [TAB_DATA.YAML.ID],
+        activeTab: TAB_DATA.YAML.ID,
+        yamlConfig: 'serialized: true',
+      })
+
+      expect(capturedYamlPanelProps.current?.yaml).toBe('serialized: true')
     })
   })
 

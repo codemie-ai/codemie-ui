@@ -17,33 +17,22 @@ import * as jsYaml from 'js-yaml'
 import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
-import ExternalSvg from '@/assets/icons/external.svg?react'
 import AceEditor, { AceEditorRef } from '@/components/AceEditor/AceEditor'
-import Button from '@/components/Button'
-import Autocomplete from '@/components/form/Autocomplete'
-import Tabs from '@/components/Tabs/Tabs'
-import { ButtonType } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
-import { CreatedBy } from '@/types/common'
-import { createdBy, findLeadingTabLine, formatDateTime } from '@/utils/helpers'
+import { findLeadingTabLine } from '@/utils/helpers'
 import { isConfigItemEnabled, getConfigItemSettings } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
+import WorkflowYamlHeaderActions from '../../components/WorkflowYamlHeaderActions'
 import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import TabFooter from './components/TabFooter'
 
-interface YamlHistoryItem {
-  date: string
-  yaml_config: string
-  created_by: CreatedBy
-}
-
 interface YamlPanelProps {
   yaml: string
-  history?: YamlHistoryItem[]
   onUpdate?: (yaml: string) => void
   onClose: (forceCloseAll?: boolean) => void
+  onShowVersionHistory?: (visibleYaml: string) => void
 }
 
 export interface YamlPanelRef {
@@ -54,14 +43,12 @@ export interface YamlPanelRef {
 }
 
 const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
-  ({ yaml, history = [], onUpdate, onClose }, ref) => {
+  ({ yaml, onUpdate, onClose, onShowVersionHistory }, ref) => {
     const { configs } = useSnapshot(appInfoStore)
     const { activeIssue } = useWorkflowContext()
     const aceEditorRef = useRef<AceEditorRef>(null)
     const [value, setValue] = useState(yaml)
     const [validationError, setValidationError] = useState<string | null>(null)
-    const [activeTab, setActiveTab] = useState<'current' | 'history'>('current')
-    const [selectedHistoryOption, setSelectedHistoryOption] = useState<string | null>(null)
 
     const isDocumentationEnabled = isConfigItemEnabled(configs, 'workflowYamlDocumentation')
     const documentationUrl = getConfigItemSettings(configs, 'workflowYamlDocumentation')?.url
@@ -149,22 +136,6 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
       validateYaml(newValue)
     }
 
-    const historyOptions = history.map((item, index) => {
-      const versionNumber = history.length - index
-      const label = `[${String(versionNumber).padStart(2, '0')}] - ${formatDateTime(
-        item.date,
-        'short'
-      )} - ${createdBy(item.created_by)}`
-      return { label, value: item.yaml_config }
-    })
-
-    const handleRestore = () => {
-      if (selectedHistoryOption) {
-        setValue(selectedHistoryOption)
-        setActiveTab('current')
-      }
-    }
-
     const handleSave = async () => {
       const success = await saveData()
       if (success) {
@@ -180,96 +151,43 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
       onClose(true)
     }
 
-    const documentationButton =
-      isDocumentationEnabled && documentationUrl ? (
-        <a
-          href={documentationUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:no-underline"
-        >
-          <Button variant={ButtonType.SECONDARY} size="medium" className="!text-sm !font-bold">
-            <ExternalSvg />
-            Documentation
-          </Button>
-        </a>
-      ) : null
-
-    const currentTabContent = (
-      <div className="flex flex-col gap-2">
-        {validationError && (
-          <div className="text-failed-secondary text-xs sticky top-0">
-            YAML Error: {validationError}
-          </div>
-        )}
-        <div
-          className={cn('h-[500px] rounded-lg border border-transparent', {
-            'border-failed-secondary': validationError,
-          })}
-        >
-          <AceEditor
-            ref={aceEditorRef}
-            value={value}
-            onChange={handleYamlChange}
-            lang="yaml"
-            name="yaml_config"
-            showInvisibles
-          />
-        </div>
-      </div>
-    )
-
-    const historyTabContent = (
-      <div className="flex flex-col gap-2 h-full">
-        {historyOptions.length > 0 ? (
-          <>
-            <div className="flex items-center gap-2">
-              <Autocomplete
-                placeholder="Select a version"
-                options={historyOptions}
-                value={selectedHistoryOption ?? ''}
-                onChange={(value) => setSelectedHistoryOption(value)}
-                className="flex-1 h-[34px]"
-              />
-              <Button onClick={handleRestore} className="w-[66px] h-7 shrink-0">
-                Restore
-              </Button>
-            </div>
-            {selectedHistoryOption && (
-              <div className="h-[500px]">
-                <AceEditor
-                  value={selectedHistoryOption}
-                  onChange={() => {}}
-                  lang="yaml"
-                  readonly
-                  name="yaml_config_history"
-                  showInvisibles
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          <h1 className="text-md text-center">Value was not yet modified</h1>
-        )}
-      </div>
-    )
-
     return (
       <>
         <div className="flex flex-col gap-4">
-          <div className="flex items-center">
-            <label className="text-sm text-text-quaternary">YAML Configuration</label>
-            <div className="ml-auto">{documentationButton}</div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="shrink-0 whitespace-nowrap text-sm text-text-quaternary">
+              YAML Configuration
+            </span>
+            <WorkflowYamlHeaderActions
+              showDocumentation={isDocumentationEnabled}
+              documentationUrl={documentationUrl}
+              onShowVersionHistory={onShowVersionHistory}
+              getVisibleYaml={() => value}
+              versionHistoryAriaLabel="Version History (visual editor)"
+            />
           </div>
-          <Tabs
-            tabs={[
-              { id: 'current', label: 'Edit mode', element: currentTabContent },
-              { id: 'history', label: 'Version History', element: historyTabContent },
-            ]}
-            activeTab={activeTab}
-            onChange={setActiveTab}
-            className="h-full"
-          />
+
+          <div className="flex flex-col gap-2">
+            {validationError && (
+              <div className="text-failed-secondary text-xs sticky top-0">
+                YAML Error: {validationError}
+              </div>
+            )}
+            <div
+              className={cn('h-[500px] rounded-lg border border-transparent', {
+                'border-failed-secondary': validationError,
+              })}
+            >
+              <AceEditor
+                ref={aceEditorRef}
+                value={value}
+                onChange={handleYamlChange}
+                lang="yaml"
+                name="yaml_config"
+                showInvisibles
+              />
+            </div>
+          </div>
         </div>
 
         <TabFooter onCancel={handleCancel} onSave={handleSave} saveDisabled={!!validationError} />

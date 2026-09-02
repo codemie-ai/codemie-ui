@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Implement EPMCDME-8827 Workflow Version History Frontend Update with Assistant-style YAML history popup, side-by-side diff, rollback API, shared component extraction, and legacy UI removal.",
+  "generated": "2026-08-11T16:05:00+03:00",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 21,
+  "size": "L",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Rewrites WorkflowVersionHistoryPopup, dual YAML entry points (YamlPanel + WorkflowConfigField), EditWorkflowPage orchestration, store/types cleanup, and extracts SystemPromptVersionHistoryView into shared VersionHistoryDiffView with Assistant import update — 4+ coordinated components plus shared-form extraction."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Rollback → refetch → reinitialize editors → clear dirty baseline has no exact precedent (Assistant is client-side onChange; current Workflow is draft-then-save); WRITE-gated Restore on shared VersionedFieldHistoryTab must not break Assistant; dual legacy restore paths must fully collapse."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Roughly 11–15+ files: popup rewrite, two editor paths, form/prop plumbing, store + types, shared extract + Assistant consumer, dirty/hook changes, deletes of Row/Compare/move-tag, and substantial test rewrite/delete/add."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: touches core shared utilities (extract VersionHistoryDiffView; extend VersionedFieldHistoryTab for WRITE gating)",
+    "Technical Risk bumped from L to XL: affects authorization (READ browse vs WRITE Restore confirmation/rollback)"
+  ],
+  "split_recommendation": null
+}

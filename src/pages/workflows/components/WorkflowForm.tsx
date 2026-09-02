@@ -50,6 +50,7 @@ interface WorkflowFormProps {
   onValidityChange?: (isValid: boolean) => void
   issues?: WorkflowIssue[] | null
   setIssues?: Dispatch<SetStateAction<WorkflowIssue[] | null>>
+  onShowVersionHistory?: (visibleYaml: string) => void
 }
 
 const MODES = {
@@ -80,6 +81,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
       onValidityChange,
       issues,
       setIssues,
+      onShowVersionHistory,
     },
     ref
   ) => {
@@ -311,6 +313,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
             onLoadExample={shouldShowLoadExample ? handleLoadExample : undefined}
             issues={issues}
             setIssues={setIssues}
+            onShowVersionHistory={onShowVersionHistory}
           />
         ) : (
           <WorkflowFormFields
@@ -320,8 +323,8 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
             workflow={workflow}
             isEditing={isEditing}
             mode={MODES.SEQUENTIAL}
-            onSubmit={onSubmit}
             onValidityChange={onValidityChange}
+            onShowVersionHistory={onShowVersionHistory}
           />
         )}
       </>

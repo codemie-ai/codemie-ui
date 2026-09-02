@@ -1,0 +1,6 @@
+{"type": "decision.recorded", "gate_id": "spec.approved", "decision": "approve", "recorded_at": "2026-08-11T13:14:31Z"}
+{"type": "decision.recorded", "gate_id": "plan.approved", "decision": "approve", "recorded_at": "2026-08-11T13:17:04Z"}
+{"type": "decision.pending", "gate_id": "code-review.final", "recorded_at": "2026-08-11T13:39:35Z"}
+{"type": "decision.recorded", "gate_id": "code-review.final", "decision": "request-changes", "recorded_at": "2026-08-11T13:48:09Z"}
+{"type": "decision.recorded", "gate_id": "code-review.check", "decision": "approve", "recorded_at": "2026-08-11T14:00:51Z"}
+{"type": "decision.recorded", "gate_id": "feature.verification", "decision": "approve", "recorded_at": "2026-08-11T15:23:10Z"}

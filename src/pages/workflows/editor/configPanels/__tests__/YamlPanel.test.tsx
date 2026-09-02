@@ -42,6 +42,12 @@ vi.mock('@/components/Tabs/Tabs', () => ({
   ),
 }))
 
+vi.mock('@/assets/icons/history.svg?react', () => ({
+  default: () => null,
+}))
+
+vi.mock('@/router', () => ({ router: {} }))
+
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -71,10 +77,13 @@ const workflowContextValue = { activeIssue: null }
 
 afterEach(cleanup)
 
-const renderPanel = (yaml = '') =>
+const renderPanel = (
+  yaml = '',
+  props: { onShowVersionHistory?: (visibleYaml: string) => void } = {}
+) =>
   render(
     <WorkflowContext.Provider value={workflowContextValue as any}>
-      <YamlPanel yaml={yaml} onClose={vi.fn()} />
+      <YamlPanel yaml={yaml} onClose={vi.fn()} {...props} />
     </WorkflowContext.Provider>
   )
 
@@ -110,5 +119,28 @@ describe('YamlPanel tab detection', () => {
     })
 
     expect(screen.queryByText(/YAML Error/)).not.toBeInTheDocument()
+  })
+})
+
+describe('YamlPanel version history entry point', () => {
+  it('does not render a Version History tab', () => {
+    renderPanel('states: []', { onShowVersionHistory: vi.fn() })
+    expect(screen.queryByRole('tab', { name: /Version History/i })).not.toBeInTheDocument()
+  })
+
+  it('shows Version History button beside the YAML header and invokes callback', () => {
+    const onShowVersionHistory = vi.fn()
+    renderPanel('states:\n  - id: buffer', { onShowVersionHistory })
+
+    const button = screen.getByRole('button', { name: /Version History \(visual editor\)/i })
+    fireEvent.click(button)
+    expect(onShowVersionHistory).toHaveBeenCalledWith('states:\n  - id: buffer')
+  })
+
+  it('hides Version History when callback is not provided (create mode)', () => {
+    renderPanel('states: []')
+    expect(
+      screen.queryByRole('button', { name: /Version History/i })
+    ).not.toBeInTheDocument()
   })
 })

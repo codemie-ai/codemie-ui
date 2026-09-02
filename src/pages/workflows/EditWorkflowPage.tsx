@@ -33,6 +33,7 @@ import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
 import { WorkflowAIRefineResponse } from '@/types/entity/workflow'
 import API from '@/utils/api'
+import { canEdit } from '@/utils/entity'
 import toaster from '@/utils/toaster'
 import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
 import { isVisualEditorEnabled, notifyAboutConsumerSlots } from '@/utils/workflows'
@@ -40,6 +41,7 @@ import { isVisualEditorEnabled, notifyAboutConsumerSlots } from '@/utils/workflo
 import RefineWorkflowPromptPopup from './components/RefineWorkflowPromptPopup'
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
 import WorkflowsNavigation from './components/WorkflowsNavigation'
+import WorkflowVersionHistoryPopup from './components/WorkflowVersionHistoryPopup'
 import WorkflowStartExecutionPopup from './details/popups/WorkflowStartExecutionPopup'
 
 const EditWorkflowPage: React.FC = () => {
@@ -53,6 +55,8 @@ const EditWorkflowPage: React.FC = () => {
   const [capturedYaml, setCapturedYaml] = useState('')
   // non-null only while an unsaved AI refinement is active
   const [preRefinementYaml, setPreRefinementYaml] = useState<string | null>(null)
+  const [showVersionHistory, setShowVersionHistory] = useState(false)
+  const [versionHistoryYaml, setVersionHistoryYaml] = useState('')
 
   const [workflowAIEnabled] = useWorkflowAIEnabled()
 
@@ -164,6 +168,20 @@ const EditWorkflowPage: React.FC = () => {
     toaster.info('Reverted to previous version')
   }
 
+  const handleShowVersionHistory = (visibleYaml?: string) => {
+    setVersionHistoryYaml(visibleYaml ?? formRef.current?.getFormValues()?.yaml_config ?? '')
+    setShowVersionHistory(true)
+  }
+
+  const handleRestoreFromHistory = (yamlConfig: string) => {
+    formRef.current?.replaceYamlConfig(yamlConfig)
+    setPreRefinementYaml(null)
+    setShowVersionHistory(false)
+    toaster.info('Workflow YAML has been restored successfully!')
+  }
+
+  const canWrite = currentWorkflow ? canEdit(currentWorkflow as any) : false
+
   return (
     <div className="flex h-full">
       <Sidebar title="Workflows" description="Browse and run available AI-powered workflows">
@@ -235,9 +253,19 @@ const EditWorkflowPage: React.FC = () => {
             setIssues={setIssues}
             workflow={currentWorkflow}
             isEditing
+            onShowVersionHistory={handleShowVersionHistory}
           />
         )}
       </PageLayout>
+
+      <WorkflowVersionHistoryPopup
+        visible={showVersionHistory}
+        canWrite={canWrite}
+        currentEditorYaml={versionHistoryYaml}
+        history={currentWorkflow?.yaml_config_history ?? []}
+        onHide={() => setShowVersionHistory(false)}
+        onRestore={handleRestoreFromHistory}
+      />
 
       <WorkflowStartExecutionPopup
         isVisible={showExecutionPopup}

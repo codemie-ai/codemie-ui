@@ -52,8 +52,8 @@ interface WorkflowFormFieldsProps {
   workflow?: any
   isEditing?: boolean
   mode?: string
-  onSubmit?: (values: any, goBack?: boolean) => void
   onValidityChange?: (isValid: boolean) => void
+  onShowVersionHistory?: (visibleYaml: string) => void
 }
 
 const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsProps>(
@@ -64,8 +64,8 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
       workflow = {},
       isEditing = false,
       mode = 'Sequential',
-      onSubmit,
       onValidityChange,
+      onShowVersionHistory,
     },
     ref
   ) => {
@@ -153,11 +153,6 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
       }
     }
 
-    const handleRestore = (updatedWorkflow: any) => {
-      if (onSubmit) {
-        onSubmit(updatedWorkflow)
-      }
-    }
     return (
       <div className="flex flex-col mx-auto gap-6 py-6 max-w-5xl">
         {!onlyConfiguration && !hideConfiguration && (
@@ -298,11 +293,8 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
                 <WorkflowConfigField
                   value={field.value}
                   onChange={field.onChange}
-                  workflow={workflow}
-                  history={workflow?.yaml_config_history || []}
                   onlyConfiguration={onlyConfiguration}
-                  isEditing={isEditing}
-                  onRestore={handleRestore}
+                  onShowVersionHistory={isEditing ? onShowVersionHistory : undefined}
                 />
               )}
             />
