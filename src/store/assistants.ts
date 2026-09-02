@@ -50,6 +50,7 @@ import toaster from '@/utils/toaster'
 import { appInfoStore } from './appInfo'
 import { preferencesStore } from './preferences'
 import { userStore } from './user'
+import { profileSettingsStore } from './userProfileSettings'
 import { transformAssistantToCreateDTO } from './utils/assistants'
 
 const RECENT_ASSISTANTS_STORAGE_KEY = 'recentAssistants'
@@ -360,11 +361,11 @@ export const assistantsStore = proxy<AssistantsStoreType>({
         assistantsStore.recentAssistants.indexOf(recentAssistant),
         1
       )
-      storage.put(
-        userStore.user!.userId,
-        RECENT_ASSISTANTS_STORAGE_KEY,
-        assistantsStore.recentAssistants
-      )
+      profileSettingsStore
+        .saveProfileSettings(userStore.user!.userId, {
+          recent_assistant_ids: assistantsStore.recentAssistants.map((a: any) => a.id),
+        })
+        .catch((e) => console.error('Failed to save recent assistants', e))
     }
   },
 
@@ -392,20 +393,21 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     if (assistantsStore.recentAssistants.length > MAX_RECENT_ASSISTANTS) {
       assistantsStore.recentAssistants.pop()
     }
-    storage.put(
-      userStore.user!.userId,
-      RECENT_ASSISTANTS_STORAGE_KEY,
-      assistantsStore.recentAssistants
-    )
+    // Save IDs only to backend — full objects are re-fetched on load
+    profileSettingsStore
+      .saveProfileSettings(userStore.user!.userId, {
+        recent_assistant_ids: assistantsStore.recentAssistants.map((a: any) => a.id),
+      })
+      .catch((e) => console.error('Failed to save recent assistants', e))
   },
 
   getRecentAssistants() {
-    const recentAssistants = storage.get(userStore.user!.userId, RECENT_ASSISTANTS_STORAGE_KEY)
-    if (!recentAssistants?.length) {
+    const recentIds = profileSettingsStore.profileSettings?.recent_assistant_ids ?? []
+    if (!recentIds.length) {
       assistantsStore.recentAssistants = []
       return Promise.resolve([])
     }
-    const filters = { id: recentAssistants.map((item: any) => item.id) }
+    const filters = { id: recentIds }
 
     const url =
       `v1/assistants?page=${0}` +
@@ -418,12 +420,8 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       .then((response: any) => response.json())
       .then((result: any) => {
         const { data } = result
-        const recentAssistantsMap = new Map(
-          recentAssistants.map((assistant: any, index: number) => [assistant.id, index])
-        )
-        data.sort(
-          (a: any, b: any) => recentAssistantsMap.get(a.id)! - recentAssistantsMap.get(b.id)!
-        )
+        const recentIdsMap = new Map(recentIds.map((id: string, index: number) => [id, index]))
+        data.sort((a: any, b: any) => recentIdsMap.get(a.id)! - recentIdsMap.get(b.id)!)
         assistantsStore.recentAssistants = data
       })
   },

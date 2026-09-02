@@ -37,6 +37,7 @@ import {
 import storage from '@/utils/storage'
 
 import { userStore } from './user'
+import { profileSettingsStore } from './userProfileSettings'
 
 const COMPLETED_FLOWS_KEY = 'onboarding-completed-flows'
 const VISITED_PAGES_KEY = 'onboarding-visited-pages'
@@ -271,11 +272,17 @@ export const onboardingStore = proxy<OnboardingStoreType>({
 
     const userId = userStore.user?.userId
     if (userId) {
-      const completedFlows = getCompletedFlows()
-      if (!completedFlows.includes(flowId)) {
-        completedFlows.push(flowId)
-        saveCompletedFlows(completedFlows)
+      const current = profileSettingsStore.profileSettings?.onboarding ?? {
+        completed: false,
+        completed_flows: [],
+        visited_pages: [],
       }
+      const updatedFlows = [...new Set([...current.completed_flows, flowId])]
+      profileSettingsStore
+        .saveProfileSettings(userId, {
+          onboarding: { ...current, completed_flows: updatedFlows },
+        })
+        .catch((e) => console.error('Failed to save flow completion', e))
     }
 
     flow?.onComplete?.()
@@ -284,8 +291,12 @@ export const onboardingStore = proxy<OnboardingStoreType>({
   },
 
   isFlowCompleted(flowId: string): boolean {
-    const completedFlows = getCompletedFlows()
-    return completedFlows.includes(flowId)
+    const completedFlows = profileSettingsStore.profileSettings?.onboarding.completed_flows
+    if (completedFlows !== undefined) {
+      return completedFlows.includes(flowId)
+    }
+    // Fallback to localStorage during migration
+    return getCompletedFlows().includes(flowId)
   },
 
   resetFlow(flowId: string) {
@@ -301,16 +312,27 @@ export const onboardingStore = proxy<OnboardingStoreType>({
     const userId = userStore.user?.userId
     if (!userId) return
 
-    const visitedPages = getVisitedPages()
-    if (!visitedPages.includes(pageId)) {
-      visitedPages.push(pageId)
-      saveVisitedPages(visitedPages)
+    const current = profileSettingsStore.profileSettings?.onboarding ?? {
+      completed: false,
+      completed_flows: [],
+      visited_pages: [],
+    }
+    if (!current.visited_pages.includes(pageId)) {
+      profileSettingsStore
+        .saveProfileSettings(userId, {
+          onboarding: { ...current, visited_pages: [...current.visited_pages, pageId] },
+        })
+        .catch((e) => console.error('Failed to save visited page', e))
     }
   },
 
   isFirstPageVisit(pageId: HelpPageId): boolean {
-    const visitedPages = getVisitedPages()
-    return !visitedPages.includes(pageId)
+    const visitedPages = profileSettingsStore.profileSettings?.onboarding.visited_pages
+    if (visitedPages !== undefined) {
+      return !visitedPages.includes(pageId)
+    }
+    // Fallback to localStorage during migration
+    return !getVisitedPages().includes(pageId)
   },
 
   getFlowsForPage(pageId: HelpPageId): OnboardingFlow[] {
@@ -424,10 +446,4 @@ function getVisitedPages(): string[] {
   const userId = userStore.user?.userId
   if (!userId) return []
   return storage.get<string>(userId, VISITED_PAGES_KEY)
-}
-
-function saveVisitedPages(pages: string[]) {
-  const userId = userStore.user?.userId
-  if (!userId) return
-  storage.put(userId, VISITED_PAGES_KEY, pages)
 }

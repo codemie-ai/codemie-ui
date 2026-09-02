@@ -21,6 +21,7 @@ import { appInfoStore } from '@/store/appInfo'
 import { applicationsStore } from '@/store/applications'
 import { preferencesStore } from '@/store/preferences'
 import { skillsStore } from '@/store/skills'
+import { profileSettingsStore } from '@/store/userProfileSettings'
 
 const useInitialDataFetch = () => {
   useEffect(() => {
@@ -34,11 +35,20 @@ const useInitialDataFetch = () => {
         throw error
       }
 
-      await preferencesStore.fetchPreferences(userStore.user!.userId)
+      await Promise.all([
+        preferencesStore.fetchPreferences(userStore.user!.userId),
+        profileSettingsStore.fetchProfileSettings(userStore.user!.userId),
+      ])
 
-      await assistantsStore.fetchPinnedAssistants()
-      chatsStore.getFolders()
-      chatsStore.getChats()
+      await assistantsStore.fetchPinnedAssistants().catch((error) => {
+        console.error('[useInitialDataFetch] failed to fetch pinned assistants:', error)
+      })
+      chatsStore.getFolders().catch((error) => {
+        console.error('[useInitialDataFetch] failed to fetch chat folders:', error)
+      })
+      chatsStore.getChats().catch((error) => {
+        console.error('[useInitialDataFetch] failed to fetch chats:', error)
+      })
 
       appInfoStore.loadAppInfo()
       appInfoStore.fetchToolConfigs()

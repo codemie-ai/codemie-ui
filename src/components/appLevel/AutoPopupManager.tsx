@@ -27,6 +27,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { onboardingStore } from '@/store/onboarding'
 import { userStore } from '@/store/user'
+import { profileSettingsStore } from '@/store/userProfileSettings'
 import { OnboardingFlow } from '@/types/onboarding'
 
 const NAVIGATION_INTRODUCTION_FLOW_ID = 'navigation-introduction'
@@ -43,6 +44,7 @@ const NAVIGATION_INTRODUCTION_FLOW_ID = 'navigation-introduction'
 const AutoPopupManager: FC = () => {
   const router = useVueRouter()
   const { user } = useSnapshot(userStore)
+  const { profileSettings, error: profileSettingsError } = useSnapshot(profileSettingsStore)
   const { appReleases } = useSnapshot(appInfoStore)
   const { isActive: isOnboardingActive } = useSnapshot(onboardingStore)
   const matches = useMatches()
@@ -64,6 +66,7 @@ const AutoPopupManager: FC = () => {
   // Handles P1 (onboarding intro) and P2 (new release)
   useEffect(() => {
     if (!user) return
+    if (profileSettings === null && profileSettingsError === null) return
 
     if (!appInfoStore.isOnboardingCompleted() && userStore.isSSOUser()) {
       onboardingStore.startFlow(NAVIGATION_INTRODUCTION_FLOW_ID)
@@ -74,7 +77,7 @@ const AutoPopupManager: FC = () => {
     if (appInfoStore.isOnboardingCompleted() && appInfoStore.isAppReleaseNew()) {
       setActivePopup('release')
     }
-  }, [user])
+  }, [user, profileSettings, profileSettingsError])
 
   // Effect 2: first-time page popup — runs on each route change
   // Handles P3; suppressed when a higher-priority popup or onboarding session is active

@@ -1,0 +1,110 @@
+{
+  "decision": "approve",
+  "rationale": "All 6 blocking findings from the final round are resolved. CR-001: setTheme() now calls saveProfileSettings fire-and-forget after applyTheme. CR-002: 404 auto-create reads localStorage before seeding and isOnboardingCompleted uses explicit null check. CR-003: error path leaves profileSettings null; applyBackendTheme gated on !error. CR-004: Apache 2.0 headers added to all 4 Python files. CR-005: saveProfileSettings wrapped in try/catch with re-throw. CR-006: all fire-and-forget call sites (.5 total) have .catch() handlers. Combined diff contained unrelated uncommitted working-tree changes (poetry.lock, pyproject.toml, .env, .claude/settings.json) that are out of scope; fix-up commits are clean. A later commit on this same branch/MR added AI Adoption Config persistence, reviewed and fixed up separately, folded in here: all 4 findings (CR-007 through CR-010) resolved — critical serialization-size fix independently re-verified in the real environment, GET now guards against corrupted data, PUT rejects malformed/out-of-bounds bodies with 400, and resetAiAdoptionConfig now matches saveAiAdoptionConfig's loading/error pattern.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "themeService.ts setTheme() now imports profileSettingsStore and calls saveProfileSettings(userId, { theme }).catch() after applyTheme. Backend is now updated on every user-initiated theme change."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "404 auto-create path now checks localStorage.getItem('codemie-onboarding-completed') before seeding completed state. isOnboardingCompleted in appInfo.ts replaced ?? with explicit !== null guard, making localStorage fallback reachable."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Error path in fetchProfileSettings no longer assigns DEFAULT_PROFILE to profileSettings (now leaves null with comment). useInitialDataFetch gates applyBackendTheme inside !profileSettingsStore.error check, preserving localStorage theme on network failures."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "Apache 2.0 license header block added to user_profile_settings.py (model), user_profile_settings_repository.py, user_profile_settings_service.py, and user_profile_settings_router.py."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "saveProfileSettings now has try/catch that logs via console.error and re-throws so awaited callers receive the rejection and can handle it."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "All fire-and-forget saveProfileSettings calls now have .catch() handlers: completeFlow and markPageVisited in onboarding.ts, deleteRecentAssistant and updateRecentAssistants in assistants.ts, setViewedAppVersion in appInfo.ts (also changed from await to fire-and-forget with local state set first)."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "value=json.dumps(config.model_dump()) replaces value=json.dumps(config.to_dict()) in save_ai_adoption_config; get_ai_adoption_config reconstructs via AIAdoptionConfig(**json.loads(record.value)) instead of from_dict(). Test updated to assert flat shape and len<=10000. Independently re-verified in the real environment: 3,902 chars, round-trips to identical to_dict() output."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "get_ai_adoption_config wraps the persisted-record parse in try/except (json.JSONDecodeError, ValueError, TypeError), logs a warning, and falls back to AIAdoptionConfig() defaults. New test test_config_falls_back_to_defaults_when_persisted_value_is_corrupted covers it."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "notes": "update_ai_adoption_config wraps AIAdoptionConfig.from_dict(request_body) in try/except (ValueError, TypeError), raising ExtendedHTTPException(400). Two new tests cover both the structural-malformed-body case and the out-of-bounds-value case (also closes the Testing Plan gap noted in business_review)."
+    },
+    {
+      "id": "CR-010",
+      "status": "resolved",
+      "notes": "resetAiAdoptionConfig now sets this.loading[key]/this.error[key] around the api.delete call with a finally block clearing loading, mirroring saveAiAdoptionConfig exactly. Two new tests cover the success-clears-loading and failure-sets-error-and-rethrows paths."
+    }
+  ],
+  "findings": [],
+  "business_review": [
+    {"kind": "spec", "item": "user_profile_settings table with correct columns, types, server_defaults on non-nullable columns, nullable last_viewed_release_version", "status": "pass", "notes": "Migration creates table with correct types, server_defaults, and nullable last_viewed_release_version."},
+    {"kind": "spec", "item": "OnboardingData shape: completed bool=False, completed_flows list[str]=[], visited_pages list[str]=[]", "status": "pass", "notes": "OnboardingData model matches spec exactly."},
+    {"kind": "spec", "item": "user_id PK, IDP user ID string, no FK", "status": "pass", "notes": "Confirmed in model and migration."},
+    {"kind": "spec", "item": "recent_assistant_ids stores at most 3 IDs", "status": "pass", "notes": "MAX_RECENT_ASSISTANTS constant enforced in updateRecentAssistants via .pop()."},
+    {"kind": "spec", "item": "Full assistant objects never stored, re-fetched on load", "status": "pass", "notes": "Only IDs stored; getRecentAssistants fetches by ID."},
+    {"kind": "spec", "item": "Backend models, repository, service, router per user_preferences template", "status": "pass", "notes": "All four layers present and following the template."},
+    {"kind": "spec", "item": "GET /v1/user/profile-settings/{user_id} → 200/404/403; PUT → 200/403", "status": "pass", "notes": "Both routes present, auth guard correct (current_user.id != user_id and not current_user.is_admin → 403)."},
+    {"kind": "spec", "item": "main.py includes router unconditionally", "status": "pass", "notes": "include_router present in main.py."},
+    {"kind": "spec", "item": "Alembic migration with server_default on every non-nullable column", "status": "pass", "notes": "All non-nullable columns have correct server_defaults; migration boilerplate is complete."},
+    {"kind": "spec", "item": "TypeScript types in src/types/userProfileSettings.ts mirroring backend", "status": "pass", "notes": "OnboardingSettings, UserProfileSettings, UserProfileSettingsPatch match backend model."},
+    {"kind": "spec", "item": "fetchProfileSettings: GET with 404→PUT defaults, errors caught, non-blocking", "status": "pass", "notes": "404 path now seeds completed:true from localStorage before auto-creating profile. Error path leaves profileSettings null (no DEFAULT_PROFILE assignment). Non-blocking confirmed."},
+    {"kind": "spec", "item": "Initialization: fetchProfileSettings parallelised with fetchPreferences via Promise.all", "status": "pass", "notes": "Promise.all([fetchPreferences, fetchProfileSettings]) confirmed in useInitialDataFetch."},
+    {"kind": "spec", "item": "Theme: after fetchProfileSettings resolves, apply backend value and overwrite localStorage cache", "status": "pass", "notes": "applyBackendTheme called after Promise.all, gated on !profileSettingsStore.error to preserve localStorage on failures."},
+    {"kind": "spec", "item": "Theme: on user-initiated theme change, call saveProfileSettings with new theme", "status": "pass", "notes": "setTheme() now calls profileSettingsStore.saveProfileSettings(userId, { theme }).catch() after applyTheme. Backend is updated on every user-initiated change."},
+    {"kind": "spec", "item": "Theme: localStorage retained as fast-path read cache (source of truth is backend)", "status": "pass", "notes": "localStorage written by applyTheme as cache; user-initiated changes now also saved to backend making it the source of truth."},
+    {"kind": "spec", "item": "Onboarding: appInfo.ts and onboarding.ts both map to single onboarding JSONB field", "status": "pass", "notes": "Both files read/write profileSettingsStore.onboarding."},
+    {"kind": "spec", "item": "One-time migration: seed completed:true from localStorage codemie-onboarding-completed on first access", "status": "pass", "notes": "404 auto-create path now reads localStorage.getItem('codemie-onboarding-completed') and seeds completed:true if found. isOnboardingCompleted uses explicit null check so localStorage fallback is reachable."},
+    {"kind": "spec", "item": "Recent assistants: deleteRecentAssistant and updateRecentAssistants call saveProfileSettings with IDs", "status": "pass", "notes": "Both methods call saveProfileSettings with .catch() on fire-and-forget."},
+    {"kind": "spec", "item": "Last viewed release version: loadReleaseNotes and setViewedAppVersion use profileSettingsStore", "status": "pass", "notes": "setViewedAppVersion now fire-and-forget with local state set first; loadReleaseNotes reads profileSettingsStore."},
+    {"kind": "spec", "item": "AI adoption: remove localStorage cache from fetchAiAdoptionConfig, delete aiAdoptionConfigStorage.ts", "status": "pass", "notes": "localStorage check removed; file deleted."},
+    {"kind": "spec", "item": "Backend unavailable on init: fetchProfileSettings catches error, falls back to in-memory defaults", "status": "pass", "notes": "Error path now leaves profileSettings null; stores fall back to their own defaults. applyBackendTheme skipped on error so localStorage theme is preserved."},
+    {"kind": "spec", "item": "Backend tests: GET 200, GET 404, PUT updates, PUT non-admin different user → 403", "status": "pass", "notes": "Router test file has 6 tests covering all required scenarios plus admin access."},
+    {"kind": "spec", "item": "Frontend userProfileSettings.test.ts: 3 required scenarios", "status": "pass", "notes": "All three test cases present."},
+    {"kind": "spec", "item": "themeService.test.ts: init() reads localStorage, prefers-color-scheme fallback, backend value overwrites cache", "status": "partial", "notes": "Two applyBackendTheme tests added but the three spec-required init scenarios are not covered by new tests (may be covered by pre-existing tests). Pre-existing gap, not introduced by fix-up."},
+    {"kind": "spec", "item": "AI adoption config: updates persisted and survive page reload", "status": "pass", "notes": "PUT persists via DynamicConfigService.aset; frontend saveAiAdoptionConfig calls api.put instead of only mutating Valtio state."},
+    {"kind": "spec", "item": "AI adoption config: GET returns last saved config, falls back to defaults if none saved", "status": "pass", "notes": "get_ai_adoption_config() checks DynamicConfigService.aget_by_key first, falls back to AIAdoptionConfig() defaults."},
+    {"kind": "spec", "item": "AI adoption config: only admin users can write the configuration", "status": "partial", "notes": "PUT/DELETE gated on Depends(admin_access_only), which checks is_admin_or_maintainer, not admin-only. This matches the spec's own directive to reuse admin_access_only and every other 'admin-only' endpoint in this codebase — verified intentional and consistent, not a defect introduced by this diff."},
+    {"kind": "spec", "item": "AI adoption config: read access remains unrestricted", "status": "pass", "notes": "GET route dependencies untouched; only the handler body changed."},
+    {"kind": "spec", "item": "AI adoption config: reset-to-defaults semantics — DELETE removes persisted row so GET falls back to defaults again", "status": "pass", "notes": "reset_ai_adoption_config() calls adelete then re-reads via get_ai_adoption_config(). Minor TOCTOU noted and deferred."},
+    {"kind": "spec", "item": "AI adoption config: DynamicConfigService.adelete() new async counterpart, no-op if key missing", "status": "pass", "notes": "Matches spec description exactly, including no self-enforced admin auth (caller enforces)."},
+    {"kind": "spec", "item": "AI adoption config: PUT route validated via from_dict, admin-gated, calls DynamicConfigService.aset with exact key/value/value_type/description/updated_by, returns {data, metadata}", "status": "pass", "notes": "Matches spec verbatim; storage call now succeeds after the CR-007 fix."},
+    {"kind": "spec", "item": "AI adoption config: DELETE route admin-gated, calls DynamicConfigService.adelete, returns {data, metadata} reflecting fresh defaults", "status": "pass", "notes": "Matches spec signature and behavior."},
+    {"kind": "spec", "item": "AI adoption config: key AI_ADOPTION_CONFIG used consistently, no collision", "status": "pass", "notes": "Verified via grep — no pre-existing use of this key anywhere in the backend."},
+    {"kind": "spec", "item": "AI adoption config: frontend saveAiAdoptionConfig rethrows on error, matches spec's code block", "status": "pass", "notes": "Matches near-verbatim, including loading/error/finally handling."},
+    {"kind": "spec", "item": "AI adoption config: frontend resetAiAdoptionConfig calls api.delete with undefined body, matches spec's code block", "status": "pass", "notes": "Matches, including the explicit undefined body argument required by api.delete's (url, body?, options?) signature."},
+    {"kind": "spec", "item": "AI adoption config: backend test — PUT rejects out-of-bounds value (400 via Pydantic validation)", "status": "pass", "notes": "test_put_ai_adoption_config_returns_400_for_out_of_bounds_value added in the fix-up round, closing the gap flagged in the final round."},
+    {"kind": "spec", "item": "AI adoption config: backend test — DELETE clears persistence, subsequent GET returns defaults", "status": "pass", "notes": "test_reset_deletes_persisted_config_and_returns_defaults."},
+    {"kind": "spec", "item": "AI adoption config: backend test — DELETE rejects non-admin caller (403)", "status": "pass", "notes": "test_delete_ai_adoption_config_returns_403_for_non_admin."},
+    {"kind": "spec", "item": "AI adoption config: backend test — DELETE is idempotent (no error when nothing persisted)", "status": "pass", "notes": "test_adelete_noop_when_not_found."},
+    {"kind": "spec", "item": "AI adoption config: frontend test — saveAiAdoptionConfig success and failure paths", "status": "pass", "notes": "Both tests present in analytics.test.ts."},
+    {"kind": "spec", "item": "AI adoption config: frontend test — resetAiAdoptionConfig calls api.delete and updates store", "status": "pass", "notes": "Present and asserts the exact 3-arg call signature; fix-up round added a failure-path test too."}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow: commit format EPMCDME-####: description", "status": "pass", "notes": "All fix-up commits follow the EPMCDME-11546: <description> format exactly."},
+    {"standard": "code-quality: Apache 2.0 license headers required for source files", "status": "pass", "notes": "All 4 previously flagged Python source files now have the standard Apache 2.0 license header block."},
+    {"standard": "security: authenticate dependency on all endpoints, no sensitive logging", "status": "pass", "notes": "Both GET and PUT use Depends(authenticate). No sensitive values logged in fix-up changes."},
+    {"kind": "commit-format", "status": "pass", "notes": "AI adoption config commits follow 'EPMCDME-11546: Description' per .ai-run/guides/standards/git-workflow.md."},
+    {"kind": "code-quality", "status": "pass", "notes": "ruff check/format clean on all touched AI adoption config backend files; eslint clean on frontend files; license headers present; modern type hints and from __future__ import annotations preserved."},
+    {"kind": "security", "status": "pass", "notes": "New AI adoption config write/delete routes correctly reuse the central admin_access_only dependency rather than reimplementing role checks; no secrets or sensitive values logged."}
+  ]
+}

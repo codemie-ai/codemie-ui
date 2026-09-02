@@ -21,6 +21,7 @@ import {
   DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT,
   getFileDatasourceMaxUploadCount,
 } from '@/constants/dataSources'
+import { profileSettingsStore } from '@/store/userProfileSettings'
 import { ModelOption, SpeechConfig, ConfigItem } from '@/types/entity/configuration'
 import api from '@/utils/api'
 
@@ -42,7 +43,6 @@ const TOOL_CONFIG_FIELD_MAP: Record<string, { credentialType: string; fields: st
   sharepointconfig: { credentialType: 'sharepoint', fields: ['url'] },
 }
 
-const VIEWED_RN_VERSION_KEY = 'codemie-viewed-release-version'
 const ONBOARDING_COMPLETED_KEY = 'codemie-onboarding-completed'
 const QUICK_ACTIONS_COLLAPSED_KEY = 'codemie-quick-actions-collapsed'
 const NAVIGATION_EXPANDED_KEY = 'codemie-navigation-expanded'
@@ -88,10 +88,10 @@ export interface AppInfoStoreType {
   loadAppInfo: () => Promise<void>
   loadReleaseNotes: () => Promise<any[]>
   loadSpeechConfig: () => Promise<SpeechConfig>
-  setViewedAppVersion: (version: string) => void
+  setViewedAppVersion: (version: string) => Promise<void>
   isAppReleaseNew: () => boolean
   isOnboardingCompleted: () => boolean
-  completeOnboarding: () => void
+  completeOnboarding: () => Promise<void>
   getLLMModels: () => Promise<ModelOption[]>
   getImageGenerationModels: () => Promise<ModelOption[]>
   getEmbeddingsModels: () => Promise<ModelOption[]>
@@ -237,7 +237,8 @@ export const appInfoStore = proxy<AppInfoStoreType>({
 
   async loadReleaseNotes() {
     this.appReleases = releaseNotes
-    this.viewedAppReleaseVersion = localStorage.getItem(VIEWED_RN_VERSION_KEY) ?? ''
+    this.viewedAppReleaseVersion =
+      profileSettingsStore.profileSettings?.last_viewed_release_version ?? ''
     try {
       const response = await api.get('v1/deployment-versions')
       const data = await response.json()
@@ -269,9 +270,15 @@ export const appInfoStore = proxy<AppInfoStoreType>({
     }
   },
 
-  setViewedAppVersion(version: string) {
-    localStorage.setItem(VIEWED_RN_VERSION_KEY, version)
+  async setViewedAppVersion(version: string): Promise<void> {
     this.viewedAppReleaseVersion = version
+    // Dynamic import avoids a circular dependency with store/user.ts (via utils/api.ts).
+    const { userStore } = await import('@/store/user')
+    profileSettingsStore
+      .saveProfileSettings(userStore.user!.userId, {
+        last_viewed_release_version: version,
+      })
+      .catch((e) => console.error('Failed to save release version', e))
   },
 
   isAppReleaseNew() {
@@ -279,11 +286,25 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   },
 
   isOnboardingCompleted() {
+    const settings = profileSettingsStore.profileSettings
+    if (settings !== null) {
+      return settings.onboarding.completed
+    }
     return localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true'
   },
 
-  completeOnboarding() {
-    localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true')
+  async completeOnboarding() {
+    // Dynamic import avoids a circular dependency with store/user.ts (via utils/api.ts).
+    const { userStore } = await import('@/store/user')
+    const { userId } = userStore.user!
+    const current = profileSettingsStore.profileSettings?.onboarding ?? {
+      completed: false,
+      completed_flows: [],
+      visited_pages: [],
+    }
+    await profileSettingsStore.saveProfileSettings(userId, {
+      onboarding: { ...current, completed: true },
+    })
   },
 
   async getLLMModels() {

@@ -42,11 +42,6 @@ import {
   LeaderboardFrameworkResponse,
 } from '@/types/analytics'
 import type { ErrorDetails, ErrorResponse } from '@/types/common'
-import {
-  loadConfigFromStorage,
-  saveConfigToStorage,
-  clearConfigFromStorage,
-} from '@/utils/aiAdoptionConfigStorage'
 import api from '@/utils/api'
 import storage from '@/utils/storage'
 
@@ -142,8 +137,8 @@ interface Analytics {
     config?: AiAdoptionConfig
   }) => Promise<SummariesResponse | null>
   fetchAiAdoptionConfig: (dashboard: string) => Promise<AiAdoptionConfigResponse | null>
-  saveAiAdoptionConfig: (config: AiAdoptionConfig) => Promise<void>
-  resetAiAdoptionConfig: () => Promise<void>
+  saveAiAdoptionConfig: (config: AiAdoptionConfig) => Promise<AiAdoptionConfigResponse>
+  resetAiAdoptionConfig: () => Promise<AiAdoptionConfigResponse>
   loadDashboards: () => Promise<AnalyticsDashboardItem[]>
   saveDashboards: (dashboards: AnalyticsDashboardItem[]) => Promise<void>
   createDashboard: (dashboard: Omit<AnalyticsDashboardItem, 'id'>) => Promise<string>
@@ -631,33 +626,12 @@ export const analyticsStore = proxy<Analytics>({
       this.loading[key] = true
       this.error[key] = null
 
-      // Check localStorage first
-      const storedConfig = loadConfigFromStorage()
-      if (storedConfig) {
-        this.aiAdoptionConfig = {
-          data: storedConfig,
-          metadata: {
-            timestamp: new Date().toISOString(),
-            version: '1.0.0',
-            description: 'Configuration loaded from localStorage',
-          },
-        }
-        return this.aiAdoptionConfig
-      }
-
-      // Fetch from API if not in localStorage
       const response = await api.get('v1/analytics/ai-adoption-config', {
         skipErrorHandling: true,
       })
       const data = (await response.json()) as AiAdoptionConfigResponse
 
       this.aiAdoptionConfig = data
-
-      // Cache in localStorage
-      if (data?.data) {
-        saveConfigToStorage(data.data)
-      }
-
       return data
     } catch (error) {
       console.error('Error fetching AI adoption config:', error)
@@ -669,57 +643,47 @@ export const analyticsStore = proxy<Analytics>({
     }
   },
 
-  /**
-   * Save AI Adoption Framework configuration to localStorage
-   * @param config - Configuration object to save
-   */
   async saveAiAdoptionConfig(config: AiAdoptionConfig) {
+    const key = 'ai-adoption-config'
     try {
-      // Save to localStorage
-      saveConfigToStorage(config)
+      this.loading[key] = true
+      this.error[key] = null
 
-      // Update store state
-      this.aiAdoptionConfig = {
-        data: config,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          version: '1.0.0',
-          description: 'Configuration saved to localStorage',
-        },
-      }
-    } catch (error) {
-      console.error('Failed to save AI adoption config:', error)
-      throw error
-    }
-  },
-
-  /**
-   * Reset AI Adoption Framework configuration to defaults
-   * Clears localStorage and fetches fresh config from API
-   */
-  async resetAiAdoptionConfig() {
-    try {
-      // Clear localStorage
-      clearConfigFromStorage()
-
-      // Clear store state
-      this.aiAdoptionConfig = null
-
-      // Fetch fresh from API
-      const response = await api.get('v1/analytics/ai-adoption-config', {
+      const response = await api.put('v1/analytics/ai-adoption-config', config, {
         skipErrorHandling: true,
       })
       const data = (await response.json()) as AiAdoptionConfigResponse
 
       this.aiAdoptionConfig = data
+      return data
+    } catch (error) {
+      console.error('Error saving AI adoption config:', error)
+      this.error[key] = parseErrorResponse(error, 'Failed to save AI adoption config')
+      throw error
+    } finally {
+      this.loading[key] = false
+    }
+  },
 
-      // Cache in localStorage
-      if (data?.data) {
-        saveConfigToStorage(data.data)
-      }
+  async resetAiAdoptionConfig() {
+    const key = 'ai-adoption-config'
+    try {
+      this.loading[key] = true
+      this.error[key] = null
+
+      const response = await api.delete('v1/analytics/ai-adoption-config', undefined, {
+        skipErrorHandling: true,
+      })
+      const data = (await response.json()) as AiAdoptionConfigResponse
+
+      this.aiAdoptionConfig = data
+      return data
     } catch (error) {
       console.error('Failed to reset AI adoption config:', error)
+      this.error[key] = parseErrorResponse(error, 'Failed to reset AI adoption config')
       throw error
+    } finally {
+      this.loading[key] = false
     }
   },
 
