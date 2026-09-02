@@ -181,7 +181,10 @@ describe('author Toolkit — a pinned toolkit integration outranks the stored fl
 
   it('shows the toolkit integration and the switch off when the flag says automatic', () => {
     render(
-      <Toolkit {...toolkitLevelProps} selectedToolkits={pinnedToolkit({ auto_credentials_lookup: true })} />
+      <Toolkit
+        {...toolkitLevelProps}
+        selectedToolkits={pinnedToolkit({ auto_credentials_lookup: true })}
+      />
     )
 
     expect(screen.getByRole('switch')).not.toBeChecked()

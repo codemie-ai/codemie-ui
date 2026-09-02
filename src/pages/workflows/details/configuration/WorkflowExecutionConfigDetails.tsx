@@ -15,7 +15,6 @@
 
 import { FC, useLayoutEffect, useRef, useState } from 'react'
 
-
 import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import CopySvg from '@/assets/icons/copy.svg?react'
 import Avatar from '@/components/Avatar/Avatar'

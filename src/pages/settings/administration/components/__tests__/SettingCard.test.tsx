@@ -53,7 +53,9 @@ describe('SettingCard', () => {
     fireEvent.change(textarea, { target: { value: 'my unsaved edit' } })
 
     // saving another card refetches the list, producing a new object with identical content
-    rerender(<SettingCard setting={declaration({ text: 'stored' })} onSave={vi.fn()} onReset={vi.fn()} />)
+    rerender(
+      <SettingCard setting={declaration({ text: 'stored' })} onSave={vi.fn()} onReset={vi.fn()} />
+    )
 
     expect(screen.getByLabelText('Disclaimer text')).toHaveValue('my unsaved edit')
   })
@@ -63,8 +65,16 @@ describe('SettingCard', () => {
       <SettingCard setting={declaration({ text: 'stored' })} onSave={vi.fn()} onReset={vi.fn()} />
     )
 
-    fireEvent.change(screen.getByLabelText('Disclaimer text'), { target: { value: 'my unsaved edit' } })
-    rerender(<SettingCard setting={declaration({ text: 'saved by someone else' })} onSave={vi.fn()} onReset={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Disclaimer text'), {
+      target: { value: 'my unsaved edit' },
+    })
+    rerender(
+      <SettingCard
+        setting={declaration({ text: 'saved by someone else' })}
+        onSave={vi.fn()}
+        onReset={vi.fn()}
+      />
+    )
 
     expect(screen.getByLabelText('Disclaimer text')).toHaveValue('saved by someone else')
   })
@@ -76,7 +86,13 @@ describe('SettingCard', () => {
 
     fireEvent.change(screen.getByLabelText('Disclaimer text'), { target: { value: 'newly typed' } })
     // the save round-trips and the refetch returns exactly what was typed
-    rerender(<SettingCard setting={declaration({ text: 'newly typed' })} onSave={vi.fn()} onReset={vi.fn()} />)
+    rerender(
+      <SettingCard
+        setting={declaration({ text: 'newly typed' })}
+        onSave={vi.fn()}
+        onReset={vi.fn()}
+      />
+    )
 
     expect(screen.getByLabelText('Disclaimer text')).toHaveValue('newly typed')
   })

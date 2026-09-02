@@ -16,7 +16,10 @@
 import { FieldDeclaration, SettingValue } from '@/types/entity/customerConfiguration'
 
 /** Client-side mirror of the declared constraints. Never a replacement for the server check. */
-export const validateField = (field: FieldDeclaration, value: SettingValue | undefined): string | null => {
+export const validateField = (
+  field: FieldDeclaration,
+  value: SettingValue | undefined
+): string | null => {
   if (typeof value !== 'string') return null
 
   if (field.required && !value.trim()) {

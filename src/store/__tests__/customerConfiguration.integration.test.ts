@@ -42,7 +42,10 @@ describe('customerConfigurationStore request bodies', () => {
   const sentBody = () => JSON.parse(fetchMock.mock.calls[0][1].body)
 
   it('sends the settings object at the top level of the request body', async () => {
-    await customerConfigurationStore.saveSetting('chatDisclaimer', { enabled: true, text: 'Mind the gap' })
+    await customerConfigurationStore.saveSetting('chatDisclaimer', {
+      enabled: true,
+      text: 'Mind the gap',
+    })
 
     expect(sentBody()).toEqual({ settings: { enabled: true, text: 'Mind the gap' } })
   })

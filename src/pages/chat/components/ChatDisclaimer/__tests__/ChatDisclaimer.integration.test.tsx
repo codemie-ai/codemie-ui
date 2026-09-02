@@ -35,19 +35,31 @@ describe('ChatDisclaimer reactivity', () => {
     render(<ChatDisclaimer />)
     expect(screen.queryByTestId('chat-disclaimer')).not.toBeInTheDocument()
 
-    appInfoStore.configs = [{ id: 'chatDisclaimer', settings: { enabled: true, text: 'Verify information.' } }]
+    appInfoStore.configs = [
+      { id: 'chatDisclaimer', settings: { enabled: true, text: 'Verify information.' } },
+    ]
 
-    await waitFor(() => expect(screen.getByTestId('chat-disclaimer')).toHaveTextContent('Verify information.'))
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-disclaimer')).toHaveTextContent('Verify information.')
+    )
   })
 
   it('follows a later refetch without a reload', async () => {
-    appInfoStore.configs = [{ id: 'chatDisclaimer', settings: { enabled: true, text: 'First notice.' } }]
+    appInfoStore.configs = [
+      { id: 'chatDisclaimer', settings: { enabled: true, text: 'First notice.' } },
+    ]
     render(<ChatDisclaimer />)
-    await waitFor(() => expect(screen.getByTestId('chat-disclaimer')).toHaveTextContent('First notice.'))
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-disclaimer')).toHaveTextContent('First notice.')
+    )
 
-    appInfoStore.configs = [{ id: 'chatDisclaimer', settings: { enabled: true, text: 'Second notice.' } }]
+    appInfoStore.configs = [
+      { id: 'chatDisclaimer', settings: { enabled: true, text: 'Second notice.' } },
+    ]
 
-    await waitFor(() => expect(screen.getByTestId('chat-disclaimer')).toHaveTextContent('Second notice.'))
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-disclaimer')).toHaveTextContent('Second notice.')
+    )
   })
 
   it('disappears when the setting is turned off', async () => {
@@ -55,7 +67,9 @@ describe('ChatDisclaimer reactivity', () => {
     render(<ChatDisclaimer />)
     await waitFor(() => expect(screen.getByTestId('chat-disclaimer')).toBeInTheDocument())
 
-    appInfoStore.configs = [{ id: 'chatDisclaimer', settings: { enabled: false, text: 'Visible.' } }]
+    appInfoStore.configs = [
+      { id: 'chatDisclaimer', settings: { enabled: false, text: 'Visible.' } },
+    ]
 
     await waitFor(() => expect(screen.queryByTestId('chat-disclaimer')).not.toBeInTheDocument())
   })

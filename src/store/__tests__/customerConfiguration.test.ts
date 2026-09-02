@@ -41,8 +41,28 @@ const declaration: SettingDeclaration = {
   overridden: false,
   value: { enabled: false, text: '' },
   fields: [
-    { name: 'enabled', type: 'switch', label: 'Show disclaimer', description: null, required: false, max_length: null, pattern: null, pattern_message: null, markup: 'plain' },
-    { name: 'text', type: 'textarea', label: 'Disclaimer text', description: null, required: false, max_length: 1000, pattern: null, pattern_message: null, markup: 'markdown' },
+    {
+      name: 'enabled',
+      type: 'switch',
+      label: 'Show disclaimer',
+      description: null,
+      required: false,
+      max_length: null,
+      pattern: null,
+      pattern_message: null,
+      markup: 'plain',
+    },
+    {
+      name: 'text',
+      type: 'textarea',
+      label: 'Disclaimer text',
+      description: null,
+      required: false,
+      max_length: 1000,
+      pattern: null,
+      pattern_message: null,
+      markup: 'markdown',
+    },
   ],
 }
 
@@ -83,7 +103,11 @@ describe('customerConfigurationStore', () => {
 
   it('saves a setting through the declarations endpoint', async () => {
     mockPut.mockResolvedValue({
-      json: () => Promise.resolve({ component_id: 'chatDisclaimer', settings: { enabled: true, text: 'hi' } }),
+      json: () =>
+        Promise.resolve({
+          component_id: 'chatDisclaimer',
+          settings: { enabled: true, text: 'hi' },
+        }),
     })
 
     await customerConfigurationStore.saveSetting('chatDisclaimer', { enabled: true, text: 'hi' })

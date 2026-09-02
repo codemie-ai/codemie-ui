@@ -97,6 +97,7 @@ export interface ProjectPayload {
   display_name?: string | null
   description: string
   cost_center_id?: string | null
+  chargeback_enabled?: boolean
 }
 
 export interface ProjectUpdatePayload {

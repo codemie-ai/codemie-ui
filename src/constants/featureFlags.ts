@@ -29,8 +29,8 @@ export const FEATURE_FLAGS = {
   TEAMS_BOT_INTEGRATION: 'features:teamsBotIntegration',
   WORKFLOW_AI: 'features:workflowAI',
   CHAT_CONTEXTUAL_NAMING: 'features:chatContextualNaming',
-  SUB_WORKFLOW: 'features:subWorkflow',
   PROJECT_CHARGEBACK: 'features:projectChargeback',
+  SUB_WORKFLOW: 'features:subWorkflow',
   COST_CENTERS: 'features:costCenters',
 } as const
 

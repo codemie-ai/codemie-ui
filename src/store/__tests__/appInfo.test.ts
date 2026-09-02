@@ -328,7 +328,9 @@ describe('appInfoStore customer config refetch', () => {
   })
 
   it('serves the cached config on a second fetch', async () => {
-    mockGet.mockResolvedValue(okResponse([{ id: 'chatDisclaimer', settings: { enabled: true, text: 'hi' } }]))
+    mockGet.mockResolvedValue(
+      okResponse([{ id: 'chatDisclaimer', settings: { enabled: true, text: 'hi' } }])
+    )
 
     await appInfoStore.fetchCustomerConfig()
     await appInfoStore.fetchCustomerConfig()
@@ -337,10 +339,14 @@ describe('appInfoStore customer config refetch', () => {
   })
 
   it('refetch bypasses the fetched flag so a saved change is visible without a reload', async () => {
-    mockGet.mockResolvedValue(okResponse([{ id: 'chatDisclaimer', settings: { enabled: true, text: 'first' } }]))
+    mockGet.mockResolvedValue(
+      okResponse([{ id: 'chatDisclaimer', settings: { enabled: true, text: 'first' } }])
+    )
     await appInfoStore.fetchCustomerConfig()
 
-    mockGet.mockResolvedValue(okResponse([{ id: 'chatDisclaimer', settings: { enabled: true, text: 'second' } }]))
+    mockGet.mockResolvedValue(
+      okResponse([{ id: 'chatDisclaimer', settings: { enabled: true, text: 'second' } }])
+    )
     await appInfoStore.refetchCustomerConfig()
 
     expect(mockGet).toHaveBeenCalledTimes(2)

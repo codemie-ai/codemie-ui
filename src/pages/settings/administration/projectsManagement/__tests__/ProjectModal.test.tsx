@@ -18,6 +18,8 @@ import userEvent from '@testing-library/user-event'
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+import { userStore } from '@/store/user'
+
 import ProjectModal from '../ProjectModal'
 
 // ─── Module mocks ──────────────────────────────────────────────────────────────
@@ -105,7 +107,9 @@ vi.mock('@/components/form/Input', () => ({
 }))
 
 vi.mock('@/components/form/Switch', () => ({
-  default: () => null,
+  default: ({ id, label }: { id: string; label: string }) => (
+    <div data-testid={`switch-${id}`}>{label}</div>
+  ),
 }))
 
 vi.mock('@/components/form/Autocomplete', () => ({
@@ -292,6 +296,42 @@ describe('ProjectModal — display_name validation', () => {
     await vi.waitFor(() => {
       expect(screen.getByTestId('display_name-error')).toBeTruthy()
     })
+  })
+})
+
+describe('ProjectModal — chargeback Switch visibility', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useFeatureFlagMock.mockReturnValue([false, true])
+    Object.assign(userStore, { user: { isAdmin: false, isMaintainer: false } })
+  })
+
+  it('hides the chargeback Switch when feature flag is disabled (even for admin)', () => {
+    useFeatureFlagMock.mockReturnValue([false, true])
+    Object.assign(userStore, { user: { isAdmin: true, isMaintainer: true } })
+
+    renderModal()
+
+    expect(screen.queryByTestId('switch-chargeback_enabled')).toBeNull()
+  })
+
+  it('hides the chargeback Switch when feature flag is enabled but user is not admin', () => {
+    useFeatureFlagMock.mockReturnValue([true, true])
+    Object.assign(userStore, { user: { isAdmin: false, isMaintainer: false } })
+
+    renderModal()
+
+    expect(screen.queryByTestId('switch-chargeback_enabled')).toBeNull()
+  })
+
+  it('shows the chargeback Switch when feature flag is enabled and user is admin', () => {
+    useFeatureFlagMock.mockReturnValue([true, true])
+    Object.assign(userStore, { user: { isAdmin: true, isMaintainer: true } })
+
+    renderModal()
+
+    expect(screen.getByTestId('switch-chargeback_enabled')).toBeInTheDocument()
+    expect(screen.getByText('Enable Chargeback')).toBeInTheDocument()
   })
 })
 

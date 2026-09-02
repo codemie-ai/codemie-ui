@@ -89,9 +89,7 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
   return (
     <>
       <div className="mt-3 mb-4">
-        <div
-          className={cn('items-end', isDropdownShown ? 'grid grid-cols-2 gap-3' : 'flex gap-2')}
-        >
+        <div className={cn('items-end', isDropdownShown ? 'grid grid-cols-2 gap-3' : 'flex gap-2')}>
           <div>
             <Controller
               name="setting_id"

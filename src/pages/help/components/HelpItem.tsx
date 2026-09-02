@@ -64,8 +64,16 @@ const HelpItem: FC<HelpItemType> = ({
           </p>
         </div>
       </div>
-      <Button variant={ButtonType.SECONDARY} className="shrink-0" aria-label={`${finalButtonText} ${name}`}>
-        {type === 'chat' && !isExternal ? <ChatNewFilledSvg aria-hidden="true" /> : <ExternalSvg aria-hidden="true" />}
+      <Button
+        variant={ButtonType.SECONDARY}
+        className="shrink-0"
+        aria-label={`${finalButtonText} ${name}`}
+      >
+        {type === 'chat' && !isExternal ? (
+          <ChatNewFilledSvg aria-hidden="true" />
+        ) : (
+          <ExternalSvg aria-hidden="true" />
+        )}
         {finalButtonText}
       </Button>
     </Link>

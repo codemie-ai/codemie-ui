@@ -36,7 +36,7 @@ vi.mock('@/utils/toaster', () => ({
   default: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
 }))
 
-const asUser = (isAdmin: boolean, isMaintainer = false) => ({ isAdmin, isMaintainer }) as User
+const asUser = (isAdmin: boolean, isMaintainer = false) => ({ isAdmin, isMaintainer } as User)
 
 const declaration = (overrides: Partial<SettingDeclaration> = {}): SettingDeclaration => ({
   component_id: 'chatDisclaimer',
@@ -45,8 +45,28 @@ const declaration = (overrides: Partial<SettingDeclaration> = {}): SettingDeclar
   overridden: false,
   value: { enabled: false, text: '' },
   fields: [
-    { name: 'enabled', type: 'switch', label: 'Show disclaimer', description: null, required: false, max_length: null, pattern: null, pattern_message: null, markup: 'plain' },
-    { name: 'text', type: 'textarea', label: 'Disclaimer text', description: null, required: false, max_length: 1000, pattern: null, pattern_message: null, markup: 'markdown' },
+    {
+      name: 'enabled',
+      type: 'switch',
+      label: 'Show disclaimer',
+      description: null,
+      required: false,
+      max_length: null,
+      pattern: null,
+      pattern_message: null,
+      markup: 'plain',
+    },
+    {
+      name: 'text',
+      type: 'textarea',
+      label: 'Disclaimer text',
+      description: null,
+      required: false,
+      max_length: 1000,
+      pattern: null,
+      pattern_message: null,
+      markup: 'markdown',
+    },
   ],
   ...overrides,
 })
@@ -108,7 +128,9 @@ describe('CustomerConfigurationPage', () => {
     withSettings([declaration()])
 
     render(<CustomerConfigurationPage />)
-    fireEvent.change(await screen.findByLabelText('Disclaimer text'), { target: { value: 'Mind the gap' } })
+    fireEvent.change(await screen.findByLabelText('Disclaimer text'), {
+      target: { value: 'Mind the gap' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
 
     await waitFor(() => {
@@ -126,7 +148,9 @@ describe('CustomerConfigurationPage', () => {
     render(<CustomerConfigurationPage />)
     fireEvent.click(await screen.findByRole('button', { name: /^reset to default$/i }))
 
-    await waitFor(() => expect(customerConfigurationStore.resetSetting).toHaveBeenCalledWith('chatDisclaimer'))
+    await waitFor(() =>
+      expect(customerConfigurationStore.resetSetting).toHaveBeenCalledWith('chatDisclaimer')
+    )
   })
 
   it('offers no reset for a setting that is not overridden', async () => {
@@ -142,21 +166,37 @@ describe('CustomerConfigurationPage', () => {
     withSettings([
       declaration({
         fields: [
-          { name: 'text', type: 'input', label: 'Disclaimer text', description: null, required: false, max_length: 5, pattern: null, pattern_message: null, markup: 'plain' },
+          {
+            name: 'text',
+            type: 'input',
+            label: 'Disclaimer text',
+            description: null,
+            required: false,
+            max_length: 5,
+            pattern: null,
+            pattern_message: null,
+            markup: 'plain',
+          },
         ],
         value: { text: '' },
       }),
     ])
 
     render(<CustomerConfigurationPage />)
-    fireEvent.change(await screen.findByLabelText('Disclaimer text'), { target: { value: 'far too long' } })
+    fireEvent.change(await screen.findByLabelText('Disclaimer text'), {
+      target: { value: 'far too long' },
+    })
 
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
   })
 
   describe('reset all', () => {
     const overridden = (componentId: string) =>
-      declaration({ component_id: componentId, overridden: true, value: { enabled: true, text: 'x' } })
+      declaration({
+        component_id: componentId,
+        overridden: true,
+        value: { enabled: true, text: 'x' },
+      })
 
     it('resets every overridden setting from one header control', async () => {
       withSettings([overridden('chatDisclaimer'), overridden('bannerMessage')])
@@ -203,7 +243,9 @@ describe('CustomerConfigurationPage', () => {
       render(<CustomerConfigurationPage />)
       await screen.findByText(/no dynamic settings/i)
 
-      expect(screen.queryByRole('button', { name: /reset all to default/i })).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /reset all to default/i })
+      ).not.toBeInTheDocument()
     })
 
     it('reports a failure and leaves the page usable', async () => {

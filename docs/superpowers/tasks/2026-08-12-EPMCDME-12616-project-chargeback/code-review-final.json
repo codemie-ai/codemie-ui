@@ -1,0 +1,34 @@
+{
+  "decision": "approve",
+  "confidence": "medium",
+  "rationale": "All three prior blockers are resolved. CR-003 (commit format) is fixed — all 7 commits use EPMCDME-12616: prefix (verified by regex). CR-001 (EditWorkflowPage useEffect) and CR-002 (workflow endpoint rename) were scoped to the workflow-AI branch and are absent from this chargeback-only diff. Business acceptance criteria are all met. Minor code-quality note: local FEATURE_FLAG_PROJECT_CHARGEBACK string constants in ProjectModal and ProjectDetailsPage instead of importing FEATURE_FLAGS.PROJECT_CHARGEBACK — this follows the existing FEATURE_FLAG_COST_CENTERS pattern in those same files and is non-blocking.",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "Feature flag PROJECT_CHARGEBACK registered in featureFlags.ts", "status": "pass", "notes": "" },
+    { "criterion": "chargeback_enabled field on Project, ProjectRequest, ProjectListItem, ProjectPayload, ProjectUpdatePayload", "status": "pass", "notes": "" },
+    { "criterion": "ProjectModal Switch rendered only when flag enabled AND admin", "status": "pass", "notes": "" },
+    { "criterion": "Switch visible in both create and edit flows (no isEdit guard)", "status": "pass", "notes": "" },
+    { "criterion": "chargeback_enabled submitted in payload when admin+flag; omitted otherwise", "status": "pass", "notes": "Double guard (isAdmin && isProjectChargebackEnabled) is stricter than spec — correct defensive posture" },
+    { "criterion": "chargeback_enabled included in PATCH request body (updateProject)", "status": "pass", "notes": "" },
+    { "criterion": "ProjectDetailsPage shows Chargeback status behind isAdmin && flag guard", "status": "pass", "notes": "" },
+    { "criterion": "Tests: 3 visibility scenarios (flag off+admin, flag on+non-admin, flag on+admin)", "status": "pass", "notes": "" }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "All 7 commits use EPMCDME-12616: Capital sentence format. Verified by regex against EPMCDME-12616_project-chargeback branch."
+    },
+    {
+      "standard": "code-quality",
+      "status": "partial",
+      "notes": "Local FEATURE_FLAG_PROJECT_CHARGEBACK string constants in ProjectModal and ProjectDetailsPage instead of importing FEATURE_FLAGS.PROJECT_CHARGEBACK. Non-blocking — consistent with existing FEATURE_FLAG_COST_CENTERS pattern in those same files."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No auth bypass, no secret exposure. Flag guard plus isAdmin guard on all chargeback surfaces."
+    }
+  ],
+  "findings": []
+}

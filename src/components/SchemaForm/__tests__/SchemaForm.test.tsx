@@ -19,7 +19,9 @@ import { describe, expect, it, vi } from 'vitest'
 import SchemaForm from '@/components/SchemaForm'
 import { FieldDeclaration } from '@/types/entity/customerConfiguration'
 
-const field = (overrides: Partial<FieldDeclaration> & Pick<FieldDeclaration, 'name' | 'type' | 'label'>) => ({
+const field = (
+  overrides: Partial<FieldDeclaration> & Pick<FieldDeclaration, 'name' | 'type' | 'label'>
+) => ({
   description: null,
   required: false,
   max_length: null,
@@ -125,13 +127,17 @@ describe('SchemaForm declared pattern (CR-012)', () => {
   })
 
   it('surfaces the declared pattern message for a non-matching value', () => {
-    render(<SchemaForm fields={[patterned]} value={{ url: 'http://example.com' }} onChange={vi.fn()} />)
+    render(
+      <SchemaForm fields={[patterned]} value={{ url: 'http://example.com' }} onChange={vi.fn()} />
+    )
 
     expect(screen.getByText('URL must start with https://')).toBeInTheDocument()
   })
 
   it('accepts a matching value', () => {
-    render(<SchemaForm fields={[patterned]} value={{ url: 'https://example.com' }} onChange={vi.fn()} />)
+    render(
+      <SchemaForm fields={[patterned]} value={{ url: 'https://example.com' }} onChange={vi.fn()} />
+    )
 
     expect(screen.queryByText('URL must start with https://')).not.toBeInTheDocument()
   })

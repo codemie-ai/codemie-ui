@@ -29,11 +29,13 @@ import toaster from '@/utils/toaster'
 import SettingCard from './components/SettingCard'
 
 const PAGE_TITLE = 'Customer Configuration'
-const ACCESS_DENIED_MESSAGE = 'Access denied. Only admins and maintainers can change this configuration.'
+const ACCESS_DENIED_MESSAGE =
+  'Access denied. Only admins and maintainers can change this configuration.'
 const ADMINISTRATION_URL = '/settings/administration'
 const EMPTY_MESSAGE = 'No dynamic settings are declared yet.'
 const LOAD_FAILED_MESSAGE = 'Failed to load customer configuration'
-const SAVED_MESSAGE = 'Setting saved. New sessions pick it up within a minute; open tabs on the next reload.'
+const SAVED_MESSAGE =
+  'Setting saved. New sessions pick it up within a minute; open tabs on the next reload.'
 const SAVE_FAILED_MESSAGE = 'Failed to save the setting'
 const RESET_MESSAGE = 'Setting reset to the deployment default'
 const RESET_FAILED_MESSAGE = 'Failed to reset the setting'
@@ -48,7 +50,9 @@ const CustomerConfigurationPage: FC = () => {
   const [isResettingAll, setIsResettingAll] = useState(false)
 
   const canEdit = (user?.isAdmin ?? false) || (user?.isMaintainer ?? false)
-  const overriddenIds = settings.filter((setting) => setting.overridden).map((setting) => setting.component_id)
+  const overriddenIds = settings
+    .filter((setting) => setting.overridden)
+    .map((setting) => setting.component_id)
 
   useEffect(() => {
     if (user && !canEdit) {
@@ -99,7 +103,9 @@ const CustomerConfigurationPage: FC = () => {
   const handleResetAll = async () => {
     setIsResettingAll(true)
     try {
-      await Promise.all(overriddenIds.map((componentId) => customerConfigurationStore.resetSetting(componentId)))
+      await Promise.all(
+        overriddenIds.map((componentId) => customerConfigurationStore.resetSetting(componentId))
+      )
       await refresh()
     } catch {
       toaster.error(RESET_ALL_FAILED_MESSAGE)

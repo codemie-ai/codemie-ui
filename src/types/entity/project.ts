@@ -57,9 +57,9 @@ export interface Project {
   cost_center_id?: string | null
   cost_center_name?: string | null
   enforce_member_spend_limits?: boolean
+  chargeback_enabled?: boolean
   spending?: ProjectSpendingSummaryCompact | null
   budgets?: ProjectAssignedBudgetSummary[] | null
-  chargeback_enabled?: boolean
   chargeback_attribution?: ChargebackAttribution
 }
 

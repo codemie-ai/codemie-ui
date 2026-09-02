@@ -15,7 +15,11 @@
 
 import { proxy } from 'valtio'
 
-import { SettingDeclaration, SettingUpdateResponse, SettingValue } from '@/types/entity/customerConfiguration'
+import {
+  SettingDeclaration,
+  SettingUpdateResponse,
+  SettingValue,
+} from '@/types/entity/customerConfiguration'
 import api from '@/utils/api'
 
 const DECLARATIONS_URL = 'v1/config/declarations'
@@ -25,7 +29,10 @@ interface CustomerConfigurationStore {
   loading: boolean
   error: string | null
   indexSettings: () => Promise<SettingDeclaration[]>
-  saveSetting: (componentId: string, settings: Record<string, SettingValue>) => Promise<SettingUpdateResponse>
+  saveSetting: (
+    componentId: string,
+    settings: Record<string, SettingValue>
+  ) => Promise<SettingUpdateResponse>
   resetSetting: (componentId: string) => Promise<void>
 }
 

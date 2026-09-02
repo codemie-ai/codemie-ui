@@ -55,19 +55,28 @@ const SettingCard: FC<Props> = ({ setting, onSave, onReset }) => {
       <header className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h3 className="text-base font-semibold text-text-primary">{setting.label}</h3>
-          {setting.description && <p className="text-sm-1 text-text-secondary">{setting.description}</p>}
+          {setting.description && (
+            <p className="text-sm-1 text-text-secondary">{setting.description}</p>
+          )}
         </div>
         <span
           className={cn(
             'shrink-0 px-2 py-0.5 rounded text-xs',
-            setting.overridden ? 'bg-surface-accent text-text-accent' : 'bg-surface-secondary text-text-secondary'
+            setting.overridden
+              ? 'bg-surface-accent text-text-accent'
+              : 'bg-surface-secondary text-text-secondary'
           )}
         >
           {setting.overridden ? 'Overridden' : 'Default from config'}
         </span>
       </header>
 
-      <SchemaForm fields={setting.fields} value={value} onChange={setValue} onValidityChange={setIsValid} />
+      <SchemaForm
+        fields={setting.fields}
+        value={value}
+        onChange={setValue}
+        onValidityChange={setIsValid}
+      />
 
       <footer className="flex items-center gap-3">
         <Button
