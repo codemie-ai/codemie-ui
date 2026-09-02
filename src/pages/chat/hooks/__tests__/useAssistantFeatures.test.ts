@@ -106,4 +106,24 @@ describe('useAssistantFeatures', () => {
     )
     expect(result.current).toEqual(ALL_ENABLED)
   })
+
+  it('disables fileAttachment when any assistant has fileAttachmentEnabled false', () => {
+    const { result } = renderHook(() =>
+      useAssistantFeatures([
+        { id: 'a1', name: 'a1', type: AssistantType.CODEMIE, fileAttachmentEnabled: true },
+        { id: 'a2', name: 'a2', type: AssistantType.CODEMIE, fileAttachmentEnabled: false },
+      ])
+    )
+    expect(result.current.fileAttachment).toBe(false)
+  })
+
+  it('keeps fileAttachment enabled when fileAttachmentEnabled is null or undefined', () => {
+    const { result } = renderHook(() =>
+      useAssistantFeatures([
+        { id: 'a1', name: 'a1', type: AssistantType.CODEMIE, fileAttachmentEnabled: null },
+        { id: 'a2', name: 'a2', type: AssistantType.CODEMIE },
+      ])
+    )
+    expect(result.current.fileAttachment).toBe(true)
+  })
 })

@@ -112,6 +112,7 @@ export interface Assistant {
   llm_model_type: string
   enable_image_generation?: boolean | null
   image_generation_model?: string | null
+  file_attachment_enabled?: boolean | null
   is_liked?: boolean
   is_disliked?: boolean
   is_react?: boolean
@@ -453,6 +454,7 @@ export interface CreateAssistantDto {
   llm_model_type?: string
   enable_image_generation?: boolean | null
   image_generation_model?: string | null
+  file_attachment_enabled?: boolean | null
   toolkits?: ToolKitDetails[]
   conversation_starters?: string[]
   shared?: boolean

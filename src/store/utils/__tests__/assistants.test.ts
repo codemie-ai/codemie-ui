@@ -147,4 +147,21 @@ describe('transformAssistantToCreateDTO', () => {
       expect(dto.source_assistant_id).toBeUndefined()
     })
   })
+
+  describe('file_attachment_enabled', () => {
+    it('includes file_attachment_enabled in the DTO', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        file_attachment_enabled: false,
+      } as Assistant)
+
+      expect(dto.file_attachment_enabled).toBe(false)
+    })
+
+    it('defaults file_attachment_enabled to true when unset', () => {
+      const dto = transformAssistantToCreateDTO(baseAssistant as Assistant)
+
+      expect(dto.file_attachment_enabled).toBe(true)
+    })
+  })
 })

@@ -35,6 +35,7 @@ export function transformAssistantToCreateDTO(
     image_generation_model: assistant.enable_image_generation
       ? assistant.image_generation_model || null
       : null,
+    file_attachment_enabled: assistant.file_attachment_enabled ?? true,
     // Filter out MCP toolkit as it's handled separately
     toolkits: assistant.toolkits
       ?.filter((tk) => tk.toolkit !== 'MCP')

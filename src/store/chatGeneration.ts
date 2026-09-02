@@ -704,6 +704,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         context: assistant.context?.map((context) => context.name),
         tools: assistant.tools?.map((tool) => tool.name),
         type: assistant.type,
+        fileAttachmentEnabled: assistant.file_attachment_enabled ?? null,
       })
     } else {
       chat.assistantIds = chat.assistantIds.filter((id) => id !== assistant.id)

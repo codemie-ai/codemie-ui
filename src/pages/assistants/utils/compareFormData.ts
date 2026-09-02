@@ -28,6 +28,11 @@ const normalizeBooleanField = (value: boolean | null | undefined): boolean => {
   return value ?? false
 }
 
+/** Default-on flags: null/undefined mean enabled (true); only explicit false disables */
+const normalizeDefaultTrueBooleanField = (value: boolean | null | undefined): boolean => {
+  return value !== false
+}
+
 const normalizeStringArrayField = (value: string[] | null | undefined): string[] => {
   return Array.isArray(value) ? value : []
 }
@@ -54,6 +59,7 @@ export const compareFormData = (initial: any, current: any) => {
     description: normalizeStringField(initial.description),
     enable_image_generation: normalizeBooleanField(initial.enable_image_generation),
     image_generation_model: normalizeStringField(initial.image_generation_model),
+    file_attachment_enabled: normalizeDefaultTrueBooleanField(initial.file_attachment_enabled),
     toolkits: normalizeToolkitsForComparison(initial.toolkits || []),
     mcp_servers: normalizeMcpServersForComparison(initial.mcp_servers || []),
     llm_model_type: normalizeLlmModelField(initial.llm_model_type),
@@ -65,6 +71,7 @@ export const compareFormData = (initial: any, current: any) => {
     description: normalizeStringField(current.description),
     enable_image_generation: normalizeBooleanField(current.enable_image_generation),
     image_generation_model: normalizeStringField(current.image_generation_model),
+    file_attachment_enabled: normalizeDefaultTrueBooleanField(current.file_attachment_enabled),
     toolkits: normalizeToolkitsForComparison(current.toolkits || []),
     mcp_servers: normalizeMcpServersForComparison(current.mcp_servers || []),
     llm_model_type: normalizeLlmModelField(current.llm_model_type),

@@ -30,7 +30,7 @@ const DataSourceName = ({ dataSource }: DataSourceNameProps) => {
     <button
       type="button"
       id={dataSourceNameId(dataSource.id)}
-      className="font-bold hover:underline cursor-pointer"
+      className="font-bold hover:underline cursor-pointer bg-transparent border-0 p-0 text-inherit"
       onClick={handleNavigationToDetails}
     >
       {dataSource.repo_name}

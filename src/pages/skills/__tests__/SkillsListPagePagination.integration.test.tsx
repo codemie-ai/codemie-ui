@@ -213,6 +213,7 @@ describe('SkillsListPage - Marketplace tab - Pagination', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Marketplace 1')).toBeInTheDocument()
+      expect(document.getElementById('per-page')).toBeInTheDocument()
     })
 
     mockAPI('GET', 'v1/skills', {

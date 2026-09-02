@@ -52,6 +52,7 @@ const SharedChatPage: React.FC = () => {
       ({
         openConfigForm: (assistantId) => handleAssistantClick(assistantId),
         isSharedPage: true,
+        canAttachFiles: true,
         hideToolOutputs: false,
         setHideToolOutputs: () => {},
       } as unknown as ChatContextValue),

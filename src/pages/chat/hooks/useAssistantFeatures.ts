@@ -56,11 +56,13 @@ const FEATURE_OVERRIDES: Partial<Record<AssistantType, Partial<AssistantFeatures
 
 export function useAssistantFeatures(assistants: AssistantData[]): AssistantFeatures {
   return assistants.reduce<AssistantFeatures>(
-    (acc, { type }) => {
-      const overrides = FEATURE_OVERRIDES[type as AssistantType]
-      if (!overrides) return acc
+    (acc, assistant) => {
+      const overrides = FEATURE_OVERRIDES[assistant.type as AssistantType] ?? {}
       return {
-        fileAttachment: acc.fileAttachment && (overrides.fileAttachment ?? true),
+        fileAttachment:
+          acc.fileAttachment &&
+          (overrides.fileAttachment ?? true) &&
+          assistant.fileAttachmentEnabled !== false,
         modelSelector: acc.modelSelector && (overrides.modelSelector ?? true),
         skills: acc.skills && (overrides.skills ?? true),
         tools: acc.tools && (overrides.tools ?? true),

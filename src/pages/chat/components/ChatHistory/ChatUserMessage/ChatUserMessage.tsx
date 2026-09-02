@@ -26,6 +26,8 @@ import {
 } from '@/components/Editor/quillModules'
 import File from '@/components/File'
 import { createFileMetadata, FileMetadata, useFileUpload } from '@/hooks/useFileUpload'
+import { ChatIndexes } from '@/pages/chat/components/ChatHistory/ChatHistory'
+import { useChatContext } from '@/pages/chat/hooks/useChatContext'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
 import { ChatMessage } from '@/types/entity/conversation'
@@ -33,8 +35,6 @@ import toaster from '@/utils/toaster'
 
 import ChatUserMessageActions from './ChatUserMessageActions'
 import EditMessageModal from './EditMessageModal'
-import { useChatContext } from '../../../hooks/useChatContext'
-import { ChatIndexes } from '../ChatHistory'
 
 interface ChatUserMessageProps {
   message: ChatMessage
@@ -51,7 +51,7 @@ const ChatUserMessage: FC<ChatUserMessageProps> = ({ message, indexes, onSubmit 
   const { request = '', requestRaw = '', fileNames = [] } = message
   const { currentChat } = useSnapshot(chatsStore)
   const { createChatGeneration } = chatGenerationStore
-  const { isSharedPage, selectedSkills } = useChatContext()
+  const { isSharedPage, selectedSkills, canAttachFiles } = useChatContext()
 
   const [isEditing, setIsEditing] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -190,7 +190,7 @@ const ChatUserMessage: FC<ChatUserMessageProps> = ({ message, indexes, onSubmit 
             value={newPrompt}
             ref={editorRef}
             variant="message"
-            onAddFiles={addFiles}
+            onAddFiles={canAttachFiles ? addFiles : () => undefined}
             onChange={setNewPrompt}
             onSubmit={handleConfirmEditing}
           />
@@ -213,7 +213,7 @@ const ChatUserMessage: FC<ChatUserMessageProps> = ({ message, indexes, onSubmit 
           />
         )}
 
-        {isEditing && (
+        {isEditing && canAttachFiles && (
           <button
             type="button"
             className="w-fit flex items-center mt-2 gap-2 px-3 -mr-1 py-1.5 rounded-md border border-border-structural bg-surface-base-secondary text-text-primary text-xs hover:bg-button-surface-specific-secondary-button-hover hover:border-border-specific-interactive-outline transition-colors"

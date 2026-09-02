@@ -13,30 +13,29 @@
 // limitations under the License.
 //
 
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 interface UseFilePasteProps {
   onFilePaste: (files: File[]) => void
 }
 
+const IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/tiff',
+  'image/svg+xml',
+])
+
 export const useFilePaste = ({ onFilePaste }: UseFilePasteProps) => {
-  const editorInstanceRef = useRef<any>(null)
+  const editorInstanceRef = useRef<{ root: HTMLElement } | null>(null)
+  const onFilePasteRef = useRef(onFilePaste)
+  onFilePasteRef.current = onFilePaste
 
-  const isImageFile = (file: File): boolean => {
-    const imageTypes = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'image/bmp',
-      'image/tiff',
-      'image/svg+xml',
-    ]
-    return imageTypes.includes(file.type.toLowerCase())
-  }
-
-  const handlePaste = async (event: ClipboardEvent) => {
+  const handlePaste = useCallback((event: ClipboardEvent) => {
     const { clipboardData } = event
     if (!clipboardData) return
 
@@ -48,36 +47,39 @@ export const useFilePaste = ({ onFilePaste }: UseFilePasteProps) => {
 
     if (files.length === 0) return
 
-    // Filter out image files since they are handled by imageDropAndPaste module
-    const nonImageFiles = files.filter((file) => !isImageFile(file))
+    const nonImageFiles = files.filter((file) => !IMAGE_TYPES.has(file.type.toLowerCase()))
 
     if (nonImageFiles.length === 0) return
 
-    // Prevent default paste behavior for non-image files
     event.preventDefault()
+    onFilePasteRef.current(nonImageFiles)
+  }, [])
 
-    // Call the callback with non-image files
-    onFilePaste(nonImageFiles)
-  }
+  const setupPasteHandler = useCallback(
+    (quillInstance: { root?: HTMLElement } | null | undefined) => {
+      if (!quillInstance?.root) return
 
-  const setupPasteHandler = (quillInstance: any) => {
-    if (!quillInstance?.root) return
+      if (editorInstanceRef.current?.root) {
+        editorInstanceRef.current.root.removeEventListener('paste', handlePaste)
+      }
 
-    editorInstanceRef.current = quillInstance
-    quillInstance.root.addEventListener('paste', handlePaste)
-  }
+      editorInstanceRef.current = quillInstance as { root: HTMLElement }
+      quillInstance.root.addEventListener('paste', handlePaste)
+    },
+    [handlePaste]
+  )
 
-  const removePasteHandler = () => {
+  const removePasteHandler = useCallback(() => {
     if (editorInstanceRef.current?.root) {
       editorInstanceRef.current.root.removeEventListener('paste', handlePaste)
     }
-  }
+  }, [handlePaste])
 
   useEffect(() => {
     return () => {
       removePasteHandler()
     }
-  }, [])
+  }, [removePasteHandler])
 
   return {
     setupPasteHandler,

@@ -1,0 +1,87 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance ACs pass against plan.md (sdlc-light; no spec.md → confidence low). Blind + edge-case lenses surfaced real fail-open / race defects that can leave Attach enabled for a disabled assistant: enrichment cancel+inFlight skip (EC-001), stale Quill paste listener after disable (EC-002), and files queued during the fail-open window still sendable. Form shouldDirty:false matches existing enable_image_generation Switch pattern (dismissed). Deferred: duplicate enrichment mounts, null→true save coercion (intentional). Dismissed: form null≡true dirty normalize.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Easy-to-access configuration to disable Attach File (assistant form Switch)",
+      "status": "pass",
+      "notes": "File attachments accordion + Switch; DTO + compareFormData wired"
+    },
+    {
+      "kind": "story-ac",
+      "item": "When disabled, button is hidden or inactive",
+      "status": "pass",
+      "notes": "Toolbar and edit Attach File gated by canAttachFiles (hide)"
+    },
+    {
+      "kind": "story-ac",
+      "item": "No file uploads initiated from chat when disabled (toolbar/paste/drop/edit)",
+      "status": "partial",
+      "notes": "UI gates present but enrichment fail-open window + stale paste listener + uncleared queued files can still initiate uploads before/without successful enrich"
+    },
+    {
+      "kind": "story-ac",
+      "item": "FE-only enrichment of slim assistantData (option A)",
+      "status": "pass",
+      "notes": "useEnrichAssistantFileAttachment + updateCurrentChatAssistants copy"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Out of scope: project admin UI and workflow popups",
+      "status": "pass",
+      "notes": "Not touched in diff"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Commits use EPMCDME-7070: Capital sentence"
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "TDD unit tests added; lint/tsc passed on commit hooks"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No secrets; server still 403s; UI gating only"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/useEnrichAssistantFileAttachment.ts",
+      "title": "Enrichment cancel/inFlight can permanently skip fetch (fail-open)",
+      "problem": "Effect cleanup sets cancelled=true while inFlight still holds the id; remount/successor effect skips fetch because inFlight.has(id), then finally clears the lock without re-running because pendingIds is unchanged. fileAttachmentEnabled stays undefined → treated as allowed.",
+      "impact": "A disabled assistant can keep Attach/paste/drop enabled for the whole session after a Strict Mode remount or chat switch race.",
+      "recommendation": "Use a module-level or chat-scoped inFlight/cache keyed by assistant id; on cancel do not leave pendingIds stuck without retry; or clear inFlight before bail and force a retry token when cancelled."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/useFilePaste.ts",
+      "title": "Paste listener keeps stale addFiles after attachments disabled",
+      "problem": "useFilePaste registers handlePaste once via setupPasteHandler and closes over the first onFilePaste. Enrichment later flips canAttachFiles to false and swaps the prop, but Quill paste is never rebound.",
+      "impact": "Non-image paste can still call the original addFiles after the paperclip is hidden.",
+      "recommendation": "Keep onFilePaste in a ref updated each render, or re-register/remove the paste listener when canAttachFiles changes; add a regression test."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatPrompt/ChatPrompt.tsx",
+      "title": "Queued files still sendable after attach becomes disabled",
+      "problem": "Gating hides controls and no-ops new adds, but does not clear files state or block submit when canAttachFiles becomes false after enrichment.",
+      "impact": "Files added in the fail-open window (or before flag resolves) can still be submitted with the chat request.",
+      "recommendation": "When canAttachFiles flips to false, clear files (and optionally block canSubmit if any fileIds remain); add a unit assertion."
+    }
+  ]
+}

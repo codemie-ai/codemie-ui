@@ -22,6 +22,7 @@ import ResizableSeparator from '@/components/ResizableSeparator/ResizableSeparat
 import { useNewIntegrationPopup } from '@/hooks/useNewIntegrationPopup'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
+import { assistantsStore } from '@/store'
 import { chatsStore } from '@/store/chats'
 
 import ChatConfigResizableSeparator from './components/ChatConfiguration/ChatConfigResizableSeparator'
@@ -46,6 +47,7 @@ import {
   CHAT_SIDEBAR_MIN_WIDTH,
 } from './components/ChatSidebar/chatSidebarWidth'
 import { useChatSidebarResize } from './components/ChatSidebar/useChatSidebarResize'
+import { useAssistantFeatures } from './hooks/useAssistantFeatures'
 import { useChatAuthCallbacks } from './hooks/useChatAuthCallbacks'
 import { useChatConfiguration } from './hooks/useChatConfiguration'
 import { ChatContext, ChatContextValue } from './hooks/useChatContext'
@@ -71,7 +73,47 @@ const ChatPage: FC = () => {
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
   const chatId = router.currentRoute.value.params.id as string
 
+  const [resolvedFileAttachment, setResolvedFileAttachment] = useState<
+    Partial<Record<string, boolean | null>>
+  >({})
+
+  const pendingIdsKey = (currentChat?.assistantData ?? [])
+    .filter((a) => a.fileAttachmentEnabled === undefined && !(a.id in resolvedFileAttachment))
+    .map((a) => a.id)
+    .join(',')
+
   useEffect(() => {
+    const controller = new AbortController()
+    pendingIdsKey
+      .split(',')
+      .filter(Boolean)
+      .forEach(async (id) => {
+        try {
+          const detail = await assistantsStore.getAssistant(id, true, controller.signal)
+          setResolvedFileAttachment((prev) => ({
+            ...prev,
+            [id]: detail.file_attachment_enabled ?? null,
+          }))
+        } catch {
+          if (!controller.signal.aborted) {
+            setResolvedFileAttachment((prev) => ({ ...prev, [id]: null }))
+          }
+        }
+      })
+    return () => controller.abort()
+  }, [pendingIdsKey])
+
+  const enrichedAssistantData = (currentChat?.assistantData ?? []).map((a) => ({
+    ...a,
+    fileAttachmentEnabled:
+      a.fileAttachmentEnabled !== undefined
+        ? a.fileAttachmentEnabled
+        : resolvedFileAttachment[a.id],
+  }))
+  const { fileAttachment: canAttachFiles } = useAssistantFeatures(enrichedAssistantData)
+
+  useEffect(() => {
+    setResolvedFileAttachment({})
     if (chatId) {
       chatsStore.getChat(chatId, { saveAsRecent: true })
       chatsStore.isNewChat = false
@@ -97,8 +139,8 @@ const ChatPage: FC = () => {
     onOpen: chatConfiguration.toggleConfigVisibility,
   })
   const chatContextValue: ChatContextValue = useMemo(
-    () => ({ ...chatConfiguration, isSharedPage: false }),
-    [chatConfiguration]
+    () => ({ ...chatConfiguration, isSharedPage: false, canAttachFiles }),
+    [chatConfiguration, canAttachFiles]
   )
 
   return (

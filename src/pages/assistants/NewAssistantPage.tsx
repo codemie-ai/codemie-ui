@@ -89,6 +89,7 @@ const NewAssistantPage = () => {
       llm_model_type: '',
       enable_image_generation: false,
       image_generation_model: '',
+      file_attachment_enabled: true,
       system_prompt: '',
       description: '',
       ...assistant,

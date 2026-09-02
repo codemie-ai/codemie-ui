@@ -94,6 +94,13 @@ const getBorderWrapperClassName = (
     isInProgress && 'pointer-events-none'
   )
 
+const noopAddFiles = (_files: File[]) => undefined
+
+const resolveFileHandler = (
+  canAttachFiles: boolean,
+  addFiles: (files: File[]) => void
+): ((files: File[]) => void) => (canAttachFiles ? addFiles : noopAddFiles)
+
 const ChatPrompt: FC<ChatPromptProps> = ({
   resizable = false,
   externalPrompt,
@@ -104,7 +111,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
   const { userData, user } = useSnapshot(userStore)
   const { defaultAssistant } = useSnapshot(assistantsStore)
-  const { selectedSkills, isSharedPage, dynamicToolsConfig } = useChatContext()
+  const { selectedSkills, isSharedPage, dynamicToolsConfig, canAttachFiles } = useChatContext()
   const { initial, saveDraft, clearDraft } = useChatPromptDraft(currentChat?.id, user?.userId)
 
   const [isEditorFocused, setIsEditorFocused] = useState(false)
@@ -119,15 +126,23 @@ const ChatPrompt: FC<ChatPromptProps> = ({
     },
   })
 
+  const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
+
   const { setupPasteHandler } = useFilePaste({
-    onFilePaste: fileUpload.addFiles,
+    onFilePaste: resolveFileHandler(canAttachFiles, fileUpload.addFiles),
   })
 
   const isInProgress = currentChat?.history.flat().some((m) => m.inProgress)
-  const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
   const isInterrupted = currentChat?.isInterrupted
+  const onAddFiles = resolveFileHandler(canAttachFiles, fileUpload.addFiles)
 
   const { isPremiumActive } = usePremiumModelTip()
+
+  useEffect(() => {
+    if (!canAttachFiles && files.length > 0) {
+      setFiles([])
+    }
+  }, [canAttachFiles, files.length])
 
   let promptMode: PromptMode = PROMPT_MODES.DEFAULT
   if (isInterrupted) promptMode = PROMPT_MODES.WORKFLOW_INTERRUPTED
@@ -138,7 +153,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
 
   const canSubmit = (() => {
     if (isInterrupted) return !isInProgress && !fileUpload.hasActiveUploads
-    const hasFiles = !!files.length
+    const hasFiles = canAttachFiles && !!files.length
     const hasPrompt = prompt.message.length > 0
     return (hasPrompt || hasFiles) && !fileUpload.hasActiveUploads && !isInProgress
   })()
@@ -148,7 +163,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
 
     if (isInterrupted) {
       const userInput = prompt.message.trim() || undefined
-      const fileNames = files.flatMap((f) => (f.fileId ? [f.fileId] : []))
+      const fileNames = canAttachFiles ? files.flatMap((f) => (f.fileId ? [f.fileId] : [])) : []
       clearDraft()
       setPrompt({ message: '', messageRaw: '' })
       setFiles([])
@@ -181,12 +196,13 @@ const ChatPrompt: FC<ChatPromptProps> = ({
 
     clearDraft()
     setPrompt({ message: '', messageRaw: '' })
+    const fileIds = canAttachFiles ? files.map((f) => f.fileId!) : []
     setFiles([])
 
     chatGenerationStore.createChatGeneration({
       message,
       messageRaw: messageRaw ?? '',
-      files: files.map((f) => f.fileId!),
+      files: fileIds,
       assistantId,
       isWorkFlow: currentChat?.isWorkflow,
       skillIds: selectedSkills.map((s) => s.value),
@@ -265,7 +281,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
                 value={prompt}
                 withMentions={!currentChat?.isWorkflow}
                 onChange={setPrompt}
-                onAddFiles={fileUpload.addFiles}
+                onAddFiles={onAddFiles}
                 disabled={!!isInProgress}
                 onSubmit={handleSubmit}
                 onFocusChange={setIsEditorFocused}
@@ -282,7 +298,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
               className="flex justify-between items-center pl-2"
             >
               <div className={cn('flex items-center gap-2', isInProgress && 'opacity-60')}>
-                {assistantFeatures.fileAttachment && (
+                {canAttachFiles && (
                   <ChatPromptFileUpload {...fileUpload} files={files} />
                 )}
                 {!currentChat?.isWorkflow && !isSharedPage && (

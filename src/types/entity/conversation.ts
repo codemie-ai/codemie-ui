@@ -181,6 +181,8 @@ export interface AssistantData {
   context?: string[]
   tools?: string[]
   type?: string
+  /** null/undefined/true = allowed; only explicit false disables */
+  fileAttachmentEnabled?: boolean | null
 }
 
 export interface Conversation {

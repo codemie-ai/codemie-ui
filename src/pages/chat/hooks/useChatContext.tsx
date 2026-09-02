@@ -17,7 +17,9 @@ import { createContext, useContext } from 'react'
 
 import { UseChatConfigReturn } from './useChatConfiguration'
 
-export type ChatContextValue = (UseChatConfigReturn & { isSharedPage: boolean }) | null
+export type ChatContextValue =
+  | (UseChatConfigReturn & { isSharedPage: boolean; canAttachFiles: boolean })
+  | null
 
 export const ChatContext = createContext<ChatContextValue>(null)
 

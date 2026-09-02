@@ -122,6 +122,7 @@ const formSchema = Yup.object()
     llm_model_type: Yup.string(),
     enable_image_generation: Yup.boolean().default(false),
     image_generation_model: Yup.string().nullable().optional(),
+    file_attachment_enabled: Yup.boolean().default(true),
     categories: Yup.array().of(Yup.string().required()),
     conversation_starters: Yup.array()
       .of(Yup.string().max(200, 'Each starter must be at most 200 characters long').default(''))
@@ -283,6 +284,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           llm_model_type: assistant?.llm_model_type ?? '',
           enable_image_generation: assistant?.enable_image_generation ?? false,
           image_generation_model: assistant?.image_generation_model ?? '',
+          file_attachment_enabled: assistant?.file_attachment_enabled ?? true,
           slug: assistant?.slug?.length ? assistant.slug : getSlugFromName(assistant?.name),
           temperature: assistant?.temperature ?? undefined,
           top_p: assistant?.top_p ?? undefined,
@@ -315,6 +317,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       preparedValues.image_generation_model = values.enable_image_generation
         ? values.image_generation_model || null
         : null
+      preparedValues.file_attachment_enabled = values.file_attachment_enabled !== false
 
       preparedValues.is_react = !!assistant?.is_react
       preparedValues.slug ??= getSlugFromName(preparedValues.name)
@@ -725,6 +728,33 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
                       <></>
                     )
                   }
+                />
+              </div>
+            </Accordion>
+          </div>
+
+          <div data-onboarding="assistant-file-attachments-accordion">
+            <Accordion
+              title="File attachments"
+              description="Allow users to attach files in chat with this assistant."
+              defaultOpen={false}
+            >
+              <div className="px-4 pb-4 flex flex-col gap-6">
+                <Controller
+                  name="file_attachment_enabled"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      label="Enable file attachments"
+                      labelClassName="font-mono text-sm leading-6"
+                      value={field.value !== false}
+                      onChange={(e) => {
+                        setValue('file_attachment_enabled', e.target.checked, {
+                          shouldDirty: false,
+                        })
+                      }}
+                    />
+                  )}
                 />
               </div>
             </Accordion>

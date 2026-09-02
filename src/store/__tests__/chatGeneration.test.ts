@@ -662,4 +662,27 @@ describe('chatGenerationStore', () => {
       expect(mockToasterError).not.toHaveBeenCalled()
     })
   })
+
+  describe('updateCurrentChatAssistants', () => {
+    it('copies file_attachment_enabled onto assistantData as fileAttachmentEnabled', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const chat = createChat(createHistoryItem())
+      chat.assistantIds = []
+      chat.assistantData = []
+      chat.history = [[createHistoryItem()]]
+
+      chatGenerationStore.updateCurrentChatAssistants(chat, {
+        id: 'assistant-2',
+        name: 'New Assistant',
+        icon_url: '',
+        conversation_starters: [],
+        context: [],
+        tools: [],
+        type: 'codemie',
+        file_attachment_enabled: false,
+      } as any)
+
+      expect(chat.assistantData[0].fileAttachmentEnabled).toBe(false)
+    })
+  })
 })

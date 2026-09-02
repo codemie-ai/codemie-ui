@@ -1,0 +1,73 @@
+{
+  "decision": "approve",
+  "rationale": "Fix-up resolves all three major findings from code-review-final. CR-001: module-level enrichInFlight Map shares the in-flight promise across Strict Mode remounts and always applies when the live entry still lacks the flag (no cancelled bail). CR-002: useFilePaste keeps onFilePaste in a ref updated each render so the Quill paste listener invokes the latest gate (noop when disabled). CR-003: ChatPrompt clears queued files when canAttachFiles flips false, excludes files from canSubmit, and omits file ids on submit/resume. Regression tests cover remount enrich, stale paste callback, and clear-on-disable. No new high-risk surface in the fix-up.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Easy-to-access configuration to disable Attach File (assistant form Switch)",
+      "status": "pass",
+      "notes": "Unchanged from final; not in fix-up scope"
+    },
+    {
+      "kind": "story-ac",
+      "item": "When disabled, button is hidden or inactive",
+      "status": "pass",
+      "notes": "Still gated; clear-on-disable removes queued chips"
+    },
+    {
+      "kind": "story-ac",
+      "item": "No file uploads initiated from chat when disabled (toolbar/paste/drop/edit)",
+      "status": "pass",
+      "notes": "Enrichment remount race, stale paste, and queued-file submit paths closed in fix-up"
+    },
+    {
+      "kind": "story-ac",
+      "item": "FE-only enrichment of slim assistantData (option A)",
+      "status": "pass",
+      "notes": "Shared inFlight promise Map preserves enrichment under remount"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Out of scope: project admin UI and workflow popups",
+      "status": "pass",
+      "notes": "Not touched"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Prior commits use EPMCDME-7070: Capital sentence; fix-up pending commit uses same pattern"
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "Regression unit tests added/updated; targeted fix-up only"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "UI gating only; server still enforces"
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "useEnrichAssistantFileAttachment.ts uses module-level enrichInFlight Map; remount awaits the same promise and applyFileAttachmentEnabled always writes when entry.fileAttachmentEnabled is still undefined. Remount regression covered in useEnrichAssistantFileAttachment.test.ts."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "evidence": "useFilePaste.ts stores onFilePaste in onFilePasteRef updated each render; stable handlePaste calls onFilePasteRef.current. useFilePaste.test.ts asserts latest callback after rerender."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "evidence": "ChatPrompt.tsx clears files when !canAttachFiles; canSubmit ignores files when disabled; submit/resume send empty file lists when disabled. ChatPrompt.fileAttachment.test.tsx asserts clear-on-disable."
+    }
+  ]
+}
