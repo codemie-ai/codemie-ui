@@ -13,18 +13,22 @@
 // limitations under the License.
 //
 
-/**
- * Config item IDs for non-boolean runtime config values from GET /v1/config
- */
-export const CONFIG_KEYS = {
-  IDP_PROVIDER: 'idpProvider',
-  MCP_AUTH_ORIGIN: 'mcpAuthOrigin',
-  MCP_AUTH_TIMEOUT_SECONDS: 'mcpAuthTimeoutSeconds',
-  BANNER_MESSAGE: 'bannerMessage',
-  BANNER_LINK_LABEL: 'bannerLinkLabel',
-  BANNER_LINK_ROUTE: 'bannerLinkRoute',
-  CHAT_DISCLAIMER: 'chatDisclaimer',
-  RELEASE_NOTES_RECENT_COUNT: 'releaseNotesRecentCount',
-} as const
+import { FC } from 'react'
 
-export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS]
+import Link from '@/components/Link'
+
+import { Issue } from '../types'
+
+interface IssueLinkProps {
+  issue: Issue
+}
+
+export const IssueLink: FC<IssueLinkProps> = ({ issue }) => (
+  <Link
+    url={issue.link}
+    className="!w-auto inline-flex font-geist-mono font-normal text-sm leading-5"
+    tooltip={`${issue.type}: ${issue.key}`}
+  >
+    {issue.key}
+  </Link>
+)

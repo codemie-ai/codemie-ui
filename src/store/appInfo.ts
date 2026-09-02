@@ -21,6 +21,8 @@ import {
   DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT,
   getFileDatasourceMaxUploadCount,
 } from '@/constants/dataSources'
+import { RawRelease, Release } from '@/pages/releaseNotes/types'
+import { normalizeRelease } from '@/pages/releaseNotes/utils/normalizeRelease'
 import { profileSettingsStore } from '@/store/userProfileSettings'
 import { ModelOption, SpeechConfig, ConfigItem } from '@/types/entity/configuration'
 import api from '@/utils/api'
@@ -72,7 +74,7 @@ export interface AppInfoStoreType {
   appVersion: string
   apiVersion: string | null
   fileDatasourceMaxUploadCount: number
-  appReleases: any[]
+  appReleases: Release[]
   viewedAppReleaseVersion: string
   llmModels: ModelOption[]
   imageGenerationModels: ModelOption[]
@@ -86,7 +88,7 @@ export interface AppInfoStoreType {
   fetchToolConfigs: () => Promise<void>
 
   loadAppInfo: () => Promise<void>
-  loadReleaseNotes: () => Promise<any[]>
+  loadReleaseNotes: () => Promise<Release[]>
   loadSpeechConfig: () => Promise<SpeechConfig>
   setViewedAppVersion: (version: string) => Promise<void>
   isAppReleaseNew: () => boolean
@@ -236,7 +238,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   },
 
   async loadReleaseNotes() {
-    this.appReleases = releaseNotes
+    this.appReleases = (releaseNotes as RawRelease[]).map(normalizeRelease)
     this.viewedAppReleaseVersion =
       profileSettingsStore.profileSettings?.last_viewed_release_version ?? ''
     try {
@@ -248,7 +250,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
           d.deployedAt,
         ])
       )
-      this.appReleases = releaseNotes.map((release) => ({
+      this.appReleases = this.appReleases.map((release) => ({
         ...release,
         date: deployedAtByVersion.get(release.version) ?? release.date,
       }))

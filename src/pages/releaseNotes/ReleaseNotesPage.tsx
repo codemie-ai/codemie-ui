@@ -13,69 +13,141 @@
 // limitations under the License.
 //
 
-import { FC, useEffect } from 'react'
+import { FC, useEffect, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
-import contentGradientPng from '@/assets/images/content-gradient.png'
-import PageLayout from '@/components/Layouts/Layout'
-import { useTheme } from '@/hooks/useTheme'
+import FilterAccordionItem from '@/components/FilterAccordionItem'
+import PageLayout from '@/components/Layouts/Layout/PageLayout'
+import Sidebar from '@/components/Sidebar'
+import { CONFIG_KEYS } from '@/constants/configKeys'
+import { useSearchParams } from '@/hooks/useSearchParams'
 import { appInfoStore } from '@/store/appInfo'
-import { formatDateTime } from '@/utils/helpers'
+import { getConfigItemSettings } from '@/utils/settings'
 
-import IssueList from './components/IssueList'
+import { ReleaseContent } from './components/ReleaseContent'
+import { ReleaseNavButton } from './components/ReleaseNavButton'
+import { Release, VERSION_PARAM } from './types'
+
+const DEFAULT_RECENT_RELEASE_COUNT = 10
+
+const getMajorReleaseGroup = (version: string) => `${version.split('.')[0]}.x`
 
 const ReleaseNotesPage: FC = () => {
-  const { appReleases } = useSnapshot(appInfoStore)
-  const { isDark, appearance } = useTheme()
-  const isContentGradientEnabled = appearance?.gradients ?? true
+  const { appReleases, configs } = useSnapshot(appInfoStore)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const recentReleaseCount = (() => {
+    const n = Number(
+      getConfigItemSettings(configs, CONFIG_KEYS.RELEASE_NOTES_RECENT_COUNT)?.recentReleaseCount
+    )
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : DEFAULT_RECENT_RELEASE_COUNT
+  })()
+
+  const requestedVersion = searchParams.get(VERSION_PARAM)
+  const latestRelease = appReleases[0]
+  const selectedRelease =
+    (requestedVersion && appReleases.find((release) => release.version === requestedVersion)) ||
+    latestRelease
+
+  const recentReleases = useMemo(
+    () => appReleases.slice(0, recentReleaseCount),
+    [appReleases, recentReleaseCount]
+  )
+
+  const archiveGroups = useMemo(() => {
+    const groups: { label: string; releases: Release[] }[] = []
+    appReleases.slice(recentReleaseCount).forEach((release) => {
+      const label = getMajorReleaseGroup(release.version)
+      const group = groups.find((g) => g.label === label)
+      if (group) {
+        group.releases.push(release)
+      } else {
+        groups.push({ label, releases: [release] })
+      }
+    })
+    return groups
+  }, [appReleases, recentReleaseCount])
 
   useEffect(() => {
-    if (appReleases[0]?.version) {
-      appInfoStore.setViewedAppVersion(appReleases[0].version)
+    if (latestRelease?.version) {
+      appInfoStore.setViewedAppVersion(latestRelease.version)
     }
-  }, [appReleases])
+  }, [latestRelease?.version])
 
-  const typeOrder = ['BUG', 'STORY'] as const
+  const selectRelease = (version: string) => {
+    const nextSearchParams = new URLSearchParams(searchParams)
+    nextSearchParams.set(VERSION_PARAM, version)
+    setSearchParams(nextSearchParams)
+  }
 
   return (
-    <PageLayout>
-      <div
-        className="pt-10 z-10 pb-8 w-full min-h-screen overflow-auto bg-contain bg-no-repeat bg-bottom"
-        style={{
-          backgroundImage:
-            !isDark && isContentGradientEnabled ? `url(${contentGradientPng})` : 'none',
-        }}
+    <div className="flex min-h-full h-full">
+      <Sidebar
+        title="What's New"
+        description="Discover the latest improvements, new features, and important changes."
+        className="!mt-6"
       >
-        <h1 className="text-2xl leading-none font-semibold font-mono text-text-primary mb-1">
-          What&apos;s New
-        </h1>
-        <p className="font-mono text-sm text-text-secondary leading-tight mb-8">
-          Discover the latest improvements, new features, and important changes in your experience.
-        </p>
-        <div>
-          {appReleases.map((release) => (
-            <div key={release.version} className="mb-8 w-full max-w-[916px] flex flex-row gap-6">
-              <div className="w-28 shrink-0 pt-0.5">
-                <div className="text-base leading-none font-mono font-semibold text-primary">
-                  {release.version}
-                </div>
-                {release.date && (
-                  <div className="text-xs font-mono text-text-secondary mt-1">
-                    {formatDateTime(release.date, 'day')}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col gap-2 flex-1 min-w-0">
-                {typeOrder.map((type) => {
-                  const filteredIssues = release.issues.filter((issue) => issue.type === type)
-                  return <IssueList key={type} type={type} issues={filteredIssues} />
-                })}
-              </div>
-            </div>
-          ))}
+        <div className="pb-6">
+          <h3 className="text-sm-1 tracking-wide text-text-quaternary uppercase mb-2 font-semibold">
+            Releases
+          </h3>
+          <nav aria-label="Release versions" className="flex flex-col gap-0.5">
+            {recentReleases.map((release) => (
+              <ReleaseNavButton
+                key={release.version}
+                release={release}
+                isSelected={selectedRelease?.version === release.version}
+                onSelect={selectRelease}
+              />
+            ))}
+          </nav>
         </div>
-      </div>
-    </PageLayout>
+        {archiveGroups.length > 0 && (
+          <div className="pb-6">
+            <h3 className="text-sm-1 tracking-wide text-text-quaternary uppercase mb-2 font-semibold">
+              Older releases
+            </h3>
+            <div className="flex flex-col">
+              {archiveGroups.map((group) => (
+                <FilterAccordionItem
+                  key={group.label}
+                  label={group.label}
+                  defaultExpanded={group.releases.some(
+                    (r) => r.version === selectedRelease?.version
+                  )}
+                >
+                  <nav
+                    className="flex flex-col gap-0.5 pl-2"
+                    aria-label={`${group.label} releases`}
+                  >
+                    {group.releases.map((release) => (
+                      <ReleaseNavButton
+                        key={release.version}
+                        release={release}
+                        isSelected={selectedRelease?.version === release.version}
+                        onSelect={selectRelease}
+                      />
+                    ))}
+                  </nav>
+                </FilterAccordionItem>
+              ))}
+            </div>
+          </div>
+        )}
+      </Sidebar>
+      <PageLayout childrenClassName="px-8">
+        <div className="w-full max-w-4xl mx-auto py-10 pb-12">
+          {selectedRelease ? (
+            <ReleaseContent
+              release={selectedRelease}
+              isLatest={selectedRelease.version === latestRelease?.version}
+            />
+          ) : (
+            <p className="text-sm text-text-quaternary py-10">No release notes available.</p>
+          )}
+        </div>
+      </PageLayout>
+    </div>
   )
 }
 

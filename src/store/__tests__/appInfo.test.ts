@@ -23,6 +23,77 @@ vi.mock('@/utils/api', () => ({
   },
 }))
 
+vi.mock('@/configs/releaseNotes.json', () => ({
+  default: [
+    {
+      version: '2.46.0',
+      date: '2026-09-01',
+      sections: [
+        { code: 'highlights', items: [] },
+        { code: 'features', items: [] },
+        { code: 'fixes', items: [] },
+      ],
+    },
+    {
+      version: '2.45.0',
+      date: '2026-08-28',
+      sections: [
+        { code: 'highlights', items: [] },
+        { code: 'features', items: [] },
+        { code: 'fixes', items: [] },
+      ],
+    },
+    {
+      version: '2.44.0',
+      date: '2026-08-19',
+      sections: [
+        {
+          code: 'highlights',
+          items: [
+            {
+              title: 'Highlight item',
+              description: 'A highlight.',
+              issues: [
+                {
+                  key: 'EPMCDME-55555',
+                  type: 'STORY',
+                  link: 'https://jiraeu.epam.com/browse/EPMCDME-55555',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          code: 'features',
+          items: [],
+        },
+        {
+          code: 'fixes',
+          items: [],
+        },
+      ],
+    },
+    {
+      version: '2.43.0',
+      date: '2026-08-01',
+      issues: [
+        {
+          key: 'EPMCDME-11111',
+          title: 'Fix A',
+          link: 'https://jiraeu.epam.com/browse/EPMCDME-11111',
+          type: 'BUG',
+        },
+        {
+          key: 'EPMCDME-22222',
+          title: 'New feature',
+          link: 'https://jiraeu.epam.com/browse/EPMCDME-22222',
+          type: 'STORY',
+        },
+      ],
+    },
+  ],
+}))
+
 // Import after mock so the store picks up the mocked api
 const { appInfoStore, DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT } = await import('@/store/appInfo')
 const { getConfigItemSettings } = await import('@/utils/settings')
@@ -316,6 +387,29 @@ describe('appInfoStore.fetchToolConfigs', () => {
     expect(appInfoStore.toolFieldDefaults['jira.url']).toBe('https://jira.mycompany.com/')
     expect(appInfoStore.toolFieldDefaults['jira.cloud']).toBe(true)
     expect(appInfoStore.toolFieldPlaceholders['jira.url']).toBe('https://jira.example.com/')
+  })
+})
+
+describe('appInfoStore.loadReleaseNotes', () => {
+  it('normalizes legacy releases and keeps sectioned releases intact', async () => {
+    await appInfoStore.loadReleaseNotes()
+
+    expect(appInfoStore.appReleases).toHaveLength(4)
+
+    const sectionedRelease = appInfoStore.appReleases.find((r) => r.version === '2.44.0')!
+    expect(sectionedRelease.sections).toHaveLength(3)
+    expect(sectionedRelease.sections[0].items[0].title).toBe('Highlight item')
+
+    const legacyRelease = appInfoStore.appReleases.find((r) => r.version === '2.43.0')!
+    expect(legacyRelease.sections).toHaveLength(3)
+
+    const features = legacyRelease.sections.find((section) => section.code === 'features')!
+    expect(features.items).toHaveLength(1)
+    expect(features.items[0].issues[0].key).toBe('EPMCDME-22222')
+
+    const fixes = legacyRelease.sections.find((section) => section.code === 'fixes')!
+    expect(fixes.items).toHaveLength(1)
+    expect(fixes.items[0].issues[0].key).toBe('EPMCDME-11111')
   })
 })
 

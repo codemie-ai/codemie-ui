@@ -1,99 +1,177 @@
 [
-  {
-    "version": "2.46.0",
-    "date": "2026-09-01",
-    "issues": [
-      {
-        "title": "Show Description field on Workflow details page (not just in Configuration tab)",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-8251",
-        "key": "EPMCDME-8251"
-      },
-      {
-        "title": "Workflow step hangs on loading; does not surface configuration errors when process fails in background",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-10973",
-        "key": "EPMCDME-10973"
-      },
-      {
-        "title": "Automate Transfer and Processing of Attachments When Creating Bugs from Support Requests",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-11264",
-        "key": "EPMCDME-11264"
-      },
-      {
-        "title": "Add Sub-workflow Node Support with Isolated Context, Controlled Pre-Instantiation, and UI Configurable Workflow Pools",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-11609",
-        "key": "EPMCDME-11609"
-      },
-      {
-        "title": "Workflow Execution History cannot be deleted after associated chat/conversation is deleted - deletion remains blocked",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-11904",
-        "key": "EPMCDME-11904"
-      },
-      {
-        "title": "Display workflow description in workflow chat similarly to assistant description shown in assistant chat",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-12922",
-        "key": "EPMCDME-12922"
-      },
-      {
-        "title": "Ensure hedged LLM request logs preserve request correlation context",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-13317",
-        "key": "EPMCDME-13317"
-      },
-      {
-        "title": "Enable CodeMie Assistant to move Azure DevOps work items between parents by updating hierarchy relations",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-13967",
-        "key": "EPMCDME-13967"
-      },
-      {
-        "title": "Dynamic Customer Configuration Managed by Platform Admin",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-13983",
-        "key": "EPMCDME-13983"
-      },
-      {
-        "title": "Workflow editor shows an unexpected error when opening a previously working client workflow",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-14041",
-        "key": "EPMCDME-14041"
-      },
-      {
-        "title": "Gemini Flash image generation sometimes produces incorrect aspect ratio for custom ratio requests",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-14115",
-        "key": "EPMCDME-14115"
-      },
-      {
-        "title": "Change Image Inspector tool to return image analysis as a tool response via an independent LLM call",
-        "type": "STORY",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-14121",
-        "key": "EPMCDME-14121"
-      },
-      {
-        "title": "Assistant partial update silently nulls omitted optional fields with None defaults",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-14150",
-        "key": "EPMCDME-14150"
-      },
-      {
-        "title": "CodeMie Thoughts display diacritic characters as Unicode escape sequences in tool call output",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-14363",
-        "key": "EPMCDME-14363"
-      },
-      {
-        "title": "External users and service accounts are automatically assigned personal projects, causing incorrect spend attribution and budget bypass",
-        "type": "BUG",
-        "link": "https://jiraeu.epam.com/browse/EPMCDME-14413",
-        "key": "EPMCDME-14413"
-      }
-    ]
+{
+  "version": "2.46.0",
+  "date": "2026-09-01",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "Build modular workflows with reusable sub-workflows",
+          "description": "Create workflows that call other workflows as reusable steps, with isolated context and configurable workflow pools.",
+          "issues": [
+            {
+              "key": "EPMCDME-11609",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-11609"
+            }
+          ]
+        },
+        {
+          "title": "Move Azure DevOps work items between parent items with an assistant",
+          "description": "CodeMie Assistant can now move Azure DevOps work items between parents while updating their hierarchy relationships.",
+          "issues": [
+            {
+              "key": "EPMCDME-13967",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-13967"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Show workflow descriptions on details pages",
+          "description": "Workflow descriptions are now visible on the workflow details page without opening the Configuration tab.",
+          "issues": [
+            {
+              "key": "EPMCDME-8251",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8251"
+            }
+          ]
+        },
+        {
+          "title": "Create support bugs with their attachments",
+          "description": "When creating a bug from a support request, its attachments can now be transferred and processed automatically.",
+          "issues": [
+            {
+              "key": "EPMCDME-11264",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-11264"
+            }
+          ]
+        },
+        {
+          "title": "Show workflow descriptions in workflow chats",
+          "description": "Workflow chats now display the workflow description, similarly to assistant descriptions in assistant chats.",
+          "issues": [
+            {
+              "key": "EPMCDME-12922",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-12922"
+            }
+          ]
+        },
+        {
+          "title": "Improve LLM request correlation in logs",
+          "description": "Hedged LLM request logs now retain correlation context to improve troubleshooting and observability.",
+          "issues": [
+            {
+              "key": "EPMCDME-13317",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-13317"
+            }
+          ]
+        },
+        {
+          "title": "Manage customer configuration from Platform Admin",
+          "description": "Platform Admins can manage supported customer-specific configuration without requiring a deployment.",
+          "issues": [
+            {
+              "key": "EPMCDME-13983",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-13983"
+            }
+          ]
+        },
+        {
+          "title": "Improve image analysis responses in assistant tools",
+          "description": "Image Inspector now returns image analysis as a dedicated tool response generated through an independent LLM call.",
+          "issues": [
+            {
+              "key": "EPMCDME-14121",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14121"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "More reliable workflow editing and execution",
+          "description": "Fixed workflow issues that could leave steps loading indefinitely, prevent execution-history cleanup, or show an error when opening an existing workflow.",
+          "issues": [
+            {
+              "key": "EPMCDME-10973",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-10973"
+            },
+            {
+              "key": "EPMCDME-11904",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-11904"
+            },
+            {
+              "key": "EPMCDME-14041",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14041"
+            }
+          ]
+        },
+        {
+          "title": "Correct image generation aspect ratios",
+          "description": "Gemini Flash image generation now more reliably respects custom aspect ratios requested by users.",
+          "issues": [
+            {
+              "key": "EPMCDME-14115",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14115"
+            }
+          ]
+        },
+        {
+          "title": "Preserve assistant settings during partial updates",
+          "description": "Updating an assistant no longer clears optional fields when they are omitted from the update request.",
+          "issues": [
+            {
+              "key": "EPMCDME-14150",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14150"
+            }
+          ]
+        },
+        {
+          "title": "Display special characters correctly in CodeMie Thoughts",
+          "description": "Tool-call output in CodeMie Thoughts now displays diacritic and other non-ASCII characters correctly.",
+          "issues": [
+            {
+              "key": "EPMCDME-14363",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14363"
+            }
+          ]
+        },
+        {
+          "title": "Correct spending attribution for external users and service accounts",
+          "description": "External users and service accounts are no longer assigned personal projects that could cause incorrect spending attribution and budget bypasses.",
+          "issues": [
+            {
+              "key": "EPMCDME-14413",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14413"
+            }
+          ]
+        }
+      ]
+    }
+  ]
   },
   {
     "version": "2.45.0",

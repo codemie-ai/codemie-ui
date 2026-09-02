@@ -13,65 +13,84 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { formatDateTime } from '@/utils/helpers'
 
 import ReleaseNotesPage from '../ReleaseNotesPage'
+import { Release } from '../types'
 
 // The rendered date depends on the machine's locale and timezone (e.g. en-US
 // "July 11, 2025" vs en-GB "11 July 2025"), so derive the expected string from
 // the same formatter the page uses instead of hardcoding an en-US literal.
 const RELEASE_DATE_TEXT = formatDateTime('2025-07-11', 'day')
 
-interface Issue {
-  key: string
-  title: string
-  link: string
-  type: string
-}
-
-interface Release {
-  version?: string
-  date?: string
-  issues: Issue[]
-}
-
 vi.hoisted(() => vi.resetModules())
 
 const { mockAppInfoStore, mockTheme } = vi.hoisted(() => {
-  const appReleases: Release[] = [
+  // vi.hoisted runs before imports — use plain string keys matching SectionCode type
+  const appReleases = [
     {
       version: '1.2.0',
       date: '2025-07-11',
-      issues: [
+      sections: [
         {
-          key: 'BUG-123',
-          title: 'Fixed login issue',
-          link: 'https://example.com/BUG-123',
-          type: 'BUG',
+          code: 'highlights',
+          items: [
+            {
+              title: 'Major highlight',
+              description: 'A highlighted change.',
+              issues: [{ key: 'HIGH-1', type: 'STORY', link: 'https://example.com/HIGH-1' }],
+            },
+          ],
         },
         {
-          key: 'STORY-456',
-          title: 'Added new dashboard feature',
-          link: 'https://example.com/STORY-456',
-          type: 'STORY',
+          code: 'features',
+          items: [
+            {
+              title: 'New dashboard',
+              description: 'Added a new dashboard feature.',
+              issues: [{ key: 'STORY-456', type: 'STORY', link: 'https://example.com/STORY-456' }],
+            },
+            {
+              title: 'Performance tweak',
+              description: 'Improved loading speed.',
+              issues: [{ key: 'TASK-1', type: 'TASK', link: 'https://example.com/TASK-1' }],
+            },
+          ],
+        },
+        {
+          code: 'fixes',
+          items: [
+            {
+              title: 'Login fix',
+              description: 'Fixed the login issue.',
+              issues: [{ key: 'BUG-123', type: 'BUG', link: 'https://example.com/BUG-123' }],
+            },
+          ],
         },
       ],
     },
     {
       version: '1.1.0',
-      issues: [
+      date: '2025-06-01',
+      sections: [
+        { code: 'highlights', items: [] },
+        { code: 'features', items: [] },
         {
-          key: 'BUG-789',
-          title: 'Fixed navigation error',
-          link: 'https://example.com/BUG-789',
-          type: 'BUG',
+          code: 'fixes',
+          items: [
+            {
+              title: 'Navigation fix',
+              description: 'Fixed navigation error.',
+              issues: [{ key: 'BUG-789', type: 'BUG', link: 'https://example.com/BUG-789' }],
+            },
+          ],
         },
       ],
     },
-  ]
+  ] as unknown as Release[]
 
   return {
     mockAppInfoStore: {
@@ -92,7 +111,7 @@ vi.mock('valtio', () => ({
     if (store === mockAppInfoStore) return mockAppInfoStore
     return store
   }),
-  subscribe: vi.fn(),
+  subscribe: vi.fn(() => vi.fn()),
 }))
 
 vi.mock('@/store/appInfo', () => ({
@@ -111,8 +130,12 @@ vi.mock('@/assets/icons/lightning.svg?react', () => ({
   default: (props: any) => <svg data-testid="lightning-icon" {...props} />,
 }))
 
+vi.mock('@/assets/icons/info.svg?react', () => ({
+  default: (props: any) => <svg data-testid="info-icon" {...props} />,
+}))
+
 describe('ReleaseNotesPage', () => {
-  const initialAppReleases = [...mockAppInfoStore.appReleases]
+  const initialAppReleases = JSON.parse(JSON.stringify(mockAppInfoStore.appReleases))
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -133,15 +156,13 @@ describe('ReleaseNotesPage', () => {
   it('displays the page description', () => {
     render(<ReleaseNotesPage />)
     expect(
-      screen.getByText(
-        'Discover the latest improvements, new features, and important changes in your experience.'
-      )
+      screen.getByText('Discover the latest improvements, new features, and important changes.')
     ).toBeInTheDocument()
   })
 
-  it('displays all release versions', () => {
+  it('displays release versions in the secondary sidebar', () => {
     render(<ReleaseNotesPage />)
-    expect(screen.getByText('1.2.0')).toBeInTheDocument()
+    expect(screen.getAllByText('1.2.0')).toHaveLength(2)
     expect(screen.getByText('1.1.0')).toBeInTheDocument()
   })
 
@@ -155,14 +176,15 @@ describe('ReleaseNotesPage', () => {
   describe('release date', () => {
     it('displays formatted date when release has a date', () => {
       render(<ReleaseNotesPage />)
-      expect(screen.getByText(RELEASE_DATE_TEXT)).toBeInTheDocument()
+      expect(screen.getAllByText(RELEASE_DATE_TEXT)).toHaveLength(2)
     })
 
     it('does not render date when release has no date', () => {
       mockAppInfoStore.appReleases = [
         {
           version: '1.1.0',
-          issues: [],
+          date: '',
+          sections: [],
         },
       ]
       render(<ReleaseNotesPage />)
@@ -170,34 +192,29 @@ describe('ReleaseNotesPage', () => {
     })
   })
 
-  describe('release issues', () => {
-    it('displays all issues from all releases', () => {
+  describe('release sections', () => {
+    it('renders three sections in canonical order', () => {
+      render(<ReleaseNotesPage />)
+      const headings = screen.getAllByRole('heading', { level: 2 })
+      const firstReleaseHeadings = headings.slice(1, 4).map((h) => h.textContent)
+
+      expect(firstReleaseHeadings).toEqual(['Highlights', 'New features and enhancements', 'Fixes'])
+    })
+
+    it('renders item titles and descriptions', () => {
+      render(<ReleaseNotesPage />)
+      expect(screen.getByText('Major highlight')).toBeInTheDocument()
+      expect(screen.getByText('A highlighted change.')).toBeInTheDocument()
+      expect(screen.getByText('New dashboard')).toBeInTheDocument()
+      expect(screen.getByText('Added a new dashboard feature.')).toBeInTheDocument()
+    })
+
+    it('renders issue keys from the selected release', () => {
       render(<ReleaseNotesPage />)
       expect(screen.getByText('BUG-123')).toBeInTheDocument()
-      expect(screen.getByText('Fixed login issue')).toBeInTheDocument()
       expect(screen.getByText('STORY-456')).toBeInTheDocument()
-      expect(screen.getByText('Added new dashboard feature')).toBeInTheDocument()
-      expect(screen.getByText('BUG-789')).toBeInTheDocument()
-      expect(screen.getByText('Fixed navigation error')).toBeInTheDocument()
-    })
-
-    it('groups issues by type (BUG and STORY)', () => {
-      render(<ReleaseNotesPage />)
-      const bugIcons = screen.getAllByTestId('bug-icon')
-      const storyIcons = screen.getAllByTestId('lightning-icon')
-
-      expect(bugIcons.length).toBe(2)
-      expect(storyIcons.length).toBe(1)
-    })
-
-    it('renders BUG issues before STORY issues', () => {
-      render(<ReleaseNotesPage />)
-      const issueKeys = screen.getAllByText(/^(BUG|STORY)-\d+$/)
-
-      const bug123Index = issueKeys.findIndex((el) => el.textContent === 'BUG-123')
-      const story456Index = issueKeys.findIndex((el) => el.textContent === 'STORY-456')
-
-      expect(bug123Index).toBeLessThan(story456Index)
+      expect(screen.getByText('HIGH-1')).toBeInTheDocument()
+      expect(screen.queryByText('BUG-789')).not.toBeInTheDocument()
     })
   })
 
@@ -215,7 +232,7 @@ describe('ReleaseNotesPage', () => {
     })
 
     it('does not set viewed version when first release has no version', () => {
-      mockAppInfoStore.appReleases = [{ issues: [] }]
+      mockAppInfoStore.appReleases = [{ version: '', date: '', sections: [] }]
       render(<ReleaseNotesPage />)
       expect(mockAppInfoStore.setViewedAppVersion).not.toHaveBeenCalled()
     })
@@ -227,7 +244,8 @@ describe('ReleaseNotesPage', () => {
       mockAppInfoStore.appReleases = [
         {
           version: '2.0.0',
-          issues: [],
+          date: '2025-08-01',
+          sections: [],
         },
       ]
 
@@ -236,24 +254,22 @@ describe('ReleaseNotesPage', () => {
     })
   })
 
-  it('applies background gradient when theme is light', () => {
-    mockTheme.isDark = false
-    const { container } = render(<ReleaseNotesPage />)
-    const mainDiv = container.querySelector('.pt-10') as HTMLElement
+  it('falls back to the latest release for an invalid version', () => {
+    window.history.replaceState({}, '', '/release-notes?version=9.9.9')
+    render(<ReleaseNotesPage />)
 
-    const backgroundImage = mainDiv?.style.backgroundImage
-    expect(backgroundImage).toBeTruthy()
-    expect(backgroundImage).toContain('url(')
+    expect(screen.getByText('Major highlight')).toBeInTheDocument()
+    expect(screen.getAllByText('1.2.0')).toHaveLength(2)
   })
 
-  it('does not apply background gradient when theme is dark', () => {
-    mockTheme.isDark = true
-    const { container } = render(<ReleaseNotesPage />)
-    const mainDiv = container.querySelector('.pt-10')
+  it('selects a release from the sidebar and updates the URL', () => {
+    render(<ReleaseNotesPage />)
 
-    expect(mainDiv).toHaveStyle({
-      backgroundImage: 'none',
-    })
+    fireEvent.click(screen.getByRole('button', { name: 'Select release 1.1.0' }))
+
+    expect(screen.getByText('Navigation fix')).toBeInTheDocument()
+    expect(screen.queryByText('Major highlight')).not.toBeInTheDocument()
+    expect(window.location.search).toBe('?version=1.1.0')
   })
 
   describe('empty states', () => {
@@ -263,9 +279,7 @@ describe('ReleaseNotesPage', () => {
 
       expect(screen.getByText("What's New")).toBeInTheDocument()
       expect(
-        screen.getByText(
-          'Discover the latest improvements, new features, and important changes in your experience.'
-        )
+        screen.getByText('Discover the latest improvements, new features, and important changes.')
       ).toBeInTheDocument()
     })
 
@@ -277,82 +291,20 @@ describe('ReleaseNotesPage', () => {
       expect(versions).toHaveLength(0)
     })
 
-    it('renders version without issues when issues array is empty', () => {
+    it('does not render empty section headings', () => {
       mockAppInfoStore.appReleases = [
         {
           version: '1.0.0',
-          issues: [],
+          date: '2025-05-01',
+          sections: [],
         },
       ]
       render(<ReleaseNotesPage />)
 
-      expect(screen.getByText('1.0.0')).toBeInTheDocument()
-      expect(screen.queryByTestId('bug-icon')).not.toBeInTheDocument()
-      expect(screen.queryByTestId('lightning-icon')).not.toBeInTheDocument()
+      expect(screen.getAllByText('1.0.0')).toHaveLength(2)
+      expect(screen.queryByText('Highlights')).not.toBeInTheDocument()
+      expect(screen.queryByText('New features and enhancements')).not.toBeInTheDocument()
+      expect(screen.queryByText('Fixes')).not.toBeInTheDocument()
     })
-
-    it('filters out issue types that have no issues', () => {
-      mockAppInfoStore.appReleases = [
-        {
-          version: '1.0.0',
-          issues: [
-            {
-              key: 'BUG-100',
-              title: 'Bug fix only',
-              link: 'https://example.com/BUG-100',
-              type: 'BUG',
-            },
-          ],
-        },
-      ]
-      render(<ReleaseNotesPage />)
-
-      expect(screen.getByTestId('bug-icon')).toBeInTheDocument()
-      expect(screen.queryByTestId('lightning-icon')).not.toBeInTheDocument()
-    })
-  })
-
-  it('renders all releases with their respective issues', () => {
-    render(<ReleaseNotesPage />)
-
-    expect(screen.getByText('1.2.0')).toBeInTheDocument()
-    expect(screen.getByText('BUG-123')).toBeInTheDocument()
-    expect(screen.getByText('STORY-456')).toBeInTheDocument()
-
-    expect(screen.getByText('1.1.0')).toBeInTheDocument()
-    expect(screen.getByText('BUG-789')).toBeInTheDocument()
-  })
-
-  it('handles releases with mixed issue types', () => {
-    mockAppInfoStore.appReleases = [
-      {
-        version: '3.0.0',
-        issues: [
-          {
-            key: 'BUG-1',
-            title: 'Bug 1',
-            link: 'https://example.com/BUG-1',
-            type: 'BUG',
-          },
-          {
-            key: 'STORY-1',
-            title: 'Story 1',
-            link: 'https://example.com/STORY-1',
-            type: 'STORY',
-          },
-          {
-            key: 'BUG-2',
-            title: 'Bug 2',
-            link: 'https://example.com/BUG-2',
-            type: 'BUG',
-          },
-        ],
-      },
-    ]
-    render(<ReleaseNotesPage />)
-
-    expect(screen.getByText('BUG-1')).toBeInTheDocument()
-    expect(screen.getByText('BUG-2')).toBeInTheDocument()
-    expect(screen.getByText('STORY-1')).toBeInTheDocument()
   })
 })

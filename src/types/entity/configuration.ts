@@ -27,6 +27,7 @@ export interface ConfigItem {
     url?: string
     slug?: string
     maxProjects?: number
+    recentReleaseCount?: number
     text?: string
     content?: string
   }
