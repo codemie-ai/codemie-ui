@@ -1,5 +1,103 @@
 [
 {
+  "version": "2.47.0",
+  "date": "2026-09-04",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "Workflow versioning and change comparison",
+          "description": "Create workflow versions and compare changes between them.",
+          "issues": [{"key":"EPMCDME-8827","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-8827"}]
+        },
+        {
+          "title": "Chat tool-call confirmations",
+          "description": "Add confirmation prompts for tool calls initiated in chat.",
+          "issues": [{"key":"EPMCDME-13903","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-13903"}]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Local-provider authentication support",
+          "description": "Support authentication for local providers through the login endpoint.",
+          "issues": [{"key":"EPMCDME-14709","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14709"}]
+        },
+        {
+          "title": "User management improvements",
+          "description": "Refine visibility controls and add the ability to create users from User Management.",
+          "issues": [{"key":"EPMCDME-14535","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14535"}]
+        },
+        {
+          "title": "User profile storage",
+          "description": "Store user profile settings in the backend rather than browser-local storage.",
+          "issues": [{"key":"EPMCDME-11546","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-11546"}]
+        },
+        {
+          "title": "Release Notes experience redesign",
+          "description": "Group related tickets to make release notes easier to scan.",
+          "issues": [{"key":"EPMCDME-14295","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14295"}]
+        },
+        {
+          "title": "Release deployment dates",
+          "description": "Show the deployment date for each version in the current environment.",
+          "issues": [{"key":"EPMCDME-10701","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-10701"}]
+        },
+        {
+          "title": "Budget chargeback controls",
+          "description": "Enable chargeback for projects with assigned budgets and let project administrators adjust spend-bucket distribution.",
+          "issues": [{"key":"EPMCDME-14086","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14086"},{"key":"EPMCDME-13962","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-13962"}]
+        },
+        {
+          "title": "Separate Chrome extension usage tracking",
+          "description": "Classify Chrome extension LiteLLM spend separately from CLI traffic.",
+          "issues": [{"key":"EPMCDME-14260","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14260"}]
+        },
+        {
+          "title": "Teams bot configuration in Integrations",
+          "description": "Move Teams bot setup into the Integrations area.",
+          "issues": [{"key":"EPMCDME-14111","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14111"}]
+        },
+        {
+          "title": "Configurable MCP server startup timeout",
+          "description": "Allow configuration of the MCP server initialization timeout and increase the default for slower servers.",
+          "issues": [{"key":"EPMCDME-10045","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-10045"}]
+        },
+        {
+          "title": "Expanded file-based datasource uploads",
+          "description": "Allow uploads of more than ten files to a file-based datasource.",
+          "issues": [{"key":"EPMCDME-13212","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-13212"}]
+        },
+        {
+          "title": "Chat attachment control",
+          "description": "Allow disabling the Attach File button in chat.",
+          "issues": [{"key":"EPMCDME-7070","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-7070"}]
+        },
+        {
+          "title": "Platform and runtime improvements",
+          "description": "Add LiteLLM autoscaling, improve guardrail error messaging, update the code-executor runtime, introduce shared base container images, and update sandbox cloud-service integration.",
+          "issues": [{"key":"EPMCDME-14410","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14410"},{"key":"EPMCDME-14407","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14407"},{"key":"EPMCDME-14376","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14376"},{"key":"EPMCDME-14211","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14211"},{"key":"EPMCDME-14460","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14460"}]
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {"title":"Workflow cancellation reliability","description":"Ensure aborting a parent workflow also aborts its active sub-workflows.","issues":[{"key":"EPMCDME-14631","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14631"}]},
+        {"title":"Workflow assistant transitions","description":"Correct workflow runtime behavior when an assistant has a saved connection to the next assistant.","issues":[{"key":"EPMCDME-13566","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-13566"}]},
+        {"title":"Project budget management","description":"Correct validation status codes for budget-group updates, restore the delete-budget request, and fix the All categories filter display.","issues":[{"key":"EPMCDME-14681","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14681"},{"key":"EPMCDME-14278","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14278"},{"key":"EPMCDME-11777","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-11777"}]},
+        {"title":"MCP connectivity and deployment configuration","description":"Resolve failures loading tools from npx-launched MCP servers and render configured host aliases into MCP Connect pods.","issues":[{"key":"EPMCDME-13900","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-13900"},{"key":"EPMCDME-14323","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14323"}]},
+        {"title":"AICE provider validation","description":"Allow AICE provider configurations to be saved when validation errors are handled correctly.","issues":[{"key":"EPMCDME-13687","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-13687"}]},
+        {"title":"Accessibility announcement for copied content","description":"Announce successful copy actions to assistive technologies.","issues":[{"key":"EPMCDME-8584","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8584"}]},
+        {"title":"Security and platform hardening","description":"Applied maintenance updates to improve platform security and runtime hygiene.","issues":[]}
+      ]
+    }
+  ]
+},
+{
   "version": "2.46.0",
   "date": "2026-09-01",
   "sections": [
