@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "run_dir": "docs/superpowers/tasks/EPMCDME-14721/",
+  "generated": "2026-09-04T12:00:00Z",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "id": "AC1", "status": "pass", "note": "useEffect at lines 140-144 of WorkflowDetailsPage.tsx calls setStateId(interruptedState.id), causing WorkflowDrawerHeader to satisfy interruptedStateId === state?.id and render WorkflowExecutionStateControls without user interaction." },
+    { "id": "AC2", "status": "pass", "note": "Continue button in WorkflowExecutionStateControls calls resume() via ExecutionContext. Test 'resumes execution when Continue clicked' verifies the PUT to /resume without a manual state click." },
+    { "id": "AC3", "status": "pass", "note": "Edit button opens WorkflowExecutionEditOutputForm popup. Test 'saves edited output with correct value via API' verifies the PUT to /output." },
+    { "id": "AC4", "status": "pass", "note": "Abort button calls abortWorkflowExecution. Test 'aborts interrupted execution from state controls' verifies the PUT to /abort." },
+    { "id": "AC5", "status": "pass", "note": "No change to the chat path. The useEffect is scoped to WorkflowDetailsPage only." },
+    { "id": "AC6", "status": "pass", "note": "39 integration tests pass, including the new 'shows interruption controls automatically without user interaction' test. No regressions." }
+  ],
+  "standards_review": [
+    { "check": "commit-format", "status": "pass", "note": "Commit subject 'EPMCDME-14721: Auto-select interrupted state so execution controls appear without user interaction' matches the required pattern." },
+    { "check": "code-quality", "status": "pass", "note": "eslint + tsc + gitleaks clean (all passed in pre-commit hook). react-hooks/exhaustive-deps is turned off project-wide so the dependency array is not a violation." },
+    { "check": "security", "status": "pass", "note": "No new data sinks, redirects, user-controlled input rendering, or secret exposure introduced." }
+  ],
+  "findings": [],
+  "rationale": "Single useEffect (6 lines) keyed on interruptedState?.id fixes the root cause without altering any existing path. The guard (if interruptedState?.id) prevents setStateId from firing when there is no interrupted state, preserving normal drawer behaviour. All five acceptance criteria are met and verified by integration tests."
+}

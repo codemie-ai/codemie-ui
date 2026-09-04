@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Panel, Group } from 'react-resizable-panels'
 import { useSnapshot } from 'valtio'
 
@@ -136,6 +136,12 @@ const WorkflowDetailsPage = () => {
       ? extendedStates.find((state) => state.status === 'Interrupted')
       : null
   }, [extendedStates, execution])
+
+  useEffect(() => {
+    if (interruptedState?.id) {
+      setStateId(interruptedState.id)
+    }
+  }, [interruptedState?.id])
 
   const { isResuming, resume, resumeWithMessage, refreshOutputKey, refreshOutput } =
     useExecutionResume({

@@ -768,6 +768,19 @@ describe('WorkflowDetailsPage - Integration', () => {
       return { interruptedExecution, interruptedState }
     }
 
+    it('shows interruption controls automatically without user interaction', async () => {
+      mockInterruptedSetup()
+      renderPage('/workflows/wf-123/workflow-executions/exec-1')
+
+      await waitFor(() => expect(screen.getByText('LLM Step')).toBeInTheDocument())
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('button', { name: 'Continue' })[0]).toBeInTheDocument()
+        expect(screen.getAllByRole('button', { name: 'Edit' })[0]).toBeInTheDocument()
+        expect(screen.getAllByRole('button', { name: 'Abort' })[0]).toBeInTheDocument()
+      })
+    })
+
     it('resumes execution when Continue clicked', async () => {
       mockInterruptedSetup()
       mockAPI('PUT', 'v1/workflows/wf-123/executions/exec-1/resume', {
@@ -788,10 +801,6 @@ describe('WorkflowDetailsPage - Integration', () => {
       })
 
       renderPage('/workflows/wf-123/workflow-executions/exec-1')
-
-      await waitFor(() => expect(screen.getByText('LLM Step')).toBeInTheDocument())
-
-      await user.click(screen.getByText('LLM Step'))
 
       const continueButton = await waitFor(
         () => screen.getAllByRole('button', { name: 'Continue' })[0]
@@ -832,10 +841,6 @@ describe('WorkflowDetailsPage - Integration', () => {
 
       renderPage('/workflows/wf-123/workflow-executions/exec-1')
 
-      await waitFor(() => expect(screen.getByText('LLM Step')).toBeInTheDocument())
-
-      await user.click(screen.getByText('LLM Step'))
-
       await waitFor(() =>
         expect(screen.getByRole('button', { name: 'Continue options' })).toBeInTheDocument()
       )
@@ -868,10 +873,6 @@ describe('WorkflowDetailsPage - Integration', () => {
 
       renderPage('/workflows/wf-123/workflow-executions/exec-1')
 
-      await waitFor(() => expect(screen.getByText('LLM Step')).toBeInTheDocument())
-
-      await user.click(screen.getByText('LLM Step'))
-
       const abortButton = await waitFor(() => {
         const buttons = screen.getAllByRole('button', { name: 'Abort' })
         return buttons[buttons.length - 1]
@@ -897,9 +898,10 @@ describe('WorkflowDetailsPage - Integration', () => {
 
       renderPage('/workflows/wf-123/workflow-executions/exec-1')
 
-      await waitFor(() => expect(screen.getByText('LLM Step')).toBeInTheDocument())
-
-      await user.click(screen.getByText('LLM Step'))
+      // Wait for state controls to appear before searching for the Edit button
+      await waitFor(() =>
+        expect(screen.getAllByRole('button', { name: 'Continue' })[0]).toBeInTheDocument()
+      )
 
       const editButton = await waitFor(() => {
         const buttons = screen.getAllByRole('button', { name: 'Edit' })
