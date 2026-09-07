@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "Both prior blocking findings resolved on current source. CR-001 addressed with a ref-based re-entry guard (groupActionRunningRef) set synchronously before any await and cleared in the finally block. CR-002 addressed by moving onBudgetReset into the finally block guarded by a resetOk flag, mirroring the deletionOk pattern.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "No standards guide configured; standards_expected false for this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "No standards guide configured; standards_expected false for this profile." },
+    { "kind": "security", "status": "na", "notes": "No standards guide configured; standards_expected false for this profile." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "groupActionRunningRef = useRef(false) declared at line 63; guard if (groupActionRunningRef.current) return at line 99, set true at line 100, reset false in finally at line 112."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "resetOk flag set after resetProjectBudgetGroup resolves; onBudgetReset?.() called in finally guarded by if (resetOk) at line 111, ensuring it fires even when loadBudgets throws."
+    }
+  ]
+}

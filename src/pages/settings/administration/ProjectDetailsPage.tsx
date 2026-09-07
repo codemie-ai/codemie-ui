@@ -90,6 +90,7 @@ const ProjectDetailsPage = () => {
   const [loading, setLoading] = useState(true)
   const [isEditPopupVisible, setIsEditPopupVisible] = useState(false)
   const [budgets, setBudgets] = useState<ProjectBudget[]>([])
+  const [spendingRefreshKey, setSpendingRefreshKey] = useState(0)
 
   const isPersonalProject = project?.project_type === ProjectType.PERSONAL
   const isAdmin = currentUser?.isAdmin ?? false
@@ -306,6 +307,7 @@ const ProjectDetailsPage = () => {
                   spendingRows={project.spending_widget?.data?.rows}
                   onBudgetsChanged={isMaintainer ? setBudgets : undefined}
                   onProjectChanged={loadProject}
+                  onBudgetReset={() => setSpendingRefreshKey((k) => k + 1)}
                   access={budgetsAccess}
                   project={project}
                 />
@@ -319,6 +321,7 @@ const ProjectDetailsPage = () => {
                   onMembersChanged={loadProject}
                   budgets={isMaintainer ? budgets : undefined}
                   onBudgetsChanged={isMaintainer ? setBudgets : undefined}
+                  spendingRefreshKey={spendingRefreshKey}
                 />
               </section>
             )}

@@ -1,0 +1,38 @@
+{
+  "decision": "request-changes",
+  "rationale": "Compact profile: blind and verification-gap not dispatched; no spec: acceptance not dispatched (confidence low). Two confirmed patch findings: onBudgetReset callback silently dropped when loadBudgets throws after a successful reset (defeating the primary feature), and a ref-less re-entry guard that lets rapid double-clicks fire concurrent resets before React state propagates. 1 dismissed: unconditional onBudgetReset pass is harmless because the reset action itself is access-gated.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "No standards guide configured; standards_expected false for this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "No standards guide configured; standards_expected false for this profile." },
+    { "kind": "security", "status": "na", "notes": "No standards guide configured; standards_expected false for this profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx",
+      "line": 96,
+      "title": "Concurrent resets possible before state propagates",
+      "problem": "handleGroupReset has no synchronous re-entry guard. setGroupActionRunning(true) schedules a state update but React does not re-render synchronously, so rapid clicks in the same render cycle each find groupActionRunning false and proceed. Additionally, groupActionRunning is not in the useCallback dependency array, so any guard added inside the function reads a stale closure value and is always false.",
+      "impact": "Concurrent resetProjectBudgetGroup calls race against each other; budget counters may double-reset, leaving the project in an inconsistent state that persists until the next manual refresh.",
+      "recommendation": "Use a ref-based guard: const runningRef = useRef(false); if (runningRef.current) return; runningRef.current = true; at the top of handleGroupReset, and reset runningRef.current = false in the finally block. A groupActionRunning state check alone cannot work without adding it to the dependency array, which would recreate the callback on every state transition."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx",
+      "line": 103,
+      "title": "onBudgetReset skipped when loadBudgets throws after reset",
+      "problem": "In the try block of handleGroupReset, onBudgetReset?.() is called on line 103, after await loadBudgets() on line 102. If loadBudgets throws (e.g. transient network error), execution jumps to the catch block and onBudgetReset is never invoked, even though the reset itself already succeeded.",
+      "impact": "The member spending table stays stale after a successful reset whenever loadBudgets fails, directly defeating the primary feature this change implements.",
+      "recommendation": "Call onBudgetReset?.() before await loadBudgets(), or move it into the finally block guarded by a boolean flag (e.g. resetOk) set to true after resetProjectBudgetGroup resolves, mirroring the deletionOk pattern used in handleDelete."
+    }
+  ]
+}

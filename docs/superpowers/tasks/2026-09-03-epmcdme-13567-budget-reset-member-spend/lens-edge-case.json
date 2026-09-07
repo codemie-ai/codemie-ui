@@ -1,0 +1,20 @@
+[
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx:100-105 (handleGroupReset try block)",
+    "trigger_condition": "`loadBudgets()` throws after `resetProjectBudgetGroup` succeeds",
+    "guard_snippet": "move `onBudgetReset?.()` into the `finally` block (or before `await loadBudgets()`)",
+    "potential_consequence": "member spending table stays stale even though the underlying reset succeeded"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx:handleGroupReset entry",
+    "trigger_condition": "multiple rapid clicks before React re-render propagates `groupActionRunning: true`",
+    "guard_snippet": "if (groupActionRunning) return; at the top of handleGroupReset",
+    "potential_consequence": "concurrent reset API calls fired; budget counters double-reset"
+  },
+  {
+    "location": "src/pages/settings/administration/ProjectDetailsPage.tsx:307 (onBudgetReset prop)",
+    "trigger_condition": "`access` is not `'full'` but `onBudgetReset` is passed unconditionally",
+    "guard_snippet": "pass `onBudgetReset` conditionally like other privileged callbacks, e.g. `isMaintainer ? () => setSpendingRefreshKey(k => k + 1) : undefined`",
+    "potential_consequence": "non-maintainer viewers trigger spending refresh on reset if internal gating is bypassed"
+  }
+]

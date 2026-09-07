@@ -38,6 +38,7 @@ interface ProjectBudgetsSectionProps {
   access: ProjectBudgetsAccess
   /** Reload the project after a save — chargeback settings live on the project, not the budget. */
   onProjectChanged?: () => void
+  onBudgetReset?: () => void
   project?: ProjectDetail | null
 }
 
@@ -47,6 +48,7 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
   onBudgetsChanged,
   access,
   onProjectChanged,
+  onBudgetReset,
   project = null,
 }) => {
   const hasFullAccess = access === 'full'
@@ -92,19 +94,22 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
   }, [loadBudgets])
 
   const handleGroupReset = useCallback(async () => {
-    if (!currentGroupId) return
+    if (!currentGroupId || groupActionRunning) return
     setGroupActionRunning(true)
+    let resetOk = false
     try {
       await projectBudgetsStore.resetProjectBudgetGroup(currentGroupId)
+      resetOk = true
       toaster.info('Project budget reset')
       await loadBudgets()
     } catch {
       // error already handled by store
     } finally {
+      if (resetOk) onBudgetReset?.()
       setGroupActionRunning(false)
       setGroupConfirmAction(null)
     }
-  }, [currentGroupId, loadBudgets])
+  }, [currentGroupId, groupActionRunning, loadBudgets, onBudgetReset])
 
   const handleDelete = useCallback(async () => {
     setGroupActionRunning(true)
@@ -239,6 +244,7 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
             header="Reset Project Budget?"
             message="Resets spend counters and reset window for every category. Continue?"
             confirmText="Reset"
+            confirmDisabled={groupActionRunning}
             onConfirm={handleGroupReset}
             onCancel={() => setGroupConfirmAction(null)}
             limitWidth

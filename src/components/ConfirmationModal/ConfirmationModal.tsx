@@ -67,6 +67,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       </Button>
       <Button
         variant={confirmButtonType}
+        disabled={confirmDisabled}
         onClick={(e) => {
           e.stopPropagation()
           onConfirm()

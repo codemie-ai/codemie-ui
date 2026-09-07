@@ -117,6 +117,7 @@ interface ProjectMembersManagerProps {
   onMembersChanged?: () => Promise<void> | void
   budgets?: ProjectBudget[]
   onBudgetsChanged?: (budgets: ProjectBudget[]) => void
+  spendingRefreshKey?: number
 }
 
 const personalProjectTooltip = (action: string) =>
@@ -200,6 +201,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   onMembersChanged,
   budgets,
   onBudgetsChanged,
+  spendingRefreshKey,
 }) => {
   const snap = useSnapshot(userStore)
   const currentUser = snap.user
@@ -373,7 +375,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     return () => {
       cancelled = true
     }
-  }, [project.name, showBudgets])
+  }, [project.name, showBudgets, spendingRefreshKey])
 
   const handlePageChange = useCallback(
     async (page: number, newPerPage?: number) => {
