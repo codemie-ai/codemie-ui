@@ -137,7 +137,7 @@ export const performIncrementalReindex = (
       {
         name: item.repo_name,
         project_name: item.project_name,
-        jql: item.jira.jql,
+        jql: item.jira?.jql,
       },
       false,
       true
@@ -198,7 +198,7 @@ export const performFullReindex = (
       {
         name: item.repo_name,
         project_name: item.project_name,
-        jql: item.jira.jql,
+        jql: item.jira?.jql,
       },
       true
     )

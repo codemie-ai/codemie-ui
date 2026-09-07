@@ -198,6 +198,10 @@ export const makeBaseValidationSchema = (maxFiles: number) =>
       then: (schema) => schema.required(JQL_REQUIRED_ERR),
     }),
 
+    jiraCustomFields: Yup.array()
+      .of(Yup.string().trim().required('Custom field cannot be empty'))
+      .notRequired(),
+
     wikiQuery: Yup.string().optional(),
 
     wikiName: Yup.string().optional(),
@@ -380,6 +384,7 @@ export const useEditPopupForm = (
       xwikiSpace: '',
       xwikiWiki: '',
       jql: '',
+      jiraCustomFields: [],
       wikiQuery: '',
       wikiName: '',
       wiqlQuery: '',
@@ -436,6 +441,7 @@ export const useEditPopupForm = (
       xwikiSpace: defaults?.xwiki?.space ?? '',
       xwikiWiki: defaults?.xwiki?.wiki ?? '',
       jql: defaults?.jira?.jql ?? defaults?.xray?.jql ?? '',
+      jiraCustomFields: defaults?.jira?.custom_fields ?? [],
       wikiQuery: defaults?.azure_devops_wiki?.wiki_query ?? '',
       wikiName: defaults?.azure_devops_wiki?.wiki_name ?? '',
       wiqlQuery: defaults?.azure_devops_work_item?.wiql_query ?? '',

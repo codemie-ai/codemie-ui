@@ -514,10 +514,20 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                   </>
                 )}
                 {indexType === INDEX_TYPES.JIRA && (
-                  <div className={styles.row}>
-                    <span className={styles.propertyLabel}>JQL expression:</span>
-                    <span className={styles.propertyValue}>{dataSource.jira?.jql || 'N/A'}</span>
-                  </div>
+                  <>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>JQL expression:</span>
+                      <span className={styles.propertyValue}>{dataSource.jira?.jql || 'N/A'}</span>
+                    </div>
+                    {!!dataSource.jira?.custom_fields?.length && (
+                      <div className={styles.row}>
+                        <span className={styles.propertyLabel}>Custom fields:</span>
+                        <span className={styles.propertyValue}>
+                          {dataSource.jira?.custom_fields?.join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
                 {indexType === INDEX_TYPES.CONFLUENCE && (
                   <div className={styles.row}>

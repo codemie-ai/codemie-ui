@@ -156,6 +156,14 @@ export interface SharePointDeviceCodePollResponse {
   slow_down?: boolean
 }
 
+// A Jira field available for custom-field indexing (GET v1/index/jira/fields)
+export interface JiraFieldOption {
+  id: string
+  name: string
+  custom: boolean
+  type?: string | null
+}
+
 // Schedule types
 export type SchedulePreset = (typeof SCHEDULE_PRESETS)[keyof typeof SCHEDULE_PRESETS]
 
@@ -191,7 +199,8 @@ export interface DataSource {
   user_abilities: Array<string>
   jira: {
     jql: string
-  }
+    custom_fields?: string[]
+  } | null
   xray: {
     jql: string
   }
@@ -253,7 +262,10 @@ export interface DataSourceDetailsResponse {
   google_doc_link: string
   user_abilities: Array<string>
   confluence: any
-  jira: any
+  jira: {
+    jql: string
+    custom_fields?: string[]
+  } | null
   xray: any
   azure_devops_wiki: any
   azure_devops_work_item: any

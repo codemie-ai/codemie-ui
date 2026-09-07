@@ -1,0 +1,37 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two blockers: an unguarded array cast in the new getJiraFields that can crash the datasource form render, and two merge commit subjects that violate the Tekton-enforced subject regex in .ai-run/guides/standards/git-workflow.md. Only the edge-case lens applied under the balanced profile; the standards audit ran with no coverage gap and reported no unreadable guide, and all 14 edge-case candidates were verified against source within budget (12 dismissed after reading the surrounding code, 0 deferred). Confidence is low solely because no story or spec was available, so no acceptance criteria could be verified.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {"kind": "commit-format", "status": "partial", "notes": "9 of 11 subjects match the documented EPMCDME-XXXX: Capital sentence regex; 2 merge subjects match no alternative of the git-workflow.md regex, which allows only the EPMCDME form, release-notes and Revert forms"},
+    {"kind": "code-quality", "status": "na", "notes": "no .ai-run/guides/standards/code-quality.md exists in codemie-ui and no ArtifactRef was passed; that directory holds only git-workflow.md, so there is no documented blocking code-quality standard to adjudicate against"},
+    {"kind": "security", "status": "pass", "notes": "all 8 changed files checked against security-patterns.md: no HTML sink, no navigation from untrusted input, no postMessage listener; getJiraFields builds its query with URLSearchParams; no secret or config introduced; nginx.conf untouched"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/dataSources.ts",
+      "line": 216,
+      "title": "Unvalidated array cast can crash fields dropdown",
+      "problem": "getJiraFields returns (await response.json()) as JiraFieldOption[] with no shape check, and JiraCustomFieldsField calls fields.map inside a useMemo during render (JiraCustomFieldsField.tsx:102-110). api.get rejects only on non-2xx even with skipErrorHandling, so any 200 body that is not a bare array — for example a {data, pagination} envelope like the sibling v1/index list endpoint returns — flows straight into the render path.",
+      "impact": "fields.map throws during render of the datasource create/edit popup instead of degrading to an empty list, taking down the whole form rather than the one dropdown. Whether the backend can return a non-array 200 could not be confirmed from this repository, so this is graded major rather than critical. The surrounding store layer already guards list responses this way (skills.ts:738, assistants.ts:529, categories.ts:74, appInfo.ts:212), which makes the new method the outlier rather than a hardening request against the codebase convention.",
+      "recommendation": "In getJiraFields parse into a local and return Array.isArray(data) ? (data as JiraFieldOption[]) : [], matching the existing store convention; optionally also drop entries without a string id before the component maps them to options."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "unknown",
+      "title": "Merge commit subjects violate commit-format standard",
+      "problem": "Two subjects in 1bf0010d..HEAD — \"Merge remote-tracking branch 'origin/main' into EPMCDME-14093_jira-custom-fields\" and \"Merge branch 'main' into EPMCDME-14093_jira-custom-fields\" — match none of the three alternatives of the subject regex pinned by .ai-run/guides/standards/git-workflow.md, which allows only the EPMCDME-NNNN: Capital sentence form, 'Generate release notes for version X.Y.Z' and 'Revert \"EPMCDME-...\"'. The guide grants no merge-commit exemption.",
+      "impact": "The guide states the format is enforced by Tekton CI and that the pipeline blocks on violations, so these subjects stop the MR at the pipeline regardless of the code content.",
+      "recommendation": "Drop the two merge commits and take main via 'git fetch origin && git rebase origin/main' as the guide's Troubleshooting row prescribes, or reword the subjects to the EPMCDME-14093: Capital sentence form."
+    }
+  ]
+}

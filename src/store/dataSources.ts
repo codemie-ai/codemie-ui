@@ -20,6 +20,7 @@ import {
   DataProvider,
   DatasetResponse,
   DataSourceDetailsResponse,
+  JiraFieldOption,
   SharePointDeviceCodeInitiateResponse,
   SharePointDeviceCodePollResponse,
   SharePointOAuthInitiateResponse,
@@ -206,6 +207,18 @@ export const dataSourceStore = proxy({
     return (await response.json()) as DataSourceDetailsResponse
   },
 
+  async getJiraFields(projectName: string, settingId?: string): Promise<JiraFieldOption[]> {
+    const params = new URLSearchParams({ project_name: projectName })
+    if (settingId) params.set('setting_id', settingId)
+    // No global error toast: the custom fields dropdown renders its own failure state
+    const response = await api.get(`v1/index/jira/fields?${params.toString()}`, {
+      skipErrorHandling: true,
+    })
+    const result = await response.json()
+    // Degrade to an empty list rather than letting a non-array 200 body crash the form render
+    return Array.isArray(result) ? (result as JiraFieldOption[]) : []
+  },
+
   createApplicationGitIndex(projectName: string, index: any) {
     const updatedRequest = {
       ...index,
@@ -298,6 +311,7 @@ export const dataSourceStore = proxy({
     settingId: string,
     options: {
       jql?: string | null
+      customFields?: string[] | null
       cql?: string | null
       space?: string | null
       wiki?: string | null
@@ -315,6 +329,7 @@ export const dataSourceStore = proxy({
         index_type: indexType,
         setting_id: settingId,
         ...(options.jql != null && { jql: options.jql }),
+        ...(options.customFields != null && { custom_fields: options.customFields }),
         ...(options.cql != null && { cql: options.cql }),
         ...(options.space != null && { space: options.space }),
         ...(options.wiki != null && { wiki: options.wiki }),
@@ -375,7 +390,8 @@ export const dataSourceStore = proxy({
     embedding_model?: string,
     guardrail_assignments?: EntityGuardrailAssignment[],
     cron_expression?: string,
-    timezone?: string
+    timezone?: string,
+    custom_fields?: string[]
   ) {
     return handleIndexResponse(
       api.post('v1/index/knowledge_base/jira', {
@@ -389,6 +405,7 @@ export const dataSourceStore = proxy({
         guardrail_assignments,
         cron_expression,
         timezone,
+        custom_fields,
       })
     )
   },

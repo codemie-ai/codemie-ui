@@ -319,3 +319,43 @@ describe('dataSourceStore.getIndexesStatuses', () => {
     expect(dataSourceStore.loading).toBe(false)
   })
 })
+
+describe('dataSourceStore.getJiraFields', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns the fetched field list and builds the query from project and setting', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      json: async () => [{ id: 'customfield_10001', name: 'Story Points', custom: true }],
+    } as unknown as Response)
+
+    const fields = await dataSourceStore.getJiraFields('my-project', 'setting-1')
+
+    expect(fields).toEqual([{ id: 'customfield_10001', name: 'Story Points', custom: true }])
+    const [url] = vi.mocked(api.get).mock.calls[0]
+    expect(url).toContain('project_name=my-project')
+    expect(url).toContain('setting_id=setting-1')
+  })
+
+  it('omits setting_id when no integration is selected', async () => {
+    vi.mocked(api.get).mockResolvedValue({ json: async () => [] } as unknown as Response)
+
+    await dataSourceStore.getJiraFields('my-project')
+
+    expect(vi.mocked(api.get).mock.calls[0][0]).not.toContain('setting_id')
+  })
+
+  it('degrades to an empty list when a 200 body is not an array', async () => {
+    // An envelope like { data, pagination } would otherwise reach fields.map during render
+    vi.mocked(api.get).mockResolvedValue({
+      json: async () => ({ data: [], pagination: {} }),
+    } as unknown as Response)
+
+    await expect(dataSourceStore.getJiraFields('my-project', 'setting-1')).resolves.toEqual([])
+  })
+})

@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "reviewed_head": "067e6582b1729d36fae47b9dca1798ab34ccc33a",
+  "findings": {
+    "CR-001": {
+      "artifacts": [
+        {"path": "src/store/dataSources.ts"},
+        {"path": "src/store/__tests__/dataSources.test.ts"}
+      ],
+      "commands": [
+        {"command": "npx vitest run --project unit src/store/__tests__/dataSources.test.ts", "exit_code": 0, "head": "d645b1b6373168ff9a5b55ef7c57e51b52d58bd3"},
+        {"command": "npm run typecheck", "exit_code": 0, "head": "d645b1b6373168ff9a5b55ef7c57e51b52d58bd3"},
+        {"command": "npm run lint", "exit_code": 0, "head": "d645b1b6373168ff9a5b55ef7c57e51b52d58bd3"},
+        {"command": "npm run test:unit", "exit_code": 0, "head": "d645b1b6373168ff9a5b55ef7c57e51b52d58bd3"}
+      ]
+    },
+    "CR-002": {
+      "decision": {
+        "outcome": "Keep both merge commits; do not rebase or reword. The MR is squash-merged under its ticket-prefixed title.",
+        "rationale": "The finding's stated impact - that these subjects stop the MR at the pipeline - is refuted by this MR's own pipeline history. Sonar analysed SCM revision 4120547b655e17d0db317124db3d605195ef9e66, a commit whose subject is \"Merge branch 'main' into EPMCDME-14093_jira-custom-fields\", and the KubeRocketCI review pipeline review-codemie-ui-main-zxtdm on that revision reported mr-title-validate as Passed; only the sonar task failed, on new code smells. The Tekton task validates the merge request title, not each commit subject. The repository default branch also already contains merge commits with the same shape. The user, as the branch owner, decided on 2026-09-03 to keep them rather than force-push a rewritten history to origin."
+      }
+    }
+  }
+}

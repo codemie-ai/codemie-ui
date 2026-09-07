@@ -18,6 +18,7 @@ import { Controller } from 'react-hook-form'
 
 import Input from '@/components/form/Input'
 
+import JiraCustomFieldsField from './JiraCustomFieldsField'
 import EmbeddingsModelField from './shared/EmbeddingsModelField'
 import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
@@ -63,7 +64,7 @@ const IndexTypeJira: FC<Props> = ({
             id="jql"
             name="jql"
             className="w-full"
-            rootClass="mb-3"
+            rootClass="mb-4"
             label="JQL Query"
             placeholder='JQL expression, e.g.: project = "PROJECTKEY" AND assignee = "John Doe"'
             error={errors.jql?.message}
@@ -72,6 +73,13 @@ const IndexTypeJira: FC<Props> = ({
       />
 
       <EmbeddingsModelField control={control} embeddingModels={embeddingModels} />
+
+      <JiraCustomFieldsField
+        control={control}
+        errors={errors}
+        projectName={projectName}
+        availableSettings={filteredSettings?.[value] ?? []}
+      />
 
       <IntegrationSection
         hasNoSettings={hasNoSettings(value)}

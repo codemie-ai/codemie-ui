@@ -44,6 +44,9 @@ interface IndexEditContext {
   hasProjectChanged: boolean
 }
 
+const getJiraCustomFields = (values: FormValues): string[] =>
+  (values.jiraCustomFields ?? []).map((field) => field?.trim() ?? '').filter(Boolean)
+
 const getIndexEditContext = (
   index: DataSourceDetailsResponse | null | undefined,
   values: FormValues
@@ -85,7 +88,7 @@ export const useIndexCreation = ({
 
       const healthCheckOptions =
         {
-          [INDEX_TYPES.JIRA]: { jql: data.jql },
+          [INDEX_TYPES.JIRA]: { jql: data.jql, customFields: getJiraCustomFields(data) },
           [INDEX_TYPES.XRAY]: { jql: data.jql },
           [INDEX_TYPES.CONFLUENCE]: { cql: data.cql },
           [INDEX_TYPES.XWIKI]: { space: data.xwikiSpace, wiki: data.xwikiWiki || undefined },
@@ -308,6 +311,8 @@ export const useIndexCreation = ({
     const request = {
       ...getBaseRequestFields(values, index, hasProjectChanged),
       jql: values.jql,
+      // Always sent: an empty array clears previously configured custom fields on edit
+      custom_fields: getJiraCustomFields(values),
       setting_id: values.setting_id,
     }
 
@@ -325,7 +330,8 @@ export const useIndexCreation = ({
       request.embedding_model as string | undefined,
       request.guardrail_assignments,
       request.cron_expression ?? undefined,
-      request.timezone
+      request.timezone,
+      request.custom_fields
     )
   }
 

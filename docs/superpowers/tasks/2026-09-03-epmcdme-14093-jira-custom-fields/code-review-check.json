@@ -1,0 +1,49 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "Both prior blocking findings are accounted for on kind-appropriate proof: CR-001 is resolved on current source at HEAD d645b1b6 (the Array.isArray guard is present at src/store/dataSources.ts:219, pinned by a new regression test, with typecheck, lint and the unit suite recorded green against that same HEAD), and CR-002 is superseded because the supplied KubeRocketCI task table (cr-002-pipeline-evidence.md) shows the review pipeline has no commit-message or commit-subject validation task at all while its only title gate, mr-title-validate, passed - refuting the finding's stated impact that these subjects stop the MR at the pipeline. Confidence is high because the earlier medium rested solely on that corroboration being unavailable; the residual limits are that the run's binding to revision 4120547b is prose rather than table content and the glab retrieval was not re-executed, neither of which the no-such-task argument depends on. Brief written; no deferred file (the check round does not re-check defer findings).",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {"kind": "commit-format", "status": "partial", "notes": "9 of 11 subjects match the documented EPMCDME-XXXX: Capital sentence regex; 2 merge subjects match no alternative of the git-workflow.md regex, which allows only the EPMCDME form, release-notes and Revert forms"},
+    {"kind": "code-quality", "status": "na", "notes": "no .ai-run/guides/standards/code-quality.md exists in codemie-ui and no ArtifactRef was passed; that directory holds only git-workflow.md, so there is no documented blocking code-quality standard to adjudicate against"},
+    {"kind": "security", "status": "pass", "notes": "all 8 changed files checked against security-patterns.md: no HTML sink, no navigation from untrusted input, no postMessage listener; getJiraFields builds its query with URLSearchParams; no secret or config introduced; nginx.conf untouched"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/dataSources.ts",
+      "line": 216,
+      "title": "Unvalidated array cast can crash fields dropdown",
+      "problem": "getJiraFields returns (await response.json()) as JiraFieldOption[] with no shape check, and JiraCustomFieldsField calls fields.map inside a useMemo during render (JiraCustomFieldsField.tsx:102-110). api.get rejects only on non-2xx even with skipErrorHandling, so any 200 body that is not a bare array - for example a {data, pagination} envelope like the sibling v1/index list endpoint returns - flows straight into the render path.",
+      "impact": "fields.map throws during render of the datasource create/edit popup instead of degrading to an empty list, taking down the whole form rather than the one dropdown. Whether the backend can return a non-array 200 could not be confirmed from this repository, so this is graded major rather than critical. The surrounding store layer already guards list responses this way (skills.ts:738, assistants.ts:529, categories.ts:74, appInfo.ts:212), which makes the new method the outlier rather than a hardening request against the codebase convention.",
+      "recommendation": "In getJiraFields parse into a local and return Array.isArray(data) ? (data as JiraFieldOption[]) : [], matching the existing store convention; optionally also drop entries without a string id before the component maps them to options."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "unknown",
+      "title": "Merge commit subjects violate commit-format standard",
+      "problem": "Two subjects in 1bf0010d..HEAD - \"Merge remote-tracking branch 'origin/main' into EPMCDME-14093_jira-custom-fields\" and \"Merge branch 'main' into EPMCDME-14093_jira-custom-fields\" - match none of the three alternatives of the subject regex pinned by .ai-run/guides/standards/git-workflow.md, which allows only the EPMCDME-NNNN: Capital sentence form, 'Generate release notes for version X.Y.Z' and 'Revert \"EPMCDME-...\"'. The guide grants no merge-commit exemption.",
+      "impact": "The guide states the format is enforced by Tekton CI and that the pipeline blocks on violations, so these subjects stop the MR at the pipeline regardless of the code content.",
+      "recommendation": "Drop the two merge commits and take main via 'git fetch origin && git rebase origin/main' as the guide's Troubleshooting row prescribes, or reword the subjects to the EPMCDME-14093: Capital sentence form."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Verified on current source, not on the green commands alone. src/store/dataSources.ts:217-219 now reads the body into a local and returns Array.isArray(result) ? (result as JiraFieldOption[]) : [], exactly the recommended remedy and matching the sibling store convention. src/store/__tests__/dataSources.test.ts:353 adds 'degrades to an empty list when a 200 body is not an array', asserting the {data, pagination} envelope resolves to []. Both mapped artifacts exist and are non-empty; all four mapped commands (targeted vitest, typecheck, lint, full unit suite) are recorded exit_code 0 bound to head d645b1b6373168ff9a5b55ef7c57e51b52d58bd3, which git rev-parse HEAD confirms is the current head. Commands were not rerun - Stage 7 owns execution."
+    },
+    {
+      "id": "CR-002",
+      "status": "superseded",
+      "notes": "Not fixed - both merge commits remain in branch history - but the finding no longer applies, so it does not block. Mapped evidence is now twofold: (1) the decision record (outcome: keep both merge commits, the MR is squash-merged under its ticket-prefixed title; non-empty rationale); and (2) the pipeline artifact docs/superpowers/tasks/2026-09-03-epmcdme-14093-jira-custom-fields/cr-002-pipeline-evidence.md, sha256 1c2a3ca36b451117a13907d8e654a063caf40df1ac4da21e194baffade0472f4, the verbatim KubeRocketCI task table for run review-codemie-ui-main-zxtdm from note 2370030 on MR !1696. That artifact refutes the finding's stated impact on its own terms: across all 14 tasks there is no commit-message or commit-subject validation task (the only lints are dockerfile-lint, dockerfile-lint-kc-theme, helm-lint), and the sole title gate mr-title-validate is reported Passed, so the pipeline has no mechanism that could stop the MR on a non-conforming merge-commit subject. Corroborated by git-workflow.md, which documents squash merge into main and pins the format of the squash subject, so branch-local merge subjects never land on main. Two stated limits, neither of which the no-such-task argument depends on: the run's binding to revision 4120547b is asserted in the artifact's prose rather than shown in the table, and the glab api retrieval was not re-executed here. Note for downstream, not a finding this round: that run failed overall on sonar (new code smells) at an older revision - Stage 7 owns final QA."
+    }
+  ]
+}
