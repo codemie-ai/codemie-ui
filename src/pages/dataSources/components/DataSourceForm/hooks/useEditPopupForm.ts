@@ -48,6 +48,7 @@ import {
 
 const DESCRIPTION_REQUIRED_ERR = 'Description is required'
 const CQL_REQUIRED_ERR = 'CQL is required'
+const SPACE_REQUIRED_ERR = 'Space is required'
 const JQL_REQUIRED_ERR = 'JQL is required'
 const FILE_REQUIRED_ERR = 'At least one file is required'
 const ALL_FILES_REQUIRED_ERR = 'All file slots must be filled'
@@ -185,6 +186,13 @@ export const makeBaseValidationSchema = (maxFiles: number) =>
       then: (schema) => schema.required(CQL_REQUIRED_ERR),
     }),
 
+    xwikiSpace: Yup.string().when('indexType', {
+      is: (indexType) => indexType === INDEX_TYPES.XWIKI,
+      then: (schema) => schema.required(SPACE_REQUIRED_ERR),
+    }),
+
+    xwikiWiki: Yup.string().optional(),
+
     jql: Yup.string().when('indexType', {
       is: (indexType) => indexType === INDEX_TYPES.JIRA || indexType === INDEX_TYPES.XRAY,
       then: (schema) => schema.required(JQL_REQUIRED_ERR),
@@ -205,6 +213,7 @@ export const makeBaseValidationSchema = (maxFiles: number) =>
           INDEX_TYPES.JIRA,
           INDEX_TYPES.XRAY,
           INDEX_TYPES.CONFLUENCE,
+          INDEX_TYPES.XWIKI,
           INDEX_TYPES.AZURE_DEVOPS_WIKI,
           INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM,
           INDEX_TYPES.GOOGLE,
@@ -368,6 +377,8 @@ export const useEditPopupForm = (
       csvRowsPerDocument: 1,
       googleDoc: '',
       cql: '',
+      xwikiSpace: '',
+      xwikiWiki: '',
       jql: '',
       wikiQuery: '',
       wikiName: '',
@@ -422,6 +433,8 @@ export const useEditPopupForm = (
       csvRowsPerDocument: 1,
       googleDoc: defaults?.google_doc_link ?? '',
       cql: defaults?.confluence?.cql ?? '',
+      xwikiSpace: defaults?.xwiki?.space ?? '',
+      xwikiWiki: defaults?.xwiki?.wiki ?? '',
       jql: defaults?.jira?.jql ?? defaults?.xray?.jql ?? '',
       wikiQuery: defaults?.azure_devops_wiki?.wiki_query ?? '',
       wikiName: defaults?.azure_devops_wiki?.wiki_name ?? '',

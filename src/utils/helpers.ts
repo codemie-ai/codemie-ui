@@ -132,6 +132,11 @@ export const humanize = (string: string): string => {
     return 'SVN'
   }
 
+  // Special case for xwiki to display as xWiki
+  if (string.toLowerCase() === 'xwiki') {
+    return 'xWiki'
+  }
+
   const words = string.split('_')
 
   return words

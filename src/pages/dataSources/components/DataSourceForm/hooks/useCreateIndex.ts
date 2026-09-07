@@ -17,6 +17,7 @@ import { useState } from 'react'
 import { UseFormSetError } from 'react-hook-form'
 
 import {
+  DEFAULT_XWIKI_WIKI,
   INDEX_TYPE_CODE,
   INDEX_TYPES,
   IndexType,
@@ -87,6 +88,7 @@ export const useIndexCreation = ({
           [INDEX_TYPES.JIRA]: { jql: data.jql },
           [INDEX_TYPES.XRAY]: { jql: data.jql },
           [INDEX_TYPES.CONFLUENCE]: { cql: data.cql },
+          [INDEX_TYPES.XWIKI]: { space: data.xwikiSpace, wiki: data.xwikiWiki || undefined },
           [INDEX_TYPES.AZURE_DEVOPS_WIKI]: { wikiQuery: data.wikiQuery, wikiName: data.wikiName },
           [INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM]: { wiqlQuery: data.wiqlQuery },
           [INDEX_TYPES.SVN]: { svn_repo_url: data.repoLink, svn_branch: data.branch },
@@ -131,6 +133,8 @@ export const useIndexCreation = ({
             return createOrUpdateGoogleIndex(values)
           case INDEX_TYPES.CONFLUENCE:
             return createOrUpdateConfluenceIndex(values)
+          case INDEX_TYPES.XWIKI:
+            return createOrUpdateXWikiIndex(values)
           case INDEX_TYPES.JIRA:
             return createOrUpdateJiraIndex(values)
           case INDEX_TYPES.XRAY:
@@ -269,6 +273,33 @@ export const useIndexCreation = ({
     }
 
     return dataSourceStore.createKBIndexConfluence(request)
+  }
+
+  const createOrUpdateXWikiIndex = async (values: FormValues) => {
+    const { isEditMode, isReindex, hasProjectChanged } = getIndexEditContext(index, values)
+
+    const request = {
+      ...getBaseRequestFields(values, index, hasProjectChanged),
+      space: values.xwikiSpace,
+      setting_id: values.setting_id,
+    }
+
+    if (isEditMode) {
+      // On update an omitted wiki means "keep the stored value", so clearing the
+      // field has to send the default explicitly to actually reset it.
+      return dataSourceStore.updateKBIndex(
+        INDEX_TYPES.XWIKI,
+        { ...request, wiki: values.xwikiWiki || DEFAULT_XWIKI_WIKI },
+        isReindex
+      )
+    }
+
+    // On create an empty wiki must be omitted, not sent as '': the API requires
+    // minLength 1 when the key is present, and defaults it to 'xwiki'.
+    return dataSourceStore.createKBIndexXWiki({
+      ...request,
+      wiki: values.xwikiWiki || undefined,
+    })
   }
 
   const createOrUpdateJiraIndex = async (values: FormValues) => {

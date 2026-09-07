@@ -680,11 +680,20 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     serverEnum: 'XWiki',
     defaultUrl: XWIKI_URL,
     testable: false,
+    message: {
+      type: 'info',
+      title: 'Authentication',
+      message:
+        'Username and password always works. A token only works if the target xWiki has the ' +
+        'token plugin installed — if authentication fails with a token, use username and ' +
+        'password instead.',
+    },
     fields: {
       url: {
         label: 'URL',
         placeholder: dynPlaceholder('xwiki', 'url'),
         defaultValue: XWIKI_URL,
+        note: 'The base URL is the wiki root. Some instances serve the wiki at the domain root, others under an "/xwiki" path — use whichever your instance uses.',
         validation: Yup.string().required('URL is required').url('Value must be a valid URL'),
       },
       use_bearer: {

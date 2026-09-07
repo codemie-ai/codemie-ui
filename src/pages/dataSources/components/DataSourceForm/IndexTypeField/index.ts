@@ -24,6 +24,7 @@ import Provider from './IndexTypeProvider'
 import SharePoint from './IndexTypeSharePoint'
 import Svn from './IndexTypeSvn'
 import Xray from './IndexTypeXray'
+import XWiki from './IndexTypeXWiki'
 
 const IndexTypeField = {
   Git,
@@ -31,6 +32,7 @@ const IndexTypeField = {
   Google,
   File,
   Confluence,
+  XWiki,
   Jira,
   Xray,
   AzureDevOpsWiki,

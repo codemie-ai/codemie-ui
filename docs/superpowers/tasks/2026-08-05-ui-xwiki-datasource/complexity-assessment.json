@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "task": "Add xWiki as a new knowledge-base datasource type in the CodeMie React/TypeScript UI, mirroring the existing Confluence type end to end (constant, form component, validation, prefill, request building, store method, details view, credential filtering, reindex predicates, icon/label).",
+  "generated": "2026-08-05",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 19,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Base L (4): the change is additive but fans out across the whole datasource feature area within one subsystem - INDEX_TYPES constant, indexing type predicate, a new IndexTypeXWiki form component plus its registry entry, the DataSourceForm render branch, three hooks (useEditPopupForm validation + defaults, useEditPopup credential filtering + auto-select, useCreateIndex request build + dispatch + health-check options), the dataSources store (new create method plus a widened healthCheckDatasource options signature), DataSourceDetails, entity types, dataSourceUtils reindex predicates, DataSourceEditPage guard, and DataSourceTypeIcon. No new abstractions - every touch point has an exact Confluence precedent."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Roughly 15 source files modified across 6+ directories (constants, utils, types, store, pages/dataSources components, hooks, page-level utils), plus ~4 test files and 1-2 new files (IndexTypeXWiki.tsx and optionally an xwiki.svg asset). Modified count sits at the top of the XL band; new-file count is low, which keeps it out of XXL."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Held at S (2) despite the wide fan-out: the Confluence analogue is exact, the request/response/health-check contract was live-verified against the backend openapi.json (space required, wiki optional defaulting to 'xwiki', IndexInfo.xwiki returned on read), the change is purely additive and trivially reversible, and no auth, performance, or security surface is touched. Residual risk is omission-shaped, not design-shaped: canFullReindex/canForceReindex/performFullReindex and the useEditPopup credential map are opt-in allowlists that fail silently when a new type is missed, and adding the constant without a DataSourceForm render branch yields an empty form."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Frontend-only repo. Three layers touched - UI components, form-state/validation hooks, and the store/API-client plus entity types. No DB, no infra, no cross-system work: the xWiki backend endpoints already exist and the xwiki credential type is already fully implemented in settingsUIConfig, appInfo, and getCredentialType, so no new external integration is introduced on this side."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): touches core shared utilities - humanize() in src/utils/helpers.ts is used app-wide and needs a fifth special case so the label renders as 'xWiki' rather than 'Xwiki', and src/utils/indexing.ts gains a new shared type predicate.",
+    "Requirements Clarity bumped from S (2) to M (3): 'similar to X but different' phrasing - the task is specified as mirroring Confluence, but the field set differs (required 'space' plus an optional 'wiki' defaulting to 'xwiki', versus Confluence's single 'cql'), and one decision is explicitly open: the API marks setting_id optional while every UI analogue (Confluence/Jira/ADO) marks it required."
+  ],
+  "split_recommendation": null
+}

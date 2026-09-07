@@ -1,0 +1,26 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "finding_status": {
+    "CR-001": "resolved",
+    "CR-002": "resolved",
+    "CR-003": "resolved",
+    "CR-004": "resolved"
+  },
+  "findings": [],
+  "business_review": [
+    { "criterion": "Pre-create health check carries space and wiki", "status": "pass", "evidence": "Was partial; the blank-wiki empty string is now collapsed to undefined at useCreateIndex.ts:119, matching the create request. Covered by 'omits the wiki from the health check too'" },
+    { "criterion": "Edit saves through updateKBIndex('xwiki', ...) → PUT", "status": "pass", "evidence": "Was partial; the update path now sends DEFAULT_XWIKI_WIKI explicitly when the field is cleared, and the whole update path has hook-level coverage" },
+    { "criterion": "All other spec criteria", "status": "pass", "evidence": "Carried forward unchanged from code-review-final.json — the fix-up touched only the wiki-field handling, the health-check error routing, and tests" },
+    { "criterion": "Verified end to end against the running stack", "status": "partial", "evidence": "Still pending — Stage 7 work" }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow: commit subject format", "status": "pass", "notes": "Both fix-up commits match EPMCDME-13142: Capital sentence" },
+    { "standard": "code-quality: lint / typecheck", "status": "pass", "notes": "Clean. Typecheck caught two loose-typing issues in the new test file during the fix-up; both corrected rather than suppressed" },
+    { "standard": "code-quality: Apache-2.0 license headers", "status": "pass", "notes": "New test file carries the header; license-headers:check passes in the pre-commit hook" },
+    { "standard": "security-patterns", "status": "pass", "notes": "No change to the security surface. The url-error path now surfaces the backend's help text in the UI; that text contains no credential material" }
+  ],
+  "rationale": "All four blocking findings resolved, no new findings, so the gate approves. CR-001: health-check payload now collapses a blank wiki to undefined, matching the create request. CR-002: applyHealthCheckFieldError maps the backend's 'space' onto xwikiSpace and anchors 'url' — a credential field with no input on this form — to the integration selector, carrying the backend's /rest vs /xwiki/rest help text; both paths mutation-verified (reverting to the old direct setError call fails both tests). CR-003: the update path now sends DEFAULT_XWIKI_WIKI explicitly, since an omitted wiki means 'keep the stored value' server-side. CR-004: a new hook-level suite (9 tests) covers create omission, the full update path including the clear-to-default case, the health-check payload, and the field-error routing; the integration suite additionally asserts the serialized create and health bodies both omit wiki. No confirmation-pass lens dispatch was needed: the fix-up diff is 384 lines, mostly tests, and the one suspicion it raised was resolved by direct verification rather than deferred. That suspicion was self-inflicted scope creep — the first cut of HEALTH_CHECK_FIELD_MAP also mapped wiki_query/wiql_query, silently changing error-highlighting for Azure DevOps datasources from an xWiki ticket. Enumerating every field_error the backend can emit (space, url, git_url, svn_repo_url, jql, cql, wiki_query, wiql_query) confirmed the overreach, and the map was pulled back to the two xWiki fields with a comment recording that the other four mismatches are pre-existing and deliberately untouched. Two process notes for the record: an over-strict assertion in the first draft of the hook test (`not.toHaveProperty('wiki')` on the in-memory object, where `wiki: undefined` leaves the key present but JSON.stringify drops it) was corrected to assert wire behaviour rather than weakened; and the originally planned route-level edit-page test was dropped because ':id' routes do not resolve under the integration harness — a pre-existing harness gap, verified to affect the details page equally on main — so the edit path is covered at the hook level instead, which tests the same request-building logic more directly."
+}

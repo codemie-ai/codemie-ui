@@ -131,3 +131,54 @@ describe('editingSchema — timezone validation', () => {
     await expect(editingSchema.validate(values, { abortEarly: false })).resolves.toBeTruthy()
   })
 })
+
+describe('editingSchema — xWiki space validation', () => {
+  const baseXWiki = {
+    indexType: INDEX_TYPES.XWIKI,
+    projectName: 'test-project',
+    description: 'test description',
+    projectSpaceVisible: true,
+    isEditing: true,
+    guardrail_assignments: [],
+    setting_id: 'setting-1',
+  }
+
+  it('passes when space is provided', async () => {
+    await expect(
+      editingSchema.validate({ ...baseXWiki, xwikiSpace: 'KB' }, { abortEarly: false })
+    ).resolves.toBeTruthy()
+  })
+
+  it('fails when space is missing', async () => {
+    await expect(
+      editingSchema.validate({ ...baseXWiki, xwikiSpace: '' }, { abortEarly: false })
+    ).rejects.toThrow('Space is required')
+  })
+
+  it('treats wiki as optional — the backend defaults it to "xwiki"', async () => {
+    await expect(
+      editingSchema.validate(
+        { ...baseXWiki, xwikiSpace: 'KB', xwikiWiki: '' },
+        { abortEarly: false }
+      )
+    ).resolves.toBeTruthy()
+  })
+
+  it('requires an integration for xWiki', async () => {
+    await expect(
+      editingSchema.validate(
+        { ...baseXWiki, xwikiSpace: 'KB', setting_id: '' },
+        { abortEarly: false }
+      )
+    ).rejects.toThrow('Integration is required for this data source type')
+  })
+
+  it('does not require space for other index types', async () => {
+    await expect(
+      editingSchema.validate(
+        { ...baseValidObject, uploadedFiles: ['a.pdf'], xwikiSpace: '' },
+        { abortEarly: false }
+      )
+    ).resolves.toBeTruthy()
+  })
+})

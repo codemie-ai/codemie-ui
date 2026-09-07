@@ -203,6 +203,10 @@ export interface DataSource {
   azure_devops_work_item?: {
     wiql_query?: string
   }
+  xwiki?: {
+    space: string
+    wiki?: string
+  }
   sharepoint?: {
     site_url: string
     include_pages?: boolean
@@ -253,6 +257,10 @@ export interface DataSourceDetailsResponse {
   xray: any
   azure_devops_wiki: any
   azure_devops_work_item: any
+  xwiki?: {
+    space: string
+    wiki?: string
+  }
   sharepoint?: {
     site_url: string
     include_pages?: boolean

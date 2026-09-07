@@ -525,6 +525,24 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                   }}
                 />
               )}
+              {field.value === INDEX_TYPES.XWIKI && (
+                <IndexTypeField.XWiki
+                  {...{
+                    errors,
+                    control,
+                    projectName,
+                    hasNoSettings,
+                    isDropdownShown,
+                    filteredSettings,
+                    value: field.value,
+                    embeddingModels,
+                    onIntegrationCreated: () => {
+                      userSettingsStore.resetIsSettingsIndexed()
+                      userSettingsStore.indexSettings()
+                    },
+                  }}
+                />
+              )}
               {field.value === INDEX_TYPES.JIRA && (
                 <IndexTypeField.Jira
                   {...{

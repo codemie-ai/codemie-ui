@@ -20,6 +20,7 @@ import {
   getRootPath,
   formatScheduleDate,
   formatCompactCount,
+  humanize,
 } from '@/utils/helpers'
 
 describe('formatCompactCount', () => {
@@ -229,5 +230,21 @@ describe('formatScheduleDate', () => {
       const result = formatScheduleDate(mins(-120))
       expect(result).toMatch(/\(.+\)$/)
     })
+  })
+})
+
+describe('humanize', () => {
+  it('renders the xwiki index type as xWiki', () => {
+    expect(humanize('xwiki')).toBe('xWiki')
+  })
+
+  it('leaves the existing special cases intact', () => {
+    expect(humanize('xray')).toBe('X-ray')
+    expect(humanize('sharepoint')).toBe('SharePoint')
+    expect(humanize('svn')).toBe('SVN')
+  })
+
+  it('capitalizes each underscore-separated word by default', () => {
+    expect(humanize('azure_devops_wiki')).toBe('Azure Devops Wiki')
   })
 })

@@ -50,6 +50,7 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
   const filteredSettings = useMemo(
     () => ({
       [INDEX_TYPES.CONFLUENCE]: getSettingOptions(INDEX_TYPES.CONFLUENCE),
+      [INDEX_TYPES.XWIKI]: getSettingOptions(INDEX_TYPES.XWIKI),
       [INDEX_TYPES.JIRA]: getSettingOptions(INDEX_TYPES.JIRA),
       [INDEX_TYPES.XRAY]: getSettingOptions(INDEX_TYPES.XRAY),
       [INDEX_TYPES.GIT]: getSettingOptions(INDEX_TYPES.GIT),
@@ -114,6 +115,7 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
         indexType === INDEX_TYPES.JIRA ||
         indexType === INDEX_TYPES.XRAY ||
         indexType === INDEX_TYPES.CONFLUENCE ||
+        indexType === INDEX_TYPES.XWIKI ||
         indexType === INDEX_TYPES.GIT ||
         indexType === INDEX_TYPES.SVN ||
         indexType === INDEX_TYPES.AZURE_DEVOPS_WIKI ||

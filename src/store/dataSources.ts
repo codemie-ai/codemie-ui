@@ -299,6 +299,8 @@ export const dataSourceStore = proxy({
     options: {
       jql?: string | null
       cql?: string | null
+      space?: string | null
+      wiki?: string | null
       wikiQuery?: string | null
       wikiName?: string | null
       wiqlQuery?: string | null
@@ -314,6 +316,8 @@ export const dataSourceStore = proxy({
         setting_id: settingId,
         ...(options.jql != null && { jql: options.jql }),
         ...(options.cql != null && { cql: options.cql }),
+        ...(options.space != null && { space: options.space }),
+        ...(options.wiki != null && { wiki: options.wiki }),
         ...(options.wikiQuery != null && { wiki_query: options.wikiQuery }),
         ...(options.wikiName != null && { wiki_name: options.wikiName }),
         ...(options.wiqlQuery != null && { wiql_query: options.wiqlQuery }),
@@ -355,6 +359,10 @@ export const dataSourceStore = proxy({
 
   createKBIndexConfluence(indexConfig: any) {
     return handleIndexResponse(api.post('v1/index/knowledge_base/confluence', indexConfig))
+  },
+
+  createKBIndexXWiki(indexConfig: any) {
+    return handleIndexResponse(api.post('v1/index/knowledge_base/xwiki', indexConfig))
   },
 
   createKBIndexJIRA(

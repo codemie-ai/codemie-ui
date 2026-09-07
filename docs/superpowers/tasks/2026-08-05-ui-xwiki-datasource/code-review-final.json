@@ -1,0 +1,84 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "setting_id required in the UI for xWiki", "status": "pass", "evidence": "useEditPopupForm.ts:210 adds INDEX_TYPES.XWIKI to the required-list; covered by validation test" },
+    { "criterion": "Icon uses the IconCode fallback, no new asset", "status": "pass", "evidence": "DataSourceTypeIcon.tsx unchanged, ends in `?? IconCode`" },
+    { "criterion": "Help notes live in the credential form only", "status": "pass", "evidence": "settingsUIConfig.ts xwiki entry gains message + url note; IndexTypeXWiki.tsx carries no guidance text" },
+    { "criterion": "NEW badge on the xWiki type option", "status": "pass", "evidence": "DataSourceTypeSelector.tsx badge condition; mutation-tested (test fails when the clause is removed)" },
+    { "criterion": "Form fields named xwikiSpace / xwikiWiki, mapped to API space / wiki at request-build time", "status": "pass", "evidence": "useEditPopupForm.ts schema; useCreateIndex.ts:280-283" },
+    { "criterion": "Space input required with realistic placeholder", "status": "pass", "evidence": "IndexTypeXWiki.tsx:60-75" },
+    { "criterion": "Wiki input optional; omitted when blank so the backend default applies", "status": "pass", "evidence": "useCreateIndex.ts:282 `wiki: values.xwikiWiki || undefined` on the create path" },
+    { "criterion": "Integration for xWiki, required, auto-selected when exactly one credential exists", "status": "pass", "evidence": "IndexTypeXWiki.tsx:94-109; useEditPopup.ts filteredSettings key and auto-select list" },
+    { "criterion": "Embeddings model selector", "status": "pass", "evidence": "IndexTypeXWiki.tsx:111-118" },
+    { "criterion": "Cron schedule field shown for xWiki", "status": "pass", "evidence": "constants/dataSources.ts XWIKI added, absent from blockedReindexingIndexTypes; integration test mutation-verified" },
+    { "criterion": "Pre-create health check carries space and wiki", "status": "partial", "evidence": "Wired at useCreateIndex.ts:90 and store/dataSources.ts, but a blank Wiki is sent as empty string rather than omitted — see CR-001" },
+    { "criterion": "POST /v1/index/knowledge_base/xwiki", "status": "pass", "evidence": "store/dataSources.ts createKBIndexXWiki; switch case in useCreateIndex.ts" },
+    { "criterion": "Edit form prefills from response xwiki: { space, wiki }", "status": "pass", "evidence": "useEditPopupForm.ts resetInitFormValues" },
+    { "criterion": "Edit saves through updateKBIndex('xwiki', ...) → PUT", "status": "partial", "evidence": "Wired correctly, but clearing Wiki cannot revert to the default — see CR-003; and the whole edit path is untested — see CR-004" },
+    { "criterion": "xWiki datasources are editable", "status": "pass", "evidence": "DataSourceEditPage.tsx predicate" },
+    { "criterion": "Details view shows Space and Wiki with 'xwiki' fallback", "status": "pass", "evidence": "DataSourceDetails.tsx:528-543; unit-tested" },
+    { "criterion": "xWiki appears in the list type filter", "status": "pass", "evidence": "DataSourceFilters.tsx derives options from INDEX_TYPES automatically" },
+    { "criterion": "Full and force reindex available; incremental not", "status": "pass", "evidence": "dataSourceUtils.ts predicates + performFullReindex branch; canIncrementalReindex left unchanged; four unit tests" },
+    { "criterion": "humanize('xwiki') returns 'xWiki'", "status": "pass", "evidence": "utils/helpers.ts fifth special case; unit-tested" },
+    { "criterion": "Credential base-URL and authentication guidance", "status": "pass", "evidence": "settingsUIConfig.ts note + info message; both supported by CredentialUIMap types" },
+    { "criterion": "Six planned test specs all present", "status": "pass", "evidence": "helpers, validation, dataSourceUtils, DataSourceDetails, create-page fields/POST, scheduling — all present and passing" },
+    { "criterion": "Out of scope respected: no credential field changes, no icon asset, no backend change", "status": "pass", "evidence": "settingsUIConfig.ts adds only display-only guidance; diff is 22 files all under this repo's src/" },
+    { "criterion": "Verified end to end against the running stack", "status": "partial", "evidence": "Not yet performed — this is Stage 7 work, pending" }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow: commit subject format EPMCDME-XXXX: Capital sentence", "status": "pass", "notes": "All 8 commits on the branch match the documented regex" },
+    { "standard": "code-quality: lint / typecheck", "status": "pass", "notes": "npm run lint and npm run typecheck both clean; pre-commit hooks (eslint, prettier, tsc, license headers, gitleaks) passed on every commit" },
+    { "standard": "code-quality: Apache-2.0 license headers on new files", "status": "pass", "notes": "license-headers:check reports 0 missing across 1753 files" },
+    { "standard": "security-patterns", "status": "pass", "notes": "No secrets, auth, injection or unsafe file/process handling introduced; gitleaks clean. Credential values are unchanged and remain sensitive-flagged" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/dataSources/components/DataSourceForm/hooks/useCreateIndex.ts",
+      "line": 90,
+      "problem": "The health-check options map passes `wiki: data.xwikiWiki` unguarded, while the create path 200 lines below deliberately collapses the same value with `values.xwikiWiki || undefined`. dataSourceStore.healthCheckDatasource spreads on `options.wiki != null`, and '' != null is true, so a blank Wiki field is sent to v1/index/health as `\"wiki\": \"\"`.",
+      "impact": "Leaving Wiki blank is the documented default path (the backend defaults it to 'xwiki'). An explicit empty string overrides that default, so the pre-create health check probes wiki '' instead of 'xwiki' — a false negative that blocks creation with a confusing error. Verified: DatasourceHealthCheckRequest.wiki has no minLength, so this does not 422, but it does defeat the default.",
+      "recommendation": "Mirror the create path: `[INDEX_TYPES.XWIKI]: { space: data.xwikiSpace, wiki: data.xwikiWiki || undefined }`.",
+      "sources": ["blind", "acceptance"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/dataSources/components/DataSourceForm/hooks/useCreateIndex.ts",
+      "line": 110,
+      "problem": "On a failed health check the form calls `setError(response.error.field_error, ...)` with the backend's field name. Verified in the sibling backend at service/index/datasource_health_check_service.py:309-310: DatasourceTypes.XWIKI maps to the field name \"space\". The form registers that input as `xwikiSpace`, so setError targets a field that does not exist and no input is flagged.",
+      "impact": "When the backend rejects the space (bad space key, too many pages), the user sees only the generic health-check banner with no indication that Space is the field to fix. This is a regression relative to Confluence, whose backend field_error 'cql' matches its form field name exactly — it is the direct cost of the xwikiSpace/xwikiWiki prefixing decision.",
+      "recommendation": "Add a small backend-field → form-field map before the setError call (space → xwikiSpace, wiki → xwikiWiki) with a passthrough default, and ignore names that are not form fields. Do not revert the prefixed naming.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/dataSources/components/DataSourceForm/hooks/useCreateIndex.ts",
+      "line": 285,
+      "problem": "`wiki: values.xwikiWiki || undefined` is correct for create but wrong for the edit path, which reuses the same request object. Verified in the sibling backend at rest_api/models/index.py:776-789: `_update_xwiki_fields` applies `if wiki is not None`, so an omitted wiki means 'keep the stored value' on PUT.",
+      "impact": "Edit a datasource stored as `xwiki: { space: 'KB', wiki: 'teamwiki' }`, clear the Wiki field, save. The request omits wiki, the backend keeps 'teamwiki', and the save reports success — but the datasource keeps indexing teamwiki. Reopening the edit form repopulates 'teamwiki' with no error. The UI and the stored state silently disagree.",
+      "recommendation": "Branch the collapse on mode: keep `|| undefined` for create, and on update send the user's explicit intent — `wiki: values.xwikiWiki || 'xwiki'` — which satisfies the PUT schema's minLength-1 and actually reverts to the default.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/dataSources/__tests__/DataSourceCreatePage.integration.test.tsx",
+      "line": 244,
+      "problem": "Two non-obvious behaviours introduced by this change have no coverage: the empty-wiki-to-omitted-key collapse, and the entire xWiki edit/update path (including the `defaults?.xwiki?.space / .wiki` prefill). The POST-body test always fills Wiki in; the scheduling test leaves it blank but asserts only on cron_expression.",
+      "impact": "Changing `wiki: values.xwikiWiki || undefined` to `wiki: values.xwikiWiki` leaves the suite green while every real create with a blank Wiki sends an empty string (CR-001's failure mode, and a 422 against the create schema's minLength-1). The edit branch and prefill can break entirely without any test failing.",
+      "recommendation": "Assert `expect(body).not.toHaveProperty('wiki')` in the blank-Wiki case, and add an edit-mode test that renders with an index carrying `xwiki: { space, wiki }`, asserts the prefill, and asserts the PUT body.",
+      "sources": ["edge-case"]
+    }
+  ],
+  "rationale": "All three lenses ran against a fully readable 951-line diff with the approved spec present, so coverage is complete and confidence is high. Four major findings survived triage, all bucketed `patch` (mechanical fixes, no open design questions), which is why the decision is request-changes rather than an escalation. Three of the four cluster on one root cause: the optional `wiki` field is handled inconsistently across the three request paths it feeds (health check sends '', create omits, update omits-and-therefore-cannot-clear). CR-002 is the one genuinely new cost of the xwikiSpace/xwikiWiki naming decision — the backend's field_error contract assumes the form field is named after the API field, which holds for Confluence but not here; the fix is a small mapping, not a naming reversal. Two claims resting on the unmerged sibling backend were independently verified against ../codemie source rather than taken on trust: the XWIKI→\"space\" field_error mapping and the `if wiki is not None` update semantics. 1 finding dismissed: the blind lens flagged the NEW-badge assertion as potentially vacuous, but this was empirically refuted — reverting only the XWIKI badge clause makes that test fail, so it is correctly scoped. 0 deferred. Standards are clean: all 8 commit subjects match the documented format, lint/typecheck/license-headers/gitleaks all pass. Note that the full unit suite has 6 pre-existing failures in 4 locale-dependent files (analyticsFormatters, SkillInstructions, ReleaseNotesPage, WorkflowExecutionInfoPopup); these were confirmed to fail identically on main and are unrelated to this change. Live end-to-end verification against the running stack has not yet run — that is Stage 7."
+}

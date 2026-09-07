@@ -29,6 +29,7 @@ import {
   isLLMRoutingIndex,
   isKBIndex,
   isConfluenceIndex,
+  isXWikiIndex,
   isJiraIndex,
   isXrayIndex,
   isAzureDevOpsWikiIndex,
@@ -55,6 +56,7 @@ const DataSourceEditPage: FC = () => {
 
     if (isLLMRoutingIndex(item)) return true
     if (isConfluenceIndex(item)) return true
+    if (isXWikiIndex(item)) return true
     if (isJiraIndex(item)) return true
     if (isXrayIndex(item)) return true
     if (isAzureDevOpsWikiIndex(item)) return true

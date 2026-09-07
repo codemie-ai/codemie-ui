@@ -44,6 +44,10 @@ export const isConfluenceIndex = (info: IndexInfo): boolean => {
   return info.index_type.includes('confluence')
 }
 
+export const isXWikiIndex = (info: IndexInfo): boolean => {
+  return info.index_type.includes(INDEX_TYPES.XWIKI)
+}
+
 export const isJiraIndex = (info: IndexInfo): boolean => {
   return info.index_type.includes(INDEX_TYPES.JIRA)
 }

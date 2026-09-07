@@ -33,6 +33,7 @@ import TabsMenu from '@/components/TabsMenu/TabsMenu'
 import Tooltip from '@/components/Tooltip/Tooltip'
 import { ButtonType } from '@/constants'
 import {
+  DEFAULT_XWIKI_WIKI,
   INDEX_TYPES,
   INDEX_TYPE_CHUNK_SUMMARY,
   INDEX_TYPE_SUMMARY,
@@ -525,6 +526,22 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                       {dataSource.confluence?.cql || 'N/A'}
                     </span>
                   </div>
+                )}
+                {indexType === INDEX_TYPES.XWIKI && (
+                  <>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>Space:</span>
+                      <span className={styles.propertyValue}>
+                        {dataSource.xwiki?.space || 'N/A'}
+                      </span>
+                    </div>
+                    <div className={styles.row}>
+                      <span className={styles.propertyLabel}>Wiki:</span>
+                      <span className={styles.propertyValue}>
+                        {dataSource.xwiki?.wiki || DEFAULT_XWIKI_WIKI}
+                      </span>
+                    </div>
+                  </>
                 )}
                 {indexType === INDEX_TYPES.AZURE_DEVOPS_WIKI && (
                   <>

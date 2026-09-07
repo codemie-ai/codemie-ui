@@ -23,6 +23,7 @@ export const INDEX_TYPES = {
   GIT: 'git',
   SVN: 'svn',
   CONFLUENCE: 'confluence',
+  XWIKI: 'xwiki',
   JIRA: 'jira',
   XRAY: 'xray',
   FILE: 'file',
@@ -40,6 +41,10 @@ export const blockedReindexingIndexTypes = new Set<IndexType>([
 ])
 
 export type IndexType = (typeof INDEX_TYPES)[keyof typeof INDEX_TYPES]
+
+// Backend default for the optional xWiki `wiki` field. Sent explicitly on update,
+// where an omitted key means "keep the stored value" rather than "reset".
+export const DEFAULT_XWIKI_WIKI = 'xwiki'
 
 export const SHAREPOINT_AUTH_TYPES = {
   INTEGRATION: 'integration',

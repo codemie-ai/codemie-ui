@@ -125,3 +125,25 @@ describe('DataSourceDetails — project name display', () => {
     expect(projectValue.getAttribute('data-tooltip-content')).toBe('My Display Name')
   })
 })
+
+describe('DataSourceDetails — xWiki properties', () => {
+  const xwikiDataSource: DataSourceDetailsResponse = {
+    ...dataSource,
+    index_type: 'knowledge_base_xwiki',
+    xwiki: { space: 'KB', wiki: 'xwiki' },
+  }
+
+  it('renders the space and wiki rows', () => {
+    const { getByText } = render(<DataSourceDetails dataSource={xwikiDataSource} />)
+    expect(getByText('Space:')).toBeInTheDocument()
+    expect(getByText('KB')).toBeInTheDocument()
+    expect(getByText('Wiki:')).toBeInTheDocument()
+  })
+
+  it('falls back to the default wiki name when none is stored', () => {
+    const { getByText } = render(
+      <DataSourceDetails dataSource={{ ...xwikiDataSource, xwiki: { space: 'KB' } }} />
+    )
+    expect(getByText('xwiki')).toBeInTheDocument()
+  })
+})

@@ -26,6 +26,7 @@ import {
   isAzureDevOpsWikiIndex,
   isAzureDevOpsWorkItemIndex,
   isSharePointIndex,
+  isXWikiIndex,
   isCodeIndex,
   isProviderIndex,
   isPlatformIndex,
@@ -73,6 +74,7 @@ export const canFullReindex = (item: DataSource): boolean => {
 
   if (isLLMRoutingIndex(item)) return true
   if (isConfluenceIndex(item)) return true
+  if (isXWikiIndex(item)) return true
   if (isJiraIndex(item)) return true
   if (isXrayIndex(item)) return true
   if (isAzureDevOpsWikiIndex(item)) return true
@@ -108,6 +110,7 @@ export const canForceReindex = (item: DataSource): boolean => {
 
   if (isLLMRoutingIndex(item)) return true
   if (isConfluenceIndex(item)) return true
+  if (isXWikiIndex(item)) return true
   if (isJiraIndex(item)) return true
   if (isXrayIndex(item)) return true
   if (isAzureDevOpsWikiIndex(item)) return true
@@ -178,7 +181,9 @@ export const performFullReindex = (
     reindexMarketplace?.()
   } else if (isLLMRoutingIndex(item)) {
     reIndexKBIndex(item.index_type, item.project_name, item.repo_name)
-  } else if (isConfluenceIndex(item)) {
+  } else if (isConfluenceIndex(item) || isXWikiIndex(item)) {
+    // Type-specific fields (cql / space + wiki) are omitted deliberately: they
+    // are optional on the update schema and the backend keeps the stored values.
     updateKBIndex(
       item.index_type,
       {
