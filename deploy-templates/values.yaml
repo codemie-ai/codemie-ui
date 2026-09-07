@@ -137,3 +137,6 @@ affinity: {}
 # -- Extra config keys injected into window._env_ via ConfigMap.
 # Keys should follow the VITE_ naming convention.
 extraConfig: {}
+
+# -- Prevent Kubernetes from injecting service environment variables into pods.
+enableServiceLinks: false
