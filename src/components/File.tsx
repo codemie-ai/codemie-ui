@@ -121,7 +121,7 @@ const File: FC<FileProps> = ({
           className={iconButtonClasses}
           onClick={handleRemoveClick}
         >
-          <BasketSvg />
+          <BasketSvg aria-hidden="true" />
         </button>
       )}
 

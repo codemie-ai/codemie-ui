@@ -60,6 +60,7 @@ export const FileList: FC<FileListProps> = ({
             <FileListItem
               key={displayableUploadedFile.key}
               fileName={displayableUploadedFile.fileName}
+              fileKind="uploaded"
               onRemove={() => {
                 onUploadedFileRemove?.(displayableUploadedFile.fileName, index)
               }}
@@ -70,6 +71,7 @@ export const FileList: FC<FileListProps> = ({
             <FileListItem
               key={displayableFile.key}
               fileName={displayableFile.fileName}
+              fileKind="selected"
               onRemove={() => {
                 removeFile(index)
               }}

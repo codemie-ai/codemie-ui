@@ -20,26 +20,30 @@ import FileSvg from '@/assets/icons/file.svg?react'
 
 type Props = {
   fileName: string
+  // Distinguishes the two sections of the list so that an already-uploaded file and a
+  // newly selected one sharing a name still get distinct accessible names — removing them
+  // has materially different consequences.
+  fileKind?: 'uploaded' | 'selected'
   onRemove: () => void
 }
 
-const FileListItem: FC<Props> = ({ fileName, onRemove }) => {
+const FileListItem: FC<Props> = ({ fileName, fileKind = 'selected', onRemove }) => {
   return (
     <div className="flex items-center justify-between gap-2 px-3 py-2 bg-surface-base-content rounded-lg border border-border-primary">
       <div className="flex items-center gap-2 min-w-0">
-        <FileSvg className="size-4 flex-shrink-0 text-text-quaternary" />
+        <FileSvg aria-hidden="true" className="size-4 flex-shrink-0 text-text-quaternary" />
         <span className="text-sm text-text-primary truncate">{fileName}</span>
       </div>
       <button
         type="button"
-        aria-label={`Remove file ${fileName}`}
-        className="cursor-pointer flex-shrink-0 text-text-quaternary hover:text-text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-accent rounded-sm"
+        aria-label={`Delete ${fileKind} file ${fileName}`}
+        className="cursor-pointer flex-shrink-0 text-text-quaternary hover:text-text-primary rounded-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--colors-border-accent))]"
         onClick={(e) => {
           e.stopPropagation()
           onRemove()
         }}
       >
-        <XMarkSvg className="size-4" />
+        <XMarkSvg aria-hidden="true" className="size-4" />
       </button>
     </div>
   )

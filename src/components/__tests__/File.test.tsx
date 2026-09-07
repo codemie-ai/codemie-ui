@@ -52,12 +52,22 @@ vi.mock('@/assets/icons/download.svg?react', () => ({
   default: () => <svg data-testid="download-icon">Download</svg>,
 }))
 
+// These two forward their props so that assertions on aria-hidden reflect the real
+// SVGR behaviour instead of passing vacuously against a prop-swallowing stub.
 vi.mock('@/assets/icons/file.svg?react', () => ({
-  default: () => <svg data-testid="file-icon">File</svg>,
+  default: (props: Record<string, unknown>) => (
+    <svg data-testid="file-icon" {...props}>
+      File
+    </svg>
+  ),
 }))
 
 vi.mock('@/assets/icons/delete.svg?react', () => ({
-  default: () => <svg data-testid="basket-icon">Basket</svg>,
+  default: (props: Record<string, unknown>) => (
+    <svg data-testid="basket-icon" {...props}>
+      Basket
+    </svg>
+  ),
 }))
 
 vi.mock('@/assets/icons/chevron-down.svg?react', () => ({
@@ -133,6 +143,12 @@ describe('File', () => {
     it('shows remove button when withDelete is true', () => {
       render(<File file={mockDocFile} withDelete onRemove={vi.fn()} />)
       expect(screen.getByLabelText('Remove attached file')).toBeInTheDocument()
+    })
+
+    it('hides the remove button icon from assistive technologies', () => {
+      render(<File file={mockDocFile} withDelete onRemove={vi.fn()} />)
+
+      expect(screen.getByTestId('basket-icon')).toHaveAttribute('aria-hidden', 'true')
     })
 
     it('does not show remove button when withDelete is false', () => {

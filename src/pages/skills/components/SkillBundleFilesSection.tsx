@@ -267,7 +267,7 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
                           onClick={() => handleRemoveFile(file.path)}
                           aria-label={`Remove ${getBundleFileName(file.path)}`}
                         >
-                          <CrossSvg className="size-4" />
+                          <CrossSvg aria-hidden="true" className="size-4" />
                         </Button>
                       </div>
                     ))}

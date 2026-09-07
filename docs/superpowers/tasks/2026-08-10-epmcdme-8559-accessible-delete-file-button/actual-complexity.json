@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "task": "EPMCDME-8559 — make the FilesDropzone remove-file control a real accessible Button (role, per-file accessible name, keyboard focus ring, focus restoration after removal) and mark decorative icons aria-hidden on the other file-delete controls.",
+  "generated": "2026-08-10",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 14,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "8 files changed across 3 directories (src/components, src/components/form/FilesDropzone/components, src/pages/skills/components). No new production files; 4 of the 8 are test files carrying 18 new tests, so the raw file count overstates production scope — actual production delta is ~45 lines in File.tsx, FileList.tsx, FileListItem.tsx and SkillBundleFilesSection.tsx."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The WCAG success criteria (4.1.2 name/role/value, 1.1.1 non-text content) are precise, but the ticket did not enumerate the follow-on obligations that two rounds of code review surfaced (4 major findings): visible focus ring, focus restoration after row removal, and section-qualified accessible names so an uploaded and a newly selected file with the same name stay distinguishable. Scope grew after the first implementation pass."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Base risk is low — the shared Button component and aria-label conventions already existed, and every change is trivially reversible. The only non-boilerplate logic is the focus-restoration effect in FileList, which reads live DOM buttons via listRef.querySelectorAll and clamps a pending index against the re-rendered row count; it is index-based rather than ref-based and depends on the delete buttons being the only buttons inside the list container. Bumped one tier for the accessibility-compliance driver."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Four UI components touched (FileListItem gains a fileKind prop, FileList gains focus state, File.tsx and SkillBundleFilesSection get aria-hidden on decorative icons). All presentational, single layer, no shared contract broken."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S (2) to M (3): accessibility-compliance requirement (WCAG 4.1.2 / 1.1.1 conformance is the reason for the ticket)."
+  ],
+  "split_recommendation": null
+}

@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "Targeted re-check of the four blocking findings from code-review-final.json against the fix-up diff (9a099bc..d19e6c9, 8 files, +167/-17). All four are resolved, each with a test that was observed failing first. No full lens fan-out was re-run. One suspicion was examined on the fix-up diff itself — the new focus-management effect in FileList could in principle steal focus on an unrelated re-render — and was refuted by reading the code: pendingFocusIndex is only ever set inside a row's onRemove handler and is cleared by the effect that consumes it, so no other render path can trigger a focus() call. CR-003 is resolved for every case where a row remains; the empty-list case is explicitly out of reach and recorded as a follow-up (the drop area contains no focusable element at all — its file input is display:none and the dropzone is a plain div without tabIndex, so adding files is currently mouse-only).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "Delete control exposes role=button (WCAG 4.1.2)", "status": "pass", "evidence": "Carried forward from code-review-final.json; unchanged by the fix-up."},
+    {"criterion": "Control has an accessible name", "status": "pass", "evidence": "Carried forward; the name is now section-qualified (see CR-004)."},
+    {"criterion": "The X image is hidden from assistive technologies", "status": "pass", "evidence": "Carried forward."},
+    {"criterion": "Decorative file icon also hidden (WCAG 1.1.1)", "status": "pass", "evidence": "Carried forward."},
+    {"criterion": "Control is Tab-reachable and keyboard-operable", "status": "pass", "evidence": "Carried forward."},
+    {"criterion": "Repo guide: visible focus ring (mandatory checklist item)", "status": "pass", "evidence": "Upgraded from partial by CR-001: focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-border-accent, asserted in FileListItem.test.tsx."},
+    {"criterion": "'For ALL delete file buttons' (ticket Notes/Reproduce)", "status": "pass", "evidence": "Upgraded from partial by CR-002: aria-hidden added to BasketSvg in File.tsx and CrossSvg in SkillBundleFilesSection.tsx, each covered by a test that failed first."},
+    {"criterion": "Guide 'Icon Button Pattern' reuse", "status": "pass", "evidence": "Carried forward."},
+    {"criterion": "Plan followed; local gates green", "status": "pass", "evidence": "Post-fix gates: lint clean, typecheck clean, unit 4185 passed (366 files, +8 tests), integration 468 passed 1 skipped."}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow.md commit format", "status": "pass", "notes": "Third commit follows the same EPMCDME-8559: <subject> form."},
+    {"standard": "accessibility-patterns.md icon-button pattern", "status": "pass", "notes": "Carried forward."},
+    {"standard": "accessibility-patterns.md visible focus indicator (mandatory)", "status": "pass", "notes": "Was fail in the final round; resolved by CR-001."},
+    {"standard": "code-quality.md", "status": "pass", "notes": "Apache-2.0 headers on the new test file; lint and typecheck clean."},
+    {"standard": "security-patterns.md", "status": "na", "notes": "No security surface in the diff."}
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "src/components/form/FilesDropzone/components/FileListItem.tsx — focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--colors-border-accent))]. Test 'gives the remove button a visible focus indicator' asserts the classes and was observed failing first. IMPORTANT correction to the first attempt: the fix originally copied the repo's house style (focus:outline-none + focus-visible:ring-2 + ring colour) and that version was verified in a real browser to render NOTHING — the computed ring resolved to three fully transparent box-shadow layers while focus:outline-none had suppressed the UA outline, so the control ended up with a *less* visible focus state than before the fix. Probing the live page showed ring colours do not resolve anywhere in this project: even a core ring-red-500 computes transparent, because the Tailwind palette is replaced by CSS-variable design tokens and --tw-ring-color is never set. The shipped version therefore styles the outline instead, bound directly to the theme token, and was confirmed in the browser: after Tab the computed style is 'outline: auto 2px rgb(0, 122, 255)', matching --colors-border-accent, and the ring is clearly visible in the After screenshot."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "evidence": "aria-hidden=\"true\" added to BasketSvg (src/components/File.tsx) and CrossSvg (src/pages/skills/components/SkillBundleFilesSection.tsx). Both are covered by tests that failed first. Note the icon mocks in File.test.tsx were changed to forward props — without that the assertion would have passed vacuously against a prop-swallowing stub, exactly the trap the edge-case lens flagged. Scope held to the two delete controls named in the finding; the chevron/preview icons in File.tsx are different controls and were left alone."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "evidence": "src/components/form/FilesDropzone/components/FileList.tsx now records the removed row's index and, after the re-render, focuses the delete button at that index (clamped to the last remaining row, which yields the previous row when the tail was removed). Two tests, both observed failing first: 'moves focus to the next remaining delete button after a row is removed' and 'falls back to the previous row when the last row is removed'. Known limit, recorded as a follow-up rather than silently dropped: when the final row is removed the list unmounts and there is no focusable fallback in the drop area, so focus returns to <body>."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "evidence": "Resolved per the user's decision (distinguish sections): FileListItem takes a fileKind prop ('uploaded' | 'selected', default 'selected') and renders aria-label={`Delete ${fileKind} file ${fileName}`}; FileList passes it explicitly for each section. Test 'distinguishes an uploaded row from a selected row that share a file name' asserts two distinct accessible names for two files literally named spec.pdf, and was observed failing first. Residual, accepted with the decision: two files with the same name inside the same section still share a name — but their removal is then equivalent, so the dangerous asymmetry the finding described is gone."
+    }
+  ],
+  "findings": []
+}
