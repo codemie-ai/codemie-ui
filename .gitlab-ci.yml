@@ -14,8 +14,18 @@ workflow:
 stages:
   - pre-ci-guard
 
+no-op:
+  stage: pre-ci-guard
+  script:
+    - echo "Skipping CI guards for non-main target branch"
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME != "main"'
+
 wait-ci-init:
   extends: .wait-ci-init-template
+
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
 
   variables:
     EXPECTED_CONTEXTS: |
