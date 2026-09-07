@@ -60,4 +60,15 @@ describe('PageLayout', () => {
     expect(screen.getByText('Test Title')).toBeInTheDocument()
     expect(screen.queryByText('undefined')).not.toBeInTheDocument()
   })
+
+  it('exposes the main landmark as the skip-link target', () => {
+    render(
+      <PageLayout title="Test Title">
+        <div>Content</div>
+      </PageLayout>
+    )
+    const main = screen.getByRole('main')
+    expect(main).toHaveAttribute('id', 'main-content')
+    expect(main).toHaveAttribute('tabIndex', '-1')
+  })
 })

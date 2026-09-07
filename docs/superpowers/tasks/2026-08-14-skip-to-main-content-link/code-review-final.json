@@ -1,0 +1,61 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance lens: all 10 criteria pass (0 fail/partial). Standards: git-workflow pass (all 5 commits match 'EPMCDME-8581: Capital sentence'; branch name conforms); code-quality/security guides absent in repo, no concrete security issues found (na). Triage: 1 patch finding (CR-001, major) — SkipLink's #main-content target does not exist in the DOM while the app shows the loading/auth spinner, so the skip link silently no-ops during that window. 2 decision_needed findings (CR-002, CR-003) on cross-browser focus-shift robustness and focus vs focus-visible styling, both legitimate but debatable design calls outside the approved spec's explicit scope. 6 findings dismissed as speculative or confirmed unfounded (provider-ordering assumption verified false via direct source read of OnboardingProvider/PrimeReactProvider/UnsavedChangesProvider; id-uniqueness and nested-landmark concerns speculative with no concrete evidence; RTL class-string assertions and multi-line className formatting are non-blocking style/tooling nits; stale routing-patterns.md guide is pre-existing documentation drift unrelated to this diff). 1 finding deferred: StandaloneLayout.tsx (auth pages) intentionally left without a skip link/main landmark per the approved spec's scope boundary, but no follow-up ticket ID is recorded anywhere in the diff or spec — worth tracking before this is forgotten.",
+  "follow_ups": [
+    "Fix CR-001 before merge: guard SkipLink so its target reliably exists, or make it inert until the app has finished its initial auth/config load",
+    "Decide CR-002: whether to add a JS focus() fallback (onClick handler) for cross-browser/Safari robustness, given jsdom cannot exercise native hash-navigation focus behavior in the existing test",
+    "Decide CR-003: whether to switch focus: to focus-visible: so the skip link only appears on keyboard focus",
+    "Track StandaloneLayout.tsx's deferred WCAG 2.4.1 fix with an actual follow-up ticket ID"
+  ],
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "SkipLink component renders an anchor with href=\"#main-content\" and the exact copy/classes specified in spec", "status": "pass"},
+    {"criterion": "App.tsx renders SkipLink as the first child, before Banner/ToastContainer", "status": "pass"},
+    {"criterion": "PageLayout.tsx's <main> gains id=\"main-content\" and tabIndex={-1}", "status": "pass"},
+    {"criterion": "PageLayout remains the sole production <main> landmark", "status": "pass"},
+    {"criterion": "StandaloneLayout.tsx is untouched (out of scope per spec)", "status": "pass"},
+    {"criterion": "No .eslintrc.cjs changes", "status": "pass"},
+    {"criterion": "No axe/jest-axe test infrastructure added (not required by spec)", "status": "pass"},
+    {"criterion": "New SkipLink test matches spec's stated assertions", "status": "pass"},
+    {"criterion": "Extended PageLayout test is a superset of what spec asked", "status": "pass"},
+    {"criterion": "No new App.tsx test added (matches spec's explicit rationale)", "status": "pass"}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow", "status": "pass", "notes": "All 5 commits (e1bba0c4f, 44be5c3c3, e68e82f3e, 8e02b393c, 862f8d9d5) match 'EPMCDME-8581: Capital sentence'; branch 'EPMCDME-8581_skip-to-main-content-link' matches the documented pattern."},
+    {"standard": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md does not exist in this repo; not required by the review bundle."},
+    {"standard": "security", "status": "na", "notes": ".ai-run/guides/development/security-patterns.md does not exist in this repo; diff is static markup/id/tabIndex additions with no user input or injection surface, no concrete security issue found."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "location": "src/App.tsx:64-80",
+      "problem": "SkipLink is rendered unconditionally as the first child of UnsavedChangesProvider, but its href=\"#main-content\" target only exists once a routed page renders PageLayout's <main> under <Outlet>, which itself requires `user` to be truthy. While `!user || !isConfigFetched` (the initial load / unauthenticated window), the app renders only the Spinner — #main-content does not exist in the DOM.",
+      "impact": "A keyboard or screen-reader user who tabs to and activates the skip link during app load or before authentication gets no effect: focus stays put and nothing happens, defeating the WCAG 2.4.1 mechanism this ticket exists to add, for the entire duration of that window.",
+      "recommendation": "Guard SkipLink so it only renders (or its href/behavior is meaningful) once the main landmark can exist — e.g. render it only when `user && isConfigFetched`, or add an onClick handler that no-ops gracefully when the target is absent.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-002",
+      "triage": "decision_needed",
+      "severity": "major",
+      "location": "src/components/SkipLink/SkipLink.tsx:18-27",
+      "problem": "SkipLink relies solely on native anchor fragment navigation plus tabIndex={-1} on the target to shift focus; there is no onClick handler calling .focus() explicitly. Some browsers (notably a documented history in Safari) do not move focus to non-form elements via hash navigation even with tabindex=-1. No automated test exercises the actual focus-shift because jsdom does not implement native hash-navigation focus behavior — the existing tests only assert static attributes/classes.",
+      "impact": "If the assumption doesn't hold in a currently-supported browser, the skip link's core mechanism (moving focus past repeated blocks) silently fails for those users, and no test would catch it.",
+      "recommendation": "Decide whether to add an explicit onClick handler (`preventDefault` + `document.getElementById('main-content')?.focus()`) for cross-browser robustness, which would also make the focus-shift directly unit-testable in jsdom.",
+      "sources": ["blind", "edge-case"]
+    },
+    {
+      "id": "CR-003",
+      "triage": "decision_needed",
+      "severity": "major",
+      "location": "src/components/SkipLink/SkipLink.tsx:21-23",
+      "problem": "The visibility classes use `focus:not-sr-only` rather than `focus-visible:not-sr-only`, so the link becomes visible on any focus event (including a stray `.focus()` call or non-keyboard focus), not only keyboard-driven focus.",
+      "impact": "The skip link can visibly flash into view for interactions where a keyboard-only affordance isn't expected, which is a minor but real deviation from current skip-link UX best practice.",
+      "recommendation": "Decide whether to switch to `focus-visible:` classes to restrict visibility to keyboard-driven focus, matching modern skip-link conventions.",
+      "sources": ["blind"]
+    }
+  ]
+}

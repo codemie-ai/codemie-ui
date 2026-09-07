@@ -28,6 +28,7 @@ import FloatingKataWindow from '@/components/FloatingKataWindow'
 import { HelpPanel } from '@/components/HelpLauncher'
 import Navigation from '@/components/Navigation/Navigation'
 import { OnboardingProvider } from '@/components/Onboarding'
+import SkipLink from '@/components/SkipLink/SkipLink'
 import Spinner from '@/components/Spinner'
 import { primeReactPtOptions } from '@/constants/theme'
 import { useHistoryStack } from '@/hooks/appLevel/useHistoryStack'
@@ -64,6 +65,7 @@ const App: React.FC = () => {
     <PrimeReactProvider value={primeReactPtOptions}>
       <OnboardingProvider>
         <UnsavedChangesProvider>
+          {user && isConfigFetched && <SkipLink />}
           <Banner />
           <ToastContainer />
 

@@ -64,6 +64,8 @@ const PageLayout = ({
 
   return (
     <main
+      id="main-content"
+      tabIndex={-1}
       className="flex w-full h-full min-w-0 bg-surface-base-primary bg-contain bg-no-repeat bg-bottom"
       style={{
         backgroundImage: !isDark && isContentGradientEnabled ? `url(${contentGradient})` : 'none',
