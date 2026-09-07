@@ -59,8 +59,8 @@ const reduceAssistantPolicies = (policies: (ToolCallPolicy | undefined)[]): Tool
  * only writes to local state and gets flushed to the server after the chat is
  * created (see chatGeneration.ts).
  */
-export function useToolPermissions(): ToolPermissionsState {
-  const enabled = isFeatureEnabled(FEATURE_FLAGS.TOOL_PERMISSIONS)
+export function useToolPermissions(isWorkflow: boolean = false): ToolPermissionsState {
+  const enabled = !isWorkflow && isFeatureEnabled(FEATURE_FLAGS.TOOL_PERMISSIONS)
   const { currentChat, isNewChat } = useSnapshot(chatsStore)
   const { defaultAssistant } = useSnapshot(assistantsStore)
 

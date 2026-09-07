@@ -151,7 +151,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
     }
   }, [canAttachFiles, files.length])
 
-  const toolPermissions = useToolPermissions()
+  const toolPermissions = useToolPermissions(currentChat?.isWorkflow)
   const { isPremiumActive } = usePremiumModelTip()
 
   let promptMode: PromptMode = PROMPT_MODES.DEFAULT
