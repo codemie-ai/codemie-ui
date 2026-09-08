@@ -1,5 +1,71 @@
 [
 {
+  "version": "2.48.0",
+  "date": "2026-09-08",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "xWiki space ingestion and indexing",
+          "description": "Added support for connecting user-specified xWiki Spaces as data sources for ingestion and indexing.",
+          "issues": [{"key":"EPMCDME-13142","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-13142"}]
+        },
+        {
+          "title": "AWS Bedrock Grok 4.6",
+          "description": "Added support for running the xAI Grok 4.6 model via AWS Bedrock in CodeMie.",
+          "issues": [{"key":"EPMCDME-14422","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14422"}]
+        },
+        {
+          "title": "Gemini 3.8 Flash",
+          "description": "Added Gemini 3.8 Flash as an available LLM option in CodeMie.",
+          "issues": [{"key":"EPMCDME-14699","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14699"}]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Platform-managed conversation finishing and bulk operations",
+          "description": "Introduced platform-enforced conversation completion with Bulk API support.",
+          "issues": [{"key":"EPMCDME-11067","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-11067"}]
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Workflow chat permission handling",
+          "description": "Fixed an incorrect \"Assistant not found\" message shown in workflow chats when tool permissions are enabled.",
+          "issues": [{"key":"EPMCDME-14723","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14723"}]
+        },
+        {
+          "title": "Project budget reset accuracy",
+          "description": "Fixed project budget resets so member period spending is cleared correctly.",
+          "issues": [{"key":"EPMCDME-13567","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-13567"}]
+        },
+        {
+          "title": "Accessibility improvements",
+          "description": "Improved keyboard navigation and file-control accessibility.",
+          "issues": [{"key":"EPMCDME-8581","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8581"},{"key":"EPMCDME-8559","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8559"}]
+        },
+        {
+          "title": "Security remediation",
+          "description": "Included security hardening updates.",
+          "issues": []
+        },
+        {
+          "title": "Internal quality improvements",
+          "description": "Included internal maintenance and test-stability improvements.",
+          "issues": []
+        }
+      ]
+    }
+  ]
+},
+{
   "version": "2.47.0",
   "date": "2026-09-07",
   "sections": [
