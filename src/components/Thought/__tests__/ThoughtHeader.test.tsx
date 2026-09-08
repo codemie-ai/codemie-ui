@@ -303,4 +303,23 @@ describe('ThoughtHeader', () => {
     const inputText = screen.getByText('Search query here')
     expect(inputText).toHaveAttribute('title', 'Search query here')
   })
+
+  it('displays the backend-provided routed_model_label when available', () => {
+    const thought = createMockThought({
+      routing: {
+        routed_model: 'anthropic.claude-sonnet-4-6-v1',
+        routed_model_label: 'Claude Sonnet 4.6',
+      },
+    })
+    render(<ThoughtHeader thought={thought} setIsExpanded={mockSetIsExpanded} />)
+    expect(screen.getByText('— Claude Sonnet 4.6')).toBeInTheDocument()
+  })
+
+  it('falls back to the raw routed_model when no label is provided', () => {
+    const thought = createMockThought({
+      routing: { routed_model: 'claude-sonnet-4-6' },
+    })
+    render(<ThoughtHeader thought={thought} setIsExpanded={mockSetIsExpanded} />)
+    expect(screen.getByText('— claude-sonnet-4-6')).toBeInTheDocument()
+  })
 })

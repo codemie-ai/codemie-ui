@@ -62,6 +62,13 @@ export enum FeedbackType {
   Other = 'Other',
 }
 
+export interface RoutingInfo {
+  routed_model?: string | null
+  routed_model_label?: string | null
+  classifier_cost_usd?: number | null
+  requested_model_money_spent?: number | null
+}
+
 export interface ChatAssistant {
   id: string
   name: string
@@ -111,6 +118,7 @@ export interface Thought {
   aborted?: boolean
   parent_id?: string
   content?: string
+  routing?: RoutingInfo | null
 }
 
 export interface UserMark {
@@ -243,6 +251,7 @@ export interface ChatMetrics {
   total_input_tokens: number
   total_output_tokens: number
   total_money_spent: number
+  total_classifier_cost_usd?: number
 }
 
 export interface ChatShareResult {
@@ -275,6 +284,7 @@ export interface ThoughtBackend {
   error?: boolean
   interrupted?: boolean
   aborted?: boolean
+  routing?: RoutingInfo | null
 }
 
 export interface HistoryItemBackend {

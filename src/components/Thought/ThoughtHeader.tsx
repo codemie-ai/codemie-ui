@@ -72,6 +72,8 @@ const ThoughtHeader: FC<ThoughtHeaderProps> = ({
 }) => {
   const AuthorIcon = thought.author_type === ThoughtAuthorType.Assistant ? AssistantSvg : ToolSvg
   const toolName = thought.author_name?.trim() ?? thought.tool_name?.trim() ?? 'Tool'
+  const routedModelLabel =
+    thought.routing?.routed_model_label || thought.routing?.routed_model || null
 
   return (
     <button
@@ -104,6 +106,9 @@ const ThoughtHeader: FC<ThoughtHeaderProps> = ({
 
       <div aria-hidden="true" className="truncate font-medium text-sm select-none">
         {toolName}
+        {routedModelLabel && (
+          <span className="text-text-quaternary text-xs ml-2">— {routedModelLabel}</span>
+        )}
       </div>
 
       {thought.input_text && (

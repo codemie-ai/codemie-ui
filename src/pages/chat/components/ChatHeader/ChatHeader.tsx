@@ -157,11 +157,18 @@ const ChatHeader: FC = () => {
                   title="Usage details"
                   subtitle="Chat totals, auto-updated"
                   data={() => getMetrics(currentChat.id)}
-                  render={(data) => ({
-                    'Input tokens used': data.total_input_tokens ?? 0,
-                    'Output tokens used': data.total_output_tokens ?? 0,
-                    'Money spent (approx)': `$${data.total_money_spent?.toFixed(4) ?? '0'}`,
-                  })}
+                  render={(data) => {
+                    const rows: Record<string, string | number> = {
+                      'Input tokens used': data.total_input_tokens ?? 0,
+                      'Output tokens used': data.total_output_tokens ?? 0,
+                      'Money spent (approx)': `$${data.total_money_spent?.toFixed(4) ?? '0'}`,
+                    }
+                    const classifierCost = data.total_classifier_cost_usd
+                    if (classifierCost) {
+                      rows['Classifier cost'] = `$${classifierCost.toFixed(4)}`
+                    }
+                    return rows
+                  }}
                 />
               )}
 

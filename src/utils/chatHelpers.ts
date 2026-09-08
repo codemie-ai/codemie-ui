@@ -164,6 +164,7 @@ function transformHistoryGroup(
             aborted: preserveProgress
               ? thought.aborted ?? false
               : (thought.aborted ?? false) || (thought.in_progress ?? false),
+            routing: thought.routing ?? null,
           }))
         : [],
       assistantId: assistantItem.assistantId,

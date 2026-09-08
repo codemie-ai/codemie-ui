@@ -1534,6 +1534,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       existingThought.error = thought.error ?? existingThought.error
       existingThought.interrupted = thought.interrupted ?? existingThought.interrupted
       existingThought.aborted = thought.aborted ?? existingThought.aborted
+      existingThought.routing = thought.routing ?? existingThought.routing
     } else {
       let existingParentThought = historyItem.thoughts.find((item) => {
         return item.id === thought.parent_id
