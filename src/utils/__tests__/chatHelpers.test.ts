@@ -43,7 +43,7 @@ describe('transformChatBEtoFE', () => {
     expect(result.id).toEqual('123')
   })
 
-  it('maps thought in_progress:true to interrupted:true in history', () => {
+  it('maps thought in_progress:true to aborted:true in history', () => {
     const chat: ChatBackend = {
       id: '1',
       conversation_name: 'Test',
@@ -62,7 +62,8 @@ describe('transformChatBEtoFE', () => {
       ],
     }
     const result = transformChatBEtoFE(chat)
-    expect(result.history[0]![0]!.thoughts![0]!.interrupted).toBe(true)
+    expect(result.history[0]![0]!.thoughts![0]!.aborted).toBe(true)
+    expect(result.history[0]![0]!.thoughts![0]!.interrupted).toBe(false)
     expect(result.history[0]![0]!.thoughts![0]!.in_progress).toBe(false)
   })
 
