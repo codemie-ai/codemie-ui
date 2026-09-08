@@ -34,6 +34,8 @@ import Markdown from '@/components/markdown/Markdown'
 import Thought from '@/components/Thought/Thought'
 import { ButtonSize, ButtonType } from '@/constants'
 import { AvatarType } from '@/constants/avatar'
+import { WORKFLOW_PROGRESS_RESTORE_FAILED_MESSAGE } from '@/constants/chats'
+import { WORKFLOW_FINAL_STATUSES, WORKFLOW_STATUSES } from '@/constants/workflows'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
@@ -174,6 +176,19 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   }
 
   const isInProgress = message.inProgress
+  const hasMcpAuthPrompt = Boolean(message.mcpAuthPromptRows?.length)
+  const markdownContent = message.stream?.getStream() ?? message.response
+  const isTerminalExecution =
+    !!message.executionStatus && WORKFLOW_FINAL_STATUSES.includes(message.executionStatus)
+  const showRestoreFailed =
+    !!currentChat?.isWorkflow &&
+    !isInProgress &&
+    !isEditing &&
+    !hasMcpAuthPrompt &&
+    !message.thoughts?.length &&
+    !markdownContent &&
+    message.executionStatus !== WORKFLOW_STATUSES.RUNNING &&
+    !isTerminalExecution
 
   const processingTime = useMemo(() => {
     return message.processingTime == null ? null : message.processingTime.toFixed(2)
@@ -293,7 +308,9 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
               <>
                 <Markdown
                   className="mt-4"
-                  content={message.stream?.getStream() ?? message.response}
+                  content={
+                    showRestoreFailed ? WORKFLOW_PROGRESS_RESTORE_FAILED_MESSAGE : markdownContent
+                  }
                 />
                 {message.loginUrl && (
                   <Button

@@ -1,0 +1,97 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001, CR-002, and CR-003 are resolved in the fix-up: poll also enables on in_progress thoughts, refresh keeps a non-empty local response when GET is empty, and restore-failed copy skips terminal execution statuses. No new high-risk issue in the fix-up. Tests cover all three.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "After reloading during or after workflow execution, the UI restores and displays the correct workflow execution progress/status.",
+      "status": "pass",
+      "notes": "transformHistoryGroup preserves in_progress/inProgress when executionStatus is In Progress; ChatPage polls GET and patches in place."
+    },
+    {
+      "kind": "story-ac",
+      "item": "The answer / progress UI is not empty when execution state, progress, partial output, final result, or error information exists (or can be loaded from available APIs).",
+      "status": "pass",
+      "notes": "Thought cards and Thinking… restored on hydrate; poll copies response/thoughts."
+    },
+    {
+      "kind": "story-ac",
+      "item": "If execution state cannot be restored, show a clear user-facing message instead of a blank answer node.",
+      "status": "partial",
+      "notes": "Restore-failed copy is implemented but also fires for any empty finished workflow turn (no executionStatus/thoughts/response gate)."
+    },
+    {
+      "kind": "story-ac",
+      "item": "For the repro (send message → reload mid-run), the user can see the in-progress step and then subsequent results/steps as the run continues.",
+      "status": "pass",
+      "notes": "getChat snapshot plus 4s conversation poll while status is In Progress."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Non-workflow cut streams still hydrate as interrupted.",
+      "status": "pass",
+      "notes": "Existing remap and test retained when preserveProgress is false."
+    },
+    {
+      "kind": "story-ac",
+      "item": "No regression for normal workflow execution without page reload.",
+      "status": "partial",
+      "notes": "Post-stream refreshWorkflowExecutionIds now overwrites response/inProgress; a lagging In Progress GET can wipe the streamed answer and reopen Thinking."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Cover with unit tests (TDD per SDLC); note manual verification for full reload UX.",
+      "status": "pass",
+      "notes": "Unit tests for transform, in-place patch, poll lifecycle, empty-state; reload UX noted as manual."
+    },
+    {
+      "kind": "spec",
+      "item": "Poll while executionStatus === In Progress; optional old-BE fallback isWorkflow + executionId + thought.in_progress.",
+      "status": "partial",
+      "notes": "Hydrate implements the fallback; useWorkflowExecutionPoll only keys off executionStatus === RUNNING, so old-BE hydrate never starts polling."
+    },
+    {
+      "kind": "spec",
+      "item": "No SSE rejoin; poll via chatsStore only; 4000ms usePolling; snake_case thoughts.",
+      "status": "pass",
+      "notes": "Hook calls refreshWorkflowExecutionIds only; interval 4000; thought fields unchanged."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All four commits match EPMCDME-14075: Capital sentence (no trailing period)."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md in this repo."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Reuses existing authenticated GET v1/conversations/{id}; no new secrets, injection, or auth bypass. Restore-failed string is a constant, not user-controlled."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "hasInProgressExecution now also matches thoughts.some(in_progress); test covers missing executionStatus."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "keepLocalResponse retains non-empty local response and forces inProgress false when GET message is empty."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "showRestoreFailed skips RUNNING and WORKFLOW_FINAL_STATUSES; succeeded empty turn test added."
+    }
+  ]
+}

@@ -55,6 +55,7 @@ import { useChatInitialPrompt } from './hooks/useChatInitialPrompt'
 import { useChatNavigation } from './hooks/useChatNavigation'
 import { useChatPromptResize } from './hooks/useChatPromptResize'
 import { usePremiumModelTip } from './hooks/usePremiumModelTip'
+import { useWorkflowExecutionPoll } from './hooks/useWorkflowExecutionPoll'
 
 const ChatPage: FC = () => {
   const {
@@ -120,6 +121,8 @@ const ChatPage: FC = () => {
       chatsStore.newChatParams = null
     }
   }, [chatId])
+
+  useWorkflowExecutionPoll(chatId)
 
   useChatAuthCallbacks(currentChat)
 

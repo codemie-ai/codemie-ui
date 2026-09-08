@@ -661,6 +661,203 @@ describe('chatGenerationStore', () => {
 
       expect(mockToasterError).not.toHaveBeenCalled()
     })
+
+    it('freezes in-progress workflow progress on the open chat even without a live stream', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const historyItem = createHistoryItem({
+        inProgress: true,
+        executionStatus: 'In Progress',
+        thoughts: [{ id: 's1', message: 'running', in_progress: true }],
+      })
+      const chat = createChat(historyItem)
+      chat.isWorkflow = true
+      mockChatsStore.currentChat = chat
+
+      chatGenerationStore.stopChatGeneration('chat-1')
+
+      expect(historyItem.generationStopped).toBe(true)
+      expect(historyItem.inProgress).toBe(false)
+      expect(historyItem.stream).toBeFalsy()
+      expect(historyItem.thoughts).toEqual([])
+      expect(mockToasterError).toHaveBeenCalledWith(GENERATION_CANCELLED_MESSAGE)
+    })
+
+    it('drops the in-progress workflow step on Stop and keeps completed steps', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const historyItem = createHistoryItem({
+        inProgress: true,
+        thoughts: [
+          { id: 'done', author_name: 'Tick 3 Of 100', message: 'x', in_progress: false },
+          { id: 'running', author_name: 'Tick 4 Of 100', message: '', in_progress: true },
+        ],
+      })
+      const chat = createChat(historyItem)
+      chat.isWorkflow = true
+      mockChatsStore.currentChat = chat
+
+      chatGenerationStore.stopChatGeneration('chat-1')
+
+      expect(historyItem.thoughts).toHaveLength(1)
+      expect(historyItem.thoughts![0]!.id).toBe('done')
+      expect(historyItem.thoughts![0]!.in_progress).toBe(false)
+      expect(historyItem.thoughts![0]!.aborted).toBeFalsy()
+      expect(historyItem.generationStopped).toBe(true)
+      expect(historyItem.inProgress).toBe(false)
+    })
+
+    it('does not drop in-progress thoughts on Stop for a non-workflow chat', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const historyItem = createHistoryItem({
+        inProgress: true,
+        thoughts: [{ id: 'tool', author_name: 'Search', message: 'running', in_progress: true }],
+      })
+      const chat = createChat(historyItem)
+      chat.isWorkflow = false
+      mockChatsStore.currentChat = chat
+      chatGenerationStore.chatAbortControllers['chat-1'] = {
+        abort: vi.fn(),
+      } as unknown as AbortController
+
+      chatGenerationStore.stopChatGeneration('chat-1')
+
+      expect(historyItem.thoughts).toHaveLength(1)
+      expect(historyItem.thoughts![0]!.id).toBe('tool')
+      expect(historyItem.generationStopped).toBeFalsy()
+    })
+  })
+
+  describe('non-workflow abort keeps previous Stop behavior', () => {
+    it('keeps aborted non-workflow thoughts and does not mark the turn generationStopped', async () => {
+      const historyItem = createHistoryItem({
+        thoughts: [{ id: 'tool', author_name: 'Search', message: 'running', in_progress: true }],
+      })
+      const chat = createChat(historyItem)
+      chat.isWorkflow = false
+      mockChatsStore.currentChat = chat
+
+      const abortError = new Error('The operation was aborted')
+      abortError.name = 'AbortError'
+      let rejectRead: (error: Error) => void = () => undefined
+      const reader = {
+        read: vi.fn().mockImplementation(
+          () =>
+            new Promise((_, reject) => {
+              rejectRead = reject
+            })
+        ),
+        cancel: vi.fn(),
+      } as unknown as ReadableStreamDefaultReader
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      chatGenerationStore.chatAbortControllers['chat-1'] = {
+        abort: () => rejectRead(abortError),
+      } as unknown as AbortController
+
+      const pending = chatGenerationStore._handleStreamResponse(
+        reader,
+        historyItem,
+        chat,
+        new Date()
+      )
+      await Promise.resolve()
+      chatGenerationStore.stopChatGeneration('chat-1')
+      await pending
+
+      expect(historyItem.thoughts).toHaveLength(1)
+      expect(historyItem.thoughts![0]!.id).toBe('tool')
+      expect(historyItem.thoughts![0]!.in_progress).toBe(false)
+      expect(historyItem.generationStopped).toBeFalsy()
+    })
+  })
+
+  describe('workflow stop does not rehydrate live progress', () => {
+    it('does not refresh workflow progress after the user aborts the stream', async () => {
+      const historyItem = createHistoryItem({
+        thoughts: [{ id: 's1', message: 'running', in_progress: true }],
+      })
+      const chat = createChat(historyItem)
+      chat.isWorkflow = true
+      mockChatsStore.currentChat = chat
+      mockChatsStore.refreshWorkflowExecutionIds.mockResolvedValue(undefined)
+
+      const abortError = new Error('The operation was aborted')
+      abortError.name = 'AbortError'
+      const reader = {
+        read: vi.fn().mockRejectedValueOnce(abortError),
+        cancel: vi.fn(),
+      } as unknown as ReadableStreamDefaultReader
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      await chatGenerationStore._handleStreamResponse(reader, historyItem, chat, new Date())
+
+      expect(mockChatsStore.refreshWorkflowExecutionIds).not.toHaveBeenCalled()
+      expect(historyItem.inProgress).toBe(false)
+      expect(historyItem.thoughts).toEqual([])
+    })
+
+    it('does not write /Empty message/ when Stop is pressed on a thought-only workflow turn', async () => {
+      const historyItem = createHistoryItem({
+        thoughts: [{ id: 's1', message: 'running', in_progress: true }],
+      })
+      const chat = createChat(historyItem)
+      chat.isWorkflow = true
+      mockChatsStore.currentChat = chat
+
+      const abortError = new Error('The operation was aborted')
+      abortError.name = 'AbortError'
+      let rejectRead: (error: Error) => void = () => undefined
+      const reader = {
+        read: vi.fn().mockImplementation(
+          () =>
+            new Promise((_, reject) => {
+              rejectRead = reject
+            })
+        ),
+        cancel: vi.fn(),
+      } as unknown as ReadableStreamDefaultReader
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      chatGenerationStore.chatAbortControllers['chat-1'] = {
+        abort: () => rejectRead(abortError),
+      } as unknown as AbortController
+
+      const pending = chatGenerationStore._handleStreamResponse(
+        reader,
+        historyItem,
+        chat,
+        new Date()
+      )
+      await Promise.resolve()
+      chatGenerationStore.stopChatGeneration('chat-1')
+      await pending
+
+      expect(historyItem.response).not.toBe('/Empty message/')
+      expect(historyItem.response).toBeUndefined()
+    })
+
+    it('still refreshes workflow progress when the stream completes normally', async () => {
+      const historyItem = createHistoryItem()
+      const chat = createChat(historyItem)
+      chat.isWorkflow = true
+      mockChatsStore.currentChat = chat
+      mockChatsStore.refreshWorkflowExecutionIds.mockResolvedValue(undefined)
+
+      const reader = {
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({
+            done: false,
+            value: JSON.stringify({ generated: 'done', generated_chunk: 'done', last: true }),
+          })
+          .mockResolvedValue({ done: true, value: undefined }),
+        cancel: vi.fn(),
+      } as unknown as ReadableStreamDefaultReader
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      await chatGenerationStore._handleStreamResponse(reader, historyItem, chat, new Date())
+
+      expect(mockChatsStore.refreshWorkflowExecutionIds).toHaveBeenCalledWith('chat-1')
+    })
   })
 
   describe('updateCurrentChatAssistants', () => {

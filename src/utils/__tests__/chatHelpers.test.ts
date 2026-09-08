@@ -16,6 +16,7 @@
 import { describe, it, expect, vi } from 'vitest'
 
 import { ROLE_ASSISTANT, ROLE_USER } from '@/constants'
+import { WORKFLOW_STATUSES } from '@/constants/workflows'
 import type { ChatBackend } from '@/types/entity/conversation'
 import {
   transformChatBEtoFE,
@@ -221,6 +222,122 @@ describe('transformChatBEtoFE', () => {
     expect(result.history[0][0].a2uiEnvelopes).toBeNull()
     expect(result.history[0][0].a2uiAction).toBeNull()
     expect(result.history[0][0].a2uiDataModel).toBeNull()
+  })
+
+  const workflowHistoryChat = (
+    assistantOverrides: Record<string, unknown> = {},
+    chatOverrides: Record<string, unknown> = {}
+  ): ChatBackend =>
+    ({
+      id: 'wf-1',
+      conversation_name: 'WF',
+      assistant_ids: [],
+      initial_assistant_id: '',
+      assistant_data: [],
+      is_workflow: true,
+      history: [
+        { historyIndex: 0, message: 'hi', date: '2024-01-01', executionId: null },
+        {
+          historyIndex: 0,
+          message: '',
+          date: '2024-01-01',
+          executionId: 'exec-1',
+          workflowExecutionRef: true,
+          executionStatus: WORKFLOW_STATUSES.RUNNING,
+          thoughts: [
+            {
+              id: 's1',
+              author_name: 'Find Items Todo',
+              author_type: 'WorkflowState',
+              message: '',
+              input_text: 'Find changes',
+              in_progress: true,
+              interrupted: false,
+              aborted: false,
+            },
+          ],
+          ...assistantOverrides,
+        },
+      ],
+      ...chatOverrides,
+    } as ChatBackend)
+
+  it('preserves in-progress workflow thoughts when executionStatus is In Progress', () => {
+    const result = transformChatBEtoFE(workflowHistoryChat())
+    const message = result.history[0]![0]!
+    expect(message.inProgress).toBe(true)
+    expect(message.executionId).toBe('exec-1')
+    expect(message.executionStatus).toBe(WORKFLOW_STATUSES.RUNNING)
+    expect(message.workflowExecutionRef).toBe(true)
+    expect(message.thoughts![0]!.in_progress).toBe(true)
+    expect(message.thoughts![0]!.interrupted).toBe(false)
+    expect(message.thoughts![0]!.aborted).toBe(false)
+  })
+
+  it('keeps Thinking state between steps when executionStatus is In Progress and no thought is in_progress', () => {
+    const result = transformChatBEtoFE(
+      workflowHistoryChat({
+        thoughts: [
+          {
+            id: 's1',
+            author_name: 'Find Items Todo',
+            author_type: 'WorkflowState',
+            message: 'done',
+            in_progress: false,
+            interrupted: false,
+            aborted: false,
+          },
+        ],
+      })
+    )
+    const message = result.history[0]![0]!
+    expect(message.inProgress).toBe(true)
+    expect(message.thoughts![0]!.in_progress).toBe(false)
+    expect(message.thoughts![0]!.interrupted).toBe(false)
+    expect(message.thoughts![0]!.aborted).toBe(false)
+  })
+
+  it('does not treat a succeeded workflow turn as in progress', () => {
+    const result = transformChatBEtoFE(
+      workflowHistoryChat({
+        executionStatus: WORKFLOW_STATUSES.SUCCEEDED,
+        message: 'final',
+        thoughts: [
+          {
+            id: 's1',
+            author_name: 'Find Items Todo',
+            author_type: 'WorkflowState',
+            message: 'done',
+            in_progress: false,
+            interrupted: false,
+            aborted: false,
+          },
+        ],
+      })
+    )
+    const message = result.history[0]![0]!
+    expect(message.inProgress).toBe(false)
+    expect(message.executionStatus).toBe(WORKFLOW_STATUSES.SUCCEEDED)
+    expect(message.thoughts![0]!.in_progress).toBe(false)
+    expect(message.thoughts![0]!.interrupted).toBe(false)
+    expect(message.thoughts![0]!.aborted).toBe(false)
+  })
+
+  it('preserves in-progress thoughts on a workflow chat when executionStatus is missing but a thought is in_progress', () => {
+    const result = transformChatBEtoFE(
+      workflowHistoryChat(
+        {
+          executionStatus: undefined,
+          thoughts: [{ id: 's1', message: '', in_progress: true, interrupted: false }],
+        },
+        { is_workflow: true }
+      )
+    )
+    const message = result.history[0]![0]!
+    expect(message.inProgress).toBe(true)
+    expect(message.thoughts![0]!.in_progress).toBe(true)
+    expect(message.thoughts![0]!.interrupted).toBe(false)
+    expect(message.thoughts![0]!.aborted).toBe(false)
   })
 })
 

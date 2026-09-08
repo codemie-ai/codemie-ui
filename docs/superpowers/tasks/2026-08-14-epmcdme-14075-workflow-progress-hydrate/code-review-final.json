@@ -1,0 +1,114 @@
+{
+  "decision": "request-changes",
+  "rationale": "Hydrate preserve, in-place poll, and empty-state copy meet the reload AC, but three defects remain: poll enablement ignores the old-BE in_progress fallback; refreshWorkflowExecutionIds can wipe a just-finished no-reload answer if GET still says In Progress; restore-failed copy labels any empty finished workflow turn as unrestorable. Blind, edge-case, and acceptance lenses all ran. Dismissed: 4s Details-matching interval, index-alignment (pre-existing), infinite RUNNING poll (same as Details), interactiveRequest patch (out of scope). Defer count: 2 (whitespace-only response, GET error spinner).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "After reloading during or after workflow execution, the UI restores and displays the correct workflow execution progress/status.",
+      "status": "pass",
+      "notes": "transformHistoryGroup preserves in_progress/inProgress when executionStatus is In Progress; ChatPage polls GET and patches in place."
+    },
+    {
+      "kind": "story-ac",
+      "item": "The answer / progress UI is not empty when execution state, progress, partial output, final result, or error information exists (or can be loaded from available APIs).",
+      "status": "pass",
+      "notes": "Thought cards and Thinking… restored on hydrate; poll copies response/thoughts."
+    },
+    {
+      "kind": "story-ac",
+      "item": "If execution state cannot be restored, show a clear user-facing message instead of a blank answer node.",
+      "status": "partial",
+      "notes": "Restore-failed copy is implemented but also fires for any empty finished workflow turn (no executionStatus/thoughts/response gate)."
+    },
+    {
+      "kind": "story-ac",
+      "item": "For the repro (send message → reload mid-run), the user can see the in-progress step and then subsequent results/steps as the run continues.",
+      "status": "pass",
+      "notes": "getChat snapshot plus 4s conversation poll while status is In Progress."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Non-workflow cut streams still hydrate as interrupted.",
+      "status": "pass",
+      "notes": "Existing remap and test retained when preserveProgress is false."
+    },
+    {
+      "kind": "story-ac",
+      "item": "No regression for normal workflow execution without page reload.",
+      "status": "partial",
+      "notes": "Post-stream refreshWorkflowExecutionIds now overwrites response/inProgress; a lagging In Progress GET can wipe the streamed answer and reopen Thinking."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Cover with unit tests (TDD per SDLC); note manual verification for full reload UX.",
+      "status": "pass",
+      "notes": "Unit tests for transform, in-place patch, poll lifecycle, empty-state; reload UX noted as manual."
+    },
+    {
+      "kind": "spec",
+      "item": "Poll while executionStatus === In Progress; optional old-BE fallback isWorkflow + executionId + thought.in_progress.",
+      "status": "partial",
+      "notes": "Hydrate implements the fallback; useWorkflowExecutionPoll only keys off executionStatus === RUNNING, so old-BE hydrate never starts polling."
+    },
+    {
+      "kind": "spec",
+      "item": "No SSE rejoin; poll via chatsStore only; 4000ms usePolling; snake_case thoughts.",
+      "status": "pass",
+      "notes": "Hook calls refreshWorkflowExecutionIds only; interval 4000; thought fields unchanged."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All four commits match EPMCDME-14075: Capital sentence (no trailing period)."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md in this repo."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Reuses existing authenticated GET v1/conversations/{id}; no new secrets, injection, or auth bypass. Restore-failed string is a constant, not user-controlled."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/useWorkflowExecutionPoll.ts",
+      "line": 25,
+      "title": "Poll ignores old-BE in_progress fallback",
+      "problem": "Hydrate treats isWorkflow + executionId + thought.in_progress as live, but the poll hook enables only when executionStatus === In Progress.",
+      "impact": "On backends that omit executionStatus, reload shows the current step then never updates later steps.",
+      "recommendation": "Enable polling when any message is live the same way as isActiveWorkflowTurn: executionStatus === RUNNING or an in_progress thought."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chats.ts",
+      "line": 246,
+      "title": "Lagging GET can wipe a finished local answer",
+      "problem": "refreshWorkflowExecutionIds always assigns response and inProgress from GET. After a no-reload stream ends, chatGeneration still calls this method; a GET that is still In Progress with empty message overwrites the streamed response and sets inProgress true.",
+      "impact": "Normal workflow runs without reload can lose the answer and restart Thinking, then start the new poll loop.",
+      "recommendation": "Do not replace a non-empty local response with an empty GET message, and do not flip inProgress back to true when the local turn already finished with a response."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx",
+      "line": 167,
+      "title": "Restore-failed copy hits finished empty workflow turns",
+      "problem": "showRestoreFailed is any workflow message that is not in progress and has no thoughts and no markdown. It does not check executionStatus or whether restore actually failed.",
+      "impact": "A succeeded, failed, or aborted turn with empty output is labeled 'Workflow progress could not be restored.'",
+      "recommendation": "Show the copy only when the turn looks unrestorable (e.g. executionId set, not in progress, no thoughts/response, and executionStatus is not a terminal WORKFLOW_FINAL_STATUSES value)."
+    }
+  ]
+}

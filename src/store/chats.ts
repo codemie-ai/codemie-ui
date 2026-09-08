@@ -229,8 +229,8 @@ export const chatsStore = proxy<ChatsStoreType>({
   },
 
   /**
-   * Updates execution IDs of conversation messages once response streaming finishes.
-   * This allows newly generated messages to display links to their workflow execution page.
+   * Refreshes workflow execution identity and progress from GET conversation
+   * without `setOpenChat` (which ignores payloads while a message is in progress).
    */
   refreshWorkflowExecutionIds: async (id) => {
     const response = await api.get(`v1/conversations/${id}`)
@@ -244,12 +244,29 @@ export const chatsStore = proxy<ChatsStoreType>({
     freshChat.history.forEach((historyGroup, historyIndex) => {
       historyGroup.forEach((message, messageIndex) => {
         const conversation = existingChat.history[historyIndex]
-        if (conversation && conversation[messageIndex]) {
-          conversation[messageIndex].executionId = message.executionId
-          if (message.thoughts?.length) {
-            conversation[messageIndex].thoughts = message.thoughts
-          }
+        const existingMessage = conversation?.[messageIndex]
+        if (!existingMessage) return
+
+        existingMessage.executionId = message.executionId
+        existingMessage.workflowExecutionRef = message.workflowExecutionRef
+        // Live SSE owns the thought tree; GET hydrate uses different ids/names
+        // and would duplicate step cards if applied mid-stream.
+        if (existingMessage.stream) {
+          existingMessage.executionStatus = message.executionStatus
+          return
         }
+        // Stop on this page froze the turn; keep local progress hidden until reload.
+        if (existingMessage.generationStopped) return
+        // Stream already finished locally; a lagging In Progress GET must not
+        // resurrect step cards or wipe thoughts while the message is still empty.
+        if (existingMessage.response && !message.response) {
+          existingMessage.inProgress = false
+          return
+        }
+        existingMessage.executionStatus = message.executionStatus
+        existingMessage.response = message.response
+        existingMessage.inProgress = message.inProgress
+        existingMessage.thoughts = message.thoughts ?? []
       })
     })
   },

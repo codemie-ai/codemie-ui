@@ -19,6 +19,7 @@
 import type { A2uiActionEnvelope, A2uiDataModel, A2uiEnvelope } from '@/a2ui/types'
 import type { UserAbility } from '@/types//common'
 import type { MCPAuthGateServer } from '@/types/entity/mcpAuth'
+import type { WorkflowExecutionStatus } from '@/types/entity/workflow'
 import type { ConfluenceConnectRequired } from '@/utils/confluenceAuth'
 import type { GitLabConnectRequired } from '@/utils/gitlabAuth'
 import type { JiraConnectRequired } from '@/utils/jiraAuth'
@@ -151,6 +152,8 @@ export interface ChatMessage {
   assistantId?: string
   assistant: ChatAssistant
   inProgress?: boolean
+  /** In-memory only: user hit Stop on this page. Reload hydrates progress again. */
+  generationStopped?: boolean
   processingTime?: number
   thoughts?: Thought[]
   fileNames?: string[]
@@ -166,6 +169,8 @@ export interface ChatMessage {
   jiraAuthPrompt?: JiraConnectRequired | null
   confluenceAuthPrompt?: ConfluenceConnectRequired | null
   executionId: string | null
+  executionStatus?: WorkflowExecutionStatus | null
+  workflowExecutionRef?: boolean
   stateId?: string | null
   /** A2UI envelopes emitted with this assistant turn (streamed or from history). */
   a2uiEnvelopes?: A2uiEnvelope[] | null
@@ -283,6 +288,8 @@ export interface HistoryItemBackend {
   responseTime?: number
   userMark?: any
   executionId: string | null
+  executionStatus?: WorkflowExecutionStatus | null
+  workflowExecutionRef?: boolean
   stateId?: string | null
   a2uiEnvelopes?: A2uiEnvelope[] | null
   a2uiAction?: A2uiActionEnvelope | null

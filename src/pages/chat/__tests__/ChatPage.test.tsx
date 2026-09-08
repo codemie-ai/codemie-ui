@@ -96,6 +96,10 @@ vi.mock('../hooks/useChatInitialPrompt', () => ({
   useChatInitialPrompt: vi.fn(),
 }))
 
+vi.mock('../hooks/useWorkflowExecutionPoll', () => ({
+  useWorkflowExecutionPoll: vi.fn(),
+}))
+
 vi.mock('valtio', () => ({
   proxy: (obj: any) => obj,
   useSnapshot: vi.fn((store) => store),

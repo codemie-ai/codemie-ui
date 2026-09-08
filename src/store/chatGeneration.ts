@@ -168,7 +168,8 @@ interface ChatGenerationStoreType {
   ) => Promise<void>
   _handleGenerationStream: (
     historyItem: ChatMessage,
-    reader: ReadableStreamDefaultReader
+    reader: ReadableStreamDefaultReader,
+    isWorkflow: boolean
   ) => Promise<any>
   _processStreamChunk: (
     historyItem: ChatMessage,
@@ -183,7 +184,11 @@ interface ChatGenerationStoreType {
   _findThought: (thoughts: Thought[], targetId: string) => Thought | null
   _handleGenerationStreamError: (errorObj: any) => string
   _finishThoughts: (historyItem: ChatMessage) => void
-  _handleGenerationAbort: (historyItem: ChatMessage, reader: ReadableStreamDefaultReader) => any
+  _handleGenerationAbort: (
+    historyItem: ChatMessage,
+    reader: ReadableStreamDefaultReader,
+    isWorkflow: boolean
+  ) => any
   _scheduleWaitingNotification: (historyItem: ChatMessage) => NodeJS.Timeout
   _clearWaitingNotification: (historyItem: ChatMessage, timeoutId?: NodeJS.Timeout) => void
   _prepareRequestData: (
@@ -230,6 +235,11 @@ const getPromptRows = (message: ChatMessage | null): MCPAuthGateServer[] =>
 const markThoughtDone = (thought: Thought): void => {
   thought.in_progress = false
   thought.children?.forEach(markThoughtDone)
+}
+
+const dropInProgressThoughts = (historyItem: ChatMessage): void => {
+  if (!historyItem.thoughts?.length) return
+  historyItem.thoughts = historyItem.thoughts.filter((thought) => !thought.in_progress)
 }
 
 const finishThoughts = (historyItem: ChatMessage): void => {
@@ -763,11 +773,28 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   stopChatGeneration(chatId: string): void {
+    const chat = chatsStore.currentChat
+    let frozeProgress = false
+    if (chat?.id === chatId && chat.isWorkflow) {
+      for (const group of chat.history) {
+        for (const message of group) {
+          if (!message.inProgress && !message.stream) continue
+          message.generationStopped = true
+          message.inProgress = false
+          dropInProgressThoughts(message)
+          chatGenerationStore._finishThoughts(message)
+          frozeProgress = true
+        }
+      }
+    }
+
     const controller = chatGenerationStore.chatAbortControllers[chatId]
     if (controller) {
       controller.abort()
       toaster.error(GENERATION_CANCELLED_MESSAGE)
+      return
     }
+    if (frozeProgress) toaster.error(GENERATION_CANCELLED_MESSAGE)
   },
 
   /**
@@ -1304,7 +1331,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   async _handleStreamResponse(reader, historyItem, chat, startTime) {
-    const response = await chatGenerationStore._handleGenerationStream(historyItem, reader)
+    const response = await chatGenerationStore._handleGenerationStream(
+      historyItem,
+      reader,
+      chat.isWorkflow
+    )
 
     const endTime = new Date()
 
@@ -1331,7 +1362,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       if (response?.workflow_execution_id) {
         historyItem.executionId = response.workflow_execution_id
       }
-      await chatsStore.refreshWorkflowExecutionIds(chat.id).catch(console.error)
+      if (!response?.aborted && !historyItem.generationStopped) {
+        await chatsStore.refreshWorkflowExecutionIds(chat.id).catch(console.error)
+      }
       chat.isInterrupted = response?.workflow_state?.event_type === WORKFLOW_STATE_EVENT_INTERRUPTED
     }
 
@@ -1348,7 +1381,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
   async _handleGenerationStream(
     historyItem: ChatMessage,
-    reader: ReadableStreamDefaultReader
+    reader: ReadableStreamDefaultReader,
+    isWorkflow: boolean
   ): Promise<any> {
     historyItem.stream = new Stream()
     const state: StreamDrainState = {
@@ -1384,7 +1418,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
         // Request was aborted by user (before final chunk received)
         if (error.name === ABORT_ERROR) {
-          return chatGenerationStore._handleGenerationAbort(historyItem, reader)
+          return chatGenerationStore._handleGenerationAbort(historyItem, reader, isWorkflow)
         }
 
         console.error(error.name)
@@ -1552,15 +1586,24 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     finishThoughts(historyItem)
   },
 
-  _handleGenerationAbort(historyItem: ChatMessage, _reader: ReadableStreamDefaultReader): any {
+  _handleGenerationAbort(
+    historyItem: ChatMessage,
+    _reader: ReadableStreamDefaultReader,
+    isWorkflow: boolean
+  ): any {
     const generated = historyItem.stream?.getStream()
 
     historyItem.stream?.finish()
     historyItem.inProgress = false
+    if (isWorkflow) {
+      historyItem.generationStopped = true
+      dropInProgressThoughts(historyItem)
+    }
     chatGenerationStore._finishThoughts(historyItem)
 
     return {
-      generated: generated ?? EMPTY_MESSAGE,
+      generated: isWorkflow ? generated || undefined : generated ?? EMPTY_MESSAGE,
+      aborted: true,
     }
   },
 })

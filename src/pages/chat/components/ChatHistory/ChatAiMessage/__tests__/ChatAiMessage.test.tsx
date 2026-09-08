@@ -387,3 +387,68 @@ describe('ChatAiMessage auth prompt', () => {
     expect(screen.queryByTestId('markdown')).not.toBeInTheDocument()
   })
 })
+
+describe('ChatAiMessage — workflow restore-failed copy', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatContext.hideToolOutputs = false
+    mockChatsStore.currentChat.isWorkflow = false
+  })
+
+  it('shows restore-failed copy for a workflow message with no response and no thoughts', () => {
+    mockChatsStore.currentChat.isWorkflow = true
+    renderMessage(
+      createMessage({ response: '', thoughts: [], inProgress: false, executionId: 'exec-1' })
+    )
+    expect(screen.getByTestId('markdown')).toHaveTextContent(
+      'Workflow progress could not be restored.'
+    )
+  })
+
+  it('does not show restore-failed copy when an in-progress thought card is present', () => {
+    mockChatsStore.currentChat.isWorkflow = true
+    renderMessage(
+      createMessage({
+        response: '',
+        inProgress: true,
+        thoughts: [
+          {
+            id: 's1',
+            author_name: 'Step',
+            author_type: 'WorkflowState',
+            message: '',
+            in_progress: true,
+          },
+        ],
+      })
+    )
+    expect(screen.getByTestId('markdown')).not.toHaveTextContent(
+      'Workflow progress could not be restored.'
+    )
+    expect(screen.getByTestId('thinking-loader')).toBeInTheDocument()
+  })
+
+  it('does not show restore-failed copy for a non-workflow empty response', () => {
+    mockChatsStore.currentChat.isWorkflow = false
+    renderMessage(createMessage({ response: '', thoughts: [], inProgress: false }))
+    expect(screen.getByTestId('markdown')).not.toHaveTextContent(
+      'Workflow progress could not be restored.'
+    )
+  })
+
+  it('does not show restore-failed copy for a succeeded workflow turn with empty output', () => {
+    mockChatsStore.currentChat.isWorkflow = true
+    renderMessage(
+      createMessage({
+        response: '',
+        thoughts: [],
+        inProgress: false,
+        executionId: 'exec-1',
+        executionStatus: 'Succeeded',
+      })
+    )
+    expect(screen.getByTestId('markdown')).not.toHaveTextContent(
+      'Workflow progress could not be restored.'
+    )
+  })
+})

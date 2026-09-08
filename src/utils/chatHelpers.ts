@@ -15,6 +15,7 @@
 
 import { ROLE_ASSISTANT, ROLE_USER } from '@/constants'
 import { getChatImportSource } from '@/constants/chatImportSources'
+import { WORKFLOW_STATUSES } from '@/constants/workflows'
 import type {
   ChatBackend,
   Conversation,
@@ -52,6 +53,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
   transformedChat.history = groupAndTransformHistory(chatBE.history, {
     assistantData: chatBE.assistant_data,
     folder: chatBE.folder,
+    isWorkflow: transformedChat.isWorkflow,
   })
 
   return transformedChat
@@ -90,9 +92,23 @@ export const transformWorkflowExecutionHistoryBEtoFE = (
   return history
 }
 
+const isActiveWorkflowTurn = (assistantItem: HistoryItemBackend, isWorkflow: boolean): boolean => {
+  if (assistantItem.executionStatus === WORKFLOW_STATUSES.RUNNING) return true
+  return Boolean(
+    isWorkflow &&
+      assistantItem.executionId &&
+      assistantItem.workflowExecutionRef &&
+      assistantItem.thoughts?.some((thought) => thought.in_progress)
+  )
+}
+
 function groupAndTransformHistory(
   history: HistoryItemBackend[],
-  { assistantData = [], folder }: { assistantData?: AssistantDataBackend[]; folder?: string }
+  {
+    assistantData = [],
+    folder,
+    isWorkflow = false,
+  }: { assistantData?: AssistantDataBackend[]; folder?: string; isWorkflow?: boolean }
 ): any[][] {
   const groupedHistory = history.reduce((acc: Record<number, HistoryItemBackend[]>, item) => {
     if (!Number.isInteger(item.historyIndex)) {
@@ -104,13 +120,17 @@ function groupAndTransformHistory(
   }, {})
 
   return Object.values(groupedHistory).map((group) =>
-    transformHistoryGroup(group, { assistantData, folder })
+    transformHistoryGroup(group, { assistantData, folder, isWorkflow })
   )
 }
 
 function transformHistoryGroup(
   group: HistoryItemBackend[],
-  { assistantData, folder }: { assistantData?: AssistantDataBackend[]; folder?: string }
+  {
+    assistantData,
+    folder,
+    isWorkflow = false,
+  }: { assistantData?: AssistantDataBackend[]; folder?: string; isWorkflow?: boolean }
 ): any[] {
   // Imported chats (e.g. Claude Desktop) reference an assistant that isn't in the
   // workspace, so fall back to the import source's name and icon instead of "?".
@@ -120,6 +140,7 @@ function transformHistoryGroup(
     const assistantItem = group[2 * i + 1]
     const assistant =
       assistantData?.find((assistant) => assistant.assistant_id === assistantItem.assistantId) ?? {}
+    const preserveProgress = isActiveWorkflowTurn(assistantItem, isWorkflow)
     return {
       request: userItem.message ?? '',
       requestRaw: userItem.messageRaw,
@@ -136,11 +157,13 @@ function transformHistoryGroup(
             input_text: thought.input_text,
             children: thought.children,
             output_format: thought.output_format,
-            in_progress: false,
+            in_progress: preserveProgress ? thought.in_progress ?? false : false,
             error: thought.error ?? false,
-            // backend in_progress:true means the stream was cut (e.g. nginx timeout) — treat as interrupted
+            // Non-workflow (or finished) hydrate: backend in_progress:true means the stream was cut — treat as aborted
             interrupted: thought.interrupted ?? false,
-            aborted: (thought.aborted ?? false) || (thought.in_progress ?? false),
+            aborted: preserveProgress
+              ? thought.aborted ?? false
+              : (thought.aborted ?? false) || (thought.in_progress ?? false),
           }))
         : [],
       assistantId: assistantItem.assistantId,
@@ -155,9 +178,11 @@ function transformHistoryGroup(
         : {},
       processingTime: assistantItem.responseTime, // Add FE response
       userMark: assistantItem.userMark, // Include userMark data from backend
-      inProgress: false,
+      inProgress: preserveProgress,
       stream: null,
       executionId: assistantItem.executionId,
+      executionStatus: assistantItem.executionStatus ?? null,
+      workflowExecutionRef: assistantItem.workflowExecutionRef ?? false,
       stateId: assistantItem.stateId,
       a2uiEnvelopes: assistantItem.a2uiEnvelopes ?? null,
       a2uiAction: userItem.a2uiAction ?? null,
