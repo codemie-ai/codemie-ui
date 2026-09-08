@@ -53,7 +53,8 @@ const FormNestedAccordion = <T,>({
                 options?.context.selected && 'border-border-primary-active'
               ),
             }),
-            headerAction: () => 'hover:no-underline',
+            headerAction: () =>
+              'hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-accent focus-visible:ring-inset rounded-t-lg',
           }}
           header={
             <div className="flex justify-between items-center group/header gap-3 px-4 py-3">

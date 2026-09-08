@@ -58,12 +58,18 @@ const Accordion = ({
     >
       <AccordionTab
         pt={{
-          headerAction: () => 'hover:no-underline',
+          headerAction: () =>
+            'group hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-accent focus-visible:ring-inset rounded-lg transition-all duration-200',
           content: () => '!p-0',
           toggleableContent: () => '',
         }}
         header={(props) => (
-          <div className="flex items-center justify-between gap-3 p-4 bg-surface-base-secondary group transition hover:opacity-85 shadow-[0_1px_0_rgb(var(--colors-border-primary))]">
+          <div
+            className={cn(
+              'flex items-center justify-between gap-3 p-4 bg-surface-base-secondary transition hover:opacity-85 shadow-[0_1px_0_rgb(var(--colors-border-primary))]',
+              'group-focus-visible:ring-2 group-focus-visible:ring-border-accent group-focus-visible:ring-inset rounded-lg'
+            )}
+          >
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <h1 className="font-semibold text-text-primary">{title}</h1>

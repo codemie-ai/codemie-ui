@@ -50,7 +50,10 @@ const FormAccordion = <T,>({
       }}
     >
       <AccordionTab
-        pt={{ headerAction: () => 'hover:no-underline' }}
+        pt={{
+          headerAction: () =>
+            'hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-accent focus-visible:ring-inset rounded-t-lg',
+        }}
         header={(props) => (
           <div className="flex flex-col gap-3 p-4 group transition hover:opacity-85">
             <div className="flex justify-between items-center">
