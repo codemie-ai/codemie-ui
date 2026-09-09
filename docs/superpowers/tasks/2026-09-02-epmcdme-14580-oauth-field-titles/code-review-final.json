@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "rationale": "All three lenses ran. Edge-case (repo-aware) returned zero findings after tracing the render path (CredentialFields.tsx:247 label={getLabel(label ?? placeholder)}); the new labels take precedence over the URL placeholders and getLabel mangles none of them. Acceptance: all 7 criteria PASS. Blind raised 7 diff-only cautions; the correctness ones were refuted by the edge-case lens (all restored symbols defined/imported, toolFieldPlaceholders mock removal harmless because gitlaboauth fields use literal placeholders, tests + typecheck pass). Survivors are 2 deferred test-coverage enhancements (no DOM-render assertion for the title; no positive toggle-interaction test) and 1 dismissed (test/config label duplication is intentional regression-test design). 1 non-blocking scope observation: the diff also re-enables the OAuth types + sign-in toggle previously hidden under EPMCDME-14586 — a precondition for the fields to be visible and already authorized by the user as the branch foundation. Deferred: 2. Dismissed: 1.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "1: GitLab OAuth fields display human-readable titles", "status": "pass", "notes": "instance_url 'GitLab Instance URL', client_id 'Application ID', client_secret 'Application Secret', callback_base_url 'CodeMie Callback Base URL'"},
+    {"criterion": "2: Jira OAuth fields display human-readable titles", "status": "pass", "notes": "client_id 'Client ID', client_secret 'Client Secret', callback_base_url 'CodeMie Callback Base URL'"},
+    {"criterion": "3: Confluence OAuth fields display human-readable titles", "status": "pass", "notes": "identical to Jira"},
+    {"criterion": "4: Field titles do not duplicate tooltip/placeholder values", "status": "pass", "notes": "labels differ from placeholders and help text"},
+    {"criterion": "5: URL values shown only as placeholders/defaults, not titles", "status": "pass", "notes": "URLs remain in placeholder/defaultValue; regression test asserts no label matches /^https?:///"},
+    {"criterion": "6: Fix does not break OAuth configuration behavior", "status": "pass", "notes": "purely additive at field level; also re-enables 14586-hidden types/toggle (scope note, behavior restored not broken)"},
+    {"criterion": "7: Titles clear enough to understand expected value", "status": "pass", "notes": "provider-accurate terminology (GitLab Application ID/Secret; Atlassian Client ID/Secret)"}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow commit format", "status": "pass", "notes": "'EPMCDME-14587: Restore OAuth integration types and add human-readable field titles' matches EPMCDME-XXXX: Capital sentence"},
+    {"standard": "code-quality", "status": "pass", "notes": "prettier + eslint + tsc --noEmit passed in pre-commit; no blocking violations"},
+    {"standard": "security-patterns", "status": "pass", "notes": "static UI label strings; no secrets, no HTML sink, no redirect, no injection; gitleaks reported no leaks"}
+  ],
+  "findings": []
+}

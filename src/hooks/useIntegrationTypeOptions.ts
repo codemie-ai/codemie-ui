@@ -16,6 +16,7 @@
 import { useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
+import { OAUTH_VARIANT_CREDENTIAL_TYPES } from '@/constants/integration'
 import { appInfoStore } from '@/store/appInfo'
 import { User } from '@/types/entity/user'
 import { FilterOption } from '@/types/filters'
@@ -45,13 +46,18 @@ export const useIntegrationTypeOptions = ({
       checkIfAdminOfAnyProject,
       customerConfig: configs,
     })
-    return Object.keys(mapping)
-      .sort((a, b) => {
-        return a.localeCompare(b)
-      })
-      .map((key) => ({
-        label: mapping[key]?.displayName || getOriginalCredentialType(key),
-        value: getOriginalCredentialType(key),
-      }))
+    return (
+      Object.keys(mapping)
+        // EPMCDME-14586/14587: OAuth variants fold into their base type's serverEnum, so including
+        // them here would emit a duplicate filter option (e.g. jiraoauth -> 'Jira' alongside jira).
+        .filter((key) => !OAUTH_VARIANT_CREDENTIAL_TYPES.has(key))
+        .sort((a, b) => {
+          return a.localeCompare(b)
+        })
+        .map((key) => ({
+          label: mapping[key]?.displayName || getOriginalCredentialType(key),
+          value: getOriginalCredentialType(key),
+        }))
+    )
   }, [settingType, user, checkIfAdminOfAnyProject, configs])
 }

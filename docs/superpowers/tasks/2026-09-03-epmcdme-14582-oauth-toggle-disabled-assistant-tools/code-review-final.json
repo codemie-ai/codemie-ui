@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "rationale": "Three-lens review of a 2-file, +38/-1 change (one-token toggle predicate + tests). The core fix is confirmed correct: the edge-case lens returned no findings and verified against source that NewIntegrationPopup is the only disableType={true} caller, the save flow persists the base type + auth_type=oauth marker (tool-pinned base type preserved), the type-select lock is untouched, and New/Edit pages are unchanged; the added toolFieldPlaceholders mock is a legit test-only fix (real store inits it). The blind lens's one 'major' (toggle might rewrite the locked type into an invalid combo) was REFUTED by the edge-case lens — submit uses getOriginalCredentialType so the base type stays pinned. Two items remain, both scope decisions surfaced for the human: (CR-001) acceptance criterion 6 — when OAuth is genuinely unsupported (variant gated out by role/enterprise/feature-flag) the toggle is HIDDEN with no explanatory message; this is pre-existing behavior unchanged by the diff and matches the main integration page (which the user asked to mirror), so it may be out of scope for this bug. (CR-002) the two added tests use credentialType='git' rather than the ticket's Jira/Confluence types and there is no NewIntegrationPopup-level test; the fix is type-agnostic (disabled predicate doesn't depend on type) so 'git' proves the predicate, but adding a Jira case + a popup test would directly cover the named ACs. confidence low because CR-001 is a decision-needed scope question.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "1. OAuth toggle enabled for Jira creation from assistant-tools page when supported", "status": "pass", "notes": "showOAuthToggle true + disabled={editing}=false on create." },
+    { "criterion": "2. OAuth toggle enabled for Confluence creation when supported", "status": "pass", "notes": "same path via OAUTH_VARIANT_BY_BASE_TYPE." },
+    { "criterion": "3. Can enable OAuth and proceed with Jira OAuth creation", "status": "pass", "notes": "handleOAuthToggle -> variant; submit persists base type + auth_type=oauth." },
+    { "criterion": "4. Can enable OAuth and proceed with Confluence OAuth creation", "status": "pass", "notes": "identical mechanism, no per-type divergence." },
+    { "criterion": "5. Disabled state only when unsupported / documented reason", "status": "partial", "notes": "toggle now disabled only on editing; unsupported case is hidden, not disabled." },
+    { "criterion": "6. Clear explanatory message when OAuth cannot be enabled (missing config/permissions)", "status": "fail", "notes": "unsupported => toggle hidden, no message. Pre-existing; matches main page. Scope decision (CR-001)." },
+    { "criterion": "7. No regression to non-OAuth creation flows", "status": "pass", "notes": "non-OAuth types have no variant -> toggle not shown; type select still respects disableType." }
+  ],
+  "standards_review": [
+    { "check": "security-patterns", "status": "pass", "notes": "no secret/token handling; UI enable/disable predicate only." },
+    { "check": "code-quality", "status": "pass", "notes": "typecheck clean; follows existing prop usage." },
+    { "check": "git-workflow (commit format)", "status": "na", "notes": "no commit yet this round (held for user permission)." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "decision_needed",
+      "problem": "AC6: when the OAuth variant is gated out (role/enterprise/feature-flag), the toggle is hidden with no explanatory message.",
+      "impact": "A user who expects OAuth but for whom it is unsupported sees no reason why. Pre-existing behavior, unchanged by this diff; matches the main integration page the user asked to mirror.",
+      "recommendation": "Scope decision: keep the focused fix (match main page = hide-when-unsupported), or expand scope to render an explanatory hint when the OAuth variant is unavailable."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "Added tests use credentialType='git' and there is no NewIntegrationPopup-level test; the ticket's named types are Jira/Confluence.",
+      "impact": "Regression protection for the exact reported flow (popup + Jira/Confluence) is indirect. The fix is type-agnostic so 'git' proves the predicate, but a Jira case + popup test would cover the named ACs directly.",
+      "recommendation": "Add a Jira (or Confluence) enabled-on-locked-create case and/or a NewIntegrationPopup render test asserting the toggle is enabled."
+    }
+  ]
+}

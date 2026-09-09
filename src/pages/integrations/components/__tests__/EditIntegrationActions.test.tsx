@@ -30,6 +30,11 @@ vi.mock('../TestIntegration', () => ({
     <div data-testid="test-integration">TEST:{props.credentialType}</div>
   ),
 }))
+vi.mock('../OAuthTestAction', () => ({
+  default: (props: { credentialType: string }) => (
+    <div data-testid="oauth-test-action">OAUTH:{props.credentialType}</div>
+  ),
+}))
 
 const baseProps = {
   credentialType: 'Jira',
@@ -83,5 +88,23 @@ describe('EditIntegrationActions', () => {
     getTestableMock.mockReturnValue(['jira'])
     render(<EditIntegrationActions {...baseProps} credentialType="JIRA" />)
     expect(screen.getByTestId('test-integration')).toHaveTextContent('TEST:jira')
+  })
+
+  // EPMCDME-14587: a saved OAuth integration (auth_type=oauth in credential_values) must be tested via
+  // OAuthTestAction (connect-with-test), never the PAT-style TestIntegration — even though the base type
+  // (Jira/Git/Confluence) is itself "testable". Regression guard for the reverted refactor that dropped
+  // the auth_type marker and made the PAT test run ("Jira URL is required") / the OAuth button vanish.
+  it('shows the OAuth test action and hides the PAT test for a folded OAuth integration', () => {
+    isDeprecatedMock.mockReturnValue(false)
+    getTestableMock.mockReturnValue(['jira'])
+    render(
+      <EditIntegrationActions
+        {...baseProps}
+        credentialType="Jira"
+        credentialValues={{ auth_type: 'oauth', client_id: 'cid' }}
+      />
+    )
+    expect(screen.queryByTestId('test-integration')).not.toBeInTheDocument()
+    expect(screen.getByTestId('oauth-test-action')).toHaveTextContent('OAUTH:jira')
   })
 })

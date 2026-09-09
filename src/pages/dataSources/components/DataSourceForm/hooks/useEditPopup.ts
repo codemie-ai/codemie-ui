@@ -22,7 +22,11 @@ import { INDEX_TYPES, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
 import { GOOGLE_OAUTH_CREDENTIAL_TYPE } from '@/constants/integration'
 import { appInfoStore } from '@/store/appInfo'
 import { userSettingsStore } from '@/store/userSettings'
-import { getConfigItemSettings, isConfigItemEnabled } from '@/utils/settings'
+import {
+  getConfigItemSettings,
+  isConfigItemEnabled,
+  isOAuthProviderSetting,
+} from '@/utils/settings'
 
 import { FormValues } from './useEditPopupForm'
 
@@ -41,7 +45,11 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
     (indexType) => {
       const allSettings = settings[indexType] || []
       return allSettings.filter(
-        (setting) => setting.project_name === projectName || setting.is_global
+        (setting) =>
+          (setting.project_name === projectName || setting.is_global) &&
+          // Data sources cannot index through a delegated OAuth connection, so Jira/Confluence/Git
+          // integrations authenticated with OAuth are not offered here.
+          !isOAuthProviderSetting(setting)
       )
     },
     [projectName, settings]

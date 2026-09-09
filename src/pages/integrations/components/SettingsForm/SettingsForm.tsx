@@ -29,16 +29,17 @@ import Switch from '@/components/form/Switch'
 import InfoMessage from '@/components/Message/Message'
 import ProjectSelector from '@/components/ProjectSelector'
 import {
-  getBaseTypeForOAuthVariant,
   GOOGLE_OAUTH_CREDENTIAL_TYPE,
-  // EPMCDME-14586: used only by the temporarily-hidden OAuth sign-in toggle — do not delete.
-  // OAUTH_VARIANT_BY_BASE_TYPE,
+  OAUTH_VARIANT_BY_BASE_TYPE,
   OAUTH_VARIANT_CREDENTIAL_TYPES,
+  OAUTH_VARIANT_FEATURE_FLAG,
+  OAUTH_VARIANT_PROVIDER_LABEL,
   SHAREPOINT_AUTH_METHOD_OPTIONS,
   SHAREPOINT_AUTH_METHODS,
   SHAREPOINT_CREDENTIAL_TYPE,
 } from '@/constants/integration'
 import { useActiveHelpSegment } from '@/hooks/useActiveHelpSegment'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
 import { CredentialComponentPosition, CredentialComponentType } from '@/types/settingsUI'
@@ -87,6 +88,12 @@ interface SettingsFormProps {
   settingType?: 'user' | 'project'
   disableProject?: boolean
   disableType?: boolean
+  /**
+   * Suppresses the provider OAuth 2.0 sign-in toggle. Set by contexts that cannot consume a
+   * delegated OAuth integration (e.g. the data source form), so the user cannot create one there
+   * and then not find it in that form's integration dropdown.
+   */
+  hideOAuthToggle?: boolean
   onCredentialValuesChange?: (values: Record<string, unknown>) => void
   onCredentialTypeChange?: (type: string) => void
   shouldAutofocusInput?: boolean
@@ -110,6 +117,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     settingType = SETTING_TYPE_USER,
     disableProject = false,
     disableType = false,
+    hideOAuthToggle = false,
     onCredentialValuesChange,
     onCredentialTypeChange,
     shouldAutofocusInput = false,
@@ -144,9 +152,28 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     })
   }, [settingType, user, projectName, customerConfig])
 
+  // EPMCDME-14586/14587: OAuth is an authentication method within the base integration type, not a
+  // separate credential type. credentialType stays the base type ('jira'/'confluence'/'git') throughout
+  // — mirroring how SharePoint keeps credentialType='sharepoint' and holds its method separately. The
+  // OAuth field config lives under the variant key ('jiraoauth'…) and is reached via
+  // effectiveCredentialType below; that key is never the credentialType state value.
   const [credentialType, setCredentialType] = useState(
-    initialCredentialType?.toLowerCase() ?? CREDENTIAL_TYPES[0]
+    () => initialCredentialType?.toLowerCase() ?? CREDENTIAL_TYPES[0]
   )
+  const oauthVariantType = OAUTH_VARIANT_BY_BASE_TYPE[credentialType]
+  // isOAuth is the separate auth-method flag (like sharePointAuthMethod). On edit it re-opens from the
+  // saved auth_type=oauth marker. It does NOT depend on CREDENTIAL_VALUES_MAPPING (which loads with
+  // customerConfig) so a saved OAuth integration always re-opens as OAuth even before config resolves.
+  const [isOAuth, setIsOAuth] = useState<boolean>(
+    () => !!oauthVariantType && initialCredentialValues?.auth_type === 'oauth'
+  )
+  // The config-lookup key: the OAuth variant when the toggle is on and its field config is available,
+  // otherwise the base type. Used for every field/defaults/schema/message/help lookup; credentialType
+  // remains the persisted identity and isOAuth remains the source of truth for the marker.
+  const effectiveCredentialType =
+    isOAuth && oauthVariantType && CREDENTIAL_VALUES_MAPPING[oauthVariantType] !== undefined
+      ? oauthVariantType
+      : credentialType
   // Incremented on every external reset() so transient field-level messages
   // (e.g. the multiselect empty-selection guard) clear even when the reset
   // re-applies a string-equal value.
@@ -154,14 +181,15 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   const [manualCredentialValues, setManualCredentialValues] = useState<
     { key: string; value: string }[]
   >(() => {
-    const hasManualConfig = CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration
+    const hasManualConfig =
+      CREDENTIAL_VALUES_MAPPING[effectiveCredentialType]?.fieldsManualConfiguration
     return hasManualConfig && initialCredentialValues
       ? (convertCredsToKeyValue(initialCredentialValues) as { key: string; value: string }[])
       : []
   })
 
-  const getCredentialDefaults = (credentialType: string) => {
-    const config = CREDENTIAL_VALUES_MAPPING[credentialType]
+  const getCredentialDefaults = (type: string) => {
+    const config = CREDENTIAL_VALUES_MAPPING[type]
     const defaults: Record<string, any> = {}
 
     if (config?.fields) {
@@ -177,7 +205,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   }
 
   const getInitialCredentialValues = () => {
-    const defaults = getCredentialDefaults(credentialType)
+    const defaults = getCredentialDefaults(effectiveCredentialType)
 
     if (initialCredentialValues) {
       const storedValues = Object.fromEntries(
@@ -198,7 +226,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       return merged
     }
 
-    const hasManualConfig = CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration
+    const hasManualConfig =
+      CREDENTIAL_VALUES_MAPPING[effectiveCredentialType]?.fieldsManualConfiguration
     if (hasManualConfig) return {}
 
     return defaults
@@ -246,7 +275,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     // GitLab / Jira / Confluence OAuth integrations are saved with app credentials only; each user
     // connects their own token afterwards via the per-user OAuth flow, so there is no sign-in
     // (oauth_state) to require here. Their app-credential fields are still validated below.
-    const config = CREDENTIAL_VALUES_MAPPING[credentialType]
+    const config = CREDENTIAL_VALUES_MAPPING[effectiveCredentialType]
     if (!config) return Yup.object(schema)
 
     Object.entries(config?.fields ?? {}).forEach(([key, fieldConfig]) => {
@@ -256,7 +285,14 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     })
 
     return Yup.object(schema)
-  }, [CREDENTIAL_VALUES_MAPPING, credentialType, editing, isSharePointOAuth, isSharePointSignedIn])
+  }, [
+    CREDENTIAL_VALUES_MAPPING,
+    effectiveCredentialType,
+    credentialType,
+    editing,
+    isSharePointOAuth,
+    isSharePointSignedIn,
+  ])
 
   const {
     control,
@@ -275,8 +311,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   const formValues = useWatch({ control })
 
   const mappingExists = useMemo(() => {
-    return CREDENTIAL_VALUES_MAPPING[credentialType] !== undefined
-  }, [CREDENTIAL_VALUES_MAPPING, credentialType])
+    return CREDENTIAL_VALUES_MAPPING[effectiveCredentialType] !== undefined
+  }, [CREDENTIAL_VALUES_MAPPING, effectiveCredentialType])
 
   const handleSharePointAuthMethodChange = (method: string) => {
     setSharePointAuthMethod(method)
@@ -288,23 +324,29 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     }
   }
 
-  // OAuth-variant folding: Jira/Confluence expose their OAuth flavour through an in-form toggle
-  // rather than a separate select item, so the effective credentialType can be the base type
-  // ('jira') or its OAuth variant ('jiraoauth'). The select always shows the base type.
-  const baseCredentialType = getBaseTypeForOAuthVariant(credentialType) ?? credentialType
-  // EPMCDME-14586: Jira/Confluence OAuth sign-in toggle temporarily hidden — do NOT delete.
-  // Uncomment these consts (and the toggle JSX + OAUTH_VARIANT_BY_BASE_TYPE import) to re-enable.
-  // const oauthVariantType = OAUTH_VARIANT_BY_BASE_TYPE[baseCredentialType]
-  // const isOAuthVariantSelected = !!oauthVariantType && credentialType === oauthVariantType
-  // // Only offer the toggle when the OAuth variant is actually available in this context
-  // // (role/enterprise/feature-flag gating already applied to CREDENTIAL_VALUES_MAPPING).
-  // const showOAuthToggle =
-  //   !!oauthVariantType && CREDENTIAL_VALUES_MAPPING[oauthVariantType] !== undefined
-  //
-  // const handleOAuthToggle = (useOAuth: boolean) => {
-  //   if (!oauthVariantType) return
-  //   handleCredentialTypeChange(useOAuth ? oauthVariantType : baseCredentialType)
-  // }
+  // EPMCDME-14587: the provider's OAuth sign-in is gated by an env-driven runtime feature flag
+  // (delivered on GET /v1/config). A disabled flag hides the toggle, matching the backend routers
+  // that 503 on the same flag. Called unconditionally; a non-OAuth type resolves to no flag -> false.
+  const [providerOAuthEnabled] = useFeatureFlag(
+    (oauthVariantType && OAUTH_VARIANT_FEATURE_FLAG[oauthVariantType]) || ''
+  )
+  // Only offer the toggle when the OAuth variant is actually available in this context
+  // (role/enterprise gating via CREDENTIAL_VALUES_MAPPING) and the provider's flag is enabled.
+  const showOAuthToggle =
+    !hideOAuthToggle &&
+    !!oauthVariantType &&
+    CREDENTIAL_VALUES_MAPPING[oauthVariantType] !== undefined &&
+    providerOAuthEnabled
+
+  const handleOAuthToggle = (useOAuth: boolean) => {
+    if (!oauthVariantType) return
+    // credentialType stays the base type; only the auth-method flag flips. Re-seed the form with the
+    // now-effective config's defaults so OAuth/PAT fields swap in (mirrors handleCredentialTypeChange).
+    setIsOAuth(useOAuth)
+    const nextEffective = useOAuth ? oauthVariantType : credentialType
+    reset({ alias: getValues('alias'), ...getCredentialDefaults(nextEffective) })
+    setResetCount((count) => count + 1)
+  }
 
   const credentialTypeOptions = useMemo(() => {
     const options = CREDENTIAL_TYPES.filter(
@@ -327,13 +369,20 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
 
   useEffect(() => {
     if (onCredentialValuesChange) {
-      onCredentialValuesChange(
-        Object.fromEntries(Object.entries(formValues).filter(([_, value]) => value !== undefined))
+      const emitted = Object.fromEntries(
+        Object.entries(formValues).filter(([_, value]) => value !== undefined)
       )
+      // EPMCDME-14587: isOAuth is the source of truth for the auth method, so ensure the auth_type=oauth
+      // marker rides along in the propagated values. Consumers (e.g. the integration edit page's
+      // EditIntegrationActions) read credentialValues.auth_type to route the OAuth vs PAT test action;
+      // without this an OAuth-toggled integration would emit no marker and fall back to the PAT test.
+      // Toggling OAuth off resets the form to the base-type defaults, so no stale marker survives here.
+      if (isOAuth) emitted.auth_type = 'oauth'
+      onCredentialValuesChange(emitted)
     }
-  }, [formValues, onCredentialValuesChange])
+  }, [formValues, isOAuth, onCredentialValuesChange])
 
-  useActiveHelpSegment(credentialType)
+  useActiveHelpSegment(effectiveCredentialType)
 
   useEffect(() => {
     if (onCredentialTypeChange) {
@@ -350,9 +399,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   useEffect(() => {
     if (editing || aliasManuallyEdited.current || !credentialType) return
     // Use the base type so toggling OAuth on/off keeps a stable "jira-…"/"confluence-…" alias.
-    const defaultAlias = generateDefaultAlias(
-      getBaseTypeForOAuthVariant(credentialType) ?? credentialType
-    )
+    const defaultAlias = generateDefaultAlias(credentialType)
     if (defaultAlias) setFormValue('alias', defaultAlias)
   }, [credentialType])
 
@@ -391,6 +438,9 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
 
   const handleCredentialTypeChange = (newType: string) => {
     setCredentialType(newType)
+    // Switching the base type resets the auth method to PAT; the toggle re-derives from the new type's
+    // variant availability.
+    setIsOAuth(false)
     webhookIdManuallyEdited.current = false
 
     const hasManualConfig = CREDENTIAL_VALUES_MAPPING[newType]?.fieldsManualConfiguration
@@ -423,8 +473,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     if (appliedInitialDefaultsRef.current || !isToolDefaultsLoaded || initialCredentialValues)
       return
     appliedInitialDefaultsRef.current = true
-    reset({ alias: getValues('alias'), ...getCredentialDefaults(credentialType) })
-  }, [isToolDefaultsLoaded, credentialType, reset, initialCredentialValues])
+    reset({ alias: getValues('alias'), ...getCredentialDefaults(effectiveCredentialType) })
+  }, [isToolDefaultsLoaded, effectiveCredentialType, reset, initialCredentialValues])
 
   const buildWebhookURL = (value: string) => {
     const webhookId = value && value.trim() !== '' ? value : '<id>'
@@ -455,14 +505,15 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
 
     const isGoogleOAuth = credentialType === GOOGLE_OAUTH_CREDENTIAL_TYPE
 
-    const hasManualConfig = CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration
+    const hasManualConfig =
+      CREDENTIAL_VALUES_MAPPING[effectiveCredentialType]?.fieldsManualConfiguration
     let credential_values: { key: string; value: unknown }[] = []
     if (!isGoogleOAuth) {
       if (hasManualConfig) {
         credential_values = manualCredentialValues.filter((item) => item.key && item.value)
       } else {
         const rawValues = { ...getValues() }
-        const fieldsCfg = CREDENTIAL_VALUES_MAPPING[credentialType]?.fields ?? {}
+        const fieldsCfg = CREDENTIAL_VALUES_MAPPING[effectiveCredentialType]?.fields ?? {}
         // Evaluate shouldShow against the ORIGINAL values (before stripping virtuals),
         // then drop UI-only virtual fields — so a virtual gate can still hide its dependents.
         Object.entries(fieldsCfg).forEach(([name, cfg]) => {
@@ -481,6 +532,14 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
           ({ value }) => value !== undefined
         )
       }
+    }
+
+    // EPMCDME-14586/14587: an OAuth variant is persisted under its base credential type (Jira /
+    // Confluence / Git) with an auth_type=oauth marker in credential_values, rather than as its own
+    // credential type. getOriginalCredentialType already folds the type; add the marker here.
+    if (isOAuth) {
+      credential_values = credential_values.filter(({ key }) => key !== 'auth_type')
+      credential_values.push({ key: 'auth_type', value: 'oauth' })
     }
 
     onSubmit({
@@ -524,11 +583,11 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
             adminOnly={settingType === SETTING_TYPE_PROJECT}
           />
 
-          {CREDENTIAL_VALUES_MAPPING[credentialType] && (
+          {CREDENTIAL_VALUES_MAPPING[effectiveCredentialType] && (
             <CredentialFields
-              key={credentialType}
+              key={effectiveCredentialType}
               control={control}
-              credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
+              credentialFields={CREDENTIAL_VALUES_MAPPING[effectiveCredentialType].fields}
               buildWebhookURL={buildWebhookURL}
               position={CredentialComponentPosition.top}
               editing={editing}
@@ -561,7 +620,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
         <div data-onboarding="integration-credential-type-field">
           <Autocomplete
             id="credentialType"
-            value={baseCredentialType}
+            value={credentialType}
             name="credentialType"
             placeholder="Credential Type"
             label="Credential Type"
@@ -572,22 +631,25 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
           />
         </div>
 
-        {/* EPMCDME-14586: Jira/Confluence "Use OAuth 2.0 sign-in" toggle temporarily hidden.
-            Do NOT delete — uncomment this block and the supporting consts/import above to re-enable.
         {showOAuthToggle && (
           <div data-onboarding="integration-oauth-toggle">
             <Switch
               id="useOAuth"
-              value={isOAuthVariantSelected}
+              value={isOAuth}
               onChange={(e) => handleOAuthToggle(e.target.checked)}
-              disabled={editing || disableType}
+              // EPMCDME-14582: only `editing` disables the auth-method toggle. `disableType` locks the
+              // base credential type (e.g. the assistant-tools popup fixes it to the tool's type) but
+              // must NOT block choosing OAuth vs PAT — OAuth persists under the same base type.
+              disabled={editing}
               styledDisabled
-              label="Use OAuth 2.0 sign-in"
+              // EPMCDME-14587: name the provider — GitLab is the only OAuth provider under the shared
+              // Git type, so a bare "Use OAuth 2.0 sign-in" was ambiguous. showOAuthToggle guarantees
+              // oauthVariantType is a known variant here.
+              label={`Use ${OAUTH_VARIANT_PROVIDER_LABEL[oauthVariantType]} OAuth 2.0 sign-in`}
               hint="Authorize with your own account through a browser sign-in instead of a shared API token. Each user connects individually."
             />
           </div>
         )}
-        */}
 
         <div data-onboarding="integration-alias-field">
           <Controller
@@ -611,9 +673,10 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
           />
         </div>
 
-        {isMessagePresent(credentialType) && getCredentialMessage(credentialType) && (
-          <SettingFormMessage message={getCredentialMessage(credentialType)!} />
-        )}
+        {isMessagePresent(effectiveCredentialType) &&
+          getCredentialMessage(effectiveCredentialType) && (
+            <SettingFormMessage message={getCredentialMessage(effectiveCredentialType)!} />
+          )}
 
         {credentialType === GOOGLE_OAUTH_CREDENTIAL_TYPE ? (
           <GoogleOAuthField
@@ -644,35 +707,40 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               />
             )}
             {!isSharePointOAuth &&
-              (CREDENTIAL_VALUES_MAPPING[credentialType]?.fieldsManualConfiguration ? (
+              (CREDENTIAL_VALUES_MAPPING[effectiveCredentialType]?.fieldsManualConfiguration ? (
                 <RecordInput
                   id="manualFields"
                   value={manualCredentialValues}
                   onChange={setManualCredentialValues}
                   name="manualFields"
-                  label={CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.label}
+                  label={
+                    CREDENTIAL_VALUES_MAPPING[effectiveCredentialType].fieldsManualConfiguration
+                      .label
+                  }
                   sensitive={
-                    CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.sensitive
+                    CREDENTIAL_VALUES_MAPPING[effectiveCredentialType].fieldsManualConfiguration
+                      .sensitive
                   }
                   addText={
-                    CREDENTIAL_VALUES_MAPPING[credentialType].fieldsManualConfiguration.addText
+                    CREDENTIAL_VALUES_MAPPING[effectiveCredentialType].fieldsManualConfiguration
+                      .addText
                   }
                 />
               ) : (
                 <>
-                  {getSettingsFieldsSectionTitle(credentialType) && (
+                  {getSettingsFieldsSectionTitle(effectiveCredentialType) && (
                     <div className="-mt-3 -mb-2">
                       <hr className="opacity-25 mb-6 border-border-structural" />
                       <h4 className="text-sm font-medium">
-                        {getSettingsFieldsSectionTitle(credentialType)}
+                        {getSettingsFieldsSectionTitle(effectiveCredentialType)}
                       </h4>
                     </div>
                   )}
-                  {CREDENTIAL_VALUES_MAPPING[credentialType] && (
+                  {CREDENTIAL_VALUES_MAPPING[effectiveCredentialType] && (
                     <CredentialFields
-                      key={credentialType}
+                      key={effectiveCredentialType}
                       control={control}
-                      credentialFields={CREDENTIAL_VALUES_MAPPING[credentialType].fields}
+                      credentialFields={CREDENTIAL_VALUES_MAPPING[effectiveCredentialType].fields}
                       buildWebhookURL={buildWebhookURL}
                       editing={editing}
                       resetKey={resetCount}
@@ -709,7 +777,9 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               </Button>
             )}
 
-            {getTestableCredentialTypes().includes(credentialType) && (
+            {/* EPMCDME-14587: the PAT test button is for non-OAuth auth; hide it whenever the OAuth
+                method is selected (isOAuth), whether on create (no marker yet) or edit. */}
+            {!isOAuth && getTestableCredentialTypes().includes(credentialType) && (
               <TestIntegration
                 credentialType={credentialType}
                 credentialValues={getValues()}
@@ -718,7 +788,13 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               />
             )}
 
-            <OAuthTestAction credentialType={credentialType} credentialValues={getValues()} />
+            {/* Pass effectiveCredentialType so OAuthTestAction resolves the provider from the variant
+                key directly — on create the auth_type=oauth marker is not in getValues() yet. */}
+            <OAuthTestAction
+              credentialType={effectiveCredentialType}
+              credentialValues={getValues()}
+              settingId={settingId}
+            />
 
             <Button onClick={submit}>{submitText || 'Save'}</Button>
           </div>

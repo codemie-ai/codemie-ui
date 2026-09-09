@@ -15,6 +15,7 @@
 
 import Button from '@/components/Button'
 import { ButtonType } from '@/constants'
+import { isFoldedOAuth } from '@/constants/integration'
 import { getTestableCredentialTypes, isDeprecatedCredentialType } from '@/utils/settings'
 
 import OAuthTestAction from './OAuthTestAction'
@@ -32,7 +33,9 @@ const EditIntegrationActions = ({ credentialType, credentialValues, settingId, o
   const lowered = credentialType.toLowerCase()
   return (
     <>
-      {getTestableCredentialTypes().includes(lowered) && (
+      {/* EPMCDME-14584/14587: a folded OAuth integration is tested via OAuthTestAction (connect-with
+          -test against the stored secret), not the generic PAT-style TestIntegration. */}
+      {!isFoldedOAuth(credentialValues) && getTestableCredentialTypes().includes(lowered) && (
         <TestIntegration
           credentialType={lowered}
           credentialValues={credentialValues}
@@ -40,7 +43,11 @@ const EditIntegrationActions = ({ credentialType, credentialValues, settingId, o
           label="Test"
         />
       )}
-      <OAuthTestAction credentialType={lowered} credentialValues={credentialValues} />
+      <OAuthTestAction
+        credentialType={lowered}
+        credentialValues={credentialValues}
+        settingId={settingId}
+      />
       <Button type={ButtonType.PRIMARY} onClick={onSave}>
         Save
       </Button>

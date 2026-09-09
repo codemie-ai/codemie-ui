@@ -1,0 +1,1 @@
+{"schema":1,"ts":"2026-09-03T17:52:43Z","event":"decision.recorded","phase":5,"actor":"decision-router","summary":"code-review.check: approve (CR-002 resolved, CR-001 superseded)","data":{"gate_id":"code-review.check","decision":"approve"}}

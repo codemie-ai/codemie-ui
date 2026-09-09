@@ -21,10 +21,12 @@ import {
   getSettingCredsURL,
   getOriginalCredentialType,
   convertCredsToKeyValue,
+  credentialValuesToRecord,
   getCredentialType,
   generateDefaultAlias,
   getTestableCredentialTypes,
   isDeprecatedCredentialType,
+  isOAuthProviderSetting,
   SETTING_TYPE_PROJECT,
   SETTING_TYPE_USER,
 } from '@/utils/settings'
@@ -296,6 +298,13 @@ describe('getOriginalCredentialType', () => {
   it('returns capitalized for non-special credential types', () => {
     expect(getOriginalCredentialType('github')).toBe('Github')
   })
+
+  it('folds OAuth variants to their base type serverEnum (EPMCDME-14586/14587)', () => {
+    // OAuth is an auth method within the base type, so it persists under the base credential type.
+    expect(getOriginalCredentialType('jiraoauth')).toBe('Jira')
+    expect(getOriginalCredentialType('confluenceoauth')).toBe('Confluence')
+    expect(getOriginalCredentialType('gitlaboauth')).toBe('Git')
+  })
 })
 
 describe('convertCredsToKeyValue', () => {
@@ -503,21 +512,45 @@ describe('generateDefaultAlias', () => {
   })
 })
 
-describe('OAuth switchers commented out (EPMCDME-14586)', () => {
-  it('does not expose the GitLab OAuth credential type', () => {
-    expect(CREDENTIAL_UI_MAPPING.gitlaboauth).toBeUndefined()
-    const types = getAvailableCredentialsTypes({ settingType: SETTING_TYPE_USER, user: null })
-    expect(types).not.toContain('gitlaboauth')
+describe('OAuth credential field titles are human-readable (EPMCDME-14580)', () => {
+  // Expected human-readable labels per OAuth credential type (provider-accurate scheme).
+  const OAUTH_FIELD_LABELS: Record<string, Record<string, string>> = {
+    gitlaboauth: {
+      instance_url: 'GitLab Instance URL',
+      client_id: 'Application ID',
+      client_secret: 'Application Secret',
+      callback_base_url: 'CodeMie Callback Base URL',
+    },
+    jiraoauth: {
+      client_id: 'Client ID',
+      client_secret: 'Client Secret',
+      callback_base_url: 'CodeMie Callback Base URL',
+    },
+    confluenceoauth: {
+      client_id: 'Client ID',
+      client_secret: 'Client Secret',
+      callback_base_url: 'CodeMie Callback Base URL',
+    },
+  }
+
+  it('gives each OAuth field an explicit human-readable label', () => {
+    for (const [type, fields] of Object.entries(OAUTH_FIELD_LABELS)) {
+      for (const [field, label] of Object.entries(fields)) {
+        expect(CREDENTIAL_UI_MAPPING[type]?.fields[field]?.label).toBe(label)
+      }
+    }
   })
 
-  it('does not expose the Jira/Confluence OAuth types (hidden from the type filter too)', () => {
-    expect(CREDENTIAL_UI_MAPPING.jiraoauth).toBeUndefined()
-    expect(CREDENTIAL_UI_MAPPING.confluenceoauth).toBeUndefined()
-    const types = getAvailableCredentialsTypes({ settingType: SETTING_TYPE_USER, user: null })
-    expect(types).not.toContain('jiraoauth')
-    expect(types).not.toContain('confluenceoauth')
-    // Base token types remain.
-    expect(types).toEqual(expect.arrayContaining(['jira', 'confluence']))
+  it('never uses a URL as an OAuth field title', () => {
+    for (const type of Object.keys(OAUTH_FIELD_LABELS)) {
+      const fields = CREDENTIAL_UI_MAPPING[type]?.fields ?? {}
+      for (const cfg of Object.values(fields)) {
+        // Every OAuth field must carry a plain-string label, and it must not be a raw URL
+        // (the exact regression: the URL placeholder leaking into the field title).
+        expect(typeof cfg.label).toBe('string')
+        expect(cfg.label as string).not.toMatch(/^https?:\/\//)
+      }
+    }
   })
 })
 
@@ -569,5 +602,60 @@ describe('deprecated credential type filtering', () => {
     expect(isDeprecatedCredentialType('Jira')).toBe(false)
     expect(isDeprecatedCredentialType('ZephyrScale')).toBe(false)
     expect(isDeprecatedCredentialType('unknown-type')).toBe(false)
+  })
+})
+
+describe('credentialValuesToRecord', () => {
+  it('returns an empty record for undefined', () => {
+    expect(credentialValuesToRecord(undefined)).toEqual({})
+  })
+
+  it('collapses {key, value} pairs into a record', () => {
+    expect(
+      credentialValuesToRecord([
+        { key: 'auth_type', value: 'oauth' },
+        { key: 'token', value: 'secret' },
+      ])
+    ).toEqual({ auth_type: 'oauth', token: 'secret' })
+  })
+})
+
+describe('isOAuthProviderSetting', () => {
+  const oauth = { key: 'auth_type', value: 'oauth' }
+
+  it.each([
+    ['jira', 'Jira'],
+    ['confluence', 'Confluence'],
+    ['git', 'GitLab (Git)'],
+  ])('is true for a folded %s OAuth setting', (credential_type) => {
+    expect(isOAuthProviderSetting({ credential_type, credential_values: [oauth] })).toBe(true)
+  })
+
+  it('is true for a legacy standalone OAuth variant credential_type', () => {
+    // A row still typed as the variant (e.g. jiraoauth) resolves without needing the marker.
+    expect(isOAuthProviderSetting({ credential_type: 'jiraoauth', credential_values: [] })).toBe(
+      true
+    )
+  })
+
+  it('is false for SharePoint OAuth (not a folded Jira/Confluence/Git provider)', () => {
+    // SharePoint also stores auth_type=oauth but must stay selectable in the data source form.
+    expect(
+      isOAuthProviderSetting({ credential_type: 'sharepoint', credential_values: [oauth] })
+    ).toBe(false)
+  })
+
+  it.each([
+    ['jira', 'PAT Jira'],
+    ['confluence', 'PAT Confluence'],
+    ['git', 'PAT GitHub/GitLab'],
+  ])('is false for a %s PAT setting (no auth_type=oauth marker)', (credential_type) => {
+    expect(
+      isOAuthProviderSetting({ credential_type, credential_values: [{ key: 'token', value: 'x' }] })
+    ).toBe(false)
+  })
+
+  it('is false for a missing credential_type', () => {
+    expect(isOAuthProviderSetting({ credential_values: [oauth] })).toBe(false)
   })
 })

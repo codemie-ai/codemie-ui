@@ -19,6 +19,7 @@ import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
 import Sidebar from '@/components/Sidebar'
 import { ButtonType } from '@/constants'
+import { isFoldedOAuth } from '@/constants/integration'
 import { INTEGRATIONS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { projectSettingsStore } from '@/store/projectSettings'
@@ -79,7 +80,10 @@ const NewProjectIntegrationPage = () => {
             <Button type={ButtonType.SECONDARY} onClick={onBack}>
               Cancel
             </Button>
+            {/* EPMCDME-14587: a folded OAuth integration is tested via OAuthTestAction, not the generic
+                PAT-style TestIntegration — hide the PAT test when the OAuth marker is present. */}
             {credentialType &&
+              !isFoldedOAuth(credentialValues) &&
               getTestableCredentialTypes().includes(credentialType.toLowerCase()) && (
                 <TestIntegration
                   credentialType={credentialType.toLowerCase()}

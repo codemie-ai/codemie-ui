@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "rationale": "Three-lens review (blind, edge-case, acceptance) of a 9-file, +311/-43 frontend diff. Acceptance lens audited all 8 EPMCDME-14584 criteria against source: all pass (backend test:true support confirmed present in ConnectOAuthRequest.test). Edge-case lens returned no findings, confirming against source that the auth_type=oauth marker is present in credentialValues on the Edit pages, MASKED_VALUE matches the sensitive-field mask, git is non-testable, resolveOAuthVariant cannot throw, the create flow is unregressed, and the three connect endpoints/store methods match. Blind lens raised 3 majors: #2 (Jira/Confluence branches use bare identifiers instead of value()) is a FALSE POSITIVE caused by an abbreviated diff in the lens prompt — the real code uses value('client_id')/value('client_secret')/value('callback_base_url') in every branch; #1 (masked-secret path tests stored config rather than unsaved non-secret field edits) is a known, previously-accepted trade-off since sending the mask to /initiate is strictly worse; #3 (masked secret with no settingId leaking to /initiate) is theoretical with no real path (create flow uses freshly typed secrets, confirmed by edge-case). Dismissed: 1 (blind #2 false positive). Deferred (non-blocking): blind #1 stale-config-on-edit trade-off; blind #3 theoretical; and a minor latent over-match where isFoldedOAuth also matches SharePoint auth_type=oauth (benign today — SharePoint is non-testable and resolveOAuthVariant returns undefined for it). No critical/major finding survived verification. Security risk flag reviewed: the masked secret is never posted; connect-with-test posts only {setting_id, test}; no secret in URL or logs. Note: no commits exist yet (held for user permission), so git-workflow commit-format check is N/A this round.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "Saved Jira OAuth testable without re-pasting token", "status": "pass", "notes": "resolveOAuthVariant('jira',{auth_type:'oauth'})->jiraoauth; masked secret routes to connectJiraOAuth(settingId,true)." },
+    { "criterion": "Saved Confluence OAuth testable without re-pasting token", "status": "pass", "notes": "connectConfluenceOAuth(settingId,true) -> v1/confluence-oauth/connect." },
+    { "criterion": "Saved GitLab OAuth testable without re-pasting token", "status": "pass", "notes": "git base type now resolves to gitlaboauth; Test button restored (was absent) + connectGitLabOAuth(settingId,true)." },
+    { "criterion": "UI uses correct saved OAuth token/secure reference on Test", "status": "pass", "notes": "useStoredSecret uses stored secret by settingId; settingId threaded through Edit pages + SettingsForm." },
+    { "criterion": "Token used is consistent with saved integration state", "status": "pass", "notes": "MASKED_VALUE sentinel means unchanged secret -> stored-secret path." },
+    { "criterion": "Manual token paste no longer required", "status": "pass", "notes": "masked (untyped) secret is exactly the case that now succeeds via connect-with-test." },
+    { "criterion": "Test result reflects real OAuth connectivity", "status": "pass", "notes": "connect/initiate responses share auth_url/state; popup OAuth flow correlates by signed state (backend runs the real handshake)." },
+    { "criterion": "No regression to create/save/edit/use of OAuth integrations", "status": "pass", "notes": "generic PAT-style TestIntegration hidden only for folded OAuth; create flow unchanged (variant key resolves directly; marker injected at submit)." }
+  ],
+  "standards_review": [
+    { "check": "security-patterns (secret handling)", "status": "pass", "notes": "masked secret never posted; connect-with-test posts only {setting_id,test}; no secret in URL/logs; client_secret stays sensitive." },
+    { "check": "code-quality", "status": "pass", "notes": "follows existing store/component patterns; typecheck clean; prettier/eslint applied via PostToolUse hook." },
+    { "check": "git-workflow (commit format)", "status": "na", "notes": "no commits yet this round (held for user permission); commit-format checked at commit time." }
+  ],
+  "findings": []
+}

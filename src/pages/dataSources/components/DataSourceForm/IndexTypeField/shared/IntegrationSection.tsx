@@ -144,6 +144,9 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
         onSuccess={onIntegrationSuccess}
         project={projectName}
         credentialType={credentialType || datasourceType || ''}
+        // Data sources cannot index through a delegated OAuth connection, and such integrations are
+        // filtered out of the selector above, so creating one from here would be a dead end.
+        hideOAuthToggle
       />
     </>
   )

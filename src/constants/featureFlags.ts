@@ -34,6 +34,9 @@ export const FEATURE_FLAGS = {
   COST_CENTERS: 'features:costCenters',
   BUDGET_SOFT_LIMIT_NOTIFICATION: 'features:budgetSoftLimitNotification',
   TOOL_PERMISSIONS: 'features:tool_permissions',
+  GITLAB_OAUTH: 'features:gitlabOauth',
+  JIRA_OAUTH: 'features:jiraOauth',
+  CONFLUENCE_OAUTH: 'features:confluenceOauth',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

@@ -1,0 +1,66 @@
+{
+  "task": "EPMCDME-14582 — enable the 'Use OAuth 2.0 sign-in' toggle in SettingsForm when the credential type is locked (disableType) so the assistant-tools 'Create User Integration' popup no longer disables the auth-method choice on create.",
+  "generated": "2026-09-03",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "SettingsForm OAuth toggle (Switch disabled condition)",
+      "layers": "UI only"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": "Governs an auth-method (OAuth vs PAT) selection in a popup, but the change is purely a presentational disabled-state flip with no authentication/authorization logic altered and no backend surface touched.",
+      "mitigation": "Fully reversible one-token change; covered by a parametrized SettingsForm enabled-when-locked test (git/jira/confluence), an editing-disabled regression test, and a NewIntegrationPopup render test."
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 2,
+      "modified_file_list": [
+        "src/pages/integrations/components/SettingsForm/SettingsForm.tsx",
+        "src/pages/integrations/components/SettingsForm/__tests__/SettingsForm.oauth.test.tsx"
+      ],
+      "new_files": 1,
+      "new_file_list": [
+        "src/pages/integrations/components/NewIntegrationPopup/__tests__/NewIntegrationPopup.test.tsx"
+      ],
+      "affected_dirs": [
+        "src/pages/integrations/components/SettingsForm",
+        "src/pages/integrations/components/NewIntegrationPopup"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 7,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 3,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "3 files changed (SettingsForm.tsx plus two colocated test files, one new) — the only dimension above XS; production change is a single line while the bulk of the 124 insertions are tests." },
+    { "dimension": "component_scope", "reason": "One component touched — a single Switch's `disabled={editing || disableType}` narrowed to `disabled={editing}`; no layer boundaries crossed, credential-type select still respects disableType." },
+    { "dimension": "technical_risk", "reason": "Presentational disabled-state flip, fully reversible, exact adjacent pattern exists; no auth/authorization logic, backend, or persistence involved." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

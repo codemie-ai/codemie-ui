@@ -14,6 +14,7 @@
 //
 
 import { USER_TYPE_EXTERNAL } from '@/constants'
+import { getBaseTypeForOAuthVariant, resolveOAuthVariant } from '@/constants/integration'
 import { CREDENTIAL_DEFAULTS } from '@/constants/settings'
 import { userStore } from '@/store'
 import { SettingCredentialValue } from '@/types/entity'
@@ -109,6 +110,13 @@ export const getAvailableCredentialsTypes = ({
 }
 
 export const getOriginalCredentialType = (value: string): string => {
+  // EPMCDME-14586/14587: OAuth is an authentication method within the existing integration type, so
+  // an OAuth variant persists under its base type's serverEnum (e.g. 'jiraoauth' -> 'Jira',
+  // 'gitlaboauth' -> 'Git'). The auth_type=oauth marker travels in credential_values instead.
+  const baseType = getBaseTypeForOAuthVariant(value)
+  if (baseType) {
+    return getOriginalCredentialType(baseType)
+  }
   // Return the serverEnum (backend enum) from config if available (e.g., "AWS", "GCP", "Xray")
   // Otherwise fall back to capitalized value (e.g., "Jira")
   const credConfig = CREDENTIAL_UI_MAPPING[value]
@@ -133,6 +141,27 @@ export const getCredentialMessage = (credentialType: string) => {
   const credConfig = CREDENTIAL_UI_MAPPING[credentialType]
   return credConfig?.message
 }
+
+// Saved settings expose credential_values as {key, value} pairs, while the OAuth helpers in
+// constants/integration work on the record form used inside the integration form.
+export const credentialValuesToRecord = (
+  credentialValues: readonly SettingCredentialValue[] | undefined
+): Record<string, unknown> =>
+  Object.fromEntries((credentialValues ?? []).map(({ key, value }) => [key, value]))
+
+/**
+ * True when a saved integration authenticates through OAuth for one of the folded providers
+ * (Jira, Confluence, Git/GitLab). Deliberately scoped to those base types via resolveOAuthVariant,
+ * so SharePoint — which also stores auth_type=oauth — is not matched.
+ */
+export const isOAuthProviderSetting = (setting: {
+  credential_type?: string
+  credential_values?: readonly SettingCredentialValue[]
+}): boolean =>
+  !!resolveOAuthVariant(
+    setting.credential_type ?? '',
+    credentialValuesToRecord(setting.credential_values)
+  )
 
 export const convertCredsToKeyValue = (
   credentialValues: Record<string, unknown> | undefined

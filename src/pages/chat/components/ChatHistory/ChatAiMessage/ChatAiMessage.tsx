@@ -333,7 +333,10 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
           </div>
         )}
 
-        {!isInProgress && !isSharedPage && (
+        {/* An auth-prompt turn (MCP / per-user OAuth "Sign in with …") is not a normal AI answer: it
+            carries no editable/copyable/rateable content, and editing it would call
+            update_conversation_ai_message on a turn that has no user+AI pair (500). Hide the toolbar. */}
+        {!isInProgress && !isSharedPage && !hasAuthPrompt && (
           <ChatAiMessageActions
             isEditing={isEditing}
             indexes={indexes}

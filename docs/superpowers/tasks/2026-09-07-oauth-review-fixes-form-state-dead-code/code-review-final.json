@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "rationale": "Pure deletion of 6 verified-dead OAuth feature-flag wrappers (-24 lines). Blind lens: no blocking findings (only caveat = possible out-of-diff imports). Edge-case lens (repo read access): [] — confirmed zero remaining references to any of the six names anywhere in src, no barrel/index re-exports them, and the retained generic useFeatureFlag/isFeatureEnabled + FEATURE_FLAGS.*_OAUTH constants still power the SettingsForm OAuth toggle. No acceptance lens (sdlc-light has no spec); nothing to accept for a pure deletion. Standards: commit subject 'EPMCDME-14587: Remove unused OAuth feature-flag helpers' conforms; tsc + eslint clean. No behavior change.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "check": "git-workflow (commit format)", "status": "pass", "notes": "Single-ticket 'EPMCDME-14587: Capital sentence' subject." },
+    { "check": "code-quality", "status": "pass", "notes": "tsc --noEmit clean; eslint clean; featureFlags unit suite green." },
+    { "check": "security-patterns", "status": "na", "notes": "Dead-code removal; no security surface." }
+  ],
+  "findings": []
+}

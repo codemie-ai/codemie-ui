@@ -1,0 +1,71 @@
+{
+  "task": "EPMCDME-14584 — restore the OAuth connect-with-test flow for saved folded OAuth integrations (Jira/Confluence/GitLab) so a masked stored client_secret is validated via connect-with-test instead of being sent to /initiate.",
+  "generated": "2026-09-03",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L",
+      "affected": "constants/integration.ts (isFoldedOAuth/resolveOAuthVariant helpers), OAuthTestAction, EditProjectIntegrationPage, EditUserIntegrationPage, SettingsForm, userSettings store (3 connect*OAuth methods)",
+      "layers": "UI (pages, components, form), State (Valtio store), shared constants module"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": "Well-scoped bug fix against a specific ticket; the folded-OAuth model and connect-with-test contract were already established by the 14586/14587 refactor. Only minor confirmation around masked-secret routing behavior."
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L",
+      "risk_factors": "Handles OAuth authentication credentials — routes a masked/stored client_secret through connect-with-test; incorrect routing sends the mask to /initiate and breaks the test, or risks persisting a token where none should be persisted.",
+      "mitigation": "Reuses the existing connect-with-test path (server decrypts by setting_id, no token persisted); guarded by the isFoldedOAuth marker + settingId + MASKED_VALUE check; covered by unit tests on the helpers, OAuthTestAction, and store methods."
+    },
+    "file_change_estimate": {
+      "score": 4,
+      "label": "L",
+      "modified_files": 9,
+      "modified_file_list": [
+        "src/constants/integration.ts",
+        "src/constants/__tests__/integration.test.ts",
+        "src/pages/integrations/EditProjectIntegrationPage.tsx",
+        "src/pages/integrations/EditUserIntegrationPage.tsx",
+        "src/pages/integrations/components/OAuthTestAction.tsx",
+        "src/pages/integrations/components/SettingsForm/SettingsForm.tsx",
+        "src/pages/integrations/components/__tests__/OAuthTestAction.test.tsx",
+        "src/store/__tests__/userSettings.test.ts",
+        "src/store/userSettings.ts"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": ["src/constants", "src/pages", "src/store"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 2,
+      "label": "S",
+      "layers_changed": ["UI", "State"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 17,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 9,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Six source components touched across the UI and state layers — two Edit pages, OAuthTestAction, SettingsForm, the userSettings store, plus new helpers in the shared constants/integration.ts module consumed across integration forms." },
+    { "dimension": "technical_risk", "reason": "Sits directly on the OAuth authentication path — decides whether a masked stored client_secret is validated server-side via connect-with-test or (wrongly) sent to /initiate; a mistake either breaks the test or mishandles credentials." },
+    { "dimension": "file_change_estimate", "reason": "9 files changed (311 insertions, 43 deletions) spanning three top-level src areas (constants, pages, store), including three test files — squarely in the L band (8–10 files)." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M (3) to L (4): change affects authentication/authorization — routes a masked/stored client_secret through the OAuth connect-with-test flow.",
+    "Component Scope bumped from M (3) to L (4): adds isFoldedOAuth/resolveOAuthVariant helpers to the shared constants/integration.ts module used across the integration forms."
+  ],
+  "split_recommendation": null
+}

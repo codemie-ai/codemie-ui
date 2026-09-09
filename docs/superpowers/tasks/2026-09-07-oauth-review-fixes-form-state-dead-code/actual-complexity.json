@@ -1,0 +1,60 @@
+{
+  "task": "Remove six unused OAuth-related feature-flag helper functions (dead code) from the feature-flag hooks and utils modules, per MR !1798 review.",
+  "generated": "2026-09-07",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "Feature-flag helper module (useFeatureFlags hook wrappers, featureFlags util wrappers)",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": "Pure deletion of unused exports with no callers; trivially reversible, no behavior change"
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 2,
+      "modified_file_list": [
+        "src/hooks/useFeatureFlags.ts",
+        "src/utils/featureFlags.ts"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": ["src/hooks", "src/utils"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single feature-flag helper concern across two adjacent files (hooks + utils); no architectural impact, no layer boundaries crossed" },
+    { "dimension": "technical_risk", "reason": "24 deletions only, no insertions; removed exports have no callers and no tests referenced them, so the change is behavior-neutral and trivially reversible" }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

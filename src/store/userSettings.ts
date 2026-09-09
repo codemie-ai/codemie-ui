@@ -72,17 +72,20 @@ interface UserSettingsStoreType {
   initiateGitLabOAuth: (
     payload?: GitLabOAuthInitiatePayload
   ) => Promise<GitLabOAuthInitiateResponse>
-  connectGitLabOAuth: (settingId: string) => Promise<GitLabOAuthConnectResponse>
+  connectGitLabOAuth: (settingId: string, test?: boolean) => Promise<GitLabOAuthConnectResponse>
   getGitLabConnectionStatus: (settingId: string) => Promise<GitLabConnectionStatusResponse>
   disconnectGitLabOAuth: (settingId: string) => Promise<{ status: string }>
   initiateJiraOAuth: (payload?: JiraOAuthInitiatePayload) => Promise<JiraOAuthInitiateResponse>
-  connectJiraOAuth: (settingId: string) => Promise<JiraOAuthConnectResponse>
+  connectJiraOAuth: (settingId: string, test?: boolean) => Promise<JiraOAuthConnectResponse>
   getJiraConnectionStatus: (settingId: string) => Promise<JiraConnectionStatusResponse>
   disconnectJiraOAuth: (settingId: string) => Promise<{ status: string }>
   initiateConfluenceOAuth: (
     payload?: ConfluenceOAuthInitiatePayload
   ) => Promise<ConfluenceOAuthInitiateResponse>
-  connectConfluenceOAuth: (settingId: string) => Promise<ConfluenceOAuthConnectResponse>
+  connectConfluenceOAuth: (
+    settingId: string,
+    test?: boolean
+  ) => Promise<ConfluenceOAuthConnectResponse>
   getConfluenceConnectionStatus: (settingId: string) => Promise<ConfluenceConnectionStatusResponse>
   disconnectConfluenceOAuth: (settingId: string) => Promise<{ status: string }>
 }
@@ -263,8 +266,8 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
 
   // Per-user connect to an existing shared integration: app credentials are loaded server-side
   // from `settingId`, so the member never re-enters client_id / client_secret.
-  async connectGitLabOAuth(settingId: string): Promise<GitLabOAuthConnectResponse> {
-    const response = await api.post('v1/gitlab-oauth/connect', { setting_id: settingId })
+  async connectGitLabOAuth(settingId: string, test = false): Promise<GitLabOAuthConnectResponse> {
+    const response = await api.post('v1/gitlab-oauth/connect', { setting_id: settingId, test })
     return response.json()
   },
 
@@ -295,8 +298,8 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
 
   // Per-user connect to an existing shared Jira integration: app credentials are loaded server-side
   // from `settingId`, so the member never re-enters client_id / client_secret.
-  async connectJiraOAuth(settingId: string): Promise<JiraOAuthConnectResponse> {
-    const response = await api.post('v1/atlassian-oauth/connect', { setting_id: settingId })
+  async connectJiraOAuth(settingId: string, test = false): Promise<JiraOAuthConnectResponse> {
+    const response = await api.post('v1/atlassian-oauth/connect', { setting_id: settingId, test })
     return response.json()
   },
 
@@ -325,8 +328,11 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
     return response.json()
   },
 
-  async connectConfluenceOAuth(settingId: string): Promise<ConfluenceOAuthConnectResponse> {
-    const response = await api.post('v1/confluence-oauth/connect', { setting_id: settingId })
+  async connectConfluenceOAuth(
+    settingId: string,
+    test = false
+  ): Promise<ConfluenceOAuthConnectResponse> {
+    const response = await api.post('v1/confluence-oauth/connect', { setting_id: settingId, test })
     return response.json()
   },
 

@@ -1,0 +1,39 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "EPMCDME-14587: remove standalone JIRA_OAUTH/CONFLUENCE_OAUTH/GITLAB_OAUTH credential types; OAuth persists under base type + auth_type=oauth marker",
+      "status": "pass",
+      "notes": "FE submit folds the OAuth variant to the base serverEnum (Jira/Confluence/Git) and injects {key:'auth_type', value:'oauth'}; backend removed the enum members and resolves the provider from the marker (folded_credentials.oauth_provider)."
+    },
+    {
+      "criterion": "EPMCDME-14586: GitLab OAuth reuses the existing Git integration via a 'Use OAuth 2.0 sign in' toggle (like Jira/Confluence)",
+      "status": "pass",
+      "notes": "git added to OAUTH_VARIANT_BY_BASE_TYPE so the Git form shows the toggle; GitLab no longer a standalone select item; folded rows disambiguated from GitHub PAT via the marker on the backend."
+    },
+    {
+      "criterion": "Saved OAuth integration re-opens on the OAuth form on edit (toggle ON, OAuth fields shown)",
+      "status": "pass",
+      "notes": "SettingsForm initial-type resolver maps a base setting carrying auth_type=oauth to its OAuth variant key; covered by SettingsForm.oauth.test.tsx edit test."
+    },
+    {
+      "criterion": "OAuth variants no longer appear as their own credential-type option / filter option",
+      "status": "pass",
+      "notes": "credentialTypeOptions and useIntegrationTypeOptions both exclude OAUTH_VARIANT_CREDENTIAL_TYPES; the latter fix prevents a duplicate base filter option."
+    }
+  ],
+  "standards_review": [
+    {"standard": "code-quality (ruff check + ruff format --check on backend diff)", "status": "pass", "notes": "24 changed .py files: all checks passed, all already formatted."},
+    {"standard": "lint + typecheck (frontend)", "status": "pass", "notes": "npm run lint clean; npm run typecheck (tsc --noEmit) clean."},
+    {"standard": "security-patterns (secrets, injection, auth)", "status": "pass", "notes": "auth_type=oauth is a non-sensitive plaintext marker; no secrets added; provider resolution is server-side from the marker; OAuth connect/test uses provider enums, unaffected by the credential-type enum removal."}
+  ],
+  "findings": [],
+  "rationale": "Single-reviewer inline review (not the 3-lens subagent fan-out) over both repos' diffs: codemie-ui F1-F3 (uncommitted) and codemie backend (committed on EPMCDME-14587_reuse-oauth-integration-types). One maintainability finding was found and FIXED during review (CR-001): the OAuth-variant configs in settingsUIConfig.ts still declared serverEnum 'GitLabOAuth'/'JiraOAuth'/'ConfluenceOAuth' — backend enum values that were removed — a latent trap since getOriginalCredentialType folds before reading serverEnum; updated to the base enum ('Git'/'Jira'/'Confluence'). FE→BE contract verified exact: FE emits {key:'auth_type', value:'oauth'}; backend folded_credentials reads AUTH_TYPE_KEY='auth_type'/OAUTH_AUTH_TYPE='oauth'. No blocking findings remain. Confidence medium (inline single-pass, no acceptance subagent) rather than high. NOTE for merge: the Alembic migration fa14587c0de1 has NOT been run against a real Postgres (no local DB) and must get an upgrade/downgrade smoke test before merge.",
+  "reviewed_scope": {
+    "codemie-ui": ["src/utils/settings.ts", "src/constants/integration.ts", "src/hooks/useIntegrationTypeOptions.ts", "src/pages/integrations/components/SettingsForm/SettingsForm.tsx", "src/utils/settingsUIConfig.ts", "tests"],
+    "codemie": ["src/codemie_tools/base/models.py", "src/codemie/service/oauth/*", "src/codemie/service/settings/settings.py", "src/codemie/service/{jira,confluence,gitlab}_oauth/token_manager.py", "src/codemie/rest_api/routers/*oauth*", "src/external/alembic/versions/fa14587c0de1_*"]
+  }
+}

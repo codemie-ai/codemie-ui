@@ -1,0 +1,64 @@
+{
+  "task": "Add human-readable labels to GitLab/Jira/Confluence OAuth credential config fields and restore the previously hidden OAuth credential types and sign-in toggle, with regression tests.",
+  "generated": "2026-09-02",
+  "dimensions": {
+    "component_scope": {
+      "score": 2,
+      "label": "S",
+      "affected": "CREDENTIAL_UI_MAPPING (settingsUIConfig), SettingsForm component",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Re-enabling the hidden gitlaboauth/jiraoauth/confluenceoauth credential types and the OAuth sign-in toggle exposes real integration auth flows to users",
+      "mitigation": "label already existed on CredentialFieldConfig; change is data/config plus uncommenting existing, previously-shipped logic; trivially reversible"
+    },
+    "file_change_estimate": {
+      "score": 2,
+      "label": "S",
+      "modified_files": 3,
+      "modified_file_list": [
+        "src/pages/integrations/components/SettingsForm/SettingsForm.tsx",
+        "src/utils/settingsUIConfig.ts",
+        "src/utils/__tests__/settings.test.ts"
+      ],
+      "new_files": 1,
+      "new_file_list": [
+        "src/pages/integrations/components/SettingsForm/__tests__/SettingsForm.oauth.test.tsx"
+      ],
+      "affected_dirs": ["src/pages", "src/utils"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Two UI source files touched (CREDENTIAL_UI_MAPPING data map and the SettingsForm component), all within a single UI layer" },
+    { "dimension": "technical_risk", "reason": "The label additions are trivial and mirror existing config entries, but the same branch restores three OAuth credential types plus the sign-in toggle, exposing integration auth flows; rollback is trivial and no new patterns were introduced" },
+    { "dimension": "file_change_estimate", "reason": "4 files changed (3 modified, 1 new regression test) across two directories" }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

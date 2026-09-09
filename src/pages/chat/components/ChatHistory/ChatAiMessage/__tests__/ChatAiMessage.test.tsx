@@ -164,6 +164,36 @@ const defaultIndexes = { historyIndex: 0, messageIndex: 0 }
 
 // ---
 
+describe('ChatAiMessage — auth-prompt turns', () => {
+  // EPMCDME-14587: a "Sign in with GitLab/Jira/Confluence" (or MCP) auth-prompt turn is not a normal
+  // AI answer — it has no editable/copyable/rateable content, and editing it would call
+  // update_conversation_ai_message on a turn with no user+AI pair (backend 500). The action toolbar
+  // (edit/copy/export/like/dislike) must be hidden for these turns.
+  it('hides the message action toolbar for an auth-prompt turn (gate applies to MCP + OAuth)', () => {
+    renderMessage(
+      createMessage({
+        mcpAuthPromptRows: [
+          {
+            mcp_config_id: 'mcp-1',
+            mcp_config_name: 'GitHub',
+            mcp_server_name: 'GitHub',
+            auth_config_id: 'auth-1',
+            status: 'authentication_required',
+            initiate_url: '/v1/mcp-auth/oauth2/initiate',
+          },
+        ],
+      } as Partial<ChatMessage>)
+    )
+    expect(screen.getByTestId('chat-ai-auth-prompt')).toBeInTheDocument()
+    expect(screen.queryByTestId('message-actions')).not.toBeInTheDocument()
+  })
+
+  it('still renders the action toolbar for a normal AI answer', () => {
+    renderMessage(createMessage())
+    expect(screen.getByTestId('message-actions')).toBeInTheDocument()
+  })
+})
+
 describe('ChatAiMessage processing metadata', () => {
   beforeEach(() => {
     vi.clearAllMocks()

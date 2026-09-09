@@ -183,9 +183,28 @@ describe('userSettingsStore — per-user GitLab connect', () => {
       })
     )
     const res = await userSettingsStore.connectGitLabOAuth('s1')
-    expect(mockPost).toHaveBeenCalledWith('v1/gitlab-oauth/connect', { setting_id: 's1' })
+    expect(mockPost).toHaveBeenCalledWith('v1/gitlab-oauth/connect', {
+      setting_id: 's1',
+      test: false,
+    })
     expect(res.state).toBe('st')
     expect(res.setting_id).toBe('s1')
+  })
+
+  it('connectGitLabOAuth forwards test:true for a non-persisting test', async () => {
+    mockPost.mockResolvedValueOnce(
+      okResponse({
+        auth_url: 'https://gl/auth',
+        state: 'st',
+        instance_url: 'https://gl',
+        setting_id: 's1',
+      })
+    )
+    await userSettingsStore.connectGitLabOAuth('s1', true)
+    expect(mockPost).toHaveBeenCalledWith('v1/gitlab-oauth/connect', {
+      setting_id: 's1',
+      test: true,
+    })
   })
 
   it('getGitLabConnectionStatus reads the caller status', async () => {
@@ -225,9 +244,23 @@ describe('userSettingsStore — per-user Jira connect', () => {
       okResponse({ auth_url: 'https://a', state: 'st', setting_id: 's1' })
     )
     const res = await userSettingsStore.connectJiraOAuth('s1')
-    expect(mockPost).toHaveBeenCalledWith('v1/atlassian-oauth/connect', { setting_id: 's1' })
+    expect(mockPost).toHaveBeenCalledWith('v1/atlassian-oauth/connect', {
+      setting_id: 's1',
+      test: false,
+    })
     expect(res.state).toBe('st')
     expect(res.setting_id).toBe('s1')
+  })
+
+  it('connectJiraOAuth forwards test:true for a non-persisting test', async () => {
+    mockPost.mockResolvedValueOnce(
+      okResponse({ auth_url: 'https://a', state: 'st', setting_id: 's1' })
+    )
+    await userSettingsStore.connectJiraOAuth('s1', true)
+    expect(mockPost).toHaveBeenCalledWith('v1/atlassian-oauth/connect', {
+      setting_id: 's1',
+      test: true,
+    })
   })
 
   it('getJiraConnectionStatus reads the caller status', async () => {
@@ -267,8 +300,22 @@ describe('userSettingsStore — per-user Confluence connect', () => {
       okResponse({ auth_url: 'https://a', state: 'st', setting_id: 's1' })
     )
     const res = await userSettingsStore.connectConfluenceOAuth('s1')
-    expect(mockPost).toHaveBeenCalledWith('v1/confluence-oauth/connect', { setting_id: 's1' })
+    expect(mockPost).toHaveBeenCalledWith('v1/confluence-oauth/connect', {
+      setting_id: 's1',
+      test: false,
+    })
     expect(res.state).toBe('st')
+  })
+
+  it('connectConfluenceOAuth forwards test:true for a non-persisting test', async () => {
+    mockPost.mockResolvedValueOnce(
+      okResponse({ auth_url: 'https://a', state: 'st', setting_id: 's1' })
+    )
+    await userSettingsStore.connectConfluenceOAuth('s1', true)
+    expect(mockPost).toHaveBeenCalledWith('v1/confluence-oauth/connect', {
+      setting_id: 's1',
+      test: true,
+    })
   })
 
   it('getConfluenceConnectionStatus reads the caller status', async () => {

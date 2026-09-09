@@ -19,7 +19,9 @@ import {
   CONFLUENCE_OAUTH_CREDENTIAL_TYPE,
   GITLAB_OAUTH_CREDENTIAL_TYPE,
   JIRA_OAUTH_CREDENTIAL_TYPE,
+  resolveOAuthVariant,
 } from '@/constants/integration'
+import { MASKED_VALUE } from '@/constants/settings'
 import { userSettingsStore } from '@/store/userSettings'
 import { OAuthProvider } from '@/types/entity/dataSource'
 
@@ -28,15 +30,23 @@ import OAuthTestButton from './SettingsForm/OAuthTestButton'
 interface OAuthTestActionProps {
   credentialType: string
   credentialValues: Record<string, unknown>
+  settingId?: string
 }
 
 /**
  * Renders a "Test Integration" button for GitLab / Jira / Confluence OAuth integrations, to sit in
  * the integration form footer alongside Save (same slot as the non-OAuth TestIntegration). The test
- * runs the provider OAuth flow in non-persisting mode (persist_token=false) against the credentials
- * currently in the form; nothing is saved. Returns null for non-OAuth credential types.
+ * runs the provider OAuth flow in non-persisting mode against the credentials currently in the form.
+ *
+ * The integration may arrive as a variant credentialType (create flow / in-form footer) or as a base
+ * type carrying the auth_type=oauth marker (edit flow) — resolveOAuthVariant handles both. Returns
+ * null for non-OAuth credential types.
  */
-const OAuthTestAction: FC<OAuthTestActionProps> = ({ credentialType, credentialValues }) => {
+const OAuthTestAction: FC<OAuthTestActionProps> = ({
+  credentialType,
+  credentialValues,
+  settingId,
+}) => {
   // Credential form values are strings; anything else (undefined/object) is treated as empty
   // rather than stringified, so a non-string never leaks in as "[object Object]".
   const value = (key: string): string => {
@@ -44,47 +54,63 @@ const OAuthTestAction: FC<OAuthTestActionProps> = ({ credentialType, credentialV
     return typeof raw === 'string' ? raw : ''
   }
 
-  if (credentialType === GITLAB_OAUTH_CREDENTIAL_TYPE) {
+  const variant = resolveOAuthVariant(credentialType, credentialValues)
+  if (!variant) return null
+
+  // On edit the backend returns client_secret as a masked placeholder. Sending that mask to the
+  // OAuth /initiate endpoint makes the test fail (EPMCDME-14584). When the integration is saved and
+  // the secret is still masked, run the test against the STORED secret via connect-with-test (the
+  // backend decrypts it by setting_id, no token persisted). A freshly typed secret (create flow, or
+  // edit-with-change) still validates the form values via /initiate.
+  const useStoredSecret = !!settingId && value('client_secret') === MASKED_VALUE
+
+  if (variant === GITLAB_OAUTH_CREDENTIAL_TYPE) {
     return (
       <OAuthTestButton
         provider={OAuthProvider.GITLAB}
         initiate={() =>
-          userSettingsStore.initiateGitLabOAuth({
-            client_id: value('client_id'),
-            client_secret: value('client_secret'),
-            callback_base_url: value('callback_base_url'),
-            instance_url: value('instance_url'),
-          })
+          useStoredSecret
+            ? userSettingsStore.connectGitLabOAuth(settingId, true)
+            : userSettingsStore.initiateGitLabOAuth({
+                client_id: value('client_id'),
+                client_secret: value('client_secret'),
+                callback_base_url: value('callback_base_url'),
+                instance_url: value('instance_url'),
+              })
         }
       />
     )
   }
 
-  if (credentialType === JIRA_OAUTH_CREDENTIAL_TYPE) {
+  if (variant === JIRA_OAUTH_CREDENTIAL_TYPE) {
     return (
       <OAuthTestButton
         provider={OAuthProvider.JIRA}
         initiate={() =>
-          userSettingsStore.initiateJiraOAuth({
-            client_id: value('client_id'),
-            client_secret: value('client_secret'),
-            callback_base_url: value('callback_base_url'),
-          })
+          useStoredSecret
+            ? userSettingsStore.connectJiraOAuth(settingId, true)
+            : userSettingsStore.initiateJiraOAuth({
+                client_id: value('client_id'),
+                client_secret: value('client_secret'),
+                callback_base_url: value('callback_base_url'),
+              })
         }
       />
     )
   }
 
-  if (credentialType === CONFLUENCE_OAUTH_CREDENTIAL_TYPE) {
+  if (variant === CONFLUENCE_OAUTH_CREDENTIAL_TYPE) {
     return (
       <OAuthTestButton
         provider={OAuthProvider.CONFLUENCE}
         initiate={() =>
-          userSettingsStore.initiateConfluenceOAuth({
-            client_id: value('client_id'),
-            client_secret: value('client_secret'),
-            callback_base_url: value('callback_base_url'),
-          })
+          useStoredSecret
+            ? userSettingsStore.connectConfluenceOAuth(settingId, true)
+            : userSettingsStore.initiateConfluenceOAuth({
+                client_id: value('client_id'),
+                client_secret: value('client_secret'),
+                callback_base_url: value('callback_base_url'),
+              })
         }
       />
     )

@@ -27,6 +27,8 @@ interface NewIntegrationPopupProps {
   onSuccess: () => void | Promise<void>
   project?: string
   credentialType?: string
+  /** Hides the provider OAuth 2.0 sign-in toggle for callers that cannot use OAuth integrations. */
+  hideOAuthToggle?: boolean
 }
 
 const NewIntegrationPopup: React.FC<NewIntegrationPopupProps> = ({
@@ -35,6 +37,7 @@ const NewIntegrationPopup: React.FC<NewIntegrationPopupProps> = ({
   onSuccess,
   project,
   credentialType,
+  hideOAuthToggle = false,
 }) => {
   const formRef = useRef<SettingsFormRef>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -78,6 +81,7 @@ const NewIntegrationPopup: React.FC<NewIntegrationPopupProps> = ({
           projectName={project}
           disableProject={true}
           disableType={true}
+          hideOAuthToggle={hideOAuthToggle}
           hideActions={true}
           shouldAutofocusInput={true}
         />

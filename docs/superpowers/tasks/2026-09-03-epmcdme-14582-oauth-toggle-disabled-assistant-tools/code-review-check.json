@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "Check round over the CR-002 fix-up (test-only: parametrized the enabled-when-locked test across git/jira/confluence, and added NewIntegrationPopup.test.tsx asserting the OAuth toggle renders enabled through the real popup wiring). No production code changed in the fix-up, so no new high-risk surface and no confirmation pass needed. CR-002 (test coverage) is resolved: the ticket's named Jira/Confluence types plus a popup-level test now directly cover the reported flow. CR-001 (AC6 explanatory message when OAuth is unsupported) was a decision_needed scope question resolved by the human as out-of-scope — it is pre-existing hide-when-unsupported behavior matching the main integration page the user asked to mirror — so it is superseded, not a code change. business_review and standards_review carried forward from the final round; the AC6 row remains a documented, accepted scope exclusion. All 7 tests in the two files pass.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "1. OAuth toggle enabled for Jira creation from assistant-tools page when supported", "status": "pass", "notes": "now directly covered by parametrized + popup tests." },
+    { "criterion": "2. OAuth toggle enabled for Confluence creation when supported", "status": "pass", "notes": "covered by parametrized test." },
+    { "criterion": "3. Can enable OAuth and proceed with Jira OAuth creation", "status": "pass", "notes": "unchanged; base type + auth_type=oauth marker." },
+    { "criterion": "4. Can enable OAuth and proceed with Confluence OAuth creation", "status": "pass", "notes": "unchanged." },
+    { "criterion": "5. Disabled state only when unsupported / documented reason", "status": "partial", "notes": "disabled only on editing; unsupported case hidden. Accepted." },
+    { "criterion": "6. Clear explanatory message when OAuth cannot be enabled", "status": "fail", "notes": "ACCEPTED OUT-OF-SCOPE by human: pre-existing hide behavior, matches main page (CR-001 superseded)." },
+    { "criterion": "7. No regression to non-OAuth creation flows", "status": "pass", "notes": "unchanged." }
+  ],
+  "standards_review": [
+    { "check": "security-patterns", "status": "pass", "notes": "no secret/token handling." },
+    { "check": "code-quality", "status": "pass", "notes": "typecheck clean; test mocks mirror existing patterns." },
+    { "check": "git-workflow (commit format)", "status": "na", "notes": "no commit yet (held for user permission)." }
+  ],
+  "finding_status": [
+    { "id": "CR-001", "status": "superseded", "notes": "AC6 explanatory-message gap accepted as out-of-scope by the human; pre-existing behavior matching the main integration page. No code change." },
+    { "id": "CR-002", "status": "resolved", "notes": "Parametrized git/jira/confluence enabled-when-locked test + new NewIntegrationPopup render test asserting the toggle is enabled." }
+  ],
+  "findings": []
+}

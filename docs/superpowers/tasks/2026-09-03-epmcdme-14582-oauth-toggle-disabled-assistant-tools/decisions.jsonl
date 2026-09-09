@@ -1,0 +1,2 @@
+{"ts":"2026-09-03T17:52:43Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"request-changes","source":"hitl","confidence":"low"},"escalated":true,"prior_context":{"findings":["CR-001 AC6 message (decision_needed)","CR-002 test coverage (patch)"],"user_decision":"strengthen tests; AC6 out of scope"}}
+{"ts":"2026-09-03T17:52:43Z","gate_id":"code-review.check","mode":"hitl","verdict":{"decision":"approve","source":"hitl","confidence":"high"},"escalated":false,"prior_context":{"finding_status":["CR-001 superseded","CR-002 resolved"]}}
