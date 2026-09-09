@@ -316,7 +316,9 @@ export const ButtonRenderer: React.FC<A2uiRenderProps> = ({ props, buildChild, c
       // taken is this button. Without it a form offering Approve / Reject / Defer looks
       // the same afterwards whichever was pressed, and the chip above shows field values
       // rather than the action for a data-model answer.
-      className={cn(isSubmittedAction && 'a2ui-answered')}
+      // The design-system button keeps its label on one line; a generated label can be a
+      // whole sentence, so here it wraps rather than spilling out of the chat column.
+      className={cn('h-auto max-w-full whitespace-normal break-all', isSubmittedAction && 'a2ui-answered')}
       aria-pressed={isSubmittedAction || undefined}
       {...ariaAttributes(props)}
       {...(isSubmittedAction ? { 'data-testid': `a2ui-selected-${submittedAction!.name}` } : {})}

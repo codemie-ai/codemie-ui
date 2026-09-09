@@ -59,13 +59,17 @@ vi.mock('@/hooks/useVueRouter', () => ({
   })),
 }))
 
-vi.mock('@/pages/chat/hooks/useChatContext', () => ({
-  useChatContext: vi.fn(() => ({
+const { mockChatContext } = vi.hoisted(() => ({
+  mockChatContext: {
     selectedAssistant: null,
     openConfigForm: vi.fn(),
     closeConfig: vi.fn(),
     isSharedPage: false,
-  })),
+  },
+}))
+
+vi.mock('@/pages/chat/hooks/useChatContext', () => ({
+  useChatContext: vi.fn(() => mockChatContext),
 }))
 
 vi.mock('@/components/Avatar/Avatar', () => ({
@@ -739,5 +743,43 @@ describe('ChatAiMessage a2ui wiring', () => {
       'name: Bob',
       1
     )
+  })
+})
+
+describe('ChatA2uiBlock in the shared conversation view', () => {
+  const renderUnansweredSurfaceAtEdge = () => {
+    const message = createMessage({ a2uiEnvelopes: textSurfaceEnvelopes() })
+    mockChatsStore.currentChat.history = [[message]]
+    return renderBlock(message)
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatsStore.currentChat.history = []
+    mockChatContext.isSharedPage = false
+  })
+
+  it('leaves an unanswered last-turn surface interactive in the normal chat', () => {
+    renderUnansweredSurfaceAtEdge()
+
+    expect(screen.getByTestId('a2ui-surface-fieldset')).not.toBeDisabled()
+  })
+
+  it('locks an unanswered last-turn surface in the shared view', () => {
+    mockChatContext.isSharedPage = true
+
+    renderUnansweredSurfaceAtEdge()
+
+    expect(screen.getByTestId('a2ui-surface-fieldset')).toBeDisabled()
+  })
+
+  it('does not submit from a shared view surface', async () => {
+    mockChatContext.isSharedPage = true
+    const user = userEvent.setup()
+    renderUnansweredSurfaceAtEdge()
+
+    await user.click(screen.getByRole('button', { name: 'Approve' }))
+
+    expect(mockSubmitA2uiAction).not.toHaveBeenCalled()
   })
 })

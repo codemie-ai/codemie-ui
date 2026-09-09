@@ -38,6 +38,7 @@ import type { ChatMessage } from '@/types/entity/conversation'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
+import { useChatContext } from '../../../hooks/useChatContext'
 import { ChatIndexes } from '../ChatHistory'
 
 const INVALID_SURFACE_MESSAGE = 'Please complete the required fields before submitting'
@@ -73,6 +74,7 @@ const ChatA2uiBlock: FC<ChatA2uiBlockProps> = ({
   onSubmitted,
 }) => {
   const { currentChat } = useSnapshot(chatsStore)
+  const { isSharedPage } = useChatContext()
   const envelopes = message.a2uiEnvelopes
 
   const history = currentChat?.history ?? []
@@ -109,7 +111,10 @@ const ChatA2uiBlock: FC<ChatA2uiBlockProps> = ({
   //    its turn. An answered surface is otherwise read-only, and an unanswered
   //    one that scrolled behind newer turns (stale) is never interactive.
   const isSurfaceActive = (surfaceId: string) =>
-    !isChatBusy && !isSubmitting && (isFormEditing || (!answers.has(surfaceId) && isAtEdge))
+    !isSharedPage &&
+    !isChatBusy &&
+    !isSubmitting &&
+    (isFormEditing || (!answers.has(surfaceId) && isAtEdge))
 
   // Valtio snapshot values are tracking proxies all the way down, which neither
   // `structuredClone` nor the A2UI DataModel accept — the JSON round-trip both

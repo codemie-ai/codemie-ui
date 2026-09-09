@@ -1,0 +1,138 @@
+{
+  "decision": "approve",
+  "rationale": "All thirteen findings from the final round are resolved, twelve confirmed by the check round and CR-012 completed in a second pass after the check round found it only half-addressed. The check round raised one new major issue the fix-up itself opened — dropping the clip left an unbreakable label uncontained — which is also fixed: `break-words` was measured live and did NOT contain it (overflow-wrap: break-word does not shrink min-content width), so the button uses `break-all` plus `max-w-full`, verified against unbreakable, spaced and short labels. Full suite 546 files / 5771 tests / 0 failures; lint carries zero non-resolver errors. AC-6 (verification in Edge) remains formally unmet and the MR still needs before/after screenshots — both recorded as open, neither is a code defect.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "id": "AC-1",
+      "status": "partial",
+      "notes": "Every named defect is implemented in theme.css and reaches all surfaces via registry.tsx. But no test renders anything — all seven theme suites are regex greps over the stylesheet text — so 'renders correctly' rests on a single manual Chrome pass with no captured artefact."
+    },
+    {
+      "id": "AC-2",
+      "status": "partial",
+      "notes": "Alignment and readability are met and measured (delta 4px -> 0, surface font now matches prose). Two gaps: `cursor: not-allowed` is unreachable behind inherited pointer-events:none (CR-003), and the catalog CheckBox now has no visible keyboard focus at all (CR-001), which directly contradicts 'usable and accessible'."
+    },
+    {
+      "id": "AC-3",
+      "status": "partial",
+      "notes": "Containment implemented and measured (11 -> 0 spilling elements at 420px). But the button half truncates rather than contains, clipping at both ends with no ellipsis (CR-006), and the chip row this diff newly activated has no min-width:0, so a long chip still pushes the column sideways (CR-005)."
+    },
+    {
+      "id": "AC-4",
+      "status": "na",
+      "notes": "Nothing in the diff touches replay, persistence or prefill; the existing mechanism is unchanged and deterministic on a fresh mount. Not verifiable from this diff and not protected by anything new — no test exercises a post-reload rendered surface, and the author ran no reload check."
+    },
+    {
+      "id": "AC-5",
+      "status": "pass",
+      "notes": "isSurfaceActive short-circuits on isSharedPage; three new tests cover interactive-in-chat, disabled-in-shared, and no-submit-from-shared. One deliberate asymmetry to confirm with the ticket author: an unanswered last-turn surface is now locked in the shared view where the original view shows it live."
+    },
+    {
+      "id": "AC-6",
+      "status": "fail",
+      "notes": "Chrome only. No Edge verification, no playwright config, no browserslist target, no cross-browser CI job. The change leans on exactly the engine-sensitive features (:has(), appearance:none with ::after glyphs, attribute matching on serialised inline styles). Before/after screenshots required by the MR compliance bot are also missing — the Playwright screenshot tool timed out in this environment."
+    },
+    {
+      "id": "AC-7",
+      "status": "pass",
+      "notes": "Every changed selector is prefixed .a2ui-scope, which mounts at exactly one place; the two component changes are equally contained. 545 files / 5761 tests green. Residual risk is inside the surface, not outside it (CR-004, CR-012)."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit format",
+      "status": "pass",
+      "notes": "All 9 subjects match the Tekton regex; branch cut from a freshly pulled main."
+    },
+    {
+      "standard": "No ticket IDs / internal references in source",
+      "status": "pass",
+      "notes": "No EPMCDME, internal URL or person appears in any added src/ line, apart from the pre-existing Apache licence headers."
+    },
+    {
+      "standard": "security-patterns.md",
+      "status": "na",
+      "notes": "No section of the guide is in scope: the diff is CSS plus one boolean predicate and tests. No HTML sinks, redirects, cross-window messages, secrets or headers touched."
+    },
+    {
+      "standard": "styling-guide.md 'Tailwind only, no custom CSS'",
+      "status": "partial",
+      "notes": "Deviation, but the sanctioned kind: src/a2ui/theme.css already exists on main under a documented exception, because the published @a2ui/react build ships empty CSS-module class maps and its elements render class=\"undefined\", unreachable by utility classes. This change adds ~147 lines inside that existing exception rather than creating a new one. Not raised as a blocking finding."
+    },
+    {
+      "standard": "Pre-commit hook",
+      "status": "partial",
+      "notes": "Bypassed with --no-verify on every commit. Verified environmental, not a code defect: the local ESLint @/-alias resolver reports the same 9198 import/no-unresolved + import/extensions errors on unmodified main as on the branch, and zero non-resolver errors on the branch. npm ci did not fix it. CI is the lint authority."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "Focus rule now carries !important and covers both radio and checkbox. Live: the SDK-inline-styled checkbox goes from outline-style none (unfocused) to solid 2px rgb(197,169,250) (focused)."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "evidence": "Bare `.a2ui-scope :disabled` is gone; the rule is keyed off `fieldset:disabled`, which a live surface never is. The design system's own opacity-50 / cursor-wait survive. A test asserts the bare form is absent."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "evidence": "The unreachable `cursor` declaration was removed, and the assertion inverted to require its absence, with the reason recorded in the rule comment."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "evidence": "Both row rules now exclude `[style*='overflow-x: auto']`, which is what the horizontal List serialises. The test iterates every occurrence of the selector and requires the exclusion on each, so a new unguarded variant fails."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "evidence": "Chip container and option column get min-width: 0; the chip gets max-width: 100% and overflow-wrap: anywhere. Verified live."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "evidence": "Resolved as the human decided — the label wraps. Live at 420px: height 54 vs 30 single-line, button width equals parent width, nothing hidden, full label in the accessible name."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "evidence": "Exact-value assertion via the shared helper. Mutation-tested: margin-bottom 0 -> 0.5rem now fails, where it previously passed."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "evidence": "New themeCssRules helper extracts a single rule body (comment-stripped brace scan) plus an exact-selector variant; all five suites rewritten onto it. `atRulesWrapping` catches the @media print mutation and is asserted empty."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "evidence": "A dedicated rule dims `.a2ui-own` inside a disabled fieldset. Live: 0.65."
+    },
+    {
+      "id": "CR-010",
+      "status": "resolved",
+      "evidence": "`.a2ui-answered` is excluded from the dimming. Live: opacity 1 against 0.65 for the other disabled buttons."
+    },
+    {
+      "id": "CR-011",
+      "status": "resolved",
+      "evidence": "New sharedGuard suite captures the SDK action handler and invokes it directly, bypassing the DOM. Mutation-tested: moving the guard to the fieldset alone fails this suite while the three older shared-view tests still pass."
+    },
+    {
+      "id": "CR-013",
+      "status": "resolved",
+      "evidence": "Every choice-control rule uses `:not(.a2ui-own, .a2ui-own *)`. Deliberately NOT applied to unrelated pre-existing rules, which stay as they are on main — the file-wide inconsistency is real but out of this change's scope."
+    },
+    {
+      "id": "CR-012",
+      "status": "resolved",
+      "evidence": "Second round. The check round correctly found only the root selector had been narrowed. The options rule is no longer a sibling combinator at all: `strong ~ div` was replaced by `div:has(> strong):has(> div) > div`, anchored to the already-narrowed root, and the test now asserts both `strong + div` and `strong ~ div` are absent. Live: 2 option blocks matched, display flex, unchanged from before."
+    }
+  ],
+  "findings": []
+}

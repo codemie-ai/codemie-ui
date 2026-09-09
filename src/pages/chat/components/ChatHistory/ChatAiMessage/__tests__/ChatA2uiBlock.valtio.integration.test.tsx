@@ -20,6 +20,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { A2UI_PROTOCOL_VERSION, CATALOG_ID } from '@/a2ui/config'
 import type { A2uiEnvelope } from '@/a2ui/types'
+import { ChatContext, type ChatContextValue } from '@/pages/chat/hooks/useChatContext'
 import { chatsStore } from '@/store/chats'
 import type { ChatMessage } from '@/types/entity/conversation'
 
@@ -115,16 +116,21 @@ const createMessage = (overrides: Partial<ChatMessage> = {}): ChatMessage =>
  * Mirrors the production render path: ChatHistory reads the history off a
  * Valtio snapshot and passes the snapshot message object down.
  */
+/** Stable identity: a fresh object here would remount every consumer on each render. */
+const CHAT_CONTEXT = { isSharedPage: false } as ChatContextValue
+
 const Harness: FC<{ historyIndex?: number }> = ({ historyIndex = 0 }) => {
   const snapshot = useSnapshot(chatsStore) as unknown as typeof store
   const message = snapshot.currentChat.history[historyIndex][0]
   return (
-    <ChatA2uiBlock
-      message={message}
-      indexes={{ historyIndex, messageIndex: 0 }}
-      isFormEditing={false}
-      onSubmitted={() => undefined}
-    />
+    <ChatContext.Provider value={CHAT_CONTEXT}>
+      <ChatA2uiBlock
+        message={message}
+        indexes={{ historyIndex, messageIndex: 0 }}
+        isFormEditing={false}
+        onSubmitted={() => undefined}
+      />
+    </ChatContext.Provider>
   )
 }
 

@@ -1,0 +1,228 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three lenses ran over the source-only diff. The fixes land their measured targets, but the review found thirteen actionable defects the implementation introduced or left unprotected — an accessibility regression (keyboard focus is now invisible on the catalog CheckBox because the SDK's inline `outline: none` defeats the new focus rule while `appearance: none` removed the UA-painted one), two design-system state overrides on DsButton, a read-only affordance half of which can never reach the user, two over-matching structural selectors (one of which breaks the catalog's horizontal List scroller), a remaining overflow path on the chip row that this diff itself activated, and a test suite whose regexes pass against the exact regressions they claim to catch. Four blind-lens suspicions were checked live and dismissed as not reproducible (hover on read-only controls cannot fire under inherited pointer-events:none; the fieldset's compounding opacity has no effect because display:contents generates no box; the removed `display: inline` is covered by the flex parent on every real pair; the tick colour has adequate contrast in both actual themes). CR-006 is a genuine product trade-off, not a defect with one right answer, so confidence is low and the call belongs to a human.",
+  "confidence": "low",
+  "risk_flags": ["accessibility", "regression"],
+  "business_review": [
+    {
+      "id": "AC-1",
+      "status": "partial",
+      "notes": "Every named defect is implemented in theme.css and reaches all surfaces via registry.tsx. But no test renders anything — all seven theme suites are regex greps over the stylesheet text — so 'renders correctly' rests on a single manual Chrome pass with no captured artefact."
+    },
+    {
+      "id": "AC-2",
+      "status": "partial",
+      "notes": "Alignment and readability are met and measured (delta 4px -> 0, surface font now matches prose). Two gaps: `cursor: not-allowed` is unreachable behind inherited pointer-events:none (CR-003), and the catalog CheckBox now has no visible keyboard focus at all (CR-001), which directly contradicts 'usable and accessible'."
+    },
+    {
+      "id": "AC-3",
+      "status": "partial",
+      "notes": "Containment implemented and measured (11 -> 0 spilling elements at 420px). But the button half truncates rather than contains, clipping at both ends with no ellipsis (CR-006), and the chip row this diff newly activated has no min-width:0, so a long chip still pushes the column sideways (CR-005)."
+    },
+    {
+      "id": "AC-4",
+      "status": "na",
+      "notes": "Nothing in the diff touches replay, persistence or prefill; the existing mechanism is unchanged and deterministic on a fresh mount. Not verifiable from this diff and not protected by anything new — no test exercises a post-reload rendered surface, and the author ran no reload check."
+    },
+    {
+      "id": "AC-5",
+      "status": "pass",
+      "notes": "isSurfaceActive short-circuits on isSharedPage; three new tests cover interactive-in-chat, disabled-in-shared, and no-submit-from-shared. One deliberate asymmetry to confirm with the ticket author: an unanswered last-turn surface is now locked in the shared view where the original view shows it live."
+    },
+    {
+      "id": "AC-6",
+      "status": "fail",
+      "notes": "Chrome only. No Edge verification, no playwright config, no browserslist target, no cross-browser CI job. The change leans on exactly the engine-sensitive features (:has(), appearance:none with ::after glyphs, attribute matching on serialised inline styles). Before/after screenshots required by the MR compliance bot are also missing — the Playwright screenshot tool timed out in this environment."
+    },
+    {
+      "id": "AC-7",
+      "status": "pass",
+      "notes": "Every changed selector is prefixed .a2ui-scope, which mounts at exactly one place; the two component changes are equally contained. 545 files / 5761 tests green. Residual risk is inside the surface, not outside it (CR-004, CR-012)."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit format",
+      "status": "pass",
+      "notes": "All 9 subjects match the Tekton regex; branch cut from a freshly pulled main."
+    },
+    {
+      "standard": "No ticket IDs / internal references in source",
+      "status": "pass",
+      "notes": "No EPMCDME, internal URL or person appears in any added src/ line, apart from the pre-existing Apache licence headers."
+    },
+    {
+      "standard": "security-patterns.md",
+      "status": "na",
+      "notes": "No section of the guide is in scope: the diff is CSS plus one boolean predicate and tests. No HTML sinks, redirects, cross-window messages, secrets or headers touched."
+    },
+    {
+      "standard": "styling-guide.md 'Tailwind only, no custom CSS'",
+      "status": "partial",
+      "notes": "Deviation, but the sanctioned kind: src/a2ui/theme.css already exists on main under a documented exception, because the published @a2ui/react build ships empty CSS-module class maps and its elements render class=\"undefined\", unreachable by utility classes. This change adds ~147 lines inside that existing exception rather than creating a new one. Not raised as a blocking finding."
+    },
+    {
+      "standard": "Pre-commit hook",
+      "status": "partial",
+      "notes": "Bypassed with --no-verify on every commit. Verified environmental, not a code defect: the local ESLint @/-alias resolver reports the same 9198 import/no-unresolved + import/extensions errors on unmodified main as on the branch, and zero non-resolver errors on the branch. npm ci did not fix it. CI is the lint authority."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "title": "Catalog CheckBox loses all visible keyboard focus",
+      "severity": "critical",
+      "triage": "patch",
+      "problem": "@a2ui/react v0_9 sets `outline: \"none\"` inline on its checkbox input. The new `:focus-visible` rule declares an outline without `!important`, so the inline declaration wins, while the new `appearance: none` removed the UA-painted focus ring the control previously relied on. The ChoicePicker's bare inputs (no inline style) do get the ring, so focus is visible on one control type and invisible on the other.",
+      "impact": "An accessibility regression introduced by this change, on the criterion (AC-2) that asks for accessible interactive elements.",
+      "failure_scenario": "Agent emits a CheckBox; user tabs to it; the element is focused and Space toggles it, but nothing on screen changes. Before this diff the native control still painted its own focus affordance.",
+      "location": "src/a2ui/theme.css (focus-visible rule)",
+      "recommendation": "Add `!important` to the focus outline, as the checked/hover rules already do for the same inline-style reason, and confirm the ring is visible on both the CheckBox and the picker options.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-002",
+      "title": "The read-only dimming overrides the design system's own disabled and loading states",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "`.a2ui-scope :disabled:not(.a2ui-own, .a2ui-own *)` computes to (0,3,0); the Tailwind utilities on DsButton are (0,1,0). ButtonRenderer is not marked `.a2ui-own`, so the rule silently defeats Button.tsx's `opacity-50` (disabled) and `cursor-wait` (loading, since `disabled={disabled || isLoading}`).",
+      "impact": "Two design-system states the rule was never reasoning about are overridden on live surfaces, not just read-only ones.",
+      "failure_scenario": "A live surface with isValid === false renders its Approve button at 0.65 instead of the DS 0.5. A button in flight shows `not-allowed` instead of `wait`, reading as permanently blocked rather than busy.",
+      "location": "src/a2ui/theme.css (disabled rule), src/components/Button/Button.tsx:108-109",
+      "recommendation": "Scope the dimming to the read-only surface rather than to every `:disabled` inside a scope — e.g. key it off the disabled fieldset — so a natively disabled or loading DS button keeps its own styling.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-003",
+      "title": "`cursor: not-allowed` on read-only surfaces never reaches the user",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The only state in which these controls are `:disabled` is the read-only surface, and the same branch puts `pointer-events-none` on the fieldset. `pointer-events` is inherited, so every descendant is a non-hit-target and the cursor resolves from the nearest ancestor that still accepts pointer events. Only the opacity half of the affordance is observable.",
+      "impact": "Half of the T2 fix ships inert, and `theme.readonly.test.ts` asserts the declaration exists, which reads as coverage. The author's own live check used getComputedStyle, which reports the value regardless of whether it can ever apply.",
+      "failure_scenario": "Hover any locked control in an answered or shared surface: the cursor stays the default arrow, exactly as before the fix, while the test suite and a computed-style probe both report success.",
+      "location": "src/a2ui/theme.css (disabled rule), src/pages/chat/components/ChatHistory/ChatAiMessage/ChatA2uiBlock.tsx:241",
+      "recommendation": "Either deliver the cursor where it can be seen (a hit-testable ancestor that is read-only) or drop the declaration and its assertion and rely on dimming — but do not ship a rule plus a test for behaviour the user cannot observe.",
+      "sources": ["edge-case", "acceptance"]
+    },
+    {
+      "id": "CR-004",
+      "title": "The row-wrap rule over-matches the catalog's horizontal List and destroys its scroller",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "`div[style*='flex-direction: row']` is a substring match on the serialised inline style. A catalog `List` with `direction: horizontal` emits `flex-direction: row` together with `overflow-x: auto; overflow-y: hidden`, precisely to be a horizontally scrolling strip. Forcing `flex-wrap: wrap` converts it into a wrapping grid, and the companion `> * { min-width: 0 }` lets its items collapse below their content width. The rule's comment reasons only about Row. The same substring also matches `row-reverse`.",
+      "impact": "A designed one-line scroller becomes a multi-line grid inside a container whose `overflow-y: hidden` was written assuming one line.",
+      "failure_scenario": "Agent emits List{direction: horizontal} with 8 cards. Before: one scrollable line. After: cards wrap into three stacked lines, clipped vertically.",
+      "location": "src/a2ui/theme.css (row rule)",
+      "recommendation": "Exclude the horizontal List — e.g. require the element not also carry `overflow-x: auto` — or match the Row more precisely than by inline-style substring.",
+      "sources": ["edge-case", "blind"]
+    },
+    {
+      "id": "CR-005",
+      "title": "The chip row still overflows — the defect this task set out to fix, on a path this diff activated",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "`min-width: 0` was applied only to `div[style*='flex-direction: row']` and its children. The chip container (`div:has(> .chip)`) and the option list (`strong ~ div`) are flex containers created by this stylesheet and get neither `min-width: 0` on their children nor `max-width`/`overflow-wrap` on `.chip`. The chip container only became a real flex container in this diff (`display: flex` newly added), so this path is newly live.",
+      "impact": "A single long option label is an unshrinkable flex item and pushes the chat column sideways — the exact AC-3 failure being fixed.",
+      "failure_scenario": "ChoicePicker with chips and an option labelled 'Escalate to the platform reliability on-call rotation' at a narrow width: horizontal overflow of the message returns.",
+      "location": "src/a2ui/theme.css (chip rules)",
+      "recommendation": "Give the chip and option containers the same `min-width: 0` treatment as the row, and let a chip label wrap or shrink.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-006",
+      "title": "The button label is clipped at both ends with no ellipsis",
+      "severity": "major",
+      "triage": "decision_needed",
+      "problem": "DsButton is `flex items-center justify-center` with a hard-coded `whitespace-nowrap`. Overflowing content in a centre-justified flex container spills symmetrically, so `overflow: hidden` cuts the START of the label as well as the end, and there is no `text-ellipsis`, `title` or tooltip to signal that anything was removed. `buttonOverflow.test.tsx` pins this as intended behaviour.",
+      "impact": "AC-3 explicitly forbids truncating important content, and an action label is the load-bearing text of a surface. This is a product trade-off (a clean box showing a middle fragment vs. an ugly but readable spill), not a defect with one correct answer.",
+      "failure_scenario": "Narrow chat column, one button labelled 'Approve and forward to the finance team' renders as a middle fragment with no ellipsis; the user cannot tell what pressing it does.",
+      "location": "src/a2ui/renderers.tsx (ButtonRenderer className), src/components/Button/Button.tsx:60-62",
+      "recommendation": "Decide the intended behaviour: add ellipsis plus an accessible full label, let the label wrap, or drop the clip and rely on the row wrapping alone. Then make the test assert that decision rather than the current class list.",
+      "sources": ["edge-case", "acceptance"]
+    },
+    {
+      "id": "CR-007",
+      "title": "`margin-bottom:\\s*0` matches `0.5rem` — both alignment tests pass against the exact regression",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The regex is unanchored, so it matches `margin-bottom: 0.5rem`, `0.25rem`, `0px` — every plausible regression value. Two separate tests depend on it.",
+      "impact": "The tests written to protect the checkbox-centring fix and the picker spacing fix do not protect them.",
+      "failure_scenario": "Restore `margin-bottom: 0.5rem` on the checkbox label (re-breaking the 4px centring) and `0.25rem` on the picker label (restoring the doubled first step): theme.checkboxAlignment.test.ts and theme.choicePickerLayout.test.ts both stay green.",
+      "location": "src/a2ui/__tests__/theme.checkboxAlignment.test.ts, src/a2ui/__tests__/theme.choicePickerLayout.test.ts",
+      "recommendation": "Anchor the value: `/margin-bottom:\\s*0\\s*;/`.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-008",
+      "title": "The theme tests grep text and cross rule boundaries, so they pass on a broken cascade",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "Every theme.* test is readFileSync + regex, using unanchored `[\\s\\S]{0,N}` / `[\\s\\S]*?` spans that freely cross `}`. They prove two strings are near each other in the file, not that they are in the same rule — and nothing renders, so no test can observe specificity, inline-style defeat, or whether a rule is active at all.",
+      "impact": "The suite reports coverage it does not have; two mutations below leave it fully green while the styling is wrong.",
+      "failure_scenario": "Mutation A: wrap the whole new choice-control + read-only + row block in `@media print { … }` — theme.choiceControls, theme.readonly and theme.overflow all pass while nothing applies in a browser. Mutation B: move `max-width: 100%` out of `.a2ui-scope` onto `.chip` — 'keeps the surface itself inside its column' still passes.",
+      "location": "src/a2ui/__tests__/theme.*.test.ts",
+      "recommendation": "Extract the specific rule block first and assert within it, rather than regexing across the whole file; where behaviour matters more than text, assert it in a rendered test or accept the gap explicitly.",
+      "sources": ["edge-case", "blind", "acceptance"]
+    },
+    {
+      "id": "CR-009",
+      "title": "DateTimeInput is exempt from the dimming yet has no disabled state of its own",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The `.a2ui-own` exemption is justified as 'our own renderers carry their own states', but nothing passes a `disabled` prop into DateTimeInputRenderer — the DS DatePicker and the native time input are disabled only by the ancestor `fieldset[disabled]`, so they keep their normal live styling.",
+      "impact": "In a read-only or shared surface every other control dims while the date picker stays at full opacity, so the one control a user is most likely to click looks interactive.",
+      "failure_scenario": "Shared conversation containing a surface with a DateTimeInput: text fields, checkboxes and buttons are at 0.65, the date picker is at 1.0; the user clicks it and nothing happens.",
+      "location": "src/a2ui/theme.css (disabled rule), src/a2ui/renderers.tsx (DateTimeInputRenderer, OWN_STYLING at :380 and :397)",
+      "recommendation": "Either pass the read-only state into the renderer so it dims itself, or narrow the exemption so it does not cover a renderer that has no disabled state.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-010",
+      "title": "Uniform dimming flattens the `.a2ui-answered` marker it has to coexist with",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "`.a2ui-answered` exists precisely because a read-only surface must still say WHICH action was taken. That button is `:disabled` via the fieldset and is not `.a2ui-own`, so it receives the same 0.65 as the actions that were not taken.",
+      "impact": "The contrast delta between the chosen and unchosen actions shrinks in both themes, attenuating the only signal that survives on an answered surface.",
+      "failure_scenario": "Surface offering Approve / Reject / Defer with Approve pressed: all three render at 0.65, and the accent border distinguishing Approve drops toward sub-3:1 against the surface.",
+      "location": "src/a2ui/theme.css (answered marker and disabled rule)",
+      "recommendation": "Exempt `.a2ui-answered` from the dimming, or dim the unchosen actions only.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-011",
+      "title": "The shared-view tests cannot distinguish the JS guard from the DOM guard",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "All three new cases assert only the fieldset's `disabled` attribute, or the absence of a submit after a click that jsdom already swallows because the fieldset is disabled. Nothing exercises `handleAction`'s `isSurfaceActive` early return independently.",
+      "impact": "The guard that actually matters for a non-DOM action path is untested; the SDK dispatches through actionHandlerRef, not through the DOM button.",
+      "failure_scenario": "Mutation: remove `!isSharedPage &&` from isSurfaceActive and instead write `disabled={isSharedPage || !isActive}` on the fieldset. All three new tests pass, while handleAction would submit for a shared surface if an action arrived from a non-click source.",
+      "location": "src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatA2uiBlock.test.tsx (shared-view describe)",
+      "recommendation": "Drive one case through the action handler rather than a DOM click.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-012",
+      "title": "`div:has(> strong)` and `strong ~ div` restyle any surface container of that shape",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The picker-root rule keys off a direct `<strong>` child, and the options rule was widened from an adjacent to a general sibling combinator, so it now reaches every later div sibling of a label, not just the options container. Both describe a ChoicePicker in their comments but match by shape alone.",
+      "impact": "Arbitrary LLM-authored layouts inside a surface can be forced to flex-column with a gap. Contained to .a2ui-scope, so no regression outside a2ui, but it makes surface layout depend on generated markup shape. Not reproduced in the current markup — live inspection found exactly two matches, both genuine picker roots, each reaching exactly one div — so this is a latent risk, not an observed break.",
+      "failure_scenario": "A surface whose Card renders bold text directly inside a div, or a picker followed by an action row of divs: the container becomes a column flex with a gap, stacking content meant to flow inline or sit side by side.",
+      "location": "src/a2ui/theme.css (picker root and options rules)",
+      "recommendation": "Narrow both selectors, or accept the risk explicitly in the file's comment so the next SDK bump knows to re-check them.",
+      "sources": ["blind", "acceptance"]
+    },
+    {
+      "id": "CR-013",
+      "title": "The choice-control rules exclude only `.a2ui-own` descendants, not the element itself",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The control rules use `:not(.a2ui-own *)`, while the disabled rule in the same file correctly uses `:not(.a2ui-own, .a2ui-own *)`. A renderer that puts the marker on the input element itself is not exempted.",
+      "impact": "Inconsistent with the file's own convention; an own-renderer control would be double-painted by the theme.",
+      "failure_scenario": "An own renderer emitting `<input type=\"checkbox\" className=\"a2ui-own\">` receives appearance:none plus the theme box, blanking a control that carries its own states.",
+      "location": "src/a2ui/theme.css (choice control rules)",
+      "recommendation": "Use the same `:not(.a2ui-own, .a2ui-own *)` form as the disabled rule.",
+      "sources": ["blind"]
+    }
+  ]
+}

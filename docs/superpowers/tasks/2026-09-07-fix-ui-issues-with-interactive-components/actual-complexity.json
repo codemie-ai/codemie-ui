@@ -1,0 +1,97 @@
+{
+  "task": "Fix seven rendering and interaction defects in LLM-generated A2UI interactive surfaces (typography, read-only affordance, narrow-width containment, shared-conversation guard, checkbox/label alignment, checkbox/radio design-system parity, filterable-picker spacing).",
+  "generated": "2026-09-07",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L",
+      "affected": "src/a2ui/theme.css (surface stylesheet, ~150 added lines), src/a2ui/renderers.tsx (ButtonRenderer class list), ChatA2uiBlock.tsx (isSurfaceActive predicate + useChatContext read), new shared test helper src/a2ui/__tests__/themeCssRules.ts",
+      "layers": "UI-Styling (a2ui theme), UI-Renderer (a2ui renderers), UI-Chat-Presentation (ChatA2uiBlock)"
+    },
+    "requirements_clarity": {
+      "score": 4,
+      "label": "L",
+      "status": "Partially Clear",
+      "gaps": "AC-1 ('renders correctly') and AC-2 ('usable and accessible') are unfalsifiable as written and closed only 'partial' in review. CR-006 (button label clipping vs wrapping) was triaged decision_needed and escalated to a human mid-implementation, causing a clip -> wrap -> break-all rework. AC-5 carries a deliberate behavioural asymmetry (unanswered last-turn surface now locked in the shared view) still flagged for confirmation with the ticket author. AC-6 (Edge verification) remains formally unmet."
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L",
+      "risk_factors": "No precedent for the approach: the published @a2ui/react build ships empty CSS-module class maps, so elements render class=\"undefined\" and the SDK sets border/background/outline via inline style. Fixes therefore rest on structural selectors, specificity arithmetic and targeted !important rather than utility classes. The change introduced a critical accessibility regression of its own (appearance:none removed the UA focus ring while the SDK's inline outline:none defeated the replacement), plus two self-inflicted visual regressions found during the work (appearance:none collapsing bare picker options to 0x0; wrong accent token rendering a checked control white-on-white in the dark theme). Selectors match on serialised inline-style substrings, which over-matched the catalog's horizontal List scroller. Engine-sensitive features (:has(), appearance:none with ::after glyphs) verified in Chrome only. jsdom computes no layout, so no test can observe the cascade.",
+      "mitigation": "Every selector is prefixed .a2ui-scope, which mounts in exactly one place, so blast radius is bounded to a2ui surfaces. Pure CSS plus one boolean predicate — trivially revertible. One full code-review round (13 findings, 1 critical) plus a check round (1 further finding) all resolved and mutation-tested; live browser measurement used as the acceptance evidence in place of unit assertions."
+    },
+    "file_change_estimate": {
+      "score": 5,
+      "label": "XL",
+      "modified_files": 5,
+      "modified_file_list": [
+        "src/a2ui/theme.css",
+        "src/a2ui/renderers.tsx",
+        "src/pages/chat/components/ChatHistory/ChatAiMessage/ChatA2uiBlock.tsx",
+        "src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatA2uiBlock.test.tsx",
+        "src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatA2uiBlock.valtio.integration.test.tsx"
+      ],
+      "new_files": 16,
+      "new_file_list": [
+        "src/a2ui/__tests__/buttonOverflow.test.tsx",
+        "src/a2ui/__tests__/theme.checkboxAlignment.test.ts",
+        "src/a2ui/__tests__/theme.choiceControls.test.ts",
+        "src/a2ui/__tests__/theme.choicePickerLayout.test.ts",
+        "src/a2ui/__tests__/theme.font.test.ts",
+        "src/a2ui/__tests__/theme.overflow.test.ts",
+        "src/a2ui/__tests__/theme.readonly.test.ts",
+        "src/a2ui/__tests__/themeCssRules.ts",
+        "src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatA2uiBlock.sharedGuard.test.tsx",
+        "docs/superpowers/tasks/2026-09-07-fix-ui-issues-with-interactive-components/.reviewed_head",
+        "docs/superpowers/tasks/2026-09-07-fix-ui-issues-with-interactive-components/code-review-check.json",
+        "docs/superpowers/tasks/2026-09-07-fix-ui-issues-with-interactive-components/code-review-final.json",
+        "docs/superpowers/tasks/2026-09-07-fix-ui-issues-with-interactive-components/decisions.jsonl",
+        "docs/superpowers/tasks/2026-09-07-fix-ui-issues-with-interactive-components/events.jsonl",
+        "docs/superpowers/tasks/2026-09-07-fix-ui-issues-with-interactive-components/plan.md",
+        "docs/superpowers/tasks/2026-09-07-fix-ui-issues-with-interactive-components/technical-analysis.md"
+      ],
+      "affected_dirs": ["src/a2ui/", "src/pages/chat/components/ChatHistory/ChatAiMessage/", "docs/superpowers/tasks/"],
+      "note": "The raw diffstat (21 files, 2726 insertions) overstates code volume: 7 files and roughly 1500 lines are planning/review artefacts under docs/superpowers/. Production source is 3 files (~150 CSS lines plus two one-line component edits). Scored XL on the source-only surface of 14 files with 9 new test files across 2 source directories, not on the raw 21."
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 2,
+      "label": "S",
+      "layers_changed": ["UI — a2ui theme stylesheet", "UI — a2ui renderers", "UI — chat presentation"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 20,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 21,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "14 source files touched — 3 production, 11 test — with 9 new test files across 2 directories. Production code itself is small (theme.css +~150 lines, one className on ButtonRenderer, one import/hook/condition in ChatA2uiBlock), but the test surface was rebuilt: five suites were rewritten onto a new themeCssRules helper after review found the original regex greps passed against the exact regressions they claimed to catch."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Seven independent defects, each fixed at its own layer, plus design-system parity work reproducing Checkbox.tsx and RadioButton.tsx appearance in raw CSS. theme.css is shared by every a2ui surface, so each rule is cross-cutting within the subsystem — evidenced by review findings CR-002, CR-004, CR-010 and CR-012, all cases of a new rule reaching markup it was not reasoning about."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Difficulty was concentrated in cascade reasoning against third-party SDK markup that ships empty CSS-module class maps and sets properties inline — specificity and !important arithmetic mattered more than volume. The change introduced a critical keyboard-focus regression of its own and two self-inflicted visual regressions during the work; jsdom computes no layout so nothing could be proven by unit test, and cross-browser (Edge) verification remains unmet."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Two acceptance criteria are unfalsifiable as written and closed 'partial'; one finding (button-label truncation) was a genuine product trade-off escalated to a human and reworked twice before landing on break-all + max-w-full; one behavioural asymmetry in the shared view still needs author confirmation."
+    }
+  ],
+  "red_flags_applied": [
+    "Requirements Clarity bumped from M (3) to L (4): vague acceptance criteria — AC-1 'renders correctly' and AC-2 'usable and accessible' carry no measurable threshold and both closed 'partial' in review."
+  ],
+  "split_recommendation": null
+}

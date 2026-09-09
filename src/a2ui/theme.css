@@ -71,6 +71,8 @@
 
   --a2ui-checkbox-size: 1rem;
   --a2ui-checkbox-border-radius: 0.25rem;
+  --a2ui-checkbox-background: transparent;
+  --a2ui-checkbox-border: var(--a2ui-border-width) solid rgb(var(--colors-border-primary));
 
   /* Blocks read as blocks: a card sits a step above the surface it is on. */
   --a2ui-card-background: rgb(var(--colors-surface-base-secondary));
@@ -97,7 +99,11 @@
   --a2ui-spacing-m: 0.75rem;
   --a2ui-spacing-l: 1rem;
 
-  font-family: inherit;
+  max-width: 100%;
+  min-width: 0;
+
+  /* Body inherits the mono stack; the surface is prose-adjacent and follows the chat. */
+  font-family: var(--font-family-body-sans, Geist, Arial, Helvetica, sans-serif);
 }
 
 /*
@@ -157,6 +163,25 @@
   border-color: rgb(var(--colors-border-secondary));
 }
 
+/*
+ * A choice picker's root. Matched through its label rather than by class, because the
+ * catalog's class map is empty. It owns the spacing between the label, the optional filter
+ * box and the options, so nothing depends on which of them are present. The `:has(> div)`
+ * half keeps a plain container of bold text from being turned into a column: a picker
+ * always wraps its options in a block, prose never does. Both halves match by SHAPE, so an
+ * SDK upgrade must re-check them.
+ */
+.a2ui-scope div:has(> strong):has(> div) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s);
+}
+
+/* The root gap spaces the label now; a margin on top of it would double the first step. */
+.a2ui-scope div:has(> strong):has(> div) > strong {
+  margin-bottom: 0;
+}
+
 /* A choice picker labels itself with <strong> and lists its options in the next block. */
 .a2ui-scope strong {
   display: block;
@@ -166,20 +191,25 @@
   color: rgb(var(--colors-text-quaternary));
 }
 
-.a2ui-scope strong + div {
+/*
+ * The options block. Anchored to the picker root rather than reached by a sibling
+ * combinator: a general sibling would match every later div sibling of any <strong>, and an
+ * adjacent one breaks the moment a filter box sits between the label and the options.
+ */
+.a2ui-scope div:has(> strong):has(> div) > div {
   display: flex;
   flex-direction: column;
   gap: var(--a2ui-spacing-s);
+  min-width: 0;
 }
 
 /*
- * A checkbox labels itself AFTER its control, so the block-label rule above would push it
- * onto its own line and break the row the catalog already centres. The line height is
- * pinned to the control's own size so the two share a box and centre exactly, rather than
- * depending on the font's default leading.
+ * A checkbox labels itself AFTER its control, so the generic field-label rule above would
+ * give it that rule's block margin — which a centred flex row then splits, leaving the
+ * text half a margin above the box. The `:not()` repeats the same exclusion purely to
+ * out-specify it.
  */
-.a2ui-scope input + label[for] {
-  display: inline;
+.a2ui-scope input + label[for]:not(.a2ui-own, .a2ui-own *) {
   margin-bottom: 0;
   font-size: var(--a2ui-font-size-s);
   line-height: var(--a2ui-checkbox-size);
@@ -202,13 +232,86 @@
   cursor: pointer;
 }
 
-.a2ui-scope input[type='radio'],
-.a2ui-scope input[type='checkbox'] {
+/*
+ * A native-appearance control paints itself and ignores the border, background and radius
+ * the catalog sets inline, so it lands in the chat as a stock OS checkbox. Painting is
+ * taken back here to match the design system's own Checkbox and RadioButton.
+ */
+.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *),
+.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *) {
+  appearance: none;
+  position: relative;
   flex: none;
   align-self: center;
+  box-sizing: border-box;
   margin: 0;
-  accent-color: rgb(var(--colors-text-accent-status));
   cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+
+  /*
+   * Size and border are declared here rather than left to the catalog: a picker's options
+   * are bare inputs with no inline styling, and without an intrinsic native box they would
+   * collapse to nothing once `appearance` is cleared.
+   */
+  width: var(--a2ui-checkbox-size);
+  height: var(--a2ui-checkbox-size);
+  border: var(--a2ui-checkbox-border);
+  border-radius: var(--a2ui-checkbox-border-radius);
+  background: var(--a2ui-checkbox-background);
+}
+
+.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *) {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50% !important;
+}
+
+.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *):hover,
+.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *):hover {
+  border-color: rgb(var(--colors-text-accent-status)) !important;
+}
+
+.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *):checked {
+  background: rgb(var(--colors-text-accent-status)) !important;
+  border-color: rgb(var(--colors-text-accent-status)) !important;
+}
+
+/* The tick: a rotated two-sided box, so no icon font or SVG is needed. */
+.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *):checked::after {
+  content: '';
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 0.25rem;
+  height: 0.5rem;
+  border: solid rgb(var(--colors-surface-base-primary));
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *):checked {
+  border-color: rgb(var(--colors-text-accent-status)) !important;
+}
+
+.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *):checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border-radius: 50%;
+  background: rgb(var(--colors-text-accent-status));
+  transform: translate(-50%, -50%);
+}
+
+/* The catalog sets `outline: none` inline, and appearance:none removed the UA ring. */
+.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *):focus-visible,
+.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *):focus-visible {
+  outline: 2px solid rgb(var(--colors-text-accent-status)) !important;
+  outline-offset: 2px;
 }
 
 /* The option's own text, so the box and the words share a baseline box. */
@@ -225,12 +328,18 @@
  * already carries `button`, so importing it would restyle the whole application.
  */
 .a2ui-scope div:has(> .chip) {
+  display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   gap: var(--a2ui-spacing-s);
+  min-width: 0;
 }
 
 .a2ui-scope .chip {
+  /* A long generated label must wrap inside the chip rather than widen the chat column. */
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 0.25rem 0.75rem;
   border: 1px solid rgb(var(--colors-border-structural));
   border-radius: 999px;
@@ -279,7 +388,7 @@
 
 .a2ui-scope input[type='range'] {
   width: 100%;
-  accent-color: rgb(var(--colors-border-accent));
+  accent-color: rgb(var(--colors-text-accent-status));
 }
 
 /*
@@ -318,4 +427,47 @@
 
 .a2ui-scope .a2ui-answered::before {
   content: '✓ ';
+}
+
+/*
+ * Read-only surfaces. A submitted surface — and every surface in the shared view — is
+ * wrapped in a disabled fieldset, which stops interaction but paints nothing, so the form
+ * still reads as live. Keyed off that fieldset rather than off `:disabled` alone, so a
+ * control the design system disabled on a LIVE surface keeps its own disabled and loading
+ * styling. The answered action is exempt: on a read-only surface it is the only thing left
+ * saying which action was taken, so dimming it to match the rest erases that signal.
+ * `cursor` is deliberately absent — the fieldset also carries `pointer-events: none`, which
+ * is inherited, so no descendant is ever a hit target and a cursor here could never apply.
+ */
+.a2ui-scope fieldset:disabled :where(input, textarea, select, button):not(
+    .a2ui-answered,
+    .a2ui-own,
+    .a2ui-own *
+  ) {
+  opacity: 0.65;
+}
+
+.a2ui-scope fieldset:disabled :where(input, textarea)::placeholder {
+  opacity: 0.65;
+}
+
+/* Own renderers are disabled only by the ancestor fieldset, so they need the cue too. */
+.a2ui-scope fieldset:disabled .a2ui-own {
+  opacity: 0.65;
+}
+
+/*
+ * The catalog's Row styles itself inline and never sets flex-wrap, so a row of buttons
+ * refuses to break and pushes the chat column sideways on a narrow viewport. The inline
+ * style sets no flex-wrap, so these plain declarations win without !important. A horizontal
+ * List carries the same inline direction but adds `overflow-x: auto` to be a scroller —
+ * wrapping it would turn one designed line into a vertically clipped grid, so it is excluded.
+ */
+.a2ui-scope div[style*='flex-direction: row']:not([style*='overflow-x: auto']) {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.a2ui-scope div[style*='flex-direction: row']:not([style*='overflow-x: auto']) > * {
+  min-width: 0;
 }
