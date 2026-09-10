@@ -1,0 +1,53 @@
+{
+  "decision": "approved",
+  "round": "check",
+  "reviews": "code-review-final.json",
+  "rationale": "All four findings from the initial review are resolved. CR-002, CR-003 and CR-004 were fixed and each fix is protected by a test that fails when the fix is reverted. CR-001 was rejected as a non-defect and later became moot: the follow-up refactor moved the debounce onto the shared useDebouncedApply hook, which owns the timer, so the unmount cleanup the finding referred to no longer exists.",
+  "confidence": "high",
+  "risk_flags": [],
+  "verification": {
+    "head": "2aede96c1",
+    "tests": "6 passed (6) — npx vitest run --project unit src/pages/settings/administration/components/__tests__/AddUserModal.test.tsx",
+    "typecheck": "tsc --noEmit — clean",
+    "lint": "eslint — exit 0",
+    "mutation_checks": [
+      { "mutation": "SEARCH_DEBOUNCE_MS 500 -> 0", "result": "2 failed | 4 passed", "guards": "debounce window" },
+      { "mutation": "remove requestId guard in runSearch", "result": "1 failed | 5 passed", "guards": "CR stale-response race" },
+      { "mutation": "remove setIsLoadingUsers(false) from short-query branch", "result": "1 failed | 5 passed", "guards": "CR-003" },
+      { "mutation": "remove setIsLoadingUsers(false) from resetFormState", "result": "1 failed | 5 passed", "guards": "CR-002" },
+      { "mutation": "none (baseline)", "result": "6 passed", "guards": "-" }
+    ]
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "status": "rejected-then-moot",
+      "title": "Unmount cleanup does not cancel in-flight runSearch",
+      "resolution": "Rejected as a non-defect: React 19.2.8 makes setState on an unmounted component a no-op with no warning (the warning was removed in React 18), AddUserModal is never unmounted independently because ProjectMembersManager always renders it and only toggles the visible prop, and the UserEmailAutocomplete reference performs clearTimeout only. Empirically confirmed: removing the proposed line left the full suite green, showing it changes no observable behaviour. The point is now moot — commit 2aede96c1 replaced the hand-rolled timer with useDebouncedApply, whose own effect cleanup owns cancellation, so the unmount effect was deleted entirely."
+    },
+    {
+      "id": "CR-002",
+      "status": "fixed",
+      "title": "resetFormState leaves loading spinner after close or submit",
+      "resolution": "setIsLoadingUsers(false) added to resetFormState (AddUserModal.tsx:72). Covered by 'clears loading spinner when the modal is closed while a request is in-flight'; removing the line turns that test red."
+    },
+    {
+      "id": "CR-003",
+      "status": "fixed",
+      "title": "Short-query early-return does not clear loading spinner",
+      "resolution": "setIsLoadingUsers(false) added to the short-query branch of handleUserSearch (AddUserModal.tsx:108). Covered by 'clears loading spinner when query is cleared while a request is in-flight'; removing the line turns that test red. This was the only user-reachable defect of the four — clearing the field mid-request left the spinner running."
+    },
+    {
+      "id": "CR-004",
+      "status": "fixed",
+      "title": "Test captures not reset between test suites",
+      "resolution": "capturedOnFilter, capturedOnChange, capturedPopupSubmit and capturedPopupOnHide are reset to undefined in beforeEach (AddUserModal.test.tsx:51)."
+    }
+  ],
+  "follow_up": {
+    "id": "FU-001",
+    "kind": "refactor",
+    "title": "Reuse the shared debounce hook instead of a hand-rolled timer",
+    "detail": "Raised outside the review rounds. The initial implementation hand-rolled setTimeout/clearTimeout at 300 ms, following UserEmailAutocomplete — one of only two hand-rolled debounces in the repository. The convention is useDebouncedApply, used at ten call sites including ProjectMembersFilters, the members search on this same page. Commit 2aede96c1 moves AddUserModal onto that hook and aligns the delay to 500 ms, matching ProjectMembersFilters, UsersManagementFilters, ProjectsManagementFull and AnalyticsFilters. The requestIdRef guard is retained: the hook debounces the timer only and does not cancel a stale in-flight response."
+  }
+}

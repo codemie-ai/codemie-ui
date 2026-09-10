@@ -13,12 +13,13 @@
 // limitations under the License.
 //
 
-import { FC, useState, useCallback } from 'react'
+import { FC, useState, useCallback, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 
 import MultiSelect from '@/components/form/MultiSelect'
 import Select from '@/components/form/Select'
 import Popup from '@/components/Popup'
+import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { userStore } from '@/store/user'
 import { ProjectRole } from '@/types/entity/project'
 import toaster from '@/utils/toaster'
@@ -36,6 +37,7 @@ export interface AddUserFormData {
 
 const MIN_SEARCH_LENGTH = 1
 const SEARCH_RESULTS_LIMIT = 10
+const SEARCH_DEBOUNCE_MS = 500
 
 const ERROR_MESSAGES = {
   SELECT_USER: 'Please select a user',
@@ -59,43 +61,61 @@ const AddUserModal: FC<AddUserModalProps> = ({ visible, onHide, onSubmit }) => {
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState('')
   const [role, setRole] = useState<string>(ProjectRole.USER)
+  const [userQuery, setUserQuery] = useState('')
+
+  // Guards against a slow earlier request overwriting a newer one's results.
+  // The debounce timer itself is owned by useDebouncedApply.
+  const requestIdRef = useRef(0)
 
   const resetFormState = useCallback(() => {
+    requestIdRef.current += 1
+    setIsLoadingUsers(false)
     reset()
     setSelectedUserId('')
     setUserOptions([])
     setUserIdError('')
     setRole(ProjectRole.USER)
+    setUserQuery('')
   }, [reset])
 
-  const handleUserSearch = useCallback(async (query: string) => {
-    setSelectedUserId('')
-    setUserIdError('')
-
-    if (query.length < MIN_SEARCH_LENGTH) {
-      setUserOptions([])
-      return
-    }
-
+  const runSearch = useCallback(async (query: string) => {
+    requestIdRef.current += 1
+    const requestId = requestIdRef.current
     setIsLoadingUsers(true)
     try {
       const users = await userStore.searchUsers(query, SEARCH_RESULTS_LIMIT)
-
-      const options = users.map((user) => ({
-        label: `${user.name} (${user.email})`,
-        value: user.id,
-      }))
-
-      setUserOptions(options)
+      if (requestId !== requestIdRef.current) return
+      setUserOptions(users.map((u) => ({ label: `${u.name} (${u.email})`, value: u.id })))
     } catch (error: any) {
+      if (requestId !== requestIdRef.current) return
       console.error('Failed to search users:', error)
-      const errorMessage = error?.parsedError?.message || error?.message || 'Failed to search users'
-      toaster.error(errorMessage)
+      toaster.error(error?.parsedError?.message || error?.message || 'Failed to search users')
       setUserOptions([])
     } finally {
-      setIsLoadingUsers(false)
+      if (requestId === requestIdRef.current) setIsLoadingUsers(false)
     }
   }, [])
+
+  const handleUserSearch = useCallback((query: string) => {
+    setSelectedUserId('')
+    setUserIdError('')
+    setUserQuery(query)
+
+    // Too short to search: drop the panel and invalidate any in-flight request
+    // straight away rather than waiting out the debounce window.
+    if (query.length < MIN_SEARCH_LENGTH) {
+      requestIdRef.current += 1
+      setIsLoadingUsers(false)
+      setUserOptions([])
+    }
+  }, [])
+
+  const applyUserSearch = useCallback(() => {
+    if (userQuery.length < MIN_SEARCH_LENGTH) return
+    runSearch(userQuery)
+  }, [userQuery, runSearch])
+
+  useDebouncedApply(userQuery, SEARCH_DEBOUNCE_MS, applyUserSearch)
 
   const handleUserChange = useCallback((value: string | string[] | null) => {
     if (!value) {

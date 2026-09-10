@@ -1,0 +1,62 @@
+{
+  "decision": "request-changes",
+  "rationale": "Four confirmed patch findings in the new debounce implementation: the unmount cleanup, resetFormState, and short-query early-return paths each omit setIsLoadingUsers(false), leaving the spinner stuck; test module-level captures are not reset between suites. No spec was present so business acceptance was not checked; confidence is low.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards review not dispatched; intentionally omitted for compact profile with no standards guides configured." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards review not dispatched; intentionally omitted for compact profile with no standards guides configured." },
+    { "kind": "security", "status": "na", "notes": "Standards review not dispatched; intentionally omitted for compact profile with no standards guides configured." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/AddUserModal.tsx",
+      "line": 66,
+      "title": "Unmount cleanup does not cancel in-flight runSearch",
+      "problem": "The useEffect cleanup calls clearTimeout(debounceRef.current) but does not increment requestIdRef.current. If the debounce timer fires before unmount, runSearch is dispatched; when the component then unmounts and the await resolves, requestId === requestIdRef.current is still true so the finally block calls setIsLoadingUsers(false) and the try/catch path calls setUserOptions on an unmounted component. The network request is not abandoned.",
+      "impact": "In React 18 the setState calls are silently discarded, but the network request completes unnecessarily. In strict-mode double-invoke scenarios or a future React version the stale state write could produce incorrect renders. The pattern also means unmount does not actually cancel pending work, which contradicts the requestIdRef guard design.",
+      "recommendation": "Change the cleanup arrow to: () => { clearTimeout(debounceRef.current); requestIdRef.current += 1 }. This causes runSearch's finally guard (requestId === requestIdRef.current) to be false on the unmounted path, preventing setState and making the behaviour consistent with the reset and short-query paths."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/AddUserModal.tsx",
+      "line": 73,
+      "title": "resetFormState leaves loading spinner after close or submit",
+      "problem": "resetFormState increments requestIdRef.current (correctly invalidating any in-flight runSearch) but never calls setIsLoadingUsers(false). When runSearch's finally block runs after the reset, the guard (requestId !== requestIdRef.current) prevents it from clearing isLoadingUsers, leaving it as true.",
+      "impact": "Because Popup uses a visibility prop rather than unmounting the component, isLoadingUsers persists across open/close cycles. The next time the modal is opened, the MultiSelect renders with loading=true and an empty options list, making it appear perpetually busy.",
+      "recommendation": "Add setIsLoadingUsers(false) inside resetFormState immediately after requestIdRef.current += 1, so the spinner is always cleared when the form is reset regardless of any in-flight request."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/AddUserModal.tsx",
+      "line": 106,
+      "title": "Short-query early-return does not clear loading spinner",
+      "problem": "When the user clears or shortens the query below MIN_SEARCH_LENGTH while runSearch is in-flight, handleUserSearch increments requestIdRef.current and returns early, but does not call setIsLoadingUsers(false). The in-flight runSearch reaches its finally block, finds requestId !== requestIdRef.current, and skips setIsLoadingUsers(false).",
+      "impact": "The loading spinner remains permanently visible on the MultiSelect until the modal is closed and re-opened. The component appears indefinitely busy even though no search is running.",
+      "recommendation": "Add setIsLoadingUsers(false) to the early-return block: if (query.length < MIN_SEARCH_LENGTH) { requestIdRef.current += 1; setIsLoadingUsers(false); setUserOptions([]); return }"
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/__tests__/AddUserModal.test.tsx",
+      "line": 44,
+      "title": "Test captures not reset between test suites",
+      "problem": "The module-level variables capturedOnFilter, capturedOnChange, and capturedPopupSubmit are never reset in beforeEach; only capturedOptions is cleared. The mock components overwrite these variables on each render, but if a future test uses them before its own render updates them (or if test ordering changes), it exercises stale closures from a prior render instance.",
+      "impact": "Tests can silently pass while asserting against the wrong component instance's callbacks. The submit-path suite is particularly exposed: capturedOnChange and capturedPopupSubmit carry the values from the last debounce-suite render rather than from a clean slate, so a regression in how those callbacks are wired could go undetected.",
+      "recommendation": "In beforeEach, add: capturedOnFilter = undefined; capturedOnChange = undefined; capturedPopupSubmit = undefined; alongside the existing capturedOptions = [] reset, so each test begins from a known-empty state."
+    }
+  ]
+}
