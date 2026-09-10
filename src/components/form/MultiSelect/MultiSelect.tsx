@@ -59,6 +59,20 @@ const DefaultOption = ({ label }: { label: string }) => {
 
 const defaultRenderOption = (option: { label: string }) => <DefaultOption label={option.label} />
 
+// Builds the panelHeaderTemplate prop: default search header, default empty header,
+// or (when panelHeaderExtra is set) the default search header plus the extra content below it.
+const buildPanelHeaderTemplate = (panelHeaderExtra: React.ReactNode, hasFilter: boolean) => {
+  if (!hasFilter) return <div />
+  if (!panelHeaderExtra) return null
+
+  return (options: { element: React.ReactNode }) => (
+    <div className="flex flex-col">
+      {options.element}
+      {panelHeaderExtra}
+    </div>
+  )
+}
+
 export enum MultiSelectSize {
   SMALL = 'small',
   MEDIUM = 'medium',
@@ -113,6 +127,9 @@ export type MultiSelectProps = {
   virtualScrollerOptions?: VirtualScrollerProps
   hasVirtualScroll?: boolean
   onScrollBottom?: () => void
+  // Extra content rendered inside the dropdown panel, directly below the search box.
+  // Requires `onFilter` to be set (the search box itself must be present).
+  panelHeaderExtra?: React.ReactNode
 }
 
 const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
@@ -151,6 +168,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       virtualScrollerOptions,
       hasVirtualScroll = false,
       onScrollBottom,
+      panelHeaderExtra,
     },
     ref
   ) => {
@@ -392,7 +410,10 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}
           showSelectAll={false}
           filter={typeof onFilter === 'function'}
-          panelHeaderTemplate={onFilter ? null : <div />}
+          panelHeaderTemplate={buildPanelHeaderTemplate(
+            panelHeaderExtra,
+            typeof onFilter === 'function'
+          )}
           itemTemplate={renderOption ?? defaultRenderOption}
           optionLabel={optionLabel}
           optionValue={optionValue}

@@ -20,7 +20,7 @@ import { useSnapshot } from 'valtio'
 import Avatar from '@/components/Avatar/Avatar'
 import InfoBox from '@/components/form/InfoBox'
 import MultiSelect from '@/components/form/MultiSelect'
-import { AssistantIndexScope } from '@/constants/assistants'
+import { ASSISTANT_INDEX_SCOPES, AssistantIndexScope } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { usePaginatedOptions, LoadListParams, LoadListResult } from '@/hooks/usePaginatedOptions'
@@ -33,9 +33,10 @@ export interface AssistantOption {
   id: string
   name: string
   iconUrl?: string
-  icon_url?: string // Support snake_case from API
+  icon_url?: string
   project?: string
   is_builtin_subagent?: boolean
+  is_global?: boolean
   created_by?: {
     id: string
     name?: string
@@ -49,9 +50,7 @@ interface AssistantSelectorProps {
   disabled?: boolean
   singleValue?: boolean
   hideHeader?: boolean
-  // Rendered by the inner MultiSelect itself (same label markup as every other form field).
-  // Ignored when hideHeader is false — the "Sub-Assistants" header takes over that slot.
-  label?: string
+  label?: string // Rendered by the inner MultiSelect, ignored when hideHeader is false
   placeholder?: string
 
   value?: AssistantOption[]
@@ -66,21 +65,31 @@ interface AssistantSelectorProps {
   errorClassName?: string
   enlargedLabel?: boolean
   scrollHeight?: string
-
   // Allows injecting extra "virtual" assistant options (e.g. built-in subagents)
   // directly into the dropdown list. These will be placed at the top.
   extraOptionsTop?: AssistantOption[]
-
   // When false, a project change reloads options but leaves `value` alone — for callers
   // that own their own clear-on-project-change behavior (e.g. a shared form-level effect).
   resetOnProjectChange?: boolean
+  // Extra content rendered inside the dropdown panel, directly below the search box (e.g. scope tabs).
+  panelHeaderExtra?: React.ReactNode
+  // Shows a "Project" / "Marketplace" badge after each option's name, based on `is_global`.
+  showScopeBadge?: boolean
 }
 
 const BUILTIN_SUBAGENT_META =
   'inherits data sources, skills and tools, but uses built-in system prompt'
 
+const SCOPE_LABELS = {
+  marketplace: 'Marketplace',
+  project: 'Project',
+} as const
+
 // Extracted AssistantOption component to comply with Rules of Hooks
-const AssistantOptionComponent: React.FC<{ option: AssistantOption }> = ({ option }) => {
+const AssistantOptionComponent: React.FC<{ option: AssistantOption; showScopeBadge?: boolean }> = ({
+  option,
+  showScopeBadge,
+}) => {
   const optionEl = useRef<HTMLParagraphElement>(null)
   const isTruncated = useIsTruncated(optionEl)
 
@@ -96,15 +105,25 @@ const AssistantOptionComponent: React.FC<{ option: AssistantOption }> = ({ optio
         name={option.name}
         type={AvatarType.DROPDOWN}
       />
+
       <div className="flex flex-col min-w-0 flex-1">
-        <p
-          ref={optionEl}
-          className="truncate text-sm font-medium"
-          data-tooltip-id="react-tooltip"
-          data-tooltip-content={isTruncated ? option.name : ''}
-        >
-          {option.name}
-        </p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p
+            ref={optionEl}
+            className="truncate text-sm font-medium"
+            data-tooltip-id="react-tooltip"
+            data-tooltip-content={isTruncated ? option.name : ''}
+          >
+            {option.name}
+          </p>
+
+          {showScopeBadge && (
+            <span className="ml-2 text-xs text-text-tertiary">
+              {option.is_global ? SCOPE_LABELS.marketplace : SCOPE_LABELS.project}
+            </span>
+          )}
+        </div>
+
         {!!metadata && <p className="text-xs text-text-tertiary truncate">{metadata}</p>}
       </div>
     </div>
@@ -135,6 +154,8 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
       extraOptionsTop = [],
       scrollHeight,
       resetOnProjectChange = true,
+      panelHeaderExtra,
+      showScopeBadge,
     },
     ref
   ) => {
@@ -145,26 +166,52 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
 
     const SUB_ASSISTANTS_PAGE_SIZE = 12
 
-    const loadList = useCallback(
-      async ({ searchTerm, page }: LoadListParams): Promise<LoadListResult<AssistantOption>> => {
+    const fetchScopePage = useCallback(
+      async (
+        fetchScope: AssistantIndexScope | undefined,
+        fetchProject: string | undefined,
+        searchTerm: string,
+        page: number
+      ) => {
         const assistants =
           (await assistantsSnapshot.getAssistantOptions?.(
             searchTerm,
-            { project, page, per_page: SUB_ASSISTANTS_PAGE_SIZE },
-            scope
+            { project: fetchProject, page, per_page: SUB_ASSISTANTS_PAGE_SIZE },
+            fetchScope
           )) || []
 
-        const items = assistants.map((asst) => ({
+        return assistants.map((asst) => ({
           id: asst.id,
           name: asst.name,
           iconUrl: asst.icon_url,
           project: asst.project,
           created_by: asst.created_by,
+          is_global: asst.is_global,
         }))
-
-        return { items, hasMore: items.length === SUB_ASSISTANTS_PAGE_SIZE }
       },
-      [assistantsSnapshot, project, scope]
+      [assistantsSnapshot]
+    )
+
+    const loadList = useCallback(
+      async ({ searchTerm, page }: LoadListParams): Promise<LoadListResult<AssistantOption>> => {
+        const projectFilter = scope === ASSISTANT_INDEX_SCOPES.MARKETPLACE ? undefined : project
+
+        const primaryItems = await fetchScopePage(scope, projectFilter, searchTerm, page)
+
+        // ALL isn't automatically mixed with marketplace by the backend, so runnig the second query
+        const marketplaceItems =
+          scope === ASSISTANT_INDEX_SCOPES.ALL
+            ? await fetchScopePage(ASSISTANT_INDEX_SCOPES.MARKETPLACE, undefined, searchTerm, page)
+            : []
+
+        return {
+          items: [...primaryItems, ...marketplaceItems],
+          hasMore:
+            primaryItems.length === SUB_ASSISTANTS_PAGE_SIZE ||
+            marketplaceItems.length === SUB_ASSISTANTS_PAGE_SIZE,
+        }
+      },
+      [fetchScopePage, project, scope]
     )
 
     const { options, loadOptions, handleScrollBottom } = usePaginatedOptions<AssistantOption>({
@@ -201,15 +248,12 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
     }
 
     useEffect(() => {
-      // Reset selected value and reload options from page 0 whenever the project changes
       if (resetOnProjectChange) resetValue()
       loadOptions()
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [project])
+    }, [project, scope])
 
-    // Custom option renderer for MultiSelect
     const Option = (option: AssistantOption): React.ReactNode => {
-      return <AssistantOptionComponent option={option} />
+      return <AssistantOptionComponent option={option} showScopeBadge={showScopeBadge} />
     }
 
     const handleChange = (selectedOptions: { value: string[] }) => {
@@ -246,6 +290,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
             </InfoBox>
           </>
         )}
+
         <MultiSelect
           ref={ref}
           key={project}
@@ -269,6 +314,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
           singleValue={singleValue}
           showCheckbox={!singleValue}
           scrollHeight={scrollHeight}
+          panelHeaderExtra={panelHeaderExtra}
         />
       </div>
     )

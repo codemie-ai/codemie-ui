@@ -448,6 +448,10 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       setManualCredentialValues([])
     }
 
+    if (CREDENTIAL_VALUES_MAPPING[newType]?.hideGlobalToggle) {
+      setIsGlobal(false)
+    }
+
     reset({ alias: getValues('alias'), ...getCredentialDefaults(newType) })
     setResetCount((count) => count + 1)
   }
@@ -599,22 +603,23 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
             />
           )}
 
-          {settingType === SETTING_TYPE_USER && (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="isGlobal"
-                  value={isGlobal}
-                  onChange={(e) => setIsGlobal(e.target.checked)}
-                  label="Global Integration"
-                />
+          {settingType === SETTING_TYPE_USER &&
+            !CREDENTIAL_VALUES_MAPPING[credentialType]?.hideGlobalToggle && (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="isGlobal"
+                    value={isGlobal}
+                    onChange={(e) => setIsGlobal(e.target.checked)}
+                    label="Global Integration"
+                  />
+                </div>
+                <InfoMessage>
+                  By enabling, it will become versatile and can be applied across multiple projects
+                  without being tied to any specific one.
+                </InfoMessage>
               </div>
-              <InfoMessage>
-                By enabling, it will become versatile and can be applied across multiple projects
-                without being tied to any specific one.
-              </InfoMessage>
-            </div>
-          )}
+            )}
         </div>
 
         <div data-onboarding="integration-credential-type-field">

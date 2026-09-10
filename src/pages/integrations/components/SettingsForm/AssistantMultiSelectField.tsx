@@ -15,6 +15,9 @@
 
 import { useEffect, useState } from 'react'
 
+import Spinner from '@/components/Spinner'
+import Tabs, { Tab } from '@/components/Tabs/Tabs'
+import { ASSISTANT_INDEX_SCOPES, AssistantIndexScope } from '@/constants/assistants'
 import AssistantSelector, { AssistantOption } from '@/pages/assistants/components/AssistantSelector'
 import { assistantsStore } from '@/store/assistants'
 
@@ -26,6 +29,20 @@ interface AssistantMultiSelectFieldProps {
   error?: string
   disabled?: boolean
 }
+
+type ScopeTabId = 'all' | 'project' | 'marketplace'
+
+const SCOPE_TAB_TO_INDEX_SCOPE: Record<ScopeTabId, AssistantIndexScope> = {
+  all: ASSISTANT_INDEX_SCOPES.ALL, // project + all marketplace
+  project: ASSISTANT_INDEX_SCOPES.VISIBLE_TO_USER, // only project scoped
+  marketplace: ASSISTANT_INDEX_SCOPES.MARKETPLACE, // all marketplace (no project filtering)
+}
+
+const SCOPE_TABS: Tab<ScopeTabId>[] = [
+  { id: 'all', label: 'All', element: null },
+  { id: 'project', label: 'Project', element: null },
+  { id: 'marketplace', label: 'Marketplace', element: null },
+]
 
 const toNameMap = (assistants: { id: string; name: string }[]): Record<string, string> =>
   Object.fromEntries(assistants.map((assistant) => [assistant.id, assistant.name]))
@@ -39,21 +56,34 @@ const AssistantMultiSelectField: React.FC<AssistantMultiSelectFieldProps> = ({
   disabled,
 }) => {
   const [nameCache, setNameCache] = useState<Record<string, string>>({})
+  const [scopeTab, setScopeTab] = useState<ScopeTabId>('project')
+
+  const unresolvedIds = value.filter((id) => !(id in nameCache))
+  const isResolvingNames = unresolvedIds.length > 0
 
   useEffect(() => {
-    const unresolvedIds = value.filter((id) => !(id in nameCache))
     if (!unresolvedIds.length) return () => {}
 
     let cancelled = false
-    assistantsStore.getAssistantOptions('', { ids: unresolvedIds, project }).then((assistants) => {
-      if (cancelled) return
-      setNameCache((prev) => ({ ...prev, ...toNameMap(assistants) }))
-    })
+
+    assistantsStore
+      .getAssistantOptions('', { ids: unresolvedIds }, ASSISTANT_INDEX_SCOPES.ALL)
+      .then((assistants) => {
+        if (cancelled) return
+        const found = toNameMap(assistants)
+        // Assistants the fetch didn't return (e.g. deleted) still need a resolved
+        // entry, otherwise they'd be treated as unresolved forever.
+        const fallback = Object.fromEntries(
+          unresolvedIds.filter((id) => !(id in found)).map((id) => [id, id])
+        )
+        setNameCache((prev) => ({ ...prev, ...found, ...fallback }))
+      })
 
     return () => {
       cancelled = true
     }
-  }, [value, project, nameCache])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, nameCache])
 
   const selectedOptions: AssistantOption[] = value.map((id) => ({
     id,
@@ -63,6 +93,10 @@ const AssistantMultiSelectField: React.FC<AssistantMultiSelectFieldProps> = ({
   const handleChange = (options: AssistantOption[]) => {
     setNameCache((prev) => ({ ...prev, ...toNameMap(options) }))
     onChange(options.map((option) => option.id))
+  }
+
+  if (isResolvingNames) {
+    return <Spinner inline />
   }
 
   return (
@@ -77,6 +111,19 @@ const AssistantMultiSelectField: React.FC<AssistantMultiSelectFieldProps> = ({
       placeholder="Search…"
       resetOnProjectChange={false}
       selectClassName="!rounded-md !py-1.5"
+      scope={SCOPE_TAB_TO_INDEX_SCOPE[scopeTab]}
+      showScopeBadge={SCOPE_TAB_TO_INDEX_SCOPE[scopeTab] === ASSISTANT_INDEX_SCOPES.ALL}
+      panelHeaderExtra={
+        <Tabs
+          isSmall
+          tabs={SCOPE_TABS}
+          activeTab={scopeTab}
+          onChange={setScopeTab}
+          alwaysShowTabs
+          className="px-3 py-1"
+          headerClassName="mb-0"
+        />
+      }
     />
   )
 }

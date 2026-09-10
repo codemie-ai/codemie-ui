@@ -122,6 +122,7 @@ export type CredentialTypeConfig = {
   personalFeatureFlag?: string
   deprecated?: boolean // If true, hide from new-integration picker and render existing settings read-only.
   featureFlag?: string // Gates visibility of this credential type
+  hideGlobalToggle?: boolean // If true, hide the "Global Integration" switch (for types requiring project_name)
 }
 
 export type CredentialUIMap = Record<string, CredentialTypeConfig>
