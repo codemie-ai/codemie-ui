@@ -291,31 +291,33 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
           </>
         )}
 
-        <MultiSelect
-          ref={ref}
-          key={project}
-          disabled={disabled}
-          value={preparedValue}
-          onChange={handleChange}
-          options={getMultiselectOptions()}
-          label={label ?? ''}
-          className="flex-1 max-w-full"
-          inputClassName={selectClassName}
-          errorClassName={errorClassName}
-          placeholder={placeholder ?? 'Select Sub-Assistants'}
-          onFilter={loadOptions}
-          onScrollBottom={handleScrollBottom}
-          renderOption={Option}
-          error={error}
-          fullWidth
-          size="medium"
-          optionLabel="name"
-          optionValue="id"
-          singleValue={singleValue}
-          showCheckbox={!singleValue}
-          scrollHeight={scrollHeight}
-          panelHeaderExtra={panelHeaderExtra}
-        />
+        <div className="flex gap-2">
+          <MultiSelect
+            ref={ref}
+            key={project}
+            disabled={disabled}
+            value={preparedValue}
+            onChange={handleChange}
+            options={getMultiselectOptions()}
+            label={label ?? ''}
+            className="max-w-full"
+            inputClassName={selectClassName}
+            errorClassName={errorClassName}
+            placeholder={placeholder ?? 'Select Sub-Assistants'}
+            onFilter={loadOptions}
+            onScrollBottom={handleScrollBottom}
+            renderOption={Option}
+            error={error}
+            fullWidth
+            size="medium"
+            optionLabel="name"
+            optionValue="id"
+            singleValue={singleValue}
+            showCheckbox={!singleValue}
+            scrollHeight={scrollHeight}
+            panelHeaderExtra={panelHeaderExtra}
+          />
+        </div>
       </div>
     )
   }

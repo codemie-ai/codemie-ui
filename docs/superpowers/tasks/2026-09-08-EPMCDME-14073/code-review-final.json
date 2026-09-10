@@ -1,0 +1,97 @@
+{
+  "decision": "approve",
+  "rationale": "The change correctly identifies and neutralizes the cause of the collapsed control. `MultiSelect` forwards the caller's `className` to both its outer wrapper (MultiSelect.tsx:352) and the inner PrimeReact root (MultiSelect.tsx:391), so the previous `flex-1` landed next to `h-[44px] py-[5px]` (MultiSelect.tsx:229). Inside a `flex flex-col` parent, `flex-1`'s `flex: 1 1 0%` resolves against the vertical axis and outranks the height declaration, collapsing the field. Dropping `flex-1` restores the 44px height, and the new row-flex wrapper gives `fullWidth`'s `flex-grow` a horizontal axis so the control still fills its container. Presentation-only: no props, state, data flow, or API surface changed. Gates verified on a clean `npm ci` install - typecheck exit 0, lint exit 0, unit 509 files / 5323 passed / 1 skipped, gitleaks `no leaks found`. One non-blocking nit recorded (CR-001).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "AC-1 Create Assistant Sub-Assistants picker renders at 44px",
+      "status": "pass",
+      "notes": "`size=\"medium\"` maps to `h-[44px] py-[5px]` and is no longer overridden now that `flex-1` is gone. Confirmed visually in the before/after screenshots attached to MR !1868."
+    },
+    {
+      "criterion": "AC-2 Attach to Assistants modal picker renders at 44px",
+      "status": "pass",
+      "notes": "Same code path via AttachToAssistantsModal.tsx:109; confirmed in the second before/after screenshot pair."
+    },
+    {
+      "criterion": "AC-3 Placeholder vertically centred, not clipped",
+      "status": "pass",
+      "notes": "`py-[5px]` inside the restored 44px box centres the placeholder; visible in the after screenshots."
+    },
+    {
+      "criterion": "AC-4 Control still fills available width",
+      "status": "pass",
+      "notes": "`fullWidth` puts `flex-grow` on the MultiSelect wrapper; the new `div.flex` supplies the row axis it previously lacked. `max-w-full` retained as the overflow guard."
+    },
+    {
+      "criterion": "AC-5 Dropdown behaviour unchanged",
+      "status": "pass",
+      "notes": "No prop, handler, or state touched - `onFilter`, `onScrollBottom`, `renderOption`, `singleValue`, `showCheckbox`, `scrollHeight`, `disabled` and `error` are passed through verbatim. Error text renders inside the MultiSelect wrapper (MultiSelect.tsx:424) so the added div does not displace it."
+    },
+    {
+      "criterion": "AC-6 No regression in the other three consumers",
+      "status": "pass",
+      "notes": "Consumers are AssistantForm.tsx:673, AttachToAssistantsModal.tsx:109, AssistantMultiSelectField.tsx:69, GuardrailAssignmentEntitySelector.tsx:127. All receive the same corrected layout. The workflow-local components/AssistantSelector.tsx is a different component and is untouched - its suite still passes."
+    },
+    {
+      "criterion": "AC-7 Lint, type-check and unit suite green",
+      "status": "pass",
+      "notes": "typecheck exit 0; lint exit 0 with no findings; test:unit 509/509 files, 5323 passed, 1 skipped."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "concern",
+      "notes": "Commit subject `EPMCDME-14073: Restore 44px height in AssistantSelector dropdown` matches the enforced Tekton regex. Branch is `EPMCDME-14073/fix-placeholder`, which uses a `/` where `.ai-run/guides/standards/git-workflow.md` specifies `EPMCDME-XXXX_short-description`. The ticket key is present and CI validates commit messages rather than branch names, so this is cosmetic and non-blocking."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "Single-file, minimal diff. ESLint and tsc clean. See CR-001 for the one cosmetic nit."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "Tailwind class change only. No HTML sink, redirect, cross-window message, config read, or secret involved. gitleaks reports `no leaks found`."
+    },
+    {
+      "standard": "testing",
+      "status": "pass",
+      "notes": "No unit test added. Accepted trade-off: the change carries no behavioural surface a jsdom assertion would protect, and computed layout is not resolved under jsdom, so a height assertion would test the class string rather than the bug. Verified visually instead via MR screenshots plus the sanity-ui harness run."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "low",
+      "category": "dead-code",
+      "blocking": false,
+      "file": "src/pages/assistants/components/AssistantSelector.tsx",
+      "line": 249,
+      "summary": "`gap-2` on the new wrapper is inert - the div has exactly one child.",
+      "detail": "`<div className=\"flex gap-2\">` wraps only `<MultiSelect />`. `gap` applies between flex items, so with a single item it never renders. `className=\"flex\"` alone is sufficient and states the intent - supplying a row axis for `flex-grow` - without implying a sibling that does not exist.",
+      "recommendation": "Drop `gap-2`, keeping `<div className=\"flex\">`.",
+      "status": "open"
+    }
+  ],
+  "follow_ups": [
+    {
+      "id": "FU-001",
+      "summary": "`MultiSelect` applies the caller's `className` to two elements in two different flex contexts (MultiSelect.tsx:352 outer wrapper, MultiSelect.tsx:391 inner PrimeReact root).",
+      "detail": "Every layout class any consumer passes is silently applied twice. This is the underlying cause of EPMCDME-14073 and will keep producing similar defects. Out of scope here - MultiSelect is used app-wide and the change needs its own ticket with a full regression pass.",
+      "owner": "unassigned"
+    }
+  ],
+  "evidence": {
+    "install": "npm ci, exit 0",
+    "typecheck": "npm run typecheck (tsc --noEmit), exit 0, no diagnostics",
+    "lint": "npm run lint, exit 0, no findings",
+    "unit": "npm run test:unit - Test Files 509 passed (509), Tests 5323 passed | 1 skipped (5324), exit 0",
+    "secrets": "npm run secrets:check - gitleaks scanned 96.42 MB, no leaks found, exit 0",
+    "e2e": "npm run test-harness (--sanity-ui) - 2 passed in 247.04s (0:04:07)"
+  },
+  "reviewed_diff": "code-review.diff",
+  "source": "agent"
+}
