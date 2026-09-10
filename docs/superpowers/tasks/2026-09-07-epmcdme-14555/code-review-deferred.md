@@ -1,0 +1,3 @@
+# Deferred from code review — 2026-09-07-epmcdme-14555 (2026-09-07)
+
+- **Stale ref triggers spurious load on budget-management enable** — `src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx:290` — When `isBudgetManagementEnabled` is false and budget filters change externally (URL restore, store mutation), the effect returns early at line 290 and `previousBudgetFiltersRef` is not updated. When the flag later enables, `hasBudgetFiltersChanged` evaluates true against the stale ref and fires a spurious load alongside the initial load. Pre-existing: the ref-not-updated-when-flag-is-false pattern predates this PR; the PR changed only the initial ref value, not the update guard at the early-return point.

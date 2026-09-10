@@ -162,13 +162,18 @@ const ProjectsManagementFull: FC = () => {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
   const skipPaginationReloadRef = useRef(false)
-  const previousBudgetFiltersRef = useRef({
-    budgetAssignmentFilter: 'all' as 'all' | 'assigned',
-    budgetCategory: 'all' as BudgetCategoryFilter,
-  })
 
   const [isUserManagementEnabled] = useUserManagementEnabled()
   const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
+
+  // Initialized from live state so Effect 2's hasBudgetFiltersChanged is false on mount when
+  // budget management is already enabled. Tracking isBudgetManagementEnabled here means a
+  // false→true transition counts as a change and triggers one corrective refetch with budget params.
+  const previousBudgetFiltersRef = useRef({
+    budgetAssignmentFilter,
+    budgetCategory,
+    isBudgetManagementEnabled,
+  })
 
   // Check if project creation feature is enabled
   const [isProjectCreationForNonAdminsEnabled, isConfigLoaded] = useFeatureFlag(
@@ -288,11 +293,13 @@ const ProjectsManagementFull: FC = () => {
 
     const hasBudgetFiltersChanged =
       previousBudgetFiltersRef.current.budgetAssignmentFilter !== budgetAssignmentFilter ||
-      previousBudgetFiltersRef.current.budgetCategory !== budgetCategory
+      previousBudgetFiltersRef.current.budgetCategory !== budgetCategory ||
+      previousBudgetFiltersRef.current.isBudgetManagementEnabled !== isBudgetManagementEnabled
 
     previousBudgetFiltersRef.current = {
       budgetAssignmentFilter,
       budgetCategory,
+      isBudgetManagementEnabled,
     }
 
     if (!hasBudgetFiltersChanged) return

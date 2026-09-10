@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "The ref initialization change introduced a regression: when isBudgetManagementEnabled transitions false→true mid-session with filters unchanged, hasBudgetFiltersChanged is false and no budget-params load fires, leaving budget columns empty (reachability uncertain; the code documents that the flag is assumed stable from first render). 1 finding deferred: the pre-existing stale-ref pattern when filters change while the flag is disabled, which the PR did not alter. 1 dismissed; no spec was present and acceptance could not be checked.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards not checked; standards_expected false — compact profile, no guide configured." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards not checked; standards_expected false — compact profile, no guide configured." },
+    { "kind": "security", "status": "na", "notes": "Standards not checked; standards_expected false — compact profile, no guide configured." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx",
+      "line": 289,
+      "title": "Budget load skipped when feature flag enables mid-session",
+      "problem": "After this change previousBudgetFiltersRef is initialized from live filter values. When isBudgetManagementEnabled is false at mount and later transitions to true with filters unchanged, hasBudgetFiltersChanged evaluates false and Effect 2 returns early without calling loadProjects with budget params. Effect 1 had already run on mount without budget params. The pre-PR hardcoded 'all' ref incidentally produced a false-positive change detection when the stored filter was 'assigned', which triggered a budget-params load; the live-value initialization removed that incidental behavior.",
+      "impact": "Budget columns remain empty for the session when the feature flag activates after mount with no concurrent filter change. Reachability is uncertain: the code documents that isBudgetManagementEnabled is assumed stable from first render via the App.tsx gate.",
+      "recommendation": "Track the previous isBudgetManagementEnabled value in a ref (e.g. prevBudgetEnabledRef). In Effect 2, when detecting a false→true transition (isBudgetManagementEnabled && !prevBudgetEnabledRef.current), call loadProjects with budgetQueryParamsRef.current unconditionally before the hasBudgetFiltersChanged guard, then update prevBudgetEnabledRef."
+    }
+  ]
+}

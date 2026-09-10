@@ -1,0 +1,9 @@
+{
+  "findings": [
+    {
+      "id": "CR-001",
+      "resolution": "fixed",
+      "evidence": "Three unit tests pass in ProjectsManagementFull.initialLoad.test.tsx: (1) mount with flag already true fires exactly 1 request; (2) filter change fires exactly 1 request; (3) flag false→true transition fires exactly 1 corrective refetch. Full unit suite: Test Files 508 passed."
+    }
+  ]
+}

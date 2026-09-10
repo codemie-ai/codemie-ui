@@ -1,0 +1,41 @@
+{
+  "round": "check",
+  "decision": "approved",
+  "confidence": "high",
+  "base_review": "code-review-final.json",
+  "reviewed_head": "f2a86874beadf1d17489115c7881bf4c0b322ee7",
+  "previous_head": "aca4cd5bd9b8260dd12348d4dfb90aa9dfcd5778",
+  "rationale": "The single blocking finding from code-review-final.json (CR-001) was fixed in f2a86874b and verified by targeted test runs. No new findings. The one deferred finding remains deferred and is recorded below with its status re-assessed against the fix.",
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "resolution": "fixed",
+      "status": "verified",
+      "fix_commit": "f2a86874beadf1d17489115c7881bf4c0b322ee7",
+      "fix_summary": "isBudgetManagementEnabled is now part of previousBudgetFiltersRef — seeded at first render, compared in hasBudgetFiltersChanged, and written on every ref update. A false→true transition therefore counts as a change and fires exactly one corrective load carrying budget params. The fix removes the cross-file dependency on the App.tsx isConfigFetched gate that the earlier code comment relied on; that comment was replaced with one stating what the code now guarantees.",
+      "verification": "Regression suite src/pages/settings/administration/projectsManagement/__tests__/ProjectsManagementFull.initialLoad.test.tsx — 3 tests: (1) mount with the flag already true and a stored 'assigned' filter fires exactly 1 request; (2) a budget-filter change fires exactly 1 request; (3) an isBudgetManagementEnabled false→true transition after mount fires exactly 1 corrective refetch. RED/GREEN confirmed by reverting the production change: without the initial fix, test 1 fails with 'expected 1 times, but got 2 times'; with only the CR-001 change reverted, test 3 fails with 'expected 1 times, but got 0 times'."
+    }
+  ],
+  "deferred": [
+    {
+      "title": "Stale ref when budget filters change while budget management is disabled",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx",
+      "status": "still-deferred",
+      "note": "Pre-existing: the effect still returns early without updating previousBudgetFiltersRef while isBudgetManagementEnabled is false, and this PR does not change that guard. The CR-001 fix does change the consequence the deferred item described — a load on flag enable is now the intended single corrective refetch rather than a spurious extra request."
+    }
+  ],
+  "gates": {
+    "unit": {
+      "command": "npx vitest run --project unit",
+      "result": "Test Files 508 passed (508) | Tests 5295 passed | 1 skipped (5296)"
+    },
+    "scoped_unit": {
+      "command": "npx vitest run --project unit ProjectsManagementFull",
+      "result": "Test Files 4 passed (4) | Tests 11 passed (11)"
+    },
+    "pre_commit": {
+      "result": "lint-staged, license-headers:check (1993 files, 0 missing), secrets:check (gitleaks, no leaks) all passed; sonar-local skipped, SONAR_TOKEN not set"
+    }
+  }
+}
