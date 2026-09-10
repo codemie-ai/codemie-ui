@@ -30,6 +30,7 @@ const LoginPageExpired = lazy(() => import('./pages/LoginPageExpired'))
 const LoginOtp = lazy(() => import('./pages/LoginOtp'))
 const LoginVerifyEmail = lazy(() => import('./pages/LoginVerifyEmail'))
 const LoginResetPassword = lazy(() => import('./pages/LoginResetPassword'))
+const LogoutConfirm = lazy(() => import('./pages/LogoutConfirm'))
 
 export default function KcPage(props: { kcContext: KcContext }) {
   const { kcContext } = props
@@ -112,6 +113,16 @@ export default function KcPage(props: { kcContext: KcContext }) {
           case 'login-reset-password.ftl':
             return (
               <LoginResetPassword
+                kcContext={kcContext}
+                i18n={i18n}
+                Template={Template}
+                classes={{}}
+                doUseDefaultCss={false}
+              />
+            )
+          case 'logout-confirm.ftl':
+            return (
+              <LogoutConfirm
                 kcContext={kcContext}
                 i18n={i18n}
                 Template={Template}
