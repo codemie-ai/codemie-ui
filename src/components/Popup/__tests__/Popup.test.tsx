@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -124,5 +124,169 @@ describe('Popup', () => {
   it('applies custom className to the dialog element', () => {
     renderPopup({ className: 'my-custom-dialog' })
     expect(screen.getByRole('dialog')).toHaveClass('my-custom-dialog')
+  })
+})
+
+describe('Popup — stacked dialogs', () => {
+  beforeEach(() => {
+    user = userEvent.setup()
+    vi.clearAllMocks()
+  })
+
+  it('traps focus in the topmost (inner) dialog when two dialogs are stacked', async () => {
+    const outerHide = vi.fn()
+    const innerHide = vi.fn()
+
+    render(
+      <>
+        <Popup
+          visible
+          onHide={outerHide}
+          cancelText="Back"
+          submitText="Move"
+          header="Move to folder"
+        >
+          <p>Select a folder</p>
+        </Popup>
+        <Popup visible onHide={innerHide} header="Create new folder">
+          <input data-testid="folder-name" placeholder="Folder name" />
+        </Popup>
+      </>
+    )
+
+    // PrimeReact sets aria-label="Close" on the close button (overriding the
+    // mocked icon's aria-label), so query by PrimeReact's structural attribute.
+    const allCloseButtons = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-pc-section="closebutton"]')
+    )
+    const innerCloseBtn = allCloseButtons[allCloseButtons.length - 1]
+    const folderInput = screen.getByTestId('folder-name')
+    const cancelBtn = screen.getByRole('button', { name: 'Cancel' })
+    const createBtn = screen.getByRole('button', { name: 'Create' })
+
+    // Tab forward: Close → Folder name → Cancel → Create → Close
+    innerCloseBtn.focus()
+    expect(innerCloseBtn).toHaveFocus()
+
+    await user.tab()
+    expect(folderInput).toHaveFocus()
+
+    await user.tab()
+    expect(cancelBtn).toHaveFocus()
+
+    await user.tab()
+    expect(createBtn).toHaveFocus()
+
+    await user.tab() // wraps to first
+    expect(innerCloseBtn).toHaveFocus()
+
+    // Shift+Tab backward: Close → Create → Cancel → Folder name → Close
+    await user.tab({ shift: true }) // wraps to last
+    expect(createBtn).toHaveFocus()
+
+    await user.tab({ shift: true })
+    expect(cancelBtn).toHaveFocus()
+
+    await user.tab({ shift: true })
+    expect(folderInput).toHaveFocus()
+
+    await user.tab({ shift: true })
+    expect(innerCloseBtn).toHaveFocus()
+  })
+
+  it('closes only the topmost dialog on a single Escape when two dialogs are stacked', async () => {
+    const outerHide = vi.fn()
+    const innerHide = vi.fn()
+
+    // Both dialogs use hideClose so PrimeReact disables its own closeOnEscape and the custom
+    // Escape handler — the one guarded on isTopmost — is the code under test.
+    render(
+      <>
+        <Popup visible hideClose onHide={outerHide} header="Move to folder">
+          <p>Select a folder</p>
+        </Popup>
+        <Popup visible hideClose onHide={innerHide} header="Create new folder">
+          <input data-testid="folder-name" placeholder="Folder name" />
+        </Popup>
+      </>
+    )
+
+    await user.keyboard('{Escape}')
+
+    expect(innerHide).toHaveBeenCalledTimes(1)
+    expect(outerHide).not.toHaveBeenCalled()
+  })
+})
+
+describe('Popup — focus trap', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('traps Tab on last focusable element — wraps focus to first', () => {
+    render(
+      <Popup visible onHide={mockOnHide} hideFooter hideClose>
+        <button data-testid="btn-a">A</button>
+        <button data-testid="btn-b">B</button>
+      </Popup>
+    )
+    screen.getByTestId('btn-b').focus()
+    fireEvent.keyDown(document, { key: 'Tab', bubbles: true })
+    expect(screen.getByTestId('btn-a')).toHaveFocus()
+  })
+
+  it('traps Shift+Tab on first focusable element — wraps focus to last', () => {
+    render(
+      <Popup visible onHide={mockOnHide} hideFooter hideClose>
+        <button data-testid="btn-a">A</button>
+        <button data-testid="btn-b">B</button>
+      </Popup>
+    )
+    screen.getByTestId('btn-a').focus()
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true, bubbles: true })
+    expect(screen.getByTestId('btn-b')).toHaveFocus()
+  })
+
+  it('does not intercept Tab when the dialog is not visible', () => {
+    render(
+      <Popup visible={false} onHide={mockOnHide}>
+        <button data-testid="btn-a">A</button>
+      </Popup>
+    )
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    const before = document.activeElement
+    fireEvent.keyDown(document, { key: 'Tab', bubbles: true })
+    expect(document.activeElement).toBe(before)
+  })
+
+  it('excludes data-p-hidden-focusable sentinels from focus boundaries', () => {
+    render(
+      <Popup visible onHide={mockOnHide} hideFooter hideClose>
+        <button data-testid="btn-a">A</button>
+        <button data-testid="btn-b">B</button>
+      </Popup>
+    )
+    const dialog = document.querySelector('[role="dialog"]')!
+    const sentinel = document.createElement('span')
+    sentinel.setAttribute('tabindex', '0')
+    sentinel.setAttribute('data-p-hidden-focusable', 'true')
+    sentinel.setAttribute('data-testid', 'sentinel')
+    dialog.appendChild(sentinel)
+
+    screen.getByTestId('btn-b').focus()
+    fireEvent.keyDown(document, { key: 'Tab', bubbles: true })
+    expect(screen.getByTestId('btn-a')).toHaveFocus()
+  })
+
+  it('redirects focus to first element when Tab is pressed with focus outside the dialog', () => {
+    render(
+      <Popup visible onHide={mockOnHide} hideFooter hideClose>
+        <button data-testid="btn-a">A</button>
+        <button data-testid="btn-b">B</button>
+      </Popup>
+    )
+    document.body.focus()
+    fireEvent.keyDown(document, { key: 'Tab', bubbles: true })
+    expect(screen.getByTestId('btn-a')).toHaveFocus()
   })
 })

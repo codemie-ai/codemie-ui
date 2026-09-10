@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Wire existing useFocusTrap hook into Popup.tsx shared modal component and add Tab-trapping tests to Popup.test.tsx",
+  "generated": "2026-08-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Popup.tsx is a core shared UI component with 117 consumers; modifying it plus its test file is narrowly scoped to one component but the shared/central nature warrants M — red flag applied"
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Exact same useFocusTrap pattern already exists in NavigationProfile.tsx: useRef + useFocusTrap(ref, visible ?? false) + pt.root.ref attachment; copy, adapt, done; change is additive and trivially reversible"
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: Popup.tsx is a core shared component used by 117 consumers (touches core shared utilities)"
+  ],
+  "split_recommendation": null
+}

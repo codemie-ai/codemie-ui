@@ -1,0 +1,63 @@
+{
+  "decision": "request-changes",
+  "rationale": "Edge-case lens (completed after initial verdict) found one critical and three major issues. EC-1 (critical): all Popup instances share the same document.querySelectorAll('[role=dialog]')[last] query, so when multiple Popups are simultaneously visible, every focus-trap listener targets the innermost dialog — outer popups lose keyboard accessibility. EC-2 (major): CSS :not() concatenation applies only to the last selector rule, not all six; filter works today by coincidence of sentinel element type. EC-3 (major): closable={!hideClose} disables PrimeReact's Escape priority queue for hideClose popups, leaving only the custom Escape handler which fires for all visible popups simultaneously. EC-4 (major): the Proxy filter and focus-escape-recovery branch go completely untested. Blind and acceptance lenses failed to run (API errors/stall).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "check": "git-workflow commit format",
+      "status": "na",
+      "notes": "No commits on branch yet."
+    },
+    {
+      "check": "branch naming",
+      "status": "pass",
+      "notes": "Branch EPMCDME-8429_fix-keyboard-focus-trap-modal matches the required pattern."
+    },
+    {
+      "check": "code-quality guide",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not found."
+    },
+    {
+      "check": "security patterns",
+      "status": "pass",
+      "notes": "No security surface in this diff — DOM focus management only."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "decision_needed",
+      "problem": "All Popup instances share the same document.querySelectorAll('[role=\"dialog\"]')[last] query. When multiple Popup dialogs are simultaneously visible (e.g. ConfirmationModal over a form Popup), every instance's keydown listener targets the innermost dialog. The outer Popup's focus trap is captured but redirected into the wrong dialog.",
+      "impact": "Any nested-modal flow (confirmation, delete, publish over another form dialog) breaks keyboard accessibility for the outer dialog entirely until all nested ones close.",
+      "recommendation": "Attach a real React ref to each Popup's own dialog root element instead of using a shared global DOM query. Either use a wrapper div around Dialog children, or use PrimeReact's onShow callback to capture the dialog element into a per-instance ref."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "CSS :not() is appended by string concatenation to a comma-separated selector: `${selector}:not([data-p-hidden-focusable=\"true\"])`. CSS does not distribute the trailing pseudo-class across commas — it attaches only to the final rule. The five preceding rules receive no filter.",
+      "impact": "Works today because PrimeReact's sentinels are <span> elements matching only the [tabindex] rule. A PrimeReact upgrade that renders sentinels as <button> or adds href would silently reintroduce the wrap-around bug.",
+      "recommendation": "Post-filter the NodeList after query: `Array.from(target.querySelectorAll(selector)).filter(el => el.getAttribute('data-p-hidden-focusable') !== 'true')`"
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "closable={!hideClose} disables PrimeReact's internal Escape handler (conditioned on closable && closeOnEscape) for all hideClose popups. The remaining custom Escape useEffect fires for every visible Popup unconditionally. With two stacked hideClose Popups, both onHide callbacks fire on a single Escape keypress.",
+      "impact": "Stacked hideClose dialogs (ConfirmationModal, DeleteFolderPopup, OnboardingModal, and ~13 others) simultaneously close on Escape, potentially discarding unsaved form state.",
+      "recommendation": "Remove the custom Escape useEffect and rely solely on PrimeReact's closeOnEscape (already passed as a prop), which handles displayOrder priority correctly. OR keep the custom handler but guard it so only the topmost visible dialog responds."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The Proxy's sentinel-filtering logic and the focus-escape-recovery path (container.contains === false) are untested. All three new tests could pass even if the Proxy were removed entirely.",
+      "impact": "Silent regression protection gap — the sentinel filter and recovery path can break without test failures.",
+      "recommendation": "Add: (1) a test with a data-p-hidden-focusable sentinel verifying it is skipped during Tab wrap; (2) a test where focus is outside the dialog, Tab is pressed, and focus lands on the first element inside; (3) update the hidden test to assert document.activeElement is unchanged."
+    }
+  ]
+}

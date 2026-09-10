@@ -21,7 +21,10 @@ import gradientModal from '@/assets/images/gradient-modal.png'
 import ModalAnnouncerHost from '@/components/appLevel/ToasterAnnouncer/ModalAnnouncerHost'
 import CustomButton from '@/components/Button'
 import { ButtonType } from '@/constants'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { cn } from '@/utils/utils'
+
+import { useTopmostDialog } from './useTopmostDialog'
 
 export interface PopupProps {
   isFullWidth?: boolean
@@ -79,20 +82,25 @@ const Popup: React.FC<PopupProps> = ({
   hideHeader = false,
 }) => {
   const headerId = useId()
+  const { registerDialog, dialogContainerRef, isTopmost } = useTopmostDialog(visible ?? false)
 
-  // Handle Escape key press
+  useFocusTrap(dialogContainerRef, visible ?? false)
+
+  // For hideClose dialogs, PrimeReact's own closeOnEscape is disabled (it guards
+  // on closable && closeOnEscape). Only add a custom handler for that case, and
+  // guard it to fire only for the topmost visible dialog so stacked dialogs do
+  // not all close simultaneously on a single Escape keypress.
   useEffect(() => {
     const handleEscapeKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && visible) {
-        onHide()
-      }
+      if (!hideClose || e.key !== 'Escape' || !visible) return
+      if (!isTopmost) return
+      onHide()
     }
-
     document.addEventListener('keydown', handleEscapeKey)
     return () => {
       document.removeEventListener('keydown', handleEscapeKey)
     }
-  }, [visible, onHide])
+  }, [visible, onHide, hideClose, isTopmost])
 
   // Custom header component
   const renderHeader = () => {
@@ -140,6 +148,7 @@ const Popup: React.FC<PopupProps> = ({
   return (
     <Dialog
       focusOnShow={false}
+      closable={!hideClose}
       header={renderHeader}
       visible={visible}
       onHide={onHide}
@@ -195,6 +204,8 @@ const Popup: React.FC<PopupProps> = ({
     >
       {/* Hosts the app's live region while this dialog is open — assistive tech is scoped to the
           dialog, so a region left outside it is silent. */}
+      {/* Marker used only to reach the portalled dialog element and register it as topmost. */}
+      <div ref={registerDialog} className="hidden" />
       <ModalAnnouncerHost active={visible} />
       {children}
     </Dialog>

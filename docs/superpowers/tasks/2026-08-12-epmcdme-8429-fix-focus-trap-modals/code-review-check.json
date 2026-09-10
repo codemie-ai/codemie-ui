@@ -1,0 +1,52 @@
+{
+  "decision": "approve",
+  "rationale": "All four blocking findings are resolved. CR-001 (global DOM query) fixed by querying the per-instance data-popup-id attribute instead of the last [role=dialog] in the document. CR-002 (CSS :not concatenation) fixed by Array.from+filter post-processing. CR-003 (stacked-Escape handler) fixed by early-returning for closable dialogs and adding a topmost-dialog guard. CR-004 (untested paths) covered by three new tests: sentinel injection, focus-escape-recovery, and strengthened hidden-dialog assertion. Fix-up diff is small, targeted, and all 4647 tests pass.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "check": "git-workflow commit format",
+      "status": "na",
+      "notes": "No commits on branch yet — carried forward from final round."
+    },
+    {
+      "check": "branch naming",
+      "status": "pass",
+      "notes": "Branch EPMCDME-8429_fix-keyboard-focus-trap-modal matches the required pattern."
+    },
+    {
+      "check": "code-quality guide",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not found — carried forward from final round."
+    },
+    {
+      "check": "security patterns",
+      "status": "pass",
+      "notes": "No security surface in this diff — DOM focus management only."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "document.querySelector('[data-popup-id=\"...\"]') replaces the shared last-dialog query; each Popup instance targets its own element."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Array.from + .filter(el => el.getAttribute(...) !== 'true') replaces CSS concatenation; filter applies across all six selector rules."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Escape useEffect now returns early when !hideClose (PrimeReact closeOnEscape handles those dialogs); for hideClose dialogs a topmost-dialog data-popup-id check prevents multiple simultaneous closes."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "Three new tests added: sentinel injection verifying the filter, focus-outside-dialog Tab redirect, and document.activeElement unchanged when dialog is hidden."
+    }
+  ]
+}
