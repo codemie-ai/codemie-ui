@@ -1,5 +1,76 @@
 [
 {
+  "version": "2.49.0",
+  "date": "2026-09-10",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "Configurable Jira field indexing",
+          "description": "Jira data sources can now index configurable custom fields.",
+          "issues": [{"key":"EPMCDME-14093","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14093"}]
+        },
+        {
+          "title": "Interactive chat components",
+          "description": "Added interactive A2UI components for richer, more dynamic chat experiences.",
+          "issues": [{"key":"EPMCDME-13910","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-13910"}]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Unified dynamic configuration resolution",
+          "description": "Introduced a shared component resolver for backend configuration and the /v1/config API, initially supporting the webSearch feature.",
+          "issues": [{"key":"EPMCDME-14705","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14705"}]
+        },
+        {
+          "title": "Platform reliability improvements",
+          "description": "Updated MCP Connect deployment configuration for more reliable runtime operation.",
+          "issues": [{"key":"EPMCDME-14756","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14756"}]
+        },
+        {
+          "title": "Guardrails observability",
+          "description": "Blocked Phrase Filter input is now recorded in Langfuse for improved guardrail traceability.",
+          "issues": [{"key":"EPMCDME-14717","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14717"}]
+        },
+        {
+          "title": "Security maintenance",
+          "description": "Included security-related dependency maintenance and platform hardening.",
+          "issues": []
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Data source project lookup",
+          "description": "Fixed Project not found errors caused by casing differences between Keycloak and CodeMie project records.",
+          "issues": [{"key":"EPMCDME-14768","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14768"}]
+        },
+        {
+          "title": "Hedged assistant requests",
+          "description": "Fixed HTTP 500 errors when using hedged mode for assistant requests.",
+          "issues": [{"key":"EPMCDME-14730","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14730"}]
+        },
+        {
+          "title": "Workflow progress after reload",
+          "description": "Fixed workflow execution progress disappearing after a page reload.",
+          "issues": [{"key":"EPMCDME-14075","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14075"}]
+        },
+        {
+          "title": "MCP Connect tool execution",
+          "description": "Fixed HTTP 500 errors during MCP Connect tool execution.",
+          "issues": [{"key":"EPMCDME-11351","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-11351"}]
+        }
+      ]
+    }
+  ]
+},
+{
   "version": "2.48.0",
   "date": "2026-09-08",
   "sections": [
