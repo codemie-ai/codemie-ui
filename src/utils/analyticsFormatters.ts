@@ -16,9 +16,14 @@
 import { MetricFormat } from '@/types/analytics'
 import { formatDateTime } from '@/utils/helpers'
 
-/**
- * Format metric value based on its type and format
- */
+// Compact token counts (K/M/B). Mirrors the analytics reference app's `fmtTokens`.
+export const formatTokens = (n: number): string => {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`
+  return String(n || 0)
+}
+
 export const formatMetricValue = (
   value: string | number | boolean,
   format?: MetricFormat
@@ -40,6 +45,10 @@ export const formatMetricValue = (
 
   if (format === MetricFormat.DURATION) {
     return `${value}m`
+  }
+
+  if (format === MetricFormat.TOKENS) {
+    return formatTokens(Number(value))
   }
 
   if (format === MetricFormat.TIMESTAMP) {

@@ -1,0 +1,47 @@
+{
+  "decision": "approve",
+  "rationale": "All four blocking findings from code-review-final.json are resolved and verified against current source. CR-004, CR-008 and CR-009 were fixed in code; CR-003 was closed by adding the missing access-control tests, which were mutation-checked by removing the isProjectAdmin branch and confirming exactly one test fails. Gates run individually after npm ci: affected unit suites 20 files / 164 tests passed, typecheck clean, lint clean. Confidence is medium rather than high because the final round ran with no spec, so acceptance never ran, and the full suite and integration project were not executed.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Carried forward unchanged from the final round. Squash merge means only the squash subject and MR title bind, and neither exists yet; enforcement scope is not verifiable from the working tree. Re-adjudicate at merge time."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Carried forward unchanged. No .ai-run/guides/standards/code-quality.md exists; no documented blocking code-quality standard to adjudicate against."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Carried forward unchanged. The fixes touch a test mock, two test cases, a React key and a row-selection guard - no security surface."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Closed in src/pages/analytics/__tests__/AnalyticsPage.test.tsx by adding two cases to the 'CLI Analytics feature flag gate' suite: a project admin with isAdmin:false and a projects array containing is_project_admin:true asserts data-cli-analytics-enabled='true', and a companion case with an all-false projects array asserts 'false', pinning the .some() predicate in both directions. Verified non-vacuous by mutation: replacing '(isAdmin || isProjectAdmin) && isCliAnalyticsConfigEnabled' with 'isAdmin && isCliAnalyticsConfigEnabled' fails exactly 1 of 10 tests; the source was restored and re-verified afterwards."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "Fixed at src/pages/analytics/__tests__/AnalyticsPage.test.tsx:205. The key was corrected from the nonexistent 'features:localAnalytics' to the production 'features:cliAnalytics' (AnalyticsPage.tsx:52), and the mock catch-all was changed from [false, true] to [true, true] so the corrected branch determines the outcome instead of being shadowed by the default. Safe because AnalyticsPage reads exactly three flags and all three are handled explicitly in the mock. Verified: the suite collects and runs rather than silently skipping."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "Fixed at src/pages/analytics/components/cli-analytics/views/SessionTimeline.tsx:137; the React key is now a composite of dispatch.label and index, so duplicate labels can no longer collide. Verified by typecheck and the cli-analytics unit suites."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "notes": "Fixed at src/pages/analytics/components/cli-analytics/views/UsersView.tsx:311 by adding 'if (clicked && !clicked.user_id) return' ahead of handleDrill, so a row that cannot be drilled into is no longer highlighted. Guarding on clicked preserves deselection, since clicked is undefined when a click removes an already-selected row. Verified: UsersView unit suite passes."
+    }
+  ]
+}

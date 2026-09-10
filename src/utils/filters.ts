@@ -31,6 +31,7 @@ export enum FILTER_ENTITY {
   USER_SETTINGS = 'user_settings',
   PROJECT_SETTINGS = 'project_settings',
   ANALYTICS = 'analytics',
+  CLI_ANALYTICS = 'local_analytics',
   USERS_MANAGEMENT = 'users_management',
   FAVORITES = 'favorites',
   PROJECTS = 'projects',

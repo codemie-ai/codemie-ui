@@ -23,3 +23,15 @@ export const formatCurrency = (value: number): string =>
  */
 export const formatSpend = (value: number | null | undefined): string =>
   value == null ? '-' : formatCurrency(value)
+
+/**
+ * Formats an LLM session cost with precision tiers appropriate for AI spend:
+ * - Sub-cent values get 4 decimal places to avoid showing real spend as $0.00
+ * - Values >= $100 are rounded to integer to reduce noise at large scale
+ */
+export const formatCliAnalyticsCost = (v: number): string => {
+  if (!v) return '$0.00'
+  if (v < 0.01) return `$${v.toFixed(4)}`
+  if (v < 100) return `$${v.toFixed(2)}`
+  return `$${Math.round(v).toLocaleString()}`
+}

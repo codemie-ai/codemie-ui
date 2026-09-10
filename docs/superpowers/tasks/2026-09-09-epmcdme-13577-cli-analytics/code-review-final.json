@@ -1,0 +1,74 @@
+{
+  "decision": "request-changes",
+  "rationale": "Final review of the CLI Analytics branch. Four findings survived verification against current source, with data-shape claims checked against the backend API contracts: one broken test mock, one missing test, one React key collision, and one dead-end row interaction. Acceptance was skipped because no spec exists for this branch, and the diff was oversized, so confidence is low. An initial pass raised nine further candidates that were dismissed on verification - they are not carried here; see code-review-check.json for the per-id record.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "git-workflow.md § Merge Strategy specifies squash merge, so only the squash subject and MR title must match the CI regex, and neither artifact exists at review time. Branch history does not conform (139 of 182 subjects fail, 109 excluding merges), but the regex cannot match git's own default 'Merge branch ...' subject, which the documented workflow produced 43 times here. Enforcement scope is not verifiable from the working tree: .gitlab-ci.yml only waits on external ci-pipeline/compliance-report contexts, and .husky has no commit-msg hook. Re-adjudicate the squash subject and MR title at merge time."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md exists; no documented blocking code-quality standard to adjudicate against."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "sanitizePostLoginRedirect rejects protocol-relative and backslash-relative paths. No HTML sinks, no secrets, no import.meta.env/window._env_ changes carrying secret values."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/AnalyticsPage.tsx",
+      "line": 53,
+      "title": "isProjectAdmin access-control path untested",
+      "problem": "isCliAnalyticsEnabled = (isAdmin || isProjectAdmin) && isCliAnalyticsConfigEnabled, where isProjectAdmin is derived at line 46 from user.projects.some((p) => p.is_project_admin). No test sets isAdmin: false alongside a user holding a project with is_project_admin: true, so the project-admin half of the access-control gate is unexercised.",
+      "impact": "A regression that drops or inverts the isProjectAdmin branch would ship silently, revoking CLI Analytics from every project admin who is not a global admin. The existing tests cover only the isAdmin branch and the catch-all false case, so both would stay green.",
+      "recommendation": "Add a test with isAdmin: false and projects: [{ name, is_project_admin: true }] plus features:cliAnalytics enabled, asserting data-cli-analytics-enabled='true'. Pair it with an all-false projects case so the .some() predicate is pinned in both directions."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/__tests__/AnalyticsPage.test.tsx",
+      "line": 205,
+      "title": "Flag-disabled test mocks a feature-flag key that does not exist",
+      "problem": "The 'passes isCliAnalyticsEnabled=false when flag disabled' test branches on 'features:localAnalytics', a string that appears nowhere in src/. Production reads 'features:cliAnalytics' at AnalyticsPage.tsx:52. The test passes only because the mock's catch-all return [false, true] coincidentally yields the asserted value.",
+      "impact": "The test asserts nothing about the flag gate it names. Changing the production key, or changing the mock default, would leave it green while the flag-disabled path went unexercised - false assurance on a feature gate.",
+      "recommendation": "Correct the key to 'features:cliAnalytics'. Also change the catch-all so it does not coincide with the branch value, otherwise the corrected branch remains shadowed by the default and the test stays vacuous."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/cli-analytics/views/SessionTimeline.tsx",
+      "line": 137,
+      "title": "Duplicate dispatch labels produce colliding React keys",
+      "problem": "sortedDispatches.map uses key={dispatch.label}. DispatchRow carries no unique identifier and label is a plain string, so two dispatches sharing a label - two sequential invocations of the same kind - produce duplicate keys within one timeline.",
+      "impact": "React cannot reliably reconcile the list and emits duplicate-key warnings; DOM nodes may be reused across the wrong rows on re-render. Selection itself is index-based (selectedIndex === index), so the highlight is not misapplied.",
+      "recommendation": "Use a key that is unique within the list, e.g. a composite of label and index, or start_offset_ms and index."
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/cli-analytics/views/UsersView.tsx",
+      "line": 311,
+      "title": "Row without user_id is selected but opens nothing",
+      "problem": "In the Table onSelectRow callback, setSelected(newRows) runs unconditionally while handleDrill early-returns on falsy row.user_id. Null user_id is reachable, not merely type-optional: the backend declares user_id: str | None (cli_analytics.py:146) and the router assigns None whenever identity resolution fails or the email does not resolve to a UUID.",
+      "impact": "Clicking a row whose user could not be resolved highlights it as though a drill-through occurred, but no modal opens and no message appears - a dead-end interaction with no feedback.",
+      "recommendation": "Suppress selection for rows that cannot be drilled into, guarding on the newly clicked row so that deselection of an already-selected row still works."
+    }
+  ]
+}

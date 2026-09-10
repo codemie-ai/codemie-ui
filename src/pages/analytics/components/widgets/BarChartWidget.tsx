@@ -45,7 +45,7 @@ import AnalyticsWidget from '../AnalyticsWidget'
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels)
 
 interface BarChartWidgetProps {
-  metricType: TabularMetricType
+  metricType?: TabularMetricType
   title: string
   description?: string
   valueField: string
@@ -60,6 +60,7 @@ interface BarChartWidgetProps {
   colorByLabel?: (label: string, index: number) => string
   /** Row field used as the color key passed to colorByLabel (defaults to labelField) */
   colorIdField?: string
+  dataOverride?: TabularResponse | null
 }
 
 /**
@@ -81,12 +82,20 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
   actions,
   colorByLabel,
   colorIdField,
+  dataOverride,
 }) => {
   const { loading, error } = useSnapshot(analyticsStore)
-  const [data, setData] = useState<TabularResponse | null>(null)
+  const [data, setData] = useState<TabularResponse | null>(dataOverride ?? null)
   const shouldFormatLabelsAsDates = labelField === 'date' || labelField.endsWith('_date')
 
   useEffect(() => {
+    if (dataOverride) {
+      setData(dataOverride)
+      return
+    }
+
+    if (!metricType) return
+
     const fetchData = async () => {
       // Fetch all records without pagination (backend returns up to 10k days)
       const result = await analyticsStore.fetchTabularData(metricType, {
@@ -99,7 +108,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     }
 
     fetchData().catch(console.error)
-  }, [metricType, filters, extraParams])
+  }, [metricType, filters, extraParams, dataOverride])
 
   // Extract labels (dates) and values from data
   const labels =
@@ -281,7 +290,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     ]
   )
 
-  const hasData = values.length > 0 && values.some((v) => v > 0)
+  const hasData = values.length > 0 && values.some((v) => v !== 0)
 
   const renderChartContent = () => {
     if (!hasData) {
@@ -303,8 +312,8 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     <AnalyticsWidget
       title={title}
       description={description}
-      loading={loading[metricType]}
-      error={error[metricType]}
+      loading={metricType ? loading[metricType] : false}
+      error={metricType ? error[metricType] : null}
       expandable={expandable}
       actions={actions}
     >

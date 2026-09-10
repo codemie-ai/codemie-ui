@@ -23,6 +23,7 @@ export enum AnalyticsDashboard {
   cliInsights = 'cliInsights',
   leaderboard = 'leaderboard',
   adoption = 'adoption',
+  cliAnalytics = 'cliAnalytics',
 }
 
 // ============================================================================
@@ -52,6 +53,7 @@ export enum MetricFormat {
   PERCENTAGE = 'percentage',
   DURATION = 'duration',
   TIMESTAMP = 'timestamp',
+  TOKENS = 'tokens',
 }
 
 export enum WidgetType {

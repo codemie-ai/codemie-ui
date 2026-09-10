@@ -15,14 +15,15 @@
 
 import React, { useEffect } from 'react'
 import { UseFormSetError } from 'react-hook-form'
-import { useNavigate } from 'react-router'
+import { matchRoutes, useNavigate, useSearchParams } from 'react-router'
 import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
 import StandaloneLayout from '@/components/Layouts/StandaloneLayout'
+import { routes } from '@/router'
 import { authStore } from '@/store/auth'
 import { SignInFormData } from '@/types/auth'
-import { consumePostLoginRedirect } from '@/utils/postLoginRedirect'
+import { consumePostLoginRedirect, sanitizePostLoginRedirect } from '@/utils/postLoginRedirect'
 import toaster from '@/utils/toaster'
 import { ValidationError } from '@/utils/validationError'
 
@@ -30,6 +31,7 @@ import SignInForm from '../components/SignInForm'
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { loading } = useSnapshot(authStore)
 
   useEffect(() => {
@@ -43,8 +45,13 @@ const SignInPage: React.FC = () => {
   const handleSignIn = async (data: SignInFormData, setError: UseFormSetError<SignInFormData>) => {
     try {
       await authStore.login(data)
-      const returnUrl = consumePostLoginRedirect()
-      navigate(returnUrl ?? '/')
+      const storedReturnUrl = consumePostLoginRedirect()
+      const returnUrl = sanitizePostLoginRedirect(searchParams.get('next')) ?? storedReturnUrl
+      if (returnUrl && !matchRoutes(routes, returnUrl)) {
+        window.location.assign(returnUrl)
+      } else {
+        navigate(returnUrl ?? '/')
+      }
     } catch (e) {
       if (e instanceof ValidationError) {
         const items = e.fieldErrors

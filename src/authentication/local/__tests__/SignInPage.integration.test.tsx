@@ -15,7 +15,7 @@
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 
 import { navigate, renderPage, mockAPI } from '@/test-utils/integration'
 import toaster from '@/utils/toaster'
@@ -25,8 +25,26 @@ const TEST_PASSWORD = 'password123'
 const TEST_WRONG_PASSWORD = 'wrongpassword'
 
 describe('SignInPage — Integration', () => {
+  // jsdom defines location.assign as non-configurable and non-writable, so vi.spyOn cannot
+  // replace it. Swap the whole location object instead — window.location IS configurable.
+  // Same pattern as src/utils/__tests__/postLoginRedirect.test.ts:29-33.
+  const originalLocation = window.location
+
+  function stubLocationAssign() {
+    const assign = vi.fn()
+    delete (window as any).location
+    // @ts-expect-error: location override for testing
+    window.location = { ...originalLocation, assign }
+    return assign
+  }
+
   beforeEach(() => {
     sessionStorage.clear()
+  })
+
+  afterEach(() => {
+    // @ts-expect-error: location override for testing
+    window.location = originalLocation
   })
 
   const fillAndSubmit = async (password = TEST_PASSWORD) => {
@@ -74,6 +92,48 @@ describe('SignInPage — Integration', () => {
     })
   })
 
+  it('navigates to the safe next query parameter after login', async () => {
+    mockAPI('POST', 'v1/local-auth/login', {})
+
+    const user = userEvent.setup()
+    renderPage('/auth/sign-in?next=%2Fassistants%2Fmarketplace%2Ffoo%3Fref%3Dshare')
+
+    await user.type(screen.getByLabelText('Email address'), TEST_EMAIL)
+    await user.type(screen.getByLabelText('Password'), TEST_PASSWORD)
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Sign in to your account' })).not.toBeDisabled()
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Sign in to your account' }))
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith('/assistants/marketplace/foo?ref=share')
+    })
+  })
+
+  it('prefers the safe next query parameter over sessionStorage after login', async () => {
+    sessionStorage.setItem('postLoginRedirect', '/skills')
+    mockAPI('POST', 'v1/local-auth/login', {})
+
+    const user = userEvent.setup()
+    renderPage('/auth/sign-in?next=%2Fassistants')
+
+    await user.type(screen.getByLabelText('Email address'), TEST_EMAIL)
+    await user.type(screen.getByLabelText('Password'), TEST_PASSWORD)
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Sign in to your account' })).not.toBeDisabled()
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Sign in to your account' }))
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith('/assistants')
+      expect(sessionStorage.getItem('postLoginRedirect')).toBeNull()
+    })
+  })
+
   it('clears postLoginRedirect from sessionStorage after login', async () => {
     sessionStorage.setItem('postLoginRedirect', '/assistants/marketplace/foo')
     mockAPI('POST', 'v1/local-auth/login', {})
@@ -93,6 +153,49 @@ describe('SignInPage — Integration', () => {
 
     await waitFor(() => {
       expect(navigate).toHaveBeenCalledWith('/')
+    })
+  })
+
+  it('falls back to stored postLoginRedirect when next is invalid (open-redirect guard)', async () => {
+    sessionStorage.setItem('postLoginRedirect', '/assistants/marketplace/foo')
+    mockAPI('POST', 'v1/local-auth/login', {})
+
+    const user = userEvent.setup()
+    renderPage('/auth/sign-in?next=%2F%2Fevil.com')
+
+    await user.type(screen.getByLabelText('Email address'), TEST_EMAIL)
+    await user.type(screen.getByLabelText('Password'), TEST_PASSWORD)
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Sign in to your account' })).not.toBeDisabled()
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Sign in to your account' }))
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith('/assistants/marketplace/foo')
+    })
+  })
+
+  it('hard-redirects via window.location.assign when next does not match a SPA route', async () => {
+    mockAPI('POST', 'v1/local-auth/login', {})
+    const assignSpy = stubLocationAssign()
+
+    const user = userEvent.setup()
+    renderPage('/auth/sign-in?next=%2Fapi%2Fv1%2Fauth%2Flogin%2F54619')
+
+    await user.type(screen.getByLabelText('Email address'), TEST_EMAIL)
+    await user.type(screen.getByLabelText('Password'), TEST_PASSWORD)
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Sign in to your account' })).not.toBeDisabled()
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Sign in to your account' }))
+
+    await waitFor(() => {
+      expect(assignSpy).toHaveBeenCalledWith('/api/v1/auth/login/54619')
+      expect(navigate).not.toHaveBeenCalled()
     })
   })
 

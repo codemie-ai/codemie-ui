@@ -15,7 +15,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { formatCurrency, formatSpend } from '../currency'
+import { formatCurrency, formatSpend, formatCliAnalyticsCost } from '../currency'
 
 describe('formatCurrency', () => {
   it('formats with two fraction digits', () => {
@@ -50,5 +50,22 @@ describe('formatSpend', () => {
 
   it('formats a number', () => {
     expect(formatSpend(1234.5)).toBe('$1,234.50')
+  })
+})
+
+describe('formatCliAnalyticsCost', () => {
+  it('returns $0.00 for zero', () => {
+    expect(formatCliAnalyticsCost(0)).toBe('$0.00')
+  })
+  it('returns 4 decimal places for sub-cent values', () => {
+    expect(formatCliAnalyticsCost(0.001)).toBe('$0.0010')
+  })
+  it('returns 2 decimal places for values between 0.01 and 100', () => {
+    expect(formatCliAnalyticsCost(5.5)).toBe('$5.50')
+    expect(formatCliAnalyticsCost(99.99)).toBe('$99.99')
+  })
+  it('returns rounded integer with locale separator for values >= 100', () => {
+    expect(formatCliAnalyticsCost(100)).toBe('$100')
+    expect(formatCliAnalyticsCost(1234.56)).toBe('$1,235')
   })
 })

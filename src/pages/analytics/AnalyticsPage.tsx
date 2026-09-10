@@ -43,11 +43,14 @@ const AnalyticsPage: FC = () => {
   const { aiAdoptionConfig } = useSnapshot(analyticsStore)
   const { user } = useSnapshot(userStore)
   const isAdmin = user?.isAdmin ?? false
+  const isProjectAdmin = user?.projects?.some((project) => project.is_project_admin) ?? false
   const isAuditor = user?.isAuditor ?? false
   const isAdoptionEnabled = isAdmin || isAuditor
   const [isCustomizationEnabled] = useFeatureFlag('feature:dashboardCustomization')
   const [isLeaderboardConfigEnabled] = useFeatureFlag('aiChampionsLeaderboard')
   const isLeaderboardEnabled = (isAdmin || isAuditor) && isLeaderboardConfigEnabled
+  const [isCliAnalyticsConfigEnabled] = useFeatureFlag('features:cliAnalytics')
+  const isCliAnalyticsEnabled = (isAdmin || isProjectAdmin) && isCliAnalyticsConfigEnabled
 
   const [searchParams] = useSearchParams()
   const { filters, handleFilterChange } = useAnalyticsFilters()
@@ -59,7 +62,9 @@ const AnalyticsPage: FC = () => {
   const isInsightsTab = tab === AnalyticsDashboardType.insights
   const isAdoptionTab = tab === AnalyticsDashboardType.adoption
   const isLeaderboardTab = tab === AnalyticsDashboardType.leaderboard
-  const isCustomDashboard = tab && !isAdoptionTab && !isInsightsTab && !isLeaderboardTab
+  const isCliAnalyticsTab = tab === AnalyticsDashboardType.cliAnalytics
+  const isCustomDashboard =
+    tab && !isAdoptionTab && !isInsightsTab && !isLeaderboardTab && !isCliAnalyticsTab
 
   const dashboardId = tab!
 
@@ -135,6 +140,7 @@ const AnalyticsPage: FC = () => {
             isAdoptionEnabled={isAdoptionEnabled}
             isLeaderboardEnabled={isLeaderboardEnabled}
             isCustomizationEnabled={isCustomizationEnabled}
+            isCliAnalyticsEnabled={isCliAnalyticsEnabled}
             onHideConfig={() => setIsConfigVisible(false)}
           />
         </div>

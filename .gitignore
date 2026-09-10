@@ -62,3 +62,4 @@ bmad/*
 
 # Code-review diff artifacts
 *.diff
+.code-graph/

@@ -16,6 +16,9 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+import { userStore } from '@/store'
+
 import AnalyticsPage from '../AnalyticsPage'
 
 const mockSearchParams = vi.hoisted(() => ({
@@ -62,7 +65,9 @@ vi.mock('../hooks/useAnalyticsFilters', () => ({
 }))
 
 vi.mock('../components/AnalyticsDashboard', () => ({
-  default: () => <div data-testid="analytics-dashboard" />,
+  default: ({ isCliAnalyticsEnabled }) => (
+    <div data-testid="analytics-dashboard" data-cli-analytics-enabled={isCliAnalyticsEnabled} />
+  ),
 }))
 
 vi.mock('../components/AnalyticsFilters', () => ({
@@ -150,5 +155,125 @@ describe('AnalyticsPage - isCustomDashboard excludes leaderboard tab', () => {
     render(<AnalyticsPage />)
 
     expect(screen.queryByText('Edit Dashboard')).not.toBeInTheDocument()
+  })
+
+  it('should NOT show Edit Dashboard button when tab is cliAnalytics', () => {
+    mockSearchParams.get.mockImplementation((key: string) => {
+      if (key === 'tab') return 'cliAnalytics'
+      return null
+    })
+
+    render(<AnalyticsPage />)
+
+    expect(screen.queryByText('Edit Dashboard')).not.toBeInTheDocument()
+  })
+})
+
+describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockSearchParams.get.mockImplementation((key: string) => {
+      if (key === 'tab') return 'insights'
+      return null
+    })
+    userStore.user = {
+      userId: 'test-user',
+      email: 'test@test.com',
+      isAdmin: true,
+      isAuthenticated: true,
+    }
+  })
+
+  it('passes isCliAnalyticsEnabled=true when admin and flag enabled', () => {
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'feature:dashboardCustomization') return [true, true]
+      if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:cliAnalytics') return [true, true]
+      return [false, true]
+    })
+    render(<AnalyticsPage />)
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-cli-analytics-enabled',
+      'true'
+    )
+  })
+
+  it('passes isCliAnalyticsEnabled=false when flag disabled', () => {
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'feature:dashboardCustomization') return [true, true]
+      if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:cliAnalytics') return [false, true]
+      return [true, true]
+    })
+    render(<AnalyticsPage />)
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-cli-analytics-enabled',
+      'false'
+    )
+  })
+
+  it('passes isCliAnalyticsEnabled=true for a project admin who is not a global admin', () => {
+    userStore.user = {
+      userId: 'test-user',
+      email: 'test@test.com',
+      isAdmin: false,
+      isAuthenticated: true,
+      projects: [
+        { name: 'other-project', is_project_admin: false },
+        { name: 'owned-project', is_project_admin: true },
+      ],
+    }
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'feature:dashboardCustomization') return [true, true]
+      if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:cliAnalytics') return [true, true]
+      return [false, true]
+    })
+    render(<AnalyticsPage />)
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-cli-analytics-enabled',
+      'true'
+    )
+  })
+
+  it('passes isCliAnalyticsEnabled=false when the user admins no project', () => {
+    userStore.user = {
+      userId: 'test-user',
+      email: 'test@test.com',
+      isAdmin: false,
+      isAuthenticated: true,
+      projects: [{ name: 'other-project', is_project_admin: false }],
+    }
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'feature:dashboardCustomization') return [true, true]
+      if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:cliAnalytics') return [true, true]
+      return [false, true]
+    })
+    render(<AnalyticsPage />)
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-cli-analytics-enabled',
+      'false'
+    )
+  })
+
+  it('passes isCliAnalyticsEnabled=false when not admin even with flag enabled', () => {
+    userStore.user = {
+      userId: 'test-user',
+      email: 'test@test.com',
+      isAdmin: false,
+      isAuthenticated: true,
+    }
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'feature:dashboardCustomization') return [true, true]
+      if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:cliAnalytics') return [true, true]
+      return [false, true]
+    })
+    render(<AnalyticsPage />)
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-cli-analytics-enabled',
+      'false'
+    )
   })
 })

@@ -26,6 +26,7 @@ import { analyticsStore } from '@/store/analytics'
 import { AnalyticsQueryParams, AnalyticsDashboard } from '@/types/analytics'
 
 import AIAdoptionTab from './AIAdoptionTab'
+import CliAnalyticsTab from './cli-analytics/CliAnalyticsTab'
 import CLIInsightsTab from './CLIInsightsTab'
 import CustomDashboard from './CustomDashboard'
 import InfoNotice from './InfoNotice'
@@ -40,6 +41,7 @@ interface AnalyticsDashboardProps {
   isAdoptionEnabled: boolean
   isLeaderboardEnabled: boolean
   isCustomizationEnabled: boolean
+  isCliAnalyticsEnabled: boolean
 }
 
 const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
@@ -50,6 +52,7 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
   isAdoptionEnabled,
   isLeaderboardEnabled,
   isCustomizationEnabled,
+  isCliAnalyticsEnabled,
 }) => {
   const { dashboards } = useSnapshot(analyticsStore)
 
@@ -114,6 +117,15 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
       },
     ]
 
+    if (isCliAnalyticsEnabled) {
+      tabsList.push({
+        id: AnalyticsDashboard.cliAnalytics,
+        label: 'CLI Analytics',
+        element: <CliAnalyticsTab filters={filters} />,
+        className: '[overflow-wrap:normal]',
+      })
+    }
+
     if (isLeaderboardEnabled) {
       tabsList.push({
         id: AnalyticsDashboard.leaderboard,
@@ -143,7 +155,14 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
     }
 
     return tabsList
-  }, [dashboards, filters, isLeaderboardEnabled, isAdoptionEnabled, isCustomizationEnabled])
+  }, [
+    dashboards,
+    filters,
+    isLeaderboardEnabled,
+    isAdoptionEnabled,
+    isCustomizationEnabled,
+    isCliAnalyticsEnabled,
+  ])
 
   return (
     <div className="analytics-dashboard flex flex-col min-w-0">

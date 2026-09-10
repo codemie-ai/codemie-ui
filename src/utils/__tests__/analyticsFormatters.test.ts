@@ -38,6 +38,14 @@ describe('analyticsFormatters', () => {
       expect(formatMetricValue(14, MetricFormat.DURATION)).toBe('14m')
     })
 
+    it('formats token counts into compact K/M/B units', () => {
+      expect(formatMetricValue(950, MetricFormat.TOKENS)).toBe('950')
+      expect(formatMetricValue(2000, MetricFormat.TOKENS)).toBe('2.0K')
+      expect(formatMetricValue(1234567, MetricFormat.TOKENS)).toBe('1.2M')
+      expect(formatMetricValue(3200000000, MetricFormat.TOKENS)).toBe('3.2B')
+      expect(formatMetricValue(0, MetricFormat.TOKENS)).toBe('0')
+    })
+
     it('formats timestamps with the browser locale', () => {
       expect(formatMetricValue('2026-03-24T10:20:30Z', MetricFormat.TIMESTAMP)).toBe(
         formatDateTime('2026-03-24T10:20:30Z')

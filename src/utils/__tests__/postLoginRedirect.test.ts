@@ -15,7 +15,11 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { consumePostLoginRedirect, savePostLoginRedirect } from '@/utils/postLoginRedirect'
+import {
+  consumePostLoginRedirect,
+  sanitizePostLoginRedirect,
+  savePostLoginRedirect,
+} from '@/utils/postLoginRedirect'
 
 describe('postLoginRedirect', () => {
   // jsdom's window.location is non-configurable — use delete+reassign (same pattern as
@@ -104,6 +108,26 @@ describe('postLoginRedirect', () => {
       sessionStorage.setItem('postLoginRedirect', '/\\evil')
 
       expect(consumePostLoginRedirect()).toBeNull()
+    })
+  })
+
+  describe('sanitizePostLoginRedirect', () => {
+    it('accepts an in-app path', () => {
+      expect(sanitizePostLoginRedirect('/assistants/marketplace/foo?ref=share')).toBe(
+        '/assistants/marketplace/foo?ref=share'
+      )
+    })
+
+    it('rejects a protocol-relative URL ("//evil.com/path")', () => {
+      expect(sanitizePostLoginRedirect('//evil.com/path')).toBeNull()
+    })
+
+    it('rejects a backslash-relative URL ("/\\evil")', () => {
+      expect(sanitizePostLoginRedirect('/\\evil')).toBeNull()
+    })
+
+    it('rejects a non-path value ("assistants")', () => {
+      expect(sanitizePostLoginRedirect('assistants')).toBeNull()
     })
   })
 })

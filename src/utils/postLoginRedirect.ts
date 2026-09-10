@@ -15,6 +15,15 @@
 
 const KEY = 'postLoginRedirect'
 
+export function sanitizePostLoginRedirect(redirect: string | null | undefined): string | null {
+  if (!redirect) return null
+  // Reject protocol-relative and backslash-relative paths (CWE-601 open-redirect defence).
+  if (!redirect.startsWith('/') || redirect.startsWith('//') || redirect.startsWith('/\\')) {
+    return null
+  }
+  return redirect
+}
+
 export function savePostLoginRedirect(): void {
   // Strip the Vite BASE_URL prefix so the stored path is in React Router space.
   // BASE_URL is always '/' (root) or '/suffix/' (Vite guarantees trailing slash).
@@ -31,8 +40,5 @@ export function savePostLoginRedirect(): void {
 export function consumePostLoginRedirect(): string | null {
   const saved = sessionStorage.getItem(KEY)
   sessionStorage.removeItem(KEY)
-  if (!saved) return null
-  // Reject protocol-relative and backslash-relative paths (CWE-601 open-redirect defence).
-  if (!saved.startsWith('/') || saved.startsWith('//') || saved.startsWith('/\\')) return null
-  return saved
+  return sanitizePostLoginRedirect(saved)
 }
