@@ -428,17 +428,14 @@ const ProjectsManagementFull: FC = () => {
     [editingProject, handleModalClose, refreshProjects]
   )
 
-  const handlePageChange = useCallback(
-    (page: number, newPerPage?: number) => {
-      const perPage = newPerPage ?? pagination.perPage
-      loadProjects(page, perPage, search || undefined, sort.sortKey, sort.sortOrder).catch(
-        (error) => {
-          console.error('Failed to load projects:', error)
-        }
-      )
-    },
-    [loadProjects, pagination.perPage, search, sort.sortKey, sort.sortOrder]
-  )
+  // Writes the requested page/perPage and stops there: the pagination effect below is the only
+  // thing that fetches. Fetching here as well duplicated every page change, because
+  // indexProjects writes the responded page back into the store, which re-ran that effect with
+  // the identical arguments. Writing state also makes re-clicking the current page a no-op.
+  const handlePageChange = useCallback((page: number, newPerPage?: number) => {
+    if (newPerPage !== undefined) projectsStore.pagination.perPage = newPerPage
+    projectsStore.pagination.page = page
+  }, [])
 
   const customRenderColumns = useMemo(
     () => ({
