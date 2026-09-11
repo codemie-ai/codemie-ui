@@ -1,5 +1,75 @@
 [
 {
+  "version": "2.50.0",
+  "date": "2026-09-14",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "OAuth authentication for external integrations",
+          "description": "Added OAuth-based authentication for Jira, Confluence, and GitLab integrations, enabling connected tools to be configured and used through OAuth sign-in.",
+          "issues": [{"key":"EPMCDME-13527","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-13527"}]
+        },
+        {
+          "title": "Git-based FAQ datasource",
+          "description": "Added a Git-backed FAQ datasource with loading, processing, database support, and frontend integration.",
+          "issues": [{"key":"EPMCDME-11696","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-11696"}]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": []
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Security and dependency maintenance",
+          "description": "Applied security-related maintenance updates, including read-only configuration for the MCP Connect service code path.",
+          "issues": [{"key":"EPMCDME-14775","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14775"}]
+        },
+        {
+          "title": "Confluence indexing resilience",
+          "description": "Retrying with backoff now handles Confluence 504 responses instead of aborting indexing.",
+          "issues": [{"key":"EPMCDME-14732","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14732"}]
+        },
+        {
+          "title": "Project Management request efficiency",
+          "description": "Prevented duplicate project-endpoint requests when opening Project Management and reduced user-search requests while typing.",
+          "issues": [{"key":"EPMCDME-14555","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14555"},{"key":"EPMCDME-14056","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14056"}]
+        },
+        {
+          "title": "Budget and project lifecycle reliability",
+          "description": "Fixed spending display after assigning a budget to a user with existing usage, and prevented an error when deleting a project after its budget is removed.",
+          "issues": [{"key":"EPMCDME-13669","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-13669"},{"key":"EPMCDME-13156","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-13156"}]
+        },
+        {
+          "title": "Sub-assistant selector layout",
+          "description": "Aligned the Sub-Assistants dropdown width with other dropdowns.",
+          "issues": [{"key":"EPMCDME-14073","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14073"}]
+        },
+        {
+          "title": "Logout-page styling",
+          "description": "Restored button styling for the logout confirmation control.",
+          "issues": [{"key":"EPMCDME-14003","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14003"}]
+        },
+        {
+          "title": "Tool-call handling with subagents",
+          "description": "Fixed malformed tool-call/result sequences that could cause request failures when using subagents.",
+          "issues": [{"key":"EPMCDME-12566","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-12566"}]
+        },
+        {
+          "title": "Create-folder dialog accessibility",
+          "description": "Kept keyboard focus within the “Create new folder” dialog.",
+          "issues": [{"key":"EPMCDME-8429","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8429"}]
+        }
+      ]
+    }
+  ]
+},
+{
   "version": "2.49.0",
   "date": "2026-09-10",
   "sections": [
