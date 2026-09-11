@@ -259,7 +259,11 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
     if (processingSummary.unique_extensions?.length) {
       tabsList.push({ id: TabsId.extension, label: 'Unique Extensions' })
     }
-    if (indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN) {
+    if (
+      indexType === INDEX_TYPES.GIT ||
+      indexType === INDEX_TYPES.SVN ||
+      indexType === INDEX_TYPES.GIT_FAQ
+    ) {
       tabsList.push({ id: TabsId.files, label: 'Files Filter' })
     }
     if (indexType === INDEX_TYPES.SHAREPOINT && dataSource.sharepoint?.files_filter) {
@@ -615,6 +619,20 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                       <span className={styles.propertyValue}>
                         {dataSource.sharepoint?.include_lists ?? true ? 'Yes' : 'No'}
                       </span>
+                    </div>
+                  </>
+                )}
+                {indexType === INDEX_TYPES.GIT_FAQ && (
+                  <>
+                    <div className="flex flex-col">
+                      <span className={styles.propertyLabel}>Repository link:</span>
+                      <span className={styles.propertyValue + ' w-full '}>
+                        <DetailsCopyField value={dataSource.link ?? ''} label="" />
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={styles.propertyLabel}>Branch:</span>
+                      <span className={styles.propertyValue}>{dataSource.branch}</span>
                     </div>
                   </>
                 )}

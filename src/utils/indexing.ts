@@ -40,6 +40,10 @@ export const isLLMRoutingIndex = (info: IndexInfo): boolean => {
   return info.index_type.includes('llm_routing_')
 }
 
+export const isGitFaqIndex = (info: IndexInfo): boolean => {
+  return info.index_type.includes('knowledge_base_git_faq')
+}
+
 export const isConfluenceIndex = (info: IndexInfo): boolean => {
   return info.index_type.includes('confluence')
 }
@@ -112,7 +116,9 @@ export const getIndexTypeCode = (type?: string, vcsType?: string): string => {
 export const getIndexTypeDisplay = (type: string): string => {
   if (type === INDEX_TYPE_SUMMARY) return 'Code (Summary)'
   if (type === INDEX_TYPE_CHUNK_SUMMARY) return 'Code (Chunk-Summary)'
-  return type.replace('knowledge_base_', '').replace('llm_routing_', '')
+  const base = type.replace('knowledge_base_', '').replace('llm_routing_', '')
+  if (base === INDEX_TYPES.GIT_FAQ) return 'Git FAQ'
+  return base
 }
 
 export const getFullIndexType = (type: string): string => {
@@ -120,6 +126,7 @@ export const getFullIndexType = (type: string): string => {
   if (isGitIndex(type)) return INDEX_TYPES.GIT
   if (type === INDEX_TYPES.PROVIDER) return type
   if (type === INDEX_TYPES.GOOGLE) return 'llm_routing_google'
+  if (type === INDEX_TYPES.GIT_FAQ) return 'knowledge_base_git_faq'
 
   return `knowledge_base_${type}`
 }

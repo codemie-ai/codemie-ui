@@ -26,6 +26,7 @@ import {
 import { Controller, SubmitHandler, useController } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
 
+import Autocomplete from '@/components/form/Autocomplete'
 import CronScheduleInput from '@/components/form/CronScheduleInput'
 import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
@@ -36,6 +37,10 @@ import InfoWarning from '@/components/InfoWarning'
 import ProjectSelector from '@/components/ProjectSelector'
 import Spinner from '@/components/Spinner/Spinner'
 import {
+  CONTENT_PROCESSING_STRATEGY_DEFAULT,
+  CONTENT_PROCESSING_STRATEGY_FAQ,
+  CONTENT_PROCESSING_STRATEGY_TOOLTIP,
+  GIT_CONTENT_PROCESSING_STRATEGY_OPTIONS,
   INDEX_TYPES,
   INDEX_TYPE_SUMMARY,
   INDEX_TYPE_CHUNK_SUMMARY,
@@ -414,7 +419,15 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                 control={control}
                 render={({ field: metadataField }) => (
                   <DataSourceTypeSelector
-                    indexType={indexTypeField.value}
+                    // GIT_FAQ isn't in DataSourceTypeSelector's own option list (it's reached via
+                    // the "Content Processing Strategy" selector, not the top-level type dropdown)
+                    // — display it as "Git" there so the two selectors don't fight over the same
+                    // field's value.
+                    indexType={
+                      indexTypeField.value === INDEX_TYPES.GIT_FAQ
+                        ? INDEX_TYPES.GIT
+                        : indexTypeField.value
+                    }
                     onIndexTypeChange={indexTypeField.onChange}
                     indexMetadata={metadataField.value ?? {}}
                     onIndexMetadataChange={metadataField.onChange}
@@ -432,6 +445,29 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
           control={control}
           render={({ field }) => (
             <>
+              {!index &&
+                (field.value === INDEX_TYPES.GIT || field.value === INDEX_TYPES.GIT_FAQ) && (
+                  <Autocomplete
+                    id="contentProcessingStrategy"
+                    name="contentProcessingStrategy"
+                    label="Content Processing Strategy"
+                    hint={CONTENT_PROCESSING_STRATEGY_TOOLTIP}
+                    value={
+                      field.value === INDEX_TYPES.GIT_FAQ
+                        ? CONTENT_PROCESSING_STRATEGY_FAQ
+                        : CONTENT_PROCESSING_STRATEGY_DEFAULT
+                    }
+                    onChange={(val) =>
+                      field.onChange(
+                        val === CONTENT_PROCESSING_STRATEGY_FAQ
+                          ? INDEX_TYPES.GIT_FAQ
+                          : INDEX_TYPES.GIT
+                      )
+                    }
+                    options={GIT_CONTENT_PROCESSING_STRATEGY_OPTIONS}
+                    placeholder="Select processing strategy"
+                  />
+                )}
               {field.value === INDEX_TYPES.GIT && (
                 <IndexTypeField.Git
                   {...{
@@ -484,6 +520,24 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                     googleDocsGuideEnabled,
                     embeddingModels,
                     projectName,
+                    hasNoSettings,
+                    isDropdownShown,
+                    filteredSettings,
+                    onIntegrationCreated: () => {
+                      userSettingsStore.resetIsSettingsIndexed()
+                      userSettingsStore.indexSettings()
+                    },
+                  }}
+                />
+              )}
+              {field.value === INDEX_TYPES.GIT_FAQ && (
+                <IndexTypeField.Faq
+                  {...{
+                    value: field.value,
+                    errors,
+                    control,
+                    projectName,
+                    embeddingModels,
                     hasNoSettings,
                     isDropdownShown,
                     filteredSettings,

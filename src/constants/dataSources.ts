@@ -28,6 +28,7 @@ export const INDEX_TYPES = {
   XRAY: 'xray',
   FILE: 'file',
   GOOGLE: 'google',
+  GIT_FAQ: 'git_faq',
   AZURE_DEVOPS_WIKI: 'azure_devops_wiki',
   AZURE_DEVOPS_WORK_ITEM: 'azure_devops_work_item',
   SHAREPOINT: 'sharepoint',
@@ -70,6 +71,23 @@ export const REPO_INDEX_TYPE_OPTIONS: IndexTypeOption[] = [
   { value: INDEX_TYPE_CODE, label: 'Whole codebase' },
   { value: INDEX_TYPE_SUMMARY, label: 'Summarization per file' },
   { value: INDEX_TYPE_CHUNK_SUMMARY, label: 'Summarization per chunks' },
+]
+
+export const CONTENT_PROCESSING_STRATEGY_DEFAULT = 'default'
+export const CONTENT_PROCESSING_STRATEGY_FAQ = 'faq'
+
+export const CONTENT_PROCESSING_STRATEGY_TOOLTIP =
+  'Chooses the pipeline used to index this datasource. "Default" indexes source files ' +
+  'as-is for code search (default behavior). "FAQ" parses every Markdown file into Q&A ' +
+  'articles for knowledge-base retrieval instead.'
+
+// Git's content processing strategy options. Every other datasource type currently has none —
+// when a type needs its own variants, give it a similar options list and render
+// <ContentProcessingStrategyField> for it; see IndexTypeGit's usage in DataSourceForm.tsx
+// for the reference implementation.
+export const GIT_CONTENT_PROCESSING_STRATEGY_OPTIONS: IndexTypeOption[] = [
+  { value: CONTENT_PROCESSING_STRATEGY_DEFAULT, label: 'Default' },
+  { value: CONTENT_PROCESSING_STRATEGY_FAQ, label: 'FAQ' },
 ]
 
 export const FILTER_INITIAL_STATE = {

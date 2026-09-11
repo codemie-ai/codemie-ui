@@ -50,7 +50,12 @@ const DataSourceTypeSelector = ({
     badge?: string
   }[] = useMemo(() => {
     const baseTypes = Object.keys(INDEX_TYPES)
-      .filter((key) => INDEX_TYPES[key] !== INDEX_TYPES.PROVIDER)
+      // GIT_FAQ is reached via the "Content Processing Strategy" selector inside the Git form,
+      // not as its own top-level type — see DataSourceForm.tsx.
+      .filter(
+        (key) =>
+          INDEX_TYPES[key] !== INDEX_TYPES.PROVIDER && INDEX_TYPES[key] !== INDEX_TYPES.GIT_FAQ
+      )
       .map((key) => {
         const option = {
           value: INDEX_TYPES[key],

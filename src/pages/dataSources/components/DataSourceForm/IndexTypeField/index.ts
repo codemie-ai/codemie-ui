@@ -16,6 +16,7 @@
 import AzureDevOpsWiki from './IndexTypeAzureDevOpsWiki'
 import AzureDevOpsWorkItem from './IndexTypeAzureDevOpsWorkItem'
 import Confluence from './IndexTypeConfluence'
+import Faq from './IndexTypeFaq'
 import File from './IndexTypeFile'
 import Git from './IndexTypeGit'
 import Google from './IndexTypeGoogle'
@@ -30,6 +31,7 @@ const IndexTypeField = {
   Git,
   Svn,
   Google,
+  Faq,
   File,
   Confluence,
   XWiki,

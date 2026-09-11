@@ -121,6 +121,9 @@ export const humanize = (string: string): string => {
   if (string.toLowerCase() === 'google') {
     return 'Google Docs'
   }
+  if (string.toLowerCase() === 'git_faq') {
+    return 'Git FAQ'
+  }
 
   // Special case for sharepoint to display as SharePoint
   if (string.toLowerCase() === 'sharepoint') {

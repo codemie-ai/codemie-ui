@@ -337,6 +337,7 @@ export const dataSourceStore = proxy({
         ...(options.wikiName != null && { wiki_name: options.wikiName }),
         ...(options.wiqlQuery != null && { wiql_query: options.wiqlQuery }),
         ...(options.svn_repo_url != null && { svn_repo_url: options.svn_repo_url }),
+        ...(options.git_url != null && { git_url: options.git_url }),
         ...(options.svn_branch != null && { svn_branch: options.svn_branch }),
         ...(options.git_url != null && { git_url: options.git_url }),
       }
@@ -567,6 +568,29 @@ export const dataSourceStore = proxy({
         cron_expression,
         setting_id,
         timezone,
+      })
+    )
+  },
+
+  createKBIndexGitFaq(request: {
+    name: string
+    project_name: string
+    description: string
+    project_space_visible: boolean
+    link: string
+    branch: string
+    files_filter?: string
+    embedding_model?: string
+    setting_id?: string
+    guardrail_assignments?: EntityGuardrailAssignment[]
+    cron_expression?: string
+  }) {
+    return handleIndexResponse(
+      api.post('v1/index/knowledge_base/git_faq', {
+        ...request,
+        setting_id: request.setting_id || undefined,
+        guardrail_assignments: request.guardrail_assignments,
+        cron_expression: request.cron_expression,
       })
     )
   },

@@ -1,0 +1,19 @@
+{
+  "decision": "approve",
+  "rationale": "Check round for the Git FAQ frontend MR. The final round (code-review-final.json) found zero blocking findings on first pass -- tests pass (8/8), tsc --noEmit clean, eslint clean, no acceptance-criteria failures, one non-blocking style nit (duplicate git_url spread in dataSources.ts, deferred). There is nothing to re-verify since the final round raised no patch/decision_needed findings, so this check round carries the approve forward.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "spec", "item": "UI exposes the FAQ path input only when the Git FAQ index type is selected", "status": "pass", "notes": "Carried forward from code-review-final.json unchanged."},
+    {"kind": "spec", "item": "Changing FAQ options in the UI correctly configures the backend payload", "status": "pass", "notes": "Carried forward from code-review-final.json unchanged."},
+    {"kind": "spec", "item": "No regression for other datasource types", "status": "pass", "notes": "Carried forward from code-review-final.json unchanged."},
+    {"kind": "spec", "item": "Datasource type registered in FE constants/enum/labels for display, detail view, and edit-mode defaults", "status": "pass", "notes": "Carried forward from code-review-final.json unchanged."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "Carried forward from code-review-final.json unchanged."},
+    {"kind": "code-quality", "status": "pass", "notes": "Carried forward from code-review-final.json unchanged."},
+    {"kind": "security", "status": "pass", "notes": "Carried forward from code-review-final.json unchanged."}
+  ],
+  "findings": [],
+  "finding_status": []
+}

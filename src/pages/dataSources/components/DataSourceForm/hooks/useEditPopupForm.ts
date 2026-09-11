@@ -74,13 +74,19 @@ export const makeBaseValidationSchema = (maxFiles: number) =>
     indexType: Yup.string().required(),
 
     // TODO: add validation regex from BE error response
-    // ^https?:\\/\\/[A-Za-z0-9][A-Za-z0-9\\-\\.]*[A-Za-z0-9]\\.[A-Za-z]{2,}(?:\\/.*)?$
+    // ^https?:\/\/[A-Za-z0-9][A-Za-z0-9\-\.]*[A-Za-z0-9]\.[A-Za-z]{2,}(?:\/.*)?$
     repoLink: Yup.string().when('indexType', {
-      is: (indexType) => indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN,
+      is: (indexType) =>
+        indexType === INDEX_TYPES.GIT ||
+        indexType === INDEX_TYPES.SVN ||
+        indexType === INDEX_TYPES.GIT_FAQ,
       then: (schema) => schema.required('Repo Link is required'),
     }),
     branch: Yup.string().when('indexType', {
-      is: (indexType) => indexType === INDEX_TYPES.GIT || indexType === INDEX_TYPES.SVN,
+      is: (indexType) =>
+        indexType === INDEX_TYPES.GIT ||
+        indexType === INDEX_TYPES.SVN ||
+        indexType === INDEX_TYPES.GIT_FAQ,
       then: (schema) => schema.required('Branch is required'),
     }),
 
@@ -213,6 +219,9 @@ export const makeBaseValidationSchema = (maxFiles: number) =>
         if (indexType === INDEX_TYPES.SHAREPOINT) {
           return !sharepointAuthType || sharepointAuthType === SHAREPOINT_AUTH_TYPES.INTEGRATION
         }
+        // Git-based types (GIT, GIT_FAQ) are intentionally absent: public repositories
+        // need no integration, and the backend rejects private repos without one
+        // (see _validate_git_credentials -> "Repository Not Publicly Accessible").
         return [
           INDEX_TYPES.JIRA,
           INDEX_TYPES.XRAY,

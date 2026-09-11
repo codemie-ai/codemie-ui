@@ -27,9 +27,20 @@ const FILES_FILTER_TOOLTIP = `- Patterns (e.g., *.py): Include ONLY matching fil
 interface Props {
   control
   errors
+  label?: string
+  helperText?: string
+  tooltip?: string
+  placeholder?: string
 }
 
-const FilesFilterField: FC<Props> = ({ control, errors }) => (
+const FilesFilterField: FC<Props> = ({
+  control,
+  errors,
+  label = 'Files Filter',
+  helperText = 'Specify file extensions or names to include in indexing. Leaving empty will index all files.',
+  tooltip = FILES_FILTER_TOOLTIP,
+  placeholder = FILE_FILTER_PLACEHOLDER,
+}) => (
   <>
     <Controller
       name="filesFilter"
@@ -38,12 +49,12 @@ const FilesFilterField: FC<Props> = ({ control, errors }) => (
         <Textarea
           id="filesFilter"
           name="filesFilter"
-          label="Files Filter"
+          label={label}
           rows={4}
           value={field.value}
           onBlur={field.onBlur}
           error={errors.filesFilter?.message}
-          placeholder={FILE_FILTER_PLACEHOLDER}
+          placeholder={placeholder}
           onChange={(e) => field.onChange(e.target.value)}
         />
       )}
@@ -51,13 +62,11 @@ const FilesFilterField: FC<Props> = ({ control, errors }) => (
 
     <div className="flex items-start text-text-secondary text-xs my-3">
       <TooltipButton
-        content={FILES_FILTER_TOOLTIP}
+        content={tooltip}
         iconClassName="w-[18px] h-[18px]"
         wrapperClassName="mr-2 mt-0.5"
       />
-      <span className="mt-0.5">
-        Specify file extensions or names to include in indexing. Leaving empty will index all files.
-      </span>
+      <span className="mt-0.5">{helperText}</span>
     </div>
   </>
 )

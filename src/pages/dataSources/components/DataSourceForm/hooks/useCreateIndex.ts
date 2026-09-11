@@ -58,6 +58,12 @@ const getIndexEditContext = (
   return { isEditMode, isReindex, hasProjectChanged }
 }
 
+const hasSourceChanged = (values: FormValues, index: DataSourceDetailsResponse): boolean =>
+  values.repoLink !== (index.link ?? '') ||
+  values.branch !== (index.branch ?? '') ||
+  (values.filesFilter || '') !== (index.files_filter || '') ||
+  (values.setting_id ?? '') !== (index.setting_id ?? '')
+
 const getBaseRequestFields = (
   values: FormValues,
   index: DataSourceDetailsResponse | null | undefined,
@@ -96,6 +102,7 @@ export const useIndexCreation = ({
           [INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM]: { wiqlQuery: data.wiqlQuery },
           [INDEX_TYPES.SVN]: { svn_repo_url: data.repoLink, svn_branch: data.branch },
           [INDEX_TYPES.GIT]: { git_url: data.repoLink },
+          [INDEX_TYPES.GIT_FAQ]: { git_url: data.repoLink },
         }[data.indexType] ?? {}
 
       const response = await dataSourceStore.healthCheckDatasource(
@@ -134,6 +141,8 @@ export const useIndexCreation = ({
             return createOrUpdateFilesIndex(values)
           case INDEX_TYPES.GOOGLE:
             return createOrUpdateGoogleIndex(values)
+          case INDEX_TYPES.GIT_FAQ:
+            return createOrUpdateGitFaqIndex(values)
           case INDEX_TYPES.CONFLUENCE:
             return createOrUpdateConfluenceIndex(values)
           case INDEX_TYPES.XWIKI:
@@ -191,12 +200,52 @@ export const useIndexCreation = ({
         projectName,
         request.name,
         isReindex,
-        request,
+        {
+          ...request,
+          // Cleared-but-previously-set integration goes out as '' — undefined would be
+          // dropped from the payload and the backend would keep the old integration.
+          setting_id: values.setting_id || (index.setting_id ? '' : request.setting_id),
+        },
         !values.reindexOnEdit
       )
     }
 
     return dataSourceStore.createApplicationGitIndex(values.projectName, request)
+  }
+
+  const createOrUpdateGitFaqIndex = async (values: FormValues) => {
+    const { isEditMode, isReindex, hasProjectChanged } = getIndexEditContext(index, values)
+
+    if (isEditMode && index) {
+      // Source fields are only accepted by the backend together with full_reindex=true;
+      // a metadata-only edit must not carry them (422 otherwise).
+      const withReindex = isReindex || hasSourceChanged(values, index)
+      const request = {
+        ...getBaseRequestFields(values, index, hasProjectChanged),
+        ...(withReindex && {
+          link: values.repoLink!,
+          branch: values.branch!,
+          files_filter: values.filesFilter || undefined,
+          // An explicitly cleared integration must reach the backend as '' so it can
+          // distinguish "remove integration" from "field not sent" (undefined would
+          // be dropped from the JSON and silently keep the old integration).
+          setting_id: values.setting_id || (index.setting_id ? '' : undefined),
+        }),
+        cron_expression: values.cronExpression ?? undefined,
+      }
+      return dataSourceStore.updateKBIndex(INDEX_TYPES.GIT_FAQ, request, withReindex)
+    }
+
+    const request = {
+      ...getBaseRequestFields(values, index, hasProjectChanged),
+      link: values.repoLink!,
+      branch: values.branch!,
+      files_filter: values.filesFilter || undefined,
+      embedding_model: values.embeddingsModel || undefined,
+      setting_id: values.setting_id || undefined,
+      cron_expression: values.cronExpression ?? undefined,
+    }
+    return dataSourceStore.createKBIndexGitFaq({ ...request, name: request.name.toLowerCase() })
   }
 
   const createOrUpdateFilesIndex = async (values: FormValues) => {
