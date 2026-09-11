@@ -78,7 +78,6 @@ export interface GitLabConnectionStatusResponse {
 export interface JiraOAuthInitiatePayload {
   client_id?: string
   client_secret?: string
-  callback_base_url?: string
 }
 
 export type JiraOAuthInitiateResponse = OAuthInitiateResponse
@@ -102,7 +101,6 @@ export interface JiraConnectionStatusResponse {
 export interface ConfluenceOAuthInitiatePayload {
   client_id?: string
   client_secret?: string
-  callback_base_url?: string
 }
 
 export type ConfluenceOAuthInitiateResponse = OAuthInitiateResponse
@@ -126,7 +124,6 @@ export interface ConfluenceConnectionStatusResponse {
 export interface GitLabOAuthInitiatePayload {
   client_id?: string
   client_secret?: string
-  callback_base_url?: string
   instance_url?: string
 }
 

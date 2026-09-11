@@ -100,7 +100,6 @@ describe('OAuthTestAction', () => {
           auth_type: 'oauth',
           client_id: 'id',
           client_secret: MASKED,
-          callback_base_url: 'https://h',
         }}
       />
     )
@@ -135,7 +134,6 @@ describe('OAuthTestAction', () => {
         credentialValues={{
           client_id: 'id',
           client_secret: 'real-secret',
-          callback_base_url: 'https://h',
         }}
       />
     )
@@ -143,7 +141,6 @@ describe('OAuthTestAction', () => {
     expect(userSettingsStore.initiateConfluenceOAuth).toHaveBeenCalledWith({
       client_id: 'id',
       client_secret: 'real-secret',
-      callback_base_url: 'https://h',
     })
     expect(userSettingsStore.connectConfluenceOAuth).not.toHaveBeenCalled()
   })
@@ -155,7 +152,6 @@ describe('OAuthTestAction', () => {
         credentialValues={{
           client_id: 'id',
           client_secret: MASKED,
-          callback_base_url: 'https://h',
         }}
       />
     )

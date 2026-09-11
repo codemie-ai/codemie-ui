@@ -26,8 +26,10 @@ import Input from '@/components/form/Input'
 import RadioGroup from '@/components/form/RadioGroup/RadioGroup'
 import RecordInput from '@/components/form/RecordInput/RecordInput'
 import Switch from '@/components/form/Switch'
+import InfoWarning from '@/components/InfoWarning'
 import InfoMessage from '@/components/Message/Message'
 import ProjectSelector from '@/components/ProjectSelector'
+import { InfoWarningType } from '@/constants'
 import {
   GOOGLE_OAUTH_CREDENTIAL_TYPE,
   OAUTH_VARIANT_BY_BASE_TYPE,
@@ -653,6 +655,13 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               label={`Use ${OAUTH_VARIANT_PROVIDER_LABEL[oauthVariantType]} OAuth 2.0 sign-in`}
               hint="Authorize with your own account through a browser sign-in instead of a shared API token. Each user connects individually."
             />
+            {isOAuth && (
+              <InfoWarning
+                className="mt-2"
+                type={InfoWarningType.WARNING}
+                message="OAuth integrations are available only for assistants and workflows. They can not be used with datasources."
+              />
+            )}
           </div>
         )}
 

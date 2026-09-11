@@ -111,7 +111,6 @@ describe('SettingsForm — OAuth is an auth method (isOAuth), not a credential t
       await user.type(screen.getByLabelText('Alias'), 'my-gitlab')
       await user.type(screen.getByPlaceholderText('GitLab OAuth Application ID'), 'cid')
       await user.type(screen.getByPlaceholderText('GitLab OAuth Application Secret'), 'sec')
-      await user.type(screen.getByPlaceholderText('https://your-codemie-host'), 'https://cm')
       await user.click(screen.getByRole('button', { name: 'Save' }))
     })
 
@@ -213,6 +212,35 @@ describe('SettingsForm — OAuth is an auth method (isOAuth), not a credential t
       screen.getByRole('switch', { name: /Use GitLab OAuth 2\.0 sign-in/ })
     ).toBeInTheDocument()
     expect(screen.queryByRole('switch', { name: /^Use OAuth 2\.0 sign-in/ })).toBeNull()
+  })
+
+  // EPMCDME-14587: enabling OAuth surfaces a note that OAuth integrations can't back a data source.
+  it('shows the data-source-unavailable note only while the OAuth toggle is on', async () => {
+    const user = userEvent.setup()
+    render(
+      <SettingsForm
+        credentialType="git"
+        settingType="user"
+        disableType
+        editing={false}
+        onSubmit={vi.fn()}
+        onClose={vi.fn()}
+        submitText="Save"
+      />
+    )
+
+    const note = /oauth integrations are available only for assistants and workflows/i
+    expect(screen.queryByText(note)).toBeNull()
+
+    await act(async () => {
+      await user.click(screen.getByRole('switch', { name: /Use GitLab OAuth 2\.0 sign-in/i }))
+    })
+    expect(screen.getByText(note)).toBeInTheDocument()
+
+    await act(async () => {
+      await user.click(screen.getByRole('switch', { name: /Use GitLab OAuth 2\.0 sign-in/i }))
+    })
+    expect(screen.queryByText(note)).toBeNull()
   })
 
   it('hides the OAuth toggle when the provider feature flag is disabled', () => {

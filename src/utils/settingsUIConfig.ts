@@ -1038,13 +1038,6 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
         sensitive: true,
         help: 'https://docs.gitlab.com/ee/integration/oauth_provider.html',
       },
-      callback_base_url: {
-        label: 'CodeMie Callback Base URL',
-        placeholder: 'https://your-codemie-host',
-        help:
-          'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
-          'must match the Redirect URI registered on the GitLab OAuth application.',
-      },
     },
   },
   [JIRA_OAUTH_CREDENTIAL_TYPE]: {
@@ -1065,13 +1058,6 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
         sensitive: true,
         help: 'https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/',
       },
-      callback_base_url: {
-        label: 'CodeMie Callback Base URL',
-        placeholder: 'https://your-codemie-host',
-        help:
-          'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
-          'must match the Callback URL registered on the Atlassian OAuth (3LO) app.',
-      },
     },
   },
   [CONFLUENCE_OAUTH_CREDENTIAL_TYPE]: {
@@ -1091,13 +1077,6 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
         placeholder: 'Atlassian OAuth Client Secret',
         sensitive: true,
         help: 'https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/',
-      },
-      callback_base_url: {
-        label: 'CodeMie Callback Base URL',
-        placeholder: 'https://your-codemie-host',
-        help:
-          'Base URL of this CodeMie deployment; the OAuth redirect URI is derived from it and ' +
-          'must match the Callback URL registered on the Atlassian OAuth (3LO) app.',
       },
     },
   },

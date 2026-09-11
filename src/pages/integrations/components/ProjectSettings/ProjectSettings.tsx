@@ -18,10 +18,8 @@ import { createPortal } from 'react-dom'
 import { useSnapshot } from 'valtio'
 
 import IconDelete from '@/assets/icons/delete.svg?react'
-import IconEdit from '@/assets/icons/edit.svg?react'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import Filters from '@/components/Filters'
-import NavigationMore from '@/components/NavigationMore'
 import { renderProjectNameCell } from '@/components/ProjectNameCell'
 import Table from '@/components/Table'
 import { TableProps } from '@/components/Table/Table'
@@ -40,16 +38,12 @@ import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/fi
 import { ColumnDefinition } from '@/types/table'
 import { checkEmptyFilters, FILTER_ENTITY } from '@/utils/filters'
 import { humanize, createdBy } from '@/utils/helpers'
-import {
-  getSettingCredsURL,
-  SETTING_TYPE_PROJECT,
-  getTestableCredentialTypes,
-} from '@/utils/settings'
+import { getSettingCredsURL, SETTING_TYPE_PROJECT } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 
 import IntegrationDeleteWarning from '../IntegrationDeleteWarning'
+import IntegrationRowActionsCell from '../IntegrationRowActionsCell'
 import { renderIntegrationStateCell } from '../IntegrationStateBadge/renderIntegrationStateCell'
-import TestIntegration from '../TestIntegration'
 
 const REFRESH_TIMEOUT = 1000
 
@@ -68,38 +62,14 @@ export const ProjectSettingActionsCell: FC<ProjectSettingActionsCellProps> = ({
   item,
   onEdit,
   onDelete,
-}) => {
-  return (
-    <NavigationMore
-      childrenFirst
-      hideOnClickInside
-      contextId={`project-setting-name-${item.id}`}
-      items={[
-        {
-          title: 'Edit',
-          onClick: () => onEdit(item),
-          icon: <IconEdit />,
-        },
-        {
-          title: 'Delete',
-          onClick: () => onDelete(item),
-          icon: <IconDelete />,
-        },
-      ]}
-    >
-      {getTestableCredentialTypes().includes(item.credential_type.toLocaleLowerCase()) && (
-        <TestIntegration
-          label="Test"
-          inline
-          credentialType={item.credential_type}
-          settingId={item.id}
-          credentialValues={item.credential_values}
-          testIcon="connection"
-        />
-      )}
-    </NavigationMore>
-  )
-}
+}) => (
+  <IntegrationRowActionsCell
+    item={item}
+    contextIdPrefix="project-setting-name"
+    onEdit={onEdit}
+    onDelete={onDelete}
+  />
+)
 
 const renderProjectSettingNameCell = (item: ProjectSetting) => (
   <span id={`project-setting-name-${item.id}`}>

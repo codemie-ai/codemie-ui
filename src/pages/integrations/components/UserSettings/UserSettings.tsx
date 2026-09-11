@@ -18,10 +18,8 @@ import { createPortal } from 'react-dom'
 import { useSnapshot } from 'valtio'
 
 import IconDelete from '@/assets/icons/delete.svg?react'
-import IconEdit from '@/assets/icons/edit.svg?react'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import Filters from '@/components/Filters'
-import NavigationMore from '@/components/NavigationMore'
 import { renderProjectNameCell } from '@/components/ProjectNameCell'
 import Table from '@/components/Table'
 import { TableProps } from '@/components/Table/Table'
@@ -39,12 +37,12 @@ import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/fi
 import { ColumnDefinition } from '@/types/table'
 import { checkEmptyFilters, FILTER_ENTITY } from '@/utils/filters'
 import { humanize } from '@/utils/helpers'
-import { getSettingCredsURL, getTestableCredentialTypes, SETTING_TYPE_USER } from '@/utils/settings'
+import { getSettingCredsURL, SETTING_TYPE_USER } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 
 import IntegrationDeleteWarning from '../IntegrationDeleteWarning'
+import IntegrationRowActionsCell from '../IntegrationRowActionsCell'
 import { renderIntegrationStateCell } from '../IntegrationStateBadge/renderIntegrationStateCell'
-import TestIntegration from '../TestIntegration'
 
 const REFRESH_TIMEOUT = 1000
 
@@ -59,38 +57,14 @@ interface UserSettingActionsCellProps {
   onDelete: (setting: UserSetting) => void
 }
 
-const UserSettingActionsCell: FC<UserSettingActionsCellProps> = ({ item, onEdit, onDelete }) => {
-  return (
-    <NavigationMore
-      childrenFirst
-      hideOnClickInside
-      contextId={`user-setting-name-${item.id}`}
-      items={[
-        {
-          title: 'Edit',
-          onClick: () => onEdit(item),
-          icon: <IconEdit />,
-        },
-        {
-          title: 'Delete',
-          onClick: () => onDelete(item),
-          icon: <IconDelete />,
-        },
-      ]}
-    >
-      {getTestableCredentialTypes().includes(item.credential_type.toLocaleLowerCase()) && (
-        <TestIntegration
-          label="Test"
-          inline
-          credentialType={item.credential_type}
-          settingId={item.id}
-          credentialValues={item.credential_values}
-          testIcon="connection"
-        />
-      )}
-    </NavigationMore>
-  )
-}
+const UserSettingActionsCell: FC<UserSettingActionsCellProps> = ({ item, onEdit, onDelete }) => (
+  <IntegrationRowActionsCell
+    item={item}
+    contextIdPrefix="user-setting-name"
+    onEdit={onEdit}
+    onDelete={onDelete}
+  />
+)
 
 const renderUserSettingNameCell = (item: UserSetting) => (
   <span id={`user-setting-name-${item.id}`}>

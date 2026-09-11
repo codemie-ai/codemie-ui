@@ -24,6 +24,12 @@ import toaster from '@/utils/toaster'
 interface OAuthTestButtonProps {
   provider: OAuthProvider
   initiate: () => Promise<OAuthInitiateResponse>
+  label?: string
+  classNames?: string
+  testIcon?: 'connection'
+  // When rendered inside a dropdown menu that closes on click-inside (integrations list), stop the
+  // click from bubbling so the menu — and this button — stay mounted through the OAuth flow.
+  stopPropagation?: boolean
 }
 
 const CHECKER_STATUS_BY_OAUTH: Record<OAuthStatus, CheckerStatus> = {
@@ -40,7 +46,14 @@ const CHECKER_STATUS_BY_OAUTH: Record<OAuthStatus, CheckerStatus> = {
  * shared Checker + toaster affordance, mirroring the non-OAuth "Test integration" UX. No oauth_state
  * is produced — the per-user token is connected later via the chat auth gate.
  */
-const OAuthTestButton: FC<OAuthTestButtonProps> = ({ provider, initiate }) => {
+const OAuthTestButton: FC<OAuthTestButtonProps> = ({
+  provider,
+  initiate,
+  label = 'Test',
+  classNames,
+  testIcon,
+  stopPropagation = false,
+}) => {
   const { status, user, error, handleSignIn } = useToolOAuthTest({ initiate })
   const prevStatus = useRef(status)
 
@@ -59,7 +72,16 @@ const OAuthTestButton: FC<OAuthTestButtonProps> = ({ provider, initiate }) => {
   }, [status, user, error, provider])
 
   return (
-    <Checker label="Test" status={CHECKER_STATUS_BY_OAUTH[status]} onCheck={() => handleSignIn()} />
+    <Checker
+      label={label}
+      status={CHECKER_STATUS_BY_OAUTH[status]}
+      onCheck={(e) => {
+        if (stopPropagation) e.stopPropagation()
+        handleSignIn()
+      }}
+      classNames={classNames}
+      testIcon={testIcon}
+    />
   )
 }
 

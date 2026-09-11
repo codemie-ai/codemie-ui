@@ -24,13 +24,21 @@ import {
 import { MASKED_VALUE } from '@/constants/settings'
 import { userSettingsStore } from '@/store/userSettings'
 import { OAuthProvider } from '@/types/entity/dataSource'
+import { cn } from '@/utils/utils'
 
 import OAuthTestButton from './SettingsForm/OAuthTestButton'
+import { TEST_INTEGRATION_INLINE_CLASS } from './TestIntegration'
 
 interface OAuthTestActionProps {
   credentialType: string
   credentialValues: Record<string, unknown>
   settingId?: string
+  // When rendered inside the integrations-list 3-dot menu, style the button as an inline menu item
+  // (matching the non-OAuth TestIntegration entry) instead of the form-footer button.
+  inline?: boolean
+  inlineClass?: string
+  testIcon?: 'connection'
+  label?: string
 }
 
 /**
@@ -46,6 +54,10 @@ const OAuthTestAction: FC<OAuthTestActionProps> = ({
   credentialType,
   credentialValues,
   settingId,
+  inline = false,
+  inlineClass = '',
+  testIcon,
+  label = 'Test',
 }) => {
   // Credential form values are strings; anything else (undefined/object) is treated as empty
   // rather than stringified, so a non-string never leaks in as "[object Object]".
@@ -57,6 +69,11 @@ const OAuthTestAction: FC<OAuthTestActionProps> = ({
   const variant = resolveOAuthVariant(credentialType, credentialValues)
   if (!variant) return null
 
+  const classNames = inline ? cn(TEST_INTEGRATION_INLINE_CLASS, inlineClass) : undefined
+  // `inline` is only set when the button lives in the integrations-list 3-dot menu, which closes on
+  // click-inside; stop the click there so the menu (and this button) stay mounted for the OAuth flow.
+  const buttonProps = { label, classNames, testIcon, stopPropagation: inline }
+
   // On edit the backend returns client_secret as a masked placeholder. Sending that mask to the
   // OAuth /initiate endpoint makes the test fail (EPMCDME-14584). When the integration is saved and
   // the secret is still masked, run the test against the STORED secret via connect-with-test (the
@@ -67,6 +84,7 @@ const OAuthTestAction: FC<OAuthTestActionProps> = ({
   if (variant === GITLAB_OAUTH_CREDENTIAL_TYPE) {
     return (
       <OAuthTestButton
+        {...buttonProps}
         provider={OAuthProvider.GITLAB}
         initiate={() =>
           useStoredSecret
@@ -74,7 +92,6 @@ const OAuthTestAction: FC<OAuthTestActionProps> = ({
             : userSettingsStore.initiateGitLabOAuth({
                 client_id: value('client_id'),
                 client_secret: value('client_secret'),
-                callback_base_url: value('callback_base_url'),
                 instance_url: value('instance_url'),
               })
         }
@@ -85,6 +102,7 @@ const OAuthTestAction: FC<OAuthTestActionProps> = ({
   if (variant === JIRA_OAUTH_CREDENTIAL_TYPE) {
     return (
       <OAuthTestButton
+        {...buttonProps}
         provider={OAuthProvider.JIRA}
         initiate={() =>
           useStoredSecret
@@ -92,7 +110,6 @@ const OAuthTestAction: FC<OAuthTestActionProps> = ({
             : userSettingsStore.initiateJiraOAuth({
                 client_id: value('client_id'),
                 client_secret: value('client_secret'),
-                callback_base_url: value('callback_base_url'),
               })
         }
       />
@@ -102,6 +119,7 @@ const OAuthTestAction: FC<OAuthTestActionProps> = ({
   if (variant === CONFLUENCE_OAUTH_CREDENTIAL_TYPE) {
     return (
       <OAuthTestButton
+        {...buttonProps}
         provider={OAuthProvider.CONFLUENCE}
         initiate={() =>
           useStoredSecret
@@ -109,7 +127,6 @@ const OAuthTestAction: FC<OAuthTestActionProps> = ({
             : userSettingsStore.initiateConfluenceOAuth({
                 client_id: value('client_id'),
                 client_secret: value('client_secret'),
-                callback_base_url: value('callback_base_url'),
               })
         }
       />

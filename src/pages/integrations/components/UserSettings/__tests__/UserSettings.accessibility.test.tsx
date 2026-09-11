@@ -128,12 +128,21 @@ vi.mock('@/utils/settings', () => ({
   getSettingCredsURL: vi.fn(() => ''),
   getTestableCredentialTypes: vi.fn(() => []),
   SETTING_TYPE_USER: 'user',
+  isOAuthProviderSetting: vi.fn(() => false),
+  credentialValuesToRecord: vi.fn(() => ({})),
 }))
 vi.mock('@/utils/helpers', () => ({ humanize: (s: string) => s }))
 vi.mock('@/utils/toaster', () => ({ default: { info: vi.fn(), error: vi.fn() } }))
 vi.mock('@/constants', () => ({
   ButtonType: { DELETE: 'delete' },
   DECIMAL_PAGINATION_OPTIONS: [10, 25],
+  // Consumed transitively via OAuthTestAction -> OAuthTestButton for OAuth integration rows.
+  CHECKER_STATUSES: {
+    UNDEFINED: 'undefined',
+    IN_PROGRESS: 'in-progress',
+    FAILED: 'failed',
+    SUCCESS: 'success',
+  },
 }))
 
 vi.mock('@/assets/icons/navigation-more.svg?react', () => ({ default: () => <svg /> }))

@@ -101,7 +101,7 @@ export const useToolOAuthTest = ({
       if (!isToolOAuthCallbackMessage(event.data)) return
       // The signed `state` is the cryptographic correlation. Additionally require the message to
       // come from the popup we opened, OR from the configured backend origin — the callback host
-      // (per-integration `callback_base_url`) is not always what the browser derives as the API
+      // (the deployment's CALLBACK_API_BASE_URL) is not always what the browser derives as the API
       // origin, so a plain `event.origin === apiOrigin` gate drops valid messages in that case.
       if (event.data.state !== stateRef.current) return
       const fromOurPopup = popup.matchesSource(event.source)

@@ -519,17 +519,14 @@ describe('OAuth credential field titles are human-readable (EPMCDME-14580)', () 
       instance_url: 'GitLab Instance URL',
       client_id: 'Application ID',
       client_secret: 'Application Secret',
-      callback_base_url: 'CodeMie Callback Base URL',
     },
     jiraoauth: {
       client_id: 'Client ID',
       client_secret: 'Client Secret',
-      callback_base_url: 'CodeMie Callback Base URL',
     },
     confluenceoauth: {
       client_id: 'Client ID',
       client_secret: 'Client Secret',
-      callback_base_url: 'CodeMie Callback Base URL',
     },
   }
 
