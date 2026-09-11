@@ -38,6 +38,7 @@ export interface ProjectBudget {
   budget_duration: string
   budget_reset_at?: string | null
   provider_sync_status: BudgetSyncStatus | null
+  is_active?: boolean
   member_count: number
   allocated_member_budget_total: number
   member_allocations: ProjectBudgetMemberAllocation[]

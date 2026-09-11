@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "decision": "request-changes",
+  "rationale": "Three major findings: missing accessibility label for screen readers, untested mode='manage' render path, and missing test coverage for is_active: null (runtime type mismatch). All are actionable patches.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "category": "git_workflow",
+      "item": "Commit message format",
+      "status": "pass",
+      "notes": "Both commits conform to EPMCDME-XXXX: Capital sentence format"
+    },
+    {
+      "category": "security",
+      "item": "HTML sinks, navigation, cross-window messages, secrets",
+      "status": "pass",
+      "notes": "Diff contains no security-sensitive patterns"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/ProjectBudgetCard.tsx",
+      "line_range": "173-175",
+      "problem": "\"Budget Stopped\" span has no accessible role or aria-label. Screen reader users scanning the card will hear \"Budget Stopped\" with no surrounding context about which budget it refers to.",
+      "impact": "Screen reader users cannot associate the \"Budget Stopped\" text with the budget card it describes, reducing accessibility.",
+      "recommendation": "Add aria-label=\"Budget stopped\" to the span, or use aria-describedby to tie it to the budget category heading.",
+      "sources": ["blind"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/ProjectBudgetCard.tsx",
+      "line_range": "173-175",
+      "problem": "Indicator is rendered inside AssignedCard regardless of mode prop ('view' or 'manage'), but all three new tests only use mode='view'. The manage-mode render path is completely untested.",
+      "impact": "If the indicator should be suppressed in manage mode (e.g., admin can re-activate), lack of mode guard is a logic gap. If it should appear in both modes, the lack of test coverage means a future refactor could break manage mode without detection.",
+      "recommendation": "Add test: it('shows Budget Stopped indicator in manage mode when is_active is false', () => { render(<ProjectBudgetCard variant='assigned' mode='manage' budget={{ ...baseBudget, is_active: false }} />); expect(screen.getByText('Budget Stopped')).toBeInTheDocument() })",
+      "sources": ["blind", "edge-case"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/ProjectBudgetCard.tsx",
+      "line_range": "173-175",
+      "problem": "Strict === false check silently skips null. While TypeScript type allows only boolean | undefined, REST APIs routinely serialize absent optional booleans as null, so a deserialized response can carry null at runtime despite the type.",
+      "impact": "If the API returns is_active: null for an inactive budget, the indicator is never shown, silently masking the stopped state.",
+      "recommendation": "Add test: it('does not show Budget Stopped when is_active is null (treats null like undefined)', () => { render(<ProjectBudgetCard variant='assigned' mode='view' budget={{ ...baseBudget, is_active: null as unknown as boolean }} />); expect(screen.queryByText('Budget Stopped')).not.toBeInTheDocument() }) — or change guard to budget.is_active === false || budget.is_active === null if null should also show the indicator.",
+      "sources": ["edge-case"]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "decision": "approve",
+  "rationale": "All three findings from code-review.final have been resolved: CR-001 added aria-label for accessibility, CR-002 added manage mode test coverage, CR-003 added null handling test. Fix-up diff is clean with no new high-risk issues.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "category": "git_workflow",
+      "item": "Commit message format",
+      "status": "pass",
+      "notes": "Fix-up commit conforms to EPMCDME-XXXX: Capital sentence format"
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "aria-label=\"Budget stopped\" added to span at line 173"
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Test 'shows Budget Stopped indicator in manage mode when is_active is false' added at line 125"
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Test 'does not show Budget Stopped when is_active is null' added at line 140"
+    }
+  ]
+}

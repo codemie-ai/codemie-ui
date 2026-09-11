@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "mode": "actual",
+  "assessed_at": "2026-08-26T00:00:00Z",
+  "dimensions": {
+    "scope": {
+      "score": 1,
+      "rationale": "3 files touched, all within a single product area (projectsManagement). Net change is 83 lines: 5 in the component, 1 in the type, 77 in the test file. No shared components, stores, or routes affected."
+    },
+    "technical_depth": {
+      "score": 1,
+      "rationale": "Implementation is a single JSX conditional block (is_active === false) rendering a styled span with a Tailwind class and an aria-label. No state, no hooks, no derived data, no utility functions introduced."
+    },
+    "cross_cutting": {
+      "score": 1,
+      "rationale": "Three distinct layers were touched: the domain type (projectBudget.ts), the presentational component, and the test file. All three are within the same feature slice; no cross-slice or cross-page impact."
+    },
+    "test_coverage": {
+      "score": 2,
+      "rationale": "Five targeted test cases cover the meaningful states: is_active=false shows indicator, is_active=true hides it, is_active=undefined (omitted) hides it, is_active=null hides it, and manage mode shows it. Edge cases for null and undefined were explicitly handled, matching the strict-equality guard in the implementation."
+    },
+    "risk": {
+      "score": 1,
+      "rationale": "Purely additive change. The new type field is optional (backward-compatible with existing API payloads that omit it). The component guard uses strict equality (=== false) so undefined/null do not trigger the indicator. No existing rendering paths were altered."
+    },
+    "dependencies": {
+      "score": 0,
+      "rationale": "No new npm dependencies, no new internal imports, no new utility modules. Uses only existing Tailwind color token (text-failed-secondary) already present in the theme."
+    },
+    "documentation": {
+      "score": 0,
+      "rationale": "No inline comments, no JSDoc, no guide updates. An aria-label was added to the indicator span, which is minimal accessibility annotation rather than documentation."
+    },
+    "reversibility": {
+      "score": 1,
+      "rationale": "Trivially reversible: remove 5 lines from the component, 1 line from the type, and the test suite. No schema migrations, no stored state, no API contract changes. The optional type field leaves nothing behind if dropped."
+    },
+    "domain_complexity": {
+      "score": 1,
+      "rationale": "Requires only the knowledge that a ProjectBudget can be inactive and that the flag is a boolean. No budget calculation logic, no financial rules, no multi-state workflow understanding needed."
+    }
+  },
+  "total": 8,
+  "size": "s",
+  "summary": "Minimal additive change: one optional boolean field added to a type, a five-line conditional indicator injected into an existing card component, and five edge-case tests. No logic, state, or cross-cutting concerns were modified."
+}

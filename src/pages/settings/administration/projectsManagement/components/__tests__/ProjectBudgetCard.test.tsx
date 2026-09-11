@@ -76,3 +76,80 @@ describe('ProjectBudgetCard premium link', () => {
     ).not.toBeInTheDocument()
   })
 })
+
+describe('ProjectBudgetCard Budget Stopped indicator', () => {
+  it('shows "Budget Stopped" indicator when is_active is false', () => {
+    const inactiveBudget: ProjectBudget = {
+      ...baseBudget,
+      is_active: false,
+    }
+
+    render(
+      <MemoryRouter>
+        <ProjectBudgetCard variant="assigned" mode="view" budget={inactiveBudget} />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Budget Stopped')).toBeInTheDocument()
+  })
+
+  it('does not show "Budget Stopped" when is_active is true', () => {
+    const activeBudget: ProjectBudget = {
+      ...baseBudget,
+      is_active: true,
+    }
+
+    render(
+      <MemoryRouter>
+        <ProjectBudgetCard variant="assigned" mode="view" budget={activeBudget} />
+      </MemoryRouter>
+    )
+
+    expect(screen.queryByText('Budget Stopped')).not.toBeInTheDocument()
+  })
+
+  it('does not show "Budget Stopped" when is_active is undefined', () => {
+    const budgetWithoutField: ProjectBudget = {
+      ...baseBudget,
+      // is_active omitted — backward compatibility case
+    }
+
+    render(
+      <MemoryRouter>
+        <ProjectBudgetCard variant="assigned" mode="view" budget={budgetWithoutField} />
+      </MemoryRouter>
+    )
+
+    expect(screen.queryByText('Budget Stopped')).not.toBeInTheDocument()
+  })
+
+  it('shows "Budget Stopped" indicator in manage mode when is_active is false', () => {
+    const inactiveBudget: ProjectBudget = {
+      ...baseBudget,
+      is_active: false,
+    }
+
+    render(
+      <MemoryRouter>
+        <ProjectBudgetCard variant="assigned" mode="manage" budget={inactiveBudget} />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Budget Stopped')).toBeInTheDocument()
+  })
+
+  it('does not show "Budget Stopped" when is_active is null', () => {
+    const budgetWithNull: ProjectBudget = {
+      ...baseBudget,
+      is_active: null as unknown as boolean,
+    }
+
+    render(
+      <MemoryRouter>
+        <ProjectBudgetCard variant="assigned" mode="view" budget={budgetWithNull} />
+      </MemoryRouter>
+    )
+
+    expect(screen.queryByText('Budget Stopped')).not.toBeInTheDocument()
+  })
+})

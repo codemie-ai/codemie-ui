@@ -170,6 +170,11 @@ const AssignedCard: FC<ProjectBudgetCardAssignedProps & { mode?: 'manage' | 'vie
             >
               {getBudgetCategoryLabel(budget.budget_category)}
             </div>
+            {budget.is_active === false && (
+              <span className="text-xs text-text-quaternary" aria-label="Budget stopped">
+                Budget Stopped
+              </span>
+            )}
             {spendingRow != null &&
               (() => {
                 const hardLimitPercentage = calculateHardLimitPercentage(
