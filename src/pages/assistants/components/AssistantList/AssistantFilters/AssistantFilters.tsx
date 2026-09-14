@@ -37,6 +37,15 @@ interface AssistantFiltersProps {
   activeScope: string
 }
 
+const USER_VISIBLE_FILTER_KEYS: (keyof AssistantFiltersType)[] = [
+  'search',
+  'project',
+  'categories',
+  'created_by',
+  'shared',
+  'is_global',
+]
+
 const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   onFilterChange,
   filters,
@@ -52,7 +61,11 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   const { assistantCategories } = useSnapshot(assistantsStore)
 
   const areFiltersEmpty = useMemo(() => {
-    return checkEmptyFilters(filters)
+    const userFilters = USER_VISIBLE_FILTER_KEYS.reduce((acc, key) => {
+      acc[key] = filters[key]
+      return acc
+    }, {} as Partial<AssistantFiltersType>)
+    return checkEmptyFilters(userFilters)
   }, [filters])
 
   const statusOptions: FilterOption[] = [
