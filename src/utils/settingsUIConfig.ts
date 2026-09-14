@@ -1025,7 +1025,6 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
         label: 'GitLab Instance URL',
         placeholder: 'https://gitlab.com',
         defaultValue: 'https://gitlab.com',
-        help: 'GitLab instance URL (gitlab.com or a self-hosted instance).',
       },
       client_id: {
         label: 'Application ID',
