@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "generated": "2026-09-10T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 3,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Two adjacent presentational components in one directory — JiraCustomFieldsField (inputClassName override) and IndexTypeJira (wrapper spacing div). Single UI layer, no store, API or type changes." },
+    { "dimension": "technical_risk", "reason": "The fix works by overriding global SCSS (fixed height, py-0, truncate on .p-multiselect-label) with !important Tailwind arbitrary variants. Established styling pattern, fully reversible, no security or performance surface — but className-level assertions in the new test are the only guard against a future SCSS change re-clipping the chips." },
+    { "dimension": "file_change_estimate", "reason": "3 files total per diffstat: 2 modified components plus 1 new test file (__tests__/JiraCustomFieldsField.test.tsx), 87 insertions / 7 deletions, all under one feature directory." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

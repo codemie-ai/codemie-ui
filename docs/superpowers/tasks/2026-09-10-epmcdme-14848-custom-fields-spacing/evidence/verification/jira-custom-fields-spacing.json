@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "head": "6b24d1656e73586262d3d2aaaa276903f0d9157f",
+  "feature_id": "jira-custom-fields-spacing",
+  "tool": "playwright",
+  "coverage_source": "generated-test",
+  "test_command": "~/Library/Caches/pypoetry/virtualenvs/codemie-test-harness-zcd7CGSE-py3.13/bin/python docs/superpowers/tasks/2026-09-10-epmcdme-14848-custom-fields-spacing/dynamic-tests/verify_jira_custom_fields.py <screenshot-dir>",
+  "app_url": "http://localhost:5199/verify-jira-fields.html",
+  "screenshot_path": "evidence/screenshots/custom-fields-after-codemieLight.png",
+  "screenshots": [
+    "evidence/screenshots/custom-fields-after-codemieLight.png",
+    "evidence/screenshots/custom-fields-after-codemieDark.png",
+    "evidence/screenshots/custom-fields-before-codemieLight.png",
+    "evidence/screenshots/custom-fields-before-codemieDark.png"
+  ],
+  "measurements": "evidence/verification/measurements.json",
+  "measured": {
+    "after": {
+      "chips": 8, "rows": 4,
+      "min_horizontal_gap_px": 8, "min_vertical_gap_px": 8,
+      "control_height": "150px", "control_max_height": "none", "control_min_height": "44px",
+      "label_padding_y": "6px", "label_white_space": "normal", "label_overflow": "visible",
+      "clipped_chips": [], "label_overflowing": false,
+      "gap_above_px": 24, "gap_below_px": 16,
+      "themes_identical": true
+    },
+    "before_same_dom_fix_classes_stripped": {
+      "control_height": "32px", "control_max_height": "32px",
+      "label_padding_y": "0px", "label_white_space": "nowrap", "label_overflow": "hidden",
+      "clipped_chips": ["QA Owner","Root Cause Analysis","Severity","Sprint","Story Points","Team"]
+    },
+    "dark_theme_contrast": {
+      "chip_bg": "rgb(33,34,36)", "chip_text": "rgb(255,255,255)", "chip_border": "rgb(51,52,54)",
+      "control_bg": "rgb(26,26,26)"
+    }
+  },
+  "notes": [
+    "The app's PrimeReact pass-through preset replaces the .p-multiselect-token class, so chips are the direct <span> children of .p-multiselect-label. The same preset already applies 'flex flex-wrap gap-2' to the label, which makes the [&_.p-multiselect-label]:!gap-2 token in the fix redundant (harmless, not a defect).",
+    "Create and edit forms both render DataSourceForm -> IndexTypeField.Jira, so this single verification covers both."
+  ],
+  "console_errors": [],
+  "network_failures": [],
+  "result": "PASS"
+}

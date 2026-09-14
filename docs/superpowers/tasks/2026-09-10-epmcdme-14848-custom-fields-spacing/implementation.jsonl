@@ -1,0 +1,2 @@
+{"task_id":"1","status":"done","commit":"a97f77708","test_command":"npx vitest run --project unit src/pages/dataSources/components/DataSourceForm/IndexTypeField/__tests__/JiraCustomFieldsField.test.tsx"}
+{"task_id":"2","status":"done","commit":"6b24d1656","test_command":"npx vitest run --project unit src/pages/dataSources/components/DataSourceForm/IndexTypeField/__tests__/JiraCustomFieldsField.test.tsx"}

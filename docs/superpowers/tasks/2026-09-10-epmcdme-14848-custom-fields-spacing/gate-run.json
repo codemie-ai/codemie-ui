@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14848_custom-fields-spacing",
+  "head": "6b24d1656e73586262d3d2aaaa276903f0d9157f",
+  "runner": "npm",
+  "started_at": "2026-09-10T10:20:41Z",
+  "completed_at": "2026-09-10T10:32:10Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25553,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Only pre-existing advisory 'React version not specified in eslint-plugin-react settings'; no rule errors."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 18617,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide 'Skip if': no dependency added, removed, or moved. Diff of package.json/package-lock.json against merge_base is empty."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 6004,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Genuine scan, not an image-pull fallback: 'scanned ~22448994 bytes (22.45 MB) in 3.32s' then 'no leaks found'; docker daemon reachable. Working tree only - git history is never scanned by this script, so history remains covered solely by the MR pipeline's gitleaks-scan task."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 197264,
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "notes": "Test Files 521 passed (521); Tests 5411 passed (5411). No suite failed to import. Branch's own new suite executed: JiraCustomFieldsField.test.tsx (3 tests)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 109284,
+      "command": "npm run test:integration",
+      "exit_code": 0,
+      "notes": "Test Files 40 passed (40); Tests 507 passed | 1 skipped (508). The 1 skip is pre-existing and unrelated to the diff; stderr noise is mock-teardown logging inside passing tests."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1120,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Hook chain verified per constituent command rather than via the stager, since nothing is staged: prettier ('All matched files use Prettier code style!' on the 3 changed files), eslint --fix (lint gate clean), tsc --noEmit (typecheck gate clean), license-headers --fix (license-headers gate clean)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 914,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Real work performed: 'Checked 2008 files, 0 missing license headers'."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 369,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipping gate: exited 0 without scanning. Output: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Enable locally by exporting SONAR_TOKEN (the pre-commit hook sources .env.local, so placing SONAR_TOKEN there also arms it at commit time). Static analysis is therefore still owed and only the server-side ci-pipeline Sonar stage can settle it."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (3 .tsx files under src/pages/dataSources) but no configured UI test script; browser verification is a separate caller decision. This change is purely Tailwind spacing/wrapping on a PrimeReact MultiSelect, which unit assertions cover only at the className level, not visually."
+    },
+    {
+      "id": "wait-ci-init",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "gitlab pre-ci-guard .wait-ci-init-template",
+      "exit_code": null,
+      "notes": "Needs unreachable infrastructure: it is a guard job that blocks on external GitLab commit contexts 'ci-pipeline' and 'compliance-report', defined outside this repo in epm-cdme/codemie-gitlab-templates and only produced by a real merge_request_event pipeline. Cannot run locally."
+    }
+  ],
+  "failures": {}
+}

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "head": "6b24d1656e73586262d3d2aaaa276903f0d9157f",
+  "branch": "EPMCDME-14848_custom-fields-spacing",
+  "merge_base": "a0a5b1753d8c8ff2828fec283605564c428fee7d",
+  "surface_changed": true,
+  "changed_ui_files": [
+    "src/pages/dataSources/components/DataSourceForm/IndexTypeField/IndexTypeJira.tsx",
+    "src/pages/dataSources/components/DataSourceForm/IndexTypeField/JiraCustomFieldsField.tsx"
+  ],
+  "tool": "playwright",
+  "tool_resolution": "Host repo has no Playwright/Cypress/Storybook and no feature_verification.command. Adding a browser dependency here is an 'Ask first' boundary in AGENTS.md, so no dependency was added. Used the Playwright already installed in the sibling codemie-test-harness poetry venv (codemie-test-harness-zcd7CGSE-py3.13) plus its cached Chromium.",
+  "coverage_source": "generated-test",
+  "existing_coverage_reviewed": "../codemie-sdk/test-harness/codemie_test_harness/tests/ui/datasource/ has UI datasource specs, but they require the full CodeMie stack (API :8080 + IDP) which is not running and cannot be started from this repo (docker-compose.yml here serves only the UI). They also need a live Jira integration to populate this field.",
+  "app_under_test": "vite dev server on :5199 serving a temporary entry that renders the real JiraCustomFieldsField inside the exact IndexTypeJira wrapper markup, against the app's real global SCSS + Tailwind cascade; GET /api/v1/index/jira/fields stubbed at the network layer",
+  "features": [
+    {
+      "feature_id": "jira-custom-fields-spacing",
+      "route": "/datasources/create and /datasources/:id/edit (both render the same DataSourceForm -> IndexTypeField.Jira)",
+      "assertions": [
+        "8 selected chips wrap to multiple rows",
+        "horizontal gap between adjacent chips >= 4px (not merged)",
+        "vertical gap between chip rows >= 4px (not cramped)",
+        "no chip painted outside the control box (not clipped)",
+        "control height grows with content (max-height released)",
+        "visible vertical space between the embeddings field and the Custom fields label",
+        "identical geometry in codemieLight and codemieDark",
+        "zero console errors and zero network failures"
+      ]
+    }
+  ]
+}

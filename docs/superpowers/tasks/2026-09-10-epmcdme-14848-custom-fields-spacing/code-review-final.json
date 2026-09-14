@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "Compact profile: the edge-case lens ran clean and parseable; acceptance never ran because no spec/story artifact was supplied, so this is a no-spec round and confidence is low. One blocking finding survives verification: the new chip-wrapping classes make the control grow to multiple rows while MultiSelect's absolutely positioned clear button stays at top-1/2 with only pr-1 of label gutter, so it overlaps mid-row chips. 0 deferred; 3 candidates filtered as noise (unbounded growth is contained by the popup's scrolling body, chip text overflow needs a space-less field name and stays cosmetic, and the new test's unawaited mock promise produces at most act() noise since the effect is cancel-guarded and no setup file fails on console warnings).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "No standards audit dispatched for this review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "No standards audit dispatched for this review profile." },
+    { "kind": "security", "status": "na", "notes": "No standards audit dispatched for this review profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/dataSources/components/DataSourceForm/IndexTypeField/JiraCustomFieldsField.tsx",
+      "line": 142,
+      "title": "Clear button overlaps wrapped chip rows",
+      "problem": "The new inputClassName releases the control's fixed height (!h-auto !max-h-none min-h-11) and re-enables wrapping (!whitespace-normal, !overflow-visible) so selected chips flow onto several rows. MultiSelect renders its own clear control as an absolutely positioned child at src/components/form/MultiSelect/MultiSelect.tsx:411-419 with 'absolute right-[34px] top-1/2 -translate-y-1/2', shown unconditionally whenever one or more values are selected. That offset was written for the 34px fixed height set in src/assets/stylesheets/vue_components.scss:84-85; with a multi-row control it now sits at the vertical centre of the whole stack, over a middle chip row. The same block gives .p-multiselect-label only pr-1, and this change replaces the previous truncate clipping with !overflow-visible, so chips extend under the clear button and trigger instead of being clipped short of them.",
+      "impact": "In exactly the scenario the ticket targets - several custom fields selected in the Jira datasource form - the clear icon floats over a chip. Clicking what looks like that chip's own remove icon clears the entire selection instead of removing one field, and the overlapped chip text is partly obscured, which works against the acceptance criteria on readable, non-merged values and on introducing no regression.",
+      "recommendation": "Stay inside the agreed scope (JiraCustomFieldsField.tsx only, no shared component, ptPreset or vue_components.scss edits): extend the same inputClassName with a right gutter and a top-anchored clear button via arbitrary variants scoped to this instance, e.g. add [&_.p-multiselect-label]:!pr-16 to reserve room for the clear icon and trigger, plus [&>button]:!top-2 [&>button]:!translate-y-0 so the clear control pins to the first row instead of the centre of a growing stack. Verify with five or more long field names selected in both the create and edit flows, and in dark theme."
+    }
+  ]
+}

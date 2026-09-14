@@ -1,0 +1,68 @@
+{
+ "schema": 1,
+ "gate_id": "code-review.final",
+ "round": "check",
+ "flow": "sdlc-light",
+ "reviewed_head": "5b2d7f3a8",
+ "decision": "approve",
+ "confidence": "medium",
+ "rationale": "Check round for the single blocking finding raised by the final review (CR-001). The finding was verified against the code rather than patched blindly, and its premise was disproved with reproducible evidence: the control it claims to overlap is never mounted. No source change was therefore required, the reviewed diff is unchanged from the final round, and the human gate was re-asked and approved on that evidence. Functional browser verification of the shipped behaviour was captured independently.",
+ "findings": [
+  {
+   "id": "CR-001",
+   "title": "Clear button overlaps wrapped chip rows",
+   "severity": "major",
+   "status": "resolved",
+   "resolution": "disproved",
+   "code_changed": false,
+   "verification": "PrimeReact's MultiSelect declares children: undefined in defaultProps and renders props.children only as panel list content (multiselect.esm.js:310, :361, :942). The clear <button aria-label=\"Clear selected options\"> passed as a child of <PrimeMultiselect> at src/components/form/MultiSelect/MultiSelect.tsx:411-419 is therefore never mounted. Rendering the shared MultiSelect with display=chip and two selected values yields 0 button elements inside the control, so no absolutely positioned clear control exists for the new wrapping classes to overlap, and the recommended [&>button]:!top-2 / !translate-y-0 variants would be dead CSS. The right-gutter half of the recommendation is likewise unnecessary: .p-multiselect-label-container is overflow-hidden and the trigger is a shrink-0 flex sibling, so chips are bounded by the container rather than running under the trigger.",
+   "evidence": [
+    "docs/superpowers/tasks/2026-09-10-epmcdme-14848-custom-fields-spacing/code-review-fix-evidence.json",
+    "docs/superpowers/tasks/2026-09-10-epmcdme-14848-custom-fields-spacing/evidence/verification/jira-custom-fields-spacing.json",
+    "docs/superpowers/tasks/2026-09-10-epmcdme-14848-custom-fields-spacing/evidence/verification/measurements.json"
+   ],
+   "commands": [
+    {
+     "command": "grep -n 'children' node_modules/primereact/multiselect/multiselect.esm.js",
+     "exit_code": 0
+    },
+    {
+     "command": "npx vitest run --project unit src/pages/dataSources/components/DataSourceForm/IndexTypeField/__tests__/JiraCustomFieldsField.test.tsx",
+     "exit_code": 0
+    }
+   ]
+  }
+ ],
+ "unresolved_findings": [],
+ "gates_recorded": [
+  {
+   "gate_id": "code-review.final",
+   "decision": "request-changes",
+   "note": "user asked for CR-001 to be investigated and fixed"
+  },
+  {
+   "gate_id": "code-review.final",
+   "decision": "approve",
+   "note": "CR-001 disproved with evidence; user approved the unchanged code"
+  }
+ ],
+ "functional_verification": {
+  "verified": true,
+  "blocking": false,
+  "summary": "Rendered the real JiraCustomFieldsField in Chromium against the app's actual SCSS + Tailwind cascade. With 8 chips wrapping to 4 rows: 8px horizontal and vertical gaps, no clipped chips, control grew to 150px, 24px gap above and 16px below, identical in light and dark themes, zero console or network errors. Stripping the fix classes from the same DOM clipped 6 of 8 chips at 32px, confirming the change is load-bearing."
+ },
+ "quality_gates": {
+  "passed": true,
+  "gates": [
+   "lint",
+   "typecheck",
+   "license-check",
+   "secrets",
+   "unit",
+   "integration",
+   "lint-staged",
+   "license-headers",
+   "sonar-local"
+  ]
+ }
+}

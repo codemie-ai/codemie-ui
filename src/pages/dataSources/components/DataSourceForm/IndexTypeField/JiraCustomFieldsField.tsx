@@ -137,7 +137,9 @@ const JiraCustomFieldsField: FC<Props> = ({ control, errors, projectName, availa
           <MultiSelect
             id="jiraCustomFields"
             name={field.name}
-            className="mb-3"
+            // Release the fixed height so wrapped chip rows grow instead of being clipped, and
+            // restore the label padding/wrapping the global SCSS strips (`py-0` + `truncate`).
+            inputClassName="!h-auto !max-h-none min-h-11 [&_.p-multiselect-label]:!py-1.5 [&_.p-multiselect-label]:!overflow-visible [&_.p-multiselect-label]:!whitespace-normal [&_.p-multiselect-label]:!gap-2"
             label={CUSTOM_FIELDS_LABEL}
             hint={CUSTOM_FIELDS_HINT}
             placeholder={placeholder}

@@ -74,12 +74,14 @@ const IndexTypeJira: FC<Props> = ({
 
       <EmbeddingsModelField control={control} embeddingModels={embeddingModels} />
 
-      <JiraCustomFieldsField
-        control={control}
-        errors={errors}
-        projectName={projectName}
-        availableSettings={filteredSettings?.[value] ?? []}
-      />
+      <div className="mt-6 mb-4">
+        <JiraCustomFieldsField
+          control={control}
+          errors={errors}
+          projectName={projectName}
+          availableSettings={filteredSettings?.[value] ?? []}
+        />
+      </div>
 
       <IntegrationSection
         hasNoSettings={hasNoSettings(value)}
