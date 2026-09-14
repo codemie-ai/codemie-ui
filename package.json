@@ -10,6 +10,8 @@
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
+    "test:unit:slnt": "vitest run --project unit --silent",
+    "test:integration:slnt": "vitest run --project integration --silent",
     "test:coverage": "vitest run --coverage",
     "preview": "vite preview",
     "format": "prettier --write src/ && npm run lint:fix",

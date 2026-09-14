@@ -1,0 +1,31 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 superseded: no reference to docs/qa-gates-token-audit.md present in quality-gates.md at HEAD. CR-002 resolved: Full Pre-MR Checklist uses test:unit:slnt and test:integration:slnt. CR-003 resolved: all five named sibling guides reference :slnt variants. CR-004 superseded by explicit team decision (test:coverage:slnt not required). Guide file changes predate this round's fix-up diff (absent from changed_files); verified directly at HEAD. 0 deferred, 0 dismissed.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "superseded",
+      "notes": "No reference to docs/qa-gates-token-audit.md present in quality-gates.md at HEAD; the finding's target location is gone."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Full Pre-MR Checklist (lines 113-114) now uses npm run test:unit:slnt and npm run test:integration:slnt."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "All five named guides (security/README.md:64, testing-patterns.md:47-48, qa-strategy.md:19,29, refactoring-patterns.md:125,203, security/verification.md:12,21) now reference :slnt variants."
+    },
+    {
+      "id": "CR-004",
+      "status": "superseded",
+      "notes": "Team explicitly decided test:coverage:slnt is not required; package.json confirms no such script was added."
+    }
+  ]
+}

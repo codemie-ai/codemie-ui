@@ -9,7 +9,7 @@ the test counter only counts suites that imported, so a broken install prints a 
 count than a healthy one. `npm run typecheck` in the same state exits non-zero with
 `TS2307: Cannot find module` for packages present in both `package.json` and `package-lock.json`.
 
-Quote the `Test Files` line, not the `Tests` line. Applies to `test:unit` and `test:integration`
+Quote the `Test Files` line, not the `Tests` line. Applies to `test:unit:slnt` and `test:integration:slnt`
 equally.
 
 ## 2. Local gates
@@ -18,7 +18,7 @@ equally.
 |---|---|---|
 | `npm run lint` | ESLint plus the `sonarjs` plugin over `src/` | Dependencies, images, `nginx.conf` |
 | `npm run typecheck` | `tsc --noEmit` | Run-time behaviour |
-| `npm run test:unit` / `test:integration` | Only the suites that imported | The built artifact; the API layer is stubbed |
+| `npm run test:unit:slnt` / `test:integration:slnt` | Only the suites that imported | The built artifact; the API layer is stubbed |
 | `npm run secrets:check` | gitleaks over the working tree | Git history; misreports a registry failure — [`README.md`](README.md) § Exit codes that mislead |
 | `npm run license-check` | Resolved licences against the inline allowlist | Vulnerabilities |
 | `npm run sonar-local` | Nothing without `SONAR_TOKEN` | — |

@@ -1,0 +1,58 @@
+{
+  "decision": "request-changes",
+  "rationale": "4 major patch findings: quality-gates.md line 80 references docs/qa-gates-token-audit.md which does not exist; the Full Pre-MR Checklist at lines 128-129 still names the verbose test:unit/test:integration scripts; five sibling guides (security/README.md, testing-patterns.md, qa-strategy.md, refactoring-patterns.md, security/verification.md) still direct agents to the noisy variants, bypassing the reduction for any non-quality-gates.md entry point; package.json lacks a test:coverage:slnt script. No spec (acceptance not applicable); 0 deferred, 0 dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": ".ai-run/guides/quality-gates.md",
+      "line": 80,
+      "title": "Dead link to docs/qa-gates-token-audit.md",
+      "problem": "quality-gates.md line 80 references `docs/qa-gates-token-audit.md` to explain the --silent rationale and cite the empirical token-cost measurement, but that file does not exist in the repository.",
+      "impact": "Any agent or human following the reference encounters a missing-file error; the cited empirical justification for the :slnt approach is unavailable, leaving the guide's claim unsubstantiated.",
+      "recommendation": "Either create docs/qa-gates-token-audit.md with the audit data (token counts before/after, the 637 KB to 5 KB figure already cited inline), or inline the key figures into the guide prose and remove the dead reference."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": ".ai-run/guides/quality-gates.md",
+      "line": 128,
+      "title": "Pre-MR checklist still uses verbose test scripts",
+      "problem": "The Full Pre-MR Checklist block at lines 128-129 contains `npm run test:unit` and `npm run test:integration` rather than their :slnt variants.",
+      "impact": "An agent or human following the most prominent checklist in the guide will invoke the verbose scripts, producing full console noise and incurring the exact token cost the change exists to avoid.",
+      "recommendation": "Replace `npm run test:unit` with `npm run test:unit:slnt` and `npm run test:integration` with `npm run test:integration:slnt` in the Full Pre-MR Checklist block."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": ".ai-run/guides/security/README.md",
+      "line": 64,
+      "title": "Sibling guides still reference noisy test scripts",
+      "problem": "security/README.md:64, testing/testing-patterns.md:47-48, testing/qa-strategy.md:19,29, development/refactoring-patterns.md:125,203, and security/verification.md:12,21 all direct agents to `npm run test:unit` / `npm run test:integration` rather than the :slnt variants.",
+      "impact": "Agents that enter via any of these five guides bypass the token-cost reduction entirely; the improvement is siloed to quality-gates.md as the sole entry point, which AGENTS.md marks as P0 for only the testing category.",
+      "recommendation": "Update all named sibling guide references from test:unit / test:integration to test:unit:slnt / test:integration:slnt."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "package.json",
+      "line": 15,
+      "title": "test:coverage lacks a silent :slnt variant",
+      "problem": "package.json defines `test:coverage` (`vitest run --coverage`) but no `test:coverage:slnt` counterpart, leaving the coverage gate at full console verbosity.",
+      "impact": "The token-cost reduction goal is unmet for the coverage gate; any agent that runs `npm run test:coverage` as a quality gate step still incurs the full noise while the unit and integration peers do not.",
+      "recommendation": "Add `\"test:coverage:slnt\": \"vitest run --coverage --silent\"` to the scripts block in package.json alongside the existing :slnt variants."
+    }
+  ]
+}

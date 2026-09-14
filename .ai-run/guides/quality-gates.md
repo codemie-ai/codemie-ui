@@ -64,7 +64,7 @@ Run gates in this order (fastest to slowest). All must pass before opening an MR
 
 ### Unit Tests
 
-**Run**: `npm run test:unit`
+**Run**: `npm run test:unit:slnt`
 
 **Pass**: All test suites pass, summary shows `X passed`, exit code 0.
 
@@ -78,7 +78,7 @@ Run gates in this order (fastest to slowest). All must pass before opening an MR
 
 ### Integration Tests
 
-**Run**: `npm run test:integration`
+**Run**: `npm run test:integration:slnt`
 
 **Pass**: All integration suites pass, summary shows `X passed`, exit code 0.
 
@@ -108,10 +108,10 @@ These run automatically — you do not invoke them manually before committing.
 ## Full Pre-MR Checklist
 
 ```bash
-npm run lint          # Lint all files
-npm run typecheck     # TypeScript check
-npm run test:unit     # Unit tests
-npm run test:integration  # Integration tests
+npm run lint                   # Lint all files
+npm run typecheck              # TypeScript check
+npm run test:unit:slnt         # Unit tests
+npm run test:integration:slnt  # Integration tests
 ```
 
 All four must exit 0 before pushing and opening an MR.

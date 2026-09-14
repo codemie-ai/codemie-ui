@@ -44,8 +44,8 @@ Workspace config: `vitest.workspace.ts` — two projects with separate setup fil
 ## Running Tests
 
 ```bash
-npm run test:unit          # unit tests only
-npm run test:integration   # integration tests only
+npm run test:unit:slnt          # unit tests only
+npm run test:integration:slnt   # integration tests only
 npm test                   # all tests
 npm test -- --watch        # watch mode
 npm run test:coverage      # with coverage report

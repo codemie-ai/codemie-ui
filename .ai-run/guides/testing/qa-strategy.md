@@ -16,7 +16,7 @@
 
 - **Location**: `src/**/__tests__/`
 - **Pattern**: `*.test.ts`, `*.test.tsx` (excludes `*.integration.test.*`)
-- **Run command**: `npm run test:unit`
+- **Run command**: `npm run test:unit:slnt`
 - **Vitest project name**: `unit`
 - **Setup**: `src/setupTests.tsx` + `src/setupTests.unit.ts`
 - **Mocking strategy**: `@/utils/api` mocked via `vi.mock`; Valtio `useSnapshot` returns store directly (no real reactivity)
@@ -26,7 +26,7 @@
 
 - **Location**: `src/**/__tests__/`
 - **Pattern**: `*.integration.test.ts`, `*.integration.test.tsx`
-- **Run command**: `npm run test:integration`
+- **Run command**: `npm run test:integration:slnt`
 - **Vitest project name**: `integration`
 - **Setup**: `src/setupTests.tsx` only (real Valtio reactivity, real stores, API layer mocked via `global.fetch` stub)
 - **Utilities**: `src/test-utils/integration.tsx` — `renderPage(path)`, `mockAPI(method, url, data)`, `navigate` spy

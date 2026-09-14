@@ -122,7 +122,7 @@ Follow this order to avoid breaking the component mid-refactor:
 2. **Create** the new file alongside the existing one.
 3. **Move** the code — cut from source, paste into new file.
 4. **Import** the new export back into the source file.
-5. **Verify** the component still renders correctly (run `npm run test:unit`).
+5. **Verify** the component still renders correctly (run `npm run test:unit:slnt`).
 6. **Repeat** for each section until the main file is under 300 lines.
 
 Never attempt to split and rename simultaneously in the same step — it makes diffs unreadable and errors hard to trace.
@@ -200,7 +200,7 @@ Create the folder structure at the start of the refactor — moving a file to a 
 
 ## Testing After Refactoring
 
-Run `npm run test:unit` after each extraction step. If a test breaks:
+Run `npm run test:unit:slnt` after each extraction step. If a test breaks:
 
 1. The component's props interface likely changed — update the test's `render()` call.
 2. A hook's return shape changed — update destructuring in the test.

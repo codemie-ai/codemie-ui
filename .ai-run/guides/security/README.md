@@ -61,7 +61,7 @@ execute — [`verification.md`](verification.md) § 1.
 
 | What you changed | Run | Why |
 |---|---|---|
-| `package.json` / `package-lock.json` | `npm ci`, then `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run test:integration` | `npm ci` proves the lock is installable and self-consistent; `npm install` would rewrite it |
+| `package.json` / `package-lock.json` | `npm ci`, then `npm run typecheck`, `npm run lint`, `npm run test:unit:slnt`, `npm run test:integration:slnt` | `npm ci` proves the lock is installable and self-consistent; `npm install` would rewrite it |
 | `src/` as part of the fix | The same four gates, plus a test covering the changed path | Application-level fixes in history shipped with tests — `git log --oneline -i --grep='CVE'` |
 | A `Dockerfile` only | Rebuild and rescan — [`images.md`](images.md) | No gate in this repository looks inside an image |
 | `nginx.conf` | Rebuild and rescan, and exercise the served app | Nothing in the working tree validates this file |
@@ -117,7 +117,7 @@ Observed in this repository. Read the output, not the exit code.
 | `npm run secrets:check` | Runs gitleaks in a container pulled at run time. Without registry access it exits non-zero and still prints `Secrets detected! …` — the exit handler cannot tell a pull failure from a finding. Read the lines above that message. |
 | `npm run secrets:check` | Scans the working directory only (`gitleaks dir`), never git history. A credential committed and since deleted from the tree passes. |
 | `npm run typecheck` | `TS2307: Cannot find module '<pkg>'` for a package present in both `package.json` and `package-lock.json` means `node_modules` is stale. Run `npm ci` and re-check. |
-| `npm run test:unit` / `test:integration` | `Tests: N passed` counts only suites that imported successfully; a suite that failed to import adds nothing to it. Read the `Test Files` line — [`verification.md`](verification.md) § 1. |
+| `npm run test:unit:slnt` / `test:integration:slnt` | `Tests: N passed` counts only suites that imported successfully; a suite that failed to import adds nothing to it. Read the `Test Files` line — [`verification.md`](verification.md) § 1. |
 | `npm run sonar-local` | Exits 0 with `Skipping Sonar scan because SONAR_TOKEN is not set`, and again when the server is unreachable. It sits in the Husky pre-commit hook, so a commit can pass its Sonar gate having analysed nothing. The enforcing Sonar gate runs in the MR pipeline. |
 
 A gate that could not run is unverified, not passed. Registry failure, stale scanner database,
