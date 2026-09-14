@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "head": "017b42ad8c944cd0d619b70cddbdf8107a6aabab",
+  "feature_id": "budget-modal-toggle-reflects-in-details",
+  "tool": "playwright",
+  "coverage_source": "generated-test",
+  "test_command": "node docs/superpowers/tasks/2026-09-08-epmcdme-14757/dynamic-tests/chargeback-verification.js (scenario 4)",
+  "app_url": "http://localhost:5173/settings/administration/projects/demo-project",
+  "screenshot_path": "evidence/screenshots/budget-modal-chargeback-settings.png",
+  "console_errors": [],
+  "network_failures": [],
+  "result": "PASS",
+  "detail": "Starting from chargeback disabled (details status 'Disabled', single occurrence), opened Manage Budget > Edit Budget, toggled the 'Enable chargeback' switch inside ChargebackSettings, submitted, and the details tab (after reload) shows a single 'Chargeback' status now reading 'Enabled'; the mocked backend project record recorded chargeback_enabled=true from the PATCH sent by the budget modal's save flow."
+}

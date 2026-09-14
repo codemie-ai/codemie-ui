@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "branch": "feature/EPMCDME-14757",
+  "head": "7686daf0583a4ab48e7703bf4f98edc3d220074d",
+  "runner": "npm",
+  "started_at": "2026-09-09T09:59:33Z",
+  "completed_at": "2026-09-09T10:03:43Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 14583,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 10860,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1574,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 23238,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks reported 'no leaks found' after scanning ~98.06 MB of working tree."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 68330,
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "notes": "Test Files 509 passed (509); Tests 5326 passed | 1 skipped (5327)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 42150,
+      "command": "npm run test:integration",
+      "exit_code": 0,
+      "notes": "Test Files 40 passed (40); Tests 507 passed | 1 skipped (508)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "",
+      "exit_code": null,
+      "notes": "UI surface changed (CredentialFields.tsx, ProjectDetailsPage.tsx, ProjectModal.tsx and their tests) but no configured UI test script (no 'test:ui' entry in package.json); browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 287,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 1995 files, 0 missing license headers. Not in the guide's own gate list; enforced by the Husky pre-commit hook."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 727,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: output was '→ No staged files found.' Working tree has no staged changes at time of this run; the same prettier/eslint/tsc chain is already covered against the full tree by the lint and typecheck gates above. To exercise this exact hook gate locally, stage the changed files (git add) and re-run npx lint-staged."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 5235,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: output was '[sonar-local] Skipping Sonar scan because https://sonar.core.kuberocketci.io is unreachable.' SONAR_TOKEN is set, but the internal SonarQube host (sonar.core.kuberocketci.io) is not reachable from this sandbox. Enable by running from a network with access to that host; CI will run this for real on the MR pipeline."
+    },
+    {
+      "id": "ci-wait-ci-init",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "",
+      "exit_code": null,
+      "notes": "gitlab-ci.yml only wires a 'wait-ci-init' job (external template epm-cdme/codemie-gitlab-templates) that polls for GitLab commit statuses 'ci-pipeline' and 'compliance-report' set by an external CI system on merge_request_event pipelines targeting main. Requires a live GitLab MR pipeline; not runnable from a local checkout."
+    }
+  ],
+  "failures": {}
+}

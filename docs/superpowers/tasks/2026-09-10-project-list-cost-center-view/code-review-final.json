@@ -1,0 +1,62 @@
+{
+  "decision": "request-changes",
+  "rationale": "Edge-case lens ran cleanly and its 3 candidates were all confirmed live in current source: a whitespace-only display_name duplicates the project code in the new two-line name cell, an explicit backend routing:null can never clear a previously merged routing label, and a $0 classifier cost is hidden rather than shown. All three are kept as blocking patches; nothing was deferred or dismissed. Blind and verification-gap are out of scope for the compact profile (not failures); acceptance found no spec/story artifact (genuine no-spec), which caps confidence at low. Standards was not expected for this profile, so its rows are na with no coverage gap.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not expected for the compact review profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not expected for the compact review profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not expected for the compact review profile."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHeader/ChatHeader.tsx",
+      "line": 166,
+      "title": "Classifier cost row hidden at $0",
+      "problem": "The new 'Classifier cost' row is added only `if (classifierCost)`, a truthiness check, so a `total_classifier_cost_usd` of exactly 0 skips the row entirely — identical to the field being absent.",
+      "impact": "An admin reading the usage-details overlay cannot tell 'classifier ran and cost nothing' apart from 'classifier did not run', undermining the diagnostic value the new row was added for.",
+      "recommendation": "Check `classifierCost !== undefined && classifierCost !== null` instead of truthiness so a $0.0000 result still renders."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx",
+      "line": 141,
+      "title": "Whitespace display_name duplicates project code",
+      "problem": "`getProjectDisplayName` falls back to `item.name` when `display_name` trims to empty, but the secondary code line's guard (`item.display_name && ...`) only checks truthiness, not trim. A whitespace-only `display_name` is truthy, so both the primary label and the secondary line render `item.name`. The backend's `display_name` field carries no trim/whitespace validation, so a pre-existing or directly-API-set whitespace value reaches this cell unguarded.",
+      "impact": "The project row in the very two-line cost-center-style list this change introduces shows the same project code twice, implying a distinct display name that does not exist — undermining the readability improvement this task set out to deliver.",
+      "recommendation": "Guard the secondary line with the same trim check used by `getProjectDisplayName`, e.g. `item.display_name?.trim() && <span>...`."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chatGeneration.ts",
+      "line": 1537,
+      "title": "Routing label can never be cleared once set",
+      "problem": "`existingThought.routing = thought.routing ?? existingThought.routing` treats an explicit `routing: null` from the backend the same as an absent field, because `??` falls through on `null`, not just `undefined`.",
+      "impact": "If the backend streams `routing: null` on a later update to intentionally clear a prior routing decision, the stale routed-model label from an earlier merge is kept and keeps displaying indefinitely.",
+      "recommendation": "Use `'routing' in thought ? thought.routing : existingThought.routing` so an explicit null is honored, mirroring the presence-check idiom this file already uses for other mergeable fields."
+    }
+  ]
+}

@@ -40,8 +40,8 @@ public/keycloakify-dev-resources
 .ai-run/runs/
 .agents/memory/sdlc/daily/
 docs/superpowers/runs/
-docs/superpowers/tasks/*/.state.json
-docs/superpowers/tasks/*/gate-plan.json
+docs/superpowers/tasks/*/state.local.json
+docs/superpowers/tasks/*/gate-plan.local.json
 docs/superpowers/tasks/*/*.diff
 .superpowers
 .codemie/claude-templates

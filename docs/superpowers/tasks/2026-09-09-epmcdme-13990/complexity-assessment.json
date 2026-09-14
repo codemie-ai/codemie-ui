@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "task": "Reorder and rename the Sharepoint Integration credential fields (URL, Tenant ID, Application (Client) ID, Client Secret) to match the Sharepoint Datasource naming convention.",
+  "generated": "2026-09-09T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "The order/parity requirement is clear, but the exact target label wording is unresolved: the ticket's own stated strings ('Tenant ID', 'Application (Client) ID', 'Client Secret') match neither the Integration form's current wording ('Azure AD ...') nor the Datasource form's OAUTH_CUSTOM wording ('Azure Application (client) ID', 'Azure Directory (tenant) ID'); the two Jira screenshots that would resolve this are unavailable. Whether the Datasource form's OAUTH_CUSTOM labels must also change for true parity is a second open scope question. technical-analysis.md names this ambiguity as the primary complexity driver, not code mechanics — this is a vague-acceptance-criteria signal, scored L rather than M." },
+    { "dimension": "component_scope", "reason": "Primary edit is a key-order swap inside CREDENTIAL_UI_MAPPING.sharepoint in src/utils/settingsUIConfig.ts, consumed as-is by CredentialFields.tsx (no renderer change needed). Achieving true naming parity may additionally require touching IndexTypeSharePoint.tsx's inlined OAUTH_CUSTOM labels — at most two files in the same UI/config layer, self-contained." },
+    { "dimension": "file_change_estimate", "reason": "1-2 modified files (settingsUIConfig.ts, possibly IndexTypeSharePoint.tsx) plus a new regression test, since no existing test currently pins field order or label text for either form." }
+  ],
+  "red_flags_applied": [
+    "Vague acceptance criteria: bumped Requirements Clarity from M to L — exact converged label wording and whether the Datasource form's own labels must change too are undecided design questions per technical-analysis.md."
+  ],
+  "split_recommendation": null
+}

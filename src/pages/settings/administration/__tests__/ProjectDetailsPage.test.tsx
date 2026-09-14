@@ -16,6 +16,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import ProjectDetailsPage from '@/pages/settings/administration/ProjectDetailsPage'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
@@ -110,7 +111,8 @@ const { chargebackFlag, costCentersFlag, budgetManagementFlag } = vi.hoisted(() 
 }))
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
-  useFeatureFlag: () => costCentersFlag(),
+  useFeatureFlag: (flag: string) =>
+    flag === FEATURE_FLAGS.COST_CENTERS ? costCentersFlag() : [true, true],
   useBudgetManagementEnabled: () => budgetManagementFlag(),
   useProjectChargebackEnabled: () => chargebackFlag(),
 }))
@@ -132,6 +134,7 @@ const mockProject: ProjectDetail = {
 describe('ProjectDetailsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUserStore.user = null
     chargebackFlag.mockReturnValue([false, true])
     costCentersFlag.mockReturnValue([true, true])
     projectsStore.getProject = vi.fn().mockResolvedValue(mockProject)
@@ -184,6 +187,39 @@ describe('ProjectDetailsPage', () => {
 
     expect(await screen.findByText('Chargeback')).toBeInTheDocument()
     expect(screen.getAllByText('Disabled').length).toBeGreaterThan(0)
+  })
+
+  it('shows the Chargeback status exactly once for an admin viewer (EPMCDME-14757)', async () => {
+    mockUserStore.user = {
+      isAdmin: true,
+      isMaintainer: false,
+      isAuditor: false,
+      applicationsAdmin: [],
+    }
+    chargebackFlag.mockReturnValue([true, true])
+    projectsStore.getProject = vi.fn().mockResolvedValue({
+      ...mockProject,
+      chargeback_enabled: true,
+      chargeback_attribution: 'cost_center',
+    })
+
+    render(<ProjectDetailsPage />)
+
+    expect((await screen.findAllByText('Chargeback')).length).toBe(1)
+  })
+
+  it('shows the same single Chargeback status for a non-admin viewer (EPMCDME-14757)', async () => {
+    chargebackFlag.mockReturnValue([true, true])
+    projectsStore.getProject = vi.fn().mockResolvedValue({
+      ...mockProject,
+      chargeback_enabled: true,
+      chargeback_attribution: 'cost_center',
+    })
+
+    render(<ProjectDetailsPage />)
+
+    expect((await screen.findAllByText('Chargeback')).length).toBe(1)
+    expect(screen.getByText('Enabled, attributed to a cost center')).toBeInTheDocument()
   })
 
   it('hides the chargeback field when the feature flag is off', async () => {

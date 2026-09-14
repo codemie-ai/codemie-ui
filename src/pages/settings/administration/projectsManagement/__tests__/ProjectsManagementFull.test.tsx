@@ -60,6 +60,7 @@ vi.mock('@/components/Table', () => ({
     <div>
       {items.map((item: any) => (
         <div key={item.name} data-testid={`row-${item.name}`}>
+          {customRenderColumns?.name?.(item)}
           {customRenderColumns?.assignments?.(item)}
         </div>
       ))}
@@ -137,6 +138,12 @@ const mockProject = {
   },
 }
 
+const mockProjectWithDisplayName = {
+  ...mockProject,
+  name: 'my-project',
+  display_name: 'My Project',
+}
+
 beforeEach(() => {
   vi.mocked(useSnapshot).mockImplementation((store) => {
     if (store === projectsStore) {
@@ -205,5 +212,56 @@ describe('ProjectsManagementFull — resource counter links', () => {
       </MemoryRouter>
     )
     expectBadgeHref(/data sources/i, 'data-sources')
+  })
+})
+
+describe('ProjectsManagementFull — name column', () => {
+  it('renders the project display name and code as a two-line name cell', () => {
+    vi.mocked(useSnapshot).mockImplementation((store) => {
+      if (store === projectsStore) {
+        return {
+          projects: [mockProjectWithDisplayName],
+          pagination: { page: 1, perPage: 10, total: 1, totalPages: 1 },
+          loading: false,
+        }
+      }
+      if (store === userStore) return { user: { platform_role: 'admin', isAdmin: true } }
+      return {}
+    })
+    render(
+      <MemoryRouter>
+        <ProjectsManagementFull />
+      </MemoryRouter>
+    )
+    const row = screen.getByTestId('row-my-project')
+    expect(row.querySelector('.text-text-quaternary')?.textContent).toBe('my-project')
+    expect(row).toHaveTextContent('My Project')
+  })
+
+  it('renders a single line when display_name is whitespace-only', () => {
+    const mockProjectWithWhitespaceDisplayName = {
+      ...mockProject,
+      name: 'my-project',
+      display_name: '   ',
+    }
+    vi.mocked(useSnapshot).mockImplementation((store) => {
+      if (store === projectsStore) {
+        return {
+          projects: [mockProjectWithWhitespaceDisplayName],
+          pagination: { page: 1, perPage: 10, total: 1, totalPages: 1 },
+          loading: false,
+        }
+      }
+      if (store === userStore) return { user: { platform_role: 'admin', isAdmin: true } }
+      return {}
+    })
+    render(
+      <MemoryRouter>
+        <ProjectsManagementFull />
+      </MemoryRouter>
+    )
+    const row = screen.getByTestId('row-my-project')
+    expect(row.querySelector('.text-text-quaternary')).toBeNull()
+    expect(row).toHaveTextContent('my-project')
   })
 })

@@ -47,7 +47,7 @@ import { BudgetCategoryFilter, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/bu
 import { Project, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import { formatCurrency, formatSpend } from '@/utils/currency'
-import { formatProjectLabel } from '@/utils/projectDisplayName'
+import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
@@ -138,7 +138,12 @@ const ProjectNameCell = ({
   onOpenDetails: (name: string) => void
 }) => (
   <span id={`project-name-${item.id}`}>
-    <NameLinkCell onClick={() => onOpenDetails(item.name)}>{formatProjectLabel(item)}</NameLinkCell>
+    <NameLinkCell onClick={() => onOpenDetails(item.name)}>
+      {getProjectDisplayName(item)}
+      {item.display_name?.trim() && (
+        <span className="block text-xs text-text-quaternary">{item.name}</span>
+      )}
+    </NameLinkCell>
   </span>
 )
 

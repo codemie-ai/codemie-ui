@@ -1,0 +1,63 @@
+{
+  "decision": "request-changes",
+  "rationale": "2 major findings block: ChatHeader.tsx's truthy check hides a legitimate $0.0000 classifier cost row, and chatGeneration.ts's `??` routing merge cannot apply an explicit `routing: null` clear from the backend (reachability unconfirmed from the frontend alone, and tracing it pushed this round past its 24-call budget). Two other edge-case reports in CredentialFields.tsx (function-typed label bypass; textarea/select branches ignoring an explicit label) were traced to every current config producer in the repo and found genuinely unreachable today, so they were dismissed rather than deferred (0 deferred, 5 dismissed as noise/unreachable). Acceptance lens confirms all 4 SharePoint field-order/label/shared-config/regression-test criteria pass; standards review was not expected for the compact profile (na, no coverage gap).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "SharePoint Integration form (Azure app registration) renders fields in order: URL, Tenant ID, Application (Client) ID, Client Secret",
+      "status": "pass",
+      "notes": "settingsUIConfig.ts:729-748 declares fields in that order; CredentialFields.tsx renders via Object.entries in declaration order."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Rendered label text is exactly URL / Azure Directory (tenant) ID / Azure Application (client) ID / Client Secret",
+      "status": "pass",
+      "notes": "Explicit label set per field plus the label-precedence fix in CredentialFields.tsx:248 makes explicit labels bypass the truncating heuristic."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Standalone Integrations page and inline create-integration flow inside SharePoint Datasource form show identical order/wording",
+      "status": "pass",
+      "notes": "Both entry points render the same CredentialFields component against one shared CREDENTIAL_UI_MAPPING.sharepoint config."
+    },
+    {
+      "kind": "story-ac",
+      "item": "A regression test asserts rendered field order and exact label text for the four fields",
+      "status": "pass",
+      "notes": "SettingsForm.sharePointAuth.test.tsx asserts DOM order and exact text of all four labels."
+    }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for the compact review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for the compact review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for the compact review profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHeader/ChatHeader.tsx",
+      "line": 167,
+      "title": "Classifier cost row hidden when cost is exactly zero",
+      "problem": "`if (classifierCost)` treats a real `total_classifier_cost_usd` of exactly 0 as falsy, so the 'Classifier cost' row is omitted from the usage-details overlay — indistinguishable from the classifier never having run.",
+      "impact": "A user cannot tell 'classifier ran and cost $0' from 'classifier did not run'; the sibling 'Money spent (approx)' row in the same render always shows via `?? '0'`, so the two rows behave inconsistently for the same zero-value edge case.",
+      "recommendation": "Use a definedness check instead of a truthy check, e.g. `if (classifierCost !== undefined)`."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chatGeneration.ts",
+      "line": 1537,
+      "title": "Routing merge cannot apply an explicit null clear",
+      "problem": "`existingThought.routing = thought.routing ?? existingThought.routing` uses nullish coalescing, so a streamed chunk that explicitly sends `routing: null` to clear a prior routing assignment is swallowed and the stale value is kept. `Thought.routing`/`ThoughtBackend.routing` are the only fields in this merge typed `| null` (every sibling field here is a plain optional), a concrete signal that an explicit clear was anticipated by the type but not implemented in the merge.",
+      "impact": "If the backend ever sends an explicit `routing: null` to retract a routing assignment mid-stream, the UI keeps showing the stale routed-model label for that thought indefinitely.",
+      "recommendation": "Distinguish 'absent' from 'explicitly null' with an `in` check, e.g. `existingThought.routing = 'routing' in thought ? thought.routing : existingThought.routing`."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "head": "017b42ad8c944cd0d619b70cddbdf8107a6aabab",
+  "tool": "playwright",
+  "tool_resolution": "unconfigured in host project (no playwright.config, no @playwright/test dep, no cypress, no storybook-test, no custom config) -> dynamic Playwright path used with an ephemeral install (npm install --no-save playwright@1.55.0 in a scratch dir) driving the project's own `npm run dev` Vite server with all /api/v1/* network calls mocked via page.route",
+  "surface_changed": [
+    "src/pages/settings/administration/ProjectDetailsPage.tsx",
+    "src/pages/settings/administration/projectsManagement/ProjectModal.tsx"
+  ],
+  "app_url": "http://localhost:5173/settings/administration/projects/demo-project",
+  "dynamic_test_file": "docs/superpowers/tasks/2026-09-08-epmcdme-14757/dynamic-tests/chargeback-verification.js",
+  "run_command": "EXE=<cached chromium executable> NODE_PATH=/tmp/pw-verify/node_modules node docs/superpowers/tasks/2026-09-08-epmcdme-14757/dynamic-tests/chargeback-verification.js",
+  "features": [
+    "details-chargeback-single-occurrence",
+    "details-chargeback-status-cost-center",
+    "edit-project-modal-no-chargeback-switch",
+    "budget-modal-toggle-reflects-in-details",
+    "flag-disabled-no-chargeback-anywhere"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "head": "017b42ad8c944cd0d619b70cddbdf8107a6aabab",
+  "feature_id": "details-chargeback-status-cost-center",
+  "tool": "playwright",
+  "coverage_source": "generated-test",
+  "test_command": "node docs/superpowers/tasks/2026-09-08-epmcdme-14757/dynamic-tests/chargeback-verification.js (scenario 1/2)",
+  "app_url": "http://localhost:5173/settings/administration/projects/demo-project",
+  "screenshot_path": "evidence/screenshots/details-enabled-cost-center.png",
+  "console_errors": [],
+  "network_failures": [],
+  "result": "PASS",
+  "detail": "For a project with chargeback_enabled=true and chargeback_attribution='cost_center', the single status line reads 'Enabled, attributed to a cost center' — both the enabled state and the cost-center attribution are present in one line."
+}

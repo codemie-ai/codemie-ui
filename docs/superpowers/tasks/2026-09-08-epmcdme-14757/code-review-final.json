@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case lens returned no findings and the standards audit passed (commit-format, security); code-quality is na because no code-quality guide exists in this repo. Acceptance did not run because no spec/story artifact was linked to EPMCDME-14757 (genuine no-spec round), which caps confidence at low. 0 deferred, 0 dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Both commit subjects match the EPMCDME-XXXX: Capital sentence format required by .ai-run/guides/standards/git-workflow.md."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no code-quality guide found at .ai-run/guides/standards/code-quality.md or .ai-run/guides/development/code-quality.md, and no ArtifactRef was passed for code_quality"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "security-patterns.md checklist does not apply: no dangerouslySetInnerHTML/innerHTML, no navigation or postMessage code, no new config or secret values in ProjectDetailsPage.tsx or ProjectModal.tsx."
+    }
+  ],
+  "findings": []
+}

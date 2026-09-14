@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-09-09T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk": { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 1, "label": "XS" }
+  },
+  "total": 7,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 3,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "3 files changed per diffstat (CredentialFields.tsx, its sharePointAuth test, settingsUIConfig.ts) spanning the SettingsForm component directory, its __tests__ subdirectory, and src/utils/ — small but not single-directory."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Change is confined to the shared CredentialFields renderer and the SharePoint entry in settingsUIConfig.ts (the credential config map it reads), both within the single existing SettingsForm UI feature — no new component or layer boundary introduced. CredentialFields.tsx now prefers an explicit config.label over the derived getLabel(placeholder) fallback, and the sharepoint field configs in settingsUIConfig.ts (url, tenant_id, client_id, client_secret) carry explicit labels so the Azure app registration fields render in a fixed URL / Tenant ID / Client ID / Secret order — an additive tweak to an existing, well-established rendering pattern."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

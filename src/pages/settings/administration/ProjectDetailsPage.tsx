@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
 import Button from '@/components/Button'
 import Spinner from '@/components/Spinner'
 import { ButtonSize } from '@/constants'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { PROJECTS_MANAGEMENT_DETAIL } from '@/constants/routes'
 import {
   useFeatureFlag,
@@ -47,9 +48,6 @@ import ProjectBudgetsSection, {
 } from './projectsManagement/ProjectBudgetsSection'
 import ProjectMembersManager from './projectsManagement/ProjectMembersManager'
 import { goBackProjectDetails } from './utils/goBackAdministration'
-
-const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
-const FEATURE_FLAG_PROJECT_CHARGEBACK = 'features:projectChargeback'
 
 function chargebackStatusLabel(
   enabled?: boolean,
@@ -82,8 +80,7 @@ const ProjectDetailsPage = () => {
   const router = useVueRouter()
   const { user: currentUser } = useSnapshot(userStore)
   const projectName = router.params.projectName as string
-  const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
-  const [isProjectChargebackEnabled] = useFeatureFlag(FEATURE_FLAG_PROJECT_CHARGEBACK)
+  const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAGS.COST_CENTERS)
   const [isChargebackFeatureEnabled] = useProjectChargebackEnabled()
   const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const [project, setProject] = useState<ProjectDetail | null>(null)
@@ -146,7 +143,6 @@ const ProjectDetailsPage = () => {
         cost_center_id: payload.cost_center_id,
         clear_cost_center: payload.clear_cost_center,
         enforce_member_spend_limits: payload.enforce_member_spend_limits,
-        chargeback_enabled: payload.chargeback_enabled,
         chargeback_attribution: payload.chargeback_attribution,
       })
       toaster.info(`Project ${updatedProject.name} updated successfully`)
@@ -282,12 +278,6 @@ const ProjectDetailsPage = () => {
                     </div>
                     <div>{project.enforce_member_spend_limits ? 'Enabled' : 'Disabled'}</div>
                   </div>
-                  {isAdmin && isProjectChargebackEnabled && (
-                    <div>
-                      <div className="text-xs text-text-quaternary mb-1">Chargeback</div>
-                      <div>{project.chargeback_enabled ? 'Enabled' : 'Disabled'}</div>
-                    </div>
-                  )}
                   <div>
                     <div className="text-xs text-text-quaternary mb-1">Created by</div>
                     <div>{displayValue(project.created_by)}</div>

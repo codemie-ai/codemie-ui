@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "head": "017b42ad8c944cd0d619b70cddbdf8107a6aabab",
+  "feature_id": "details-chargeback-single-occurrence",
+  "tool": "playwright",
+  "coverage_source": "generated-test",
+  "test_command": "node docs/superpowers/tasks/2026-09-08-epmcdme-14757/dynamic-tests/chargeback-verification.js (scenario 1)",
+  "app_url": "http://localhost:5173/settings/administration/projects/demo-project",
+  "screenshot_path": "evidence/screenshots/details-enabled-cost-center.png",
+  "console_errors": [],
+  "network_failures": [],
+  "result": "PASS",
+  "detail": "With features:projectChargeback enabled, the project details tab renders exactly one 'Chargeback' label/value pair (count=1) instead of the pre-fix duplicate."
+}

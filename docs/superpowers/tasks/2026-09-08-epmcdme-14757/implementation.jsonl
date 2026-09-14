@@ -1,0 +1,2 @@
+{"task_id":"task-1","status":"done","commit":"b7cffc997","test_command":"npx vitest run src/pages/settings/administration/__tests__/ProjectDetailsPage.test.tsx"}
+{"task_id":"task-2","status":"done","commit":"017b42ad8","test_command":"npx vitest run src/pages/settings/administration/projectsManagement/__tests__/ProjectModal.test.tsx"}

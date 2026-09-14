@@ -245,7 +245,7 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
                   value={value}
                   error={error}
                   placeholder={getPlaceholder(placeholder)}
-                  label={getLabel(label ?? placeholder)}
+                  label={label ?? getLabel(placeholder)}
                   sensitive={sensitive}
                   showPassword={passwordVisibility[name] || false}
                   onChange={(e) => {

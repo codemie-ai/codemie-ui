@@ -730,16 +730,19 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
         placeholder: dynPlaceholder('sharepoint', 'url'),
         defaultValue: SHAREPOINT_URL,
       },
-      client_id: {
-        placeholder: 'Azure AD Application (Client) ID',
-        help: 'https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app',
-      },
       tenant_id: {
-        placeholder: 'Azure AD Tenant ID',
+        label: 'Azure Directory (tenant) ID',
+        placeholder: 'Azure Directory (tenant) ID',
         help: 'https://learn.microsoft.com/en-us/azure/active-directory/fundamentals/how-to-find-tenant',
       },
+      client_id: {
+        label: 'Azure Application (client) ID',
+        placeholder: 'Azure Application (client) ID',
+        help: 'https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app',
+      },
       client_secret: {
-        placeholder: 'Azure AD Client Secret',
+        label: 'Client Secret',
+        placeholder: 'Client Secret',
         sensitive: true,
         help: 'https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app#add-a-client-secret',
       },

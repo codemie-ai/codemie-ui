@@ -24,6 +24,7 @@ import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { costCentersStore } from '@/store/costCenters'
 import { userStore } from '@/store/user'
@@ -46,7 +47,6 @@ export interface ProjectFormData {
   cost_center_id?: string | null
   clear_cost_center?: boolean
   enforce_member_spend_limits?: boolean
-  chargeback_enabled?: boolean
   chargeback_attribution?: ChargebackAttribution
 }
 
@@ -56,7 +56,6 @@ interface ProjectModalFormValues {
   description: string
   cost_center_id: string
   enforce_member_spend_limits: boolean
-  chargeback_enabled: boolean
 }
 
 const PROJECT_NAME_REGEX = /^[a-z0-9][a-z0-9_-]*$/
@@ -71,16 +70,12 @@ const validationSchema = Yup.object({
   cost_center_id: Yup.string().default(''),
 })
 
-const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
-const FEATURE_FLAG_PROJECT_CHARGEBACK = 'features:projectChargeback'
-
 const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmit }) => {
   const { user } = useSnapshot(userStore)
   const isNameDisabled = (project?.user_count ?? 0) > 0
   const isAdmin = user?.isAdmin ?? false
   const isMaintainer = user?.isMaintainer ?? false
-  const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
-  const [isProjectChargebackEnabled] = useFeatureFlag(FEATURE_FLAG_PROJECT_CHARGEBACK)
+  const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAGS.COST_CENTERS)
   const [costCenterOptions, setCostCenterOptions] = useState<FilterOption[]>([])
 
   const {
@@ -96,7 +91,6 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       description: '',
       cost_center_id: '',
       enforce_member_spend_limits: false,
-      chargeback_enabled: false,
     },
   })
 
@@ -108,7 +102,6 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
         description: project.description || '',
         cost_center_id: project.cost_center_id || '',
         enforce_member_spend_limits: !!project.enforce_member_spend_limits,
-        chargeback_enabled: !!project.chargeback_enabled,
       })
     } else if (visible && !project) {
       reset({
@@ -117,7 +110,6 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
         description: '',
         cost_center_id: '',
         enforce_member_spend_limits: false,
-        chargeback_enabled: false,
       })
     }
   }, [visible, project, reset])
@@ -155,8 +147,6 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       cost_center_id: data.cost_center_id || null,
       clear_cost_center: clearingCostCenter,
       enforce_member_spend_limits: project ? data.enforce_member_spend_limits : undefined,
-      chargeback_enabled:
-        isAdmin && isProjectChargebackEnabled ? data.chargeback_enabled : undefined,
       chargeback_attribution: needsAttributionReset ? 'project' : undefined,
     })
     reset()
@@ -266,24 +256,6 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
                 id="enforce_member_spend_limits"
                 label="Enforce member spend limits"
                 hint="Disabled: track each member's spend against the project budget (no individual cap enforced). Enabled: enforce each member's configured allocation limit."
-                value={value}
-                onBlur={onBlur}
-                ref={ref}
-                onChange={(event) => onChange((event.target as HTMLInputElement).checked)}
-              />
-            )}
-          />
-        )}
-
-        {isAdmin && isProjectChargebackEnabled && (
-          <Controller
-            name="chargeback_enabled"
-            control={control}
-            render={({ field: { value, onChange, onBlur, ref } }) => (
-              <Switch
-                id="chargeback_enabled"
-                label="Enable Chargeback"
-                hint="When enabled, this project's usage is tracked for chargeback billing."
                 value={value}
                 onBlur={onBlur}
                 ref={ref}

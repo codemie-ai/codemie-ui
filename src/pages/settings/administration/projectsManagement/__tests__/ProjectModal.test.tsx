@@ -299,14 +299,14 @@ describe('ProjectModal — display_name validation', () => {
   })
 })
 
-describe('ProjectModal — chargeback Switch visibility', () => {
+describe('ProjectModal — chargeback switch removed', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     useFeatureFlagMock.mockReturnValue([false, true])
     Object.assign(userStore, { user: { isAdmin: false, isMaintainer: false } })
   })
 
-  it('hides the chargeback Switch when feature flag is disabled (even for admin)', () => {
+  it('never renders the chargeback switch when feature flag is disabled (even for admin)', () => {
     useFeatureFlagMock.mockReturnValue([false, true])
     Object.assign(userStore, { user: { isAdmin: true, isMaintainer: true } })
 
@@ -315,7 +315,7 @@ describe('ProjectModal — chargeback Switch visibility', () => {
     expect(screen.queryByTestId('switch-chargeback_enabled')).toBeNull()
   })
 
-  it('hides the chargeback Switch when feature flag is enabled but user is not admin', () => {
+  it('never renders the chargeback switch when feature flag is enabled but user is not admin', () => {
     useFeatureFlagMock.mockReturnValue([true, true])
     Object.assign(userStore, { user: { isAdmin: false, isMaintainer: false } })
 
@@ -324,14 +324,13 @@ describe('ProjectModal — chargeback Switch visibility', () => {
     expect(screen.queryByTestId('switch-chargeback_enabled')).toBeNull()
   })
 
-  it('shows the chargeback Switch when feature flag is enabled and user is admin', () => {
+  it('never renders the chargeback switch when feature flag is enabled and user is admin', () => {
     useFeatureFlagMock.mockReturnValue([true, true])
     Object.assign(userStore, { user: { isAdmin: true, isMaintainer: true } })
 
     renderModal()
 
-    expect(screen.getByTestId('switch-chargeback_enabled')).toBeInTheDocument()
-    expect(screen.getByText('Enable Chargeback')).toBeInTheDocument()
+    expect(screen.queryByTestId('switch-chargeback_enabled')).toBeNull()
   })
 })
 

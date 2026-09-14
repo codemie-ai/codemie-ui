@@ -134,6 +134,28 @@ describe('SettingsForm — SharePoint authentication method', () => {
     expect(screen.queryByTestId('oauth-error')).not.toBeInTheDocument()
   })
 
+  it('renders the Azure app registration fields in URL, Tenant ID, Client ID, Secret order with matching labels', async () => {
+    const user = userEvent.setup()
+    renderSharePointForm()
+
+    await act(async () => {
+      await user.click(screen.getByLabelText('Azure app registration'))
+    })
+
+    const labels = screen
+      .getAllByText(
+        /^(URL|Azure Directory \(tenant\) ID|Azure Application \(client\) ID|Client Secret)$/
+      )
+      .map((el) => el.textContent)
+
+    expect(labels).toEqual([
+      'URL',
+      'Azure Directory (tenant) ID',
+      'Azure Application (client) ID',
+      'Client Secret',
+    ])
+  })
+
   it('still renders the manual-fields editor for a credential type that uses one', async () => {
     // The SharePoint branch guards the shared credential-fields block, so a type
     // configured with manual fields (MCP) must keep rendering its own editor.

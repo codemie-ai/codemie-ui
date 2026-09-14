@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "branch": "feature/EPMCDME-14757",
+  "head": "997f0c2e6b057e5a0be655a0748ad309612d4ec4",
+  "runner": "npm",
+  "started_at": "2026-09-10T08:23:40Z",
+  "completed_at": "2026-09-10T08:34:45Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 15443,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 14925,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip condition met: package.json and package-lock.json are unchanged vs merge_base (304350edd47dba7b8e962da078dee042c6fd2f5e), so no dependency was added, removed, or moved."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25722,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 64976,
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "notes": "Test Files 509 passed (509); Tests 5328 passed | 1 skipped (5329)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 36088,
+      "command": "npm run test:integration",
+      "exit_code": 0,
+      "notes": "Test Files 40 passed (40); Tests 507 passed | 1 skipped (508). Stderr noise is intentional error-path logging from tests (e.g. mocked assistant/spending fetch failures), not gate failures."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (diff touches .tsx files matching ui_globs) but no configured UI test script exists in gate-plan.local.json; browser verification is a separate caller decision (feature-verification)."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 788,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: output was \"→ No staged files found.\" — nothing was staged at run time (git status showed only untracked docs artifacts), so lint-staged did no work despite exit 0. Would run for real against staged changes at commit time."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 387,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 1995 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 302843,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "SONAR_TOKEN was present in the shell environment and https://sonar.core.kuberocketci.io was reachable, so the scan ran for real (not a self-skip). QUALITY GATE STATUS: PASSED for branch feature/EPMCDME-14757."
+    },
+    {
+      "id": "ci-guard",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "`.gitlab-ci.yml` only defines a pre-ci-guard stage (no-op / wait-ci-init) that waits on external GitLab status contexts (ci-pipeline, compliance-report) posted by other pipelines targeting main. Not invokable or verifiable from a local checkout."
+    }
+  ],
+  "failures": {}
+}
