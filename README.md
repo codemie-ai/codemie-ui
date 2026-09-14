@@ -109,6 +109,23 @@ npm run test:coverage        # With coverage report
 npm run sonar-local          # Run shared local SonarQube check
 ```
 
+### Sanity UI suite (CodeMie test harness)
+
+Requires `~/.codemie/test-harness.json` and a running backend. The `:mac`/`:win`
+variants build the app and serve it with `vite preview` on port 5173 first — faster
+and less flaky than testing against the dev server.
+
+```bash
+npm run test-harness         # Against whatever already serves port 5173
+npm run test-harness:mac     # Build + vite preview, then sanity UI (macOS/Linux)
+npm run test-harness:win     # Same flow on Windows (PowerShell)
+npm run test-harness:fast    # Same flow via Docker/nginx (compose profile `uitest`)
+```
+
+Every variant shuts its server down when the run ends. `:mac` and `:win` exit 0
+even when tests fail, so read their output rather than the exit code; `test-harness`
+and `:fast` report the real status.
+
 ## Code Quality
 
 ```bash

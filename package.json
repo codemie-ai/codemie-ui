@@ -20,6 +20,8 @@
     "lint:fix": "npm run lint -- --fix",
     "all:fix": "npm run format && npm run lint:fix",
     "test-harness": "uvx codemie-test-harness --sanity-ui",
+    "test-harness:mac": "kill $(lsof -ti tcp:5173) 2>/dev/null; npm run build && { node node_modules/vite/bin/vite.js preview --port 5173 --strictPort & P=$!; until curl -sf http://localhost:5173 >/dev/null; do sleep 1; done; uvx codemie-test-harness run sanity-ui -n 8; kill $P; }",
+    "test-harness:win": "powershell -NoProfile -Command \"& { Get-NetTCPConnection -LocalPort 5173 -State Listen -EA SilentlyContinue | Where-Object { $_.OwningProcess -gt 4 } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -EA SilentlyContinue }; npm run build; if ($LASTEXITCODE -ne 0) { return }; $p = Start-Process node -ArgumentList 'node_modules/vite/bin/vite.js','preview','--port','5173','--strictPort' -PassThru -NoNewWindow; try { $ready = $false; foreach ($i in 1..30) { Start-Sleep 1; if ($p.HasExited) { Write-Host ('vite exited ' + $p.ExitCode); return }; curl.exe -sf --max-time 2 http://localhost:5173 -o NUL; if ($LASTEXITCODE -eq 0) { $ready = $true; break } }; if (-not $ready) { Write-Host 'not ready in 30s'; return }; uvx codemie-test-harness run sanity-ui -n 8 } finally { Stop-Process -Id $p.Id -Force -EA SilentlyContinue } }\"",
     "test-harness:fast": "node scripts/test-harness-fast.mjs",
     "check:pre-commit": "npm run typecheck && npm run lint",
     "prepare": "husky",
