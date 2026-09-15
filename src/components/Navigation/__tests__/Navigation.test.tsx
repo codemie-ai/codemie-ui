@@ -122,6 +122,7 @@ describe('Navigation', () => {
         applications: '/applications',
         integrations: '/integrations',
         'data-sources': '/data-sources',
+        schedulers: '/schedulers',
         katas: '/katas',
         analytics: '/analytics',
         help: '/help',
@@ -198,5 +199,30 @@ describe('Navigation', () => {
 
     expect(screen.queryByRole('link', { name: 'Terms and Conditions' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Help' })).toBeInTheDocument()
+  })
+
+  it('hides Schedulers nav when feature flag is absent', () => {
+    mockAppInfoStore.configs = []
+    renderWithRouter(<Navigation />)
+
+    expect(screen.queryByRole('link', { name: 'Schedulers' })).not.toBeInTheDocument()
+  })
+
+  it('hides Schedulers nav when feature flag settings.enabled is false', () => {
+    mockAppInfoStore.configs = [
+      { id: 'features:schedulersView', settings: { enabled: false } },
+    ] as any
+    renderWithRouter(<Navigation />)
+
+    expect(screen.queryByRole('link', { name: 'Schedulers' })).not.toBeInTheDocument()
+  })
+
+  it('shows Schedulers nav when feature flag settings.enabled is true', () => {
+    mockAppInfoStore.configs = [
+      { id: 'features:schedulersView', settings: { enabled: true } },
+    ] as any
+    renderWithRouter(<Navigation />)
+
+    expect(screen.getByRole('link', { name: 'Schedulers' })).toBeInTheDocument()
   })
 })

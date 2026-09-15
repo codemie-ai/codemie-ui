@@ -37,6 +37,7 @@ export const FEATURE_FLAGS = {
   GITLAB_OAUTH: 'features:gitlabOauth',
   JIRA_OAUTH: 'features:jiraOauth',
   CONFLUENCE_OAUTH: 'features:confluenceOauth',
+  SCHEDULERS_VIEW: 'features:schedulersView',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

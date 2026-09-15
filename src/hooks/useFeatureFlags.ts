@@ -124,3 +124,7 @@ export const useSubWorkflowEnabled = (): FeatureFlagResult => {
 export const useBudgetSoftLimitNotificationEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.BUDGET_SOFT_LIMIT_NOTIFICATION)
 }
+
+export const useSchedulersViewEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.SCHEDULERS_VIEW)
+}

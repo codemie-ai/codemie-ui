@@ -22,6 +22,7 @@ import {
   useFavoritesEnabled,
   useFavoritesPageEnabled,
   usePinnedAssistantsEnabled,
+  useSchedulersViewEnabled,
 } from '@/hooks/useFeatureFlags'
 import { useTheme } from '@/hooks/useTheme'
 import { useVueRouter } from '@/hooks/useVueRouter'
@@ -67,6 +68,7 @@ const Navigation: React.FC<NavigationProps> = () => {
   const [isFavoritesEnabled] = useFavoritesEnabled()
   const [isFavoritesPageEnabled] = useFavoritesPageEnabled()
   const [isPinnedAssistantsEnabled] = usePinnedAssistantsEnabled()
+  const [isSchedulersViewEnabled] = useSchedulersViewEnabled()
 
   const upperItems = useMemo(() => {
     const items: NavigationLinkItem[] = [
@@ -121,17 +123,20 @@ const Navigation: React.FC<NavigationProps> = () => {
         route: router.resolve({ name: 'data-sources' }).fullPath,
       },
       {
-        label: 'Schedulers',
-        icon: IconType.SCHEDULER,
-        route: router.resolve({ name: SCHEDULERS }).fullPath,
-      },
-      {
         label: 'AI Katas',
         icon: IconType.KATA,
         route: router.resolve({ name: 'katas' }).fullPath,
         badge: 'NEW',
       },
     ]
+
+    if (isSchedulersViewEnabled) {
+      items.splice(2, 0, {
+        label: 'Schedulers',
+        icon: IconType.SCHEDULER,
+        route: router.resolve({ name: SCHEDULERS }).fullPath,
+      })
+    }
 
     if (isEnterpriseEdition()) {
       items.push({
@@ -143,7 +148,7 @@ const Navigation: React.FC<NavigationProps> = () => {
     }
 
     return items
-  }, [router])
+  }, [router, isSchedulersViewEnabled])
 
   const favoritesItems: NavigationLinkItem[] = useMemo(
     () =>
