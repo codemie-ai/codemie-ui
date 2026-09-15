@@ -59,6 +59,9 @@ import KatasPage, { KatasCategory } from '@/pages/katas/KatasPage'
 import NewKataPage from '@/pages/katas/NewKataPage'
 import LoginSuccessPage from '@/pages/login-success/LoginSuccessPage'
 import ReleaseNotesPage from '@/pages/releaseNotes/ReleaseNotesPage'
+import SchedulerRunDetailsPage from '@/pages/schedulers/SchedulerRunDetailsPage'
+import SchedulerRunHistoryPage from '@/pages/schedulers/SchedulerRunHistoryPage'
+import SchedulersPage from '@/pages/schedulers/SchedulersPage'
 import ActivityEventsPage from '@/pages/settings/administration/ActivityEventsPage'
 import AiAdoptionConfigPage from '@/pages/settings/administration/AiAdoptionConfigPage'
 import BudgetsManagementPage from '@/pages/settings/administration/BudgetsManagementPage'
@@ -296,6 +299,24 @@ const dataSourceRoutes: RouteObject[] = [
     id: 'create-data-source',
     path: 'data-sources/create',
     Component: DataSourceCreatePage,
+  },
+]
+
+const schedulerRoutes: RouteObject[] = [
+  {
+    id: 'schedulers',
+    path: 'schedulers',
+    Component: SchedulersPage,
+  },
+  {
+    id: 'scheduler-runs',
+    path: 'schedulers/:schedulerId/runs',
+    Component: SchedulerRunHistoryPage,
+  },
+  {
+    id: 'scheduler-run-details',
+    path: 'schedulers/:schedulerId/runs/:runId',
+    Component: SchedulerRunDetailsPage,
   },
 ]
 
@@ -686,6 +707,7 @@ export const routes: RouteObject[] = [
       ...favoritesRoutes,
       ...integrationRoutes,
       ...dataSourceRoutes,
+      ...schedulerRoutes,
       ...katasRoutes,
       ...workflowRoutes,
       ...applicationRoutes,

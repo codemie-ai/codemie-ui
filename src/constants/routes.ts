@@ -44,6 +44,8 @@ export const APPLICATIONS = 'applications'
 export const APPLICATION = 'application'
 export const INTEGRATIONS = 'integrations'
 
+export const SCHEDULERS = 'schedulers'
+
 export const DATASOURCES = 'data-sources'
 export const DATASOURCE_DETAILS = 'data-source-details'
 

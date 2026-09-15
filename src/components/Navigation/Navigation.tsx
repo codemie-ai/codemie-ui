@@ -16,7 +16,7 @@
 import React, { useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
-import { ANALYTICS } from '@/constants/routes'
+import { ANALYTICS, SCHEDULERS } from '@/constants/routes'
 import {
   useFeatureFlag,
   useFavoritesEnabled,
@@ -119,6 +119,11 @@ const Navigation: React.FC<NavigationProps> = () => {
         label: 'Data Sources',
         icon: IconType.DATASOURCE,
         route: router.resolve({ name: 'data-sources' }).fullPath,
+      },
+      {
+        label: 'Schedulers',
+        icon: IconType.SCHEDULER,
+        route: router.resolve({ name: SCHEDULERS }).fullPath,
       },
       {
         label: 'AI Katas',

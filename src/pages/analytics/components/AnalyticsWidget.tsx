@@ -24,7 +24,7 @@ import WidgetModal from './WidgetModal'
 
 export interface AnalyticsWidgetProps {
   title: string
-  description?: string
+  description?: ReactNode
   children?: ReactNode
   renderContent?: ({ isExpanded }: { isExpanded: boolean }) => ReactNode
   loading?: boolean
@@ -38,6 +38,12 @@ export interface AnalyticsWidgetProps {
    * Keep true for tables, charts, and detailed visualizations.
    */
   expandable?: boolean
+  /**
+   * Controls whether the widget content area is rendered. When false, content is hidden and
+   * the header loses its bottom margin. Use with an external toggle button to collapse/expand.
+   * Default: true
+   */
+  contentVisible?: boolean
   /**
    * When true, subsequent loads show a light overlay instead of replacing content with a spinner.
    * Use only for widgets where preserving visible data during refresh is important (e.g. leaderboard table).
@@ -56,6 +62,7 @@ const AnalyticsWidget: FC<AnalyticsWidgetProps> = ({
   className,
   actions,
   expandable = true,
+  contentVisible = true,
   softReload = false,
   minLoadingHeight = '80px',
 }) => {
@@ -116,10 +123,12 @@ const AnalyticsWidget: FC<AnalyticsWidgetProps> = ({
         className
       )}
     >
-      <div className="flex items-start justify-between mb-4">
+      <div className={cn('flex items-start justify-between', contentVisible && 'mb-4')}>
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
-          {description && <p className="text-sm text-text-quaternary mt-1">{description}</p>}
+          {typeof description === 'string'
+            ? description && <p className="text-sm text-text-quaternary mt-1">{description}</p>
+            : description}
         </div>
         <div className="flex items-center gap-2 ml-4">
           {actions}
@@ -136,7 +145,7 @@ const AnalyticsWidget: FC<AnalyticsWidgetProps> = ({
         </div>
       </div>
 
-      <div className="widget-content min-w-0">{renderWrapper()}</div>
+      {contentVisible && <div className="widget-content min-w-0">{renderWrapper()}</div>}
 
       <WidgetModal
         visible={isExpanded}

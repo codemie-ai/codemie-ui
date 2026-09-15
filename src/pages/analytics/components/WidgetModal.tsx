@@ -21,7 +21,7 @@ interface WidgetModalProps {
   visible: boolean
   onHide: () => void
   title: string
-  description?: string
+  description?: ReactNode
   actions?: ReactNode
   children: ReactNode
 }

@@ -15,7 +15,7 @@
 
 import { FC } from 'react'
 
-import { CliSummaryResponse, SummariesResponse, WidgetSize } from '@/types/analytics'
+import { CliSummaryResponse, Metric, SummariesResponse, WidgetSize } from '@/types/analytics'
 import { cn } from '@/utils/utils'
 
 import MetricCard from './MetricCard'
@@ -23,10 +23,12 @@ import TimePeriodBadge from './TimePeriodBadge'
 
 interface MetricsGridProps {
   size?: WidgetSize
-  data: SummariesResponse | CliSummaryResponse | null
+  data?: SummariesResponse | CliSummaryResponse | null
+  metrics?: Metric[]
   isExpanded?: boolean
   selectedMetrics?: string[]
   className?: string
+  metricValueClassName?: (metric: Metric) => string | undefined
 }
 
 /**
@@ -36,17 +38,20 @@ interface MetricsGridProps {
  */
 const MetricsGrid: FC<MetricsGridProps> = ({
   data,
+  metrics,
   size,
   isExpanded,
   selectedMetrics,
   className,
+  metricValueClassName,
 }) => {
-  if (!data) return null
+  if (!data && !metrics) return null
 
+  const availableMetrics = metrics ?? data?.data.metrics ?? []
   const metricsToDisplay =
     selectedMetrics && selectedMetrics.length > 0
-      ? data.data.metrics.filter((metric) => selectedMetrics.includes(metric.id))
-      : data.data.metrics
+      ? availableMetrics.filter((metric) => selectedMetrics.includes(metric.id))
+      : availableMetrics
 
   return (
     <div
@@ -60,6 +65,7 @@ const MetricsGrid: FC<MetricsGridProps> = ({
         <MetricCard
           key={metric.id}
           metric={metric}
+          valueColorClassName={metricValueClassName?.(metric)}
           badge={
             metric.fixed_timeframe ? (
               <TimePeriodBadge

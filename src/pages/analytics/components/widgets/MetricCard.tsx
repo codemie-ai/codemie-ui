@@ -17,12 +17,14 @@ import { FC, ReactNode } from 'react'
 
 import { Metric } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
+import { cn } from '@/utils/utils'
 
 interface MetricCardProps {
   metric: Metric
   mutedTextClassName?: string
   badge?: ReactNode
   valueClassName?: string
+  valueColorClassName?: string
   valueOverride?: ReactNode
 }
 
@@ -31,6 +33,7 @@ const MetricCard: FC<MetricCardProps> = ({
   mutedTextClassName = 'text-text-quaternary',
   badge,
   valueClassName = 'text-lg sm:text-xl font-semibold leading-snug tracking-tight text-text-primary break-all [font-variant-numeric:tabular-nums]',
+  valueColorClassName,
   valueOverride,
 }) => {
   return (
@@ -44,7 +47,9 @@ const MetricCard: FC<MetricCardProps> = ({
         {badge}
       </div>
       {valueOverride || (
-        <p className={valueClassName}>{formatMetricValue(metric.value, metric.format)}</p>
+        <p className={cn(valueClassName, valueColorClassName)}>
+          {formatMetricValue(metric.value, metric.format)}
+        </p>
       )}
       {metric.description && (
         <p className={`mt-1 text-[11px] leading-5 line-clamp-3 ${mutedTextClassName}`}>

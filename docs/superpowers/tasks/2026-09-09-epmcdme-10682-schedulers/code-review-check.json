@@ -1,0 +1,19 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "CR-001 resolved: HttpError import added, catch block checks instanceof HttpError + response.status === 409, shows specific toast. No new issues introduced by the fix-up.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {"standard": "git-workflow", "status": "pass", "notes": "Fix-up committed with correct conventional format."},
+    {"standard": "security-patterns", "status": "pass", "notes": "No regressions."}
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "HttpError import added in SchedulerRunHistoryPage.tsx; catch block checks instanceof HttpError + response.status === 409 and shows 'Cannot delete a run that is still in progress.' toast."
+    }
+  ]
+}

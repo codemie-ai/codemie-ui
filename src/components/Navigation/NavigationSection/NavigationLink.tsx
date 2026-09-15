@@ -23,6 +23,7 @@ import ChatSvg from '@/assets/icons/chat-new.svg?react'
 import KataSvg from '@/assets/icons/code-duotone.svg?react'
 import DatasourceSvg from '@/assets/icons/datasource.svg?react'
 import AnalyticsSvg from '@/assets/icons/diagram-duotone.svg?react'
+import HistorySvg from '@/assets/icons/history.svg?react'
 import InfoSvg from '@/assets/icons/info-menu.svg?react'
 import IntegrationSvg from '@/assets/icons/integration.svg?react'
 import SkillSvg from '@/assets/icons/lightning-duotone.svg?react'
@@ -46,6 +47,7 @@ const iconComponents = {
   [IconType.KATA]: KataSvg,
   [IconType.ANALYTICS]: AnalyticsSvg,
   [IconType.FAVORITES]: StarFilledSvg,
+  [IconType.SCHEDULER]: HistorySvg,
   [IconType.DOCUMENT]: PaperSvg,
 }
 
