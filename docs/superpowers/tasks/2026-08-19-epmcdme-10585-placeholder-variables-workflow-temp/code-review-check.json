@@ -1,0 +1,75 @@
+{
+  "decision": "approve",
+  "rationale": "All five prior blocking findings are resolved in current source: fetch abort and popup reset (CR-001), null WorkflowForm no longer mounts on Apply error or Cancel (CR-002), Cancel-with-history asserts goBackWorkflows (CR-003), Apply test locks seed yaml (CR-004), and Apply awaits with an in-flight guard plus generation ignore after Cancel (CR-005). business_review and standards_review carried unchanged from the final round. Brief written to code-review-brief.md.",
+  "confidence": "high",
+  "risk_flags": ["breaking-change", "public-api", "data-contract"],
+  "business_review": [
+    {"kind": "story-ac", "item": "Dialog lists required template variables before the form opens.", "status": "pass", "notes": "Popup opens with required_variables; form waits until Apply."},
+    {"kind": "story-ac", "item": "Apply calls the backend materialize API instead of client YAML substitute.", "status": "pass", "notes": "handlePlaceholderSubmit POSTs materialize-by-slug with { variables }."},
+    {"kind": "story-ac", "item": "Create form opens with substituted YAML and description/start hint.", "status": "pass", "notes": "Success merges seed into setTemplate; name cleared."},
+    {"kind": "story-ac", "item": "Cancel leaves create-from-template (back or workflows list).", "status": "pass", "notes": "handlePlaceholderCancel hides popup then goBack or workflows-all."},
+    {"kind": "story-ac", "item": "Empty required lists skip the dialog.", "status": "pass", "notes": "Falsy required_variables seeds GET fields with no popup/materialize."},
+    {"kind": "story-ac", "item": "Materialize validation errors keep the dialog open with values.", "status": "pass", "notes": "Catch leaves popup open and sets placeholderError; page crash is CR-002."},
+    {"kind": "story-ac", "item": "Save after materialize uses the normal create path.", "status": "pass", "notes": "submit() calls createWorkflow; no leftover-token scan."},
+    {"kind": "story-ac", "item": "Pasting ${input:…} after materialize does not block Save in the UI.", "status": "pass", "notes": "No haystack/extract guard; leftover test expects createWorkflow."},
+    {"kind": "story-ac", "item": "Clone and blank create flows stay unchanged.", "status": "pass", "notes": "Clone still getWorkflow; blank setTemplate({}); popup hidden."},
+    {"kind": "story-ac", "item": "Client extract/substitute helpers removed from create-from-template.", "status": "pass", "notes": "Page uses materialize only; extract/substitute helpers absent from src."},
+    {"kind": "story-ac", "item": "Types and store methods for required_variables and materialize.", "status": "pass", "notes": "WorkflowTemplate.required_variables; materializeWorkflowTemplate; no raw_yaml."},
+    {"kind": "story-ac", "item": "Tests assert dialog → materialize → form, not client regex.", "status": "pass", "notes": "Page tests cover popup, empty vars, errors, cancel; store posts { variables }."},
+    {"kind": "spec", "item": "On Save, only normal create validation — no leftover ${input:…} UI scan.", "status": "pass", "notes": "submit has no leftover scan and no unresolved_placeholder mapping."},
+    {"kind": "spec", "item": "Backend owns discovery and materialization; UI collects values.", "status": "pass", "notes": "GET required_variables drives popup; POST materialize returns the seed."},
+    {"kind": "spec", "item": "Drop client token scan, substitute helpers, save leftover guard.", "status": "pass", "notes": "Create-from-template does not scan yaml or add leftover/unresolved handling."},
+    {"kind": "spec", "item": "Keep popup UX (Apply fills form; does not POST create).", "status": "pass", "notes": "Apply materializes then setTemplate; createWorkflow only in submit()."},
+    {"kind": "spec", "item": "Non-empty required_variables open popup; empty seeds GET with no materialize.", "status": "pass", "notes": "Matches fetchData and handlePlaceholderSubmit branches."},
+    {"kind": "spec", "item": "GET required_variables: string[]; no raw_yaml on the type.", "status": "pass", "notes": "WorkflowTemplate adds required_variables?; no raw_yaml field."},
+    {"kind": "spec", "item": "POST materialize body { variables }; response yaml_config/description/start_hint.", "status": "pass", "notes": "Store posts { variables } to prebuilt/{slug}/materialize and returns the seed."},
+    {"kind": "spec", "item": "Map missing_placeholder_variables and materialization_failed to the dialog.", "status": "pass", "notes": "Catch surfaces details.message via setPlaceholderError; does not setIssues."},
+    {"kind": "spec", "item": "Reset popup fields when placeholder list or visibility changes.", "status": "pass", "notes": "Popup effect resets on placeholdersKey and visible."},
+    {"kind": "spec", "item": "Client required/non-blank on Apply is OK; backend remains authoritative.", "status": "pass", "notes": "handleApply blocks empty/whitespace; API errors still handled by parent."},
+    {"kind": "spec", "item": "Workflow types: required_variables; drop raw_yaml if unused.", "status": "pass", "notes": "required_variables on WorkflowTemplate; raw_yaml not introduced."},
+    {"kind": "spec", "item": "Workflows store: materialize client method.", "status": "pass", "notes": "materializeWorkflowTemplate uses skipErrorHandling for dialog errors."},
+    {"kind": "spec", "item": "NewWorkflowPage: rewrite fetch / Apply / submit as specified.", "status": "pass", "notes": "fetch branches on required_variables; Apply materializes; submit is create-only."},
+    {"kind": "spec", "item": "Helpers: remove unused extract/substitute builders and their tests.", "status": "pass", "notes": "Those helpers are absent; helpers.test only adds preprocessYamlConfig round-trip."},
+    {"kind": "spec", "item": "backendErrorHandler tests: drop obsolete unresolved_placeholder create cases.", "status": "pass", "notes": "No unresolved_placeholder create-path cases added."},
+    {"kind": "spec", "item": "Primary tests: popup → materialize → form; empty vars skip; no leftover Save guard.", "status": "pass", "notes": "NewWorkflowPage.test.tsx covers the three seams with a mocked store."},
+    {"kind": "spec", "item": "Secondary tests: popup reset/error; store materialize wiring.", "status": "pass", "notes": "Popup tests plus workflows.materializeWorkflowTemplate.test.ts."},
+    {"kind": "spec", "item": "Must not move the popup to the template details page.", "status": "pass", "notes": "WorkflowPlaceholderValuesPopup is rendered from NewWorkflowPage only."},
+    {"kind": "spec", "item": "Must not immediately POST create from Apply.", "status": "pass", "notes": "Apply calls materializeWorkflowTemplate only."},
+    {"kind": "spec", "item": "Must not change help/docs or the Apply → Save label.", "status": "pass", "notes": "submitText remains Apply; no help/docs UI added."},
+    {"kind": "spec", "item": "Must not add authoring of catalog templates in the UI.", "status": "pass", "notes": "Diff is create-from-template consume path only."},
+    {"kind": "spec", "item": "Do not keep dual paths in case raw_yaml returns.", "status": "pass", "notes": "No raw_yaml fallback; empty vars seed GET; non-empty vars only materialize."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "17 subjects in ebf464f77b3fb8da4ebf2f70ce05963ac5ac276c..HEAD match git-workflow.md EPMCDME-XXXX: Capital sentence (non-zero ticket, first word capitalized, no trailing period)"},
+    {"kind": "code-quality", "status": "na", "notes": "no guide to adjudicate against; .ai-run/guides/standards/code-quality.md is absent and no ArtifactRef was passed"},
+    {"kind": "security", "status": "pass", "notes": "Changed src files add no HTML sinks, untrusted navigation, postMessage, env secrets, credentials, nginx edits, or nosonar; materialize posts via api.ts and errors render as React text."}
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "fetchData aborts the prior GET via AbortController, resets popup/pending/placeholders at start, and ignores aborted responses. Slug-change tests cover overlay and reset."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Error catch no longer setLoading(false); WorkflowForm mounts only when template != null; templateKey increments on success. Failure test asserts the form is absent."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "New test seeds history.stack with two entries, clicks Cancel, and expects goBackWorkflows rather than workflows-all."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "Apply-merge test now asserts form-yaml contains 'id: start', which the GET yaml 'states: []' cannot satisfy."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "Popup awaits onSubmit, disables Apply via submittingRef, and parent generation ignores late materialize after Cancel. Both paths have tests."
+    }
+  ]
+}

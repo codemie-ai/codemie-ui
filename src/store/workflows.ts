@@ -24,6 +24,7 @@ import { Pagination } from '@/types/common'
 import {
   Workflow,
   WorkflowTemplate,
+  WorkflowTemplateMaterializeSeed,
   WorkflowExecution,
   CreateWorkflowExecutionRequest,
   WorkflowPublishValidationResponse,
@@ -81,7 +82,11 @@ interface WorkflowsStore {
   indexWorkflowTemplates: (page?: number, perPage?: number, name?: string) => Promise<void>
 
   getWorkflowTemplate: (slug: string) => Promise<void>
-  getWorkflowTemplateBySlug: (slug: string) => Promise<WorkflowTemplate>
+  getWorkflowTemplateBySlug: (slug: string, signal?: AbortSignal) => Promise<WorkflowTemplate>
+  materializeWorkflowTemplate: (
+    slug: string,
+    variables: Record<string, string>
+  ) => Promise<WorkflowTemplateMaterializeSeed>
   getWorkflowOptions: (params?: { search?: string; project?: string }) => Promise<Workflow>
   getSelectableWorkflows: (params?: { search?: string; project?: string }) => Promise<Workflow[]>
   createWorkflow: (values: any, errorFormat?: ErrorFormat) => Promise<any>
@@ -306,8 +311,20 @@ export const workflowsStore = proxy<WorkflowsStore>({
       .then((response) => response.data)
   },
 
-  async getWorkflowTemplateBySlug(slug: string): Promise<WorkflowTemplate> {
-    const response = await api.get(`v1/workflows/prebuilt/${slug}`)
+  async getWorkflowTemplateBySlug(slug: string, signal?: AbortSignal): Promise<WorkflowTemplate> {
+    const response = await api.get(`v1/workflows/prebuilt/${slug}`, { signal })
+    return response.json()
+  },
+
+  async materializeWorkflowTemplate(
+    slug: string,
+    variables: Record<string, string>
+  ): Promise<WorkflowTemplateMaterializeSeed> {
+    const response = await api.post(
+      `v1/workflows/prebuilt/${slug}/materialize`,
+      { variables },
+      { skipErrorHandling: true }
+    )
     return response.json()
   },
 

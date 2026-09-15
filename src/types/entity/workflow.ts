@@ -53,7 +53,16 @@ export interface WorkflowTemplate {
   slug: string
   name: string
   yaml_config?: string
+  description?: string
+  start_hint?: string | null
+  required_variables?: string[]
   [key: string]: any
+}
+
+export interface WorkflowTemplateMaterializeSeed {
+  yaml_config: string
+  description?: string
+  start_hint?: string | null
 }
 
 export type WorkflowExecutionStatus =

@@ -30,7 +30,6 @@ import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
 import { GenerateWorkflowResponse } from '@/types/entity/workflow'
 import API from '@/utils/api'
-import { preprocessYamlConfig } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
 import { serialize } from '@/utils/workflowEditor/serialization'
@@ -38,6 +37,7 @@ import { isVisualEditorEnabled, notifyAboutConsumerSlots } from '@/utils/workflo
 
 import GenerateWorkflowPopup from './components/GenerateWorkflowPopup'
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
+import WorkflowPlaceholderValuesPopup from './components/WorkflowPlaceholderValuesPopup'
 import WorkflowsNavigation from './components/WorkflowsNavigation'
 import WorkflowStartExecutionPopup from './details/popups/WorkflowStartExecutionPopup'
 import { goBackWorkflows } from './utils/goBackWorkflows'
@@ -65,6 +65,10 @@ const NewWorkflowPage: React.FC = () => {
   const [isCloning] = useState(!!id)
   const [loading, setLoading] = useState(true)
   const [template, setTemplate] = useState<WorkflowTemplate | null>(null)
+  const [showPlaceholderPopup, setShowPlaceholderPopup] = useState(false)
+  const [placeholders, setPlaceholders] = useState<string[]>([])
+  const [pendingTemplateData, setPendingTemplateData] = useState<WorkflowTemplate | null>(null)
+  const [placeholderError, setPlaceholderError] = useState<string | null>(null)
   const [showExecutionPopup, setShowExecutionPopup] = useState(false)
   const [createdWorkflowId, setCreatedWorkflowId] = useState<string>('')
   const [issues, setIssues] = useState<WorkflowIssue[] | null>(null)
@@ -83,41 +87,70 @@ const NewWorkflowPage: React.FC = () => {
   const [templateKey, setTemplateKey] = useState(0)
   const [headline, setHeadline] = useState(DEFAULT_HEADLINE)
   const [_submitName, setSubmitName] = useState(DEFAULT_SUBMIT)
+  const materializeGenerationRef = useRef(0)
 
   useEffect(() => {
+    const controller = new AbortController()
+
+    const resetPlaceholderState = () => {
+      setShowPlaceholderPopup(false)
+      setPendingTemplateData(null)
+      setPlaceholders([])
+      setPlaceholderError(null)
+    }
+
     const fetchData = async () => {
+      resetPlaceholderState()
+      setTemplate(null)
+      setLoading(true)
+
       try {
         if (isCloning && id) {
+          resetPlaceholderState()
           setHeadline(CLONE_HEADLINE)
           setSubmitName(CLONE_SUBMIT)
 
           const data = await workflowsStore.getWorkflow(id)
+          if (controller.signal.aborted) return
           setTemplate({
             ...data,
             id: null,
             name: null,
           })
+          setLoading(false)
         } else if (isFromTemplate && slug) {
           setHeadline(FROM_TEMPLATE_HEADLINE)
           setSubmitName(DEFAULT_SUBMIT)
 
-          const data = await workflowsStore.getWorkflowTemplateBySlug(slug)
-          setTemplate({
-            ...data,
-            yaml_config: preprocessYamlConfig(data.yaml_config || ''),
-            name: '',
-          })
+          const data = await workflowsStore.getWorkflowTemplateBySlug(slug, controller.signal)
+          if (controller.signal.aborted) return
+          if (data.required_variables?.length) {
+            setPendingTemplateData({ ...data, name: '' })
+            setPlaceholders(data.required_variables)
+            setPlaceholderError(null)
+            setShowPlaceholderPopup(true)
+          } else {
+            resetPlaceholderState()
+            setTemplate({ ...data, name: '' })
+            setLoading(false)
+          }
         } else {
+          resetPlaceholderState()
           setTemplate({})
+          setLoading(false)
         }
-      } catch {
+      } catch (error: any) {
+        if (controller.signal.aborted || error?.name === 'AbortError') return
         toaster.error('Failed to load workflow data')
-      } finally {
         setLoading(false)
       }
     }
 
     fetchData()
+    return () => {
+      controller.abort()
+      materializeGenerationRef.current += 1
+    }
   }, [isCloning, isFromTemplate, id, slug])
 
   const handleSave = async () => {
@@ -153,6 +186,40 @@ const NewWorkflowPage: React.FC = () => {
       serialize({ states: workflow_config.states ?? [], assistants: workflow_config.assistants })
     setTemplate({ ...workflow_config, yaml_config })
     setTemplateKey((k) => k + 1)
+  }
+
+  const handlePlaceholderSubmit = async (values: Record<string, string>) => {
+    if (!pendingTemplateData || !slug) return
+    materializeGenerationRef.current += 1
+    const generation = materializeGenerationRef.current
+    try {
+      const seed = await workflowsStore.materializeWorkflowTemplate(slug, values)
+      if (generation !== materializeGenerationRef.current) return
+      if (typeof seed?.yaml_config !== 'string' || seed.yaml_config === '') {
+        throw new Error('Failed to materialize template')
+      }
+      setPlaceholderError(null)
+      setTemplate({ ...pendingTemplateData, ...seed, name: '' })
+      setTemplateKey((k) => k + 1)
+      setShowPlaceholderPopup(false)
+      setLoading(false)
+    } catch (error: any) {
+      if (generation !== materializeGenerationRef.current) return
+      const message = error?.parsedError?.message || 'Failed to materialize template'
+      toaster.error(message)
+      setPlaceholderError(message)
+    }
+  }
+
+  const handlePlaceholderCancel = () => {
+    materializeGenerationRef.current += 1
+    setShowPlaceholderPopup(false)
+    setPlaceholderError(null)
+    if (history.stack.length > 1) {
+      goBackWorkflows()
+    } else {
+      router.push({ name: WORKFLOWS_ALL })
+    }
   }
 
   const onBack = () => {
@@ -229,7 +296,7 @@ const NewWorkflowPage: React.FC = () => {
           </div>
         }
       >
-        {!loading && (
+        {!loading && template != null && (
           <WorkflowForm
             key={templateKey}
             ref={formRef}
@@ -258,6 +325,14 @@ const NewWorkflowPage: React.FC = () => {
           onGenerated={handleGenerated}
         />
       )}
+
+      <WorkflowPlaceholderValuesPopup
+        visible={showPlaceholderPopup}
+        placeholders={placeholders}
+        error={placeholderError}
+        onSubmit={handlePlaceholderSubmit}
+        onHide={handlePlaceholderCancel}
+      />
     </div>
   )
 }
