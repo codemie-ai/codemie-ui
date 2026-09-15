@@ -31,6 +31,7 @@ export interface ProjectBudgetGroupCreatePayload {
   categories: Record<BudgetCategory, CategoryBudgetSpec>
   notification_owner_email?: string | null
   soft_limit_notify_once?: boolean
+  soft_limit_notification_enabled?: boolean
 }
 
 export interface CategoryBudgetSpecUpdate {
@@ -47,6 +48,7 @@ export interface ProjectBudgetGroupUpdatePayload {
   categories?: Partial<Record<BudgetCategory, CategoryBudgetSpecUpdate>>
   notification_owner_email?: string | null
   soft_limit_notify_once?: boolean | null
+  soft_limit_notification_enabled?: boolean | null
 }
 
 export interface CategoryBudgetDetail {
@@ -71,6 +73,7 @@ export interface ProjectBudgetGroup {
   description?: string | null
   notification_owner_email?: string | null
   soft_limit_notify_once?: boolean
+  soft_limit_notification_enabled?: boolean
   created_by: string
   created_at?: string | null
   updated_at?: string | null

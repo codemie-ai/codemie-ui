@@ -29,11 +29,13 @@ import UnifiedProjectBudgetModal, {
 const chargebackFlag = vi.fn(() => [true, true] as [boolean, boolean])
 const costCentersFlag = vi.fn(() => [true, true] as [boolean, boolean])
 const notificationFlag = vi.fn(() => [true, true] as [boolean, boolean])
+const emailFlag = vi.fn(() => [false, true] as [boolean, boolean])
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
   useProjectChargebackEnabled: () => chargebackFlag(),
   useFeatureFlag: () => costCentersFlag(),
   useBudgetSoftLimitNotificationEnabled: () => notificationFlag(),
+  useBudgetSoftLimitEmailEnabled: () => emailFlag(),
 }))
 
 const updateProject = vi.fn()

@@ -27,6 +27,7 @@ import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner/Spinner'
 import UserEmailAutocomplete from '@/components/UserEmailAutocomplete'
 import {
+  useBudgetSoftLimitEmailEnabled,
   useBudgetSoftLimitNotificationEnabled,
   useFeatureFlag,
   useProjectChargebackEnabled,
@@ -69,6 +70,7 @@ interface FormValues {
   description: string
   notification_owner_email: string
   soft_limit_notify_once: boolean
+  soft_limit_notification_enabled: boolean
 }
 
 const schema = Yup.object({
@@ -85,6 +87,7 @@ const schema = Yup.object({
     .default('')
     .defined(),
   soft_limit_notify_once: Yup.boolean().default(false).defined(),
+  soft_limit_notification_enabled: Yup.boolean().default(false).defined(),
 })
 
 const distributionOnlySchema = schema.shape({
@@ -93,6 +96,7 @@ const distributionOnlySchema = schema.shape({
   total_budget: Yup.number().defined(),
   description: Yup.string().default('').defined(),
   notification_owner_email: Yup.string().default('').defined(),
+  soft_limit_notification_enabled: Yup.boolean().default(false).defined(),
 })
 
 export interface UnifiedProjectBudgetModalProps {
@@ -125,6 +129,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   const [isChargebackFeatureEnabled] = useProjectChargebackEnabled()
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
   const [isNotificationEnabled] = useBudgetSoftLimitNotificationEnabled()
+  const [isEmailEnabled] = useBudgetSoftLimitEmailEnabled()
   const [chargeback, setChargeback] = useState<ChargebackSettingsValue>({
     chargeback_enabled: false,
     chargeback_attribution: 'project',
@@ -170,10 +175,12 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       description: '',
       notification_owner_email: '',
       soft_limit_notify_once: false,
+      soft_limit_notification_enabled: false,
     },
   })
 
   const totalBudget = Number(watch('total_budget')) || 0
+  const sendEmailEnabled = watch('soft_limit_notification_enabled')
 
   const hardVals = useMemo<PctMap>(() => {
     const result = { ...ZERO_PCTS }
@@ -241,6 +248,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
         description: plan.description ?? '',
         notification_owner_email: plan.notification_owner_email ?? '',
         soft_limit_notify_once: plan.soft_limit_notify_once ?? false,
+        soft_limit_notification_enabled: plan.soft_limit_notification_enabled ?? false,
       })
       setExistingGroup(plan)
     },
@@ -259,6 +267,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       description: '',
       notification_owner_email: '',
       soft_limit_notify_once: false,
+      soft_limit_notification_enabled: false,
     })
     if (!projectName || forceCreate) return
     setDataLoading(true)
@@ -415,7 +424,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
         await projectBudgetsStore.updateProjectBudgetGroup(
           existingGroup.group_id,
           distributionOnly
-            ? { categories }
+            ? { categories, soft_limit_notification_enabled: data.soft_limit_notification_enabled }
             : {
                 name: data.name,
                 total_amount: data.total_budget,
@@ -424,6 +433,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
                 categories,
                 notification_owner_email: ownerEmail,
                 soft_limit_notify_once: data.soft_limit_notify_once,
+                soft_limit_notification_enabled: data.soft_limit_notification_enabled,
               }
         )
         toaster.info('Project budget saved')
@@ -437,6 +447,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
           categories,
           notification_owner_email: ownerEmail,
           soft_limit_notify_once: data.soft_limit_notify_once,
+          soft_limit_notification_enabled: data.soft_limit_notification_enabled,
         })
         toaster.info('Project budget created')
       }
@@ -551,36 +562,58 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
           />
 
           {isNotificationEnabled && !distributionOnly && (
-            <>
-              <Controller
-                name="notification_owner_email"
-                control={control}
-                render={({ field }) => (
-                  <UserEmailAutocomplete
-                    id="notification_owner_email"
-                    label="Budget owner"
-                    hint="Notified by email when this budget reaches its soft limit. Search for a platform user or type any address, including a group alias. Leave empty to disable notifications."
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    error={errors.notification_owner_email?.message}
-                  />
-                )}
-              />
+            <Controller
+              name="notification_owner_email"
+              control={control}
+              render={({ field }) => (
+                <UserEmailAutocomplete
+                  id="notification_owner_email"
+                  label="Budget owner"
+                  hint="Notified by email when this budget reaches its soft limit. Search for a platform user or type any address, including a group alias. Leave empty to disable notifications."
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  error={errors.notification_owner_email?.message}
+                />
+              )}
+            />
+          )}
 
-              <Controller
-                name="soft_limit_notify_once"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    id="soft_limit_notify_once"
-                    label="Notify only once"
-                    labelHint="When enabled, the soft-limit notification email is sent only once per budget edit cycle. It resets when you save the budget."
-                    checked={field.value}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-            </>
+          {isNotificationEnabled && (
+            <Controller
+              name="soft_limit_notification_enabled"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  id="soft_limit_notification_enabled"
+                  label="Send email notifications"
+                  labelHint={
+                    !isEmailEnabled
+                      ? 'Email sending is disabled by system configuration'
+                      : 'When enabled, the notification owner will receive an email when this budget reaches its soft limit.'
+                  }
+                  checked={field.value}
+                  onChange={field.onChange}
+                  disabled={!isEmailEnabled}
+                />
+              )}
+            />
+          )}
+
+          {isNotificationEnabled && !distributionOnly && (
+            <Controller
+              name="soft_limit_notify_once"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  id="soft_limit_notify_once"
+                  label="Notify only once"
+                  labelHint="When enabled, the soft-limit notification email is sent only once per budget edit cycle. It resets when you save the budget."
+                  checked={field.value}
+                  onChange={field.onChange}
+                  disabled={!isEmailEnabled || !sendEmailEnabled}
+                />
+              )}
+            />
           )}
 
           <div>

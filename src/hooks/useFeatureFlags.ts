@@ -125,6 +125,10 @@ export const useBudgetSoftLimitNotificationEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.BUDGET_SOFT_LIMIT_NOTIFICATION)
 }
 
+export const useBudgetSoftLimitEmailEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.BUDGET_SOFT_LIMIT_EMAIL)
+}
+
 export const useSchedulersViewEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.SCHEDULERS_VIEW)
 }

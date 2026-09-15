@@ -29,6 +29,7 @@ export interface Budget {
   notification_owner_email?: string | null
   /** When true, the soft-limit email fires only once per budget edit cycle. */
   soft_limit_notify_once?: boolean
+  soft_limit_notification_enabled?: boolean
   is_preconfigured?: boolean
   created_by?: string | null
   created_at?: string | null
@@ -47,6 +48,7 @@ export interface BudgetPayload {
   notification_owner_email?: string | null
   /** When true, the soft-limit email fires only once per budget edit cycle. */
   soft_limit_notify_once?: boolean
+  soft_limit_notification_enabled?: boolean
 }
 
 export interface BudgetAssignment {

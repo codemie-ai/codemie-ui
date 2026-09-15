@@ -33,6 +33,7 @@ export const FEATURE_FLAGS = {
   SUB_WORKFLOW: 'features:subWorkflow',
   COST_CENTERS: 'features:costCenters',
   BUDGET_SOFT_LIMIT_NOTIFICATION: 'features:budgetSoftLimitNotification',
+  BUDGET_SOFT_LIMIT_EMAIL: 'features:budgetSoftLimitEmail',
   TOOL_PERMISSIONS: 'features:tool_permissions',
   GITLAB_OAUTH: 'features:gitlabOauth',
   JIRA_OAUTH: 'features:jiraOauth',
