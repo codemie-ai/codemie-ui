@@ -44,6 +44,7 @@ export interface ProjectFormData {
   display_name?: string | null
   clear_display_name?: boolean
   description?: string
+  clear_description?: boolean
   cost_center_id?: string | null
   clear_cost_center?: boolean
   enforce_member_spend_limits?: boolean
@@ -66,7 +67,7 @@ const validationSchema = Yup.object({
     .matches(PROJECT_NAME_REGEX, "Use lowercase letters, numbers, '-' and '_' only")
     .defined(),
   display_name: Yup.string().max(150, 'Display name cannot exceed 150 characters').default(''),
-  description: Yup.string().required('Description is required'),
+  description: Yup.string().max(500, 'Description cannot exceed 500 characters').default(''),
   cost_center_id: Yup.string().default(''),
 })
 
@@ -133,6 +134,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
 
   const handleFormSubmit: SubmitHandler<ProjectModalFormValues> = async (data) => {
     const trimmedDisplayName = data.display_name?.trim()
+    const trimmedDescription = data.description?.trim()
     const clearingCostCenter = !!project && !data.cost_center_id
     // Attributing spend to a cost center that no longer exists on the project is an
     // invalid combination the backend rejects — reset attribution to the project
@@ -143,7 +145,8 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       name: isNameDisabled ? undefined : data.name,
       display_name: trimmedDisplayName || undefined,
       clear_display_name: !!project && !trimmedDisplayName,
-      description: data.description,
+      description: trimmedDescription || undefined,
+      clear_description: !!project && !trimmedDescription,
       cost_center_id: data.cost_center_id || null,
       clear_cost_center: clearingCostCenter,
       enforce_member_spend_limits: project ? data.enforce_member_spend_limits : undefined,
@@ -218,7 +221,6 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
               {...field}
               id="description"
               label="Description"
-              required
               placeholder="Describe what this project is for"
               rows={4}
               error={errors.description?.message}

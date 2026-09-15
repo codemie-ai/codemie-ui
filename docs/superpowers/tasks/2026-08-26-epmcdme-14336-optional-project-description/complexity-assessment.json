@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Make project description optional in FE: remove required constraint from ProjectModal, wire edit modal to send clear_description:true when user empties field, ensure details page renders null placeholder, add null-handling to description reads.",
+  "generated": "2026-08-26T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 12,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three components require edits: ProjectModal.tsx (Yup schema + handleFormSubmit + Textarea prop), store/projects.ts (updateProject PATCH body), and type definitions in project.ts + projectManagement.ts (add clear_description, widen description to string|null). Two tiers involved (UI/Form + Store/API)."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Direct edits to ProjectModal.tsx, store/projects.ts, project.ts, projectManagement.ts, plus updates to 2–3 test files (ProjectModal.test.tsx, ProjectDetailsPage.test.tsx, projects.test.ts). Approximately 6 files across src/pages/…/projectsManagement/, src/store/, and src/types/entity/."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

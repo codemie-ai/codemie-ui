@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -274,6 +274,119 @@ describe('ProjectModal — form submission', () => {
           clear_display_name: true,
         })
       )
+    })
+  })
+})
+
+describe('ProjectModal — optional description (EPMCDME-14336)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('allows creating a project with an empty description', async () => {
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal()
+
+    await user.type(screen.getByTestId('name'), 'no-desc-project')
+    // description intentionally left blank
+
+    await act(async () => {
+      screen.getByRole('button', { name: /submit/i }).click()
+    })
+
+    await vi.waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'no-desc-project',
+          description: undefined,
+          clear_description: false,
+        })
+      )
+    })
+    expect(screen.queryByTestId('description-error')).toBeNull()
+  })
+
+  it('sends clear_description=true when an existing description is cleared in edit mode', async () => {
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({
+      project: {
+        id: 'proj-1',
+        name: 'existing-project',
+        display_name: 'Existing Project',
+        description: 'previous description',
+        project_type: 'shared',
+        user_count: 2,
+        admin_count: 1,
+      } as any,
+    })
+
+    const descriptionInput = screen.getByTestId<HTMLTextAreaElement>('description')
+    await user.clear(descriptionInput)
+
+    await act(async () => {
+      screen.getByRole('button', { name: /submit/i }).click()
+    })
+
+    await vi.waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: undefined,
+          clear_description: true,
+        })
+      )
+    })
+  })
+
+  it('does not set clear_description when a new description is provided in edit mode', async () => {
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({
+      project: {
+        id: 'proj-1',
+        name: 'existing-project',
+        display_name: 'Existing Project',
+        description: 'previous',
+        project_type: 'shared',
+        user_count: 2,
+        admin_count: 1,
+      } as any,
+    })
+
+    const descriptionInput = screen.getByTestId<HTMLTextAreaElement>('description')
+    await user.clear(descriptionInput)
+    await user.type(descriptionInput, 'brand new')
+
+    await act(async () => {
+      screen.getByRole('button', { name: /submit/i }).click()
+    })
+
+    await vi.waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: 'brand new',
+          clear_description: false,
+        })
+      )
+    })
+  })
+
+  it('rejects a description longer than 500 characters', async () => {
+    const user = userEvent.setup()
+    renderModal()
+
+    await user.type(screen.getByTestId('name'), 'over-limit')
+    // React-hook-form's yup resolver validates on submit; type a string just over 500.
+    const longText = 'a'.repeat(501)
+    const descriptionInput = screen.getByTestId<HTMLTextAreaElement>('description')
+    await act(async () => {
+      fireEvent.change(descriptionInput, { target: { value: longText } })
+    })
+
+    await act(async () => {
+      screen.getByRole('button', { name: /submit/i }).click()
+    })
+
+    await vi.waitFor(() => {
+      expect(screen.getByTestId('description-error')).toBeTruthy()
     })
   })
 })

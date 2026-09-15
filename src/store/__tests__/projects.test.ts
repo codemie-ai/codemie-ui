@@ -251,6 +251,7 @@ describe('projectsStore', () => {
           display_name: undefined,
           clear_display_name: undefined,
           description: 'Updated description',
+          clear_description: undefined,
           cost_center_id: undefined,
           clear_cost_center: undefined,
           enforce_member_spend_limits: undefined,
@@ -298,6 +299,43 @@ describe('projectsStore', () => {
       )
     })
 
+    it('sends clear_description and omits description when clearing (EPMCDME-14336)', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({ name: 'my-project', description: null }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateProject('my-project', {
+        name: 'my-project',
+        description: undefined,
+        clear_description: true,
+      })
+
+      expect(mockPatch).toHaveBeenCalledWith(
+        'v1/projects/my-project',
+        expect.objectContaining({ description: undefined, clear_description: true }),
+        { skipErrorHandling: true }
+      )
+    })
+
+    it('omits clear_description when not set (EPMCDME-14336)', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({ name: 'my-project', description: 'text' }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateProject('my-project', {
+        name: 'my-project',
+        description: 'text',
+      })
+
+      expect(mockPatch).toHaveBeenCalledWith(
+        'v1/projects/my-project',
+        expect.objectContaining({ description: 'text', clear_description: undefined }),
+        { skipErrorHandling: true }
+      )
+    })
+
     it('passes budget tracking flag in update payload', async () => {
       mockPatch.mockResolvedValue({
         json: async () => ({
@@ -318,6 +356,7 @@ describe('projectsStore', () => {
           display_name: undefined,
           clear_display_name: undefined,
           description: undefined,
+          clear_description: undefined,
           cost_center_id: undefined,
           clear_cost_center: undefined,
           enforce_member_spend_limits: true,

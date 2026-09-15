@@ -189,6 +189,29 @@ describe('ProjectsManagementFull — edit save flow', () => {
     expect(userStore.getCurrentUser).toHaveBeenCalled()
   })
 
+  it('forwards clear_description on edit save when the description is cleared (EPMCDME-14336)', async () => {
+    render(<ProjectsManagementFull />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+
+    const { onSubmit } = projectModalMock.mock.calls.at(-1)[0]
+    await act(async () => {
+      await onSubmit({
+        name: 'my-project',
+        display_name: 'My Project',
+        description: undefined,
+        clear_description: true,
+        cost_center_id: '',
+        enforce_member_spend_limits: false,
+      })
+    })
+
+    expect(projectsStore.updateProject).toHaveBeenCalledWith(
+      'my-project',
+      expect.objectContaining({ description: undefined, clear_description: true })
+    )
+  })
+
   it('shows the project name in the success toast when name is omitted from the payload (EPMCDME-13165)', async () => {
     render(<ProjectsManagementFull />)
 

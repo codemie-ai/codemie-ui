@@ -95,14 +95,15 @@ export interface ProjectSpendingWidget {
 export interface ProjectPayload {
   name: string
   display_name?: string | null
-  description: string
+  description?: string | null
   cost_center_id?: string | null
   chargeback_enabled?: boolean
 }
 
 export interface ProjectUpdatePayload {
   display_name?: string | null
-  description?: string
+  description?: string | null
+  clear_description?: boolean
   cost_center_id?: string | null
   clear_cost_center?: boolean
   enforce_member_spend_limits?: boolean

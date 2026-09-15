@@ -261,6 +261,20 @@ describe('ProjectDetailsPage', () => {
     expect(projectsStore.getProject).toHaveBeenNthCalledWith(2, 'Test Project', true)
   })
 
+  it('renders the no-value placeholder when the project description is null (EPMCDME-14336)', async () => {
+    projectsStore.getProject = vi.fn().mockResolvedValue({
+      ...mockProject,
+      description: null,
+    })
+
+    render(<ProjectDetailsPage />)
+
+    const descriptionLabel = await screen.findByText('Description')
+    const descriptionSection = descriptionLabel.parentElement
+    expect(descriptionSection).toBeTruthy()
+    expect(descriptionSection?.textContent).toContain('-')
+  })
+
   it('renders project member budget tracking status', async () => {
     render(<ProjectDetailsPage />)
 
