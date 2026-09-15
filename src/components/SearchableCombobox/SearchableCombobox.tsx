@@ -19,6 +19,7 @@ import {
   KeyboardEvent,
   MouseEvent,
   ReactNode,
+  RefObject,
   useEffect,
   useId,
   useRef,
@@ -63,6 +64,8 @@ export interface SearchableComboboxProps<T> {
   contentClassName?: string
 
   disabled?: boolean
+  /** Ref to the trigger element. When provided, focus returns to it when the overlay closes. */
+  triggerRef?: RefObject<HTMLElement | null>
 }
 
 const SearchableCombobox = <T,>({
@@ -84,6 +87,7 @@ const SearchableCombobox = <T,>({
   listClassName,
   contentClassName,
   disabled = false,
+  triggerRef,
 }: SearchableComboboxProps<T>) => {
   const overlayRef = useRef<OverlayPanel>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -151,6 +155,7 @@ const SearchableCombobox = <T,>({
       <OverlayPanel
         ref={overlayRef}
         onShow={handleOverlayShow}
+        onHide={() => triggerRef?.current?.focus()}
         className={cn(
           'bg-surface-base-secondary rounded-lg border border-border-structural shadow-xl p-0 overflow-hidden',
           panelClassName

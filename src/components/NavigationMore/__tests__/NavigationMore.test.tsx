@@ -159,4 +159,16 @@ describe('NavigationMore accessibility attributes', () => {
     expect(trigger).toHaveAttribute('aria-label', 'Export diagram')
     expect(trigger).not.toHaveAttribute('aria-labelledby')
   })
+
+  it('returns focus to trigger button when Escape closes the menu', () => {
+    render(<NavigationMore items={makeItems()} />)
+    const trigger = screen.getByRole('button', { name: 'More options' })
+
+    fireEvent.click(trigger)
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(trigger).toHaveFocus()
+  })
 })

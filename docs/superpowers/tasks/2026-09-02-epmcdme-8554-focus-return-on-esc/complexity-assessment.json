@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Fix NavigationMore component to return focus to the trigger button when Escape closes the menu, and add a regression test.",
+  "generated": "2026-09-02T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 6,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single component (NavigationMore.tsx) — adds a useRef and a useEffect; no layer boundaries crossed, no shared contracts changed."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Exact same pattern exists three times in the codebase: NavigationProfile.tsx (setTimeout + buttonRef.focus), PinnedAssistantsOverflowDropdown.tsx (anchorRef.focus on Esc), ChatHeaderDownloadConversationButton.tsx (triggerWrapperRef.focus on hide). Change is purely additive and trivially reversible."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

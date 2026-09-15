@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "rationale": "Two major findings block merge: (1) all three commit subjects use a lowercase first word and will fail Tekton CI commit-format validation; (2) NavigationMore combines refs with an inline arrow function that creates a new callback on every render, causing floating-ui to tear down and re-set its reference element each cycle — the idiomatic fix is useMergeRefs from @floating-ui/react. All seven acceptance criteria are met; lenses ran fully; no security or breaking-change risk.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "id": "AC-1", "description": "useFocusReturn hook: correct signature and true→false-only trigger", "status": "met" },
+    { "id": "AC-2", "description": "useFocusReturn unit tests: all four cases present and correct", "status": "met" },
+    { "id": "AC-3", "description": "NavigationMore: triggerRef + useFocusReturn + combined ref callback", "status": "met" },
+    { "id": "AC-4", "description": "NavigationMore test: open → Escape → trigger has focus", "status": "met" },
+    { "id": "AC-5", "description": "SearchableCombobox: optional triggerRef prop + onHide wiring", "status": "met" },
+    { "id": "AC-6", "description": "ChatPromptLlmSelector: triggerRef created, attached to button, passed to SearchableCombobox", "status": "met" },
+    { "id": "AC-7", "description": "useMCPServerModal / useMarketplaceModal correctly deferred (out of scope)", "status": "met" }
+  ],
+  "standards_review": [
+    {
+      "id": "S-1",
+      "standard": "git-workflow commit format",
+      "status": "fail",
+      "notes": "All three commits use a lowercase first word after the colon: 'add useFocusReturn hook', 'return focus to trigger on NavigationMore close', 'return focus to trigger on SearchableCombobox close'. The guide requires EPMCDME-XXXX: Capital sentence (first word uppercase). Tekton CI enforces this regex and will block the MR. Correct forms: 'Add useFocusReturn hook', 'Return focus to trigger on NavigationMore close', 'Return focus to trigger on SearchableCombobox close'."
+    },
+    {
+      "id": "S-2",
+      "standard": "security-patterns",
+      "status": "pass",
+      "notes": "No untrusted input rendered, no new API surface, no secrets introduced."
+    },
+    {
+      "id": "S-3",
+      "standard": "code-quality — stable refs",
+      "status": "fail",
+      "notes": "NavigationMore uses an inline arrow function as a dual-assignment callback ref: (el) => { triggerRef.current = el; refs.setReference(el) }. This creates a new function identity on every render, causing React to call the old ref with null then the new with el on each cycle, triggering unnecessary floating-ui reference teardown/setup. The @floating-ui/react package exports useMergeRefs for exactly this purpose."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "file": "git history",
+      "problem": "All three commit subjects begin with a lowercase word, violating the project's enforced commit format (EPMCDME-XXXX: Capital sentence).",
+      "impact": "Tekton CI will block the MR with a commit-format failure before any reviewer sees it.",
+      "recommendation": "Reword via interactive rebase: 'Add useFocusReturn hook', 'Return focus to trigger on NavigationMore close', 'Return focus to trigger on SearchableCombobox close'."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/components/NavigationMore/NavigationMore.tsx",
+      "problem": "The trigger button uses an inline arrow function `(el) => { triggerRef.current = el; refs.setReference(el) }` to combine two refs. React creates a new function object on every render, so it calls the old ref with null then the new ref with the element each cycle, causing @floating-ui/react to reset its reference element state on every render.",
+      "impact": "Unnecessary floating-ui lifecycle calls and potential positioning micro-jitter on every NavigationMore re-render. Violates floating-ui's recommended stable-ref contract; could manifest as visible flicker in future library versions.",
+      "recommendation": "Import useMergeRefs from @floating-ui/react: `const mergedRef = useMergeRefs([triggerRef, refs.setReference])`, then use `ref={mergedRef}` on the button. useMergeRefs returns a memoized stable callback that only fires on actual mount/unmount."
+    }
+  ]
+}

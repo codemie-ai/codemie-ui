@@ -133,6 +133,7 @@ const ModelOptionRow: FC<{
 
 const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = false }) => {
   const [search, setSearch] = useState('')
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   const { llmModels, getLLMModels } = useSnapshot(appInfoStore)
   const { currentChat, updateChat } = useSnapshot(chatsStore) as typeof chatsStore
@@ -201,6 +202,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
   }) => (
     <button
+      ref={triggerRef}
       type="button"
       onClick={onClick}
       disabled={disabled}
@@ -267,6 +269,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
 
   return (
     <SearchableCombobox<LlmValue>
+      triggerRef={triggerRef}
       items={items}
       isOptionSelected={isOptionSelected}
       onSelect={handleSelect}

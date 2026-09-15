@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "Both blocking findings resolved. CR-001: all four commit subjects now follow EPMCDME-XXXX: Capital sentence format (Add, Return ×2, Use). CR-002: inline dual-assignment callback ref replaced with useMergeRefs([triggerRef, refs.setReference]) from @floating-ui/react — stable memoized callback, no per-render teardown/setup. Fix-up diff is narrow (one file, one concern) with no new high-risk issues.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "id": "AC-1", "status": "met" },
+    { "id": "AC-2", "status": "met" },
+    { "id": "AC-3", "status": "met" },
+    { "id": "AC-4", "status": "met" },
+    { "id": "AC-5", "status": "met" },
+    { "id": "AC-6", "status": "met" },
+    { "id": "AC-7", "status": "met" }
+  ],
+  "standards_review": [
+    { "id": "S-1", "standard": "git-workflow commit format", "status": "pass", "notes": "All four commits now match EPMCDME-XXXX: Capital sentence: Add, Return, Return, Use." },
+    { "id": "S-2", "standard": "security-patterns", "status": "pass" },
+    { "id": "S-3", "standard": "code-quality stable refs", "status": "pass", "notes": "useMergeRefs produces a stable memoized callback ref; no per-render teardown." }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "note": "Commit subjects rewound via filter-branch: Add, Return (×2), Use — all match Capital sentence." },
+    { "id": "CR-002", "status": "resolved", "note": "useMergeRefs([triggerRef, refs.setReference]) replaces the inline arrow function; ref={mergedTriggerRef} on the trigger button." }
+  ]
+}

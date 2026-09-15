@@ -21,12 +21,14 @@ import {
   useDismiss,
   useInteractions,
   useClick,
+  useMergeRefs,
   FloatingPortal,
   Alignment,
 } from '@floating-ui/react'
-import React, { memo, MouseEventHandler, useId, useState } from 'react'
+import React, { memo, MouseEventHandler, useId, useRef, useState } from 'react'
 
 import NavigationMoreSvg from '@/assets/icons/navigation-more.svg?react'
+import { useFocusReturn } from '@/hooks/useFocusReturn'
 import { cn } from '@/utils/utils'
 
 export interface NavigationItem {
@@ -74,9 +76,12 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   contextId,
 }) => {
   const [show, setShow] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const id = useId()
   const menuId = `nav-more-menu-${id}`
   const buttonId = `nav-more-btn-${id}`
+
+  useFocusReturn(triggerRef, show)
 
   const { refs, floatingStyles, context } = useFloating({
     open: show,
@@ -94,6 +99,8 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
       reference: { onClick },
     },
   ])
+
+  const mergedTriggerRef = useMergeRefs([triggerRef, refs.setReference])
 
   const handleClickInside = () => {
     if (!hideOnClickInside) return
@@ -162,7 +169,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
       <button
         type="button"
         id={buttonId}
-        ref={refs.setReference}
+        ref={mergedTriggerRef}
         className={cn(
           'm-1 p-1 rounded-md border border-transparent hover:bg-surface-specific-dropdown-hover transition',
           'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
