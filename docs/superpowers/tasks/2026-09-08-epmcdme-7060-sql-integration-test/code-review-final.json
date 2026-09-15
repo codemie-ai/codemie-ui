@@ -1,0 +1,82 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "No spec or story available — no-spec mode; low confidence reflects missing acceptance criteria, not code quality. Two lenses ran (blind, edge-case); acceptance lens skipped. 5 major findings: 1 decision_needed (CR-001, port unconditionally required for all dialects including InfluxDB — potential breaking change for existing InfluxDB credentials), 4 patch (CR-002 leading-zero port strings silently accepted, CR-003 username/password validation untested, CR-004 org/bucket validation untested, CR-005 port empty/undefined boundary untested). Git-workflow standard: both commit subjects match EPMCDME-XXXX: Capital sentence format. Security: clean. No code-quality guide present; SonarQube complexity gate satisfied.",
+  "risk_flags": ["breaking-change"],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "Both commit subjects match the EPMCDME-XXXX: Capital sentence pattern ('EPMCDME-7060: Enable SQL integration test in UI', 'EPMCDME-7060: Enhance port validation and add unit tests for CREDENTIAL_UI_MA…'). Branch name EPMCDME-7060_sql-integration-test matches the EPMCDME-XXXX_description pattern."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No HTML sinks, secrets, injection points, cross-window messages, or external redirects introduced. Yup validation is UI-layer only and does not replace backend validation."
+    },
+    {
+      "standard": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md not present. SonarQube cyclomatic complexity gate (max 15) satisfied: each validation callback is a simple boolean predicate; no single function approaches the threshold."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "decision_needed",
+      "title": "Port field unconditionally required for all dialects including InfluxDB",
+      "file": "src/utils/settingsUIConfig.ts:562",
+      "problem": "The port field has .required('Port is required') with no dialect guard. Unlike database_name, username, and password (which use .when('dialect', ...) to be optional for InfluxDB), port is always required for every dialect. If InfluxDB credentials were previously stored without an explicit port value, users editing those credentials will hit a validation error they cannot dismiss.",
+      "impact": "Potential breaking change for existing InfluxDB users: editing a saved InfluxDB credential that has no stored port will fail form validation. It is unclear whether the InfluxDB backend client builds its connection from separate host+port fields or from the url field alone.",
+      "recommendation": "Confirm with the product owner or backend team whether InfluxDB requires an explicit port field separate from the url. If not, wrap port validation in .when('dialect', { is: isGenericSQLDIalect, then: required, otherwise: optional }) to mirror the pattern used by database_name.",
+      "sources": ["blind"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Port validation accepts leading-zero strings",
+      "file": "src/utils/settingsUIConfig.ts:562",
+      "problem": "The regex /^\\d+$/ matches any digit-only string including leading-zero forms such as '007' or '00080'. parseInt('007', 10) = 7, which is within the 1–65535 range, so the value passes all three chain steps (required, matches, test) and is submitted to the backend as the raw string '007'.",
+      "impact": "Backend may reject the non-canonical string, silently coerce it to port 7 instead of what the user intended, or store an uncanonical string that confuses subsequent form rendering.",
+      "recommendation": "Change the regex to /^[1-9]\\d*$/ to reject leading zeros and zero in one step, or add a .test() checking v === String(parseInt(v, 10)). Update the 'accepts numeric ports' test to also assert that '0306' fails.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "title": "username and password validation schemas have zero test coverage",
+      "file": "src/utils/__tests__/settingsUIConfig.test.ts:55",
+      "problem": "The username and password fields carry Yup.string().when('dialect', { is: isGenericSQLDIalect, then: required, otherwise: nullable }) schemas structurally identical to database_name, which does have tests. No test verifies that username is required for postgres/mysql/mssql and optional for influxdb, and likewise for password. A typo in either predicate (e.g., accidentally using isInfluxDBDialect) would silently make these fields optional for all dialects.",
+      "impact": "If either when() predicate is wrong, users can save SQL credentials with no username or password, causing all tool invocations to fail at runtime with authentication errors rather than clear form validation messages.",
+      "recommendation": "Add tests mirroring the database_name pattern for both username and password: validate('', { parent: { dialect: 'postgres' } }) rejects with the expected message, validate('', { parent: { dialect: 'influxdb' } }) resolves.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "title": "org and bucket validation schemas untested",
+      "file": "src/utils/__tests__/settingsUIConfig.test.ts:89",
+      "problem": "The 'shows influxdb fields only for influxdb dialect' test verifies shouldShow callbacks for token, org, and bucket, but does not test the Yup validation schemas for org and bucket. No assertion verifies that validate('', { parent: { dialect: 'influxdb' } }) rejects with 'Organization is required' or 'Bucket is required', nor that these fields are optional for non-InfluxDB dialects.",
+      "impact": "A broken when() predicate on org or bucket would allow saving an InfluxDB credential without organization or bucket, causing all InfluxDB queries to fail silently at runtime.",
+      "recommendation": "Add validation tests for org and bucket mirroring the token test: validate('', { parent: { dialect: 'influxdb' } }) rejects with expected message, validate('', { parent: { dialect: 'postgres' } }) resolves.",
+      "sources": ["edge-case"]
+    },
+    {
+      "id": "CR-005",
+      "severity": "major",
+      "triage": "patch",
+      "title": "Port .required() boundary (empty string / undefined) not tested",
+      "file": "src/utils/__tests__/settingsUIConfig.test.ts:28",
+      "problem": "The test suite covers non-numeric input, a valid port, and out-of-range values, but never calls portValidation.validate('') or portValidation.validate(undefined). The .required('Port is required') step guards the most common user mistake (clearing the field), yet it is unverified. A refactor removing .required() or changing its message would not be caught.",
+      "impact": "Clearing the port field produces no validation message under this regression. The most common user error goes undetected by the test suite.",
+      "recommendation": "Add: await expect(portValidation.validate('')).rejects.toThrow('Port is required') and await expect(portValidation.validate(undefined)).rejects.toThrow('Port is required').",
+      "sources": ["blind", "edge-case"]
+    }
+  ]
+}

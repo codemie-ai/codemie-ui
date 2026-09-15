@@ -62,6 +62,7 @@ import {
   generateDefaultAlias,
   slugifyType,
 } from '@/utils/settings'
+import toaster from '@/utils/toaster'
 
 import OAuthTestAction from '../OAuthTestAction'
 import CredentialFields from './CredentialFields'
@@ -72,6 +73,7 @@ import SharePointOAuthField from './SharePointOAuthField'
 
 export interface SettingsFormRef {
   submit: () => void
+  validate: () => Promise<boolean>
 }
 
 interface SettingsFormProps {
@@ -566,6 +568,13 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
 
   useImperativeHandle(ref, () => ({
     submit,
+    validate: async () => {
+      const isValid = await trigger()
+      if (!isValid) {
+        toaster.error('Please fix form errors before testing')
+      }
+      return isValid
+    },
   }))
 
   return (
@@ -799,6 +808,13 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                 credentialValues={getValues()}
                 settingId={settingId}
                 label="Test Integration"
+                onBeforeTest={async () => {
+                  const isValid = await trigger()
+                  if (!isValid) {
+                    toaster.error('Please fix form errors before testing')
+                  }
+                  return isValid
+                }}
               />
             )}
 

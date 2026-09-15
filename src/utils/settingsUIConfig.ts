@@ -536,13 +536,14 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
   },
   sql: {
     defaultUrl: 'localhost',
-    testable: false,
+    testable: true,
     displayName: 'SQL',
     serverEnum: 'SQL',
     fields: {
       dialect: {
         placeholder: 'Database Dialect',
         type: CredentialComponentType.select,
+        validation: Yup.string().required('Dialect is required'),
         options: [
           { value: 'postgres', label: 'PostgreSQL' },
           { value: 'mssql', label: 'MSSql' },
@@ -550,26 +551,62 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
           { value: 'influxdb', label: 'InfluxDB' },
         ],
       },
-      url: { placeholder: 'Database URL (e.g. "localhost")' },
-      port: { label: 'Port Number', placeholder: '3306' },
+      url: {
+        placeholder: 'Database URL (e.g. "localhost")',
+        validation: Yup.string().required('Database URL is required'),
+      },
+      port: {
+        label: 'Port Number',
+        placeholder: '3306',
+        validation: Yup.string()
+          .required('Port is required')
+          .matches(/^\d+$/, 'Port must be a number')
+          .test(
+            'port-range',
+            'Port must be between 1 and 65535',
+            (v) =>
+              !v ||
+              (v === String(parseInt(v, 10)) && parseInt(v, 10) >= 1 && parseInt(v, 10) <= 65535)
+          ),
+      },
       database_name: {
         placeholder: 'Database or schema name',
         shouldShow: isGenericSQLDIalect,
+        validation: Yup.string().when('dialect', {
+          is: (v) => isGenericSQLDIalect({ dialect: v }),
+          then: (s) => s.required('Database name is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
       },
       username: {
         placeholder: 'Username',
         shouldShow: isGenericSQLDIalect,
+        validation: Yup.string().when('dialect', {
+          is: (v) => isGenericSQLDIalect({ dialect: v }),
+          then: (s) => s.required('Username is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
       },
       password: {
         placeholder: 'Password',
         shouldShow: isGenericSQLDIalect,
         sensitive: true,
+        validation: Yup.string().when('dialect', {
+          is: (v) => isGenericSQLDIalect({ dialect: v }),
+          then: (s) => s.required('Password is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
       },
       // InfluxDB specific fields
       token: {
         placeholder: 'InfluxDB Token',
         sensitive: true,
         shouldShow: isInfluxDBDialect,
+        validation: Yup.string().when('dialect', {
+          is: (v) => isInfluxDBDialect({ dialect: v }),
+          then: (s) => s.required('Token is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
       },
       verify_ssl: {
         type: CredentialComponentType.switch,
@@ -579,10 +616,20 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
       org: {
         placeholder: 'Organization',
         shouldShow: isInfluxDBDialect,
+        validation: Yup.string().when('dialect', {
+          is: (v) => isInfluxDBDialect({ dialect: v }),
+          then: (s) => s.required('Organization is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
       },
       bucket: {
         placeholder: 'Bucket',
         shouldShow: isInfluxDBDialect,
+        validation: Yup.string().when('dialect', {
+          is: (v) => isInfluxDBDialect({ dialect: v }),
+          then: (s) => s.required('Bucket is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
       },
     },
   },

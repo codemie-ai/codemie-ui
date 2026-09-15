@@ -26,9 +26,16 @@ type Props = {
   credentialValues: Record<string, unknown>
   settingId: string
   onSave: () => void
+  onBeforeTest?: () => Promise<boolean>
 }
 
-const EditIntegrationActions = ({ credentialType, credentialValues, settingId, onSave }: Props) => {
+const EditIntegrationActions = ({
+  credentialType,
+  credentialValues,
+  settingId,
+  onSave,
+  onBeforeTest,
+}: Props) => {
   if (isDeprecatedCredentialType(credentialType)) return null
   const lowered = credentialType.toLowerCase()
   return (
@@ -41,6 +48,7 @@ const EditIntegrationActions = ({ credentialType, credentialValues, settingId, o
           credentialValues={credentialValues}
           settingId={settingId}
           label="Test"
+          onBeforeTest={onBeforeTest}
         />
       )}
       <OAuthTestAction

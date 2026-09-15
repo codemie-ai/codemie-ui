@@ -34,6 +34,7 @@ interface TestIntegrationProps {
   inline?: boolean
   inlineClass?: string
   testIcon?: 'connection'
+  onBeforeTest?: () => Promise<boolean>
 }
 
 const TestIntegration: React.FC<TestIntegrationProps> = ({
@@ -44,6 +45,7 @@ const TestIntegration: React.FC<TestIntegrationProps> = ({
   inline = false,
   inlineClass = '',
   testIcon,
+  onBeforeTest,
 }) => {
   const [status, setStatus] = useState<string>(CHECKER_STATUSES.UNDEFINED)
 
@@ -63,6 +65,14 @@ const TestIntegration: React.FC<TestIntegrationProps> = ({
     setStatus(CHECKER_STATUSES.IN_PROGRESS)
 
     try {
+      if (onBeforeTest) {
+        const isValid = await onBeforeTest()
+        if (!isValid) {
+          setStatus(CHECKER_STATUSES.UNDEFINED)
+          return
+        }
+      }
+
       const response = await testSetting(
         getOriginalCredentialType(credentialType),
         settingId,

@@ -1,0 +1,53 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "medium",
+  "rationale": "All 5 findings from the final review are resolved. CR-001 closed by product owner confirmation that port is required for all dialects including InfluxDB — no code change required. CR-002 fixed by adding a canonical-form guard (v === String(parseInt(v, 10))) to the port range test, rejecting leading-zero strings such as '007'. CR-003 fixed by adding tests for username and password validation covering both required (postgres) and optional (influxdb) branches. CR-004 fixed by adding tests for org and bucket validation covering both required (influxdb) and optional (postgres) branches. CR-005 fixed by adding 'rejects empty port' test exercising validate('') and validate(undefined). Fix-up changes introduce no new security surface or public API changes.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "Carried forward from final review."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "Carried forward from final review. Fix-up changes are test additions and a validation tightening — no new security surface introduced."
+    },
+    {
+      "standard": "code-quality",
+      "status": "na",
+      "notes": "Carried forward from final review."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Product owner confirmed port is required for all SQL dialects including InfluxDB. No code change required; original behaviour is correct."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Added v === String(parseInt(v, 10)) condition to the port-range .test() in settingsUIConfig.ts:565. Leading-zero strings like '007' now fail with 'Port must be between 1 and 65535'. New 'rejects leading-zero ports' test confirms the fix."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Added 'requires username and password for generic SQL dialects' test covering postgres (rejects empty) and influxdb (resolves empty) branches for both usernameValidation and passwordValidation."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "Added 'requires org and bucket for influxdb' test covering influxdb (rejects empty) and postgres (resolves empty) branches for both orgValidation and bucketValidation."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "Added 'rejects empty port' test asserting portValidation.validate('') and portValidation.validate(undefined) both reject with 'Port is required'."
+    }
+  ],
+  "findings": []
+}

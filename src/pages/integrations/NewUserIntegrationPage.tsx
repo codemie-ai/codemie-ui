@@ -87,6 +87,7 @@ const NewUserIntegrationPage = () => {
                   credentialType={credentialType.toLowerCase()}
                   credentialValues={credentialValues}
                   label="Test"
+                  onBeforeTest={() => formRef.current!.validate()}
                 />
               )}
             <OAuthTestAction

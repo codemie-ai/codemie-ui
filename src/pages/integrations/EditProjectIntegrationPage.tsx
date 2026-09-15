@@ -111,6 +111,7 @@ const EditProjectIntegrationPage = () => {
                 credentialValues={credentialValues}
                 settingId={setting.id}
                 onSave={() => formRef.current?.submit()}
+                onBeforeTest={() => formRef.current?.validate() ?? Promise.resolve(true)}
               />
             )}
           </div>
