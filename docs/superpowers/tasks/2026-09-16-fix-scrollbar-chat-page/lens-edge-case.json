@@ -1,0 +1,14 @@
+[
+  {
+    "location": "src/pages/chat/components/ChatHistory/__tests__/ChatHistory.scrollbar.test.tsx:38-46",
+    "trigger_condition": "`show-scroll` class removed from ChatHistory scroll container in future edit",
+    "guard_snippet": "expect(scrollDiv.classList.contains('show-scroll')).toBe(true)",
+    "potential_consequence": "Scrollbar visibility silently regresses; no test fails to signal it"
+  },
+  {
+    "location": "src/pages/chat/components/ChatHistory/ChatHistory.tsx:53",
+    "trigger_condition": "Content overflows in Safari where `scrollbar-gutter` is unsupported",
+    "guard_snippet": "@supports not (scrollbar-gutter: stable) { .scrollbar-gutter-edge { padding-right: 8px; } }",
+    "potential_consequence": "8px layout shift squeezes content when chat first overflows in Safari"
+  }
+]

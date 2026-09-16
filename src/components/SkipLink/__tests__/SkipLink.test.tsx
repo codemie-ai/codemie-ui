@@ -40,7 +40,7 @@ describe('SkipLink', () => {
     render(
       <>
         <SkipLink />
-        <main id="main-content" tabIndex={-1} />
+        <main id="main-content" />
       </>
     )
 
@@ -48,5 +48,21 @@ describe('SkipLink', () => {
     link.click()
 
     expect(screen.getByRole('main')).toHaveFocus()
+  })
+
+  it('makes the main landmark focusable only until it loses focus', () => {
+    render(
+      <>
+        <SkipLink />
+        <main id="main-content" />
+      </>
+    )
+
+    const main = screen.getByRole('main')
+    screen.getByRole('link', { name: 'Skip to main content' }).click()
+    expect(main).toHaveAttribute('tabindex', '-1')
+
+    main.blur()
+    expect(main).not.toHaveAttribute('tabindex')
   })
 })

@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14842/fix-scrollbar-chat-page",
+  "head": "1c2f5370c6c7e0b95f6908933e77db5ef0780fc1",
+  "runner": "npm",
+  "started_at": "2026-09-16T09:08:00.000Z",
+  "completed_at": "2026-09-16T09:16:00.000Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 214429,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 118942,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency added, removed, or moved; guide Skip if condition met"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 137073,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Scanned ~890 MB; output: 'no leaks found'"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test:unit:slnt",
+      "exit_code": null,
+      "notes": "Excluded by caller: 'do not run the whole suite'"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test:integration:slnt",
+      "exit_code": null,
+      "notes": "Excluded by caller: 'do not run the whole suite'"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 2603,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2098 files, 0 missing license headers"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2535,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: 'Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN env var to run locally; CI runs sonar-scan unconditionally."
+    }
+  ],
+  "failures": {}
+}

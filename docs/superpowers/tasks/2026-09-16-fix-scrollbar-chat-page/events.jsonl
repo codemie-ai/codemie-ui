@@ -1,0 +1,2 @@
+{"event":"lifecycle_emission","intent":"record_complexity_score","mode":"actual","status":"succeeded"}
+{"schema":1,"ts":"2026-09-16T09:24:25Z","event":"decision.recorded","phase":0,"actor":"sdlc-gate","summary":"Decision recorded for plan.approved: approve","artifacts":["decisions.jsonl"],"data":{"gate_id":"plan.approved","mode":"hitl","decision":"approve","source":"hitl","escalated":false}}

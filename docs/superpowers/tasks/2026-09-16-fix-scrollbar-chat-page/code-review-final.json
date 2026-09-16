@@ -1,0 +1,22 @@
+{
+  "decision": "request-changes",
+  "rationale": "Edge-case lens ran; no spec/story existed (no-spec round, confidence low). One patch finding: test asserts scrollbar-gutter-edge but omits the show-scroll class introduced by this fix — if removed, no test fails. One finding deferred: Safari scrollbar-gutter fallback gap at ChatHistory.tsx:53 is pre-existing (see code-review-deferred.md).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHistory/__tests__/ChatHistory.scrollbar.test.tsx",
+      "line": 38,
+      "title": "Missing show-scroll assertion in scrollbar test",
+      "problem": "The test added for this change asserts that scrollbar-gutter-edge is present and scrollbar-gutter is absent, but does not assert that show-scroll is present. Removing show-scroll from ChatHistory.tsx would not cause any test to fail.",
+      "impact": "The core behavioral change — scrollbar visibility controlled by show-scroll — has no automated guard. The fix can silently regress in any future className edit to the scroll container.",
+      "recommendation": "Add expect(scrollDiv.classList.contains('show-scroll')).toBe(true) to the existing test case alongside the scrollbar-gutter-edge assertion."
+    }
+  ]
+}

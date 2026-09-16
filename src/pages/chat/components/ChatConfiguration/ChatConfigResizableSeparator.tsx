@@ -23,7 +23,7 @@ const ChatConfigResizableSeparator = () => (
     aria-label="Resize configuration panel"
     aria-controls="chat-area chat-config"
     aria-orientation="vertical"
-    className="relative w-4 -mx-2 bg-transparent !cursor-[ew-resize] !outline-none z-[1] flex items-center justify-center group"
+    className="relative w-1 -mx-0.5 h-12 self-center bg-transparent !cursor-[ew-resize] !outline-none z-[1] flex items-center justify-center group"
   >
     {/* Decorative pill — focus ring appears here so the indicator is visible */}
     <div

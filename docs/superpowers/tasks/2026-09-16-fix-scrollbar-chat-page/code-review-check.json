@@ -1,0 +1,12 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 addressed: added expect(scrollDiv.classList.contains('show-scroll')).toBe(true) to ChatHistory.scrollbar.test.tsx alongside the existing scrollbar-gutter-edge assertion. The show-scroll class is now guarded and a future removal will fail the test.",
+  "confidence": "low",
+  "findings_resolved": [
+    {
+      "id": "CR-001",
+      "outcome": "fixed",
+      "evidence": "src/pages/chat/components/ChatHistory/__tests__/ChatHistory.scrollbar.test.tsx:45 — assertion added"
+    }
+  ]
+}

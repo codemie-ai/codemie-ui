@@ -20,7 +20,13 @@ const SkipLink: FC = () => (
     href="#main-content"
     onClick={(e) => {
       e.preventDefault()
-      document.getElementById('main-content')?.focus()
+      const main = document.getElementById('main-content')
+      if (!main) return
+      // A permanent tabindex would let any click inside <main> focus it, which stops
+      // arrow keys from scrolling the nested scroll containers.
+      main.setAttribute('tabindex', '-1')
+      main.addEventListener('blur', () => main.removeAttribute('tabindex'), { once: true })
+      main.focus()
     }}
     className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-4 focus-visible:left-4 focus-visible:z-50
                focus-visible:rounded-lg focus-visible:border focus-visible:border-border-structural focus-visible:bg-surface-base-secondary

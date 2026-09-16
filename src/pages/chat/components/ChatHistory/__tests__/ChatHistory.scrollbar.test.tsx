@@ -43,5 +43,6 @@ describe('ChatHistory scrollbar classes', () => {
     expect(scrollDiv).not.toBeNull()
     expect(scrollDiv.classList.contains('scrollbar-gutter-edge')).toBe(true)
     expect(scrollDiv.classList.contains('scrollbar-gutter')).toBe(false)
+    expect(scrollDiv.classList.contains('show-scroll')).toBe(true)
   })
 })

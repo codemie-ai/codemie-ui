@@ -23,7 +23,7 @@ const ChatResizableSeparator = () => (
     aria-label="Resize chat prompt area"
     aria-controls="chat-history chat-prompt"
     aria-orientation="horizontal"
-    className="relative h-4 -my-2 bg-transparent !cursor-[ns-resize] !outline-none z-[1] flex items-center justify-center group"
+    className="relative h-1 -my-0.5 w-12 self-center bg-transparent !cursor-[ns-resize] !outline-none z-[1] flex items-center justify-center group"
   >
     {/* Decorative pill — focus ring appears here so the indicator is visible */}
     <div

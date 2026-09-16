@@ -50,7 +50,7 @@ const ChatHistory = () => {
     <div className="h-full w-full flex flex-col overflow-hidden">
       <div
         ref={scrollContainerRefSetter}
-        className="flex-1 min-h-0 pt-8 pb-6 px-6 overflow-y-auto scrollbar-gutter-edge"
+        className="flex-1 min-h-0 pt-8 pb-6 px-6 overflow-y-auto scrollbar-gutter-edge show-scroll"
       >
         <div className="flex flex-col gap-6 grow max-w-5xl mx-auto px-0.5">
           {hasMoreMessages && <div ref={refs.sentryRef} />}

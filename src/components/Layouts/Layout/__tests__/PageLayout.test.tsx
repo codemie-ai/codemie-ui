@@ -69,6 +69,6 @@ describe('PageLayout', () => {
     )
     const main = screen.getByRole('main')
     expect(main).toHaveAttribute('id', 'main-content')
-    expect(main).toHaveAttribute('tabIndex', '-1')
+    expect(main).not.toHaveAttribute('tabIndex')
   })
 })
