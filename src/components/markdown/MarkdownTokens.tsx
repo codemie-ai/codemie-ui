@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 
-import DOMPurify from 'dompurify'
 import { Parser } from 'marked'
 import { FC, useMemo } from 'react'
 
@@ -22,6 +21,7 @@ import ListToken from '@/components/markdown/tokens/ListToken'
 import MermaidDiagram from '@/components/markdown/tokens/MermaidDiagram'
 import TableBlock from '@/components/markdown/tokens/TableBlock'
 
+import { sanitizeHtmlWithImageAllowList } from './Markdown.sanitize'
 import {
   getMarkdownRenderer,
   MarkdownToken,
@@ -55,13 +55,13 @@ const MarkdownTokens: FC<MarkdownTokensProps> = ({ tokens = [] }) => {
 
   const getInlineProps = (token: MarkdownToken) => ({
     dangerouslySetInnerHTML: {
-      __html: DOMPurify.sanitize(Parser.parseInline([token], options), { ADD_ATTR: ['target'] }),
+      __html: sanitizeHtmlWithImageAllowList(Parser.parseInline([token], options)),
     },
   })
 
   const getBlockProps = (token: MarkdownToken) => ({
     dangerouslySetInnerHTML: {
-      __html: DOMPurify.sanitize(Parser.parse([token], options), { ADD_ATTR: ['target'] }),
+      __html: sanitizeHtmlWithImageAllowList(Parser.parse([token], options)),
     },
   })
 
@@ -76,7 +76,7 @@ const MarkdownTokens: FC<MarkdownTokensProps> = ({ tokens = [] }) => {
       return (
         <TableBlock
           key={key}
-          html={DOMPurify.sanitize(Parser.parse([token], options), { ADD_ATTR: ['target'] })}
+          html={sanitizeHtmlWithImageAllowList(Parser.parse([token], options))}
           raw={token.raw}
         />
       )

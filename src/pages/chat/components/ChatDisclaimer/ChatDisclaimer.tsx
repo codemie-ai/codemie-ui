@@ -18,10 +18,10 @@ import { marked } from 'marked'
 import { FC, useMemo, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
+import { getMarkdownRenderer } from '@/components/markdown/Markdown.utils'
 import { CONFIG_KEYS } from '@/constants/configKeys'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { appInfoStore } from '@/store/appInfo'
-import { getMarkdownRenderer } from '@/utils/messageHelpers'
 import { getConfigItemSettings } from '@/utils/settings'
 
 // inline parsing keeps the text in one line box, so the clamp applies to it

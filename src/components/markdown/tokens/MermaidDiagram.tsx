@@ -20,11 +20,11 @@ import FileSvg from '@/assets/icons/file.svg?react'
 import ViewSvg from '@/assets/icons/view.svg?react'
 import Button from '@/components/Button'
 import CodeBlock from '@/components/CodeBlock/CodeBlock'
+import { unSanitizeMessage } from '@/components/markdown/Markdown.utils'
 import NavigationMore, { NavigationItem } from '@/components/NavigationMore/NavigationMore'
 import ZoomableImage from '@/components/ZoomableImage'
 import { ButtonType, ButtonSize } from '@/constants'
 import { filesStore } from '@/store/files'
-import { unSanitizeMessage } from '@/utils/messageHelpers'
 
 import MermaidCodePopup from './MermaidCodePopup'
 

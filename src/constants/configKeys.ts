@@ -23,6 +23,7 @@ export const CONFIG_KEYS = {
   BANNER_MESSAGE: 'bannerMessage',
   BANNER_LINK_LABEL: 'bannerLinkLabel',
   BANNER_LINK_ROUTE: 'bannerLinkRoute',
+  ALLOWED_IMAGE_DOMAINS: 'allowedImageDomains',
   CHAT_DISCLAIMER: 'chatDisclaimer',
   RELEASE_NOTES_RECENT_COUNT: 'releaseNotesRecentCount',
 } as const

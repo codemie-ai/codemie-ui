@@ -69,6 +69,7 @@ export interface AppInfoStoreType {
   getBannerMessage: () => string
   getBannerLinkLabel: () => string
   getBannerLinkRoute: () => string
+  getAllowedImageDomains: () => string
 
   description?: string
   appVersion: string
@@ -168,6 +169,14 @@ export const appInfoStore = proxy<AppInfoStoreType>({
 
   getBannerLinkRoute(): string {
     return this.configs.find((c) => c.id === CONFIG_KEYS.BANNER_LINK_ROUTE)?.settings.value ?? ''
+  },
+
+  // Comma-separated hostnames the UI may render <img> sources from in LLM output.
+  // Empty (or not yet fetched) means default-deny for every external image.
+  getAllowedImageDomains(): string {
+    return (
+      this.configs.find((c) => c.id === CONFIG_KEYS.ALLOWED_IMAGE_DOMAINS)?.settings.value ?? ''
+    )
   },
 
   // Config is fetched once per tab, so a saved change needs an explicit refetch to become visible

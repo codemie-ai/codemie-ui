@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "ts": "2026-07-27T11:13:26Z",
+  "decision": "request-changes",
+  "confidence": "low",
+  "risk_flags": ["security"],
+  "rationale": "Two patchable gaps block merge: README documentation is entirely absent (spec required it) and parseAllowList() lacks the spec's two-label minimum enforcement, which lets a single-label entry like '.com' bypass the allow-list for all .com hostnames. A third finding is decision_needed: the Terms & Conditions page renders content fetched at runtime from the backend, so static analysis cannot confirm whether it contains external images — a human must decide whether T&C content is in scope before merge. The decision_needed finding forces confidence: low so the user makes the call rather than any automated resolver.",
+  "business_review": [
+    {
+      "criterion": "Tier 1 — blank src blocked",
+      "status": "pass",
+      "notes": "isImageAllowed returns false for empty/whitespace src. Covered by unit tests."
+    },
+    {
+      "criterion": "Tier 2 — data:image/* always allowed",
+      "status": "pass",
+      "notes": "Regex guard /^data:image\\//i returns true before any network-protocol check. Covered by unit tests."
+    },
+    {
+      "criterion": "Tier 3 — unparseable URL blocked",
+      "status": "pass",
+      "notes": "parseImageUrl returns undefined on parse failure; isImageAllowed returns false. Test uses 'http://[invalid-bracket' to trigger genuine WHATWG parse failure."
+    },
+    {
+      "criterion": "Tier 4 — only https: and http: accepted",
+      "status": "pass",
+      "notes": "Explicit protocol check. blob:, javascript:, ftp: etc. all blocked."
+    },
+    {
+      "criterion": "Tier 5 — http: allowed only on localhost",
+      "status": "pass",
+      "notes": "isHttpSafeFromPage() checks hostname === 'localhost' || '127.0.0.1'. Covered by tests."
+    },
+    {
+      "criterion": "Tier 6 — same-origin always allowed",
+      "status": "pass",
+      "notes": "url.origin === window.location.origin. Covers /api/v1/files/ in local dev."
+    },
+    {
+      "criterion": "Tier 7 — backend origin always allowed",
+      "status": "pass",
+      "notes": "getBackendOrigin() reads api.BASE_URL origin. Covered by renderer tests with mockApi.BASE_URL override."
+    },
+    {
+      "criterion": "Tier 8 — empty allow-list default-denies external images",
+      "status": "pass",
+      "notes": "allowList.size === 0 → return false. Unit tested."
+    },
+    {
+      "criterion": "Tier 9 — allow-list hostname matching (exact + subdomain wildcard)",
+      "status": "partial",
+      "notes": "matchesAllowListEntry correctly handles leading-dot wildcard and exact match. However, parseAllowList() does not enforce the spec's two-label minimum — a single-label entry like '.com' passes through and would allow all .com hostnames. See CR-002."
+    },
+    {
+      "criterion": "All four render surfaces patched (Markdown.utils.ts, messageHelpers.ts, ThoughtMessage.tsx, MarkdownEditor.tsx)",
+      "status": "pass",
+      "notes": "All four surfaces apply isImageAllowed before rendering. Note: messageHelpers.ts patched code is unreachable from production (ChatAiMessageActions.tsx imports from Markdown.utils.ts), but the patch is correct and imposes no security gap."
+    },
+    {
+      "criterion": "BlockedImageBadge component created and used on all blocked surfaces",
+      "status": "pass",
+      "notes": "BlockedImageBadge.tsx created; used in ThoughtMessage.tsx and MarkdownEditor.tsx. HTML badge string used in marked renderer surfaces."
+    },
+    {
+      "criterion": "VITE_ALLOWED_IMAGE_DOMAINS added to EnvConfig, config.js, and .env",
+      "status": "partial",
+      "notes": "Added to EnvConfig (global.ts), config.js, and .env. The .env line is present but has no inline comment explaining the format (spec required: '# Comma-separated list…'). See CR-001."
+    },
+    {
+      "criterion": "Helm values and configmap updated with VITE_ALLOWED_IMAGE_DOMAINS",
+      "status": "pass",
+      "notes": "deploy-templates/values.yaml and configmap.yaml both updated. Helm chart tests added."
+    },
+    {
+      "criterion": "TDD approach — tests written first, all passing",
+      "status": "pass",
+      "notes": "31 unit tests in imageAllowList.test.tsx, 2 in BlockedImageBadge, integration tests in Markdown.utils.test.ts and messageHelpers.renderer.test.ts, ThoughtMessage.test.tsx. All quality-gate failures fixed."
+    },
+    {
+      "criterion": "README documentation subsection for VITE_ALLOWED_IMAGE_DOMAINS",
+      "status": "fail",
+      "notes": "README.md has zero mentions of VITE_ALLOWED_IMAGE_DOMAINS. Spec and plan both required a subsection documenting the variable, format, default, and security rationale. See CR-001."
+    },
+    {
+      "criterion": "TermsAndConditionsPage does not render external images via markdown",
+      "status": "decision_needed",
+      "notes": "T&C content is loaded at runtime from the backend (settings?.content) — static grep cannot confirm the absence of external image URLs in backend-supplied content. Human must decide whether T&C content is in scope before merge. See CR-003."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit_format",
+      "status": "partial",
+      "notes": "Guide requires EPMCDME-XXXX: Capital sentence (first word must match [A-Z][a-z]*). Branch commits use lowercase first words: 'implement', 'update', 'add'. The CI check runs on the squash merge commit — the squash subject must be 'EPMCDME-12950: Implement image allow-list for LLM markdown output' (capital I) before the MR is merged."
+    },
+    {
+      "standard": "code_quality",
+      "status": "pass",
+      "notes": "ESLint consistent-return, TypeScript strict errors, and sonarjs/cognitive-complexity violations were all fixed during implementation. No remaining lint blockers."
+    },
+    {
+      "standard": "security",
+      "status": "partial",
+      "notes": "Core allow-list logic is sound (WHATWG URL parsing, protocol enforcement, XSS-safe HTML escaping). One gap: parseAllowList() accepts single-label entries (e.g. '.com') that would match all hostnames of that TLD via endsWith(). The spec requires a two-label minimum. See CR-002."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "title": "README not updated; .env missing required inline comment",
+      "problem": "The spec and plan both required (1) a README subsection documenting VITE_ALLOWED_IMAGE_DOMAINS (format, default, security rationale) and (2) an inline comment on the .env line explaining the comma-separated format. Neither was added. README has zero occurrences of 'VITE_ALLOWED_IMAGE_DOMAINS'.",
+      "impact": "Operators deploying the feature have no documentation on how to configure the allow-list. The .env line's empty default is unexplained, making it easy to leave blank in production without realising images will be fully blocked.",
+      "recommendation": "1) Add a README subsection under the Environment Variables section: 'VITE_ALLOWED_IMAGE_DOMAINS — Comma-separated list of trusted external image domains (e.g. cdn.example.com,.trusted.org). Supports leading-dot wildcard for subdomains. Empty = block all external images (default). Requires two-label minimum per entry.' 2) Add an inline comment on the .env line: '# Comma-separated trusted image domains. Empty = block all external images. Example: cdn.example.com,.trusted.org'",
+      "sources": ["acceptance", "edge-case"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "title": "parseAllowList() accepts single-label entries — allows entire TLD bypass",
+      "problem": "parseAllowList() in imageAllowList.ts applies no minimum-label validation. An operator entry like '.com' or 'com' passes through the filter(Boolean) check and reaches matchesAllowListEntry(), where 'evil.com'.endsWith('.com') === true — so every .com hostname is allowed. The spec explicitly requires a two-label minimum (e.g. 'example.com' or '.example.com') to prevent this class of misconfiguration.",
+      "impact": "A misconfigured allow-list entry (single-label apex like '.com', '.net', '.io') silently grants images from all hostnames under that TLD. This is an exploitable security bypass if an attacker can influence allow-list configuration or if an operator makes a typo.",
+      "recommendation": "Add label-count enforcement in parseAllowList(): .filter(e => e.replace(/^\\./, '').split('.').length >= 2). Also add a test: isImageAllowed('https://evil.com/img.png') with VITE_ALLOWED_IMAGE_DOMAINS='.com' must return false.",
+      "sources": ["edge-case", "security-adjudication"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "decision_needed",
+      "title": "T&C page content audit not performed — runtime content from backend cannot be statically verified",
+      "problem": "TermsAndConditionsPage renders content from settings?.content fetched at runtime from the backend API. Static grep cannot confirm the absence of external image URLs in this content. If T&C content ever contains markdown images, those images bypass the allow-list (since the page does not appear to use a patched markdown renderer). The acceptance criterion requires confirmation that T&C content is safe.",
+      "impact": "If backend-supplied T&C content includes markdown image links to external domains, those images will render without allow-list enforcement — a potential data-exfiltration vector if T&C content is attacker-influenced.",
+      "recommendation": "Human decision required before merge: (a) Confirm the backend T&C content pipeline never includes external image URLs (backend-side policy / content review), OR (b) Patch TermsAndConditionsPage to use the allow-list-aware markdown renderer for settings?.content rendering. Option (b) is the safer default if T&C content origin cannot be fully controlled.",
+      "sources": ["acceptance", "edge-case"]
+    }
+  ]
+}

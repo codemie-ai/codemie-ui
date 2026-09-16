@@ -89,6 +89,30 @@ VITE_API_URL=http://localhost:8080
 VITE_SUFFIX=/app
 ```
 
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_API_URL` | _(required)_ | Backend API base URL |
+| `VITE_SUFFIX` | `''` | URL path prefix for the app |
+
+### Image Allow-List
+
+Controls which external image domains are rendered in LLM/assistant markdown output. Images from domains not on the list are replaced with a "blocked" badge and no `<img>` element is created, preventing data exfiltration via image requests to attacker-controlled servers.
+
+This is **backend customer configuration**, not a UI environment variable — it is served by `GET /v1/config` under the `allowedImageDomains` id and configured per deployment in the backend's `config/customer/customer-config.yaml`:
+
+```yaml
+- id: "allowedImageDomains"
+  settings:
+    enabled: true
+    value: "cdn.example.com,.trusted.org"
+```
+
+- **Format:** Comma-separated list of hostnames. A leading dot (`.example.com`) allows the apex domain and all its subdomains. Each entry must have at least two labels (e.g. `example.com`, not `com`).
+- **Default (empty):** All external images are blocked. Same-origin and backend-origin images are always allowed regardless of this setting.
+- **Scope:** The allow-list also applies to the HTML produced by "Copy message", so a message pasted into an email client loads no blocked image either.
+
 ## Development Commands
 
 ```bash

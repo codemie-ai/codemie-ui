@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "ts": "2026-07-27T11:20:42Z",
+  "decision": "approve",
+  "confidence": "medium",
+  "risk_flags": [],
+  "rationale": "All three original findings are resolved. CR-001 docs gaps closed: README now has an Environment Variables section documenting VITE_ALLOWED_IMAGE_DOMAINS format, default, security rationale, and Helm notes; .env has the required inline comment. CR-002 security gap closed: parseAllowList() now rejects single-label entries via the two-label minimum filter; two regression tests confirm bypass prevention. CR-003 confirmed resolved without code change: TermsAndConditionsPage renders content through the <Markdown> component → MarkdownTokens.tsx → getMarkdownRenderer(), which already has the patched image override — T&C content is protected. The fix-up diff (98 lines) introduces no new issues.",
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "README Environment Variables section added (line ~89); .env inline comment added above VITE_ALLOWED_IMAGE_DOMAINS. Both address the documentation gaps exactly as recommended."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "parseAllowList() now has .filter(e => e.replace(/^\\./, '').split('.').length >= 2). Two new tests confirm that '.com' and 'com' entries do not allow evil.com — both pass. No new security issues introduced."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "T&C audit confirmed: TermsAndConditionsPage uses <Markdown content={sectionContent} /> which renders via MarkdownTokens.tsx (line 47: const renderer = getMarkdownRenderer()) with the patched image override. All image tokens in T&C content pass through isImageAllowed() before rendering. No code change required — existing patch already covers this surface."
+    }
+  ]
+}

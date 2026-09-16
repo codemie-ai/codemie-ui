@@ -95,7 +95,7 @@ module.exports = {
     'import/no-named-as-default-member': 'off',
     'import/prefer-default-export': 'off' /* enable later */,
     'import/no-cycle': 'off' /* enable later */,
-    'import/no-unresolved': ['error', { ignore: ['\\?react$'] }],
+    'import/no-unresolved': ['error', { ignore: ['\\?react$', '\\?raw$'] }],
     'import/extensions': [
       'error',
       'ignorePackages',

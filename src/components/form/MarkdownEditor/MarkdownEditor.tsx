@@ -19,8 +19,10 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { dracula, prism } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import ExpandSvg from '@/assets/icons/expand.svg?react'
+import BlockedImageBadge from '@/components/BlockedImageBadge/BlockedImageBadge'
 import Popup from '@/components/Popup'
 import { useTheme } from '@/hooks/useTheme'
+import { isImageAllowed } from '@/utils/imageAllowList'
 import { cn } from '@/utils/utils'
 
 import type { Components } from 'react-markdown'
@@ -42,6 +44,18 @@ interface MarkdownComponentProps {
   inline?: boolean
   [key: string]: any
 }
+
+// Kept at module scope so the component identity is stable across renders
+const MarkdownImage = ({
+  src,
+  alt,
+  ...props
+}: MarkdownComponentProps & { src?: string; alt?: string }) =>
+  isImageAllowed(src ?? '') ? (
+    <img src={src} alt={alt} className="max-w-full h-auto rounded-md my-4" {...props} />
+  ) : (
+    <BlockedImageBadge src={src ?? ''} />
+  )
 
 const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
   ({ value, onChange, label, error, required, rows = 10, className }, ref) => {
@@ -340,9 +354,7 @@ const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
           {children}
         </a>
       ),
-      img: ({ src, alt, ...props }: MarkdownComponentProps & { src?: string; alt?: string }) => (
-        <img src={src} alt={alt} className="max-w-full h-auto rounded-md my-4" {...props} />
-      ),
+      img: MarkdownImage,
       strong: ({ children, ...props }: MarkdownComponentProps) => (
         <strong className="font-semibold" {...props}>
           {children}

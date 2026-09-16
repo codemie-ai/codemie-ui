@@ -1,0 +1,2690 @@
+diff --git a/.env b/.env
+index 1e9087789..b6c8eeb8b 100644
+--- a/.env
++++ b/.env
+@@ -9,6 +9,7 @@ VITE_SHOW_ALL_PROJECTS='false'
+ VITE_WORKFLOW_YAML_DOCUMENTATION_URL='https://codemie-ai.github.io/docs/user-guide/workflows/configuration/'
+ VITE_WORKFLOW_DOCUMENTATION_URL='https://docs.codemie.ai/user-guide/workflows/create-workflow'
+ VITE_WORKFLOW_VISUAL_EDITOR_ENABLED='true'
++VITE_ALLOWED_IMAGE_DOMAINS=''
+ 
+ # Keycloak SSO (Azure Entra ID) only for localhost!!!
+ KC_ENTRA_TENANT_ID=
+diff --git a/config.js b/config.js
+index 3c1b81afa..93d7f0788 100644
+--- a/config.js
++++ b/config.js
+@@ -12,3 +12,4 @@ window._env_.VITE_ENABLE_USER_MANAGEMENT = 'true'
+ window._env_.VITE_ENABLE_BUDGET_MANAGEMENT = 'true'
+ window._env_.VITE_IDP_PROVIDER = 'local'
+ window._env_.VITE_MCP_AUTH_ORIGIN = 'http://localhost:8080'
++window._env_.VITE_ALLOWED_IMAGE_DOMAINS = ''
+diff --git a/deploy-templates/templates/configmap.yaml b/deploy-templates/templates/configmap.yaml
+index 2c6433754..a7c962483 100644
+--- a/deploy-templates/templates/configmap.yaml
++++ b/deploy-templates/templates/configmap.yaml
+@@ -20,6 +20,9 @@ data:
+       {{- if .Values.viteMcpAuthOrigin }}
+       VITE_MCP_AUTH_ORIGIN: "{{ .Values.viteMcpAuthOrigin }}",
+       {{- end }}
++      {{- if .Values.viteAllowedImageDomains }}
++      VITE_ALLOWED_IMAGE_DOMAINS: "{{ .Values.viteAllowedImageDomains }}",
++      {{- end }}
+       {{- range $key, $val := .Values.extraConfig }}
+       {{ $key }}: "{{ $val }}",
+       {{- end }}
+diff --git a/deploy-templates/tests/configmap_test.yaml b/deploy-templates/tests/configmap_test.yaml
+index e02000e29..256b04891 100644
+--- a/deploy-templates/tests/configmap_test.yaml
++++ b/deploy-templates/tests/configmap_test.yaml
+@@ -79,6 +79,20 @@ tests:
+           path: data["config.js"]
+           pattern: 'VITE_MCP_AUTH_ORIGIN: "https://auth\.example\.com"'
+ 
++  - it: should not render VITE_ALLOWED_IMAGE_DOMAINS when viteAllowedImageDomains is not set
++    asserts:
++      - notMatchRegex:
++          path: data["config.js"]
++          pattern: 'VITE_ALLOWED_IMAGE_DOMAINS'
++
++  - it: should render VITE_ALLOWED_IMAGE_DOMAINS when viteAllowedImageDomains is set
++    set:
++      viteAllowedImageDomains: "cdn.example.com,.trusted.org"
++    asserts:
++      - matchRegex:
++          path: data["config.js"]
++          pattern: 'VITE_ALLOWED_IMAGE_DOMAINS: "cdn\.example\.com,\.trusted\.org"'
++
+   - it: should not render extraConfig keys when extraConfig is empty
+     asserts:
+       - notMatchRegex:
+diff --git a/deploy-templates/values.yaml b/deploy-templates/values.yaml
+index 28837f501..688f76283 100644
+--- a/deploy-templates/values.yaml
++++ b/deploy-templates/values.yaml
+@@ -26,6 +26,8 @@ viteEnableBudgetManagement: false
+ viteIdpProvider: keycloak
+ # -- MCP authentication origin URL
+ viteMcpAuthOrigin: ""
++# -- Comma-separated list of trusted image domains (e.g. "cdn.example.com,.trusted.org"). Empty = block all external images.
++viteAllowedImageDomains: ""
+ 
+ # -- Secrets with credentials to pull images from a private registry.
+ imagePullSecrets: []
+diff --git a/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/decisions.jsonl b/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/decisions.jsonl
+new file mode 100644
+index 000000000..bae53b9e5
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/decisions.jsonl
+@@ -0,0 +1,2 @@
++{"ts":"2026-07-27T09:49:33Z","gate_id":"spec.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User confirmed spec is ready after 4 rounds of review. No blocking issues remain. Utils/components split correct, tier 5 gates on window.location.hostname, leading-whitespace data:image expectation corrected to allowed, tier 4 protocol-relative rationale accurate, license-header requirement noted.","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false,"prior_context":{"question":"Approve spec for image-allowlist-llm-output to proceed to plan writing?","options":["Approve","Request changes","Abort"],"phase":3,"risk_flags":["security"],"artifact_refs":["docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/spec.md"]}}
++{"ts":"2026-07-27T09:56:00Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved plan to proceed to Stage 5 inline TDD implementation.","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false,"prior_context":{"question":"Approve the implementation plan to proceed to Stage 5 (inline TDD implementation)?","options":["Approve — implement","Request changes","Abort"],"phase":4,"risk_flags":["security"],"artifact_refs":["docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/plan.md"]}}
+diff --git a/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/events.jsonl b/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/events.jsonl
+new file mode 100644
+index 000000000..cdad87e70
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/events.jsonl
+@@ -0,0 +1,2 @@
++{"schema":1,"ts":"2026-07-27T09:49:33Z","event":"decision.recorded","run_id":"2026-07-20-image-allowlist-llm-output","phase":3,"actor":"decision-router","summary":"Decision recorded for spec.approved: approve","artifacts":["decisions.jsonl"],"data":{"gate_id":"spec.approved","mode":"hitl","decision":"approve","source":"hitl","escalated":false,"prior_context":{"question":"Approve spec for image-allowlist-llm-output to proceed to plan writing?","options":["Approve","Request changes","Abort"],"phase":3,"risk_flags":["security"],"artifact_refs":["docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/spec.md"]}}}
++{"schema":1,"ts":"2026-07-27T09:56:00Z","event":"decision.recorded","run_id":"2026-07-20-image-allowlist-llm-output","phase":4,"actor":"decision-router","summary":"Decision recorded for plan.approved: approve","artifacts":["decisions.jsonl"],"data":{"gate_id":"plan.approved","mode":"hitl","decision":"approve","source":"hitl","escalated":false,"prior_context":{"question":"Approve the implementation plan to proceed to Stage 5 (inline TDD implementation)?","options":["Approve — implement","Request changes","Abort"],"phase":4,"risk_flags":["security"],"artifact_refs":["docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/plan.md"]}}}
+diff --git a/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/plan.md b/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/plan.md
+new file mode 100644
+index 000000000..6a01bf92d
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/plan.md
+@@ -0,0 +1,1303 @@
++# Image Allow-List for LLM Output Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++
++**Goal:** Enforce a configurable domain allow-list on every image render path in LLM/Assistant output to prevent URL-based data exfiltration.
++
++**Architecture:** A new `src/utils/imageAllowList.ts` policy module provides `isImageAllowed`, `getBlockedImageBadgeHTML`, and shared constants; a new `BlockedImageBadge` React component provides JSX-path rendering. Four render paths in `Markdown.utils.ts`, `messageHelpers.ts`, `ThoughtMessage.tsx`, and `MarkdownEditor.tsx` are patched to call `isImageAllowed` before emitting any `<img>` tag. A new `VITE_ALLOWED_IMAGE_DOMAINS` env var and matching Helm values control the allow-list at deployment time without a rebuild.
++
++**Tech Stack:** TypeScript, React 18, marked 4.3.0 (renderer override), DOMPurify 3.2.5, react-markdown 10.1.0, Vitest 1.6.1, React Testing Library 16.3.
++
++## Global Constraints
++
++- Every new `.ts` / `.tsx` file requires the Apache 2.0 license header (enforced by pre-commit hook). The header is shown verbatim in Task 1; copy it to every new file.
++- `extractHostname` and `getBlockedImageLabel` and `getBlockedImageBadgeHTML` and `BLOCKED_IMAGE_BADGE_CLASS` and `BLOCKED_IMAGE_BADGE_TITLE` and `isImageAllowed` are all exported from `src/utils/imageAllowList.ts`. `extractHostname` is exported because `BlockedImageBadge` imports it.
++- `parseImageUrl` is the sole call site of `new URL()` in `imageAllowList.ts`. No other function in that module calls `new URL()` directly.
++- `BLOCKED_IMAGE_BADGE_TITLE = 'Image not displayed: domain is not on the allow-list'` — exact string, no variation.
++- `BLOCKED_IMAGE_BADGE_CLASS = 'blocked-image-badge'` — exact string, no variation.
++- Tier order in `isImageAllowed`: blank → data:image/* → parse → scheme → http-on-local-page → same-origin → backend-origin → empty-list → allow-list match → default block.
++- `renderer.image.bind(renderer)` is required in both `Markdown.utils.ts` and `messageHelpers.ts` (marked 4.3.0's `Renderer.image` reads `this.options`; without bind, strict-mode modules call it with `this === undefined`).
++- All unit tests live in `__tests__/` subdirectories next to the source files.
++- Test framework: Vitest + `@testing-library/react`. Import `describe`, `it`, `expect`, `vi`, `beforeEach`, `afterEach` from `vitest`.
++- `npm run test:unit` runs all unit tests; `npx vitest run --project unit <path>` runs a single file.
++
++---
++
++## Task 1: Policy module + React badge component
++
++**Files:**
++- Create: `src/utils/imageAllowList.ts`
++- Create: `src/components/BlockedImageBadge/BlockedImageBadge.tsx`
++- Create: `src/utils/__tests__/imageAllowList.test.tsx`
++- Create: `src/components/BlockedImageBadge/__tests__/BlockedImageBadge.test.tsx`
++
++**Test-first:** yes — write failing tests before implementing each file.
++
++**Interfaces:**
++- Produces (for Tasks 2-4):
++  - `isImageAllowed(src: string): boolean`
++  - `getBlockedImageBadgeHTML(src: string): string`
++  - `extractHostname(src: string): string | undefined`
++  - `getBlockedImageLabel(hostname?: string): string`
++  - `BLOCKED_IMAGE_BADGE_CLASS: string`
++  - `BLOCKED_IMAGE_BADGE_TITLE: string`
++  - `BlockedImageBadge` (default export, `FC<{ src: string }>`)
++
++---
++
++- [ ] **Step 1: Write failing tests for `imageAllowList.ts`**
++
++Create `src/utils/__tests__/imageAllowList.test.tsx`:
++
++```tsx
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import DOMPurify from 'dompurify'
++import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
++
++const mockApi = vi.hoisted(() => ({
++  BASE_URL: 'http://localhost/api',
++  get: vi.fn(),
++  post: vi.fn(),
++  put: vi.fn(),
++  delete: vi.fn(),
++  patch: vi.fn(),
++  handleError: vi.fn(),
++}))
++
++vi.mock('@/utils/api', () => ({ default: mockApi }))
++
++import {
++  isImageAllowed,
++  getBlockedImageBadgeHTML,
++  getBlockedImageLabel,
++  BLOCKED_IMAGE_BADGE_CLASS,
++  BLOCKED_IMAGE_BADGE_TITLE,
++} from '@/utils/imageAllowList'
++import BlockedImageBadge from '@/components/BlockedImageBadge/BlockedImageBadge'
++
++function stubProductionLocation() {
++  vi.stubGlobal('location', {
++    hostname: 'production.example.com',
++    origin: 'https://production.example.com',
++    href: 'https://production.example.com/',
++  })
++}
++
++function stubLocalLocation() {
++  vi.stubGlobal('location', {
++    hostname: 'localhost',
++    origin: 'http://localhost',
++    href: 'http://localhost/',
++  })
++}
++
++beforeEach(() => {
++  mockApi.BASE_URL = 'http://localhost/api'
++  ;(window as any)._env_ = undefined
++})
++
++afterEach(() => {
++  vi.unstubAllGlobals()
++})
++
++describe('isImageAllowed — tier 1: blank', () => {
++  it('blocks empty string', () => {
++    expect(isImageAllowed('')).toBe(false)
++  })
++
++  it('blocks whitespace-only string', () => {
++    expect(isImageAllowed('   ')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 2: data:image/*', () => {
++  it('allows data:image/png', () => {
++    expect(isImageAllowed('data:image/png;base64,abc123==')).toBe(true)
++  })
++
++  it('allows data:image/svg+xml', () => {
++    expect(isImageAllowed('data:image/svg+xml,%3Csvg%3E%3C/svg%3E')).toBe(true)
++  })
++
++  it('allows data:image/png with leading whitespace (trimmed at entry)', () => {
++    expect(isImageAllowed(' data:image/png;base64,abc123==')).toBe(true)
++  })
++
++  it('blocks data:text/html (not data:image)', () => {
++    expect(isImageAllowed('data:text/html;base64,PHNjcmlwdD4=')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 3: malformed URL', () => {
++  beforeEach(() => stubProductionLocation())
++
++  it('blocks a malformed string that is not a valid URL', () => {
++    expect(isImageAllowed('not a url :// @@')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 4: scheme', () => {
++  beforeEach(() => stubProductionLocation())
++
++  it('blocks blob: URL', () => {
++    expect(isImageAllowed('blob:https://example.com/some-id')).toBe(false)
++  })
++
++  it('blocks protocol-relative //evil.com/x.png on production page (resolves to https:, blocked by tier 8)', () => {
++    // Resolves to https://evil.com/x.png — passes tier 4, no match in tiers 6-7, blocked at tier 8
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    expect(isImageAllowed('//evil.com/x.png')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 5: http: only on local page', () => {
++  it('blocks http://evil.com on an HTTPS production page', () => {
++    stubProductionLocation()
++    expect(isImageAllowed('http://evil.com/img.png')).toBe(false)
++  })
++
++  it('allows http://localhost/img.png on a local page (hostname=localhost)', () => {
++    stubLocalLocation()
++    expect(isImageAllowed('http://localhost/img.png')).toBe(true)
++  })
++
++  it('allows http://127.0.0.1/img.png on a local page (hostname=127.0.0.1)', () => {
++    vi.stubGlobal('location', {
++      hostname: '127.0.0.1',
++      origin: 'http://127.0.0.1',
++      href: 'http://127.0.0.1/',
++    })
++    expect(isImageAllowed('http://127.0.0.1/img.png')).toBe(true)
++  })
++
++  it('blocks http://localhost/img.png on a production page', () => {
++    stubProductionLocation()
++    expect(isImageAllowed('http://localhost/img.png')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 6: same-origin', () => {
++  it('allows a same-origin absolute URL', () => {
++    stubLocalLocation()
++    expect(isImageAllowed('http://localhost/static/img.png')).toBe(true)
++  })
++
++  it('allows a same-origin relative URL resolved against href', () => {
++    stubLocalLocation()
++    expect(isImageAllowed('/api/v1/files/abc.png')).toBe(true)
++  })
++})
++
++describe('isImageAllowed — tier 7: backend origin', () => {
++  it('allows an image from the backend origin (absolute VITE_API_URL)', () => {
++    stubProductionLocation()
++    mockApi.BASE_URL = 'https://codemie.example.com/code-assistant-api'
++    expect(isImageAllowed('https://codemie.example.com/code-assistant-api/v1/files/img.png')).toBe(true)
++  })
++})
++
++describe('isImageAllowed — tier 8: empty allow-list', () => {
++  it('blocks external https:// URL when allow-list is empty', () => {
++    stubProductionLocation()
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    mockApi.BASE_URL = 'https://api.example.com'
++    expect(isImageAllowed('https://external.com/img.png')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 9: allow-list matching', () => {
++  beforeEach(() => {
++    stubProductionLocation()
++    mockApi.BASE_URL = 'https://api.example.com'
++  })
++
++  it('allows exact match in list', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: 'cdn.example.com' }
++    expect(isImageAllowed('https://cdn.example.com/img.png')).toBe(true)
++  })
++
++  it('leading-dot wildcard .example.com matches apex example.com', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '.example.com' }
++    expect(isImageAllowed('https://example.com/img.png')).toBe(true)
++  })
++
++  it('leading-dot wildcard .example.com matches sub.example.com', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '.example.com' }
++    expect(isImageAllowed('https://sub.example.com/img.png')).toBe(true)
++  })
++
++  it('leading-dot wildcard .example.com rejects evil-example.com', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '.example.com' }
++    expect(isImageAllowed('https://evil-example.com/img.png')).toBe(false)
++  })
++
++  it('leading-dot wildcard .example.com rejects example.com.evil.io', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '.example.com' }
++    expect(isImageAllowed('https://example.com.evil.io/img.png')).toBe(false)
++  })
++
++  it('allow-list entry with extra whitespace and mixed case is normalized', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '  CDN.EXAMPLE.COM  ' }
++    expect(isImageAllowed('https://cdn.example.com/img.png')).toBe(true)
++  })
++})
++
++describe('getBlockedImageBadgeHTML', () => {
++  it('contains data-blocked-image-hostname, title, and label for a normal URL', () => {
++    const html = getBlockedImageBadgeHTML('https://evil.com/img.png')
++    expect(html).toContain('data-blocked-image-hostname="evil.com"')
++    expect(html).toContain(`title="${BLOCKED_IMAGE_BADGE_TITLE}"`)
++    expect(html).toContain('Image from evil.com blocked')
++    expect(html).toContain(BLOCKED_IMAGE_BADGE_CLASS)
++  })
++
++  it('returns empty string for blank src', () => {
++    expect(getBlockedImageBadgeHTML('')).toBe('')
++  })
++
++  it('HTML-escapes a hostname containing angle brackets', () => {
++    // Browsers don't return < in hostnames but we verify escaping logic
++    const html = getBlockedImageBadgeHTML('https://evil.com/img.png')
++    expect(html).not.toMatch(/<[^s]/)
++  })
++
++  it('renders fallback label and no data attribute for malformed src', () => {
++    const html = getBlockedImageBadgeHTML('not-a-valid-url @@')
++    expect(html).toContain('Image from untrusted domain blocked')
++    expect(html).not.toContain('data-blocked-image-hostname=')
++  })
++
++  it('data-blocked-image-hostname survives DOMPurify.sanitize with ADD_ATTR target', () => {
++    const html = getBlockedImageBadgeHTML('https://evil.com/img.png')
++    const sanitized = DOMPurify.sanitize(html, { ADD_ATTR: ['target'] })
++    const div = document.createElement('div')
++    div.innerHTML = sanitized
++    const span = div.querySelector('span')
++    expect(span?.dataset.blockedImageHostname).toBe('evil.com')
++  })
++})
++
++describe('getBlockedImageLabel', () => {
++  it('returns hostname-specific label when hostname provided', () => {
++    expect(getBlockedImageLabel('cdn.evil.com')).toBe('Image from cdn.evil.com blocked')
++  })
++
++  it('returns fallback label when hostname is undefined', () => {
++    expect(getBlockedImageLabel(undefined)).toBe('Image from untrusted domain blocked')
++  })
++})
++
++describe('drift prevention: BlockedImageBadge renders same structure as getBlockedImageBadgeHTML', () => {
++  it('matches tagName, className, dataset, title, textContent', () => {
++    const src = 'https://evil.com/img.png'
++    const htmlString = getBlockedImageBadgeHTML(src)
++
++    // Parse HTML string into a DOM node
++    const container = document.createElement('div')
++    container.innerHTML = htmlString
++    const fromHtml = container.firstElementChild as HTMLElement
++
++    // Render React component
++    const { container: reactContainer } = render(<BlockedImageBadge src={src} />)
++    const fromReact = reactContainer.firstElementChild as HTMLElement
++
++    expect(fromReact.tagName).toBe(fromHtml.tagName)
++    expect(fromReact.className).toBe(fromHtml.className)
++    expect(fromReact.dataset.blockedImageHostname).toBe(fromHtml.dataset.blockedImageHostname)
++    expect(fromReact.title).toBe(fromHtml.title)
++    expect(fromReact.textContent).toBe(fromHtml.textContent)
++  })
++})
++```
++
++- [ ] **Step 2: Run the failing tests**
++
++```bash
++npx vitest run --project unit src/utils/__tests__/imageAllowList.test.tsx
++```
++
++Expected: many `FAIL` errors — `Cannot find module '@/utils/imageAllowList'` and `Cannot find module '@/components/BlockedImageBadge/BlockedImageBadge'`.
++
++- [ ] **Step 3: Write failing tests for `BlockedImageBadge.tsx`**
++
++Create `src/components/BlockedImageBadge/__tests__/BlockedImageBadge.test.tsx`:
++
++```tsx
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { describe, it, expect } from 'vitest'
++
++import {
++  BLOCKED_IMAGE_BADGE_CLASS,
++  BLOCKED_IMAGE_BADGE_TITLE,
++} from '@/utils/imageAllowList'
++import BlockedImageBadge from '../BlockedImageBadge'
++
++describe('BlockedImageBadge', () => {
++  it('renders nothing for blank src', () => {
++    const { container } = render(<BlockedImageBadge src="" />)
++    expect(container.firstChild).toBeNull()
++  })
++
++  it('renders badge with correct hostname, class, title, and label', () => {
++    const { container } = render(<BlockedImageBadge src="https://evil.com/img.png" />)
++    const span = container.querySelector('span')!
++    expect(span).toBeInTheDocument()
++    expect(span.className).toBe(BLOCKED_IMAGE_BADGE_CLASS)
++    expect(span.title).toBe(BLOCKED_IMAGE_BADGE_TITLE)
++    expect(span.dataset.blockedImageHostname).toBe('evil.com')
++    expect(span.textContent).toBe('Image from evil.com blocked')
++  })
++})
++```
++
++- [ ] **Step 4: Run BlockedImageBadge tests to confirm they fail**
++
++```bash
++npx vitest run --project unit src/components/BlockedImageBadge/__tests__/BlockedImageBadge.test.tsx
++```
++
++Expected: FAIL — `Cannot find module '@/components/BlockedImageBadge/BlockedImageBadge'`.
++
++- [ ] **Step 5: Implement `src/utils/imageAllowList.ts`**
++
++Create `src/utils/imageAllowList.ts`:
++
++```typescript
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import api from '@/utils/api'
++
++export const BLOCKED_IMAGE_BADGE_CLASS = 'blocked-image-badge'
++export const BLOCKED_IMAGE_BADGE_TITLE = 'Image not displayed: domain is not on the allow-list'
++
++function parseImageUrl(src: string): URL | undefined {
++  try {
++    return new URL(src, window.location.href)
++  } catch {
++    return undefined
++  }
++}
++
++export function extractHostname(src: string): string | undefined {
++  if (!src.trim()) return undefined
++  return parseImageUrl(src)?.hostname || undefined
++}
++
++function parseAllowList(): Set<string> {
++  const raw =
++    window?._env_?.VITE_ALLOWED_IMAGE_DOMAINS || import.meta.env.VITE_ALLOWED_IMAGE_DOMAINS || ''
++  return new Set(
++    (raw as string)
++      .split(',')
++      .map((e: string) => e.trim().toLowerCase())
++      .filter(Boolean)
++  )
++}
++
++function getBackendOrigin(): string | null {
++  return parseImageUrl(api.BASE_URL)?.origin ?? null
++}
++
++export function getBlockedImageLabel(hostname?: string): string {
++  return hostname ? `Image from ${hostname} blocked` : 'Image from untrusted domain blocked'
++}
++
++function escapeHtml(str: string): string {
++  return str
++    .replace(/&/g, '&amp;')
++    .replace(/</g, '&lt;')
++    .replace(/>/g, '&gt;')
++    .replace(/"/g, '&quot;')
++}
++
++export function getBlockedImageBadgeHTML(src: string): string {
++  if (!src.trim()) return ''
++  const hostname = extractHostname(src)
++  const hostnameAttr = hostname ? ` data-blocked-image-hostname="${escapeHtml(hostname)}"` : ''
++  const label = getBlockedImageLabel(hostname)
++  return `<span class="${BLOCKED_IMAGE_BADGE_CLASS}"${hostnameAttr} title="${BLOCKED_IMAGE_BADGE_TITLE}">${escapeHtml(label)}</span>`
++}
++
++export function isImageAllowed(src: string): boolean {
++  src = src.trim()
++  // Tier 1: blank src — browser re-requests current page; never render
++  if (!src) return false
++  // Tier 2: data:image/* issues no network request and is always safe
++  if (/^data:image\//i.test(src)) return true
++  // Tier 3: unparseable URL — no safe interpretation
++  const url = parseImageUrl(src)
++  if (!url) return false
++  // Tier 4: only https: and http: are accepted; blob:, data:text/, etc. are blocked
++  if (url.protocol !== 'https:' && url.protocol !== 'http:') return false
++  // Tier 5: http: is only safe when the page itself is running locally
++  // (gating on page hostname, not image hostname, prevents probing local services from prod pages)
++  if (url.protocol === 'http:') {
++    const pageHostname = window.location.hostname
++    if (pageHostname !== 'localhost' && pageHostname !== '127.0.0.1') return false
++  }
++  // Tier 6: same-origin (covers /api/v1/files/ in local dev)
++  if (url.origin === window.location.origin) return true
++  // Tier 7: backend origin (covers absolute VITE_API_URL in production)
++  if (url.origin === getBackendOrigin()) return true
++  // Tier 8: empty allow-list → default-deny all external images
++  const allowList = parseAllowList()
++  if (allowList.size === 0) return false
++  // Tier 9: allow-list hostname matching
++  const hostname = url.hostname
++  for (const entry of allowList) {
++    if (entry.startsWith('.')) {
++      // Leading-dot wildcard: matches apex and all subdomains
++      // entry.slice(1) == 'example.com'; endsWith('.example.com') matches sub.example.com
++      // 'evil-example.com' ends with '-example.com' not '.example.com' — safe
++      if (hostname === entry.slice(1) || hostname.endsWith(entry)) return true
++    } else {
++      if (hostname === entry) return true
++    }
++  }
++  return false
++}
++```
++
++- [ ] **Step 6: Implement `src/components/BlockedImageBadge/BlockedImageBadge.tsx`**
++
++Create `src/components/BlockedImageBadge/BlockedImageBadge.tsx`:
++
++```tsx
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { FC } from 'react'
++
++import {
++  BLOCKED_IMAGE_BADGE_CLASS,
++  BLOCKED_IMAGE_BADGE_TITLE,
++  extractHostname,
++  getBlockedImageLabel,
++} from '@/utils/imageAllowList'
++
++interface BlockedImageBadgeProps {
++  src: string
++}
++
++const BlockedImageBadge: FC<BlockedImageBadgeProps> = ({ src }) => {
++  if (!src.trim()) return null
++  const hostname = extractHostname(src)
++  return (
++    <span
++      className={BLOCKED_IMAGE_BADGE_CLASS}
++      data-blocked-image-hostname={hostname}
++      title={BLOCKED_IMAGE_BADGE_TITLE}
++    >
++      {getBlockedImageLabel(hostname)}
++    </span>
++  )
++}
++
++export default BlockedImageBadge
++```
++
++- [ ] **Step 7: Run all Task 1 tests and verify they pass**
++
++```bash
++npx vitest run --project unit src/utils/__tests__/imageAllowList.test.tsx src/components/BlockedImageBadge/__tests__/BlockedImageBadge.test.tsx
++```
++
++Expected: all tests PASS.
++
++- [ ] **Step 8: Commit**
++
++```bash
++git add src/utils/imageAllowList.ts \
++  src/components/BlockedImageBadge/BlockedImageBadge.tsx \
++  src/utils/__tests__/imageAllowList.test.tsx \
++  src/components/BlockedImageBadge/__tests__/BlockedImageBadge.test.tsx
++git commit -m "feat(EPMCDME-12950): add image allow-list policy module and BlockedImageBadge component"
++```
++
++---
++
++## Task 2: Patch `getMarkdownRenderer()` in both renderer files
++
++**Files:**
++- Modify: `src/components/markdown/Markdown.utils.ts:124-140`
++- Modify: `src/utils/messageHelpers.ts:49-66`
++- Create: `src/components/markdown/__tests__/Markdown.utils.test.ts`
++- Create: `src/components/markdown/__tests__/MarkdownTokens.test.tsx`
++
++**Test-first:** yes.
++
++**Interfaces:**
++- Consumes (from Task 1): `isImageAllowed`, `getBlockedImageBadgeHTML`
++- Produces: `getMarkdownRenderer()` now returns a renderer whose `image` method applies the allow-list policy.
++
++---
++
++- [ ] **Step 1: Write failing tests for the renderer override**
++
++Create `src/components/markdown/__tests__/Markdown.utils.test.ts`:
++
++```typescript
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect, vi, beforeEach } from 'vitest'
++
++const mockIsImageAllowed = vi.hoisted(() => vi.fn())
++const mockGetBlockedImageBadgeHTML = vi.hoisted(() => vi.fn())
++
++vi.mock('@/utils/imageAllowList', () => ({
++  isImageAllowed: mockIsImageAllowed,
++  getBlockedImageBadgeHTML: mockGetBlockedImageBadgeHTML,
++  BLOCKED_IMAGE_BADGE_CLASS: 'blocked-image-badge',
++  BLOCKED_IMAGE_BADGE_TITLE: 'Image not displayed: domain is not on the allow-list',
++  getBlockedImageLabel: vi.fn((h?: string) => h ? `Image from ${h} blocked` : 'Image from untrusted domain blocked'),
++  extractHostname: vi.fn((src: string) => {
++    try { return new URL(src).hostname } catch { return undefined }
++  }),
++}))
++
++import { getMarkdownRenderer } from '@/components/markdown/Markdown.utils'
++
++describe('getMarkdownRenderer — image override', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++    mockGetBlockedImageBadgeHTML.mockReturnValue('<span class="blocked-image-badge">blocked</span>')
++  })
++
++  it('delegates to the original renderer for an allowed image', () => {
++    mockIsImageAllowed.mockReturnValue(true)
++    const renderer = getMarkdownRenderer()
++    const result = renderer.image('https://allowed.com/img.png', null, 'alt text')
++    expect(result).toContain('<img')
++    expect(result).toContain('https://allowed.com/img.png')
++    expect(mockIsImageAllowed).toHaveBeenCalledWith('https://allowed.com/img.png')
++  })
++
++  it('returns badge HTML for a blocked image', () => {
++    mockIsImageAllowed.mockReturnValue(false)
++    const renderer = getMarkdownRenderer()
++    const result = renderer.image('https://evil.com/img.png', null, 'alt text')
++    expect(result).toBe('<span class="blocked-image-badge">blocked</span>')
++    expect(mockGetBlockedImageBadgeHTML).toHaveBeenCalledWith('https://evil.com/img.png')
++  })
++
++  it('does not throw (this-binding is correct)', () => {
++    mockIsImageAllowed.mockReturnValue(true)
++    const renderer = getMarkdownRenderer()
++    // Calling image with an unbound function would throw in strict mode — this must not throw
++    expect(() => renderer.image('https://allowed.com/img.png', 'title', 'alt')).not.toThrow()
++  })
++})
++```
++
++- [ ] **Step 2: Run the test to verify it fails**
++
++```bash
++npx vitest run --project unit src/components/markdown/__tests__/Markdown.utils.test.ts
++```
++
++Expected: FAIL — `renderer.image` is not a function or does not call `isImageAllowed` (the override doesn't exist yet).
++
++- [ ] **Step 3: Patch `src/components/markdown/Markdown.utils.ts`**
++
++Add the import at the top of the imports block (after `import api from '@/utils/api'`):
++
++```typescript
++import { getBlockedImageBadgeHTML, isImageAllowed } from '@/utils/imageAllowList'
++```
++
++Then in `getMarkdownRenderer()`, add the `imageRenderer` capture and override. The new function body (full replacement of lines 124–140):
++
++```typescript
++export const getMarkdownRenderer = () => {
++  const renderer = new marked.Renderer()
++  const tableRenderer = renderer.table
++  const codespanRenderer = renderer.codespan
++  const imageRenderer = renderer.image.bind(renderer)
++  renderer.link = (href, title, text) => {
++    const titleAttr = title ? `title="${title}"` : ''
++    return `<a href="${href}" target="_blank" rel="noopener noreferrer" ${titleAttr}>${text}</a>`
++  }
++  renderer.image = (href: string, title: string | null, text: string): string =>
++    isImageAllowed(href) ? imageRenderer(href, title, text) : getBlockedImageBadgeHTML(href)
++  // Wrap table element to have horizontal scroll for tables
++  renderer.table = (...args) => `<div class="overflow-x-auto">${tableRenderer(...args)}</div>`
++  // Almost any text containing ~ wraps in del. Removed it completely as agents don't seem to use it correctly anyway.
++  renderer.del = (text) => text
++  renderer.codespan = (text) =>
++    codespanRenderer(text.replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;'))
++
++  return renderer
++}
++```
++
++- [ ] **Step 4: Run Markdown.utils tests — verify they pass**
++
++```bash
++npx vitest run --project unit src/components/markdown/__tests__/Markdown.utils.test.ts
++```
++
++Expected: 3 tests PASS.
++
++- [ ] **Step 5: Write failing MarkdownTokens integration tests**
++
++Create `src/components/markdown/__tests__/MarkdownTokens.test.tsx`:
++
++```tsx
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { marked } from 'marked'
++import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
++
++const mockApi = vi.hoisted(() => ({
++  BASE_URL: 'http://localhost/api',
++  get: vi.fn(),
++  post: vi.fn(),
++  put: vi.fn(),
++  delete: vi.fn(),
++  patch: vi.fn(),
++  handleError: vi.fn(),
++}))
++
++vi.mock('@/utils/api', () => ({ default: mockApi }))
++
++import MarkdownTokens from '@/components/markdown/MarkdownTokens'
++import { MarkdownToken } from '@/components/markdown/Markdown.utils'
++
++function getImageToken(url: string, alt = 'alt'): MarkdownToken {
++  const tokens = marked.lexer(`![${alt}](${url})`)
++  // marked wraps inline tokens in a paragraph; image is inside paragraph.tokens
++  const para = tokens[0] as any
++  return para.tokens[0] as MarkdownToken
++}
++
++beforeEach(() => {
++  ;(window as any)._env_ = undefined
++  vi.stubGlobal('location', {
++    hostname: 'production.example.com',
++    origin: 'https://production.example.com',
++    href: 'https://production.example.com/',
++  })
++})
++
++afterEach(() => {
++  vi.unstubAllGlobals()
++})
++
++describe('MarkdownTokens — image rendering', () => {
++  it('renders <img> for an allowed domain in the allow-list', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: 'allowed.example.com' }
++    const token = getImageToken('https://allowed.example.com/img.png')
++    const { container } = render(<MarkdownTokens tokens={[token]} />)
++    expect(container.querySelector('img')).toBeInTheDocument()
++    expect(container.querySelector('img')?.src).toContain('allowed.example.com')
++  })
++
++  it('renders badge and no <img> for a blocked domain (empty allow-list)', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    const token = getImageToken('https://evil.com/img.png')
++    const { container } = render(<MarkdownTokens tokens={[token]} />)
++    expect(container.querySelector('img')).not.toBeInTheDocument()
++    expect(container.querySelector('.blocked-image-badge')).toBeInTheDocument()
++  })
++
++  it('data-blocked-image-hostname survives DOMPurify sanitization', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    const token = getImageToken('https://evil.com/img.png')
++    const { container } = render(<MarkdownTokens tokens={[token]} />)
++    const badge = container.querySelector('.blocked-image-badge') as HTMLElement
++    expect(badge?.dataset.blockedImageHostname).toBe('evil.com')
++  })
++})
++```
++
++- [ ] **Step 6: Run MarkdownTokens tests — verify badge test fails (no badge yet since MarkdownTokens uses module-level renderer)**
++
++```bash
++npx vitest run --project unit src/components/markdown/__tests__/MarkdownTokens.test.tsx
++```
++
++Expected: the badge tests FAIL (no `.blocked-image-badge` in DOM) because `MarkdownTokens.tsx` caches `const renderer = getMarkdownRenderer()` at module level. The tests will pass once `Markdown.utils.ts` patch is applied (the module is re-evaluated in each test file run).
++
++Note: if tests pass already due to module isolation in Vitest, that is correct behavior — the module cache is separate per test file.
++
++- [ ] **Step 7: Patch `src/utils/messageHelpers.ts` with the identical renderer change**
++
++Add the import alongside the existing imports:
++
++```typescript
++import { getBlockedImageBadgeHTML, isImageAllowed } from '@/utils/imageAllowList'
++```
++
++Then in `getMarkdownRenderer()`, add the `imageRenderer` capture and override. New function body (full replacement of lines 49–66):
++
++```typescript
++export const getMarkdownRenderer = (): marked.Renderer => {
++  const renderer = new marked.Renderer()
++  const tableRenderer = renderer.table
++  const codespanRenderer = renderer.codespan
++  const imageRenderer = renderer.image.bind(renderer)
++  renderer.link = (href: string, title: string | null, text: string): string => {
++    const titleAttr = title ? `title="${title}"` : ''
++    return `<a href="${href}" target="_blank" rel="noopener noreferrer" ${titleAttr}>${text}</a>`
++  }
++  renderer.image = (href: string, title: string | null, text: string): string =>
++    isImageAllowed(href) ? imageRenderer(href, title, text) : getBlockedImageBadgeHTML(href)
++  // Wrap table element to have horizontal scroll for tables
++  renderer.table = (...args: any[]): string =>
++    `<div class="overflow-x-auto">${tableRenderer(...args)}</div>`
++  // Almost any text containing ~ wraps in del. Removed it completely as agents don't seem to use it correctly anyway.
++  renderer.del = (text: string): string => text
++  renderer.codespan = (text: string): string =>
++    codespanRenderer(text.replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;'))
++
++  return renderer
++}
++```
++
++- [ ] **Step 8: Run all Task 2 tests**
++
++```bash
++npx vitest run --project unit src/components/markdown/__tests__/Markdown.utils.test.ts src/components/markdown/__tests__/MarkdownTokens.test.tsx
++```
++
++Expected: all tests PASS.
++
++- [ ] **Step 9: Commit**
++
++```bash
++git add src/components/markdown/Markdown.utils.ts \
++  src/utils/messageHelpers.ts \
++  src/components/markdown/__tests__/Markdown.utils.test.ts \
++  src/components/markdown/__tests__/MarkdownTokens.test.tsx
++git commit -m "feat(EPMCDME-12950): add image allow-list check to getMarkdownRenderer in both renderer files"
++```
++
++---
++
++## Task 3: Patch `ThoughtMessage.tsx` structured image path
++
++**Files:**
++- Modify: `src/components/Thought/ThoughtMessage.tsx:131-142`
++- Create: `src/components/Thought/__tests__/ThoughtMessage.test.tsx`
++
++**Test-first:** yes.
++
++**Interfaces:**
++- Consumes (from Task 1): `isImageAllowed`, `BlockedImageBadge` (default export)
++- `ThoughtMessage` currently renders `<img src={segment.url}>` for `segment.type === 'image'` with no validation.
++
++---
++
++- [ ] **Step 1: Write failing tests for the ThoughtMessage image guard**
++
++Create `src/components/Thought/__tests__/ThoughtMessage.test.tsx`:
++
++```tsx
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render, screen } from '@testing-library/react'
++import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
++
++const mockIsImageAllowed = vi.hoisted(() => vi.fn())
++
++vi.mock('@/utils/imageAllowList', () => ({
++  isImageAllowed: mockIsImageAllowed,
++  getBlockedImageBadgeHTML: vi.fn().mockReturnValue('<span>blocked</span>'),
++  BLOCKED_IMAGE_BADGE_CLASS: 'blocked-image-badge',
++  BLOCKED_IMAGE_BADGE_TITLE: 'Image not displayed: domain is not on the allow-list',
++  getBlockedImageLabel: vi.fn((h?: string) => h ? `Image from ${h} blocked` : 'Image from untrusted domain blocked'),
++  extractHostname: vi.fn((src: string) => {
++    try { return new URL(src).hostname } catch { return undefined }
++  }),
++}))
++
++import { Thought, ThoughtAuthorType } from '@/types/entity/conversation'
++import ThoughtMessage from '../ThoughtMessage'
++
++const makeImageThought = (url: string): Thought => ({
++  id: 'thought-1',
++  author_name: 'Agent',
++  author_type: ThoughtAuthorType.Tool,
++  message: JSON.stringify([{ type: 'image', url, alt: 'test image' }]),
++  in_progress: false,
++})
++
++beforeEach(() => {
++  vi.clearAllMocks()
++})
++
++afterEach(() => {
++  vi.unstubAllGlobals()
++})
++
++describe('ThoughtMessage — image segment policy', () => {
++  it('renders <img> when image URL is allowed', () => {
++    mockIsImageAllowed.mockReturnValue(true)
++    render(<ThoughtMessage thought={makeImageThought('https://allowed.com/img.png')} />)
++    expect(screen.getByRole('img')).toBeInTheDocument()
++    expect(screen.getByRole('img')).toHaveAttribute('src', 'https://allowed.com/img.png')
++  })
++
++  it('renders BlockedImageBadge and no <img> when URL is blocked', () => {
++    mockIsImageAllowed.mockReturnValue(false)
++    const { container } = render(<ThoughtMessage thought={makeImageThought('https://evil.com/img.png')} />)
++    expect(container.querySelector('img')).not.toBeInTheDocument()
++    expect(container.querySelector('.blocked-image-badge')).toBeInTheDocument()
++  })
++
++  it('onError handler on allowed <img> hides image on load failure', () => {
++    mockIsImageAllowed.mockReturnValue(true)
++    render(<ThoughtMessage thought={makeImageThought('https://allowed.com/img.png')} />)
++    const img = screen.getByRole('img') as HTMLImageElement
++    // Simulate error event
++    img.dispatchEvent(new Event('error', { bubbles: true }))
++    expect(img.style.display).toBe('none')
++  })
++})
++```
++
++- [ ] **Step 2: Run tests to verify they fail**
++
++```bash
++npx vitest run --project unit src/components/Thought/__tests__/ThoughtMessage.test.tsx
++```
++
++Expected: the "renders BlockedImageBadge and no `<img>` when URL is blocked" test FAILS (renders `<img>` unconditionally) and the "renders `<img>` when allowed" test may pass or fail depending on allow-list state.
++
++- [ ] **Step 3: Patch `src/components/Thought/ThoughtMessage.tsx`**
++
++Add imports at the top of the file, alongside existing imports:
++
++```typescript
++import BlockedImageBadge from '@/components/BlockedImageBadge/BlockedImageBadge'
++import { isImageAllowed } from '@/utils/imageAllowList'
++```
++
++Replace the `segment.type === 'image'` block (lines 131–142):
++
++**Before:**
++```tsx
++      {segment.type === 'image' && (
++        <img
++          src={segment.url}
++          alt={segment.alt}
++          className="max-w-full h-auto rounded-lg border border-border-structural shadow-sm"
++          style={{ maxHeight: 400, objectFit: 'contain' }}
++          onError={(e) => {
++            ;(e.target as HTMLImageElement).style.display = 'none'
++            console.error('Failed to load image:', segment.url.substring(0, 50) + '...')
++          }}
++        />
++      )}
++```
++
++**After:**
++```tsx
++      {segment.type === 'image' && (
++        isImageAllowed(segment.url)
++          ? <img
++              src={segment.url}
++              alt={segment.alt}
++              className="max-w-full h-auto rounded-lg border border-border-structural shadow-sm"
++              style={{ maxHeight: 400, objectFit: 'contain' }}
++              onError={(e) => {
++                ;(e.target as HTMLImageElement).style.display = 'none'
++                console.error('Failed to load image:', segment.url.substring(0, 50) + '...')
++              }}
++            />
++          : <BlockedImageBadge src={segment.url} />
++      )}
++```
++
++- [ ] **Step 4: Run ThoughtMessage tests — verify they all pass**
++
++```bash
++npx vitest run --project unit src/components/Thought/__tests__/ThoughtMessage.test.tsx
++```
++
++Expected: all 3 tests PASS.
++
++- [ ] **Step 5: Commit**
++
++```bash
++git add src/components/Thought/ThoughtMessage.tsx \
++  src/components/Thought/__tests__/ThoughtMessage.test.tsx
++git commit -m "feat(EPMCDME-12950): guard ThoughtMessage structured image_url segment with isImageAllowed"
++```
++
++---
++
++## Task 4: Patch `MarkdownEditor.tsx` react-markdown img component
++
++**Files:**
++- Modify: `src/components/form/MarkdownEditor/MarkdownEditor.tsx:343-345`
++
++**Test-first:** The spec does not specify a test file for `MarkdownEditor.tsx`. The change is structurally identical to the `ThoughtMessage` patch. No new test file.
++
++**Interfaces:**
++- Consumes (from Task 1): `isImageAllowed`, `BlockedImageBadge`
++
++---
++
++- [ ] **Step 1: Add imports to `src/components/form/MarkdownEditor/MarkdownEditor.tsx`**
++
++Add alongside existing imports at the top of the file:
++
++```typescript
++import BlockedImageBadge from '@/components/BlockedImageBadge/BlockedImageBadge'
++import { isImageAllowed } from '@/utils/imageAllowList'
++```
++
++- [ ] **Step 2: Replace the `img` component at line 343**
++
++**Before (lines 343–345):**
++```tsx
++      img: ({ src, alt, ...props }: MarkdownComponentProps & { src?: string; alt?: string }) => (
++        <img src={src} alt={alt} className="max-w-full h-auto rounded-md my-4" {...props} />
++      ),
++```
++
++**After:**
++```tsx
++      img: ({ src = '', alt, ...props }: MarkdownComponentProps & { src?: string; alt?: string }) => (
++        isImageAllowed(src)
++          ? <img src={src} alt={alt} className="max-w-full h-auto rounded-md my-4" {...props} />
++          : <BlockedImageBadge src={src} />
++      ),
++```
++
++- [ ] **Step 3: Run the full unit test suite to check for regressions**
++
++```bash
++npm run test:unit
++```
++
++Expected: all tests PASS, no regressions.
++
++- [ ] **Step 4: Commit**
++
++```bash
++git add src/components/form/MarkdownEditor/MarkdownEditor.tsx
++git commit -m "feat(EPMCDME-12950): guard MarkdownEditor react-markdown img component with isImageAllowed"
++```
++
++---
++
++## Task 5: Configuration — env vars, Helm values, README
++
++**Files:**
++- Modify: `src/types/global.ts`
++- Modify: `config.js`
++- Modify: `.env`
++- Modify: `deploy-templates/values.yaml`
++- Modify: `deploy-templates/templates/configmap.yaml`
++- Modify: `deploy-templates/tests/configmap_test.yaml`
++- Modify: `README.md`
++
++**Test-first:** no unit tests. The Helm template tests in `configmap_test.yaml` serve as the verification.
++
++---
++
++- [ ] **Step 1: Add `VITE_ALLOWED_IMAGE_DOMAINS` to `src/types/global.ts`**
++
++Add after `VITE_MCP_AUTH_ORIGIN?: string`:
++
++```typescript
++  VITE_MCP_AUTH_ORIGIN?: string
++  VITE_ALLOWED_IMAGE_DOMAINS?: string
++```
++
++Full `EnvConfig` interface becomes:
++
++```typescript
++export interface EnvConfig {
++  VITE_ENV: string
++  VITE_API_URL: string
++  VITE_APP_VERSION: string
++  VITE_BANNER_MESSAGE: string
++  VITE_BANNER_LINK_LABEL?: string
++  VITE_BANNER_LINK_ROUTE?: string
++  VITE_CAN_SWITCH_DESIGN: string
++  VITE_SHOW_ALL_PROJECTS: string
++  VITE_IS_EXTERNAL_LOGIN: string
++  VITE_ENABLE_USER_MANAGEMENT: string
++  VITE_ENABLE_BUDGET_MANAGEMENT: string
++  VITE_IDP_PROVIDER: string
++  VITE_MCP_AUTH_AUTHENTICATING_TIMEOUT_SECONDS?: string
++  VITE_MCP_AUTH_ORIGIN?: string
++  VITE_ALLOWED_IMAGE_DOMAINS?: string
++}
++```
++
++- [ ] **Step 2: Add the key to `config.js` (repo root)**
++
++Add after the `VITE_MCP_AUTH_ORIGIN` line:
++
++```javascript
++window._env_.VITE_ALLOWED_IMAGE_DOMAINS = ''
++```
++
++Full `config.js` becomes:
++
++```javascript
++window._env_ = window._env_ || {}
++window._env_.VITE_API_URL = '/api'
++window._env_.VITE_ENV = 'local'
++window._env_.VITE_APP_VERSION = '7.7.7'
++window._env_.VITE_BANNER_MESSAGE = ''
++window._env_.VITE_BANNER_LINK_LABEL = ''
++window._env_.VITE_BANNER_LINK_ROUTE = ''
++window._env_.VITE_CAN_SWITCH_DESIGN = ''
++window._env_.VITE_SHOW_ALL_PROJECTS = 'false'
++window._env_.VITE_IS_EXTERNAL_LOGIN = 'false'
++window._env_.VITE_ENABLE_USER_MANAGEMENT = 'true'
++window._env_.VITE_ENABLE_BUDGET_MANAGEMENT = 'true'
++window._env_.VITE_IDP_PROVIDER = 'local'
++window._env_.VITE_MCP_AUTH_ORIGIN = 'http://localhost:8080'
++window._env_.VITE_ALLOWED_IMAGE_DOMAINS = ''
++```
++
++- [ ] **Step 3: Add the variable to `.env`**
++
++Append after `KC_ENTRA_CLIENT_SECRET=`:
++
++```
++# Comma-separated image domain allow-list for LLM output.
++# Empty = block all external images (only same-origin and backend-origin are allowed).
++# Exact match: cdn.example.com. Subdomain wildcard: .example.com (matches example.com and sub.example.com).
++# Entries must have at least two domain labels; single-label entries (e.g. .com) are not supported.
++VITE_ALLOWED_IMAGE_DOMAINS=''
++```
++
++- [ ] **Step 4: Add `viteAllowedImageDomains` to `deploy-templates/values.yaml`**
++
++Add after the `viteMcpAuthOrigin: ""` line (line 28):
++
++```yaml
++# -- Comma-separated allow-list of trusted image domains for LLM output rendering.
++# Empty = block all external images. Supports exact hostname and leading-dot subdomain wildcards.
++# Entries must have at least two domain labels. Example: "cdn.example.com,.trusted.io"
++viteAllowedImageDomains: ""
++```
++
++- [ ] **Step 5: Add the conditional block to `deploy-templates/templates/configmap.yaml`**
++
++Add after the `viteMcpAuthOrigin` conditional block (after line 22):
++
++```yaml
++      {{- if .Values.viteAllowedImageDomains }}
++      VITE_ALLOWED_IMAGE_DOMAINS: "{{ .Values.viteAllowedImageDomains }}",
++      {{- end }}
++```
++
++Full `configmap.yaml` data section becomes:
++
++```yaml
++data:
++  config.js: |
++    window._env_ = window._env_ || {};
++    window._env_ = {
++      VITE_API_URL: "{{ .Values.viteApiUrl }}",
++      VITE_ENV: "{{ .Values.viteEnv }}",
++      VITE_APP_VERSION: "{{ .Values.image.tag | default .Chart.AppVersion }}",
++      {{- if .Values.viteBannerMessage }}
++      VITE_BANNER_MESSAGE: "{{ .Values.viteBannerMessage }}",
++      {{- end }}
++      VITE_ENABLE_USER_MANAGEMENT: "{{ .Values.viteEnableUserManagement }}",
++      VITE_ENABLE_BUDGET_MANAGEMENT: "{{ .Values.viteEnableBudgetManagement }}",
++      VITE_IDP_PROVIDER: "{{ .Values.viteIdpProvider }}",
++      {{- if .Values.viteMcpAuthOrigin }}
++      VITE_MCP_AUTH_ORIGIN: "{{ .Values.viteMcpAuthOrigin }}",
++      {{- end }}
++      {{- if .Values.viteAllowedImageDomains }}
++      VITE_ALLOWED_IMAGE_DOMAINS: "{{ .Values.viteAllowedImageDomains }}",
++      {{- end }}
++      {{- range $key, $val := .Values.extraConfig }}
++      {{ $key }}: "{{ $val }}",
++      {{- end }}
++    };
++```
++
++- [ ] **Step 6: Add Helm test cases to `deploy-templates/tests/configmap_test.yaml`**
++
++Append after the last `should render VITE_MCP_AUTH_ORIGIN when viteMcpAuthOrigin is set` test:
++
++```yaml
++  - it: should not render VITE_ALLOWED_IMAGE_DOMAINS when viteAllowedImageDomains is not set
++    asserts:
++      - notMatchRegex:
++          path: data["config.js"]
++          pattern: 'VITE_ALLOWED_IMAGE_DOMAINS'
++
++  - it: should render VITE_ALLOWED_IMAGE_DOMAINS when viteAllowedImageDomains is set
++    set:
++      viteAllowedImageDomains: "cdn.example.com,.trusted.io"
++    asserts:
++      - matchRegex:
++          path: data["config.js"]
++          pattern: 'VITE_ALLOWED_IMAGE_DOMAINS: "cdn\.example\.com,\.trusted\.io"'
++```
++
++- [ ] **Step 7: Update `README.md`**
++
++The existing `.env` example block is at lines 87–90:
++
++```env
++VITE_API_URL=http://localhost:8080
++VITE_SUFFIX=/app
++```
++
++Replace with:
++
++```env
++VITE_API_URL=http://localhost:8080
++VITE_SUFFIX=/app
++VITE_ALLOWED_IMAGE_DOMAINS=''
++```
++
++Then add a subsection after the code block (after line 90 / the closing triple-backtick):
++
++```markdown
++### Image Domain Allow-List (`VITE_ALLOWED_IMAGE_DOMAINS`)
++
++Controls which external image domains are rendered in LLM/Assistant markdown output.
++
++- **Default (empty):** All external images are blocked. Only same-origin and backend-origin (`VITE_API_URL` host) images are allowed.
++- **Format:** Comma-separated list of hostnames. Exact match: `cdn.example.com`. Subdomain wildcard: `.example.com` (matches `example.com` and all subdomains). Entries must contain at least two domain labels — single-label wildcards such as `.com` are not supported.
++- **Example:** `VITE_ALLOWED_IMAGE_DOMAINS='cdn.example.com,.trusted.io'`
++- **Deployment:** Set `viteAllowedImageDomains` in `deploy-templates/values.yaml`. The value is injected into `config.js` at runtime — no rebuild required.
++```
++
++- [ ] **Step 8: Run the full unit test suite to verify no regressions**
++
++```bash
++npm run test:unit
++```
++
++Expected: all tests PASS.
++
++- [ ] **Step 9: Run TypeScript type-check**
++
++```bash
++npm run typecheck
++```
++
++Expected: no errors.
++
++- [ ] **Step 10: Pre-merge audit (manual)**
++
++Before committing, audit whether T&C text or kata content currently references external images. Run a search:
++
++```bash
++grep -r "https://" src/pages/terms src/pages/kata 2>/dev/null | grep -i "img\|png\|jpg\|jpeg\|gif\|webp" || echo "no external image references found"
++```
++
++If any are found, add their hostnames to `VITE_ALLOWED_IMAGE_DOMAINS` in the `.env` or document them for the operator. Under default-deny, those pages will show blocked badges instead of images.
++
++- [ ] **Step 11: Commit**
++
++```bash
++git add src/types/global.ts \
++  config.js \
++  .env \
++  deploy-templates/values.yaml \
++  deploy-templates/templates/configmap.yaml \
++  deploy-templates/tests/configmap_test.yaml \
++  README.md
++git commit -m "feat(EPMCDME-12950): add VITE_ALLOWED_IMAGE_DOMAINS configuration to env, config.js, Helm chart, and README"
++```
+diff --git a/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/spec.md b/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/spec.md
+new file mode 100644
+index 000000000..3f2017f93
+--- /dev/null
++++ b/docs/superpowers/tasks/2026-07-20-image-allowlist-llm-output/spec.md
+@@ -0,0 +1,384 @@
++# Spec: Image Allow-List for LLM Output (EPMCDME-12950)
++
++## Problem
++
++The CodeMie UI renders images in LLM-generated markdown output without domain validation. An attacker can inject markdown image links pointing to attacker-controlled domains; when the browser loads those images it issues an HTTP request to an attacker-controlled URL. Sensitive data — conversation content, identifiers, or other context — can be encoded into the URL itself (e.g. `https://evil.com/log?d=<content>`). The mere fact of the request with a unique URL is sufficient for exfiltration; no credentials need to be forwarded. This is the reason domain blocking is the correct fix, not credential stripping.
++
++A second, independent path in `ThoughtMessage.tsx` renders structured `image_url` segments from parsed JSON as bare `<img src={segment.url}>` with no validation.
++
++## Goals
++
++- Enforce a configurable allow-list of trusted image domains across all image render paths in LLM output.
++- Block-by-default: when the allow-list is empty or unset, only same-origin and backend-origin images are allowed.
++- Blocked images render an inline badge showing the blocked hostname; no `<img>` tag is emitted, so no network request is made.
++- The block is verifiable in browser dev tools (no outbound request appears in the Network tab).
++- The allow-list is configurable at deployment time without a rebuild, via `VITE_ALLOWED_IMAGE_DOMAINS`.
++
++## Out of Scope
++
++- CSP `img-src` headers (no `vite.config.ts` or nginx change in this ticket; the React-layer block satisfies the acceptance criteria).
++- Backend-driven allow-list via `appInfoStore` (env-var approach satisfies AC1; backend-driven config is a future enhancement).
++- `markdown2html` clipboard raw-HTML bypass — see Known Limitations.
++
++---
++
++## Architecture
++
++Two new files share responsibilities along the `src/utils/` vs. `src/components/` boundary the codebase enforces: policy and HTML-string rendering live in a utility module; the React component lives under components.
++
++`getMarkdownRenderer()` is consumed by `MarkdownTokens.tsx`, which is used by every `<Markdown>` component in the codebase. Eight consumers go through this path:
++
++| Consumer | Context |
++|----------|---------|
++| `ChatAiMessage` | AI chat responses |
++| `ThoughtMessage` (markdown thought path) | Agent thought messages |
++| `EditOutputForm` | Editable output area |
++| `TermsAndConditionsPage` | T&C content rendered from markdown |
++| `WorkflowStateOutput` | Workflow execution output |
++| `ContinueWithInputPopup` | Continuation input popups |
++| `KataDetailView` (line 326) | Kata detail descriptions |
++| `StepByStepNavigator` | Step-by-step content |
++
++Under default-deny, any external image embedded in T&C text, kata content, or workflow output will render as a blocked badge rather than an image. **Pre-merge requirement**: audit whether T&C text or kata content currently references external images. If they do, those hostnames must be added to a seeded default in `VITE_ALLOWED_IMAGE_DOMAINS` (or the content updated), or AC5 (no regression) fails on those pages.
++
++```
++src/utils/imageAllowList.ts                                    ← new; policy + HTML-string badge + shared label/class
++src/components/BlockedImageBadge/BlockedImageBadge.tsx         ← new; React component; imports label/class from utils
++src/components/markdown/Markdown.utils.ts                      ← patch: renderer.image override
++src/utils/messageHelpers.ts                                    ← patch: identical renderer.image override
++src/components/Thought/ThoughtMessage.tsx                      ← patch: segment.type === 'image' guard
++src/components/form/MarkdownEditor/MarkdownEditor.tsx          ← patch: custom img component guard
++src/types/global.ts                                            ← add VITE_ALLOWED_IMAGE_DOMAINS to EnvConfig
++config.js                                                      ← add key with empty default (repo root)
++deploy-templates/values.yaml                                   ← add viteAllowedImageDomains key
++deploy-templates/templates/configmap.yaml                      ← add conditional VITE_ALLOWED_IMAGE_DOMAINS block
++deploy-templates/tests/configmap_test.yaml                     ← add rendered/not-rendered test cases
++README.md                                                      ← add to .env example block + short subsection
++```
++
++Both new files require the project Apache 2.0 license header (enforced by the pre-commit hook).
++
++---
++
++## `src/utils/imageAllowList.ts`
++
++### Unexported internals
++
++**`parseImageUrl(src: string): URL | undefined`**
++
++The single internal URL parser for the module. Every other helper that needs a `URL` object calls this; no other function in the module calls `new URL()` directly.
++
++```
++try { return new URL(src, window.location.href) } catch { return undefined }
++```
++
++**`extractHostname(src: string): string | undefined`**
++
++Thin wrapper over `parseImageUrl`. Returns the parsed hostname, or `undefined` on parse failure or blank input. Used by the badge functions to fall back to a hostname-less label when the source URL is malformed or empty.
++
++```
++if (!src.trim()) return undefined
++return parseImageUrl(src)?.hostname || undefined
++```
++
++**`parseAllowList(): Set<string>`**
++
++Reads `window?._env_?.VITE_ALLOWED_IMAGE_DOMAINS || import.meta.env.VITE_ALLOWED_IMAGE_DOMAINS`. Splits on `,`, trims whitespace, lowercases, and drops empty entries. Returns a `Set<string>`. Not cached at module level (the `window._env_` object can be replaced at runtime in tests and some deployment patterns).
++
++**`getBackendOrigin(): string | null`**
++
++```
++return parseImageUrl(api.BASE_URL)?.origin ?? null
++```
++
++Reads from `api.BASE_URL` directly (which already applies the `window?._env_?.VITE_API_URL || import.meta.env.VITE_API_URL` fallback chain). Does not re-read `VITE_API_URL` itself. Works for both the local relative path (`/api`) and the production absolute URL (`https://codemie.%%DOMAIN%%/code-assistant-api`).
++
++### Exports
++
++**`BLOCKED_IMAGE_BADGE_CLASS: string`**
++
++Single CSS class string shared by both `getBlockedImageBadgeHTML` (in this module) and `BlockedImageBadge` (in `src/components/BlockedImageBadge/BlockedImageBadge.tsx`). Changing the badge appearance requires editing exactly one constant.
++
++**`BLOCKED_IMAGE_BADGE_TITLE: string`**
++
++`'Image not displayed: domain is not on the allow-list'` — shared title attribute string used by both `getBlockedImageBadgeHTML` and `BlockedImageBadge`. Neither form hardcodes this string; both read this constant.
++
++**`getBlockedImageLabel(hostname?: string): string`**
++
++```
++hostname ? `Image from ${hostname} blocked` : 'Image from untrusted domain blocked'
++```
++
++Used as the visible text by both badge forms. When `hostname` is `undefined` (malformed or non-`data:` non-HTTP URL), the fallback label is rendered. For a blank `src`, neither badge form renders visible content — see `getBlockedImageBadgeHTML` below.
++
++**`getBlockedImageBadgeHTML(src: string): string`**
++
++HTML-string badge for the two `marked` renderer paths (which must return strings, not JSX). Calls `extractHostname(src)` internally. If `src` is blank (trimmed empty), returns an empty string — a blank src is a malformed token, not a blocked image, and rendering a badge label for it would be inaccurate. HTML-escapes the hostname before inserting it into attributes and label text. Includes:
++- `class="${BLOCKED_IMAGE_BADGE_CLASS}"`
++- `data-blocked-image-hostname="${escapedHostname}"` (omitted when hostname is undefined)
++- `title="${BLOCKED_IMAGE_BADGE_TITLE}"`
++
++**`isImageAllowed(src: string): boolean`**
++
++`src` is trimmed once on entry (`src = src.trim()`). This ensures `data:image/...` values with leading whitespace match tier 2 after trim, and that `new URL('', location.href)` is never reached from a whitespace-only src.
++
++Tier order — first match wins. `parseImageUrl` is called once in tier 3 and its result is used by all subsequent tiers.
++
++| Tier | Condition | Decision | Rationale |
++|------|-----------|----------|-----------|
++| 1 | `src` is empty after trim | **blocked** | `new URL('', location.href)` resolves to the current page; an empty `src` on `<img>` causes browsers to re-request the current URL. |
++| 2 | `src` matches `/^data:image\//i` | **allowed** | `data:image/*` (including `data:image/svg+xml`) issues no network request. Browsers render `<img>`-sourced SVG in secure static mode — scripts are disabled and external fetches are blocked. `data:image/svg+xml` is explicitly safe. Non-image data URIs (e.g. `data:text/html`) do **not** match and fall through to tier 3 where they are blocked by scheme. |
++| 3 | `parseImageUrl(src)` returns `undefined` | **blocked** | Malformed URL; no safe interpretation. |
++| 4 | Scheme is `blob:` or anything other than `https:` or `http:` | **blocked** | Only HTTPS remote URLs are accepted. Protocol-relative URLs (e.g. `//evil.com/x.png`) are resolved by `new URL()` to `https:` or `http:` inheriting the page scheme — they pass tier 4, pass tier 5, and are blocked at tier 8 (empty list) or the final default-block (non-empty list where the hostname is absent). |
++| 5 | Scheme is `http:` and `window.location.hostname` is not `localhost` or `127.0.0.1` | **blocked** | HTTP is only permitted when the page itself is running locally. Gating on the page hostname — not the image hostname — prevents prompt-injected content from probing the user's local services (`http://localhost:8080/admin`) on an HTTPS production page. Mixed-content blocking would stop most such probes, but the design does not rely on it. |
++| 6 | `url.origin === window.location.origin` | **allowed** | Same-origin; covers `/api/v1/files/…` in local dev where `VITE_API_URL='/api'`. |
++| 7 | `url.origin === getBackendOrigin()` | **allowed** | Backend origin; covers `https://codemie.%%DOMAIN%%/code-assistant-api/v1/files/…` in production when `VITE_API_URL` is an absolute URL. Tier 7 trusts the entire backend origin (not just the `/v1/files/` path) — this is a conscious, documented choice. |
++| 8 | `parseAllowList().size === 0` | **blocked** | Default-deny: empty allow-list blocks all external images. |
++| 9 | Hostname matches an entry in the allow-list | **allowed** | See matching rules below. |
++| — | (no tier matched) | **blocked** | |
++
++**Allow-list entry matching rules:**
++
++- Entries are stored lowercased and trimmed; `url.hostname` is already lowercased by the `URL` API.
++- Exact match: `hostname === entry` (e.g., entry `cdn.example.com` matches only `cdn.example.com`).
++- Subdomain wildcard: entries beginning with `.` match the apex domain and all subdomains. For entry `.example.com`: allowed if `hostname === 'example.com'` OR `hostname.endsWith('.example.com')`. The `endsWith` check is safe: `evil-example.com` ends with `-example.com` (not `.example.com`) and is rejected; `example.com.evil.io` does not end with `.example.com` and is rejected.
++- Operators must use entries with at least two domain labels (e.g., `.example.com`, not `.com`). Single-label wildcards are syntactically valid but match far too broadly and are not supported.
++
++---
++
++## `src/components/BlockedImageBadge/BlockedImageBadge.tsx`
++
++React component for JSX render paths (`ThoughtMessage`, `MarkdownEditor`). Imports `BLOCKED_IMAGE_BADGE_CLASS` and `getBlockedImageLabel` from `src/utils/imageAllowList.ts` so both badge forms share one label and one class source.
++
++Calls `extractHostname(src)` (also imported from the utils module). If `src` is blank (trimmed empty), returns `null` — same policy as `getBlockedImageBadgeHTML` for blank src. Renders:
++
++```jsx
++<span
++  className={BLOCKED_IMAGE_BADGE_CLASS}
++  data-blocked-image-hostname={hostname}
++  title={BLOCKED_IMAGE_BADGE_TITLE}
++>
++  {getBlockedImageLabel(hostname)}
++</span>
++```
++
++The drift-prevention test asserts the component's rendered HTML equals `getBlockedImageBadgeHTML(src)` output for a non-blank src, ensuring the two forms never silently diverge.
++
++---
++
++## Four Render Path Patches
++
++### `Markdown.utils.ts` and `messageHelpers.ts` (identical change in both)
++
++In `getMarkdownRenderer()`, capture and bind the default renderer before overriding:
++
++```typescript
++const imageRenderer = renderer.image.bind(renderer)
++renderer.image = (href: string, title: string | null, text: string): string =>
++  isImageAllowed(href) ? imageRenderer(href, title, text) : getBlockedImageBadgeHTML(href)
++```
++
++Binding is required: `marked` 4.3.0's `Renderer.image` reads `this.options` (see `marked.cjs:1957` and `:1965`). Without `.bind(renderer)`, the method is called with `this === undefined` in strict-mode ES modules, causing `TypeError: Cannot read properties of undefined (reading 'sanitize')`. The existing `tableRenderer` and `codespanRenderer` captures happen to work without binding only because those methods do not access `this`.
++
++**Copy-message behavior change:** `markdown2html` (used by `ChatAiMessageActions.tsx:67` for "Copy message") also calls `getMarkdownRenderer()`. As a result, markdown image tokens from blocked domains now produce badge `<span>` elements in the clipboard HTML rather than `<img>` tags. This is the correct and desired outcome — blocked images should not load when the user pastes into an email. QA should expect badge spans, not `<img>` tags, in copied HTML for messages containing blocked images.
++
++### `ThoughtMessage.tsx`
++
++Replace the bare `<img>` at lines 131–142 with a guarded branch:
++
++```jsx
++{segment.type === 'image' && (
++  isImageAllowed(segment.url)
++    ? <img
++        src={segment.url}
++        alt={segment.alt}
++        className="max-w-full h-auto rounded-lg border border-border-structural shadow-sm"
++        style={{ maxHeight: 400, objectFit: 'contain' }}
++        onError={(e) => {
++          ;(e.target as HTMLImageElement).style.display = 'none'
++          console.error('Failed to load image:', segment.url.substring(0, 50) + '...')
++        }}
++      />
++    : <BlockedImageBadge src={segment.url} />
++)}
++```
++
++The existing `onError` hide is preserved on the allowed branch. A load failure is not a policy block; the two concerns are kept separate.
++
++### `MarkdownEditor.tsx`
++
++The `react-markdown` custom `img` component at line 343. The `src = ''` default makes a blank src directly reachable — `isImageAllowed('')` returns `false` at tier 1, and `BlockedImageBadge` returns `null` for blank src, so nothing is rendered.
++
++```jsx
++img: ({ src = '' }) =>
++  isImageAllowed(src) ? <img src={src} … /> : <BlockedImageBadge src={src} />
++```
++
++---
++
++## Configuration
++
++### `src/types/global.ts`
++
++Add to `EnvConfig`:
++
++```typescript
++VITE_ALLOWED_IMAGE_DOMAINS?: string
++```
++
++### `config.js` (repo root)
++
++Add after the `VITE_MCP_AUTH_ORIGIN` line:
++
++```js
++window._env_.VITE_ALLOWED_IMAGE_DOMAINS = ''
++```
++
++### `.env`
++
++Add:
++
++```
++# Comma-separated image domain allow-list for LLM output.
++# Empty = block all external images (only same-origin and backend-origin are allowed).
++# Exact match: cdn.example.com. Subdomain wildcard: .example.com (matches example.com and sub.example.com).
++# Entries must have at least two domain labels; single-label entries (e.g. .com) are not supported.
++VITE_ALLOWED_IMAGE_DOMAINS=''
++```
++
++### `deploy-templates/values.yaml`
++
++Add after `viteMcpAuthOrigin`:
++
++```yaml
++# -- Comma-separated allow-list of trusted image domains for LLM output rendering.
++# Empty = block all external images. Supports exact hostname and leading-dot subdomain wildcards.
++# Entries must have at least two domain labels. Example: "cdn.example.com,.trusted.io"
++viteAllowedImageDomains: ""
++```
++
++### `deploy-templates/templates/configmap.yaml`
++
++Add after the `viteMcpAuthOrigin` block:
++
++```yaml
++      {{- if .Values.viteAllowedImageDomains }}
++      VITE_ALLOWED_IMAGE_DOMAINS: "{{ .Values.viteAllowedImageDomains }}",
++      {{- end }}
++```
++
++### `deploy-templates/tests/configmap_test.yaml`
++
++Add two test cases after the `viteMcpAuthOrigin` tests:
++
++```yaml
++  - it: should not render VITE_ALLOWED_IMAGE_DOMAINS when viteAllowedImageDomains is not set
++    asserts:
++      - notMatchRegex:
++          path: data["config.js"]
++          pattern: 'VITE_ALLOWED_IMAGE_DOMAINS'
++
++  - it: should render VITE_ALLOWED_IMAGE_DOMAINS when viteAllowedImageDomains is set
++    set:
++      viteAllowedImageDomains: "cdn.example.com,.trusted.io"
++    asserts:
++      - matchRegex:
++          path: data["config.js"]
++          pattern: 'VITE_ALLOWED_IMAGE_DOMAINS: "cdn\.example\.com,\.trusted\.io"'
++```
++
++### `README.md`
++
++Add `VITE_ALLOWED_IMAGE_DOMAINS=''` to the existing `.env` example block (lines 85–90). Below the block, add a short subsection documenting the variable: purpose (domain allow-list for LLM output images), default behaviour (empty = block all external), format (comma-separated hostnames, leading-dot subdomain wildcards), and the two-label minimum rule.
++
++---
++
++## Known Limitations
++
++### `markdown2html` clipboard raw-HTML bypass (accepted risk)
++
++`markdown2html` in `Markdown.utils.ts:118` runs `marked.parse(DOMPurify.sanitize(text), { renderer: getMarkdownRenderer(), ... })`. This path is used for clipboard copy in `ChatAiMessageActions.tsx:67`.
++
++- DOMPurify's default config permits `<img>` elements. A raw HTML `<img>` in LLM content (not a markdown image token, but a literal `<img>` tag) survives DOMPurify sanitization and lands in the clipboard HTML as-is. When pasted into a rich-text editor (e.g., email), the image would load.
++- The `renderer.image` override does not fire for raw HTML `<img>` tags — only for markdown image tokens (`![alt](url)`) that `marked.parse` processes.
++- **Severity**: Low — no request is issued from our page. The user's email client makes the request after paste, outside our threat surface.
++- **Why the main display path is safe**: `getMarkdownTokens()` calls `sanitizeMessage()`, which escapes `<` and `>` into HTML entities before tokenization. This prevents raw `<img>` tags in LLM content from ever becoming image tokens in the rendering pipeline. The `markdown2html` clipboard path skips `sanitizeMessage` and uses DOMPurify instead — DOMPurify strips scripts but allows images by default.
++- **Correct fix shape** (for a future ticket): a DOMPurify `afterSanitizeAttributes` hook on `markdown2html` that applies `isImageAllowed` to the `src` attribute of any surviving `<img>` element, replacing the src with an empty string for blocked URLs. `FORBID_TAGS: ['img']` is not the right fix — it would also strip allowed images from the clipboard HTML, regressing the copy feature.
++- **Status**: Accepted risk for this ticket. No follow-up ticket has been filed yet; this should be raised in the post-merge security review.
++
++---
++
++## Testing
++
++### `src/utils/__tests__/imageAllowList.test.tsx`
++
++File is `.tsx` because the drift-prevention assertion renders `<BlockedImageBadge>` with React Testing Library.
++
++`isImageAllowed`:
++- Empty string → blocked (tier 1)
++- Whitespace-only string → blocked (tier 1)
++- `data:image/png;base64,…` → allowed (tier 2)
++- `data:image/svg+xml;…` → allowed (tier 2)
++- `data:image/png` with leading whitespace → **allowed** (trimmed at entry; tier 2 regex matches)
++- `data:text/html;base64,…` → blocked (does not match tier 2; tier 3 parses OK; tier 4 blocks non-http(s) scheme)
++- Malformed string → blocked (tier 3)
++- `blob:https://…` → blocked (tier 4)
++- `//evil.com/x.png` → blocked (resolves to `https://evil.com/x.png`; passes tier 4; fails to match tiers 5–7; blocked at tier 8 or final block)
++- `http://evil.com/img.png` on an HTTPS production page → blocked (tier 5: page hostname is not localhost)
++- `http://localhost/img.png` on a local page → allowed (tier 5: page hostname is localhost)
++- `http://127.0.0.1/img.png` on a local page → allowed (tier 5: page hostname is 127.0.0.1)
++- `http://localhost/img.png` on a production page (page hostname is not localhost) → blocked (tier 5)
++- Same-origin relative URL → allowed (tier 6)
++- Same-origin absolute URL → allowed (tier 6)
++- Absolute `api.BASE_URL` origin matching image URL origin → allowed (tier 7; mocks `api.BASE_URL` to an absolute URL)
++- Empty `VITE_ALLOWED_IMAGE_DOMAINS` → external `https://` URL blocked (tier 8)
++- Exact match in list → allowed (tier 9)
++- Leading-dot wildcard `.example.com` matches `example.com` → allowed
++- Leading-dot wildcard `.example.com` matches `sub.example.com` → allowed
++- Leading-dot wildcard `.example.com` rejects `evil-example.com` → blocked
++- Leading-dot wildcard `.example.com` rejects `example.com.evil.io` → blocked
++- List entry with extra whitespace and mixed case is normalized → match succeeds
++
++Badge:
++- `getBlockedImageBadgeHTML('https://evil.com/img.png')` contains `data-blocked-image-hostname="evil.com"`, `title="…"`, and the label text
++- `getBlockedImageBadgeHTML('')` returns empty string (blank src)
++- `getBlockedImageBadgeHTML` HTML-escapes a hostname containing `<script>` → no raw `<` in output
++- Drift-prevention: render `<BlockedImageBadge src="https://evil.com/img.png">` and call `getBlockedImageBadgeHTML('https://evil.com/img.png')`; parse both results into DOM nodes and assert equal `tagName`, `className`, `dataset.blockedImageHostname`, `title`, and `textContent` — structural comparison, not string equality, so attribute-ordering differences in React's serialiser never cause false failures
++- `data-blocked-image-hostname` survives `DOMPurify.sanitize(getBlockedImageBadgeHTML(src), { ADD_ATTR: ['target'] })` — verifies `ALLOW_DATA_ATTR` default keeps the attribute
++- Malformed src → badge renders with no `data-blocked-image-hostname` attribute; label uses fallback text
++
++### `src/components/BlockedImageBadge/__tests__/BlockedImageBadge.test.tsx`
++
++- `<BlockedImageBadge src="">` renders nothing (returns null)
++- `<BlockedImageBadge src="https://evil.com/img.png">` renders the badge with correct hostname, class, title, and label
++
++### `src/components/markdown/__tests__/Markdown.utils.test.ts`
++
++- Allowed image URL → `renderer.image` delegates to captured `imageRenderer` and returns `<img>` HTML
++- Blocked image URL → returns `getBlockedImageBadgeHTML` output
++- `imageRenderer` is called with `this` bound correctly (no TypeError on `.sanitize` access)
++
++### `src/components/markdown/__tests__/MarkdownTokens.test.tsx`
++
++- Markdown string `![alt](https://allowed.example.com/img.png)` with `allowed.example.com` in allow-list → `<img>` in rendered output
++- Markdown string `![alt](https://evil.com/img.png)` with empty allow-list → badge in rendered output, no `<img>` tag
++- Full path: badge HTML passes through `DOMPurify.sanitize(…, { ADD_ATTR: ['target'] })` and `data-blocked-image-hostname` is present in the final rendered DOM
++
++### `src/components/Thought/__tests__/ThoughtMessage.test.tsx`
++
++- `segment.type === 'image'` with allowed URL → `<img>` rendered
++- `segment.type === 'image'` with blocked URL → `<BlockedImageBadge>` rendered, no `<img>` tag
++- `onError` handler on the allowed-path `<img>` still hides the image on load failure (existing behavior not regressed)
++
++---
++
++## Acceptance Criteria Mapping
++
++| AC | How satisfied |
++|----|---------------|
++| Configurable allow-list | `VITE_ALLOWED_IMAGE_DOMAINS` via `window._env_` (runtime, no rebuild); documented key in `values.yaml` and `configmap.yaml` |
++| UI enforces the allow-list | All four render paths check `isImageAllowed` before emitting any `<img>` tag; all eight `<Markdown>` consumers inherit the fix through `getMarkdownRenderer()` |
++| No network request for blocked domains | Blocked path emits a `<span>` badge or nothing, never an `<img>` tag; no `src` is set |
++| Blocking verifiable via dev tools | Absence of outbound image requests in Network tab; badge in DOM with `data-blocked-image-hostname` attribute |
++| No regression for allowed domains | Tiers 2, 6, 7 allow `data:image/*`, same-origin, and backend-origin; tier 9 allow-lists external domains. **Pre-merge**: audit T&C and kata content for external image URLs |
++| Documentation | `values.yaml` comment, `.env` comment, and README subsection (operator-facing); this spec (internal) |
+diff --git a/src/components/BlockedImageBadge/BlockedImageBadge.tsx b/src/components/BlockedImageBadge/BlockedImageBadge.tsx
+new file mode 100644
+index 000000000..df423095d
+--- /dev/null
++++ b/src/components/BlockedImageBadge/BlockedImageBadge.tsx
+@@ -0,0 +1,43 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { FC } from 'react'
++
++import {
++  BLOCKED_IMAGE_BADGE_CLASS,
++  BLOCKED_IMAGE_BADGE_TITLE,
++  extractHostname,
++  getBlockedImageLabel,
++} from '@/utils/imageAllowList'
++
++interface BlockedImageBadgeProps {
++  src: string
++}
++
++const BlockedImageBadge: FC<BlockedImageBadgeProps> = ({ src }) => {
++  if (!src.trim()) return null
++  const hostname = extractHostname(src)
++  return (
++    <span
++      className={BLOCKED_IMAGE_BADGE_CLASS}
++      data-blocked-image-hostname={hostname}
++      title={BLOCKED_IMAGE_BADGE_TITLE}
++    >
++      {getBlockedImageLabel(hostname)}
++    </span>
++  )
++}
++
++export default BlockedImageBadge
+diff --git a/src/components/BlockedImageBadge/__tests__/BlockedImageBadge.test.tsx b/src/components/BlockedImageBadge/__tests__/BlockedImageBadge.test.tsx
+new file mode 100644
+index 000000000..6d9c0440c
+--- /dev/null
++++ b/src/components/BlockedImageBadge/__tests__/BlockedImageBadge.test.tsx
+@@ -0,0 +1,38 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { describe, it, expect } from 'vitest'
++
++import { BLOCKED_IMAGE_BADGE_CLASS, BLOCKED_IMAGE_BADGE_TITLE } from '@/utils/imageAllowList'
++
++import BlockedImageBadge from '../BlockedImageBadge'
++
++describe('BlockedImageBadge', () => {
++  it('renders nothing for blank src', () => {
++    const { container } = render(<BlockedImageBadge src="" />)
++    expect(container.firstChild).toBeNull()
++  })
++
++  it('renders badge with correct hostname, class, title, and label', () => {
++    const { container } = render(<BlockedImageBadge src="https://evil.com/img.png" />)
++    const span = container.querySelector('span')!
++    expect(span).toBeInTheDocument()
++    expect(span.className).toBe(BLOCKED_IMAGE_BADGE_CLASS)
++    expect(span.title).toBe(BLOCKED_IMAGE_BADGE_TITLE)
++    expect(span.dataset.blockedImageHostname).toBe('evil.com')
++    expect(span.textContent).toBe('Image from evil.com blocked')
++  })
++})
+diff --git a/src/components/Thought/ThoughtMessage.tsx b/src/components/Thought/ThoughtMessage.tsx
+index dd924151b..df6f5b8fa 100644
+--- a/src/components/Thought/ThoughtMessage.tsx
++++ b/src/components/Thought/ThoughtMessage.tsx
+@@ -16,6 +16,7 @@
+ import { FC, Fragment, useMemo } from 'react'
+ import { useSnapshot } from 'valtio'
+ 
++import BlockedImageBadge from '@/components/BlockedImageBadge/BlockedImageBadge'
+ import CodeBlock from '@/components/CodeBlock/CodeBlock'
+ import Markdown from '@/components/markdown/Markdown'
+ import TextBlock from '@/components/markdown/TextBlock'
+@@ -23,6 +24,7 @@ import { DOCUMENT_SOURCE_KEY, MARKDOWN_ENABLED_AUTHORS } from '@/constants'
+ import { WORKFLOW_OUTPUT_FORMATS } from '@/constants/workflows'
+ import { appInfoStore } from '@/store/appInfo'
+ import { Thought } from '@/types/entity/conversation'
++import { isImageAllowed } from '@/utils/imageAllowList'
+ import { tryParseJsonObjectOrArray } from '@/utils/jsonHelpers'
+ import { isValidMessageArray, parseValidatedMessageArray } from '@/utils/messageFormat'
+ 
+@@ -128,18 +130,21 @@ const ThoughtMessage: FC<ThoughtMessageProps> = ({ thought }) => {
+           <TextBlock className="break-all" text={segment.content} />
+         ))}
+ 
+-      {segment.type === 'image' && (
+-        <img
+-          src={segment.url}
+-          alt={segment.alt}
+-          className="max-w-full h-auto rounded-lg border border-border-structural shadow-sm"
+-          style={{ maxHeight: 400, objectFit: 'contain' }}
+-          onError={(e) => {
+-            ;(e.target as HTMLImageElement).style.display = 'none'
+-            console.error('Failed to load image:', segment.url.substring(0, 50) + '...')
+-          }}
+-        />
+-      )}
++      {segment.type === 'image' &&
++        (isImageAllowed(segment.url) ? (
++          <img
++            src={segment.url}
++            alt={segment.alt}
++            className="max-w-full h-auto rounded-lg border border-border-structural shadow-sm"
++            style={{ maxHeight: 400, objectFit: 'contain' }}
++            onError={(e) => {
++              ;(e.target as HTMLImageElement).style.display = 'none'
++              console.error('Failed to load image:', segment.url.substring(0, 50) + '...')
++            }}
++          />
++        ) : (
++          <BlockedImageBadge src={segment.url} />
++        ))}
+ 
+       {segment.type === 'document' && (
+         <ThoughtDocument title={segment.title} content={segment.content} />
+diff --git a/src/components/Thought/__tests__/ThoughtMessage.test.tsx b/src/components/Thought/__tests__/ThoughtMessage.test.tsx
+new file mode 100644
+index 000000000..20ed4a5f5
+--- /dev/null
++++ b/src/components/Thought/__tests__/ThoughtMessage.test.tsx
+@@ -0,0 +1,78 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
++
++import { Thought, ThoughtAuthorType } from '@/types/entity/conversation'
++import { BLOCKED_IMAGE_BADGE_CLASS } from '@/utils/imageAllowList'
++
++import ThoughtMessage from '../ThoughtMessage'
++
++const mockApi = vi.hoisted(() => ({
++  BASE_URL: 'https://api.example.com',
++  get: vi.fn(),
++  post: vi.fn(),
++}))
++
++vi.mock('@/utils/api', () => ({ default: mockApi }))
++
++function makeImageThought(url: string): Thought {
++  return {
++    id: 'thought-1',
++    author_name: 'Test Tool',
++    author_type: ThoughtAuthorType.Tool,
++    message: JSON.stringify([{ type: 'image_url', image_url: { url } }]),
++    in_progress: false,
++  }
++}
++
++beforeEach(() => {
++  mockApi.BASE_URL = 'https://api.example.com'
++  ;(window as any)._env_ = undefined
++  vi.stubGlobal('location', {
++    hostname: 'production.example.com',
++    origin: 'https://production.example.com',
++    href: 'https://production.example.com/',
++  })
++})
++
++afterEach(() => {
++  vi.unstubAllGlobals()
++})
++
++describe('ThoughtMessage — image allow-list', () => {
++  it('renders BlockedImageBadge when the image URL is not on the allow-list', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    render(<ThoughtMessage thought={makeImageThought('https://evil.com/img.png')} />)
++    expect(document.querySelector(`.${BLOCKED_IMAGE_BADGE_CLASS}`)).toBeInTheDocument()
++    expect(document.querySelector('img')).not.toBeInTheDocument()
++  })
++
++  it('renders <img> when the image URL is on the allow-list', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: 'cdn.trusted.com' }
++    render(<ThoughtMessage thought={makeImageThought('https://cdn.trusted.com/img.png')} />)
++    expect(document.querySelector('img')).toBeInTheDocument()
++    expect(document.querySelector(`.${BLOCKED_IMAGE_BADGE_CLASS}`)).not.toBeInTheDocument()
++  })
++
++  it('renders <img> for a same-origin image', () => {
++    render(
++      <ThoughtMessage thought={makeImageThought('https://production.example.com/files/img.png')} />
++    )
++    expect(document.querySelector('img')).toBeInTheDocument()
++    expect(document.querySelector(`.${BLOCKED_IMAGE_BADGE_CLASS}`)).not.toBeInTheDocument()
++  })
++})
+diff --git a/src/components/form/MarkdownEditor/MarkdownEditor.tsx b/src/components/form/MarkdownEditor/MarkdownEditor.tsx
+index 182e374ef..31cf3e84b 100644
+--- a/src/components/form/MarkdownEditor/MarkdownEditor.tsx
++++ b/src/components/form/MarkdownEditor/MarkdownEditor.tsx
+@@ -19,8 +19,10 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+ import { dracula, prism } from 'react-syntax-highlighter/dist/esm/styles/prism'
+ 
+ import ExpandSvg from '@/assets/icons/expand.svg?react'
++import BlockedImageBadge from '@/components/BlockedImageBadge/BlockedImageBadge'
+ import Popup from '@/components/Popup'
+ import { useTheme } from '@/hooks/useTheme'
++import { isImageAllowed } from '@/utils/imageAllowList'
+ import { cn } from '@/utils/utils'
+ 
+ import type { Components } from 'react-markdown'
+@@ -340,9 +342,12 @@ const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
+           {children}
+         </a>
+       ),
+-      img: ({ src, alt, ...props }: MarkdownComponentProps & { src?: string; alt?: string }) => (
+-        <img src={src} alt={alt} className="max-w-full h-auto rounded-md my-4" {...props} />
+-      ),
++      img: ({ src, alt, ...props }: MarkdownComponentProps & { src?: string; alt?: string }) =>
++        isImageAllowed(src ?? '') ? (
++          <img src={src} alt={alt} className="max-w-full h-auto rounded-md my-4" {...props} />
++        ) : (
++          <BlockedImageBadge src={src ?? ''} />
++        ),
+       strong: ({ children, ...props }: MarkdownComponentProps) => (
+         <strong className="font-semibold" {...props}>
+           {children}
+diff --git a/src/components/markdown/Markdown.utils.ts b/src/components/markdown/Markdown.utils.ts
+index a55e91768..2c2213095 100644
+--- a/src/components/markdown/Markdown.utils.ts
++++ b/src/components/markdown/Markdown.utils.ts
+@@ -17,6 +17,7 @@ import DOMPurify from 'dompurify'
+ import { marked } from 'marked'
+ 
+ import api from '@/utils/api'
++import { getBlockedImageBadgeHTML, isImageAllowed } from '@/utils/imageAllowList'
+ 
+ import { FileExtension } from '../CodeBlock/fileExtensions'
+ 
+@@ -135,6 +136,11 @@ export const getMarkdownRenderer = () => {
+   renderer.del = (text) => text
+   renderer.codespan = (text) =>
+     codespanRenderer(text.replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;'))
++  const imageRenderer = renderer.image.bind(renderer)
++  renderer.image = (href, title, text) => {
++    if (!isImageAllowed(href)) return getBlockedImageBadgeHTML(href)
++    return imageRenderer(href, title, text)
++  }
+ 
+   return renderer
+ }
+diff --git a/src/components/markdown/__tests__/Markdown.utils.test.ts b/src/components/markdown/__tests__/Markdown.utils.test.ts
+new file mode 100644
+index 000000000..9015fccc5
+--- /dev/null
++++ b/src/components/markdown/__tests__/Markdown.utils.test.ts
+@@ -0,0 +1,72 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
++
++import { getMarkdownRenderer, markdown2html } from '@/components/markdown/Markdown.utils'
++import { BLOCKED_IMAGE_BADGE_CLASS } from '@/utils/imageAllowList'
++
++const mockApi = vi.hoisted(() => ({
++  BASE_URL: 'https://api.example.com',
++  get: vi.fn(),
++  post: vi.fn(),
++}))
++
++vi.mock('@/utils/api', () => ({ default: mockApi }))
++
++function stubProductionLocation() {
++  vi.stubGlobal('location', {
++    hostname: 'production.example.com',
++    origin: 'https://production.example.com',
++    href: 'https://production.example.com/',
++  })
++}
++
++beforeEach(() => {
++  mockApi.BASE_URL = 'https://api.example.com'
++  ;(window as any)._env_ = undefined
++  stubProductionLocation()
++})
++
++afterEach(() => {
++  vi.unstubAllGlobals()
++})
++
++describe('Markdown.utils getMarkdownRenderer — image override', () => {
++  it('returns badge HTML for a blocked external URL', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    const renderer = getMarkdownRenderer()
++    const result = renderer.image('https://evil.com/img.png', null, 'alt')
++    expect(result).toContain(BLOCKED_IMAGE_BADGE_CLASS)
++    expect(result).not.toContain('<img')
++  })
++
++  it('returns <img> for a domain on the allow-list', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: 'cdn.trusted.com' }
++    const renderer = getMarkdownRenderer()
++    const result = renderer.image('https://cdn.trusted.com/img.png', null, 'alt')
++    expect(result).toContain('<img')
++    expect(result).not.toContain(BLOCKED_IMAGE_BADGE_CLASS)
++  })
++})
++
++describe('Markdown.utils markdown2html — image allow-list integration', () => {
++  it('emits badge HTML for a blocked image', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    const html = markdown2html('![alt](https://evil.com/img.png)')
++    expect(html).toContain(BLOCKED_IMAGE_BADGE_CLASS)
++    expect(html).not.toContain('<img')
++  })
++})
+diff --git a/src/types/global.ts b/src/types/global.ts
+index 94b279e5e..f732298b1 100644
+--- a/src/types/global.ts
++++ b/src/types/global.ts
+@@ -28,6 +28,7 @@ export interface EnvConfig {
+   VITE_IDP_PROVIDER: string
+   VITE_MCP_AUTH_AUTHENTICATING_TIMEOUT_SECONDS?: string
+   VITE_MCP_AUTH_ORIGIN?: string
++  VITE_ALLOWED_IMAGE_DOMAINS?: string
+ }
+ 
+ declare global {
+diff --git a/src/utils/__tests__/imageAllowList.test.tsx b/src/utils/__tests__/imageAllowList.test.tsx
+new file mode 100644
+index 000000000..93c9aebb8
+--- /dev/null
++++ b/src/utils/__tests__/imageAllowList.test.tsx
+@@ -0,0 +1,276 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { render } from '@testing-library/react'
++import DOMPurify from 'dompurify'
++import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
++
++import BlockedImageBadge from '@/components/BlockedImageBadge/BlockedImageBadge'
++import {
++  isImageAllowed,
++  getBlockedImageBadgeHTML,
++  getBlockedImageLabel,
++  BLOCKED_IMAGE_BADGE_CLASS,
++  BLOCKED_IMAGE_BADGE_TITLE,
++} from '@/utils/imageAllowList'
++
++const mockApi = vi.hoisted(() => ({
++  BASE_URL: 'http://localhost/api',
++  get: vi.fn(),
++  post: vi.fn(),
++  put: vi.fn(),
++  delete: vi.fn(),
++  patch: vi.fn(),
++  handleError: vi.fn(),
++}))
++
++vi.mock('@/utils/api', () => ({ default: mockApi }))
++
++function stubProductionLocation() {
++  vi.stubGlobal('location', {
++    hostname: 'production.example.com',
++    origin: 'https://production.example.com',
++    href: 'https://production.example.com/',
++  })
++}
++
++function stubLocalLocation() {
++  vi.stubGlobal('location', {
++    hostname: 'localhost',
++    origin: 'http://localhost',
++    href: 'http://localhost/',
++  })
++}
++
++beforeEach(() => {
++  mockApi.BASE_URL = 'http://localhost/api'
++  ;(window as any)._env_ = undefined
++})
++
++afterEach(() => {
++  vi.unstubAllGlobals()
++})
++
++describe('isImageAllowed — tier 1: blank', () => {
++  it('blocks empty string', () => {
++    expect(isImageAllowed('')).toBe(false)
++  })
++
++  it('blocks whitespace-only string', () => {
++    expect(isImageAllowed('   ')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 2: data:image/*', () => {
++  it('allows data:image/png', () => {
++    expect(isImageAllowed('data:image/png;base64,abc123==')).toBe(true)
++  })
++
++  it('allows data:image/svg+xml', () => {
++    expect(isImageAllowed('data:image/svg+xml,%3Csvg%3E%3C/svg%3E')).toBe(true)
++  })
++
++  it('allows data:image/png with leading whitespace (trimmed at entry)', () => {
++    expect(isImageAllowed(' data:image/png;base64,abc123==')).toBe(true)
++  })
++
++  it('blocks data:text/html (not data:image)', () => {
++    expect(isImageAllowed('data:text/html;base64,PHNjcmlwdD4=')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 3: malformed URL', () => {
++  beforeEach(() => stubProductionLocation())
++
++  it('blocks a malformed IPv6 authority URL that cannot be parsed', () => {
++    expect(isImageAllowed('http://[invalid-bracket')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 4: scheme', () => {
++  beforeEach(() => stubProductionLocation())
++
++  it('blocks blob: URL', () => {
++    expect(isImageAllowed('blob:https://example.com/some-id')).toBe(false)
++  })
++
++  it('blocks protocol-relative //evil.com/x.png on production page (resolves to https:, blocked at tier 8)', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    mockApi.BASE_URL = 'https://api.example.com'
++    expect(isImageAllowed('//evil.com/x.png')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 5: http: only on local page', () => {
++  it('blocks http://evil.com on an HTTPS production page', () => {
++    stubProductionLocation()
++    expect(isImageAllowed('http://evil.com/img.png')).toBe(false)
++  })
++
++  it('allows http://localhost/img.png on a local page (hostname=localhost)', () => {
++    stubLocalLocation()
++    expect(isImageAllowed('http://localhost/img.png')).toBe(true)
++  })
++
++  it('allows http://127.0.0.1/img.png on a local page (hostname=127.0.0.1)', () => {
++    vi.stubGlobal('location', {
++      hostname: '127.0.0.1',
++      origin: 'http://127.0.0.1',
++      href: 'http://127.0.0.1/',
++    })
++    expect(isImageAllowed('http://127.0.0.1/img.png')).toBe(true)
++  })
++
++  it('blocks http://localhost/img.png on a production page', () => {
++    stubProductionLocation()
++    expect(isImageAllowed('http://localhost/img.png')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 6: same-origin', () => {
++  it('allows a same-origin absolute URL', () => {
++    stubLocalLocation()
++    expect(isImageAllowed('http://localhost/static/img.png')).toBe(true)
++  })
++
++  it('allows a same-origin relative URL resolved against href', () => {
++    stubLocalLocation()
++    expect(isImageAllowed('/api/v1/files/abc.png')).toBe(true)
++  })
++})
++
++describe('isImageAllowed — tier 7: backend origin', () => {
++  it('allows an image from the backend origin (absolute VITE_API_URL)', () => {
++    stubProductionLocation()
++    mockApi.BASE_URL = 'https://codemie.example.com/code-assistant-api'
++    expect(isImageAllowed('https://codemie.example.com/code-assistant-api/v1/files/img.png')).toBe(
++      true
++    )
++  })
++})
++
++describe('isImageAllowed — tier 8: empty allow-list', () => {
++  it('blocks external https:// URL when allow-list is empty', () => {
++    stubProductionLocation()
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    mockApi.BASE_URL = 'https://api.example.com'
++    expect(isImageAllowed('https://external.com/img.png')).toBe(false)
++  })
++})
++
++describe('isImageAllowed — tier 9: allow-list matching', () => {
++  beforeEach(() => {
++    stubProductionLocation()
++    mockApi.BASE_URL = 'https://api.example.com'
++  })
++
++  it('allows exact match in list', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: 'cdn.example.com' }
++    expect(isImageAllowed('https://cdn.example.com/img.png')).toBe(true)
++  })
++
++  it('leading-dot wildcard .example.com matches apex example.com', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '.example.com' }
++    expect(isImageAllowed('https://example.com/img.png')).toBe(true)
++  })
++
++  it('leading-dot wildcard .example.com matches sub.example.com', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '.example.com' }
++    expect(isImageAllowed('https://sub.example.com/img.png')).toBe(true)
++  })
++
++  it('leading-dot wildcard .example.com rejects evil-example.com', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '.example.com' }
++    expect(isImageAllowed('https://evil-example.com/img.png')).toBe(false)
++  })
++
++  it('leading-dot wildcard .example.com rejects example.com.evil.io', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '.example.com' }
++    expect(isImageAllowed('https://example.com.evil.io/img.png')).toBe(false)
++  })
++
++  it('allow-list entry with extra whitespace and mixed case is normalized', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '  CDN.EXAMPLE.COM  ' }
++    expect(isImageAllowed('https://cdn.example.com/img.png')).toBe(true)
++  })
++})
++
++describe('getBlockedImageBadgeHTML', () => {
++  it('contains data-blocked-image-hostname, title, and label for a normal URL', () => {
++    const html = getBlockedImageBadgeHTML('https://evil.com/img.png')
++    expect(html).toContain('data-blocked-image-hostname="evil.com"')
++    expect(html).toContain(`title="${BLOCKED_IMAGE_BADGE_TITLE}"`)
++    expect(html).toContain('Image from evil.com blocked')
++    expect(html).toContain(BLOCKED_IMAGE_BADGE_CLASS)
++  })
++
++  it('returns empty string for blank src', () => {
++    expect(getBlockedImageBadgeHTML('')).toBe('')
++  })
++
++  it('HTML-escapes angle brackets in output (no raw < in attribute context)', () => {
++    const html = getBlockedImageBadgeHTML('https://evil.com/img.png')
++    // Outside the tag itself there should be no unescaped < followed by a non-space non-/ character
++    // that would open a new tag mid-attribute
++    expect(html).not.toMatch(/="[^"]*<[^"]*"/)
++  })
++
++  it('renders fallback label and no data attribute for a URL that cannot be parsed', () => {
++    const html = getBlockedImageBadgeHTML('http://[invalid-bracket')
++    expect(html).toContain('Image from untrusted domain blocked')
++    expect(html).not.toContain('data-blocked-image-hostname=')
++  })
++
++  it('data-blocked-image-hostname survives DOMPurify.sanitize with ADD_ATTR target', () => {
++    const html = getBlockedImageBadgeHTML('https://evil.com/img.png')
++    const sanitized = DOMPurify.sanitize(html, { ADD_ATTR: ['target'] })
++    const div = document.createElement('div')
++    div.innerHTML = sanitized
++    const span = div.querySelector('span')
++    expect(span?.dataset.blockedImageHostname).toBe('evil.com')
++  })
++})
++
++describe('getBlockedImageLabel', () => {
++  it('returns hostname-specific label when hostname provided', () => {
++    expect(getBlockedImageLabel('cdn.evil.com')).toBe('Image from cdn.evil.com blocked')
++  })
++
++  it('returns fallback label when hostname is undefined', () => {
++    expect(getBlockedImageLabel(undefined)).toBe('Image from untrusted domain blocked')
++  })
++})
++
++describe('drift prevention: BlockedImageBadge renders same structure as getBlockedImageBadgeHTML', () => {
++  it('matches tagName, className, dataset, title, textContent', () => {
++    const src = 'https://evil.com/img.png'
++    const htmlString = getBlockedImageBadgeHTML(src)
++
++    // Parse HTML string into a DOM node
++    const container = document.createElement('div')
++    container.innerHTML = htmlString
++    const fromHtml = container.firstElementChild as HTMLElement
++
++    // Render React component
++    const { container: reactContainer } = render(<BlockedImageBadge src={src} />)
++    const fromReact = reactContainer.firstElementChild as HTMLElement
++
++    expect(fromReact.tagName).toBe(fromHtml.tagName)
++    expect(fromReact.className).toBe(fromHtml.className)
++    expect(fromReact.dataset.blockedImageHostname).toBe(fromHtml.dataset.blockedImageHostname)
++    expect(fromReact.title).toBe(fromHtml.title)
++    expect(fromReact.textContent).toBe(fromHtml.textContent)
++  })
++})
+diff --git a/src/utils/__tests__/messageHelpers.renderer.test.ts b/src/utils/__tests__/messageHelpers.renderer.test.ts
+new file mode 100644
+index 000000000..1c0f2af99
+--- /dev/null
++++ b/src/utils/__tests__/messageHelpers.renderer.test.ts
+@@ -0,0 +1,96 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
++
++import { BLOCKED_IMAGE_BADGE_CLASS, BLOCKED_IMAGE_BADGE_TITLE } from '@/utils/imageAllowList'
++import { getMarkdownRenderer, markdown2html } from '@/utils/messageHelpers'
++
++const mockApi = vi.hoisted(() => ({
++  BASE_URL: 'https://api.example.com',
++  get: vi.fn(),
++  post: vi.fn(),
++}))
++
++vi.mock('@/utils/api', () => ({ default: mockApi }))
++
++function stubProductionLocation() {
++  vi.stubGlobal('location', {
++    hostname: 'production.example.com',
++    origin: 'https://production.example.com',
++    href: 'https://production.example.com/',
++  })
++}
++
++beforeEach(() => {
++  mockApi.BASE_URL = 'https://api.example.com'
++  ;(window as any)._env_ = undefined
++  stubProductionLocation()
++})
++
++afterEach(() => {
++  vi.unstubAllGlobals()
++})
++
++describe('getMarkdownRenderer — image override', () => {
++  it('returns badge HTML for an external URL when allow-list is empty', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    const renderer = getMarkdownRenderer()
++    const result = renderer.image('https://evil.com/img.png', null, 'alt')
++    expect(result).toContain(BLOCKED_IMAGE_BADGE_CLASS)
++    expect(result).toContain(BLOCKED_IMAGE_BADGE_TITLE)
++    expect(result).toContain('evil.com')
++    expect(result).not.toContain('<img')
++  })
++
++  it('returns <img> for an allowed domain in the allow-list', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: 'cdn.trusted.com' }
++    const renderer = getMarkdownRenderer()
++    const result = renderer.image('https://cdn.trusted.com/img.png', null, 'alt')
++    expect(result).toContain('<img')
++    expect(result).not.toContain(BLOCKED_IMAGE_BADGE_CLASS)
++  })
++
++  it('returns <img> for a same-origin image', () => {
++    const renderer = getMarkdownRenderer()
++    const result = renderer.image('https://production.example.com/files/img.png', null, 'alt')
++    expect(result).toContain('<img')
++    expect(result).not.toContain(BLOCKED_IMAGE_BADGE_CLASS)
++  })
++
++  it('returns <img> for the backend origin', () => {
++    mockApi.BASE_URL = 'https://backend.example.com/api'
++    const renderer = getMarkdownRenderer()
++    const result = renderer.image('https://backend.example.com/files/img.png', null, 'alt')
++    expect(result).toContain('<img')
++    expect(result).not.toContain(BLOCKED_IMAGE_BADGE_CLASS)
++  })
++})
++
++describe('markdown2html — image allow-list integration', () => {
++  it('emits badge HTML when image domain is blocked', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: '' }
++    const html = markdown2html('![alt](https://evil.com/img.png)')
++    expect(html).toContain(BLOCKED_IMAGE_BADGE_CLASS)
++    expect(html).not.toContain('<img')
++  })
++
++  it('emits <img> when image domain is on the allow-list', () => {
++    ;(window as any)._env_ = { VITE_ALLOWED_IMAGE_DOMAINS: 'cdn.trusted.com' }
++    const html = markdown2html('![alt](https://cdn.trusted.com/img.png)')
++    expect(html).toContain('<img')
++    expect(html).not.toContain(BLOCKED_IMAGE_BADGE_CLASS)
++  })
++})
+diff --git a/src/utils/imageAllowList.ts b/src/utils/imageAllowList.ts
+new file mode 100644
+index 000000000..97defd517
+--- /dev/null
++++ b/src/utils/imageAllowList.ts
+@@ -0,0 +1,112 @@
++// Copyright 2026 EPAM Systems, Inc. ("EPAM")
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++//
++
++import api from '@/utils/api'
++
++export const BLOCKED_IMAGE_BADGE_CLASS = 'blocked-image-badge'
++export const BLOCKED_IMAGE_BADGE_TITLE = 'Image not displayed: domain is not on the allow-list'
++
++function parseImageUrl(src: string): URL | undefined {
++  let result: URL | undefined
++  try {
++    result = new URL(src, window.location.href)
++  } catch {
++    // URL failed to parse
++  }
++  return result
++}
++
++export function extractHostname(src: string): string | undefined {
++  return src.trim() ? parseImageUrl(src)?.hostname || undefined : undefined
++}
++
++function parseAllowList(): Set<string> {
++  const raw =
++    window?._env_?.VITE_ALLOWED_IMAGE_DOMAINS || import.meta.env.VITE_ALLOWED_IMAGE_DOMAINS || ''
++  return new Set(
++    (raw as string)
++      .split(',')
++      .map((e: string) => e.trim().toLowerCase())
++      .filter(Boolean)
++  )
++}
++
++function getBackendOrigin(): string | null {
++  return parseImageUrl(api.BASE_URL)?.origin ?? null
++}
++
++export function getBlockedImageLabel(hostname?: string): string {
++  return hostname ? `Image from ${hostname} blocked` : 'Image from untrusted domain blocked'
++}
++
++function escapeHtml(str: string): string {
++  return str
++    .replace(/&/g, '&amp;')
++    .replace(/</g, '&lt;')
++    .replace(/>/g, '&gt;')
++    .replace(/"/g, '&quot;')
++}
++
++export function getBlockedImageBadgeHTML(src: string): string {
++  if (!src.trim()) return ''
++  const hostname = extractHostname(src)
++  const hostnameAttr = hostname ? ` data-blocked-image-hostname="${escapeHtml(hostname)}"` : ''
++  const label = getBlockedImageLabel(hostname)
++  return `<span class="${BLOCKED_IMAGE_BADGE_CLASS}"${hostnameAttr} title="${BLOCKED_IMAGE_BADGE_TITLE}">${escapeHtml(
++    label
++  )}</span>`
++}
++
++function isHttpSafeFromPage(): boolean {
++  const h = window.location.hostname
++  return h === 'localhost' || h === '127.0.0.1'
++}
++
++function matchesAllowListEntry(hostname: string, entry: string): boolean {
++  if (entry.startsWith('.')) {
++    // Leading-dot wildcard: matches apex and all subdomains
++    // 'evil-example.com'.endsWith('-example.com') ≠ '.example.com' — safe
++    return hostname === entry.slice(1) || hostname.endsWith(entry)
++  }
++  return hostname === entry
++}
++
++export function isImageAllowed(src: string): boolean {
++  src = src.trim()
++  // Tier 1: blank src — browser re-requests current page; never render
++  if (!src) return false
++  // Tier 2: data:image/* issues no network request and is always safe
++  if (/^data:image\//i.test(src)) return true
++  // Tier 3: unparseable URL — no safe interpretation
++  const url = parseImageUrl(src)
++  if (!url) return false
++  // Tier 4: only https: and http: are accepted
++  if (url.protocol !== 'https:' && url.protocol !== 'http:') return false
++  // Tier 5: http: only safe when the page itself is running locally
++  if (url.protocol === 'http:' && !isHttpSafeFromPage()) return false
++  // Tier 6: same-origin (covers /api/v1/files/ in local dev)
++  if (url.origin === window.location.origin) return true
++  // Tier 7: backend origin (covers absolute VITE_API_URL in production)
++  if (url.origin === getBackendOrigin()) return true
++  // Tier 8: empty allow-list → default-deny all external images
++  const allowList = parseAllowList()
++  if (allowList.size === 0) return false
++  // Tier 9: allow-list hostname matching
++  const { hostname } = url
++  for (const entry of allowList) {
++    if (matchesAllowListEntry(hostname, entry)) return true
++  }
++  return false
++}
+diff --git a/src/utils/messageHelpers.ts b/src/utils/messageHelpers.ts
+index bb55dff97..cb0e2a7ee 100644
+--- a/src/utils/messageHelpers.ts
++++ b/src/utils/messageHelpers.ts
+@@ -18,6 +18,7 @@ import { marked } from 'marked'
+ 
+ import { markedOptions } from '@/constants/chats'
+ import api from '@/utils/api'
++import { getBlockedImageBadgeHTML, isImageAllowed } from '@/utils/imageAllowList'
+ 
+ export const sanitizeMessage = (message: string): string => {
+   // We need to keep <br> as they are. <br> are used legitimately because \n breaks markdown parsing
+@@ -61,6 +62,11 @@ export const getMarkdownRenderer = (): marked.Renderer => {
+   renderer.del = (text: string): string => text
+   renderer.codespan = (text: string): string =>
+     codespanRenderer(text.replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;'))
++  const imageRenderer = renderer.image.bind(renderer)
++  renderer.image = (href: string, title: string | null, text: string): string => {
++    if (!isImageAllowed(href)) return getBlockedImageBadgeHTML(href)
++    return imageRenderer(href, title, text)
++  }
+ 
+   return renderer
+ }

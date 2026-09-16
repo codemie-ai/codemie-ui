@@ -16,6 +16,7 @@
 import { FC, Fragment, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
+import BlockedImageBadge from '@/components/BlockedImageBadge/BlockedImageBadge'
 import CodeBlock from '@/components/CodeBlock/CodeBlock'
 import Markdown from '@/components/markdown/Markdown'
 import TextBlock from '@/components/markdown/TextBlock'
@@ -23,6 +24,7 @@ import { DOCUMENT_SOURCE_KEY, MARKDOWN_ENABLED_AUTHORS } from '@/constants'
 import { WORKFLOW_OUTPUT_FORMATS } from '@/constants/workflows'
 import { appInfoStore } from '@/store/appInfo'
 import { Thought } from '@/types/entity/conversation'
+import { isImageAllowed } from '@/utils/imageAllowList'
 import { tryParseJsonObjectOrArray } from '@/utils/jsonHelpers'
 import { isValidMessageArray, parseValidatedMessageArray } from '@/utils/messageFormat'
 
@@ -128,18 +130,21 @@ const ThoughtMessage: FC<ThoughtMessageProps> = ({ thought }) => {
           <TextBlock className="break-all" text={segment.content} />
         ))}
 
-      {segment.type === 'image' && (
-        <img
-          src={segment.url}
-          alt={segment.alt}
-          className="max-w-full h-auto rounded-lg border border-border-structural shadow-sm"
-          style={{ maxHeight: 400, objectFit: 'contain' }}
-          onError={(e) => {
-            ;(e.target as HTMLImageElement).style.display = 'none'
-            console.error('Failed to load image:', segment.url.substring(0, 50) + '...')
-          }}
-        />
-      )}
+      {segment.type === 'image' &&
+        (isImageAllowed(segment.url) ? (
+          <img
+            src={segment.url}
+            alt={segment.alt}
+            className="max-w-full h-auto rounded-lg border border-border-structural shadow-sm"
+            style={{ maxHeight: 400, objectFit: 'contain' }}
+            onError={(e) => {
+              ;(e.target as HTMLImageElement).style.display = 'none'
+              console.error('Failed to load image:', segment.url.substring(0, 50) + '...')
+            }}
+          />
+        ) : (
+          <BlockedImageBadge src={segment.url} />
+        ))}
 
       {segment.type === 'document' && (
         <ThoughtDocument title={segment.title} content={segment.content} />

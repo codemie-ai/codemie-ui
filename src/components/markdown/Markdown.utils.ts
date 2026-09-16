@@ -18,6 +18,7 @@ import { marked } from 'marked'
 
 import api from '@/utils/api'
 
+import { sanitizeHtmlWithImageAllowList } from './Markdown.sanitize'
 import { FileExtension } from '../CodeBlock/fileExtensions'
 
 export const TOKEN_TYPES = {
@@ -116,9 +117,11 @@ export const getMarkdownTokens = (message: string): MarkdownToken[] => {
 }
 
 export const markdown2html = (text) => {
-  return marked
-    .parse(DOMPurify.sanitize(text), { renderer: getMarkdownRenderer(), breaks: true })
-    .trim()
+  // The image allow-list runs on the HTML marked produced, not on the markdown source, so the
+  // <img> tags marked emits from ![](...) are gated alongside any raw HTML DOMPurify let through.
+  return sanitizeHtmlWithImageAllowList(
+    marked.parse(DOMPurify.sanitize(text), { renderer: getMarkdownRenderer(), breaks: true })
+  ).trim()
 }
 
 export const getMarkdownRenderer = () => {

@@ -44,7 +44,7 @@ vi.mock('dompurify', () => ({
   default: { sanitize: (_input: string) => _input },
 }))
 
-vi.mock('@/utils/messageHelpers', () => ({
+vi.mock('@/components/markdown/Markdown.utils', () => ({
   unSanitizeMessage: (s: string) => s,
 }))
 

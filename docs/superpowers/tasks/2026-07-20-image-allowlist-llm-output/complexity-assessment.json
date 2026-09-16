@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "task": "Implement an image domain allow-list for LLM/Assistant markdown output by overriding the renderer.image method in Markdown.utils.ts and its messageHelpers.ts duplicate, fixing the structured image_url path in ThoughtMessage.tsx, adding VITE_ALLOWED_IMAGE_DOMAINS to EnvConfig, and writing tests from scratch for the zero-coverage markdown rendering pipeline.",
+  "generated": "2026-07-27T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 2, "label": "S" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 17,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three independent fix locations: getMarkdownRenderer() in Markdown.utils.ts (primary), the duplicate copy in messageHelpers.ts (must mirror consistently), and the structured image_url path in ThoughtMessage.tsx (entirely separate code path). Bumped from M to L by the 'touches core shared utilities' red flag — getMarkdownRenderer() is shared across ChatAiMessageActions.tsx and MermaidDiagram.tsx via messageHelpers.ts."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Six source files changed (Markdown.utils.ts, messageHelpers.ts, ThoughtMessage.tsx, src/types/global.ts, .env, src/constants/index.ts) plus three new test files written from scratch (Markdown.utils.test.ts, MarkdownTokens.test.tsx, ThoughtMessage.test.tsx). Total of ~9 files across four directories fits the L(4) band of 8-10 modified + 2-4 new files."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S to M: explicit security vulnerability fix (image URL exfiltration via LLM-injected markdown) — 'Security or Compliance requirements' red flag applied",
+    "Component Scope bumped from M to L: getMarkdownRenderer() is a core shared utility duplicated across Markdown.utils.ts and messageHelpers.ts, consumed by multiple components — 'Touches core shared utilities' red flag applied"
+  ],
+  "split_recommendation": null
+}
