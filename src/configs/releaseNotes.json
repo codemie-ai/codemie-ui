@@ -1,5 +1,106 @@
 [
 {
+  "version": "2.51.0",
+  "date": "2026-09-16",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "Configurable project chargeback",
+          "description": "Added configurable chargeback for project budgets, including cost-center attribution.",
+          "issues": [{"key":"EPMCDME-14387","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14387"}]
+        },
+        {
+          "title": "Workflow template placeholders",
+          "description": "Workflow templates can now use placeholder variables with automatic prompts for their values.",
+          "issues": [{"key":"EPMCDME-10585","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-10585"}]
+        },
+        {
+          "title": "Direct SQL integration testing",
+          "description": "Users can test SQL integrations directly from the Integration UI without first adding them to an agent.",
+          "issues": [{"key":"EPMCDME-7060","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-7060"}]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Optional project descriptions",
+          "description": "Projects can now include an optional description.",
+          "issues": [{"key":"EPMCDME-14336","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14336"}]
+        },
+        {
+          "title": "Internal platform maintenance",
+          "description": "Completed internal operational and test-automation maintenance.",
+          "issues": []
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Security maintenance improvements",
+          "description": "Applied security remediation updates across platform services.",
+          "issues": []
+        },
+        {
+          "title": "Web chat scrolling",
+          "description": "Restored scrolling through web-chat transcripts and results, including keyboard navigation and Microsoft Edge behavior.",
+          "issues": [{"key":"EPMCDME-14913","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14913"},{"key":"EPMCDME-14842","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14842"}]
+        },
+        {
+          "title": "Project deletion with integrations",
+          "description": "Fixed project deletion when integrations exist or when the displayed integration count does not match the integrations list.",
+          "issues": [{"key":"EPMCDME-14866","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14866"},{"key":"EPMCDME-14497","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14497"}]
+        },
+        {
+          "title": "Custom-field layout spacing",
+          "description": "Corrected spacing around selected values in custom-field inputs.",
+          "issues": [{"key":"EPMCDME-14848","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14848"}]
+        },
+        {
+          "title": "Webhook XWiki datasource support",
+          "description": "Fixed webhook integrations rejecting the XWiki datasource type.",
+          "issues": [{"key":"EPMCDME-14794","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14794"}]
+        },
+        {
+          "title": "Duplicate chargeback entry",
+          "description": "Prevented chargeback from appearing twice in project administration.",
+          "issues": [{"key":"EPMCDME-14757","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14757"}]
+        },
+        {
+          "title": "Project recreation permissions",
+          "description": "Prevented recreated projects from inheriting Project Admin access from previously deleted projects with the same name.",
+          "issues": [{"key":"EPMCDME-14501","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14501"}]
+        },
+        {
+          "title": "Workflow execution context display",
+          "description": "Corrected execution-context viewer behavior when a following workflow node fails.",
+          "issues": [{"key":"EPMCDME-14319","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14319"}]
+        },
+        {
+          "title": "Assistant filter controls",
+          "description": "Hid the “Clear all” action when no assistant filters are applied.",
+          "issues": [{"key":"EPMCDME-14302","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14302"}]
+        },
+        {
+          "title": "ADO document attachment duplication",
+          "description": "Prevented the same chat document from being reattached to an Azure DevOps work item on every update.",
+          "issues": [{"key":"EPMCDME-13958","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-13958"}]
+        },
+        {
+          "title": "Focus restoration",
+          "description": "Restored focus to the invoking element after closing a dialog with Escape.",
+          "issues": [{"key":"EPMCDME-8554","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8554"}]
+        }
+      ]
+    }
+  ]
+},
+{
   "version": "2.50.0",
   "date": "2026-09-14",
   "sections": [
