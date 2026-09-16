@@ -57,9 +57,149 @@ const MarkdownImage = ({
     <BlockedImageBadge src={src ?? ''} />
   )
 
+// react-markdown always passes a code block's text as a string, or an array
+// containing one; children is typed as React.ReactNode only because that's
+// the generic Components contract. Narrow explicitly rather than coercing
+// via String(), which would silently print "[object Object]" for anything
+// react-markdown never actually sends here (typescript:S6551).
+const codeChildrenToText = (children: React.ReactNode): string => {
+  if (typeof children === 'string') return children
+  if (Array.isArray(children)) {
+    return children.filter((child): child is string => typeof child === 'string').join('')
+  }
+  return ''
+}
+
+const CodeBlock = ({ inline, className, children, ...props }: MarkdownComponentProps) => {
+  const { isDark } = useTheme()
+  const match = /language-(\w+)/.exec(className || '')
+  return !inline && match ? (
+    <SyntaxHighlighter
+      {...props}
+      style={isDark ? dracula : prism}
+      language={match[1]}
+      PreTag="div"
+      className="rounded-md !my-4"
+      customStyle={{
+        background: 'transparent',
+        border: 'none',
+      }}
+    >
+      {codeChildrenToText(children).replace(/\n$/, '')}
+    </SyntaxHighlighter>
+  ) : (
+    <code
+      {...props}
+      className={cn('bg-surface-base-secondary px-1.5 py-0.5 rounded text-sm font-mono', className)}
+    >
+      {children}
+    </code>
+  )
+}
+
+const Heading1 = ({ children, ...props }: MarkdownComponentProps) => (
+  <h1 className="text-3xl font-semibold text-text-primary mt-6 mb-3 first:mt-0" {...props}>
+    {children}
+  </h1>
+)
+
+const Heading2 = ({ children, ...props }: MarkdownComponentProps) => (
+  <h2 className="text-2xl font-semibold text-text-primary mt-5 mb-2 first:mt-0" {...props}>
+    {children}
+  </h2>
+)
+
+const Heading3 = ({ children, ...props }: MarkdownComponentProps) => (
+  <h3 className="text-xl font-semibold text-text-primary mt-4 mb-2 first:mt-0" {...props}>
+    {children}
+  </h3>
+)
+
+const Paragraph = ({ children, ...props }: MarkdownComponentProps) => (
+  <p className="mb-4 text-text-primary leading-relaxed" {...props}>
+    {children}
+  </p>
+)
+
+const UnorderedList = ({ children, ...props }: MarkdownComponentProps) => (
+  <ul className="mb-4 space-y-1 list-disc pl-8 ml-0 block" {...props}>
+    {children}
+  </ul>
+)
+
+const OrderedList = ({ children, ...props }: MarkdownComponentProps) => (
+  <ol className="mb-4 space-y-1 list-decimal pl-8 ml-0 block" {...props}>
+    {children}
+  </ol>
+)
+
+const ListItem = ({ children, ...props }: MarkdownComponentProps) => (
+  <li className="text-text-primary list-item list-outside ml-0" {...props}>
+    {children}
+  </li>
+)
+
+const BlockQuote = ({ children, ...props }: MarkdownComponentProps) => (
+  <blockquote
+    className="border-l-4 border-not-started-primary pl-4 my-4 text-text-quaternary italic"
+    {...props}
+  >
+    {children}
+  </blockquote>
+)
+
+const Anchor = ({ children, href, ...props }: MarkdownComponentProps & { href?: string }) => (
+  <a
+    href={href}
+    className="text-text-quaternary underline hover:opacity-80 transition-opacity"
+    target="_blank"
+    rel="noopener noreferrer"
+    {...props}
+  >
+    {children}
+  </a>
+)
+
+const Strong = ({ children, ...props }: MarkdownComponentProps) => (
+  <strong className="font-semibold" {...props}>
+    {children}
+  </strong>
+)
+
+const Em = ({ children, ...props }: MarkdownComponentProps) => (
+  <em className="italic" {...props}>
+    {children}
+  </em>
+)
+
+const Preformatted = ({ children, ...props }: MarkdownComponentProps) => (
+  <pre
+    className="bg-surface-base-secondary p-3 rounded-md overflow-x-auto my-4 border border-border-specific-panel-outline"
+    {...props}
+  >
+    {children}
+  </pre>
+)
+
+const markdownComponents: Components = {
+  code: CodeBlock,
+  h1: Heading1,
+  h2: Heading2,
+  h3: Heading3,
+  p: Paragraph,
+  ul: UnorderedList,
+  ol: OrderedList,
+  li: ListItem,
+  blockquote: BlockQuote,
+  a: Anchor,
+  img: MarkdownImage,
+  strong: Strong,
+  em: Em,
+  pre: Preformatted,
+}
+
 const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
   ({ value, onChange, label, error, required, rows = 10, className }, ref) => {
-    const { isDark } = useTheme()
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
     const [fullscreenPreview, setFullscreenPreview] = useState(false)
@@ -270,110 +410,6 @@ const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
         )}
       </div>
     )
-
-    const markdownComponents: Components = {
-      code({ inline, className, children, ...props }: MarkdownComponentProps) {
-        const match = /language-(\w+)/.exec(className || '')
-        return !inline && match ? (
-          <SyntaxHighlighter
-            {...props}
-            style={isDark ? dracula : prism}
-            language={match[1]}
-            PreTag="div"
-            className="rounded-md !my-4"
-            customStyle={{
-              background: 'transparent',
-              border: 'none',
-            }}
-          >
-            {String(children).replace(/\n$/, '')}
-          </SyntaxHighlighter>
-        ) : (
-          <code
-            {...props}
-            className={cn(
-              'bg-surface-base-secondary px-1.5 py-0.5 rounded text-sm font-mono',
-              className
-            )}
-          >
-            {children}
-          </code>
-        )
-      },
-      h1: ({ children, ...props }: MarkdownComponentProps) => (
-        <h1 className="text-3xl font-semibold text-text-primary mt-6 mb-3 first:mt-0" {...props}>
-          {children}
-        </h1>
-      ),
-      h2: ({ children, ...props }: MarkdownComponentProps) => (
-        <h2 className="text-2xl font-semibold text-text-primary mt-5 mb-2 first:mt-0" {...props}>
-          {children}
-        </h2>
-      ),
-      h3: ({ children, ...props }: MarkdownComponentProps) => (
-        <h3 className="text-xl font-semibold text-text-primary mt-4 mb-2 first:mt-0" {...props}>
-          {children}
-        </h3>
-      ),
-      p: ({ children, ...props }: MarkdownComponentProps) => (
-        <p className="mb-4 text-text-primary leading-relaxed" {...props}>
-          {children}
-        </p>
-      ),
-      ul: ({ children, ...props }: MarkdownComponentProps) => (
-        <ul className="mb-4 space-y-1 list-disc pl-8 ml-0 block" {...props}>
-          {children}
-        </ul>
-      ),
-      ol: ({ children, ...props }: MarkdownComponentProps) => (
-        <ol className="mb-4 space-y-1 list-decimal pl-8 ml-0 block" {...props}>
-          {children}
-        </ol>
-      ),
-      li: ({ children, ...props }: MarkdownComponentProps) => (
-        <li className="text-text-primary list-item list-outside ml-0" {...props}>
-          {children}
-        </li>
-      ),
-      blockquote: ({ children, ...props }: MarkdownComponentProps) => (
-        <blockquote
-          className="border-l-4 border-not-started-primary pl-4 my-4 text-text-quaternary italic"
-          {...props}
-        >
-          {children}
-        </blockquote>
-      ),
-      a: ({ children, href, ...props }: MarkdownComponentProps & { href?: string }) => (
-        <a
-          href={href}
-          className="text-text-quaternary underline hover:opacity-80 transition-opacity"
-          target="_blank"
-          rel="noopener noreferrer"
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-      img: MarkdownImage,
-      strong: ({ children, ...props }: MarkdownComponentProps) => (
-        <strong className="font-semibold" {...props}>
-          {children}
-        </strong>
-      ),
-      em: ({ children, ...props }: MarkdownComponentProps) => (
-        <em className="italic" {...props}>
-          {children}
-        </em>
-      ),
-      pre: ({ children, ...props }: MarkdownComponentProps) => (
-        <pre
-          className="bg-surface-base-secondary p-3 rounded-md overflow-x-auto my-4 border border-border-specific-panel-outline"
-          {...props}
-        >
-          {children}
-        </pre>
-      ),
-    }
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       onChange(e.target.value)

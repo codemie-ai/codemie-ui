@@ -44,7 +44,7 @@ import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { BudgetCategoryFilter, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
-import { Project, ProjectType } from '@/types/entity/project'
+import { Project, ProjectCounters, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import { formatCurrency, formatSpend } from '@/utils/currency'
 import { getProjectDisplayName } from '@/utils/projectDisplayName'
@@ -57,8 +57,6 @@ import ProjectResourceCounters from './ProjectResourceCounters'
 
 const ERROR_MESSAGES = {
   DELETE_NO_COUNT_DATA: 'Cannot delete project: assignment count data unavailable',
-  DELETE_HAS_ASSIGNMENTS:
-    'This project has assigned entities and cannot be deleted. Remove all assignments first.',
 }
 
 const WARNING_MESSAGES = {
@@ -91,6 +89,34 @@ const calculateTotalAssignments = (project: Project): number => {
     c.datasources_count +
     c.skills_count
   )
+}
+
+// EPMCDME-14866: integrations no longer block deletion — the backend auto-deletes a
+// project's integrations instead, so they're excluded from the blocking check below.
+const BLOCKING_COUNTER_LABELS: Array<{ key: keyof ProjectCounters; label: string }> = [
+  { key: 'assistants_count', label: 'assistants' },
+  { key: 'workflows_count', label: 'workflows' },
+  { key: 'datasources_count', label: 'datasources' },
+  { key: 'skills_count', label: 'skills' },
+]
+
+const getBlockingResourceLabels = (project: Project): string[] => {
+  const c = project.counters
+  if (!c) return []
+  return BLOCKING_COUNTER_LABELS.filter(({ key }) => c[key] > 0).map(({ label }) => label)
+}
+
+const joinWithAnd = (labels: string[]): string => {
+  if (labels.length === 1) return labels[0]
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`
+  return `${labels.slice(0, -1).join(', ')}, and ${labels[labels.length - 1]}`
+}
+
+const buildBlockingTooltip = (labels: string[]): string => {
+  const noun = labels.length > 1 ? 'them' : 'it'
+  return `This project has assigned ${joinWithAnd(
+    labels
+  )} and cannot be deleted. Remove ${noun} first.`
 }
 
 const columnDefinitions: ColumnDefinition[] = [
@@ -490,14 +516,14 @@ const ProjectsManagementFull: FC = () => {
 
           if (!isPersonal) {
             const hasCountData = item.counters !== undefined
-            const totalCount = calculateTotalAssignments(item)
-            const shouldDisableDelete = !hasCountData || totalCount > 0
+            const blockingLabels = getBlockingResourceLabels(item)
+            const shouldDisableDelete = !hasCountData || blockingLabels.length > 0
 
             let deleteTooltip: string | undefined
             if (!hasCountData) {
               deleteTooltip = ERROR_MESSAGES.DELETE_NO_COUNT_DATA
-            } else if (totalCount > 0) {
-              deleteTooltip = ERROR_MESSAGES.DELETE_HAS_ASSIGNMENTS
+            } else if (blockingLabels.length > 0) {
+              deleteTooltip = buildBlockingTooltip(blockingLabels)
             }
 
             menuItems.push({
