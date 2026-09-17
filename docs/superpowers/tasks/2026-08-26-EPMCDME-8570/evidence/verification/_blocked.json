@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "head": "fe7302b47bfd34e3a02637d2ea5824d65250dad9",
+  "result": "BLOCKED",
+  "reason": "UI surface changed (src/pages/help/components/HelpItem.tsx) but no browser verification tool is configured. @playwright/test and cypress are absent from devDependencies; no playwright.config.* or cypress.config.* found; no custom feature_verification.command in .ai-run/sdlc-factory/config.json.",
+  "changed_ui_files": ["src/pages/help/components/HelpItem.tsx"],
+  "feature_id": "help-item-accessibility",
+  "remediation": "Install Playwright (npm i -D @playwright/test && npx playwright install) or set feature_verification.command in .ai-run/sdlc-factory/config.json"
+}

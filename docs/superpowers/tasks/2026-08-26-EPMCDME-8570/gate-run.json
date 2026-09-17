@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-8570_work-on-epmcdme-8570",
+  "head": "fe7302b47bfd34e3a02637d2ea5824d65250dad9",
+  "runner": "npm",
+  "started_at": "2026-08-26T13:11:14Z",
+  "completed_at": "2026-08-26T13:17:53Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 7000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency files changed in this diff; guide skip-if condition met."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12000,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 198110,
+      "command": "npm run test:unit",
+      "exit_code": 0
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 95440,
+      "command": "npm run test:integration",
+      "exit_code": 0
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "lint-staged operates only on git-staged files and requires an active commit; cannot run outside a commit context. lint gate (npm run lint) covered the full tree."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 9000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: 'Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN env var to enable locally; Sonar runs in the CI pipeline regardless."
+    }
+  ],
+  "failures": {}
+}

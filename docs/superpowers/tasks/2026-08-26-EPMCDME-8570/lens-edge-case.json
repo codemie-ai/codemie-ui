@@ -1,0 +1,26 @@
+[
+  {
+    "location": "src/pages/help/components/HelpItem.tsx:51",
+    "trigger_condition": "iconUrl is an empty string (falsy)",
+    "guard_snippet": "{iconUrl != null && iconUrl !== '' && <img src={iconUrl} alt=\"\" role=\"presentation\" />}",
+    "potential_consequence": "Empty-string iconUrl silently falls through to default avatar; caller intent ignored"
+  },
+  {
+    "location": "src/pages/help/components/__tests__/HelpItem.test.tsx:93,101,111,154",
+    "trigger_condition": "Multiple presentation-role images present in DOM simultaneously",
+    "guard_snippet": "screen.getAllByRole('presentation')[0] or add a data-testid to distinguish icon images",
+    "potential_consequence": "getByRole throws found multiple elements; tests break if a second img is ever introduced"
+  },
+  {
+    "location": "src/pages/help/components/__tests__/HelpSection.test.tsx:167",
+    "trigger_condition": "Test renders defaultProps (3 items, no iconUrl) alongside itemsWithIconUrl",
+    "guard_snippet": "Isolate render to itemsWithIconUrl only (already done); confirm no other HelpSection test leaks presentation images into this assertion",
+    "potential_consequence": "getByRole('presentation') ambiguous if test setup ever renders multiple default-avatar items in scope"
+  },
+  {
+    "location": "src/pages/help/components/HelpItem.tsx:54",
+    "trigger_condition": "Icon component does not accept aria-hidden prop in its type signature",
+    "guard_snippet": "Ensure IconType (or ComponentType) accepts HTMLAttributes or SVGAttributes so aria-hidden passes without TS error",
+    "potential_consequence": "TypeScript compilation error at runtime if Icon prop type is strict and rejects aria-hidden"
+  }
+]

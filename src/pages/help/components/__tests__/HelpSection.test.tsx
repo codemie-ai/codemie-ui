@@ -164,7 +164,8 @@ describe('HelpSection', () => {
       },
     ]
     renderWithRouter(<HelpSection {...defaultProps} items={itemsWithIconUrl} />)
-    const img = screen.getByAltText('Avatar Item')
+    const img = screen.getByRole('presentation')
     expect(img).toHaveAttribute('src', 'https://example.com/avatar.png')
+    expect(img).toHaveAttribute('alt', '')
   })
 })

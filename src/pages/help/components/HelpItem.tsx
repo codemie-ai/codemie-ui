@@ -48,8 +48,13 @@ const HelpItem: FC<HelpItemType> = ({
     >
       <div className="flex items-center gap-x-5 flex-1 min-w-0">
         <div className="border flex justify-center items-center rounded-full size-8 min-w-8 min-h-8 overflow-hidden border-border-specific-icon-outline bg-surface-interactive-active">
-          {iconUrl && <img src={iconUrl} alt={name} />}
-          {!iconUrl && (Icon ? <Icon /> : <img src={DefaultIconPng} alt={name} />)}
+          {iconUrl && <img src={iconUrl} alt="" role="presentation" />}
+          {!iconUrl &&
+            (Icon ? (
+              <Icon aria-hidden="true" />
+            ) : (
+              <img src={DefaultIconPng} alt="" role="presentation" />
+            ))}
         </div>
         <div className="flex flex-col pr-2 min-w-0">
           <h3 className="font-medium">{name}</h3>

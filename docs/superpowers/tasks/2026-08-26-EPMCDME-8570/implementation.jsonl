@@ -1,0 +1,1 @@
+{"task_id":"1","status":"done","commit":"fe7302b47","test_command":"./node_modules/.bin/vitest run --project unit src/pages/help/components/__tests__/HelpItem.test.tsx src/pages/help/components/__tests__/HelpSection.test.tsx"}

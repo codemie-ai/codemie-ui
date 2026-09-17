@@ -105,27 +105,25 @@ describe('HelpItem', () => {
 
   it('renders iconUrl image when provided', () => {
     renderWithRouter(<HelpItem {...defaultProps} iconUrl="https://example.com/icon.png" />)
-    const img = screen.getByAltText('Test Assistant')
+    const img = screen.getByRole('presentation')
     expect(img).toBeInTheDocument()
     expect(img).toHaveAttribute('src', 'https://example.com/icon.png')
+    expect(img).toHaveAttribute('alt', '')
   })
 
   it('renders default avatar when no icon or iconUrl provided', () => {
     renderWithRouter(<HelpItem {...defaultProps} />)
-
-    const img = screen.getByAltText('Test Assistant')
-
+    const img = screen.getByRole('presentation')
     expect(img).toBeInTheDocument()
     expect(img).toHaveAttribute('src', 'ai-avatar.png')
+    expect(img).toHaveAttribute('alt', '')
   })
 
   it('prioritizes iconUrl over custom icon', () => {
     renderWithRouter(
       <HelpItem {...defaultProps} iconUrl="https://example.com/icon.png" icon={TestIconSvg} />
     )
-
-    const img = screen.getByAltText('Test Assistant')
-
+    const img = screen.getByRole('presentation')
     expect(img).toHaveAttribute('src', 'https://example.com/icon.png')
     expect(screen.queryByTestId('test-icon')).not.toBeInTheDocument()
   })
@@ -168,7 +166,8 @@ describe('HelpItem', () => {
     expect(screen.getByText('Full featured assistant')).toBeInTheDocument()
     expect(screen.getByText('Start Chat')).toBeInTheDocument()
     expect(screen.getByTestId('external-link-icon')).toBeInTheDocument()
-    const img = screen.getByAltText('Advanced Assistant')
+    const img = screen.getByRole('presentation')
     expect(img).toHaveAttribute('src', 'https://example.com/avatar.png')
+    expect(img).toHaveAttribute('alt', '')
   })
 })
