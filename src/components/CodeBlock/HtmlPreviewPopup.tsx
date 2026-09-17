@@ -18,6 +18,7 @@ import { FC, useRef } from 'react'
 import CloseSvg from '@/assets/icons/cross.svg?react'
 import RefreshSvg from '@/assets/icons/refresh.svg?react'
 
+import { HTML_PREVIEW_SANDBOX } from './htmlPreviewSandbox'
 import Popup from '../Popup'
 
 interface HtmlPreviewPopupProps {
@@ -55,7 +56,13 @@ const HtmlPreviewPopup: FC<HtmlPreviewPopupProps> = ({ isVisible, html, onHide }
       }
       className="w-3/4 max-w-[1000px] h-[90%] max-h-[850px]"
     >
-      <iframe title="HTML Preview" ref={iframeRef} srcDoc={html} className="size-full pb-4" />
+      <iframe
+        title="HTML Preview"
+        ref={iframeRef}
+        sandbox={HTML_PREVIEW_SANDBOX}
+        srcDoc={html}
+        className="size-full pb-4"
+      />
     </Popup>
   )
 }

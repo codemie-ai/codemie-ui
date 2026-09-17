@@ -13,4 +13,8 @@
 // limitations under the License.
 //
 
-export { default } from './HTMLPreviewPopup'
+// Approved sandbox token for previewing untrusted, chat-authored HTML/JS in an iframe.
+// allow-scripts only: JS executes, but the iframe keeps an opaque origin (no
+// allow-same-origin), cannot navigate the top window, and cannot open unsandboxed popups.
+// Do not add further tokens without updating this comment and the tests that pin this value.
+export const HTML_PREVIEW_SANDBOX = 'allow-scripts'

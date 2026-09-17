@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "generated": "2026-09-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 5,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "Security-relevant iframe sandbox hardening: sandbox value is restricted to allow-scripts only and forbidden tokens (allow-same-origin, allow-forms, allow-popups, etc.) are excluded and pinned by new tests. Uses the native platform sandbox mechanism, no novel code, fully reversible, and the injection surface is explicitly covered by new forbidden-token test suites in both htmlPreviewSandbox.test.ts and HtmlPreviewPopup.test.tsx." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -1,0 +1,9 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "All 3 commit subjects in range match EPMCDME-XXXX: Capital sentence with no trailing period: 'EPMCDME-15059: Delete unused divergently-sandboxed HTML preview component', 'EPMCDME-15059: Sandbox the chat HTML preview iframe', 'EPMCDME-15059: Add shared HTML preview sandbox constant'"},
+    {"kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md exists in the repo and no ArtifactRef was passed for it; no standard to adjudicate against"},
+    {"kind": "security", "status": "pass", "notes": "Change consolidates two divergent iframe sandbox policies into one HTML_PREVIEW_SANDBOX='allow-scripts' constant (src/components/CodeBlock/htmlPreviewSandbox.ts), used by the single surviving HtmlPreviewPopup.tsx; the unused src/components/HTMLPreviewPopup/ (previously sandbox='' with zero callers) is deleted entirely, so no second HTML preview entry point can drift from the approved sandbox. No allow-same-origin, allow-popups, allow-forms, allow-top-navigation or other escape tokens are present. Pinning tests (htmlPreviewSandbox.test.ts, HtmlPreviewPopup.test.tsx) assert the exact token and forbid the escape-token set, matching the security-patterns.md pattern of a fix backed by a regression test that pins the value. grep confirms no remaining references to the deleted HTMLPreviewPopup path and exactly one consumer (CodeBlock.tsx) of the surviving component"}
+  ],
+  "blocking_findings": [],
+  "coverage_gap": false
+}

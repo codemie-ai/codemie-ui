@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15059",
+  "head": "bc65cc395c15e2f6cbc53bfc779165cab83ce4a2",
+  "runner": "npm",
+  "started_at": "2026-09-16T15:54:25Z",
+  "completed_at": "2026-09-16T16:01:52Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 11997,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9117,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1382,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "No dependency was added/removed in this diff; ran anyway per guide's 'when in doubt, run' guidance."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5723,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 96230,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 563 passed (563); Tests 5772 passed (5772)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 31688,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 45 passed (45); Tests 530 passed | 1 skipped (531)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "Diff touches .tsx files (UI surface) but no configured test:ui script exists in package.json; browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 344,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2101 files, 0 missing license headers."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Nothing is staged in this checkout; lint-staged only runs prettier/eslint --fix/tsc on staged files, both fully subsumed by the standalone lint and typecheck gates already run at full-repo scope."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 128,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit code 0 but no analysis ran. To enable locally, set SONAR_TOKEN (see .sonarlint/connectedMode.json / sonar-project.properties) before running."
+    }
+  ],
+  "failures": {}
+}
