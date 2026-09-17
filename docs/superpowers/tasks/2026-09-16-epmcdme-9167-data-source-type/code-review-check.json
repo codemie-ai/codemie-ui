@@ -1,0 +1,68 @@
+{
+  "decision": "approve",
+  "rationale": "All findings resolved. CR-001/CR-002/CR-003 fixed in the committed fix-up. CR-004 and CR-005 were unrelated dirty working-tree files (useFeatureFlags.ts, vite.config.ts) that were reverted via git checkout before committing — they are not present on the branch.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Specific provider type names shown",
+      "status": "pass",
+      "notes": "provider_name resolved from indexProviderSchemas via provider_fields.provider_id lookup."
+    },
+    {
+      "criterion": "Generic Provider no longer shown when actual name available",
+      "status": "pass",
+      "notes": "Falls back to humanize(indexType) only when no matching schema found."
+    },
+    {
+      "criterion": "Consistent display for all supported provider types",
+      "status": "pass",
+      "notes": "Lookup is generic — works for any provider UUID returned by the API."
+    },
+    {
+      "criterion": "No regression for other data source types",
+      "status": "pass",
+      "notes": "indexType !== PROVIDER guard ensures non-provider types use humanize(indexType) unchanged."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "EPMCDME-NNNN: format."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "Display-only change."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "|| operator used; empty string falls back to humanize(indexType)."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Type is string | null — reverted after implementation switched to indexProviderSchemas lookup (provider_name no longer on DataSourceDetailsResponse)."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Test cases cover null and empty-string provider_fields fallback."
+    },
+    {
+      "id": "CR-004",
+      "status": "superseded",
+      "notes": "useFeatureFlags.ts was reverted via git checkout before committing — not present on the branch."
+    },
+    {
+      "id": "CR-005",
+      "status": "superseded",
+      "notes": "vite.config.ts was reverted via git checkout before committing — not present on the branch."
+    }
+  ],
+  "findings": []
+}

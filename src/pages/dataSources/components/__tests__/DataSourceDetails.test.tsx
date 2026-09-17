@@ -14,8 +14,9 @@
 //
 
 import { render } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 
 import DataSourceDetails from '../DataSourceDetails'
@@ -41,6 +42,8 @@ vi.mock('@/store/dataSources', () => ({
     reIndexKBIndex: vi.fn(),
     updateApplicationIndex: vi.fn(),
     reindexMarketplace: vi.fn(),
+    getProviderIndexSchemas: vi.fn(),
+    indexProviderSchemas: [],
   },
 }))
 
@@ -123,6 +126,53 @@ describe('DataSourceDetails — project name display', () => {
     const projectValue = getByText('my-project')
     expect(projectValue.getAttribute('data-tooltip-id')).toBe('react-tooltip')
     expect(projectValue.getAttribute('data-tooltip-content')).toBe('My Display Name')
+  })
+})
+
+describe('DataSourceDetails — provider data source type display', () => {
+  const PROVIDER_ID = 'test-provider-uuid'
+  const providerDataSource: DataSourceDetailsResponse = {
+    ...dataSource,
+    index_type: 'provider',
+    provider_fields: { provider_id: PROVIDER_ID, base_params: {}, create_params: {} },
+  }
+
+  beforeEach(() => {
+    ;(dataSourceStore as any).indexProviderSchemas = [
+      {
+        id: PROVIDER_ID,
+        provider_name: 'CodeAnalysisServiceProvider',
+        name: 'CodeAnalysisServiceProvider - CodeAnalysisToolkit',
+        base_schema: { parameters: [] },
+        create_schema: { parameters: [] },
+      },
+    ]
+  })
+
+  afterEach(() => {
+    ;(dataSourceStore as any).indexProviderSchemas = []
+  })
+
+  it('shows the specific provider_name resolved from indexProviderSchemas', () => {
+    const { getByText, queryByText } = render(<DataSourceDetails dataSource={providerDataSource} />)
+    expect(getByText('CodeAnalysisServiceProvider')).toBeInTheDocument()
+    expect(queryByText('Provider')).not.toBeInTheDocument()
+  })
+
+  it('falls back to humanized index type when provider_id has no matching schema', () => {
+    const { getByText } = render(
+      <DataSourceDetails
+        dataSource={{ ...providerDataSource, provider_fields: { provider_id: 'unknown-id' } }}
+      />
+    )
+    expect(getByText('Provider')).toBeInTheDocument()
+  })
+
+  it('falls back to humanized index type when provider_fields is absent', () => {
+    const { getByText } = render(
+      <DataSourceDetails dataSource={{ ...providerDataSource, provider_fields: null }} />
+    )
+    expect(getByText('Provider')).toBeInTheDocument()
   })
 })
 

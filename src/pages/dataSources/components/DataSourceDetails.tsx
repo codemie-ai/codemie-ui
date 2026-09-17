@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import DeleteSvg from '@/assets/icons/delete.svg?react'
@@ -197,7 +197,22 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
     reIndexKBIndex,
     updateApplicationIndex,
     reindexMarketplace,
+    indexProviderSchemas,
   } = useSnapshot(dataSourceStore) as typeof dataSourceStore
+
+  useEffect(() => {
+    if (indexType === INDEX_TYPES.PROVIDER && dataSourceStore.indexProviderSchemas.length === 0) {
+      dataSourceStore.getProviderIndexSchemas()
+    }
+  }, [indexType])
+
+  const providerDisplayName = useMemo(() => {
+    if (indexType !== INDEX_TYPES.PROVIDER) return humanize(indexType)
+    const schema = indexProviderSchemas.find(
+      (s) => s.id === dataSource.provider_fields?.provider_id
+    )
+    return schema?.provider_name || humanize(indexType)
+  }, [indexType, indexProviderSchemas, dataSource.provider_fields?.provider_id])
 
   const [isReindexConfirmationVisible, setIsReindexConfirmationVisible] = useState(false)
   const [spReindexVisible, setSpReindexVisible] = useState(false)
@@ -729,7 +744,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
                 )
               }
             />
-            <DetailsProperty label="Data Source Type" value={humanize(indexType)} />
+            <DetailsProperty label="Data Source Type" value={providerDisplayName} />
             <DetailsCopyField
               label="Data Source ID"
               value={dataSource.id}

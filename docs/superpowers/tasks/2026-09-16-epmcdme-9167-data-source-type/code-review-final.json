@@ -1,0 +1,69 @@
+{
+  "decision": "request-changes",
+  "rationale": "Three major patch findings: (CR-001) ?? operator passes through empty string — use || instead; (CR-002) type should be string | null to reflect possible API null; (CR-003) test suite missing null and empty-string cases. List-view inconsistency deferred as out-of-scope per ticket affected areas. AC-3 partially met: only one provider name exercised in tests. No security or breaking-change risk flags.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Specific provider type names shown",
+      "status": "pass",
+      "notes": "provider_name is rendered directly when present; test confirms CodeAnalysisProvider is displayed."
+    },
+    {
+      "criterion": "Generic Provider no longer shown when actual name is available",
+      "status": "pass",
+      "notes": "Fallback to humanize(indexType) only activates when provider_name is absent; test asserts queryByText('Provider') is null when name is set."
+    },
+    {
+      "criterion": "Consistent display for all supported provider types",
+      "status": "partial",
+      "notes": "Runtime logic is generic (renders whatever API returns) but only one provider name is tested; list view inconsistency deferred as out-of-scope."
+    },
+    {
+      "criterion": "No regression for other data source types",
+      "status": "pass",
+      "notes": "provider_name is optional; absent on non-provider types causing fallback to humanize(indexType) unchanged."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Commit follows EPMCDME-NNNN: description convention."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "Display-only change; no auth, injection, or unsafe data handling."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The ?? operator passes through an empty string, so provider_name: '' renders a blank Data Source Type field instead of falling back to humanize(indexType).",
+      "impact": "A provider data source with a blank provider_name shows nothing in the sidebar type field.",
+      "recommendation": "Replace ?? with ||: value={dataSource.provider_name || humanize(indexType)}",
+      "location": "src/pages/dataSources/components/DataSourceDetails.tsx:733"
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "provider_name is typed as string | undefined but the API may return null; downstream consumers trusting the TypeScript type will skip null guards.",
+      "impact": "Future code accessing provider_name without null guards may throw at runtime if the API sends null.",
+      "recommendation": "Widen the type declaration to provider_name?: string | null in DataSourceDetailsResponse.",
+      "location": "src/types/entity/dataSource.ts:293"
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "The test suite has no cases for provider_name: null or provider_name: '' — the two runtime values most likely to cause a display regression.",
+      "impact": "A backend change returning null or empty string would silently break the display with no test catching it.",
+      "recommendation": "Add test cases for provider_name: null and provider_name: '' each asserting the humanized fallback is rendered.",
+      "location": "src/pages/dataSources/components/__tests__/DataSourceDetails.test.tsx"
+    }
+  ]
+}
