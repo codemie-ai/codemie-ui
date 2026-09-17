@@ -188,5 +188,9 @@ export const getCronDescription = (cronExpression: string): string => {
     '0 2 * * *': 'Every day at 2:00 AM',
   }
 
-  return presetDescriptions[cronExpression.trim()] ?? cronstrue.toString(cronExpression.trim())
+  try {
+    return presetDescriptions[cronExpression.trim()] ?? cronstrue.toString(cronExpression.trim())
+  } catch {
+    return cronExpression.trim()
+  }
 }

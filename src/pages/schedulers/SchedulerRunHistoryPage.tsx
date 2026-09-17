@@ -57,12 +57,6 @@ const formatDuration = (ms: number | null): string => {
   return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`
 }
 
-const getSuccessRateColorClass = (rate: number) => {
-  if (rate >= 75) return 'text-success-primary'
-  if (rate <= 30) return 'text-failed-secondary'
-  return 'text-text-warning'
-}
-
 const EMPTY_STATS: SchedulerRunStats = {
   total: 0,
   completed: 0,
@@ -225,7 +219,6 @@ const SchedulerRunHistoryPage = () => {
           { label: 'Completed', value: 'completed' },
           { label: 'Failed', value: 'failed' },
           { label: 'Running', value: 'running' },
-          { label: 'Cancelled', value: 'cancelled' },
         ],
       },
       {
@@ -341,7 +334,7 @@ const SchedulerRunHistoryPage = () => {
         label: 'Total runs',
         type: ColumnType.INTEGER,
         value: s.total,
-        description: 'All executions in the selected period',
+        description: 'All scheduler executions',
       },
       {
         id: 'completed',
@@ -363,27 +356,6 @@ const SchedulerRunHistoryPage = () => {
         type: ColumnType.INTEGER,
         value: s.running,
         description: 'Currently active runs',
-      },
-      {
-        id: 'cancelled',
-        label: 'Cancelled',
-        type: ColumnType.INTEGER,
-        value: s.cancelled,
-        description: 'Cancelled executions',
-      },
-      {
-        id: 'success-rate',
-        label: 'Success rate',
-        type: ColumnType.STRING,
-        value: `${s.successRate.toFixed(1)}%`,
-        description: 'Successful completed executions',
-      },
-      {
-        id: 'average-duration',
-        label: 'Avg duration',
-        type: ColumnType.STRING,
-        value: formatDuration(s.averageDurationMs),
-        description: 'Average execution time',
       },
     ]
   }, [stats])
@@ -420,7 +392,10 @@ const SchedulerRunHistoryPage = () => {
                       <strong className="font-semibold text-text-primary">
                         {scheduler.resource.name}
                       </strong>
-                      <span className="text-text-quaternary"> · {scheduler.resource.type}</span>
+                      <strong className="font-semibold text-text-primary">
+                        {' '}
+                        {scheduler.resource.type}
+                      </strong>
                       {'   Project: '}
                       <strong className="font-semibold text-text-primary">
                         {scheduler.project.name}
@@ -452,11 +427,7 @@ const SchedulerRunHistoryPage = () => {
             >
               <MetricsGrid
                 metrics={metricItems}
-                metricValueClassName={(metric) =>
-                  metric.id === 'success-rate'
-                    ? getSuccessRateColorClass((stats ?? EMPTY_STATS).successRate)
-                    : undefined
-                }
+                mutedTextClassName="text-[10px] leading-4 line-clamp-1 text-text-quaternary"
               />
             </AnalyticsWidget>
 

@@ -1,0 +1,38 @@
+{
+  "decision": "request-changes",
+  "rationale": "One major finding: the two new creation pages use inconsistent post-save navigation. NewProjectSchedulerPage uses router.push({ name: 'schedulers' }) (deterministic) while NewUserSchedulerPage uses navigateBack(SCHEDULERS) (history-based, may not land on the schedulers list if the user arrived via direct URL). Both pages also call schedulersStore.fetchSchedulers() with no query args inside setTimeout(..., 1000) — redundant since SchedulersPage re-fetches on mount. All other acceptance criteria (route registration, SettingsForm reuse, hideType field hiding, titles, store methods, Create button) are satisfied. Deferred: CronInputField preview is blur-only (UX, not a correctness bug). Dismissed: 7 blind/edge-case findings that were either based on incorrect project assumptions (useVueRouter is an internal hook) or pre-existing issues outside this PR's scope.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "Routes /schedulers/project/new and /schedulers/user/new are registered", "status": "pass" },
+    { "criterion": "Both pages reuse SettingsForm component", "status": "pass" },
+    { "criterion": "Credential Type field is hidden (not just disabled) on both pages", "status": "pass" },
+    { "criterion": "credentialType preset to 'scheduler' on both pages", "status": "pass" },
+    { "criterion": "Page titles: 'New Project Scheduler' and 'New User Scheduler'", "status": "pass" },
+    { "criterion": "Project page uses projectSettingsStore.createProjectSetting()", "status": "pass" },
+    { "criterion": "User page uses userSettingsStore.createUserSetting()", "status": "pass" },
+    { "criterion": "Post-save navigation goes to schedulers list", "status": "partial", "notes": "Project page uses router.push({ name: 'schedulers' }) (deterministic); user page uses navigateBack(SCHEDULERS) (history-based). Covered by CR-001." },
+    { "criterion": "Post-save calls schedulersStore.fetchSchedulers()", "status": "partial", "notes": "Both pages call fetchSchedulers() with no args inside setTimeout(..., 1000). Redundant — SchedulersPage re-fetches on mount. Covered by CR-001." },
+    { "criterion": "Create button added to SchedulersPage", "status": "pass" },
+    { "criterion": "Create Project Scheduler option gated by admin/project permission", "status": "pass" },
+    { "criterion": "hideType defaults to false, existing integration pages unaffected", "status": "pass" },
+    { "criterion": "Tests exist for hideType prop behavior", "status": "pass" },
+    { "criterion": "Integration tests exist for both new pages", "status": "partial", "notes": "Tests cover title and field absence but not submit, error handling, or Create button permission gating." }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "All commits follow EPMCDME-15019: Capital sentence format." },
+    { "standard": "code-quality", "status": "pass", "notes": "New pages follow established page patterns; hideType prop is minimal and backward-compatible." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/schedulers/NewUserSchedulerPage.tsx",
+      "line": 44,
+      "problem": "NewProjectSchedulerPage uses router.push({ name: 'schedulers' }) for post-save navigation while NewUserSchedulerPage uses navigateBack(SCHEDULERS). The two new pages navigate to the same destination via different mechanisms: navigateBack calls router.back() and only falls through to SCHEDULERS when no history entry exists. When a user creates a user scheduler after a fresh page load or via a direct URL, there may be no history entry and behavior becomes browser-dependent. Additionally, both pages call schedulersStore.fetchSchedulers() with no query args inside setTimeout(..., 1000), fetching with empty params that ignore any active filters or ownerType — and the call is redundant since SchedulersPage already re-fetches on mount.",
+      "impact": "Users arriving at /schedulers/user/new via direct URL get inconsistent post-save navigation. The redundant setTimeout fetchSchedulers() call also causes a brief flash of unfiltered results before SchedulersPage issues its own filtered query.",
+      "recommendation": "Standardize both pages to use the same navigation strategy. The simplest fix: replace navigateBack(SCHEDULERS) in NewUserSchedulerPage with router.push({ name: 'schedulers' }) to match the project page. Remove the setTimeout(() => schedulersStore.fetchSchedulers(), 1000) calls from both pages — SchedulersPage re-fetches on mount via useEffect([query]) and the delay is unnecessary."
+    }
+  ]
+}

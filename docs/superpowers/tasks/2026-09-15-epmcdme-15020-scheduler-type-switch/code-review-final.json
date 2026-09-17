@@ -1,0 +1,30 @@
+{
+  "decision": "request-changes",
+  "rationale": "One critical finding: handleChangeSchedulerType calls clearUrlFilters() from src/utils/filters.ts, which uses window.history.replaceState and never updates the React state owned by the custom useSearchParams hook. After a type switch the query memo reads stale filter values from React state and sends them to the API, so the visible filter reset is cosmetic only. clearUrlFilters() also never clears the sessionStorage entry, causing filters to be restored on the next page visit. Fix is a one-line change: replace clearUrlFilters() with clearParams() returned by useSearchParams. All six spec acceptance criteria are otherwise satisfied. One deferred item: page 0 vs page 1 discrepancy between spec and story (spec is authoritative here).",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "SelectButton appears in header, defaults to User", "status": "pass", "notes": "useState(IntegrationOption.USER) sets default; SelectButton rendered in rightContent." },
+    { "criterion": "User fetches user-owned; Project fetches project-owned; ownerType forwarded to API", "status": "pass", "notes": "ownerType added to SchedulersQuery and forwarded as query param; query memo includes schedulerType as ownerType." },
+    { "criterion": "Switching type calls clearUrlFilters() and resets pagination to page 0", "status": "partial", "notes": "setPage(0) and setSchedulerType both called, but clearUrlFilters() does not update React state in useSearchParams — old filter values remain in the query memo. Covered by CR-001." },
+    { "criterion": "Project option hidden without applicationsAdmin or isAdmin; switch not rendered if only one option", "status": "pass", "notes": "schedulerOptions filters out PROJECT when no permission; SelectButton only rendered when schedulerOptions.length > 1." },
+    { "criterion": "ownerType forwarded to GET /v1/schedulers as query parameter", "status": "pass", "notes": "params.ownerType = query.ownerType added in fetchSchedulers." },
+    { "criterion": "All other filters combine with type selection", "status": "pass", "notes": "ownerType added to query memo alongside existing filters; no existing filter logic replaced." }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "Both commits follow EPMCDME-XXXX: Capital sentence format." },
+    { "standard": "code-quality", "status": "pass", "notes": "Two focused source files changed; pattern mirrors existing Integrations page implementation." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/schedulers/SchedulersPage.tsx",
+      "line": 151,
+      "problem": "handleChangeSchedulerType calls clearUrlFilters() from src/utils/filters.ts, which updates the URL via window.history.replaceState but never updates the React state managed by the custom useSearchParams hook. The hook owns its own URLSearchParams state (setSearchParamsState) that is only updated via its own setSearchParams or clearParams functions. clearUrlFilters() also never clears the sessionStorage entry the hook writes, so filters are restored on the next page visit.",
+      "impact": "After a type switch the query memo still reads old filter values from React state and sends them to fetchSchedulers. The URL appears cleared but the API call is not — users see stale-filtered results that contradict the empty URL. On the next page visit, filters are silently restored from sessionStorage.",
+      "recommendation": "Replace clearUrlFilters() with the clearParams function returned by useSearchParams: const [searchParams, setSearchParams, clearParams] = useSearchParams(). Call clearParams() in handleChangeSchedulerType instead of clearUrlFilters(). This updates both the URL and React state atomically and clears sessionStorage."
+    }
+  ]
+}

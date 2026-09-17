@@ -16,6 +16,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { IntegrationOption } from '@/constants/integration'
 import { schedulersStore } from '@/store/schedulers'
 import { mockAPI, renderPage } from '@/test-utils/integration'
 
@@ -72,5 +73,53 @@ describe('SchedulersPage', () => {
     const triggers = container.querySelectorAll('.p-multiselect')
     fireEvent.click(triggers[0])
     expect(screen.getByText('Platform Team')).toBeInTheDocument()
+  })
+
+  it('accepts ownerType in fetchSchedulers query', async () => {
+    mockAPI('GET', 'v1/schedulers', mockSchedulersResponse)
+    await schedulersStore.fetchSchedulers({ ownerType: IntegrationOption.USER })
+    expect(schedulersStore.schedulers).toBeDefined()
+  })
+
+  describe('Scheduler Type switch', () => {
+    it('renders the type switch with only User option for non-admin users', async () => {
+      // default v1/user mock in setupTests returns is_admin: false — no override needed
+      renderPage('/schedulers')
+      await waitFor(() => {
+        expect(schedulersStore.schedulers).toBeDefined()
+      })
+      expect(screen.getByText('Scheduler Type:')).toBeInTheDocument()
+      // PrimeReact SelectButton renders options as role="button" divs
+      const switchWrapper = screen.getByText('Scheduler Type:').closest('div')!.parentElement!
+      const optionButtons = switchWrapper.querySelectorAll('[role="button"]')
+      expect(optionButtons).toHaveLength(1)
+      expect(optionButtons[0]).toHaveTextContent('User')
+    })
+
+    it('always renders the Create button', async () => {
+      renderPage('/schedulers')
+      await waitFor(() => {
+        expect(schedulersStore.schedulers).toBeDefined()
+      })
+      expect(screen.getByText('Create')).toBeInTheDocument()
+    })
+
+    it('renders the type switch for admin users', async () => {
+      mockAPI('GET', 'v1/user', {
+        user_id: 'admin-id',
+        email: 'admin@example.com',
+        name: 'Admin User',
+        username: 'adminuser',
+        is_admin: true,
+        is_maintainer: false,
+        user_type: 'INTERNAL',
+        applications: ['demo'],
+        applications_admin: ['demo'],
+      })
+      renderPage('/schedulers')
+      await waitFor(() => {
+        expect(screen.getByText('Scheduler Type:')).toBeInTheDocument()
+      })
+    })
   })
 })

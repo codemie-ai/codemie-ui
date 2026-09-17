@@ -29,6 +29,7 @@ interface MetricsGridProps {
   selectedMetrics?: string[]
   className?: string
   metricValueClassName?: (metric: Metric) => string | undefined
+  mutedTextClassName?: string
 }
 
 /**
@@ -44,6 +45,7 @@ const MetricsGrid: FC<MetricsGridProps> = ({
   selectedMetrics,
   className,
   metricValueClassName,
+  mutedTextClassName,
 }) => {
   if (!data && !metrics) return null
 
@@ -66,6 +68,7 @@ const MetricsGrid: FC<MetricsGridProps> = ({
           key={metric.id}
           metric={metric}
           valueColorClassName={metricValueClassName?.(metric)}
+          mutedTextClassName={mutedTextClassName}
           badge={
             metric.fixed_timeframe ? (
               <TimePeriodBadge

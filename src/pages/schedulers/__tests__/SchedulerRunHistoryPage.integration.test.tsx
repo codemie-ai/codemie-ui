@@ -102,6 +102,64 @@ describe('SchedulerRunHistoryPage', () => {
     })
   })
 
+  it('shows 0 total runs metric when stats are empty', async () => {
+    mockAPI('GET', 'v1/scheduler-runs/stats', {
+      total: 0,
+      completed: 0,
+      failed: 0,
+      running: 0,
+      cancelled: 0,
+      successRate: 0,
+      averageDurationMs: 0,
+    })
+
+    renderPage('/schedulers/sched-1/runs')
+
+    await waitFor(() => {
+      expect(screen.getByText('Daily Jira Report')).toBeInTheDocument()
+    })
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Expand summary metrics' }).click()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Total runs')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByText('Success rate')).toBeNull()
+    expect(screen.queryByText('Avg duration')).toBeNull()
+  })
+
+  it('does not render success-rate or avg-duration cards', async () => {
+    mockAPI('GET', 'v1/scheduler-runs/stats', {
+      total: 5,
+      completed: 0,
+      failed: 5,
+      running: 0,
+      cancelled: 0,
+      successRate: 0,
+      averageDurationMs: 0,
+    })
+
+    renderPage('/schedulers/sched-1/runs')
+
+    await waitFor(() => {
+      expect(screen.getByText('Daily Jira Report')).toBeInTheDocument()
+    })
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Expand summary metrics' }).click()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Total runs')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByText('Success rate')).toBeNull()
+    expect(screen.queryByText('Avg duration')).toBeNull()
+  })
+
   it('shows stats metrics in the widget after expanding the accordion', async () => {
     renderPage('/schedulers/sched-1/runs')
 

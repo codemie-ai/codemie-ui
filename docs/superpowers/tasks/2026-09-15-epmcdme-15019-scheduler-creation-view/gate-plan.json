@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "runner": "npm",
+  "gates": [
+    {"id": "lint",        "command": "npm run lint",                  "available": true},
+    {"id": "typecheck",   "command": "npm run typecheck",             "available": true},
+    {"id": "license",     "command": "npm run license-check",         "available": true,  "skipped": true, "skip_reason": "No dependency changes in this branch"},
+    {"id": "secrets",     "command": "npm run secrets:check",         "available": true,  "skipped": true, "skip_reason": "Runs automatically in pre-commit hook; no secrets-related changes"},
+    {"id": "unit",        "command": "npm run test:unit:slnt",        "available": true},
+    {"id": "integration", "command": "npm run test:integration:slnt", "available": true},
+    {"id": "ui",          "command": "",                              "available": false,  "skipped": true, "skip_reason": "No configured UI test script; diff touches UI surface — feature-verification must provide browser evidence if ui=true"}
+  ],
+  "ui_globs": ["\\.tsx$", "src/pages/", "src/components/"],
+  "detected_at": "2026-09-15T18:45:00Z"
+}

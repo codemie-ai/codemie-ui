@@ -59,6 +59,8 @@ import KatasPage, { KatasCategory } from '@/pages/katas/KatasPage'
 import NewKataPage from '@/pages/katas/NewKataPage'
 import LoginSuccessPage from '@/pages/login-success/LoginSuccessPage'
 import ReleaseNotesPage from '@/pages/releaseNotes/ReleaseNotesPage'
+import NewProjectSchedulerPage from '@/pages/schedulers/NewProjectSchedulerPage'
+import NewUserSchedulerPage from '@/pages/schedulers/NewUserSchedulerPage'
 import SchedulerRunDetailsPage from '@/pages/schedulers/SchedulerRunDetailsPage'
 import SchedulerRunHistoryPage from '@/pages/schedulers/SchedulerRunHistoryPage'
 import SchedulersPage from '@/pages/schedulers/SchedulersPage'
@@ -307,6 +309,16 @@ const schedulerRoutes: RouteObject[] = [
     id: 'schedulers',
     path: 'schedulers',
     Component: SchedulersPage,
+  },
+  {
+    id: 'scheduler-project-new',
+    path: 'schedulers/project/new',
+    Component: NewProjectSchedulerPage,
+  },
+  {
+    id: 'scheduler-user-new',
+    path: 'schedulers/user/new',
+    Component: NewUserSchedulerPage,
   },
   {
     id: 'scheduler-runs',

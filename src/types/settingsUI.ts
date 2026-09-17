@@ -32,6 +32,7 @@ export enum CredentialComponentType {
   webhookUrl = 'webhookUrl',
   resourceSelect = 'resourceSelect',
   assistantMultiSelect = 'assistantMultiSelect',
+  cronInput = 'cronInput',
 }
 
 export enum CredentialComponentPosition {

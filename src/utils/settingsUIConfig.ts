@@ -841,6 +841,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
         position: CredentialComponentPosition.top,
       },
       schedule: {
+        type: CredentialComponentType.cronInput,
         placeholder: 'Valid Cron Expression (example nigtly run: 0 0 * * 1-5)',
         help: 'https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules',
         validation: Yup.string()

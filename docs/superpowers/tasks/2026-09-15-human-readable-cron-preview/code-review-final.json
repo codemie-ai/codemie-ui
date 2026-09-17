@@ -1,0 +1,48 @@
+{
+  "decision": "request-changes",
+  "rationale": "Three major defects found: (1) blank cron field on blur shows misleading 'No schedule set' preview because isValidCronExpression returns true for empty strings; (2) cronstrue.toString() is called without a try/catch and can throw for edge inputs that pass the custom validator, crashing the blur handler or schedulers table; (3) the preview state is never reset when the parent form is externally reset, leaving stale previews.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "AC-1", "status": "pass", "notes": "Blur handler sets preview from getCronDescription for valid expressions; renders as <p role='status'>."},
+    {"criterion": "AC-2", "status": "pass", "notes": "Preview set in onBlur, not onChange — no per-keystroke update."},
+    {"criterion": "AC-3", "status": "pass", "notes": "cronInput type routed through CredentialFields used by both create and edit flows."},
+    {"criterion": "AC-4", "status": "pass", "notes": "getCronDescription produces human-readable text from valid cron."},
+    {"criterion": "AC-5", "status": "pass", "notes": "Blur handler sets preview to '' when isValidCronExpression returns false."},
+    {"criterion": "AC-6", "status": "pass", "notes": "validateCronExpression Yup validation in settingsUIConfig.ts unchanged."},
+    {"criterion": "AC-7", "status": "pass", "notes": "No new warning message for one-hour restriction introduced."},
+    {"criterion": "AC-8", "status": "pass", "notes": "getScheduleDescription now returns human-readable description as primary; raw cron shown as small secondary text. Human-readable is now primary."},
+    {"criterion": "AC-9", "status": "partial", "notes": "No explicit regression test for existing save/update paths. Risk is low as existing field routing is untouched."},
+    {"criterion": "AC-10", "status": "pass", "notes": "Scheduler validation logic is unchanged."}
+  ],
+  "standards_review": [
+    {"standard": "security", "status": "pass", "notes": "Preview rendered as text content in <p>, not via dangerouslySetInnerHTML. No secrets, no injection surface."},
+    {"standard": "code-quality", "status": "pass", "notes": "No guide present; no obvious blocking violations observed."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "isValidCronExpression returns true for an empty or whitespace-only string (the `trimmed === ''` branch). The onBlur handler then calls getCronDescription('') which returns 'No schedule set'. Because preview is truthy, <p role='status'> renders 'No schedule set' when the user clears the field and blurs.",
+      "impact": "Misleading status text appears beneath an empty field, suggesting a schedule is configured when it is not. Appears for optional cron fields where empty is a valid state.",
+      "recommendation": "Guard the onBlur handler against empty input: `setPreview(v.trim() && isValidCronExpression(v) ? getCronDescription(v) : '')`."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "getCronDescription calls cronstrue.toString() for inputs that pass the custom isValidCronExpression validator but are not covered by the preset map. cronstrue can throw for expressions that the custom validator accepts (e.g. unusual combined patterns, step values on non-standard fields). No try/catch wraps the call.",
+      "impact": "An unhandled exception from cronstrue.toString() on blur in CredentialFields would crash the React render tree. In getScheduleDescription/renderSchedulerSchedule it would crash the entire schedulers table.",
+      "recommendation": "Wrap cronstrue.toString() in getCronDescription in a try/catch and return a safe fallback (e.g., the cron string itself or 'Custom schedule') on failure."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "CronInputField stores the preview in local useState updated only in onBlur. When the parent form is externally reset via React Hook Form reset() (or a new scheduler is loaded in the edit flow), the value prop changes but setPreview is never called, leaving the previous cron description visible.",
+      "impact": "After form reset or when navigating between schedulers in the edit flow, the preview shows the previous scheduler's cron description until the user manually blurs the field.",
+      "recommendation": "Add a useEffect that clears or recomputes preview when value changes: `useEffect(() => { setPreview(value.trim() && isValidCronExpression(value) ? getCronDescription(value) : '') }, [value])`."
+    }
+  ]
+}

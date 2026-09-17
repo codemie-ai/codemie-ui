@@ -1,0 +1,26 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 is resolved: clearUrlFilters() replaced with clearParams() (third return value of useSearchParams), and the stale clearUrlFilters import removed. The fix-up diff is minimal and surgical — three lines changed, no new imports, no API surface changes. All prior business_review and standards_review criteria carry forward unchanged. No new issues introduced.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "SelectButton appears in header, defaults to User", "status": "pass" },
+    { "criterion": "User fetches user-owned; Project fetches project-owned; ownerType forwarded to API", "status": "pass" },
+    { "criterion": "Switching type calls clearUrlFilters() and resets pagination to page 0", "status": "pass", "notes": "CR-001 fix: now uses clearParams() which updates both URL and React state atomically and clears sessionStorage." },
+    { "criterion": "Project option hidden without applicationsAdmin or isAdmin; switch not rendered if only one option", "status": "pass" },
+    { "criterion": "ownerType forwarded to GET /v1/schedulers as query parameter", "status": "pass" },
+    { "criterion": "All other filters combine with type selection", "status": "pass" }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass" },
+    { "standard": "code-quality", "status": "pass" }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "clearUrlFilters() replaced with clearParams() from useSearchParams; import removed. Fix confirmed in code-review-check.diff."
+    }
+  ]
+}

@@ -15,6 +15,7 @@
 
 import { proxy } from 'valtio'
 
+import { IntegrationOption } from '@/constants/integration'
 import { Pagination, PaginationBE } from '@/types/common'
 import api, { DEFAULT_ERROR_MESSAGE } from '@/utils/api'
 import toaster from '@/utils/toaster'
@@ -66,6 +67,7 @@ export interface SchedulersQuery {
   resourceId?: string
   status?: SchedulerStatus
   lastRunStatus?: SchedulerLastRunStatus
+  ownerType?: IntegrationOption
 }
 
 interface SchedulersResponse {
@@ -123,6 +125,7 @@ export const schedulersStore = proxy<SchedulersStoreType>({
       if (query.resourceId) params.resourceId = query.resourceId
       if (query.status) params.status = query.status
       if (query.lastRunStatus) params.lastRunStatus = query.lastRunStatus
+      if (query.ownerType) params.ownerType = query.ownerType
 
       const response = await api.get('/v1/schedulers', { params })
       const data = (await response.json()) as SchedulersResponse

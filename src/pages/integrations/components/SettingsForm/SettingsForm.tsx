@@ -89,6 +89,7 @@ interface SettingsFormProps {
   credentialValues?: Record<string, unknown>
   isGlobal?: boolean
   hideActions?: boolean
+  hideType?: boolean
   settingType?: 'user' | 'project'
   disableProject?: boolean
   disableType?: boolean
@@ -118,6 +119,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     credentialValues: initialCredentialValues,
     isGlobal: initialIsGlobal,
     hideActions = false,
+    hideType = false,
     settingType = SETTING_TYPE_USER,
     disableProject = false,
     disableType = false,
@@ -633,19 +635,21 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
             )}
         </div>
 
-        <div data-onboarding="integration-credential-type-field">
-          <Autocomplete
-            id="credentialType"
-            value={credentialType}
-            name="credentialType"
-            placeholder="Credential Type"
-            label="Credential Type"
-            allowEmpty={false}
-            options={credentialTypeOptions}
-            disabled={editing || disableType}
-            onChange={handleCredentialTypeChange}
-          />
-        </div>
+        {!hideType && (
+          <div data-onboarding="integration-credential-type-field">
+            <Autocomplete
+              id="credentialType"
+              value={credentialType}
+              name="credentialType"
+              placeholder="Credential Type"
+              label="Credential Type"
+              allowEmpty={false}
+              options={credentialTypeOptions}
+              disabled={editing || disableType}
+              onChange={handleCredentialTypeChange}
+            />
+          </div>
+        )}
 
         {showOAuthToggle && (
           <div data-onboarding="integration-oauth-toggle">

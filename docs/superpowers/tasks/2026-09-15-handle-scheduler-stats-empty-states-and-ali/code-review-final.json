@@ -1,0 +1,21 @@
+{
+  "decision": "approve",
+  "rationale": "All three review lenses ran cleanly. All 8 acceptance criteria satisfied. The two-line value-formatting change and the metricValueClassName guard are correct: success-rate shows '—' when total=0 and color is suppressed; avg-duration shows '—' when total=0 or completed=0; 0.0%/red styling is preserved when completed runs exist. Edge-case lens found no issues. Blind lens flagged the redundant `s.total === 0` clause (cosmetic — implied by completed=0) and noted that all-in-progress success-rate shows 0.0% red (outside spec scope for this ticket). These are deferred, not blocking. Commit format and code quality pass. 3 integration tests added covering the key empty-state branches.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "When total runs is 0, Success Rate displays '—' with neutral styling (not red 0.0%)", "status": "pass" },
+    { "criterion": "When total runs is 0, Average Duration displays '—' (not 0s)", "status": "pass" },
+    { "criterion": "If runs exist but all are still in progress, Average Duration displays '—'", "status": "pass" },
+    { "criterion": "If completed runs exist and all failed, Success Rate remains 0.0% with failed/red styling", "status": "pass", "notes": "Logic path is correct: total>0 guard passes, getSuccessRateColorClass(0) returns text-failed-secondary. Test uses completed=0/failed=5 scenario; the canonical completed>0/all-failed path is logically sound but not directly test-asserted for color." },
+    { "criterion": "Completed, Failed, Running, and Cancelled counters display numeric values including 0", "status": "pass" },
+    { "criterion": "Scheduler statistic cards match compact analytics metric card sizing/density", "status": "pass", "notes": "MetricsGrid/MetricCard from analytics widgets reused directly — no structural changes needed." },
+    { "criterion": "Reuse existing analytics metric components where possible", "status": "pass" },
+    { "criterion": "Existing scheduler run statistics loading and filtering must not regress", "status": "pass", "notes": "Only display-layer changes; fetching, filtering, pagination untouched." }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "EPMCDME-15028: Handle scheduler stats empty states — follows project convention." },
+    { "standard": "code-quality", "status": "pass", "notes": "consistent-return resolved before commit; ternary expressions clean." }
+  ],
+  "findings": []
+}

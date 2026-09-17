@@ -34,6 +34,7 @@ import {
 } from '@/types/settingsUI'
 
 import AssistantMultiSelectField from './AssistantMultiSelectField'
+import CronInputField from './CronInputField'
 import { useResourceOptions } from './hooks/useResourceOptions'
 import MultiSelectCheckboxGroup from './MultiSelectCheckboxGroup'
 import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
@@ -348,6 +349,20 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
                   value={(value as string[]) ?? []}
                   error={error}
                   onChange={field.onChange}
+                />
+              )}
+
+              {type === CredentialComponentType.cronInput && (
+                <CronInputField
+                  name={name}
+                  value={value}
+                  error={error}
+                  resolvedPlaceholder={getPlaceholder(placeholder)}
+                  resolvedLabel={typeof label === 'string' ? label : getLabel(placeholder)}
+                  autoComplete={autoComplete}
+                  onManualFieldEdit={onManualFieldEdit}
+                  field={{ onChange: field.onChange, onBlur: field.onBlur }}
+                  control={control}
                 />
               )}
 

@@ -19,17 +19,23 @@ import { useSnapshot } from 'valtio'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
+import PlusIcon from '@/assets/icons/plus.svg?react'
 import ConfirmationModal from '@/components/ConfirmationModal'
+import DropdownButton from '@/components/DropdownButton/DropdownButton'
 import PageLayout from '@/components/Layouts/Layout'
 import NavigationMore from '@/components/NavigationMore'
+import SelectButton from '@/components/SelectButton/SelectButton'
 import Sidebar from '@/components/Sidebar'
 import StatusBadge, { StatusEnum } from '@/components/StatusBadge/StatusBadge'
 import Table from '@/components/Table'
 import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
+import { IntegrationOption } from '@/constants/integration'
 import { useSearchParams } from '@/hooks/useSearchParams'
 import { useVueRouter } from '@/hooks/useVueRouter'
+import { userStore } from '@/store'
 import { Scheduler, schedulersStore, SchedulersQuery } from '@/store/schedulers'
 import { ColumnDefinition } from '@/types/table'
+import { getCronDescription, isValidCronExpression } from '@/utils/cronValidator'
 import { parseDate } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 
@@ -44,13 +50,14 @@ const LAST_RUN_STATUS_MAP: Record<string, (typeof StatusEnum)[keyof typeof Statu
 
 const renderSchedulerProject = (item: Scheduler) => <span>{item.project.name}</span>
 
+const getScheduleDescription = (cron: string, backendDescription: string): string => {
+  if (backendDescription && backendDescription !== cron) return backendDescription
+  if (isValidCronExpression(cron)) return getCronDescription(cron)
+  return cron
+}
+
 const renderSchedulerSchedule = (item: Scheduler) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono">{item.schedule.cron}</span>
-    {item.schedule.description !== item.schedule.cron && (
-      <span className="text-[10px] text-text-secondary">{item.schedule.description}</span>
-    )}
-  </div>
+  <span>{getScheduleDescription(item.schedule.cron, item.schedule.description)}</span>
 )
 
 const SchedulerDateContent = ({ rawDate }: { rawDate: string | null | undefined }) => {
@@ -69,11 +76,20 @@ const SchedulerDateContent = ({ rawDate }: { rawDate: string | null | undefined 
 const SchedulersPage = () => {
   const router = useVueRouter()
   const { schedulers, pagination, loading, filterOptions } = useSnapshot(schedulersStore)
+  const { user: currentUser } = useSnapshot(userStore)
 
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams, clearParams] = useSearchParams()
   const [page, setPage] = useState(0)
   const [perPage, setPerPage] = useState(10)
   const [schedulerToDelete, setSchedulerToDelete] = useState<Scheduler | null>(null)
+
+  const schedulerOptions = useMemo(() => {
+    const hasProjectPermission = currentUser?.applicationsAdmin?.length || currentUser?.isAdmin
+    return [IntegrationOption.USER, IntegrationOption.PROJECT].filter(
+      (opt) => opt !== IntegrationOption.PROJECT || hasProjectPermission
+    )
+  }, [currentUser])
+  const [schedulerType, setSchedulerType] = useState(IntegrationOption.USER)
 
   const filters = useMemo<SchedulerFilterValues>(
     () => ({
@@ -99,8 +115,9 @@ const SchedulersPage = () => {
       resourceId: filters.resourceId,
       status: filters.status || undefined,
       lastRunStatus: filters.lastRunStatus || undefined,
+      ownerType: schedulerType,
     }),
-    [page, perPage, filters]
+    [page, perPage, filters, schedulerType]
   )
 
   useEffect(() => {
@@ -130,6 +147,30 @@ const SchedulersPage = () => {
     setPage(p)
     if (pp !== undefined) setPerPage(pp)
   }, [])
+
+  const handleChangeSchedulerType = (type: IntegrationOption) => {
+    clearParams()
+    setPage(0)
+    setSchedulerType(type)
+  }
+
+  const createActionOptions = useMemo(() => {
+    const hasProjectPermission = currentUser?.applicationsAdmin?.length || currentUser?.isAdmin
+    return [
+      {
+        label: 'Create User Scheduler',
+        onClick: () => router.push({ path: '/schedulers/user/new' }),
+      },
+      ...(hasProjectPermission
+        ? [
+            {
+              label: 'Create Project Scheduler',
+              onClick: () => router.push({ path: '/schedulers/project/new' }),
+            },
+          ]
+        : []),
+    ]
+  }, [currentUser, router])
 
   const handleToggle = useCallback(async (scheduler: Scheduler) => {
     await schedulersStore.toggleScheduler(scheduler.id, !scheduler.isEnabled)
@@ -165,7 +206,10 @@ const SchedulersPage = () => {
           icon: <EditSvg />,
           onClick: () =>
             router.push({
-              path: '/integrations/user/edit',
+              path:
+                schedulerType === IntegrationOption.PROJECT
+                  ? '/integrations/project/edit'
+                  : '/integrations/user/edit',
               query: {
                 project_name: item.project.name,
                 credential_type: 'Scheduler',
@@ -185,7 +229,7 @@ const SchedulersPage = () => {
         </div>
       )
     },
-    [router, handleToggle]
+    [router, handleToggle, schedulerType]
   )
 
   const renderLastRun = useCallback((item: Scheduler) => {
@@ -288,7 +332,29 @@ const SchedulersPage = () => {
           onApply={handleApplyFilters}
         />
       </Sidebar>
-      <PageLayout>
+      <PageLayout
+        rightContent={
+          <div className="flex items-center text-white">
+            {schedulerOptions.length > 0 && (
+              <>
+                <SelectButton
+                  caption="Scheduler Type:"
+                  value={schedulerType}
+                  options={schedulerOptions}
+                  onChange={handleChangeSchedulerType}
+                />
+                <div className="border-l border-border-primary h-[21px] mx-5" />
+              </>
+            )}
+            <DropdownButton
+              label="Create"
+              size="medium"
+              iconLeft={<PlusIcon />}
+              items={createActionOptions}
+            />
+          </div>
+        }
+      >
         <Table<Scheduler>
           items={schedulers}
           loading={loading}

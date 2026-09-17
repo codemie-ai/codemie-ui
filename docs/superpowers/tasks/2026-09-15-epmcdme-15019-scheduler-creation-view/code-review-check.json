@@ -1,0 +1,34 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 is resolved: NewUserSchedulerPage now uses router.push({ name: 'schedulers' }) matching the project page, and the redundant setTimeout(() => schedulersStore.fetchSchedulers(), 1000) calls were removed from both pages. The unused schedulersStore import was also cleaned from NewProjectSchedulerPage. The fix-up diff is 69 lines, minimal and surgical — no new issues introduced. All prior business_review and standards_review criteria carry forward unchanged.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "Routes /schedulers/project/new and /schedulers/user/new are registered", "status": "pass" },
+    { "criterion": "Both pages reuse SettingsForm component", "status": "pass" },
+    { "criterion": "Credential Type field is hidden (not just disabled) on both pages", "status": "pass" },
+    { "criterion": "credentialType preset to 'scheduler' on both pages", "status": "pass" },
+    { "criterion": "Page titles: 'New Project Scheduler' and 'New User Scheduler'", "status": "pass" },
+    { "criterion": "Project page uses projectSettingsStore.createProjectSetting()", "status": "pass" },
+    { "criterion": "User page uses userSettingsStore.createUserSetting()", "status": "pass" },
+    { "criterion": "Post-save navigation goes to schedulers list", "status": "pass", "notes": "CR-001 fix: both pages now use router.push({ name: 'schedulers' }) for deterministic post-save navigation." },
+    { "criterion": "Post-save calls schedulersStore.fetchSchedulers()", "status": "pass", "notes": "Redundant setTimeout calls removed; SchedulersPage re-fetches on mount via useEffect([query])." },
+    { "criterion": "Create button added to SchedulersPage", "status": "pass" },
+    { "criterion": "Create Project Scheduler option gated by admin/project permission", "status": "pass" },
+    { "criterion": "hideType defaults to false, existing integration pages unaffected", "status": "pass" },
+    { "criterion": "Tests exist for hideType prop behavior", "status": "pass" },
+    { "criterion": "Integration tests exist for both new pages", "status": "partial", "notes": "Tests cover title and field absence; submit/error tests remain absent — deferred as pre-existing gap." }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "Fix-up commit follows EPMCDME-15019: Capital sentence format." },
+    { "standard": "code-quality", "status": "pass", "notes": "Unused import removed; navigation standardized." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "NewUserSchedulerPage updated to use router.push({ name: 'schedulers' }); setTimeout fetchSchedulers() removed from both pages. Fix confirmed in code-review-check.diff (69 lines)."
+    }
+  ]
+}
