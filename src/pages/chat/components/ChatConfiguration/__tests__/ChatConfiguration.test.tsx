@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, act } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { Assistant } from '@/types/entity/assistant'
 import { Conversation } from '@/types/entity/conversation'
@@ -230,5 +230,61 @@ describe('ChatConfiguration', () => {
     mockChatContext.isConfigVisible = true
     render(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
     expect(screen.getByText('Hide tool outputs')).toBeInTheDocument()
+  })
+})
+
+describe('focus management', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    mockChatContext.isConfigVisible = false
+    mockChatContext.isConfigFormVisible = false
+    mockChatsStore.currentChat = mockChat
+    mockCanEdit.mockReturnValue(true)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('moves focus to the sidebar panel when isConfigVisible transitions to true', () => {
+    const { rerender } = render(
+      <ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />
+    )
+
+    mockChatContext.isConfigVisible = true
+    rerender(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
+
+    act(() => {
+      vi.advanceTimersByTime(100)
+    })
+
+    expect(screen.getByTestId('chat-configuration-panel')).toHaveFocus()
+  })
+
+  it('restores focus to the previously focused element when isConfigVisible transitions to false', () => {
+    const triggerButton = document.createElement('button')
+    document.body.appendChild(triggerButton)
+    try {
+      triggerButton.focus()
+
+      mockChatContext.isConfigVisible = true
+      const { rerender } = render(
+        <ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />
+      )
+
+      act(() => {
+        vi.advanceTimersByTime(100)
+      })
+
+      // Aside must have focus before we can verify it is restored on close
+      expect(screen.getByTestId('chat-configuration-panel')).toHaveFocus()
+
+      mockChatContext.isConfigVisible = false
+      rerender(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
+
+      expect(triggerButton).toHaveFocus()
+    } finally {
+      document.body.removeChild(triggerButton)
+    }
   })
 })

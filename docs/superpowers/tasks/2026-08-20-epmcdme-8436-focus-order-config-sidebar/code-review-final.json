@@ -1,0 +1,31 @@
+{
+  "decision": "request-changes",
+  "rationale": "Implementation is correct: all 7 acceptance criteria satisfied, TDD cycle verified (RED→GREEN observed), pre-commit hooks (prettier, tsc, eslint, license, secrets) all passed. One major blocking finding: the focus-restore test appends a button to document.body but only removes it at the end of the test body — if either toHaveFocus assertion throws, the element leaks into subsequent tests. Timing-race concerns raised by two lenses are not real bugs: useFocusOnVisible defers focus via setTimeout(100), so the synchronous prevFocusRef capture runs before focus moves. Firefox/Safari document.activeElement limitation noted but deferred as a pre-existing systemic concern matching the project's prescribed accessibility pattern. 1 dismissed finding, 3 deferred edge cases.",
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "problem": "In the focus-restore test, triggerButton is created with document.createElement and appended to document.body, but removeChild is only called at the final line of the test body. If either toHaveFocus assertion throws before that line, the element leaks into subsequent tests, potentially causing false passes or interference when later tests query document.body.",
+      "impact": "DOM element leak across tests — could cause spurious passes or interference in later test runs.",
+      "recommendation": "Move triggerButton cleanup into afterEach or wrap the appended element lifecycle in a try/finally block to guarantee document.body.removeChild always runs.",
+      "file": "src/pages/chat/components/ChatConfiguration/__tests__/ChatConfiguration.test.tsx",
+      "triage": "patch"
+    }
+  ],
+  "business_review": [
+    { "criterion": "AC1: Focus moves into sidebar on open", "status": "satisfied", "notes": "useFocusOnVisible(sidebarRef, isConfigVisible) schedules focus after 100ms; capture effect is synchronous, no race." },
+    { "criterion": "AC2: Focus restores to trigger on close", "status": "satisfied", "notes": "prevFocusRef useEffect captures document.activeElement on open and restores on close; matches accessibility guide prescription." },
+    { "criterion": "AC3: tabIndex={-1} on <aside>", "status": "satisfied", "notes": "Confirmed in diff." },
+    { "criterion": "AC4: useFocusOnVisible call", "status": "satisfied", "notes": "Confirmed in diff." },
+    { "criterion": "AC5: prevFocusRef useEffect pattern", "status": "satisfied", "notes": "Confirmed; effect ordering correct due to setTimeout deferral." },
+    { "criterion": "AC6: Two unit tests with fake timers", "status": "satisfied", "notes": "Both tests present with vi.useFakeTimers(), vi.advanceTimersByTime(100), and toHaveFocus() assertions." },
+    { "criterion": "AC7: No prop/store/file changes", "status": "satisfied", "notes": "Confirmed — two source files only." }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow commit format", "status": "pass", "notes": "EPMCDME-8436: Fix focus order when Configuration sidebar opens — valid EPMCDME-NNNN: Capital sentence format." },
+    { "standard": "security-patterns", "status": "pass", "notes": "No dangerouslySetInnerHTML, no external data, no secrets, no redirects." },
+    { "standard": "accessibility-patterns prescribed pattern", "status": "pass", "notes": "prevFocusRef + useEffect matches .ai-run/guides/patterns/accessibility-patterns.md § Restore Focus on Modal Close exactly." }
+  ],
+  "risk_flags": [],
+  "confidence": "high"
+}

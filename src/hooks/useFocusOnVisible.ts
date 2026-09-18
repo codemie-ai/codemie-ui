@@ -47,6 +47,7 @@ export const useFocusOnVisible = (
 
     if (isVisible && ref.current) {
       timer = setTimeout(() => {
+        if (ref.current?.contains(document.activeElement)) return
         ref.current?.focus()
       }, delay)
     }

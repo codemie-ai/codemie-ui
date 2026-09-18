@@ -1,0 +1,28 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 (test DOM leak) resolved: triggerButton lifecycle wrapped in try/finally, guaranteeing document.body.removeChild runs even if an assertion throws. All 8 unit tests pass after the fix. No new issues introduced by the fix-up diff (2-line structural change to a test body only). business_review and standards_review carried forward from code-review-final.json unchanged.",
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "triggerButton cleanup moved into try/finally block in the focus-restore test. Verified: all 8 ChatConfiguration tests pass."
+    }
+  ],
+  "findings": [],
+  "business_review": [
+    { "criterion": "AC1: Focus moves into sidebar on open", "status": "satisfied", "notes": "Carried forward — unchanged by fix-up." },
+    { "criterion": "AC2: Focus restores to trigger on close", "status": "satisfied", "notes": "Carried forward — unchanged by fix-up." },
+    { "criterion": "AC3: tabIndex={-1} on <aside>", "status": "satisfied", "notes": "Carried forward — unchanged by fix-up." },
+    { "criterion": "AC4: useFocusOnVisible call", "status": "satisfied", "notes": "Carried forward — unchanged by fix-up." },
+    { "criterion": "AC5: prevFocusRef useEffect pattern", "status": "satisfied", "notes": "Carried forward — unchanged by fix-up." },
+    { "criterion": "AC6: Two unit tests with fake timers", "status": "satisfied", "notes": "Carried forward — fix-up improved test robustness, no assertion changes." },
+    { "criterion": "AC7: No prop/store/file changes", "status": "satisfied", "notes": "Carried forward — unchanged by fix-up." }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow commit format", "status": "pass", "notes": "EPMCDME-8436: Fix test DOM leak in focus-restore test — valid format." },
+    { "standard": "security-patterns", "status": "pass", "notes": "Fix-up is test-only; no production code changed." },
+    { "standard": "accessibility-patterns prescribed pattern", "status": "pass", "notes": "Carried forward — unchanged by fix-up." }
+  ],
+  "risk_flags": [],
+  "confidence": "high"
+}

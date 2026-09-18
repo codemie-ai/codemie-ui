@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "task": "Fix incorrect focus order when Configuration sidebar opens by adding focus-on-open and focus-restore-on-close to ChatConfiguration.tsx using the existing useFocusOnVisible hook (EPMCDME-8436).",
+  "generated": "2026-08-20T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Primary change is ChatConfiguration.tsx only — adds useRef and calls the already-available useFocusOnVisible hook. A secondary focus-restore pattern (saving document.activeElement at open time) lives in the same component. The useFocusOnVisible hook itself needs no modification."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Task description is specific: exact component, exact hook, exact patterns. The accessibility guide explicitly prescribes both focus-on-open and focus-restore-on-close for non-modal panels. Minor open question: whether to also fix the isConfigFormVisible sub-view focus gap, but this is noted as adjacent rather than required."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "useFocusOnVisible is already used by useMCPServerModal and useMarketplaceModal — the pattern is proven. Two opening triggers (Configuration button and avatar click) require focus-restore to track the last active element dynamically, which is a minor coordination step but follows the established manual pattern from the accessibility guide."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "1 source file modified (ChatConfiguration.tsx). Optionally 1 new test file added for keyboard/focus assertions. Technical analysis confirms 1–2 files for the fix; with tests 2–3 files total, all within one directory."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

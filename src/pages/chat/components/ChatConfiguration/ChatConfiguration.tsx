@@ -13,9 +13,10 @@
 // limitations under the License.
 //
 
-import { FC } from 'react'
+import { FC, useRef, useEffect } from 'react'
 import { useSnapshot } from 'valtio'
 
+import { useFocusOnVisible } from '@/hooks/useFocusOnVisible'
 import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { useChatContext } from '@/pages/chat/hooks/useChatContext'
 import { chatsStore } from '@/store/chats'
@@ -36,8 +37,23 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
   const { currentChat } = useSnapshot(chatsStore)
   const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
 
+  const sidebarRef = useRef<HTMLElement>(null)
+  const prevFocusRef = useRef<HTMLElement | null>(null)
+
+  useFocusOnVisible(sidebarRef, isConfigVisible)
+
+  useEffect(() => {
+    if (isConfigVisible) {
+      prevFocusRef.current = document.activeElement as HTMLElement
+    } else {
+      prevFocusRef.current?.focus()
+    }
+  }, [isConfigVisible])
+
   return (
     <aside
+      ref={sidebarRef}
+      tabIndex={-1}
       id="chat-configuration-panel"
       data-testid="chat-configuration-panel"
       className="flex flex-col h-full overflow-x-hidden bg-surface-base-sidebar shadow-surface-base-sidebar border-l border-border-specific-panel-outline"
