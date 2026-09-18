@@ -23,6 +23,7 @@ import TableWidget from '@/pages/analytics/components/widgets/TableWidget'
 import { OverviewMetricType, TabularMetricType } from '@/types/analytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
+import RoutingAnalyticsSection from './RoutingAnalyticsSection'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, toPerPage, type TopN } from './utils/topNFilter'
 
 interface InsightsTabProps {
@@ -134,6 +135,10 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
               />
             }
           />
+        </div>
+        <div className="mt-6">
+          <h3 className="mb-4 text-lg font-semibold text-text-primary">Routing Analytics</h3>
+          <RoutingAnalyticsSection filters={filters} />
         </div>
       </section>
 

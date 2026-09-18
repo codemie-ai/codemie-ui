@@ -23,7 +23,7 @@ import {
   Legend,
   ChartOptions,
 } from 'chart.js'
-import { FC, useEffect, useState, useMemo } from 'react'
+import { FC, useEffect, useState, useMemo, ReactNode } from 'react'
 import { Bar } from 'react-chartjs-2'
 import { useSnapshot } from 'valtio'
 
@@ -62,6 +62,8 @@ interface StackedBarChartWidgetProps {
   labelField: string
   series: SeriesDefinition[]
   filters?: AnalyticsQueryParams
+  valueFormat?: 'currency' | 'number'
+  actions?: ReactNode
 }
 
 /**
@@ -75,6 +77,8 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
   labelField,
   series,
   filters,
+  valueFormat = 'currency',
+  actions,
 }) => {
   const { loading, error } = useSnapshot(analyticsStore)
   const [data, setData] = useState<TabularResponse | null>(null)
@@ -190,8 +194,10 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
               return context[0].label
             },
             label: (context) => {
-              const value = context.parsed.y ?? 0
-              return ` ${context.dataset.label}: $${value.toFixed(4)}`
+              const value = Number(context.raw ?? context.parsed.y ?? 0)
+              const formattedValue =
+                valueFormat === 'currency' ? `$${value.toFixed(4)}` : value.toLocaleString()
+              return ` ${context.dataset.label}: ${formattedValue}`
             },
           },
         },
@@ -237,7 +243,7 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
             color: textColor,
             callback: (value) => {
               if (typeof value === 'number') {
-                return `$${value.toFixed(2)}`
+                return valueFormat === 'currency' ? `$${value.toFixed(2)}` : value.toLocaleString()
               }
               return value
             },
@@ -248,7 +254,7 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
         },
       },
     }
-  }, [gridColor, textColor, data, labelField])
+  }, [gridColor, textColor, data, labelField, valueFormat])
 
   const hasData = chartData.datasets.some((ds) => ds.data.some((v) => v > 0))
 
@@ -276,11 +282,16 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
       error={error[metricType]}
       actions={
         data?.fixed_timeframe ? (
-          <TimePeriodBadge
-            label={data.fixed_timeframe}
-            tooltip="Time filters are ignored for this metric. It always reflects its own fixed window."
-          />
-        ) : undefined
+          <div className="flex items-center gap-2">
+            <TimePeriodBadge
+              label={data.fixed_timeframe}
+              tooltip="Time filters are ignored for this metric. It always reflects its own fixed window."
+            />
+            {actions}
+          </div>
+        ) : (
+          actions
+        )
       }
     >
       {renderChartContent()}

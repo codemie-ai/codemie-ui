@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "Fresh check of the current EPMCDME-14888 MR diff found no blocking code-review findings. RoutingAnalyticsSection composes the requested analytics widgets with the correct routing metric identifiers, StackedBarChartWidget preserves currency formatting by default while supporting count formatting for routing activity, and the focused test verifies the four routing tiers and path columns. The change introduces no new dependency, security surface, or unsafe data handling.",
+  "confidence": "high",
+  "risk_flags": [],
+  "reviewed_head": "5b59539a66a3c438a99e1f3977ce97a37ff35dce",
+  "finding_status": [],
+  "business_review": [
+    {
+      "criterion": "Insights includes routing summary and router distribution widgets.",
+      "status": "pass",
+      "evidence": "InsightsTab renders RoutingAnalyticsSection, which mounts ROUTING_SUMMARY and ROUTING_REQUESTED_MODELS widgets."
+    },
+    {
+      "criterion": "Routing activity displays the four supported routing tiers as counts.",
+      "status": "pass",
+      "evidence": "RoutingAnalyticsSection passes Simple, Medium, Reasoning, and Complex series with valueFormat=number; the focused test asserts the series."
+    },
+    {
+      "criterion": "Routing paths expose request volume and cost fields.",
+      "status": "pass",
+      "evidence": "The focused test asserts router, routed_model, tier, request_count, actual_cost_usd, estimated_max_cost_usd, and potential_savings_usd."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "The reviewed commit is EPMCDME-14888: Add routing analytics."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "The focused test and pre-commit TypeScript, formatting, lint, and license checks cover the implementation."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "The diff contains only UI composition, chart formatting, metric identifiers, and tests; no secrets, redirects, HTML sinks, or authentication changes."
+    }
+  ]
+}

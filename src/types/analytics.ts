@@ -247,6 +247,12 @@ export enum TabularMetricType {
   LEADERBOARD_SNAPSHOTS = 'leaderboard/snapshots',
   USER_PROJECT_SPENDING = 'user-project-spending',
   PROJECT_MEMBER_SPENDING = 'project-member-spending',
+  ROUTING_DECISIONS = 'routing/decisions',
+  ROUTING_ACTIVITY = 'routing/activity',
+  ROUTING_PATHS = 'routing/paths',
+  ROUTING_REQUESTED_MODELS = 'routing/requested-model-distribution',
+  ROUTING_ROUTED_MODELS = 'routing/routed-model-distribution',
+  ROUTING_TIERS = 'routing/tier-distribution',
 }
 
 export enum OverviewMetricType {
@@ -258,6 +264,7 @@ export enum OverviewMetricType {
   AI_ADOPTION_OVERVIEW = 'ai-adoption-overview',
   AI_ADOPTION_MATURITY = 'ai-adoption-maturity',
   LEADERBOARD_SUMMARY = 'leaderboard/summary',
+  ROUTING_SUMMARY = 'routing/summary',
 }
 
 // ============================================================================
