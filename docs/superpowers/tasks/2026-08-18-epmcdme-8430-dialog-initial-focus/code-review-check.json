@@ -1,0 +1,37 @@
+{
+  "decision": "approve",
+  "rationale": "All three prior findings resolved: CR-001 addressed by setting aria-labelledby unconditionally on pt.root; CR-002 addressed by prepending a[href] to the FOCUSABLE selector; CR-003 addressed by adding a headerContent-variant focus test. Fix-up diff is 9 lines across 2 files, no new high-risk issues introduced. Unconditional aria-labelledby referencing a non-existent element degrades gracefully in ARIA.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "Commit subject follows TICKET: description pattern consistent with project history."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No secrets, injection vectors, or unsafe DOM operations. Focus is set via standard HTMLElement.focus()."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "aria-labelledby now set unconditionally to headerId on pt.root."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "a[href] prepended to FOCUSABLE selector string."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Test added: 'focuses the close button when headerContent is used instead of header'."
+    }
+  ]
+}

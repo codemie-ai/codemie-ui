@@ -21,9 +21,14 @@ import { createMountOrderStack, useTopmostEntry } from '@/hooks/useMountOrderSta
 // document-wide query re-run on each keypress. Shared by the focus trap and the Escape handler.
 const dialogStack = createMountOrderStack<HTMLElement>()
 
-// The Proxy post-filters PrimeReact's FocusTrap sentinel elements
-// (data-p-hidden-focusable="true") via Array.from + filter rather than CSS
-// concatenation, which would only apply :not() to the last rule in the
+// PrimeReact injects hidden focusable sentinels around dialog content to implement its own
+// FocusTrap. Both the proxy and focusFirstElement in Popup must skip them; centralising the check
+// here keeps the sentinel attribute name in one place.
+export const isPrimeReactSentinel = (el: HTMLElement): boolean =>
+  el.getAttribute('data-p-hidden-focusable') === 'true'
+
+// The Proxy post-filters PrimeReact's FocusTrap sentinel elements via Array.from + filter rather
+// than CSS :not() concatenation, which would only apply to the last rule in the
 // comma-separated FOCUSABLE_SELECTOR.
 function createFocusableElementsProxy(target: HTMLElement): HTMLElement {
   return new Proxy(target, {
@@ -31,7 +36,7 @@ function createFocusableElementsProxy(target: HTMLElement): HTMLElement {
       if (prop === 'querySelectorAll') {
         return (selector: string): NodeListOf<HTMLElement> =>
           Array.from(proxyTarget.querySelectorAll<HTMLElement>(selector)).filter(
-            (child) => child.getAttribute('data-p-hidden-focusable') !== 'true'
+            (child) => !isPrimeReactSentinel(child)
           ) as unknown as NodeListOf<HTMLElement>
       }
       const value = Reflect.get(proxyTarget, prop, proxyTarget)

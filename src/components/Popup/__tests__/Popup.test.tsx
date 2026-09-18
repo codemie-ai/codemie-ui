@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -124,6 +124,101 @@ describe('Popup', () => {
   it('applies custom className to the dialog element', () => {
     renderPopup({ className: 'my-custom-dialog' })
     expect(screen.getByRole('dialog')).toHaveClass('my-custom-dialog')
+  })
+
+  describe('focus management', () => {
+    it('moves focus to the close button when the dialog opens', async () => {
+      renderPopup()
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' }))
+      )
+    })
+
+    it('does not move focus when visible is false', () => {
+      const btn = document.createElement('button')
+      document.body.appendChild(btn)
+      btn.focus()
+      renderPopup({ visible: false })
+      expect(document.activeElement).toBe(btn)
+      document.body.removeChild(btn)
+    })
+
+    it('focuses the first visible focusable when hideClose is true', async () => {
+      renderPopup({
+        hideClose: true,
+        hideFooter: true,
+        children: <input aria-label="folder name" />,
+      })
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'folder name' }))
+      )
+    })
+
+    it('returns focus to the trigger when the dialog closes', async () => {
+      const { rerender } = render(
+        <>
+          <button>Open Dialog</button>
+          <Popup visible={false} onHide={mockOnHide} onSubmit={mockOnSubmit} header="Test Popup" />
+        </>
+      )
+      const trigger = screen.getByRole('button', { name: 'Open Dialog' })
+      trigger.focus()
+
+      rerender(
+        <>
+          <button>Open Dialog</button>
+          <Popup visible={true} onHide={mockOnHide} onSubmit={mockOnSubmit} header="Test Popup" />
+        </>
+      )
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' }))
+      )
+
+      await user.click(screen.getByRole('button', { name: 'Close' }))
+      expect(mockOnHide).toHaveBeenCalled()
+
+      // Simulate the controlled component responding to onHide by hiding the dialog.
+      // PrimeReact's focusElementOnHide ref holds the trigger (captured before our
+      // setTimeout moved focus), so it restores focus to the trigger on hide.
+      rerender(
+        <>
+          <button>Open Dialog</button>
+          <Popup visible={false} onHide={mockOnHide} onSubmit={mockOnSubmit} header="Test Popup" />
+        </>
+      )
+      await waitFor(() => expect(document.activeElement).toBe(trigger))
+    })
+
+    it('only focuses the newly opened dialog when two are stacked', async () => {
+      const { rerender } = render(
+        <>
+          <Popup visible={true} onHide={mockOnHide} onSubmit={mockOnSubmit} header="Dialog One" />
+          <Popup visible={false} onHide={mockOnHide} onSubmit={mockOnSubmit} header="Dialog Two" />
+        </>
+      )
+      await waitFor(() => {
+        const [closeBtn1] = screen.getAllByRole('button', { name: 'Close' })
+        expect(document.activeElement).toBe(closeBtn1)
+      })
+
+      rerender(
+        <>
+          <Popup visible={true} onHide={mockOnHide} onSubmit={mockOnSubmit} header="Dialog One" />
+          <Popup visible={true} onHide={mockOnHide} onSubmit={mockOnSubmit} header="Dialog Two" />
+        </>
+      )
+      await waitFor(() => {
+        const [, closeBtn2] = screen.getAllByRole('button', { name: 'Close' })
+        expect(document.activeElement).toBe(closeBtn2)
+      })
+    })
+
+    it('focuses the close button when headerContent is used instead of header', async () => {
+      renderPopup({ headerContent: <h2>Custom Header</h2> })
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' }))
+      )
+    })
   })
 })
 

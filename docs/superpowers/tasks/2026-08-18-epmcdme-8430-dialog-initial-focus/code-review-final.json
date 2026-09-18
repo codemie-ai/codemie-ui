@@ -1,0 +1,51 @@
+{
+  "decision": "request-changes",
+  "rationale": "Blind and edge-case lenses both ran. Three major patch findings: (1) aria-labelledby is conditionally omitted on pt.root when headerContent is used, so the at(-1) fallback can focus the wrong dialog in stacked scenarios; (2) a[href] is absent from the Priority-2 FOCUSABLE selector, causing link-only dialogs to miss their first focusable; (3) no test covers the at(-1) fallback path. No acceptance/spec lens (no-spec round). Dismissed: tabindex=-1 sentinel concern (sentinels use tabindex=0, not -1), fake-timer style, PrimeReact trigger-focus internal concern (deferred, 1 finding not emitted).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow",
+      "status": "pass",
+      "notes": "Commit subject follows TICKET: description pattern consistent with project history."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No secrets, injection vectors, or unsafe DOM operations. Focus is set via standard HTMLElement.focus()."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "problem": "When headerContent is provided without a header string, pt.root['aria-labelledby'] is undefined (line 208: header ? headerId : undefined). The dialogs.find(el => el.getAttribute('aria-labelledby') === headerId) call returns nothing and the effect falls back to dialogs.at(-1). In any stacked-dialog scenario where the headerContent popup is not the last [role=\"dialog\"] in DOM order, at(-1) picks a different dialog and target?.focus() fires on the wrong element.",
+      "impact": "Keyboard and screen-reader users land in the wrong dialog when a headerContent popup opens while another popup (rendered after it in the React tree) is already visible. Breaks WCAG 2.1 SC 2.1.2.",
+      "recommendation": "Set aria-labelledby unconditionally: change `header ? headerId : undefined` to just `headerId` in pt.root. The attribute is consumed only by the focus effect for per-instance identification; the <h4 id={headerId}> element is still gated on header, so accessible-name derivation is unaffected.",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Popup/Popup.tsx",
+      "line": 208
+    },
+    {
+      "id": "CR-002",
+      "problem": "The Priority-2 FOCUSABLE selector omits a[href]. Native anchor elements are keyboard-focusable by default without an explicit tabindex, so they are invisible to both the enumerated tag list and the [tabindex] clause.",
+      "impact": "A dialog whose first interactive element is a plain <a href> link skips it and falls through to the [tabindex=\"-1\"] content-container fallback. Focus lands on a non-interactive wrapper instead of the semantically correct element.",
+      "recommendation": "Prepend `a[href],` to the FOCUSABLE constant: 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex=\"-1\"])'.",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Popup/Popup.tsx",
+      "line": 119
+    },
+    {
+      "id": "CR-003",
+      "problem": "None of the 5 new focus-management tests exercises the dialogs.at(-1) fallback code path. All tests use header=\"...\" (the renderPopup default or explicit prop), so aria-labelledby is always set and find() always succeeds. The headerContent/hideHeader fallback documented in the code comment is untested.",
+      "impact": "Any regression in the at(-1) path would not be caught by CI, leaving a silent accessibility defect visible only at runtime.",
+      "recommendation": "Add a test that renders <Popup headerContent={<h2>Custom</h2>} visible onHide={...}> without a header prop and asserts waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' }))). A second variant with two stacked popups (one headerContent, one header) both visible simultaneously would also validate the ordering assumption.",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Popup/__tests__/Popup.test.tsx",
+      "line": 129
+    }
+  ]
+}

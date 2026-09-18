@@ -14,17 +14,17 @@
 //
 
 import { Dialog } from 'primereact/dialog'
-import React, { ReactNode, useEffect, useId } from 'react'
+import React, { ReactNode, useEffect, useId, useRef } from 'react'
 
 import CloseSvg from '@/assets/icons/cross.svg?react'
 import gradientModal from '@/assets/images/gradient-modal.png'
 import ModalAnnouncerHost from '@/components/appLevel/ToasterAnnouncer/ModalAnnouncerHost'
 import CustomButton from '@/components/Button'
 import { ButtonType } from '@/constants'
-import { useFocusTrap } from '@/hooks/useFocusTrap'
+import { useFocusTrap, FOCUSABLE_SELECTOR } from '@/hooks/useFocusTrap'
 import { cn } from '@/utils/utils'
 
-import { useTopmostDialog } from './useTopmostDialog'
+import { useTopmostDialog, isPrimeReactSentinel } from './useTopmostDialog'
 
 export interface PopupProps {
   isFullWidth?: boolean
@@ -102,6 +102,34 @@ const Popup: React.FC<PopupProps> = ({
     }
   }, [visible, onHide, hideClose, isTopmost])
 
+  const dialogRef = useRef<Dialog>(null)
+
+  // WCAG 2.4.3: focus must enter the dialog when it opens. focusOnShow stays false on purpose —
+  // enabling it would also activate PrimeReact's own FocusTrap on top of useFocusTrap, causing a
+  // double trap. onShow fires in the same lifecycle hook PrimeReact would have focused from, so
+  // the dialog is mounted and the trigger is already stored for focus restore.
+  const focusFirstElement = () => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+
+    // Never steal focus that is already inside the dialog: a field may have autofocused,
+    // or the user may have started typing before the open transition finished.
+    if (dialog.getElement()?.contains(document.activeElement)) return
+
+    const closeButton = hideClose ? null : dialog.getCloseButton()
+    if (closeButton) {
+      closeButton.focus()
+      return
+    }
+
+    const element = dialog.getElement()
+    const firstFocusable = Array.from(
+      element?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? []
+    ).find((el) => !isPrimeReactSentinel(el) && el !== dialog.getCloseButton())
+
+    ;(firstFocusable ?? dialog.getContent())?.focus()
+  }
+
   // Custom header component
   const renderHeader = () => {
     if (headerContent) {
@@ -147,8 +175,10 @@ const Popup: React.FC<PopupProps> = ({
 
   return (
     <Dialog
+      ref={dialogRef}
       focusOnShow={false}
       closable={!hideClose}
+      onShow={focusFirstElement}
       header={renderHeader}
       visible={visible}
       onHide={onHide}
