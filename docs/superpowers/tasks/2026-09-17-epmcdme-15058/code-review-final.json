@@ -1,0 +1,97 @@
+{
+  "decision": "request-changes",
+  "rationale": "One critical finding: missing test for the non-reset handleFilterChange path (spec partial, CR-001). Four major findings: Date.parse accepts locale-format dates bypassing ISO validation (CR-002); sanitizeUrlFilters drops time_period when only users/projects are valid and sends a temporally-unscoped API query (CR-003); resolveInitialFilters returns {} instead of DEFAULT_FILTERS when userId is null at mount (CR-004, reachability unconfirmed — cap at major); handleFilterChange's localStorage quota path leaves React state stale after a window.history.replaceState URL write, which useSearchParams does not observe (CR-005, reachability unconfirmed — cap at major). All five are introduced by this change's rewrite. Zero deferred, zero dismissed.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "AC 1: Selecting a filter writes both URL and localStorage; value stays in the address bar without disappearing", "status": "pass", "notes": "handleFilterChange calls setFilters which writes URL+localStorage; functional updater in handleTabChange prevents clobbering filter params on tab change"},
+    {"kind": "story-ac", "item": "AC 2: Navigating away then returning restores filters consistently in UI, URL params, and localStorage", "status": "pass", "notes": "useSearchParams with searchStr dep re-runs on every URL change including back-navigation"},
+    {"kind": "story-ac", "item": "AC 3: Opening a shared link shows only the link's filter set; locally saved state is not merged in", "status": "pass", "notes": "hasUrlFilters branch reads only URL via getFiltersFromUrl; localStorage read is skipped entirely in that code path"},
+    {"kind": "story-ac", "item": "AC 4: After opening a link with filters, reopening without query params shows those same values", "status": "pass", "notes": "URL-valid path calls storage.put; URL-sanitized path calls setFilters which also writes localStorage"},
+    {"kind": "story-ac", "item": "AC 5: Resetting filters writes DEFAULT_FILTERS to URL and localStorage; no filter control left empty or invalid", "status": "pass", "notes": "handleFilterChange: isReset=true path calls setFilters(DEFAULT_FILTERS); test confirms"},
+    {"kind": "story-ac", "item": "AC 6: Invalid/unknown query params are silently ignored; page does not crash", "status": "pass", "notes": "getFiltersFromUrl scopes reads to known keys; sanitizeUrlFilters validates each field"},
+    {"kind": "story-ac", "item": "AC 7: All filter controls on the Analytics page behave consistently (single localStorage key FILTER_ENTITY.ANALYTICS)", "status": "pass", "notes": "FILTER_ENTITY.ANALYTICS used exclusively throughout useAnalyticsFilters.ts"},
+    {"kind": "story-ac", "item": "AC 8: Empty URL with no query params applies localStorage filters and reflects them in the URL", "status": "pass", "notes": "else branch (hasUrlFilters=false): getFilters returns stored values; setFilters writes URL+localStorage"},
+    {"kind": "story-ac", "item": "AC 9: If user store hydrates after first render, filters are still correctly restored from URL or localStorage", "status": "pass", "notes": "user?.userId in useEffect deps triggers re-run when userId transitions null to value"},
+    {"kind": "spec", "item": "Fix 1: Replace object-form setSearchParams({tab}) with functional updater to preserve other params", "status": "pass", "notes": "AnalyticsDashboard.tsx: setSearchParams((prev) => { prev.set('tab', tabId); return prev })"},
+    {"kind": "spec", "item": "Fix 2: Reactive URL subscription via useSearchParams; URL-priority decision tree; userId hydration guard; stability guard preventing update loop", "status": "pass", "notes": "useSearchParams + searchStr dep; if(!user?.userId) return guard; isEqual stability check"},
+    {"kind": "spec", "item": "Fix 3: No changes to getFilters() per-key merge behaviour in filters.ts; overwrite-on-URL logic is analytics-local", "status": "pass", "notes": "filters.ts diff adds only getFilterStorageKey export; getFilters() body unchanged"},
+    {"kind": "spec", "item": "Fix 4: Reset/clear writes DEFAULT_FILTERS (not empty state) to URL and localStorage", "status": "pass", "notes": "handleFilterChange: isReset path calls setFilters(FILTER_ENTITY.ANALYTICS, DEFAULT_FILTERS)"},
+    {"kind": "spec", "item": "Test: useAnalyticsFilters — URL params present → state from URL only; localStorage overwritten; no merge with prior storage", "status": "pass", "notes": "useAnalyticsFilters.test.ts: 'URL present, all valid: storage.put called with URL values; setFilters NOT called'"},
+    {"kind": "spec", "item": "Test: useAnalyticsFilters — URL params absent, localStorage has values → state from localStorage; URL updated", "status": "pass", "notes": "useAnalyticsFilters.test.ts: 'URL absent, localStorage has values: setFilters called with storage values'"},
+    {"kind": "spec", "item": "Test: useAnalyticsFilters — URL params absent, localStorage empty → DEFAULT_FILTERS applied; URL and localStorage updated", "status": "pass", "notes": "useAnalyticsFilters.test.ts: 'URL absent, localStorage empty: DEFAULT_FILTERS applied via setFilters'"},
+    {"kind": "spec", "item": "Test: useAnalyticsFilters — Filter change via handleFilterChange → URL and localStorage both updated (non-reset path)", "status": "partial", "notes": "Only reset path tested; no test covers handleFilterChange with a non-empty value asserting setFilters is called with those values — src/pages/analytics/hooks/__tests__/useAnalyticsFilters.test.ts"},
+    {"kind": "spec", "item": "Test: useAnalyticsFilters — Unknown/malformed URL param keys → silently ignored, no crash, known keys still parsed", "status": "pass", "notes": "Tests for malformed time_period and malformed start_date with valid sibling; unknown-key isolation in filters.test.ts"},
+    {"kind": "spec", "item": "Test: useAnalyticsFilters — Filter reset/clear → DEFAULT_FILTERS in URL and localStorage (not empty)", "status": "pass", "notes": "useAnalyticsFilters.test.ts: 'handleFilterChange with all-empty values writes DEFAULT_FILTERS'"},
+    {"kind": "spec", "item": "Test: useAnalyticsFilters — User store hydrates after mount → filters still restored correctly", "status": "pass", "notes": "Two tests: 'userId becomes available after mount' and 'URL valid + userId initially unavailable (AC 4 + AC 9)'"},
+    {"kind": "spec", "item": "Test: AnalyticsDashboard — Tab change via handleTabChange preserves existing filter query params in URL", "status": "pass", "notes": "Unit test checks functional updater shape; integration test confirms time_period preserved after tab click"},
+    {"kind": "spec", "item": "Test: filters.test.ts additions — updateUrlWithFilters preserves current tab param when writing filter params", "status": "pass", "notes": "filters.test.ts: 'preserves the current tab param when writing filter params' confirms tab preservation"},
+    {"kind": "spec", "item": "Test: filters.test.ts additions — getFiltersFromUrl returns only keys it was asked for; unknown keys not returned", "status": "pass", "notes": "filters.test.ts: 'returns only the keys in the provided FilterKeys schema, ignoring unknown keys'"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "All 3 subjects match the documented EPMCDME-XXXX: Capital sentence format: 'Rewrite', 'Add', and 'Fix' each start uppercase, no zero ID, no trailing period"},
+    {"kind": "code-quality", "status": "na", "notes": "No guide found at .ai-run/guides/standards/code-quality.md — absent standard"},
+    {"kind": "security", "status": "pass", "notes": "No dangerouslySetInnerHTML or innerHTML in changed files. clearUrlFilters builds newUrl from window.location parts and calls window.history.replaceState. No credentials logged; console.error calls log only error objects. No cross-window postMessage added. No nosonar markers introduced."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/analytics/hooks/__tests__/useAnalyticsFilters.test.ts",
+      "title": "Non-reset handleFilterChange path has no test",
+      "problem": "Spec requires a test calling handleFilterChange with a non-empty filter value (e.g., {time_period: 'last_7_days'}) and asserting setFilters is called with that value, but only the all-empty (isReset=true) path is exercised in the test suite.",
+      "impact": "The non-reset code path (lines 145–147 of useAnalyticsFilters.ts) handles every normal filter selection in production but is unverified; a regression in how non-empty filters propagate to setFilters would ship undetected.",
+      "recommendation": "Add a test case that invokes handleFilterChange({ time_period: TimePeriod.LAST_7_DAYS }) and asserts mockSetFilters was called with { time_period: TimePeriod.LAST_7_DAYS }, verifying the non-reset branch alongside the existing reset test."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/hooks/useAnalyticsFilters.ts",
+      "line": 47,
+      "title": "Date validator accepts non-ISO locale-format strings via Date.parse",
+      "problem": "isValidISODate uses Date.parse(v), which accepts locale-format strings such as 'Jan 1 2024' on most browsers; a URL param with a locale date passes the sanitization guard and is treated as a valid ISO date.",
+      "impact": "Non-ISO date strings reach the API in start_date/end_date fields; Date.parse behavior for locale strings is not standardized by ECMAScript, creating cross-browser inconsistency and potential silent data-range errors on the backend.",
+      "recommendation": "Replace the Date.parse check with an ISO 8601 prefix regex: /^\\d{4}-\\d{2}-\\d{2}/.test(v) to ensure only well-formed ISO dates pass through sanitization."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/hooks/useAnalyticsFilters.ts",
+      "line": 61,
+      "title": "sanitizeUrlFilters omits time_period when only users/projects are valid",
+      "problem": "When the URL contains an invalid time_period alongside valid users or projects, sanitizeUrlFilters returns {users: [...]} without time_period; the fallback to DEFAULT_FILTERS only triggers when the result object is completely empty.",
+      "impact": "The API query is dispatched without temporal scope; depending on API defaults this may silently return data for an unexpected date range, and the behavior is non-deterministic across API versions.",
+      "recommendation": "After building the partial result, add: if (!result.time_period) result.time_period = DEFAULT_FILTERS.time_period; before the Object.keys length check, so temporal scope is always present in the sanitized output."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/hooks/useAnalyticsFilters.ts",
+      "line": 72,
+      "title": "Null userId at mount yields empty initial filters instead of DEFAULT_FILTERS",
+      "problem": "resolveInitialFilters returns {} when userId is null at mount; the useEffect guard prevents filter resolution, but child components receive a filters object with all fields undefined on first render.",
+      "impact": "Reachability unconfirmed: whether AnalyticsDashboard or any tab component fires an effect that dispatches an API call with time_period: undefined before userId resolves could not be established from the bounded read; if a downstream effect does fire, a request with no temporal scope is made.",
+      "recommendation": "Return DEFAULT_FILTERS instead of {} in resolveInitialFilters when userId is null, so all consumers always receive a well-formed filter set regardless of auth hydration state."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/hooks/useAnalyticsFilters.ts",
+      "line": 146,
+      "title": "localStorage quota error leaves React state stale after URL write",
+      "problem": "handleFilterChange calls setFilters (which writes the URL via window.history.replaceState before writing localStorage) then setFilterState; if localStorage throws a quota error, the catch block silences the exception before setFilterState runs, leaving React state at the old filter values while the URL holds new ones.",
+      "impact": "Reachability unconfirmed (localStorage quota exceeded is low-probability); when it occurs, UI filter controls display stale values until the next navigation event. Because setFilters uses window.history.replaceState rather than React Router navigation, useSearchParams does not observe the URL change and the reactive useEffect that would re-sync state does not fire.",
+      "recommendation": "Move setFilterState(filtersToApply) before the setFilters call, or place it in a finally block, so React state is updated regardless of whether the localStorage write succeeds."
+    }
+  ]
+}

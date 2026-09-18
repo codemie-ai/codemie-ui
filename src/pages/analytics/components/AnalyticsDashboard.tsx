@@ -98,7 +98,10 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
   }, [filters, activeTab, aiAdoptionConfig])
 
   const handleTabChange = (tabId: string) => {
-    setSearchParams({ tab: tabId })
+    setSearchParams((prev) => {
+      prev.set('tab', tabId)
+      return prev
+    })
   }
 
   const tabs: Tab<string>[] = useMemo(() => {

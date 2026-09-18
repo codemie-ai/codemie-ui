@@ -15,9 +15,12 @@
 
 import { AnalyticsQueryParams, TimePeriod } from '@/types/analytics'
 
-export const DEFAULT_FILTERS: AnalyticsQueryParams = {
-  time_period: TimePeriod.LAST_HOUR,
-}
+/**
+ * No filters are applied until the user picks some: the analytics API applies its
+ * own default window when the request carries no time parameters. Seeding a period
+ * here would both narrow that window and push the value into the URL on first load.
+ */
+export const DEFAULT_FILTERS: AnalyticsQueryParams = {}
 
 export const TIME_PERIOD_OPTIONS = [
   { label: 'Last Hour', value: TimePeriod.LAST_HOUR },

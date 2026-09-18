@@ -22,6 +22,13 @@ import storage from './storage'
 
 const FILTERS_PREFIX = 'filters'
 
+/**
+ * Returns the localStorage key for a given filter entity.
+ * Exposes the private FILTERS_PREFIX format so callers can write to the
+ * correct key directly without duplicating the prefix constant.
+ */
+export const getFilterStorageKey = (entityKey: string): string => `${FILTERS_PREFIX}_${entityKey}`
+
 export enum FILTER_ENTITY {
   ASSISTANTS = 'assistants',
   SKILLS = 'skills',

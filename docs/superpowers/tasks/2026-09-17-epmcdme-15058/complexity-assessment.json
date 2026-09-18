@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "task": "Fix Analytics page filter sync between URL query params and localStorage: query params disappear after selection, not restored on return navigation, shared links merged instead of replacing local state.",
+  "generated": "2026-09-17T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 19,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four components touched — filters.ts (shared utility), useAnalyticsFilters.ts (hook), AnalyticsDashboard.tsx (component), AnalyticsPage.tsx (page) — across UI and Service layers. src/utils/filters.ts is consumed by at least 11 feature areas (assistants, skills, workflows, datasources, etc.), making it a core shared utility; base L score bumped to XL by red flag."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Three risk vectors: (1) No reactive URL-to-state subscription pattern exists in the codebase — useAnalyticsFilters currently reads window.location.search once at mount with no re-subscription; (2) dual URL-write paths (imperative replace() in useVueRouter vs setSearchParams object-form in AnalyticsDashboard) must be reconciled without cross-cancelling; (3) zero test coverage for all three symptom code paths — useAnalyticsFilters has no test file, AnalyticsDashboard has no test file, and getFilters/setFilters/updateUrlWithFilters are untested. The three reported symptoms each map to untested edge cases with no existing test template, triggering the test-gap red-flag bump from L to XL."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): touches core shared utility src/utils/filters.ts consumed by 11 feature areas across the codebase.",
+    "Technical Risk bumped from L (4) to XL (5): no existing test template covers the URL+localStorage sync edge cases (shared-link entry, return navigation, filter-change write-back); test baseline for all three symptom scenarios is absent."
+  ],
+  "split_recommendation": null
+}

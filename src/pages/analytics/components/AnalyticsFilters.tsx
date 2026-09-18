@@ -205,7 +205,14 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
   }
 
   const handleClearFilters = () => {
-    updateFilters(DEFAULT_FILTERS)
+    // Clearing is a discrete, deliberate action, so it bypasses the 2s debounce that
+    // exists to throttle the date pickers and rapid dropdown changes. Cancelling first
+    // drops any trailing call still pending from the change that revealed this button —
+    // otherwise unmounting within the window would cancel the clear and leave the old
+    // filters in the URL and localStorage.
+    debouncedFiltersChange.cancel()
+    setLocalFilters(DEFAULT_FILTERS)
+    onFiltersChangeRef.current(DEFAULT_FILTERS)
   }
 
   const hasNonDefaultFilters = useMemo(() => {

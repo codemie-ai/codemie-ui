@@ -13,14 +13,42 @@
 // limitations under the License.
 //
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import {
   getChangedKeys,
   getInitialAssistantFilters,
   checkEmptyFilters,
   createEmptyFilters,
+  getFilterStorageKey,
+  getFilters,
+  getFiltersFromUrl,
+  updateUrlWithFilters,
+  FilterKeys,
 } from '@/utils/filters'
+
+const mockReplace = vi.hoisted(() => vi.fn())
+vi.mock('@/hooks/useVueRouter', () => ({
+  replace: mockReplace,
+  parseSearchParams: (p: URLSearchParams) => {
+    const q: Record<string, string | string[]> = {}
+    p.forEach((v, k) => {
+      const ex = q[k]
+      if (ex === undefined) {
+        q[k] = v
+      } else if (Array.isArray(ex)) {
+        q[k] = [...ex, v]
+      } else {
+        q[k] = [ex, v]
+      }
+    })
+    return q
+  },
+}))
+vi.mock('@/store/user', () => ({ userStore: { user: { userId: 'u1' } } }))
+vi.mock('@/utils/storage', () => ({
+  default: { getObject: vi.fn(() => ({})), put: vi.fn(), remove: vi.fn() },
+}))
 
 describe('getChangedKeys', () => {
   it('returns an empty array when all values are identical strings', () => {
@@ -232,5 +260,76 @@ describe('createEmptyFilters', () => {
   it('converts an empty string field to an empty string', () => {
     const result = createEmptyFilters({ search: '' })
     expect(result).toEqual({ search: '' })
+  })
+})
+
+describe('getFilterStorageKey', () => {
+  it('returns the prefixed key for a given entity', () => {
+    expect(getFilterStorageKey('analytics')).toBe('filters_analytics')
+    expect(getFilterStorageKey('assistants')).toBe('filters_assistants')
+  })
+})
+
+const ANALYTICS_KEYS: FilterKeys = {
+  simple: ['time_period', 'start_date', 'end_date'],
+  boolean: [],
+  multiple: ['users', 'projects'],
+}
+
+describe('updateUrlWithFilters', () => {
+  beforeEach(() => {
+    mockReplace.mockClear()
+    vi.stubGlobal('location', { ...window.location, search: '?tab=insights' })
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('preserves the current tab param when writing filter params', () => {
+    updateUrlWithFilters({ time_period: 'last_hour' })
+    expect(mockReplace).toHaveBeenCalledOnce()
+    const q = mockReplace.mock.calls[0][0].query
+    expect(q.tab).toBe('insights')
+    expect(q.time_period).toBe('last_hour')
+  })
+})
+
+describe('getFiltersFromUrl', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('returns only the keys in the provided FilterKeys schema, ignoring unknown keys', () => {
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?time_period=last_hour&search=foo&tab=insights',
+    })
+    const result = getFiltersFromUrl(ANALYTICS_KEYS)
+    expect(result.time_period).toBe('last_hour')
+    expect(result.search).toBeUndefined()
+    expect(result.tab).toBeUndefined()
+  })
+
+  it('returns multiple values for a multiple-type key', () => {
+    vi.stubGlobal('location', { ...window.location, search: '?users=alice&users=bob' })
+    expect(getFiltersFromUrl(ANALYTICS_KEYS)).toEqual({ users: ['alice', 'bob'] })
+  })
+
+  it('returns empty object when search is empty', () => {
+    vi.stubGlobal('location', { ...window.location, search: '' })
+    expect(getFiltersFromUrl(ANALYTICS_KEYS)).toEqual({})
+  })
+})
+
+describe('getFilters scoped to ANALYTICS_KEYS', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('does not include non-analytics URL params (search, status) in the result', () => {
+    vi.stubGlobal('location', { ...window.location, search: '?search=foo&status=active' })
+    const result = getFilters('analytics', ANALYTICS_KEYS)
+    expect((result as any).search).toBeUndefined()
+    expect((result as any).status).toBeUndefined()
   })
 })

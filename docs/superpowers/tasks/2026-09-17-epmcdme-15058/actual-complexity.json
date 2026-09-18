@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "generated": "2026-09-17T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 17,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 7,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three production files touched: AnalyticsDashboard.tsx (UI), useAnalyticsFilters.ts (hook/service), and filters.ts — a core shared utility serving 12+ entity types (ASSISTANTS, SKILLS, WORKFLOWS, DATASOURCES, etc.) across the whole app. Red flag 'Touches core shared utilities' bumped score from M to L."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "7 files changed in diffstat (3 modified production files + 4 new test files across analytics/components, analytics/hooks, and utils directories). 7 maps to L on the actual-mode scale (7–10 = L)."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Reactive URL/localStorage sync in useAnalyticsFilters introduces subtle timing concerns: userId guard preventing early writes, param-reorder loop prevention (documented in code comments), and stability guard via isEqual to skip redundant re-renders. Broad hook pattern exists in codebase; no novel architecture needed, keeping risk at M."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M(3) to L(4): filters.ts is a core shared utility consumed by 12+ entity types across the codebase"
+  ],
+  "split_recommendation": null
+}
