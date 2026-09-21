@@ -18,6 +18,7 @@ import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown'
 import { forwardRef, ReactNode, Ref, useRef } from 'react'
 
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
+import FieldAnnouncer from '@/components/form/FieldAnnouncer'
 import TooltipButton from '@/components/TooltipButton'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { FilterOption } from '@/types/filters'
@@ -127,65 +128,75 @@ const Select = forwardRef(
 
     return (
       <div className={cn('flex flex-col', rootClassName)}>
-        <div className="flex flex-col gap-2">
-          {label && (
-            <div className="flex gap-2 items-center">
-              <label className="text-xs text-text-quaternary" htmlFor={id}>
-                {label}
-                {required && <span className="text-text-error ml-0.5">*</span>}
-              </label>
-              {hint && <TooltipButton content={hint} />}
+        <FieldAnnouncer
+          id={id}
+          error={error}
+          errorClassName={cn('text-failed-secondary text-sm mt-1', errorClassName)}
+        >
+          {({ ariaInvalid, ariaDescribedBy }) => (
+            <div className="flex flex-col gap-2">
+              {label && (
+                <div className="flex gap-2 items-center">
+                  <label className="text-xs text-text-quaternary" htmlFor={id}>
+                    {label}
+                    {required && <span className="text-text-error ml-0.5">*</span>}
+                  </label>
+                  {hint && <TooltipButton content={hint} />}
+                </div>
+              )}
+              <Dropdown
+                showClear={showClear}
+                id={id}
+                ref={ref}
+                inputRef={inputRef}
+                name={name}
+                value={value}
+                options={enhancedOptions}
+                onChange={handleChange}
+                disabled={disabled}
+                placeholder={placeholder}
+                panelFooterTemplate={panelFooterTemplate}
+                valueTemplate={valueTemplate}
+                itemTemplate={OptionTemplate}
+                loading={loading}
+                appendTo={appendTo}
+                filter={filter}
+                filterBy={filterBy}
+                filterPlaceholder={filterPlaceholder}
+                className={cn(
+                  'h-8 gap-2 !px-2 text-sm flex text-text-primary justify-between items-center bg-surface-base-content border border-border-primary rounded-lg transition hover:border-border-secondary cursor-pointer',
+                  !value && 'text-text-quaternary',
+                  error && '!border-failed-secondary',
+                  className
+                )}
+                panelClassName={cn(
+                  'bg-surface-base-primary max-w-64 mt-2 border overflow-auto flex bg-surface-base-secondary border-border-specific-panel-outline p-1.5 rounded-lg flex flex-col',
+                  panelClassName
+                )}
+                pt={{
+                  root: (options) => options?.state.overlayVisible && '!border-border-secondary',
+                  wrapper: { className: 'order-2' },
+                  item: {
+                    className: cn('text-sm focus-visible:ring-0 !p-0 rounded-md cursor-pointer'),
+                  },
+                  input: {
+                    className: cn(
+                      'text-ellipsis overflow-hidden text-text-primary',
+                      classNameValue
+                    ),
+                    'aria-invalid': ariaInvalid,
+                    'aria-describedby': ariaDescribedBy,
+                  },
+                  trigger: { className: cn('text-text-primary', classNameValue) },
+                  footer: { className: 'order-1' },
+                  clearIcon: { className: 'focus:outline-none' },
+                }}
+                collapseIcon={<ChevronDownSvg className="text-text-secondary" />}
+                dropdownIcon={<ChevronDownSvg className="text-text-secondary" />}
+              />
             </div>
           )}
-          <Dropdown
-            showClear={showClear}
-            id={id}
-            ref={ref}
-            inputRef={inputRef}
-            name={name}
-            value={value}
-            options={enhancedOptions}
-            onChange={handleChange}
-            disabled={disabled}
-            placeholder={placeholder}
-            panelFooterTemplate={panelFooterTemplate}
-            valueTemplate={valueTemplate}
-            itemTemplate={OptionTemplate}
-            loading={loading}
-            appendTo={appendTo}
-            filter={filter}
-            filterBy={filterBy}
-            filterPlaceholder={filterPlaceholder}
-            className={cn(
-              'h-8 gap-2 !px-2 text-sm flex text-text-primary justify-between items-center bg-surface-base-content border border-border-primary rounded-lg transition hover:border-border-secondary cursor-pointer',
-              !value && 'text-text-quaternary',
-              error && '!border-failed-secondary',
-              className
-            )}
-            panelClassName={cn(
-              'bg-surface-base-primary max-w-64 mt-2 border overflow-auto flex bg-surface-base-secondary border-border-specific-panel-outline p-1.5 rounded-lg flex flex-col',
-              panelClassName
-            )}
-            pt={{
-              root: (options) => options?.state.overlayVisible && '!border-border-secondary',
-              wrapper: { className: 'order-2' },
-              item: {
-                className: cn('text-sm focus-visible:ring-0 !p-0 rounded-md cursor-pointer'),
-              },
-              input: {
-                className: cn('text-ellipsis overflow-hidden text-text-primary', classNameValue),
-              },
-              trigger: { className: cn('text-text-primary', classNameValue) },
-              footer: { className: 'order-1' },
-              clearIcon: { className: 'focus:outline-none' },
-            }}
-            collapseIcon={<ChevronDownSvg className="text-text-secondary" />}
-            dropdownIcon={<ChevronDownSvg className="text-text-secondary" />}
-          />
-        </div>
-        {error && (
-          <div className={cn('text-failed-secondary text-sm mt-1', errorClassName)}>{error}</div>
-        )}
+        </FieldAnnouncer>
       </div>
     )
   }

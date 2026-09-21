@@ -16,7 +16,7 @@
 import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import Textarea from '../Textarea'
+import Input from '../Input'
 
 const noop = vi.fn()
 
@@ -24,43 +24,36 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-describe('Textarea', () => {
+describe('Input', () => {
   describe('error association', () => {
-    it('links the textarea to the error message via aria-describedby', () => {
-      render(
-        <Textarea
-          id="description"
-          name="description"
-          value=""
-          onChange={noop}
-          error="This field is required"
-        />
-      )
+    it('links the input to the error message via aria-describedby and role="alert"', () => {
+      render(<Input id="name" name="name" value="" onChange={noop} error="Name is required" />)
 
-      const textarea = screen.getByRole('textbox')
-      const errorNode = screen.getByText('This field is required')
+      const input = screen.getByRole('textbox')
+      const errorNode = screen.getByRole('alert')
 
-      expect(errorNode).toHaveAttribute('id', textarea.getAttribute('aria-describedby'))
-      expect(textarea).toHaveAttribute('aria-invalid', 'true')
-      expect(textarea).toHaveAccessibleDescription('This field is required')
+      expect(errorNode).toHaveTextContent('Name is required')
+      expect(errorNode).toHaveAttribute('id', input.getAttribute('aria-describedby'))
+      expect(input).toHaveAttribute('aria-invalid', 'true')
+      expect(input).toHaveAccessibleDescription('Name is required')
     })
 
     it('does not render aria-describedby or an error node when there is no error', () => {
-      render(<Textarea id="description" name="description" value="" onChange={noop} />)
+      render(<Input id="name" name="name" value="" onChange={noop} />)
 
-      const textarea = screen.getByRole('textbox')
+      const input = screen.getByRole('textbox')
 
-      expect(textarea).not.toHaveAttribute('aria-describedby')
-      expect(textarea).toHaveAttribute('aria-invalid', 'false')
-      expect(screen.queryByText('This field is required')).not.toBeInTheDocument()
+      expect(input).not.toHaveAttribute('aria-describedby')
+      expect(input).toHaveAttribute('aria-invalid', 'false')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
 
     it('still associates the error when no id prop is passed (useId fallback)', () => {
-      render(<Textarea name="description" value="" onChange={noop} error="Required" />)
+      render(<Input name="name" value="" onChange={noop} error="Required" />)
 
-      const textarea = screen.getByRole('textbox')
-      const errorNode = screen.getByText('Required')
-      const describedBy = textarea.getAttribute('aria-describedby')
+      const input = screen.getByRole('textbox')
+      const errorNode = screen.getByRole('alert')
+      const describedBy = input.getAttribute('aria-describedby')
 
       expect(describedBy).toBeTruthy()
       expect(errorNode).toHaveAttribute('id', describedBy)
@@ -68,52 +61,47 @@ describe('Textarea', () => {
 
     it('merges a caller-supplied aria-describedby with the computed error id and forces aria-invalid=true', () => {
       render(
-        <Textarea
-          id="description"
-          name="description"
+        <Input
+          id="name"
+          name="name"
           value=""
           onChange={noop}
-          error="This field is required"
+          error="Name is required"
           aria-describedby="caller-hint"
           aria-invalid={false}
         />
       )
 
-      const textarea = screen.getByRole('textbox')
+      const input = screen.getByRole('textbox')
       const errorNode = screen.getByRole('alert')
 
-      expect(textarea).toHaveAttribute(
+      expect(input).toHaveAttribute(
         'aria-describedby',
         `caller-hint ${errorNode.getAttribute('id')}`
       )
-      expect(textarea).toHaveAttribute('aria-invalid', 'true')
+      expect(input).toHaveAttribute('aria-invalid', 'true')
     })
 
     it('preserves a caller-supplied aria-describedby when there is no error', () => {
-      render(
-        <Textarea
-          id="description"
-          name="description"
-          value=""
-          onChange={noop}
-          aria-describedby="description-hint"
-        />
-      )
+      render(<Input id="age" name="age" value="" onChange={noop} aria-describedby="age-hint" />)
 
-      expect(screen.getByRole('textbox')).toHaveAttribute('aria-describedby', 'description-hint')
+      const input = screen.getByRole('textbox')
+
+      expect(input).toHaveAttribute('aria-describedby', 'age-hint')
     })
 
     it('re-mounts the alert node when the error message changes so screen readers re-announce', () => {
       const { rerender } = render(
-        <Textarea id="description" name="description" value="" onChange={noop} error="Required" />
+        <Input id="name" name="name" value="" onChange={noop} error="Required" />
       )
 
       const firstAlert = screen.getByRole('alert')
+      expect(firstAlert).toHaveTextContent('Required')
 
       rerender(
-        <Textarea
-          id="description"
-          name="description"
+        <Input
+          id="name"
+          name="name"
           value=""
           onChange={noop}
           error="Must be at least 3 characters"

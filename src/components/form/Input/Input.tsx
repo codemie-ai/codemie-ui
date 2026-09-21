@@ -15,6 +15,7 @@
 
 import React, { forwardRef, InputHTMLAttributes, ReactNode } from 'react'
 
+import FieldAnnouncer from '@/components/form/FieldAnnouncer'
 import Hint from '@/components/Hint'
 import TooltipButton from '@/components/TooltipButton'
 import { cn } from '@/utils/utils'
@@ -94,102 +95,110 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const inputType = getInputType()
 
+    const callerDescribedBy = (rest as { 'aria-describedby'?: string })['aria-describedby']
+
     return (
       <label
         htmlFor={id}
         className={cn('flex flex-col gap-y-2 w-full min-w-0 input-field-wrapper', rootClass)}
       >
-        <div
-          className={cn(
-            'flex flex-col gap-2 justify-between',
-            orientation === 'horizontal' && 'flex-row'
-          )}
+        <FieldAnnouncer
+          id={id}
+          error={error}
+          describedBy={callerDescribedBy}
+          errorClassName={cn('text-sm text-failed-secondary input-error-message', errorClassName)}
         >
-          {label && (
-            <div className="flex justify-between">
-              <div className="flex items-center gap-x-1 input-label-container">
-                <div className="flex text-xs text-text-quaternary input-label">
-                  {label}
-                  {required && (
-                    <span className="text-text-error input-label-required ml-0.5">*</span>
-                  )}
-                </div>
-                {hint && <TooltipButton className="ml-1" content={hint} />}
-              </div>
-              {labelContent}
-            </div>
-          )}
-
-          <div
-            className={cn(
-              'flex rounded-lg min-h-8 max-h-8 border bg-surface-base-content input-block-container transition',
-              error && 'border-failed-secondary input-block-error',
-              !error &&
-                'border-border-primary hover:border-border-secondary focus-within:border-border-secondary',
-              disabled && 'hover:border-border-primary opacity-60',
-              filled && 'bg-border-primary',
-              containerClass
-            )}
-          >
-            {sideLabel && (
-              <div className="text-xs flex items-center px-2 rounded-l-lg bg-surface-specific-input-prefix outline-1 outline outline-border-subtle">
-                {sideLabel}
-              </div>
-            )}
+          {({ ariaInvalid, ariaDescribedBy }) => (
             <div
               className={cn(
-                'relative w-full text-text-primary',
-                isFilterInput && 'border-border-structural rounded-lg',
-                fullWidth && 'w-full',
-                filled && 'w-full',
-                leftIcon && 'pl-[30px]',
-                rightIcon && 'pr-[30px]',
-                className,
-                sideLabel && 'rounded-l-none'
+                'flex flex-col gap-2 justify-between',
+                orientation === 'horizontal' && 'flex-row'
               )}
             >
-              {leftIcon && (
-                <div className="absolute top-[50%] left-[8px] transform -translate-y-1/2">
-                  {leftIcon}
+              {label && (
+                <div className="flex justify-between">
+                  <div className="flex items-center gap-x-1 input-label-container">
+                    <div className="flex text-xs text-text-quaternary input-label">
+                      {label}
+                      {required && (
+                        <span className="text-text-error input-label-required ml-0.5">*</span>
+                      )}
+                    </div>
+                    {hint && <TooltipButton className="ml-1" content={hint} />}
+                  </div>
+                  {labelContent}
                 </div>
               )}
-              <input
-                id={id}
-                ref={ref}
-                name={name}
-                type={inputType}
-                value={value ?? ''}
-                onChange={handleChange}
-                autoComplete={sensitive ? 'off' : undefined}
-                data-testid="validation"
-                disabled={disabled}
-                required={required}
+
+              <div
                 className={cn(
-                  'grow h-full bg-transparent text-sm text-text-primary outline-none input-element py-[9px] w-full placeholder:text-text-specific-input-placeholder',
-                  isFilterInput ? 'px-1 rounded-lg' : 'p-2',
-                  inputClass
+                  'flex rounded-lg min-h-8 max-h-8 border bg-surface-base-content input-block-container transition',
+                  error && 'border-failed-secondary input-block-error',
+                  !error &&
+                    'border-border-primary hover:border-border-secondary focus-within:border-border-secondary',
+                  disabled && 'hover:border-border-primary opacity-60',
+                  filled && 'bg-border-primary',
+                  containerClass
                 )}
-                {...rest}
-              />
-              {children}
-              {rightIcon && (
-                <div className="absolute top-[50%] right-[8px] transform -translate-y-1/2">
-                  {rightIcon}
+              >
+                {sideLabel && (
+                  <div className="text-xs flex items-center px-2 rounded-l-lg bg-surface-specific-input-prefix outline-1 outline outline-border-subtle">
+                    {sideLabel}
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    'relative w-full text-text-primary',
+                    isFilterInput && 'border-border-structural rounded-lg',
+                    fullWidth && 'w-full',
+                    filled && 'w-full',
+                    leftIcon && 'pl-[30px]',
+                    rightIcon && 'pr-[30px]',
+                    className,
+                    sideLabel && 'rounded-l-none'
+                  )}
+                >
+                  {leftIcon && (
+                    <div className="absolute top-[50%] left-[8px] transform -translate-y-1/2">
+                      {leftIcon}
+                    </div>
+                  )}
+                  <input
+                    id={id}
+                    ref={ref}
+                    name={name}
+                    type={inputType}
+                    value={value ?? ''}
+                    onChange={handleChange}
+                    autoComplete={sensitive ? 'off' : undefined}
+                    data-testid="validation"
+                    disabled={disabled}
+                    required={required}
+                    className={cn(
+                      'grow h-full bg-transparent text-sm text-text-primary outline-none input-element py-[9px] w-full placeholder:text-text-specific-input-placeholder',
+                      isFilterInput ? 'px-1 rounded-lg' : 'p-2',
+                      inputClass
+                    )}
+                    {...rest}
+                    aria-invalid={ariaInvalid}
+                    aria-describedby={ariaDescribedBy}
+                  />
+                  {children}
+                  {rightIcon && (
+                    <div className="absolute top-[50%] right-[8px] transform -translate-y-1/2">
+                      {rightIcon}
+                    </div>
+                  )}
+                  {!label && hint && (
+                    <span className="flex items-center input-hint-icon">
+                      <Hint hint={hint} />
+                    </span>
+                  )}
                 </div>
-              )}
-              {!label && hint && (
-                <span className="flex items-center input-hint-icon">
-                  <Hint hint={hint} />
-                </span>
-              )}
+              </div>
             </div>
-          </div>
-        </div>
-        {error && (
-          <div className={cn('text-sm text-failed-secondary input-error-message', errorClassName)}>
-            {error}
-          </div>
-        )}
+          )}
+        </FieldAnnouncer>
       </label>
     )
   }

@@ -282,4 +282,20 @@ describe('FormGenAIPopup', () => {
       expect(screen.getByText('Generate Assistant with AI')).toBeInTheDocument()
     })
   })
+
+  describe('accessibility — validation error announcement', () => {
+    it('announces "Prompt is required" via role="alert" and links the textarea to it', async () => {
+      renderPopup()
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: /Generate with AI/i }))
+
+      const alert = await screen.findByRole('alert')
+      expect(alert).toHaveTextContent('Prompt is required')
+
+      const textarea = screen.getByRole('textbox', { name: 'What should your assistant do?' })
+      expect(textarea).toHaveAttribute('aria-invalid', 'true')
+      expect(textarea).toHaveAttribute('aria-describedby', alert.getAttribute('id') as string)
+    })
+  })
 })

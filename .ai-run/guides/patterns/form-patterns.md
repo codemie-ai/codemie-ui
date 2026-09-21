@@ -102,26 +102,25 @@ Use `yup.InferType<typeof schema>` — never write the TS type separately.
 
 ## Displaying Field Errors
 
-Pass `errors.<field>?.message` to the component's `error` prop:
+Pass `errors.<field>?.message` to the component's `error` prop. The shared form primitives
+(`Input`, `Select`, `MultiSelect`, `Textarea`, `FilesDropzone`) wire the ARIA contract internally:
+`aria-invalid`, `aria-describedby`, and a keyed `role="alert"` error node with a `useId`-derived
+id. `aria-invalid` is always overridden by the primitive; `aria-describedby` supplied by the
+caller (e.g. to point at a hint span) is preserved and the error id is appended to it when an
+error is present.
 
 ```tsx
 <Controller name='age' control={control}
   render={({ field }) => (
-    <Input {...field} label='Age' type='number'
-      error={errors.age?.message}
-      aria-invalid={!!errors.age}
-      aria-describedby={errors.age ? 'age-error' : undefined} />
+    <Input {...field} label='Age' type='number' error={errors.age?.message} />
   )} />
 ```
 
-For inline error span:
-```tsx
-{errors.age && (
-  <span id='age-error' className='text-text-error text-sm' role='alert'>
-    {errors.age.message}
-  </span>
-)}
-```
+Never render your own error span next to a primitive — you get a duplicate live region and
+the announcement fires twice. If your form uses a raw `<input>` / `<textarea>` (not a
+primitive), reproduce the same contract locally, following
+[`accessibility-patterns.md`](./accessibility-patterns.md#form-validation) and the
+`Textarea` reference implementation in `src/components/form/Textarea/Textarea.tsx`.
 
 ---
 

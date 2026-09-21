@@ -30,6 +30,7 @@ import React, {
 
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
 import XMarkSvg from '@/assets/icons/cross.svg?react'
+import FieldAnnouncer from '@/components/form/FieldAnnouncer'
 import TooltipButton from '@/components/TooltipButton'
 import { useInputWidth } from '@/hooks/useInputWidth'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
@@ -376,85 +377,102 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
 
     return (
       <div className={cn('relative flex flex-col', fullWidth && 'flex-grow', className)}>
-        {label && !hideLabel && (
-          <label htmlFor={id} className="text-xs pb-2 text-text-quaternary flex items-center">
-            {label}
-            {required && <span className="text-text-error input-label-required ml-0.5">*</span>}
-            {hint && <TooltipButton className="ml-1" content={hint} iconClassName="h-4" />}
-          </label>
-        )}
-        <PrimeMultiselect
-          pt={preparedPreset}
-          ref={selectRef}
+        <FieldAnnouncer
           id={id}
-          name={name}
-          value={preparedValue}
-          options={sortedOptions}
-          placeholder={placeholder}
-          disabled={disabled}
-          onChange={(e) => handleChange(e, selectRef)}
-          onShow={() => {
-            setIsPanelOpen(true)
-            if (onScrollBottom) attachScrollListener()
-          }}
-          onHide={() => {
-            setIsPanelOpen(false)
-            setSelectedSnapshot(preparedValue)
-            // Remove the scroll listener when the panel closes
-            scrollCleanupRef.current?.()
-            scrollCleanupRef.current = null
-          }}
-          onFilter={(e) => {
-            onFilter?.(e.filter)
-            if (onScrollBottom) {
-              const wrapper = selectRef.current
-                ?.getOverlay()
-                ?.querySelector<HTMLElement>('[data-pc-section="wrapper"]')
-              if (wrapper) wrapper.scrollTop = 0
-            }
-          }}
-          multiple={!singleValue}
-          className={cn(className, mappedSizeClassname, inputClassName)}
-          panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}
-          showSelectAll={false}
-          filter={typeof onFilter === 'function'}
-          panelHeaderTemplate={buildPanelHeaderTemplate(
-            panelHeaderExtra,
-            typeof onFilter === 'function'
+          error={error}
+          errorClassName={cn(
+            'text-sm text-failed-secondary input-error-message mt-2',
+            errorClassName
           )}
-          itemTemplate={renderOption ?? defaultRenderOption}
-          optionLabel={optionLabel}
-          optionValue={optionValue}
-          loading={loading}
-          scrollHeight={scrollHeight}
-          virtualScrollerOptions={resolvedVirtualScrollerOptions}
-          focusOnHover={resolvedFocusOnHover}
-          onKeyDown={handleKeyDown}
-          filterPlaceholder={filterPlaceholder ?? 'Search'}
-          emptyFilterMessage={emptyFilterMessage}
-          dropdownIcon={<ChevronDownSvg />}
-          aria-label={label || placeholder}
-          display={display}
-          selectedItemTemplate={preparedSelectedItemTemplate ?? undefined}
         >
-          {preparedValue.length > 0 && !singleValue && (
-            <button
-              type="button"
-              aria-label="Clear selected options"
-              className="absolute right-[34px] top-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0 text-text-secondary hover:text-text-accent-hover"
-              onClick={(e) => onChange({ ...e, value: [] } as unknown as MultiSelectChangeEvent)}
-            >
-              <XMarkSvg className="w-[20px] h-[20px]" />
-            </button>
+          {({ ariaInvalid, ariaDescribedBy }) => (
+            <>
+              {label && !hideLabel && (
+                <label htmlFor={id} className="text-xs pb-2 text-text-quaternary flex items-center">
+                  {label}
+                  {required && (
+                    <span className="text-text-error input-label-required ml-0.5">*</span>
+                  )}
+                  {hint && <TooltipButton className="ml-1" content={hint} iconClassName="h-4" />}
+                </label>
+              )}
+              <PrimeMultiselect
+                pt={{
+                  ...preparedPreset,
+                  input: {
+                    ...preparedPreset.input,
+                    'aria-invalid': ariaInvalid,
+                    'aria-describedby': ariaDescribedBy,
+                  },
+                }}
+                ref={selectRef}
+                id={id}
+                name={name}
+                value={preparedValue}
+                options={sortedOptions}
+                placeholder={placeholder}
+                disabled={disabled}
+                onChange={(e) => handleChange(e, selectRef)}
+                onShow={() => {
+                  setIsPanelOpen(true)
+                  if (onScrollBottom) attachScrollListener()
+                }}
+                onHide={() => {
+                  setIsPanelOpen(false)
+                  setSelectedSnapshot(preparedValue)
+                  // Remove the scroll listener when the panel closes
+                  scrollCleanupRef.current?.()
+                  scrollCleanupRef.current = null
+                }}
+                onFilter={(e) => {
+                  onFilter?.(e.filter)
+                  if (onScrollBottom) {
+                    const wrapper = selectRef.current
+                      ?.getOverlay()
+                      ?.querySelector<HTMLElement>('[data-pc-section="wrapper"]')
+                    if (wrapper) wrapper.scrollTop = 0
+                  }
+                }}
+                multiple={!singleValue}
+                className={cn(className, mappedSizeClassname, inputClassName)}
+                panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}
+                showSelectAll={false}
+                filter={typeof onFilter === 'function'}
+                panelHeaderTemplate={buildPanelHeaderTemplate(
+                  panelHeaderExtra,
+                  typeof onFilter === 'function'
+                )}
+                itemTemplate={renderOption ?? defaultRenderOption}
+                optionLabel={optionLabel}
+                optionValue={optionValue}
+                loading={loading}
+                scrollHeight={scrollHeight}
+                virtualScrollerOptions={resolvedVirtualScrollerOptions}
+                focusOnHover={resolvedFocusOnHover}
+                onKeyDown={handleKeyDown}
+                filterPlaceholder={filterPlaceholder ?? 'Search'}
+                emptyFilterMessage={emptyFilterMessage}
+                dropdownIcon={<ChevronDownSvg />}
+                aria-label={label || placeholder}
+                display={display}
+                selectedItemTemplate={preparedSelectedItemTemplate ?? undefined}
+              >
+                {preparedValue.length > 0 && !singleValue && (
+                  <button
+                    type="button"
+                    aria-label="Clear selected options"
+                    className="absolute right-[34px] top-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0 text-text-secondary hover:text-text-accent-hover"
+                    onClick={(e) =>
+                      onChange({ ...e, value: [] } as unknown as MultiSelectChangeEvent)
+                    }
+                  >
+                    <XMarkSvg className="w-[20px] h-[20px]" />
+                  </button>
+                )}
+              </PrimeMultiselect>
+            </>
           )}
-        </PrimeMultiselect>
-        {error && (
-          <div
-            className={cn('text-sm text-failed-secondary input-error-message mt-2', errorClassName)}
-          >
-            {error}
-          </div>
-        )}
+        </FieldAnnouncer>
       </div>
     )
   }

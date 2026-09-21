@@ -63,3 +63,4 @@ bmad/*
 # Code-review diff artifacts
 *.diff
 .code-graph/
+run.log.harness

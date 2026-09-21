@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Fix shared form primitives (Input, Select, MultiSelect) to match the Textarea ARIA contract: useId-derived errorId, aria-invalid, aria-describedby, and keyed role='alert' error node for screen-reader announcement of validation errors.",
+  "generated": "2026-08-24T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 14,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three shared form primitives (Input, Select, MultiSelect) all received the same ARIA contract additions. These components are core shared utilities used across the entire app, which triggered the red-flag bump from M to L."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "diffstat reports 12 files changed (3 source components + 3 matching test files + 1 page-level test + guide update + .gitignore + others), placing this in the XL band (11-15 files). The high file count is primarily driven by paired test coverage for each changed component."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: touches three core shared form utility components used across the entire application."
+  ],
+  "split_recommendation": null
+}

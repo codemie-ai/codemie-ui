@@ -1,0 +1,103 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "high",
+  "risk_flags": [
+    "accessibility"
+  ],
+  "business_review": [
+    {
+      "id": "AC-1",
+      "text": "Form validation errors announced by screen readers on the listed modals/pages (WCAG SC 4.1.3, SC 3.3.1) by aligning Input, Select, MultiSelect with Textarea pattern.",
+      "status": "met"
+    },
+    {
+      "id": "AC-2",
+      "text": "Computed ARIA values win over caller-supplied aria-invalid/aria-describedby.",
+      "status": "met"
+    },
+    {
+      "id": "AC-3",
+      "text": "T1 Input.tsx wiring.",
+      "status": "met"
+    },
+    {
+      "id": "AC-4",
+      "text": "T1 Input.test.tsx with 4 cases.",
+      "status": "met"
+    },
+    {
+      "id": "AC-5",
+      "text": "T2 Select.tsx wiring.",
+      "status": "met"
+    },
+    {
+      "id": "AC-6",
+      "text": "T2 Select.test.tsx with 3 cases.",
+      "status": "met"
+    },
+    {
+      "id": "AC-7",
+      "text": "T3 MultiSelect.tsx wiring.",
+      "status": "met"
+    },
+    {
+      "id": "AC-8",
+      "text": "T3 MultiSelect.a11y.test.tsx with 3 cases.",
+      "status": "met"
+    },
+    {
+      "id": "AC-9",
+      "text": "T4 FormGenAIPopup a11y regression test.",
+      "status": "met"
+    },
+    {
+      "id": "AC-10",
+      "text": "T5 form-patterns.md updated.",
+      "status": "met"
+    },
+    {
+      "id": "AC-11",
+      "text": "Non-goals not violated.",
+      "status": "met"
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow: EPMCDME-XXXX_ prefix on branch and commits",
+      "status": "pass",
+      "notes": "Branch EPMCDME-8489_a11y-form-error-live-region; 4 commits all prefixed EPMCDME-8489:"
+    },
+    {
+      "standard": "security-patterns: no XSS/redirect/secret surface changed",
+      "status": "pass",
+      "notes": "Change is ARIA attribute wiring only, no user-input rendering."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "file": "src/components/form/Input/Input.tsx",
+      "line": 176,
+      "severity": "major",
+      "triage": "patch",
+      "problem": "aria-describedby={error ? errorId : undefined} is placed after {...rest}, which unconditionally overrides any caller-supplied aria-describedby. When no error is present the effective value is undefined, so React strips the attribute \u2014 silently losing hint/help associations passed by any of the 84 Input call sites that legitimately supply their own aria-describedby.",
+      "failure_scenario": "A caller renders <Input id=\"age\" aria-describedby=\"age-hint\" /> alongside a <span id=\"age-hint\">Between 18 and 100</span>. With no error, the current code sets aria-describedby={undefined}, removing the caller's association. Screen readers no longer announce the hint on focus.",
+      "impact": "WCAG 1.3.1 / 4.1.2 regression on any Input call site that provides its own aria-describedby; the fix's own guide currently claims 'caller-supplied ones are dropped by design', which frames a regression as intentional.",
+      "recommendation": "Merge the caller's aria-describedby with errorId when both are present: aria-describedby={[restDescribedBy, error ? errorId : undefined].filter(Boolean).join(' ') || undefined}. Update the 'caller cannot override' Input test to assert merge behavior (caller's id + error id when error, caller's id alone when no error). Update form-patterns.md to reflect the actual contract (primitives always add the error id; they do not replace caller-supplied describedby)."
+    },
+    {
+      "id": "CR-002",
+      "file": "src/components/form/Input/Input.tsx",
+      "line": 195,
+      "severity": "major",
+      "triage": "patch",
+      "problem": "role=\"alert\" is announced by screen readers only on DOM insertion, not on text-content mutation. When the same field's error changes from one non-empty string to another (e.g. Yup revalidation replaces 'Required' with 'Min 3 chars'), the existing <div id=\u2026 role=\"alert\"> stays in the DOM and only its text updates \u2014 VoiceOver/Safari and NVDA/Firefox do not re-announce.",
+      "failure_scenario": "User submits form empty \u2192 'Required' announced. User types one character \u2192 RHF mode:onChange fires, error becomes 'Must be at least 3 characters'. Same div, mutated text; screen reader stays silent.",
+      "impact": "WCAG 4.1.3 fails on error refinements \u2014 the primary a11y scenario the ticket exists to fix. Applies to all three fixed primitives.",
+      "recommendation": "Add key={error} to the role=\"alert\" div in Input.tsx, Select.tsx, and MultiSelect.tsx. React unmounts+remounts the div on every distinct error string, guaranteeing a fresh insertion announcement. No test change strictly required; a targeted assertion on the div's element identity across error changes is nice-to-have."
+    }
+  ],
+  "rationale": "Blind lens raised the caller-override issue (CR-001) and two additional concerns that triage dismisses: (a) Select pt.input target \u2014 the T2 test already queries input[aria-haspopup=\"listbox\"] and confirms attrs land on the focusable a11y input; (b) MultiSelect pt.input caller-merge \u2014 MultiSelect builds preparedPreset internally and does not accept a caller pt prop, so no merge path exists. Edge-case lens flagged the role=\"alert\" text-mutation non-announcement in all three primitives (CR-002); the recommended fix (key={error}) is a one-line remount forcing insertion semantics. Acceptance lens confirmed 11/11 criteria met. Both surviving findings are patch-class (mechanical, no design decision) \u2014 fix and re-check.",
+  "reviewed_head": "f65b8d946e5b1519a1207224b06bca954d4dc865"
+}
