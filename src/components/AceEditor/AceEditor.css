@@ -32,3 +32,12 @@
   position: absolute;
   left: 0;
 }
+
+/* Override Ace Tomorrow Night theme colors for WCAG AA contrast compliance (EPMCDME-8518) */
+.ace-tomorrow-night .ace_entity.ace_name.ace_tag,
+.ace-tomorrow-night .ace_entity.ace_other.ace_attribute-name,
+.ace-tomorrow-night .ace_meta.ace_tag,
+.ace-tomorrow-night .ace_string.ace_regexp,
+.ace-tomorrow-night .ace_variable {
+  color: #ff8080 !important;
+}
