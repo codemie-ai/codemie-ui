@@ -1,0 +1,41 @@
+{
+  "decision": "approve",
+  "rationale": "The runtime routingAnalytics flag is added, RoutingAnalyticsSection is conditionally rendered, and enabled and disabled behavior is covered by focused tests. No unresolved findings remain.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Routing analytics is hidden when features:routingAnalytics is disabled",
+      "status": "pass",
+      "notes": "InsightsTab regression test confirms the section is absent when the flag is disabled."
+    },
+    {
+      "criterion": "Routing analytics remains available when the flag is enabled",
+      "status": "pass",
+      "notes": "InsightsTab regression test confirms the section is rendered when the flag is enabled."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "Uses the existing runtime feature-flag hook and shared FEATURE_FLAGS constant."
+    },
+    {
+      "standard": "tests",
+      "status": "pass",
+      "notes": "Focused unit tests pass for both flag states."
+    }
+  ],
+  "findings": [],
+  "finding_status": [],
+  "reviewed_range": {
+    "base_sha": "cd2327fc714d7228e80aa48f9baf30b248a87083",
+    "head_sha": "be2c8ea2f19d8af683d26d5c03f0594cf33f1932"
+  },
+  "verification": {
+    "tests": "npm run test:unit -- src/pages/analytics/components/__tests__/InsightsTab.test.tsx - 2 passed",
+    "typecheck": "passed",
+    "lint": "passed"
+  }
+}

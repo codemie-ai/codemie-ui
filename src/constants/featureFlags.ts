@@ -39,6 +39,7 @@ export const FEATURE_FLAGS = {
   JIRA_OAUTH: 'features:jiraOauth',
   CONFLUENCE_OAUTH: 'features:confluenceOauth',
   SCHEDULERS_VIEW: 'features:schedulersView',
+  ROUTING_ANALYTICS: 'features:routingAnalytics',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

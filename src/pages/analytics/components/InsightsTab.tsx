@@ -16,6 +16,8 @@
 import { FC, useMemo, useState } from 'react'
 
 import Select from '@/components/form/Select'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import DonutChartWidget from '@/pages/analytics/components/widgets/DonutChartWidget'
 import MetricsWidget from '@/pages/analytics/components/widgets/MetricsWidget'
 import StackedBarChartWidget from '@/pages/analytics/components/widgets/StackedBarChartWidget'
@@ -33,6 +35,7 @@ interface InsightsTabProps {
 const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
   const [topLlmsTopN, setTopLlmsTopN] = useState<TopN>(TopNFilter.TEN)
   const [topCliLlmsTopN, setTopCliLlmsTopN] = useState<TopN>(TopNFilter.TEN)
+  const [isRoutingAnalyticsEnabled] = useFeatureFlag(FEATURE_FLAGS.ROUTING_ANALYTICS)
 
   const topLlmsExtraParams = useMemo(() => ({ per_page: toPerPage(topLlmsTopN) }), [topLlmsTopN])
 
@@ -136,10 +139,12 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
             }
           />
         </div>
-        <div className="mt-6">
-          <h3 className="mb-4 text-lg font-semibold text-text-primary">Routing Analytics</h3>
-          <RoutingAnalyticsSection filters={filters} />
-        </div>
+        {isRoutingAnalyticsEnabled && (
+          <div className="mt-6">
+            <h3 className="mb-4 text-lg font-semibold text-text-primary">Routing Analytics</h3>
+            <RoutingAnalyticsSection filters={filters} />
+          </div>
+        )}
       </section>
 
       {/* ===== PLATFORM ACTIVITY SECTION ===== */}
