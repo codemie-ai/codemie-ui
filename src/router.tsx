@@ -65,7 +65,6 @@ import SchedulerRunDetailsPage from '@/pages/schedulers/SchedulerRunDetailsPage'
 import SchedulerRunHistoryPage from '@/pages/schedulers/SchedulerRunHistoryPage'
 import SchedulersPage from '@/pages/schedulers/SchedulersPage'
 import ActivityEventsPage from '@/pages/settings/administration/ActivityEventsPage'
-import AiAdoptionConfigPage from '@/pages/settings/administration/AiAdoptionConfigPage'
 import BudgetsManagementPage from '@/pages/settings/administration/BudgetsManagementPage'
 import CategoriesManagementPage from '@/pages/settings/administration/CategoriesManagementPage'
 import CostCenterDetailsPage from '@/pages/settings/administration/CostCenterDetailsPage'
@@ -456,18 +455,6 @@ const applicationRoutes: RouteObject[] = [
   },
 ]
 
-const aiAdoptionConfigRoutes: RouteObject[] = [
-  {
-    id: 'ai-adoption-config',
-    path: '/settings/administration/ai-adoption-config',
-    element: (
-      <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
-        <AiAdoptionConfigPage />
-      </FeatureGuard>
-    ),
-  },
-]
-
 const settingsRoutes: RouteObject[] = [
   {
     id: 'settings',
@@ -724,7 +711,6 @@ export const routes: RouteObject[] = [
       ...workflowRoutes,
       ...applicationRoutes,
       ...analyticsRoutes,
-      ...aiAdoptionConfigRoutes,
       ...settingsRoutes,
       ...awsSettingsRoutes,
       ...otherRoutes,

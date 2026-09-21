@@ -23,15 +23,6 @@ import {
   TabularMetricType,
   AnalyticsRequestParams,
   AnalyticsPaginatedRequestParams,
-  AiAdoptionConfigResponse,
-  AiAdoptionConfig,
-  AnalyticsDashboard,
-  UserEngagementUsersRequest,
-  UserEngagementDrillDownState,
-  AssetReusabilityAssistantsRequest,
-  AssetReusabilityWorkflowsRequest,
-  AssetReusabilityDatasourcesRequest,
-  AssetReusabilityDrillDownState,
   AnalyticsDashboardItem,
   LeaderboardSeasonsResponse,
   LeaderboardSeason,
@@ -97,14 +88,9 @@ interface Analytics {
   generations: Map<string, number>
 
   // State
-  overview: SummariesResponse | null
   cliSummary: CliSummaryResponse | null
-  aiAdoptionConfig: AiAdoptionConfigResponse | null
   dashboards: AnalyticsDashboardItem[]
-  userEngagementDrillDown: UserEngagementDrillDownState
-  assetReusabilityDrillDown: AssetReusabilityDrillDownState
   loading: Record<string, boolean>
-  loaded: { 'ai-adoption-config': boolean }
   error: Record<string, ErrorDetails | null>
 
   // Methods
@@ -112,14 +98,10 @@ interface Analytics {
     type: string,
     params?: AnalyticsRequestParams
   ) => Promise<SummariesResponse | null>
-  fetchAiAdoptionOverview: (params?: {
-    projects?: string[]
-    config?: AiAdoptionConfig
-  }) => Promise<SummariesResponse | null>
   fetchCliSummary: (params?: AnalyticsRequestParams) => Promise<CliSummaryResponse | null>
   fetchTabularData: (
     type: TabularMetricType,
-    params?: AnalyticsPaginatedRequestParams & { config?: AiAdoptionConfig }
+    params?: AnalyticsPaginatedRequestParams
   ) => Promise<TabularResponse | null>
   fetchUserProjectSpending: (userEmail: string) => Promise<TabularResponse | null>
   fetchProjectMemberSpending: (projectName: string) => Promise<TabularResponse | null>
@@ -132,13 +114,6 @@ interface Analytics {
   ) => Promise<LeaderboardUserDetailResponse | null>
   fetchLeaderboardProjects: () => Promise<string[]>
   fetchLeaderboardFramework: () => Promise<LeaderboardFrameworkResponse | null>
-  fetchAiAdoptionMaturity: (params?: {
-    projects?: string[]
-    config?: AiAdoptionConfig
-  }) => Promise<SummariesResponse | null>
-  fetchAiAdoptionConfig: (dashboard: string) => Promise<AiAdoptionConfigResponse | null>
-  saveAiAdoptionConfig: (config: AiAdoptionConfig) => Promise<AiAdoptionConfigResponse>
-  resetAiAdoptionConfig: () => Promise<AiAdoptionConfigResponse>
   loadDashboards: () => Promise<AnalyticsDashboardItem[]>
   saveDashboards: (dashboards: AnalyticsDashboardItem[]) => Promise<void>
   createDashboard: (dashboard: Omit<AnalyticsDashboardItem, 'id'>) => Promise<string>
@@ -237,120 +212,15 @@ const fetchWithState = async <T>(
   }
 }
 
-/**
- * Common helper to handle POST API calls with loading/error state management
- * @param withCancellation - If true, uses AbortController + generation tracking to prevent stale data
- */
-const fetchWithStatePost = async <T>(
-  store: Analytics,
-  key: string,
-  endpoint: string,
-  body?: any,
-  errorMessage?: string,
-  options?: { withCancellation?: boolean }
-): Promise<T | null> => {
-  let signal: AbortSignal | undefined
-  let requestGeneration: number | undefined
-
-  if (options?.withCancellation) {
-    signal = startRequest(key, store)
-    requestGeneration = store.generations.get(key)!
-    store.error[key] = null
-  } else {
-    store.loading[key] = true
-    store.error[key] = null
-  }
-
-  try {
-    const response = await api.post(endpoint, body, {
-      skipErrorHandling: true,
-      signal,
-    })
-
-    // requestGeneration === store.generations.get(key) means the current request is still ongoing
-
-    // Stale response
-    if (options?.withCancellation && requestGeneration !== store.generations.get(key)) {
-      return null
-    }
-
-    const data = (await response.json()) as T
-
-    if (!options?.withCancellation || requestGeneration === store.generations.get(key)) {
-      store.loading[key] = false
-    }
-
-    return data
-  } catch (error: any) {
-    // AbortError is expected when request is cancelled
-    if (error?.name === 'AbortError') {
-      return null
-    }
-
-    console.error('Error fetching:', key, error)
-    store.error[key] = parseErrorResponse(error, errorMessage || `Failed to fetch ${key}`)
-
-    if (!options?.withCancellation || requestGeneration === store.generations.get(key)) {
-      store.loading[key] = false
-    }
-
-    return null
-  }
-}
-
 export const analyticsStore = proxy<Analytics>({
   // Request lifecycle management
   abortControllers: new Map<string, AbortController>(),
   generations: new Map<string, number>(),
 
   // State initialization
-  overview: null,
   cliSummary: null,
-  aiAdoptionConfig: null,
   dashboards: [],
-  userEngagementDrillDown: {
-    isOpen: false,
-    project: null,
-    data: null,
-    filters: {},
-    sort_by: 'engagement_score',
-    sort_order: 'desc',
-    page: 0,
-    per_page: 20,
-  },
-  assetReusabilityDrillDown: {
-    isOpen: false,
-    project: null,
-    activeTab: 'assistants',
-    assistants: {
-      data: null,
-      filters: {},
-      sort_by: 'total_usage',
-      sort_order: 'desc',
-      page: 0,
-      per_page: 20,
-    },
-    workflows: {
-      data: null,
-      filters: {},
-      sort_by: 'execution_count',
-      sort_order: 'desc',
-      page: 0,
-      per_page: 20,
-    },
-    datasources: {
-      data: null,
-      filters: {},
-      sort_by: 'assistant_count',
-      sort_order: 'desc',
-      page: 0,
-      per_page: 20,
-    },
-  },
   loading: {},
-  loaded: {
-    'ai-adoption-config': false,
-  },
   error: {},
 
   /**
@@ -368,38 +238,6 @@ export const analyticsStore = proxy<Analytics>({
       `Failed to fetch ${type}`,
       { withCancellation: true }
     )
-  },
-
-  /**
-   * Fetch AI adoption overview metrics (total projects, users, assistants, workflows, datasources)
-   * @param params - Query parameters for filtering (projects and optional config)
-   * @returns Promise with SummariesResponse or null
-   */
-  async fetchAiAdoptionOverview(params?: { projects?: string[]; config?: AiAdoptionConfig }) {
-    const { config, ...queryParams } = params || {}
-
-    // Clean query params: convert empty arrays to null for proper backend handling
-    const cleanedParams = {
-      ...queryParams,
-      projects:
-        Array.isArray(queryParams.projects) && queryParams.projects.length === 0
-          ? null
-          : queryParams.projects,
-    }
-
-    const data = await fetchWithStatePost<SummariesResponse>(
-      this,
-      'overview',
-      'v1/analytics/ai-adoption-overview',
-      {
-        ...cleanedParams,
-        config: config || undefined,
-      },
-      'Failed to fetch AI adoption overview',
-      { withCancellation: true }
-    )
-    this.overview = data
-    return data
   },
 
   /**
@@ -435,46 +273,21 @@ export const analyticsStore = proxy<Analytics>({
    */
   async fetchTabularData(
     type: TabularMetricType,
-    params?: AnalyticsPaginatedRequestParams & { config?: AiAdoptionConfig }
+    params?: AnalyticsPaginatedRequestParams
   ) {
-    // Extract config from params if present
-    const { config, ...queryParams } = params || {}
-
     // Clean query params: convert empty arrays to null for proper backend handling
     const cleanedParams = {
-      ...queryParams,
+      ...params,
       projects:
-        Array.isArray(queryParams.projects) && queryParams.projects.length === 0
+        Array.isArray(params?.projects) && params.projects.length === 0
           ? null
-          : queryParams.projects,
+          : params?.projects,
       users:
-        Array.isArray(queryParams.users) && queryParams.users.length === 0
+        Array.isArray(params?.users) && params.users.length === 0
           ? null
-          : queryParams.users,
+          : params?.users,
     }
 
-    // For AI adoption dimension tables, always use POST
-    const isAiAdoptionDimension =
-      type === TabularMetricType.AI_ADOPTION_USER_ENGAGEMENT ||
-      type === TabularMetricType.AI_ADOPTION_ASSET_REUSABILITY ||
-      type === TabularMetricType.AI_ADOPTION_EXPERTISE_DISTRIBUTION ||
-      type === TabularMetricType.AI_ADOPTION_FEATURE_ADOPTION
-
-    if (isAiAdoptionDimension) {
-      return fetchWithStatePost<TabularResponse>(
-        this,
-        type,
-        `v1/analytics/${type}`,
-        {
-          ...cleanedParams,
-          config: config || undefined,
-        },
-        `Failed to fetch ${type} data`,
-        { withCancellation: true }
-      )
-    }
-
-    // For other metrics, use GET
     return fetchWithState<TabularResponse>(
       this,
       type,
@@ -577,117 +390,6 @@ export const analyticsStore = proxy<Analytics>({
   },
 
   /**
-   * Fetch AI Adoption Maturity metrics
-   * Returns adoption_index, maturity_level, and dimension scores (d1-d4)
-   * @param params - Query parameters (projects and optional config)
-   * @returns Promise with SummariesResponse or null
-   */
-  async fetchAiAdoptionMaturity(params?: { projects?: string[]; config?: AiAdoptionConfig }) {
-    const { config, ...queryParams } = params || {}
-
-    // Clean query params: convert empty arrays to null for proper backend handling
-    const cleanedParams = {
-      ...queryParams,
-      projects:
-        Array.isArray(queryParams.projects) && queryParams.projects.length === 0
-          ? null
-          : queryParams.projects,
-    }
-
-    return fetchWithStatePost<SummariesResponse>(
-      this,
-      'ai-adoption-maturity',
-      'v1/analytics/ai-adoption-maturity',
-      {
-        ...cleanedParams,
-        config: config || undefined,
-      },
-      'Failed to fetch AI adoption maturity',
-      { withCancellation: true }
-    )
-  },
-
-  /**
-   * Fetch AI Adoption Framework configuration
-   * Returns framework configuration (weights, thresholds, scoring rules)
-   * Checks localStorage first, falls back to API if not found
-   * @returns Promise with AiAdoptionConfigResponse or null
-   */
-  async fetchAiAdoptionConfig(dashboard) {
-    const key = 'ai-adoption-config'
-    this.loaded[key] = false
-
-    if (dashboard !== AnalyticsDashboard.adoption) {
-      this.loaded[key] = true
-      return null
-    }
-
-    try {
-      this.loading[key] = true
-      this.error[key] = null
-
-      const response = await api.get('v1/analytics/ai-adoption-config', {
-        skipErrorHandling: true,
-      })
-      const data = (await response.json()) as AiAdoptionConfigResponse
-
-      this.aiAdoptionConfig = data
-      return data
-    } catch (error) {
-      console.error('Error fetching AI adoption config:', error)
-      this.error[key] = parseErrorResponse(error, 'Failed to fetch AI adoption config')
-      return null
-    } finally {
-      this.loading[key] = false
-      this.loaded[key] = true
-    }
-  },
-
-  async saveAiAdoptionConfig(config: AiAdoptionConfig) {
-    const key = 'ai-adoption-config'
-    try {
-      this.loading[key] = true
-      this.error[key] = null
-
-      const response = await api.put('v1/analytics/ai-adoption-config', config, {
-        skipErrorHandling: true,
-      })
-      const data = (await response.json()) as AiAdoptionConfigResponse
-
-      this.aiAdoptionConfig = data
-      return data
-    } catch (error) {
-      console.error('Error saving AI adoption config:', error)
-      this.error[key] = parseErrorResponse(error, 'Failed to save AI adoption config')
-      throw error
-    } finally {
-      this.loading[key] = false
-    }
-  },
-
-  async resetAiAdoptionConfig() {
-    const key = 'ai-adoption-config'
-    try {
-      this.loading[key] = true
-      this.error[key] = null
-
-      const response = await api.delete('v1/analytics/ai-adoption-config', undefined, {
-        skipErrorHandling: true,
-      })
-      const data = (await response.json()) as AiAdoptionConfigResponse
-
-      this.aiAdoptionConfig = data
-      return data
-    } catch (error) {
-      console.error('Failed to reset AI adoption config:', error)
-      this.error[key] = parseErrorResponse(error, 'Failed to reset AI adoption config')
-      throw error
-    } finally {
-      this.loading[key] = false
-    }
-  },
-
-  /**
    * Load dashboards from localStorage with migration from old format
    * @returns Promise with AnalyticsDashboardItem array
    */
@@ -757,416 +459,9 @@ export const analyticsStore = proxy<Analytics>({
    * Clear all state
    */
   clearState() {
-    this.overview = null
     this.cliSummary = null
-    this.aiAdoptionConfig = null
     this.dashboards = []
-    this.userEngagementDrillDown = {
-      isOpen: false,
-      project: null,
-      data: null,
-      filters: {},
-      sort_by: 'engagement_score',
-      sort_order: 'desc',
-      page: 0,
-      per_page: 20,
-    }
-    this.assetReusabilityDrillDown = {
-      isOpen: false,
-      project: null,
-      activeTab: 'assistants',
-      assistants: {
-        data: null,
-        filters: {},
-        sort_by: 'total_usage',
-        sort_order: 'desc',
-        page: 0,
-        per_page: 20,
-      },
-      workflows: {
-        data: null,
-        filters: {},
-        sort_by: 'execution_count',
-        sort_order: 'desc',
-        page: 0,
-        per_page: 20,
-      },
-      datasources: {
-        data: null,
-        filters: {},
-        sort_by: 'assistant_count',
-        sort_order: 'desc',
-        page: 0,
-        per_page: 20,
-      },
-    }
     this.loading = {}
     this.error = {}
   },
 })
-
-/**
- * Open User Engagement drill-down modal for a specific project
- */
-export async function openUserEngagementDrillDown(project: string) {
-  analyticsStore.userEngagementDrillDown.isOpen = true
-  analyticsStore.userEngagementDrillDown.project = project
-  analyticsStore.userEngagementDrillDown.page = 0
-  analyticsStore.userEngagementDrillDown.filters = {}
-
-  await fetchUserEngagementUsers()
-}
-
-/**
- * Close User Engagement drill-down modal
- */
-export function closeUserEngagementDrillDown() {
-  analyticsStore.userEngagementDrillDown.isOpen = false
-  analyticsStore.userEngagementDrillDown.project = null
-  analyticsStore.userEngagementDrillDown.data = null
-  // Clear global loading/error state
-  analyticsStore.loading['user-engagement-drill-down'] = false
-  analyticsStore.error['user-engagement-drill-down'] = null
-}
-
-/**
- * Fetch user-level data for User Engagement drill-down
- */
-export async function fetchUserEngagementUsers() {
-  const state = analyticsStore.userEngagementDrillDown
-
-  if (!state.project) {
-    console.error('Cannot fetch users: project is null')
-    return
-  }
-
-  // Build payload and filter out undefined values
-  const payload: UserEngagementUsersRequest = {
-    project: state.project,
-    page: state.page,
-    per_page: state.per_page,
-    sort_by: state.sort_by as UserEngagementUsersRequest['sort_by'],
-    sort_order: state.sort_order,
-  }
-
-  // Only add filter fields if they have values
-  if (state.filters.user_type) {
-    payload.user_type = state.filters.user_type as UserEngagementUsersRequest['user_type']
-  }
-  if (state.filters.activity_level) {
-    payload.activity_level = state.filters
-      .activity_level as UserEngagementUsersRequest['activity_level']
-  }
-  if (state.filters.multi_assistant_only !== undefined) {
-    payload.multi_assistant_only = state.filters.multi_assistant_only
-  }
-
-  const data = await fetchWithStatePost<TabularResponse>(
-    analyticsStore,
-    'user-engagement-drill-down',
-    'v1/analytics/ai-adoption-user-engagement/users',
-    payload,
-    'Failed to fetch user engagement users'
-  )
-
-  if (data) {
-    state.data = data
-  }
-}
-
-/**
- * Update drill-down filters
- */
-export async function updateUserEngagementFilters(
-  filters: Partial<UserEngagementDrillDownState['filters']>
-) {
-  analyticsStore.userEngagementDrillDown.filters = {
-    ...analyticsStore.userEngagementDrillDown.filters,
-    ...filters,
-  }
-  analyticsStore.userEngagementDrillDown.page = 0 // Reset to first page
-  await fetchUserEngagementUsers()
-}
-
-/**
- * Update drill-down sorting
- */
-export async function updateUserEngagementSort(sort_by: string, sort_order: 'asc' | 'desc') {
-  analyticsStore.userEngagementDrillDown.sort_by = sort_by
-  analyticsStore.userEngagementDrillDown.sort_order = sort_order
-  analyticsStore.userEngagementDrillDown.page = 0 // Reset to first page
-  await fetchUserEngagementUsers()
-}
-
-/**
- * Update drill-down pagination
- */
-export async function updateUserEngagementPage(page: number) {
-  analyticsStore.userEngagementDrillDown.page = page
-  await fetchUserEngagementUsers()
-}
-
-// ============================================================================
-// Asset Reusability Drill-Down Actions (Unified Tabbed Modal)
-// ============================================================================
-
-/**
- * Open Asset Reusability drill-down modal for a specific project
- */
-export async function openAssetReusabilityDrillDown(
-  project: string,
-  tab: 'assistants' | 'workflows' | 'datasources' = 'assistants'
-) {
-  analyticsStore.assetReusabilityDrillDown.isOpen = true
-  analyticsStore.assetReusabilityDrillDown.project = project
-  analyticsStore.assetReusabilityDrillDown.activeTab = tab
-
-  // Fetch data for the active tab
-  switch (tab) {
-    case 'assistants':
-      await fetchAssetReusabilityAssistants()
-      break
-    case 'workflows':
-      await fetchAssetReusabilityWorkflows()
-      break
-    case 'datasources':
-      await fetchAssetReusabilityDatasources()
-      break
-    default:
-      break
-  }
-}
-
-/**
- * Close Asset Reusability drill-down modal
- */
-export function closeAssetReusabilityDrillDown() {
-  analyticsStore.assetReusabilityDrillDown.isOpen = false
-  analyticsStore.assetReusabilityDrillDown.project = null
-  // Clear all tab data
-  analyticsStore.assetReusabilityDrillDown.assistants.data = null
-  analyticsStore.assetReusabilityDrillDown.workflows.data = null
-  analyticsStore.assetReusabilityDrillDown.datasources.data = null
-  // Clear global loading/error state for all tabs
-  analyticsStore.loading['asset-reusability-assistants'] = false
-  analyticsStore.error['asset-reusability-assistants'] = null
-  analyticsStore.loading['asset-reusability-workflows'] = false
-  analyticsStore.error['asset-reusability-workflows'] = null
-  analyticsStore.loading['asset-reusability-datasources'] = false
-  analyticsStore.error['asset-reusability-datasources'] = null
-}
-
-/**
- * Switch active tab and fetch data if needed
- */
-export async function setAssetReusabilityTab(tab: 'assistants' | 'workflows' | 'datasources') {
-  analyticsStore.assetReusabilityDrillDown.activeTab = tab
-
-  // Fetch data if not already loaded
-  switch (tab) {
-    case 'assistants':
-      if (!analyticsStore.assetReusabilityDrillDown.assistants.data) {
-        await fetchAssetReusabilityAssistants()
-      }
-      break
-    case 'workflows':
-      if (!analyticsStore.assetReusabilityDrillDown.workflows.data) {
-        await fetchAssetReusabilityWorkflows()
-      }
-      break
-    case 'datasources':
-      if (!analyticsStore.assetReusabilityDrillDown.datasources.data) {
-        await fetchAssetReusabilityDatasources()
-      }
-      break
-    default:
-      break
-  }
-}
-
-/**
- * Fetch assistant-level data for Asset Reusability drill-down
- */
-export async function fetchAssetReusabilityAssistants() {
-  const parentState = analyticsStore.assetReusabilityDrillDown
-  const state = parentState.assistants
-
-  if (!parentState.project) {
-    console.error('Cannot fetch assistants: project is null')
-    return
-  }
-
-  const payload: AssetReusabilityAssistantsRequest = {
-    project: parentState.project,
-    page: state.page,
-    per_page: state.per_page,
-    sort_by: state.sort_by as AssetReusabilityAssistantsRequest['sort_by'],
-    sort_order: state.sort_order,
-  }
-
-  // Only add filter fields if they have values
-  if (state.filters.status) {
-    payload.status = state.filters.status as AssetReusabilityAssistantsRequest['status']
-  }
-  if (state.filters.adoption) {
-    payload.adoption = state.filters.adoption as AssetReusabilityAssistantsRequest['adoption']
-  }
-
-  const data = await fetchWithStatePost<TabularResponse>(
-    analyticsStore,
-    'asset-reusability-assistants',
-    'v1/analytics/ai-adoption-asset-reusability/assistants',
-    payload,
-    'Failed to fetch asset reusability assistants'
-  )
-
-  if (data) {
-    state.data = data
-  }
-}
-
-/**
- * Fetch workflow-level data for Asset Reusability drill-down
- */
-export async function fetchAssetReusabilityWorkflows() {
-  const parentState = analyticsStore.assetReusabilityDrillDown
-  const state = parentState.workflows
-
-  if (!parentState.project) {
-    console.error('Cannot fetch workflows: project is null')
-    return
-  }
-
-  const payload: AssetReusabilityWorkflowsRequest = {
-    project: parentState.project,
-    page: state.page,
-    per_page: state.per_page,
-    sort_by: state.sort_by as AssetReusabilityWorkflowsRequest['sort_by'],
-    sort_order: state.sort_order,
-  }
-
-  if (state.filters.status) {
-    payload.status = state.filters.status as AssetReusabilityWorkflowsRequest['status']
-  }
-  if (state.filters.reuse) {
-    payload.reuse = state.filters.reuse as AssetReusabilityWorkflowsRequest['reuse']
-  }
-
-  const data = await fetchWithStatePost<TabularResponse>(
-    analyticsStore,
-    'asset-reusability-workflows',
-    'v1/analytics/ai-adoption-asset-reusability/workflows',
-    payload,
-    'Failed to fetch asset reusability workflows'
-  )
-
-  if (data) {
-    state.data = data
-  }
-}
-
-/**
- * Fetch datasource-level data for Asset Reusability drill-down
- */
-export async function fetchAssetReusabilityDatasources() {
-  const parentState = analyticsStore.assetReusabilityDrillDown
-  const state = parentState.datasources
-
-  if (!parentState.project) {
-    console.error('Cannot fetch datasources: project is null')
-    return
-  }
-
-  const payload: AssetReusabilityDatasourcesRequest = {
-    project: parentState.project,
-    page: state.page,
-    per_page: state.per_page,
-    sort_by: state.sort_by as AssetReusabilityDatasourcesRequest['sort_by'],
-    sort_order: state.sort_order,
-  }
-
-  if (state.filters.status) {
-    payload.status = state.filters.status as AssetReusabilityDatasourcesRequest['status']
-  }
-  if (state.filters.shared) {
-    payload.shared = state.filters.shared as AssetReusabilityDatasourcesRequest['shared']
-  }
-  if (state.filters.type) {
-    payload.type = state.filters.type
-  }
-
-  const data = await fetchWithStatePost<TabularResponse>(
-    analyticsStore,
-    'asset-reusability-datasources',
-    'v1/analytics/ai-adoption-asset-reusability/datasources',
-    payload,
-    'Failed to fetch asset reusability datasources'
-  )
-
-  if (data) {
-    state.data = data
-  }
-}
-
-/**
- * Update assistants tab filters
- */
-export async function updateAssistantsFilters(filters: Partial<Record<string, any>>) {
-  const state = analyticsStore.assetReusabilityDrillDown.assistants
-  state.filters = {
-    ...state.filters,
-    ...filters,
-  }
-  state.page = 0 // Reset to first page
-  await fetchAssetReusabilityAssistants()
-}
-
-/**
- * Update workflows tab filters
- */
-export async function updateWorkflowsFilters(filters: Partial<Record<string, any>>) {
-  const state = analyticsStore.assetReusabilityDrillDown.workflows
-  state.filters = {
-    ...state.filters,
-    ...filters,
-  }
-  state.page = 0
-  await fetchAssetReusabilityWorkflows()
-}
-
-/**
- * Update datasources tab filters
- */
-export async function updateDatasourcesFilters(filters: Partial<Record<string, any>>) {
-  const state = analyticsStore.assetReusabilityDrillDown.datasources
-  state.filters = {
-    ...state.filters,
-    ...filters,
-  }
-  state.page = 0
-  await fetchAssetReusabilityDatasources()
-}
-
-/**
- * Update assistants tab pagination
- */
-export async function updateAssistantsPage(page: number) {
-  analyticsStore.assetReusabilityDrillDown.assistants.page = page
-  await fetchAssetReusabilityAssistants()
-}
-
-/**
- * Update workflows tab pagination
- */
-export async function updateWorkflowsPage(page: number) {
-  analyticsStore.assetReusabilityDrillDown.workflows.page = page
-  await fetchAssetReusabilityWorkflows()
-}
-
-/**
- * Update datasources tab pagination
- */
-export async function updateDatasourcesPage(page: number) {
-  analyticsStore.assetReusabilityDrillDown.datasources.page = page
-  await fetchAssetReusabilityDatasources()
-}

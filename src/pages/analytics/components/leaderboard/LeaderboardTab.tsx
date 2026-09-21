@@ -247,7 +247,6 @@ const LeaderboardTab: FC = () => {
             'score_delta',
           ]}
           columnOrder={LEADERBOARD_COLUMN_ORDER}
-          waitForAdoptionConfig={false}
           filters={tableFilters}
           actions={<LeaderboardFilters filters={filters} onChange={handleFiltersChange} />}
           sort={sortState}

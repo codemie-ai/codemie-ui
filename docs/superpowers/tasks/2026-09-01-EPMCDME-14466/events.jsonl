@@ -1,0 +1,10 @@
+{"event":"lifecycle_emission","intent":"record_complexity_score","mode":"initial","status":"skipped"}
+{"schema":1,"ts":"2026-09-01T11:16:57Z","event":"decision.recorded","phase":0,"actor":"sdlc-gate","summary":"Decision recorded for spec.approved: approve","artifacts":["decisions.jsonl"],"data":{"gate_id":"spec.approved","mode":"hitl","decision":"approve","source":"hitl","escalated":false}}
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"spec","status":"skipped"}
+{"schema":1,"ts":"2026-09-01T15:33:31Z","event":"decision.recorded","phase":0,"actor":"sdlc-gate","summary":"Decision recorded for plan.approved: approve","artifacts":["decisions.jsonl"],"data":{"gate_id":"plan.approved","mode":"hitl","decision":"approve","source":"hitl","escalated":false}}
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"plan","status":"skipped"}
+{"schema":1,"ts":"2026-09-02T06:38:11Z","event":"decision.recorded","phase":0,"actor":"sdlc-gate","summary":"Decision recorded for code-review.final: request-changes","artifacts":["decisions.jsonl"],"data":{"gate_id":"code-review.final","mode":"hitl","decision":"request-changes","source":"hitl","escalated":false}}
+{"schema":1,"ts":"2026-09-02T07:38:39Z","event":"decision.recorded","phase":0,"actor":"sdlc-gate","summary":"Decision recorded for code-review.check: approve","artifacts":["decisions.jsonl"],"data":{"gate_id":"code-review.check","mode":"hitl","decision":"approve","source":"hitl","escalated":false}}
+{"schema":1,"ts":"2026-09-02T08:35:53Z","event":"decision.recorded","phase":0,"actor":"sdlc-gate","summary":"Decision recorded for feature.verification: approve","artifacts":["decisions.jsonl"],"data":{"gate_id":"feature.verification","mode":"hitl","decision":"approve","source":"hitl","escalated":false}}
+{"event":"lifecycle_emission","intent":"record_complexity_score","mode":"actual","status":"failed"}
+{"event":"lifecycle_emission","intent":"record_complexity_score","mode":"actual","status":"succeeded"}

@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14344_retire-ai-run-adoption-framework",
+  "head": "53a0f53e22af30b9a0157610b9a9e998ae8e9f9c",
+  "runner": "npm",
+  "started_at": "2026-09-04T17:20:00.000Z",
+  "completed_at": "2026-09-04T22:58:00.000Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 147135,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 91009,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency added, removed, or moved (package.json not in diff); guide Skip-if condition met"
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 63039,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 2541170,
+      "command": "npm run test:unit",
+      "exit_code": 1,
+      "notes": "3 failed test files / 2 failed tests out of 498 files / 5183 tests. All 3 failures are pre-existing Windows-specific platform issues not caused by branch changes: (1) scripts/license_headers/__tests__/check_license_headers.test.js — SyntaxError parsing .js file under vitest; (2) src/a2ui/__tests__/manifest.test.ts — CRLF vs LF line-ending mismatch in a2ui-manifest.json (Windows git autocrlf checkout); (3) src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts — Windows path.relative() returns backslashes, test expects forward slashes. None of these files are in the branch diff. CI runs Linux and will not reproduce these failures."
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 1451570,
+      "command": "npm run test:integration",
+      "exit_code": 1,
+      "notes": "1 failed test out of 492 tests across 38 files. The failure is a timeout in src/pages/assistants/__tests__/InteractiveFeaturesSection.integration.test.tsx ('enabling interactive features sends the boolean switch on', 30000ms limit exceeded). This file is NOT in the branch diff. When re-run in isolation the same test suite completed in 15.9s with 5/5 passing — the timeout was caused by system load running multiple test suites in parallel. This is a flaky timeout, not a regression introduced by this branch."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 39923,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 31000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: 'Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN in .env.local to run the SonarQube scan locally; it also runs as the 'ci-pipeline' context in the GitLab MR pipeline."
+    }
+  ],
+  "failures": {
+    "unit-tests": "FAIL |unit| scripts/license_headers/__tests__/check_license_headers.test.js\nSyntaxError: Invalid or unexpected token\n  scripts/license_headers/__tests__/check_license_headers.test.js:3:31\n\nFAIL |unit| src/a2ui/__tests__/manifest.test.ts > a2ui manifest file contract > is serialized exactly as the generator writes it (stable diffs)\nAssertionError: a2ui-manifest.json is out of date — run npm run a2ui:manifest: expected '{\\r\\n  \"catalogId\": \"https://a2ui.org…' to be '{\\n  \"catalogId\": \"https://a2ui.org/s…' // Object.is equality\n\nFAIL |unit| src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts > modal surfaces host the live region > recognises the surfaces that already carry the host\nAssertionError: expected [ …(2) ] to include 'components/Popup/Popup.tsx'\n  src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts:73:23\n  Cause: Windows path.relative() returns backslash-separated paths; test expects forward slashes\n\nTest Files  3 failed | 495 passed (498)\n      Tests  2 failed | 5180 passed | 1 skipped (5183)\n   Duration  2541.17s",
+    "integration-tests": "FAIL |integration| src/pages/assistants/__tests__/InteractiveFeaturesSection.integration.test.tsx > AssistantForm Interactive features section - Integration > enabling interactive features sends the boolean switch on\nError: Test timed out in 30000ms.\nIf this is a long-running test, pass a timeout value as the last argument or configure it globally with \"testTimeout\".\n\nTest Files  1 failed | 37 passed (38)\n      Tests  1 failed | 490 passed | 1 skipped (492)\n   Duration  1451.57s\n\nRe-run in isolation: 1 passed (1 file), 5 passed (5 tests), duration 393s — flaky timeout, not a branch regression."
+  }
+}

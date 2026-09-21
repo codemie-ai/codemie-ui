@@ -64,7 +64,7 @@ const DynamicWidget: FC<DynamicWidgetProps> = ({ expandable, filters, widget }) 
 
   switch (widgetType) {
     case WidgetType.TABLE:
-      return <TableWidget {...sharedProps} metricType={metricType} waitForAdoptionConfig={false} />
+      return <TableWidget {...sharedProps} metricType={metricType} />
 
     case WidgetType.DONUT: {
       const { labelField, valueField } = widget

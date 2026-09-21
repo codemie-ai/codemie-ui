@@ -1,0 +1,181 @@
+{
+  "decision": "request-changes",
+  "rationale": "6 patch findings: isCustomDashboard race on load, adoption-redirect missing custom-dashboard id collision guard, retirement notice missing ARIA semantics, ineffective vi.mock path in DynamicWidget test, no integration test for the settings redirect, and a CI-blocking commit-format violation. 4 dismissed as false positives (dead-import claim refuted by live usage, localStorage removal concern refuted by no writers in src/, FeatureGuard removal is intentional, clearState has no callers); 0 deferred.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Visiting /settings/administration/ai-adoption-config redirects to /settings/administration — no error page shown",
+      "status": "pass",
+      "notes": "Loader-only route added in settingsRoutes; old FeatureGuard-wrapped component route removed."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Visiting ?tab=adoption on the analytics route redirects to ?tab=insights and shows a retirement notice",
+      "status": "pass",
+      "notes": "useEffect guards tab==='adoption' and redirects; notice banner rendered when notice==='adoption-retired'."
+    },
+    {
+      "kind": "story-ac",
+      "item": "On first app load after deployment, codemie-ai-adoption-config is removed from localStorage",
+      "status": "pass",
+      "notes": "localStorage.removeItem('codemie-ai-adoption-config') added at top of fetchInitialData in startup useEffect."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Custom dashboard widgets whose metricType is a retired adoption metric display 'Metric no longer available'",
+      "status": "pass",
+      "notes": "RETIRED_METRIC_TYPES.has(metricType) guard passes ErrorDetails to AnalyticsWidget error prop before widgetType switch."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Custom dashboard widgets with non-adoption metric types continue to render normally",
+      "status": "pass",
+      "notes": "Guard returns early only on RETIRED_METRIC_TYPES match; all other metricType values fall through unchanged."
+    },
+    {
+      "kind": "spec",
+      "item": "Settings route redirect uses loader-only route inside settingsRoutes — no component, no guard wrapper",
+      "status": "pass",
+      "notes": "New route object has only path and loader props; no element or Component key."
+    },
+    {
+      "kind": "spec",
+      "item": "Analytics tab guard checks tab==='adoption' specifically; generic unknown-tab detection excluded",
+      "status": "pass",
+      "notes": "useEffect condition is if (tab === 'adoption') exactly."
+    },
+    {
+      "kind": "spec",
+      "item": "Retirement notice uses panel-outline border and text-h5 text-text-primary styling with exact text",
+      "status": "pass",
+      "notes": "Classes and exact text 'The AI Adoption Analytics tab has been removed.' confirmed in AnalyticsPage.tsx."
+    },
+    {
+      "kind": "spec",
+      "item": "Notice disappears when user changes tabs because handleTabChange drops notice param",
+      "status": "pass",
+      "notes": "AnalyticsDashboard.handleTabChange calls setSearchParams({tab:tabId}) with no notice key."
+    },
+    {
+      "kind": "spec",
+      "item": "localStorage.removeItem uses bare key 'codemie-ai-adoption-config' (not prefixed with userId)",
+      "status": "pass",
+      "notes": "Call is localStorage.removeItem('codemie-ai-adoption-config') — no storage utility compound key."
+    },
+    {
+      "kind": "spec",
+      "item": "RETIRED_METRIC_TYPES defined as Set<string> in src/pages/analytics/constants.ts with all 6 metric types",
+      "status": "pass",
+      "notes": "Set with 6 entries confirmed in constants.ts."
+    },
+    {
+      "kind": "spec",
+      "item": "RETIRED_METRIC_TYPES guard placed before widgetType switch; passes ErrorDetails with 'Metric no longer available'",
+      "status": "pass",
+      "notes": "Guard returns before widgetType OVERVIEW check; error object shape {message:'Metric no longer available'} confirmed."
+    },
+    {
+      "kind": "spec",
+      "item": "Stale test file src/store/__tests__/analytics.test.ts deleted",
+      "status": "pass",
+      "notes": "File deleted in diff."
+    },
+    {
+      "kind": "spec",
+      "item": "Tests for tab redirect and widget fallback guard added to AnalyticsPage.test.tsx and DynamicWidget.test.tsx",
+      "status": "pass",
+      "notes": "AnalyticsPage.test.tsx adds redirect/notice tests; new DynamicWidget.test.tsx covers retired and live metricType cases."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "fail",
+      "notes": "13 of 14 subjects match the documented EPMCDME-XXXX: Capital sentence pattern; 'EPMCDME-14466: add planning artifacts' violates it — 'add' begins with a lowercase letter, but the enforced regex requires [A-Z] as the first character after the ticket prefix and space"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No guide found at .ai-run/guides/standards/code-quality.md and no ArtifactRef was passed; absent standard"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No dangerouslySetInnerHTML or .innerHTML introduced; redirect uses hardcoded literal path; no postMessage changes; no secrets added; localStorage.removeItem operates on a hardcoded key"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/AnalyticsPage.tsx",
+      "line": 59,
+      "title": "isCustomDashboard always false on first render",
+      "problem": "`isCustomDashboard` is evaluated synchronously as `dashboards.some((d) => d.id === tab)`, but `dashboards` is `[]` in the Valtio store until the `loadDashboards()` call in the startup `useEffect` resolves. On every initial render of a custom-dashboard URL the expression returns false.",
+      "impact": "The 'Edit Dashboard' button is absent on first render and then flashes in after the async load completes, producing a layout shift for any user navigating directly to a saved custom dashboard tab.",
+      "recommendation": "Introduce a `dashboardsLoaded` boolean flag (state or store field) set to true after `loadDashboards()` resolves; gate `isCustomDashboard` on that flag being true before evaluating `dashboards.some(...)`."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/AnalyticsPage.tsx",
+      "line": 69,
+      "title": "Adoption redirect collides with custom-dashboard id",
+      "problem": "The `useEffect` redirects unconditionally when `tab === 'adoption'` without checking whether a custom dashboard with that exact id exists in `dashboards`. While `createDashboard` uses `crypto.randomUUID()` ensuring new dashboards cannot have id 'adoption', any legacy persisted entry or direct localStorage manipulation could create a collision. Reachability unconfirmed — no such dashboard is known to exist.",
+      "impact": "A user with a custom dashboard whose stored id equals 'adoption' would be permanently redirected away from it on every navigation, with no recovery path short of directly editing localStorage.",
+      "recommendation": "Change the redirect condition to `if (tab === 'adoption' && !dashboards.some((d) => d.id === 'adoption'))`, or document 'adoption' as a reserved id and add a guard in `createDashboard`/`loadDashboards` to reject or rename any entry with that id."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/AnalyticsPage.tsx",
+      "line": 118,
+      "title": "Retirement notice missing ARIA live-region semantics",
+      "problem": "The retirement notice `<div>` injected when `notice === 'adoption-retired'` carries no `role=\"alert\"` or `aria-live` attribute. The notice is dynamically inserted into the DOM after the adoption-tab redirect fires.",
+      "impact": "Screen-reader users redirected from `?tab=adoption` receive no auditory notification of the retirement message, violating WCAG SC 4.1.3 (Status Messages). The redirect itself is also not announced.",
+      "recommendation": "Add `role=\"alert\"` to the outer `<div>` of the notice banner (or `aria-live=\"polite\"` if a less assertive announcement is preferred), so the message is read aloud when it appears."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/widgets/__tests__/DynamicWidget.test.tsx",
+      "line": 23,
+      "title": "vi.mock targets wrong AnalyticsWidget module path",
+      "problem": "`vi.mock('../AnalyticsWidget', ...)` is resolved from the `__tests__/` directory, pointing to `widgets/AnalyticsWidget` (which does not exist). `DynamicWidget.tsx` imports `'../AnalyticsWidget'` from `widgets/`, resolving to `components/AnalyticsWidget`. The two resolved paths are different module IDs, so Vitest never intercepts the real import and the mock is dead.",
+      "impact": "The 'Metric no longer available' assertion passes only because the real `AnalyticsWidget` happens to render `error.message`. Any future change to that component's error rendering, or any provider requirement it gains, could silently break the retired-metric guard contract without a diagnostic failure pointing at `DynamicWidget`.",
+      "recommendation": "Change the mock path to `'../../AnalyticsWidget'` so it resolves from `__tests__/` to `src/pages/analytics/components/AnalyticsWidget`, matching the module `DynamicWidget.tsx` actually imports."
+    },
+    {
+      "id": "CR-005",
+      "kind": "evidence",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/router.tsx",
+      "title": "No integration test for settings-page redirect",
+      "problem": "No test file navigates to `/settings/administration/ai-adoption-config` and asserts the URL settles at `/settings/administration`. The grep and glob search confirms zero references to this path in any test file; the two existing settings integration tests cover unrelated routes.",
+      "impact": "A regression in the loader route — an accidental deletion, a path typo, or a future router refactor — would produce a blank screen or 404 for users with bookmarked adoption-config URLs without any automated test failing.",
+      "recommendation": "Add an integration test using `renderPage('/settings/administration/ai-adoption-config')` (or the project's equivalent router harness) that asserts the settled URL is `/settings/administration` after navigation resolves."
+    },
+    {
+      "id": "CR-006",
+      "kind": "evidence",
+      "severity": "major",
+      "triage": "patch",
+      "file": "unknown",
+      "title": "Commit subject violates enforced uppercase pattern",
+      "problem": "The commit `EPMCDME-14466: add planning artifacts` begins its description with the lowercase word 'add'. The project's enforced Tekton regex `^(EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.*` requires the first character after the ticket prefix and space to be uppercase.",
+      "impact": "Tekton CI validates every commit subject in the review range against this pattern and blocks the pipeline on violations; this commit will fail the gate and prevent merging.",
+      "recommendation": "Reword the commit subject to `EPMCDME-14466: Add planning artifacts` (capitalise 'Add'), either via interactive rebase or a fixup commit before merge."
+    }
+  ]
+}

@@ -280,7 +280,6 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
               hideWrapper
               hidePagination
               hiddenColumns={['budget_limit']}
-              waitForAdoptionConfig={false}
               tableStyles={{
                 className: 'spending-table-widget',
                 minWidth: '100%',

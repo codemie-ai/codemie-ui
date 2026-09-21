@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "head": "af4d7d98cbdcafbb650ba3b28cf0296884a4e11e",
+  "result": "BLOCKED",
+  "reason": "UI surface changed but no browser verification tool is configured. No playwright.config.*, cypress.config.*, storybook test runner, or .ai-run/sdlc-factory/config.json with feature_verification.command was found in the repository.",
+  "changed_ui_files": [
+    "src/pages/analytics/AnalyticsPage.tsx",
+    "src/pages/analytics/components/AIAdoptionTab.tsx",
+    "src/pages/analytics/components/AnalyticsDashboard.tsx",
+    "src/pages/analytics/components/AssetReusabilityDrillDownModal.tsx",
+    "src/pages/analytics/components/UserEngagementDrillDownModal.tsx",
+    "src/pages/analytics/components/cliInsights/EnrichedUserSection.tsx",
+    "src/pages/analytics/components/leaderboard/LeaderboardTab.tsx",
+    "src/pages/analytics/components/widgets/DynamicWidget.tsx",
+    "src/pages/analytics/components/widgets/MaturityOverviewWidget.tsx",
+    "src/pages/analytics/components/widgets/OverviewWidget.tsx",
+    "src/pages/analytics/components/widgets/TableWidget.tsx",
+    "src/pages/settings/administration/AiAdoptionConfigPage.tsx",
+    "src/pages/settings/administration/components/AiAdoptionConfigView.tsx",
+    "src/pages/settings/administration/components/ConfigItem.tsx",
+    "src/pages/settings/administration/components/ConfigItemList.tsx",
+    "src/pages/settings/administration/components/ConfigSection.tsx",
+    "src/pages/settings/administration/components/ConfigSubSection.tsx",
+    "src/pages/settings/administration/components/DimensionConfigSection.tsx",
+    "src/pages/settings/components/SpendingCard.tsx",
+    "src/pages/settings/tabs.tsx",
+    "src/router.tsx",
+    "src/hooks/useAiAdoptionConfig.ts"
+  ],
+  "remediation": "Install Playwright (npm i -D @playwright/test && npx playwright install) or set feature_verification.command in .ai-run/sdlc-factory/config.json"
+}

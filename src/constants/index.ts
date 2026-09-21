@@ -88,7 +88,6 @@ export enum SettingsTab {
   CATEGORIES_MANAGEMENT = 'categories_management',
   MCP_MANAGEMENT = 'mcp_management',
   PROVIDERS_MANAGEMENT = 'providers_management',
-  AI_ADOPTION_CONFIG = 'ai_adoption_config',
   ANALYTICS = 'analytics',
   AWS_ASSISTANTS = 'aws_assistants',
   AWS_WORKFLOWS = 'aws_workflows',

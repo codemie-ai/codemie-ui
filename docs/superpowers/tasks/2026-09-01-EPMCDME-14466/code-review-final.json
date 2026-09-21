@@ -1,0 +1,157 @@
+{
+  "decision": "request-changes",
+  "rationale": "6 patch findings confirmed (1 critical: ?tab=adoption evaluates isCustomDashboard=true at AnalyticsPage.tsx:57; 5 major: dead exported drill-down functions making live AI-adoption API calls, removed route with no redirect, missing regression test, dead store field, and orphaned localStorage key). 1 candidate dismissed (fetchTabularData POST-branch concern; adoption metric types fully removed from the TabularMetricType enum, providing compile-time enforcement). No deferred findings.",
+  "confidence": "high",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Analytics tab bar renders no AI/Run Adoption tab for any role (admin, auditor, or other)",
+      "status": "pass",
+      "notes": "isAdoptionEnabled and adoption tabsList.push block removed from AnalyticsDashboard.tsx; AIAdoptionTab.tsx deleted"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Insights, CLI Insights, and Leaderboard tabs remain present in their existing order with existing role gates",
+      "status": "pass",
+      "notes": "Only adoption push block removed from useMemo; Insights, CLIInsights, Leaderboard pushes untouched in AnalyticsDashboard.tsx"
+    },
+    {
+      "kind": "story-ac",
+      "item": "No Configuration button or adoption config popup appears on any Analytics tab",
+      "status": "pass",
+      "notes": "handleOpenConfigModal, isConfigVisible, ConfigurationSvg, and Configuration button JSX removed from AnalyticsPage.tsx; Popup+ConfirmationModal removed from AnalyticsDashboard.tsx"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Settings → Administration menu renders no AI/Run Adoption Framework entry; every other entry in same position",
+      "status": "pass",
+      "notes": "AI_ADOPTION_CONFIG removed from getEnterpriseAdminItems in tabs.tsx; remaining entries unaffected"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Users who never had access to the adoption tab see no change in the Analytics page or Settings",
+      "status": "pass",
+      "notes": "All removed code was gated by isAdoptionEnabled (admin/auditor only); non-adoption user code paths are identical"
+    },
+    {
+      "kind": "spec",
+      "item": "TableWidget.tsx contains no waitForAdoptionConfig prop, no loaded['ai-adoption-config'] guard, and no config argument to fetchTabularData",
+      "status": "pass",
+      "notes": "Prop removed from interface and destructuring; guard removed from fetchData; config removed from fetchTabularData call; dependency array entries removed"
+    },
+    {
+      "kind": "spec",
+      "item": "analyticsStore contains no adoption state fields, no adoption methods, and no loaded field",
+      "status": "pass",
+      "notes": "aiAdoptionConfig state, loaded field, and adoption fetch/save/reset methods removed; userEngagementDrillDown, assetReusabilityDrillDown, and overview not yet removed — see CR-004, CR-005"
+    },
+    {
+      "kind": "spec",
+      "item": "No TypeScript errors after all removals; npm run typecheck passes",
+      "status": "pending-stage-7",
+      "notes": "No type errors visible in diff; typecheck execution required for confirmation"
+    },
+    {
+      "kind": "spec",
+      "item": "AnalyticsPage.test.tsx passes with the adoption test case removed",
+      "status": "pass",
+      "notes": "Adoption test case removed; fetchAiAdoptionConfig and aiAdoptionConfig removed from mock"
+    },
+    {
+      "kind": "spec",
+      "item": "No dead imports or unused variables remain in modified files",
+      "status": "pass",
+      "notes": "ConfigurationSvg, useCallback, adoption-related imports all cleaned from modified files per diff"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 5 subjects match the EPMCDME-XXXX: Capital sentence format; ticket EPMCDME-14466 is non-zero, first word 'Remove' satisfies [A-Z][a-z]*, no trailing period"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality.md found at .ai-run/guides/standards/code-quality.md and no ArtifactRef was passed; absent standard, not a coverage gap"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "All changed files are removals or cleanup of adoption-related code; no new dangerouslySetInnerHTML sinks introduced; no credentials or tokens added to config paths; no new Sonar suppressions detected"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/analytics/AnalyticsPage.tsx",
+      "line": 57,
+      "title": "?tab=adoption URL silently enters custom-dashboard path",
+      "problem": "isAdoptionTab was removed without adding a redirect or exclusion guard for the 'adoption' value. isCustomDashboard (tab && !isInsightsTab && !isLeaderboardTab) now evaluates true when tab='adoption', assigning dashboardId='adoption' and forwarding it to AnalyticsDashboard with no matching tab entry.",
+      "impact": "Any user navigating to a bookmarked ?tab=adoption URL gets a broken analytics page: a spurious 'Edit Dashboard' button for a non-existent custom dashboard with id 'adoption', and AnalyticsDashboard rendering with no active tab panel — blank or errored content.",
+      "recommendation": "Add an explicit redirect when the incoming tab value is not a recognised AnalyticsDashboard enum member (e.g. a useEffect that calls setSearchParams({ tab: AnalyticsDashboardType.insights }) when tab is not insights, leaderboard, or a known custom dashboard id), or extend the isCustomDashboard guard to require the tab value to exist in the loaded dashboards list."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/__tests__/AnalyticsPage.test.tsx",
+      "line": 141,
+      "title": "No replacement test for broken ?tab=adoption regression",
+      "problem": "The test 'should NOT show Edit Dashboard button when tab is adoption' was removed with no replacement covering the new behavior where tab=adoption produces isCustomDashboard=true and a spurious Edit Dashboard button — the same broken path confirmed in CR-001.",
+      "impact": "The regression introduced by CR-001 has no automated coverage. Future refactors to isCustomDashboard or tab-routing logic can silently worsen the adoption URL behavior without any gate catching it.",
+      "recommendation": "Add a test asserting that navigating to ?tab=adoption redirects to the insights tab (or the expected fallback) and does not render 'Edit Dashboard'. This test should fail until CR-001 is also resolved."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/router.tsx",
+      "title": "Removed adoption route has no redirect registered",
+      "problem": "The route /settings/administration/ai-adoption-config was deleted. No redirect or catch-all is registered in its place. React Router finds no match and renders blank content under the root layout; the root ErrorBoundary handles JS errors, not unmatched routes.",
+      "impact": "Users or automated integrations navigating to the removed path receive a blank page with no error message or navigation cue. The silent blank is worse than an explicit 404.",
+      "recommendation": "Register a redirect from /settings/administration/ai-adoption-config to /settings/administration using react-router's redirect route config or a <Navigate> element, so existing bookmarks land on the administration page rather than a blank screen."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/analytics.ts",
+      "line": 96,
+      "title": "Dead overview field remains in Analytics interface and clearState",
+      "problem": "overview: SummariesResponse | null persists in the Analytics interface and is reset in clearState(), but its sole writer (fetchAiAdoptionOverview) was deleted in this change. No component reads or writes this field.",
+      "impact": "Dead interface field misleads future contributors about the live store shape. clearState() performs a no-op reset on it. Signals incomplete cleanup and may cause confusion during future store modifications.",
+      "recommendation": "Remove the overview field from the Analytics interface declaration and from the clearState() body in src/store/analytics.ts."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/analytics.ts",
+      "line": 622,
+      "title": "Dead exported drill-down functions still make live AI-adoption API calls",
+      "problem": "openUserEngagementDrillDown, closeUserEngagementDrillDown, fetchUserEngagementUsers, and equivalent assetReusability* exports remain in analytics.ts after all consuming components were deleted. openUserEngagementDrillDown sets isOpen=true on userEngagementDrillDown and POSTs to v1/analytics/ai-adoption-user-engagement/users. The store state and types (UserEngagementDrillDownState, AssetReusabilityDrillDownState) are also retained in the interface.",
+      "impact": "If any external caller or future developer invokes these exports the drill-down store state is permanently opened with no UI path to close it, and live POST requests are sent to AI-adoption endpoints that are no longer part of the product. Dead exported functions from a removed feature are a latent liability.",
+      "recommendation": "Remove userEngagementDrillDown and assetReusabilityDrillDown from the Analytics interface and store proxy, delete all exported drill-down helpers (openUserEngagementDrillDown, closeUserEngagementDrillDown, fetchUserEngagementUsers, openAssetReusabilityDrillDown, and related assetReusability helpers), and remove their type declarations from analytics.ts."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/aiAdoptionConfigStorage.ts",
+      "title": "Orphaned localStorage key not cleared on app initialisation",
+      "problem": "aiAdoptionConfigStorage.ts was deleted without adding a one-time cleanup step. The 'codemie-ai-adoption-config' localStorage key persists in every returning user's browser with no code path to remove it.",
+      "impact": "Stale adoption config data accumulates in users' localStorage indefinitely. If the key name is reused for a different feature it will be pre-populated with stale AI adoption data, producing subtle and hard-to-trace initialisation bugs.",
+      "recommendation": "Add localStorage.removeItem('codemie-ai-adoption-config') in app initialisation — for example in src/main.tsx or the appInfoStore initializer — so the orphaned key is cleared for all users on the first load after deployment."
+    }
+  ]
+}

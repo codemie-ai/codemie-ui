@@ -36,7 +36,6 @@ interface TableWidgetProps {
   refreshTrigger?: number
   onRowClick?: (row: Record<string, unknown>, rowIndex: number) => void
   expandable?: boolean
-  waitForAdoptionConfig?: boolean
   initialData?: TabularResponse | null
   hideWrapper?: boolean
   hidePagination?: boolean
@@ -93,7 +92,6 @@ const TableWidget: FC<TableWidgetProps> = ({
   refreshTrigger = 0,
   onRowClick,
   expandable,
-  waitForAdoptionConfig = true,
   initialData,
   hideWrapper = false,
   hidePagination = false,
@@ -110,7 +108,7 @@ const TableWidget: FC<TableWidgetProps> = ({
   columnLabels,
   columnTooltips,
 }) => {
-  const { loading, loaded, error, aiAdoptionConfig } = useSnapshot(analyticsStore)
+  const { loading, error } = useSnapshot(analyticsStore)
   const [data, setData] = useState<TabularResponse | null>(initialData || null)
   const [page, setPage] = useState(0)
   const [perPage, setPerPage] = useState(10)
@@ -123,8 +121,6 @@ const TableWidget: FC<TableWidgetProps> = ({
   const fetchData = useCallback(async () => {
     if (initialData) return
 
-    if (!loaded['ai-adoption-config'] && waitForAdoptionConfig) return
-
     fetchGenerationRef.current += 1
     const generation = fetchGenerationRef.current
 
@@ -132,7 +128,6 @@ const TableWidget: FC<TableWidgetProps> = ({
       ...filters,
       page,
       per_page: perPage,
-      config: aiAdoptionConfig?.data,
     })
     if (result && generation === fetchGenerationRef.current) {
       setData(result)
@@ -142,8 +137,6 @@ const TableWidget: FC<TableWidgetProps> = ({
     page,
     perPage,
     filters,
-    loaded['ai-adoption-config'],
-    waitForAdoptionConfig,
     initialData,
   ])
 

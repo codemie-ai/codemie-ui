@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "generated": "2026-09-04T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 19,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 56,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Retirement spans 4+ subsystems: analytics feature area (AnalyticsPage, AnalyticsDashboard, AIAdoptionTab, multiple widgets), settings/administration area (AiAdoptionConfigPage and 6 sub-components deleted), shared Valtio store (analytics.ts), React Router (redirect added), and shared types/constants. Bumped from L to XL by the core-shared-utilities red flag (src/constants/index.ts and src/types/analytics.ts modified)."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "56 files per diffstat (1296 insertions, 3754 deletions). The high deletion count reflects wholesale removal of AIAdoptionTab, AiAdoptionConfigPage, ConfigItem/ConfigItemList/ConfigSection/ConfigSubSection/DimensionConfigSection and related test files. 16+ files maps to XXL."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: touches core shared utilities (src/constants/index.ts, src/types/analytics.ts modified as part of cross-cutting adoption removal)"
+  ],
+  "split_recommendation": null
+}

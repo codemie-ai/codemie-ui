@@ -13,13 +13,15 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { userStore } from '@/store'
 
 import AnalyticsPage from '../AnalyticsPage'
+
+const mockSetSearchParams = vi.hoisted(() => vi.fn())
 
 const mockSearchParams = vi.hoisted(() => ({
   get: vi.fn(),
@@ -29,7 +31,7 @@ vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router')
   return {
     ...actual,
-    useSearchParams: vi.fn(() => [mockSearchParams]),
+    useSearchParams: vi.fn(() => [mockSearchParams, mockSetSearchParams]),
   }
 })
 
@@ -49,11 +51,10 @@ vi.mock('@/store', () => ({
 
 vi.mock('@/store/analytics', () => ({
   analyticsStore: {
-    aiAdoptionConfig: null,
     loading: {},
     error: {},
+    dashboards: [{ id: 'some-custom-dashboard-id', name: 'Test Dashboard', sections: [] }],
     loadDashboards: vi.fn().mockResolvedValue([]),
-    fetchAiAdoptionConfig: vi.fn().mockResolvedValue(null),
   },
 }))
 
@@ -124,7 +125,7 @@ describe('AnalyticsPage - isCustomDashboard excludes leaderboard tab', () => {
     expect(screen.queryByText('Edit Dashboard')).not.toBeInTheDocument()
   })
 
-  it('should show Edit Dashboard button when tab is a custom dashboard id', () => {
+  it('should show Edit Dashboard button when tab is a custom dashboard id', async () => {
     mockSearchParams.get.mockImplementation((key: string) => {
       if (key === 'tab') return 'some-custom-dashboard-id'
       return null
@@ -132,23 +133,12 @@ describe('AnalyticsPage - isCustomDashboard excludes leaderboard tab', () => {
 
     render(<AnalyticsPage />)
 
-    expect(screen.getByText('Edit Dashboard')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Edit Dashboard')).toBeInTheDocument())
   })
 
   it('should NOT show Edit Dashboard button when tab is insights', () => {
     mockSearchParams.get.mockImplementation((key: string) => {
       if (key === 'tab') return 'insights'
-      return null
-    })
-
-    render(<AnalyticsPage />)
-
-    expect(screen.queryByText('Edit Dashboard')).not.toBeInTheDocument()
-  })
-
-  it('should NOT show Edit Dashboard button when tab is adoption', () => {
-    mockSearchParams.get.mockImplementation((key: string) => {
-      if (key === 'tab') return 'adoption'
       return null
     })
 
@@ -274,6 +264,17 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
       'data-cli-analytics-enabled',
       'false'
+    )
+  })
+
+  it('redirects an unrecognised tab to insights once dashboards have loaded', async () => {
+    mockSearchParams.get.mockImplementation((key: string) => {
+      if (key === 'tab') return 'stale-unknown-tab'
+      return null
+    })
+    render(<AnalyticsPage />)
+    await waitFor(() =>
+      expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'insights' }, { replace: true })
     )
   })
 })

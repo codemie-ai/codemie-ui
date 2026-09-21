@@ -495,7 +495,6 @@ Try clicking on a theme option to see the change!`,
       description: `As an administrator, you have access to platform-wide management tools in the Administration section.
 
 Available pages:
-- AI/Run Adoption Framework: Define and track organization-wide AI adoption goals, configure scoring dimensions, and monitor team progress (Enterprise)
 - Categories management: Create and manage categories used to organize assistants and other content across the platform
 - MCPs management: Browse and configure the MCP (Model Context Protocol) server catalog that assistants can connect to
 - Projects management: Create projects, assign budget limits to users, and control who has access to what

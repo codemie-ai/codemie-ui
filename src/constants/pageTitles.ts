@@ -92,9 +92,6 @@ export const ROUTE_ID_TO_TITLE: Record<string, string> = {
   'application-federation': 'Application',
   'application-iframe': 'Application',
 
-  // AI Adoption Config
-  'ai-adoption-config': 'AI Adoption Config',
-
   // Settings — general
   settings: 'Settings',
   'projects-management': 'Projects',

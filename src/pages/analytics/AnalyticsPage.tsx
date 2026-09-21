@@ -13,11 +13,10 @@
 // limitations under the License.
 //
 
-import { FC, useCallback, useEffect, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useSnapshot } from 'valtio'
 
-import ConfigurationSvg from '@/assets/icons/configuration.svg?react'
 import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import Button from '@/components/Button'
@@ -40,37 +39,50 @@ import { useAnalyticsFilters } from './hooks/useAnalyticsFilters'
 
 const AnalyticsPage: FC = () => {
   const router = useVueRouter()
-  const { aiAdoptionConfig } = useSnapshot(analyticsStore)
   const { user } = useSnapshot(userStore)
+  const { dashboards } = useSnapshot(analyticsStore)
   const isAdmin = user?.isAdmin ?? false
   const isProjectAdmin = user?.projects?.some((project) => project.is_project_admin) ?? false
   const isAuditor = user?.isAuditor ?? false
-  const isAdoptionEnabled = isAdmin || isAuditor
   const [isCustomizationEnabled] = useFeatureFlag('feature:dashboardCustomization')
   const [isLeaderboardConfigEnabled] = useFeatureFlag('aiChampionsLeaderboard')
   const isLeaderboardEnabled = (isAdmin || isAuditor) && isLeaderboardConfigEnabled
   const [isCliAnalyticsConfigEnabled] = useFeatureFlag('features:cliAnalytics')
   const isCliAnalyticsEnabled = (isAdmin || isProjectAdmin) && isCliAnalyticsConfigEnabled
 
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { filters, handleFilterChange } = useAnalyticsFilters()
   const [showDashboardList, setShowDashboardList] = useState(false)
-  const [isConfigVisible, setIsConfigVisible] = useState(false)
+  const [dashboardsLoaded, setDashboardsLoaded] = useState(false)
 
   const tab = searchParams.get('tab') ?? AnalyticsDashboardType.insights
 
   const isInsightsTab = tab === AnalyticsDashboardType.insights
-  const isAdoptionTab = tab === AnalyticsDashboardType.adoption
   const isLeaderboardTab = tab === AnalyticsDashboardType.leaderboard
-  const isCliAnalyticsTab = tab === AnalyticsDashboardType.cliAnalytics
   const isCustomDashboard =
-    tab && !isAdoptionTab && !isInsightsTab && !isLeaderboardTab && !isCliAnalyticsTab
+    dashboardsLoaded &&
+    tab &&
+    !isInsightsTab &&
+    !isLeaderboardTab &&
+    dashboards.some((d) => d.id === tab)
 
   const dashboardId = tab!
 
   useEffect(() => {
-    analyticsStore.loadDashboards()
+    analyticsStore.loadDashboards().then(() => setDashboardsLoaded(true))
   }, [])
+
+  useEffect(() => {
+    if (!dashboardsLoaded) return
+    const isValidTab =
+      tab === AnalyticsDashboardType.insights ||
+      tab === AnalyticsDashboardType.cliInsights ||
+      tab === AnalyticsDashboardType.leaderboard ||
+      dashboards.some((d) => d.id === tab)
+    if (!isValidTab) {
+      setSearchParams({ tab: AnalyticsDashboardType.insights }, { replace: true })
+    }
+  }, [tab, dashboardsLoaded, dashboards, setSearchParams])
 
   const handleFiltersChange = (newFilters: AnalyticsQueryParams) => {
     handleFilterChange(newFilters)
@@ -89,29 +101,12 @@ const AnalyticsPage: FC = () => {
     }
   }
 
-  const handleOpenConfigModal = useCallback(async () => {
-    setIsConfigVisible(true)
-    if (!aiAdoptionConfig && tab) {
-      await analyticsStore.fetchAiAdoptionConfig(tab).catch(console.error)
-    }
-  }, [tab, aiAdoptionConfig])
-
   const actions = (
     <div className="flex gap-2">
       {isCustomizationEnabled && isCustomDashboard && (
         <Button variant="primary" onClick={handleEditDashboard}>
           <EditSvg />
           Edit Dashboard
-        </Button>
-      )}
-      {isAdoptionTab && isAdoptionEnabled && (
-        <Button
-          variant="secondary"
-          aria-label="Open framework configuration"
-          onClick={handleOpenConfigModal}
-        >
-          <ConfigurationSvg className="text-button-base-text" />
-          Configuration
         </Button>
       )}
       {isCustomizationEnabled && (
@@ -136,12 +131,9 @@ const AnalyticsPage: FC = () => {
           <AnalyticsDashboard
             activeTab={tab}
             filters={filters}
-            isConfigVisible={isConfigVisible}
-            isAdoptionEnabled={isAdoptionEnabled}
             isLeaderboardEnabled={isLeaderboardEnabled}
             isCustomizationEnabled={isCustomizationEnabled}
             isCliAnalyticsEnabled={isCliAnalyticsEnabled}
-            onHideConfig={() => setIsConfigVisible(false)}
           />
         </div>
       </PageLayout>

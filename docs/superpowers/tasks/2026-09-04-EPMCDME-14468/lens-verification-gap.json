@@ -1,0 +1,11 @@
+[
+  {
+    "location": "src/router.tsx:436-438 — route for /settings/administration/ai-adoption-config now uses loader: () => redirect('/settings/administration') instead of rendering AiAdoptionConfigPage",
+    "trigger_condition": "No integration test navigates to /settings/administration/ai-adoption-config and asserts the redirect fires",
+    "guard_snippet": "an integration test that calls renderPage('/settings/administration/ai-adoption-config') and asserts the settled URL is /settings/administration",
+    "potential_consequence": "If the loader was accidentally removed or pointed at the wrong target, users with bookmarks to the old AI Adoption Config settings URL would land on a 404 or blank screen; no automated test would fail",
+    "gap_shape": "regression-gap",
+    "consumer": "any user or external link navigating to /settings/administration/ai-adoption-config (previously the AI Adoption Framework config page rendered there)",
+    "evidence": "Grep for 'ai-adoption-config' in src/ returns only src/hooks/appLevel/useInitialDataFetch.tsx and src/router.tsx — no test file; the two existing settings/administration integration tests (AdminTablesPagination.integration.test.tsx, UsersManagementSpending.integration.test.tsx) do not navigate to this path; no route-redirect integration tests exist anywhere in the codebase (checked via Glob for *.integration.test.tsx)"
+  }
+]

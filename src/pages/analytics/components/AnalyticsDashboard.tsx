@@ -13,19 +13,14 @@
 // limitations under the License.
 //
 
-import { FC, useEffect, useState, useMemo } from 'react'
+import { FC, useMemo } from 'react'
 import { useSearchParams } from 'react-router'
 import { useSnapshot } from 'valtio'
 
-import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal'
-import Popup from '@/components/Popup'
 import Tabs, { Tab } from '@/components/Tabs/Tabs'
-import { useAiAdoptionConfig } from '@/hooks/useAiAdoptionConfig'
-import AiAdoptionConfigView from '@/pages/settings/administration/components/AiAdoptionConfigView'
 import { analyticsStore } from '@/store/analytics'
 import { AnalyticsQueryParams, AnalyticsDashboard } from '@/types/analytics'
 
-import AIAdoptionTab from './AIAdoptionTab'
 import CliAnalyticsTab from './cli-analytics/CliAnalyticsTab'
 import CLIInsightsTab from './CLIInsightsTab'
 import CustomDashboard from './CustomDashboard'
@@ -35,10 +30,7 @@ import LeaderboardTab from './leaderboard/LeaderboardTab'
 
 interface AnalyticsDashboardProps {
   activeTab: string
-  isConfigVisible: boolean
-  onHideConfig: () => void
   filters: AnalyticsQueryParams
-  isAdoptionEnabled: boolean
   isLeaderboardEnabled: boolean
   isCustomizationEnabled: boolean
   isCliAnalyticsEnabled: boolean
@@ -46,10 +38,7 @@ interface AnalyticsDashboardProps {
 
 const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
   activeTab,
-  isConfigVisible,
-  onHideConfig,
   filters,
-  isAdoptionEnabled,
   isLeaderboardEnabled,
   isCustomizationEnabled,
   isCliAnalyticsEnabled,
@@ -57,45 +46,6 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
   const { dashboards } = useSnapshot(analyticsStore)
 
   const [, setSearchParams] = useSearchParams()
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
-
-  const {
-    aiAdoptionConfig,
-    loading,
-    error,
-    editingConfig,
-    validationErrors,
-    showResetConfirmation,
-    handleCancel,
-    handleSaveMaturity,
-    handleSaveUserEngagement,
-    handleSaveAssetReusability,
-    handleSaveExpertiseDistribution,
-    handleSaveFeatureAdoption,
-    handleReset,
-    handleResetConfirm,
-    handleResetCancel,
-    updateNestedValue,
-  } = useAiAdoptionConfig({
-    onSaveSuccess: () => {
-      setRefreshTrigger((prev) => prev + 1)
-    },
-  })
-
-  useEffect(() => {
-    if (!aiAdoptionConfig) {
-      analyticsStore.fetchAiAdoptionConfig(activeTab).catch(console.error)
-    }
-    if (activeTab === AnalyticsDashboard.adoption && aiAdoptionConfig) {
-      // Wait for config to load before fetching overview (prevents using default config)
-      analyticsStore
-        .fetchAiAdoptionOverview({
-          ...(filters.projects && filters.projects.length > 0 && { projects: filters.projects }),
-          config: aiAdoptionConfig.data,
-        })
-        .catch(console.error)
-    }
-  }, [filters, activeTab, aiAdoptionConfig])
 
   const handleTabChange = (tabId: string) => {
     setSearchParams((prev) => {
@@ -138,15 +88,6 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
       })
     }
 
-    if (isAdoptionEnabled) {
-      tabsList.push({
-        id: AnalyticsDashboard.adoption,
-        label: 'AI/Run Adoption',
-        element: <AIAdoptionTab filters={filters} refreshTrigger={refreshTrigger} />,
-        className: '[overflow-wrap:normal]',
-      })
-    }
-
     if (isCustomizationEnabled) {
       dashboards.forEach((dashboard) => {
         tabsList.push({
@@ -158,14 +99,7 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
     }
 
     return tabsList
-  }, [
-    dashboards,
-    filters,
-    isLeaderboardEnabled,
-    isAdoptionEnabled,
-    isCustomizationEnabled,
-    isCliAnalyticsEnabled,
-  ])
+  }, [dashboards, filters, isLeaderboardEnabled, isCustomizationEnabled, isCliAnalyticsEnabled])
 
   return (
     <div className="analytics-dashboard flex flex-col min-w-0">
@@ -182,44 +116,6 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
         isEmbedded={false}
         className="min-w-0"
         tabClassName="min-w-0"
-      />
-
-      <Popup
-        visible={isConfigVisible}
-        onHide={() => onHideConfig()}
-        header="AI/Run Adoption Framework Configuration"
-        hideFooter={true}
-        isFullWidth={true}
-        bodyClassName="max-h-[80vh]"
-      >
-        <AiAdoptionConfigView
-          config={aiAdoptionConfig?.data ?? null}
-          loading={loading['ai-adoption-config']}
-          error={error['ai-adoption-config']?.message}
-          readOnly={false}
-          editingConfig={editingConfig}
-          validationErrors={validationErrors}
-          showResetButton={true}
-          onSaveMaturity={handleSaveMaturity}
-          onSaveUserEngagement={handleSaveUserEngagement}
-          onSaveAssetReusability={handleSaveAssetReusability}
-          onSaveExpertiseDistribution={handleSaveExpertiseDistribution}
-          onSaveFeatureAdoption={handleSaveFeatureAdoption}
-          onReset={handleReset}
-          onCancel={handleCancel}
-          onUpdate={updateNestedValue}
-        />
-      </Popup>
-
-      {/* Reset Confirmation Modal */}
-      <ConfirmationModal
-        header="Reset to Defaults"
-        message="Are you sure you want to reset to default configuration? This will clear your custom settings and refresh the analytics data."
-        confirmText="Reset"
-        cancelText="Cancel"
-        visible={showResetConfirmation}
-        onConfirm={handleResetConfirm}
-        onCancel={handleResetCancel}
       />
     </div>
   )

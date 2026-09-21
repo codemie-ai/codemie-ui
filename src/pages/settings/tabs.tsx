@@ -33,12 +33,6 @@ const getEnterpriseAdminItems = (
   isMcpFeatureEnabled: boolean,
   budgetsManagementTab: LayoutTab[]
 ): LayoutTab[] => [
-  {
-    id: SettingsTab.AI_ADOPTION_CONFIG,
-    name: 'AI/Run Adoption Framework',
-    title: 'AI/Run Adoption Framework',
-    url: '/settings/administration/ai-adoption-config',
-  },
   ...budgetsManagementTab,
   {
     id: SettingsTab.CATEGORIES_MANAGEMENT,

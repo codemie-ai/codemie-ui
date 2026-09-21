@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14466_remove-ai-run-adoption-ui",
+  "head": "af4d7d98cbdcafbb650ba3b28cf0296884a4e11e",
+  "runner": "npm",
+  "started_at": "2026-09-02T11:51:00.000Z",
+  "completed_at": "2026-09-02T12:31:00.000Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 42000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency changes in diff; guide Skip if condition met (no package.json or lockfile changes)"
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 2000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Podman daemon is not running / Run 'podman machine start' to enable secrets detection locally — exited 0 without scanning"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1136530,
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "notes": "4863 tests passed; 1 pre-existing suite failure in scripts/license_headers/__tests__/check_license_headers.test.js (SyntaxError on Unicode smart quotes, not in src/, not caused by this branch)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 586800,
+      "command": "npm run test:integration",
+      "exit_code": 0,
+      "notes": "37 test files, 486 passed, 1 skipped"
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1000,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "No staged files found — no-op outside commit context; full lint gate already covers all source files"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 8000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set — set SONAR_TOKEN environment variable to run locally"
+    },
+    {
+      "id": "ci-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "command": null,
+      "exit_code": null,
+      "notes": "External GitLab CI context from epm-cdme/codemie-gitlab-templates; requires CI infrastructure, cannot run locally"
+    },
+    {
+      "id": "compliance-report",
+      "source": "ci",
+      "status": "N/A",
+      "command": null,
+      "exit_code": null,
+      "notes": "External GitLab CI context from epm-cdme/codemie-gitlab-templates; requires CI infrastructure, cannot run locally"
+    }
+  ],
+  "failures": {}
+}
