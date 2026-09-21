@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "head": "d9ac28a78bb8d510c9a24caf0f4111927c49b37e",
+  "surface_change_detected": true,
+  "changed_files": [
+    "src/pages/chat/components/ChatHistory/ChatAiMessage/MessageFeedbackActions/MessageFeedbackActions.tsx"
+  ],
+  "tool": "playwright",
+  "resolution_reason": "unconfigured (no playwright.config, no @playwright/test dep, no .ai-run/sdlc-factory/config.json) -> dynamic Playwright path per Step 4",
+  "coverage_source": "generated-test",
+  "generated_test_path": "dynamic-tests/feedback-empty-response.spec.ts",
+  "generated_config_path": "dynamic-tests/playwright.config.ts",
+  "app_start": "existing background `npm run dev` at http://localhost:5173 (Vite), backend fully mocked via Playwright page.route so no real API/auth was required",
+  "features": [
+    "message-feedback-empty-response",
+    "message-like-empty-response",
+    "message-feedback-submission-failure-toast"
+  ]
+}

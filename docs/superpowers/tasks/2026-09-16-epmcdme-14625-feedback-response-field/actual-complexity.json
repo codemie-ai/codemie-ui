@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-09-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 7,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "2 files changed per diffstat: the MessageFeedbackActions component itself plus one new co-located test file, both in the same directory." },
+    { "dimension": "technical_risk", "reason": "Fix applies the nullish-coalescing default (`?? ''`) already used elsewhere in the same submit calls, guarding message.response before it is sent to chatsStore.submitFeedback; no new pattern, fully reversible single-file change." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

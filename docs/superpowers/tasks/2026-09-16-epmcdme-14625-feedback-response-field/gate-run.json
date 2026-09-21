@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14625_feedback-response-field",
+  "head": "d9ac28a78bb8d510c9a24caf0f4111927c49b37e",
+  "runner": "npm",
+  "started_at": "2026-09-16T14:28:24Z",
+  "completed_at": "2026-09-16T16:37:52Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 22489,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16354,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency was added, removed, or moved. git diff <merge_base>...HEAD shows package.json and package-lock.json unchanged, so this gate was not run."
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25471,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks reported 'no leaks found' after scanning ~31.68 MB."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 186689,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "562 test files passed (5770 tests)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 99270,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "45 test files passed, 530 tests passed, 1 skipped (pre-existing skip, not a regression)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision. Changed files: MessageFeedbackActions.tsx and its test matched ui_globs (.tsx)."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 481,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2101 files, 0 missing license headers. Not covered by any guide gate; added because it is chained in .husky/pre-commit."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 418,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip detected: script printed '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' and exited 0. Zero exit code is not evidence it ran. To enable locally, export SONAR_TOKEN for the connected SonarQube project (codemie-ui at https://sonar.core.kuberocketci.io) before running. This check runs for real on the CI-triggered compliance path; a PASSED outcome here does not confirm CI's Sonar analysis will be green."
+    },
+    {
+      "id": "ci-status-checks",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "N/A: .gitlab-ci.yml only defines a pre-ci-guard stage that waits for externally-reported GitLab status contexts (ci-pipeline, compliance-report) supplied by another pipeline/system; there are no runnable job definitions in this repo to execute locally. Only settled by pushing and observing the actual MR pipeline."
+    }
+  ],
+  "failures": {}
+}

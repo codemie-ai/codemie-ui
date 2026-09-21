@@ -93,7 +93,7 @@ const MessageFeedbackActions: FC<MessageFeedbackActionsProps> = ({ message, inde
           comments: feedback.comment,
           type: feedback.type,
           request: message.request,
-          response: message.response,
+          response: message.response ?? '',
           assistant_id: message.assistantId,
         },
         indexes.historyIndex,
@@ -103,6 +103,7 @@ const MessageFeedbackActions: FC<MessageFeedbackActionsProps> = ({ message, inde
       if (isFeedbackPopupVisible) setIsFeedbackPopupVisible(false)
     } catch (error) {
       console.error('Error submitting feedback: ', error)
+      toaster.error("We couldn't submit your feedback. Please try again.")
       setMark(oldMark)
     }
   }
@@ -138,7 +139,7 @@ const MessageFeedbackActions: FC<MessageFeedbackActionsProps> = ({ message, inde
           comments: likeFeedback.comment,
           type: '',
           request: message.request,
-          response: message.response,
+          response: message.response ?? '',
           assistant_id: message.assistantId,
         },
         indexes.historyIndex,
@@ -148,6 +149,7 @@ const MessageFeedbackActions: FC<MessageFeedbackActionsProps> = ({ message, inde
       if (isLikeFeedbackPopupVisible) setIsLikeFeedbackPopupVisible(false)
     } catch (error) {
       console.error('Error submitting feedback: ', error)
+      toaster.error("We couldn't submit your feedback. Please try again.")
       setMark(oldMark)
     }
   }
