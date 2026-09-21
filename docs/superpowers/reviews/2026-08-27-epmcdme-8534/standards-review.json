@@ -1,0 +1,28 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "fail", "notes": "4 of 6 commits pass the EPMCDME-XXXX: Capital sentence format; 2 fail: 'chore: add gate-plan.json artifact for EPMCDME-8534' uses a conventional-commits prefix instead of the ticket pattern, and 'epmcdme-8534-workflow-execution-label: add planning artifacts' uses the branch name as subject with lowercase and wrong separator. Branch name 'feature/EPMCDME-8534-workflow-execution-input-label' also violates the documented EPMCDME-XXXX_short-description pattern (uses feature/ prefix and hyphens instead of underscore separator)."},
+    {"kind": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md does not exist in this repository; no code-quality standard to adjudicate against."},
+    {"kind": "security", "status": "pass", "notes": "Changes are limited to adding an ariaLabelledBy prop to Editor and wiring a visible label in WorkflowStartExecutionPopup. No dangerouslySetInnerHTML or innerHTML sinks introduced. No navigation built from untrusted input. No postMessage or cross-window messaging. The ariaLabelledBy value flows from React useId(), not from user input or API responses, so setAttribute('aria-labelledby', ...) carries no injection risk. No config or secrets involved."}
+  ],
+  "blocking_findings": [
+    {
+      "location": "commit subject: 'chore: add gate-plan.json artifact for EPMCDME-8534'",
+      "violation": "git-workflow.md requires the format EPMCDME-XXXX: Capital sentence (regex: ^(EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.*$); this subject uses a conventional-commits 'chore:' prefix with no ticket number",
+      "why_blocking": "Tekton CI blocks the pipeline on any commit subject that does not match the documented regex",
+      "remedy": "Amend the subject to 'EPMCDME-8534: Add gate-plan.json artifact for review round'"
+    },
+    {
+      "location": "commit subject: 'epmcdme-8534-workflow-execution-label: add planning artifacts'",
+      "violation": "git-workflow.md requires EPMCDME-XXXX: Capital sentence; this subject uses the branch name as a prefix, is entirely lowercase, and separates with a colon after a hyphenated slug rather than a ticket-number colon",
+      "why_blocking": "Tekton CI blocks the pipeline on any commit subject that does not match the documented regex",
+      "remedy": "Amend the subject to 'EPMCDME-8534: Add planning artifacts'"
+    },
+    {
+      "location": "branch: feature/EPMCDME-8534-workflow-execution-input-label",
+      "violation": "git-workflow.md documents branch naming pattern as EPMCDME-XXXX_short-description; this branch uses a 'feature/' prefix and hyphens instead of the required underscore separator, matching the documented invalid example 'feature/add-hint-text (no ticket)'",
+      "why_blocking": "The guide lists this shape as invalid and CI validates the prefix; a non-conformant branch name also makes squash-merge subject derivation ambiguous",
+      "remedy": "Rename to EPMCDME-8534_workflow-execution-input-label"
+    }
+  ],
+  "coverage_gap": false
+}

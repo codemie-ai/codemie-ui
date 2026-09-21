@@ -1,0 +1,26 @@
+[
+  {
+    "location": "src/pages/workflows/details/popups/WorkflowStartExecutionPopup.tsx:138-140",
+    "trigger_condition": "User clicks the visible label text with pointer or touch",
+    "guard_snippet": "onClick={() => editorRef.current?.focus()} on <label>",
+    "potential_consequence": "Label click does nothing; expected click-to-focus UX broken for all users"
+  },
+  {
+    "location": "src/components/Editor/Editor.tsx:137-146",
+    "trigger_condition": "ariaLabelledBy provided but Quill onLoad never fires (init error)",
+    "guard_snippet": "if (!quill) console.warn('Editor: ariaLabelledBy set but Quill not ready')",
+    "potential_consequence": "aria-labelledby silently absent on editor root; screen reader users receive no label"
+  },
+  {
+    "location": "src/components/Editor/Editor.tsx:201",
+    "trigger_condition": "ariaLabelledBy transitions truthy→falsy while Quill reinitializes simultaneously",
+    "guard_snippet": "else quill.root.removeAttribute('aria-labelledby') in onLoad else branch",
+    "potential_consequence": "Stale aria-labelledby persists on new Quill root after reinitialization with falsy prop"
+  },
+  {
+    "location": "src/pages/workflows/details/popups/WorkflowStartExecutionPopup.tsx:104",
+    "trigger_condition": "placeholder and label carry identical text; empty editor focused by screen reader",
+    "guard_snippet": "placeholder=\"Type your prompt here\" or omit placeholder when visible label exists",
+    "potential_consequence": "Some AT announces field name twice in sequence; confusing audible experience"
+  }
+]

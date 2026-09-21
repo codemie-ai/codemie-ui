@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-08-27T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 3,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two production files modified (shared Editor component + WorkflowStartExecutionPopup page component) within a single UI tier; additive optional prop threading with no layer boundary crossed"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "3 files total: Editor.tsx (modified), WorkflowStartExecutionPopup.tsx (modified), WorkflowStartExecutionPopup.accessibility.test.tsx (new); spans 2 directories (src/components/Editor/ and src/pages/workflows/details/popups/); borderline S but single architectural layer keeps total at XS ceiling"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

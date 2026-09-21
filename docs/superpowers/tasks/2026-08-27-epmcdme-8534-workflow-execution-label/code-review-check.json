@@ -1,0 +1,35 @@
+{
+  "decision": "approve",
+  "rationale": "All four blocking findings from code-review.final are resolved. CR-001: aria-labelledby now applied in the onLoad callback where quill.root is guaranteed live (Editor.tsx:201). CR-002: else branch added to removeAttribute when prop is cleared (Editor.tsx:143). CR-003: useId() replaces the hardcoded label id (WorkflowStartExecutionPopup.tsx:55). CR-004: ?? '' fallback removed from accessibility test mock. No new findings introduced.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Carried forward from prior verdict — compact profile, standards audit not re-run." },
+    { "kind": "code-quality", "status": "na", "notes": "Carried forward from prior verdict — compact profile, standards audit not re-run." },
+    { "kind": "security", "status": "na", "notes": "Carried forward from prior verdict — compact profile, standards audit not re-run." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "aria-labelledby applied inside onLoad callback at Editor.tsx:201 where quill.root is live. The useEffect at line 137 handles dynamic prop updates."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "else branch added at Editor.tsx:143: quill.root.removeAttribute('aria-labelledby') when ariaLabelledBy is falsy."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "useId() used at WorkflowStartExecutionPopup.tsx:55; labelId passed to both label id and ariaLabelledBy prop."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "?? '' fallback removed from accessibility test mock at WorkflowStartExecutionPopup.accessibility.test.tsx:22; aria-labelledby={ariaLabelledBy} without fallback, matching real Editor behaviour."
+    }
+  ]
+}

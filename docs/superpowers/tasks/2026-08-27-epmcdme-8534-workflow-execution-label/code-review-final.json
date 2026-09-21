@@ -1,0 +1,62 @@
+{
+  "decision": "request-changes",
+  "rationale": "No spec existed; confidence is low. CR-001 is critical: the aria-labelledby useEffect runs before Quill initialises, getQuill() returns null, the static prop never re-fires, and the onLoad callback does not apply the attribute — the label association is absent at runtime and the ticket's accessibility fix is silently undelivered. CR-002 and CR-003 are fragile patterns introduced by this change with uncertain reachability, capped at major; CR-004 is an invalid empty-string fallback in the test mock. 0 deferred, 0 dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Compact profile — standards audit intentionally omitted." },
+    { "kind": "code-quality", "status": "na", "notes": "Compact profile — standards audit intentionally omitted." },
+    { "kind": "security", "status": "na", "notes": "Compact profile — standards audit intentionally omitted." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/components/Editor/Editor.tsx",
+      "line": 137,
+      "title": "aria-labelledby never applied on initial render",
+      "problem": "The useEffect at line 137 calls editorRef.current?.getQuill() before Quill has initialised; it returns null so the guard fails silently. ariaLabelledBy is a static string in the only call site, so the dep-array never changes and the effect does not re-run after Quill loads. The onLoad callback (line 190) does not apply the attribute either. quill.root never receives aria-labelledby.",
+      "impact": "Screen readers find no label for the Quill editor's contenteditable root. The accessibility fix this ticket delivers is silently absent in production for all assistive technology that reads quill.root.",
+      "recommendation": "Apply the attribute inside the onLoad callback where the quill instance is guaranteed to exist: add `if (ariaLabelledBy) quill.root.setAttribute('aria-labelledby', ariaLabelledBy)` in the onLoad body alongside the existing initialisation code. The existing useEffect can remain for dynamic prop updates once the onLoad path is fixed."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Editor/Editor.tsx",
+      "line": 137,
+      "title": "Stale aria-labelledby persists when prop is cleared",
+      "problem": "The effect guard `if (quill && ariaLabelledBy)` only sets the attribute; it never removes it. If ariaLabelledBy changes from a value to undefined the attribute remains on quill.root with its old value. Reachability is uncertain in current usage (the prop is static) but the defect is in newly introduced code.",
+      "impact": "A stale aria-labelledby referencing a non-existent or wrong label causes screen readers to announce incorrect or missing label text; the accessibility association is silently wrong for any consumer that later clears the prop.",
+      "recommendation": "Add an else branch to the guard: `else quill.root.removeAttribute('aria-labelledby')` so the attribute lifecycle matches the prop lifecycle."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/details/popups/WorkflowStartExecutionPopup.tsx",
+      "line": 138,
+      "title": "Hardcoded label ID breaks aria association if popup rendered concurrently",
+      "problem": "Both the label id and the ariaLabelledBy prop use the literal string 'workflow-execution-prompt-label'. If the popup is rendered more than once simultaneously (in tests or a future multi-step flow), duplicate IDs cause aria-labelledby to reference the first DOM match only. Reachability is uncertain in the current single-instance usage.",
+      "impact": "When multiple popup instances coexist, screen readers may associate the editor with the wrong label element, silently breaking the accessibility feature the ticket adds.",
+      "recommendation": "Replace the hardcoded id with `const labelId = useId()` (React built-in) and pass labelId to both `id` and `ariaLabelledBy`. This also makes the component safe in test suites that render it multiple times."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/details/popups/__tests__/WorkflowStartExecutionPopup.accessibility.test.tsx",
+      "line": 22,
+      "title": "Test mock emits invalid empty aria-labelledby when prop absent",
+      "problem": "The Editor mock at lines 22–23 applies `aria-labelledby={ariaLabelledBy ?? ''}`. When ariaLabelledBy is undefined the mock emits `aria-labelledby=\"\"` (invalid empty-string attribute). The real Editor emits no attribute in that case. Reachability is uncertain for the existing tests (prop is always defined), but affects any future test case that asserts the attribute is absent.",
+      "impact": "Future tests checking for the absence of aria-labelledby will get a false negative — the assertion passes against an invalid empty string rather than a missing attribute — masking regressions in prop-threading code.",
+      "recommendation": "Remove the `?? ''` fallback: use `aria-labelledby={ariaLabelledBy}`. React omits the attribute when the value is undefined, matching real Editor behaviour."
+    }
+  ]
+}

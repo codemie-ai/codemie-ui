@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useState, useEffect } from 'react'
+import { FC, useState, useEffect, useId } from 'react'
 
 import AttachmentSvg from '@/assets/icons/attachment.svg?react'
 import Editor, { EditorValue } from '@/components/Editor/Editor'
@@ -52,6 +52,8 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
   onStart,
   replaceRoute,
 }) => {
+  const labelId = useId()
+  const editorRootId = useId()
   const router = useVueRouter()
   const { unblockTransition, blockTransition } = useUnsavedChanges({
     formId: FormIDs.WORKFLOW_FORM,
@@ -133,29 +135,39 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
         <Spinner inline />
       ) : (
         <div>
-          <div className="pt-1 mb-2 relative">
-            <Editor
-              value={prompt}
-              withMentions={false}
-              className="workflow-execution-editor"
-              placeholder="Enter a starting prompt"
-              onChange={setPrompt}
-              onAddFiles={addFiles}
-              onSubmit={handleSubmit}
-            />
-
-            <button
-              type="button"
-              onClick={openFilePicker}
-              data-tooltip-id="react-tooltip"
-              data-tooltip-content={WF_FILE_UPLOAD_MESSAGE}
-              className={cn(
-                'absolute top-[54%] right-[6px] transform -translate-x-1/2 -translate-y-1/2',
-                'hover:opacity-80 transition-opacity'
-              )}
+          <div className="pt-1 mb-2">
+            <label
+              id={labelId}
+              htmlFor={editorRootId}
+              className="block mb-1 text-sm font-medium text-text-secondary"
             >
-              <AttachmentSvg />
-            </button>
+              Enter a starting prompt
+            </label>
+            <div className="relative">
+              <Editor
+                value={prompt}
+                withMentions={false}
+                className="workflow-execution-editor"
+                ariaLabelledBy={labelId}
+                rootId={editorRootId}
+                onChange={setPrompt}
+                onAddFiles={addFiles}
+                onSubmit={handleSubmit}
+              />
+
+              <button
+                type="button"
+                onClick={openFilePicker}
+                data-tooltip-id="react-tooltip"
+                data-tooltip-content={WF_FILE_UPLOAD_MESSAGE}
+                className={cn(
+                  'absolute top-1/2 right-[6px] transform -translate-x-1/2 -translate-y-1/2',
+                  'hover:opacity-80 transition-opacity'
+                )}
+              >
+                <AttachmentSvg />
+              </button>
+            </div>
           </div>
 
           <input {...inputProps} />

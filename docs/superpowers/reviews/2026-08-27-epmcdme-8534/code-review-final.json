@@ -1,0 +1,95 @@
+{
+  "decision": "request-changes",
+  "rationale": "Six patch findings: two malformed commit subjects and a non-conformant branch name block Tekton CI, and three accessibility defects in the new label implementation (label not click-focusable, silent aria-labelledby loss on Quill init failure with uncertain reachability, duplicate label and placeholder text). No spec existed; acceptance lens not dispatched and confidence is low on that basis. One finding dismissed (stale aria-labelledby on Quill reinitialization — truthy-to-falsy ariaLabelledBy transition unreachable from the sole current caller, which passes a stable useId() value).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "fail",
+      "notes": "2 commits fail: 'chore: add gate-plan.json' uses conventional-commits prefix; 'epmcdme-8534-...' uses branch-slug. Branch 'feature/EPMCDME-8534-...' violates EPMCDME-XXXX_short-description pattern."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md does not exist in this repository; no code-quality standard to adjudicate against."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No innerHTML sinks, untrusted navigation, or cross-window messaging introduced. ariaLabelledBy flows from React useId(), not user input; setAttribute('aria-labelledby') carries no injection risk."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Editor/Editor.tsx",
+      "line": 137,
+      "title": "ariaLabelledBy unset when Quill init fails",
+      "problem": "The useEffect at lines 137–146 fetches the Quill instance via editorRef.current?.getQuill(); if Quill failed to initialize the return is undefined, the setAttribute call is silently skipped, and the onLoad fallback at line 201 also never fires on an init error. No warning or retry is issued. Reachability uncertain — Quill init errors are uncommon in production.",
+      "impact": "Screen reader users receive no accessible label on the editor root if Quill fails to initialize; the gap is invisible (no console error, no visual indicator). Severity capped at major because reachability was unconfirmed.",
+      "recommendation": "After line 145 add an else branch that emits a dev-time warning when ariaLabelledBy is truthy but quill is null, surfacing the broken-initialization path early; alternatively document that onLoad is guaranteed to fire on successful mount and add a guard that logs if it does not."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/details/popups/WorkflowStartExecutionPopup.tsx",
+      "line": 138,
+      "title": "Label element has no click-to-focus binding",
+      "problem": "The <label> at line 138 carries id={labelId} but neither an htmlFor attribute nor an onClick handler. Quill renders a div[contenteditable], so htmlFor cannot natively focus it; without an explicit onClick the label text is inert to pointer and touch input.",
+      "impact": "Clicking the visible 'Enter a starting prompt' label does nothing; the standard label-click-to-focus behavior is absent in a change explicitly designed to improve accessibility.",
+      "recommendation": "Add a ref to the Editor element (typed as EditorRef) and wire onClick={() => editorRef.current?.focus()} on the label, using the existing focus() implementation in Editor's useImperativeHandle at line 170."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/details/popups/WorkflowStartExecutionPopup.tsx",
+      "line": 146,
+      "title": "Placeholder duplicates visible label text",
+      "problem": "The placeholder prop at line 146 is 'Enter a starting prompt', identical to the visible label at lines 138–139. The Editor also carries aria-labelledby pointing to that label; some AT announces the aria-labelledby name and then the placeholder in sequence when the field is empty.",
+      "impact": "Screen reader users on an empty editor hear the field name announced twice in quick succession, conflicting with the purpose of the accessible label this change was introduced to add.",
+      "recommendation": "Remove the placeholder prop entirely (the visible label already identifies the field), or replace it with a concrete example that adds information beyond the label, such as 'e.g. Summarize the latest deployment'."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "unknown",
+      "title": "Branch name uses feature/ prefix instead of EPMCDME ticket pattern",
+      "problem": "Branch 'feature/EPMCDME-8534-workflow-execution-input-label' uses a 'feature/' prefix with hyphen separators. git-workflow.md requires the pattern EPMCDME-XXXX_short-description; this shape is listed as an invalid example in that guide and fails the CI branch-name validator.",
+      "impact": "CI validates the branch prefix; squash-merge subject derivation is ambiguous with a non-conformant name. Pipeline branch-validation step may block.",
+      "recommendation": "Rename branch to EPMCDME-8534_workflow-execution-input-label."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "unknown",
+      "title": "Commit subject uses lowercase branch-slug prefix",
+      "problem": "Commit 'epmcdme-8534-workflow-execution-label: add planning artifacts' uses the branch name as a subject prefix — entirely lowercase, hyphen-separated — violating the EPMCDME-XXXX: Capital sentence format required by git-workflow.md (regex: ^(EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.*$).",
+      "impact": "Tekton CI blocks the pipeline on any commit subject that does not match the documented regex.",
+      "recommendation": "Amend the commit subject to 'EPMCDME-8534: Add planning artifacts'."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "unknown",
+      "title": "Planning commit uses conventional-commits prefix with no ticket number",
+      "problem": "Commit 'chore: add gate-plan.json artifact for EPMCDME-8534' uses a conventional-commits 'chore:' prefix and carries no ticket number as the first token, failing the required EPMCDME-XXXX: Capital sentence format.",
+      "impact": "Tekton CI blocks the pipeline on any commit subject that does not match the documented format.",
+      "recommendation": "Amend the commit subject to 'EPMCDME-8534: Add gate-plan.json artifact for review round'."
+    }
+  ]
+}

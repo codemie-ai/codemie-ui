@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "blocked_gate": null,
+  "drift_detected": false,
+  "head": "04197bdc3",
+  "gates": [
+    { "name": "unit-tests", "status": "PASSED", "detail": "2/2 tests in WorkflowStartExecutionPopup.accessibility.test.tsx" },
+    { "name": "type-check", "status": "PASSED", "detail": "tsc --noEmit exited 0" },
+    { "name": "lint", "status": "PASSED", "detail": "eslint ran clean via pre-commit hook" }
+  ]
+}

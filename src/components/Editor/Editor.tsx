@@ -31,6 +31,8 @@ import {
   unregisterEditorHandlers,
 } from './quillModules'
 
+const ARIA_LABELLEDBY = 'aria-labelledby'
+
 export interface EditorValue {
   message: string
   messageRaw: string
@@ -77,6 +79,8 @@ interface EditorProps {
   onAddFiles: (files: File[]) => void
   onFocusChange?: (isFocused: boolean) => void
   onEditorLoad?: (quill: any) => void
+  ariaLabelledBy?: string
+  rootId?: string
 }
 
 const Editor = forwardRef<EditorRef, EditorProps>(
@@ -93,6 +97,8 @@ const Editor = forwardRef<EditorRef, EditorProps>(
       onAddFiles,
       onFocusChange,
       onEditorLoad,
+      ariaLabelledBy,
+      rootId,
     },
     ref
   ) => {
@@ -135,7 +141,22 @@ const Editor = forwardRef<EditorRef, EditorProps>(
     useEffect(() => {
       const quill = editorRef.current?.getQuill()
       if (!quill) return
-      // PrimeReact only sets readOnly at Quill init time; imperatively sync it on changes.
+      if (ariaLabelledBy) {
+        quill.root.setAttribute(ARIA_LABELLEDBY, ariaLabelledBy)
+      } else {
+        quill.root.removeAttribute(ARIA_LABELLEDBY)
+      }
+      if (rootId) {
+        quill.root.setAttribute('id', rootId)
+      } else {
+        quill.root.removeAttribute('id')
+      }
+    }, [ariaLabelledBy, rootId])
+
+    useEffect(() => {
+      const quill = editorRef.current?.getQuill()
+      if (!quill) return
+      // PrimeReact only sets readOnly at Quill init time; sync it imperatively on changes.
       if (disabled) {
         quill.disable()
       } else {
@@ -185,6 +206,8 @@ const Editor = forwardRef<EditorRef, EditorProps>(
             const length = quill.getLength()
             quill.setSelection(length, 0)
             quill.focus()
+            if (ariaLabelledBy) quill.root.setAttribute(ARIA_LABELLEDBY, ariaLabelledBy)
+            if (rootId) quill.root.setAttribute('id', rootId)
             onEditorLoad?.(quill)
           }
         }}

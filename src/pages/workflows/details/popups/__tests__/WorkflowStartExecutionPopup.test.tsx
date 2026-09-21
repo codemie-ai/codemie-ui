@@ -28,9 +28,9 @@ vi.mock('@/store/workflowExecutions', () => ({
 }))
 
 vi.mock('@/components/Editor/Editor', () => ({
-  default: ({ onChange, placeholder, onSubmit }: any) => (
+  default: ({ onChange, onSubmit, ariaLabelledBy }: any) => (
     <textarea
-      placeholder={placeholder}
+      aria-labelledby={ariaLabelledBy}
       onChange={(e) => onChange({ message: e.target.value, messageRaw: e.target.value })}
       onKeyDown={(e) => e.key === 'Enter' && onSubmit?.()}
     />
@@ -174,7 +174,9 @@ describe('WorkflowStartExecutionPopup', () => {
       hasActiveUploads: true,
     })
     render(<WorkflowStartExecutionPopup {...defaultProps} />)
-    fireEvent.keyDown(screen.getByPlaceholderText('Enter a starting prompt'), { key: 'Enter' })
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Enter a starting prompt' }), {
+      key: 'Enter',
+    })
     expect(workflowExecutionsStore.createWorkflowExecution).not.toHaveBeenCalled()
   })
 

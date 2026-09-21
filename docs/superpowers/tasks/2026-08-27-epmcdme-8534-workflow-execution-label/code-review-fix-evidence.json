@@ -1,0 +1,24 @@
+{
+  "findings": [
+    {
+      "id": "CR-001",
+      "outcome": "fixed",
+      "note": "Added `if (ariaLabelledBy) quill.root.setAttribute('aria-labelledby', ariaLabelledBy)` inside the onLoad callback in Editor.tsx where the quill instance is guaranteed to be initialised."
+    },
+    {
+      "id": "CR-002",
+      "outcome": "fixed",
+      "note": "Expanded the useEffect guard to an if/else block that calls removeAttribute when ariaLabelledBy is falsy, matching the attribute lifecycle to the prop lifecycle."
+    },
+    {
+      "id": "CR-003",
+      "outcome": "fixed",
+      "note": "Replaced hardcoded 'workflow-execution-prompt-label' string with `const labelId = useId()` (React 18 built-in) in WorkflowStartExecutionPopup.tsx; both the label's id and ariaLabelledBy now receive the same stable-per-instance value."
+    },
+    {
+      "id": "CR-004",
+      "outcome": "fixed",
+      "note": "Removed `?? ''` fallback from the Editor mock in the accessibility test; aria-labelledby is now passed as-is so React omits the attribute when the prop is undefined, matching real Editor behaviour."
+    }
+  ]
+}
