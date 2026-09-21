@@ -39,10 +39,6 @@ public/keycloakify-dev-resources
 .ai-run/sdlc-factory/
 .ai-run/runs/
 .agents/memory/sdlc/daily/
-docs/superpowers/runs/
-docs/superpowers/tasks/*/state.local.json
-docs/superpowers/tasks/*/gate-plan.local.json
-docs/superpowers/tasks/*/*.diff
 .superpowers
 .codemie/claude-templates
 .codemie/virtual_assistants
@@ -60,7 +56,65 @@ bmad/*
 /.codegraph/
 /.serena/
 
-# Code-review diff artifacts
-*.diff
+# SDLC Factory: keep the durable record, ignore the machine state.
+# Prose is durable by shape (*.md), so a new Factory artifact needs no rule here;
+# resume cursors, diff snapshots, per-lens review inputs and task briefs stay ignored.
+docs/superpowers/tasks/**
+!docs/superpowers/tasks/*/
+!docs/superpowers/tasks/*/**/
+# Durable: every hand-authored document, plus the records a run cannot regenerate
+!docs/superpowers/tasks/*/**/*.md
+!docs/superpowers/tasks/*/**/*.py
+!docs/superpowers/tasks/*/**/actual-complexity.json
+!docs/superpowers/tasks/*/**/code-review-final.json
+!docs/superpowers/tasks/*/**/code-review-check.json
+!docs/superpowers/tasks/*/**/code-review-findings.json
+!docs/superpowers/tasks/*/**/complexity.json
+!docs/superpowers/tasks/*/**/complexity-assessment.json
+!docs/superpowers/tasks/*/**/complexity-assessment-actual.json
+!docs/superpowers/tasks/*/**/gate-run.json
+!docs/superpowers/tasks/*/**/meta.json
+!docs/superpowers/tasks/*/**/decisions.jsonl
+!docs/superpowers/tasks/*/**/events.jsonl
+!docs/superpowers/tasks/*/**/work-item-events.jsonl
+# ...minus the documents the Factory generates around a run rather than as its record
+docs/superpowers/tasks/*/**/lens-*.md
+docs/superpowers/tasks/*/**/code-review-brief.md
+docs/superpowers/tasks/*/**/code-review-deferred.md
+docs/superpowers/tasks/*/**/mr-body.md
+docs/superpowers/tasks/*/**/mr-title.txt
+docs/superpowers/tasks/*/**/mr-description.md
+docs/superpowers/runs/**
+!docs/superpowers/runs/*/
+!docs/superpowers/runs/*/**/
+# Durable: every hand-authored document, plus the records a run cannot regenerate
+!docs/superpowers/runs/*/**/*.md
+!docs/superpowers/runs/*/**/*.py
+!docs/superpowers/runs/*/**/actual-complexity.json
+!docs/superpowers/runs/*/**/code-review-final.json
+!docs/superpowers/runs/*/**/code-review-findings.json
+!docs/superpowers/runs/*/**/complexity.json
+!docs/superpowers/runs/*/**/complexity-assessment.json
+!docs/superpowers/runs/*/**/complexity-assessment-actual.json
+!docs/superpowers/runs/*/**/gate-run.json
+!docs/superpowers/runs/*/**/meta.json
+!docs/superpowers/runs/*/**/decisions.jsonl
+!docs/superpowers/runs/*/**/events.jsonl
+!docs/superpowers/runs/*/**/work-item-events.jsonl
+# ...minus the documents the Factory generates around a run rather than as its record
+docs/superpowers/runs/*/**/lens-*.md
+docs/superpowers/runs/*/**/code-review-brief.md
+docs/superpowers/runs/*/**/code-review-deferred.md
+docs/superpowers/runs/*/**/mr-body.md
+docs/superpowers/runs/*/**/mr-title.txt
+docs/superpowers/runs/*/**/mr-description.md
+# Shape rules: disposable machine state, whatever the Factory names it next
+docs/superpowers/tasks/*/**/*.local.*
+docs/superpowers/runs/*/**/*.local.*
+docs/superpowers/qa-tasks/*/**/*.local.*
+credentials.json
 .code-graph/
-run.log.harness
+
+# Legacy review artifacts / analytics exports: ignore entirely, no exceptions
+docs/superpowers/reviews/
+docs/codemie/analytics/

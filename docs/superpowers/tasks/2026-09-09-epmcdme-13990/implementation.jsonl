@@ -1,1 +1,0 @@
-{"task_id":"task-1","status":"done","commit":"7686daf05","test_command":"npx vitest run src/pages/integrations/components/SettingsForm/__tests__/SettingsForm.sharePointAuth.test.tsx"}

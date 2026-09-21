@@ -1,9 +1,0 @@
-{
-  "standards_review": [
-    {"kind": "commit-format", "status": "pass", "notes": "All 3 subjects match the documented EPMCDME-XXXX: Capital sentence format: 'Rewrite', 'Add', and 'Fix' each start uppercase, no zero ID, no trailing period"},
-    {"kind": "code-quality", "status": "na", "notes": "No guide found at .ai-run/guides/standards/code-quality.md — absent standard"},
-    {"kind": "security", "status": "pass", "notes": "No dangerouslySetInnerHTML or innerHTML in changed files. clearUrlFilters builds newUrl from window.location parts and calls window.history.replaceState (not location.replace/assign/href/window.open, which the guide targets). updateUrlWithFilters passes through a router abstraction. No credentials or sensitive data logged; console.error calls log only error objects. No cross-window postMessage or addEventListener('message') added. No nosonar markers or sonar suppression criteria introduced. The eslint-disable-next-line at useAnalyticsFilters.ts:123 is an ESLint directive, not a Sonar suppression, and does not fall under the guide's rule."}
-  ],
-  "blocking_findings": [],
-  "coverage_gap": false
-}

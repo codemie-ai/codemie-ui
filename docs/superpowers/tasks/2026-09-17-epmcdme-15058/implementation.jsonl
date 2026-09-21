@@ -1,3 +1,0 @@
-{"task_id":"task-1","status":"done","commit":"d1c95eb11","test_command":"npx vitest run src/pages/analytics/components/__tests__/AnalyticsDashboard.test.tsx src/pages/analytics/components/__tests__/AnalyticsDashboard.integration.test.tsx"}
-{"task_id":"task-2","status":"done","commit":"19fbf9764","test_command":"npx vitest run src/utils/__tests__/filters.test.ts"}
-{"task_id":"task-3","status":"done","commit":"4d8bffb7b","test_command":"npx vitest run src/pages/analytics/hooks/__tests__/useAnalyticsFilters.test.ts"}

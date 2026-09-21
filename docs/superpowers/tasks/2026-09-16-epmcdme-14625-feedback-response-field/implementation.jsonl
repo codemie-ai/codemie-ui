@@ -1,2 +1,0 @@
-{"task_id":"1","status":"done","commit":"035921400","test_command":"npm run test:unit -- MessageFeedbackActions.test.tsx"}
-{"task_id":"2","status":"done","commit":"d9ac28a78","test_command":"npm run test:unit -- MessageFeedbackActions.test.tsx"}

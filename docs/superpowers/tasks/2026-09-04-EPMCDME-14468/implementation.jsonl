@@ -1,6 +1,0 @@
-{"task_id":"task-1","status":"done","commit":"281ce1e15","test_command":"npm run typecheck"}
-{"task_id":"task-2","status":"done","commit":"60fee8ccd","test_command":"npm run typecheck"}
-{"task_id":"task-3","status":"done","commit":"4c6d83947","test_command":"npm run typecheck"}
-{"task_id":"task-4","status":"done","commit":"bda9adaf4","test_command":"npx vitest run src/pages/analytics/components/widgets/__tests__/DynamicWidget.test.tsx"}
-{"task_id":"task-5","status":"done","commit":"8506e9927","test_command":"npx vitest run src/pages/analytics/__tests__/AnalyticsPage.test.tsx"}
-{"task_id":"task-6","status":"done","commit":"59fd7c55d","test_command":"npm run typecheck"}

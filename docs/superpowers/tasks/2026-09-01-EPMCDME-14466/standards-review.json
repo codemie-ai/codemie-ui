@@ -1,9 +1,0 @@
-{
-  "standards_review": [
-    {"kind": "commit-format", "status": "pass", "notes": "All 5 subjects match the documented EPMCDME-XXXX: Capital sentence format; ticket EPMCDME-14466 is non-zero, first word 'Remove' satisfies [A-Z][a-z]*, no trailing period"},
-    {"kind": "code-quality",  "status": "na",   "notes": "No code-quality.md found at .ai-run/guides/standards/code-quality.md and no ArtifactRef was passed; absent standard, not a coverage gap"},
-    {"kind": "security",      "status": "pass",  "notes": "All changed files are removals or cleanup of adoption-related code; no new dangerouslySetInnerHTML sinks introduced in TableWidget.tsx (only gating logic removed); router.tsx removes an adoption route with no new navigation from untrusted input; no new postMessage listeners; no credentials or tokens added to config paths; no new Sonar suppressions detected in added lines"}
-  ],
-  "blocking_findings": [],
-  "coverage_gap": false
-}

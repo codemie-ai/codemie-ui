@@ -1,1 +1,0 @@
-{"task":"Add .show-scroll class to ChatHistory scroll container","status":"done","commit":"df7b2007c0dede7958a615675ab44a7ea631e9ce","files":["src/pages/chat/components/ChatHistory/ChatHistory.tsx"]}

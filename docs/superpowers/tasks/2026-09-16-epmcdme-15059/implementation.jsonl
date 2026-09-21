@@ -1,3 +1,0 @@
-{"task_id":"1","status":"done","commit":"89bc1891d","test_command":"npx vitest run src/components/CodeBlock/__tests__/htmlPreviewSandbox.test.ts"}
-{"task_id":"2","status":"done","commit":"7e36b833c","test_command":"npx vitest run src/components/CodeBlock/__tests__/HtmlPreviewPopup.test.tsx"}
-{"task_id":"3","status":"done","commit":"bc65cc395","test_command":"npx vitest run src/components/CodeBlock/"}
