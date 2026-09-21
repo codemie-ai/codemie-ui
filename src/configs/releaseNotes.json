@@ -1,5 +1,86 @@
 [
 {
+  "version": "2.52.0",
+  "date": "2026-09-21",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "Provision internal MCP tools in Claude Desktop",
+          "description": "CodeMie can now automatically provision EPAM internal MCP tools for use in Claude Desktop.",
+          "issues": [{"key":"EPMCDME-13167","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-13167"}]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Enhance incremental indexing",
+          "description": "Incremental indexing now includes improved watermark handling, REST routing, and actor dispatch.",
+          "issues": [{"key":"EPMCDME-13941","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-13941"}]
+        },
+        {
+          "title": "Improve Claude Desktop data in Analytics and Chats",
+          "description": "Claude Desktop data retrieval and presentation have been improved across Analytics and Chats.",
+          "issues": [{"key":"EPMCDME-12687","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-12687"}]
+        },
+        {
+          "title": "Platform maintenance improvements",
+          "description": "Internal platform maintenance and CI performance improvements were delivered.",
+          "issues": []
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Synchronize Analytics page filters",
+          "description": "Analytics page filters now remain consistent between URL query parameters and locally stored preferences.",
+          "issues": [{"key":"EPMCDME-15058","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-15058"}]
+        },
+        {
+          "title": "Preserve key spending after budget redistribution",
+          "description": "Previous spending is now transferred to newly created keys when budget distributions change.",
+          "issues": [{"key":"EPMCDME-14998","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14998"}]
+        },
+        {
+          "title": "Fix nested Azure DevOps work-item payloads",
+          "description": "Create and update work-item tools now correctly process nested work_item_json payloads.",
+          "issues": [{"key":"EPMCDME-14788","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14788"}]
+        },
+        {
+          "title": "Restore Gemini agent analytics tracking",
+          "description": "Analytics data collection for Gemini agents has been corrected.",
+          "issues": [{"key":"EPMCDME-14674","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14674"}]
+        },
+        {
+          "title": "Preserve workflow tool state after reload",
+          "description": "Tool calls no longer incorrectly appear as interrupted after a page reload.",
+          "issues": [{"key":"EPMCDME-14624","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14624"}]
+        },
+        {
+          "title": "Maintain workflow tool context",
+          "description": "Bare workflow tool states now retain their execution context instead of creating isolated workspaces.",
+          "issues": [{"key":"EPMCDME-14138","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14138"}]
+        },
+        {
+          "title": "Show specific data-source types",
+          "description": "Data-source details now display the specific provider type rather than a generic provider label.",
+          "issues": [{"key":"EPMCDME-9167","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-9167"}]
+        },
+        {
+          "title": "Improve accessibility and keyboard navigation",
+          "description": "Focus order, focus visibility, and decorative-image accessibility have been corrected across configuration, chat-folder, and AI/Run Feedback interfaces.",
+          "issues": [{"key":"EPMCDME-8570","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8570"},{"key":"EPMCDME-8437","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8437"},{"key":"EPMCDME-8436","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8436"},{"key":"EPMCDME-8430","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8430"}]
+        }
+      ]
+    }
+  ]
+},
+{
   "version": "2.51.0",
   "date": "2026-09-17",
   "sections": [
