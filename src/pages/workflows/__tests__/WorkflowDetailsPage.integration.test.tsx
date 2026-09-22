@@ -197,6 +197,23 @@ describe('WorkflowDetailsPage - Integration', () => {
       })
     })
 
+    it('renders the executions list at the bare path with no executionId', async () => {
+      ;(mockRouterState as any).params = { workflowId: 'wf-123' }
+      mockAPI('GET', 'v1/workflows/id/wf-123', createWorkflowFixture())
+      mockAPI(
+        'GET',
+        'v1/workflows/wf-123/executions',
+        createExecutionsResponse([createExecutionFixture()])
+      )
+
+      renderPage('/workflows/wf-123/workflow-executions')
+
+      await waitFor(() => {
+        expect(screen.getAllByText('My Workflow').length).toBeGreaterThan(0)
+        expect(screen.getByText('Workflow Execution History')).toBeInTheDocument()
+      })
+    })
+
     it('navigates to execution when sidebar item clicked', async () => {
       const exec2 = createExecutionFixture({ execution_id: 'exec-2', overall_status: 'Failed' })
       mockAPI('GET', 'v1/workflows/id/wf-123', createWorkflowFixture())

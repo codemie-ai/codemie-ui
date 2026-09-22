@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case lens ran cleanly; acceptance is n/a because no spec/story exists for this ticket (genuine no-spec, capping confidence at low). Of 6 edge-case candidates, 4 are pre-existing WorkflowDetailsPage/goBackWorkflows/router behavior not touched by this 1-line route-pattern diff (deferred to code-review-deferred.md); 2 dismissed — the route.replace().catch() suggestion assumes a promise-returning API but useVueRouter's replace/push are typed void, and the trailing-slash matchRoutes assertion is a nice-to-have below the test-coverage floor for the requested bare-path regression test. No standards audit was expected for this profile, so standards_review rows are na with no coverage gap.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for this profile/round; no guides implicated." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for this profile/round; no guides implicated." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for this profile/round; no guides implicated." }
+  ],
+  "findings": []
+}

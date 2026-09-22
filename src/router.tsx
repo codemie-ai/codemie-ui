@@ -439,7 +439,7 @@ const workflowRoutes: RouteObject[] = [
   },
   {
     id: WOKRFLOW_EXECUTIONS,
-    path: 'workflows/:workflowId/workflow-executions/:executionId',
+    path: 'workflows/:workflowId/workflow-executions/:executionId?',
     Component: WorkflowDetailsPage,
   },
   {
