@@ -37,9 +37,16 @@ import type { DropdownChangeEvent } from 'primereact/dropdown'
 interface AnalyticsFiltersProps {
   filters: AnalyticsQueryParams
   onFiltersChange: (filters: AnalyticsQueryParams) => void
+  /** Seed options for the user filter — keeps pre-selected users visible on
+   *  initial load even before the async options list is fetched. */
+  initialUserOptions?: Array<{ label: string; value: string }>
 }
 
-const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange }) => {
+const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
+  filters,
+  onFiltersChange,
+  initialUserOptions,
+}) => {
   const { user } = useSnapshot(userStore)
   const [isUserManagementEnabled] = useUserManagementEnabled()
   const isAdmin = user?.isAdmin ?? false
@@ -296,6 +303,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({ filters, onFiltersChange 
             isAdmin={isAdminPgSearch}
             showMeCheckbox={showMeCheckbox}
             onSearchChange={handleSearchChange}
+            initialStickyOptions={initialUserOptions}
           />
         </FilterAccordionItem>
       </div>

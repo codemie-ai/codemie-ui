@@ -335,4 +335,49 @@ describe('AnalyticsUserFilter', () => {
     const meCheckbox = screen.queryByLabelText('Me')
     expect(meCheckbox).not.toBeInTheDocument()
   })
+
+  it('renders a chip label for a preselected user provided via initialStickyOptions even when userOptions is empty', async () => {
+    render(
+      <AnalyticsUserFilter
+        value={['user-xyz']}
+        userOptions={[]}
+        initialStickyOptions={[{ value: 'user-xyz', label: 'Jane Doe' }]}
+        onChange={vi.fn()}
+      />
+    )
+    await waitFor(() => {
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    })
+  })
+
+  it('renders a chip label when initialStickyOptions arrives after mount (async prop update)', async () => {
+    // Simulates AnalyticsPage: mounts with seedUserOptions=[] then updates after
+    // the async getAnalyticsUsers fetch resolves.
+    const { rerender } = render(
+      <AnalyticsUserFilter
+        value={['user-late']}
+        userOptions={[]}
+        initialStickyOptions={[]}
+        onChange={vi.fn()}
+      />
+    )
+
+    // Before the async prop arrives the chip label must not appear.
+    expect(screen.queryByText('Bob Late')).not.toBeInTheDocument()
+
+    // Simulate parent resolving seed options.
+    rerender(
+      <AnalyticsUserFilter
+        value={['user-late']}
+        userOptions={[]}
+        initialStickyOptions={[{ value: 'user-late', label: 'Bob Late' }]}
+        onChange={vi.fn()}
+      />
+    )
+
+    // After the prop update the chip label must appear.
+    await waitFor(() => {
+      expect(screen.getByText('Bob Late')).toBeInTheDocument()
+    })
+  })
 })

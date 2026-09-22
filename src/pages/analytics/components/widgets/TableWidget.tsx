@@ -132,13 +132,7 @@ const TableWidget: FC<TableWidgetProps> = ({
     if (result && generation === fetchGenerationRef.current) {
       setData(result)
     }
-  }, [
-    metricType,
-    page,
-    perPage,
-    filters,
-    initialData,
-  ])
+  }, [metricType, page, perPage, filters, initialData])
 
   useEffect(() => {
     fetchData().catch(console.error)

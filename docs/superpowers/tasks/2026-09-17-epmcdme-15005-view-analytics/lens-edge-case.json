@@ -1,0 +1,32 @@
+[
+  {
+    "location": "src/pages/analytics/components/AnalyticsUserFilter.tsx:125-133",
+    "trigger_condition": "initialStickyOptions prop is empty at mount; async parent fetch resolves later",
+    "guard_snippet": "useEffect(() => { if (initialStickyOptions?.length) { setStickyOptions(prev => { const m = new Map(prev); initialStickyOptions.forEach(o => m.set(o.value, o)); return m }) } }, [initialStickyOptions])",
+    "potential_consequence": "Sticky cache never seeded; pre-selected user chip shows no label"
+  },
+  {
+    "location": "src/pages/analytics/AnalyticsPage.tsx:83-99",
+    "trigger_condition": "Component unmounts while getAnalyticsUsers fetch is in-flight",
+    "guard_snippet": "let cancelled = false; ... .then(opts => { if (!cancelled) setSeedUserOptions(...) }); return () => { cancelled = true }",
+    "potential_consequence": "setSeedUserOptions called on unmounted component; stale state update"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx:249-261 (new Link hunk)",
+    "trigger_condition": "User clicks analytics link before listProjectBudgets resolves; memberBudgets is still []",
+    "guard_snippet": "const [budgetsLoaded, setBudgetsLoaded] = useState(false); disable or aria-disabled the Link until budgetsLoaded",
+    "potential_consequence": "Analytics opens with time_period=LAST_30_DAYS instead of actual budget period"
+  },
+  {
+    "location": "src/utils/analyticsBudgetPeriod.ts:779-793 (periodStartMs)",
+    "trigger_condition": "budget_duration is any value outside {daily, weekly, monthly}",
+    "guard_snippet": "default: console.warn(`Unknown budget_duration: ${duration}`); return null",
+    "potential_consequence": "Budget silently excluded; LAST_30_DAYS fallback used with no observable error"
+  },
+  {
+    "location": "src/pages/analytics/AnalyticsPage.tsx:88-89",
+    "trigger_condition": "URL has users param but no projects param; filters.projects is undefined",
+    "guard_snippet": "userStore.getAnalyticsUsers({ projects: filters.projects ?? [] })",
+    "potential_consequence": "Seed fetch loads all analytics users across all projects; large response discarded client-side"
+  }
+]

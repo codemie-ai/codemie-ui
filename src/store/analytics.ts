@@ -271,21 +271,13 @@ export const analyticsStore = proxy<Analytics>({
    * @param params - Query parameters including pagination and optional config
    * @returns Promise with TabularResponse or null
    */
-  async fetchTabularData(
-    type: TabularMetricType,
-    params?: AnalyticsPaginatedRequestParams
-  ) {
+  async fetchTabularData(type: TabularMetricType, params?: AnalyticsPaginatedRequestParams) {
     // Clean query params: convert empty arrays to null for proper backend handling
     const cleanedParams = {
       ...params,
       projects:
-        Array.isArray(params?.projects) && params.projects.length === 0
-          ? null
-          : params?.projects,
-      users:
-        Array.isArray(params?.users) && params.users.length === 0
-          ? null
-          : params?.users,
+        Array.isArray(params?.projects) && params.projects.length === 0 ? null : params?.projects,
+      users: Array.isArray(params?.users) && params.users.length === 0 ? null : params?.users,
     }
 
     return fetchWithState<TabularResponse>(

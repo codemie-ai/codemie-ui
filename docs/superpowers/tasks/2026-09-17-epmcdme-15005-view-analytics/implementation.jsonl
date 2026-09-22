@@ -1,0 +1,4 @@
+{"task_id":"1","status":"done","commit":"7330aeb15","test_command":"npm run test:unit:slnt -- analyticsBudgetPeriod.test.ts"}
+{"task_id":"2","status":"done","commit":"69eb25f6f","test_command":"npm run test:unit:slnt -- getAnalyticsMemberLink.test.ts"}
+{"task_id":"3","status":"done","commit":"3ba4ed252","test_command":"npm run test:unit:slnt -- AnalyticsUserFilter.test.tsx"}
+{"task_id":"4","status":"done","commit":"34cc187d7","test_command":"./node_modules/.bin/vitest run --project integration --silent ProjectMembersViewAnalytics.integration.test.tsx"}

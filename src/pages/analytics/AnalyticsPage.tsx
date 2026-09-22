@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useEffect, useState } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useSnapshot } from 'valtio'
 
@@ -55,6 +55,14 @@ const AnalyticsPage: FC = () => {
   const [showDashboardList, setShowDashboardList] = useState(false)
   const [dashboardsLoaded, setDashboardsLoaded] = useState(false)
 
+  // Seed user options for pre-selected users arriving via URL (e.g. from the
+  // "View analytics" button in ProjectMembersManager).  Fetched once on mount
+  // so the selected chip renders with a label even before the main filter load.
+  const [seedUserOptions, setSeedUserOptions] = useState<Array<{ label: string; value: string }>>(
+    []
+  )
+  const seedFetchedRef = useRef(false)
+
   const tab = searchParams.get('tab') ?? AnalyticsDashboardType.insights
 
   const isInsightsTab = tab === AnalyticsDashboardType.insights
@@ -70,6 +78,24 @@ const AnalyticsPage: FC = () => {
 
   useEffect(() => {
     analyticsStore.loadDashboards().then(() => setDashboardsLoaded(true))
+  }, [])
+
+  useEffect(() => {
+    if (seedFetchedRef.current || !filters.users?.length || !filters.projects?.length) return
+    seedFetchedRef.current = true
+    // Fetch user options scoped to the pre-selected project (broadest scope so
+    // the user appears even with no activity in the current period).
+    userStore
+      .getAnalyticsUsers({ projects: filters.projects })
+      .then((options) => {
+        const preselected = new Set(filters.users ?? [])
+        setSeedUserOptions(
+          options.filter((o: { label: string; value: string }) => preselected.has(o.value))
+        )
+      })
+      .catch(console.error)
+    // Run once on mount only — deps intentionally empty.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -129,7 +155,11 @@ const AnalyticsPage: FC = () => {
     <div className="flex h-full min-w-0">
       {!isLeaderboardTab && (
         <Sidebar title="Analytics" description="Monitor usage metrics and performance">
-          <AnalyticsFilters filters={filters} onFiltersChange={handleFiltersChange} />
+          <AnalyticsFilters
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            initialUserOptions={seedUserOptions}
+          />
         </Sidebar>
       )}
 

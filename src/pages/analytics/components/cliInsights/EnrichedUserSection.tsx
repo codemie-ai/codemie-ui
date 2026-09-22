@@ -115,35 +115,30 @@ const EnrichedUserSection: FC<EnrichedUserSectionProps> = ({ filters }) => {
             title="Top Countries by Cost"
             description="Highest-cost countries in the selected period."
             filters={filters}
-
           />
           <TableWidget
             metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_CITY}
             title="Top Cities by Cost"
             description="Highest-cost cities in the selected period."
             filters={filters}
-
           />
           <TableWidget
             metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_JOB_TITLE}
             title="Users by Job Title"
             description="CLI users distributed by job title."
             filters={filters}
-
           />
           <TableWidget
             metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_PRIMARY_SKILL}
             title="Users by Primary Skill"
             description="CLI users distributed by primary skill."
             filters={filters}
-
           />
           <TableWidget
             metricType={TabularMetricType.CLI_INSIGHTS_BY_ENRICHED_USER_JOB_TITLE_GROUP}
             title="Users by Job Title Group"
             description="CLI users distributed by job title group."
             filters={filters}
-
           />
         </div>
       )}

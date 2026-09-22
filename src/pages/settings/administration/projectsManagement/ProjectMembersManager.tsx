@@ -14,8 +14,10 @@
 //
 
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { useSnapshot } from 'valtio'
 
+import AnalyticsSvg from '@/assets/icons/diagram-duotone.svg?react'
 import ImportSvg from '@/assets/icons/input.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import Button from '@/components/Button'
@@ -26,6 +28,7 @@ import Spinner from '@/components/Spinner'
 import Table from '@/components/Table'
 import { ButtonSize, ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import { useTableSelection } from '@/hooks/useTableSelection'
+import { useVueRouter } from '@/hooks/useVueRouter'
 import { getErrorMessage } from '@/pages/integrations/utils/getErrorMessage'
 import AddUserModal, {
   AddUserFormData,
@@ -47,7 +50,10 @@ import { UserListItem } from '@/types/entity/user'
 import { getCategorySpend, ProjectMemberSpendingRow } from '@/types/entity/userProjectSpending'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import { formatCurrency, formatSpend } from '@/utils/currency'
+import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
+import { getAnalyticsMemberLink } from '@/utils/getAnalyticsMemberLink'
 import toaster from '@/utils/toaster'
+import { cn } from '@/utils/utils'
 
 import MemberAllocationOverrideModal from './components/MemberAllocationOverrideModal'
 import ImportUsersModal from './ImportUsersModal'
@@ -205,6 +211,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
 }) => {
   const snap = useSnapshot(userStore)
   const currentUser = snap.user
+  const router = useVueRouter()
 
   const [users, setUsers] = useState<UserListItem[]>([])
   const [deletingUser, setDeletingUser] = useState<UserListItem | null>(null)
@@ -234,6 +241,11 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     Record<string, ProjectMemberSpendingRow>
   >({})
   const [spendingLoading, setSpendingLoading] = useState(false)
+
+  // Budgets fetched independently for the "View analytics" link — entirely
+  // separate from the `budgets` prop which drives the Budget Allocations column.
+  const [memberBudgets, setMemberBudgets] = useState<ProjectBudget[]>([])
+  const [budgetsLoaded, setBudgetsLoaded] = useState(false)
 
   const tableContainerRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -344,6 +356,29 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   useEffect(() => {
     loadUsers()
   }, [loadUsers])
+
+  // Fetch project budgets independently for the "View analytics" link period calculation.
+  // This is guarded by canManageProject and does NOT affect showBudgets or the budget column.
+  useEffect(() => {
+    let cancelled = false
+    setBudgetsLoaded(false)
+    if (canManageProject) {
+      projectBudgetsStore
+        .listProjectBudgets({ projectName: project.name })
+        .then((result) => {
+          if (!cancelled) setMemberBudgets(result)
+        })
+        .catch(console.error)
+        .finally(() => {
+          if (!cancelled) setBudgetsLoaded(true)
+        })
+    } else {
+      setBudgetsLoaded(true)
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [canManageProject, project.name])
 
   useEffect(() => {
     let cancelled = false
@@ -574,6 +609,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       ),
       actions: (user: UserListItem) => {
         const isCreator = user.id === project.created_by
+        const memberName = user.name ?? user.username
+        const analyticsTooltip = `View analytics for ${memberName} in ${project.name}`
 
         return (
           <div
@@ -582,6 +619,26 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
+            {isEnterpriseEdition() && (
+              <Link
+                to={getAnalyticsMemberLink(router, project.name, user.id, memberBudgets)}
+                aria-label={analyticsTooltip}
+                aria-disabled={!budgetsLoaded}
+                data-tooltip-id="react-tooltip"
+                data-tooltip-content={analyticsTooltip}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (!budgetsLoaded) e.preventDefault()
+                }}
+                onKeyDown={(e) => e.stopPropagation()}
+                className={cn(
+                  'inline-flex items-center justify-center w-8 h-8 rounded text-text-tertiary hover:text-text-primary hover:bg-surface-specific-dropdown-hover transition-colors',
+                  !budgetsLoaded && 'pointer-events-none opacity-50'
+                )}
+              >
+                <AnalyticsSvg className="w-4 h-4" />
+              </Link>
+            )}
             {!isCreator && (
               <span
                 data-tooltip-id="react-tooltip"
@@ -613,6 +670,9 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       handleDeleteUser,
       budgetAllocationLookup,
       spendingByUserId,
+      memberBudgets,
+      budgetsLoaded,
+      router,
     ]
   )
 

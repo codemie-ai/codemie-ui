@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "generated": "2026-09-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 17,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 11,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Change spans 4 components across two product areas: ProjectMembersManager (settings/administration), AnalyticsPage + AnalyticsFilters + AnalyticsUserFilter (analytics), plus two new shared utility functions (computeAnalyticsBudgetPeriod, getAnalyticsMemberLink). Shared utilities added warrant L."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Diffstat reports 11 files changed (6 new test files + 5 production files modified/created), mapping to XL (11-15) per the scoring table. Test coverage for edge cases in budget period computation accounts for the majority of the insertion count (969 insertions)."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Budget period computation (computeAnalyticsBudgetPeriod) contains custom date math with multiple edge cases: budget_reset_at vs created_at fallback, 30-minute floor-to-step snapping, NaN guards. No existing utility covered this domain. Closest pattern is the analytics filter URL encoding, which is well-established. M is appropriate — novel but low-risk, no security or performance critical path."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

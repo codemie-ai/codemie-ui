@@ -30,6 +30,9 @@ interface AnalyticsUserFilterProps {
   isAdmin?: boolean
   showMeCheckbox?: boolean
   onSearchChange?: (term: string) => void
+  /** Seed options that are merged into the sticky cache on mount so that
+   *  pre-selected users remain visible even before `userOptions` is loaded. */
+  initialStickyOptions?: Array<{ label: string; value: string }>
 }
 
 const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
@@ -39,6 +42,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   isAdmin = false,
   showMeCheckbox = false,
   onSearchChange = () => {},
+  initialStickyOptions,
 }) => {
   const [meChecked, setMeChecked] = useState(false)
   const currentUser = userStore.user
@@ -114,6 +118,18 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   const [stickyOptions, setStickyOptions] = useState<Map<string, { label: string; value: string }>>(
     new Map()
   )
+
+  // Seed sticky options whenever the initialStickyOptions prop changes so that
+  // pre-selected users render with labels even when the options arrive after mount
+  // (e.g. after an async getAnalyticsUsers fetch in the parent).
+  useEffect(() => {
+    if (!initialStickyOptions?.length) return
+    setStickyOptions((prev) => {
+      const m = new Map(prev)
+      initialStickyOptions.forEach((o) => m.set(o.value, o))
+      return m
+    })
+  }, [initialStickyOptions])
 
   useEffect(() => {
     setStickyOptions((prev) => {

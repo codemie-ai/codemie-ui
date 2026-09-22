@@ -153,7 +153,7 @@ export const useAnalyticsFilters = () => {
       if (typeof value === 'string') return value === ''
       return value === null || value === undefined
     })
-    const filtersToApply = isReset ? DEFAULT_FILTERS : (cleanFilters as AnalyticsQueryParams)
+    const filtersToApply = isReset ? DEFAULT_FILTERS : cleanFilters
     try {
       setFilters(FILTER_ENTITY.ANALYTICS, filtersToApply)
       setFilterState(filtersToApply)

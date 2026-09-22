@@ -1,0 +1,62 @@
+{
+  "decision": "request-changes",
+  "rationale": "No acceptance criteria (no spec/story ArtifactRef dispatched; genuine no-spec). Edge-case lens ran; 3 major patch findings: pre-selected user chip label lost when seed options arrive after mount (CR-002), analytics link navigable before budget-period fetch completes (CR-003), seed user fetch unscoped when URL omits projects (CR-001). 2 dismissed: setState after unmount is a no-op in React 18; unknown budget_duration fallback is intentional per the utility's design. 0 deferred.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 4 subjects match the documented pattern EPMCDME-XXXX: Capital sentence (non-zero ID, first word capitalised, no trailing period): 'Add View analytics icon button to ProjectMembersManager', 'Seed pre-selected user into AnalyticsUserFilter on mount', 'Add getAnalyticsMemberLink URL builder', 'Add computeAnalyticsBudgetPeriod utility'"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality guide found at .ai-run/guides/standards/code-quality.md and no ref was passed; absent standard, no adjudication possible"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No dangerouslySetInnerHTML or .innerHTML sinks introduced. getAnalyticsMemberLink builds a URL via router.resolve({ name: ANALYTICS, query }) — path comes from a named route constant, not from user input; API-sourced values (user.id, project.name) are query parameter values that react-router URL-encodes, not path segments, and the result is consumed by react-router <Link to> not a location navigation API. No window.open, location.href/assign/replace calls. No new postMessage or addEventListener('message') usage. No VITE_* or window._env_ additions. No credentials in config or tracked files."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/AnalyticsPage.tsx",
+      "line": 89,
+      "title": "Seed user fetch unscoped when URL omits projects",
+      "problem": "userStore.getAnalyticsUsers({ projects: filters.projects }) passes projects: undefined when the URL contains a users parameter but no projects parameter; the API call is unscoped and may return the full analytics user roster across all projects.",
+      "impact": "Server returns the full user roster for an unscoped request; the large response is discarded client-side after filtering to the pre-selected ids. Reachability is uncertain via the 'View analytics' button (which always includes a project parameter), but direct URL access or bookmarks with only a users param trigger this path — a realistic scenario on any deployment with many users.",
+      "recommendation": "Add a guard so the seed fetch only fires when both filters.users and filters.projects are non-empty, or explicitly pass projects: filters.projects ?? [] and verify that the API treats an empty array as a scoped-to-nothing call rather than an all-projects call."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/AnalyticsUserFilter.tsx",
+      "line": 132,
+      "title": "Sticky user option not seeded when async prop arrives late",
+      "problem": "The useEffect at lines 124-132 that seeds stickyOptions from initialStickyOptions runs only on mount (empty deps array). AnalyticsPage initialises seedUserOptions as [] and updates it only after an async getAnalyticsUsers fetch; by the time the resolved options arrive as the initialStickyOptions prop, the effect never re-fires.",
+      "impact": "The pre-selected member chip in the User filter renders with no label until the main userOptions list loads and includes that user. Members with no activity in the current period never appear in userOptions at all, which is the exact scenario this seeding mechanism was introduced to solve — making the feature a no-op for its primary use case.",
+      "recommendation": "Add initialStickyOptions to the useEffect dependency array (removing the existing ESLint suppression comment), or restructure so the parent passes the resolved options only after the async fetch completes so the mount-time value is already populated."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 616,
+      "title": "Analytics link active before budget-period fetch completes",
+      "problem": "The Link at line 616 calls getAnalyticsMemberLink(router, project.name, user.id, memberBudgets) where memberBudgets initialises as [] and is populated by an async listProjectBudgets fetch. The link is always enabled; clicking it while the fetch is in-flight passes an empty budgets array to computeAnalyticsBudgetPeriod, which returns the LAST_30_DAYS fallback.",
+      "impact": "Admins who click the button on page load or on a slow network open Analytics with a 30-day window rather than the project's actual budget period, with no indication that the date range is wrong. The feature's primary value — opening the correct budgeting window — is silently lost.",
+      "recommendation": "Track a budgetsLoaded boolean (set to true in the listProjectBudgets .then handler) and either render the Link with aria-disabled and pointer-events-none styling until budgetsLoaded is true, or replace it with a button that defers navigation until the flag is set."
+    }
+  ]
+}

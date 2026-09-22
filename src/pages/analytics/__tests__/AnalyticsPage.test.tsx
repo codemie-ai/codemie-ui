@@ -44,10 +44,15 @@ vi.mock('@/hooks/useFeatureFlags', () => ({
   }),
 }))
 
-vi.mock('@/store', () => ({
-  userStore: {
+const { mockUserStore } = vi.hoisted(() => ({
+  mockUserStore: {
     user: { id: 'test-user', email: 'test@test.com', isAdmin: true },
+    getAnalyticsUsers: vi.fn().mockResolvedValue([]),
   },
+}))
+
+vi.mock('@/store', () => ({
+  userStore: mockUserStore,
 }))
 
 vi.mock('@/store/analytics', () => ({
@@ -59,11 +64,15 @@ vi.mock('@/store/analytics', () => ({
   },
 }))
 
-vi.mock('../hooks/useAnalyticsFilters', () => ({
-  useAnalyticsFilters: vi.fn(() => ({
+const { mockUseAnalyticsFilters } = vi.hoisted(() => ({
+  mockUseAnalyticsFilters: vi.fn(() => ({
     filters: {},
     handleFilterChange: vi.fn(),
   })),
+}))
+
+vi.mock('../hooks/useAnalyticsFilters', () => ({
+  useAnalyticsFilters: mockUseAnalyticsFilters,
 }))
 
 vi.mock('../components/AnalyticsDashboard', () => ({
@@ -344,6 +353,43 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     render(<AnalyticsPage />)
     await waitFor(() =>
       expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'insights' }, { replace: true })
+    )
+  })
+})
+
+describe('AnalyticsPage - seed user fetch guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockSearchParams.get.mockReturnValue(null)
+    mockUserStore.getAnalyticsUsers.mockResolvedValue([])
+  })
+
+  it('does NOT call getAnalyticsUsers when users param is present but projects param is absent', async () => {
+    mockUseAnalyticsFilters.mockReturnValue({
+      filters: { users: ['user-abc'] },
+      handleFilterChange: vi.fn(),
+    })
+
+    render(<AnalyticsPage />)
+
+    // Wait a tick for any pending microtasks
+    await vi.waitFor(() => Promise.resolve())
+
+    expect(mockUserStore.getAnalyticsUsers).not.toHaveBeenCalled()
+  })
+
+  it('calls getAnalyticsUsers scoped to the project when both users and projects are present', async () => {
+    mockUseAnalyticsFilters.mockReturnValue({
+      filters: { users: ['user-abc'], projects: ['project-x'] },
+      handleFilterChange: vi.fn(),
+    })
+
+    render(<AnalyticsPage />)
+
+    await vi.waitFor(() => Promise.resolve())
+
+    expect(mockUserStore.getAnalyticsUsers).toHaveBeenCalledWith(
+      expect.objectContaining({ projects: ['project-x'] })
     )
   })
 })
