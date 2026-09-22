@@ -1,0 +1,21 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Both commits follow EPMCDME-NNNNN: <description> format"
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No security concerns — purely cosmetic Tailwind class change"
+    }
+  ],
+  "findings": [],
+  "rationale": "Both blind and edge-case lenses returned no findings. The diff replaces text-[10px] (10px arbitrary value) and implicit default size with text-xs (12px Tailwind standard) on both resource name and type spans — a purely cosmetic change with no correctness, security, or API risk. No acceptance lens ran (no-spec mode: no story/spec artifact available), which forces confidence: low per the no-spec rule."
+}

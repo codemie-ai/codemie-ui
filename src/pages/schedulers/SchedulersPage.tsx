@@ -282,8 +282,8 @@ const SchedulersPage = () => {
   const renderResource = useCallback(
     (item: Scheduler) => (
       <div className="flex flex-col gap-0.5">
-        <span className="font-medium">{item.resource.name}</span>
-        <span className="text-[10px] text-text-secondary">{item.resource.type}</span>
+        <span className="text-xs font-medium">{item.resource.name}</span>
+        <span className="text-xs text-text-secondary">{item.resource.type}</span>
       </div>
     ),
     []
