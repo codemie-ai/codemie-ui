@@ -74,15 +74,22 @@ const AnalyticsPage: FC = () => {
 
   useEffect(() => {
     if (!dashboardsLoaded) return
-    const isValidTab =
-      tab === AnalyticsDashboardType.insights ||
-      tab === AnalyticsDashboardType.cliInsights ||
-      tab === AnalyticsDashboardType.leaderboard ||
-      dashboards.some((d) => d.id === tab)
+    const isKnownTab = (Object.values(AnalyticsDashboardType) as string[]).includes(tab)
+    const isFlagGatedTabEnabled =
+      (tab !== AnalyticsDashboardType.cliAnalytics || isCliAnalyticsEnabled) &&
+      (tab !== AnalyticsDashboardType.leaderboard || isLeaderboardEnabled)
+    const isValidTab = (isKnownTab && isFlagGatedTabEnabled) || dashboards.some((d) => d.id === tab)
     if (!isValidTab) {
       setSearchParams({ tab: AnalyticsDashboardType.insights }, { replace: true })
     }
-  }, [tab, dashboardsLoaded, dashboards, setSearchParams])
+  }, [
+    tab,
+    dashboardsLoaded,
+    dashboards,
+    setSearchParams,
+    isCliAnalyticsEnabled,
+    isLeaderboardEnabled,
+  ])
 
   const handleFiltersChange = (newFilters: AnalyticsQueryParams) => {
     handleFilterChange(newFilters)

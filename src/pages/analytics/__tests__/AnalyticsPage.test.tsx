@@ -18,6 +18,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { userStore } from '@/store'
+import { AnalyticsDashboard as AnalyticsDashboardType } from '@/types/analytics'
 
 import AnalyticsPage from '../AnalyticsPage'
 
@@ -66,8 +67,13 @@ vi.mock('../hooks/useAnalyticsFilters', () => ({
 }))
 
 vi.mock('../components/AnalyticsDashboard', () => ({
-  default: ({ isCliAnalyticsEnabled }) => (
-    <div data-testid="analytics-dashboard" data-cli-analytics-enabled={isCliAnalyticsEnabled} />
+  default: ({ activeTab, isCliAnalyticsEnabled, isLeaderboardEnabled }) => (
+    <div
+      data-testid="analytics-dashboard"
+      data-active-tab={activeTab}
+      data-cli-analytics-enabled={isCliAnalyticsEnabled}
+      data-leaderboard-enabled={isLeaderboardEnabled}
+    />
   ),
 }))
 
@@ -162,6 +168,11 @@ describe('AnalyticsPage - isCustomDashboard excludes leaderboard tab', () => {
 describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'feature:dashboardCustomization') return [true, true]
+      if (flag === 'aiChampionsLeaderboard') return [true, true]
+      return [false, true]
+    })
     mockSearchParams.get.mockImplementation((key: string) => {
       if (key === 'tab') return 'insights'
       return null
@@ -270,6 +281,64 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
   it('redirects an unrecognised tab to insights once dashboards have loaded', async () => {
     mockSearchParams.get.mockImplementation((key: string) => {
       if (key === 'tab') return 'stale-unknown-tab'
+      return null
+    })
+    render(<AnalyticsPage />)
+    await waitFor(() =>
+      expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'insights' }, { replace: true })
+    )
+  })
+
+  it.each(Object.values(AnalyticsDashboardType))(
+    'does not redirect the built-in %s tab once dashboards have loaded',
+    async (builtInTab) => {
+      vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+        if (flag === 'feature:dashboardCustomization') return [true, true]
+        if (flag === 'aiChampionsLeaderboard') return [true, true]
+        if (flag === 'features:cliAnalytics') return [true, true]
+        return [false, true]
+      })
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === 'tab') return builtInTab
+        return null
+      })
+      render(<AnalyticsPage />)
+      await waitFor(() =>
+        expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+          'data-active-tab',
+          builtInTab
+        )
+      )
+      expect(mockSetSearchParams).not.toHaveBeenCalled()
+    }
+  )
+
+  it('redirects the cliAnalytics tab to insights when its feature flag is disabled', async () => {
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'feature:dashboardCustomization') return [true, true]
+      if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:cliAnalytics') return [false, true]
+      return [false, true]
+    })
+    mockSearchParams.get.mockImplementation((key: string) => {
+      if (key === 'tab') return AnalyticsDashboardType.cliAnalytics
+      return null
+    })
+    render(<AnalyticsPage />)
+    await waitFor(() =>
+      expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'insights' }, { replace: true })
+    )
+  })
+
+  it('redirects the leaderboard tab to insights when its feature flag is disabled', async () => {
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'feature:dashboardCustomization') return [true, true]
+      if (flag === 'aiChampionsLeaderboard') return [false, true]
+      if (flag === 'features:cliAnalytics') return [true, true]
+      return [false, true]
+    })
+    mockSearchParams.get.mockImplementation((key: string) => {
+      if (key === 'tab') return AnalyticsDashboardType.leaderboard
       return null
     })
     render(<AnalyticsPage />)
