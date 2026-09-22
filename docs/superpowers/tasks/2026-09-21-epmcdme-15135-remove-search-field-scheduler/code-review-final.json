@@ -1,0 +1,31 @@
+{
+  "decision": "request-changes",
+  "rationale": "One major finding (CR-001): SchedulerRunFilters.tsx line 109 still passes searchKey=\"_search\" to <Filters>. The component is currently unreferenced (no importers), but it conflicts with the intent of EPMCDME-15135 and is a maintenance hazard. All other guards in Filters.tsx are correct and complete. No-spec round (no story/spec artifact supplied); blind lens clean; confidence low due to no acceptance criteria.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Commit 'EPMCDME-15135: Remove search field from scheduler runs view' matches the required pattern."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "pass",
+      "notes": "No HTML sinks, navigation from untrusted input, or secrets introduced."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "SchedulerRunFilters.tsx (line 109) still passes searchKey=\"_search\" to <Filters>. This component was not updated by the diff.",
+      "impact": "Incomplete feature removal. The component is currently unreferenced dead code, but if imported it would silently re-introduce the search input that EPMCDME-15135 is meant to remove. Dead code conflicting with stated intent is a maintenance hazard.",
+      "recommendation": "Remove searchKey=\"_search\" (and searchPlaceholder if present) from SchedulerRunFilters.tsx line 109, or delete the component entirely if it is confirmed dead code.",
+      "location": "src/pages/schedulers/SchedulerRunFilters.tsx:109",
+      "sources": ["edge-case"]
+    }
+  ]
+}

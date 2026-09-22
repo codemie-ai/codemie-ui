@@ -60,7 +60,7 @@ export type CustomFilterRenderFunction = (
 export interface FiltersProps {
   onApply: (filters: Record<string, unknown>) => void
   filterDefinitions: FilterDefinition[]
-  searchKey: string
+  searchKey?: string
   searchPlaceholder?: string
   searchValue?: unknown
   renderCustomFilter?: CustomFilterRenderFunction

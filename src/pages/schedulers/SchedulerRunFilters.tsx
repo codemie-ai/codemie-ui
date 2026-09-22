@@ -106,7 +106,6 @@ const SchedulerRunFilters: React.FC<Props> = ({ values, onApply }) => {
   return (
     <Filters
       filterDefinitions={filterDefinitions}
-      searchKey="_search"
       areFiltersEmpty={areFiltersEmpty}
       onApply={handleApply}
       refreshOnValuesUpdate

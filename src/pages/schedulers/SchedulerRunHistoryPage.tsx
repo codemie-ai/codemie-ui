@@ -377,8 +377,6 @@ const SchedulerRunHistoryPage = () => {
           onApply={applyFilters}
           filterDefinitions={filterDefinitions}
           renderCustomFilter={renderCustomFilter}
-          searchKey="_search"
-          searchPlaceholder="Search runs"
           refreshOnValuesUpdate
         />
       </Sidebar>

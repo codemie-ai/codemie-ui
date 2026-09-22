@@ -1,0 +1,27 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: searchKey=\"_search\" removed from SchedulerRunFilters.tsx line 89 in the fix-up commit. The fix-up diff also includes .codemie/codemie-cli.config.json (pre-existing dirty file, apiKey is empty, no secret exposure). No new high-risk issues introduced. All blocking findings resolved.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Fix-up commit 'EPMCDME-15135: Remove searchKey from SchedulerRunFilters' matches the required pattern."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "pass",
+      "notes": "No HTML sinks, navigation from untrusted input, or secrets introduced."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "searchKey prop removed from SchedulerRunFilters.tsx."
+    }
+  ]
+}

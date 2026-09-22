@@ -48,7 +48,7 @@ const Filters: React.FC<FiltersProps> = ({
   const filterValuesFromProps = useMemo(() => {
     const initialFilters: Record<string, unknown> = {}
 
-    if (searchValue) {
+    if (searchKey && searchValue) {
       initialFilters[searchKey] = searchValue
     }
 
@@ -116,13 +116,13 @@ const Filters: React.FC<FiltersProps> = ({
     onApply(filters)
   }
 
-  useDebouncedApply(filters[searchKey], 1000, () => {
+  useDebouncedApply(searchKey ? filters[searchKey] : undefined, 1000, () => {
     apply()
   })
 
   const filtersWithoutSearch = useMemo(() => {
     const newFilters = { ...filters }
-    delete newFilters[searchKey]
+    if (searchKey) delete newFilters[searchKey]
     return JSON.stringify(newFilters)
   }, [filters, searchKey])
   const prevFiltersRef = useRef(filtersWithoutSearch)
@@ -180,22 +180,24 @@ const Filters: React.FC<FiltersProps> = ({
         )}
       </div>
       <div className="mb-4">
-        <Input
-          isFilterInput
-          fullWidth
-          rootClass="mb-6"
-          className="bg-surface-base-content flex"
-          id={`search-${searchKey}`}
-          value={(filters[searchKey] as string) || ''}
-          name="filter"
-          onChange={(e) => handleInputChange(searchKey, e.target.value)}
-          placeholder={searchPlaceholder}
-          leftIcon={
-            <div className="cursor-pointer" onClick={apply} aria-hidden="true">
-              <SearchIcon className="text-text-quaternary" />
-            </div>
-          }
-        />
+        {searchKey && (
+          <Input
+            isFilterInput
+            fullWidth
+            rootClass="mb-6"
+            className="bg-surface-base-content flex"
+            id={`search-${searchKey}`}
+            value={(filters[searchKey] as string) || ''}
+            name="filter"
+            onChange={(e) => handleInputChange(searchKey, e.target.value)}
+            placeholder={searchPlaceholder}
+            leftIcon={
+              <div className="cursor-pointer" onClick={apply} aria-hidden="true">
+                <SearchIcon className="text-text-quaternary" />
+              </div>
+            }
+          />
+        )}
         <Accordion
           multiple
           collapseIcon={
