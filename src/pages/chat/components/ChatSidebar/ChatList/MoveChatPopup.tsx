@@ -24,12 +24,16 @@ import FolderSvg from '@/assets/icons/folder-add.svg?react'
 import Button from '@/components/Button'
 import Autocomplete from '@/components/form/Autocomplete'
 import Popup from '@/components/Popup'
-import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
 import { VALIDATION_MESSAGES } from '@/constants/validation'
 import { chatsStore } from '@/store/chats'
 import { ChatListItem } from '@/types/entity/conversation'
 import { FilterOption } from '@/types/filters'
 
+import {
+  getFolderKindFromKey,
+  isWorkflowAssociatedFolder,
+  sidebarFolderKeyFromName,
+} from '../ChatSidebarLists/chatSidebarListsHelpers'
 import FolderFormPopup from '../FolderList/FolderFormPopup'
 
 interface MoveChatPopupProps {
@@ -41,7 +45,8 @@ interface MoveChatPopupProps {
 
 const MoveChatPopup = ({ isVisible, selectedChat, onHide, onMove }: MoveChatPopupProps) => {
   const autocompleteRef = useRef<AutoComplete<FilterOption>>(null)
-  const { moveChatToFolder, chatFolders } = useSnapshot(chatsStore)
+  const { moveChatToFolder, chatFolders, chats, isChatsAndFoldersRefreshing } =
+    useSnapshot(chatsStore)
 
   const [isFolderFormPopupVisible, setIsFolderFormPopupVisible] = useState(false)
 
@@ -49,7 +54,7 @@ const MoveChatPopup = ({ isVisible, selectedChat, onHide, onMove }: MoveChatPopu
     targetFolder: Yup.string().required(VALIDATION_MESSAGES.FOLDER_NAME_REQUIRED),
   })
 
-  const { control, handleSubmit, setValue } = useForm({
+  const { control, handleSubmit, reset, setValue } = useForm({
     mode: 'all',
     shouldUnregister: true,
     resolver: yupResolver(formSchema),
@@ -58,26 +63,35 @@ const MoveChatPopup = ({ isVisible, selectedChat, onHide, onMove }: MoveChatPopu
     },
   })
 
+  // "Move to folder" only makes sense for folders the user actually curates — exclude
+  // legacy-import folders (never user-created) and workflow-associated folders (auto-created run
+  // history, EPMCDME-15012) so only genuine custom folders are offered.
   const folderOptions = useMemo(() => {
-    const options = chatFolders
+    if (isChatsAndFoldersRefreshing) return []
+
+    return chatFolders
+      .filter(({ name }) => {
+        if (getFolderKindFromKey(sidebarFolderKeyFromName(name)) !== 'custom') return false
+        const folderChats = (chats as ChatListItem[]).filter((chat) => chat.folder === name)
+        return !isWorkflowAssociatedFolder(folderChats)
+      })
       .map(({ name }) => ({
         label: name,
         value: name,
       }))
       .sort((a, b) => a.label.localeCompare(b.label))
+      .filter((option) => option.value !== selectedChat?.folder)
+  }, [chatFolders, chats, isChatsAndFoldersRefreshing, selectedChat])
 
-    const isDefaultOptIncluded = options.find((item) => item.value === DEFAULT_CHAT_FOLDER)
-    if (!isDefaultOptIncluded) {
-      options.unshift({ label: DEFAULT_CHAT_FOLDER, value: DEFAULT_CHAT_FOLDER })
-    }
-
-    return options.filter((option) => option.value !== selectedChat?.folder)
-  }, [chatFolders, selectedChat])
+  const handleHide = () => {
+    reset()
+    onHide()
+  }
 
   const onSubmit = handleSubmit(async ({ targetFolder }) => {
     if (selectedChat) {
       await moveChatToFolder(selectedChat.id, targetFolder)
-      onHide()
+      handleHide()
       onMove(targetFolder)
     }
   })
@@ -89,9 +103,16 @@ const MoveChatPopup = ({ isVisible, selectedChat, onHide, onMove }: MoveChatPopu
         withBorderBottom={false}
         visible={isVisible}
         header="Move to folder"
-        onHide={onHide}
+        headerDescription={
+          selectedChat?.folder ? (
+            <>
+              Current folder: <strong className="text-text-primary">{selectedChat.folder}</strong>
+            </>
+          ) : undefined
+        }
+        onHide={handleHide}
         onSubmit={onSubmit}
-        submitText="Move"
+        submitText={selectedChat?.folder ? 'Move' : 'Add'}
       >
         <Controller
           name="targetFolder"

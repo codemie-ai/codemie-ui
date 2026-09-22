@@ -222,12 +222,27 @@ const globalDefaults: Record<string, () => unknown> = {
   'v1/info': () => ({ version: '0.0.0' }),
   'v1/settings/user/available': () => [],
   'v1/conversations/folders/list': () => [],
+  'v1/assistant-folders': () => [],
+  'v1/guardrails': () => ({
+    data: [],
+    pagination: { total: 0, page: 0, per_page: 10000, pages: 0 },
+  }),
+  'v1/guardrails/assignments': () => [],
   'v1/conversations': () => [],
   'v1/customer-config': () => ({}),
   'v1/skills/categories': () => [],
   'v1/assistants': () => ({ data: [], pagination: { total: 0, page: 0, per_page: 12, pages: 0 } }),
   'v1/assistants/default': () => null,
   'v1/assistants/help': () => ({ data: [] }),
+  'v1/assistants/slug/ai-run-chatbot': () => ({
+    id: 'default-assistant',
+    name: 'Default Assistant',
+    slug: 'ai-run-chatbot',
+    nested_assistants: [],
+    mcp_servers: [],
+    toolkits: [],
+    skills: [],
+  }),
   'v1/applications': () => [],
   'v1/preferences/test-user-id': () => ({
     user_id: 'test-user-id',
@@ -288,12 +303,15 @@ const fetchMock = vi
     ).toUpperCase()
     const path = normalizeUrl(rawUrl)
     const params = parseQueryParams(rawUrl)
+
+    // Capture the matching response before the first async boundary. Tests clear
+    // requestRegistry in afterEach, so looking up a request after awaiting its body
+    // can turn an already-started request into the null fallback for the next test.
+    const registryFactory = matchRegistry(method, path, params)
+    const defaultResponse = registryFactory ? null : matchDefaults(path)
     const body = await parseRequestBody(input, init)
 
-    const registryFactory = matchRegistry(method, path, params)
     if (registryFactory) return registryFactory(body)
-
-    const defaultResponse = matchDefaults(path)
     if (defaultResponse) return defaultResponse
 
     return new Response(JSON.stringify(null), { status: 200 })

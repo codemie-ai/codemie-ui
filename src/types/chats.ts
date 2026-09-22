@@ -15,16 +15,30 @@
 
 export type ChatExportFormat = 'docx' | 'pdf' | 'pptx' | 'json'
 
+export interface AssistantFolderListItem {
+  assistant_id: string
+  name: string
+  icon_url?: string | null
+}
+
+export type AssistantFolderDeleteAction = 'delete_chats_only' | 'delete_folder_and_chats'
+
+export interface AssistantFolderDeleteResponse {
+  deleted_conversation_ids: string[]
+  folder_deleted: boolean
+}
+
 export interface SearchResultItem {
-  id: string // Chat ID or Folder ID
-  name: string // Chat or folder name
-  updated_at: string // ISO timestamp
-  type: 'chat' | 'folder' // Discriminator
+  id: string // Assistant, chat, or folder ID
+  name: string // Assistant, chat, or folder name
+  updated_at: string | null // ISO timestamp when the result has one
+  type: 'assistant' | 'chat' | 'folder' // Discriminator
   folder?: string // Parent folder name (for chats only)
+  icon_url?: string | null // Assistant avatar (for assistant results only)
 }
 
 export interface SearchResults {
-  items: SearchResultItem[] // Combined chats + folders, sorted by updated_at DESC
+  items: SearchResultItem[] // Combined assistants, chats, and folders (up to 20 per type)
 }
 
 export interface SearchHistoryItem {

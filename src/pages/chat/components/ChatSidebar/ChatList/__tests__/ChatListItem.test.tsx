@@ -22,11 +22,12 @@ vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: () => ({ push: vi.fn() }),
 }))
 
+const STABLE_VALTIO_SNAPSHOT = { renameChat: vi.fn(), pinChat: vi.fn() }
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal<typeof import('valtio')>()
   return {
     ...actual,
-    useSnapshot: () => ({ renameChat: vi.fn(), pinChat: vi.fn() }),
+    useSnapshot: () => STABLE_VALTIO_SNAPSHOT,
   }
 })
 

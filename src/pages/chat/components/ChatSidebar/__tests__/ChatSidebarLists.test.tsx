@@ -13,81 +13,429 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import ChatSidebarLists from '../ChatSidebarLists/ChatSidebarLists'
 
-vi.hoisted(() => vi.resetModules())
+import type { ReactNode } from 'react'
+
+const mockChatsStore = vi.hoisted(() => ({
+  chats: [] as Record<string, unknown>[],
+  currentChat: null as Record<string, unknown> | null,
+  chatFolders: [] as Record<string, unknown>[],
+  assistantFolders: [] as Record<string, unknown>[],
+  isChatsLoading: false,
+}))
 
 vi.mock('valtio', () => ({
   useSnapshot: vi.fn((store) => store),
+  proxy: vi.fn((obj: unknown) => obj),
 }))
 
 vi.mock('@/store/chats', () => ({
-  chatsStore: {
-    chats: [],
-    currentChat: null,
-    chatFolders: [],
-    isChatsLoading: false,
-  },
+  chatsStore: mockChatsStore,
+}))
+
+const mockPinOrderStore = vi.hoisted(() => ({
+  getPinOrder: vi.fn(() => ({} as Record<string, string>)),
+}))
+vi.mock('@/store/pinOrder', () => ({
+  pinOrderStore: mockPinOrderStore,
+}))
+
+const mockMoveOrderStore = vi.hoisted(() => ({
+  getMoveOrder: vi.fn(() => ({} as Record<string, string>)),
+}))
+vi.mock('@/store/moveOrder', () => ({
+  moveOrderStore: mockMoveOrderStore,
 }))
 
 vi.mock('../ChatSidebarLists/ChatSidebarAccordion', () => ({
-  default: ({ children, title, headerContentTemplate }: any) => (
-    <div data-testid={`accordion-${title.toLowerCase()}`}>
-      {headerContentTemplate}
+  default: ({
+    children,
+    isExpanded,
+    onToggle,
+    title,
+  }: {
+    children: ReactNode
+    isExpanded?: boolean
+    onToggle: () => void
+    title: string
+  }) => (
+    <section data-testid={`${title.toLowerCase()}-section`} data-expanded={isExpanded}>
+      <button type="button" onClick={onToggle}>
+        {title}
+      </button>
       {children}
-    </div>
+    </section>
   ),
 }))
 
 vi.mock('../ChatList/ChatList', () => ({
-  default: () => <ul />,
-}))
-
-vi.mock('../ChatList/DeleteChatPopup', () => ({
-  default: () => null,
-}))
-
-vi.mock('../ChatList/MoveChatPopup', () => ({
-  default: () => null,
-}))
-
-vi.mock('../FolderList/FolderFormPopup', () => ({
-  default: () => null,
+  default: ({
+    chats,
+    currentChatId,
+  }: {
+    chats: Record<string, unknown>[]
+    currentChatId?: string
+  }) => (
+    <div
+      data-testid="chat-list"
+      data-active-visible={chats.some((chat) => chat.id === currentChatId)}
+      data-chat-ids={chats.map((chat) => chat.id).join(',')}
+    />
+  ),
 }))
 
 vi.mock('../FolderList/FolderList', () => ({
-  default: () => <div data-testid="folder-list" />,
+  default: ({
+    activeFolderIndices,
+    currentChatId,
+    folders,
+    foldersToChatsMap,
+    setActiveFolders,
+  }: {
+    activeFolderIndices: number[]
+    currentChatId?: string
+    folders: string[]
+    foldersToChatsMap: Record<string, Record<string, unknown>[]>
+    setActiveFolders?: (folders: string[]) => void
+  }) => (
+    <div
+      data-testid="folder-list"
+      data-active-folder-indices={activeFolderIndices.join(',')}
+      data-active-visible={Object.values(foldersToChatsMap)
+        .flat()
+        .some((chat) => chat.id === currentChatId)}
+      data-folder-names={folders.join(',')}
+    >
+      {folders.map((folder) => (
+        <button
+          key={folder}
+          type="button"
+          data-testid={`expand-folder-${folder}`}
+          onClick={() => setActiveFolders?.([folder])}
+        >
+          {folder}
+        </button>
+      ))}
+    </div>
+  ),
 }))
 
-vi.mock('@/components/Spinner', () => ({
-  default: () => <div data-testid="spinner" />,
-}))
+vi.mock('../ChatList/DeleteChatPopup', () => ({ default: () => null }))
+vi.mock('../ChatList/MoveChatPopup', () => ({ default: () => null }))
+vi.mock('../FolderList/FolderFormPopup', () => ({ default: () => null }))
 
-vi.mock('@/assets/icons/folder-add.svg?react', () => ({
-  default: (props: any) => <span data-testid="folder-add-icon" {...props} />,
-}))
+afterEach(cleanup)
 
 describe('ChatSidebarLists', () => {
-  it('renders a tree container with role="tree" and aria-label="Chats"', () => {
-    render(<ChatSidebarLists />)
-    const tree = screen.getByRole('tree')
-    expect(tree).toBeInTheDocument()
-    expect(tree).toHaveAttribute('aria-label', 'Chats')
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatsStore.chats = []
+    mockChatsStore.currentChat = null
+    mockChatsStore.chatFolders = []
+    mockChatsStore.assistantFolders = []
+    mockChatsStore.isChatsLoading = false
+    mockPinOrderStore.getPinOrder.mockReturnValue({})
+    mockMoveOrderStore.getMoveOrder.mockReturnValue({})
   })
 
-  it('renders the create folder button following the shared icon-button pattern', () => {
-    render(<ChatSidebarLists />)
-    const createFolderButton = screen.getByRole('button', { name: 'Create folder' })
-    expect(createFolderButton).toBeInTheDocument()
-    // aria-label + shared react-tooltip instead of a native title tooltip
-    expect(createFolderButton).not.toHaveAttribute('title')
-    expect(createFolderButton).toHaveAttribute('data-tooltip-id', 'react-tooltip')
-    expect(createFolderButton).toHaveAttribute('data-tooltip-content', 'Create folder')
+  it('shows a folder chat in Recent and keeps Recent expanded', async () => {
+    const activeChat = {
+      id: 'chat-1',
+      name: 'Active chat',
+      pinned: false,
+      folder: 'Project',
+      date: '2026-07-16T08:00:00.000Z',
+      updateDate: '2026-07-16T09:00:00.000Z',
+    }
+    mockChatsStore.chats = [activeChat]
+    mockChatsStore.currentChat = activeChat
+    mockChatsStore.chatFolders = [{ name: 'Project', updateDate: '2026-07-16T09:00:00.000Z' }]
 
-    const icon = screen.getByTestId('folder-add-icon')
-    expect(icon).toHaveAttribute('aria-hidden', 'true')
+    render(<ChatSidebarLists />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('recent chats-section')).toHaveAttribute('data-expanded', 'true')
+      expect(screen.getByTestId('folders-section')).toHaveAttribute('data-expanded', 'false')
+      expect(screen.getByTestId('chat-list')).toHaveAttribute('data-chat-ids', 'chat-1')
+      expect(screen.getByTestId('chat-list')).toHaveAttribute('data-active-visible', 'true')
+      expect(screen.getByTestId('folder-list')).toHaveAttribute('data-active-folder-indices', '')
+      expect(screen.getByTestId('folder-list')).toHaveAttribute('data-active-visible', 'true')
+    })
+  })
+
+  it('keeps every folder collapsed when Folders is expanded, and expands only the one clicked', async () => {
+    const activeChat = {
+      id: 'chat-1',
+      name: 'Active chat',
+      pinned: false,
+      folder: 'Project',
+      date: '2026-07-16T08:00:00.000Z',
+      updateDate: '2026-07-16T09:00:00.000Z',
+    }
+    mockChatsStore.chats = [activeChat]
+    mockChatsStore.currentChat = activeChat
+    mockChatsStore.chatFolders = [
+      { name: 'Project', updateDate: '2026-07-16T09:00:00.000Z' },
+      { name: 'Archive', updateDate: '2026-07-10T09:00:00.000Z' },
+    ]
+
+    render(<ChatSidebarLists />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Folders' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('folders-section')).toHaveAttribute('data-expanded', 'true')
+      // The current chat lives in "Project", but no folder should pre-open itself.
+      expect(screen.getByTestId('folder-list')).toHaveAttribute('data-active-folder-indices', '')
+    })
+
+    fireEvent.click(screen.getByTestId('expand-folder-custom:Archive'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('folder-list')).toHaveAttribute('data-active-folder-indices', '1')
+    })
+  })
+
+  it('sorts recent chats by the first valid update or creation date', () => {
+    mockChatsStore.chats = [
+      {
+        id: 'oldest-chat',
+        pinned: false,
+        folder: null,
+        updateDate: 'invalid-date',
+        date: '2026-07-14T09:00:00.000Z',
+      },
+      {
+        id: 'middle-chat',
+        pinned: false,
+        folder: null,
+        updateDate: '2026-07-15T09:00:00.000Z',
+        date: '2026-07-13T09:00:00.000Z',
+      },
+      {
+        id: 'newest-chat',
+        pinned: false,
+        folder: null,
+        updateDate: '',
+        date: '2026-07-16T09:00:00.000Z',
+      },
+    ]
+
+    render(<ChatSidebarLists />)
+
+    expect(screen.getByTestId('chat-list')).toHaveAttribute(
+      'data-chat-ids',
+      'newest-chat,middle-chat,oldest-chat'
+    )
+  })
+
+  it('sorts empty folder by its own updateDate alongside non-empty folders', () => {
+    mockChatsStore.chatFolders = [
+      { name: 'No Activity', updateDate: '2026-07-16T09:00:00.000Z' },
+      { name: 'Has Activity', updateDate: '2026-07-14T09:00:00.000Z' },
+    ]
+    mockChatsStore.chats = [
+      {
+        id: 'chat-1',
+        pinned: false,
+        folder: 'Has Activity',
+        updateDate: '2026-07-15T09:00:00.000Z',
+        date: '2026-07-15T09:00:00.000Z',
+      },
+    ]
+
+    render(<ChatSidebarLists />)
+
+    // No Activity has updateDate T16, Has Activity latest chat is T15 — empty folder ranks higher
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'custom:No Activity,custom:Has Activity'
+    )
+  })
+
+  it('sorts by max of entity date and chat activity across folders', () => {
+    mockChatsStore.chatFolders = [
+      { name: 'NewEntity', updateDate: '2026-07-18T09:00:00.000Z' },
+      { name: 'NewChat', updateDate: '2026-07-14T09:00:00.000Z' },
+    ]
+    mockChatsStore.chats = [
+      {
+        id: 'chat-a',
+        pinned: false,
+        folder: 'NewEntity',
+        updateDate: '2026-07-15T09:00:00.000Z',
+        date: '2026-07-15T09:00:00.000Z',
+      },
+      {
+        id: 'chat-b',
+        pinned: false,
+        folder: 'NewChat',
+        updateDate: '2026-07-17T09:00:00.000Z',
+        date: '2026-07-17T09:00:00.000Z',
+      },
+    ]
+
+    render(<ChatSidebarLists />)
+
+    // NewEntity: max(entityT18, chatT15) = T18; NewChat: max(entityT14, chatT17) = T17
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'custom:NewEntity,custom:NewChat'
+    )
+  })
+
+  it('sorts custom and assistant folders together by chat activity, not by type', () => {
+    mockChatsStore.chatFolders = [{ name: 'My Custom', updateDate: '2026-07-10T09:00:00.000Z' }]
+    mockChatsStore.assistantFolders = [{ assistant_id: 'asst-1', name: 'My Assistant' }]
+    mockChatsStore.chats = [
+      {
+        id: 'chat-custom',
+        pinned: false,
+        folder: 'My Custom',
+        updateDate: '2026-07-09T09:00:00.000Z',
+        date: '2026-07-09T09:00:00.000Z',
+      },
+      {
+        id: 'chat-asst',
+        pinned: false,
+        folder: null,
+        assistantIds: ['asst-1'],
+        initialAssistantId: 'asst-1',
+        assistantNames: ['My Assistant'],
+        updateDate: '2026-07-16T09:00:00.000Z',
+        date: '2026-07-16T09:00:00.000Z',
+      },
+    ]
+
+    render(<ChatSidebarLists />)
+
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'assistant:asst-1,custom:My Custom'
+    )
+  })
+
+  it('keeps an emptied Assistant Folder at its last position instead of dropping it', () => {
+    mockChatsStore.chatFolders = [{ name: 'Old Custom', updateDate: '2026-06-01T09:00:00.000Z' }]
+    mockChatsStore.assistantFolders = [{ assistant_id: 'asst-1', name: 'My Assistant' }]
+    const assistantChat = {
+      id: 'chat-asst',
+      pinned: false,
+      folder: null,
+      assistantIds: ['asst-1'],
+      initialAssistantId: 'asst-1',
+      assistantNames: ['My Assistant'],
+      updateDate: '2026-07-16T09:00:00.000Z',
+      date: '2026-07-16T09:00:00.000Z',
+    }
+    mockChatsStore.chats = [assistantChat]
+
+    const { rerender } = render(<ChatSidebarLists />)
+
+    // Assistant Folder's only chat is the most recent activity, so it sorts above the old
+    // custom folder.
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'assistant:asst-1,custom:Old Custom'
+    )
+
+    // Its last (and only) chat gets deleted — the Assistant Folder registration itself
+    // persists (it isn't auto-removed), it just has zero chats now.
+    mockChatsStore.chats = []
+    rerender(<ChatSidebarLists />)
+
+    // Without the fix this would recompute from an empty state (no entity date exists for
+    // Assistant Folders) and drop to the bottom; it must instead keep its prior position.
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'assistant:asst-1,custom:Old Custom'
+    )
+  })
+
+  it('deduplicates registered Claude legacy aliases as one import folder', () => {
+    mockChatsStore.chatFolders = [
+      { name: 'Claude Desktop', updateDate: '2026-07-16T09:00:00.000Z' },
+      { name: 'Claude Imports', updateDate: '2026-07-15T09:00:00.000Z' },
+      { name: 'claude', updateDate: '2026-07-14T09:00:00.000Z' },
+      { name: 'codemie-code', updateDate: '2026-07-13T09:00:00.000Z' },
+    ]
+
+    render(<ChatSidebarLists />)
+
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'legacy-import:Claude Imports,legacy-import:codemie-code'
+    )
+  })
+
+  it('renders the Pinned section ordered by pinOrderStore, not by updateDate', () => {
+    mockChatsStore.chats = [
+      {
+        id: 'pinned-older-updateDate',
+        pinned: true,
+        folder: null,
+        updateDate: '2026-07-20T09:00:00.000Z',
+      },
+      {
+        id: 'pinned-newer-updateDate',
+        pinned: true,
+        folder: null,
+        updateDate: '2026-07-10T09:00:00.000Z',
+      },
+    ]
+    // pinned-newer-updateDate was pinned more recently than pinned-older-updateDate, even
+    // though its updateDate is older — pinOrderStore's map must be what drives the Pinned
+    // section order, proving the wiring from ChatSidebarLists.tsx into the view model.
+    mockPinOrderStore.getPinOrder.mockReturnValue({
+      'pinned-older-updateDate': '2026-08-01T00:00:00.000Z',
+      'pinned-newer-updateDate': '2026-08-02T00:00:00.000Z',
+    })
+
+    render(<ChatSidebarLists />)
+
+    expect(screen.getByTestId('pinned-section')).toHaveAttribute('data-expanded', 'true')
+    const pinnedList = screen
+      .getByTestId('pinned-section')
+      .querySelector('[data-testid="chat-list"]')
+    expect(pinnedList).toHaveAttribute(
+      'data-chat-ids',
+      'pinned-newer-updateDate,pinned-older-updateDate'
+    )
+    expect(mockPinOrderStore.getPinOrder).toHaveBeenCalled()
+  })
+
+  it('renders Recent ordered by moveOrderStore for a chat moved back to the Chats section', () => {
+    mockChatsStore.chats = [
+      {
+        id: 'stale-moved-chat',
+        pinned: false,
+        folder: null,
+        updateDate: '2026-07-01T09:00:00.000Z',
+      },
+      {
+        id: 'active-chat',
+        pinned: false,
+        folder: null,
+        updateDate: '2026-07-20T09:00:00.000Z',
+      },
+    ]
+    // stale-moved-chat has an older updateDate but was moved back to Recent most recently —
+    // moveOrderStore's map must be what drives Recent's order here, proving the wiring from
+    // ChatSidebarLists.tsx into the view model.
+    mockMoveOrderStore.getMoveOrder.mockReturnValue({
+      'stale-moved-chat': '2026-08-01T00:00:00.000Z',
+    })
+
+    render(<ChatSidebarLists />)
+
+    expect(screen.getByTestId('chat-list')).toHaveAttribute(
+      'data-chat-ids',
+      'stale-moved-chat,active-chat'
+    )
+    expect(mockMoveOrderStore.getMoveOrder).toHaveBeenCalled()
   })
 })

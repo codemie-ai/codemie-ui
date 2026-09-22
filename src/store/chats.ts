@@ -21,7 +21,14 @@ import {
   MAX_CHAT_POLL_ATTEMPTS,
 } from '@/constants/chats'
 import { router } from '@/hooks/useVueRouter'
-import { SearchResultItem, ChatExportFormat, RecentChat } from '@/types/chats'
+import {
+  AssistantFolderDeleteAction,
+  AssistantFolderDeleteResponse,
+  AssistantFolderListItem,
+  SearchResultItem,
+  ChatExportFormat,
+  RecentChat,
+} from '@/types/chats'
 import {
   Conversation,
   ChatFolder,
@@ -37,6 +44,8 @@ import storage from '@/utils/storage'
 import toaster from '@/utils/toaster'
 import { getRootPath } from '@/utils/utils'
 
+import { moveOrderStore } from './moveOrder'
+import { pinOrderStore } from './pinOrder'
 import { premiumModelTipStore } from './premiumModelTip'
 import { recentChatsStore } from './recentChats'
 import { userStore } from './user'
@@ -75,10 +84,97 @@ const mapConversationUpdatePayload = (data: Partial<Conversation>) => {
 const LAST_CHAT_ID = 'last-chat-id'
 const chatPollTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
+const getAssistantFolderChats = (chats: ChatListItem[], assistantId: string) =>
+  chats.filter(
+    (chat) =>
+      (chat.initialAssistantId === assistantId ||
+        (!chat.initialAssistantId && chat.assistantIds?.includes(assistantId))) &&
+      !chat.folder &&
+      !chat.isWorkflow &&
+      chat.importSource == null &&
+      !chat.pinned
+  )
+
+const deleteConversations = (conversationIds: string[]) =>
+  Promise.all(conversationIds.map((id) => api.delete(`v1/conversations/${id}`)))
+
+const parseAssistantFolderDeleteResponse = async (
+  response: Response,
+  fallback: AssistantFolderDeleteResponse
+) => {
+  if (typeof response.text === 'function') {
+    const responseBody = await response.text()
+    return responseBody.trim()
+      ? (JSON.parse(responseBody) as AssistantFolderDeleteResponse)
+      : fallback
+  }
+  return typeof response.json === 'function'
+    ? ((await response.json()) as AssistantFolderDeleteResponse)
+    : fallback
+}
+
+const deleteRegisteredAssistantFolder = async (
+  assistantId: string,
+  action: AssistantFolderDeleteAction,
+  fallback: AssistantFolderDeleteResponse
+): Promise<AssistantFolderDeleteResponse | null> => {
+  try {
+    const response = await api.delete(
+      `v1/assistant-folders/${encodeURIComponent(assistantId)}`,
+      undefined,
+      { params: { remove_conversations: true }, skipErrorHandling: true }
+    )
+    const deleted = await parseAssistantFolderDeleteResponse(response, fallback)
+    // Both actions delete the chats. They differ only in whether the emptied folder stays
+    // listed, which the backend cannot decide for us: its folders are derived from the chats,
+    // so once the chats are gone the folder is gone too unless the sidebar keeps showing it.
+    return { ...deleted, folder_deleted: action === 'delete_folder_and_chats' }
+  } catch (error) {
+    if (error instanceof Response && error.status === 404) return null
+    toaster.error('Failed to delete assistant folder')
+    throw error
+  }
+}
+
+const getFallbackAssistantFolder = (
+  assistantId: string,
+  chats: ChatListItem[]
+): AssistantFolderListItem => {
+  const firstChat = chats[0]
+  const assistantIndex = firstChat?.assistantIds?.indexOf(assistantId) ?? -1
+  return {
+    assistant_id: assistantId,
+    name:
+      (assistantIndex >= 0 ? firstChat?.assistantNames?.[assistantIndex] : undefined) ??
+      firstChat?.assistantNames?.[0] ??
+      assistantId,
+    icon_url: firstChat?.iconUrl,
+  }
+}
+
+interface MoveChatToFolderOptions {
+  successMessage?: string
+}
+
 interface NewChatParams {
   assistantId: string
   folder: string
   isWorkflow: boolean
+}
+
+let chatsAndFoldersRefreshCount = 0
+
+const refreshChatsAndFolders = async () => {
+  chatsAndFoldersRefreshCount += 1
+  chatsStore.isChatsAndFoldersRefreshing = true
+  try {
+    const results = await Promise.allSettled([chatsStore.getFolders(), chatsStore.getChats()])
+    const rejectedResult = results.find((result) => result.status === 'rejected')
+    if (rejectedResult) throw rejectedResult.reason
+  } finally {
+    chatsAndFoldersRefreshCount -= 1
+    chatsStore.isChatsAndFoldersRefreshing = chatsAndFoldersRefreshCount > 0
+  }
 }
 
 export interface ChatsStoreType {
@@ -87,10 +183,13 @@ export interface ChatsStoreType {
   isChatsLoading: boolean
   chats: ChatListItem[]
   chatFolders: FolderListItem[]
+  assistantFolders: AssistantFolderListItem[]
   currentChat: Conversation | null
   openedChatsHistory: Conversation[]
   abortControllers: Record<string, AbortController>
   isInitialDataFetched: boolean
+  isChatsAndFoldersRefreshing: boolean
+  isMovingChatsToFolder: boolean
   isNewChat: boolean
   newChatParams: NewChatParams | null
 
@@ -130,9 +229,19 @@ export interface ChatsStoreType {
   // Folder management methods
   createFolder(folder: string): Promise<any>
   getFolders(): Promise<ChatFolder[]>
+  getAssistantFolders(): Promise<AssistantFolderListItem[]>
+  deleteAssistantFolder(
+    assistantId: string,
+    action: AssistantFolderDeleteAction
+  ): Promise<AssistantFolderDeleteResponse>
   deleteChatFolder(folder: string, deleteChats?: boolean, localUpdate?: boolean): Promise<void>
   renameChatFolder(oldFolder: string, newFolder: string): Promise<void>
-  moveChatToFolder(chatId: string, targetFolder: string): Promise<void>
+  moveChatToFolder(
+    chatId: string,
+    targetFolder: string,
+    options?: MoveChatToFolderOptions
+  ): Promise<void>
+  moveChatsToFolder(chatIds: string[], targetFolder: string): Promise<void>
 
   // Additional features
   getMetrics(chatId: string): Promise<ChatMetrics>
@@ -161,11 +270,14 @@ export interface ChatsStoreType {
 export const chatsStore = proxy<ChatsStoreType>({
   chats: [],
   chatFolders: [],
+  assistantFolders: [],
   currentChat: null,
   openedChatsHistory: [],
   metrics: null,
   isChatsLoading: false,
   isInitialDataFetched: false,
+  isChatsAndFoldersRefreshing: false,
+  isMovingChatsToFolder: false,
   isNewChat: false,
   newChatParams: null,
   abortControllers: {},
@@ -178,26 +290,20 @@ export const chatsStore = proxy<ChatsStoreType>({
     if (!chatsStore.isInitialDataFetched) chatsStore.isChatsLoading = true
     try {
       const response = await api.get('v1/conversations')
-      const fetchedChats = transformChatListItemDTOs(await response.json())
-      // Backend DTOs never carry pendingRename (frontend-only, EPMCDME-11647) — a
-      // wholesale replace here would silently drop the placeholder mask mid-poll
-      // and re-flash the raw truncated name. Carry it forward for any chat still
-      // being polled; the poll's own terminal step clears it for real.
-      const pendingRenameIds = new Set(
-        chatsStore.chats.filter((chat) => chat.pendingRename).map((chat) => chat.id)
-      )
-      const chats = pendingRenameIds.size
-        ? fetchedChats.map((chat) =>
-            pendingRenameIds.has(chat.id) ? { ...chat, pendingRename: true } : chat
-          )
-        : fetchedChats
+      const chats = transformChatListItemDTOs(await response.json())
       chatsStore.chats = chats
       const userId = userStore.user?.userId
-      if (userId && chats)
+      if (userId)
         sweepOrphanedChatKeys(
           userId,
           chats.map((c) => c.id)
         )
+      // One-time backfill: a chat pinned before pinOrderStore existed has no recorded pin
+      // timestamp yet. Without this, its Pinned-section position would fall back to its live
+      // updateDate indefinitely, letting real activity reorder Pinned for exactly these chats.
+      for (const chat of chats) {
+        if (chat.pinned) pinOrderStore.ensurePinOrder(chat.id, chat.updateDate ?? chat.date)
+      }
       return chats
     } finally {
       chatsStore.isChatsLoading = false
@@ -455,6 +561,7 @@ export const chatsStore = proxy<ChatsStoreType>({
       chatsStore.getChats()
     }
     chatsStore.getFolders()
+    chatsStore.getAssistantFolders()
 
     const fullChat = await chatsStore.getChat(newChat.id)
 
@@ -476,6 +583,10 @@ export const chatsStore = proxy<ChatsStoreType>({
 
     await api.put(`v1/conversations/${id}`, { pinned: !chat.pinned }).then(() => {
       chat.pinned = !chat.pinned
+      // Pin/unpin is a menu action, not usage — it must not touch updateDate. The Pinned
+      // section's own order comes from pinOrderStore instead.
+      if (chat.pinned) pinOrderStore.recordPin(id)
+      else pinOrderStore.clearPin(id)
     })
   },
 
@@ -542,6 +653,8 @@ export const chatsStore = proxy<ChatsStoreType>({
       recentChatsStore.removeRecentChat(id)
       workflowExecutionsStore.removeExecutionsByConversationId(id)
       removeChatStorage(userStore.user?.userId, id)
+      pinOrderStore.clearPin(id)
+      moveOrderStore.clearMove(id)
       return response.json()
     })
   },
@@ -581,9 +694,14 @@ export const chatsStore = proxy<ChatsStoreType>({
     chatPollTimeouts.clear()
     const chatIds = chatsStore.chats.map((c) => c.id)
     await api.delete(`v1/conversations`).then((response) => response.json())
-    chatIds.forEach((id) => removeChatStorage(userStore.user?.userId, id))
+    chatIds.forEach((id) => {
+      removeChatStorage(userStore.user?.userId, id)
+      pinOrderStore.clearPin(id)
+      moveOrderStore.clearMove(id)
+    })
     chatsStore.chats = []
     chatsStore.chatFolders = []
+    chatsStore.assistantFolders = []
     chatsStore.currentChat = null
     chatsStore.openedChatsHistory = []
     workflowExecutionsStore.removeAllChatLinkedExecutions()
@@ -603,7 +721,10 @@ export const chatsStore = proxy<ChatsStoreType>({
 
     if (existingItemIndex !== -1) {
       const existingItem = chatsStore.chats[existingItemIndex]
-      chatsStore.chats[existingItemIndex] = { ...existingItem, ...newItem }
+      const definedUpdates = Object.fromEntries(
+        Object.entries(newItem).filter(([, v]) => v !== undefined)
+      )
+      chatsStore.chats[existingItemIndex] = { ...existingItem, ...definedUpdates }
     }
   },
 
@@ -625,6 +746,70 @@ export const chatsStore = proxy<ChatsStoreType>({
       })
   },
 
+  getAssistantFolders: () => {
+    return api
+      .get('v1/assistant-folders')
+      .then((response) => response.json())
+      .then((folders: AssistantFolderListItem[] | null) => {
+        const normalizedFolders = Array.isArray(folders) ? folders : []
+        chatsStore.assistantFolders = normalizedFolders
+        return normalizedFolders
+      })
+  },
+
+  deleteAssistantFolder: async (assistantId, action) => {
+    const fallbackChats = getAssistantFolderChats(chatsStore.chats, assistantId)
+    const fallbackDeletedConversationIds = fallbackChats.map((chat) => chat.id)
+    const fallbackResult: AssistantFolderDeleteResponse = {
+      deleted_conversation_ids: fallbackDeletedConversationIds,
+      folder_deleted: action === 'delete_folder_and_chats',
+    }
+    const registeredFolder = chatsStore.assistantFolders.find(
+      (folder) => folder.assistant_id === assistantId
+    )
+    let result: AssistantFolderDeleteResponse
+
+    if (registeredFolder) {
+      const registeredResult = await deleteRegisteredAssistantFolder(
+        assistantId,
+        action,
+        fallbackResult
+      )
+      if (!registeredResult) {
+        await deleteConversations(fallbackDeletedConversationIds)
+      }
+      result = registeredResult ?? fallbackResult
+    } else {
+      await deleteConversations(fallbackDeletedConversationIds)
+      result = fallbackResult
+      if (action === 'delete_chats_only') {
+        chatsStore.assistantFolders.push(getFallbackAssistantFolder(assistantId, fallbackChats))
+      }
+    }
+
+    result.deleted_conversation_ids.forEach((id) => {
+      recentChatsStore.removeRecentChat(id)
+      workflowExecutionsStore.removeExecutionsByConversationId(id)
+      removeChatStorage(userStore.user?.userId, id)
+      pinOrderStore.clearPin(id)
+      moveOrderStore.clearMove(id)
+    })
+    chatsStore.chats = chatsStore.chats.filter(
+      (chat) => !result.deleted_conversation_ids.includes(chat.id)
+    )
+    chatsStore.openedChatsHistory = chatsStore.openedChatsHistory.filter(
+      (chat) => !result.deleted_conversation_ids.includes(chat.id)
+    )
+
+    if (result.folder_deleted) {
+      chatsStore.assistantFolders = chatsStore.assistantFolders.filter(
+        (folder) => folder.assistant_id !== assistantId
+      )
+    }
+
+    return result
+  },
+
   deleteChatFolder: (folder, deleteChats = false) => {
     const folderChatIds = deleteChats
       ? chatsStore.chats.filter((c) => c.folder === folder).map((c) => c.id)
@@ -636,21 +821,23 @@ export const chatsStore = proxy<ChatsStoreType>({
       .then(() => {
         if (deleteChats) {
           recentChatsStore.removeRecentChatsByFolder(folder)
-          folderChatIds.forEach((id) => removeChatStorage(userStore.user?.userId, id))
+          folderChatIds.forEach((id) => {
+            removeChatStorage(userStore.user?.userId, id)
+            pinOrderStore.clearPin(id)
+            moveOrderStore.clearMove(id)
+          })
         }
-        return chatsStore.getFolders()
+        return refreshChatsAndFolders()
       })
-      .then(() => chatsStore.getChats())
   },
 
   renameChatFolder: (oldFolder, newFolder) => {
     return api
       .put(`v1/conversations/folder/${encodeURIComponent(oldFolder)}`, { folder: newFolder })
-      .then(() => chatsStore.getFolders())
-      .then(() => chatsStore.getChats())
+      .then(() => refreshChatsAndFolders())
   },
 
-  moveChatToFolder: async (chatId, targetFolder) => {
+  moveChatToFolder: async (chatId, targetFolder, options) => {
     const chat = chatsStore.findChat(chatId)
 
     if (!chat) return
@@ -660,17 +847,49 @@ export const chatsStore = proxy<ChatsStoreType>({
       .put(`v1/conversations/${chatId}`, { folder: folderValue })
       .then((response) => {
         chat.folder = folderValue
+        // A move must land at the top of the target list regardless of the chat's actual
+        // last activity, without treating the move itself as activity — moveOrderStore
+        // records this independently of updateDate (EPMCDME-15009 reopened AC).
+        moveOrderStore.recordMove(chatId)
         return response.json()
       })
       .then(() => {
         const displayName = targetFolder === DEFAULT_CHAT_FOLDER ? 'Chats section' : targetFolder
-        toaster.info(`Chat moved to ${displayName || 'Chats section'}`)
+        if (options?.successMessage) toaster.success(options.successMessage)
+        else toaster.info(`Chat moved to ${displayName || 'Chats section'}`)
         return chatsStore.getChats()
       })
       .catch((error) => {
         toaster.error('Failed to move chat')
         console.error('Failed to move chat:', error)
       })
+  },
+
+  moveChatsToFolder: async (chatIds, targetFolder) => {
+    if (chatIds.length === 0) return
+
+    const folderValue = targetFolder === DEFAULT_CHAT_FOLDER ? '' : targetFolder
+    chatsStore.isMovingChatsToFolder = true
+    try {
+      await api.put('v1/conversations/folders/move', {
+        conversation_ids: chatIds,
+        target_folder: folderValue,
+      })
+      chatsStore.chats.forEach((chat) => {
+        if (chatIds.includes(chat.id)) chat.folder = folderValue
+      })
+      chatIds.forEach((id) => moveOrderStore.recordMove(id))
+      await refreshChatsAndFolders()
+      toaster.success(
+        `${chatIds.length} ${chatIds.length === 1 ? 'chat' : 'chats'} moved to ${targetFolder}`
+      )
+    } catch (error) {
+      await refreshChatsAndFolders()
+      toaster.error('Failed to move selected chats')
+      throw error
+    } finally {
+      chatsStore.isMovingChatsToFolder = false
+    }
   },
 
   getMetrics: async (chatId) => {

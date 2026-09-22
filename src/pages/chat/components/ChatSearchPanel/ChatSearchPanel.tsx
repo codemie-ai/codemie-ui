@@ -33,6 +33,12 @@ import { ChatSidebarListsRef } from '../ChatSidebar/ChatSidebarLists/ChatSidebar
 
 export const SEARCH_TRIGGER_LENGTH = 3
 
+const SEARCH_RESULT_GROUPS: Array<{ type: SearchItem['type']; label: string }> = [
+  { type: 'assistant', label: 'Assistants' },
+  { type: 'chat', label: 'Chats' },
+  { type: 'folder', label: 'Folders' },
+]
+
 interface ChatSearchPanelProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -78,6 +84,7 @@ const ChatSearchPanel = ({ open, onOpenChange, sidebarListsRef }: ChatSearchPane
     const timeoutId = setTimeout(async () => {
       try {
         const results = await chatsStore.searchChats(query, controller.signal)
+        if (controller.signal.aborted) return
         setSearchResults(results)
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -93,10 +100,13 @@ const ChatSearchPanel = ({ open, onOpenChange, sidebarListsRef }: ChatSearchPane
     }
   }, [query])
 
-  const handleSelectResult = (item: SearchItem) => {
+  const handleSelectResult = async (item: SearchItem) => {
     addToHistory(query)
 
-    if (item.type === 'chat') {
+    if (item.type === 'assistant') {
+      await chatsStore.startNewChat(item.id, '', false)
+      router.push({ name: 'new-chat' })
+    } else if (item.type === 'chat') {
       router.push({ name: 'chats', params: { id: item.id } })
       sidebarListsRef.current?.scrollToChat(item.id, item.folder)
     } else if (item.type === 'folder') {
@@ -212,7 +222,7 @@ const ChatSearchPanel = ({ open, onOpenChange, sidebarListsRef }: ChatSearchPane
 
               {history.length === 0 && Object.values(groupedChats).every((g) => g.length === 0) && (
                 <div className="px-3 py-8 text-center text-sm text-text-secondary">
-                  Start typing to search chats and folders...
+                  Start typing to search assistants, chats, and folders...
                 </div>
               )}
             </>
@@ -229,19 +239,29 @@ const ChatSearchPanel = ({ open, onOpenChange, sidebarListsRef }: ChatSearchPane
           {query.length >= SEARCH_TRIGGER_LENGTH && searchResults && (
             <>
               {searchResults.length > 0 ? (
-                <Command.Group>
-                  {searchResults.map((item) => (
-                    <SearchResultItem
-                      key={item.id ?? item.name}
-                      item={item}
-                      query={query}
-                      onSelect={handleSelectResult}
-                    />
-                  ))}
-                </Command.Group>
+                SEARCH_RESULT_GROUPS.map(({ type, label }) => {
+                  const groupItems = searchResults.filter((item) => item.type === type)
+                  if (groupItems.length === 0) return null
+                  return (
+                    <Command.Group
+                      key={type}
+                      heading={label}
+                      className="p-1 command-group [&~.command-group]:mt-4 [&>[cmdk-group-heading]]:mb-1 [&>[cmdk-group-heading]]:pl-1 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:text-text-quaternary"
+                    >
+                      {groupItems.map((item) => (
+                        <SearchResultItem
+                          key={`${item.type}:${item.id}`}
+                          item={item}
+                          query={query}
+                          onSelect={handleSelectResult}
+                        />
+                      ))}
+                    </Command.Group>
+                  )
+                })
               ) : (
                 <Command.Empty className="px-3 py-8 text-center text-sm text-text-secondary">
-                  No chats or folders found
+                  No assistants, chats, or folders found
                 </Command.Empty>
               )}
             </>

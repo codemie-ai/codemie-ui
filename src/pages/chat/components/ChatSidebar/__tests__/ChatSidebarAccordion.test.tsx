@@ -31,7 +31,7 @@ vi.mock('primereact/accordion', () => ({
           aria-owns={haPt['aria-owns']}
           data-testid="accordion-header"
         >
-          {header?.()}
+          {header}
         </div>
         {children}
       </div>
@@ -92,5 +92,17 @@ describe('ChatSidebarAccordion', () => {
       </ChatSidebarAccordion>
     )
     expect(screen.getByRole('treeitem')).not.toHaveAttribute('aria-owns')
+  })
+
+  it('renders a non-collapsible section without interactive accordion semantics', () => {
+    render(
+      <ChatSidebarAccordion title="Recent" isCollapsible={false}>
+        <div>Recent chat</div>
+      </ChatSidebarAccordion>
+    )
+
+    expect(screen.queryByRole('treeitem')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('chevron')).not.toBeInTheDocument()
+    expect(screen.getByText('Recent chat')).toBeVisible()
   })
 })

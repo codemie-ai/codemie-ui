@@ -79,13 +79,32 @@ describe('Avatar', () => {
     expect(img).toHaveAttribute('src', 'https://example.com/icon.png')
   })
 
-  it('falls back to ai-avatar image when no iconUrl and generatedAvatars is disabled', () => {
+  it('falls back to ai-avatar image when generatedAvatars flag is disabled', () => {
     vi.mocked(useFeatureFlag).mockReturnValue([false] as any)
 
     const { container } = render(<Avatar name="Test Assistant" />)
 
     const img = getImg(container)
     expect(img).toHaveAttribute('src', 'ai-avatar.png')
+  })
+
+  it('falls back to ai-avatar image when no name and generatedAvatars is disabled', () => {
+    vi.mocked(useFeatureFlag).mockReturnValue([false] as any)
+
+    const { container } = render(<Avatar />)
+
+    const img = getImg(container)
+    expect(img).toHaveAttribute('src', 'ai-avatar.png')
+  })
+
+  it('falls back to generated avatar when no name and generatedAvatars flag is enabled', () => {
+    vi.mocked(useFeatureFlag).mockReturnValue([true] as any)
+
+    const { container } = render(<Avatar />)
+
+    expect(generateAssistantAvatarDataUrl).toHaveBeenCalledWith('')
+    const img = getImg(container)
+    expect(img).toHaveAttribute('src', 'generated-url')
   })
 
   it('falls back to generated avatar when generatedAvatars feature flag is enabled', () => {

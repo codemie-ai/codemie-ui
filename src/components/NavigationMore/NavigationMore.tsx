@@ -24,6 +24,7 @@ import {
   useMergeRefs,
   FloatingPortal,
   Alignment,
+  Placement,
 } from '@floating-ui/react'
 import React, { memo, MouseEventHandler, useId, useRef, useState } from 'react'
 
@@ -42,7 +43,7 @@ export interface NavigationItem {
 
 /**
  * Prefer `contextId` when an entity name exists in the DOM; use `data-tooltip-content` for
- * action-only menus with no named entity (e.g. "Export diagram", "Remove execution").
+ * action-only menus with no named entity.
  */
 interface NavigationMoreProps {
   children?: React.ReactNode
@@ -52,8 +53,10 @@ interface NavigationMoreProps {
   childrenFirst?: boolean
   renderInRoot?: boolean
   alignment?: Alignment | null
+  placement?: Placement
   autoAlignment?: boolean
   onClick?: MouseEventHandler<Element>
+  onOpenChange?: (open: boolean) => void
   className?: string
   buttonClassName?: string
   'data-tooltip-content'?: string
@@ -68,10 +71,12 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   customIcon = null,
   renderInRoot,
   alignment = 'end',
+  placement,
   autoAlignment,
   className,
   buttonClassName,
   onClick,
+  onOpenChange,
   'data-tooltip-content': dataTooltipContent,
   contextId,
 }) => {
@@ -83,13 +88,22 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
 
   useFocusReturn(triggerRef, show)
 
+  const handleOpenChange = (value: boolean) => {
+    setShow(value)
+    onOpenChange?.(value)
+  }
+
   const { refs, floatingStyles, context } = useFloating({
     open: show,
-    middleware: [offset(4), shift(), autoPlacement({ alignment, autoAlignment })],
-    onOpenChange: setShow,
+    placement,
+    middleware: placement
+      ? [offset(4), shift({ padding: 8 })]
+      : [offset(4), autoPlacement({ alignment, autoAlignment }), shift({ padding: 8 })],
+    onOpenChange: handleOpenChange,
+    strategy: renderInRoot ? 'fixed' : 'absolute',
   })
 
-  const dismiss = useDismiss(context)
+  const dismiss = useDismiss(context, { ancestorScroll: true })
   const click = useClick(context)
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
@@ -104,7 +118,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
 
   const handleClickInside = () => {
     if (!hideOnClickInside) return
-    setShow(false)
+    handleOpenChange(false)
   }
 
   const visibleItems = items?.filter((item) => !item.hidden)
@@ -119,7 +133,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
     >
       <div
         id={menuId}
-        className="flex flex-col bg-surface-base-secondary rounded-lg border border-border-structural z-50 w-44 py-2 px-2"
+        className="z-50 flex w-max min-w-44 max-w-[calc(100vw-1rem)] flex-col rounded-lg border border-border-structural bg-surface-base-secondary px-2 py-2"
         role="menu"
         aria-label="Options"
       >
@@ -132,14 +146,14 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
                   type="button"
                   role="menuitem"
                   className={cn(
-                    'flex items-center gap-4 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed',
+                    'flex items-center gap-3 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed',
                     !item.disabled &&
                       'hover:bg-surface-specific-dropdown-hover hover:text-text-accent',
                     'focus:outline-none focus:ring-2 focus:ring-primary-500'
                   )}
                   onClick={(e) => {
                     if (!item.disabled) item.onClick(e)
-                    if (hideOnClickInside) setShow(false)
+                    if (hideOnClickInside) handleOpenChange(false)
                   }}
                   disabled={item.disabled}
                   aria-label={item.title}
@@ -147,12 +161,12 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
                   data-tooltip-content={item.tooltip}
                 >
                   <span
-                    className="w-[18px] h-[18px] flex justify-center items-center"
+                    className="flex size-5 shrink-0 items-center justify-center"
                     aria-hidden="true"
                   >
                     {item.icon}
                   </span>
-                  <span className="text-left grow">{item.title}</span>
+                  <span className="min-w-0 grow truncate text-left">{item.title}</span>
                 </button>
               </li>
             ))}
@@ -172,7 +186,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
         ref={mergedTriggerRef}
         className={cn(
           'm-1 p-1 rounded-md border border-transparent hover:bg-surface-specific-dropdown-hover transition',
-          'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1',
           buttonClassName
         )}
         {...getReferenceProps()}

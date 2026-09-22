@@ -109,7 +109,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   const handleChatClick = React.useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation()
-      await chatsStore.startNewChat(assistant.id, assistant.name, false)
+      await chatsStore.startNewChat(assistant.id, '', false)
       updateRecentAssistants(assistant)
       router.push({ name: 'new-chat' })
     },

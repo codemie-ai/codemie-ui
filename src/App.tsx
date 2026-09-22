@@ -37,6 +37,7 @@ import { usePageTitle } from '@/hooks/appLevel/usePageTitle'
 import usePrismThemeToggle from '@/hooks/appLevel/usePrismThemeToggle'
 import { useTheme } from '@/hooks/useTheme'
 import { UnsavedChangesProvider } from '@/hooks/useUnsavedChangesWarning'
+import { chatViewSettingsStore, setChatViewSettingsUserId } from '@/store/chatViewSettings'
 import { floatingKataStore } from '@/store/floatingKata'
 import { userStore } from '@/store/user'
 
@@ -54,10 +55,12 @@ const App: React.FC = () => {
 
   const showGradient = appearance?.gradients ?? true
 
-  // Load floating kata state from localStorage after user is loaded
+  // Load per-user localStorage state after user is loaded
   useEffect(() => {
     if (user) {
       floatingKataStore.loadFromLocalStorage()
+      setChatViewSettingsUserId(user.userId)
+      chatViewSettingsStore.loadFromLocalStorage()
     }
   }, [user])
 

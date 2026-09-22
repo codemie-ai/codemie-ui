@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import NavigationMore, { NavigationItem } from '../NavigationMore'
 
@@ -30,6 +30,8 @@ const makeItems = (overrides: Partial<NavigationItem>[] = []): NavigationItem[] 
 const openMenu = () => {
   fireEvent.click(screen.getByRole('button', { name: 'More options' }))
 }
+
+afterEach(cleanup)
 
 describe('NavigationMore', () => {
   it('renders items inside a <ul> when popup is open', () => {
@@ -100,6 +102,33 @@ describe('NavigationMore', () => {
     const { container } = render(<NavigationMore items={items} />)
     openMenu()
     expect(container.querySelector('ul')).not.toBeInTheDocument()
+  })
+
+  it('closes a portal menu when its scroll container moves', () => {
+    render(
+      <div data-testid="scroll-container" style={{ maxHeight: 10, overflow: 'auto' }}>
+        <NavigationMore items={makeItems()} renderInRoot />
+      </div>
+    )
+
+    openMenu()
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+
+    fireEvent.scroll(screen.getByTestId('scroll-container'))
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('shows the trigger focus ring only for keyboard-visible focus', () => {
+    render(<NavigationMore items={makeItems()} />)
+
+    const trigger = screen.getByRole('button', { name: 'More options' })
+    expect(trigger).toHaveClass(
+      'focus-visible:ring-2',
+      'focus-visible:ring-primary-500',
+      'focus-visible:ring-offset-1'
+    )
+    expect(trigger).not.toHaveClass('focus:ring-2')
   })
 })
 

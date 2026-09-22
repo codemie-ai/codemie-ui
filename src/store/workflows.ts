@@ -41,6 +41,7 @@ import { preferencesStore } from './preferences'
 import { userStore } from './user'
 
 export const MAX_RECENT_WORKFLOWS = 3
+const WORKFLOWS_FETCH_BATCH_SIZE = 50
 
 export const ERROR_FORMAT_STRING = 'string' as const
 export const ERROR_FORMAT_JSON = 'json' as const
@@ -71,6 +72,7 @@ interface WorkflowsStore {
   workflowExecutionsPagination: Pagination
   workflowExecutionsLoading: boolean
   recentWorkflows: Workflow[]
+  chatWorkflows: Workflow[]
   indexWorkflows: (page?: number, perPage?: number) => Promise<void>
   setWorkflowsFilters: (filters: WorkflowsFilters) => void
   setWorkflowsScope: (scope: string) => void
@@ -116,6 +118,7 @@ interface WorkflowsStore {
     options: { output_format: string; combined: boolean }
   ) => Promise<void>
   getRecentWorkflows: () => Promise<void>
+  fetchWorkflowsByIds: (ids: string[]) => Promise<void>
   updateRecentWorkflows: (workflow: Workflow) => void
   deleteRecentWorkflow: (id: string) => void
   getCustomNodeSchema: (customNodeId: string) => Promise<CustomNodeSchemaResponse | null>
@@ -162,6 +165,7 @@ export const workflowsStore = proxy<WorkflowsStore>({
   workflowExecutionsPagination: { page: 0, perPage: 10, totalPages: 0, totalCount: 0 },
   workflowExecutionsLoading: false,
   recentWorkflows: [],
+  chatWorkflows: [],
 
   async indexWorkflows(
     this: WorkflowsStore,
@@ -445,10 +449,53 @@ export const workflowsStore = proxy<WorkflowsStore>({
     try {
       const response = await api.get(`v1/workflows/recent?limit=${MAX_RECENT_WORKFLOWS}`)
       const data = await response.json()
-      this.recentWorkflows = data
+      this.recentWorkflows = Array.isArray(data) ? data : []
     } catch (error) {
       console.error('Failed to fetch recent workflows:', error)
       this.recentWorkflows = []
+    }
+  },
+
+  async fetchWorkflowsByIds(this: WorkflowsStore, ids: string[]) {
+    const knownIds = new Set(
+      [...this.workflows, ...this.recentWorkflows, ...this.chatWorkflows].map(
+        (workflow) => workflow.id
+      )
+    )
+    const missingIds = [...new Set(ids)].filter((id) => id && !knownIds.has(id))
+    if (!missingIds.length) return
+
+    const chunks: string[][] = []
+    for (let i = 0; i < missingIds.length; i += WORKFLOWS_FETCH_BATCH_SIZE) {
+      chunks.push(missingIds.slice(i, i + WORKFLOWS_FETCH_BATCH_SIZE))
+    }
+    const requestedIds = new Set(missingIds)
+    const cachedIds = new Set(this.chatWorkflows.map((workflow) => workflow.id))
+
+    const workflowChunks = await Promise.all(
+      chunks.map(async (chunk): Promise<Workflow[]> => {
+        try {
+          const filters = encodeURIComponent(JSON.stringify({ id: chunk }))
+          const url =
+            `v1/workflows?page=0&per_page=${WORKFLOWS_FETCH_BATCH_SIZE}` +
+            `&filters=${filters}&minimal_response=true`
+          const response = await api.get(url, { skipErrorHandling: true })
+          const result = await response.json()
+          return Array.isArray(result.data) ? result.data : []
+        } catch (error) {
+          console.error('[fetchWorkflowsByIds] failed:', error)
+          return []
+        }
+      })
+    )
+
+    for (const workflows of workflowChunks) {
+      for (const workflow of workflows) {
+        if (requestedIds.has(workflow.id) && !cachedIds.has(workflow.id)) {
+          this.chatWorkflows.push(workflow)
+          cachedIds.add(workflow.id)
+        }
+      }
     }
   },
 

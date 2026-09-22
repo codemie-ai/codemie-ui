@@ -1,0 +1,41 @@
+{
+  "decision": "approve",
+  "rationale": "Verification round over the two blocking findings recorded in code-review-final.json. Both are resolved in commit 40b667981 and verified against the current working tree, each at every call site the finding named, each with a regression test. CR-001: isAssistantNameFolder now exists and guards the custom-folder branch in both classifiers. CR-002: pendingRename is back on ChatListItem and read by the render path again. Targeted regression suites pass (2 files, 60 tests). Separately, this round found and fixed an initial-data-fetch identity race introduced by 0cf9f49c9 that was breaking the E2E harness; see CR-003. Scope note: this check round verifies the recorded findings and the CR-003 regression only. It does not widen the coverage of the original review, which recorded confidence 'low' because a manual single pass over a 155-file (+12903/-1215) diff replaced the three-lens fan-out; that coverage gap is unchanged and is the reason confidence here is 'medium' rather than 'high'.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Fix-up commits follow 'EPMCDME-XXXX: Capital sentence' (40b667981, 3e15e3161)."
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "Both fixes ship regression tests: chatSidebarListsHelpers.test.ts (+20) for CR-001, ChatListItem.test.tsx (+12) for CR-002. Targeted run: 2 files passed, 60 tests passed."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No new HTTP surface, no secrets. CR-003 restores correct identity resolution rather than weakening it."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "chatSidebarCollectionHelpers.ts:64 exports isAssistantNameFolder. It guards the custom-folder branch at both call sites the finding named: unifiedChatSidebarViewModel.ts:62 and focusedChatSidebarCollections.ts:107, both now `if (chat.folder && !isAssistantNameFolder(chat.folder, assistant))`, so a folder whose name equals the assistant's falls through to assistant-folder classification. Covered by chatSidebarListsHelpers.test.ts."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "evidence": "pendingRename?: boolean restored on ChatListItem (types/entity/conversation.ts:94) and read by the render path again: ChatListItem.tsx:56 `if (chat.name?.trim() && !chat.pendingRename)` and FocusedAggregateRow.tsx:48. Store-side plumbing in chatGeneration.ts (675, 690, 711) is unchanged, so the flag the store maintains is reconnected to the UI. Covered by ChatListItem.test.tsx."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "evidence": "Found during this round, not in code-review-final.json. 0cf9f49c9 parallelized useInitialDataFetch as Promise.all([fetchCustomerConfig(), loadUser()]). api.authHeaders() (utils/api.ts:439) branches on getIsLocalAuth(), which reads appInfoStore.getIdpProvider() — that defaults to 'keycloak' until the customer config lands (store/appInfo.ts:144). With idpProvider='local', loadUser() therefore raced ahead of the config and sent the dev 'user-id' header, resolving the app as the dev stub instead of the signed-in account. Restored the serial order (config, then user) with an explanatory comment. Verified: test_datasource_sidebar_interaction went from failing on 'Actual value: dev-codemie-user' to passing, and the full sanity-ui harness is green at 82 passed. The two navigator.webdriver guards in AutoPopupManager and the profileSettings guard in onboarding.markPageVisited were workarounds for this same root cause and have been reverted. Guarded by useInitialDataFetch.test.tsx, whose ordering case previously asserted the parallel call and now asserts that loadUser is not called until fetchCustomerConfig resolves."
+    }
+  ]
+}

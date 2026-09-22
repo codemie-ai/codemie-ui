@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -27,7 +27,14 @@ const mockRouter = {
   push: vi.fn(),
 }
 
-const { mockAssistantsStore, mockChatsStore } = vi.hoisted(() => {
+interface MockInfiniteScrollOptions {
+  enabled: boolean
+  isLoading: boolean
+  hasMore: boolean
+  onLoadMore: () => void
+}
+
+const { mockAssistantsStore, mockChatsStore, mockUseInfiniteScroll } = vi.hoisted(() => {
   return {
     mockAssistantsStore: {
       recentAssistants: [] as Assistant[],
@@ -38,8 +45,13 @@ const { mockAssistantsStore, mockChatsStore } = vi.hoisted(() => {
     mockChatsStore: {
       startNewChat: vi.fn(),
     },
+    mockUseInfiniteScroll: vi.fn((_options: MockInfiniteScrollOptions) => vi.fn()),
   }
 })
+
+vi.mock('@/hooks/useInfiniteScroll', () => ({
+  useInfiniteScroll: mockUseInfiniteScroll,
+}))
 
 vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: vi.fn(() => mockRouter),
@@ -187,6 +199,7 @@ describe('ChatSidebarAssistants', () => {
     mockAssistantsStore.updateRecentAssistants = vi.fn()
     mockChatsStore.startNewChat = vi.fn()
     mockRouter.push = vi.fn()
+    mockUseInfiniteScroll.mockReturnValue(vi.fn())
   })
 
   it('renders without crashing and fetches recent assistants', () => {
@@ -194,7 +207,7 @@ describe('ChatSidebarAssistants', () => {
 
     expect(container.firstChild).toBeInTheDocument()
     expect(mockAssistantsStore.getRecentAssistants).toHaveBeenCalledTimes(1)
-    expect(screen.getByText('Assistants')).toBeInTheDocument()
+    expect(screen.getByText('Recent Assistants')).toBeInTheDocument()
   })
 
   it('renders list of recent assistants', () => {
@@ -230,7 +243,7 @@ describe('ChatSidebarAssistants', () => {
     expect(screen.queryByText(/\.\.\./)).not.toBeInTheDocument()
   })
 
-  it('displays only first 5 assistants when more are available', () => {
+  it('renders recent assistants in batches of five inside a five-row viewport', () => {
     const manyAssistants = Array.from({ length: 10 }, (_, i) => ({
       ...mockAssistants[0],
       id: `assistant-${i}`,
@@ -242,6 +255,18 @@ describe('ChatSidebarAssistants', () => {
     expect(screen.getByText('Assistant 0')).toBeInTheDocument()
     expect(screen.getByText('Assistant 4')).toBeInTheDocument()
     expect(screen.queryByText('Assistant 5')).not.toBeInTheDocument()
+    expect(screen.queryByText('Assistant 9')).not.toBeInTheDocument()
+
+    const scrollContainer = screen.getByTestId('recent-assistants-scroll-container')
+    expect(scrollContainer).toHaveStyle({ maxHeight: '180px' })
+    fireEvent.scroll(scrollContainer)
+
+    const infiniteScrollOptions = mockUseInfiniteScroll.mock.calls.at(-1)?.[0]
+    expect(infiniteScrollOptions?.enabled).toBe(true)
+    act(() => infiniteScrollOptions?.onLoadMore())
+
+    expect(screen.getByText('Assistant 5')).toBeInTheDocument()
+    expect(screen.getByText('Assistant 9')).toBeInTheDocument()
   })
 
   it('starts new chat and navigates when assistant is clicked', async () => {
@@ -251,7 +276,7 @@ describe('ChatSidebarAssistants', () => {
 
     await user.click(screen.getByText('Code Helper'))
 
-    expect(mockChatsStore.startNewChat).toHaveBeenCalledWith('assistant-1', 'Code Helper', false)
+    expect(mockChatsStore.startNewChat).toHaveBeenCalledWith('assistant-1', '', false)
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith({ name: 'new-chat' })
       expect(mockAssistantsStore.updateRecentAssistants).toHaveBeenCalledWith(mockAssistants[0])
@@ -276,45 +301,43 @@ describe('ChatSidebarAssistants', () => {
     render(<ChatSidebarAssistants />)
 
     expect(screen.getByTestId('menu-item-new-chat')).toBeInTheDocument()
-    expect(screen.getByTestId('menu-item-view')).toBeInTheDocument()
-    expect(screen.getByTestId('menu-item-edit')).toBeInTheDocument()
-    expect(screen.getByTestId('menu-item-remove')).toBeInTheDocument()
+    expect(screen.getByTestId('menu-item-view-chat-history')).toBeInTheDocument()
+    expect(screen.getByTestId('menu-item-edit-assistant')).toBeInTheDocument()
+    expect(screen.getByTestId('menu-item-remove-from-recent-assistants')).toBeInTheDocument()
   })
 
   it('does not show Edit menu item when canEdit is false', () => {
     mockAssistantsStore.recentAssistants = [mockAssistants[2]]
     render(<ChatSidebarAssistants />)
 
-    expect(screen.queryByTestId('menu-item-edit')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('menu-item-edit-assistant')).not.toBeInTheDocument()
     expect(screen.getByTestId('menu-item-new-chat')).toBeInTheDocument()
-    expect(screen.getByTestId('menu-item-view')).toBeInTheDocument()
-    expect(screen.getByTestId('menu-item-remove')).toBeInTheDocument()
+    expect(screen.getByTestId('menu-item-view-chat-history')).toBeInTheDocument()
+    expect(screen.getByTestId('menu-item-remove-from-recent-assistants')).toBeInTheDocument()
   })
 
   it('does not show Edit menu item for A2A type assistants', () => {
     mockAssistantsStore.recentAssistants = [mockAssistants[3]]
     render(<ChatSidebarAssistants />)
 
-    expect(screen.queryByTestId('menu-item-edit')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('menu-item-edit-assistant')).not.toBeInTheDocument()
   })
 
-  it('navigates to assistant view page when View is clicked', async () => {
+  it('opens Assistant History when View chat history is clicked', async () => {
+    const onViewChatHistory = vi.fn()
     mockAssistantsStore.recentAssistants = [mockAssistants[0]]
-    render(<ChatSidebarAssistants />)
+    render(<ChatSidebarAssistants onViewChatHistory={onViewChatHistory} />)
 
-    await user.click(screen.getByTestId('menu-item-view'))
+    await user.click(screen.getByTestId('menu-item-view-chat-history'))
 
-    expect(mockRouter.push).toHaveBeenCalledWith({
-      name: 'assistant',
-      params: { id: 'assistant-1' },
-    })
+    expect(onViewChatHistory).toHaveBeenCalledWith('assistant-1', 'Code Helper', 'icon1.png')
   })
 
   it('navigates to edit assistant page when Edit is clicked', async () => {
     mockAssistantsStore.recentAssistants = [mockAssistants[0]]
     render(<ChatSidebarAssistants />)
 
-    await user.click(screen.getByTestId('menu-item-edit'))
+    await user.click(screen.getByTestId('menu-item-edit-assistant'))
 
     expect(mockRouter.push).toHaveBeenCalledWith({
       name: 'edit-assistant',
@@ -327,7 +350,7 @@ describe('ChatSidebarAssistants', () => {
     mockAssistantsStore.recentAssistants = [mockAssistants[0]]
     render(<ChatSidebarAssistants />)
 
-    await user.click(screen.getByTestId('menu-item-remove'))
+    await user.click(screen.getByTestId('menu-item-remove-from-recent-assistants'))
 
     await waitFor(() => {
       expect(mockAssistantsStore.deleteRecentAssistant).toHaveBeenCalledWith('assistant-1')
@@ -342,7 +365,7 @@ describe('ChatSidebarAssistants', () => {
 
     await user.click(screen.getByTestId('menu-item-new-chat'))
 
-    expect(mockChatsStore.startNewChat).toHaveBeenCalledWith('assistant-1', 'Code Helper', false)
+    expect(mockChatsStore.startNewChat).toHaveBeenCalledWith('assistant-1', '', false)
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith({ name: 'new-chat' })
     })

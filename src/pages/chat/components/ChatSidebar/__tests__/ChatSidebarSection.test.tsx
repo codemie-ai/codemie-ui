@@ -197,8 +197,15 @@ describe('ChatsSidebarSection', () => {
     const accordion = container.querySelector('.p-accordion')
     expect(accordion).toBeInTheDocument()
 
-    const headerDiv = container.querySelector('.flex.items-center.gap-2')
-    expect(headerDiv).toHaveClass('flex', 'items-center', 'gap-2', 'font-bold', 'uppercase')
+    const headerDiv = screen.getByText('Test Section').parentElement
+    expect(headerDiv).toHaveClass(
+      'flex',
+      'items-center',
+      'gap-2',
+      'font-medium',
+      'uppercase',
+      'text-text-heading'
+    )
   })
 
   it('preserves children content when toggling accordion', async () => {

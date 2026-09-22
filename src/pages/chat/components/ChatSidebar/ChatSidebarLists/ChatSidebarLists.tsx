@@ -13,140 +13,118 @@
 // limitations under the License.
 //
 
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
-import AddFolderSvg from '@/assets/icons/folder-add.svg?react'
+import PlusSvg from '@/assets/icons/plus.svg?react'
 import Spinner from '@/components/Spinner'
 import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
+import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatsStore } from '@/store/chats'
+import { ChatOrganizeMode, chatViewSettingsStore } from '@/store/chatViewSettings'
+import { moveOrderStore } from '@/store/moveOrder'
+import { pinOrderStore } from '@/store/pinOrder'
 import { ChatListItem } from '@/types/entity/conversation'
 
-import ChatSidebarAccordion from './ChatSidebarAccordion'
-import ChatList from '../ChatList/ChatList'
+import {
+  buildFocusedChatSidebarViewModel,
+  buildUnifiedChatSidebarViewModel,
+  FocusedChatSidebarAggregate,
+} from './chatSidebarListsHelpers'
+import FocusedChatSidebar from './FocusedChatSidebar'
+import { FocusedView } from './focusedChatSidebarHelpers'
+import UnifiedChatSidebar from './UnifiedChatSidebar'
+import { ChatSidebarListsRef, useChatSidebarSections } from './useChatSidebarSections'
 import DeleteChatPopup from '../ChatList/DeleteChatPopup'
 import MoveChatPopup from '../ChatList/MoveChatPopup'
+import RemoveChatFromFolderPopup from '../ChatList/RemoveChatFromFolderPopup'
 import FolderFormPopup from '../FolderList/FolderFormPopup'
-import FolderList from '../FolderList/FolderList'
+import StartNewChatModal from '../StartNewChatModal'
 
-type SectionName = 'chats' | 'folders'
-type PopupName = 'delete-chat' | 'folder-form' | 'move-chat'
+export type { ChatSidebarListsRef }
 
-export interface ChatSidebarListsRef {
-  expandFolder: (folderName: string) => void
-  scrollToChat: (chatId: string, folderName?: string) => void
+type PopupName = 'delete-chat' | 'folder-form' | 'move-chat' | 'remove-chat-from-folder'
+type FocusedNavigationSection = 'pinned' | 'workflow-runs'
+
+interface ChatSidebarListsProps {
+  onFocusedViewActiveChange?: (isActive: boolean) => void
 }
 
-const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) => {
-  const { chats, currentChat, chatFolders, isChatsLoading } = useSnapshot(
-    chatsStore
-  ) as typeof chatsStore
+const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>((props, ref) => {
+  const { onFocusedViewActiveChange } = props
+  const router = useVueRouter()
+  const { chats, currentChat, chatFolders, assistantFolders, isChatsLoading } =
+    useSnapshot(chatsStore)
+  const { organizeBy, density, showRecentAssistants, showWorkflowRunsSeparately } =
+    useSnapshot(chatViewSettingsStore)
 
   const [selectedChat, setSelectedChat] = useState<ChatListItem>()
+  const [newChatFolder, setNewChatFolder] = useState<string>()
   const [activePopup, setActivePopup] = useState<PopupName | null>(null)
-  const [activeSection, setActiveSection] = useState<SectionName | null>(null)
-  const [activeFolder, setActiveFolder] = useState<string | null>(null)
-  const [hasManuallyExpandedSection, setHasManuallyExpandedSection] = useState(false)
-  const [disableAccordionAnimation, setDisableAccordionAnimation] = useState(false)
+  const [focusedView, setFocusedView] = useState<FocusedView>({ type: 'root' })
+  const [focusedNavigationSection, setFocusedNavigationSection] =
+    useState<FocusedNavigationSection | null>(null)
 
-  useImperativeHandle(ref, () => ({
-    expandFolder: (folderName: string) => {
-      setDisableAccordionAnimation(true)
-      setActiveSection('folders')
-      setActiveFolder(folderName)
+  const isFocused = organizeBy === ChatOrganizeMode.FOCUSED || focusedView.type !== 'root'
 
-      setTimeout(() => {
-        const folderElement = document.querySelector(
-          `[data-folder="${folderName}"]`
-        ) as HTMLElement | null
-        if (!folderElement) {
-          setDisableAccordionAnimation(false)
-          return
-        }
-        folderElement.scrollIntoView({ behavior: 'instant', block: 'center' })
-        if (folderElement.getAttribute('data-folder-open') !== 'true') {
-          folderElement.click()
-        }
-        setDisableAccordionAnimation(false)
-      }, 50)
-    },
-    scrollToChat: (chatId: string, folderName?: string) => {
-      setDisableAccordionAnimation(true)
-
-      if (folderName) {
-        setActiveSection('folders')
-        setActiveFolder(folderName)
-      } else {
-        setActiveSection('chats')
-      }
-
-      setTimeout(() => {
-        const chatElement = document.querySelector(`[data-chat-id="${chatId}"]`)
-        if (chatElement) {
-          chatElement.scrollIntoView({ behavior: 'instant', block: 'nearest' })
-        }
-        setDisableAccordionAnimation(false)
-      }, 50)
-    },
-  }))
-
-  const defaultChats = useMemo(
-    () => chats.filter((chat) => !chat.folder || chat.isWorkflow),
-    [chats]
+  const {
+    pinnedChats,
+    recentChats,
+    workflowChats,
+    foldersToChatsMap,
+    folderLabels,
+    chatLocations,
+  } = useMemo(
+    () =>
+      buildUnifiedChatSidebarViewModel(
+        chats as ChatListItem[],
+        {
+          showRecentAssistants,
+          showWorkflowRunsSeparately,
+        },
+        assistantFolders,
+        pinOrderStore.getPinOrder(),
+        moveOrderStore.getMoveOrder()
+      ),
+    [assistantFolders, chats, showRecentAssistants, showWorkflowRunsSeparately]
   )
 
-  const foldersToChatsMap = useMemo(() => {
-    return chats.reduce((acc: Record<string, ChatListItem[]>, chat) => {
-      if (chat.folder) {
-        acc[chat.folder] = acc[chat.folder] ?? []
-        acc[chat.folder].push(chat)
-      }
-
-      return acc
-    }, {})
-  }, [chats])
-
-  const folders = useMemo(() => {
-    return chatFolders
-      .slice()
-      .sort(
-        (a, b) => new Date(b.updateDate ?? '').getTime() - new Date(a.updateDate ?? '').getTime()
-      )
-      .map((folder) => folder.name)
-  }, [chatFolders])
-
-  const activeFolderIndex = useMemo(() => {
-    const folderIndex = folders.findIndex((folder) => folder === activeFolder)
-    return folderIndex === -1 ? null : folderIndex
-  }, [activeFolder, JSON.stringify(folders)])
-
-  const handleHidePopup = () => setActivePopup(null)
-  const handleToggleSection = (name: SectionName) => {
-    setHasManuallyExpandedSection(true)
-    setActiveSection(activeSection === name ? null : name)
-  }
-
-  const handleMoveChat = (folderName: string) => {
-    if (currentChat?.id === selectedChat?.id) {
-      setActiveSection(folderName === DEFAULT_CHAT_FOLDER ? 'chats' : 'folders')
-      setActiveFolder(folderName)
-    }
-  }
-
-  const handleCreateFolder = () => {
-    setActiveSection('folders')
-    setActiveFolder(null)
-  }
+  const focusedViewModel = useMemo(() => {
+    const viewModel = buildFocusedChatSidebarViewModel(
+      chats as ChatListItem[],
+      {
+        showRecentAssistants,
+        showWorkflowRunsSeparately,
+      },
+      assistantFolders
+    )
+    return viewModel
+  }, [assistantFolders, chats, showRecentAssistants, showWorkflowRunsSeparately])
 
   useEffect(() => {
-    // Auto-switch sections only if:
-    // 1. User hasn't manually toggled sections yet, OR
-    // 2. We're in loading state (new chat being created/navigated to)
-    if (currentChat && (!hasManuallyExpandedSection || isChatsLoading)) {
-      setActiveSection(currentChat.folder ? 'folders' : 'chats')
-    }
-    if (currentChat?.folder) setActiveFolder(currentChat.folder)
-  }, [currentChat?.id, currentChat?.folder, isChatsLoading, hasManuallyExpandedSection])
+    onFocusedViewActiveChange?.(isFocused && focusedView.type !== 'root')
+  }, [focusedView.type, isFocused, onFocusedViewActiveChange])
+
+  const sections = useChatSidebarSections({
+    ref,
+    pinnedChats,
+    recentChats,
+    workflowChats,
+    chatLocations,
+    chatFolders,
+    foldersToChatsMap,
+    folderLabels,
+    currentChat: currentChat as ChatListItem | undefined,
+    isChatsLoading,
+    isFocused,
+    focusedViewModel,
+    setFocusedView,
+    setFocusedNavigationSection,
+  })
+
+  const { handleMoveChat, handleCreateFolder, registerChatElement } = sections
+
+  const handleHidePopup = () => setActivePopup(null)
 
   const chatActions = useMemo(
     () => ({
@@ -154,7 +132,10 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
         setSelectedChat(chat)
         setActivePopup('move-chat')
       },
-
+      removeChatFromFolder: (chat: ChatListItem) => {
+        setSelectedChat(chat)
+        setTimeout(() => setActivePopup('remove-chat-from-folder'), 0)
+      },
       deleteChat: (chat: ChatListItem) => {
         setSelectedChat(chat)
         setActivePopup('delete-chat')
@@ -163,18 +144,31 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
     []
   )
 
+  const handleFocusedNewChat = useCallback(
+    async (aggregate: FocusedChatSidebarAggregate) => {
+      if (aggregate.kind === 'folder') {
+        const isImportFolder =
+          aggregate.folderKind === 'import' || aggregate.folderKind === 'legacy-import'
+        setNewChatFolder(isImportFolder ? '' : aggregate.name)
+        return
+      }
+      try {
+        await chatsStore.startNewChat(aggregate.id, '', false)
+        router.push({ name: 'new-chat' })
+      } catch (error) {
+        console.error('[handleFocusedNewChat] failed to start chat:', error)
+      }
+    },
+    [router]
+  )
+
   const createFolderButton = (
     <button
       type="button"
-      aria-label="Create folder"
-      data-tooltip-id="react-tooltip"
-      data-tooltip-content="Create folder"
-      data-tooltip-place="top"
-      className="flex items-center cursor-pointer"
+      title="Create Folder"
+      aria-label="Create Folder"
+      className="rounded p-1 text-icon-secondary hover:text-icon-primary"
       onKeyDown={(e) => {
-        // This button renders inside the accordion's header action, which
-        // preventDefault()s Enter/Space to toggle the tab — that also cancels the
-        // button's own activation, so the key must not reach it.
         if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
       }}
       onClick={(e) => {
@@ -183,65 +177,70 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, object>((_props, ref) =
         setActivePopup('folder-form')
       }}
     >
-      <AddFolderSvg aria-hidden="true" className="opacity-80 hover:opacity-100" />
+      <PlusSvg className="size-4" />
     </button>
   )
 
   if (isChatsLoading) return <Spinner inline className="mx-auto" />
 
   return (
-    <div role="tree" aria-label="Chats" className="flex flex-col w-full grow min-h-0">
-      <ChatSidebarAccordion
-        title="Chats"
-        isExpanded={activeSection === 'chats'}
-        onToggle={() => handleToggleSection('chats')}
-        transitionOptions={disableAccordionAnimation ? { timeout: 0 } : undefined}
-        groupId="chat-tree-group-chats"
-      >
-        <ChatList
+    <div className="flex flex-col w-full grow min-h-0">
+      {isFocused ? (
+        <FocusedChatSidebar
+          view={focusedView}
+          viewModel={focusedViewModel}
           chatActions={chatActions}
-          chats={defaultChats}
           currentChatId={currentChat?.id}
-          id="chat-tree-group-chats"
+          density={density}
+          navigationSection={focusedNavigationSection}
+          onViewChange={setFocusedView}
+          onNewChat={handleFocusedNewChat}
+          registerChatElement={registerChatElement}
         />
-      </ChatSidebarAccordion>
-
-      <div data-onboarding="chat-sidebar-folders">
-        <ChatSidebarAccordion
-          title="Folders"
-          isExpanded={activeSection === 'folders'}
-          headerContentTemplate={createFolderButton}
-          onToggle={() => handleToggleSection('folders')}
-          transitionOptions={disableAccordionAnimation ? { timeout: 0 } : undefined}
-        >
-          <FolderList
-            folders={folders}
-            chatActions={chatActions}
-            foldersToChatsMap={foldersToChatsMap}
-            activeFolderIndex={activeFolderIndex}
-            currentChatId={currentChat?.id}
-            setActiveFolder={setActiveFolder}
-          />
-        </ChatSidebarAccordion>
-      </div>
+      ) : (
+        <UnifiedChatSidebar
+          pinnedChats={pinnedChats}
+          recentChats={recentChats}
+          workflowChats={workflowChats}
+          foldersToChatsMap={foldersToChatsMap}
+          folderLabels={folderLabels}
+          currentChatId={currentChat?.id}
+          density={density}
+          chatActions={chatActions}
+          createFolderButton={createFolderButton}
+          onOpenAssistantHistory={(assistantId) =>
+            setFocusedView({ type: 'assistant', id: assistantId })
+          }
+          sections={sections}
+        />
+      )}
 
       <DeleteChatPopup
         onHide={handleHidePopup}
         isVisible={activePopup === 'delete-chat'}
         selectedChat={selectedChat}
       />
-
       <MoveChatPopup
         onHide={handleHidePopup}
         isVisible={activePopup === 'move-chat'}
         selectedChat={selectedChat}
-        onMove={handleMoveChat}
+        onMove={(folderName) => handleMoveChat(folderName, selectedChat)}
       />
-
+      <RemoveChatFromFolderPopup
+        onHide={handleHidePopup}
+        isVisible={activePopup === 'remove-chat-from-folder'}
+        selectedChat={selectedChat}
+        onRemove={() => handleMoveChat(DEFAULT_CHAT_FOLDER, selectedChat)}
+      />
       <FolderFormPopup
         onHide={handleHidePopup}
         isVisible={activePopup === 'folder-form'}
         onCreate={handleCreateFolder}
+      />
+      <StartNewChatModal
+        isVisible={newChatFolder !== undefined}
+        folder={newChatFolder}
+        onHide={() => setNewChatFolder(undefined)}
       />
     </div>
   )

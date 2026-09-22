@@ -18,6 +18,7 @@ import { useSnapshot } from 'valtio'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import Button from '@/components/Button'
 import Popup from '@/components/Popup'
+import { ButtonType } from '@/constants'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatsStore } from '@/store/chats'
 
@@ -31,12 +32,14 @@ const DeleteFolderPopup = ({ selectedFolder, isVisible, onHide }: DeleteFolderPo
   const router = useVueRouter()
   const { currentChat } = useSnapshot(chatsStore)
 
-  const deleteFolder = async (deleteWithChats = false) => {
+  const deleteFolder = async () => {
     const isActiveChatInFolder = currentChat && currentChat.folder === selectedFolder
-    await chatsStore.deleteChatFolder(selectedFolder ?? '', deleteWithChats)
+    await chatsStore.deleteChatFolder(selectedFolder ?? '', true)
 
-    if (isActiveChatInFolder && chatsStore.chats.length > 0) {
-      router.push({ name: 'chats', params: { id: chatsStore.chats[0].id } })
+    if (isActiveChatInFolder) {
+      const nextChat = chatsStore.chats[0]
+      if (nextChat) router.push({ name: 'chats', params: { id: nextChat.id } })
+      else router.push({ name: 'new-chat' })
     }
 
     onHide()
@@ -51,24 +54,19 @@ const DeleteFolderPopup = ({ selectedFolder, isVisible, onHide }: DeleteFolderPo
       withBorder={false}
       onHide={onHide}
       footerContent={
-        <div className="flex justify-between pb-3 gap-3 grow">
-          <Button onClick={onHide}>Cancel</Button>
-
-          <div className="flex gap-3">
-            <Button onClick={() => deleteFolder()}>Delete Folder</Button>
-            <Button variant="delete" onClick={() => deleteFolder(true)}>
-              <DeleteSvg /> Delete with Chats
-            </Button>
-          </div>
+        <div className="flex justify-end pb-3 gap-3 grow">
+          <Button variant={ButtonType.BASE} onClick={onHide}>
+            Cancel
+          </Button>
+          <Button variant={ButtonType.DELETE} onClick={deleteFolder}>
+            <DeleteSvg /> Delete folder and chats
+          </Button>
         </div>
       }
     >
       <p className="mb-3">
-        To delete folder with all chats that are contained within it - press{' '}
-        <b>&quot;Delete with Chats&quot;</b>
-      </p>
-      <p className="mb-3">
-        To delete this folder only - press the button <b>&quot;Delete Folder&quot;</b> below.
+        This permanently deletes the folder and every chat currently inside it. Deleted chats will
+        also disappear from Recent Chats, Pinned, Search, and Assistant History.
       </p>
     </Popup>
   )

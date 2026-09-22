@@ -46,11 +46,12 @@ vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: () => ({ push: vi.fn() }),
 }))
 
+const STABLE_VALTIO_SNAPSHOT = { chats: [] as never[] }
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal<typeof import('valtio')>()
   return {
     ...actual,
-    useSnapshot: () => ({ chats: [] }),
+    useSnapshot: () => STABLE_VALTIO_SNAPSHOT,
   }
 })
 

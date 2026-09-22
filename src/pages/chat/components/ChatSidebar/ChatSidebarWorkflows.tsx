@@ -70,41 +70,50 @@ const ChatSidebarWorkflows = () => {
   return (
     <ChatsSidebarSection title="Workflows">
       <div className="flex flex-col">
-        {recentWorkflows.slice(0, MAX_RECENT_WORKFLOWS).map((workflow) => {
-          const workflowNameId = `sidebar-workflow-name-${workflow.id}`
-          return (
-            <div key={workflow.id} className="flex justify-between items-center h-9 px-1.5">
-              <button
-                type="button"
-                onClick={() => createChat(workflow)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    createChat(workflow)
-                  }
-                }}
-                className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-0 text-inherit"
+        {recentWorkflows.slice(0, MAX_RECENT_WORKFLOWS).map((workflow) => (
+          <div
+            key={workflow.id}
+            className="flex h-9 min-w-0 items-center justify-between gap-2 px-1.5"
+          >
+            <button
+              type="button"
+              onClick={() => createChat(workflow)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  createChat(workflow)
+                }
+              }}
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-inherit"
+            >
+              <Avatar
+                iconUrl={workflow.icon_url}
+                name={workflow.name}
+                type={AvatarType.XS}
+                className="shrink-0"
+              />
+              <span
+                id={`sidebar-workflow-name-${workflow.id}`}
+                className="block min-w-0 flex-1 truncate text-left text-sm font-normal text-text-primary"
+                title="Start a new conversation with this Workflow"
               >
-                <Avatar iconUrl={workflow.icon_url} name={workflow.name} type={AvatarType.XS} />
-                <span
-                  id={workflowNameId}
-                  className="block w-full truncate text-text-primary text-sm font-normal"
-                  title="Start a new conversation with this Workflow"
-                >
-                  {truncateName(workflow.name)}
-                </span>
-              </button>
+                {truncateName(workflow.name)}
+              </span>
+            </button>
 
-              <div className="flex items-center">
-                <NavigationMore
-                  hideOnClickInside
-                  items={getMenuItems(workflow)}
-                  contextId={workflowNameId}
-                />
-              </div>
+            <div className="flex shrink-0 items-center">
+              <NavigationMore
+                renderInRoot
+                placement="right-end"
+                hideOnClickInside
+                className="size-6 shrink-0"
+                buttonClassName="m-0 flex size-6 items-center justify-center p-0"
+                contextId={`sidebar-workflow-name-${workflow.id}`}
+                items={getMenuItems(workflow)}
+              />
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
     </ChatsSidebarSection>
   )

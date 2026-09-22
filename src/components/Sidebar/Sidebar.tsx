@@ -23,11 +23,14 @@ import { cn } from '@/utils/utils'
 import SidebarToggle from './SidebarToggle'
 
 interface SidebarProps {
+  id?: string
   title: string
+  titleContent?: ReactNode
   description?: string
   children?: ReactNode
   headerContent?: ReactNode
   className?: string
+  hideHeader?: boolean
   /**
    * When true, the sidebar fills its container's width and height and lets the
    * parent own collapse/expand (used by the chat page, where a resizable
@@ -39,11 +42,14 @@ interface SidebarProps {
 }
 
 const Sidebar = ({
+  id,
   title,
+  titleContent,
   description,
   children,
   headerContent,
   className,
+  hideHeader = false,
   fillContainer = false,
 }: SidebarProps) => {
   const [isVisible, setIsVisible] = useState<boolean>(appInfoStore.sidebarExpanded)
@@ -57,14 +63,16 @@ const Sidebar = ({
 
   return (
     <aside
+      id={id}
       className={cn(
-        'flex flex-col border-r min-h-full',
+        'flex flex-col min-h-full',
         showGradient && 'bg-sidebar-gradient',
         'transition-all ease-in-out duration-150 overflow-x-hidden shrink-0',
         {
           'w-full h-full': fillContainer,
           'w-sidebar max-w-sidebar': !fillContainer && isVisible,
           'w-0': !fillContainer && !isVisible,
+          'border-r': isVisible,
           'border-border-specific-sidebar': !appearance,
           'border-border-structural': Boolean(appearance),
         }
@@ -76,14 +84,27 @@ const Sidebar = ({
           fillContainer ? 'w-full' : 'min-w-sidebar w-sidebar max-w-sidebar'
         )}
       >
-        <div className="flex justify-between items-center px-6">
-          <h2 className="text-2xl font-semibold text-text-primary">{title}</h2>
-          {headerContent}
-        </div>
-        {description && (
+        {!hideHeader && (
+          <div className="flex justify-between items-center px-6">
+            <div className="flex items-center gap-1">
+              <h2 className="text-2xl font-semibold text-text-primary">{title}</h2>
+              {titleContent}
+            </div>
+            {headerContent}
+          </div>
+        )}
+        {!hideHeader && description && (
           <p className="text-sm text-text-quaternary font-semibold mt-1 px-6">{description}</p>
         )}
-        <div className={cn('mt-7 h-full z-[10] overflow-y-auto px-6', className)}>{children}</div>
+        <div
+          className={cn(
+            'h-full z-[10] overflow-y-auto px-6',
+            hideHeader ? 'mt-0' : 'mt-7',
+            className
+          )}
+        >
+          {children}
+        </div>
       </div>
       <SidebarToggle />
     </aside>

@@ -1,0 +1,91 @@
+{
+  "decision": "request-changes",
+  "rationale": "Manual single-pass review (no 3-lens subagent fan-out — Claude usage limits blocked the code-review-orchestrator's Agent-tool dispatch) covering the highest-risk classification/store files out of a 155-file, +12903/-1215 branch diff; full line-by-line coverage of every file was not attempted. Found 2 major, well-evidenced defects: CR-001 (missing isAssistantNameFolder guard lets legacy folder=assistant-name chats render as a duplicate spurious Custom Folder instead of merging into their real Assistant Folder — a required §2.1/§3.3.3 behavior) and CR-002 (the pendingRename UI guard was dropped from ChatListItem.tsx's getChatDisplayName while chatGeneration.ts's store-side rename-polling logic remains fully active, regressing the EPMCDME-11647 placeholder-name behavior). Verified compliant: all 6 startNewChat callers no longer send folder=assistant.name (§3.3.4), DTO unknown-import_source normalization (§3.3.1/§4), resolveImportDisplay priority (§3.3.2), namespaced group keys (§2.4), and commit-message format across the branch. Confidence is forced low regardless of finding quality, given the degraded non-fan-out process and the unreviewed remainder of the diff.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Unknown dto.import_source values normalize to null, no canonical Import Folder created (§3.3.1, §4)",
+      "status": "pass",
+      "notes": "src/store/utils/chats.ts:33 — isValidImportSourceKind(dto.import_source) ? dto.import_source : null"
+    },
+    {
+      "kind": "spec",
+      "item": "resolveImportDisplay resolves display metadata only (icon+label), never sidebar placement (§3.3.2)",
+      "status": "pass",
+      "notes": "src/constants/chatImportSources.ts — importSource priority then legacy folder fallback, no placement logic"
+    },
+    {
+      "kind": "spec",
+      "item": "Canonical import_source takes priority over folder for sidebar placement (§2.1 step 3, §2.2)",
+      "status": "pass",
+      "notes": "unifiedChatSidebarViewModel.ts getChatLocation/getFolderKey and focusedChatSidebarCollections.ts both check resolveImportGroupIdentity before falling through to chat.folder"
+    },
+    {
+      "kind": "spec",
+      "item": "isAssistantNameFolder guard prevents chat.folder === assistant name from becoming a spurious Custom Folder, falls through to Assistant Folder instead (§2.1 step 5 vs 6, §3.3.3)",
+      "status": "fail",
+      "notes": "Helper not implemented anywhere in the codebase (zero matches for isAssistantNameFolder / isCustomFolder). See CR-001."
+    },
+    {
+      "kind": "spec",
+      "item": "All 6 confirmed startNewChat callers stop sending folder = assistant.name (§3.3.4)",
+      "status": "pass",
+      "notes": "Verified ChatSidebarAssistants.tsx, NavigationPinnedSection.tsx, AssistantChatStartPage.tsx, AssistantDetailsPage.tsx, AssistantCard.tsx, StartNewChatModal.tsx (new file, uses folder ?? '' by construction) — all call startNewChat(id, '', false)"
+    },
+    {
+      "kind": "spec",
+      "item": "Namespaced group keys (assistant:/custom:/import:/legacy-import:) preserved across FolderKind and key builders (§2.4)",
+      "status": "pass",
+      "notes": "chatSidebarFolderHelpers.ts key builders (assistantFolderKey, customFolderKey, importGroupKey) and getFolderKindFromKey are consistently namespaced"
+    },
+    {
+      "kind": "spec",
+      "item": "§3.3.5 Tasks 2-10 (settings migration, density, search/import/workflow UI behavior, ChatSidebarLists split to <=300 lines)",
+      "status": "na",
+      "notes": "Not audited in this degraded, time-boxed pass — out of scope for this round given diff size; flagged as unreviewed, not verified pass"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All commits on this branch since merge-base match the EPMCDME-XXXX: Capital sentence pattern (verified via git log against the documented regex)"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md exists in this repository"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Swept the full diff for dangerouslySetInnerHTML / eval / innerHTML / document.write / raw window.location sinks — only one window.location.href read found, in test setup/teardown (not a sink). Not an exhaustive line-by-line security pass given the diff size."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/unifiedChatSidebarViewModel.ts",
+      "line": 45,
+      "title": "Legacy folder=assistant.name chats are not merged into the Assistant Folder group",
+      "problem": "getFolderKey treats any truthy chat.folder as a Custom Folder unconditionally (`if (chat.folder) return customFolderKey(chat.folder)`), with no check against the assistant's name. The identical pattern exists in focusedChatSidebarCollections.ts's collectFocusedChats (`if (chat.folder) { addToFolder(...); continue }` runs before the assistant-identity fallback). Spec §3.3.3 requires an `isAssistantNameFolder(chat, assistants)` helper so a chat.folder that equals the assistant's name falls through to Assistant Folder classification instead (§2.1 step 5 explicitly excludes assistant-name folders from Custom Folder, per the isCustomFolder(...) pseudocode) — this helper does not exist anywhere in the codebase (grep confirms zero matches for isAssistantNameFolder or isCustomFolder).",
+      "impact": "Any pre-existing chat whose folder still equals its assistant's name — exactly the historical 'folder pollution' this ticket's Goal #2 exists to fix — renders as a duplicate, spurious Custom Folder named after the assistant, instead of being grouped with that assistant's real Assistant Folder entry. The sidebar shows the same assistant's chats split across two different groups.",
+      "recommendation": "Add isAssistantNameFolder(chat, assistants) (or reuse the already-resolved assistant identity from getAssistantIdentity) and check it before the `if (chat.folder) return customFolderKey(...)` branch in both unifiedChatSidebarViewModel.ts's getFolderKey and focusedChatSidebarCollections.ts's collectFocusedChats, so a folder-name-equals-assistant-name match falls through to assistant-folder classification instead of custom-folder classification."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx",
+      "line": 55,
+      "title": "Sidebar chat name no longer masks the optimistic name while a rename is pending",
+      "problem": "getChatDisplayName now returns chat.name.trim() whenever it is non-empty, with no check of a pending-rename flag. At the branch's merge-base, the equivalent logic was `if (chat.name?.trim() && !chat.pendingRename) chatName = chat.name.trim()`. `pendingRename` was removed from the ChatListItem interface in this diff, but src/store/chatGeneration.ts still actively sets/clears it via `chatsStore.updateChatListItem({ id, pendingRename: true/false })` at lines 576, 591 and 612 — these calls still compile only because TypeScript's excess-property check does not reliably fire through the `Partial<ChatListItem> & { id: string }` intersection parameter type, silently masking the type/behavior mismatch.",
+      "impact": "During the LLM-generated-name polling window (EPMCDME-11647), the sidebar now flashes the raw truncated first-message optimistic name instead of holding a placeholder, because the UI-layer guard that used to read pendingRename was dropped while the store-layer plumbing that sets it remains fully intact and tested — chatGeneration.renamePoll.test.ts still passes because it only asserts store state, never the rendered chat name.",
+      "recommendation": "Reintroduce a pendingRename (or equivalently named) field on ChatListItem and check it in getChatDisplayName (ChatListItem.tsx), the same way the pre-existing code did, so the render path is reconnected to the store flag chatGeneration.ts already maintains."
+    }
+  ]
+}

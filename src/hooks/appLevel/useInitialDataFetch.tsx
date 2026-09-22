@@ -46,6 +46,9 @@ const useInitialDataFetch = () => {
       chatsStore.getFolders().catch((error) => {
         console.error('[useInitialDataFetch] failed to fetch chat folders:', error)
       })
+      chatsStore.getAssistantFolders().catch((error) => {
+        console.error('[useInitialDataFetch] failed to fetch assistant folders:', error)
+      })
       chatsStore.getChats().catch((error) => {
         console.error('[useInitialDataFetch] failed to fetch chats:', error)
       })

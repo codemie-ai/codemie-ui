@@ -15,11 +15,19 @@
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 import toaster from '@/utils/toaster'
+
+// This suite verifies NewAssistantPage behaviour. App-level chrome has dedicated tests
+// and must not turn an unrelated background-widget render failure into a cascade of
+// route ErrorBoundary failures when the shared user store changes during these tests.
+vi.mock('@/components/Navigation/Navigation', () => ({ default: () => null }))
+vi.mock('@/components/appLevel/AutoPopupManager', () => ({ default: () => null }))
+vi.mock('@/components/FloatingKataWindow', () => ({ default: () => null }))
+vi.mock('@/components/HelpLauncher', () => ({ HelpPanel: () => null }))
 
 // handleGenerateClick uses try/finally (no catch); a rejected API promise propagates
 // out of react-hook-form's handleSubmit as an unhandled rejection. Tests that
@@ -38,7 +46,7 @@ const suppressUnhandledRejection = () => {
 }
 
 describe('NewAssistantPage - Integration', () => {
-  const user = userEvent.setup()
+  let user: ReturnType<typeof userEvent.setup>
 
   const createAssistantFixture = (overrides = {}) => ({
     id: 'assistant-1',
@@ -92,6 +100,7 @@ describe('NewAssistantPage - Integration', () => {
   const getDialog = () => screen.getByRole('dialog')
 
   beforeEach(() => {
+    user = userEvent.setup()
     mockRouterState.push.mockClear()
     mockRouterState.replace.mockClear()
     mockRouterState.currentRoute.value = {
@@ -1179,8 +1188,8 @@ describe('NewAssistantPage - Integration', () => {
     })
 
     it('shows validation error for invalid logo URL on blur', async () => {
-      renderPage('/assistants/new')
       mockAPI('GET', 'v1/user', userWithProject)
+      renderPage('/assistants/new')
 
       await waitFor(() => {
         expect(screen.getByText('Create Assistant')).toBeInTheDocument()

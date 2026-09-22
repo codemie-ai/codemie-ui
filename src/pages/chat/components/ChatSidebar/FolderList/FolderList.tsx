@@ -14,106 +14,148 @@
 //
 
 import { Accordion, AccordionTab } from 'primereact/accordion'
-import { useState, FC } from 'react'
-import { useSnapshot } from 'valtio'
+import { FC } from 'react'
 
-import ArchiveSvg from '@/assets/icons/delete.svg?react'
-import EditSvg from '@/assets/icons/edit.svg?react'
-import FolderIcon from '@/assets/icons/folder.svg?react'
-import Plus from '@/assets/icons/plus.svg?react'
-import NavigationMore, { NavigationItem } from '@/components/NavigationMore/NavigationMore'
+import AvatarGroup from '@/components/Avatar/AvatarGroup'
+import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Tooltip from '@/components/Tooltip'
-import { useVueRouter } from '@/hooks/useVueRouter'
-import { chatsStore } from '@/store/chats'
+import {
+  resolveChatAvatar,
+  resolveGroupChatAvatars,
+  useAvatarStores,
+  type AvatarStores,
+  type ResolvedChatAvatar,
+} from '@/pages/chat/hooks/useChatItemAvatar'
+import { ChatListDensity } from '@/store/chatViewSettings'
 import { ChatListItem as ChatListItemType } from '@/types/entity/conversation'
+import { cn } from '@/utils/utils'
 
 import DeleteFolderPopup from './DeleteFolderPopup'
 import FolderFormPopup from './FolderFormPopup'
+import { useFolderListActions } from './useFolderListActions'
+import AddChatsToFolderPopup from '../AddChatsToFolderPopup'
+import AssistantFolderDeletePopup from './AssistantFolderDeletePopup'
 import ChatList from '../ChatList/ChatList'
-import { ChatListItemActions } from '../ChatList/ChatListItem'
+import { ChatListItemActions, RegisterChatElement } from '../ChatList/ChatListItem'
+import {
+  FolderKind,
+  getFolderDisplayName,
+  getFolderKindFromKey,
+} from '../ChatSidebarLists/chatSidebarListsHelpers'
+import FolderTypeIcon from '../FolderTypeIcon'
 
-const MAX_CHAT_NAME_LENGTH = 22
+const FOLDER_TOOLTIP_MIN_LENGTH = 23
+
+const resolveFolderUniqueAvatars = (
+  folderChats: ChatListItemType[],
+  avatarStores: AvatarStores
+): ResolvedChatAvatar[] => {
+  const seen = new Set<string>()
+  const items: ResolvedChatAvatar[] = []
+  for (const chat of folderChats) {
+    if (chat.isGroup && chat.assistantIds.length > 0) {
+      const avatars = resolveGroupChatAvatars(chat, avatarStores)
+      chat.assistantIds.forEach((id, i) => {
+        if (id && !seen.has(id)) {
+          seen.add(id)
+          items.push(avatars[i] ?? { iconUrl: null, name: chat.assistantNames?.[i] })
+        }
+      })
+    } else {
+      const key =
+        chat.initialAssistantId ?? `${chat.iconUrl ?? ''}:${chat.assistantNames?.[0] ?? ''}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        items.push(resolveChatAvatar(chat, avatarStores))
+      }
+    }
+  }
+  return items
+}
 
 interface FolderListProps {
   folders: string[]
-  activeFolderIndex: number | null
+  activeFolderIndices?: number[]
+  /** @deprecated Single-folder mode is retained only for existing callers during migration. */
+  activeFolderIndex?: number | null
   chatActions: ChatListItemActions
   currentChatId?: string
   foldersToChatsMap: Record<string, ChatListItemType[]>
-  setActiveFolder: (folder: string | null) => void
+  folderLabels?: Record<string, string>
+  folderKinds?: Record<string, FolderKind>
+  setActiveFolders?: (folders: string[]) => void
+  /** @deprecated Use setActiveFolders for multi-expand behavior. */
+  setActiveFolder?: (folder: string | null) => void
+  onOpenAssistantHistory?: (assistantId: string) => void
+  density?: ChatListDensity
+  registerChatElement?: RegisterChatElement
+  registerFolderElement?: (folderName: string, element: HTMLDivElement | null) => void
 }
 
 const FolderList: FC<FolderListProps> = ({
   folders,
   chatActions,
+  activeFolderIndices,
   activeFolderIndex,
   currentChatId,
   foldersToChatsMap,
+  folderLabels,
+  folderKinds,
+  setActiveFolders,
   setActiveFolder,
+  onOpenAssistantHistory,
+  density = ChatListDensity.DETAILED,
+  registerChatElement,
+  registerFolderElement,
 }) => {
-  const [selectedFolder, setSelectedFolder] = useState<string>()
-  const [isDeleteFolderPopupVisible, setIsDeleteFolderPopupVisible] = useState(false)
-  const [isFolderFormPopupVisible, setIsFolderFormPopupVisible] = useState(false)
+  const avatarStores = useAvatarStores()
+  const isCompact = density === ChatListDensity.COMPACT
+  const {
+    selectedFolder,
+    addChatsFolder,
+    isDeleteFolderPopupVisible,
+    isFolderFormPopupVisible,
+    assistantFolderToDelete,
+    getMenuItems,
+    closeDeleteFolderPopup,
+    closeFolderFormPopup,
+    closeAddChatsPopup,
+    closeAssistantFolderDeletePopup,
+  } = useFolderListActions({ folderLabels, foldersToChatsMap, onOpenAssistantHistory })
 
-  const router = useVueRouter()
-  const { chats } = useSnapshot(chatsStore) as typeof chatsStore
-
-  const addFolderChat = async (folderName: string) => {
-    const folderChatIds = foldersToChatsMap[folderName] ?? []
-    const latestChat = chats.find((chat) => chat.id === folderChatIds[0]?.id)
-
-    const assistantId = latestChat?.initialAssistantId ?? latestChat?.assistantIds?.[0] ?? ''
-    const isWorkflow = latestChat?.isWorkflow ?? false
-
-    await chatsStore.startNewChat(assistantId, folderName, isWorkflow)
-    router.push({ name: 'new-chat' })
+  const setActiveFolderIndices = (indices: number[]) => {
+    const expandedFolders = indices.map((index) => folders[index]).filter(Boolean)
+    if (setActiveFolders) setActiveFolders(expandedFolders)
+    else setActiveFolder?.(expandedFolders[expandedFolders.length - 1] ?? null)
   }
 
-  const getMenuItems = (folder: string): NavigationItem[] => [
-    {
-      title: 'Add chat',
-      icon: <Plus />,
-      onClick: (e) => {
-        e.stopPropagation()
-        addFolderChat(folder)
-      },
-    },
-    {
-      title: 'Edit folder',
-      icon: <EditSvg />,
-      onClick: (e) => {
-        e.stopPropagation()
-        setSelectedFolder(folder)
-        setIsFolderFormPopupVisible(true)
-      },
-    },
-    {
-      title: 'Delete folder',
-      icon: <ArchiveSvg />,
-      onClick: (e) => {
-        e.stopPropagation()
-        setSelectedFolder(folder)
-        setIsDeleteFolderPopupVisible(true)
-      },
-    },
-  ]
-
-  const setActiveFolderIndex = (index: number) => {
-    setActiveFolder(folders[index] || null)
-  }
+  const resolvedActiveFolderIndices =
+    activeFolderIndices ?? (activeFolderIndex == null ? [] : [activeFolderIndex])
 
   return (
     <div>
       <Tooltip target=".chat-sidebar-folder" appendTo={null} delay={0} />
       <Accordion
-        activeIndex={activeFolderIndex}
-        onTabChange={(e) => setActiveFolderIndex(e.index as number)}
+        multiple
+        activeIndex={resolvedActiveFolderIndices}
+        onTabChange={(e) => setActiveFolderIndices(e.index as number[])}
         expandIcon={() => null}
         collapseIcon={() => null}
       >
         {folders.map((folder) => {
-          const isOverMaxLength = folder.length > MAX_CHAT_NAME_LENGTH
+          const kind = folderKinds?.[folder] ?? getFolderKindFromKey(folder)
+          const isImportFolder = kind === 'import' || kind === 'legacy-import'
           const folderKey = encodeURIComponent(folder)
+          const legacyKey = `legacy-import:${folder}`
+          let chatMapKey = folder
+          if (kind === 'legacy-import' && legacyKey in foldersToChatsMap) {
+            chatMapKey = legacyKey
+          }
+          const displayName = folderLabels?.[folder] ?? getFolderDisplayName(folder)
+          const showFolderTooltip = displayName.length >= FOLDER_TOOLTIP_MIN_LENGTH
+          const folderChats = foldersToChatsMap[chatMapKey] ?? []
+
+          const uniqueAvatarItems = resolveFolderUniqueAvatars(folderChats, avatarStores)
 
           return (
             <AccordionTab
@@ -131,39 +173,67 @@ const FolderList: FC<FolderListProps> = ({
                 }),
               }}
               header={() => (
-                <div className="flex items-center justify-between my-1 ml-2 text-sm">
-                  <div className="flex items-center whitespace-nowrap overflow-hidden text-ellipsis h-12">
-                    <FolderIcon className="mr-2 h-8" />
+                <div
+                  ref={(element) => registerFolderElement?.(folder, element)}
+                  className="flex min-w-0 items-center justify-between gap-2 px-2 text-sm"
+                >
+                  <div
+                    className={cn(
+                      'flex min-w-0 flex-1 items-center overflow-hidden whitespace-nowrap',
+                      isCompact ? 'h-8' : 'h-10'
+                    )}
+                  >
+                    <FolderTypeIcon kind={kind} className="mr-2" />
                     <p
                       id={`folder-name-${folderKey}`}
-                      data-pr-tooltip={isOverMaxLength ? folder : ''}
-                      className="font-semibold whitespace-nowrap h-full flex items-center overflow-hidden text-ellipsis chat-sidebar-folder"
+                      data-pr-tooltip={showFolderTooltip ? displayName : ''}
+                      className="chat-sidebar-folder min-w-0 flex-1 truncate font-semibold"
                     >
-                      {folder.slice(0, MAX_CHAT_NAME_LENGTH) + (isOverMaxLength ? '...' : '')}
+                      {displayName}
                     </p>
                   </div>
 
-                  <div className="flex items-center">
-                    <NavigationMore
-                      renderInRoot
-                      autoAlignment
-                      hideOnClickInside
-                      contextId={`folder-name-${folderKey}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        e.preventDefault()
-                      }}
-                      items={getMenuItems(folder)}
-                    />
+                  <div className="flex shrink-0 items-center">
+                    {!isCompact &&
+                      !isImportFolder &&
+                      uniqueAvatarItems.length > (kind === 'assistant' ? 1 : 0) && (
+                        <AvatarGroup
+                          iconUrls={uniqueAvatarItems.map((avatar) => avatar.iconUrl)}
+                          names={uniqueAvatarItems.map((avatar) => avatar.name)}
+                          className="mr-1 shrink-0"
+                        />
+                      )}
+                    {getMenuItems(folder, kind).length > 0 && (
+                      <NavigationMore
+                        renderInRoot
+                        placement="right-end"
+                        hideOnClickInside
+                        className="size-6 shrink-0"
+                        buttonClassName="m-0 flex size-6 items-center justify-center p-0"
+                        contextId={`folder-name-${folderKey}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                        }}
+                        items={getMenuItems(folder, kind)}
+                      />
+                    )}
                   </div>
                 </div>
               )}
             >
-              <div className="flex flex-col border-l ml-4 pl-4 border-border-secondary">
+              <div className="ml-4 flex min-w-0 flex-col border-l border-border-secondary pl-4">
                 <ChatList
-                  chats={foldersToChatsMap[folder] ?? []}
+                  chats={folderChats}
                   chatActions={chatActions}
                   currentChatId={currentChatId}
+                  hideAvatar={
+                    kind === 'assistant'
+                      ? (chat) => !chat.isGroup || new Set(chat.assistantIds).size <= 1
+                      : false
+                  }
+                  density={density}
+                  registerChatElement={registerChatElement}
                   id={`chat-tree-folder-group-${folderKey}`}
                 />
               </div>
@@ -175,14 +245,27 @@ const FolderList: FC<FolderListProps> = ({
       <DeleteFolderPopup
         selectedFolder={selectedFolder}
         isVisible={isDeleteFolderPopupVisible}
-        onHide={() => setIsDeleteFolderPopupVisible(false)}
+        onHide={closeDeleteFolderPopup}
+      />
+
+      <AssistantFolderDeletePopup
+        assistantId={assistantFolderToDelete?.id}
+        assistantName={assistantFolderToDelete?.name}
+        isVisible={assistantFolderToDelete !== undefined}
+        onHide={closeAssistantFolderDeletePopup}
+      />
+
+      <AddChatsToFolderPopup
+        folderName={addChatsFolder}
+        isVisible={addChatsFolder !== undefined}
+        onHide={closeAddChatsPopup}
       />
 
       <FolderFormPopup
         isEditing
         folder={selectedFolder}
         isVisible={isFolderFormPopupVisible}
-        onHide={() => setIsFolderFormPopupVisible(false)}
+        onHide={closeFolderFormPopup}
       />
     </div>
   )

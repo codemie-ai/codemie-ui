@@ -14,7 +14,11 @@
 //
 
 import { ROLE_ASSISTANT, ROLE_USER } from '@/constants'
-import { getChatImportSource } from '@/constants/chatImportSources'
+import {
+  ImportSourceKind,
+  isValidImportSourceKind,
+  resolveImportDisplay,
+} from '@/constants/chatImportSources'
 import { WORKFLOW_STATUSES } from '@/constants/workflows'
 import type {
   ChatBackend,
@@ -24,6 +28,7 @@ import type {
 } from '@/types/entity/conversation'
 
 export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
+  const importSource = isValidImportSourceKind(chatBE.import_source) ? chatBE.import_source : null
   const transformedChat: Conversation = {
     id: chatBE.id,
     name: chatBE.conversation_name,
@@ -33,7 +38,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
     isWorkflow: chatBE.is_workflow_conversation ?? chatBE.is_workflow ?? false,
     isInterrupted: chatBE.history.some((item) => item.thoughts?.some((t) => t.interrupted)),
     isGroup: (chatBE.assistant_ids?.length ?? 0) > 1,
-    folder: chatBE.folder,
+    folder: chatBE.folder || undefined,
     assistantIds: chatBE.assistant_ids ?? [],
     initialAssistantId: chatBE.initial_assistant_id,
     toolCallPolicy: chatBE.tool_call_policy ?? null,
@@ -52,7 +57,8 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
 
   transformedChat.history = groupAndTransformHistory(chatBE.history, {
     assistantData: chatBE.assistant_data,
-    folder: chatBE.folder,
+    folder: chatBE.folder || undefined,
+    importSource,
     isWorkflow: transformedChat.isWorkflow,
   })
 
@@ -107,8 +113,14 @@ function groupAndTransformHistory(
   {
     assistantData = [],
     folder,
+    importSource,
     isWorkflow = false,
-  }: { assistantData?: AssistantDataBackend[]; folder?: string; isWorkflow?: boolean }
+  }: {
+    assistantData?: AssistantDataBackend[]
+    folder?: string
+    importSource?: ImportSourceKind | null
+    isWorkflow?: boolean
+  }
 ): any[][] {
   const groupedHistory = history.reduce((acc: Record<number, HistoryItemBackend[]>, item) => {
     if (!Number.isInteger(item.historyIndex)) {
@@ -120,7 +132,7 @@ function groupAndTransformHistory(
   }, {})
 
   return Object.values(groupedHistory).map((group) =>
-    transformHistoryGroup(group, { assistantData, folder, isWorkflow })
+    transformHistoryGroup(group, { assistantData, folder, importSource, isWorkflow })
   )
 }
 
@@ -129,12 +141,18 @@ function transformHistoryGroup(
   {
     assistantData,
     folder,
+    importSource,
     isWorkflow = false,
-  }: { assistantData?: AssistantDataBackend[]; folder?: string; isWorkflow?: boolean }
+  }: {
+    assistantData?: AssistantDataBackend[]
+    folder?: string
+    importSource?: ImportSourceKind | null
+    isWorkflow?: boolean
+  }
 ): any[] {
   // Imported chats (e.g. Claude Desktop) reference an assistant that isn't in the
   // workspace, so fall back to the import source's name and icon instead of "?".
-  const importSource = getChatImportSource(folder)
+  const importDisplay = resolveImportDisplay({ importSource, folder })
   return Array.from({ length: Math.ceil(group.length / 2) }, (_, i) => {
     const userItem = group[2 * i]
     const assistantItem = group[2 * i + 1] ?? {
@@ -181,8 +199,8 @@ function transformHistoryGroup(
       assistant: assistant
         ? {
             id: (assistant as any).assistant_id ?? assistantItem.assistantId ?? '',
-            name: (assistant as any).assistant_name || importSource?.name || '',
-            iconUrl: (assistant as any).assistant_icon || importSource?.iconUrl || '',
+            name: (assistant as any).assistant_name || importDisplay?.name || '',
+            iconUrl: (assistant as any).assistant_icon || importDisplay?.iconUrl || '',
             context: ((assistant as any).context ?? []).map((context: any) => context.name),
             tools: ((assistant as any).tools ?? []).map((tool: any) => tool.name),
           }

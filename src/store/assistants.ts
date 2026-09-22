@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { proxy } from 'valtio'
+import { proxy, subscribe } from 'valtio'
 
 import {
   CHATBOT_ASSISTANT_SLUG,
@@ -54,6 +54,7 @@ import { profileSettingsStore } from './userProfileSettings'
 import { transformAssistantToCreateDTO } from './utils/assistants'
 
 const RECENT_ASSISTANTS_STORAGE_KEY = 'recentAssistants'
+const RECENT_ASSISTANTS_FETCH_BATCH_SIZE = 50
 const SHOW_NEW_ASST_AI_POPUP = 'codemie-new-asst-ai-popup'
 
 /**
@@ -73,6 +74,9 @@ interface AssistantsStoreType {
   assistantTemplatesLoading: boolean
   assistantsPagination: Pagination
   recentAssistants: Assistant[]
+  chatAssistants: Assistant[]
+  isRecentAssistantsLoading: boolean
+  isRecentAssistantsLoaded: boolean
   availableToolkits: AssistantToolkit[]
   hedgeableToolkits: AssistantToolkit[]
   availableContext: AssistantContext[]
@@ -96,7 +100,7 @@ interface AssistantsStoreType {
   deleteAssistant: (id: string) => Promise<Response>
   deleteRecentAssistant: (id: string) => void
   updateRecentAssistants: (assistant: Assistant) => void
-  getRecentAssistants: () => Promise<void | any[]>
+  getRecentAssistants: () => Promise<void>
   getHelpAssistants: () => Promise<void>
   getDefaultAssistant: () => Promise<void>
   assistantTemplatesPagination: Pagination
@@ -196,6 +200,7 @@ interface AssistantsStoreType {
 
   pinnedAssistants: FavoriteItem[]
   fetchPinnedAssistants: () => Promise<void>
+  fetchAssistantsByIds: (ids: string[]) => Promise<void>
   pinAssistant: (id: string) => Promise<void>
   unpinAssistant: (id: string) => Promise<void>
 }
@@ -234,6 +239,9 @@ export const assistantsStore = proxy<AssistantsStoreType>({
   builtinSubagentsCatalog: [],
   builtinSubagentsCatalogLoaded: false,
   recentAssistants: [],
+  chatAssistants: [],
+  isRecentAssistantsLoading: false,
+  isRecentAssistantsLoaded: false,
   helpAssistants: [],
   helpAssistantsFetched: false,
   defaultAssistant: null,
@@ -369,29 +377,25 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     }
   },
 
-  updateRecentAssistants(assistant: any) {
+  updateRecentAssistants(assistant: Pick<Assistant, 'id' | 'name' | 'icon_url'>) {
     const present = assistantsStore.recentAssistants.find((item) => item.id === assistant.id)
     if (present) {
       const index = assistantsStore.recentAssistants.indexOf(present)
-      assistantsStore.recentAssistants.splice(index, 1)
-      assistantsStore.recentAssistants.unshift({
+      assistantsStore.recentAssistants.splice(index, 1, {
+        ...present,
         icon_url: assistant.icon_url,
         name: assistant.name,
-        type: assistant.type,
-        user_abilities: assistant.user_abilities,
         id: assistant.id,
       })
     } else {
       assistantsStore.recentAssistants.unshift({
         icon_url: assistant.icon_url,
-        type: assistant.type,
-        user_abilities: assistant.user_abilities,
         name: assistant.name,
         id: assistant.id,
-      })
+      } as Assistant)
     }
     if (assistantsStore.recentAssistants.length > MAX_RECENT_ASSISTANTS) {
-      assistantsStore.recentAssistants.pop()
+      assistantsStore.recentAssistants.splice(MAX_RECENT_ASSISTANTS)
     }
     // Save IDs only to backend — full objects are re-fetched on load
     profileSettingsStore
@@ -401,29 +405,63 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       .catch((e) => console.error('Failed to save recent assistants', e))
   },
 
-  getRecentAssistants() {
-    const recentIds = profileSettingsStore.profileSettings?.recent_assistant_ids ?? []
-    if (!recentIds.length) {
-      assistantsStore.recentAssistants = []
-      return Promise.resolve([])
+  async getRecentAssistants() {
+    if (assistantsStore.isRecentAssistantsLoading || assistantsStore.isRecentAssistantsLoaded) {
+      return
     }
-    const filters = { id: recentIds }
 
-    const url =
-      `v1/assistants?page=${0}` +
-      `&filters=${encodeURIComponent(JSON.stringify(filters))}` +
-      `&scope=${ASSISTANT_INDEX_SCOPES.ALL}` +
-      `&minimal_response=true`
+    assistantsStore.isRecentAssistantsLoading = true
+    try {
+      // The profile fetch (which carries recent_assistant_ids) runs on a separate, slower async
+      // chain than this store's callers, which fire on mount — often before fetchProfileSettings
+      // has even started, so `profileSettingsStore.loading` can still read `false` (not started
+      // yet, not finished). Wait for it to actually settle (success sets profileSettings, failure
+      // sets error) rather than treating "not present yet" as "no recents" — that would latch in
+      // permanently, since isRecentAssistantsLoaded blocks every future call from retrying.
+      if (!profileSettingsStore.profileSettings && !profileSettingsStore.error) {
+        await new Promise<void>((resolve) => {
+          const unsubscribe = subscribe(profileSettingsStore, () => {
+            if (profileSettingsStore.profileSettings || profileSettingsStore.error) {
+              unsubscribe()
+              resolve()
+            }
+          })
+        })
+      }
 
-    return api
-      .get(url)
-      .then((response: any) => response.json())
-      .then((result: any) => {
-        const { data } = result
-        const recentIdsMap = new Map(recentIds.map((id: string, index: number) => [id, index]))
-        data.sort((a: any, b: any) => recentIdsMap.get(a.id)! - recentIdsMap.get(b.id)!)
-        assistantsStore.recentAssistants = data
-      })
+      const recentIds = profileSettingsStore.profileSettings?.recent_assistant_ids ?? []
+      if (!recentIds.length) {
+        assistantsStore.recentAssistants = []
+        assistantsStore.isRecentAssistantsLoaded = true
+        return
+      }
+
+      const batches: string[][] = []
+      for (let index = 0; index < recentIds.length; index += RECENT_ASSISTANTS_FETCH_BATCH_SIZE) {
+        batches.push(recentIds.slice(index, index + RECENT_ASSISTANTS_FETCH_BATCH_SIZE))
+      }
+      const data = (
+        await Promise.all(
+          batches.map((batchIds) =>
+            assistantsStore.getAssistantOptions(
+              '',
+              { ids: batchIds, page: 0, per_page: batchIds.length },
+              ASSISTANT_INDEX_SCOPES.ALL
+            )
+          )
+        )
+      ).flat()
+      const recentIdsMap = new Map(recentIds.map((id: string, index: number) => [id, index]))
+      data.sort(
+        (a, b) =>
+          (recentIdsMap.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (recentIdsMap.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+      )
+      assistantsStore.recentAssistants = data
+      assistantsStore.isRecentAssistantsLoaded = true
+    } finally {
+      assistantsStore.isRecentAssistantsLoading = false
+    }
   },
 
   async getAssistant(id, skipErrorHandling = false, signal = undefined) {
@@ -1027,6 +1065,29 @@ export const assistantsStore = proxy<AssistantsStoreType>({
         .map((a) => ({ ...a!, icon_url: a!.icon_url ?? '', is_pinned: true }))
     } catch (error) {
       console.error('[fetchPinnedAssistants] failed to load pinned assistants:', error)
+    }
+  },
+
+  async fetchAssistantsByIds(ids) {
+    if (!ids.length) return
+    const url =
+      `v1/assistants?page=0` +
+      `&filters=${encodeURIComponent(JSON.stringify({ id: ids }))}` +
+      `&scope=${ASSISTANT_INDEX_SCOPES.ALL}` +
+      `&minimal_response=true`
+    try {
+      const response = await api.get(url, { skipErrorHandling: true })
+      const result = await response.json()
+      const data: Assistant[] = result.data ?? []
+      const existingIds = new Set(assistantsStore.chatAssistants.map((a) => a.id))
+      for (const a of data) {
+        if (!existingIds.has(a.id)) {
+          assistantsStore.chatAssistants.push(a)
+          existingIds.add(a.id)
+        }
+      }
+    } catch (error) {
+      console.error('[fetchAssistantsByIds] failed:', error)
     }
   },
 

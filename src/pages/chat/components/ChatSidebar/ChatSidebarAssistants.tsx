@@ -13,26 +13,35 @@
 // limitations under the License.
 //
 
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import PencilSquareSvg from '@/assets/icons/chat-new-filled.svg?react'
 import ArchiveSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
-import InfoSvg from '@/assets/icons/info.svg?react'
+import HistorySvg from '@/assets/icons/history.svg?react'
+import PlusSvg from '@/assets/icons/plus.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import { AvatarType } from '@/constants/avatar'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useVueRouter } from '@/hooks/useVueRouter'
-import { getAssistantEditRoute, getAssistantRoute } from '@/pages/assistants/utils/getAssistantLink'
-import { assistantsStore, MAX_RECENT_ASSISTANTS } from '@/store/assistants'
+import { getAssistantEditRoute } from '@/pages/assistants/utils/getAssistantLink'
+import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
 import { Assistant } from '@/types/entity/assistant'
 import { canEdit } from '@/utils/entity'
 
 import ChatsSidebarSection from './ChatSidebarSection'
+import RecentAssistantsPickerPopup from './RecentAssistantsPickerPopup'
 
 const MAX_NAME_LENGTH = 20
+const RECENT_ASSISTANTS_BATCH_SIZE = 5
+const RECENT_ASSISTANT_ROW_HEIGHT_PX = 36
+
+interface ChatSidebarAssistantsProps {
+  onViewChatHistory?: (assistantId: string, assistantName: string, iconUrl?: string | null) => void
+}
 
 const truncateName = (assistant: Assistant) => {
   if (assistant.name.length <= MAX_NAME_LENGTH) {
@@ -41,13 +50,26 @@ const truncateName = (assistant: Assistant) => {
   return assistant.name.slice(0, MAX_NAME_LENGTH) + '...'
 }
 
-const ChatSidebarAssistants = () => {
+const ChatSidebarAssistants = ({ onViewChatHistory }: ChatSidebarAssistantsProps) => {
   const router = useVueRouter()
   const { recentAssistants } = useSnapshot(assistantsStore)
+  const [isPickerVisible, setIsPickerVisible] = useState(false)
+  const [visibleAssistantsCount, setVisibleAssistantsCount] = useState(RECENT_ASSISTANTS_BATCH_SIZE)
+  const [hasScrollIntent, setHasScrollIntent] = useState(false)
 
-  const viewAssistant = (assistant: Assistant) => {
-    router.push(getAssistantRoute(assistant))
-  }
+  const visibleAssistants = recentAssistants.slice(0, visibleAssistantsCount)
+  const hasMoreAssistants = visibleAssistants.length < recentAssistants.length
+  const loadMoreAssistants = useCallback(() => {
+    setVisibleAssistantsCount((count) =>
+      Math.min(count + RECENT_ASSISTANTS_BATCH_SIZE, recentAssistants.length)
+    )
+  }, [recentAssistants.length])
+  const sentinelRef = useInfiniteScroll({
+    enabled: hasScrollIntent,
+    isLoading: false,
+    hasMore: hasMoreAssistants,
+    onLoadMore: loadMoreAssistants,
+  })
 
   const editAssistant = (assistant: Assistant) => {
     router.push(getAssistantEditRoute(assistant))
@@ -59,7 +81,7 @@ const ChatSidebarAssistants = () => {
   }
 
   const createChat = async (assistant: Assistant) => {
-    await chatsStore.startNewChat(assistant.id, assistant.name, false)
+    await chatsStore.startNewChat(assistant.id, '', false)
     assistantsStore.updateRecentAssistants(assistant)
     router.push({ name: 'new-chat' })
   }
@@ -71,21 +93,21 @@ const ChatSidebarAssistants = () => {
       icon: <PencilSquareSvg className="w-4 h-4" />,
     },
     {
-      title: 'View',
-      onClick: () => viewAssistant(assistant),
-      icon: <InfoSvg />,
+      title: 'View chat history',
+      onClick: () => onViewChatHistory?.(assistant.id, assistant.name, assistant.icon_url),
+      icon: <HistorySvg />,
     },
     ...(canEdit(assistant) && assistant.type !== 'A2A'
       ? [
           {
-            title: 'Edit',
+            title: 'Edit assistant',
             onClick: () => editAssistant(assistant),
             icon: <EditSvg className="h-4" />,
           },
         ]
       : []),
     {
-      title: 'Remove',
+      title: 'Remove from Recent Assistants',
       onClick: () => deleteAssistant(assistant),
       icon: <ArchiveSvg className="w-4 h-4" />,
     },
@@ -96,17 +118,43 @@ const ChatSidebarAssistants = () => {
   }, [])
 
   return (
-    <ChatsSidebarSection title="Assistants">
-      <div className="flex flex-col">
-        {recentAssistants.slice(0, MAX_RECENT_ASSISTANTS).map((assistant) => {
-          const assistantNameId = `sidebar-assistant-name-${assistant.id}`
-          return (
-            <div key={assistant.id} className="flex justify-between items-center h-9 px-1.5">
+    <>
+      <ChatsSidebarSection
+        title="Recent Assistants"
+        headerContent={
+          <button
+            type="button"
+            title="Add Recent Assistants"
+            aria-label="Add Recent Assistants"
+            className="rounded p-1 text-icon-secondary hover:text-icon-primary"
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              setIsPickerVisible(true)
+            }}
+          >
+            <PlusSvg className="size-4" />
+          </button>
+        }
+      >
+        <div
+          data-testid="recent-assistants-scroll-container"
+          className="flex flex-col overflow-y-auto"
+          style={{ maxHeight: RECENT_ASSISTANTS_BATCH_SIZE * RECENT_ASSISTANT_ROW_HEIGHT_PX }}
+          onScroll={() => setHasScrollIntent(true)}
+          onWheel={() => setHasScrollIntent(true)}
+          onTouchMove={() => setHasScrollIntent(true)}
+        >
+          {visibleAssistants.map((assistant) => (
+            <div
+              key={assistant.id}
+              className="flex h-9 shrink-0 min-w-0 items-center justify-between gap-2 px-1.5"
+            >
               <button
                 type="button"
                 aria-label={`Start new chat with ${assistant.name}`}
                 onClick={() => createChat(assistant)}
-                className="flex justify-start items-center gap-2 cursor-pointer"
+                className="flex min-w-0 flex-1 cursor-pointer items-center justify-start gap-2"
               >
                 <Avatar
                   withTooltip
@@ -115,25 +163,34 @@ const ChatSidebarAssistants = () => {
                   name={assistant.name}
                 />
                 <span
-                  id={assistantNameId}
-                  className="block w-full truncate text-text-primary text-sm font-normal"
+                  id={`sidebar-assistant-name-${assistant.id}`}
+                  className="block min-w-0 flex-1 truncate text-left text-sm font-normal text-text-primary"
                 >
                   {truncateName(assistant)}
                 </span>
               </button>
 
-              <div className="flex items-center">
+              <div className="flex shrink-0 items-center">
                 <NavigationMore
+                  renderInRoot
+                  placement="right-end"
                   hideOnClickInside
+                  className="size-6 shrink-0"
+                  buttonClassName="m-0 flex size-6 items-center justify-center p-0"
+                  contextId={`sidebar-assistant-name-${assistant.id}`}
                   items={getMenuItems(assistant)}
-                  contextId={assistantNameId}
                 />
               </div>
             </div>
-          )
-        })}
-      </div>
-    </ChatsSidebarSection>
+          ))}
+          {hasMoreAssistants && <div ref={sentinelRef} className="h-px shrink-0" aria-hidden />}
+        </div>
+      </ChatsSidebarSection>
+      <RecentAssistantsPickerPopup
+        isVisible={isPickerVisible}
+        onHide={() => setIsPickerVisible(false)}
+      />
+    </>
   )
 }
 

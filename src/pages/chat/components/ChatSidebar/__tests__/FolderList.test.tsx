@@ -13,11 +13,12 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { mockRouter } from '@/hooks/__mocks__/useVueRouter'
+import { chatsStore } from '@/store/chats'
 
 import FolderList from '../FolderList/FolderList'
 
@@ -28,7 +29,7 @@ vi.mock('primereact/accordion', () => ({
     const childrenWithContext = React.Children.map(children, (child: any, index: number) => {
       if (!React.isValidElement(child)) return child
       return React.cloneElement(child as React.ReactElement<any>, {
-        _selected: activeIndex === index,
+        _selected: Array.isArray(activeIndex) ? activeIndex.includes(index) : activeIndex === index,
       })
     })
     return <div>{childrenWithContext}</div>
@@ -59,17 +60,26 @@ vi.mock('@/hooks/useVueRouter', () => ({ useVueRouter: () => mockRouter }))
 
 vi.mock('valtio', () => ({
   useSnapshot: vi.fn((store) => store),
+  proxy: vi.fn((obj: unknown) => obj),
 }))
 
 vi.mock('@/store/chats', () => ({
   chatsStore: {
     chats: [],
-    startNewChat: vi.fn(),
+    startNewChat: vi.fn().mockResolvedValue(undefined),
   },
 }))
 
 vi.mock('@/components/NavigationMore/NavigationMore', () => ({
-  default: () => <div data-testid="navigation-more" />,
+  default: ({ items }: { items: any[] }) => (
+    <div data-testid="navigation-more" data-items-count={items?.length ?? 0}>
+      {items?.map((item: any) => (
+        <button key={item.title} type="button" onClick={item.onClick}>
+          {item.title}
+        </button>
+      ))}
+    </div>
+  ),
 }))
 
 vi.mock('@/components/Tooltip', () => ({
@@ -90,6 +100,10 @@ vi.mock('../ChatList/ChatList', () => ({
 
 vi.mock('@/assets/icons/folder.svg?react', () => ({
   default: () => <span data-testid="folder-icon" />,
+}))
+
+vi.mock('@/assets/icons/chat-import.svg?react', () => ({
+  default: () => <span data-testid="chat-import-icon" />,
 }))
 
 vi.mock('@/assets/icons/delete.svg?react', () => ({
@@ -164,5 +178,110 @@ describe('FolderList', () => {
     expect(ownsValues).toContain('chat-tree-folder-group-A%2FB')
     expect(ownsValues).toContain('chat-tree-folder-group-A-B')
     expect(new Set(ownsValues).size).toBe(2)
+  })
+
+  it('shows full menu (3 items) for custom folders', () => {
+    render(
+      <FolderList
+        {...defaultProps}
+        folders={['My Project']}
+        foldersToChatsMap={{ 'My Project': [] }}
+        folderKinds={{ 'My Project': 'custom' }}
+      />
+    )
+    const menu = screen.getByTestId('navigation-more')
+    expect(menu).toHaveAttribute('data-items-count', '3')
+  })
+
+  describe('workflow-associated folder menu (EPMCDME-15012)', () => {
+    it('shows "Add chats..." (not "New chat") for a plain custom folder', () => {
+      render(
+        <FolderList
+          {...defaultProps}
+          folders={['My Project']}
+          foldersToChatsMap={{ 'My Project': [] }}
+          folderKinds={{ 'My Project': 'custom' }}
+        />
+      )
+      expect(screen.getByRole('button', { name: 'Add chats...' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'New chat' })).not.toBeInTheDocument()
+    })
+
+    const workflowFolderChats = {
+      'Release workflows': [{ id: 'run-1', isWorkflow: true, initialWorkflowId: 'workflow-a' }],
+    } as unknown as Record<string, any>
+
+    it('shows "New chat" instead of "Add chats..." for a workflow-associated folder, keeps Rename/Delete', () => {
+      render(
+        <FolderList
+          {...defaultProps}
+          folders={['Release workflows']}
+          foldersToChatsMap={workflowFolderChats}
+          folderKinds={{ 'Release workflows': 'workflow' }}
+        />
+      )
+      const menu = screen.getByTestId('navigation-more')
+      expect(menu).toHaveAttribute('data-items-count', '3')
+      expect(screen.getByRole('button', { name: 'New chat' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Add chats...' })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Rename folder' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Delete...' })).toBeInTheDocument()
+    })
+
+    it('starts a new chat with the folder\'s workflow when "New chat" is clicked, not the add-chats popup', async () => {
+      render(
+        <FolderList
+          {...defaultProps}
+          folders={['Release workflows']}
+          foldersToChatsMap={workflowFolderChats}
+          folderKinds={{ 'Release workflows': 'workflow' }}
+        />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'New chat' }))
+
+      expect(chatsStore.startNewChat).toHaveBeenCalledWith('workflow-a', 'Release workflows', true)
+      await waitFor(() => expect(mockRouter.push).toHaveBeenCalledWith({ name: 'new-chat' }))
+    })
+  })
+
+  it('does not show folder actions for import folders', () => {
+    render(
+      <FolderList
+        {...defaultProps}
+        folders={['import:codex', 'legacy-import:Claude Imports']}
+        foldersToChatsMap={{ 'import:codex': [], 'legacy-import:Claude Imports': [] }}
+        folderKinds={{
+          'import:codex': 'import',
+          'legacy-import:Claude Imports': 'legacy-import',
+        }}
+      />
+    )
+    expect(screen.queryByTestId('navigation-more')).not.toBeInTheDocument()
+  })
+
+  it('shows the import icon for legacy-import folders', () => {
+    render(
+      <FolderList
+        {...defaultProps}
+        folders={['legacy-import:Claude imports']}
+        foldersToChatsMap={{ 'legacy-import:Claude imports': [] }}
+        folderKinds={{ 'legacy-import:Claude imports': 'legacy-import' }}
+      />
+    )
+    expect(screen.getByTestId('chat-import-icon')).toBeInTheDocument()
+    expect(screen.queryByTestId('folder-icon')).not.toBeInTheDocument()
+  })
+
+  it('shows the display name for legacy-import folders', () => {
+    render(
+      <FolderList
+        {...defaultProps}
+        folders={['legacy-import:Claude imports']}
+        foldersToChatsMap={{ 'legacy-import:Claude imports': [] }}
+        folderKinds={{ 'legacy-import:Claude imports': 'legacy-import' }}
+      />
+    )
+    expect(screen.getByText('Claude Imports')).toBeInTheDocument()
   })
 })

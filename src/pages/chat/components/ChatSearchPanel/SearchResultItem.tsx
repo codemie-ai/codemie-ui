@@ -17,6 +17,8 @@ import { Command } from 'cmdk'
 
 import ChatIcon from '@/assets/icons/chat.svg?react'
 import FolderIcon from '@/assets/icons/folder.svg?react'
+import Avatar from '@/components/Avatar/Avatar'
+import { AvatarType } from '@/constants/avatar'
 import { SearchResultItem as SearchItem } from '@/types/chats'
 import { formatDateTime } from '@/utils/helpers'
 import { highlightText } from '@/utils/textUtils'
@@ -33,11 +35,20 @@ const SearchResultItem = ({ item, query, onSelect }: SearchResultItemProps) => {
 
   return (
     <Command.Item
-      value={item.id}
+      value={`${item.type}:${item.id}`}
       onSelect={() => onSelect(item)}
       className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-1.5 hover:bg-surface-specific-dropdown-hover data-[selected=true]:bg-surface-specific-dropdown-hover"
     >
-      <Icon className="h-[1.12rem] w-[1.12rem] flex-shrink-0 text-text-secondary" />
+      {item.type === 'assistant' ? (
+        <Avatar
+          iconUrl={item.icon_url}
+          name={item.name}
+          type={AvatarType.XS}
+          className="shrink-0"
+        />
+      ) : (
+        <Icon className="h-[1.12rem] w-[1.12rem] flex-shrink-0 text-text-secondary" />
+      )}
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         <div className="truncate text-sm text-text-primary">
           {highlightText(item.name, query ?? '')}

@@ -71,7 +71,7 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
   const projectName = router.currentRoute.value.params.projectName as string
 
   const createChat = async (assistant) => {
-    await chatsStore.startNewChat(assistant.id, assistant.name, false)
+    await chatsStore.startNewChat(assistant.id, '', false)
     assistantsStore.updateRecentAssistants(assistant)
     router.push({ name: 'new-chat' })
   }

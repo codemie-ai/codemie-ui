@@ -69,5 +69,19 @@ export function mockAPI(
 // to assert navigation; post-navigation rendering cannot be tested with this setup.
 export const renderPage = (path: string): RenderResult => {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
-  return render(<RouterProvider router={router} />)
+  // React 19 supports onCaughtError at runtime, while some installations resolve
+  // @testing-library/react against older ReactDOM types that declare it as undefined.
+  const renderWithCaughtError = render as unknown as (
+    ui: Parameters<typeof render>[0],
+    options: { onCaughtError: (error: unknown) => void }
+  ) => RenderResult
+
+  return renderWithCaughtError(<RouterProvider router={router} />, {
+    // React Router converts render exceptions into its ErrorPage. In a test this hides
+    // the original stack and makes every subsequent waitFor fail with a huge fallback
+    // DOM dump. Fail immediately with the actual cause instead.
+    onCaughtError: (error) => {
+      throw error
+    },
+  })
 }

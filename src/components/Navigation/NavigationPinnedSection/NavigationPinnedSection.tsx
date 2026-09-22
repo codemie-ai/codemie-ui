@@ -85,7 +85,7 @@ const NavigationPinnedSection: React.FC = () => {
 
   const handleAssistantClick = useCallback(
     async (a: { id: string; name: string }) => {
-      await chatsStore.startNewChat(a.id, a.name, false)
+      await chatsStore.startNewChat(a.id, '', false)
       assistantsStore.updateRecentAssistants(a as unknown as Assistant)
       router.push({ name: 'new-chat' })
     },

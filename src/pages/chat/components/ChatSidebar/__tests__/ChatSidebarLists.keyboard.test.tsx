@@ -69,8 +69,11 @@ vi.mock('@/assets/icons/folder-add.svg?react', () => ({
 }))
 
 const foldersHeader = () => {
-  const header = document.getElementById('pr_id_1_header_1')
-  return header ?? document.querySelectorAll<HTMLElement>('a.p-accordion-header-link')[1]
+  const foldersLabel = screen.getByText('Folders')
+  const header = foldersLabel.closest<HTMLElement>('a.p-accordion-header-link')
+
+  if (!header) throw new Error('Folders accordion header was not rendered')
+  return header
 }
 
 describe('ChatSidebarLists — keyboard activation of the Create Folder trigger', () => {
@@ -78,7 +81,7 @@ describe('ChatSidebarLists — keyboard activation of the Create Folder trigger'
     const user = userEvent.setup()
     render(<ChatSidebarLists />)
 
-    const trigger = screen.getByRole('button', { name: 'Create folder' })
+    const trigger = screen.getByTitle('Create Folder')
     const expandedBefore = foldersHeader().getAttribute('aria-expanded')
 
     trigger.focus()
@@ -93,7 +96,7 @@ describe('ChatSidebarLists — keyboard activation of the Create Folder trigger'
     const user = userEvent.setup()
     render(<ChatSidebarLists />)
 
-    const trigger = screen.getByRole('button', { name: 'Create folder' })
+    const trigger = screen.getByTitle('Create Folder')
     const expandedBefore = foldersHeader().getAttribute('aria-expanded')
 
     trigger.focus()
@@ -111,6 +114,7 @@ describe('ChatSidebarLists — keyboard activation of the Create Folder trigger'
     const expandedBefore = header.getAttribute('aria-expanded')
 
     header.focus()
+    expect(header).toHaveFocus()
     await user.keyboard('{Enter}')
 
     expect(foldersHeader().getAttribute('aria-expanded')).not.toBe(expandedBefore)

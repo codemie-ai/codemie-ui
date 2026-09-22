@@ -13,54 +13,72 @@
 // limitations under the License.
 //
 
-import { forwardRef, memo, useMemo, type Ref } from 'react'
+import { forwardRef, memo, type Ref } from 'react'
 
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import { ChatListDensity } from '@/store/chatViewSettings'
 import { ChatListItem as ChatListItemType } from '@/types/entity/conversation'
 
-import ChatListItem, { ChatListItemActions } from './ChatListItem'
+import ChatListItem, { ChatListItemActions, RegisterChatElement } from './ChatListItem'
 
 interface ChatListProps {
   currentChatId?: string
   chatActions: ChatListItemActions
   chats: ChatListItemType[]
+  hideAvatar?: boolean | ((chat: ChatListItemType) => boolean)
   id?: string
+  onLoadMore?: () => void
+  hasMore?: boolean
+  isLoading?: boolean
+  isLazyLoadingEnabled?: boolean
+  density?: ChatListDensity
+  showRelativeTimestamp?: boolean
+  registerChatElement?: RegisterChatElement
 }
 
 const ChatListInner = (
-  { currentChatId, chatActions, chats, id }: ChatListProps,
+  {
+    currentChatId,
+    chatActions,
+    chats,
+    hideAvatar,
+    id,
+    onLoadMore = () => undefined,
+    hasMore = false,
+    isLoading = false,
+    isLazyLoadingEnabled = false,
+    density = ChatListDensity.DETAILED,
+    showRelativeTimestamp = false,
+    registerChatElement,
+  }: ChatListProps,
   ref: Ref<HTMLUListElement>
 ) => {
-  const { pinnedChats, unpinnedChats } = useMemo(() => {
-    const pinnedChats: ChatListItemType[] = []
-    const unpinnedChats: ChatListItemType[] = []
-
-    chats.forEach((chat) => (chat.pinned ? pinnedChats.push(chat) : unpinnedChats.push(chat)))
-
-    return { pinnedChats, unpinnedChats }
-  }, [chats])
+  const sentinelRef = useInfiniteScroll({
+    enabled: isLazyLoadingEnabled,
+    isLoading,
+    hasMore,
+    onLoadMore,
+  })
 
   return (
-    <ul // NOSONAR: WAI-ARIA treeview pattern; role="group" groups treeitem children within the role="tree" sidebar container.
-      ref={ref}
-      role="group"
-      id={id}
-    >
-      {pinnedChats.map((chat) => (
+    <ul ref={ref} id={id}>
+      {chats.map((chat) => (
         <ChatListItem
           key={chat.id}
           chat={chat}
           actions={chatActions}
           currentChatId={currentChatId}
+          hideAvatar={typeof hideAvatar === 'function' ? hideAvatar(chat) : hideAvatar === true}
+          density={density}
+          showRelativeTimestamp={showRelativeTimestamp}
+          registerChatElement={registerChatElement}
         />
       ))}
-      {unpinnedChats.map((chat) => (
-        <ChatListItem
-          key={chat.id}
-          chat={chat}
-          actions={chatActions}
-          currentChatId={currentChatId}
-        />
-      ))}
+      {hasMore && (
+        <li aria-hidden="true">
+          <div ref={sentinelRef} className="h-px" />
+        </li>
+      )}
     </ul>
   )
 }

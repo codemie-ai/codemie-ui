@@ -13,97 +13,125 @@
 // limitations under the License.
 //
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useSnapshot } from 'valtio'
 
-import ExploreSvg from '@/assets/icons/explore.svg?react'
 import Plus from '@/assets/icons/plus.svg?react'
 import SearchIcon from '@/assets/icons/search.svg?react'
 import Button from '@/components/Button/Button'
 import Sidebar from '@/components/Sidebar/Sidebar'
-import { useVueRouter } from '@/hooks/useVueRouter'
+import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
+import { chatViewSettingsStore } from '@/store/chatViewSettings'
+import { fetchMissingChatAvatarData } from '@/store/utils/chatAvatarData'
+import { workflowsStore } from '@/store/workflows'
+import { ChatListItem } from '@/types/entity/conversation'
 
 import ChatSidebarAssistants from './ChatSidebarAssistants'
 import ChatSidebarLists, { ChatSidebarListsRef } from './ChatSidebarLists/ChatSidebarLists'
-import ChatSidebarWorkflows from './ChatSidebarWorkflows'
+import ChatViewSettings from './ChatViewSettings'
+import StartNewChatModal from './StartNewChatModal'
 import ChatSearchPanel from '../ChatSearchPanel/ChatSearchPanel'
 
 const ChatSidebar = () => {
-  const router = useVueRouter()
-  const { startNewChat } = useSnapshot(chatsStore)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false)
+  const [isFocusedViewActive, setIsFocusedViewActive] = useState(false)
   const sidebarListsRef = useRef<ChatSidebarListsRef>(null)
+  const recentMetadataPromiseRef = useRef<Promise<void>>(Promise.resolve())
+  const { chats, isChatsLoading, isInitialDataFetched } = useSnapshot(chatsStore)
+  const { showRecentAssistants } = useSnapshot(chatViewSettingsStore)
 
-  const handleCreateChat = async () => {
-    await startNewChat('', '', false)
-    router.push({ name: 'new-chat' })
-  }
+  useEffect(() => {
+    recentMetadataPromiseRef.current = Promise.all([
+      assistantsStore.getRecentAssistants().catch((error) => {
+        console.error('[ChatSidebar] failed to fetch recent assistants:', error)
+      }),
+      workflowsStore.getRecentWorkflows().catch((error) => {
+        console.error('[ChatSidebar] failed to fetch recent workflows:', error)
+      }),
+    ]).then(() => undefined)
+  }, [])
 
-  const navigateToAssistants = () => {
-    router.push({ name: 'assistants' })
-  }
+  useEffect(() => {
+    if (isChatsLoading || !isInitialDataFetched) return
 
-  const navigateToWorkflows = () => {
-    router.push({ name: 'workflows' })
-  }
+    const hydrateChatAvatars = async () => {
+      await recentMetadataPromiseRef.current
+      await fetchMissingChatAvatarData(chats as ChatListItem[])
+    }
+
+    hydrateChatAvatars().catch((error) => {
+      console.error('[ChatSidebar] failed to fetch chat avatar data:', error)
+    })
+  }, [chats, isChatsLoading, isInitialDataFetched])
+
+  const handleFocusedViewActiveChange = useCallback((isActive: boolean) => {
+    setIsFocusedViewActive(isActive)
+    if (isActive) setIsSearchOpen(false)
+  }, [])
 
   return (
     <Sidebar
+      id="chat-sidebar"
       title="Chats"
+      titleContent={<ChatViewSettings />}
+      hideHeader={isFocusedViewActive}
       fillContainer
       className="px-4"
       headerContent={
-        <Button variant="primary" onClick={handleCreateChat} data-onboarding="chat-new-chat-button">
+        <Button
+          variant="primary"
+          size="medium"
+          onClick={() => setIsNewChatModalOpen(true)}
+          data-onboarding="chat-new-chat-button"
+          className="shrink-0 whitespace-nowrap rounded-lg"
+        >
           <Plus />
           New Chat
         </Button>
       }
     >
-      <div className="flex flex-col h-full">
-        <div data-onboarding="chat-sidebar-recents">
-          <ChatSidebarAssistants />
+      <div className="flex h-full min-h-0 flex-col">
+        {!isFocusedViewActive && (
+          <>
+            <div className="border-b border-border-secondary mb-2">
+              <Button
+                variant="tertiary"
+                onClick={() => setIsSearchOpen(true)}
+                className="w-full justify-start font-normal text-sm text-text-secondary !h-10 min-h-10 rounded-none"
+              >
+                <SearchIcon className="size-4 shrink-0" />
+                Search in Chats
+              </Button>
+            </div>
 
-          <button
-            onClick={navigateToAssistants}
-            className="text-text-accent flex items-center gap-2 text-sm mt-3 ml-1.5"
-          >
-            <ExploreSvg />
-            Explore Assistants
-          </button>
+            <ChatSearchPanel
+              open={isSearchOpen}
+              onOpenChange={setIsSearchOpen}
+              sidebarListsRef={sidebarListsRef}
+            />
 
-          <div className="mt-6">
-            <ChatSidebarWorkflows />
-          </div>
+            {showRecentAssistants && (
+              <ChatSidebarAssistants
+                onViewChatHistory={(assistantId, assistantName, iconUrl) =>
+                  sidebarListsRef.current?.openAssistantHistory(assistantId, assistantName, iconUrl)
+                }
+              />
+            )}
+          </>
+        )}
 
-          <button
-            onClick={navigateToWorkflows}
-            className="text-text-accent flex items-center gap-2 text-sm mt-3 ml-1.5"
-          >
-            <ExploreSvg />
-            Explore Workflows
-          </button>
-        </div>
-
-        <div className="h-px min-h-px bg-border-primary mt-7 mb-4" />
-
-        <Button
-          variant="tertiary"
-          onClick={() => setIsSearchOpen(true)}
-          className="mb-1 w-full flex items-center gap-2 justify-start font-normal font-sm !h-9 min-h-9"
-        >
-          <SearchIcon className="size-5" />
-          Search in Chats
-        </Button>
-
-        <ChatSearchPanel
-          open={isSearchOpen}
-          onOpenChange={setIsSearchOpen}
-          sidebarListsRef={sidebarListsRef}
+        <ChatSidebarLists
+          ref={sidebarListsRef}
+          onFocusedViewActiveChange={handleFocusedViewActiveChange}
         />
-
-        <ChatSidebarLists ref={sidebarListsRef} />
       </div>
+
+      <StartNewChatModal
+        isVisible={isNewChatModalOpen}
+        onHide={() => setIsNewChatModalOpen(false)}
+      />
     </Sidebar>
   )
 }

@@ -22,9 +22,14 @@ import { cn } from '@/utils/utils'
 export interface ChatsSidebarSectionProps {
   title: string
   children?: ReactNode
+  headerContent?: ReactNode
 }
 
-const ChatsSidebarSection: React.FC<ChatsSidebarSectionProps> = ({ title, children }) => {
+const ChatsSidebarSection: React.FC<ChatsSidebarSectionProps> = ({
+  title,
+  children,
+  headerContent,
+}) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(0)
 
   return (
@@ -39,11 +44,14 @@ const ChatsSidebarSection: React.FC<ChatsSidebarSectionProps> = ({ title, childr
           headerAction: { href: null, className: 'hover:no-underline' },
         }}
         header={({ tabIndex }) => (
-          <div className="flex items-center gap-2 font-bold text-text-heading px-2 text-xs uppercase py-3 hover:text-text-accent-hover transition">
-            <ChevronRightIcon
-              className={cn('transition', activeIndex === tabIndex && 'rotate-90')}
-            />
-            {title}
+          <div className="flex min-w-0 grow items-center justify-between gap-2 pr-1.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2 px-2 py-4 text-xs font-medium uppercase text-text-heading transition hover:text-text-accent-hover">
+              <ChevronRightIcon
+                className={cn('shrink-0 transition', activeIndex === tabIndex && 'rotate-90')}
+              />
+              <span className="truncate">{title}</span>
+            </div>
+            {headerContent && <div className="shrink-0">{headerContent}</div>}
           </div>
         )}
       >

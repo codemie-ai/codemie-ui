@@ -16,6 +16,7 @@
 import { useSnapshot } from 'valtio'
 
 import ConfirmationModal from '@/components/ConfirmationModal'
+import { ButtonType } from '@/constants'
 import { AVATAR_CHAT_FOLDER } from '@/constants/chats'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatsStore } from '@/store/chats'
@@ -31,13 +32,14 @@ const DeleteChatPopup = ({ isVisible, selectedChat, onHide }: DeleteChatPopupPro
   const router = useVueRouter()
   const { currentChat, chats } = useSnapshot(chatsStore)
 
-  const resolveRouteName = (folder?: string) =>
+  const resolveRouteName = (folder?: string | null) =>
     folder === AVATAR_CHAT_FOLDER ? 'avatar-chat' : 'chats'
 
   const confirmDelete = async () => {
     if (!selectedChat) return
 
-    const { id, folder = '' } = selectedChat
+    const { id } = selectedChat
+    const folder = selectedChat.folder ?? ''
     const folderChats = chats.filter((c) => c.folder === folder)
     const candidateNextIndex = folderChats.findIndex((c) => c.id === id) + 1
     const candidateNext = folderChats[candidateNextIndex] ?? folderChats[0]
@@ -71,6 +73,7 @@ const DeleteChatPopup = ({ isVisible, selectedChat, onHide }: DeleteChatPopupPro
       onCancel={onHide}
       visible={isVisible}
       onConfirm={confirmDelete}
+      confirmButtonType={ButtonType.DELETE}
       message={
         selectedChat?.folder &&
         chats.filter((c) => (c.folder ?? '') === (selectedChat.folder ?? '')).length === 1

@@ -17,6 +17,7 @@
  * Chat entity types from backend API
  */
 import type { A2uiActionEnvelope, A2uiDataModel, A2uiEnvelope } from '@/a2ui/types'
+import type { ImportSourceKind } from '@/constants/chatImportSources'
 import type { UserAbility } from '@/types//common'
 import type { MCPAuthGateServer } from '@/types/entity/mcpAuth'
 import type { WorkflowExecutionStatus } from '@/types/entity/workflow'
@@ -81,13 +82,20 @@ export interface ChatAssistant {
 export interface ChatListItem {
   id: string
   name: string | null
-  folder: string
+  folder: string | null
   pinned: boolean
   date: string
+  updateDate?: string
   assistantIds: string[]
   initialAssistantId: string | null
+  initialWorkflowId: string | null
   isGroup: boolean
   isWorkflow: boolean
+  iconUrl?: string | null
+  assistantNames?: string[]
+  importSource?: ImportSourceKind | null
+  /** True when the backend marked the conversation as imported, even for an unknown source. */
+  isImported?: boolean
   // Frontend-only: true while the LLM-generated name (EPMCDME-11647) is still
   // being polled for, so the UI can show the assistant name as a placeholder
   // instead of the raw truncated first-message optimistic name.
@@ -323,6 +331,7 @@ export interface ChatBackend {
   history: HistoryItemBackend[]
   is_workflow?: boolean
   is_workflow_conversation?: boolean
+  import_source?: string | null
   tool_call_policy?: string | null
 }
 

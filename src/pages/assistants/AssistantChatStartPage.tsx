@@ -40,7 +40,7 @@ const AssistantChatStartPage: React.FC = () => {
         if (cancelled) return
 
         if (assistant.id) {
-          await chatsStore.startNewChat(assistant.id, assistant.name, false)
+          await chatsStore.startNewChat(assistant.id, '', false)
           if (cancelled) return
 
           assistantsStore.updateRecentAssistants(assistant)
