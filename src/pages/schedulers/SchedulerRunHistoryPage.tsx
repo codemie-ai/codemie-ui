@@ -199,6 +199,11 @@ const SchedulerRunHistoryPage = () => {
       await schedulerRunsStore.deleteRun(id)
       toaster.info('Run deleted successfully')
       schedulerRunsStore.fetchRuns(query)
+      schedulerRunsStore.fetchStats({
+        schedulerId: query.schedulerId,
+        dateFrom: query.dateFrom,
+        dateTo: query.dateTo,
+      })
     } catch (err) {
       if (err instanceof HttpError && err.response.status === 409) {
         toaster.error('Cannot delete a run that is still in progress.')

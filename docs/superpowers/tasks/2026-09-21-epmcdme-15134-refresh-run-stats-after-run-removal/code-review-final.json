@@ -1,0 +1,20 @@
+{
+  "decision": "approve",
+  "rationale": "Single symmetric change: adds fetchStats call in handleDeleteConfirm mirroring the existing useEffect pattern. query.schedulerId typed as string (empty-string fallback via ?? '') satisfies SchedulerStatsQuery.schedulerId: string. No type errors, no logic gaps, no security issues. No-spec round (no story/spec supplied); blind and edge-case lenses clean.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Commit 'EPMCDME-15134: Refresh stats after run deletion' matches the required pattern."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "pass",
+      "notes": "No HTML sinks, navigation from untrusted input, or secrets introduced."
+    }
+  ],
+  "findings": []
+}
