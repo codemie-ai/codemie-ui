@@ -1,0 +1,21 @@
+{
+  "decision": "approve",
+  "rationale": "Both blind and edge-case lenses found no issues. The diff cleanly splits the combined last-run column into two separate columns (date and status badge), with correct null guards, updated useMemo dependency array, and matching column key registration. Commit subject conforms to project format. No spec artifact available — no-spec round, confidence degraded to low per policy.",
+  "follow_ups": [],
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "Commit message format",
+      "status": "pass",
+      "notes": "EPMCDME-15125: Move last run status to separate column in scheduler table — matches EPMCDME-XXXX: Capital sentence pattern."
+    },
+    {
+      "standard": "Security patterns",
+      "status": "na",
+      "notes": "No security-relevant changes in diff."
+    }
+  ],
+  "findings": []
+}

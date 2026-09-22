@@ -236,16 +236,20 @@ const SchedulersPage = () => {
     if (!item.lastRun) {
       return <span className="text-text-secondary">Never run</span>
     }
+    return <SchedulerDateContent rawDate={item.lastRun.startedAt} />
+  }, [])
+
+  const renderLastRunStatus = useCallback((item: Scheduler) => {
+    if (!item.lastRun) {
+      return <span className="text-text-secondary">—</span>
+    }
     const statusVariant = LAST_RUN_STATUS_MAP[item.lastRun.status] ?? StatusEnum.NotStarted
     return (
-      <div className="flex flex-col gap-0.5">
-        <StatusBadge
-          status={statusVariant}
-          text={item.lastRun.status}
-          className="font-semibold text-[10px]"
-        />
-        <SchedulerDateContent rawDate={item.lastRun.startedAt} />
-      </div>
+      <StatusBadge
+        status={statusVariant}
+        text={item.lastRun.status}
+        className="font-semibold text-[10px]"
+      />
     )
   }, [])
 
@@ -292,6 +296,7 @@ const SchedulersPage = () => {
       { label: 'Project', key: 'project', type: 'custom' },
       { label: 'Schedule', key: 'schedule', type: 'custom' },
       { label: 'Last run', key: 'lastRun', type: 'custom' },
+      { label: 'Last Run Status', key: 'lastRunStatus', type: 'custom' },
       { label: 'Next run', key: 'nextRun', type: 'custom' },
       { label: 'Status', key: 'status', type: 'custom' },
       { label: 'Actions', key: 'actions', type: 'custom' },
@@ -306,11 +311,20 @@ const SchedulersPage = () => {
       project: renderSchedulerProject,
       schedule: renderSchedulerSchedule,
       lastRun: renderLastRun,
+      lastRunStatus: renderLastRunStatus,
       nextRun: renderNextRun,
       status: renderStatus,
       actions: renderActions,
     }),
-    [renderName, renderResource, renderLastRun, renderNextRun, renderStatus, renderActions]
+    [
+      renderName,
+      renderResource,
+      renderLastRun,
+      renderLastRunStatus,
+      renderNextRun,
+      renderStatus,
+      renderActions,
+    ]
   )
 
   const tablePagination = useMemo(
