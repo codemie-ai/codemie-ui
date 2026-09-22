@@ -1,0 +1,8 @@
+{"file": "codemie-ui/src/types/entity/conversation.ts", "action": "modified", "purpose": "Extend HistoryItemBackend with in_progress and status"}
+{"file": "codemie-ui/src/utils/chatHelpers.ts", "action": "modified", "purpose": "Reconstruct active turns, map inProgress correctly, and suppress processingTime for active turns"}
+{"file": "codemie-ui/src/store/chats.ts", "action": "modified", "purpose": "Trigger and run reactive chat polling for open in-progress conversations"}
+{"file": "codemie-ui/src/store/chatGeneration.ts", "action": "modified", "purpose": "Call backend abort route on user Stop"}
+{"file": "codemie-ui/src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx", "action": "modified", "purpose": "Render ThinkingLoader and memoize/suppress processingTime while active"}
+{"file": "codemie-ui/src/utils/__tests__/chatHelpers.test.ts", "action": "modified", "purpose": "Test transformChatBEtoFE behaviour for active in-progress processingTime suppression"}
+{"file": "codemie-ui/src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx", "action": "modified", "purpose": "Test ChatAiMessage components correctly render ThinkingLoader and suppress processingTime when active"}
+{"file": "codemie-ui/src/store/__tests__/chats.pollIncompleteChat.test.ts", "action": "created", "purpose": "Write frontend unit tests for polling and stop button"}

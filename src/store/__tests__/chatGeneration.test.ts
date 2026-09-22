@@ -22,7 +22,7 @@ import { ThoughtAuthorType } from '@/types/entity/conversation'
 import type { MCPAuthGateServer } from '@/types/entity/mcpAuth'
 
 const mockStream = vi.fn()
-const mockPost = vi.fn()
+const mockPost = vi.fn().mockResolvedValue({})
 const mockPut = vi.fn()
 const mockDelete = vi.fn()
 const mockGetAssistant = vi.fn()
@@ -39,6 +39,7 @@ const mockChatsStore = {
   findChat: vi.fn(),
   getConversationName: vi.fn(),
   refreshWorkflowExecutionIds: vi.fn(),
+  stopChatCompletionPoll: vi.fn(),
 }
 
 vi.mock('@/utils/api', () => ({
@@ -46,7 +47,7 @@ vi.mock('@/utils/api', () => ({
   DEFAULT_ERROR_MESSAGE: 'Oops! Something went wrong',
   default: {
     stream: (...args: unknown[]) => mockStream(...args),
-    post: (...args: unknown[]) => mockPost(...args),
+    post: (...args: unknown[]) => mockPost(...args) ?? Promise.resolve({} as Response),
     put: (...args: unknown[]) => mockPut(...args),
     delete: (...args: unknown[]) => mockDelete(...args),
   },
@@ -654,8 +655,10 @@ describe('chatGenerationStore', () => {
       expect(mockToasterError).toHaveBeenCalledWith(GENERATION_CANCELLED_MESSAGE)
     })
 
-    it('does nothing when no controller is registered for the chat', async () => {
+    it('does nothing when no controller is registered and chat is not in progress', async () => {
       const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const { chatsStore } = await import('@/store/chats')
+      chatsStore.currentChat = null
 
       chatGenerationStore.stopChatGeneration('chat-unknown')
 
@@ -723,6 +726,43 @@ describe('chatGenerationStore', () => {
       expect(historyItem.thoughts).toHaveLength(1)
       expect(historyItem.thoughts![0]!.id).toBe('tool')
       expect(historyItem.generationStopped).toBeFalsy()
+    })
+
+    it('aborts in-progress chat after page refresh when no controller is registered', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const { chatsStore } = await import('@/store/chats')
+
+      const inProgressMessage = createHistoryItem()
+      inProgressMessage.inProgress = true
+      const chat = createChat(inProgressMessage)
+      chat.id = 'chat-refresh'
+      chat.history = [[inProgressMessage]]
+      chatsStore.currentChat = chat
+
+      chatGenerationStore.stopChatGeneration('chat-refresh')
+
+      expect(mockChatsStore.stopChatCompletionPoll).toHaveBeenCalledWith('chat-refresh')
+      expect(inProgressMessage.inProgress).toBe(false)
+      expect(chat.isInterrupted).toBe(true)
+      expect(mockToasterError).toHaveBeenCalledWith(GENERATION_CANCELLED_MESSAGE)
+    })
+
+    it('cancels generation and clears inProgress on openedChatsHistory when distinct from currentChat', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const inProgressMsg = createHistoryItem()
+      inProgressMsg.inProgress = true
+      const openedChat = createChat(inProgressMsg)
+      openedChat.id = 'chat-bg-refresh'
+      openedChat.history = [[inProgressMsg]]
+      mockChatsStore.openedChatsHistory = [openedChat]
+      mockChatsStore.currentChat = null
+
+      chatGenerationStore.stopChatGeneration('chat-bg-refresh')
+
+      expect(mockChatsStore.stopChatCompletionPoll).toHaveBeenCalledWith('chat-bg-refresh')
+      expect(inProgressMsg.inProgress).toBe(false)
+      expect(openedChat.isInterrupted).toBe(true)
+      expect(mockToasterError).toHaveBeenCalledWith(GENERATION_CANCELLED_MESSAGE)
     })
   })
 
@@ -857,6 +897,35 @@ describe('chatGenerationStore', () => {
       await chatGenerationStore._handleStreamResponse(reader, historyItem, chat, new Date())
 
       expect(mockChatsStore.refreshWorkflowExecutionIds).toHaveBeenCalledWith('chat-1')
+    })
+
+    it('prioritizes server-provided time_elapsed over wall-clock delta', async () => {
+      const historyItem = createHistoryItem()
+      const chat = createChat(historyItem)
+      mockChatsStore.currentChat = chat
+
+      const reader = {
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({
+            done: false,
+            value: JSON.stringify({
+              generated: 'done',
+              generated_chunk: 'done',
+              last: true,
+              time_elapsed: 27.01,
+            }),
+          })
+          .mockResolvedValue({ done: true, value: undefined }),
+        cancel: vi.fn(),
+      } as unknown as ReadableStreamDefaultReader
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      // Pass a synthetic startTime 3 hours in the past (simulating timezone skew)
+      const skewedStartTime = new Date(Date.now() - 10800 * 1000)
+      await chatGenerationStore._handleStreamResponse(reader, historyItem, chat, skewedStartTime)
+
+      expect(historyItem.processingTime).toBe(27.01)
     })
   })
 

@@ -1,0 +1,25 @@
+{
+  "ticket": "EPMCDME-14797",
+  "verification_steps": [
+    {
+      "step": 1,
+      "description": "Send a query, wait 2 seconds, refresh page (F5). Verify prompt stays visible and thinking loader shows up."
+    },
+    {
+      "step": 2,
+      "description": "Verify reactive polling updates both openedChatsHistory and currentChat until complete."
+    },
+    {
+      "step": 3,
+      "description": "Verify thoughts preserve in_progress=true while active and map to aborted=true only when turn finishes."
+    },
+    {
+      "step": 4,
+      "description": "Click 'Stop' button after page reload with no active AbortController; confirm polling stops, UI marks interrupted, and backend abort is called."
+    },
+    {
+      "step": 5,
+      "description": "Verify polling ceiling at 150 attempts and timer cleanup on chat deletion."
+    }
+  ]
+}

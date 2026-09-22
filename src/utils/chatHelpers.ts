@@ -135,12 +135,22 @@ function transformHistoryGroup(
   // Imported chats (e.g. Claude Desktop) reference an assistant that isn't in the
   // workspace, so fall back to the import source's name and icon instead of "?".
   const importSource = getChatImportSource(folder)
-  return Array.from({ length: group.length / 2 }, (_, i) => {
+  return Array.from({ length: Math.ceil(group.length / 2) }, (_, i) => {
     const userItem = group[2 * i]
-    const assistantItem = group[2 * i + 1]
+    const assistantItem = group[2 * i + 1] ?? {
+      historyIndex: userItem.historyIndex,
+      message: '',
+      date: userItem.date,
+      assistantId: '',
+      in_progress: true,
+      executionId: null,
+      thoughts: [],
+    }
     const assistant =
       assistantData?.find((assistant) => assistant.assistant_id === assistantItem.assistantId) ?? {}
-    const preserveProgress = isActiveWorkflowTurn(assistantItem, isWorkflow)
+    const isAssistantInProgress =
+      isActiveWorkflowTurn(assistantItem, isWorkflow) ||
+      Boolean(assistantItem.in_progress ?? (assistantItem as any).inProgress ?? false)
     return {
       request: userItem.message ?? '',
       requestRaw: userItem.messageRaw,
@@ -157,11 +167,11 @@ function transformHistoryGroup(
             input_text: thought.input_text,
             children: thought.children,
             output_format: thought.output_format,
-            in_progress: preserveProgress ? thought.in_progress ?? false : false,
+            in_progress: isAssistantInProgress ? thought.in_progress ?? false : false,
             error: thought.error ?? false,
             // Non-workflow (or finished) hydrate: backend in_progress:true means the stream was cut — treat as aborted
             interrupted: thought.interrupted ?? false,
-            aborted: preserveProgress
+            aborted: isAssistantInProgress
               ? thought.aborted ?? false
               : (thought.aborted ?? false) || (thought.in_progress ?? false),
             routing: thought.routing ?? null,
@@ -177,9 +187,9 @@ function transformHistoryGroup(
             tools: ((assistant as any).tools ?? []).map((tool: any) => tool.name),
           }
         : {},
-      processingTime: assistantItem.responseTime, // Add FE response
+      processingTime: isAssistantInProgress ? undefined : assistantItem.responseTime, // Add FE response
       userMark: assistantItem.userMark, // Include userMark data from backend
-      inProgress: preserveProgress,
+      inProgress: isAssistantInProgress,
       stream: null,
       executionId: assistantItem.executionId,
       executionStatus: assistantItem.executionStatus ?? null,

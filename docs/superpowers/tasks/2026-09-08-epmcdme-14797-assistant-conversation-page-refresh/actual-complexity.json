@@ -1,0 +1,7 @@
+{
+  "ticket": "EPMCDME-14797",
+  "estimated_complexity_score": 12,
+  "actual_complexity_score": 12,
+  "actual_hours_spent": 2.5,
+  "justification": "The frontend implementation of transformHistoryGroup, active thought rendering, reactive polling inside chatsStore with timeout ceiling and cleanup, and post-refresh Stop button handling calling backend /abort was performed cleanly and verified across 43 automated unit tests."
+}

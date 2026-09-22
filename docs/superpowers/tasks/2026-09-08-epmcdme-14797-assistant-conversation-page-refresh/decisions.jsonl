@@ -1,0 +1,2 @@
+{"ts":"2026-09-08T14:44:47Z","gate_id":"spec.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"Spec matches the strictly approved user implementation plan EPMCDME-14797","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-09-08T14:45:29Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"Plan matches the strictly approved user implementation plan EPMCDME-14797 and satisfies TDD requirements.","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

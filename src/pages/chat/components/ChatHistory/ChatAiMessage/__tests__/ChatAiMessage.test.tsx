@@ -217,6 +217,12 @@ describe('ChatAiMessage processing metadata', () => {
     expect(screen.getByText(/Apr 30/)).toBeInTheDocument()
   })
 
+  it('renders ThinkingLoader and hides Processed in when inProgress is true even if processingTime is set', () => {
+    renderMessage(createMessage({ inProgress: true, processingTime: 12.34 }))
+    expect(screen.getByTestId('thinking-loader')).toBeInTheDocument()
+    expect(screen.queryByText(/Processed in:/)).not.toBeInTheDocument()
+  })
+
   it('renders Allow/Deny buttons when a thought is interrupted and chat is not a workflow', () => {
     const message: ChatMessage = {
       role: 'Assistant',

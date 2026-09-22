@@ -304,6 +304,8 @@ export interface HistoryItemBackend {
   a2uiEnvelopes?: A2uiEnvelope[] | null
   a2uiAction?: A2uiActionEnvelope | null
   a2uiDataModel?: A2uiDataModel | null
+  in_progress?: boolean
+  status?: string
 }
 
 export interface ChatBackend {

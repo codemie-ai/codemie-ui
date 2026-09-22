@@ -15,7 +15,11 @@
 
 import { proxy } from 'valtio'
 
-import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
+import {
+  CHAT_POLL_INTERVAL_MS,
+  DEFAULT_CHAT_FOLDER,
+  MAX_CHAT_POLL_ATTEMPTS,
+} from '@/constants/chats'
 import { router } from '@/hooks/useVueRouter'
 import { SearchResultItem, ChatExportFormat, RecentChat } from '@/types/chats'
 import {
@@ -69,6 +73,7 @@ const mapConversationUpdatePayload = (data: Partial<Conversation>) => {
 }
 
 const LAST_CHAT_ID = 'last-chat-id'
+const chatPollTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
 interface NewChatParams {
   assistantId: string
@@ -94,6 +99,8 @@ export interface ChatsStoreType {
   getChats(): Promise<ChatListItem[]>
   findChat(id: string): ChatListItem | undefined
   getChat(id: string, options?: { saveAsRecent?: boolean }): Promise<Conversation>
+  pollIncompleteChat(id: string): void
+  stopChatCompletionPoll(id: string): void
   getSharedChat(token: string): Promise<Conversation>
   searchChats(query: string, signal?: AbortSignal): Promise<SearchResultItem[]>
   setOpenChat(newChat: Conversation, saveToOpenedChatsHistory?: boolean): Conversation
@@ -225,7 +232,77 @@ export const chatsStore = proxy<ChatsStoreType>({
       })
     }
 
-    return chatsStore.setOpenChat(chat)
+    const openedChat = chatsStore.setOpenChat(chat)
+
+    const hasInProgress = chat.history.some((group) => group.some((msg) => msg.inProgress))
+    if (hasInProgress) {
+      if (!chat.isWorkflow && openedChat) {
+        import('./chatGeneration').then(({ chatGenerationStore }) => {
+          chatGenerationStore.reconnectChatStream(openedChat)
+        })
+      } else {
+        chatsStore.pollIncompleteChat(id)
+      }
+    }
+
+    return openedChat
+  },
+
+  stopChatCompletionPoll(id: string): void {
+    if (chatPollTimeouts.has(id)) {
+      clearTimeout(chatPollTimeouts.get(id))
+      chatPollTimeouts.delete(id)
+    }
+  },
+
+  pollIncompleteChat(id) {
+    chatsStore.stopChatCompletionPoll(id)
+
+    let attempt = 0
+
+    const poll = async () => {
+      attempt += 1
+      const activeChat =
+        chatsStore.openedChatsHistory.find((chat) => chat.id === id) ||
+        (chatsStore.currentChat?.id === id ? chatsStore.currentChat : null)
+      if (!activeChat || attempt > MAX_CHAT_POLL_ATTEMPTS) {
+        chatPollTimeouts.delete(id)
+        return
+      }
+
+      try {
+        const response = await api.get(`v1/conversations/${id}`)
+        const freshChat = transformChatBEtoFE(await response.json())
+
+        const stillInProgress = freshChat.history.some((group) =>
+          group.some((msg) => msg.inProgress)
+        )
+
+        const existingChat = chatsStore.openedChatsHistory.find((chat) => chat.id === id)
+        if (existingChat) {
+          existingChat.history = freshChat.history
+          existingChat.isInterrupted = freshChat.isInterrupted
+        }
+        if (chatsStore.currentChat?.id === id) {
+          chatsStore.currentChat.history = freshChat.history
+          chatsStore.currentChat.isInterrupted = freshChat.isInterrupted
+        }
+
+        if (stillInProgress && attempt < MAX_CHAT_POLL_ATTEMPTS) {
+          const timeoutId = setTimeout(poll, CHAT_POLL_INTERVAL_MS)
+          chatPollTimeouts.set(id, timeoutId)
+        } else {
+          chatPollTimeouts.delete(id)
+          chatsStore.updateChatListItem(freshChat)
+        }
+      } catch (err) {
+        console.error(`Error polling incomplete chat ${id}:`, err)
+        chatPollTimeouts.delete(id)
+      }
+    }
+
+    const timeoutId = setTimeout(poll, CHAT_POLL_INTERVAL_MS)
+    chatPollTimeouts.set(id, timeoutId)
   },
 
   /**
@@ -459,6 +536,7 @@ export const chatsStore = proxy<ChatsStoreType>({
   },
 
   deleteChat: (id) => {
+    chatsStore.stopChatCompletionPoll(id)
     return api.delete(`v1/conversations/${id}`).then((response) => {
       chatsStore.chats = chatsStore.chats.filter((chat) => chat.id !== id)
       recentChatsStore.removeRecentChat(id)
@@ -499,6 +577,8 @@ export const chatsStore = proxy<ChatsStoreType>({
   },
 
   deleteAllConversations: async () => {
+    chatPollTimeouts.forEach((timeoutId) => clearTimeout(timeoutId))
+    chatPollTimeouts.clear()
     const chatIds = chatsStore.chats.map((c) => c.id)
     await api.delete(`v1/conversations`).then((response) => response.json())
     chatIds.forEach((id) => removeChatStorage(userStore.user?.userId, id))

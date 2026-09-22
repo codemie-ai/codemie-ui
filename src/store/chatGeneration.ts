@@ -96,6 +96,7 @@ interface ChatGenerationStoreType {
   deleteChatMessage: (chatId: string, historyIndex: number) => Promise<void>
 
   stopChatGeneration: (chatId: string) => void
+  reconnectChatStream: (chat: Conversation) => Promise<void>
   resumeToolCall: (thoughtId: string, action: ToolCallAction) => Promise<void>
   submitA2uiAction: (
     surfaceId: string,
@@ -242,6 +243,33 @@ const dropInProgressThoughts = (historyItem: ChatMessage): void => {
   historyItem.thoughts = historyItem.thoughts.filter((thought) => !thought.in_progress)
 }
 
+const interruptChatHistory = (chat: Conversation | null | undefined): void => {
+  if (!chat) return
+  chat.history.forEach((group) => {
+    group.forEach((msg) => {
+      if (msg.inProgress) {
+        msg.inProgress = false
+      }
+    })
+  })
+  chat.isInterrupted = true
+}
+
+const freezeWorkflowProgress = (chat: Conversation): boolean => {
+  let froze = false
+  for (const group of chat.history) {
+    for (const message of group) {
+      if (!message.inProgress && !message.stream) continue
+      message.generationStopped = true
+      message.inProgress = false
+      dropInProgressThoughts(message)
+      finishThoughts(message)
+      froze = true
+    }
+  }
+  return froze
+}
+
 const finishThoughts = (historyItem: ChatMessage): void => {
   if (!historyItem.thoughts) return
 
@@ -251,13 +279,29 @@ const finishThoughts = (historyItem: ChatMessage): void => {
   })
 }
 
+const ISO_TIMEZONE_OFFSET_REGEX = /[+-]\d{2}(:\d{2})?$/
+const MS_PER_SECOND = 1000
+
+export const parseUtcDate = (dateStr?: string): Date => {
+  if (!dateStr) return new Date()
+  const normalized =
+    dateStr.endsWith('Z') || ISO_TIMEZONE_OFFSET_REGEX.test(dateStr) ? dateStr : `${dateStr}Z`
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
+}
+
+const extractServerDuration = (payload: any): number | undefined => {
+  const duration = payload?.time_elapsed ?? payload?.timeElapsed
+  return typeof duration === 'number' ? duration : undefined
+}
+
 const finalizeFailedRequest = (historyItem: ChatMessage, startTime: Date): void => {
   historyItem.inProgress = false
   historyItem.stream = null
   finishThoughts(historyItem)
 
   const endTime = new Date()
-  historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
+  historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / MS_PER_SECOND
 }
 
 // Auth prompts (MCP + the three provider connect gates) are mutually exclusive on a message.
@@ -773,27 +817,89 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
   stopChatGeneration(chatId: string): void {
     const chat = chatsStore.currentChat
-    let frozeProgress = false
-    if (chat?.id === chatId && chat.isWorkflow) {
-      for (const group of chat.history) {
-        for (const message of group) {
-          if (!message.inProgress && !message.stream) continue
-          message.generationStopped = true
-          message.inProgress = false
-          dropInProgressThoughts(message)
-          chatGenerationStore._finishThoughts(message)
-          frozeProgress = true
-        }
-      }
-    }
+    const frozeProgress =
+      chat?.id === chatId && chat.isWorkflow ? freezeWorkflowProgress(chat) : false
 
     const controller = chatGenerationStore.chatAbortControllers[chatId]
+    const isCurrentChatInProgress =
+      chatsStore.currentChat?.id === chatId &&
+      chatsStore.currentChat?.history?.some((group) => group.some((msg) => msg.inProgress))
+    const openedChat = chatsStore.openedChatsHistory?.find((c) => c.id === chatId)
+    const isOpenedChatInProgress = openedChat?.history?.some((group) =>
+      group.some((msg) => msg.inProgress)
+    )
+
+    if (!controller && !isCurrentChatInProgress && !isOpenedChatInProgress && !frozeProgress) return
+
     if (controller) {
       controller.abort()
-      toaster.error(GENERATION_CANCELLED_MESSAGE)
-      return
+      delete chatGenerationStore.chatAbortControllers[chatId]
     }
-    if (frozeProgress) toaster.error(GENERATION_CANCELLED_MESSAGE)
+
+    chatsStore.stopChatCompletionPoll?.(chatId)
+
+    if (chatsStore.currentChat?.id === chatId && !chat?.isWorkflow) {
+      interruptChatHistory(chatsStore.currentChat)
+    }
+
+    if (openedChat && openedChat !== chatsStore.currentChat) {
+      interruptChatHistory(openedChat)
+    }
+
+    toaster.error(GENERATION_CANCELLED_MESSAGE)
+
+    api.post(`v1/conversations/${chatId}/abort`).catch((err) => {
+      console.error('Failed to abort generation on backend:', err)
+    })
+  },
+
+  async reconnectChatStream(chat: Conversation): Promise<void> {
+    if (!chat?.id || chat?.isWorkflow) return
+
+    // Avoid duplicate streams if already reconnecting or generating
+    if (chatGenerationStore.chatAbortControllers[chat.id]) return
+
+    // Find the in-progress message in the last turn
+    const lastGroup = chat.history.at(-1)
+    const inProgressMessage = lastGroup?.find((msg) => msg.inProgress)
+    if (!inProgressMessage) return
+
+    const abortController = ref(new AbortController())
+    chatGenerationStore.chatAbortControllers[chat.id] = abortController
+    const startTime = parseUtcDate(inProgressMessage.createdAt)
+
+    try {
+      const reader = await api.stream(
+        `v1/conversations/${chat.id}/stream`,
+        undefined,
+        abortController,
+        'GET'
+      )
+
+      if (reader instanceof Response) {
+        await chatGenerationStore._handleNonStreamResponse(
+          reader,
+          inProgressMessage,
+          chat,
+          startTime
+        )
+      } else {
+        await chatGenerationStore._handleStreamResponse(reader, inProgressMessage, chat, startTime)
+      }
+    } catch (error: any) {
+      if (error?.name === ABORT_ERROR) {
+        return
+      }
+      console.error('Error in reconnectChatStream:', error)
+      if (inProgressMessage.inProgress) {
+        chatsStore.pollIncompleteChat(chat.id)
+      }
+    } finally {
+      delete chatGenerationStore.chatAbortControllers[chat.id]
+      if (inProgressMessage.inProgress) {
+        chatsStore.pollIncompleteChat(chat.id)
+      }
+    }
   },
 
   /**
@@ -1319,7 +1425,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     try {
       const data = await reader.json()
       historyItem.response = data.generated
-      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
+      const serverDuration = extractServerDuration(data)
+      historyItem.processingTime =
+        serverDuration ?? (endTime.getTime() - startTime.getTime()) / MS_PER_SECOND
       historyItem.stream = null
       chatGenerationStore._finishThoughts(historyItem)
     } catch (error) {
@@ -1337,13 +1445,15 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     )
 
     const endTime = new Date()
+    const serverDuration = extractServerDuration(response)
 
     // Assigned for every finalized turn, not only for the ones that produced text: an
     // A2UI-only response has no text but still needs its "Processed in" metadata,
     // and its terminal chunk carries `last`. A stream that ended without a terminal chunk
     // (server-side cut, proxy timeout) never finished, so it stays unlabelled.
     if (response?.last || response?.generated || response?.capturedStreamText) {
-      historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / 1000
+      historyItem.processingTime =
+        serverDuration ?? (endTime.getTime() - startTime.getTime()) / MS_PER_SECOND
     }
 
     if (response?.generated) {

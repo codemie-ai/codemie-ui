@@ -98,3 +98,7 @@ export const TIME_PERIODS = {
   LAST_7_DAYS: 7 * 24 * 60 * 60 * 1000, // 7 days
   LAST_30_DAYS: 30 * 24 * 60 * 60 * 1000, // 30 days
 } as const
+
+// ===== Background Incomplete Chat Polling =====
+export const CHAT_POLL_INTERVAL_MS = 2000
+export const MAX_CHAT_POLL_ATTEMPTS = 150

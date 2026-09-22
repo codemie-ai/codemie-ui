@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-09-08T18:25:00Z",
+  "success": true,
+  "gates": [
+    {
+      "name": "frontend_typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "output": "tsc --noEmit compiled with 0 errors"
+    },
+    {
+      "name": "frontend_lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "output": "eslint scanned with 0 errors"
+    },
+    {
+      "name": "frontend_unit_tests",
+      "command": "npm run test -- chatGeneration chats.pollIncompleteChat chatHelpers",
+      "status": "passed",
+      "output": "45 tests passed successfully across 3 test suites"
+    }
+  ]
+}

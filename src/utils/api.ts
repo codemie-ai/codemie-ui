@@ -218,7 +218,7 @@ class API {
     const requestOptions: RequestInit = {
       method,
       headers,
-      body: JSON.stringify(body),
+      ...(method !== 'GET' && body !== undefined && { body: JSON.stringify(body) }),
       redirect: 'manual',
       ...(getIsLocalAuth() && { credentials: 'include' as RequestCredentials }),
     }

@@ -13,7 +13,12 @@
 // limitations under the License.
 //
 
-const TIMEOUT = 10
+export const STREAM_TYPING_INTERVAL_MS = 10
+export const DEFAULT_STREAM_CHUNK_SIZE = 1
+export const FAST_DRAIN_BUFFER_THRESHOLD = 200
+export const FAST_DRAIN_CHUNK_SIZE = 20
+export const MEDIUM_DRAIN_BUFFER_THRESHOLD = 50
+export const MEDIUM_DRAIN_CHUNK_SIZE = 5
 
 /**
  * Helps to "print" text to the screen fluidly
@@ -45,11 +50,18 @@ export default class Stream {
     if (!this.isStreaming) return
 
     if (this.streamBuffer.length) {
-      this.stream += this.streamBuffer[0]
-      this.streamBuffer = this.streamBuffer.slice(1)
+      // Adaptive draining: fast catch-up if backlog is large, fluid typing when real-time
+      let chunkSize = DEFAULT_STREAM_CHUNK_SIZE
+      if (this.streamBuffer.length > FAST_DRAIN_BUFFER_THRESHOLD) {
+        chunkSize = FAST_DRAIN_CHUNK_SIZE
+      } else if (this.streamBuffer.length > MEDIUM_DRAIN_BUFFER_THRESHOLD) {
+        chunkSize = MEDIUM_DRAIN_CHUNK_SIZE
+      }
+      this.stream += this.streamBuffer.slice(0, chunkSize)
+      this.streamBuffer = this.streamBuffer.slice(chunkSize)
     }
 
-    setTimeout(() => this.run(), TIMEOUT)
+    setTimeout(() => this.run(), STREAM_TYPING_INTERVAL_MS)
   }
 
   getStream(): string {

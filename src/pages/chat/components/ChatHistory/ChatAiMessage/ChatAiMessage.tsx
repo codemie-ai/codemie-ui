@@ -175,7 +175,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
     }
   }
 
-  const isInProgress = message.inProgress
+  const isInProgress = Boolean(message.inProgress)
   const hasMcpAuthPrompt = Boolean(message.mcpAuthPromptRows?.length)
   const markdownContent = message.stream?.getStream() ?? message.response
   const isTerminalExecution =
@@ -191,8 +191,10 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
     !isTerminalExecution
 
   const processingTime = useMemo(() => {
-    return message.processingTime == null ? null : message.processingTime.toFixed(2)
-  }, [message.processingTime])
+    return !isInProgress && message.processingTime != null
+      ? message.processingTime.toFixed(2)
+      : null
+  }, [isInProgress, message.processingTime])
 
   const handleAvatarClick = () => {
     if (currentChat?.isWorkflow && message.assistant?.id) {
