@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "task": "Remove the deprecated ZephyrSquad integration path and its dedicated redirect handling from the integrations settings UI.",
+  "generated": "2026-09-03T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 19,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches both integration pages (NewProjectIntegrationPage.tsx, NewUserIntegrationPage.tsx), the shared EditIntegrationActions component, and the core shared credential config/utils (settings.ts, settingsUIConfig.ts, settingsUI.ts) that every credential type depends on — bumped by the 'touches core shared utilities' red flag." },
+    { "dimension": "file_change_estimate", "reason": "13 files changed (280 insertions, 232 deletions) spanning mock-server fixtures, two page components, an actions component + test, a hook and its test that were removed entirely, shared types, and shared utils/config plus their tests — maps to the 11-15 file XL band." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: touches core shared utilities — settings.ts and settingsUIConfig.ts hold CREDENTIAL_UI_MAPPING, consumed by every credential/integration type in the app, not just ZephyrSquad."
+  ],
+  "split_recommendation": null
+}

@@ -121,7 +121,6 @@ export type CredentialTypeConfig = {
   fieldsSectionTitle?: string // Defaults to 'Authentication'
   fieldsManualConfiguration?: FieldsManualConfiguration // If present, use RecordInput instead of CredentialFields
   personalFeatureFlag?: string
-  deprecated?: boolean // If true, hide from new-integration picker and render existing settings read-only.
   featureFlag?: string // Gates visibility of this credential type
   hideGlobalToggle?: boolean // If true, hide the "Global Integration" switch (for types requiring project_name)
 }

@@ -16,7 +16,7 @@
 import Button from '@/components/Button'
 import { ButtonType } from '@/constants'
 import { isFoldedOAuth } from '@/constants/integration'
-import { getTestableCredentialTypes, isDeprecatedCredentialType } from '@/utils/settings'
+import { getTestableCredentialTypes } from '@/utils/settings'
 
 import OAuthTestAction from './OAuthTestAction'
 import TestIntegration from './TestIntegration'
@@ -36,7 +36,6 @@ const EditIntegrationActions = ({
   onSave,
   onBeforeTest,
 }: Props) => {
-  if (isDeprecatedCredentialType(credentialType)) return null
   const lowered = credentialType.toLowerCase()
   return (
     <>
