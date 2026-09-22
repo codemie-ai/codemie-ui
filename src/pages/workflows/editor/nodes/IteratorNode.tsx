@@ -25,26 +25,30 @@ import {
 } from '@/utils/workflowEditor/constants'
 
 import { CommonNodeProps } from './common'
+import { DIFF_ITERATOR_SVG_CLASS, useNodeRenderState } from './diffChromeContext'
 
 export const IteratorNode = ({ data, selected, id }: CommonNodeProps) => {
   const state = data.findState(id)
   const { highlighted, isFullscreen } = data
   const iterKey = state?._meta?.data?.next?.iter_key
+  const { diffStatus } = useNodeRenderState()
 
   return (
     <div
       className={cn(
         'relative w-full h-full rounded-lg',
-        data.hasError && 'outline outline-offset-2 outline-failed-secondary'
+        data.hasError && !diffStatus && 'outline outline-offset-2 outline-failed-secondary'
       )}
     >
       <NodeIteratorBorderSvg
         className={cn(
           'absolute inset-0 w-full h-full pointer-events-none transition-all rounded-[8px]',
-          {
-            'text-border-specific-node-border-iter-focus': selected,
-            'text-border-specific-node-border-iter': !selected,
-          }
+          diffStatus
+            ? DIFF_ITERATOR_SVG_CLASS[diffStatus]
+            : {
+                'text-border-specific-node-border-iter-focus': selected,
+                'text-border-specific-node-border-iter': !selected,
+              }
         )}
       />
       <div
@@ -63,7 +67,7 @@ export const IteratorNode = ({ data, selected, id }: CommonNodeProps) => {
           </NodeResizeControl>
         )}
 
-        <div className="flex gap-2 items-center">
+        <div className={cn('flex gap-2 items-center', diffStatus === 'removed' && 'line-through')}>
           <RefreshSvg className="w-3.5 h-3.5 min-w-3.5 min-h-3.5" />
           <span className="text-sm"> Iterator </span>
 

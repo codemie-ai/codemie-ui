@@ -21,6 +21,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NoteStateConfiguration } from '@/types/workflowEditor/configuration'
 
 import { CommonNodeProps } from '../common'
+import { NODE_RENDER_MODE, NodeRenderContext } from '../diffChromeContext'
 import { NoteNode } from '../NoteNode'
 
 vi.mock('@/assets/icons/delete.svg?react', () => ({
@@ -334,6 +335,106 @@ describe('NoteNode', () => {
       renderNoteNode({ id: 'custom-note-id' })
 
       expect(mockFindState).toHaveBeenCalledWith('custom-note-id')
+    })
+  })
+
+  describe('diff chrome', () => {
+    const mockState: NoteStateConfiguration = {
+      id: 'note1',
+      note: 'diff note',
+      _meta: {
+        type: 'note',
+        is_connected: false,
+        data: { note: 'diff note' },
+      },
+    }
+
+    it('applies the default-width diff border class when status is "removed"', () => {
+      mockFindState.mockReturnValue(mockState)
+
+      const { container } = render(
+        <ReactFlowProvider>
+          <NodeRenderContext.Provider
+            value={{ mode: NODE_RENDER_MODE.VISUAL_DIFF, diffStatus: 'removed' }}
+          >
+            <NoteNode {...createMockProps()} />
+          </NodeRenderContext.Provider>
+        </ReactFlowProvider>
+      )
+
+      const noteNode = container.firstChild as HTMLElement
+      expect(noteNode).toHaveClass('border-1')
+      expect(noteNode).toHaveClass('!border-failed-secondary')
+    })
+
+    it('applies line-through to header row and textarea when status is "removed"', () => {
+      mockFindState.mockReturnValue(mockState)
+
+      render(
+        <ReactFlowProvider>
+          <NodeRenderContext.Provider
+            value={{ mode: NODE_RENDER_MODE.VISUAL_DIFF, diffStatus: 'removed' }}
+          >
+            <NoteNode {...createMockProps()} />
+          </NodeRenderContext.Provider>
+        </ReactFlowProvider>
+      )
+
+      const header = screen.getByText('Note').closest('.flex.justify-between')
+      expect(header).toHaveClass('[&_*]:line-through')
+
+      const noteContent = screen.getByText('diff note')
+      expect(noteContent).toHaveClass('line-through')
+    })
+
+    it('applies added-status diff border when status is "added"', () => {
+      mockFindState.mockReturnValue(mockState)
+
+      const { container } = render(
+        <ReactFlowProvider>
+          <NodeRenderContext.Provider
+            value={{ mode: NODE_RENDER_MODE.VISUAL_DIFF, diffStatus: 'added' }}
+          >
+            <NoteNode {...createMockProps()} />
+          </NodeRenderContext.Provider>
+        </ReactFlowProvider>
+      )
+
+      const noteNode = container.firstChild as HTMLElement
+      expect(noteNode).toHaveClass('border-1')
+      expect(noteNode).toHaveClass('!border-success-primary')
+    })
+  })
+
+  describe('visual diff mode', () => {
+    const mockState: NoteStateConfiguration = {
+      id: 'note1',
+      note: 'diff note',
+      _meta: {
+        type: 'note',
+        is_connected: false,
+        data: { note: 'diff note' },
+      },
+    }
+
+    it('hides editing controls and renders inspectable static content', () => {
+      mockFindState.mockReturnValue(mockState)
+
+      render(
+        <ReactFlowProvider>
+          <NodeRenderContext.Provider value={{ mode: NODE_RENDER_MODE.VISUAL_DIFF }}>
+            <NoteNode {...createMockProps()} />
+          </NodeRenderContext.Provider>
+        </ReactFlowProvider>
+      )
+
+      expect(screen.queryByTestId('delete-icon')).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      expect(screen.getByText('diff note')).toHaveClass(
+        'pointer-events-auto',
+        'select-text',
+        'overflow-y-auto'
+      )
     })
   })
 

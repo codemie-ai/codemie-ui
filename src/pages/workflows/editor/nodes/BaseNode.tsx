@@ -23,6 +23,7 @@ import { WorkflowExecutionStatus } from '@/types/entity'
 import { cn } from '@/utils/utils'
 
 import { getStatusBorderClass } from './common'
+import { DIFF_BORDER_CLASS, NODE_RENDER_MODE, useNodeRenderState } from './diffChromeContext'
 import { ExecutionContext } from '../../details/hooks/useExecutionsContext'
 
 export interface BaseNodeProps {
@@ -51,33 +52,41 @@ const BaseNode: React.FC<BaseNodeProps> = ({
   highlighted = false,
 }) => {
   const ctx = useContext(ExecutionContext)
+  const { diffStatus, mode } = useNodeRenderState()
 
   const isIteratorNode = success !== undefined || failures !== undefined
+  const isVisualDiff = mode === NODE_RENDER_MODE.VISUAL_DIFF
 
   return (
     <div
       className={cn(
-        'bg-surface-base-chat group/base-node w-64 rounded-xl shadow-md border-[1.5px] relative ',
-        'border-border-specific-node-border text-xs transition-all',
+        'bg-surface-base-chat workflow-base-node group/base-node w-64 rounded-xl relative',
+        'text-xs transition-all border-[1.5px]',
+        diffStatus
+          ? cn('shadow-none', DIFF_BORDER_CLASS[diffStatus])
+          : cn('border-border-specific-node-border shadow-md', {
+              'border-border-specific-node-border-focus': selected,
+              'border-transparent': status,
+            }),
         {
-          'border-border-specific-node-border-focus': selected,
-          'outline outline-offset-2 outline-failed-secondary': hasError,
-          'outline outline-offset-2 outline-border-accent': highlighted && !hasError,
-          'border-transparent': status,
-          '!pointer-events-auto cursor-grab': isIteratorNode,
+          'outline outline-offset-2 outline-failed-secondary': hasError && !diffStatus,
+          'outline outline-offset-2 outline-border-accent': highlighted && !hasError && !diffStatus,
+          '!pointer-events-auto cursor-grab': isIteratorNode && !isVisualDiff,
         },
-        getStatusBorderClass(status),
+        !diffStatus && getStatusBorderClass(status),
         classNames
       )}
     >
-      <div
-        className={cn(
-          'bg-surface-elevated/50 border border-border-secondary absolute -inset-2 rounded-2xl -z-10 opacity-0 transition',
-          active && 'opacity-100'
-        )}
-      />
+      {!diffStatus && (
+        <div
+          className={cn(
+            'bg-surface-elevated/50 border border-border-secondary absolute -inset-2 rounded-2xl -z-10 opacity-0 transition',
+            active && 'opacity-100'
+          )}
+        />
+      )}
 
-      {isConnected !== undefined && (
+      {isConnected !== undefined && !isVisualDiff && (
         <div
           className={cn(
             'connection-ind',

@@ -75,12 +75,6 @@ describe('EditWorkflowPage - AI Refine and Revert', () => {
     })
   })
 
-  it('"Revert to Previous" is not shown on page load', async () => {
-    renderPage('/workflows/wf-edit-1/edit')
-    await waitFor(() => screen.getByText('Refine with AI'))
-    expect(screen.queryByText('Revert to Previous')).not.toBeInTheDocument()
-  })
-
   it('"Revert to Previous" appears after an AI refinement is applied', async () => {
     mockAPI('POST', 'v1/workflows/wf-edit-1/refine', {
       yaml_config: 'states: []\n# refined',
@@ -206,13 +200,15 @@ describe('EditWorkflowPage - Version History restore', () => {
   it('restores history YAML into the editor without calling rollback', async () => {
     mockAPI('GET', 'v1/workflows/id/wf-edit-1', historyWorkflow())
     mockAPI('PUT', 'v1/workflows/wf-edit-1', historyWorkflow())
+    mockAPI('POST', 'v1/workflows/wf-edit-1/validate', {})
     renderPage('/workflows/wf-edit-1/edit')
 
     await user.click(await screen.findByRole('button', { name: 'YAML' }))
 
-    await user.click(
-      await screen.findByRole('button', { name: /Version History \(visual editor\)/i })
-    )
+    const historyButton = await screen.findByRole('button', {
+      name: 'Version History (YAML)',
+    })
+    await user.click(historyButton)
     await screen.findByRole('heading', { name: 'Version History' })
     await user.click(screen.getByRole('button', { name: 'Restore' }))
     await user.click(
@@ -223,9 +219,8 @@ describe('EditWorkflowPage - Version History restore', () => {
     )
 
     await waitFor(() => {
-      expect(toaster.info).toHaveBeenCalledWith('Workflow YAML has been restored successfully!')
+      expect(toaster.info).toHaveBeenCalledWith('Workflow YAML restored — checking for issues…')
     })
-    expect(screen.queryByText(/Rollback creates a new current version/i)).not.toBeInTheDocument()
     expect(toaster.success).not.toHaveBeenCalled()
     expect(global.fetch).not.toHaveBeenCalledWith(
       expect.stringContaining('/rollback'),

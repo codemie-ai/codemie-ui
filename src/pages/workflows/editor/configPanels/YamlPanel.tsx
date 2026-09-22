@@ -163,7 +163,7 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
               documentationUrl={documentationUrl}
               onShowVersionHistory={onShowVersionHistory}
               getVisibleYaml={() => value}
-              versionHistoryAriaLabel="Version History (visual editor)"
+              versionHistoryAriaLabel="Version History (YAML)"
             />
           </div>
 

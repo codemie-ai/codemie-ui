@@ -1,0 +1,271 @@
+{
+  "decision": "approve",
+  "rationale": "All 21 prior blocking findings verified resolved in source: DiffComputedState tri-state with inline resetKeyRef (CR-001/002/006), empty-baseline parse-error path (CR-003), aria-pressed attributes (CR-004), baseline tabs moved outside VersionHistoryDiffView (CR-005), useLayoutEffect/useMemo/useCallback timing fixes (CR-007/008/009/013), buildNodes(baselineConfig) for removed nodes with parentId/data/positions (CR-010/011) and edges (CR-012), stableJson recursive (CR-016), promoteToModified guards 'added' (CR-017), duplicate-ID warn (CR-018), no-hardcode colors (CR-014), line-through decoration (CR-015), tailwind token pair fixed (CR-019), parse-error and previous-baseline tests added (CR-020/021). No new findings discovered.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC 1: YAML/Visual toggle shown when entry selected, both YAML parse OK, and canvas not identical",
+      "status": "partial",
+      "notes": "CR-001 resolved: DiffComputedState tri-state; toggle appears only after onHasDiff fires"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 2: Visual tab renders read-only xyflow canvas with diff chrome",
+      "status": "pending-stage-7",
+      "notes": "ReactFlow canvas with diffStatus-annotated nodes built from canvasConfig; DiffNodeWrapper wraps each node type"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 3: Added nodes — green solid border and ADDED badge",
+      "status": "pending-stage-7",
+      "notes": "linebg-add CSS var with solid outline and ADDED badge applied in DiffNodeWrapper"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 4: Removed nodes — red dashed border, 40% opacity, label line-through, REMOVED badge",
+      "status": "pending-stage-7",
+      "notes": "CR-015 resolved: textDecoration line-through applied in DiffNodeWrapper style for removed nodes"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 5: Modified nodes — amber solid border, MODIFIED badge; comparison excludes position/isAdvancedConfigField/layout metadata",
+      "status": "pending-stage-7",
+      "notes": "linebg-modified token and solid outline used; _meta and isAdvancedConfigField() keys excluded in omitNonSemanticFields"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 6: Edges adopt color of most-severe endpoint (removed > modified > added)",
+      "status": "pass",
+      "notes": "DIFF_SEVERITY ordering and pickHigherSeverity correct; stroke applied via edge.style"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 7: Node identity matched by state.id only",
+      "status": "pass",
+      "notes": "canvasMap and baselineMap both keyed by s.id in diffWorkflowGraphs"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 8: Actor change in assistants[]/tools[]/custom_nodes[] marks referencing states modified",
+      "status": "pass",
+      "notes": "propagateActorChanges diffs all three arrays and promotes referencing states via promoteToModified"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 9: Iterator children diffed independently; removed iterator renders as ghost frame with children at baseline positions inside",
+      "status": "pending-stage-7",
+      "notes": "CR-010 resolved: removedNodes built from buildNodes(baselineConfig) preserving parentId and position"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 10: Canvas supports zoom and pan only; not draggable, selectable, or connectable",
+      "status": "pass",
+      "notes": "nodesDraggable/nodesConnectable/elementsSelectable=false; panOnDrag/zoomOnScroll present"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 11: Legend shown within canvas chrome: green=ADDED, amber=MODIFIED, red=REMOVED",
+      "status": "pending-stage-7",
+      "notes": "DiffLegend rendered at absolute bottom-4 left-4 with three color-swatch items"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 12: Identical graphs hide Visual toggle; if on Visual, auto-switch to YAML",
+      "status": "pending-stage-7",
+      "notes": "CR-001 resolved: diffComputedState tri-state; auto-switch useEffect present"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 13: YAML parse failure hides Visual tab immediately; no toast",
+      "status": "pending-stage-7",
+      "notes": "CR-001/007/008 resolved: useLayoutEffect notification, empty-string parse-error, no toast"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 14: Switching Current/Previous baseline tab while on Visual re-renders diff without leaving Visual",
+      "status": "pending-stage-7",
+      "notes": "CR-005 resolved: baseline tabs always visible outside VersionHistoryDiffView; controlled mode propagates to visual view"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 15: SystemPromptExpandedModal caller of VersionHistoryDiffView is unaffected",
+      "status": "pass",
+      "notes": "onTabChange added as optional prop defaulting to undefined; existing callers pass no value"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 16: Colors sourced exclusively from tailwind.config.ts diff tokens via getTailwindColor; no hardcoded hex values",
+      "status": "pending-stage-7",
+      "notes": "CR-014 resolved: all colors via getTailwindColor on CSS vars; neutralFallback uses CSS var fallback"
+    },
+    {
+      "kind": "spec",
+      "item": "New files WorkflowVisualDiffView.tsx, diffWorkflowGraphs.ts, DiffNodeWrapper.tsx created at specified paths",
+      "status": "pass",
+      "notes": "All three files present in diff at correct paths"
+    },
+    {
+      "kind": "spec",
+      "item": "DiffStatus, NodeDiffEntry, DiffResult types match spec signature (canvasNode/baselineNode optionality)",
+      "status": "pass",
+      "notes": "Types declared as specified — diffWorkflowGraphs.ts:30–52"
+    },
+    {
+      "kind": "spec",
+      "item": "Diff comparison excludes _meta (position, measured, layout) and isAdvancedConfigField fields",
+      "status": "pass",
+      "notes": "omitNonSemanticFields skips _meta key and isAdvancedConfigField() keys"
+    },
+    {
+      "kind": "spec",
+      "item": "Actor propagation across all three actor arrays (assistants[], tools[], custom_nodes[])",
+      "status": "pass",
+      "notes": "All three arrays diffed via changedActorIds in propagateActorChanges"
+    },
+    {
+      "kind": "spec",
+      "item": "tailwind.config.ts: linebg-modified token added as [dark, light] tuple following yellow.500 palette at convention weight",
+      "status": "pass",
+      "notes": "CR-019 resolved: [yellow.700, yellow.100] follows heavy-dark/light-light convention matching linebg-add/remove"
+    },
+    {
+      "kind": "spec",
+      "item": "Unit tests 1–7 for diffWorkflowGraphs present in diffWorkflowGraphs.test.ts",
+      "status": "pending-stage-7",
+      "notes": "All 7 test cases present; execution results owned by Stage 7"
+    },
+    {
+      "kind": "spec",
+      "item": "WorkflowVersionHistoryPopup toggle render and viewMode transition tests present",
+      "status": "pending-stage-7",
+      "notes": "CR-020/021 resolved: parse-error hide test and previous-baseline routing test added"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "6 subjects all match EPMCDME-14482: Capital sentence; ticket non-zero; first word capitalised (Add, Implement, Fix); no trailing period"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md does not exist in the repository and no ArtifactRef was supplied; no standard to adjudicate against"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Checked WorkflowVisualDiffView.tsx, DiffNodeWrapper.tsx, WorkflowVersionHistoryPopup.tsx, diffWorkflowGraphs.ts, VersionHistoryDiffView.tsx. No dangerouslySetInnerHTML or .innerHTML sinks. YAML input parsed by js-yaml and deserialized to typed WorkflowConfiguration before reaching ReactFlow. No navigation from user strings. No cross-window postMessage. No credential logging."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "DiffComputedState tri-state ('computing' init); showVisualToggle = diffComputedState === 'has-diff'; toggle invisible until onHasDiff fires via useLayoutEffect."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "resetKeyRef encodes `${selectedValue}:${activeBaselineTab}`; inline render-time reset when key changes covers both selectedValue and activeBaselineTab transitions."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "baselineYaml set to '' when activeBaselineTab='previous' and previousEntry is absent; silentDeserialize returns null for empty string, triggering onParseError."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "aria-pressed={viewMode === 'yaml'} and aria-pressed={viewMode === 'visual'} on toggle buttons; baseline tab buttons also carry aria-pressed={isActive}."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "Baseline tab switcher rendered directly in WorkflowVersionHistoryPopup outside VersionHistoryDiffView, always visible. VersionHistoryDiffView accepts activeTab prop (controlled mode) and hides its own tabs when controlled."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "onParseError, onNoDiff, onHasDiff all wrapped in useCallback([]) — stable references across parent re-renders."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "silentDeserialize: `if (!yamlStr || !yamlStr.trim()) return null` added as first guard before yaml.load."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "useLayoutEffect replaces useEffect for onParseError/onNoDiff/onHasDiff notification; parent state update batched with initial render."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "notes": "useMemo returns full object {canvasConfig, baselineConfig, statusById, diff}; diff.nodes accessed via destructure at render time — no second diffWorkflowGraphs call."
+    },
+    {
+      "id": "CR-010",
+      "status": "resolved",
+      "notes": "removedNodes built via buildNodes(baselineConfig) → baselineBuiltById.get(n.id); spread preserves parentId and all ReactFlow node fields."
+    },
+    {
+      "id": "CR-011",
+      "status": "resolved",
+      "notes": "Same buildNodes(baselineConfig) fix preserves full node data (label, domain fields) and position; no nodes stack at origin."
+    },
+    {
+      "id": "CR-012",
+      "status": "resolved",
+      "notes": "removedBaselineEdges = buildEdges(baselineConfig).filter(e => removedIds.has(e.source) || removedIds.has(e.target)) with 'removed' stroke; included in allEdges."
+    },
+    {
+      "id": "CR-013",
+      "status": "resolved",
+      "notes": "diffNodeTypes wrapped in useMemo([], []) with comment noting nodeTypeComponents is module-level constant; prevents ReactFlow node remounts on parent re-render."
+    },
+    {
+      "id": "CR-014",
+      "status": "resolved",
+      "notes": "neutralFallback() = getTailwindColor('--colors-border-primary', 'gray'); badgeTextColor = getTailwindColor('--colors-text-primary', 'black'); edgeColor fallback uses same neutralFallback. No hardcoded hex."
+    },
+    {
+      "id": "CR-015",
+      "status": "resolved",
+      "notes": "DiffNodeWrapper style: `...(diffStatus === 'removed' ? { textDecoration: 'line-through' } : {})` applied to the wrapper div."
+    },
+    {
+      "id": "CR-016",
+      "status": "resolved",
+      "notes": "stableJson recurses: each value serialized via `stableJson((obj as Record<string, unknown>)[k])`; nested object key order no longer produces false positives."
+    },
+    {
+      "id": "CR-017",
+      "status": "resolved",
+      "notes": "promoteToModified: `if (existing.status !== 'added')` guard prevents overwriting 'added' status; added states referencing changed actors remain 'added'."
+    },
+    {
+      "id": "CR-018",
+      "status": "resolved",
+      "notes": "warnDuplicateStateIds logs console.warn on duplicate state IDs; called for both canvas and baseline arrays before Map construction."
+    },
+    {
+      "id": "CR-019",
+      "status": "resolved",
+      "notes": "linebg-modified: [c['yellow']['700'], c['yellow']['100']] — heavy dark / light light, matching linebg-add [green.900, green.50] and linebg-remove [red.900, red.75] convention."
+    },
+    {
+      "id": "CR-020",
+      "status": "resolved",
+      "notes": "mockVisualCallsParseError flag and test 'hides the Visual toggle when WorkflowVisualDiffView signals onParseError' added; asserts toggle absent after parse-error signal."
+    },
+    {
+      "id": "CR-021",
+      "status": "resolved",
+      "notes": "Previous-baseline routing test clicks 'Previous Version' tab and asserts data-baseline attribute changes to previousEntry.yaml_config; mock exposes baselineYaml as data-baseline."
+    }
+  ]
+}

@@ -91,6 +91,12 @@ interface WorkflowsStore {
   getSelectableWorkflows: (params?: { search?: string; project?: string }) => Promise<Workflow[]>
   createWorkflow: (values: any, errorFormat?: ErrorFormat) => Promise<any>
   updateWorkflow: (id: string | number, values: any, errorFormat?: ErrorFormat) => Promise<any>
+  validateWorkflow: (
+    id: string | number,
+    values: any,
+    errorFormat?: ErrorFormat,
+    options?: { skipErrorHandling?: boolean }
+  ) => Promise<Response>
   deleteWorkflow: (id: string | number) => Promise<void>
   getWorkflowDiagram: (payload: any) => Promise<any>
   clearCurrentWorkflow: () => void
@@ -344,6 +350,24 @@ export const workflowsStore = proxy<WorkflowsStore>({
     }
     const options = errorFormat === ERROR_FORMAT_JSON ? { skipErrorHandling: true } : {}
     return api.put(url, values, options)
+  },
+
+  async validateWorkflow(
+    id: string | number,
+    values: any,
+    errorFormat?: ErrorFormat,
+    options: { skipErrorHandling?: boolean } = {}
+  ) {
+    let url = `v1/workflows/${id}/validate`
+    if (errorFormat) url += `?error_format=${errorFormat}`
+    // skipErrorHandling defaults to true when errorFormat is ERROR_FORMAT_JSON so the
+    // caller's catch block handles the structured error without a second global toast.
+    // Pass { skipErrorHandling: true } explicitly when calling without errorFormat to
+    // avoid a double notification.
+    const requestOptions = {
+      skipErrorHandling: options.skipErrorHandling ?? errorFormat === ERROR_FORMAT_JSON,
+    }
+    return api.post(url, values, requestOptions)
   },
 
   async deleteWorkflow(id: string | number) {

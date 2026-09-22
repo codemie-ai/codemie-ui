@@ -132,15 +132,13 @@ describe('YamlPanel version history entry point', () => {
     const onShowVersionHistory = vi.fn()
     renderPanel('states:\n  - id: buffer', { onShowVersionHistory })
 
-    const button = screen.getByRole('button', { name: /Version History \(visual editor\)/i })
+    const button = screen.getByRole('button', { name: /Version History \(YAML\)/i })
     fireEvent.click(button)
     expect(onShowVersionHistory).toHaveBeenCalledWith('states:\n  - id: buffer')
   })
 
   it('hides Version History when callback is not provided (create mode)', () => {
     renderPanel('states: []')
-    expect(
-      screen.queryByRole('button', { name: /Version History/i })
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Version History/i })).not.toBeInTheDocument()
   })
 })

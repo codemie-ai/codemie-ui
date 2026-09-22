@@ -1,0 +1,102 @@
+{
+  "decision": "approve",
+  "rationale": "All 15 prior blocking findings are resolved at HEAD: restore-validation toasts empty error arrays, guards a missing formRef, uses a generation counter against concurrent restores, and no longer claims success before validate; visual-diff parse, no-diff, rAF, render-phase, iterator layout, and iterator-parent topology defects are fixed in current source. Standards rows carried forward unchanged; no new findings on this round.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 13 subjects in the review range match EPMCDME-XXXX: Capital sentence; ticket 14482 (non-zero), first word capitalised in every case, no trailing periods"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md found in the repository and no ArtifactRef was passed; absent standard, not a gap"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No dangerouslySetInnerHTML or .innerHTML introduced; TextDiffView renders all diff content as React text nodes. WorkflowVisualDiffView parses YAML through js-yaml and passes WorkflowConfiguration objects into the canvas — no raw HTML injected. validateWorkflow in workflows.ts uses the project api.post layer and builds a URL from a server-validated ID and a controlled enum argument; no credentials logged, no new navigation from untrusted input, no postMessage calls, no new import.meta.env or window._env_ reads, and no nosonar suppressions added"
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Empty error arrays now toast 'Validation returned no issue details' instead of opening a blank issues panel."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "validateRestoredWorkflow and handleRestoreFromHistory both return early when formRef.current is null before spreading form values."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "validateGenRef plus abandonedGensRef drop stale concurrent restore responses; tests cover late 400 after a later 200."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "Restore toast is now 'Workflow YAML restored — checking for issues…' and no longer asserts success before validation."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "The 400 restore test asserts mockClearAllResolvedFields was called on the error path."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "Render-phase setDiffComputedState is gone; the visual popup remounts WorkflowVisualDiffView with a selectedValue key."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "DiffCanvasControls tracks innerFrameA and innerFrameB separately and cancels both plus a cancelled flag on cleanup."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "prepareVisualDiffCanvas maps deserialize failures to a graph reason; the popup shows 'Could not build the visual graph'."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "notes": "The nodes-only no-diff hide is gone; the canvas always renders, and added/removed edges are overlaid in buildVisualDiffGraph."
+    },
+    {
+      "id": "CR-010",
+      "status": "resolved",
+      "notes": "setNodes(graphNodes) runs in useLayoutEffect and the view remounts on selectedValue, so prior-layout positions cannot stick."
+    },
+    {
+      "id": "CR-011",
+      "status": "resolved",
+      "notes": "NoteNode.test.tsx renders NoteNode under VISUAL_DIFF with diffStatus removed and asserts border and line-through classes."
+    },
+    {
+      "id": "CR-012",
+      "status": "resolved",
+      "notes": "validateWorkflow accepts an explicit skipErrorHandling option, documented as independent of errorFormat."
+    },
+    {
+      "id": "CR-013",
+      "status": "resolved",
+      "notes": "Removed-iterator children are repositioned relative to the new bbox origin in wrapRemovedIteratorGhosts."
+    },
+    {
+      "id": "CR-014",
+      "status": "resolved",
+      "notes": "iteratorIdsForParent now walks condition.then/otherwise and switch.cases/default; tests 9e–9g cover those topologies."
+    },
+    {
+      "id": "CR-015",
+      "status": "resolved",
+      "notes": "Unused linebg-modified token removed; TextDiffView only styles added/removed lines, matching the YAML-diff contract."
+    }
+  ]
+}

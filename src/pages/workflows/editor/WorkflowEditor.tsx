@@ -86,6 +86,24 @@ const createDuplicateShortcut = (onDuplicate: () => void, isDisabled: boolean) =
   }
 }
 
+const isCanvasShortcutBlocked = (isYamlTabVisible: boolean, disableCanvasShortcuts: boolean) =>
+  isYamlTabVisible || disableCanvasShortcuts
+
+const filterOutIssuesTab = (tabs: PanelTabId[]): PanelTabId[] =>
+  tabs.filter((tab) => tab !== TAB_DATA.ISSUES.ID)
+
+const clearIssuesActiveTab = (activeTab: PanelTabId | null): PanelTabId | null =>
+  activeTab === TAB_DATA.ISSUES.ID ? null : activeTab
+
+const wrapShowVersionHistory = (
+  onShowVersionHistory: ((visibleYaml: string) => void) | undefined,
+  getYaml: () => string
+) =>
+  !onShowVersionHistory
+    ? undefined
+    : (visibleYaml?: string) =>
+        onShowVersionHistory(typeof visibleYaml === 'string' ? visibleYaml : getYaml())
+
 interface WorkflowEditorProps {
   workflow?: any
   yamlConfig: string
@@ -105,6 +123,8 @@ interface WorkflowEditorProps {
   onExecutionNodeClick?: (nodeId: string) => void
   highlightedNodeIds?: string[]
   onShowVersionHistory?: (visibleYaml: string) => void
+  onShowVisualVersionHistory?: (visibleYaml: string) => void
+  disableCanvasShortcuts?: boolean
 }
 
 enum ColorMode {
@@ -142,6 +162,7 @@ export interface WorkflowEditorRef {
   getYamlConfig: () => string
   getWorkflowFields: () => WorkflowFormValues | null
   openIssuesPanel: () => void
+  closeIssuesPanel: () => void
   clearAllResolvedFields: () => void
 }
 
@@ -165,6 +186,8 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       onExecutionNodeClick,
       highlightedNodeIds,
       onShowVersionHistory,
+      onShowVisualVersionHistory,
+      disableCanvasShortcuts = false,
     },
     ref
   ) => {
@@ -178,6 +201,10 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
     const [activeTab, setActiveTab] = useState<PanelTabId | null>(null)
     const isYamlTabVisible = tabs.includes(TAB_DATA.YAML.ID)
     const isConfigTabVisible = tabs.includes(TAB_DATA.CONFIGURATION.ID)
+    const canvasShortcutsDisabled = isCanvasShortcutBlocked(
+      isYamlTabVisible,
+      disableCanvasShortcuts
+    )
 
     const closeTabs = useCallback(() => {
       setTabs([])
@@ -330,6 +357,10 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
         setTabs([TAB_DATA.ISSUES.ID])
         setActiveTab(TAB_DATA.ISSUES.ID)
       },
+      closeIssuesPanel: () => {
+        setTabs(filterOutIssuesTab)
+        setActiveTab(clearIssuesActiveTab)
+      },
       clearAllResolvedFields: clearAllResolvedIssues,
     }))
 
@@ -339,11 +370,11 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
 
     useEffect(() => {
       // Cmd+Z / Ctrl+Z
-      const handleKeyDown = createUndoShortcut(handleUndo, editor.canUndo, isYamlTabVisible)
+      const handleKeyDown = createUndoShortcut(handleUndo, editor.canUndo, canvasShortcutsDisabled)
 
       window.addEventListener('keydown', handleKeyDown) // nosonar
       return () => window.removeEventListener('keydown', handleKeyDown) // nosonar
-    }, [editor.canUndo, handleUndo, isYamlTabVisible])
+    }, [editor.canUndo, handleUndo, canvasShortcutsDisabled])
 
     useEffect(() => {
       // Cmd+D / Ctrl+D
@@ -355,11 +386,16 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
         }
       }
 
-      const handleKeyDown = createDuplicateShortcut(handleDuplicate, isYamlTabVisible)
+      const handleKeyDown = createDuplicateShortcut(handleDuplicate, canvasShortcutsDisabled)
 
       window.addEventListener('keydown', handleKeyDown) // nosonar
       return () => window.removeEventListener('keydown', handleKeyDown) // nosonar
-    }, [editor.selectedNode, editor.duplicateState, isYamlTabVisible, executeWithUnsavedCheck])
+    }, [
+      editor.selectedNode,
+      editor.duplicateState,
+      canvasShortcutsDisabled,
+      executeWithUnsavedCheck,
+    ])
 
     const adjustViewport = (isFullscreen) => {
       const viewport = isFullscreen ? VIEWPORT.FULLSCREEN : VIEWPORT.WINDOWED
@@ -631,6 +667,9 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
             onUndo={handleUndo}
             onLoadExample={onLoadExample ? handleLoadExample : undefined}
             onBeautify={handleBeautify}
+            onShowVisualVersionHistory={wrapShowVersionHistory(onShowVisualVersionHistory, () =>
+              serialize(editor.config)
+            )}
             tabs={tabs}
             toggleTabs={toggleTabs}
           />
@@ -638,6 +677,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
           {isFullscreen && <Sidebar createState={handleCreateState} disabled={locked} />}
 
           <ReactFlow
+            id="workflow-editor"
             nodes={wrappedNodes}
             edges={wrappedEdges}
             onNodesChange={handleNodesChange}
@@ -661,7 +701,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
             elementsSelectable={isFullscreen && !locked}
             edgesFocusable={isFullscreen && !locked}
             selectNodesOnDrag={false}
-            deleteKeyCode={['Backspace', 'Delete']}
+            deleteKeyCode={canvasShortcutsDisabled ? null : ['Backspace', 'Delete']}
             minZoom={isFullscreen ? ZOOM.FULLSCREEN.MIN : ZOOM.WINDOWED.MIN}
             maxZoom={isFullscreen ? ZOOM.FULLSCREEN.MAX : ZOOM.WINDOWED.MAX}
           >
@@ -710,7 +750,9 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
               onUpdateAdvancedConfig={editor.updateAdvancedConfig}
               pendingAction={pendingAction}
               setPendingAction={setPendingAction}
-              onShowVersionHistory={onShowVersionHistory}
+              onShowVersionHistory={wrapShowVersionHistory(onShowVersionHistory, () =>
+                serialize(editor.config)
+              )}
             />
           )}
         </div>

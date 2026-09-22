@@ -51,6 +51,8 @@ interface WorkflowFormProps {
   issues?: WorkflowIssue[] | null
   setIssues?: Dispatch<SetStateAction<WorkflowIssue[] | null>>
   onShowVersionHistory?: (visibleYaml: string) => void
+  onShowVisualVersionHistory?: (visibleYaml: string) => void
+  disableCanvasShortcuts?: boolean
 }
 
 const MODES = {
@@ -64,6 +66,7 @@ export interface WorkflowFormRef {
   save: (shouldOpenExecution: boolean) => Promise<void>
   getFormValues: () => any
   openIssuesPanel: () => void
+  closeIssuesPanel: () => void
   clearAllResolvedFields: () => void
   replaceYamlConfig: (yaml: string) => void
 }
@@ -82,6 +85,8 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
       issues,
       setIssues,
       onShowVersionHistory,
+      onShowVisualVersionHistory,
+      disableCanvasShortcuts,
     },
     ref
   ) => {
@@ -255,6 +260,9 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
       openIssuesPanel: () => {
         editorRef.current?.openIssuesPanel()
       },
+      closeIssuesPanel: () => {
+        editorRef.current?.closeIssuesPanel()
+      },
       clearAllResolvedFields: () => {
         editorRef.current?.clearAllResolvedFields()
       },
@@ -314,6 +322,8 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
             issues={issues}
             setIssues={setIssues}
             onShowVersionHistory={onShowVersionHistory}
+            onShowVisualVersionHistory={onShowVisualVersionHistory}
+            disableCanvasShortcuts={disableCanvasShortcuts}
           />
         ) : (
           <WorkflowFormFields

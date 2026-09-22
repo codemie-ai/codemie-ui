@@ -120,7 +120,31 @@ describe('VersionedFieldHistoryTab canRestore', () => {
     expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument()
   })
 
-  it('does not render Load more or list status', async () => {
+  it('hides the YAML line-color hint when banner is null', async () => {
+    const { default: VersionedFieldHistoryTab } = await import(
+      '@/components/form/VersionedField/VersionedFieldHistoryTab'
+    )
+
+    render(
+      <VersionedFieldHistoryTab
+        options={[{ label: '[01] - d - a', value: 'v1' }]}
+        selectedOption="v1"
+        emptyPlaceholder="empty"
+        onRestore={vi.fn()}
+        onOptionChange={vi.fn()}
+        banner={null}
+      >
+        <div>diff</div>
+      </VersionedFieldHistoryTab>
+    )
+
+    expect(screen.queryByText(/Review the changes below/)).not.toBeInTheDocument()
+    expect(screen.getByTestId('version-history-toolbar')).toContainElement(
+      screen.getByRole('button', { name: 'Restore' })
+    )
+  })
+
+  it('shows the YAML line-color hint by default', async () => {
     const { default: VersionedFieldHistoryTab } = await import(
       '@/components/form/VersionedField/VersionedFieldHistoryTab'
     )
@@ -137,8 +161,42 @@ describe('VersionedFieldHistoryTab canRestore', () => {
       </VersionedFieldHistoryTab>
     )
 
-    expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument()
-    expect(screen.queryByText(/Showing .* of .* versions/)).not.toBeInTheDocument()
+    expect(screen.getByText(/Review the changes below/)).toBeInTheDocument()
+    expect(screen.getByText('red')).toBeInTheDocument()
+    expect(screen.getByText('green')).toBeInTheDocument()
+    expect(screen.queryByText('yellow')).not.toBeInTheDocument()
+    expect(screen.queryByText(/were modified/)).not.toBeInTheDocument()
+
+    const toolbar = screen.getByTestId('version-history-toolbar')
+    expect(toolbar).toContainElement(screen.getByText(/Review the changes below/))
+    expect(toolbar).toContainElement(screen.getByRole('button', { name: 'Restore' }))
+    expect(toolbar.parentElement).toHaveClass('gap-4')
+  })
+
+  it('renders a custom banner instead of the YAML hint', async () => {
+    const { default: VersionedFieldHistoryTab } = await import(
+      '@/components/form/VersionedField/VersionedFieldHistoryTab'
+    )
+
+    render(
+      <VersionedFieldHistoryTab
+        options={[{ label: '[01] - d - a', value: 'v1' }]}
+        selectedOption="v1"
+        emptyPlaceholder="empty"
+        onRestore={vi.fn()}
+        onOptionChange={vi.fn()}
+        banner={<div data-testid="banner-slot">legend</div>}
+      >
+        <div>diff</div>
+      </VersionedFieldHistoryTab>
+    )
+
+    expect(screen.getByTestId('banner-slot')).toBeInTheDocument()
+    expect(screen.queryByText(/Review the changes below/)).not.toBeInTheDocument()
+
+    const toolbar = screen.getByTestId('version-history-toolbar')
+    expect(toolbar).toContainElement(screen.getByTestId('banner-slot'))
+    expect(toolbar).toContainElement(screen.getByRole('button', { name: 'Restore' }))
   })
 
   const renderHistoryTab = async (onRestore = vi.fn()) => {

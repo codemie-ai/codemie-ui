@@ -44,8 +44,8 @@ const VersionHistoryDiffView = ({
   const newText = historyText
 
   return (
-    <div className="flex flex-col gap-2 h-full">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="flex flex-col gap-2 h-full min-h-0">
+      <div className="grid grid-cols-2 gap-4 shrink-0">
         <div className="flex gap-5 w-fit border-b border-border-specific-panel-outline">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id
@@ -83,7 +83,8 @@ const VersionHistoryDiffView = ({
         oldText={oldText}
         newText={newText}
         showLineNumbers
-        columnClassName="border border-border-structural rounded-lg overflow-auto h-[56vh]"
+        className="min-h-0 flex-1"
+        columnClassName="border border-border-structural rounded-lg overflow-auto h-full min-h-0"
       />
     </div>
   )

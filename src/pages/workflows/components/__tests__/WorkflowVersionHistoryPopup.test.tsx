@@ -36,10 +36,10 @@ const historyFixture: WorkflowConfigHistoryItem[] = [
 ]
 
 vi.mock('@/components/Popup', () => ({
-  default: ({ visible, children, headerContent }: any) =>
+  default: ({ visible, children, header, className, bodyClassName }: any) =>
     visible ? (
-      <div data-testid="popup">
-        {headerContent}
+      <div data-testid="popup" data-class={className} data-body-class={bodyClassName}>
+        {header}
         {children}
       </div>
     ) : null,
@@ -111,6 +111,9 @@ describe('WorkflowVersionHistoryPopup', () => {
     expect(select).toHaveValue('2026-08-10T12:00:00+00:00::0')
     expect(screen.getByRole('option', { name: /\[02\]/ })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: /\[01\]/ })).toBeInTheDocument()
+    expect(screen.getByTestId('popup').dataset.class).toContain('flex')
+    expect(screen.getByTestId('popup').dataset.class).toContain('overflow-hidden')
+    expect(screen.getByTestId('popup').dataset.bodyClass).toContain('min-h-0')
   })
 
   it('diffs selected history YAML against current editor YAML and the next-older entry', async () => {
@@ -130,19 +133,24 @@ describe('WorkflowVersionHistoryPopup', () => {
     expect(screen.getByTestId('diff-previous')).toHaveTextContent('states: [] # prior-1')
   })
 
-  it('hides Restore for READ users', async () => {
+  it('hides Restore when the selected history row has a null yaml_config', async () => {
     render(
       <WorkflowVersionHistoryPopup
         visible
-        canWrite={false}
+        canWrite
         currentEditorYaml="editor-yaml"
-        history={historyFixture}
+        history={[
+          {
+            ...historyFixture[0],
+            yaml_config: null as unknown as string,
+          },
+        ]}
         onHide={vi.fn()}
         onRestore={vi.fn()}
       />
     )
 
-    await screen.findByTestId('diff-view')
+    await screen.findByLabelText('Select a version')
     expect(screen.queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument()
   })
 
@@ -161,6 +169,22 @@ describe('WorkflowVersionHistoryPopup', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Restore' }))
     expect(onRestore).toHaveBeenCalledWith('states: []\n# prior-2')
+  })
+
+  it('hides Restore for a read-only user even when the selected version can be restored', async () => {
+    render(
+      <WorkflowVersionHistoryPopup
+        visible
+        canWrite={false}
+        currentEditorYaml="editor-yaml"
+        history={historyFixture}
+        onHide={vi.fn()}
+        onRestore={vi.fn()}
+      />
+    )
+
+    await screen.findByLabelText('Select a version')
+    expect(screen.queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument()
   })
 
   it('shows empty state when history is empty', async () => {

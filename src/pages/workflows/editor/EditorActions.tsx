@@ -17,6 +17,7 @@ import { useSnapshot } from 'valtio'
 
 import CodeSVG from '@/assets/icons/code.svg?react'
 import ExternalSvg from '@/assets/icons/external.svg?react'
+import HistorySVG from '@/assets/icons/history.svg?react'
 import RevertSVG from '@/assets/icons/revert.svg?react'
 import SidebarSVG from '@/assets/icons/sidebar.svg?react'
 import StatusFailedSvg from '@/assets/icons/status-failed.svg?react'
@@ -37,6 +38,7 @@ interface EditorActionsProps {
   onUndo: () => void
   onLoadExample?: () => void
   onBeautify: () => void
+  onShowVisualVersionHistory?: () => void
   tabs: PanelTabId[]
   toggleTabs: (tabs: PanelTabId[]) => void
 }
@@ -55,6 +57,7 @@ const EditorActions = ({
   onUndo,
   onLoadExample,
   onBeautify,
+  onShowVisualVersionHistory,
   tabs,
   toggleTabs,
 }: EditorActionsProps) => {
@@ -123,6 +126,17 @@ const EditorActions = ({
             <WorkflowSVG />
             Beautify
           </Button>
+
+          {onShowVisualVersionHistory ? (
+            <Button
+              type="secondary"
+              onClick={onShowVisualVersionHistory}
+              aria-label="Version History (visual editor)"
+            >
+              <HistorySVG />
+              Version History
+            </Button>
+          ) : null}
 
           <Button
             type={isYamlTabVisible ? ButtonType.PRIMARY : ButtonType.SECONDARY}

@@ -16,9 +16,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
-import AIGenerateSVG from '@/assets/icons/ai-generate.svg?react'
-import RunSvg from '@/assets/icons/run-wf-small.svg?react'
-import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
@@ -35,14 +32,20 @@ import { WorkflowAIRefineResponse } from '@/types/entity/workflow'
 import API from '@/utils/api'
 import { canEdit } from '@/utils/entity'
 import toaster from '@/utils/toaster'
-import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
+import {
+  processBackendError,
+  WorkflowValidationError,
+} from '@/utils/workflowEditor/helpers/backendErrorHandler'
 import { isVisualEditorEnabled, notifyAboutConsumerSlots } from '@/utils/workflows'
 
 import RefineWorkflowPromptPopup from './components/RefineWorkflowPromptPopup'
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
 import WorkflowsNavigation from './components/WorkflowsNavigation'
 import WorkflowVersionHistoryPopup from './components/WorkflowVersionHistoryPopup'
+import WorkflowVisualVersionHistoryPopup from './components/WorkflowVisualVersionHistoryPopup'
 import WorkflowStartExecutionPopup from './details/popups/WorkflowStartExecutionPopup'
+import EditWorkflowHeaderActions from './EditWorkflowHeaderActions'
+import { useWorkflowHistoryRestore } from './useWorkflowHistoryRestore'
 
 const EditWorkflowPage: React.FC = () => {
   const route = useVueRoute()
@@ -55,8 +58,6 @@ const EditWorkflowPage: React.FC = () => {
   const [capturedYaml, setCapturedYaml] = useState('')
   // non-null only while an unsaved AI refinement is active
   const [preRefinementYaml, setPreRefinementYaml] = useState<string | null>(null)
-  const [showVersionHistory, setShowVersionHistory] = useState(false)
-  const [versionHistoryYaml, setVersionHistoryYaml] = useState('')
 
   const [workflowAIEnabled] = useWorkflowAIEnabled()
 
@@ -65,6 +66,37 @@ const EditWorkflowPage: React.FC = () => {
   const { configs } = useSnapshot(appInfoStore)
 
   const visualEditorEnabled = isVisualEditorEnabled(configs as ConfigItem[])
+
+  const applyWorkflowBackendValidationError = (parsedError: WorkflowValidationError) => {
+    setIssues(null)
+    const { issues: backendIssues, generalError } = processBackendError(parsedError)
+    if (backendIssues) {
+      setIssues(backendIssues)
+      formRef.current?.openIssuesPanel()
+    } else if (generalError) {
+      toaster.error(generalError)
+    } else {
+      toaster.error('Validation returned no issue details')
+    }
+  }
+
+  const {
+    showVersionHistory,
+    showVisualVersionHistory,
+    versionHistoryYaml,
+    handleShowVersionHistory,
+    handleShowVisualVersionHistory,
+    handleRestoreFromHistory,
+    hideYamlHistory,
+    hideVisualHistory,
+    disableCanvasShortcuts,
+  } = useWorkflowHistoryRestore({
+    workflowId: id,
+    formRef,
+    setIssues,
+    applyWorkflowBackendValidationError,
+    onRestoreApplied: () => setPreRefinementYaml(null),
+  })
 
   useEffect(() => {
     workflowsStore.fetchWorkflow(id)
@@ -107,47 +139,29 @@ const EditWorkflowPage: React.FC = () => {
         API.handleError({ error: error.parsedError })
         return
       }
-
-      const { issues: backendIssues, generalError } = processBackendError(error.parsedError)
-
-      if (backendIssues) {
-        setIssues(backendIssues)
-        formRef.current?.openIssuesPanel()
-      } else if (generalError) {
-        toaster.error(generalError)
+      if (error?.parsedError) {
+        applyWorkflowBackendValidationError(error.parsedError)
+      } else {
+        toaster.error('Failed to save the workflow')
       }
     }
   }
 
-  const handleSave = async () => {
+  const saveWorkflow = async (shouldRun: boolean) => {
     if (!formRef.current) return
-
     const validation = formRef.current.validateWorkflow()
-
     if (!validation?.isValid) {
       formRef.current.triggerValidation()
       return
     }
-
-    await formRef.current.save(false)
-  }
-
-  const handleSaveAndRun = async () => {
-    if (!formRef.current) return
-
-    const validation = formRef.current.validateWorkflow()
-
-    if (!validation?.isValid) {
-      formRef.current.triggerValidation()
-      return
-    }
-
-    await formRef.current.save(true)
+    await formRef.current.save(shouldRun)
   }
 
   const onBack = () => {
     goBackFromWorkflowEdit({ workflowId: id })
   }
+
+  const canWrite = currentWorkflow ? canEdit(currentWorkflow) : false
 
   const handleRefineStart = () => {
     setCapturedYaml(formRef.current?.getFormValues()?.yaml_config ?? '')
@@ -168,20 +182,6 @@ const EditWorkflowPage: React.FC = () => {
     toaster.info('Reverted to previous version')
   }
 
-  const handleShowVersionHistory = (visibleYaml?: string) => {
-    setVersionHistoryYaml(visibleYaml ?? formRef.current?.getFormValues()?.yaml_config ?? '')
-    setShowVersionHistory(true)
-  }
-
-  const handleRestoreFromHistory = (yamlConfig: string) => {
-    formRef.current?.replaceYamlConfig(yamlConfig)
-    setPreRefinementYaml(null)
-    setShowVersionHistory(false)
-    toaster.info('Workflow YAML has been restored successfully!')
-  }
-
-  const canWrite = currentWorkflow ? canEdit(currentWorkflow as any) : false
-
   return (
     <div className="flex h-full">
       <Sidebar title="Workflows" description="Browse and run available AI-powered workflows">
@@ -195,42 +195,17 @@ const EditWorkflowPage: React.FC = () => {
         onBack={onBack}
         childrenClassName="px-0"
         rightContent={
-          <div className="flex gap-5">
-            {workflowAIEnabled && preRefinementYaml && (
-              <Button type="secondary" onClick={() => setShowRevertConfirm(true)}>
-                Revert to Previous
-              </Button>
-            )}
-            {workflowAIEnabled && (
-              <Button
-                type="magical"
-                onClick={handleRefineStart}
-                disabled={currentWorkflowLoading || !currentWorkflow}
-              >
-                <AIGenerateSVG /> Refine with AI
-              </Button>
-            )}
-            <Button type="secondary" className="min-w-20" onClick={onBack}>
-              Cancel
-            </Button>
-            <Button
-              className="min-w-20"
-              onClick={handleSave}
-              disabled={currentWorkflowLoading || !currentWorkflow}
-            >
-              Save
-            </Button>
-            {visualEditorEnabled && (
-              <Button
-                className="min-w-20"
-                onClick={handleSaveAndRun}
-                disabled={currentWorkflowLoading || !currentWorkflow}
-              >
-                <RunSvg />
-                Save and Run
-              </Button>
-            )}
-          </div>
+          <EditWorkflowHeaderActions
+            workflowAIEnabled={workflowAIEnabled}
+            visualEditorEnabled={visualEditorEnabled}
+            hasPreRefinement={!!preRefinementYaml}
+            isBusy={currentWorkflowLoading || !currentWorkflow}
+            onRevert={() => setShowRevertConfirm(true)}
+            onRefine={handleRefineStart}
+            onBack={onBack}
+            onSave={() => saveWorkflow(false)}
+            onSaveAndRun={() => saveWorkflow(true)}
+          />
         }
       >
         {currentWorkflowLoading && (
@@ -254,6 +229,8 @@ const EditWorkflowPage: React.FC = () => {
             workflow={currentWorkflow}
             isEditing
             onShowVersionHistory={handleShowVersionHistory}
+            onShowVisualVersionHistory={handleShowVisualVersionHistory}
+            disableCanvasShortcuts={disableCanvasShortcuts}
           />
         )}
       </PageLayout>
@@ -263,7 +240,16 @@ const EditWorkflowPage: React.FC = () => {
         canWrite={canWrite}
         currentEditorYaml={versionHistoryYaml}
         history={currentWorkflow?.yaml_config_history ?? []}
-        onHide={() => setShowVersionHistory(false)}
+        onHide={hideYamlHistory}
+        onRestore={handleRestoreFromHistory}
+      />
+
+      <WorkflowVisualVersionHistoryPopup
+        visible={showVisualVersionHistory}
+        canWrite={canWrite}
+        currentEditorYaml={versionHistoryYaml}
+        history={currentWorkflow?.yaml_config_history ?? []}
+        onHide={hideVisualHistory}
         onRestore={handleRestoreFromHistory}
       />
 

@@ -37,7 +37,23 @@ interface VersionedFieldHistoryTabProps {
   onRestore: () => void
   onOptionChange: (optionValue: string) => void
   canRestore?: boolean
+  /**
+   * Chrome to the left of the version selector. Omit for the YAML line-color hint
+   * (assistants / YAML popup). Pass a node to replace it (e.g. visual DiffLegend).
+   * Pass null to hide it.
+   */
+  banner?: ReactNode
 }
+
+const VersionHistoryDiffHint = () => (
+  <div className="flex items-center min-w-0 max-w-full px-4 py-2 min-h-8 bg-surface-base-secondary border border-border-structural rounded-md">
+    <p className="font-mono text-xs text-text-secondary leading-4">
+      Review the changes below. Lines highlighted in{' '}
+      <span className="text-failed-secondary font-semibold">red</span> will be removed, lines in{' '}
+      <span className="text-success-primary font-semibold">green</span> will be added.
+    </p>
+  </div>
+)
 
 const VersionedFieldHistoryTab = ({
   isLoading,
@@ -49,6 +65,7 @@ const VersionedFieldHistoryTab = ({
   onRestore,
   onOptionChange,
   canRestore = true,
+  banner,
 }: VersionedFieldHistoryTabProps) => {
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false)
   const isHistoryAvailable = options.length > 0
@@ -60,45 +77,44 @@ const VersionedFieldHistoryTab = ({
     onRestore()
   }
 
+  const bannerContent = banner === undefined ? <VersionHistoryDiffHint /> : banner
+
   return (
-    <div className="flex flex-col gap-2 h-full">
+    <div className="flex flex-col gap-4 h-full min-h-0">
       {isHistoryAvailable ? (
         <>
-          <div className="flex gap-4 items-center self-end w-1/2">
-            <Autocomplete
-              placeholder="Select a version"
-              options={options}
-              value={selectedOption ?? ''}
-              onChange={(value) => {
-                setShowRestoreConfirm(false)
-                onOptionChange(value)
-              }}
-            />
+          <div
+            data-testid="version-history-toolbar"
+            className="flex gap-4 items-center w-full min-w-0 shrink-0"
+          >
+            {bannerContent}
+            <div className="flex gap-4 items-center w-1/2 min-w-0 shrink-0 ml-auto">
+              <Autocomplete
+                placeholder="Select a version"
+                options={options}
+                value={selectedOption ?? ''}
+                onChange={(value) => {
+                  setShowRestoreConfirm(false)
+                  onOptionChange(value)
+                }}
+              />
 
-            <div className="flex gap-4 items-center">
-              {canRestore &&
-                (isLoading ? (
-                  <LoaderSvg className="w-[66.3px] animate-spin" />
-                ) : (
-                  <Button onClick={handleRestoreClick}>Restore</Button>
-                ))}
-              {headerContent}
+              <div className="flex gap-4 items-center shrink-0">
+                {canRestore &&
+                  (isLoading ? (
+                    <LoaderSvg className="w-[66.3px] animate-spin" />
+                  ) : (
+                    <Button onClick={handleRestoreClick}>Restore</Button>
+                  ))}
+                {headerContent}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center shrink-0 px-4 h-8 bg-surface-base-secondary border border-border-structural rounded-md">
-            <p className="font-mono text-xs text-text-secondary leading-4">
-              Review the changes below. Lines highlighted in{' '}
-              <span className="text-failed-secondary font-semibold">red</span> will be removed,
-              lines in <span className="text-success-primary font-semibold">green</span> will be
-              added.
-            </p>
-          </div>
-
-          <div className="grow">{children}</div>
+          <div className="grow min-h-0 overflow-hidden flex flex-col">{children}</div>
         </>
       ) : (
-        <h1 className="text-md text-center">{emptyPlaceholder ?? 'Value was not yet modified'}</h1>
+        <h1 className="text-md text-center">{emptyPlaceholder}</h1>
       )}
 
       <ConfirmationModal

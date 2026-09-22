@@ -1,0 +1,415 @@
+{
+  "decision": "request-changes",
+  "rationale": "21 blocking findings across 6 critical (AC 1/4/9/14/16 partial or fail, spec theme-token partial) and 15 major (rendering bugs, performance issues, test gaps); AC 14 is fully unimplemented — VersionHistoryDiffView is CSS-hidden while Visual is active, making baseline tab switching impossible. Two test coverage gaps (onTabChange and onParseError callbacks) leave the previous-baseline routing and parse-error hide paths unverified. No deferred items (all code is new); 4 mockup/docs-only concerns dismissed.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC 1: YAML/Visual toggle shown when entry selected, both YAML parse OK, and canvas not identical",
+      "status": "partial",
+      "notes": "hasDiff=true at init; toggle visible for all entries until WorkflowVisualDiffView mounts and calls onNoDiff/onParseError — CR-001"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 2: Visual tab renders read-only xyflow canvas with diff chrome",
+      "status": "pending-stage-7",
+      "notes": "ReactFlow canvas with diffStatus-annotated nodes built from canvasConfig; DiffNodeWrapper wraps each node type"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 3: Added nodes — green solid border and ADDED badge",
+      "status": "pending-stage-7",
+      "notes": "linebg-add CSS var with solid outline and ADDED badge applied in DiffNodeWrapper"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 4: Removed nodes — red dashed border, 40% opacity, label line-through, REMOVED badge",
+      "status": "partial",
+      "notes": "opacity-40, dashed outline, REMOVED badge present; label text-decoration:line-through not applied to wrapped component — CR-015"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 5: Modified nodes — amber solid border, MODIFIED badge; comparison excludes position/isAdvancedConfigField/layout metadata",
+      "status": "pending-stage-7",
+      "notes": "linebg-modified token and solid outline used; _meta and isAdvancedConfigField() keys excluded in omitNonSemanticFields"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 6: Edges adopt color of most-severe endpoint (removed > modified > added)",
+      "status": "pass",
+      "notes": "DIFF_SEVERITY ordering and pickHigherSeverity correct; stroke applied via edge.style"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 7: Node identity matched by state.id only",
+      "status": "pass",
+      "notes": "canvasMap and baselineMap both keyed by s.id in diffWorkflowGraphs"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 8: Actor change in assistants[]/tools[]/custom_nodes[] marks referencing states modified",
+      "status": "pass",
+      "notes": "propagateActorChanges diffs all three arrays and promotes referencing states via promoteToModified"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 9: Iterator children diffed independently; removed iterator renders as ghost frame with children at baseline positions inside",
+      "status": "partial",
+      "notes": "Independent child diffing works; removedNodes construction omits parentId so removed children float freely — CR-010"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 10: Canvas supports zoom and pan only; not draggable, selectable, or connectable",
+      "status": "pass",
+      "notes": "nodesDraggable/nodesConnectable/elementsSelectable=false; panOnDrag/zoomOnScroll present"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 11: Legend shown within canvas chrome: green=ADDED, amber=MODIFIED, red=REMOVED",
+      "status": "pending-stage-7",
+      "notes": "DiffLegend rendered at absolute bottom-4 left-4 with three color-swatch items"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 12: Identical graphs hide Visual toggle; if on Visual, auto-switch to YAML",
+      "status": "partial",
+      "notes": "Auto-switch useEffect present; hasDiff=true init shows toggle optimistically for identical graphs until onNoDiff fires — CR-001"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 13: YAML parse failure hides Visual tab immediately; no toast",
+      "status": "partial",
+      "notes": "No toast implemented; parseError set only after user clicks Visual and WorkflowVisualDiffView mounts — CR-001"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 14: Switching Current/Previous baseline tab while on Visual re-renders diff without leaving Visual",
+      "status": "fail",
+      "notes": "VersionHistoryDiffView CSS-hidden when viewMode='visual'; baseline tabs inaccessible while Visual is active — CR-005"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 15: SystemPromptExpandedModal caller of VersionHistoryDiffView is unaffected",
+      "status": "pass",
+      "notes": "onTabChange added as optional prop defaulting to undefined; existing callers pass no value"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC 16: Colors sourced exclusively from tailwind.config.ts diff tokens via getTailwindColor; no hardcoded hex values",
+      "status": "partial",
+      "notes": "Badge text uses hardcoded '#000'; getTailwindColor fallback '#888888' hardcoded in DiffNodeWrapper and WorkflowVisualDiffView — CR-014"
+    },
+    {
+      "kind": "spec",
+      "item": "New files WorkflowVisualDiffView.tsx, diffWorkflowGraphs.ts, DiffNodeWrapper.tsx created at specified paths",
+      "status": "pass",
+      "notes": "All three files present in diff at correct paths"
+    },
+    {
+      "kind": "spec",
+      "item": "DiffStatus, NodeDiffEntry, DiffResult types match spec signature (canvasNode/baselineNode optionality)",
+      "status": "pass",
+      "notes": "Types declared as specified — diffWorkflowGraphs.ts:30–52"
+    },
+    {
+      "kind": "spec",
+      "item": "Diff comparison excludes _meta (position, measured, layout) and isAdvancedConfigField fields",
+      "status": "pass",
+      "notes": "omitNonSemanticFields skips _meta key and isAdvancedConfigField() keys"
+    },
+    {
+      "kind": "spec",
+      "item": "Actor propagation across all three actor arrays (assistants[], tools[], custom_nodes[])",
+      "status": "pass",
+      "notes": "All three arrays diffed via changedActorIds in propagateActorChanges"
+    },
+    {
+      "kind": "spec",
+      "item": "tailwind.config.ts: linebg-modified token added as [dark, light] tuple following yellow.500 palette at convention weight",
+      "status": "partial",
+      "notes": "Token uses [yellow.500, yellow.500] — identical dark/light values; convention requires heavy weight for dark, light weight for light — CR-019"
+    },
+    {
+      "kind": "spec",
+      "item": "Unit tests 1–7 for diffWorkflowGraphs present in diffWorkflowGraphs.test.ts",
+      "status": "pending-stage-7",
+      "notes": "All 7 test cases present; execution results owned by Stage 7"
+    },
+    {
+      "kind": "spec",
+      "item": "WorkflowVersionHistoryPopup toggle render and viewMode transition tests present",
+      "status": "pending-stage-7",
+      "notes": "Two test cases added covering toggle visibility and onNoDiff hide behavior; execution results owned by Stage 7"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "6 subjects all match EPMCDME-14482: Capital sentence; ticket non-zero; first word capitalised (Add, Implement, Fix); no trailing period"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md does not exist in the repository and no ArtifactRef was supplied; no standard to adjudicate against"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Checked WorkflowVisualDiffView.tsx, DiffNodeWrapper.tsx, WorkflowVersionHistoryPopup.tsx, diffWorkflowGraphs.ts, VersionHistoryDiffView.tsx. No dangerouslySetInnerHTML or .innerHTML sinks. YAML input parsed by js-yaml and deserialized to typed WorkflowConfiguration before reaching ReactFlow. No navigation from user strings. No cross-window postMessage. No credential logging."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVersionHistoryPopup.tsx",
+      "line": 51,
+      "title": "hasDiff initialized true shows toggle for all entries",
+      "problem": "hasDiff is initialized to true and reset to true on every selectedValue change. The Visual toggle (showVisualToggle = hasDiff && !parseError) appears for every history entry, including those where YAML parsing would fail or both graphs are identical. onNoDiff and onParseError only fire after WorkflowVisualDiffView mounts, which requires the user to click the Visual button first.",
+      "impact": "Users see a Visual toggle for entries where it would immediately disappear after clicking (AC 1, 12, 13 partial). On an entry with no semantic diff the user clicks Visual, sees a snap-back to YAML, and cannot understand why. For a parse-error entry the toggle briefly appears then vanishes.",
+      "recommendation": "Initialize hasDiff to false (or a tri-state undefined). Show the Visual toggle only after a mount callback signals a real diff exists. Consider rendering WorkflowVisualDiffView in an off-screen/invisible container on entry selection to precompute the diff state without requiring a user click."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVersionHistoryPopup.tsx",
+      "line": 93,
+      "title": "hasDiff and parseError not reset when baseline tab changes",
+      "problem": "The useEffect at line 93 resets hasDiff/parseError only when selectedValue changes. When the user switches baseline tabs (onTabChange → activeBaselineTab changes), hasDiff and parseError are not reset. If onNoDiff or onParseError fired for the 'current' baseline, the Visual toggle remains hidden after switching to 'previous' even when the previous-baseline diff is real and valid.",
+      "impact": "Visual toggle permanently hidden for the 'previous' baseline for any entry where the 'current' baseline produced no diff or a parse error. Users cannot access Visual mode for the previous-baseline comparison without re-selecting the entry.",
+      "recommendation": "Add activeBaselineTab to the reset-effect dependency array, or add a separate useEffect that resets hasDiff and parseError when activeBaselineTab changes."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVersionHistoryPopup.tsx",
+      "line": 116,
+      "title": "Previous baseline silently falls back to current editor for oldest entry",
+      "problem": "When activeBaselineTab is 'previous' and previousEntry is undefined (user is viewing the oldest history entry, which has no prior revision), baselineYaml falls back to currentEditorYaml. The visual diff then compares the oldest revision against the current editor state rather than reporting 'no previous version available'.",
+      "impact": "The user switches to 'Previous' tab for the oldest entry expecting a comparison against the version before it, but instead sees a diff against the current unsaved state. This is misleading and may show a meaningful diff when the user intends to examine nothing.",
+      "recommendation": "Detect the absence of previousEntry when activeBaselineTab is 'previous' and disable the tab or show a placeholder. Alternatively, have WorkflowVersionHistoryPopup pass a flag to the visual view indicating no prior baseline exists."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVersionHistoryPopup.tsx",
+      "line": 124,
+      "title": "YAML/Visual toggle buttons missing ARIA pressed state",
+      "problem": "The YAML and Visual toggle buttons are plain <button> elements with no aria-pressed, role=\"tab\", aria-selected, or aria-controls attributes. Visual distinction between active and inactive mode relies solely on CSS class changes.",
+      "impact": "Screen reader users cannot determine which view mode is currently active, cannot navigate between modes semantically, and receive no feedback when the active mode changes.",
+      "recommendation": "Add aria-pressed={viewMode === 'yaml'} and aria-pressed={viewMode === 'visual'} to the respective buttons, or convert to a role=\"tablist\" / role=\"tab\" pattern with aria-selected and aria-controls pointing to the panel regions."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVersionHistoryPopup.tsx",
+      "line": 151,
+      "title": "Baseline tabs CSS-hidden while Visual mode is active",
+      "problem": "VersionHistoryDiffView (the component that owns the Current/Previous baseline tab switcher) is wrapped in a div with className 'hidden' when viewMode === 'visual'. The tabs are invisible and non-interactive while Visual is active. The comment acknowledges this as intentional ('to preserve baseline tab state') but the design prevents AC 14 from working at all.",
+      "impact": "AC 14 fail: users can never switch between Current and Previous baselines while remaining in Visual mode. To switch the baseline they must return to YAML mode, switch the tab, then return to Visual — three extra clicks and a context break for every baseline comparison.",
+      "recommendation": "Move the baseline tab switcher (or a duplicate of it) to a position outside the CSS-hidden VersionHistoryDiffView so it remains visible and interactive in Visual mode. Pass its active state down to WorkflowVisualDiffView as the baselineYaml source."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVersionHistoryPopup.tsx",
+      "line": 166,
+      "title": "onParseError and onNoDiff recreated as inline callbacks each render",
+      "problem": "onParseError and onNoDiff are passed to WorkflowVisualDiffView as inline arrow functions (() => setParseError(true) and () => setHasDiff(false)). They are listed in the useEffect dependency array inside WorkflowVisualDiffView. Each parent render creates new function references, causing the effect to re-fire even when memoResult has not changed.",
+      "impact": "Extra state setter calls and re-renders on every parent render while Visual is active. In pathological cases (where state updates trigger parent re-renders) this creates a cascade of redundant effect invocations.",
+      "recommendation": "Wrap both callbacks in useCallback with empty dependency arrays at the WorkflowVersionHistoryPopup level: onParseError={useCallback(() => setParseError(true), [])} and onNoDiff={useCallback(() => setHasDiff(false), [])}."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 72,
+      "title": "silentDeserialize returns empty config for null yaml_config",
+      "problem": "silentDeserialize passes the YAML string through yaml.load as a validity check, then unconditionally calls deserialize. For an empty string (selectedEntry.yaml_config ?? ''), yaml.load('') returns undefined and does not throw, so the check passes. Inside deserialize, parseYaml treats a falsy result as an empty config and returns {states: []}. silentDeserialize therefore returns a valid empty WorkflowConfiguration instead of null.",
+      "impact": "When a history entry has a null or undefined yaml_config, the visual diff renders all canvas states as added or all baseline states as removed instead of triggering onParseError. Users see a misleading diff rather than a graceful 'cannot display' state.",
+      "recommendation": "Add an explicit guard at the top of silentDeserialize: if (!yamlStr || !yamlStr.trim()) return null. This short-circuits before the yaml.load pre-check for empty input."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 122,
+      "title": "useEffect notifies parent one render after parse-error or no-diff",
+      "problem": "The useEffect at line 122 fires after the component renders, not during. When memoResult is 'parse-error' or 'no-diff', the component returns null on the first render and only calls onParseError/onNoDiff after the DOM has been committed. The parent does not know to hide the Visual toggle until the next render cycle.",
+      "impact": "A brief layout shift occurs where WorkflowVisualDiffView renders null before the parent has received the notification and updated showVisualToggle. The effect is short but visible as a flash of empty content.",
+      "recommendation": "Call onParseError/onNoDiff synchronously during render via a ref-guarded approach or a layout effect (useLayoutEffect) so the parent state update is batched with the initial render rather than deferred to the next frame."
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 147,
+      "title": "diffWorkflowGraphs recomputed unconditionally outside useMemo",
+      "problem": "The useMemo at line 108 calls diffWorkflowGraphs and stores only statusById. A second call to diffWorkflowGraphs is made unconditionally at line 147 to obtain removed nodes, because diff.nodes was not stored in the memo. The second call runs on every render even though canvasConfig and baselineConfig are stable references from the memoized result.",
+      "impact": "Redundant O(n) graph comparison on every render while Visual is active. For large workflows this wastes CPU on every parent re-render (e.g., after hasDiff/parseError state updates).",
+      "recommendation": "Store the full DiffResult (not just statusById) in the useMemo return value, or include removedNodes construction inside the memo so the second diffWorkflowGraphs call is eliminated."
+    },
+    {
+      "id": "CR-010",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 150,
+      "title": "Removed iterator children missing parentId render outside ghost frame",
+      "problem": "The removedNodes array is built by mapping over diff nodes with status 'removed'. The constructed node object does not include a parentId field. For states that were children of an iterator in the baseline, the parentId is required by React Flow to place them inside the iterator's group/frame node. Without it, removed children render as top-level free-floating nodes.",
+      "impact": "AC 9 partial: the ghost iterator frame renders (if the iterator itself is in removedNodes) but its children appear at arbitrary positions on the canvas rather than inside the frame at their baseline positions. The visual relationship between a removed iterator and its children is lost.",
+      "recommendation": "When constructing removedNodes, read bNode._meta?.parentId (or the equivalent field) and include parentId in the node object. Ensure the parent iterator node is also in allNodes (either from canvasNodes or removedNodes) so React Flow can resolve the parent reference."
+    },
+    {
+      "id": "CR-011",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 150,
+      "title": "Removed nodes lack node data and stack at origin from position fallback",
+      "problem": "Removed node objects in allNodes are constructed with only callback stubs in their data (findState, getConfig, updateConfig, removeState, onNodesChange, hasError). Fields the original node component reads from data — including the state name, label, and any domain-specific properties — are absent. Additionally, the position fallback is {x: 0, y: 0}; nodes without _meta.position in their baseline YAML all render at the same origin point.",
+      "impact": "Removed nodes render blank or throw a runtime error inside the OriginalComponent. When multiple removed nodes have no stored position they overlap completely at origin, appearing as a single indistinguishable pile.",
+      "recommendation": "Use buildNodes(baselineConfig) to obtain the full set of baseline nodes (with data and positions), then filter to removed IDs and overlay diffStatus:'removed' on their data objects, mirroring how canvasNodes are constructed from buildNodes(canvasConfig)."
+    },
+    {
+      "id": "CR-012",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 171,
+      "title": "Baseline edges for removed nodes not rendered",
+      "problem": "canvasEdges is built exclusively from buildEdges(canvasConfig). Edges that existed only in the baseline config — those connected to removed nodes — are not included. Removed nodes have no outgoing or incoming edges in the rendered graph.",
+      "impact": "Removed nodes appear as disconnected islands on the canvas. The reviewer cannot see which nodes they were linked to, making it impossible to assess the impact of their removal on the workflow flow.",
+      "recommendation": "Also call buildEdges(baselineConfig), filter for edges whose source or target is in the removed set, apply the 'removed' stroke color to them, and include them in canvasEdges."
+    },
+    {
+      "id": "CR-013",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 181,
+      "title": "diffNodeTypes map rebuilt per render causing React Flow node remounts",
+      "problem": "diffNodeTypes is constructed inside the component function body by iterating nodeTypeComponents and creating new WrappedNode arrow functions for each type. It is not wrapped in useMemo, so a new object with new function references is produced on every render. React Flow treats a changed nodeTypes reference as a signal to remount all nodes.",
+      "impact": "Every parent re-render (e.g., after hasDiff/parseError state updates) causes React Flow to unmount and remount all nodes. This produces visible flicker, resets any in-progress pan/zoom interaction, and wastes layout computation.",
+      "recommendation": "Wrap the diffNodeTypes construction in useMemo with an empty dependency array: const diffNodeTypes = useMemo(() => Object.fromEntries(...), []). The wrapped components do not close over any render-cycle variables."
+    },
+    {
+      "id": "CR-014",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/nodes/DiffNodeWrapper.tsx",
+      "line": 54,
+      "title": "Hardcoded hex fallback and badge text color violate no-hardcode spec",
+      "problem": "getDiffColor returns getTailwindColor(CSS_VAR[status], '#888888') — the fallback '#888888' is a hardcoded hex value. The badge span at line 87 uses style={{ backgroundColor: color, color: '#000' }} — the foreground is hardcoded '#000'. The same '#888888' fallback appears in WorkflowVisualDiffView.tsx at line 55 in the edgeColor helper.",
+      "impact": "AC 16 partial: in dark mode the '#000' badge foreground on a dark background color produces illegible text. The '#888888' fallback is used whenever the CSS custom property is not resolved (e.g., in test environments or if the token name changes), producing inconsistent theming outside the expected color system.",
+      "recommendation": "Replace '#000' with a CSS custom property such as getTailwindColor('--colors-text-primary', 'black'). Replace '#888888' with a neutral token. Remove all literal hex strings from these files to satisfy the spec requirement."
+    },
+    {
+      "id": "CR-015",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/nodes/DiffNodeWrapper.tsx",
+      "line": 79,
+      "title": "Removed node label text missing line-through decoration",
+      "problem": "DiffNodeWrapper wraps the OriginalComponent inside a div with opacity-40 and a dashed outline for removed nodes. No text-decoration: line-through CSS is injected into or applied to the OriginalComponent's rendered label area. The OriginalComponent renders its label normally at reduced opacity.",
+      "impact": "AC 4 partial: removed nodes do not show the required label line-through, making them harder to distinguish from merely faded nodes. The visual convention (opacity + strikethrough) that communicates 'this node is deleted' is only half-implemented.",
+      "recommendation": "Apply textDecoration: 'line-through' via a CSS custom property or a wrapper span that overlays the label region. Alternatively pass a prop (e.g., data.isRemoved) to the OriginalComponent if it exposes a label slot, or use a CSS class with pointer-events:none overlay."
+    },
+    {
+      "id": "CR-016",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/workflowEditor/diffWorkflowGraphs.ts",
+      "line": 84,
+      "title": "stableJson does not recurse into nested object values",
+      "problem": "stableJson sorts only top-level keys of an object, then stores the original (unsorted) values and calls JSON.stringify on the result. For a nested object value, JSON.stringify serializes its keys in insertion order. Two semantically identical states whose nested objects have different key insertion orders produce different stableJson strings and are reported as modified. The same defect affects changedActorIds, which calls stableJson directly on actor objects.",
+      "impact": "False-positive 'modified' diff entries for states and actors that differ only in nested-object key insertion order. Users see amber-bordered MODIFIED nodes for states that have not actually changed semantically.",
+      "recommendation": "Change line 90 from acc[k] = (obj as Record<string, unknown>)[k] to acc[k] = stableJson((obj as Record<string, unknown>)[k]) and remove the final JSON.stringify, building the JSON string manually from sorted keys and recursively stableJson'd values."
+    },
+    {
+      "id": "CR-017",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/workflowEditor/diffWorkflowGraphs.ts",
+      "line": 170,
+      "title": "promoteToModified changes added state to modified on actor reference change",
+      "problem": "promoteToModified is called from propagateActorChanges for every canvas state that references a changed actor. If a state is brand-new (status 'added', no baseline entry), promoteToModified finds it in the nodes array and overwrites its status to 'modified'. The entry ends up with status:'modified' and baselineNode:undefined, which is an invalid NodeDiffEntry shape.",
+      "impact": "A newly added state that references a changed actor is displayed with the amber MODIFIED badge instead of the green ADDED badge. Downstream consumers that assume modified entries have both canvasNode and baselineNode may crash or render incorrectly.",
+      "recommendation": "In promoteToModified, check existing.status before overwriting: if (existing && existing.status !== 'added') existing.status = 'modified'. An added state whose actor changed is still 'added' and does not require a baselineNode."
+    },
+    {
+      "id": "CR-018",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/workflowEditor/diffWorkflowGraphs.ts",
+      "line": 226,
+      "title": "Duplicate state IDs in YAML silently dropped by Map construction",
+      "problem": "canvasMap and baselineMap are built with new Map((states ?? []).map((s) => [s.id, s])). If states contains entries with duplicate id values, the Map silently retains only the last one. The earlier duplicate is excluded from the diff without warning. Note: reachability is uncertain — js-yaml with json:true resolves duplicate top-level YAML keys but not duplicate array items; duplicate IDs in the states array (from API data) could reach this path.",
+      "impact": "One of the duplicate states is invisible to the diff algorithm; it may be incorrectly classified as added or removed depending on which copy survives.",
+      "recommendation": "Before building the Map, validate that all state IDs are unique: const seen = new Set(); for (const s of states) { if (seen.has(s.id)) throw/warn; seen.add(s.id); }. Alternatively use a Map and log a warning on collision."
+    },
+    {
+      "id": "CR-019",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "tailwind.config.ts",
+      "line": 260,
+      "title": "linebg-modified token uses identical yellow.500 for dark and light mode",
+      "problem": "tailwind.config.ts line 260: 'linebg-modified': [c['yellow']['500'], c['yellow']['500']]. The project convention for diff tokens is a [heavy-dark, light-light] pair: linebg-remove uses [red.900, red.75] and linebg-add uses [green.900, green.50]. Using the same yellow.500 for both slots means the MODIFIED node background is identical in dark and light mode.",
+      "impact": "Spec partial: yellow.500 on a light-mode background provides insufficient contrast for the modified-node overlay. The visual diff is harder to read in light mode, and the convention is broken making future maintenance inconsistent.",
+      "recommendation": "Use a heavy yellow shade for dark mode and a light shade for light mode, e.g., [c['yellow']['700'], c['yellow']['100']] or equivalent pair following the same convention as linebg-add and linebg-remove."
+    },
+    {
+      "id": "CR-020",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/__tests__/WorkflowVersionHistoryPopup.test.tsx",
+      "title": "onParseError mock never fires leaving parse-error hide path unverified",
+      "problem": "The WorkflowVisualDiffView mock only conditionally calls onNoDiff (via mockVisualCallsNoDiff). The onParseError callback is accepted in the mock's type signature but never invoked in any test. The parseError state and its effect on showVisualToggle are therefore not exercised: removing !parseError from showVisualToggle or breaking the fallback useEffect would not fail any test.",
+      "impact": "The parse-error hide path ships unverified. Any regression in this branch — toggle remains visible after a parse error, user stays in visual mode while WorkflowVisualDiffView renders null — is invisible to CI.",
+      "recommendation": "Add a parallel mockVisualCallsParseError flag to the mock and a test that sets it to true, clicks Visual, then asserts the toggle is no longer in the document and viewMode has reverted to yaml."
+    },
+    {
+      "id": "CR-021",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/__tests__/WorkflowVersionHistoryPopup.test.tsx",
+      "title": "onTabChange prop never exercised leaving previous-baseline branch unverified",
+      "problem": "The VersionHistoryDiffView mock ignores the onTabChange prop (it is not included in the mock's rendered output or called in any test). activeBaselineTab therefore always stays 'current' in every test scenario. The code path where baselineYaml uses previousEntry?.yaml_config is never reached in the test suite.",
+      "impact": "Any breakage in the previous-baseline routing — for example, always passing currentEditorYaml regardless of which tab is active — would not fail any test. The WorkflowVisualDiffView mock also ignores baselineYaml entirely, so even if onTabChange were propagated, the prop value would not be asserted.",
+      "recommendation": "In a new test, render the real VersionHistoryDiffView component (not the mock) or extend the mock to call onTabChange. Click the Previous Version tab, switch to Visual, and assert that the baselineYaml prop received by WorkflowVisualDiffView equals previousEntry.yaml_config."
+    }
+  ]
+}

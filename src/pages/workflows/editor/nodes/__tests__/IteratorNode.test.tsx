@@ -20,6 +20,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { StateConfiguration } from '@/types/workflowEditor/configuration'
 
 import { CommonNodeProps } from '../common'
+import { NODE_RENDER_MODE, NodeRenderContext } from '../diffChromeContext'
 import { IteratorNode } from '../IteratorNode'
 
 vi.mock('@xyflow/react', async () => {
@@ -31,7 +32,7 @@ vi.mock('@xyflow/react', async () => {
 })
 
 vi.mock('@/assets/images/node-iterator-border.svg?react', () => ({
-  default: () => <svg data-testid="iterator-border" />,
+  default: (props: Record<string, unknown>) => <svg data-testid="iterator-border" {...props} />,
 }))
 
 vi.mock('@/assets/icons/refresh.svg?react', () => ({
@@ -316,6 +317,84 @@ describe('IteratorNode', () => {
       renderIteratorNode()
 
       expect(screen.getByText('Iterator')).toBeInTheDocument()
+    })
+  })
+
+  describe('diff chrome', () => {
+    const iteratorState: StateConfiguration = {
+      id: 'iterator1',
+      _meta: {
+        type: 'iterator',
+        is_connected: true,
+        data: { next: { iter_key: 'items' } },
+      },
+    }
+
+    it('does not tint the dashed iterator border when node render state is unchanged', () => {
+      mockFindState.mockReturnValue(iteratorState)
+
+      const { getByTestId } = renderIteratorNode()
+
+      expect(getByTestId('iterator-border')).not.toHaveClass('text-success-primary')
+      expect(getByTestId('iterator-border')).toHaveClass('text-border-specific-node-border-iter')
+    })
+
+    it('tints the dashed iterator border when node render status is added', () => {
+      mockFindState.mockReturnValue(iteratorState)
+
+      const { getByTestId } = render(
+        <ReactFlowProvider>
+          <NodeRenderContext.Provider
+            value={{ mode: NODE_RENDER_MODE.VISUAL_DIFF, diffStatus: 'added' }}
+          >
+            <IteratorNode {...createMockProps()} />
+          </NodeRenderContext.Provider>
+        </ReactFlowProvider>
+      )
+
+      expect(getByTestId('iterator-border')).toHaveClass(
+        'text-success-primary',
+        'stroke-success-primary'
+      )
+    })
+
+    it('tints the dashed iterator border when node render status is modified', () => {
+      mockFindState.mockReturnValue(iteratorState)
+
+      const { getByTestId } = render(
+        <ReactFlowProvider>
+          <NodeRenderContext.Provider
+            value={{ mode: NODE_RENDER_MODE.VISUAL_DIFF, diffStatus: 'modified' }}
+          >
+            <IteratorNode {...createMockProps()} />
+          </NodeRenderContext.Provider>
+        </ReactFlowProvider>
+      )
+
+      expect(getByTestId('iterator-border')).toHaveClass(
+        'text-aborted-primary',
+        'stroke-aborted-primary'
+      )
+    })
+
+    it('tints the dashed iterator border when node render status is removed', () => {
+      mockFindState.mockReturnValue(iteratorState)
+
+      const { getByTestId } = render(
+        <ReactFlowProvider>
+          <NodeRenderContext.Provider
+            value={{ mode: NODE_RENDER_MODE.VISUAL_DIFF, diffStatus: 'removed' }}
+          >
+            <IteratorNode {...createMockProps()} />
+          </NodeRenderContext.Provider>
+        </ReactFlowProvider>
+      )
+
+      expect(getByTestId('iterator-border')).toHaveClass(
+        'text-failed-secondary',
+        'stroke-failed-secondary'
+      )
+      expect(screen.getByText(/Iterator/).closest('div')).toHaveClass('line-through')
     })
   })
 

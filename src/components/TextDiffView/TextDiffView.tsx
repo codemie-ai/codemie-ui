@@ -217,14 +217,14 @@ const TextDiffView: React.FC<TextDiffViewProps> = ({
   }
 
   return (
-    <div className={className}>
+    <div className={cn('flex flex-col h-full min-h-0', className)}>
       {(oldLabel || newLabel) && (
-        <div className="grid grid-cols-2 gap-4 mb-2">
+        <div className="grid grid-cols-2 gap-4 mb-2 shrink-0">
           <h5 className="text-xs font-normal text-text-tertiary">{oldLabel}</h5>
           <h5 className="text-xs font-normal text-text-accent-status">{newLabel}</h5>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 min-h-0 flex-1">
         <div
           ref={leftColRef}
           className={cn('font-mono text-xs relative', columnClassName)}

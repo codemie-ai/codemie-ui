@@ -1,0 +1,206 @@
+{
+  "decision": "request-changes",
+  "rationale": "15 major patch findings across the restore-validation and visual-diff implementations; genuine no-spec round (acceptance lens skipped, no ArtifactRef). Five candidates carry an uncertain reachability verdict (CR-002, CR-003, CR-010, CR-011, CR-014) — race conditions and async timing issues not directly confirmable by source inspection, all capped at major. No deferred items, no dismissed findings; standards audit clean across all applicable rows.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 13 subjects in the review range match EPMCDME-XXXX: Capital sentence; ticket 14482 (non-zero), first word capitalised in every case, no trailing periods"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md found in the repository and no ArtifactRef was passed; absent standard, not a gap"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No dangerouslySetInnerHTML or .innerHTML introduced; TextDiffView renders all diff content as React text nodes. WorkflowVisualDiffView parses YAML through js-yaml and passes WorkflowConfiguration objects into the canvas — no raw HTML injected. validateWorkflow in workflows.ts uses the project api.post layer and builds a URL from a server-validated ID and a controlled enum argument; no credentials logged, no new navigation from untrusted input, no postMessage calls, no new import.meta.env or window._env_ reads, and no nosonar suppressions added"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 86,
+      "title": "Silent empty issues panel on empty error array",
+      "problem": "When processBackendError receives a known error_type with an empty errors array it returns {issues: null, generalError: null}. The else branch of applyWorkflowBackendValidationError then calls openIssuesPanel() on a null issues state with no toast and no user-visible explanation.",
+      "impact": "User sees an empty issues panel open with no feedback. The test at EditWorkflowPage.versionHistory.test.tsx:207 already exercises this path (errors:[]) and asserts openIssuesPanel is called, confirming the behaviour is live on every restore that returns a known error type with an empty errors array.",
+      "recommendation": "Replace the empty else branch with an explicit error toast: if (parsedError.details?.error_type) { toaster.error('Validation returned no issue details'); } — or guard openIssuesPanel to require a non-null issues array."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 189,
+      "title": "formRef null yields incomplete validation payload",
+      "problem": "{ ...formRef.current?.getFormValues(), yaml_config: yamlConfig } — when formRef.current is null the optional-chain returns undefined, spreading nothing, so the payload contains only yaml_config while name, project and other form fields are silently dropped.",
+      "impact": "The backend receives a partial payload, potentially altering validation behaviour or causing an unexpected 422. Requires a timing race (component unmounts between restore click and the async continuation); reachability is uncertain, severity capped at major.",
+      "recommendation": "Add an early guard at the top of validateRestoredWorkflow: if (!formRef.current) return; before the spread expression."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 201,
+      "title": "Concurrent restore clicks race on issues state",
+      "problem": "handleRestoreFromHistory has no in-flight guard. Two rapid Restore clicks launch two concurrent validateWorkflow calls; whichever 400 response resolves last overwrites the issues state that the earlier call had set.",
+      "impact": "A stale error response can populate the issues panel after a later successful validation, or a stale 200 can clear valid errors, leaving the user with a misleading panel state. Requires two rapid user clicks; reachability is uncertain, severity capped at major.",
+      "recommendation": "Add a generation-counter ref: const validateGenRef = useRef(0); increment and capture on each call entry, and bail out of the error/success branch if the captured gen no longer matches validateGenRef.current."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 205,
+      "title": "Success toast fires before validation completes",
+      "problem": "toaster.info('Workflow YAML has been restored successfully!') is called synchronously before await validateRestoredWorkflow(yamlConfig), so on a 400 validation response the user reads a success toast immediately followed by error markers in the issues panel.",
+      "impact": "Contradictory UI signals on every restore that triggers validation errors. The EditWorkflowPage.versionHistory.test.tsx:207 test explicitly asserts this co-occurrence, confirming the behaviour reaches production users today.",
+      "recommendation": "Move the toast to after validation: emit it only when validateRestoredWorkflow resolves without error, or change the message to 'Workflow YAML restored — checking for issues…' so it does not assert success before the check completes."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/__tests__/EditWorkflowPage.versionHistory.test.tsx",
+      "line": 66,
+      "title": "clearAllResolvedFields call not asserted in any test",
+      "problem": "The WorkflowForm mock declares clearAllResolvedFields: vi.fn() but no test in the file ever calls expect(...).toHaveBeenCalled() on it. applyWorkflowBackendValidationError calls formRef.current?.clearAllResolvedFields() on every validation error path; silently removing the call would not cause any test to fail.",
+      "impact": "A regression that drops clearAllResolvedFields from the error path would leave stale resolved-field markers visible after a failed restore or save, showing the user misleading resolution state. The gap extends to the submit error path, which has no error test at all.",
+      "recommendation": "In the 'opens issues panel when validateWorkflow returns 400' test, hoist clearAllResolvedFields from the mock and add expect(clearAllResolvedFields).toHaveBeenCalled() to assert it was called on the error path."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVersionHistoryPopup.tsx",
+      "line": 104,
+      "title": "State setter called directly during render phase",
+      "problem": "setDiffComputedState('computing') is called inside the component body when resetKeyRef.current !== currentResetKey (lines 102-105), outside any effect or event handler — a synchronous state update during render.",
+      "impact": "In React concurrent mode this pattern is fragile: React may discard a render pass, leaving the ref updated while the queued state update is rolled back, breaking the ref/state invariant the comment describes as the reason for this workaround.",
+      "recommendation": "Replace the inline ref-guard with a useEffect on selectedValue that calls setDiffComputedState('computing'), and pass a key prop derived from selectedValue to WorkflowVisualDiffView so React resets child state on version change without relying on the inline setter."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 89,
+      "title": "rAF handle overwritten; first scheduled frame orphaned",
+      "problem": "Both the outerFrame rAF callback (line 102) and the retryTimeout callback (line 93) write to the same innerFrame variable. If outerFrame fires and schedules innerFrame=A, then retryTimeout fires and overwrites innerFrame=B, the cleanup's cancelAnimationFrame(innerFrame) cancels only B; frame A runs after component unmount.",
+      "impact": "The orphaned frame calls refreshNodeInternals() on an unmounted ReactFlow canvas, producing a no-op at best or a stale-state update and visible flicker at worst.",
+      "recommendation": "Use two separate frame-id variables — let innerFrameA = 0; let innerFrameB = 0; — assigned by the outerFrame callback and the retryTimeout respectively, and cancel both in the cleanup function."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 135,
+      "title": "silentDeserialize hides domain-validation failure silently",
+      "problem": "silentDeserialize calls yaml.load (discarding the result) then calls deserialize which re-parses the same string. If deserialize throws on syntactically valid but domain-invalid YAML, the catch returns null and onParseError fires — hiding the Visual toggle with no user-visible explanation.",
+      "impact": "Users selecting an older workflow version whose YAML passes syntax validation but fails domain schema see the Visual tab silently disappear with no indication of the cause. The redundant yaml.load call also wastes a full parse on every invocation.",
+      "recommendation": "Remove the redundant yaml.load call; wrap just deserialize in the try/catch. Provide a distinct feedback path (e.g. a message passed to the caller via onParseError) so the popup can display 'Cannot render visual diff: workflow schema incompatible' instead of silently hiding the tab."
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 180,
+      "title": "Edge-only topology change reported as no-diff",
+      "problem": "The no-diff check at line 180 tests only diff.nodes.length === 0; a pure connection rewire (no node added, removed, or modified) produces zero node entries while edges still differ. hasWorkflowEdgeDiff is exported from buildVisualDiffGraph.ts for exactly this check but is never imported or called in WorkflowVisualDiffView.tsx.",
+      "impact": "When a workflow version differs from the canvas only in next.state_id rewires — e.g. reordering branches — the Visual toggle is hidden and the diff is invisible to the user, silently suppressing a meaningful topological change.",
+      "recommendation": "Import hasWorkflowEdgeDiff from buildVisualDiffGraph and change the guard to: if (diff.nodes.length === 0 && !hasWorkflowEdgeDiff(canvasConfig, baselineConfig)) return 'no-diff';"
+    },
+    {
+      "id": "CR-010",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowVisualDiffView.tsx",
+      "line": 226,
+      "title": "Stale node positions may override newly loaded diff graph",
+      "problem": "When graph.nodes changes (new version selected), setNodes(graph.nodes) resets positions via useEffect. The onNodesChange callback, which passes positional changes from ReactFlow, can fire between renders and call applyNodeChanges with stale position data from the prior graph layout.",
+      "impact": "Newly loaded diff nodes may be rendered at positions from the previous layout pass, causing visual misalignment until the next fitView fires. Reachability is uncertain (depends on ReactFlow scheduling), severity capped at major.",
+      "recommendation": "Reset nodes synchronously by moving the setNodes(graph.nodes) call into the same useLayoutEffect or useMemo that produces the graph, so no onNodesChange can interleave between the graph update and the React render."
+    },
+    {
+      "id": "CR-011",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/nodes/NoteNode.tsx",
+      "line": 33,
+      "title": "NoteNode diff-chrome code path has no test coverage",
+      "problem": "NoteNode reads DiffChromeContext at line 33 and applies diff-specific borders and line-through styles at lines 98, 101, and 126. No test in NoteNode.test.tsx or DiffNodeWrapper.test.tsx renders NoteNode inside a DiffChromeContext.Provider — the diff chrome path is completely untested.",
+      "impact": "Regressions in NoteNode's diff chrome (dropped border class, missing line-through) would go undetected. DiffNodeWrapper.test.tsx covers BaseNode via a stub OriginalComponent, not the real NoteNode path. Reachability of a regression is uncertain but the gap is confirmed.",
+      "recommendation": "Add a test case in NoteNode.test.tsx: render NoteNode inside <DiffChromeContext.Provider value='removed'> and assert the diff border class and line-through class are present on the expected elements."
+    },
+    {
+      "id": "CR-012",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/workflows.ts",
+      "line": 337,
+      "title": "validateWorkflow skipErrorHandling tied to optional parameter",
+      "problem": "skipErrorHandling: true is set only when errorFormat === ERROR_FORMAT_JSON. A future caller that invokes validateWorkflow without errorFormat gets skipErrorHandling: false — the global API error handler toasts and any caller-side catch block toasts a second time.",
+      "impact": "Future callers receive a double error notification with no indication from the type signature that errorFormat controls error-handling mode as well as URL shape. The current single caller always passes ERROR_FORMAT_JSON, so no current regression — the concern is new-API contract clarity.",
+      "recommendation": "Either require errorFormat in the signature, or decouple skipErrorHandling from errorFormat by accepting an explicit options object (e.g. { errorFormat?, skipErrorHandling? }), and document that omitting errorFormat lets the global handler run."
+    },
+    {
+      "id": "CR-013",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/workflowEditor/buildVisualDiffGraph.ts",
+      "line": 106,
+      "title": "Removed iterator children positions not updated after reposition",
+      "problem": "wrapRemovedIteratorsAroundBaselineChildren repositions the removed iterator node to its children's bounding box but does not update the children's position values; they retain positions relative to the old iterator origin. React Flow renders each child at new_iterator_origin + old_relative_position rather than their intended absolute positions.",
+      "impact": "Children of removed iterator nodes in the diff canvas are rendered outside the repositioned iterator boundary, making the removed-iterator diff hard or impossible to read correctly.",
+      "recommendation": "After computing bbox, also update each child node's position: { x: abs_child_position.x - bbox.x, y: abs_child_position.y - bbox.y }, so the relative offset is correct with respect to the new iterator origin. The absChildren array already has the correct absolute positions for this calculation."
+    },
+    {
+      "id": "CR-014",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/workflowEditor/diffWorkflowGraphs.ts",
+      "line": 201,
+      "title": "iteratorIdForParent misses conditional-branch topology",
+      "problem": "iteratorIdForParent traverses only state.next.state_id and state.next.state_ids. When a parent state connects to an iterator via condition.then, condition.otherwise, or switch.cases[].state_id, those paths are skipped and meta_iter_state_id on those children is never found.",
+      "impact": "An iter_key change is attributed to the wrong parent node, marking the parent 'modified' instead of the iterator node and causing the visual diff to highlight the wrong element. Requires a conditional-branch iterator topology; reachability is uncertain, severity capped at major.",
+      "recommendation": "Extend childIds to also traverse condition.then, condition.otherwise, and switch.cases[].state_id targets from the state, mirroring the full edge topology described in the diffWorkflowGraphs.ts file-level comment."
+    },
+    {
+      "id": "CR-015",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "tailwind.config.ts",
+      "line": 260,
+      "title": "linebg-modified token defined but never used",
+      "problem": "linebg-modified is added to tailwind.config.ts but no component in the codebase references it. TextDiffView applies linebg-remove and linebg-add for changed lines but has no class for modified lines — the token will be purged by Tailwind's content scan at build time.",
+      "impact": "Modified-line highlighting is absent from the text diff view. Lines that were modified (rather than added or removed) receive no distinct background colour, reducing the visual clarity of the diff and leaving the feature incomplete.",
+      "recommendation": "Apply bg-surface-specific-diff-linebg-modified in TextDiffView for lines carrying a 'modified' status, or remove the token from tailwind.config.ts if the 'modified' line state is intentionally not rendered."
+    }
+  ]
+}
