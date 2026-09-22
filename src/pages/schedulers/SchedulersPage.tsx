@@ -208,8 +208,8 @@ const SchedulersPage = () => {
             router.push({
               path:
                 schedulerType === IntegrationOption.PROJECT
-                  ? '/integrations/project/edit'
-                  : '/integrations/user/edit',
+                  ? '/schedulers/project/edit'
+                  : '/schedulers/user/edit',
               query: {
                 project_name: item.project.name,
                 credential_type: 'Scheduler',

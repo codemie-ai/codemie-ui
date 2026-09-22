@@ -1,0 +1,72 @@
+{
+  "decision": "request-changes",
+  "rationale": "Four major findings across the two new scheduler edit pages: (1) success toast says 'Integration updated successfully' in a scheduler context; (2) when the setting is not found the page renders blank with no feedback or redirect; (3) fetchSetting has no catch block so network errors produce an unhandled rejection and a silent blank page; (4) query params are cast as string without validation so a direct URL access or missing param silently passes 'undefined' to the store. No spec/story artifact was available (sdlc-light no-spec round). Two deferred items: inherited (resp as any).error pattern matches the source integration pages; route absolute/relative path style inconsistency is cosmetic and functionally equivalent in react-router 7.",
+  "follow_ups": [
+    "CR-001: Change toaster.info('Integration updated successfully') to 'Scheduler updated successfully' in both EditUserSchedulerPage.tsx and EditProjectSchedulerPage.tsx",
+    "CR-002: Add else branch after if (foundSetting) in both pages: toaster.error + navigateBack(SCHEDULERS) when setting is null",
+    "CR-003: Add catch block in fetchSetting in both pages to handle network errors with toaster.error + navigateBack(SCHEDULERS)",
+    "CR-004: Add early guard at top of fetchSetting before calling store: check query.project_name/credential_type/alias are truthy, else toaster.error + navigateBack(SCHEDULERS)"
+  ],
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "All commits carry EPMCDME-15124: prefix"
+    },
+    {
+      "standard": "license-headers",
+      "status": "pass",
+      "notes": "Apache 2.0 headers present in both new files"
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No XSS, injection, or secrets issues introduced"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/schedulers/EditUserSchedulerPage.tsx",
+      "line": 67,
+      "problem": "Success toast reads 'Integration updated successfully' — copy-pasted from the integration page, wrong context for a scheduler page.",
+      "impact": "Misleading user-facing feedback in the scheduler flow. Same defect on line 58 of EditProjectSchedulerPage.tsx.",
+      "recommendation": "Change to toaster.info('Scheduler updated successfully') in both files."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/schedulers/EditUserSchedulerPage.tsx",
+      "line": 89,
+      "problem": "When findUserSetting / findProjectSetting returns falsy (no matching record, stale query params), the if (foundSetting) block is skipped. loading becomes false, setting stays null. Page renders blank shell with only Cancel — no error message and no redirect.",
+      "impact": "Silent broken state; user has no indication the scheduler setting could not be found. Same defect in EditProjectSchedulerPage.tsx.",
+      "recommendation": "Add else branch: toaster.error('Scheduler setting not found'); navigateBack(SCHEDULERS)."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/schedulers/EditUserSchedulerPage.tsx",
+      "line": 80,
+      "problem": "fetchSetting uses try/finally with no catch. If the store call throws (network failure, HTTP error), the exception becomes an unhandled promise rejection. The spinner disappears (finally runs) but no error is shown.",
+      "impact": "User sees a blank page after a network error with no feedback. Same defect in EditProjectSchedulerPage.tsx.",
+      "recommendation": "Add catch block: toaster.error('Failed to load scheduler settings'); navigateBack(SCHEDULERS)."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/schedulers/EditUserSchedulerPage.tsx",
+      "line": 83,
+      "problem": "query.project_name, query.credential_type, and query.alias are cast as string without validation. If any param is absent (direct URL access, bookmark, navigation bug), undefined is passed to the store find call.",
+      "impact": "Silent misuse — find predicate never matches, combines with CR-002 to produce a blank page. Same in EditProjectSchedulerPage.tsx.",
+      "recommendation": "Add early guard at the top of fetchSetting: if (!query.project_name || !query.credential_type || !query.alias) { toaster.error('Missing required parameters'); navigateBack(SCHEDULERS); return; }"
+    }
+  ]
+}

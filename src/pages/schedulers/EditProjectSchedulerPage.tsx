@@ -13,10 +13,11 @@
 // limitations under the License.
 //
 
-import { INTEGRATIONS } from '@/constants/routes'
+import { SCHEDULERS } from '@/constants/routes'
+import EditSettingPageBase, {
+  EditableSetting,
+} from '@/pages/integrations/components/EditSettingPageBase'
 import { projectSettingsStore } from '@/store/projectSettings'
-
-import EditSettingPageBase, { EditableSetting } from './components/EditSettingPageBase'
 
 const fetchSetting = (projectName: string, credentialType: string, alias: string) =>
   projectSettingsStore.findProjectSetting(
@@ -28,17 +29,17 @@ const fetchSetting = (projectName: string, credentialType: string, alias: string
 const updateSetting = (id: string, values: Record<string, unknown>) =>
   projectSettingsStore.updateProjectSetting(id, values)
 
-const EditProjectIntegrationPage = () => (
+const EditProjectSchedulerPage = () => (
   <EditSettingPageBase
-    title="Edit Project Integration"
-    sidebarTitle="Integrations"
-    sidebarDescription="Manage your integrations"
-    backRoute={INTEGRATIONS}
-    successMessage="Integration updated successfully"
+    title="Edit Project Scheduler"
+    sidebarTitle="Schedulers"
+    sidebarDescription="Manage your schedulers"
+    backRoute={SCHEDULERS}
+    successMessage="Scheduler updated successfully"
     settingType="project"
     fetchSetting={fetchSetting}
     updateSetting={updateSetting}
   />
 )
 
-export default EditProjectIntegrationPage
+export default EditProjectSchedulerPage
