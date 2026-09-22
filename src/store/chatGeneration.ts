@@ -36,7 +36,7 @@ import {
 } from '@/types/entity/mcpAuth'
 import api, { ABORT_ERROR, DEFAULT_ERROR_MESSAGE } from '@/utils/api'
 import { transformChatHistoryFEtoBE } from '@/utils/chatHelpers'
-import { DEFAULT_TOOLS_CONFIG, saveChatSkills, saveChatTools } from '@/utils/chatStorageUtils'
+import { DEFAULT_TOOLS_CONFIG, saveChatTools } from '@/utils/chatStorageUtils'
 import { ConfluenceConnectRequired, parseConfluenceConnectRequired } from '@/utils/confluenceAuth'
 import { isChatContextualNamingEnabled } from '@/utils/featureFlags'
 import { GitLabConnectRequired, parseGitLabConnectRequired } from '@/utils/gitlabAuth'
@@ -441,7 +441,6 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       const userId = userStore.user?.userId
       if (userId) {
         saveChatTools(userId, newId, dynamicToolsConfig ?? DEFAULT_TOOLS_CONFIG)
-        saveChatSkills(userId, newId, skillIds ?? [])
       }
       const pendingUpdates = buildPendingChatUpdates(pendingLlmModel, pendingToolCallPolicy)
       if (Object.keys(pendingUpdates).length) {

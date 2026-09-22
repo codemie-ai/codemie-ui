@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "rationale": "Both prior blocking findings are resolved at HEAD (b6fac6874a0d0177f44825814bafb093a3151543), matching the reviewed diff exactly: CR-001's startNewChat now clears the \"\" sentinel via storage.remove(userId, chatSkillsKey('')) before arming the new placeholder, mirroring the existing clearPendingDismissals() pattern; CR-002's saveChatSkills now calls storage.remove instead of no-op'ing when skills clears to []. Both fixes are covered by new unit/integration tests asserting the storage.remove calls directly.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Delete the wrong-shape write from createChatGeneration's new-chat branch", "status": "pass", "notes": "saveChatSkills call removed from chatGeneration.ts; import trimmed" },
+    { "kind": "spec", "item": "Fix the ''-falsy guard in handleSetSelectedSkills", "status": "pass", "notes": "chatId !== undefined replaces truthy check; covered by test" },
+    { "kind": "spec", "item": "Migrate the ''-keyed entry to the real chat id in the reload effect", "status": "pass", "notes": "implemented inline in existing effect, no duplicate migration" },
+    { "kind": "spec", "item": "Harden sweepOrphanedChatKeys to never delete the ''-sentinel key", "status": "pass", "notes": "existence-sweep branch guarded; empty-value sweep branch unchanged" },
+    { "kind": "spec", "item": "Minimal shape filter on loadChatSkills for corrupted entries", "status": "pass", "notes": "isValidSkillOption inline predicate, unexported, filters bad shapes" },
+    { "kind": "story-ac", "item": "Selected skills persist across navigate-away-and-back, including for a brand-new chat", "status": "pass", "notes": "covered by newChatGuard + integration test" },
+    { "kind": "story-ac", "item": "Persist correctly for a user's very first-ever chat (empty chat list, sweep race)", "status": "pass", "notes": "integration test drives the un-awaited getChats sweep path" },
+    { "kind": "story-ac", "item": "/model requests never contain null/undefined in skill_ids", "status": "pass", "notes": "loadChatSkills filter plus traced selectedSkills->skill_ids mapping at real send sites; not in diff hunk but verified pre-existing and correct" },
+    { "kind": "story-ac", "item": "Malformed/invalid stored skill entries excluded from the request", "status": "pass", "notes": "isValidSkillOption filter, tested" },
+    { "kind": "story-ac", "item": "Continuing a chat with previously selected skills after visiting Assistants works without a 422", "status": "pass", "notes": "integration test simulates unmount/remount" },
+    { "kind": "story-ac", "item": "Regression test covers new-chat -> skills -> send -> navigate -> return -> send again", "status": "partial", "notes": "integration test stops at unmount/remount; never calls createChatGeneration or asserts a second /model request body" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "all 6 subjects in range match EPMCDME-14520 with capitalized, period-free summaries" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide exists in the repo and no ArtifactRef was passed" },
+    { "kind": "security", "status": "pass", "notes": "changes confined to localStorage shaping; no HTML sink, navigation, postMessage, or secret handling touched" }
+  ],
+  "findings": [
+    { "id": "CR-001", "kind": "code", "severity": "major", "triage": "patch", "file": "src/pages/chat/hooks/useChatConfiguration.tsx", "line": 194, "title": "Placeholder-chat skills sentinel not scoped per session", "problem": "The migration effect and handleSetSelectedSkills both key pending skills on the single global chatSkillsKey('') sentinel. startNewChat() never clears or re-scopes this key, so it is shared by every not-yet-created chat for a user.", "impact": "Picking skills on placeholder chat A, navigating away without creating it, then opening a new placeholder chat B and creating B migrates A's skills onto B — a chat the user never associated them with. Reachable via a single tab (abandon-and-reopen) or two tabs open concurrently for the same user.", "recommendation": "Scope the pending-skills sentinel per placeholder session (e.g. a token set by startNewChat and cleared/rotated on each call), or clear chatSkillsKey('') inside startNewChat() before a new placeholder begins." },
+    { "id": "CR-002", "kind": "code", "severity": "major", "triage": "patch", "file": "src/utils/chatStorageUtils.ts", "line": 49, "title": "saveChatSkills never deletes the key when skills are cleared", "problem": "saveChatSkills(userId, chatId, skills) returns early without touching storage when skills.length === 0, so clearing a chat's selected skills to [] leaves the previously-persisted entry (including chatSkillsKey('')) in place.", "impact": "A stale '' sentinel entry can survive a clear and be picked up by the reload effect's migration, attaching an old, discarded skill selection to the next real chat created — the same class of unintended cross-chat leak as CR-001, rooted in the shared helper this fix's migration step now depends on.", "recommendation": "In saveChatSkills, when skills.length === 0, remove the key (storage.remove(userId, chatSkillsKey(chatId))) instead of returning without effect." }
+  ],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "startNewChat (src/store/chats.ts:351-352) now clears storage.remove(userId, chatSkillsKey('')) before arming the new placeholder chat; verified at HEAD b6fac68, matches reviewed diff. Covered by a new storageCleanup test asserting storageRemove called with 'user-1'/'chat-skills-'." },
+    { "id": "CR-002", "status": "resolved", "notes": "saveChatSkills (src/utils/chatStorageUtils.ts:49-53) now calls storage.remove(userId, chatSkillsKey(chatId)) when skills.length === 0 instead of returning without effect; verified at HEAD, matches reviewed diff. Covered by a new unit test asserting storage.remove called and storage.put not called." }
+  ]
+}

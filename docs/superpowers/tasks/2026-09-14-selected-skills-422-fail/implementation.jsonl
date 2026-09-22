@@ -1,0 +1,6 @@
+{"task_id":"task-1","status":"done","commit":"ec998b4de","test_command":"npx vitest run src/store/__tests__/chatGeneration.storageGuards.test.ts --project unit"}
+{"task_id":"task-2","status":"done","commit":"6f79e7534","test_command":"npx vitest run src/pages/chat/hooks/__tests__/useChatConfiguration.newChatGuard.test.ts --project unit"}
+{"task_id":"task-3","status":"done","commit":"66f9a89b5","test_command":"npx vitest run src/pages/chat/hooks/__tests__/useChatConfiguration.newChatGuard.test.ts --project unit"}
+{"task_id":"task-4","status":"done","commit":"f9e2c34f7","test_command":"npx vitest run src/utils/__tests__/chatStorageUtils.test.ts --project unit"}
+{"task_id":"task-5","status":"done","commit":"8926732e6","test_command":"npx vitest run src/pages/chat/hooks/__tests__/useChatConfiguration.skillShapeGuard.test.ts --project unit"}
+{"task_id":"task-6","status":"done","commit":"b6fac6874","test_command":"npx vitest run src/pages/chat/hooks/__tests__/useChatConfiguration.skillsPersistence.integration.test.ts --project integration"}

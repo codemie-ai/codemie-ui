@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14520_selected-skills-422-fail",
+  "head": "b8052f078198933fdca63ec2a229424975d67518",
+  "runner": "npm",
+  "started_at": "2026-09-14T16:38:36Z",
+  "completed_at": "2026-09-14T16:50:34Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29905,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19885,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 199290,
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "notes": "Test Files 545 passed (545); Tests 5616 passed (5616)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 85847,
+      "command": "npm run test:integration",
+      "exit_code": 0,
+      "notes": "Test Files 42 passed (42); Tests 514 passed | 1 skipped (515)"
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 4104,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 7592,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks reported 'no leaks found' against ~24.78 MB scanned; working tree only, not git history"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 733,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Husky pre-commit gate not in guide's manual gate list; checked 2070 files, 0 missing"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 210,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN (and reachable SonarQube host per .sonarlint/connectedMode.json) to run this locally; CI still owes this check."
+    }
+  ],
+  "failures": {}
+}

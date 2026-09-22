@@ -47,7 +47,10 @@ export const saveChatTools = (userId: string, chatId: string, config: DynamicToo
 }
 
 export const saveChatSkills = (userId: string, chatId: string, skills: unknown[]): void => {
-  if (skills.length === 0) return
+  if (skills.length === 0) {
+    storage.remove(userId, chatSkillsKey(chatId))
+    return
+  }
   try {
     storage.put(userId, chatSkillsKey(chatId), skills)
   } catch {
@@ -117,7 +120,7 @@ export const sweepOrphanedChatKeys = (userId: string, validChatIds?: string[]): 
         if (isUserSkills) chatId = key.slice(skillsPrefix.length)
         else if (isUserTools) chatId = key.slice(toolsPrefix.length)
         else chatId = key.slice(hideToolOutputsPrefix.length)
-        if (!validChatIds.includes(chatId)) {
+        if (chatId !== '' && !validChatIds.includes(chatId)) {
           localStorage.removeItem(key)
           return
         }

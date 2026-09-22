@@ -24,7 +24,7 @@ vi.mock('valtio', () => ({ proxy: vi.fn((obj) => obj) }))
 vi.mock('@/utils/api', () => ({
   default: {
     delete: vi.fn(),
-    get: vi.fn(),
+    get: vi.fn().mockResolvedValue({ json: () => Promise.resolve({ id: '', history: [] }) }),
     post: vi.fn(),
     put: vi.fn(),
     downloadFileStream: vi.fn(),
@@ -51,6 +51,7 @@ const mockUserStore = vi.hoisted(() => ({ user: { userId: 'user-1' } }))
 vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
 
 const apiDelete = api.delete as ReturnType<typeof vi.fn>
+const apiGet = api.get as ReturnType<typeof vi.fn>
 const storageRemove = storage.remove as ReturnType<typeof vi.fn>
 
 const jsonResponse = (data: unknown = {}) =>
@@ -62,6 +63,14 @@ beforeEach(() => {
   chatsStore.chatFolders = []
   chatsStore.currentChat = null
   chatsStore.openedChatsHistory = []
+})
+
+describe('startNewChat — pending skills cleanup', () => {
+  it('clears the "" sentinel chat-skills entry so it cannot leak onto the next placeholder chat', async () => {
+    apiGet.mockResolvedValue(jsonResponse({ id: '', history: [] }))
+    await chatsStore.startNewChat()
+    expect(storageRemove).toHaveBeenCalledWith('user-1', 'chat-skills-')
+  })
 })
 
 describe('deleteChat — storage cleanup', () => {

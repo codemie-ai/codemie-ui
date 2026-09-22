@@ -28,7 +28,7 @@ import {
 } from '@/types/entity'
 import api, { sanitizeFileName } from '@/utils/api'
 import { transformChatBEtoFE } from '@/utils/chatHelpers'
-import { removeChatStorage, sweepOrphanedChatKeys } from '@/utils/chatStorageUtils'
+import { chatSkillsKey, removeChatStorage, sweepOrphanedChatKeys } from '@/utils/chatStorageUtils'
 import storage from '@/utils/storage'
 import toaster from '@/utils/toaster'
 import { getRootPath } from '@/utils/utils'
@@ -345,6 +345,11 @@ export const chatsStore = proxy<ChatsStoreType>({
     // Every new chat re-arms the premium tip: a dismissal on the previous
     // unsaved chat must not carry over to this one.
     premiumModelTipStore.clearPendingDismissals()
+    // The "" sentinel is a single global slot for a not-yet-created chat's
+    // selected skills. Without clearing it here, skills picked on an
+    // abandoned placeholder chat would migrate onto the next one (CR-001).
+    const userId = userStore.user?.userId
+    if (userId) storage.remove(userId, chatSkillsKey(''))
     chatsStore.newChatParams = { assistantId, folder: folderValue, isWorkflow }
     chatsStore.currentChat = newConversation
 

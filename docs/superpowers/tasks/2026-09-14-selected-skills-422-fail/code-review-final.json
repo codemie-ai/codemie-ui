@@ -1,0 +1,50 @@
+{
+  "decision": "request-changes",
+  "rationale": "blind and verification-gap lenses were not part of this balanced-profile roster (n/a, not failures); 2 patch-level findings survived triage after verifying every edge-case candidate against real call sites — a shared saveChatSkills early-return that lets a stale '' skills entry survive a clear and later mis-migrate onto the next real chat, and a global (unscoped) '' sentinel that can leak one placeholder chat's skill picks onto an unrelated placeholder chat across tabs or abandon-and-reopen; 3 edge-case candidates were dismissed as either by-design (sweep exempting '' is the spec's own step 4), unreachable (no live caller bypasses handleSetSelectedSkills to write skillIds directly), or below the emission floor (redundant no-op migration read on unrelated re-renders). Acceptance lens's two partial ACs were resolved by tracing selectedSkills into the /model skill_ids payload at the real send call sites (ChatPrompt.tsx, ChatUserMessage.tsx) — pre-existing, untouched by this diff, confirmed correct; no finding. Standards audit ran clean (commit-format pass, security pass, code-quality na — no guide exists) with no coverage gap.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Delete the wrong-shape write from createChatGeneration's new-chat branch", "status": "pass", "notes": "saveChatSkills call removed from chatGeneration.ts; import trimmed" },
+    { "kind": "spec", "item": "Fix the ''-falsy guard in handleSetSelectedSkills", "status": "pass", "notes": "chatId !== undefined replaces truthy check; covered by test" },
+    { "kind": "spec", "item": "Migrate the ''-keyed entry to the real chat id in the reload effect", "status": "pass", "notes": "implemented inline in existing effect, no duplicate migration" },
+    { "kind": "spec", "item": "Harden sweepOrphanedChatKeys to never delete the ''-sentinel key", "status": "pass", "notes": "existence-sweep branch guarded; empty-value sweep branch unchanged" },
+    { "kind": "spec", "item": "Minimal shape filter on loadChatSkills for corrupted entries", "status": "pass", "notes": "isValidSkillOption inline predicate, unexported, filters bad shapes" },
+    { "kind": "story-ac", "item": "Selected skills persist across navigate-away-and-back, including for a brand-new chat", "status": "pass", "notes": "covered by newChatGuard + integration test" },
+    { "kind": "story-ac", "item": "Persist correctly for a user's very first-ever chat (empty chat list, sweep race)", "status": "pass", "notes": "integration test drives the un-awaited getChats sweep path" },
+    { "kind": "story-ac", "item": "/model requests never contain null/undefined in skill_ids", "status": "pass", "notes": "loadChatSkills filter plus traced selectedSkills->skill_ids mapping at real send sites; not in diff hunk but verified pre-existing and correct" },
+    { "kind": "story-ac", "item": "Malformed/invalid stored skill entries excluded from the request", "status": "pass", "notes": "isValidSkillOption filter, tested" },
+    { "kind": "story-ac", "item": "Continuing a chat with previously selected skills after visiting Assistants works without a 422", "status": "pass", "notes": "integration test simulates unmount/remount" },
+    { "kind": "story-ac", "item": "Regression test covers new-chat -> skills -> send -> navigate -> return -> send again", "status": "partial", "notes": "integration test stops at unmount/remount; never calls createChatGeneration or asserts a second /model request body" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "all 6 subjects in range match EPMCDME-14520 with capitalized, period-free summaries" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide exists in the repo and no ArtifactRef was passed" },
+    { "kind": "security", "status": "pass", "notes": "changes confined to localStorage shaping; no HTML sink, navigation, postMessage, or secret handling touched" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/useChatConfiguration.tsx",
+      "line": 194,
+      "title": "Placeholder-chat skills sentinel not scoped per session",
+      "problem": "The migration effect and handleSetSelectedSkills both key pending skills on the single global chatSkillsKey('') sentinel. startNewChat() never clears or re-scopes this key, so it is shared by every not-yet-created chat for a user.",
+      "impact": "Picking skills on placeholder chat A, navigating away without creating it, then opening a new placeholder chat B and creating B migrates A's skills onto B — a chat the user never associated them with. Reachable via a single tab (abandon-and-reopen) or two tabs open concurrently for the same user.",
+      "recommendation": "Scope the pending-skills sentinel per placeholder session (e.g. a token set by startNewChat and cleared/rotated on each call), or clear chatSkillsKey('') inside startNewChat() before a new placeholder begins."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/chatStorageUtils.ts",
+      "line": 49,
+      "title": "saveChatSkills never deletes the key when skills are cleared",
+      "problem": "saveChatSkills(userId, chatId, skills) returns early without touching storage when skills.length === 0, so clearing a chat's selected skills to [] leaves the previously-persisted entry (including chatSkillsKey('')) in place.",
+      "impact": "A stale '' sentinel entry can survive a clear and be picked up by the reload effect's migration, attaching an old, discarded skill selection to the next real chat created — the same class of unintended cross-chat leak as CR-001, rooted in the shared helper this fix's migration step now depends on.",
+      "recommendation": "In saveChatSkills, when skills.length === 0, remove the key (storage.remove(userId, chatSkillsKey(chatId))) instead of returning without effect."
+    }
+  ]
+}

@@ -13,12 +13,16 @@
 // limitations under the License.
 //
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+import storage from '@/utils/storage'
 
 import {
   chatHideToolOutputsKey,
+  chatSkillsKey,
   loadChatHideToolOutputs,
   saveChatHideToolOutputs,
+  saveChatSkills,
   sweepOrphanedChatKeys,
 } from '../chatStorageUtils'
 
@@ -117,6 +121,35 @@ describe('sweepOrphanedChatKeys', () => {
       sweepOrphanedChatKeys(USER, ['current-chat'])
       expect(localStorage.getItem(`${USER}_chat-tools-config-old-chat`)).toBeNull()
     })
+
+    it('keeps the "" sentinel chat-skills key even when validChatIds is populated and excludes it', () => {
+      localStorage.setItem(`${USER}_chat-skills-`, '[{"value":"skill-a"}]')
+      sweepOrphanedChatKeys(USER, ['current-chat'])
+      expect(localStorage.getItem(`${USER}_chat-skills-`)).not.toBeNull()
+    })
+
+    it('still removes the "" sentinel chat-skills key when its content is empty (empty-value sweep)', () => {
+      localStorage.setItem(`${USER}_chat-skills-`, '[]')
+      sweepOrphanedChatKeys(USER, ['current-chat'])
+      expect(localStorage.getItem(`${USER}_chat-skills-`)).toBeNull()
+    })
+  })
+})
+
+describe('saveChatSkills', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('removes the stored entry when skills is cleared to []', () => {
+    saveChatSkills(USER, 'chat-1', [])
+    expect(storage.remove).toHaveBeenCalledWith(USER, chatSkillsKey('chat-1'))
+    expect(storage.put).not.toHaveBeenCalled()
+  })
+
+  it('stores skills when non-empty', () => {
+    saveChatSkills(USER, 'chat-1', [{ value: 'skill-a' }])
+    expect(storage.put).toHaveBeenCalledWith(USER, chatSkillsKey('chat-1'), [{ value: 'skill-a' }])
   })
 })
 

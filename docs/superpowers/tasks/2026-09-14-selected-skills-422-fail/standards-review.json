@@ -1,0 +1,9 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "All 6 commit subjects in the range match the documented ^EPMCDME-XXXX: Capital sentence$ format (EPMCDME-14520, non-zero ID, capitalized first word, no trailing period); branch name EPMCDME-14520_selected-skills-422-fail matches the branch-naming pattern too"},
+    {"kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md (or any code-quality guide) exists in the repo and no ArtifactRef was passed for this check; AGENTS.md routes quality gates to quality-gates.md, which is not the code-quality kind this row adjudicates"},
+    {"kind": "security", "status": "pass", "notes": "Change is confined to localStorage JSON persistence for chat skills (src/utils/chatStorageUtils.ts, src/store/chatGeneration.ts, src/pages/chat/hooks/useChatConfiguration.tsx) plus tests; no dangerouslySetInnerHTML/innerHTML sink, no navigation built from untrusted input, no postMessage/cross-window messaging, no VITE_*/window._env_ config or secret touched. storage.get/put wrap JSON.parse/stringify around localStorage with no injection surface. Nothing in security-patterns.md's checklist applies, and no other concrete security issue was found in the changed lines"}
+  ],
+  "blocking_findings": [],
+  "coverage_gap": false
+}

@@ -44,8 +44,14 @@ const loadChatTools = (userId: string, chatId: string): DynamicToolsConfig => {
   )
 }
 
+const isValidSkillOption = (value: unknown): value is SkillOption =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as { value?: unknown }).value === 'string' &&
+  (value as { value: string }).value.length > 0
+
 const loadChatSkills = (userId: string, chatId: string): SkillOption[] => {
-  return storage.get<SkillOption>(userId, chatSkillsKey(chatId))
+  return storage.get<SkillOption>(userId, chatSkillsKey(chatId)).filter(isValidSkillOption)
 }
 
 export type UseChatConfigReturn = {
@@ -119,7 +125,7 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
       setSelectedSkills(skills)
       const chatId = currentChat?.id
       const userId = userStore.user?.userId
-      if (chatId && userId) {
+      if (chatId !== undefined && userId) {
         saveChatSkills(userId, chatId, skills)
       }
     },
@@ -185,6 +191,11 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
     const userId = userStore.user?.userId
 
     if (chatId && userId) {
+      const pendingSkills = loadChatSkills(userId, '')
+      if (pendingSkills.length) {
+        saveChatSkills(userId, chatId, pendingSkills)
+        storage.remove(userId, chatSkillsKey(''))
+      }
       if (currentChat?.history.length) {
         setDynamicToolsConfig(loadChatTools(userId, chatId))
         setSelectedSkills(loadChatSkills(userId, chatId))

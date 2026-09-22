@@ -87,10 +87,14 @@ describe('chatGeneration storage guards (isNewChat branch)', () => {
     )
   })
 
-  it('writes chat-skills when skillIds is non-empty', async () => {
+  it('never writes chat-skills, even when skillIds is non-empty', async () => {
     setupIsNewChat('new-id')
     await chatGenerationStore.createChatGeneration({ skillIds: ['skill-a'] }).catch(() => {})
-    expect(storagePut).toHaveBeenCalledWith('user-1', 'chat-skills-new-id', ['skill-a'])
+    expect(storagePut).not.toHaveBeenCalledWith(
+      'user-1',
+      expect.stringContaining('chat-skills-'),
+      expect.anything()
+    )
   })
 
   it('does not write chat-tools-config when dynamicToolsConfig is all-null', async () => {
@@ -128,18 +132,5 @@ describe('chatGeneration storage guards (isNewChat branch)', () => {
       enableWebSearch: true,
       enableCodeInterpreter: null,
     })
-  })
-
-  it('silently swallows QuotaExceededError on chat-skills write', async () => {
-    setupIsNewChat('new-id')
-    storagePut.mockImplementation((_userId: string, key: string) => {
-      if (key.includes('chat-skills-')) throw new DOMException('quota', 'QuotaExceededError')
-    })
-    let caughtError: unknown
-    await chatGenerationStore.createChatGeneration({ skillIds: ['skill-a'] }).catch((e) => {
-      caughtError = e
-    })
-    // QuotaExceededError must not propagate; subsequent recursive call may reject for other reasons
-    expect(caughtError).not.toBeInstanceOf(DOMException)
   })
 })

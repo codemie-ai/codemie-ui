@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "generated": "2026-09-14T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk": { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 2, "label": "S" }
+  },
+  "total": 17,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 11,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "Adds a malformed-entry validation guard (isValidSkillOption) and a sentinel-key existence-sweep exemption with no prior test template covering these defensive edge cases — new parameterized guard/cleanup test files (skillShapeGuard, newChatGuard, storageGuards, storageCleanup) were added specifically for this gap, triggering the edge-case Technical Risk bump." },
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 11 files changed (4 modified source files across hooks/store/utils, 7 new test files), mapping to the 11-15 XL bucket even though the change is a single confined bug fix." },
+    { "dimension": "component_scope", "reason": "Touches 2 stores (chats.ts, chatGeneration.ts), 1 hook (useChatConfiguration.tsx), and 1 shared util (chatStorageUtils.ts) — all within one feature (chat-skills persistence) and one architectural tier, following an existing storage-util pattern." }
+  ],
+  "red_flags_applied": [
+    "Sanitization/validation work with no prior reusable guard for malformed localStorage entries — Technical Risk bumped from M to L"
+  ],
+  "split_recommendation": null
+}

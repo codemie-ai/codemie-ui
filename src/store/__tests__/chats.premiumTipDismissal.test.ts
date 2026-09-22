@@ -38,6 +38,7 @@ vi.mock('@/utils/storage', () => ({
   default: { put: vi.fn(), get: vi.fn(), getObject: vi.fn(), remove: vi.fn() },
 }))
 vi.mock('@/utils/chatStorageUtils', () => ({
+  chatSkillsKey: vi.fn((chatId: string) => `chat-skills-${chatId}`),
   removeChatStorage: vi.fn(),
   sweepOrphanedChatKeys: vi.fn(),
 }))
