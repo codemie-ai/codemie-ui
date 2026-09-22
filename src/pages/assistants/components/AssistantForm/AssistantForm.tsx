@@ -81,6 +81,7 @@ import ContextSelector from './components/ContextSelector'
 import HedgingConfigField from './components/HedgingConfig'
 import InteractiveFeaturesAccordion from './components/InteractiveFeaturesAccordion'
 import RefineWithAIPromptPopup from './components/RefineWithAIPromptPopup'
+import { GitDatasourceHint, isGitDatasourceMissing } from './components/Toolkits/GitDatasourceHint'
 import ToolsConfiguration from './components/Toolkits/ToolsConfiguration'
 import { TOOL_PERMISSIONS_LABEL } from './constants'
 import { useRefineAIRecommendations } from './hooks/useRefineAIRecommendations'
@@ -869,6 +870,11 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             isAIGenerated={aiGeneratedFieldMarkers.toolkits}
             renderTitleExtra={
               isCodemieAssistant && toolPermissionsEnabled ? renderRequireConfirmation : undefined
+            }
+            renderHint={
+              isGitDatasourceMissing(toolkits, watch('context') as AssistantContext[] | undefined)
+                ? GitDatasourceHint
+                : undefined
             }
           />
 

@@ -1,0 +1,18 @@
+{
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "medium",
+  "rationale": "Both prior findings fixed in the fix-up diff. CR-001 (resolved): `tk.tools.length` replaced with `(tk.tools?.length ?? 0) > 0`, consistent with the existing usage at line 418. CR-002 (resolved): the predicate now requires `Array.isArray(ctx)` before comparing `!hasCodeContext`, so an uninitialized/undefined context no longer triggers the badge — the badge fires only when the context field is a real (loaded) array with no CODE entry. Refactored to an IIFE for readability; `npm run typecheck` passes. No new high-risk issues introduced. business_review and standards_review carried forward from prior verdict.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {"standard": "code-quality", "status": "na", "notes": "No code-quality standards guide passed."},
+    {"standard": "security", "status": "pass", "notes": "No unsafe HTML, redirect, secret, or DOM sink in the fix-up."},
+    {"standard": "commit-format", "status": "na", "notes": "No git-workflow guide passed."}
+  ],
+  "findings": [],
+  "finding_status": {
+    "CR-001": "resolved",
+    "CR-002": "resolved"
+  }
+}

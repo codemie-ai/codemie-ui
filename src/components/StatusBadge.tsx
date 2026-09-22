@@ -31,6 +31,8 @@ export type StatusType = (typeof StatusEnum)[keyof typeof StatusEnum]
 interface StatusBadgeProps {
   status: StatusType
   text?: string
+  /** Hides the leading dot — for badges that mark a trait, not a live state. */
+  showDot?: boolean
 }
 
 const statusStyles: Record<
@@ -66,7 +68,7 @@ const statusStyles: Record<
   },
 }
 
-const StatusBadge: FC<StatusBadgeProps> = ({ status, text }) => {
+const StatusBadge: FC<StatusBadgeProps> = ({ status, text, showDot = true }) => {
   const styles = statusStyles[status]
 
   return (
@@ -80,7 +82,7 @@ const StatusBadge: FC<StatusBadgeProps> = ({ status, text }) => {
         styles.container
       )}
     >
-      <span className={cn('rounded-full w-[7px] h-[7px] inline-block', styles.dot)} />
+      {showDot && <span className={cn('rounded-full w-[7px] h-[7px] inline-block', styles.dot)} />}
       {text}
     </div>
   )

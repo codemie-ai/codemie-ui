@@ -1,0 +1,35 @@
+{
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "Two blocking issues in the renderHint predicate. CR-001: `tk.tools.length` is called without optional chaining, but the codebase already treats `tools` as optional — line 418 in the same file uses `toolkit.tools?.some(...)`. If any toolkit arrives with `tools` absent/null (matches AssistantToolkitAPI-like shapes in the file that declare `tools?: any[]`), the form renders no more. CR-002: `!(watch('context') as AssistantContext[])?.some(...)` evaluates to `true` when watch returns undefined (form field not yet initialized / loading edit-existing flow), so the amber badge falsely appears at mount before context data has loaded. Dismissed 4 findings: EC-2 (watch subscription) refuted — `watch('context')` is already called at line 383 in the component body during render, which subscribes; EC-3 (dark-mode contrast) refuted empirically — I verified the amber badge is legible on the dark theme in the running app; EC-4 (TOOLKITS.Git enum mismatch) refuted — `ToolSet.GIT.value == 'Git'` on the backend, matches `TOOLKITS.Git = 'Git'` in the UI; B-1 (unstable renderHint reference) is premature — no evidence the receiver memoizes; B-3 (toolkits null-guard) refuted — `toolkits` is initialized to `[]` at line 221. No spec artifact supplied — acceptance lens skipped (no-spec), confidence forced to low.",
+  "risk_flags": ["defensive-coding"],
+  "business_review": [],
+  "standards_review": [
+    {"standard": "code-quality", "status": "na", "notes": "No code-quality standards guide passed."},
+    {"standard": "security", "status": "pass", "notes": "No unsafe HTML, redirect, secret, or DOM sink in the diff."},
+    {"standard": "commit-format", "status": "na", "notes": "No git-workflow guide passed."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "title": "`tk.tools.length` will crash the form if any toolkit's `tools` is undefined",
+      "file": "src/pages/assistants/components/AssistantForm/AssistantForm.tsx:784",
+      "problem": "The predicate uses `tk.tools.length > 0` without optional chaining. In the same file (line 418) the existing pattern is `toolkit.tools?.some(...)` — i.e. the codebase treats `tools` as possibly undefined. The AssistantToolkit type in the file declares `tools` non-optional but AssistantToolkitAPI-like shapes (line 101) declare `tools?: any[]`. Runtime data from the API can therefore diverge from the strict TS type, and any toolkit landing with `tools` missing crashes the render.",
+      "impact": "Unhandled TypeError blanks the entire AssistantForm whenever a toolkit arrives with `tools` missing or null. Silent regression risk when the backend/data shape drifts.",
+      "recommendation": "Change to `tk.tools?.length` (or `(tk.tools ?? []).length`), consistent with the existing usage at line 418."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "title": "Badge shows a false positive during form initialization",
+      "file": "src/pages/assistants/components/AssistantForm/AssistantForm.tsx:785",
+      "problem": "`!(watch('context') as AssistantContext[])?.some(...)` is `!undefined` when `context` is not yet populated → `true`. Combined with a Git toolkit being present, the amber `Git datasource required` badge appears on mount / during data load for the edit-existing flow, before the context list has been hydrated from the assistant being loaded.",
+      "impact": "Users editing an assistant that already has a CODE datasource see the warning momentarily (or persistently until the field loads), which is exactly the confusing signal this feature was meant to eliminate.",
+      "recommendation": "Make the guard explicit — treat `undefined` as no-badge: e.g. `const ctx = watch('context') as AssistantContext[] | undefined; const hasCode = Array.isArray(ctx) && ctx.some(c => c.context_type === ContextType.CODE);` then use `!hasCode` only when we know the field has loaded (a non-array `ctx` should not trigger the badge). Alternatively, gate by whether the assistant edit-load has completed."
+    }
+  ]
+}
