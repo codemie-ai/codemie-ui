@@ -27,6 +27,7 @@ import {
 import { useState, useRef, FC, memo } from 'react'
 import { useSnapshot } from 'valtio'
 
+import AssistantSVG from '@/assets/icons/assistant.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import AvatarGroup from '@/components/Avatar/AvatarGroup'
 import { AvatarType } from '@/constants/avatar'
@@ -175,6 +176,14 @@ const ChatListItem: FC<ChatListItemProps> = memo(
                   className="shrink-0"
                 />
               ))}
+
+            {isCompact && !hideAvatar && chat.isGroup && (
+              <span className="flex flex-row gap-0.5 border-white border-1 rounded-md pl-1 pr-1.5 py-0.5 bg-neutral-710 items-center">
+                <AssistantSVG className="h-3.5" />
+                <span className="text-xs-1">{groupAvatars.length}</span>
+              </span>
+            )}
+
             {isEditing ? (
               <input
                 type="text"

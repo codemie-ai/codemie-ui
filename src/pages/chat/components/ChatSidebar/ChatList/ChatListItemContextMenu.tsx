@@ -18,6 +18,7 @@ import { FC } from 'react'
 import ArchiveSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import FolderSvg from '@/assets/icons/folder-move.svg?react'
+import PinFilledSvg from '@/assets/icons/pin-filled.svg?react'
 import PinSvg from '@/assets/icons/pin.svg?react'
 import NavigationMore, { type NavigationItem } from '@/components/NavigationMore/NavigationMore'
 import { type ChatListItem } from '@/types/entity/conversation'
@@ -47,7 +48,7 @@ const buildMenuItems = ({
     {
       title: chat.pinned ? 'Unpin' : 'Pin',
       onClick: () => pinChat(chat.id),
-      icon: <PinSvg className="icon" />,
+      icon: chat.pinned ? <PinFilledSvg className="icon" /> : <PinSvg className="icon" />,
     },
   ]
   if (!isImportChat) {

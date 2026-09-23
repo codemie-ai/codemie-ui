@@ -13,12 +13,10 @@
 // limitations under the License.
 //
 
-import chatImportIcon from '@/assets/icons/chat-import.svg'
+import FolderSvg from '@/assets/icons/folder.svg'
 
 export interface ChatImportSource {
-  /** Human-readable name shown as the avatar tooltip / fallback label. */
   name: string
-  /** Icon rendered instead of the generated "?" avatar. */
   iconUrl: string
 }
 
@@ -55,15 +53,15 @@ export const isValidImportSourceKind = (value: unknown): value is ImportSourceKi
 
 /** Display metadata keyed by canonical import source. */
 export const IMPORT_SOURCE_DISPLAY: Record<ImportSourceKind, ChatImportSource> = {
-  claude_desktop: { name: 'Claude Desktop', iconUrl: chatImportIcon },
-  claude_cli: { name: 'Claude CLI', iconUrl: chatImportIcon },
-  claude_code: { name: 'Claude Code', iconUrl: chatImportIcon },
-  codex: { name: 'Codex', iconUrl: chatImportIcon },
-  gemini: { name: 'Gemini', iconUrl: chatImportIcon },
-  copilot_cli: { name: 'Copilot CLI', iconUrl: chatImportIcon },
-  opencode: { name: 'Opencode', iconUrl: chatImportIcon },
-  pi: { name: 'Pi', iconUrl: chatImportIcon },
-  kimi: { name: 'Kimi', iconUrl: chatImportIcon },
+  claude_desktop: { name: 'Claude Desktop', iconUrl: FolderSvg },
+  claude_cli: { name: 'Claude CLI', iconUrl: FolderSvg },
+  claude_code: { name: 'Claude Code', iconUrl: FolderSvg },
+  codex: { name: 'Codex', iconUrl: FolderSvg },
+  gemini: { name: 'Gemini', iconUrl: FolderSvg },
+  copilot_cli: { name: 'Copilot CLI', iconUrl: FolderSvg },
+  opencode: { name: 'Opencode', iconUrl: FolderSvg },
+  pi: { name: 'Pi', iconUrl: FolderSvg },
+  kimi: { name: 'Kimi', iconUrl: FolderSvg },
 }
 
 /**
@@ -75,10 +73,10 @@ export const IMPORT_SOURCE_DISPLAY: Record<ImportSourceKind, ChatImportSource> =
  * folder-name detection until backend migration is complete.
  */
 const CHAT_IMPORT_SOURCES: Record<string, ChatImportSource> = {
-  'claude desktop': { name: 'Claude Imports', iconUrl: chatImportIcon },
-  'claude imports': { name: 'Claude Imports', iconUrl: chatImportIcon },
-  claude: { name: 'Claude Imports', iconUrl: chatImportIcon },
-  'codemie-code': { name: 'codemie-code', iconUrl: chatImportIcon },
+  'claude desktop': { name: 'Claude Imports', iconUrl: FolderSvg },
+  'claude imports': { name: 'Claude Imports', iconUrl: FolderSvg },
+  claude: { name: 'Claude Imports', iconUrl: FolderSvg },
+  'codemie-code': { name: 'codemie-code', iconUrl: FolderSvg },
 }
 
 /** @deprecated Use resolveImportDisplay instead. */

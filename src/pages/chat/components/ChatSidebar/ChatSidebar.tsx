@@ -20,6 +20,7 @@ import Plus from '@/assets/icons/plus.svg?react'
 import SearchIcon from '@/assets/icons/search.svg?react'
 import Button from '@/components/Button/Button'
 import Sidebar from '@/components/Sidebar/Sidebar'
+import { useVueRouter } from '@/hooks/useVueRouter'
 import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
 import { chatViewSettingsStore } from '@/store/chatViewSettings'
@@ -30,12 +31,14 @@ import { ChatListItem } from '@/types/entity/conversation'
 import ChatSidebarAssistants from './ChatSidebarAssistants'
 import ChatSidebarLists, { ChatSidebarListsRef } from './ChatSidebarLists/ChatSidebarLists'
 import ChatViewSettings from './ChatViewSettings'
-import StartNewChatModal from './StartNewChatModal'
+// New chat popup disabled; direct default-chat behavior restored below. Kept for quick re-enable.
+// import StartNewChatModal from './StartNewChatModal'
 import ChatSearchPanel from '../ChatSearchPanel/ChatSearchPanel'
 
 const ChatSidebar = () => {
+  const router = useVueRouter()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false)
+  // const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false)
   const [isFocusedViewActive, setIsFocusedViewActive] = useState(false)
   const sidebarListsRef = useRef<ChatSidebarListsRef>(null)
   const recentMetadataPromiseRef = useRef<Promise<void>>(Promise.resolve())
@@ -83,7 +86,12 @@ const ChatSidebar = () => {
         <Button
           variant="primary"
           size="medium"
-          onClick={() => setIsNewChatModalOpen(true)}
+          // onClick={() => setIsNewChatModalOpen(true)}
+          onClick={async () => {
+            // Popup disabled; start a new chat directly with the default assistant, as in prod.
+            await chatsStore.startNewChat('', '', false)
+            router.push({ name: 'new-chat' })
+          }}
           data-onboarding="chat-new-chat-button"
           className="shrink-0 whitespace-nowrap rounded-lg"
         >
@@ -128,10 +136,11 @@ const ChatSidebar = () => {
         />
       </div>
 
+      {/* New chat popup disabled; direct default-chat behavior restored above. Kept for quick re-enable.
       <StartNewChatModal
         isVisible={isNewChatModalOpen}
         onHide={() => setIsNewChatModalOpen(false)}
-      />
+      /> */}
     </Sidebar>
   )
 }
