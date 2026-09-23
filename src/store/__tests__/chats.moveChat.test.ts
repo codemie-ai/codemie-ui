@@ -15,6 +15,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
+
 import { chatsStore } from '../chats'
 
 vi.mock('valtio', () => ({ proxy: vi.fn((obj) => obj) }))
@@ -96,6 +98,26 @@ describe('moveChatToFolder records move order without touching updateDate', () =
     expect(mockMoveOrderStore.recordMove).toHaveBeenCalledWith('chat-1')
     expect(mockApi.put).toHaveBeenCalledWith('v1/conversations/chat-1', { folder: 'My Folder' })
   })
+
+  it('clears move order instead of recording it when moving back to the Chats section', async () => {
+    chatsStore.chats = [
+      {
+        id: 'chat-1',
+        name: 'Chat 1',
+        pinned: false,
+        folder: 'My Folder',
+        updateDate: '2020-01-01T00:00:00.000Z',
+      } as any,
+    ]
+
+    await chatsStore.moveChatToFolder('chat-1', DEFAULT_CHAT_FOLDER)
+
+    // There is no target folder list to head, and Recent orders on activity alone, so the stale
+    // entry would only linger in storage.
+    expect(mockMoveOrderStore.clearMove).toHaveBeenCalledWith('chat-1')
+    expect(mockMoveOrderStore.recordMove).not.toHaveBeenCalled()
+    expect(mockApi.put).toHaveBeenCalledWith('v1/conversations/chat-1', { folder: '' })
+  })
 })
 
 describe('moveChatsToFolder records move order for every moved chat without touching updateDate', () => {
@@ -113,6 +135,29 @@ describe('moveChatsToFolder records move order for every moved chat without touc
       conversation_ids: ['chat-1', 'chat-2'],
       target_folder: 'My Folder',
     })
+  })
+
+  it('clears move order for each chat id when moving back to the Chats section', async () => {
+    chatsStore.chats = [
+      {
+        id: 'chat-1',
+        pinned: false,
+        folder: 'My Folder',
+        updateDate: '2020-01-01T00:00:00.000Z',
+      } as any,
+      {
+        id: 'chat-2',
+        pinned: false,
+        folder: 'My Folder',
+        updateDate: '2020-01-02T00:00:00.000Z',
+      } as any,
+    ]
+
+    await chatsStore.moveChatsToFolder(['chat-1', 'chat-2'], DEFAULT_CHAT_FOLDER)
+
+    expect(mockMoveOrderStore.clearMove).toHaveBeenCalledWith('chat-1')
+    expect(mockMoveOrderStore.clearMove).toHaveBeenCalledWith('chat-2')
+    expect(mockMoveOrderStore.recordMove).not.toHaveBeenCalled()
   })
 
   it('does nothing when given an empty list', async () => {

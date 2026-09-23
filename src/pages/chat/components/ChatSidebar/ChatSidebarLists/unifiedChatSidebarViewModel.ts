@@ -87,10 +87,11 @@ const sortPinnedByPinOrder = (chats: ChatListItem[], pinOrder: Record<string, st
   })
 }
 
-// Recent/folder lists must keep reflecting real activity, unlike Pinned — so a move only wins
-// the sort until something genuinely newer happens (max, not override): right after a move the
-// recorded moveOrder timestamp is the newest thing about the chat, so it sorts first; once real
-// usage produces a newer updateDate, that naturally takes over again.
+// Folder lists must keep reflecting real activity, unlike Pinned — so a move only wins the sort
+// until something genuinely newer happens (max, not override): right after a move the recorded
+// moveOrder timestamp is the newest thing about the chat, so it sorts first; once real usage
+// produces a newer updateDate, that naturally takes over again. Recent is deliberately excluded
+// (EPMCDME-15007) — it orders on activity alone, and a foldered chat appears there too.
 const sortByRecencyWithMoveOrder = (chats: ChatListItem[], moveOrder: Record<string, string>) => {
   chats.sort((a, b) => {
     const aTs = Math.max(
@@ -140,7 +141,7 @@ export const buildUnifiedChatSidebarViewModel = (
   }
 
   sortPinnedByPinOrder(viewModel.pinnedChats, pinOrder)
-  sortByRecencyWithMoveOrder(viewModel.recentChats, moveOrder)
+  sortChatsByMostRecent(viewModel.recentChats)
   sortChatsByMostRecent(viewModel.workflowChats)
   for (const folderChats of Object.values(viewModel.foldersToChatsMap)) {
     sortByRecencyWithMoveOrder(folderChats, moveOrder)

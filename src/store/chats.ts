@@ -847,10 +847,13 @@ export const chatsStore = proxy<ChatsStoreType>({
       .put(`v1/conversations/${chatId}`, { folder: folderValue })
       .then((response) => {
         chat.folder = folderValue
-        // A move must land at the top of the target list regardless of the chat's actual
-        // last activity, without treating the move itself as activity — moveOrderStore
-        // records this independently of updateDate (EPMCDME-15009 reopened AC).
-        moveOrderStore.recordMove(chatId)
+        // A move into a folder must land at the top of that folder regardless of the chat's
+        // actual last activity, without treating the move itself as activity — moveOrderStore
+        // records this independently of updateDate (EPMCDME-15009 reopened AC). Moving back to
+        // the Chats section has no folder list to head, and Recent orders on activity alone
+        // (EPMCDME-15007), so the entry is dropped instead.
+        if (folderValue) moveOrderStore.recordMove(chatId)
+        else moveOrderStore.clearMove(chatId)
         return response.json()
       })
       .then(() => {
@@ -878,7 +881,9 @@ export const chatsStore = proxy<ChatsStoreType>({
       chatsStore.chats.forEach((chat) => {
         if (chatIds.includes(chat.id)) chat.folder = folderValue
       })
-      chatIds.forEach((id) => moveOrderStore.recordMove(id))
+      chatIds.forEach((id) =>
+        folderValue ? moveOrderStore.recordMove(id) : moveOrderStore.clearMove(id)
+      )
       await refreshChatsAndFolders()
       toaster.success(
         `${chatIds.length} ${chatIds.length === 1 ? 'chat' : 'chats'} moved to ${targetFolder}`

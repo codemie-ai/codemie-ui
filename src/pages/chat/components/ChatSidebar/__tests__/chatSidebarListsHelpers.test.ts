@@ -460,7 +460,7 @@ describe('buildUnifiedChatSidebarViewModel', () => {
       ])
     })
 
-    it('a moved chat sorts to the top of Recent when moved back to the Chats section', () => {
+    it('a moved chat keeps its activity position in Recent', () => {
       const staleMoved = createChat({
         id: 'stale-moved',
         folder: null,
@@ -480,7 +480,37 @@ describe('buildUnifiedChatSidebarViewModel', () => {
         { 'stale-moved': '2026-08-01T00:00:00.000Z' }
       )
 
-      expect(viewModel.recentChats.map((chat) => chat.id)).toEqual(['stale-moved', 'active-chat'])
+      expect(viewModel.recentChats.map((chat) => chat.id)).toEqual(['active-chat', 'stale-moved'])
+    })
+
+    it('a chat moved into a folder heads that folder without leaving its Recent position', () => {
+      const staleMoved = createChat({
+        id: 'stale-moved',
+        folder: 'Project',
+        updateDate: '2026-01-01T00:00:00.000Z',
+      })
+      const activeResident = createChat({
+        id: 'active-resident',
+        folder: 'Project',
+        updateDate: '2026-06-01T00:00:00.000Z',
+      })
+
+      const viewModel = buildUnifiedChatSidebarViewModel(
+        [staleMoved, activeResident],
+        focusedSettings,
+        [],
+        {},
+        { 'stale-moved': '2026-08-01T00:00:00.000Z' }
+      )
+
+      expect(viewModel.foldersToChatsMap['custom:Project'].map((chat) => chat.id)).toEqual([
+        'stale-moved',
+        'active-resident',
+      ])
+      expect(viewModel.recentChats.map((chat) => chat.id)).toEqual([
+        'active-resident',
+        'stale-moved',
+      ])
     })
 
     it('genuinely newer activity elsewhere in the folder outranks a stale moveOrder entry', () => {

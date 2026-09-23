@@ -155,7 +155,7 @@ const UnifiedChatSidebar: FC<UnifiedChatSidebarProps> = ({
 
       <div className="my-2 border-t border-border-secondary shrink-0" />
 
-      <div data-onboarding="chat-sidebar-folders">
+      <div data-onboarding="chat-sidebar-folders" className="flex min-h-12 flex-col">
         <ChatSidebarAccordion
           title="Folders"
           isExpanded={isFoldersExpanded}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { ChatListItem, FolderListItem } from '@/types/entity/conversation'
 
@@ -34,12 +34,6 @@ export const useChatSidebarFolders = ({
   foldersToChatsMap,
 }: UseChatSidebarFoldersParams) => {
   const [activeFolders, setActiveFolders] = useState<string[]>([])
-  // Remembers the last computed sort timestamp per folder key across renders. When a folder's
-  // last chat is removed, its position must not immediately recompute from an empty state (that
-  // would drop it — most visibly for Assistant Folders and import groups, which have no entity
-  // date to fall back to); it should stay wherever it last was until some other folder's real
-  // activity naturally triggers a re-sort (EPMCDME-15009 reopened AC).
-  const lastKnownTimestamps = useRef(new Map<string, number>())
 
   const setActiveFolder = useCallback((folder: string | null) => {
     setActiveFolders((current) => {
@@ -52,7 +46,15 @@ export const useChatSidebarFolders = ({
     // Deduplicate named folder keys; Set preserves insertion order, keeping the
     // first occurrence of any legacy-import alias (safe: aliases share the same key).
     const namedFolderKeys = Array.from(
-      new Set(chatFolders.map((folder) => sidebarFolderKeyFromName(folder.name)))
+      new Set(
+        chatFolders
+          .map((folder) => sidebarFolderKeyFromName(folder.name))
+          .filter((key) => {
+            const kind = getFolderKindFromKey(key)
+            if (kind !== 'import' && kind !== 'legacy-import') return true
+            return (foldersToChatsMap[key] ?? []).length > 0
+          })
+      )
     )
     const namedFolderSet = new Set(namedFolderKeys)
     const additionalFolderKeys = Object.keys(foldersToChatsMap).filter(
@@ -66,29 +68,22 @@ export const useChatSidebarFolders = ({
       const ts = getValidDateTimestamp(folder.updateDate, folder.date)
       folderTimestampMap.set(key, Math.max(folderTimestampMap.get(key) ?? 0, ts))
     }
-    // Sort all folder keys by latest chat activity (descending).
-    // foldersToChatsMap entries are pre-sorted by sortChatsByMostRecent, so [0]
-    // is always the most-recent chat; fall back to the folder's own timestamp so
-    // empty folders sort alongside non-empty ones, not always last.
-    const latestChatTimestamp = (key: string): number => {
-      const entityTs = folderTimestampMap.get(key) ?? 0
+    const rankFolder = (key: string): [number, number] => {
       const chats = foldersToChatsMap[key] ?? []
-      if (chats.length === 0) {
-        // No chats right now — reuse whatever this folder last sorted at instead of
-        // recomputing from scratch, so losing its last chat doesn't move it.
-        return lastKnownTimestamps.current.get(key) ?? entityTs
-      }
+      if (chats.length === 0) return [1, folderTimestampMap.get(key) ?? 0]
       const chatTs = chats.reduce(
         (max, chat) => Math.max(max, getValidDateTimestamp(chat.updateDate, chat.date)),
         0
       )
-      const ts = Math.max(entityTs, chatTs)
-      lastKnownTimestamps.current.set(key, ts)
-      return ts
+      return [0, chatTs]
     }
-    return [...namedFolderKeys, ...additionalFolderKeys].sort(
-      (a, b) => latestChatTimestamp(b) - latestChatTimestamp(a) || a.localeCompare(b)
-    )
+    const allFolderKeys = [...namedFolderKeys, ...additionalFolderKeys]
+    const ranks = new Map(allFolderKeys.map((key) => [key, rankFolder(key)] as const))
+    return allFolderKeys.sort((a, b) => {
+      const [groupA, tsA] = ranks.get(a) ?? [1, 0]
+      const [groupB, tsB] = ranks.get(b) ?? [1, 0]
+      return groupA - groupB || tsB - tsA || a.localeCompare(b)
+    })
   }, [chatFolders, foldersToChatsMap])
 
   const folderKinds = useMemo(

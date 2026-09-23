@@ -63,3 +63,19 @@ describe('useChatSidebarFolders — folderKinds workflow override (EPMCDME-15012
     expect(result.current.folderKinds['custom:Release workflows']).toBe('custom')
   })
 })
+
+describe('useChatSidebarFolders — folder sort grouping (EPMCDME-15165)', () => {
+  it('ranks a folder holding chats above a freshly created empty folder', () => {
+    const chatFolders = [
+      { name: 'Folder A', updateDate: '2026-08-01T09:00:00.000Z' } as never,
+      { name: 'Folder B', updateDate: '2026-07-01T09:00:00.000Z' } as never,
+    ]
+    const foldersToChatsMap = {
+      'custom:Folder B': [createChat({ id: 'chat-1', updateDate: '2026-07-01T09:00:00.000Z' })],
+    }
+
+    const { result } = renderHook(() => useChatSidebarFolders({ chatFolders, foldersToChatsMap }))
+
+    expect(result.current.folders).toEqual(['custom:Folder B', 'custom:Folder A'])
+  })
+})

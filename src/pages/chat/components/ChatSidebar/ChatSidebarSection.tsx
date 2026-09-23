@@ -38,6 +38,7 @@ const ChatsSidebarSection: React.FC<ChatsSidebarSectionProps> = ({
       collapseIcon={() => null}
       activeIndex={activeIndex}
       onTabChange={(e) => setActiveIndex(e.index as number | null)}
+      pt={{ root: { className: 'shrink-0' } }}
     >
       <AccordionTab
         pt={{

@@ -28,13 +28,12 @@ export interface MoveOrderStoreType {
 }
 
 /**
- * Tracks when each chat was last moved into a folder (or back to Recent), independent of
- * `chat.updateDate`. Moving a chat must not bump its activity timestamp (EPMCDME-15009 reopened
- * AC), yet it must still land at the top of the target list regardless of its actual last
- * activity — so recency-based sorts for Recent/folder chat lists take `max(updateDate,
- * moveOrder)` instead of `updateDate` alone. Because the recorded value is a real timestamp (not
- * a flag), it only wins the sort until something legitimately newer happens — after that, normal
- * recency sorting resumes on its own, matching "regardless of its previous activity time" without
+ * Tracks when each chat was last moved into a folder, independent of `chat.updateDate`. Moving a
+ * chat must not bump its activity timestamp (EPMCDME-15009 reopened AC), yet it must still land at
+ * the top of the target folder regardless of its actual last activity — so recency-based sorts for
+ * folder chat lists take `max(updateDate, moveOrder)` instead of `updateDate` alone. Because the
+ * recorded value is a real timestamp (not a flag), it only wins the sort until something
+ * legitimately newer happens — after that, normal recency sorting resumes on its own, without
  * permanently pinning the chat to the top.
  */
 export const moveOrderStore = proxy<MoveOrderStoreType>({

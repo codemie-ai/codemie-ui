@@ -233,7 +233,7 @@ describe('ChatSidebarLists', () => {
     )
   })
 
-  it('sorts empty folder by its own updateDate alongside non-empty folders', () => {
+  it('sorts an empty folder below folders that have chat activity', () => {
     mockChatsStore.chatFolders = [
       { name: 'No Activity', updateDate: '2026-07-16T09:00:00.000Z' },
       { name: 'Has Activity', updateDate: '2026-07-14T09:00:00.000Z' },
@@ -250,14 +250,14 @@ describe('ChatSidebarLists', () => {
 
     render(<ChatSidebarLists />)
 
-    // No Activity has updateDate T16, Has Activity latest chat is T15 — empty folder ranks higher
+    // No Activity has the newer updateDate (T16) but no chats, so it sinks below Has Activity
     expect(screen.getByTestId('folder-list')).toHaveAttribute(
       'data-folder-names',
-      'custom:No Activity,custom:Has Activity'
+      'custom:Has Activity,custom:No Activity'
     )
   })
 
-  it('sorts by max of entity date and chat activity across folders', () => {
+  it('ranks a folder that has chats by chat activity alone, ignoring its own updateDate', () => {
     mockChatsStore.chatFolders = [
       { name: 'NewEntity', updateDate: '2026-07-18T09:00:00.000Z' },
       { name: 'NewChat', updateDate: '2026-07-14T09:00:00.000Z' },
@@ -281,10 +281,10 @@ describe('ChatSidebarLists', () => {
 
     render(<ChatSidebarLists />)
 
-    // NewEntity: max(entityT18, chatT15) = T18; NewChat: max(entityT14, chatT17) = T17
+    // NewEntity has the newer updateDate (T18) but the older chat (T15), so NewChat ranks above
     expect(screen.getByTestId('folder-list')).toHaveAttribute(
       'data-folder-names',
-      'custom:NewEntity,custom:NewChat'
+      'custom:NewChat,custom:NewEntity'
     )
   })
 
@@ -319,7 +319,7 @@ describe('ChatSidebarLists', () => {
     )
   })
 
-  it('keeps an emptied Assistant Folder at its last position instead of dropping it', () => {
+  it('sorts an emptied Assistant Folder below folders with known activity', () => {
     mockChatsStore.chatFolders = [{ name: 'Old Custom', updateDate: '2026-06-01T09:00:00.000Z' }]
     mockChatsStore.assistantFolders = [{ assistant_id: 'asst-1', name: 'My Assistant' }]
     const assistantChat = {
@@ -348,11 +348,9 @@ describe('ChatSidebarLists', () => {
     mockChatsStore.chats = []
     rerender(<ChatSidebarLists />)
 
-    // Without the fix this would recompute from an empty state (no entity date exists for
-    // Assistant Folders) and drop to the bottom; it must instead keep its prior position.
     expect(screen.getByTestId('folder-list')).toHaveAttribute(
       'data-folder-names',
-      'assistant:asst-1,custom:Old Custom'
+      'custom:Old Custom,assistant:asst-1'
     )
   })
 
@@ -363,12 +361,63 @@ describe('ChatSidebarLists', () => {
       { name: 'claude', updateDate: '2026-07-14T09:00:00.000Z' },
       { name: 'codemie-code', updateDate: '2026-07-13T09:00:00.000Z' },
     ]
+    mockChatsStore.chats = [
+      {
+        id: 'chat-claude',
+        pinned: false,
+        folder: 'claude',
+        updateDate: '2026-07-16T09:00:00.000Z',
+      },
+      {
+        id: 'chat-codemie-code',
+        pinned: false,
+        folder: 'codemie-code',
+        updateDate: '2026-07-13T09:00:00.000Z',
+      },
+    ]
 
     render(<ChatSidebarLists />)
 
     expect(screen.getByTestId('folder-list')).toHaveAttribute(
       'data-folder-names',
       'legacy-import:Claude Imports,legacy-import:codemie-code'
+    )
+  })
+
+  it('hides an empty import-kind folder registered with no chats', () => {
+    mockChatsStore.chatFolders = [
+      { name: 'Claude Imports', updateDate: '2026-07-15T09:00:00.000Z' },
+      { name: 'Old Custom', updateDate: '2026-07-14T09:00:00.000Z' },
+    ]
+    mockChatsStore.chats = []
+
+    render(<ChatSidebarLists />)
+
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'custom:Old Custom'
+    )
+  })
+
+  it('renders only the live Claude CLI folder when a zero-chat Claude Imports record also exists', () => {
+    mockChatsStore.chatFolders = [
+      { name: 'Claude Imports', updateDate: '2026-07-15T09:00:00.000Z' },
+    ]
+    mockChatsStore.chats = [
+      {
+        id: 'chat-cli',
+        pinned: false,
+        folder: null,
+        importSource: 'claude_cli',
+        updateDate: '2026-07-16T09:00:00.000Z',
+      },
+    ]
+
+    render(<ChatSidebarLists />)
+
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'import:claude_cli'
     )
   })
 
@@ -408,12 +457,12 @@ describe('ChatSidebarLists', () => {
     expect(mockPinOrderStore.getPinOrder).toHaveBeenCalled()
   })
 
-  it('renders Recent ordered by moveOrderStore for a chat moved back to the Chats section', () => {
+  it('renders Recent ordered by activity alone, ignoring a recent moveOrder entry', () => {
     mockChatsStore.chats = [
       {
         id: 'stale-moved-chat',
         pinned: false,
-        folder: null,
+        folder: 'My Custom',
         updateDate: '2026-07-01T09:00:00.000Z',
       },
       {
@@ -423,9 +472,9 @@ describe('ChatSidebarLists', () => {
         updateDate: '2026-07-20T09:00:00.000Z',
       },
     ]
-    // stale-moved-chat has an older updateDate but was moved back to Recent most recently —
-    // moveOrderStore's map must be what drives Recent's order here, proving the wiring from
-    // ChatSidebarLists.tsx into the view model.
+    // stale-moved-chat was moved into a folder most recently, but a move is not activity — the
+    // moveOrder map still reaches the view model (it drives folder lists) and must leave Recent,
+    // where foldered chats also appear, ordered by updateDate alone.
     mockMoveOrderStore.getMoveOrder.mockReturnValue({
       'stale-moved-chat': '2026-08-01T00:00:00.000Z',
     })
@@ -434,8 +483,37 @@ describe('ChatSidebarLists', () => {
 
     expect(screen.getByTestId('chat-list')).toHaveAttribute(
       'data-chat-ids',
-      'stale-moved-chat,active-chat'
+      'active-chat,stale-moved-chat'
     )
     expect(mockMoveOrderStore.getMoveOrder).toHaveBeenCalled()
+  })
+
+  it('resorts folders to the destination when the most-recently-active chat is moved, with no reload (EPMCDME-15165)', () => {
+    mockChatsStore.chatFolders = [
+      { name: 'Folder A', updateDate: '2026-07-01T09:00:00.000Z' },
+      { name: 'Folder B', updateDate: '2026-07-01T09:00:00.000Z' },
+    ]
+    const movedChat = {
+      id: 'chat-1',
+      pinned: false,
+      folder: 'Folder A',
+      updateDate: '2026-07-10T09:00:00.000Z',
+    }
+    mockChatsStore.chats = [movedChat]
+
+    const { rerender } = render(<ChatSidebarLists />)
+
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'custom:Folder A,custom:Folder B'
+    )
+
+    mockChatsStore.chats = [{ ...movedChat, folder: 'Folder B' }]
+    rerender(<ChatSidebarLists />)
+
+    expect(screen.getByTestId('folder-list')).toHaveAttribute(
+      'data-folder-names',
+      'custom:Folder B,custom:Folder A'
+    )
   })
 })

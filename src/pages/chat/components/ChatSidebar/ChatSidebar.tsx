@@ -95,7 +95,7 @@ const ChatSidebar = () => {
       <div className="flex h-full min-h-0 flex-col">
         {!isFocusedViewActive && (
           <>
-            <div className="border-b border-border-secondary mb-2">
+            <div className="border-b border-border-secondary mb-2 shrink-0">
               <Button
                 variant="tertiary"
                 onClick={() => setIsSearchOpen(true)}

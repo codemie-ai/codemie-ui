@@ -234,6 +234,7 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
           isExpanded={isWorkflowRunsExpanded}
           onToggle={handleToggleWorkflowRuns}
           onScrollIntent={() => setHasWorkflowRunsScrollIntent(true)}
+          scrollable
         >
           <ChatList
             chats={visibleWorkflowRuns}
@@ -254,6 +255,7 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
           count={viewModel.groups.length}
           isExpanded={isGroupsExpanded}
           onToggle={handleToggleGroups}
+          scrollable
         >
           {viewModel.groups.map((group) => (
             <FocusedAggregateRow
