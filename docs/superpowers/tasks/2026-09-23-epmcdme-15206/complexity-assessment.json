@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "task": "Add the missing Add-folder button to the Chats sidebar's Focused mode, mirroring the existing Unified-mode behavior.",
+  "generated": "2026-09-23T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches two components in one layer — ChatSidebarLists.tsx (build/pass the trigger) and FocusedChatSidebar.tsx (accept and render it via the existing headerContentTemplate slot); no new abstractions, but it is not a single self-contained component." },
+    { "dimension": "technical_risk", "reason": "The header-slot pattern (ChatSidebarAccordion's headerContentTemplate) is already proven in UnifiedChatSidebar, so risk is low, but the fix requires an interface change (new prop on FocusedChatSidebarProps) and an open design call on whether the Folders accordion's zero-folders conditional-render guard also needs to change for parity — not a pure copy-paste." },
+    { "dimension": "requirements_clarity", "reason": "Acceptance criteria are largely well-defined, but the zero-folders behavior (Focused mode's Folders accordion is only rendered when groups.length > 0, unlike Unified mode) is an open question the technical analysis flags as unresolved." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

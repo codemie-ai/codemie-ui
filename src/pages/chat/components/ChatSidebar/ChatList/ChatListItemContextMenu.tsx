@@ -21,6 +21,7 @@ import FolderSvg from '@/assets/icons/folder-move.svg?react'
 import PinFilledSvg from '@/assets/icons/pin-filled.svg?react'
 import PinSvg from '@/assets/icons/pin.svg?react'
 import NavigationMore, { type NavigationItem } from '@/components/NavigationMore/NavigationMore'
+import { useVueRouter } from '@/hooks/useVueRouter'
 import { type ChatListItem } from '@/types/entity/conversation'
 
 export interface ChatListItemContextMenuProps {
@@ -35,6 +36,21 @@ export interface ChatListItemContextMenuProps {
   onOpenChange: (open: boolean) => void
 }
 
+type BuildMenuItemsParams = Omit<ChatListItemContextMenuProps, 'contextId' | 'onOpenChange'> & {
+  editAssistant: (assistantId: string) => void
+}
+
+// "Edit assistant" is only unambiguous when the chat talks to exactly one assistant — wherever
+// the chat lives (its assistant folder, a custom folder, Pinned). Group chats and workflow runs
+// never get it.
+const getSingleAssistantId = (chat: ChatListItem): string | null => {
+  if (chat.isWorkflow) return null
+  const assistantIds = new Set(
+    [chat.initialAssistantId, ...(chat.assistantIds ?? [])].filter((id): id is string => !!id)
+  )
+  return assistantIds.size === 1 ? [...assistantIds][0] : null
+}
+
 const buildMenuItems = ({
   chat,
   isImportChat,
@@ -43,7 +59,8 @@ const buildMenuItems = ({
   removeChatFromFolder,
   deleteChat,
   edit,
-}: Omit<ChatListItemContextMenuProps, 'contextId' | 'onOpenChange'>): NavigationItem[] => {
+  editAssistant,
+}: BuildMenuItemsParams): NavigationItem[] => {
   const items: NavigationItem[] = [
     {
       title: chat.pinned ? 'Unpin' : 'Pin',
@@ -68,10 +85,20 @@ const buildMenuItems = ({
       })
     }
   }
-  items.push(
-    { title: 'Rename', onClick: edit, icon: <EditSvg className="icon" /> },
-    { title: 'Delete', onClick: () => deleteChat(chat), icon: <ArchiveSvg className="icon" /> }
-  )
+  items.push({ title: 'Rename', onClick: edit, icon: <EditSvg className="icon" /> })
+  const assistantId = getSingleAssistantId(chat)
+  if (assistantId) {
+    items.push({
+      title: 'Edit assistant',
+      onClick: () => editAssistant(assistantId),
+      icon: <EditSvg className="icon" />,
+    })
+  }
+  items.push({
+    title: 'Delete',
+    onClick: () => deleteChat(chat),
+    icon: <ArchiveSvg className="icon" />,
+  })
   return items
 }
 
@@ -85,25 +112,31 @@ const ChatListItemContextMenu: FC<ChatListItemContextMenuProps> = ({
   edit,
   contextId,
   onOpenChange,
-}) => (
-  <NavigationMore
-    renderInRoot
-    placement="right-end"
-    hideOnClickInside
-    className="size-6 shrink-0"
-    buttonClassName="m-0 flex size-6 items-center justify-center p-0"
-    contextId={contextId}
-    onOpenChange={onOpenChange}
-    items={buildMenuItems({
-      chat,
-      isImportChat,
-      pinChat,
-      moveChat,
-      removeChatFromFolder,
-      deleteChat,
-      edit,
-    })}
-  />
-)
+}) => {
+  const router = useVueRouter()
+
+  return (
+    <NavigationMore
+      renderInRoot
+      placement="right-end"
+      hideOnClickInside
+      className="size-6 shrink-0"
+      buttonClassName="m-0 flex size-6 items-center justify-center p-0"
+      contextId={contextId}
+      onOpenChange={onOpenChange}
+      items={buildMenuItems({
+        chat,
+        isImportChat,
+        pinChat,
+        moveChat,
+        removeChatFromFolder,
+        deleteChat,
+        edit,
+        editAssistant: (assistantId) =>
+          router.push({ name: 'edit-assistant', params: { id: assistantId } }),
+      })}
+    />
+  )
+}
 
 export default ChatListItemContextMenu

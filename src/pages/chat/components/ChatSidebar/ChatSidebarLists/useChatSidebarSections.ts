@@ -46,6 +46,7 @@ interface UseChatSidebarSectionsParams {
   focusedViewModel: FocusedChatSidebarViewModel
   setFocusedView: (view: FocusedView) => void
   setFocusedNavigationSection: (section: FocusedNavigationSection | null) => void
+  requestExpandFocusedFolders: () => void
 }
 
 export const useChatSidebarSections = (params: UseChatSidebarSectionsParams) => {
@@ -64,6 +65,7 @@ export const useChatSidebarSections = (params: UseChatSidebarSectionsParams) => 
     focusedViewModel,
     setFocusedView,
     setFocusedNavigationSection,
+    requestExpandFocusedFolders,
   } = params
 
   const [disableAccordionAnimation, setDisableAccordionAnimation] = useState(false)
@@ -153,7 +155,8 @@ export const useChatSidebarSections = (params: UseChatSidebarSectionsParams) => 
     setIsWorkflowRunsExpanded(false)
     setIsFoldersExpanded(true)
     setActiveFolder(null)
-  }, [markSectionManuallyExpanded, setActiveFolder])
+    requestExpandFocusedFolders()
+  }, [markSectionManuallyExpanded, requestExpandFocusedFolders, setActiveFolder])
 
   return {
     isPinnedExpanded,

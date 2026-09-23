@@ -12,15 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { AVATAR_CHAT_FOLDER } from '@/constants/chats'
 import type { AssistantFolderListItem } from '@/types/chats'
-import type { ChatListItem } from '@/types/entity/conversation'
+import type { ChatListItem, FolderListItem } from '@/types/entity/conversation'
 
 import {
   buildAggregates,
   getValidDateTimestamp,
   sortChatsByMostRecent,
 } from './chatSidebarCollectionHelpers'
-import { getFolderKindFromKey, isWorkflowAssociatedFolder } from './chatSidebarFolderHelpers'
+import {
+  classifyFolderListItemName,
+  getFolderKindFromKey,
+  isWorkflowAssociatedFolder,
+} from './chatSidebarFolderHelpers'
 import { collectFocusedChats } from './focusedChatSidebarCollections'
 
 import type { FocusedChatGroupMap } from './chatSidebarCollectionHelpers'
@@ -88,7 +93,8 @@ const buildGroups = (assistants: FocusedChatGroupMap, folders: FocusedChatGroupM
 export const buildFocusedChatSidebarViewModel = (
   chats: ChatListItem[],
   settings: UnifiedChatViewSettings,
-  assistantFolders: AssistantFolderListItem[] = []
+  assistantFolders: AssistantFolderListItem[] = [],
+  chatFolders: FolderListItem[] = []
 ): FocusedChatSidebarViewModel => {
   const registeredNames = new Map(
     assistantFolders.map((folder) => [folder.assistant_id, folder.name])
@@ -101,6 +107,20 @@ export const buildFocusedChatSidebarViewModel = (
       chats: existing?.chats ?? [],
       iconUrl: folder.icon_url,
     })
+  }
+  // A chatFolders entry created via "Create Folder" has no chats yet, so collectFocusedChats
+  // above never sees it — it only walks `chats`, not the folder registry. Synthesize an empty
+  // group for it here, deduped against every chat's own raw `chat.folder` value (not against
+  // sourceFolderChats' keys, which are prefixed for import/legacy-import groups and thus never
+  // match a plain custom-folder name — see EPMCDME-15206 plan Task 2).
+  const chatFolderNames = new Set(
+    chats.map((chat) => chat.folder).filter((name): name is string => !!name)
+  )
+  for (const folder of chatFolders) {
+    if (folder.name === AVATAR_CHAT_FOLDER) continue
+    if (classifyFolderListItemName(folder.name).kind !== 'custom') continue
+    if (chatFolderNames.has(folder.name)) continue
+    collections.sourceFolderChats.set(folder.name, [])
   }
   const folders = buildFolderGroups(collections.sourceFolderChats, collections.chatLocations)
   sortChatsByMostRecent(collections.pinnedChats)

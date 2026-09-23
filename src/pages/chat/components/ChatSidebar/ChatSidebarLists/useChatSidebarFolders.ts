@@ -17,6 +17,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { ChatListItem, FolderListItem } from '@/types/entity/conversation'
 
 import {
+  classifyFolderListItemName,
   FolderKind,
   getFolderKindFromKey,
   getValidDateTimestamp,
@@ -48,12 +49,12 @@ export const useChatSidebarFolders = ({
     const namedFolderKeys = Array.from(
       new Set(
         chatFolders
-          .map((folder) => sidebarFolderKeyFromName(folder.name))
-          .filter((key) => {
-            const kind = getFolderKindFromKey(key)
+          .map((folder) => classifyFolderListItemName(folder.name))
+          .filter(({ key, kind }) => {
             if (kind !== 'import' && kind !== 'legacy-import') return true
             return (foldersToChatsMap[key] ?? []).length > 0
           })
+          .map(({ key }) => key)
       )
     )
     const namedFolderSet = new Set(namedFolderKeys)

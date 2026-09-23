@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useCallback, useEffect, useMemo, useState } from 'react'
+import { FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { ChatListDensity } from '@/store/chatViewSettings'
 
@@ -47,6 +47,8 @@ interface FocusedChatSidebarProps {
   onViewChange: (view: FocusedView) => void
   onNewChat: (aggregate: FocusedChatSidebarAggregate) => void
   registerChatElement: RegisterChatElement
+  createFolderButton?: ReactNode
+  expandFoldersSignal?: number
 }
 
 const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
@@ -59,6 +61,8 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
   onViewChange,
   onNewChat,
   registerChatElement,
+  createFolderButton,
+  expandFoldersSignal = 0,
 }) => {
   const [isPinnedExpanded, setIsPinnedExpanded] = useState(true)
   const [isRecentExpanded, setIsRecentExpanded] = useState(true)
@@ -87,6 +91,15 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
     if (!value.trim()) return
     setIsPinnedExpanded(true)
   }
+
+  const lastExpandFoldersSignalRef = useRef(expandFoldersSignal)
+  useEffect(() => {
+    if (expandFoldersSignal === lastExpandFoldersSignalRef.current) return
+    lastExpandFoldersSignalRef.current = expandFoldersSignal
+    setIsGroupsExpanded(true)
+    setIsRecentExpanded(false)
+    setIsWorkflowRunsExpanded(false)
+  }, [expandFoldersSignal])
 
   useEffect(() => {
     if (navigationSection === 'pinned') {
@@ -249,36 +262,35 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
         </ChatSidebarAccordion>
       )}
 
-      {viewModel.groups.length > 0 && (
-        <ChatSidebarAccordion
-          title="Folders"
-          count={viewModel.groups.length}
-          isExpanded={isGroupsExpanded}
-          onToggle={handleToggleGroups}
-          scrollable
-        >
-          {viewModel.groups.map((group) => (
-            <FocusedAggregateRow
-              key={`${group.kind}:${group.id}`}
-              aggregate={group}
-              density={density}
-              onSelect={() =>
-                onViewChange(
-                  group.kind === 'assistant'
-                    ? {
-                        type: 'assistant',
-                        id: group.id,
-                        name: group.name,
-                        iconUrl: group.iconUrl,
-                      }
-                    : { type: 'folder', name: group.name }
-                )
-              }
-              onNewChat={group.kind === 'assistant' ? () => onNewChat(group) : undefined}
-            />
-          ))}
-        </ChatSidebarAccordion>
-      )}
+      <ChatSidebarAccordion
+        title="Folders"
+        count={viewModel.groups.length}
+        isExpanded={isGroupsExpanded}
+        headerContentTemplate={createFolderButton}
+        onToggle={handleToggleGroups}
+        scrollable
+      >
+        {viewModel.groups.map((group) => (
+          <FocusedAggregateRow
+            key={`${group.kind}:${group.id}`}
+            aggregate={group}
+            density={density}
+            onSelect={() =>
+              onViewChange(
+                group.kind === 'assistant'
+                  ? {
+                      type: 'assistant',
+                      id: group.id,
+                      name: group.name,
+                      iconUrl: group.iconUrl,
+                    }
+                  : { type: 'folder', name: group.name }
+              )
+            }
+            onNewChat={group.kind === 'assistant' ? () => onNewChat(group) : undefined}
+          />
+        ))}
+      </ChatSidebarAccordion>
     </div>
   )
 }

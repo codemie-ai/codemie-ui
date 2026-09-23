@@ -13,8 +13,10 @@
 // limitations under the License.
 //
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { ChatOrganizeMode, chatViewSettingsStore } from '@/store/chatViewSettings'
 
 import ChatSidebarLists from '../ChatSidebarLists/ChatSidebarLists'
 
@@ -54,11 +56,13 @@ vi.mock('@/store/moveOrder', () => ({
 vi.mock('../ChatSidebarLists/ChatSidebarAccordion', () => ({
   default: ({
     children,
+    headerContentTemplate,
     isExpanded,
     onToggle,
     title,
   }: {
     children: ReactNode
+    headerContentTemplate?: ReactNode
     isExpanded?: boolean
     onToggle: () => void
     title: string
@@ -67,6 +71,7 @@ vi.mock('../ChatSidebarLists/ChatSidebarAccordion', () => ({
       <button type="button" onClick={onToggle}>
         {title}
       </button>
+      {headerContentTemplate}
       {children}
     </section>
   ),
@@ -126,7 +131,28 @@ vi.mock('../FolderList/FolderList', () => ({
 
 vi.mock('../ChatList/DeleteChatPopup', () => ({ default: () => null }))
 vi.mock('../ChatList/MoveChatPopup', () => ({ default: () => null }))
-vi.mock('../FolderList/FolderFormPopup', () => ({ default: () => null }))
+vi.mock('../FolderList/FolderFormPopup', () => ({
+  default: ({
+    isVisible,
+    onCreate,
+  }: {
+    isVisible: boolean
+    onCreate?: (folderName: string) => void
+  }) =>
+    isVisible ? (
+      <div data-testid="folder-form-popup">
+        <button
+          type="button"
+          onClick={() => {
+            mockChatsStore.chatFolders = [...mockChatsStore.chatFolders, { name: 'New Folder' }]
+            onCreate?.('New Folder')
+          }}
+        >
+          Submit folder
+        </button>
+      </div>
+    ) : null,
+}))
 
 afterEach(cleanup)
 
@@ -515,5 +541,76 @@ describe('ChatSidebarLists', () => {
       'data-folder-names',
       'custom:Folder B,custom:Folder A'
     )
+  })
+
+  describe('Focused mode folder creation (EPMCDME-15206)', () => {
+    beforeEach(() => {
+      chatViewSettingsStore.organizeBy = ChatOrganizeMode.FOCUSED
+    })
+
+    afterEach(() => {
+      chatViewSettingsStore.organizeBy = ChatOrganizeMode.UNIFIED
+    })
+
+    it('shows the Folders section with the Create Folder button when there are no folders', () => {
+      render(<ChatSidebarLists />)
+
+      const foldersSection = screen.getByTestId('folders-section')
+      expect(
+        within(foldersSection).getByRole('button', { name: 'Create Folder' })
+      ).toBeInTheDocument()
+    })
+
+    it('opens the folder form from the Folders header button', () => {
+      render(<ChatSidebarLists />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Create Folder' }))
+
+      expect(screen.getByTestId('folder-form-popup')).toBeInTheDocument()
+    })
+
+    it('shows the created folder, expands Folders and collapses Recent and Workflows', () => {
+      chatViewSettingsStore.showWorkflowRunsSeparately = true
+      mockChatsStore.chats = [
+        {
+          id: 'workflow-run',
+          pinned: false,
+          isWorkflow: true,
+          initialWorkflowId: 'workflow-1',
+          updateDate: '2026-07-20T09:00:00.000Z',
+        },
+      ]
+
+      try {
+        render(<ChatSidebarLists />)
+
+        expect(screen.getByTestId('recent chats-section')).toHaveAttribute('data-expanded', 'true')
+        expect(screen.getByTestId('workflows-section')).toHaveAttribute('data-expanded', 'true')
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create Folder' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Submit folder' }))
+
+        const foldersSection = screen.getByTestId('folders-section')
+        expect(foldersSection).toHaveAttribute('data-expanded', 'true')
+        expect(within(foldersSection).getByText('New Folder')).toBeInTheDocument()
+        expect(screen.getByTestId('recent chats-section')).toHaveAttribute('data-expanded', 'false')
+        expect(screen.getByTestId('workflows-section')).toHaveAttribute('data-expanded', 'false')
+      } finally {
+        chatViewSettingsStore.showWorkflowRunsSeparately = false
+      }
+    })
+
+    it('opens the drill-down of an empty custom folder', () => {
+      mockChatsStore.chatFolders = [{ name: 'Empty Folder' }]
+
+      render(<ChatSidebarLists />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Folders' }))
+      fireEvent.click(screen.getByText('Empty Folder'))
+
+      expect(screen.queryByTestId('folders-section')).not.toBeInTheDocument()
+      expect(screen.getByText('Empty Folder')).toBeInTheDocument()
+      expect(screen.queryAllByTestId('chat-list').every((list) => !list.dataset.chatIds)).toBe(true)
+    })
   })
 })

@@ -64,6 +64,11 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
   const [focusedView, setFocusedView] = useState<FocusedView>({ type: 'root' })
   const [focusedNavigationSection, setFocusedNavigationSection] =
     useState<FocusedNavigationSection | null>(null)
+  const [expandFocusedFoldersSignal, setExpandFocusedFoldersSignal] = useState(0)
+  const requestExpandFocusedFolders = useCallback(
+    () => setExpandFocusedFoldersSignal((signal) => signal + 1),
+    []
+  )
 
   const isFocused = organizeBy === ChatOrganizeMode.FOCUSED || focusedView.type !== 'root'
 
@@ -96,10 +101,11 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
         showRecentAssistants,
         showWorkflowRunsSeparately,
       },
-      assistantFolders
+      assistantFolders,
+      chatFolders
     )
     return viewModel
-  }, [assistantFolders, chats, showRecentAssistants, showWorkflowRunsSeparately])
+  }, [assistantFolders, chatFolders, chats, showRecentAssistants, showWorkflowRunsSeparately])
 
   useEffect(() => {
     onFocusedViewActiveChange?.(isFocused && focusedView.type !== 'root')
@@ -120,6 +126,7 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
     focusedViewModel,
     setFocusedView,
     setFocusedNavigationSection,
+    requestExpandFocusedFolders,
   })
 
   const { handleMoveChat, handleCreateFolder, registerChatElement } = sections
@@ -196,6 +203,8 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
           onViewChange={setFocusedView}
           onNewChat={handleFocusedNewChat}
           registerChatElement={registerChatElement}
+          createFolderButton={createFolderButton}
+          expandFoldersSignal={expandFocusedFoldersSignal}
         />
       ) : (
         <UnifiedChatSidebar

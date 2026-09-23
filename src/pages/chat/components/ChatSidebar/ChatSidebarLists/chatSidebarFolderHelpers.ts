@@ -78,6 +78,11 @@ export const getFolderKindFromKey = (key: string): FolderKind => {
   return 'custom'
 }
 
+export const classifyFolderListItemName = (name: string): { key: string; kind: FolderKind } => {
+  const key = sidebarFolderKeyFromName(name)
+  return { key, kind: getFolderKindFromKey(key) }
+}
+
 export const getFolderDisplayName = (key: string): string => {
   if (key.startsWith('custom:')) return key.slice('custom:'.length)
   if (key.startsWith('import:')) {

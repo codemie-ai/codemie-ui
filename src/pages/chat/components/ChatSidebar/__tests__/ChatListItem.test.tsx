@@ -257,6 +257,51 @@ describe('ChatListItem', () => {
     expect(chatsStore.pinChat).toHaveBeenCalledWith('chat1')
   })
 
+  it('opens the assistant editor from a single-assistant chat', async () => {
+    const singleAssistantChat = {
+      ...mockChat,
+      initialAssistantId: 'assistant-1',
+      assistantIds: ['assistant-1', 'assistant-1'],
+      folder: 'Custom folder',
+      pinned: true,
+    }
+    render(<ChatListItem chat={singleAssistantChat} actions={mockActions} />)
+
+    await userEvent.click(screen.getByTestId('menu-item-edit-assistant'))
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      name: 'edit-assistant',
+      params: { id: 'assistant-1' },
+    })
+  })
+
+  it('does not offer "Edit assistant" for a chat with several assistants', () => {
+    const groupChat = {
+      ...mockChat,
+      isGroup: true,
+      initialAssistantId: 'assistant-1',
+      assistantIds: ['assistant-1', 'assistant-2'],
+    }
+    render(<ChatListItem chat={groupChat} actions={mockActions} />)
+
+    expect(screen.queryByTestId('menu-item-edit-assistant')).not.toBeInTheDocument()
+  })
+
+  it('does not offer "Edit assistant" for a chat without an assistant or a workflow run', () => {
+    const workflowChat = {
+      ...mockChat,
+      isWorkflow: true,
+      initialAssistantId: 'workflow-1',
+      assistantIds: ['workflow-1'],
+    }
+    const { unmount } = render(<ChatListItem chat={mockChat} actions={mockActions} />)
+    expect(screen.queryByTestId('menu-item-edit-assistant')).not.toBeInTheDocument()
+    unmount()
+
+    render(<ChatListItem chat={workflowChat} actions={mockActions} />)
+    expect(screen.queryByTestId('menu-item-edit-assistant')).not.toBeInTheDocument()
+  })
+
   it('enters edit mode when "Rename" is clicked', async () => {
     render(<ChatListItem chat={mockChat} actions={mockActions} />)
 

@@ -15,6 +15,7 @@
 export { getValidDateTimestamp } from './chatSidebarCollectionHelpers'
 export {
   assistantFolderKey,
+  classifyFolderListItemName,
   customFolderKey,
   getAssistantIdFromFolderKey,
   getCustomFolderNameFromKey,

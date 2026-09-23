@@ -15,6 +15,7 @@
 
 import { describe, expect, it } from 'vitest'
 
+import { AVATAR_CHAT_FOLDER } from '@/constants/chats'
 import { isImportedChat } from '@/pages/chat/components/ChatSidebar/ChatSidebarLists/chatSidebarFolderHelpers'
 import {
   buildFocusedChatSidebarViewModel,
@@ -867,6 +868,89 @@ describe('buildFocusedChatSidebarViewModel', () => {
       const viewModel = buildFocusedChatSidebarViewModel([workflow], focusedSettings)
 
       expect(viewModel.assistantHistory.get('workflow-a')).toBeUndefined()
+    })
+  })
+
+  describe('chatFolders parity (EPMCDME-15206)', () => {
+    it('synthesizes an empty custom-folder group for a chatFolders entry with no matching chats', () => {
+      const chatFolders = [{ name: 'Empty Custom' } as never]
+
+      const viewModel = buildFocusedChatSidebarViewModel([], focusedSettings, [], chatFolders)
+
+      expect(viewModel.groups).toEqual([
+        expect.objectContaining({
+          id: 'Empty Custom',
+          name: 'Empty Custom',
+          chats: [],
+          latestChat: undefined,
+          kind: 'folder',
+          folderKind: 'custom',
+        }),
+      ])
+    })
+
+    it('does not synthesize a group for a chatFolders entry that is legacy-import or the avatar folder', () => {
+      const chatFolders = [
+        { name: 'Claude imports' } as never,
+        { name: AVATAR_CHAT_FOLDER } as never,
+      ]
+
+      const viewModel = buildFocusedChatSidebarViewModel([], focusedSettings, [], chatFolders)
+
+      expect(viewModel.groups).toEqual([])
+    })
+
+    it('does not add an extra folder group for a chatFolders entry named after an assistant-polluted folder', () => {
+      const pollutedChat = createChat({ id: 'polluted-chat', folder: 'Assistant A' })
+      const chatFolders = [{ name: 'Assistant A' } as never]
+
+      const viewModel = buildFocusedChatSidebarViewModel(
+        [pollutedChat],
+        focusedSettings,
+        [],
+        chatFolders
+      )
+
+      expect(viewModel.groups).toEqual([
+        expect.objectContaining({ id: 'assistant-a', kind: 'assistant', chats: [pollutedChat] }),
+      ])
+      expect(viewModel.groups.some((g) => g.kind === 'folder')).toBe(false)
+    })
+
+    it('does not duplicate a chat-backed legacy-import folder when chatFolders also registers its raw name', () => {
+      const importedChat = createChat({ id: 'claude-import', folder: 'Claude imports' })
+      const chatFolders = [{ name: 'Claude imports' } as never]
+
+      const viewModel = buildFocusedChatSidebarViewModel(
+        [importedChat],
+        focusedSettings,
+        [],
+        chatFolders
+      )
+
+      const folderGroups = viewModel.groups.filter((g) => g.kind === 'folder')
+      expect(folderGroups).toHaveLength(1)
+      expect(folderGroups[0].id).toBe('legacy-import:Claude Imports')
+    })
+
+    it("does not duplicate an import-source folder when chatFolders registers the chat's raw folder name", () => {
+      const importedChat = createChat({
+        id: 'claude-code-import',
+        importSource: 'claude_code',
+        folder: 'My Claude export',
+      })
+      const chatFolders = [{ name: 'My Claude export' } as never]
+
+      const viewModel = buildFocusedChatSidebarViewModel(
+        [importedChat],
+        focusedSettings,
+        [],
+        chatFolders
+      )
+
+      const folderGroups = viewModel.groups.filter((g) => g.kind === 'folder')
+      expect(folderGroups).toHaveLength(1)
+      expect(folderGroups[0].id).toBe('import:claude_code')
     })
   })
 })
