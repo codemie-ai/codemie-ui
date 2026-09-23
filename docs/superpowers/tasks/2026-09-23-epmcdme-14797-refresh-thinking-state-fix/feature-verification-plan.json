@@ -1,0 +1,25 @@
+{
+  "ticket": "EPMCDME-14797",
+  "verification_steps": [
+    {
+      "step": 1,
+      "description": "Send a short prompt to the assistant that generates quickly."
+    },
+    {
+      "step": 2,
+      "description": "Immediately refresh the browser page while the assistant is thinking."
+    },
+    {
+      "step": 3,
+      "description": "Verify that reconnectChatStream handles the 0-byte stream without prematurely setting inProgress=false and triggers immediate pollIncompleteChat."
+    },
+    {
+      "step": 4,
+      "description": "Verify that the assistant's complete response and processing time display properly without showing an empty timestamp or requiring a second refresh."
+    },
+    {
+      "step": 5,
+      "description": "Verify that regular multi-chunk streaming and timeout ceilings continue to work as expected."
+    }
+  ]
+}

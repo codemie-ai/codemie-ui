@@ -1,0 +1,4 @@
+{"file": "codemie-ui/src/store/chatGeneration.ts", "action": "modified", "purpose": "Guard _handleStreamResponse to only complete turn on terminal chunks and invoke immediate polling fallback on empty stream"}
+{"file": "codemie-ui/src/store/chats.ts", "action": "modified", "purpose": "Add immediate option to pollIncompleteChat, extract helper functions to reduce cognitive complexity, and add timeout cleanup guard"}
+{"file": "codemie-ui/src/store/__tests__/chatGeneration.reconnect.test.ts", "action": "modified", "purpose": "Add unit tests verifying empty stream fallback to immediate pollIncompleteChat and terminal chunk handling"}
+{"file": "codemie-ui/src/store/__tests__/chats.pollIncompleteChat.test.ts", "action": "modified", "purpose": "Add unit tests verifying immediate polling and max attempt cleanup"}

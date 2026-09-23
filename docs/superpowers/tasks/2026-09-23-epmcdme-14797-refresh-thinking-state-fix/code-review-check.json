@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Empty stream fallback and immediate polling successfully eliminate the intermittent empty timestamp bug on page refresh. Full pre-push quality gates passed (tsc --noEmit, eslint, 53 test suites / 426 tests passed).",
+  "confidence": "high",
+  "risk_flags": [],
+  "timestamp": "2026-09-23T10:40:00Z",
+  "branch": "EPMCDME-14797_fix-refresh-thinking-state",
+  "checks": {
+    "eslint": "passed",
+    "typescript": "passed",
+    "vitest": "passed"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "ticket": "EPMCDME-14797",
+  "estimated_complexity_score": 5,
+  "actual_complexity_score": 5,
+  "actual_hours_spent": 1.5,
+  "justification": "The fix resolved the intermittent empty timestamp / checkmark on page refresh when the assistant stream is fast or already drained. It required updating _handleStreamResponse to only finalize when terminal chunk metadata is present, updating reconnectChatStream finally block to immediately trigger pollIncompleteChat(chat.id, true), and updating pollIncompleteChat with a terminal cleanup guard at max attempts and low cognitive complexity."
+}

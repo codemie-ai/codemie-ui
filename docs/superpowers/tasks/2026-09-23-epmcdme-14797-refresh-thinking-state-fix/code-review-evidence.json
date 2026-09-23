@@ -1,0 +1,18 @@
+{
+  "ticket": "EPMCDME-14797",
+  "review_session": "EPMCDME-14797-refresh-thinking-state-fix",
+  "evidence": [
+    {
+      "check": "typescript",
+      "result": "tsc --noEmit exited with code 0"
+    },
+    {
+      "check": "eslint",
+      "result": "eslint exited with code 0"
+    },
+    {
+      "check": "vitest",
+      "result": "426 tests passed across 53 test files"
+    }
+  ]
+}

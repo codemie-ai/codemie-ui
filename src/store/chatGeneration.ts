@@ -908,6 +908,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     chatGenerationStore.chatAbortControllers[chat.id] = abortController
     const startTime = parseUtcDate(inProgressMessage.createdAt)
 
+    let streamCompleted = false
+
     try {
       const reader = await api.stream(
         `v1/conversations/${chat.id}/stream`,
@@ -923,21 +925,27 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
           chat,
           startTime
         )
+        streamCompleted = Boolean(inProgressMessage.response)
       } else {
-        await chatGenerationStore._handleStreamResponse(reader, inProgressMessage, chat, startTime)
+        const streamResult = await chatGenerationStore._handleStreamResponse(
+          reader,
+          inProgressMessage,
+          chat,
+          startTime
+        )
+        streamCompleted = Boolean(
+          streamResult?.last || streamResult?.generated || streamResult?.capturedStreamText
+        )
       }
     } catch (error: any) {
       if (error?.name === ABORT_ERROR) {
         return
       }
       console.error('Error in reconnectChatStream:', error)
-      if (inProgressMessage.inProgress) {
-        chatsStore.pollIncompleteChat(chat.id)
-      }
     } finally {
       delete chatGenerationStore.chatAbortControllers[chat.id]
-      if (inProgressMessage.inProgress) {
-        chatsStore.pollIncompleteChat(chat.id)
+      if (!streamCompleted || inProgressMessage.inProgress) {
+        chatsStore.pollIncompleteChat(chat.id, true)
       }
     }
   },
@@ -1456,20 +1464,21 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   async _handleNonStreamResponse(reader, historyItem, chat, startTime) {
-    historyItem.inProgress = false
-
     if (!reader.ok) return
 
     const endTime = new Date()
 
     try {
       const data = await reader.json()
-      historyItem.response = data.generated
-      const serverDuration = extractServerDuration(data)
-      historyItem.processingTime =
-        serverDuration ?? (endTime.getTime() - startTime.getTime()) / MS_PER_SECOND
-      historyItem.stream = null
-      chatGenerationStore._finishThoughts(historyItem)
+      if (data.generated) {
+        historyItem.response = data.generated
+        const serverDuration = extractServerDuration(data)
+        historyItem.processingTime =
+          serverDuration ?? (endTime.getTime() - startTime.getTime()) / MS_PER_SECOND
+        historyItem.inProgress = false
+        historyItem.stream = null
+        chatGenerationStore._finishThoughts(historyItem)
+      }
     } catch (error) {
       console.error('Failed to parse response JSON:', error)
     }
@@ -1486,12 +1495,15 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
     const endTime = new Date()
     const serverDuration = extractServerDuration(response)
+    const hasCompletedTurn = Boolean(
+      response?.last || response?.generated || response?.capturedStreamText
+    )
 
     // Assigned for every finalized turn, not only for the ones that produced text: an
     // A2UI-only response has no text but still needs its "Processed in" metadata,
     // and its terminal chunk carries `last`. A stream that ended without a terminal chunk
     // (server-side cut, proxy timeout) never finished, so it stays unlabelled.
-    if (response?.last || response?.generated || response?.capturedStreamText) {
+    if (hasCompletedTurn) {
       historyItem.processingTime =
         serverDuration ?? (endTime.getTime() - startTime.getTime()) / MS_PER_SECOND
     }
@@ -1503,9 +1515,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       historyItem.response = response.capturedStreamText
     }
 
-    historyItem.inProgress = false
-    historyItem.stream = null
-    chatGenerationStore._finishThoughts(historyItem)
+    if (hasCompletedTurn) {
+      historyItem.inProgress = false
+      historyItem.stream = null
+      chatGenerationStore._finishThoughts(historyItem)
+    }
 
     if (chat.isWorkflow) {
       if (response?.workflow_execution_id) {
@@ -1526,6 +1540,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       // the stream started — this just picks up polling for the real name.
       chatGenerationStore._pollForRenamedChat(chat.id, chat.name)
     }
+
+    return response
   },
 
   async _handleGenerationStream(

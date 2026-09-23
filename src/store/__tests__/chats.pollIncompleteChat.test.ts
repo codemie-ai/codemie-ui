@@ -38,6 +38,12 @@ vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: () => ({ ...mockRouter, currentRoute: { value: { params: {} } } }),
 }))
 
+const advancePolls = async (count: number): Promise<void> => {
+  if (count <= 0) return
+  await vi.runOnlyPendingTimersAsync()
+  await advancePolls(count - 1)
+}
+
 const mockUserStore = vi.hoisted(() => ({ user: { userId: 'user-1' } }))
 vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
 
@@ -192,5 +198,89 @@ describe('pollIncompleteChat and stopChatGeneration', () => {
     expect(api.get).toHaveBeenCalledWith('v1/conversations/chat-fallback')
     expect(fallbackChat.history[0][0].response).toBe('Answer resolved')
     expect(fallbackChat.history[0][0].inProgress).toBe(false)
+  })
+
+  it('polls api immediately without delay when immediate=true', async () => {
+    const immediateChat = {
+      id: 'chat-immediate',
+      name: 'Immediate Chat',
+      history: [
+        [
+          {
+            request: 'Fast question',
+            response: '',
+            inProgress: true,
+          },
+        ],
+      ],
+    }
+
+    chatsStore.openedChatsHistory = [immediateChat as any]
+    chatsStore.currentChat = immediateChat as any
+
+    const mockResponse = {
+      id: 'chat-immediate',
+      conversation_name: 'Immediate Chat',
+      history: [
+        { historyIndex: 0, message: 'Fast question', date: '2026-09-23T12:00:00Z' },
+        {
+          historyIndex: 0,
+          message: 'Immediate answer',
+          date: '2026-09-23T12:00:01Z',
+          in_progress: false,
+        },
+      ],
+    }
+
+    vi.mocked(api.get).mockResolvedValueOnce({
+      json: () => Promise.resolve(mockResponse),
+    } as any)
+
+    chatsStore.pollIncompleteChat('chat-immediate', true)
+
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(api.get).toHaveBeenCalledWith('v1/conversations/chat-immediate')
+    expect(chatsStore.currentChat?.history[0][0].response).toBe('Immediate answer')
+    expect(chatsStore.currentChat?.history[0][0].inProgress).toBe(false)
+  })
+
+  it('resets inProgress flags when exceeding MAX_CHAT_POLL_ATTEMPTS', async () => {
+    const stuckChat = {
+      id: 'chat-stuck',
+      name: 'Stuck Chat',
+      history: [
+        [
+          {
+            request: 'Stuck request',
+            response: '',
+            inProgress: true,
+          },
+        ],
+      ],
+    }
+
+    chatsStore.openedChatsHistory = [stuckChat as any]
+    chatsStore.currentChat = stuckChat as any
+
+    const stillInProgressResponse = {
+      id: 'chat-stuck',
+      conversation_name: 'Stuck Chat',
+      history: [
+        { historyIndex: 0, message: 'Stuck request', date: '2026-09-23T12:00:00Z' },
+        { historyIndex: 0, message: '', date: '2026-09-23T12:00:01Z', in_progress: true },
+      ],
+    }
+
+    vi.mocked(api.get).mockResolvedValue({
+      json: () => Promise.resolve(stillInProgressResponse),
+    } as any)
+
+    chatsStore.pollIncompleteChat('chat-stuck', true)
+
+    // Advance poll attempts until max attempts exceeded
+    await advancePolls(152)
+
+    expect(chatsStore.currentChat?.history[0][0].inProgress).toBe(false)
   })
 })

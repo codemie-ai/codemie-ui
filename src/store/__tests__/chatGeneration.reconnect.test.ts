@@ -153,9 +153,16 @@ describe('chatGenerationStore.reconnectChatStream', () => {
     const { chatGenerationStore } = await import('../chatGeneration')
     const chat = createMockChat()
 
-    // Mock stream returning a reader that closes immediately
+    // Mock stream returning a reader with terminal chunk
+    const chunkData = JSON.stringify({
+      generated_chunk: 'Hello',
+      last: true,
+    })
     const mockReader = {
-      read: vi.fn().mockResolvedValue({ done: true, value: undefined }),
+      read: vi
+        .fn()
+        .mockResolvedValueOnce({ done: false, value: chunkData })
+        .mockResolvedValueOnce({ done: true, value: undefined }),
     }
     mockStream.mockResolvedValue(mockReader)
 
@@ -169,6 +176,24 @@ describe('chatGenerationStore.reconnectChatStream', () => {
     )
     expect(chatGenerationStore.chatAbortControllers[chat.id]).toBeUndefined()
     expect(chat.history[0][1].inProgress).toBe(false)
+    expect(mockChatsStore.pollIncompleteChat).not.toHaveBeenCalled()
+  })
+
+  it('triggers immediate pollIncompleteChat and preserves inProgress when stream closes without chunks', async () => {
+    const { chatGenerationStore } = await import('../chatGeneration')
+    const chat = createMockChat()
+
+    // Mock stream returning a reader that closes immediately (empty stream)
+    const mockReader = {
+      read: vi.fn().mockResolvedValue({ done: true, value: undefined }),
+    }
+    mockStream.mockResolvedValue(mockReader)
+
+    await chatGenerationStore.reconnectChatStream(chat)
+
+    expect(mockChatsStore.pollIncompleteChat).toHaveBeenCalledWith(chat.id, true)
+    expect(chatGenerationStore.chatAbortControllers[chat.id]).toBeUndefined()
+    expect(chat.history[0][1].inProgress).toBe(true)
   })
 
   it('falls back to pollIncompleteChat when streaming throws an error', async () => {
@@ -179,7 +204,7 @@ describe('chatGenerationStore.reconnectChatStream', () => {
 
     await chatGenerationStore.reconnectChatStream(chat)
 
-    expect(mockChatsStore.pollIncompleteChat).toHaveBeenCalledWith(chat.id)
+    expect(mockChatsStore.pollIncompleteChat).toHaveBeenCalledWith(chat.id, true)
     expect(chatGenerationStore.chatAbortControllers[chat.id]).toBeUndefined()
   })
 

@@ -198,7 +198,7 @@ export interface ChatsStoreType {
   getChats(): Promise<ChatListItem[]>
   findChat(id: string): ChatListItem | undefined
   getChat(id: string, options?: { saveAsRecent?: boolean }): Promise<Conversation>
-  pollIncompleteChat(id: string): void
+  pollIncompleteChat(id: string, immediate?: boolean): void
   stopChatCompletionPoll(id: string): void
   getSharedChat(token: string): Promise<Conversation>
   searchChats(query: string, signal?: AbortSignal): Promise<SearchResultItem[]>
@@ -265,6 +265,27 @@ export interface ChatsStoreType {
   // ===== Recent Chats Methods =====
   getRecentChats(): RecentChat[]
   addRecentChat(chat: Omit<RecentChat, 'openedAt'>): void
+}
+
+const syncPolledChatHistory = (id: string, freshChat: Conversation): void => {
+  const existingChat = chatsStore.openedChatsHistory.find((chat) => chat.id === id)
+  if (existingChat) {
+    existingChat.history = freshChat.history
+    existingChat.isInterrupted = freshChat.isInterrupted
+  }
+  if (chatsStore.currentChat?.id === id) {
+    chatsStore.currentChat.history = freshChat.history
+    chatsStore.currentChat.isInterrupted = freshChat.isInterrupted
+  }
+}
+
+const finalizeTimedOutPoll = (id: string, freshChat: Conversation): void => {
+  freshChat.history.forEach((group) => {
+    group.forEach((msg) => {
+      if (msg.inProgress) msg.inProgress = false
+    })
+  })
+  syncPolledChatHistory(id, freshChat)
 }
 
 export const chatsStore = proxy<ChatsStoreType>({
@@ -361,7 +382,7 @@ export const chatsStore = proxy<ChatsStoreType>({
     }
   },
 
-  pollIncompleteChat(id) {
+  pollIncompleteChat(id: string, immediate = false): void {
     chatsStore.stopChatCompletionPoll(id)
 
     let attempt = 0
@@ -384,17 +405,16 @@ export const chatsStore = proxy<ChatsStoreType>({
           group.some((msg) => msg.inProgress)
         )
 
-        const existingChat = chatsStore.openedChatsHistory.find((chat) => chat.id === id)
-        if (existingChat) {
-          existingChat.history = freshChat.history
-          existingChat.isInterrupted = freshChat.isInterrupted
-        }
-        if (chatsStore.currentChat?.id === id) {
-          chatsStore.currentChat.history = freshChat.history
-          chatsStore.currentChat.isInterrupted = freshChat.isInterrupted
+        if (stillInProgress && attempt >= MAX_CHAT_POLL_ATTEMPTS) {
+          finalizeTimedOutPoll(id, freshChat)
+          chatPollTimeouts.delete(id)
+          chatsStore.updateChatListItem(freshChat)
+          return
         }
 
-        if (stillInProgress && attempt < MAX_CHAT_POLL_ATTEMPTS) {
+        syncPolledChatHistory(id, freshChat)
+
+        if (stillInProgress) {
           const timeoutId = setTimeout(poll, CHAT_POLL_INTERVAL_MS)
           chatPollTimeouts.set(id, timeoutId)
         } else {
@@ -407,8 +427,12 @@ export const chatsStore = proxy<ChatsStoreType>({
       }
     }
 
-    const timeoutId = setTimeout(poll, CHAT_POLL_INTERVAL_MS)
-    chatPollTimeouts.set(id, timeoutId)
+    if (immediate) {
+      poll()
+    } else {
+      const timeoutId = setTimeout(poll, CHAT_POLL_INTERVAL_MS)
+      chatPollTimeouts.set(id, timeoutId)
+    }
   },
 
   /**

@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "task": "Fix intermittent empty timestamp on assistant conversation page refresh (EPMCDME-14797)",
+  "generated": "2026-09-23T10:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 9,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches chatGeneration.ts stream reconnection lifecycle and chats.ts reactive polling."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Low risk; ensures non-terminal 0-byte SSE responses immediately fall back to polling instead of prematurely finalizing the turn with inProgress=false."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "4 files in frontend: 2 store files and 2 corresponding Vitest test suites."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Frontend Valtio store and streaming response handler."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
