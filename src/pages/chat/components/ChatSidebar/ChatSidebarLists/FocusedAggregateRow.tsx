@@ -17,7 +17,7 @@ import { FC, useState } from 'react'
 
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
-import HistorySvg from '@/assets/icons/history.svg?react'
+// import HistorySvg from '@/assets/icons/history.svg?react'
 import PlusSvg from '@/assets/icons/plus.svg?react'
 import AvatarGroup from '@/components/Avatar/AvatarGroup'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
@@ -83,14 +83,15 @@ const FocusedAggregateRow: FC<FocusedAggregateRowProps> = ({
               onNewChat?.()
             },
           },
-          {
-            title: 'View chat history',
-            icon: <HistorySvg className="icon" />,
-            onClick: (e: React.MouseEvent) => {
-              e.stopPropagation()
-              onSelect()
-            },
-          },
+          // Temporarily hidden (EPMCDME-15210) — restore "View chat history" in the next release once its design is finalized.
+          // {
+          // title: 'View chat history',
+          // icon: <HistorySvg className="icon" />,
+          // onClick: (e: React.MouseEvent) => {
+          // e.stopPropagation()
+          // onSelect()
+          // },
+          // },
           {
             title: 'Edit assistant',
             icon: <EditSvg className="icon" />,

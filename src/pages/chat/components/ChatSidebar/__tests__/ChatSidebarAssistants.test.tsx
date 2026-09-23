@@ -301,7 +301,8 @@ describe('ChatSidebarAssistants', () => {
     render(<ChatSidebarAssistants />)
 
     expect(screen.getByTestId('menu-item-new-chat')).toBeInTheDocument()
-    expect(screen.getByTestId('menu-item-view-chat-history')).toBeInTheDocument()
+    // Temporarily hidden (EPMCDME-15210) — restore "View chat history" in the next release once its design is finalized.
+    expect(screen.queryByTestId('menu-item-view-chat-history')).not.toBeInTheDocument()
     expect(screen.getByTestId('menu-item-edit-assistant')).toBeInTheDocument()
     expect(screen.getByTestId('menu-item-remove-from-recent-assistants')).toBeInTheDocument()
   })
@@ -312,7 +313,6 @@ describe('ChatSidebarAssistants', () => {
 
     expect(screen.queryByTestId('menu-item-edit-assistant')).not.toBeInTheDocument()
     expect(screen.getByTestId('menu-item-new-chat')).toBeInTheDocument()
-    expect(screen.getByTestId('menu-item-view-chat-history')).toBeInTheDocument()
     expect(screen.getByTestId('menu-item-remove-from-recent-assistants')).toBeInTheDocument()
   })
 
@@ -323,7 +323,8 @@ describe('ChatSidebarAssistants', () => {
     expect(screen.queryByTestId('menu-item-edit-assistant')).not.toBeInTheDocument()
   })
 
-  it('opens Assistant History when View chat history is clicked', async () => {
+  // Temporarily hidden (EPMCDME-15210) — restore "View chat history" in the next release once its design is finalized.
+  it.skip('opens Assistant History when View chat history is clicked', async () => {
     const onViewChatHistory = vi.fn()
     mockAssistantsStore.recentAssistants = [mockAssistants[0]]
     render(<ChatSidebarAssistants onViewChatHistory={onViewChatHistory} />)

@@ -16,7 +16,7 @@ import { useCallback, useState } from 'react'
 
 import ArchiveSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
-import HistorySvg from '@/assets/icons/history.svg?react'
+// import HistorySvg from '@/assets/icons/history.svg?react'
 import Plus from '@/assets/icons/plus.svg?react'
 import { NavigationItem } from '@/components/NavigationMore/NavigationMore'
 import { useVueRouter } from '@/hooks/useVueRouter'
@@ -69,14 +69,15 @@ export const useFolderListActions = ({
               })
             },
           },
-          {
-            title: 'View chat history',
-            icon: <HistorySvg />,
-            onClick: (event) => {
-              event.stopPropagation()
-              onOpenAssistantHistory?.(assistantId)
-            },
-          },
+          // Temporarily hidden (EPMCDME-15210) — restore "View chat history" in the next release once its design is finalized.
+          // {
+          // title: 'View chat history',
+          // icon: <HistorySvg />,
+          // onClick: (event) => {
+          // event.stopPropagation()
+          // onOpenAssistantHistory?.(assistantId)
+          // },
+          // },
           {
             title: 'Edit assistant',
             icon: <EditSvg />,

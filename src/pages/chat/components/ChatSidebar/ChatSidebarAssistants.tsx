@@ -19,7 +19,7 @@ import { useSnapshot } from 'valtio'
 import PencilSquareSvg from '@/assets/icons/chat-new-filled.svg?react'
 import ArchiveSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
-import HistorySvg from '@/assets/icons/history.svg?react'
+// import HistorySvg from '@/assets/icons/history.svg?react'
 import PlusSvg from '@/assets/icons/plus.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
@@ -50,7 +50,9 @@ const truncateName = (assistant: Assistant) => {
   return assistant.name.slice(0, MAX_NAME_LENGTH) + '...'
 }
 
-const ChatSidebarAssistants = ({ onViewChatHistory }: ChatSidebarAssistantsProps) => {
+const ChatSidebarAssistants = ({
+  onViewChatHistory: _onViewChatHistory,
+}: ChatSidebarAssistantsProps) => {
   const router = useVueRouter()
   const { recentAssistants } = useSnapshot(assistantsStore)
   const [isPickerVisible, setIsPickerVisible] = useState(false)
@@ -92,11 +94,12 @@ const ChatSidebarAssistants = ({ onViewChatHistory }: ChatSidebarAssistantsProps
       onClick: () => createChat(assistant),
       icon: <PencilSquareSvg className="w-4 h-4" />,
     },
-    {
-      title: 'View chat history',
-      onClick: () => onViewChatHistory?.(assistant.id, assistant.name, assistant.icon_url),
-      icon: <HistorySvg />,
-    },
+    // Temporarily hidden (EPMCDME-15210) — restore "View chat history" in the next release once its design is finalized.
+    // {
+    // title: 'View chat history',
+    // onClick: () => onViewChatHistory?.(assistant.id, assistant.name, assistant.icon_url),
+    // icon: <HistorySvg />,
+    // },
     ...(canEdit(assistant) && assistant.type !== 'A2A'
       ? [
           {
