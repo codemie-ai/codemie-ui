@@ -1,0 +1,46 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "All three lenses ran successfully. No blocking findings survived triage. All 4 acceptance criteria passed. The change is minimal and correct: adding className=\"font-semibold text-[10px]\" to IntegrationStateBadge's StatusBadge call mirrors the identical override already present in SchedulersPage.tsx. No other files modified. Standards and security checks clean.",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "State pill uses text-[10px] and font-semibold matching Schedulers",
+      "status": "pass",
+      "notes": "className=\"font-semibold text-[10px]\" added to StatusBadge call in IntegrationStateBadge.tsx, identical to Schedulers reference."
+    },
+    {
+      "criterion": "Visually indistinguishable from Schedulers pill in typography, color, dot, padding, border, height",
+      "status": "pass",
+      "notes": "All other visual properties are shared base classes in StatusBadge — identical for both badges."
+    },
+    {
+      "criterion": "Theme parity holds in light and dark modes",
+      "status": "pass",
+      "notes": "StatusBadge uses design-token color classes; both badges share the same component so theme parity is automatic."
+    },
+    {
+      "criterion": "Change scoped to Integration state cell only; no other component modified",
+      "status": "pass",
+      "notes": "Only IntegrationStateBadge.tsx touched. StatusBadge shared component unchanged; className injected at call site."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Commit c355631ba carries EPMCDME-15202 prefix, matching the project's required format."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No dangerouslySetInnerHTML, no new deps, no secrets, no redirects. Change is a className string literal."
+    },
+    {
+      "standard": "test-first",
+      "status": "pass",
+      "notes": "TDD cycle completed: failing test written first, then implementation to pass. 8/8 tests pass."
+    }
+  ],
+  "findings": []
+}

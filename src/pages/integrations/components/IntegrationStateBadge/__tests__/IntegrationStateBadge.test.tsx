@@ -55,4 +55,11 @@ describe('IntegrationStateBadge', () => {
     render(<IntegrationStateBadge credentialValues={[{ key: 'is_enabled', value: 1 }]} />)
     expect(screen.getByText('Enabled')).toBeInTheDocument()
   })
+
+  it('applies scheduler-matching typography classes to the badge', () => {
+    render(<IntegrationStateBadge credentialValues={[{ key: 'is_enabled', value: true }]} />)
+    const badge = screen.getByRole('status')
+    expect(badge).toHaveClass('font-semibold')
+    expect(badge).toHaveClass('text-[10px]')
+  })
 })

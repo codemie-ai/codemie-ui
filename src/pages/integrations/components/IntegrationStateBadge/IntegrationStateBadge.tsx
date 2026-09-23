@@ -32,7 +32,13 @@ const IntegrationStateBadge: React.FC<Props> = ({ credentialValues }) => {
       : 'disabled'
   const badge = INTEGRATION_ENABLED_BADGE_MAP[key]
 
-  return <StatusBadge status={badge.statusEnum} text={badge.text} />
+  return (
+    <StatusBadge
+      status={badge.statusEnum}
+      text={badge.text}
+      className="font-semibold text-[10px]"
+    />
+  )
 }
 
 export default IntegrationStateBadge
