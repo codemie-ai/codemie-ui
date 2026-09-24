@@ -14,11 +14,12 @@
 //
 
 import { Accordion, AccordionTab } from 'primereact/accordion'
-import { FC } from 'react'
+import { ComponentProps, FC, useCallback, useState } from 'react'
 
 import AvatarGroup from '@/components/Avatar/AvatarGroup'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Tooltip from '@/components/Tooltip'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import {
   resolveChatAvatar,
   resolveGroupChatAvatars,
@@ -45,6 +46,40 @@ import {
 import FolderTypeIcon from '../FolderTypeIcon'
 
 const FOLDER_TOOLTIP_MIN_LENGTH = 23
+// Folders render in batches as the list scrolls: rendering hundreds of folder rows at once froze
+// expanding the Folders section.
+const FOLDERS_BATCH_SIZE = 20
+const FOLDER_CHATS_BATCH_SIZE = 20
+
+type FolderChatListProps = Omit<
+  ComponentProps<typeof ChatList>,
+  'onLoadMore' | 'hasMore' | 'isLazyLoadingEnabled'
+>
+
+/**
+ * Chats of one expanded folder, rendered in batches as the list scrolls. It lives inside the
+ * folder's accordion tab, which unmounts when collapsed, so each expand starts from one batch.
+ */
+const FolderChatList: FC<FolderChatListProps> = ({ chats, currentChatId, ...chatListProps }) => {
+  const [visibleCount, setVisibleCount] = useState(FOLDER_CHATS_BATCH_SIZE)
+  // The current chat is always rendered, so navigating to it (e.g. from search) finds its row.
+  const currentChatIndex = chats.findIndex((chat) => chat.id === currentChatId)
+  const visibleChats = chats.slice(0, Math.max(visibleCount, currentChatIndex + 1))
+  const loadMore = useCallback(() => {
+    setVisibleCount((count) => Math.min(count + FOLDER_CHATS_BATCH_SIZE, chats.length))
+  }, [chats.length])
+
+  return (
+    <ChatList
+      {...chatListProps}
+      chats={visibleChats}
+      currentChatId={currentChatId}
+      onLoadMore={loadMore}
+      hasMore={visibleChats.length < chats.length}
+      isLazyLoadingEnabled
+    />
+  )
+}
 
 const resolveFolderUniqueAvatars = (
   folderChats: ChatListItemType[],
@@ -132,6 +167,22 @@ const FolderList: FC<FolderListProps> = ({
   const resolvedActiveFolderIndices =
     activeFolderIndices ?? (activeFolderIndex == null ? [] : [activeFolderIndex])
 
+  const [visibleFoldersCount, setVisibleFoldersCount] = useState(FOLDERS_BATCH_SIZE)
+  // Expanded folders are addressed by index (and navigation can open one far down the list), so
+  // the batch always reaches the last expanded folder. Indices below it match the full list.
+  const lastActiveFolderIndex = Math.max(-1, ...resolvedActiveFolderIndices)
+  const visibleFolders = folders.slice(0, Math.max(visibleFoldersCount, lastActiveFolderIndex + 1))
+  const hasMoreFolders = visibleFolders.length < folders.length
+  const loadMoreFolders = useCallback(() => {
+    setVisibleFoldersCount((count) => Math.min(count + FOLDERS_BATCH_SIZE, folders.length))
+  }, [folders.length])
+  const foldersSentinelRef = useInfiniteScroll({
+    enabled: true,
+    isLoading: false,
+    hasMore: hasMoreFolders,
+    onLoadMore: loadMoreFolders,
+  })
+
   return (
     <div>
       <Tooltip target=".chat-sidebar-folder" appendTo={null} delay={0} />
@@ -142,7 +193,7 @@ const FolderList: FC<FolderListProps> = ({
         expandIcon={() => null}
         collapseIcon={() => null}
       >
-        {folders.map((folder) => {
+        {visibleFolders.map((folder) => {
           const kind = folderKinds?.[folder] ?? getFolderKindFromKey(folder)
           const isImportFolder = kind === 'import' || kind === 'legacy-import'
           const folderKey = encodeURIComponent(folder)
@@ -223,7 +274,7 @@ const FolderList: FC<FolderListProps> = ({
               )}
             >
               <div className="ml-4 flex min-w-0 flex-col border-l border-border-secondary pl-4">
-                <ChatList
+                <FolderChatList
                   chats={folderChats}
                   chatActions={chatActions}
                   currentChatId={currentChatId}
@@ -241,6 +292,7 @@ const FolderList: FC<FolderListProps> = ({
           )
         })}
       </Accordion>
+      {hasMoreFolders && <div ref={foldersSentinelRef} aria-hidden="true" className="h-px" />}
 
       <DeleteFolderPopup
         selectedFolder={selectedFolder}

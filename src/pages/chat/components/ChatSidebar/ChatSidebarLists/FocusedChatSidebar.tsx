@@ -15,6 +15,7 @@
 
 import { FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { ChatListDensity } from '@/store/chatViewSettings'
 
 import ChatSidebarAccordion from './ChatSidebarAccordion'
@@ -36,6 +37,9 @@ import type {
 import type { FocusedView } from './focusedChatSidebarHelpers'
 
 const WORKFLOW_RUNS_BATCH_SIZE = 20
+// Folder rows are heavy (menu, avatars, counters); rendering all of them at once froze expanding
+// Folders for users with hundreds of folders, so they load in batches as the list scrolls.
+const FOLDERS_BATCH_SIZE = 20
 
 interface FocusedChatSidebarProps {
   view: FocusedView
@@ -71,6 +75,8 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('')
   const [visibleWorkflowRunsCount, setVisibleWorkflowRunsCount] = useState(WORKFLOW_RUNS_BATCH_SIZE)
   const [hasWorkflowRunsScrollIntent, setHasWorkflowRunsScrollIntent] = useState(false)
+  const [visibleGroupsCount, setVisibleGroupsCount] = useState(FOLDERS_BATCH_SIZE)
+  const [hasGroupsScrollIntent, setHasGroupsScrollIntent] = useState(false)
 
   const selectedViewKey = getFocusedViewKey(view)
 
@@ -97,6 +103,8 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
     if (expandFoldersSignal === lastExpandFoldersSignalRef.current) return
     lastExpandFoldersSignalRef.current = expandFoldersSignal
     setIsGroupsExpanded(true)
+    // Raised after creating a folder: a new empty folder sorts last, so show the whole list.
+    setVisibleGroupsCount(Number.MAX_SAFE_INTEGER)
     setIsRecentExpanded(false)
     setIsWorkflowRunsExpanded(false)
   }, [expandFoldersSignal])
@@ -129,6 +137,28 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
     () => viewModel.workflowChats.slice(0, visibleWorkflowRunsCount),
     [viewModel.workflowChats, visibleWorkflowRunsCount]
   )
+
+  useEffect(() => {
+    if (isGroupsExpanded) return
+    setVisibleGroupsCount(FOLDERS_BATCH_SIZE)
+    setHasGroupsScrollIntent(false)
+  }, [isGroupsExpanded])
+
+  const loadMoreGroups = useCallback(() => {
+    setVisibleGroupsCount((count) => Math.min(count + FOLDERS_BATCH_SIZE, viewModel.groups.length))
+  }, [viewModel.groups.length])
+
+  const visibleGroups = useMemo(
+    () => viewModel.groups.slice(0, visibleGroupsCount),
+    [viewModel.groups, visibleGroupsCount]
+  )
+  const hasMoreGroups = visibleGroups.length < viewModel.groups.length
+  const groupsSentinelRef = useInfiniteScroll({
+    enabled: isGroupsExpanded && hasGroupsScrollIntent,
+    isLoading: false,
+    hasMore: hasMoreGroups,
+    onLoadMore: loadMoreGroups,
+  })
 
   let selectedAggregate: FocusedChatSidebarAggregate | undefined
   if (view.type === 'assistant') {
@@ -268,9 +298,10 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
         isExpanded={isGroupsExpanded}
         headerContentTemplate={createFolderButton}
         onToggle={handleToggleGroups}
+        onScrollIntent={() => setHasGroupsScrollIntent(true)}
         scrollable
       >
-        {viewModel.groups.map((group) => (
+        {visibleGroups.map((group) => (
           <FocusedAggregateRow
             key={`${group.kind}:${group.id}`}
             aggregate={group}
@@ -290,6 +321,7 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
             onNewChat={group.kind === 'assistant' ? () => onNewChat(group) : undefined}
           />
         ))}
+        {hasMoreGroups && <div ref={groupsSentinelRef} aria-hidden="true" className="h-px" />}
       </ChatSidebarAccordion>
     </div>
   )

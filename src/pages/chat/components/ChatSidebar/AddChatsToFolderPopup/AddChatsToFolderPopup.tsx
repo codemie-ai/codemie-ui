@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useEffect, useMemo, useState } from 'react'
+import { UIEvent, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import Avatar from '@/components/Avatar/Avatar'
@@ -36,6 +36,12 @@ interface AddChatsToFolderPopupProps {
   onHide: () => void
 }
 
+// Rows render in batches as the list scrolls: rendering every chat at once froze opening the
+// popup for users with thousands of chats.
+const CHATS_BATCH_SIZE = 20
+/** Load the next batch once the list is scrolled this close to its end, in px. */
+const LOAD_MORE_OFFSET = 200
+
 const getChatName = (chat: ChatListItem, entityName?: string) =>
   chat.name?.trim() || entityName?.trim() || 'New chat'
 
@@ -44,26 +50,46 @@ const AddChatsToFolderPopup = ({ folderName, isVisible, onHide }: AddChatsToFold
   const { density } = useSnapshot(chatViewSettingsStore)
   const avatarStores = useAvatarStores()
   const [selectedChatIds, setSelectedChatIds] = useState<string[]>([])
+  const [visibleChatsCount, setVisibleChatsCount] = useState(CHATS_BATCH_SIZE)
   const showAvatars = density === ChatListDensity.DETAILED
 
+  // Avatars and display names are resolved once per chat, not inside the sort comparator,
+  // where they ran twice per comparison.
   const eligibleChats = useMemo(
     () =>
       (chats as readonly ChatListItem[])
         .filter((chat) => !isImportedChat(chat) && chat.folder !== folderName)
-        .sort((a, b) =>
-          getChatName(a, resolveChatAvatar(a, avatarStores).name).localeCompare(
-            getChatName(b, resolveChatAvatar(b, avatarStores).name)
-          )
-        ),
+        .map((chat) => {
+          const avatars = chat.isGroup
+            ? resolveGroupChatAvatars(chat, avatarStores)
+            : [resolveChatAvatar(chat, avatarStores)]
+          return { chat, avatars, name: getChatName(chat, avatars[0]?.name) }
+        })
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [avatarStores, chats, folderName]
   )
   const eligibleChatIds = useMemo(
-    () => new Set(eligibleChats.map((chat) => chat.id)),
+    () => new Set(eligibleChats.map(({ chat }) => chat.id)),
     [eligibleChats]
   )
+  const selectedChatIdSet = useMemo(() => new Set(selectedChatIds), [selectedChatIds])
+
+  const visibleChats = eligibleChats.slice(0, visibleChatsCount)
+  const hasMoreChats = visibleChats.length < eligibleChats.length
+
+  // A scroll handler rather than useInfiniteScroll: the Dialog mounts its content after this
+  // component's effects run, so an IntersectionObserver sentinel would never get attached.
+  const handleListScroll = (event: UIEvent<HTMLDivElement>) => {
+    if (!hasMoreChats) return
+    const { scrollTop, clientHeight, scrollHeight } = event.currentTarget
+    if (scrollHeight - scrollTop - clientHeight > LOAD_MORE_OFFSET) return
+    setVisibleChatsCount((count) => Math.min(count + CHATS_BATCH_SIZE, eligibleChats.length))
+  }
 
   useEffect(() => {
-    if (isVisible) setSelectedChatIds([])
+    if (!isVisible) return
+    setSelectedChatIds([])
+    setVisibleChatsCount(CHATS_BATCH_SIZE)
   }, [isVisible, folderName])
 
   useEffect(() => {
@@ -98,13 +124,12 @@ const AddChatsToFolderPopup = ({ folderName, isVisible, onHide }: AddChatsToFold
       onSubmit={handleSubmit}
       limitWidth
     >
-      <div className="flex max-h-96 flex-col gap-1 overflow-y-auto py-1">
-        {eligibleChats.length > 0 ? (
-          eligibleChats.map((chat) => {
-            const avatars = chat.isGroup
-              ? resolveGroupChatAvatars(chat, avatarStores)
-              : [resolveChatAvatar(chat, avatarStores)]
-
+      <div
+        className="flex max-h-96 flex-col gap-1 overflow-y-auto py-1"
+        onScroll={handleListScroll}
+      >
+        {visibleChats.length > 0 ? (
+          visibleChats.map(({ chat, avatars, name }) => {
             return (
               <div
                 key={chat.id}
@@ -112,7 +137,7 @@ const AddChatsToFolderPopup = ({ folderName, isVisible, onHide }: AddChatsToFold
               >
                 <Checkbox
                   id={`add-chat-to-folder-${chat.id}`}
-                  checked={selectedChatIds.includes(chat.id)}
+                  checked={selectedChatIdSet.has(chat.id)}
                   onChange={(checked) => toggleChat(chat.id, checked)}
                   rootClassName="mt-0.5 shrink-0"
                 />
@@ -134,9 +159,7 @@ const AddChatsToFolderPopup = ({ folderName, isVisible, onHide }: AddChatsToFold
                   htmlFor={`add-chat-to-folder-${chat.id}`}
                   className="min-w-0 grow cursor-pointer"
                 >
-                  <span className="block truncate text-sm text-text-primary">
-                    {getChatName(chat, avatars[0].name)}
-                  </span>
+                  <span className="block truncate text-sm text-text-primary">{name}</span>
                   {chat.folder && (
                     <span className="block truncate text-xs text-text-tertiary">
                       Current folder: {chat.folder}

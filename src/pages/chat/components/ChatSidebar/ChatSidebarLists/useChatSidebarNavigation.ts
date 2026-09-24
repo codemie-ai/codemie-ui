@@ -112,6 +112,9 @@ export const useChatSidebarNavigation = ({
       setRecentExpanded(false)
       setWorkflowRunsExpanded(false)
       setFoldersExpanded(true)
+      // Open only this folder: jumps from search used to add to the open folders, and repeated
+      // jumps kept every visited folder with its chats rendered until the browser froze.
+      setActiveFolder(null)
       setActiveFolder(folderKey)
       scrollAfterRender(
         () => folderElementsRef.current.get(folderKey),
@@ -153,6 +156,8 @@ export const useChatSidebarNavigation = ({
         setRecentExpanded(false)
         setWorkflowRunsExpanded(false)
         setFoldersExpanded(true)
+        // Open only the chat's folder, as in expandFolder above.
+        setActiveFolder(null)
         setActiveFolder(targetFolderName)
       } else if (location?.section === 'recent') {
         revealRecentChat(chatId)

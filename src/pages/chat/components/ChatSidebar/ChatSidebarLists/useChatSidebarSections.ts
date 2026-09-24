@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
 import { ChatListItem, FolderListItem } from '@/types/entity/conversation'
@@ -89,6 +89,7 @@ export const useChatSidebarSections = (params: UseChatSidebarSectionsParams) => 
     loadMoreWorkflowRuns,
     hasWorkflowRunsScrollIntent,
     setHasWorkflowRunsScrollIntent,
+    resetRecentChats,
   } = useChatSidebarPagination({
     pinnedChats,
     recentChats,
@@ -112,6 +113,10 @@ export const useChatSidebarSections = (params: UseChatSidebarSectionsParams) => 
     isFocused,
     setIsPinnedExpanded,
   })
+  useEffect(() => {
+    if (!isRecentExpanded) resetRecentChats()
+  }, [isRecentExpanded, resetRecentChats])
+
   const { registerChatElement, registerFolderElement } = useChatSidebarNavigation({
     ref,
     isFocused,

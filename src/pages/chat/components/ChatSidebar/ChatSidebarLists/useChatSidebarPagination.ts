@@ -123,6 +123,17 @@ export const useChatSidebarPagination = ({
     setHasWorkflowRunsScrollIntent(false)
   }, [isChatsLoading])
 
+  // Called when Recent collapses: rows loaded by scrolling would otherwise stay in the DOM for
+  // good. The current chat stays within the first batch shown on the next expand.
+  const resetRecentChats = useCallback(() => {
+    const currentIndex =
+      currentChat && !currentChat.pinned
+        ? recentChats.findIndex((chat) => chat.id === currentChat.id)
+        : -1
+    setVisibleRecentChatsCount(Math.max(RECENT_CHATS_BATCH_SIZE, currentIndex + 1))
+    setHasRecentScrollIntent(false)
+  }, [currentChat, recentChats])
+
   return {
     isPinnedExpanded,
     setIsPinnedExpanded,
@@ -135,6 +146,7 @@ export const useChatSidebarPagination = ({
     setHasPinnedScrollIntent,
     visibleRecentChats,
     loadMoreRecentChats,
+    resetRecentChats,
     hasRecentScrollIntent,
     setHasRecentScrollIntent,
     visibleWorkflowRuns,

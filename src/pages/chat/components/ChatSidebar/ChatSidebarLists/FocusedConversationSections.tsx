@@ -100,6 +100,18 @@ const FocusedConversationSections: FC<FocusedConversationSectionsProps> = ({
     onLoadMore: loadMorePinnedItems,
   })
 
+  // Collapsing Recent drops the rows loaded by scrolling, so they do not stay in the DOM for good.
+  // The current chat stays within the first batch shown on the next expand.
+  useEffect(() => {
+    if (!isRecentCollapsible || isRecentExpanded) return
+    const targetChatId = revealChatId ?? currentChatId
+    const targetIndex = targetChatId
+      ? recentChats.findIndex((chat) => chat.id === targetChatId)
+      : -1
+    setVisibleRecentChatsCount(Math.max(RECENT_CHATS_BATCH_SIZE, targetIndex + 1))
+    setHasRecentScrollIntent(false)
+  }, [currentChatId, isRecentCollapsible, isRecentExpanded, recentChats, revealChatId])
+
   const visibleRecentChats = recentChats.slice(0, visibleRecentChatsCount)
   const hasMoreLocalRecentChats = visibleRecentChats.length < recentChats.length
   const loadMoreRecentChats = () => {

@@ -218,33 +218,41 @@ const FocusedAggregateRow: FC<FocusedAggregateRowProps> = ({
         )}
       </div>
 
-      {aggregate.kind === 'assistant' && (
+      {/* Popups mount only while open: a hidden instance of each in every row (Add chats sorts
+          every chat on render) made expanding Folders freeze with many folders. */}
+      {aggregate.kind === 'assistant' && isAssistantDeletePopupVisible && (
         <AssistantFolderDeletePopup
           assistantId={aggregate.id}
           assistantName={aggregate.name}
-          isVisible={isAssistantDeletePopupVisible}
+          isVisible
           onHide={() => setIsAssistantDeletePopupVisible(false)}
         />
       )}
 
       {aggregate.kind === 'folder' && isCustomOrWorkflowFolder && (
         <>
-          <AddChatsToFolderPopup
-            folderName={aggregate.name}
-            isVisible={isAddChatsPopupVisible}
-            onHide={() => setIsAddChatsPopupVisible(false)}
-          />
-          <FolderFormPopup
-            isEditing
-            folder={aggregate.name}
-            isVisible={isRenamePopupVisible}
-            onHide={() => setIsRenamePopupVisible(false)}
-          />
-          <DeleteFolderPopup
-            selectedFolder={aggregate.name}
-            isVisible={isCustomDeletePopupVisible}
-            onHide={() => setIsCustomDeletePopupVisible(false)}
-          />
+          {isAddChatsPopupVisible && (
+            <AddChatsToFolderPopup
+              folderName={aggregate.name}
+              isVisible
+              onHide={() => setIsAddChatsPopupVisible(false)}
+            />
+          )}
+          {isRenamePopupVisible && (
+            <FolderFormPopup
+              isEditing
+              folder={aggregate.name}
+              isVisible
+              onHide={() => setIsRenamePopupVisible(false)}
+            />
+          )}
+          {isCustomDeletePopupVisible && (
+            <DeleteFolderPopup
+              selectedFolder={aggregate.name}
+              isVisible
+              onHide={() => setIsCustomDeletePopupVisible(false)}
+            />
+          )}
         </>
       )}
     </>
