@@ -39,7 +39,8 @@ import DeleteChatPopup from '../ChatList/DeleteChatPopup'
 import MoveChatPopup from '../ChatList/MoveChatPopup'
 import RemoveChatFromFolderPopup from '../ChatList/RemoveChatFromFolderPopup'
 import FolderFormPopup from '../FolderList/FolderFormPopup'
-import StartNewChatModal from '../StartNewChatModal'
+// New chat popup disabled; direct default-chat behavior restored below. Kept for quick re-enable.
+// import StartNewChatModal from '../StartNewChatModal'
 
 export type { ChatSidebarListsRef }
 
@@ -59,7 +60,7 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
     useSnapshot(chatViewSettingsStore)
 
   const [selectedChat, setSelectedChat] = useState<ChatListItem>()
-  const [newChatFolder, setNewChatFolder] = useState<string>()
+  // const [newChatFolder, setNewChatFolder] = useState<string>()
   const [activePopup, setActivePopup] = useState<PopupName | null>(null)
   const [focusedView, setFocusedView] = useState<FocusedView>({ type: 'root' })
   const [focusedNavigationSection, setFocusedNavigationSection] =
@@ -153,14 +154,18 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
 
   const handleFocusedNewChat = useCallback(
     async (aggregate: FocusedChatSidebarAggregate) => {
-      if (aggregate.kind === 'folder') {
-        const isImportFolder =
-          aggregate.folderKind === 'import' || aggregate.folderKind === 'legacy-import'
-        setNewChatFolder(isImportFolder ? '' : aggregate.name)
-        return
-      }
+      // Popup disabled; a folder starts a new chat directly with the default assistant.
+      // if (aggregate.kind === 'folder') {
+      //   setNewChatFolder(isImportFolder ? '' : aggregate.name)
+      //   return
+      // }
+      const isFolder = aggregate.kind === 'folder'
+      const isImportFolder =
+        isFolder && (aggregate.folderKind === 'import' || aggregate.folderKind === 'legacy-import')
+      const assistantId = isFolder ? '' : aggregate.id
+      const folder = isFolder && !isImportFolder ? aggregate.name : ''
       try {
-        await chatsStore.startNewChat(aggregate.id, '', false)
+        await chatsStore.startNewChat(assistantId, folder, false)
         router.push({ name: 'new-chat' })
       } catch (error) {
         console.error('[handleFocusedNewChat] failed to start chat:', error)
@@ -246,11 +251,12 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
         isVisible={activePopup === 'folder-form'}
         onCreate={handleCreateFolder}
       />
+      {/* New chat popup disabled; direct default-chat behavior restored above. Kept for quick re-enable.
       <StartNewChatModal
         isVisible={newChatFolder !== undefined}
         folder={newChatFolder}
         onHide={() => setNewChatFolder(undefined)}
-      />
+      /> */}
     </div>
   )
 })
