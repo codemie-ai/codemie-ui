@@ -1,0 +1,38 @@
+{
+  "decision": "request-changes",
+  "rationale": "Edge-case was the only applicable lens for this compact/no-spec round (blind, acceptance, and verification-gap are all n/a) and it ran clean, but the genuine no-spec status caps confidence at low. It surfaced two blocking defects verified against source: CR-001, an orphan divider that renders above the lone Unassign item in community-edition rows because the divider is pushed unconditionally after the isEnterpriseEdition() gate; and CR-002, a dangling contextId that targets an id never rendered in the row, so every kebab trigger loses its per-user accessible name. One pre-existing tooltip-fallback risk was deferred and one divider-adjacency edge case in NavigationMore was dismissed as unreachable from any current call site; the standards audit is na (not expected for this profile, no coverage gap).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for compact profile / no guides in scope." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for compact profile / no guides in scope." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for compact profile / no guides in scope." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 625,
+      "title": "Orphan divider renders in community-edition rows",
+      "problem": "The divider menu item (`menuItems.push({ title: 'divider-...', divider: true })`) is pushed unconditionally right after the `isEnterpriseEdition()` gate that adds the analytics item, so when EE is disabled the analytics item is skipped but the divider is still added.",
+      "impact": "In community-edition deployments every row's actions menu shows a stray separator line above the single 'Unassign from Project' item, a visibly broken-looking dropdown introduced by this change.",
+      "recommendation": "Only push the divider when the analytics item was also pushed — move the divider push inside the `if (isEnterpriseEdition())` block, or guard it on `menuItems.length > 0`."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 654,
+      "title": "Kebab menu contextId targets a missing element id",
+      "problem": "`contextId={`user-more-${user.id}`}` is passed to NavigationMore, but no element in the row carries that id — the member-name span in the `user` column render has no `id` attribute.",
+      "impact": "NavigationMore's `aria-labelledby` assumes contextId resolves to a real element; since it does not, every row's kebab trigger falls back to the generic sr-only 'More options' text, losing the per-member accessible name for screen-reader users.",
+      "recommendation": "Give the member-name span `id={`user-more-${user.id}`}` matching the contextId value so aria-labelledby resolves correctly."
+    }
+  ]
+}

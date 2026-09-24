@@ -13,4 +13,5 @@
 // limitations under the License.
 //
 
-export { default } from './NavigationMore'
+export { default, isNavigationDivider } from './NavigationMore'
+export type { NavigationDivider, NavigationItem, NavigationMenuItem } from './NavigationMore'

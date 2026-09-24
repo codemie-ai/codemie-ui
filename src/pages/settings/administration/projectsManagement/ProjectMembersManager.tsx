@@ -13,16 +13,26 @@
 // limitations under the License.
 //
 
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router'
+import {
+  FC,
+  KeyboardEvent,
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useSnapshot } from 'valtio'
 
+import DeleteSvg from '@/assets/icons/delete.svg?react'
 import AnalyticsSvg from '@/assets/icons/diagram-duotone.svg?react'
 import ImportSvg from '@/assets/icons/input.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import Select from '@/components/form/Select'
+import NavigationMore, { NavigationMenuItem } from '@/components/NavigationMore'
 import Pagination from '@/components/Pagination'
 import Spinner from '@/components/Spinner'
 import Table from '@/components/Table'
@@ -53,7 +63,6 @@ import { formatCurrency, formatSpend } from '@/utils/currency'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 import { getAnalyticsMemberLink } from '@/utils/getAnalyticsMemberLink'
 import toaster from '@/utils/toaster'
-import { cn } from '@/utils/utils'
 
 import MemberAllocationOverrideModal from './components/MemberAllocationOverrideModal'
 import ImportUsersModal from './ImportUsersModal'
@@ -63,6 +72,13 @@ import ProjectMembersFilters, {
 } from './ProjectMembersFilters'
 
 const BUDGET_CATEGORIES: BudgetCategory[] = ['platform', 'cli', 'premium_models']
+
+// Stops the row-select click/keydown from bubbling past the actions cell without
+// putting a literal onClick/onKeyDown JSX attribute on the wrapping div.
+const stopRowPropagationProps = {
+  onClick: (e: MouseEvent) => e.stopPropagation(),
+  onKeyDown: (e: KeyboardEvent) => e.stopPropagation(),
+}
 
 interface UserBudgetsCellProps {
   user: UserListItem
@@ -149,7 +165,7 @@ const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnD
   if (canManage && showBudgets) {
     userColumnWidth = 'w-[24%]'
   } else if (canManage) {
-    userColumnWidth = 'w-[42%]'
+    userColumnWidth = 'w-[60%]'
   } else if (showBudgets) {
     userColumnWidth = 'w-[28%]'
   }
@@ -158,7 +174,7 @@ const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnD
   if (canManage && showBudgets) {
     roleColumnWidth = 'w-[22%]'
   } else if (canManage) {
-    roleColumnWidth = 'w-[28%]'
+    roleColumnWidth = 'w-[30%]'
   } else if (showBudgets) {
     roleColumnWidth = 'w-[24%]'
   }
@@ -178,7 +194,7 @@ const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnD
     }
   )
 
-  let actionsColumnWidth = 'w-[12%]'
+  const actionsColumnWidth = 'w-[6%]'
 
   if (showBudgets) {
     columns.push({
@@ -187,7 +203,6 @@ const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnD
       type: DefinitionTypes.Custom,
       headClassNames: canManage ? 'w-[44%]' : 'w-[48%]',
     })
-    actionsColumnWidth = 'w-[6%]'
   }
 
   if (canManage) {
@@ -562,7 +577,10 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         <div className="flex items-center gap-3">
           <UserAvatar src={user.picture} name={user.name ?? undefined} size="md" />
           <div className="flex flex-col gap-0.5 max-w-[250px]">
-            <span className="text-sm font-medium text-text-primary whitespace-nowrap overflow-hidden text-ellipsis">
+            <span
+              id={`user-more-${user.id}`}
+              className="text-sm font-medium text-text-primary whitespace-nowrap overflow-hidden text-ellipsis"
+            >
               {user.name}
             </span>
             <span className="text-xs text-text-primary whitespace-nowrap overflow-hidden text-ellipsis">
@@ -609,70 +627,59 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       ),
       actions: (user: UserListItem) => {
         const isCreator = user.id === project.created_by
-        const memberName = user.name ?? user.username
-        const analyticsTooltip = `View analytics for ${memberName} in ${project.name}`
+        const memberName = user.name || user.username
+
+        const menuItems: NavigationMenuItem[] = []
+        const unassignHidden = isCreator || isPersonal || !canManageProject
+
+        if (isEnterpriseEdition()) {
+          menuItems.push({
+            title: 'View analytics',
+            icon: <AnalyticsSvg className="w-[18px] h-[18px]" />,
+            href: getAnalyticsMemberLink(router, project.name, user.id, memberBudgets),
+            tooltip: `View analytics for ${memberName}`,
+            disabled: !budgetsLoaded,
+          })
+        }
+
+        if (menuItems.length > 0 && !unassignHidden) {
+          menuItems.push({ title: `divider-${user.id}`, divider: true })
+        }
+
+        menuItems.push({
+          title: 'Unassign from Project',
+          icon: <DeleteSvg className="w-[18px] h-[18px]" />,
+          onClick: () => handleDeleteUser(user),
+          hidden: unassignHidden,
+        })
 
         return (
-          <div
-            role="presentation"
-            className="flex items-center justify-end gap-2"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          >
-            {isEnterpriseEdition() && (
-              <Link
-                to={getAnalyticsMemberLink(router, project.name, user.id, memberBudgets)}
-                aria-label={analyticsTooltip}
-                aria-disabled={!budgetsLoaded}
-                data-tooltip-id="react-tooltip"
-                data-tooltip-content={analyticsTooltip}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (!budgetsLoaded) e.preventDefault()
-                }}
-                onKeyDown={(e) => e.stopPropagation()}
-                className={cn(
-                  'inline-flex items-center justify-center w-8 h-8 rounded text-text-tertiary hover:text-text-primary hover:bg-surface-specific-dropdown-hover transition-colors',
-                  !budgetsLoaded && 'pointer-events-none opacity-50'
-                )}
-              >
-                <AnalyticsSvg className="w-4 h-4" />
-              </Link>
-            )}
-            {!isCreator && (
-              <span
-                data-tooltip-id="react-tooltip"
-                data-tooltip-content={
-                  isPersonal ? personalProjectTooltip('unassign from') : undefined
-                }
-              >
-                <Button
-                  onClick={() => handleDeleteUser(user)}
-                  size={ButtonSize.MEDIUM}
-                  type={ButtonType.DELETE}
-                  disabled={isPersonal || !canManageProject}
-                >
-                  Unassign
-                </Button>
-              </span>
-            )}
+          <div className="flex items-center justify-end" {...stopRowPropagationProps}>
+            <NavigationMore
+              renderInRoot
+              hideOnClickInside
+              items={menuItems}
+              data-tooltip-content="More options"
+              contextId={`user-more-${user.id}`}
+            />
           </div>
         )
       },
     }),
     [
-      currentUser?.userId,
+      project,
       canManageProject,
-      isProjectAdmin,
       isPersonal,
-      getUserRole,
-      handleRoleChange,
       handleDeleteUser,
-      budgetAllocationLookup,
-      spendingByUserId,
       memberBudgets,
       budgetsLoaded,
       router,
+      currentUser?.userId,
+      isProjectAdmin,
+      getUserRole,
+      handleRoleChange,
+      budgetAllocationLookup,
+      spendingByUserId,
     ]
   )
 

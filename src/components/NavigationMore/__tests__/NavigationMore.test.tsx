@@ -14,6 +14,7 @@
 //
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import NavigationMore, { NavigationItem } from '../NavigationMore'
@@ -117,6 +118,98 @@ describe('NavigationMore', () => {
     fireEvent.scroll(screen.getByTestId('scroll-container'))
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('renders a divider as a separator, not a menuitem', () => {
+    const items = [
+      { title: 'Edit', onClick: vi.fn() },
+      { title: 'sep', divider: true as const },
+    ]
+    render(<NavigationMore items={items} />)
+    openMenu()
+    expect(screen.getByRole('separator')).toBeInTheDocument()
+    expect(screen.getAllByRole('menuitem')).toHaveLength(1)
+  })
+
+  it('renders an href item as a disabled link that does not fire onClick', () => {
+    const onClick = vi.fn()
+    const items = [{ title: 'View', href: '/x', onClick, disabled: true }]
+    render(
+      <MemoryRouter>
+        <NavigationMore items={items} />
+      </MemoryRouter>
+    )
+    openMenu()
+    const link = screen.getByRole('menuitem')
+    expect(link.tagName).toBe('A')
+    expect(link).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.click(link)
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
+  it('keeps the menu open when a disabled href item is clicked with hideOnClickInside', () => {
+    const onClick = vi.fn()
+    const items = [{ title: 'View', href: '/x', onClick, disabled: true }]
+    render(
+      <MemoryRouter>
+        <NavigationMore items={items} hideOnClickInside />
+      </MemoryRouter>
+    )
+    openMenu()
+    const link = screen.getByRole('menuitem')
+    fireEvent.click(link)
+    expect(onClick).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+  })
+
+  it('does not underline an href item on hover', () => {
+    const items = [{ title: 'View', href: '/x', onClick: vi.fn() }]
+    render(
+      <MemoryRouter>
+        <NavigationMore items={items} />
+      </MemoryRouter>
+    )
+    openMenu()
+    const link = screen.getByRole('menuitem')
+    expect(link.tagName).toBe('A')
+    expect(link).toHaveClass('hover:no-underline')
+  })
+
+  it('does not underline a button item on hover', () => {
+    render(<NavigationMore items={makeItems()} />)
+    openMenu()
+    const [button] = screen.getAllByRole('menuitem')
+    expect(button.tagName).toBe('BUTTON')
+    expect(button).toHaveClass('hover:no-underline')
+  })
+
+  it('disables the trigger when every item is hidden', () => {
+    const items = makeItems([{ hidden: true }, { hidden: true }])
+    render(<NavigationMore items={items} />)
+    const trigger = screen.getByRole('button', { name: 'More options' })
+    expect(trigger).toBeDisabled()
+
+    fireEvent.click(trigger)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('disables the trigger when items is an empty array', () => {
+    render(<NavigationMore items={[]} />)
+    const trigger = screen.getByRole('button', { name: 'More options' })
+    expect(trigger).toBeDisabled()
+  })
+
+  it('keeps the trigger enabled when at least one item is visible', () => {
+    const items = makeItems([{}, { hidden: true }])
+    render(<NavigationMore items={items} />)
+    const trigger = screen.getByRole('button', { name: 'More options' })
+    expect(trigger).not.toBeDisabled()
+  })
+
+  it('keeps the trigger enabled when only children are provided', () => {
+    render(<NavigationMore>{<span>child</span>}</NavigationMore>)
+    const trigger = screen.getByRole('button', { name: 'More options' })
+    expect(trigger).not.toBeDisabled()
   })
 
   it('shows the trigger focus ring only for keyboard-visible focus', () => {

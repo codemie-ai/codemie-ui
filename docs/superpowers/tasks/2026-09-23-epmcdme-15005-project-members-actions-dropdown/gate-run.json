@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15005_project-members-actions-dropdown",
+  "head": "2083e0cbef34220e298abcdb7b6be2af55c866e2",
+  "runner": "npm",
+  "started_at": "2026-09-23T16:04:35Z",
+  "completed_at": "2026-09-23T16:06:10Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "install",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 14808,
+      "command": "npm ci",
+      "exit_code": 0,
+      "notes": "AGENTS.md requires reinstalling from lock file before trusting any gate. Package audit reported 33 pre-existing vulnerabilities (5 low, 8 moderate, 18 high, 2 critical) unrelated to this change; not remediated here."
+    },
+    {
+      "id": "affected-unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 18050,
+      "command": "npx vitest run src/pages/settings/administration/projectsManagement/__tests__/ProjectMembersViewAnalytics.integration.test.tsx",
+      "exit_code": 0,
+      "notes": "Scoped to the test file updated by this change (Test Files 1 passed, Tests 9 passed). Caller requested this targeted run in lieu of the full test:unit:slnt/test:integration:slnt suites from quality-gates.md."
+    },
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 23499,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Only a pre-existing 'React version not specified in eslint-plugin-react settings' config warning printed; no rule violations."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16997,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 461,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Husky pre-commit gate. Checked 2204 files, 0 missing license headers."
+    },
+    {
+      "id": "test-unit-full",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test:unit:slnt",
+      "exit_code": null,
+      "notes": "Out of scope: caller requested a targeted run of only ProjectMembersViewAnalytics.integration.test.tsx for this change, not the full unit suite. Still owed before opening the MR per quality-gates.md Full Pre-MR Checklist."
+    },
+    {
+      "id": "test-integration-full",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test:integration:slnt",
+      "exit_code": null,
+      "notes": "Out of scope: caller requested a targeted run of only ProjectMembersViewAnalytics.integration.test.tsx for this change, not the full integration suite. Still owed before opening the MR per quality-gates.md Full Pre-MR Checklist."
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip-if condition met: no dependency was added, removed, or moved by this change. Also not in caller's requested 5-step scope."
+    },
+    {
+      "id": "secrets",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run secrets:check",
+      "exit_code": null,
+      "notes": "Not in caller's requested scope for this run; enforced automatically by the Husky pre-commit hook and server-side gitleaks-scan CI task, so it will still run before merge."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Not in caller's requested scope for this run; enforced automatically by the Husky pre-commit hook. Owed before merge — only the pre-commit hook or a manual run will settle it."
+    }
+  ],
+  "failures": {}
+}

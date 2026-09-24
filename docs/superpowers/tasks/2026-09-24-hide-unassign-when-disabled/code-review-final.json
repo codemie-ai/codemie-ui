@@ -1,0 +1,121 @@
+{
+  "decision": "request-changes",
+  "rationale": "No story/spec ArtifactRef existed so acceptance did not run (no-spec: business_review empty); blind, edge-case and verification-gap lenses parsed cleanly and standards ran with coverage_gap:false but found ea912cada's commit subject blocking the CI regex. 8 reachability-verified defects survive as patch findings (kebab trigger left clickable over an empty menu, a disabled href item still closes the menu, a group chat can incorrectly surface 'Edit assistant', an unhandled promise rejection on the New Chat button plus its missing test, an untested compact-density group badge, and an empty-name folder synthesizing a blank sidebar group) alongside the standards commit-format finding; 0 deferred, 8 findings dismissed as already-guarded or false positives (CSS pointer-events guard, ticketed dead prop, redesign-consistent column width, still-used icon asset, unreached type cast, existing prop support, guarded orphan-divider call site).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "fail",
+      "notes": "Commit ea912cada 'epmcdme-15005-project-members-actions-dropdown: add planning artifacts' uses a lowercase ticket prefix and lowercase text after the colon, violating git-workflow.md's commit regex."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md is absent from the repo and no code_quality ArtifactRef was passed; no documented blocking code-quality standard exists to adjudicate against."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Checked changed files against security-patterns.md: no dangerouslySetInnerHTML/innerHTML/DOMPurify sinks, no open-redirect navigation, no postMessage/config/secrets touched, no nosonar added."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "commit ea912cada",
+      "title": "Commit subject violates format",
+      "problem": "Commit ea912cada uses 'epmcdme-15005-project-members-actions-dropdown: add planning artifacts' — lowercase ticket prefix, hyphenated slug, lowercase text after the colon.",
+      "impact": "Tekton CI enforces the EPMCDME-XXXX: Capital-sentence commit regex on the pipeline; this subject fails that check and blocks CI.",
+      "recommendation": "Reword the subject to 'EPMCDME-15005: Add planning artifacts' or squash it into an adjacent EPMCDME-15005 commit that already conforms."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/NavigationMore/NavigationMore.tsx",
+      "line": 196,
+      "title": "Disabled href item still closes menu",
+      "problem": "The href-item onClick handler runs `if (hideOnClickInside) handleOpenChange(false)` with no `!item.disabled` guard, unlike the button-item branch whose native `disabled` attribute suppresses the click event entirely.",
+      "impact": "Clicking or keyboard-activating a disabled href item (e.g. 'View analytics' while `!budgetsLoaded`) closes the dropdown as if the action ran, with no feedback that nothing happened — inconsistent with the disabled-button item.",
+      "recommendation": "Guard the close call the same way the button branch guards onClick: `if (hideOnClickInside && !item.disabled) handleOpenChange(false)`."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/NavigationMore/NavigationMore.tsx",
+      "line": 236,
+      "title": "Kebab trigger stays clickable over an empty menu",
+      "problem": "The trigger `<button>` always renders regardless of `items`, while the `<ul>` is gated on `visibleItems.length > 0`. When every item a caller supplies is `hidden` (a project-member row that is the creator, a personal project, or lacks manage rights, with Enterprise Edition off so 'View analytics' is never added), the kebab icon still renders and opens to nothing.",
+      "impact": "Rows with no available actions present a functional-looking kebab button that does nothing when clicked — a dead-end control instead of no control, unlike the equivalent pre-kebab UI for the same rows.",
+      "recommendation": "Hide the trigger itself when `items` resolves to zero visible entries, or have ProjectMembersManager's `actions` cell skip rendering `<NavigationMore>` when `menuItems.every(i => isNavigationDivider(i) || i.hidden)`."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatList/ChatListItem.tsx",
+      "line": 180,
+      "title": "Compact-density group badge is untested",
+      "problem": "The new compact-mode assistant-count badge (`isCompact && !hideAvatar && chat.isGroup`) has no test rendering ChatListItem with a compact density and a group chat.",
+      "impact": "A regression in the badge's visibility condition or count would ship silently, since every existing ChatListItem test uses the default density.",
+      "recommendation": "Add a test that renders ChatListItem with `density={ChatListDensity.COMPACT}` and a group chat, asserting the badge renders with the correct `groupAvatars.length`."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatList/ChatListItemContextMenu.tsx",
+      "line": 46,
+      "title": "getSingleAssistantId ignores isGroup",
+      "problem": "`getSingleAssistantId` only excludes workflow chats (`chat.isWorkflow`) before offering 'Edit assistant', but its own comment states 'Group chats and workflow runs never get it' — nothing checks `chat.isGroup`.",
+      "impact": "A group chat whose `initialAssistantId`/`assistantIds` currently resolve to exactly one distinct id incorrectly surfaces 'Edit assistant', routing the user to edit a single-assistant config for what is actually a multi-participant chat.",
+      "recommendation": "Add `if (chat.isWorkflow || chat.isGroup) return null` at the top of `getSingleAssistantId`, matching the documented intent."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebar.tsx",
+      "line": 92,
+      "title": "New Chat button has no error handling",
+      "problem": "The 'New Chat' button's onClick is `async () => { await chatsStore.startNewChat('', '', false); router.push(...) }` with no try/catch and no toaster call.",
+      "impact": "If `startNewChat` rejects (network/API failure), the rejection is unhandled, the button silently does nothing, and the user gets no error feedback or navigation.",
+      "recommendation": "Wrap the call in try/catch and surface failures via `toaster.error(...)`, matching the error-handling pattern used elsewhere in this file."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebar.tsx",
+      "line": 95,
+      "title": "New Chat button click path is untested",
+      "problem": "No test in ChatSidebar.test.tsx fires a click on `chat-new-chat-button` and asserts `chatsStore.startNewChat`/`router.push` were called correctly; the file's `mockChatsStore` does not even define `startNewChat`.",
+      "impact": "A regression in the button's arguments, route name, await/push sequencing, or the CR-006 error-handling gap would ship with the existing suite staying green.",
+      "recommendation": "Add a test that mocks `chatsStore.startNewChat` and `router.push`, clicks the button, and asserts both are called with the expected arguments, including a rejected-promise case."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/focusedChatSidebarViewModel.ts",
+      "line": 119,
+      "title": "Empty-name folder synthesizes a blank sidebar group",
+      "problem": "The loop over `chatFolders` only skips `folder.name === AVATAR_CHAT_FOLDER`; an empty-string name classifies as kind 'custom' (`customFolderKey('')` = `'custom:'`) and is absent from `chatFolderNames` (which filters out falsy names), so it falls through to `collections.sourceFolderChats.set('', [])`.",
+      "impact": "A chatFolders entry with an empty/falsy name (e.g. transient backend data) synthesizes a nameless, blank-labeled folder group that gets rendered in the Focused sidebar's Folders section.",
+      "recommendation": "Add `if (!folder.name) continue` alongside the existing AVATAR_CHAT_FOLDER check."
+    }
+  ]
+}

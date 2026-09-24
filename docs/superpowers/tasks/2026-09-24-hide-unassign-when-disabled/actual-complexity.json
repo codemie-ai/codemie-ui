@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "generated": "2026-09-24T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 22,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 39,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Diff spans a new shared dropdown component (NavigationMore, reused by both ChatSidebar and ProjectMembersManager), a full ChatSidebar/ChatSidebarLists subsystem refactor (FocusedChatSidebar, FocusedAggregateRow, FocusedViewHeader, chatSidebarFolderHelpers, chatSidebarListsHelpers, focusedChatSidebarViewModel, useChatSidebarFolders, useChatSidebarSections), a new chat-import feature (icon + constants), and the targeted ProjectMembersManager unassign-hiding change — four+ components across multiple product areas with new abstractions introduced."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "No exact precedent for the new focused-sidebar view-model/hooks architecture; the NavigationMore component follows an established floating-ui + accessibility pattern (aria-haspopup, focus return, dismiss-on-outside-click) already present in the codebase, but the scale of the ChatSidebar restructuring carries moderate regression risk across an existing, actively used feature."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "diffstat reports 39 files changed (2071 insertions / 266 deletions) — well above the 16+ threshold for XXL, driven mostly by the ChatSidebar/ChatSidebarLists restructuring and its accompanying tests, plus SDLC task-artifact files for three separate tickets."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped: 'Refactor' of a large subsystem (ChatSidebar -> ChatSidebarLists with 8 new files: FocusedAggregateRow, FocusedChatSidebar, FocusedViewHeader, chatSidebarFolderHelpers, chatSidebarListsHelpers, focusedChatSidebarViewModel, useChatSidebarFolders, useChatSidebarSections).",
+    "Component Scope capped at XXL: change affects multiple workflows/product areas (chat sidebar navigation, chat import, project members actions) and introduces a new core shared utility (NavigationMore) reused across them."
+  ],
+  "split_recommendation": null
+}

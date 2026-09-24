@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15005_project-members-actions-dropdown",
+  "head": "25b41c19662e7cc70cc7c158800b4380df819c89",
+  "runner": "npm",
+  "started_at": "2026-09-24T08:06:32Z",
+  "completed_at": "2026-09-24T08:20:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 22290,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17149,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip condition met: no dependency added, removed, or moved (package.json and package-lock.json unchanged in this branch's diff against main)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 6773,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 147274,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 67788,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (NavigationMore, ChatSidebar, ProjectMembersManager .tsx files) but no configured UI test script exists in package.json; browser verification is a separate caller decision (feature-verification)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 517,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 293,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: script printed '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' and exited 0 without doing its work. To run locally, set SONAR_TOKEN (and reachable SonarQube host from .sonarlint/connectedMode.json) in the environment. Owed check: only CI's Sonar analysis will settle this."
+    }
+  ],
+  "failures": {}
+}

@@ -1,0 +1,55 @@
+{
+  "decision": "approve",
+  "rationale": "The two findings caused by/adjacent to this task's changes are verified resolved against current source: CR-002's href-item onClick now guards the menu-close call with `!item.disabled` (NavigationMore.tsx), so a disabled href item no longer closes the popover or navigates when clicked. CR-003's kebab trigger now computes `hasMenuContent` (children present, or at least one non-divider item visible) and disables the trigger button when it is false, so a row with zero visible actions no longer opens an empty popover. Both fixes are covered by 5 new tests in NavigationMore.test.tsx (27/27 passing) plus the full consumer suite (493 passing, no regressions). CR-001 and CR-004 through CR-008 are explicitly deferred: the user scoped this follow-up to CR-002/CR-003 only, since CR-001 is a commit-format issue on an older, already-existing commit and CR-004-CR-008 are pre-existing findings in ChatSidebar/ChatListItemContextMenu/focusedChatSidebarViewModel unrelated to this task's two plan tasks.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "CR-001 (commit-format) is deferred out of scope for this follow-up; see finding_status." },
+    { "kind": "code-quality", "status": "na", "notes": "No new code-quality findings introduced by the CR-002/CR-003 fix-up." },
+    { "kind": "security", "status": "na", "notes": "No security-relevant surface touched by this fix-up." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "onClick for href-based items now short-circuits with preventDefault + stopPropagation when `item.disabled`, so it neither navigates nor triggers `handleClickInside`'s unconditional menu close. Confirmed by the new disabled-href-item test in NavigationMore.test.tsx."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Trigger button gets `disabled={!hasMenuContent}` and `useClick(context, { enabled: hasMenuContent })`, where `hasMenuContent` is true only if `children` is passed or at least one non-divider item is visible. Confirmed by 4 new tests covering hidden-items, empty-items, one-visible-item, and children-only cases."
+    },
+    {
+      "id": "CR-001",
+      "status": "deferred",
+      "notes": "Commit-format issue on an older, already-existing commit (ea912cada). User explicitly scoped this fix-up to CR-002/CR-003 only; rewording/rebasing that commit was declined as out of scope for this small follow-up."
+    },
+    {
+      "id": "CR-004",
+      "status": "deferred",
+      "notes": "Pre-existing test-gap in ChatListItem.tsx unrelated to this task's 2 plan tasks. User declined to fix as out of scope."
+    },
+    {
+      "id": "CR-005",
+      "status": "deferred",
+      "notes": "Pre-existing mislabel in ChatListItemContextMenu.tsx (getSingleAssistantId) unrelated to this task's 2 plan tasks. User declined to fix as out of scope."
+    },
+    {
+      "id": "CR-006",
+      "status": "deferred",
+      "notes": "Pre-existing error-handling gap in ChatSidebar.tsx (New Chat button) unrelated to this task's 2 plan tasks. User declined to fix as out of scope."
+    },
+    {
+      "id": "CR-007",
+      "status": "deferred",
+      "notes": "Pre-existing test-gap in ChatSidebar.tsx (New Chat button click path) unrelated to this task's 2 plan tasks. User declined to fix as out of scope."
+    },
+    {
+      "id": "CR-008",
+      "status": "deferred",
+      "notes": "Pre-existing data issue in focusedChatSidebarViewModel.ts (empty-name folder) unrelated to this task's 2 plan tasks. User declined to fix as out of scope."
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-09-23T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 13,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 5,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "The change spans two components — the shared NavigationMore dropdown (extended with href-based menu items, per-item disabled/tooltip states, and aria-labelledby wiring) and the ProjectMembersManager page component that consumes it. NavigationMore is a reused core UI utility (its aria-label default and generic 'Options' label are asserted against by an existing consumer's test expectations), so this is a shared-utility change, not a self-contained single-component edit." },
+    { "dimension": "file_change_estimate", "reason": "5 files changed across two top-level directories (src/components/NavigationMore and src/pages/settings/administration/projectsManagement): 4 modified (NavigationMore.tsx, its test file, its index.ts barrel, ProjectMembersManager.tsx) plus 1 new integration test file." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: NavigationMore.tsx is a shared core UI component reused by multiple dropdown-menu consumers across the app, not scoped to this one feature."
+  ],
+  "split_recommendation": null
+}

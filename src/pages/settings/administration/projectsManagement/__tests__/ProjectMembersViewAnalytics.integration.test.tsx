@@ -24,6 +24,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import ProjectMembersManager from '@/pages/settings/administration/projectsManagement/ProjectMembersManager'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { userStore } from '@/store/user'
+import { ProjectType } from '@/types/entity/project'
 import type { ProjectBudget, ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
 import type { ProjectDetail } from '@/types/entity/projectManagement'
 
@@ -119,7 +120,12 @@ const usersResponse = (data: unknown[]) => ({
   pagination: { page: 0, per_page: 10, total: data.length },
 })
 
-describe('ProjectMembersManager — View analytics button', () => {
+describe('ProjectMembersManager — Actions dropdown', () => {
+  const openMenu = async () => {
+    const trigger = await screen.findByRole('button', { name: /more options/i })
+    await userEvent.setup().click(trigger)
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     userStore.user = { userId: 'admin-1', isAdmin: true } as never
@@ -129,17 +135,51 @@ describe('ProjectMembersManager — View analytics button', () => {
     vi.spyOn(projectBudgetsStore, 'listProjectBudgets').mockResolvedValue(mockBudgets)
   })
 
-  it('renders a View analytics link for each member row when admin and enterprise enabled', async () => {
+  it("wires the kebab trigger's aria-labelledby to the member name span's id", async () => {
     render(
       <MemoryRouter>
         <ProjectMembersManager project={mockProject} budgets={[]} />
       </MemoryRouter>
     )
-    const link = await screen.findByRole('link', { name: /view analytics for jane doe in alpha/i })
-    expect(link).toBeInTheDocument()
+
+    const trigger = await screen.findByRole('button', { name: /more options/i })
+    const labelledBy = trigger.getAttribute('aria-labelledby') ?? ''
+    const nameId = labelledBy.split(' ').find((id) => id.startsWith('user-more-'))
+
+    expect(nameId).toBe('user-more-u-1')
+    expect(document.getElementById(nameId as string)).toHaveTextContent('Jane Doe')
   })
 
-  it('does NOT render View analytics when the viewer is not admin/project-admin', async () => {
+  it('shows a View analytics menu item with the exact tooltip (no project suffix)', async () => {
+    render(
+      <MemoryRouter>
+        <ProjectMembersManager project={mockProject} budgets={[]} />
+      </MemoryRouter>
+    )
+
+    await openMenu()
+    const item = await screen.findByRole('menuitem', { name: /view analytics/i })
+    expect(item).toHaveAttribute('data-tooltip-content', 'View analytics for Jane Doe')
+  })
+
+  it('renders the View analytics menu item as a link with tab=insights, projects, and users query params', async () => {
+    render(
+      <MemoryRouter>
+        <ProjectMembersManager project={mockProject} budgets={[]} />
+      </MemoryRouter>
+    )
+
+    await openMenu()
+    const item = await screen.findByRole('menuitem', { name: /view analytics/i })
+    expect(item.tagName).toBe('A')
+    const href = item.getAttribute('href') ?? ''
+
+    expect(href).toContain('tab=insights')
+    expect(href).toContain('projects=Alpha')
+    expect(href).toContain('users=u-1')
+  })
+
+  it('does NOT render a View analytics menu item for a non-admin/non-project-admin viewer', async () => {
     userStore.user = { userId: 'maintainer-1', isAdmin: false } as never
 
     render(
@@ -149,10 +189,10 @@ describe('ProjectMembersManager — View analytics button', () => {
     )
 
     await screen.findByText('Jane Doe')
-    expect(screen.queryByRole('link', { name: /view analytics/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /view analytics/i })).not.toBeInTheDocument()
   })
 
-  it('does NOT render View analytics when enterprise edition is disabled', async () => {
+  it('does NOT render a View analytics menu item when enterprise edition is disabled', async () => {
     const { isEnterpriseEdition } = await import('@/utils/enterpriseEdition')
     vi.mocked(isEnterpriseEdition).mockReturnValue(false)
 
@@ -162,14 +202,17 @@ describe('ProjectMembersManager — View analytics button', () => {
       </MemoryRouter>
     )
 
-    await screen.findByText('Jane Doe')
-    expect(screen.queryByRole('link', { name: /view analytics/i })).not.toBeInTheDocument()
+    await openMenu()
+    expect(screen.queryByRole('menuitem', { name: /view analytics/i })).not.toBeInTheDocument()
+    // No analytics item means no divider should render either — otherwise the
+    // lone "Unassign from Project" item would have an orphan separator above it.
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument()
 
     // Restore for subsequent tests
     vi.mocked(isEnterpriseEdition).mockReturnValue(true)
   })
 
-  it('clicking the View analytics link does not trigger row selection (stopPropagation)', async () => {
+  it('clicking the View analytics menu item does not throw and does not trigger row selection', async () => {
     const user = userEvent.setup()
 
     render(
@@ -178,45 +221,94 @@ describe('ProjectMembersManager — View analytics button', () => {
       </MemoryRouter>
     )
 
-    const link = await screen.findByRole('link', { name: /view analytics for jane doe in alpha/i })
+    await openMenu()
+    const item = await screen.findByRole('menuitem', { name: /view analytics/i })
 
-    // The link is wrapped in a stopPropagation div; clicking it should not throw
-    // and the user remains on the page (no navigation occurred in test env).
-    await expect(user.click(link)).resolves.not.toThrow()
+    // The dropdown is wrapped in a stopPropagation div; clicking a menu item should not
+    // throw and should not bubble up into row selection.
+    await expect(user.click(item)).resolves.not.toThrow()
   })
 
-  it('the href contains tab=insights, projects=Alpha, and users=u-1', async () => {
+  it('renders a separator between View analytics and Unassign from Project', async () => {
     render(
       <MemoryRouter>
         <ProjectMembersManager project={mockProject} budgets={[]} />
       </MemoryRouter>
     )
 
-    const link = await screen.findByRole('link', { name: /view analytics for jane doe in alpha/i })
-    const href = link.getAttribute('href') ?? ''
-
-    expect(href).toContain('tab=insights')
-    expect(href).toContain('projects=Alpha')
-    expect(href).toContain('users=u-1')
+    await openMenu()
+    await screen.findByRole('menuitem', { name: /view analytics/i })
+    expect(screen.getByRole('separator')).toBeInTheDocument()
   })
 
-  it('calls projectBudgetsStore.listProjectBudgets with the project name when viewer is admin', async () => {
+  it('hides the Unassign from Project menu item for the project creator, while View analytics stays present, becomes enabled, and leaves no orphan separator', async () => {
+    userStore.getUsers = vi
+      .fn()
+      .mockResolvedValue(usersResponse([buildUser('owner-1', 'Owner Name', 'owner@epam.com')]))
+
     render(
       <MemoryRouter>
         <ProjectMembersManager project={mockProject} budgets={[]} />
       </MemoryRouter>
     )
 
-    await screen.findByRole('link', { name: /view analytics for jane doe in alpha/i })
+    await openMenu()
+
+    const analyticsItem = await screen.findByRole('menuitem', { name: /view analytics/i })
+    await waitFor(() => {
+      expect(analyticsItem).toHaveAttribute('aria-disabled', 'false')
+    })
 
     await waitFor(() => {
-      expect(projectBudgetsStore.listProjectBudgets).toHaveBeenCalledWith(
-        expect.objectContaining({ projectName: 'Alpha' })
-      )
+      expect(
+        screen.queryByRole('menuitem', { name: /unassign from project/i })
+      ).not.toBeInTheDocument()
+    })
+    // With the item hidden and only "View analytics" remaining, no orphan
+    // separator should render on the creator's row either.
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument()
+  })
+
+  it('hides the Unassign from Project menu item for a member of a personal project', async () => {
+    const personalProject: ProjectDetail = {
+      ...mockProject,
+      project_type: ProjectType.PERSONAL,
+      created_by: 'owner-1',
+    }
+
+    render(
+      <MemoryRouter>
+        <ProjectMembersManager project={personalProject} budgets={[]} />
+      </MemoryRouter>
+    )
+
+    await openMenu()
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('menuitem', { name: /unassign from project/i })
+      ).not.toBeInTheDocument()
     })
   })
 
-  it('disables the View analytics link until the budget fetch resolves, then enables it', async () => {
+  it('keeps Unassign from Project enabled and clickable for a normal member row', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <ProjectMembersManager project={mockProject} budgets={[]} />
+      </MemoryRouter>
+    )
+
+    await openMenu()
+
+    const unassignItem = await screen.findByRole('menuitem', { name: /unassign from project/i })
+    expect(unassignItem).not.toBeDisabled()
+
+    await expect(user.click(unassignItem)).resolves.not.toThrow()
+  })
+
+  it('disables the View analytics menu item until the budget fetch resolves, then enables it', async () => {
     let resolveBudgets: (budgets: ProjectBudget[]) => void = () => {}
     vi.spyOn(projectBudgetsStore, 'listProjectBudgets').mockReturnValue(
       new Promise((resolve) => {
@@ -230,15 +322,14 @@ describe('ProjectMembersManager — View analytics button', () => {
       </MemoryRouter>
     )
 
-    const link = await screen.findByRole('link', { name: /view analytics for jane doe in alpha/i })
-    expect(link).toHaveAttribute('aria-disabled', 'true')
-
-    await expect(userEvent.setup().click(link)).resolves.not.toThrow()
+    await openMenu()
+    const item = await screen.findByRole('menuitem', { name: /view analytics/i })
+    expect(item).toHaveAttribute('aria-disabled', 'true')
 
     resolveBudgets(mockBudgets)
 
     await waitFor(() => {
-      expect(link).toHaveAttribute('aria-disabled', 'false')
+      expect(item).toHaveAttribute('aria-disabled', 'false')
     })
   })
 })

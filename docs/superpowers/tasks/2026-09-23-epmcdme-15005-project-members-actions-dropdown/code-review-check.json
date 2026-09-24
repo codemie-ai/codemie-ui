@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "Both prior blocking findings verified resolved against current source: CR-001's divider push is now guarded by `menuItems.length > 0`, so community-edition rows only get the divider when the analytics item was also pushed. CR-002's contextId now resolves — the member-name span carries `id={`user-more-${user.id}`}` matching the NavigationMore contextId. Both fixes are additionally covered by new assertions in ProjectMembersViewAnalytics.integration.test.tsx (no orphan separator when EE is disabled; aria-labelledby resolves to the name span's id). No findings remain blocking.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for compact profile / no guides in scope." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for compact profile / no guides in scope." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for compact profile / no guides in scope." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Divider push moved inside `if (menuItems.length > 0)` after the EE gate; source at ProjectMembersManager.tsx:628-630 confirms the divider is only added when the analytics item was pushed. Confirmed by the new 'does NOT render ... no separator' test."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Member-name span now carries `id={`user-more-${user.id}`}` (line 565) matching the NavigationMore `contextId` (line 659). Confirmed by the new aria-labelledby wiring test."
+    }
+  ]
+}

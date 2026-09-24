@@ -27,6 +27,7 @@ import {
   Placement,
 } from '@floating-ui/react'
 import React, { memo, MouseEventHandler, useId, useRef, useState } from 'react'
+import { Link } from 'react-router'
 
 import NavigationMoreSvg from '@/assets/icons/navigation-more.svg?react'
 import { useFocusReturn } from '@/hooks/useFocusReturn'
@@ -35,11 +36,23 @@ import { cn } from '@/utils/utils'
 export interface NavigationItem {
   title: string
   tooltip?: string
-  onClick: MouseEventHandler<HTMLButtonElement>
+  onClick?: MouseEventHandler<HTMLButtonElement>
+  href?: string
+  divider?: false
   icon?: React.ReactNode
   disabled?: boolean
   hidden?: boolean
 }
+
+export interface NavigationDivider {
+  title: string
+  divider: true
+}
+
+export type NavigationMenuItem = NavigationItem | NavigationDivider
+
+export const isNavigationDivider = (item: NavigationMenuItem): item is NavigationDivider =>
+  (item as NavigationDivider).divider === true
 
 /**
  * Prefer `contextId` when an entity name exists in the DOM; use `data-tooltip-content` for
@@ -47,7 +60,7 @@ export interface NavigationItem {
  */
 interface NavigationMoreProps {
   children?: React.ReactNode
-  items?: Array<NavigationItem>
+  items?: Array<NavigationMenuItem>
   hideOnClickInside?: boolean
   customIcon?: React.ReactNode
   childrenFirst?: boolean
@@ -93,6 +106,10 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
     onOpenChange?.(value)
   }
 
+  const visibleItems = items?.filter((item) => isNavigationDivider(item) || !item.hidden)
+  const hasMenuContent =
+    Boolean(children) || (visibleItems?.some((item) => !isNavigationDivider(item)) ?? false)
+
   const { refs, floatingStyles, context } = useFloating({
     open: show,
     placement,
@@ -104,7 +121,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   })
 
   const dismiss = useDismiss(context, { ancestorScroll: true })
-  const click = useClick(context)
+  const click = useClick(context, { enabled: hasMenuContent })
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
     click,
@@ -120,8 +137,6 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
     if (!hideOnClickInside) return
     handleOpenChange(false)
   }
-
-  const visibleItems = items?.filter((item) => !item.hidden)
 
   const menu = (
     <div
@@ -140,26 +155,25 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
         {childrenFirst && children}
         {visibleItems && visibleItems.length > 0 && (
           <ul role="none">
-            {visibleItems.map((item) => (
-              <li key={item.title} role="none">
-                <button
-                  type="button"
-                  role="menuitem"
-                  className={cn(
-                    'flex items-center gap-3 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed',
-                    !item.disabled &&
-                      'hover:bg-surface-specific-dropdown-hover hover:text-text-accent',
-                    'focus:outline-none focus:ring-2 focus:ring-primary-500'
-                  )}
-                  onClick={(e) => {
-                    if (!item.disabled) item.onClick(e)
-                    if (hideOnClickInside) handleOpenChange(false)
-                  }}
-                  disabled={item.disabled}
-                  aria-label={item.title}
-                  data-tooltip-id="react-tooltip"
-                  data-tooltip-content={item.tooltip}
-                >
+            {visibleItems.map((item) => {
+              if (isNavigationDivider(item)) {
+                return (
+                  <li key={item.title} role="none">
+                    <hr className="my-1 border-t border-border-structural" />
+                  </li>
+                )
+              }
+
+              const itemClassName = cn(
+                'flex items-center gap-3 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed',
+                !item.disabled && 'hover:bg-surface-specific-dropdown-hover hover:text-text-accent',
+                'hover:no-underline',
+                'focus:outline-none focus:ring-2 focus:ring-primary-500',
+                item.href && item.disabled && 'pointer-events-none opacity-50'
+              )
+
+              const itemContent = (
+                <>
                   <span
                     className="flex size-5 shrink-0 items-center justify-center"
                     aria-hidden="true"
@@ -167,9 +181,56 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
                     {item.icon}
                   </span>
                   <span className="min-w-0 grow truncate text-left">{item.title}</span>
-                </button>
-              </li>
-            ))}
+                </>
+              )
+
+              if (item.href) {
+                return (
+                  <li key={item.title} role="none">
+                    <Link
+                      to={item.href}
+                      role="menuitem"
+                      className={itemClassName}
+                      aria-disabled={item.disabled}
+                      aria-label={item.title}
+                      data-tooltip-id="react-tooltip"
+                      data-tooltip-content={item.tooltip}
+                      onClick={(e) => {
+                        if (item.disabled) {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          return
+                        }
+                        item.onClick?.(e as never)
+                        if (hideOnClickInside) handleOpenChange(false)
+                      }}
+                    >
+                      {itemContent}
+                    </Link>
+                  </li>
+                )
+              }
+
+              return (
+                <li key={item.title} role="none">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={itemClassName}
+                    onClick={(e) => {
+                      if (!item.disabled) item.onClick?.(e)
+                      if (hideOnClickInside) handleOpenChange(false)
+                    }}
+                    disabled={item.disabled}
+                    aria-label={item.title}
+                    data-tooltip-id="react-tooltip"
+                    data-tooltip-content={item.tooltip}
+                  >
+                    {itemContent}
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         )}
 
@@ -184,9 +245,11 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
         type="button"
         id={buttonId}
         ref={mergedTriggerRef}
+        disabled={!hasMenuContent}
         className={cn(
           'm-1 p-1 rounded-md border border-transparent hover:bg-surface-specific-dropdown-hover transition',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1',
+          'disabled:opacity-50 disabled:cursor-not-allowed',
           buttonClassName
         )}
         {...getReferenceProps()}
