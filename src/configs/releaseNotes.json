@@ -1,5 +1,111 @@
 [
 {
+  "version": "2.53.0",
+  "date": "2026-09-24",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "New GPT-6 models",
+          "description": "Added Luna and Sol models to CodeMie environments.",
+          "issues": [{"key":"EPMCDME-15205","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-15205"}]
+        },
+        {
+          "title": "Opus 5.5 availability",
+          "description": "Added Opus 5.5 to CodeMie environments.",
+          "issues": [{"key":"EPMCDME-15203","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-15203"}]
+        },
+        {
+          "title": "Visual workflow revision comparisons",
+          "description": "Added visual diffs for workflow revisions.",
+          "issues": [{"key":"EPMCDME-14482","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-14482"}]
+        },
+        {
+          "title": "Redesigned Chats side panel",
+          "description": "Introduced an updated chat sidebar experience with improved navigation and folder organization.",
+          "issues": [{"key":"EPMCDME-13270","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-13270"}]
+        },
+        {
+          "title": "Scheduled assistant execution",
+          "description": "Enabled scheduled, background execution of assistants.",
+          "issues": [{"key":"EPMCDME-10682","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-10682"}]
+        },
+        {
+          "title": "Microsoft Teams integration",
+          "description": "Implemented Microsoft Teams integration with the CodeMie platform.",
+          "issues": [{"key":"EPMCDME-10250","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-10250"}]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Project-member analytics access",
+          "description": "Added a direct path from a project member to their filtered Insights analytics.",
+          "issues": [{"key":"EPMCDME-15005","type":"STORY","link":"https://jiraeu.epam.com/browse/EPMCDME-15005"}]
+        },
+        {
+          "title": "Code Executor scheduling flexibility",
+          "description": "Added configurable Kubernetes tolerations for Code Executor sandbox jobs.",
+          "issues": [{"key":"EPMCDME-15069","type":"TASK","link":"https://jiraeu.epam.com/browse/EPMCDME-15069"}]
+        },
+        {
+          "title": "Claude Desktop analytics and chat data",
+          "description": "Improved Claude Desktop data retrieval and display across Analytics and Chats.",
+          "issues": [{"key":"EPMCDME-12687","type":"TASK","link":"https://jiraeu.epam.com/browse/EPMCDME-12687"}]
+        },
+        {
+          "title": "Internal platform maintenance",
+          "description": "Delivered internal maintenance improvements.",
+          "issues": []
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Workspace presentation scripts",
+          "description": "Fixed execution of presentation scripts that depend on the Tk runtime.",
+          "issues": [{"key":"EPMCDME-15167","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-15167"}]
+        },
+        {
+          "title": "Assistant conversation persistence",
+          "description": "Prevented assistant conversations from being lost after refreshing a page.",
+          "issues": [{"key":"EPMCDME-14797","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14797"}]
+        },
+        {
+          "title": "Feedback submission validation",
+          "description": "Fixed validation that prevented users from submitting negative assistant feedback.",
+          "issues": [{"key":"EPMCDME-14625","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14625"}]
+        },
+        {
+          "title": "Skill-enabled chats",
+          "description": "Fixed a model request error after navigating away from and back to Assistants.",
+          "issues": [{"key":"EPMCDME-14520","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14520"}]
+        },
+        {
+          "title": "Workflow execution navigation",
+          "description": "Fixed a 404 error when opening the workflow executions list without an execution ID.",
+          "issues": [{"key":"EPMCDME-14318","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-14318"}]
+        },
+        {
+          "title": "GitLab API request bodies",
+          "description": "Fixed GitLab tool handling of nested JSON request bodies.",
+          "issues": [{"key":"EPMCDME-13495","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-13495"}]
+        },
+        {
+          "title": "Workflow accessibility",
+          "description": "Improved accessible labels and visual contrast in workflow execution and configuration interfaces.",
+          "issues": [{"key":"EPMCDME-8534","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8534"},{"key":"EPMCDME-8524","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8524"},{"key":"EPMCDME-8518","type":"BUG","link":"https://jiraeu.epam.com/browse/EPMCDME-8518"}]
+        }
+      ]
+    }
+  ]
+},
+{
   "version": "2.52.0",
   "date": "2026-09-21",
   "sections": [
