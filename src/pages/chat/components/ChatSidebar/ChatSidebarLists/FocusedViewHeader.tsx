@@ -15,7 +15,7 @@
 
 import { ChangeEvent, FC } from 'react'
 
-import ArrowLeftSvg from '@/assets/icons/arrow-left.svg?react'
+import ChevronLeftSvg from '@/assets/icons/chevron-left.svg?react'
 import PlusSvg from '@/assets/icons/plus.svg?react'
 import SearchSvg from '@/assets/icons/search.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
@@ -63,6 +63,29 @@ const FocusedViewHeader: FC<FocusedViewHeaderProps> = ({
 
   return (
     <div className="flex shrink-0 flex-col gap-4 px-2 pb-4">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={onBack}
+          className="-ml-1 flex w-fit shrink-0 items-center gap-2 rounded-lg px-1 py-1 text-sm font-semibold text-text-primary transition-colors hover:bg-surface-specific-dropdown-hover"
+        >
+          <ChevronLeftSvg aria-hidden="true" className="size-4" />
+          All chats
+        </button>
+
+        {!isImportFolder && (
+          <Button
+            variant="primary"
+            size="medium"
+            className="shrink-0 whitespace-nowrap rounded-lg"
+            onClick={onNewChat}
+          >
+            <PlusSvg aria-hidden="true" />
+            New chat
+          </Button>
+        )}
+      </div>
+
       <div className="flex min-w-0 items-center gap-2">
         {aggregate.kind === 'folder' ? (
           <FolderTypeIcon kind={aggregate.folderKind ?? 'custom'} />
@@ -82,22 +105,6 @@ const FocusedViewHeader: FC<FocusedViewHeaderProps> = ({
           </p>
         </div>
       </div>
-
-      {!isImportFolder && (
-        <Button variant="secondary" size="small" className="w-fit" onClick={onNewChat}>
-          <PlusSvg aria-hidden="true" className="size-4" />
-          New chat
-        </Button>
-      )}
-
-      <button
-        type="button"
-        onClick={onBack}
-        className="flex w-fit items-center gap-2 rounded-lg px-1 py-1 text-sm font-semibold text-text-primary transition-colors hover:bg-surface-specific-dropdown-hover"
-      >
-        <ArrowLeftSvg aria-hidden="true" className="size-4" />
-        All chats
-      </button>
 
       <Input
         id="focused-chat-search"
