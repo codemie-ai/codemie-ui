@@ -150,7 +150,7 @@ describe('ProjectMembersManager — Actions dropdown', () => {
     expect(document.getElementById(nameId as string)).toHaveTextContent('Jane Doe')
   })
 
-  it('shows a View analytics menu item with the exact tooltip (no project suffix)', async () => {
+  it('does NOT show a tooltip on the View analytics menu item', async () => {
     render(
       <MemoryRouter>
         <ProjectMembersManager project={mockProject} budgets={[]} />
@@ -159,7 +159,7 @@ describe('ProjectMembersManager — Actions dropdown', () => {
 
     await openMenu()
     const item = await screen.findByRole('menuitem', { name: /view analytics/i })
-    expect(item).toHaveAttribute('data-tooltip-content', 'View analytics for Jane Doe')
+    expect(item).not.toHaveAttribute('data-tooltip-content')
   })
 
   it('renders the View analytics menu item as a link with tab=insights, projects, and users query params', async () => {
@@ -229,7 +229,7 @@ describe('ProjectMembersManager — Actions dropdown', () => {
     await expect(user.click(item)).resolves.not.toThrow()
   })
 
-  it('renders a separator between View analytics and Unassign from Project', async () => {
+  it('does NOT render a separator between View analytics and Unassign from Project', async () => {
     render(
       <MemoryRouter>
         <ProjectMembersManager project={mockProject} budgets={[]} />
@@ -238,7 +238,7 @@ describe('ProjectMembersManager — Actions dropdown', () => {
 
     await openMenu()
     await screen.findByRole('menuitem', { name: /view analytics/i })
-    expect(screen.getByRole('separator')).toBeInTheDocument()
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument()
   })
 
   it('hides the Unassign from Project menu item for the project creator, while View analytics stays present, becomes enabled, and leaves no orphan separator', async () => {

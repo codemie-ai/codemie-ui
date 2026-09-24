@@ -627,7 +627,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       ),
       actions: (user: UserListItem) => {
         const isCreator = user.id === project.created_by
-        const memberName = user.name || user.username
 
         const menuItems: NavigationMenuItem[] = []
         const unassignHidden = isCreator || isPersonal || !canManageProject
@@ -637,13 +636,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             title: 'View analytics',
             icon: <AnalyticsSvg className="w-[18px] h-[18px]" />,
             href: getAnalyticsMemberLink(router, project.name, user.id, memberBudgets),
-            tooltip: `View analytics for ${memberName}`,
             disabled: !budgetsLoaded,
           })
-        }
-
-        if (menuItems.length > 0 && !unassignHidden) {
-          menuItems.push({ title: `divider-${user.id}`, divider: true })
         }
 
         menuItems.push({
@@ -659,7 +653,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
               renderInRoot
               hideOnClickInside
               items={menuItems}
-              data-tooltip-content="More options"
               contextId={`user-more-${user.id}`}
             />
           </div>
