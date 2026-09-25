@@ -45,7 +45,8 @@ export interface ActivityEventListParams {
   event_type?: string[] | null
   entity_type?: string[] | null
   entity_id?: string | null
-  actor_id?: string | null
+  actor_id?: string[] | null
+  include_system?: boolean
   from?: string | null
   to?: string | null
   sort_dir?: 'asc' | 'desc'

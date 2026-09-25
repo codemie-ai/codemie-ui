@@ -23,6 +23,7 @@ import MultiSelect from '@/components/form/MultiSelect/MultiSelect'
 import Select from '@/components/form/Select/Select'
 import Popup from '@/components/Popup'
 import Table from '@/components/Table'
+import UserSelector from '@/components/UserSelector/UserSelector'
 import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { activityEventsStore } from '@/store/activityEvents'
@@ -49,6 +50,13 @@ const SORT_OPTIONS = [
 ]
 
 const DATETIME_FORMAT = 'MM/dd/yyyy, HH:mm:ss'
+
+const SYSTEM_ACTOR_VALUE = '__system__'
+const SYSTEM_ACTOR_OPTION = {
+  label: 'System',
+  value: SYSTEM_ACTOR_VALUE,
+  email: 'Events with no user actor',
+}
 
 function renderCreatedAt(item: ActivityEvent) {
   return (
@@ -152,7 +160,7 @@ const ActivityEventsPage: FC = () => {
   const [domain, setDomain] = useState<string[]>([])
   const [eventType, setEventType] = useState<string[]>([])
   const [entityType, setEntityType] = useState<string[]>([])
-  const [actorId, setActorId] = useState('')
+  const [actorId, setActorId] = useState<string[]>([])
   const [entityId, setEntityId] = useState('')
   const [from, setFrom] = useState<string | null>(null)
   const [to, setTo] = useState<string | null>(null)
@@ -164,7 +172,7 @@ const ActivityEventsPage: FC = () => {
     domain.length > 0 ||
     eventType.length > 0 ||
     entityType.length > 0 ||
-    !!actorId ||
+    actorId.length > 0 ||
     !!entityId ||
     !!from ||
     !!to ||
@@ -174,7 +182,7 @@ const ActivityEventsPage: FC = () => {
     setDomain([])
     setEventType([])
     setEntityType([])
-    setActorId('')
+    setActorId([])
     setEntityId('')
     setFrom(null)
     setTo(null)
@@ -202,7 +210,8 @@ const ActivityEventsPage: FC = () => {
           domain: domain.length ? domain : null,
           event_type: eventType.length ? eventType : null,
           entity_type: entityType.length ? entityType : null,
-          actor_id: actorId || null,
+          actor_id: actorId.filter((id) => id !== SYSTEM_ACTOR_VALUE),
+          include_system: actorId.includes(SYSTEM_ACTOR_VALUE),
           entity_id: entityId || null,
           from: from || null,
           to: to || null,
@@ -222,7 +231,7 @@ const ActivityEventsPage: FC = () => {
     domain.join(','),
     eventType.join(','),
     entityType.join(','),
-    actorId,
+    actorId.join(','),
     entityId,
     from,
     to,
@@ -305,11 +314,12 @@ const ActivityEventsPage: FC = () => {
             />
           </div>
           <div className="w-52">
-            <Input
-              label="Actor ID"
+            <UserSelector
+              label="Actor"
+              placeholder="Filter by actor"
               value={actorId}
-              onChange={(e) => setActorId(e.target.value)}
-              placeholder="Filter by user ID"
+              onChange={setActorId}
+              extraOption={SYSTEM_ACTOR_OPTION}
             />
           </div>
           <div className="w-52">

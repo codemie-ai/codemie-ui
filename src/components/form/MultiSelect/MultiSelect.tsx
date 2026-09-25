@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
+import { FilterService } from 'primereact/api'
 import {
   MultiSelect as PrimeMultiselect,
   MultiSelectChangeEvent,
   MultiSelectPassThroughOptions,
+  MultiSelectProps as PrimeMultiSelectProps,
 } from 'primereact/multiselect'
 import React, {
   useCallback,
@@ -41,6 +43,8 @@ import ptPreset from './ptPreset'
 import { useMultiSelectLogic } from './useMultiSelectLogic'
 
 import type { VirtualScrollerProps } from 'primereact/virtualscroller'
+
+FilterService.register('custom', () => true)
 
 const DefaultOption = ({ label }: { label: string }) => {
   const optionEl = useRef<HTMLParagraphElement>(null)
@@ -121,6 +125,7 @@ export type MultiSelectProps = {
   required?: boolean
   filterPlaceholder?: string
   emptyFilterMessage?: string
+  emptyMessage?: string
   max?: number
   display?: 'comma' | 'chip'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,6 +133,9 @@ export type MultiSelectProps = {
   virtualScrollerOptions?: VirtualScrollerProps
   hasVirtualScroll?: boolean
   onScrollBottom?: () => void
+  panelSize?: 'default' | 'md'
+  preserveOptionOrder?: boolean
+  serverSideFilter?: boolean
   // Extra content rendered inside the dropdown panel, directly below the search box.
   // Requires `onFilter` to be set (the search box itself must be present).
   panelHeaderExtra?: React.ReactNode
@@ -163,12 +171,16 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       required = false,
       filterPlaceholder,
       emptyFilterMessage,
+      emptyMessage,
       max,
       display,
       selectedItemTemplate,
       virtualScrollerOptions,
       hasVirtualScroll = false,
       onScrollBottom,
+      panelSize,
+      preserveOptionOrder = false,
+      serverSideFilter = false,
       panelHeaderExtra,
     },
     ref
@@ -278,7 +290,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
 
     const sortedOptions = useMemo(() => {
       // When paginating (onScrollBottom), preserve server-side order — sorting would reorder appended items
-      if (onScrollBottom) return options
+      if (onScrollBottom || preserveOptionOrder) return options
 
       const sorted = [...options].sort((a, b) =>
         String(a[optionLabel] ?? '').localeCompare(String(b[optionLabel] ?? ''))
@@ -286,7 +298,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       const selected = sorted.filter((o) => selectedSnapshot.includes(o[optionValue] as string))
       const unselected = sorted.filter((o) => !selectedSnapshot.includes(o[optionValue] as string))
       return [...selected, ...unselected]
-    }, [options, optionLabel, optionValue, selectedSnapshot, onScrollBottom])
+    }, [options, optionLabel, optionValue, selectedSnapshot, onScrollBottom, preserveOptionOrder])
 
     const hiddenInputValue = useMemo(() => {
       if (preparedValue.length === 0) return ''
@@ -370,9 +382,11 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       )
     }, [display, selectedItemTemplate, preparedValue, onChange])
 
-    const resolvedVirtualScrollerOptions = hasVirtualScroll
+    const isEmpty = sortedOptions.length === 0
+    const baseVirtualScrollerOptions = hasVirtualScroll
       ? { itemSize: 38, ...virtualScrollerOptions }
       : virtualScrollerOptions
+    const resolvedVirtualScrollerOptions = isEmpty ? undefined : baseVirtualScrollerOptions
     const resolvedFocusOnHover = !hasVirtualScroll
 
     return (
@@ -435,7 +449,12 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
                 }}
                 multiple={!singleValue}
                 className={cn(className, mappedSizeClassname, inputClassName)}
-                panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}
+                panelStyle={(() => {
+                  const style: React.CSSProperties = {}
+                  if (inputWidth) style.width = `${inputWidth}px`
+                  if (panelSize === 'md') style.width = '320px'
+                  return style
+                })()}
                 showSelectAll={false}
                 filter={typeof onFilter === 'function'}
                 panelHeaderTemplate={buildPanelHeaderTemplate(
@@ -450,8 +469,14 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
                 virtualScrollerOptions={resolvedVirtualScrollerOptions}
                 focusOnHover={resolvedFocusOnHover}
                 onKeyDown={handleKeyDown}
+                {...(serverSideFilter
+                  ? {
+                      filterMatchMode: 'custom' as PrimeMultiSelectProps['filterMatchMode'],
+                    }
+                  : {})}
                 filterPlaceholder={filterPlaceholder ?? 'Search'}
                 emptyFilterMessage={emptyFilterMessage}
+                emptyMessage={emptyMessage}
                 dropdownIcon={<ChevronDownSvg />}
                 aria-label={label || placeholder}
                 display={display}
