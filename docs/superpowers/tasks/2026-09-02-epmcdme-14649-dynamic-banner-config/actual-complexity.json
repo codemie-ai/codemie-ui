@@ -1,0 +1,105 @@
+{
+  "task": "Replaced the three static Chat banner customer-config components with a single dynamic `banner` SettingDeclaration editable at runtime, and made the frontend Banner reactive to config changes.",
+  "generated": "2026-09-02",
+  "dimensions": {
+    "component_scope": {
+      "score": 5,
+      "label": "XL",
+      "affected": "BE declaration registry (customer_config_declarations.BANNER), BE shared text validator (customer_config_service._validate_text / _reject_scripting_scheme), customer-config.yaml component set, FE Banner.tsx (rewritten reactive), FE appInfo store (legacy banner getters removed), FE configKeys.ts, FE configuration.ts settings type",
+      "layers": "UI, Store/State, Service, Config, DB-Persistence (existing dynamic_config rows)"
+    },
+    "requirements_clarity": {
+      "score": 5,
+      "label": "XL",
+      "status": "Unclear",
+      "gaps": "The AC conflict between 'one logical Administration item' and 'three static ids as fallback' was only resolvable by a stakeholder decision: mid-brainstorm the lead removed the three legacy components outright and accepted a breaking change, so the entire predicted fallback/precedence layer was never written. A second, unstated requirement surfaced late: an initially added 'application-relative path only' pattern on linkRoute silently removed existing external-link support and had to be reverted after user pushback, replaced by scripting-scheme rejection in the shared text validator."
+    },
+    "technical_risk": {
+      "score": 5,
+      "label": "XL",
+      "risk_factors": "Shipped as a breaking configuration change — the three legacy component ids were deleted, so any externally-managed ConfigMap still carrying them silently loses its banner; linkRoute flows from an unauthenticated /v1/config into a react-router Link, so scheme validation now sits in the shared _validate_text path used by chatDisclaimer as well; making Banner reactive via useSnapshot exposed three latent defects previously masked by the component never re-rendering (PrimeReact Messages.show() appends so banners stacked on a config edit, nothing cleared the banner when disabled, and dismissal was keyed off the current render rather than the closed message)",
+      "mitigation": "replace()/clear() instead of show(); dismissal keyed off the closed message id; defence in depth on the link scheme — _reject_scripting_scheme on the backend plus isSafeLinkTarget in Banner.tsx for values that predate server-side validation; 6 code-review findings (1 critical, 5 major) all fixed and mutation-verified; check round caught one further lint-gate violation; rollback is a dynamic_config row delete plus a YAML revert, no migration"
+    },
+    "file_change_estimate": {
+      "score": 4,
+      "label": "L",
+      "modified_files": 11,
+      "modified_file_list": [
+        "config/customer/customer-config.yaml",
+        "src/codemie/service/customer_config_declarations.py",
+        "src/codemie/service/customer_config_service.py",
+        "tests/codemie/service/test_customer_config_declarations.py",
+        "tests/codemie/service/test_customer_config_service.py",
+        "src/components/appLevel/Banner.tsx",
+        "src/components/appLevel/__tests__/Banner.test.tsx",
+        "src/constants/configKeys.ts",
+        "src/store/appInfo.ts",
+        "src/types/entity/configuration.ts",
+        "src/pages/settings/administration/__tests__/CustomerConfigurationPage.test.tsx"
+      ],
+      "new_files": 3,
+      "new_file_list": [
+        "tests/codemie/service/test_customer_config_validation.py",
+        "tests/codemie/rest_api/routers/test_customer_config.py",
+        "src/components/appLevel/__tests__/Banner.integration.test.tsx"
+      ],
+      "affected_dirs": [
+        "config/customer/",
+        "src/codemie/service/",
+        "tests/codemie/service/",
+        "tests/codemie/rest_api/routers/",
+        "src/components/appLevel/",
+        "src/constants/",
+        "src/store/",
+        "src/types/entity/",
+        "src/pages/settings/administration/"
+      ]
+    },
+    "dependencies": {
+      "score": 2,
+      "label": "S",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 4,
+      "label": "L",
+      "layers_changed": ["UI", "Store/State", "Service", "Config", "DB-Persistence"],
+      "schema_migration": false,
+      "cross_system": true
+    }
+  },
+  "total": 25,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 14,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Seven source components across two repositories plus seven test files. The predicted merge/precedence layer never materialised, but the change still reached a shared utility: link-scheme rejection was added to _validate_text, which runs for every declared field including chatDisclaimer. Resolver, routers, schemas and migrations were untouched exactly as predicted."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Both of the assessment's clarity red flags proved real, but they resolved by scope change rather than by design work: the lead's breaking-change decision deleted the ambiguity instead of implementing around it. A requirement nobody had stated (external banner links already worked) caused a security-validation rework mid-implementation."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Underestimated at L in the initial assessment. The novel work turned out not to be the fallback logic but the reactivity change: switching Banner to useSnapshot converted three dormant PrimeReact defects into live ones, all found in review (one critical) and confirmed against the real valtio proxy. Combined with an accepted breaking config contract and a reverted security decision, actual risk sits at XL."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "14 files across 9 directories and 2 repos (595 insertions, 88 deletions) — within the 8-12 predicted range at the source level, with half the count being tests. Borderline L/XL: modified count (11) reaches the XL row, but the new-file count (3) and modest per-file volume keep it at L."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Four layers plus existing dynamic_config persistence, no alembic migration and no deploy-template change — as predicted. Cross-system is true (backend and frontend repos with a coordinated breaking config contract), which is what the removal of the legacy ids added on top of the original merge-order coupling."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): touches core shared utilities — scripting-scheme rejection landed in customer_config_service._validate_text, shared with chatDisclaimer.",
+    "Requirements Clarity bumped from L (4) to XL (5): 'similar to the disclaimer settings' analogy did not carry, and the conflict was resolved by a stakeholder scope decision rather than by design.",
+    "Technical Risk bumped from L (4) to XL (5): security-sensitive input (linkRoute from an unauthenticated endpoint rendered as a route) plus an accepted breaking configuration change with no fallback layer."
+  ],
+  "split_recommendation": null
+}

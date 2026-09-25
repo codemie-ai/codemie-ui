@@ -199,19 +199,19 @@ describe('CustomerConfigurationPage', () => {
       })
 
     it('resets every overridden setting from one header control', async () => {
-      withSettings([overridden('chatDisclaimer'), overridden('bannerMessage')])
+      withSettings([overridden('chatDisclaimer'), overridden('banner')])
 
       render(<CustomerConfigurationPage />)
       fireEvent.click(await screen.findByRole('button', { name: /reset all to default/i }))
 
       await waitFor(() => {
         expect(customerConfigurationStore.resetSetting).toHaveBeenCalledWith('chatDisclaimer')
-        expect(customerConfigurationStore.resetSetting).toHaveBeenCalledWith('bannerMessage')
+        expect(customerConfigurationStore.resetSetting).toHaveBeenCalledWith('banner')
       })
     })
 
     it('skips settings that are already on their default', async () => {
-      withSettings([overridden('chatDisclaimer'), declaration({ component_id: 'bannerMessage' })])
+      withSettings([overridden('chatDisclaimer'), declaration({ component_id: 'banner' })])
 
       render(<CustomerConfigurationPage />)
       fireEvent.click(await screen.findByRole('button', { name: /reset all to default/i }))

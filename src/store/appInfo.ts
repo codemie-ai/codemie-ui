@@ -66,9 +66,6 @@ export interface AppInfoStoreType {
   getIdpProvider: () => string
   getMcpAuthOrigin: () => string | null
   getMcpAuthTimeoutSeconds: () => string | null
-  getBannerMessage: () => string
-  getBannerLinkLabel: () => string
-  getBannerLinkRoute: () => string
   getAllowedImageDomains: () => string
 
   description?: string
@@ -157,18 +154,6 @@ export const appInfoStore = proxy<AppInfoStoreType>({
       this.configs.find((c) => c.id === CONFIG_KEYS.MCP_AUTH_TIMEOUT_SECONDS)?.settings.value ||
       null
     )
-  },
-
-  getBannerMessage(): string {
-    return this.configs.find((c) => c.id === CONFIG_KEYS.BANNER_MESSAGE)?.settings.value ?? ''
-  },
-
-  getBannerLinkLabel(): string {
-    return this.configs.find((c) => c.id === CONFIG_KEYS.BANNER_LINK_LABEL)?.settings.value ?? ''
-  },
-
-  getBannerLinkRoute(): string {
-    return this.configs.find((c) => c.id === CONFIG_KEYS.BANNER_LINK_ROUTE)?.settings.value ?? ''
   },
 
   // Comma-separated hostnames the UI may render <img> sources from in LLM output.

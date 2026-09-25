@@ -1,0 +1,93 @@
+{
+  "decision": "request-changes",
+  "rationale": "Three lenses ran to completion over the two-repo diff. The acceptance lens found every spec and ticket criterion met, with three test-depth criteria partial. The blind and edge-case lenses independently found the same three frontend defects, all confirmed by running the real component against the real valtio proxy: making the banner reactive exposed that Messages.show appends (banners stack on a config edit), that nothing clears the banner when an administrator turns it off, and that the dismissal key is derived from the currently rendered message rather than the closed one. Both also flagged that the linkRoute pattern's `$` anchor accepts a trailing newline in Python while the browser mirror rejects it. Two dismissed: legacy-id migration and the missing read-side fallback are the team's accepted breaking change, recorded in the spec. Two deferred: an enabled banner with a blank message is a silent no-op in the admin UI, and ConfigItem['settings'] is an untyped union bag so a future field rename fails at runtime rather than at build. One follow-up outside both repositories: the public docs repo still documents the three legacy ids.",
+  "confidence": "high",
+  "risk_flags": ["security", "breaking-change"],
+  "business_review": [
+    {"criterion": "Banner settings editable in Administration as a single item with four fields", "status": "pass"},
+    {"criterion": "A saved override reaches the banner without a redeploy", "status": "pass"},
+    {"criterion": "With no override the banner follows the customer-config values", "status": "pass"},
+    {"criterion": "Clearing the override returns the banner to its customer-config values", "status": "pass"},
+    {"criterion": "linkRoute rejects values that are not application-relative paths", "status": "pass"},
+    {"criterion": "Banner rendering, styling and dismissal behaviour unchanged", "status": "pass"},
+    {"criterion": "Chat disclaimer unaffected", "status": "pass"},
+    {"criterion": "No reference to the legacy component ids remains in either repository", "status": "pass"},
+    {"criterion": "Backend testing: banner resolves from YAML and from an override; disabled banner absent", "status": "partial"},
+    {"criterion": "Backend testing: router coverage for /v1/config/declarations including 403", "status": "pass"},
+    {"criterion": "Frontend testing: render, link, dismissal, reactivity", "status": "pass"}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow: commit subject `EPMCDME-####: Capital sentence`", "status": "pass", "notes": "All five commits across both repositories conform to the CI regex."},
+    {"standard": "git-workflow: branch name `EPMCDME-XXXX_short-description`", "status": "pass", "notes": "Initially `feature/EPMCDME-14649-dynamic-banner-config`, which both guides mark as the pattern to avoid and the frontend CI validates; renamed to `EPMCDME-14649_dynamic-banner-config` before push."},
+    {"standard": "code-quality: ruff format/check, licence headers", "status": "pass", "notes": "make ruff and make license-check clean; the new test file carries the Apache header."},
+    {"standard": "security-patterns: strict parsing, fail closed on malformed input", "status": "pass", "notes": "The linkRoute pattern rejects rather than repairs, and now anchors identically on both sides."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "codemie-ui/src/components/appLevel/Banner.tsx",
+      "line": 45,
+      "problem": "The effect called Messages.show(), which appends, and had no branch for an empty message, so nothing removed a previously shown banner.",
+      "impact": "Confirmed against the real proxy: editing the banner text left both the old and new banner on screen, and turning the banner off left it visible until a full reload — defeating the runtime-edit flow the change exists to enable.",
+      "recommendation": "Use Messages.replace() for the current banner and clear() when the message is empty or already dismissed.",
+      "sources": ["blind", "edge-case"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie-ui/src/components/appLevel/Banner.tsx",
+      "line": 74,
+      "problem": "onRemove discarded its argument and hashed the message from the current render to build the dismissal key.",
+      "impact": "Closing a banner while it is being replaced writes the dismissal key of the incoming message, permanently suppressing a banner the user never dismissed while the one they closed returns.",
+      "recommendation": "Key the dismissal off the closed message the callback receives.",
+      "sources": ["blind", "edge-case"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie/src/codemie/service/customer_config_declarations.py",
+      "line": 160,
+      "problem": "The linkRoute pattern ended in `$`, which in Python also matches before a trailing newline, while the browser mirror using the same pattern string does not.",
+      "impact": "\"/settings\\n\" was accepted by the API but rejected by the admin form, so the two validation layers disagreed on the same declared pattern.",
+      "recommendation": "End the pattern with `(?![\\s\\S])`, a true end anchor in both Python and JavaScript, rather than changing the shared validator to fullmatch (which would break the documented prefix-pattern contract).",
+      "sources": ["blind", "edge-case", "acceptance"]
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie-ui/src/components/appLevel/Banner.tsx",
+      "line": 63,
+      "problem": "linkRoute reached react-router's <Link to={...}> with no client-side check. Server validation only guards the admin write path; values arriving through customer-config/ConfigMap are never validated, and GET /v1/config is unauthenticated.",
+      "impact": "A linkRoute of https://attacker.example or javascript:... set in the externally managed ConfigMap would render as a clickable off-origin link in a banner shown to every user.",
+      "recommendation": "Mirror the guard on render: treat linkRoute as usable only when it is an in-app path, otherwise render the message without a link.",
+      "sources": ["blind", "edge-case"]
+    },
+    {
+      "id": "CR-005",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie-ui/src/components/appLevel/__tests__/Banner.test.tsx",
+      "line": 276,
+      "problem": "The new disabled-banner block sat outside describe('Banner'), so its beforeEach (localStorage and store reset) never ran, and its only assertion was negative.",
+      "impact": "The test would stay green even if the enabled flag were ignored entirely — a negative assertion passing for the wrong reason.",
+      "recommendation": "Move the block inside the suite and add a positive control asserting the same message renders when enabled.",
+      "sources": ["blind"]
+    },
+    {
+      "id": "CR-006",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie/tests/codemie/service/test_customer_config_service.py",
+      "line": 300,
+      "problem": "Banner resolution and the enabled filter were exercised only through the chatDisclaimer fixture; the spec's testing section asks for banner-specific cases.",
+      "impact": "A drift between the YAML component id and the declaration's component_id would not be caught.",
+      "recommendation": "Add banner-specific cases for override-wins-over-YAML and disabled-banner-absent.",
+      "sources": ["acceptance"]
+    }
+  ]
+}

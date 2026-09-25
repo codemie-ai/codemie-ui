@@ -22,17 +22,21 @@ import { appInfoStore } from '@/store/appInfo'
 import Banner from '../Banner'
 
 vi.mock('@/store/appInfo', () => ({
-  appInfoStore: {
-    getBannerMessage: vi.fn(() => ''),
-    getBannerLinkLabel: vi.fn(() => ''),
-    getBannerLinkRoute: vi.fn(() => ''),
-  },
+  appInfoStore: { configs: [] },
 }))
 
 const setBanner = (config: { message?: string; linkLabel?: string; linkRoute?: string }) => {
-  vi.mocked(appInfoStore.getBannerMessage).mockReturnValue(config.message ?? '')
-  vi.mocked(appInfoStore.getBannerLinkLabel).mockReturnValue(config.linkLabel ?? '')
-  vi.mocked(appInfoStore.getBannerLinkRoute).mockReturnValue(config.linkRoute ?? '')
+  appInfoStore.configs = [
+    {
+      id: 'banner',
+      settings: {
+        enabled: true,
+        message: config.message ?? '',
+        linkLabel: config.linkLabel ?? '',
+        linkRoute: config.linkRoute ?? '',
+      },
+    },
+  ]
 }
 
 const renderWithRouter = () =>
@@ -72,19 +76,19 @@ describe('Banner', () => {
 
   describe('basic rendering', () => {
     it('renders without crashing', () => {
-      const { container } = render(<Banner />)
+      const { container } = renderWithRouter()
       expect(container.firstChild).toBeInTheDocument()
     })
 
     it('does not display banner when no message is set', () => {
       setBanner({ message: '' })
-      render(<Banner />)
+      renderWithRouter()
       expect(screen.queryByText(/./)).not.toBeInTheDocument()
     })
 
     it('displays banner message when set', () => {
       setBanner({ message: 'Important announcement' })
-      render(<Banner />)
+      renderWithRouter()
       expect(screen.getByText('Important announcement')).toBeInTheDocument()
     })
   })
@@ -92,7 +96,7 @@ describe('Banner', () => {
   describe('banner message display', () => {
     it('shows banner for first time visitors', () => {
       setBanner({ message: 'Welcome message' })
-      render(<Banner />)
+      renderWithRouter()
       expect(screen.getByText('Welcome message')).toBeInTheDocument()
       expect(localStorage.getItem).toHaveBeenCalled()
     })
@@ -116,14 +120,14 @@ describe('Banner', () => {
       const storageKey = 'bannerShown-' + hash(message)
       localStorageMock[storageKey] = 'true'
 
-      render(<Banner />)
+      renderWithRouter()
       expect(screen.queryByText(message)).not.toBeInTheDocument()
     })
 
     it('displays multiline messages with whitespace preserved', () => {
       const multilineMessage = 'Line 1\nLine 2\nLine 3'
       setBanner({ message: multilineMessage })
-      const { container } = render(<Banner />)
+      const { container } = renderWithRouter()
       // Find the message detail span which contains the multiline text
       const messageDetail = container.querySelector('.p-message-detail')
       expect(messageDetail).toBeInTheDocument()
@@ -134,7 +138,7 @@ describe('Banner', () => {
   describe('close functionality', () => {
     it('has close button', () => {
       setBanner({ message: 'Closable message' })
-      const { container } = render(<Banner />)
+      const { container } = renderWithRouter()
 
       const closeButton = container.querySelector('button[aria-label="Close"]')
       expect(closeButton).toBeInTheDocument()
@@ -144,7 +148,7 @@ describe('Banner', () => {
   describe('banner properties', () => {
     it('displays info severity banner and is sticky', async () => {
       setBanner({ message: 'Sticky message' })
-      const { container } = render(<Banner />)
+      const { container } = renderWithRouter()
       const message = container.querySelector('[role="alert"]')
       expect(message).toBeInTheDocument()
       expect(screen.getByText('Sticky message')).toBeInTheDocument()
@@ -160,22 +164,22 @@ describe('Banner', () => {
   describe('edge cases', () => {
     it('handles empty, undefined, and missing banner message', () => {
       setBanner({ message: '' })
-      let { container } = render(<Banner />)
+      let { container } = renderWithRouter()
       expect(container.querySelector('[role="alert"]')).not.toBeInTheDocument()
       setBanner({})
-      container = render(<Banner />).container
+      container = renderWithRouter().container
       expect(container.querySelector('[role="alert"]')).not.toBeInTheDocument()
     })
 
     it('handles very long and special character messages', () => {
       const longMessage = 'A'.repeat(1000)
       setBanner({ message: longMessage })
-      render(<Banner />)
+      renderWithRouter()
       expect(screen.getByText(longMessage)).toBeInTheDocument()
 
       const specialMessage = '<script>alert("xss")</script> & special chars: é, ñ, 中文'
       setBanner({ message: specialMessage })
-      render(<Banner />)
+      renderWithRouter()
       expect(screen.getByText(specialMessage)).toBeInTheDocument()
     })
   })
@@ -184,14 +188,18 @@ describe('Banner', () => {
     it('shows banner again if message changes', () => {
       const message1 = 'First message'
       setBanner({ message: message1 })
-      const { rerender } = render(<Banner />)
+      const { rerender } = renderWithRouter()
 
       expect(screen.getByText(message1)).toBeInTheDocument()
 
       // Change message
       const message2 = 'Second message'
       setBanner({ message: message2 })
-      rerender(<Banner />)
+      rerender(
+        <MemoryRouter>
+          <Banner />
+        </MemoryRouter>
+      )
 
       expect(screen.getByText(message2)).toBeInTheDocument()
     })
@@ -261,6 +269,52 @@ describe('Banner', () => {
       }
 
       expect(localStorage.setItem).toHaveBeenCalledWith(`bannerShown-${hash(message)}`, 'true')
+    })
+  })
+
+  describe('link target safety', () => {
+    const scriptUrl = ['java', 'script:alert(1)'].join('')
+
+    it.each([scriptUrl, 'data:text/html;base64,PHN2Zz4=', 'vbscript:msgbox(1)'])(
+      'renders the message without a link when the target carries a scripting scheme (%s)',
+      (linkRoute) => {
+        setBanner({ message: 'Terms updated.', linkLabel: 'Details', linkRoute })
+        renderWithRouter()
+
+        expect(screen.queryByRole('link')).not.toBeInTheDocument()
+        expect(screen.getByText('Terms updated.')).toBeInTheDocument()
+      }
+    )
+
+    it.each(['/settings/profile', 'https://docs.example.com/policy'])(
+      'renders the link for an ordinary target (%s)',
+      (linkRoute) => {
+        setBanner({ message: 'Terms updated.', linkLabel: 'Details', linkRoute })
+        renderWithRouter()
+
+        expect(screen.getByRole('link', { name: 'Details' })).toHaveAttribute('href', linkRoute)
+      }
+    )
+  })
+
+  describe('disabled banner', () => {
+    it('shows nothing when the component is disabled', () => {
+      appInfoStore.configs = [
+        {
+          id: 'banner',
+          settings: { enabled: false, message: 'Hidden', linkLabel: '', linkRoute: '' },
+        },
+      ]
+      const { container } = renderWithRouter()
+
+      expect(container.querySelector('[role="alert"]')).not.toBeInTheDocument()
+    })
+
+    it('shows the same message when the component is enabled', () => {
+      setBanner({ message: 'Hidden' })
+      renderWithRouter()
+
+      expect(screen.getByText('Hidden')).toBeInTheDocument()
     })
   })
 })

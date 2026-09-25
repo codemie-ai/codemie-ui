@@ -1,0 +1,35 @@
+{
+  "decision": "approve",
+  "rationale": "All six findings from the final round are resolved, each confirmed by mutation rather than by the shipped assertions alone: reverting replace() to show(), removing clear(), making handleRemove ignore its argument, dropping the render-side link guard, forcing isEnabled true, bypassing apply_override, dropping the enabled filter, and restoring the `$` anchor each make the corresponding test fail. The check round surfaced one genuine build risk of its own — a `javascript:` literal in the new link-safety test violating eslint's no-script-url, which would have failed the CI lint gate — plus prettier drift and a regression test whose assertions hid behind an `if`. All three are fixed, and the render-side guard now matches the server rule exactly. Backend 72 passed across the three customer-config test files; frontend 4977 passed / 1 skipped across 469 files; typecheck clean; eslint clean on the touched files.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "Banner settings editable in Administration as a single item with four fields", "status": "pass"},
+    {"criterion": "A saved override reaches the banner without a redeploy", "status": "pass"},
+    {"criterion": "With no override the banner follows the customer-config values", "status": "pass"},
+    {"criterion": "Clearing the override returns the banner to its customer-config values", "status": "pass"},
+    {"criterion": "linkRoute rejects values that are not application-relative paths", "status": "pass"},
+    {"criterion": "Banner rendering, styling and dismissal behaviour unchanged", "status": "pass"},
+    {"criterion": "Chat disclaimer unaffected", "status": "pass"},
+    {"criterion": "No reference to the legacy component ids remains in either repository", "status": "pass"},
+    {"criterion": "Backend testing: banner resolves from YAML and from an override; disabled banner absent", "status": "pass"},
+    {"criterion": "Backend testing: router coverage for /v1/config/declarations including 403", "status": "pass"},
+    {"criterion": "Frontend testing: render, link, dismissal, reactivity", "status": "pass"}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow: commit subject `EPMCDME-####: Capital sentence`", "status": "pass"},
+    {"standard": "git-workflow: branch name `EPMCDME-XXXX_short-description`", "status": "pass", "notes": "Renamed from the `feature/` form before push."},
+    {"standard": "code-quality: ruff format/check, licence headers", "status": "pass"},
+    {"standard": "code-quality: eslint on changed frontend files", "status": "pass", "notes": "no-script-url violation introduced by the fix-up round was found and fixed; the remaining local @/-alias resolver errors are a known broken local config that reproduces on main."},
+    {"standard": "security-patterns: strict parsing, fail closed on malformed input", "status": "pass"}
+  ],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "replace() for the current banner, clear() when empty or dismissed. Mutation: replace->show fails the refetch test; removing clear() fails the turn-off test."},
+    {"id": "CR-002", "status": "resolved", "notes": "Dismissal keys off the closed message. Mutation: keying off the current render fails the new test."},
+    {"id": "CR-003", "status": "resolved", "notes": "Pattern ends in (?![\\s\\S]); Python and JS agree on every probed value. The shared validator stays on re.match, so the existing prefix-pattern contract holds."},
+    {"id": "CR-004", "status": "resolved", "notes": "Render-side IN_APP_PATH guard, now exactly the server rule. Mutation: dropping it fails all four cases."},
+    {"id": "CR-005", "status": "resolved", "notes": "Block nested inside describe('Banner') plus a positive control."},
+    {"id": "CR-006", "status": "resolved", "notes": "Two banner-specific resolver tests; both fail under the regressions they cover."}
+  ],
+  "findings": []
+}

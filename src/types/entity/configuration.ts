@@ -29,6 +29,9 @@ export interface ConfigItem {
     maxProjects?: number
     recentReleaseCount?: number
     text?: string
+    message?: string
+    linkLabel?: string
+    linkRoute?: string
     content?: string
   }
 }

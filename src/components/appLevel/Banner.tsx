@@ -13,11 +13,26 @@
 // limitations under the License.
 //
 
-import { Messages } from 'primereact/messages'
+import { Messages, MessagesMessage } from 'primereact/messages'
 import { FC, useEffect, useRef } from 'react'
 import { Link } from 'react-router'
+import { useSnapshot } from 'valtio'
 
+import { CONFIG_KEYS } from '@/constants/configKeys'
 import { appInfoStore } from '@/store/appInfo'
+import { getConfigItemSettings } from '@/utils/settings'
+
+// values reaching Link also arrive from customer config, which server-side validation never sees
+const SCRIPTING_SCHEME = /^(?:javascript|data|vbscript):/i
+
+// a browser ignores whitespace and control characters inside an href, so strip them before testing
+const isSafeLinkTarget = (target: string): boolean => {
+  const canonical = Array.from(target)
+    .filter((char) => char.charCodeAt(0) > 0x1f && !/\s/.test(char))
+    .join('')
+
+  return !SCRIPTING_SCHEME.test(canonical)
+}
 
 const hash = (str: string): string => {
   let hash = 0
@@ -31,39 +46,47 @@ const hash = (str: string): string => {
 
 const Banner: FC = () => {
   const messages = useRef<Messages>(null)
-  const bannerMessage = appInfoStore.getBannerMessage()
-  const bannerLinkLabel = appInfoStore.getBannerLinkLabel()
-  const bannerLinkRoute = appInfoStore.getBannerLinkRoute()
+  // read through the snapshot: valtio only re-renders for properties touched during render
+  const { configs } = useSnapshot(appInfoStore)
+  const settings = getConfigItemSettings(configs, CONFIG_KEYS.BANNER)
+  const isEnabled = Boolean(settings?.enabled)
+  const message = isEnabled ? settings?.message ?? '' : ''
+  const linkLabel = isEnabled ? settings?.linkLabel ?? '' : ''
+  const linkRoute = isEnabled ? settings?.linkRoute ?? '' : ''
 
   useEffect(() => {
-    if (bannerMessage && messages.current) {
-      const storageKey = 'bannerShown-' + hash(bannerMessage)
-      const isMessageClosed = localStorage.getItem(storageKey)
-      if (isMessageClosed !== 'true') {
-        const hasBannerLink = Boolean(bannerLinkLabel && bannerLinkRoute)
-        messages.current.show({
-          id: bannerMessage,
-          sticky: true,
-          severity: 'info',
-          detail: hasBannerLink ? (
-            <span>
-              <span className="whitespace-pre-line">{bannerMessage}</span>{' '}
-              <Link className="font-semibold underline" to={bannerLinkRoute}>
-                {bannerLinkLabel}
-              </Link>
-            </span>
-          ) : (
-            bannerMessage
-          ),
-          closable: true,
-        })
-      }
-    }
-  }, [bannerLinkLabel, bannerLinkRoute, bannerMessage])
+    if (!messages.current) return
 
-  const handleRemove = () => {
-    const storageKey = 'bannerShown-' + hash(bannerMessage)
-    localStorage.setItem(storageKey, 'true')
+    const storageKey = 'bannerShown-' + hash(message)
+    if (!message || localStorage.getItem(storageKey) === 'true') {
+      messages.current.clear()
+      return
+    }
+
+    const hasLink = Boolean(linkLabel && linkRoute && isSafeLinkTarget(linkRoute))
+    // replace, not show: show() appends, which would stack banners on a config change
+    messages.current.replace({
+      id: message,
+      sticky: true,
+      severity: 'info',
+      detail: hasLink ? (
+        <span>
+          <span className="whitespace-pre-line">{message}</span>{' '}
+          <Link className="font-semibold underline" to={linkRoute}>
+            {linkLabel}
+          </Link>
+        </span>
+      ) : (
+        message
+      ),
+      closable: true,
+    })
+  }, [linkLabel, linkRoute, message])
+
+  // key off the closed message, which may already differ from the one being rendered
+  const handleRemove = (closed: MessagesMessage) => {
+    const dismissed = typeof closed?.id === 'string' ? closed.id : message
+    localStorage.setItem('bannerShown-' + hash(dismissed), 'true')
   }
 
   return (

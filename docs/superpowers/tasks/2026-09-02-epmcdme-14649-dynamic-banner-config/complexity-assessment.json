@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "task": "Bring the three static Chat banner customer-config components (bannerMessage, bannerLinkLabel, bannerLinkRoute) into the EPMCDME-13983 dynamic customer configuration mechanism as one logical Administration item, with the static YAML values as fallback and dynamic values overriding them without redeploy.",
+  "generated": "2026-09-02",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 5, "label": "XL" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 2, "label": "S" },
+    "affected_layers":      { "score": 4, "label": "L" }
+  },
+  "total": 24,
+  "size": "L",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Six components across two repositories: BE declaration registry (customer_config_declarations.py), BE merge/resolution layer (customer_config_service.py), customer-config.yaml, FE Banner.tsx, FE appInfo store getters, FE configKeys.ts. The fallback logic lands inside the shared resolve/merge path that also serves chatDisclaimer, /v1/config and /v1/applications, so AC-8 (disclaimer unaffected) is a live regression surface rather than a given."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Acceptance criteria are detailed, but AC-2 (one logical item) structurally conflicts with AC-3/AC-4 (three static ids as fallback): SettingDeclaration is hard-wired one-to-one with a component_id. Three open decisions must be made before implementation — grouped id vs extended declaration model, the precedence rule for reading legacy ids as defaults (the externally-managed ConfigMap cannot be seeded from this repo), which enabled flag governs a grouped item, and the localStorage dismissal key that hashes bannerMessage (an observable behaviour change sitting against AC-7)."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The declaration-append pattern is established and rollback is trivial (delete a dynamic_config row, no migration), but the legacy-id fallback is genuinely new merge logic that 13983 does not provide. Security weight: bannerLinkRoute flows unvalidated into a react-router Link and /v1/config is unauthenticated, so it needs a pattern/pattern_message plus BE validation — note Markup.PLAIN does not run the link-scheme sanitiser."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Roughly 8-12 files across two repos and 5+ directories: 2-4 backend source files plus 2-3 test files (declarations, service merge, and the currently absent router-level tests the BE testing guide requires), and 3-5 frontend files including a rewrite of Banner.test.tsx (which mocks the three getters directly) and a new reactivity integration test modelled on ChatDisclaimer.integration.test.tsx."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Four distinct layers — FE UI/store, BE API payload shape, BE service/merge, BE config plus dynamic_config persistence — and the change is cross-repo with merge-order coupling (FE-first yields an empty banner, BE-first yields an admin card editing a value nothing consumes). No alembic migration and no deploy-template change, which is what keeps this at L rather than XL."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): touches core shared utilities — the fallback lands in customer_config_service resolve/merge, shared with chatDisclaimer and /v1/applications.",
+    "Requirements Clarity bumped from L (4) to XL (5): 'similar to the disclaimer settings' phrasing while the underlying shape differs (three component_ids with a 'value' field vs one id with 'text'), so the analogy does not carry.",
+    "Technical Risk bumped from M (3) to L (4): security-sensitive input — bannerLinkRoute is rendered as a route from an unauthenticated public endpoint."
+  ],
+  "split_recommendation": null
+}
