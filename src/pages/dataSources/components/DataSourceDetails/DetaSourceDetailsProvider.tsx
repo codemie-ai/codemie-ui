@@ -18,8 +18,8 @@ import { humanize } from '@/utils/helpers'
 import { cn } from '@/utils/utils'
 
 interface ProviderFields {
-  base_params: object
-  create_params: object
+  base_params?: Record<string, unknown>
+  create_params?: Record<string, unknown>
 }
 
 interface DataSourceDetailsProviderProps {
@@ -35,25 +35,41 @@ const DataSourceDetailsProvider: React.FC<DataSourceDetailsProviderProps> = ({
   propertyLabelStyles,
   propertyTagStyles,
 }) => {
-  const fields = { ...providerFields.base_params, ...providerFields.create_params }
+  const fields: Record<string, unknown> = {
+    ...providerFields?.base_params,
+    ...providerFields?.create_params,
+  }
+
+  // Provider params are not guaranteed to be strings: numbers, booleans and nested
+  // objects all appear depending on the data source type.
+  const stringify = (value: unknown): string => {
+    if (value === null || value === undefined) return ''
+    if (typeof value === 'string') return value
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+
+    // Arrays and nested objects. provider_fields is deserialized JSON, so string,
+    // number, boolean, null, array and object are the only shapes that reach here.
+    return JSON.stringify(value)
+  }
 
   // Mask b64 encoded values
-  const getValue = (value) => {
-    if (!value.endsWith('=')) return value
+  const getValue = (value: unknown) => {
+    const stringValue = stringify(value)
+    if (!stringValue.endsWith('=')) return stringValue
 
     try {
-      return btoa(atob(value)) === value && MASKED_VALUE
+      return btoa(atob(stringValue)) === stringValue ? MASKED_VALUE : stringValue
     } catch {
-      return value
+      return stringValue
     }
   }
 
-  const renderArrayValue = (values: Array<string>) => {
+  const renderArrayValue = (values: Array<unknown>) => {
     return values.map((value, index) => {
       return (
         <div
           className={cn(propertyTagStyles, 'max-w-96 overflow-hidden text-left mr-1')}
-          key={`${value.slice(-10)}_-${index}`}
+          key={`${stringify(value).slice(-10)}_-${index}`}
         >
           {getValue(value)}
         </div>
@@ -61,7 +77,7 @@ const DataSourceDetailsProvider: React.FC<DataSourceDetailsProviderProps> = ({
     })
   }
 
-  const renderSingleValue = (value: string) => {
+  const renderSingleValue = (value: unknown) => {
     return (
       <div className={cn(propertyTagStyles, 'max-w-96 overflow-hidden text-left')}>
         {getValue(value)}
