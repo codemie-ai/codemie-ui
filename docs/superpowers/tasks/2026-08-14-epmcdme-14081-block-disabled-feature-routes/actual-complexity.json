@@ -1,0 +1,63 @@
+{
+  "task": "Block navigation to routes belonging to disabled feature flags by wrapping route definitions in FeatureGuard components within the router",
+  "generated": "2026-08-14T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "router (src/router.tsx)",
+      "layers": "Routing"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Route gating is access-control-adjacent; incorrect flag mapping could block legitimate access or leave routes unguarded",
+      "mitigation": "FeatureGuard pattern is already established and used in the same file for analytics, budgets, users, MCPs, teams bot, and favorites routes — exact copy-adapt execution"
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 1,
+      "modified_file_list": ["src/router.tsx"],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": ["src"]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["Routing"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 7,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 1,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "technical_risk",
+      "reason": "Route gating is authorization-adjacent; slight bump from XS to S because incorrect feature-flag mapping could silently block or expose routes. Mitigated by the exact FeatureGuard pattern already used 8+ times in the same file."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Single file (src/router.tsx) modified. No new components, no new abstractions — existing FeatureGuard and FEATURE_FLAGS already imported. Pure copy-adapt of the established wrapping pattern."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

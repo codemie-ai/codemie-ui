@@ -48,7 +48,7 @@ describe('FeatureGuard', () => {
     ]
 
     render(
-      <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
+      <FeatureGuard featureFlags={FEATURE_FLAGS.ENTERPRISE_EDITION}>
         <div>Test Content</div>
       </FeatureGuard>
     )
@@ -63,7 +63,7 @@ describe('FeatureGuard', () => {
 
     expect(() => {
       render(
-        <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
+        <FeatureGuard featureFlags={FEATURE_FLAGS.ENTERPRISE_EDITION}>
           <div>Test Content</div>
         </FeatureGuard>
       )
@@ -83,7 +83,7 @@ describe('FeatureGuard', () => {
 
     expect(() => {
       render(
-        <FeatureGuard featureFlag={FEATURE_FLAGS.FAVORITES}>
+        <FeatureGuard featureFlags={FEATURE_FLAGS.FAVORITES}>
           <div>Test Content</div>
         </FeatureGuard>
       )

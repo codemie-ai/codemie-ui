@@ -1,0 +1,2 @@
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"plan","status":"skipped"}
+{"event":"decision.recorded","ts":"2026-08-14T00:00:00.000Z","gate_id":"code-review.final","mode":"hitl","decision":"approve","source":"hitl","escalated":false}

@@ -21,30 +21,33 @@ import { appInfoStore } from '@/store/appInfo'
 import { isConfigItemEnabled } from '@/utils/settings'
 
 interface FeatureGuardProps {
-  featureFlag: FeatureFlag
+  featureFlags: FeatureFlag | FeatureFlag[]
   children: ReactNode
 }
 
 /**
  * Component that guards route access based on feature flags.
  * Throws 404 Response if the feature is disabled, triggering ErrorBoundary.
+ * When given an array, every flag must be enabled.
  *
  * @example
  * ```tsx
  * <Route
  *   path="/analytics"
  *   element={
- *     <FeatureGuard featureFlag="features:enterpriseEdition">
+ *     <FeatureGuard featureFlags="features:enterpriseEdition">
  *       <AnalyticsPage />
  *     </FeatureGuard>
  *   }
  * />
  * ```
  */
-export const FeatureGuard: FC<FeatureGuardProps> = ({ featureFlag, children }) => {
+export const FeatureGuard: FC<FeatureGuardProps> = ({ featureFlags, children }) => {
   const { configs } = useSnapshot(appInfoStore)
 
-  const isEnabled = isConfigItemEnabled(configs, featureFlag)
+  const isEnabled = Array.isArray(featureFlags)
+    ? featureFlags.every((flag) => isConfigItemEnabled(configs, flag))
+    : isConfigItemEnabled(configs, featureFlags)
   if (!isEnabled) {
     const error = new Error('Not Found')
 

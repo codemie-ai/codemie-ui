@@ -15,7 +15,15 @@
 
 /* eslint-disable import/no-extraneous-dependencies */
 import { configure } from '@testing-library/react'
+import { type ReactNode } from 'react'
 import { vi } from 'vitest'
+
+// Integration tests exercise page behavior, not feature-flag enforcement.
+// FeatureGuard is tested in its own unit tests; bypass it here so guarded
+// routes render their content regardless of appInfoStore.configs state.
+vi.mock('@/components/FeatureGuard', () => ({
+  FeatureGuard: ({ children }: { children: ReactNode }) => children,
+}))
 
 // Integration tests run with --coverage in CI, which adds ~3x per-test overhead.
 // Raise the waitFor/findBy timeout to match the overall testTimeout so async assertions

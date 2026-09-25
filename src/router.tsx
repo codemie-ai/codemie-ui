@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { createBrowserRouter, redirect, RouteObject } from 'react-router'
+import { createBrowserRouter, Outlet, redirect, RouteObject } from 'react-router'
 
 import SignInPage from '@/authentication/local/SignInPage'
 import SignUpPage from '@/authentication/local/SignUpPage'
@@ -307,39 +307,48 @@ const dataSourceRoutes: RouteObject[] = [
 
 const schedulerRoutes: RouteObject[] = [
   {
-    id: 'schedulers',
-    path: 'schedulers',
-    Component: SchedulersPage,
-  },
-  {
-    id: 'scheduler-project-new',
-    path: 'schedulers/project/new',
-    Component: NewProjectSchedulerPage,
-  },
-  {
-    id: 'scheduler-user-new',
-    path: 'schedulers/user/new',
-    Component: NewUserSchedulerPage,
-  },
-  {
-    id: 'scheduler-user-edit',
-    path: '/schedulers/user/edit',
-    Component: EditUserSchedulerPage,
-  },
-  {
-    id: 'scheduler-project-edit',
-    path: '/schedulers/project/edit',
-    Component: EditProjectSchedulerPage,
-  },
-  {
-    id: 'scheduler-runs',
-    path: 'schedulers/:schedulerId/runs',
-    Component: SchedulerRunHistoryPage,
-  },
-  {
-    id: 'scheduler-run-details',
-    path: 'schedulers/:schedulerId/runs/:runId',
-    Component: SchedulerRunDetailsPage,
+    element: (
+      <FeatureGuard featureFlags={FEATURE_FLAGS.SCHEDULERS_VIEW}>
+        <Outlet />
+      </FeatureGuard>
+    ),
+    children: [
+      {
+        id: 'schedulers',
+        path: 'schedulers',
+        Component: SchedulersPage,
+      },
+      {
+        id: 'scheduler-project-new',
+        path: 'schedulers/project/new',
+        Component: NewProjectSchedulerPage,
+      },
+      {
+        id: 'scheduler-user-new',
+        path: 'schedulers/user/new',
+        Component: NewUserSchedulerPage,
+      },
+      {
+        id: 'scheduler-user-edit',
+        path: '/schedulers/user/edit',
+        Component: EditUserSchedulerPage,
+      },
+      {
+        id: 'scheduler-project-edit',
+        path: '/schedulers/project/edit',
+        Component: EditProjectSchedulerPage,
+      },
+      {
+        id: 'scheduler-runs',
+        path: 'schedulers/:schedulerId/runs',
+        Component: SchedulerRunHistoryPage,
+      },
+      {
+        id: 'scheduler-run-details',
+        path: 'schedulers/:schedulerId/runs/:runId',
+        Component: SchedulerRunDetailsPage,
+      },
+    ],
   },
 ]
 
@@ -496,7 +505,7 @@ const settingsRoutes: RouteObject[] = [
     id: 'cost-centers-management',
     path: '/settings/administration/cost-centers',
     element: (
-      <FeatureGuard featureFlag={FEATURE_FLAGS.COST_CENTERS}>
+      <FeatureGuard featureFlags={FEATURE_FLAGS.COST_CENTERS}>
         <CostCentersManagementPage />
       </FeatureGuard>
     ),
@@ -505,7 +514,7 @@ const settingsRoutes: RouteObject[] = [
     id: 'cost-centers-management-detail',
     path: '/settings/administration/cost-centers/:costCenterId',
     element: (
-      <FeatureGuard featureFlag={FEATURE_FLAGS.COST_CENTERS}>
+      <FeatureGuard featureFlags={FEATURE_FLAGS.COST_CENTERS}>
         <CostCenterDetailsPage />
       </FeatureGuard>
     ),
@@ -518,16 +527,28 @@ const settingsRoutes: RouteObject[] = [
   {
     id: 'budgets-management',
     path: '/settings/administration/budgets',
-    Component: BudgetsManagementPage,
+    element: (
+      <FeatureGuard featureFlags={FEATURE_FLAGS.BUDGET_MANAGEMENT}>
+        <BudgetsManagementPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: 'administration-users',
     path: '/settings/administration/users',
-    Component: UsersManagementPage,
+    element: (
+      <FeatureGuard featureFlags={FEATURE_FLAGS.USER_MANAGEMENT}>
+        <UsersManagementPage />
+      </FeatureGuard>
+    ),
   },
   {
     path: '/settings/administration/mcps',
-    Component: MCPManagementPage,
+    element: (
+      <FeatureGuard featureFlags={[FEATURE_FLAGS.MCP_CONNECT, FEATURE_FLAGS.ENTERPRISE_EDITION]}>
+        <MCPManagementPage />
+      </FeatureGuard>
+    ),
   },
   {
     path: '/settings/administration/categories',
@@ -557,101 +578,107 @@ const settingsRoutes: RouteObject[] = [
 
 const awsSettingsRoutes: RouteObject[] = [
   {
-    id: 'aws-assistant-settings',
-    path: 'settings/aws/assistants',
-    Component: AwsAssistantsPage,
-  },
-  {
-    id: 'aws-assistant-settings-detail',
-    path: 'settings/aws/assistants/:settingId',
-    Component: AwsAssistantsPage,
-  },
-  {
-    path: 'settings/aws/assistants/:settingId/:agentId',
-    Component: AwsAssistantsPage,
-  },
-  {
-    id: 'aws-workflow-settings',
-    path: 'settings/aws/workflows',
-    Component: AwsWorkflowsPage,
-  },
-  {
-    id: 'aws-workflow-settings-detail',
-    path: 'settings/aws/workflows/:settingId',
-    Component: AwsWorkflowsPage,
-  },
-  {
-    path: 'settings/aws/workflows/:settingId/:flowId',
-    Component: AwsWorkflowsPage,
-  },
-  {
-    id: 'aws-data-source-settings',
-    path: 'settings/aws/data-sources',
-    Component: AwsDataSourcesPage,
-  },
-  {
-    id: 'aws-data-source-settings-detail',
-    path: 'settings/aws/data-sources/:settingId',
-    Component: AwsDataSourcesPage,
-  },
-  {
-    id: 'aws-guardrail-settings',
-    path: 'settings/aws/guardrails',
-    Component: AwsGuardrailsPage,
-  },
-  {
-    id: 'aws-guardrail-settings-detail',
-    path: 'settings/aws/guardrails/:settingId',
-    Component: AwsGuardrailsPage,
-  },
-  {
-    path: 'settings/aws/guardrails/:settingId/:guardrailId',
-    Component: AwsGuardrailsPage,
-  },
-  {
-    id: 'aws-agentcore-runtimes-settings',
-    path: 'settings/aws/agentcore-runtimes',
-    Component: AwsAgentCoreRuntimesSettingsPage,
-  },
-  {
-    id: 'aws-agentcore-runtimes-settings-detail',
-    path: 'settings/aws/agentcore-runtimes/:settingId',
-    Component: AwsAgentCoreRuntimesListPage,
-  },
-  {
-    id: 'aws-agentcore-runtimes-settings-runtime',
-    path: 'settings/aws/agentcore-runtimes/:settingId/:runtimeId',
-    Component: AwsAgentCoreRuntimeDetailPage,
+    element: (
+      <FeatureGuard featureFlags={FEATURE_FLAGS.VENDOR_INTEGRATION_AWS}>
+        <Outlet />
+      </FeatureGuard>
+    ),
+    children: [
+      {
+        id: 'aws-assistant-settings',
+        path: 'settings/aws/assistants',
+        Component: AwsAssistantsPage,
+      },
+      {
+        id: 'aws-assistant-settings-detail',
+        path: 'settings/aws/assistants/:settingId',
+        Component: AwsAssistantsPage,
+      },
+      {
+        path: 'settings/aws/assistants/:settingId/:agentId',
+        Component: AwsAssistantsPage,
+      },
+      {
+        id: 'aws-workflow-settings',
+        path: 'settings/aws/workflows',
+        Component: AwsWorkflowsPage,
+      },
+      {
+        id: 'aws-workflow-settings-detail',
+        path: 'settings/aws/workflows/:settingId',
+        Component: AwsWorkflowsPage,
+      },
+      {
+        path: 'settings/aws/workflows/:settingId/:flowId',
+        Component: AwsWorkflowsPage,
+      },
+      {
+        id: 'aws-data-source-settings',
+        path: 'settings/aws/data-sources',
+        Component: AwsDataSourcesPage,
+      },
+      {
+        id: 'aws-data-source-settings-detail',
+        path: 'settings/aws/data-sources/:settingId',
+        Component: AwsDataSourcesPage,
+      },
+      {
+        id: 'aws-guardrail-settings',
+        path: 'settings/aws/guardrails',
+        Component: AwsGuardrailsPage,
+      },
+      {
+        id: 'aws-guardrail-settings-detail',
+        path: 'settings/aws/guardrails/:settingId',
+        Component: AwsGuardrailsPage,
+      },
+      {
+        path: 'settings/aws/guardrails/:settingId/:guardrailId',
+        Component: AwsGuardrailsPage,
+      },
+      {
+        id: 'aws-agentcore-runtimes-settings',
+        path: 'settings/aws/agentcore-runtimes',
+        Component: AwsAgentCoreRuntimesSettingsPage,
+      },
+      {
+        id: 'aws-agentcore-runtimes-settings-detail',
+        path: 'settings/aws/agentcore-runtimes/:settingId',
+        Component: AwsAgentCoreRuntimesListPage,
+      },
+      {
+        id: 'aws-agentcore-runtimes-settings-runtime',
+        path: 'settings/aws/agentcore-runtimes/:settingId/:runtimeId',
+        Component: AwsAgentCoreRuntimeDetailPage,
+      },
+    ],
   },
 ]
 
 const analyticsRoutes: RouteObject[] = [
   {
-    id: ANALYTICS,
-    path: 'analytics',
     element: (
-      <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
-        <AnalyticsPage />
+      <FeatureGuard featureFlags={FEATURE_FLAGS.ENTERPRISE_EDITION}>
+        <Outlet />
       </FeatureGuard>
     ),
-  },
-  {
-    id: ANALYTICS_NEW_DASHBOARD,
-    path: 'analytics/dashboards/new',
-    element: (
-      <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
-        <AnalyticsDashboardFormPage />
-      </FeatureGuard>
-    ),
-  },
-  {
-    id: ANALYTICS_EDIT_DASHBOARD,
-    path: 'analytics/dashboards/:dashboardId/edit',
-    element: (
-      <FeatureGuard featureFlag={FEATURE_FLAGS.ENTERPRISE_EDITION}>
-        <AnalyticsDashboardFormPage isEditing />
-      </FeatureGuard>
-    ),
+    children: [
+      {
+        id: ANALYTICS,
+        path: 'analytics',
+        Component: AnalyticsPage,
+      },
+      {
+        id: ANALYTICS_NEW_DASHBOARD,
+        path: 'analytics/dashboards/new',
+        Component: AnalyticsDashboardFormPage,
+      },
+      {
+        id: ANALYTICS_EDIT_DASHBOARD,
+        path: 'analytics/dashboards/:dashboardId/edit',
+        element: <AnalyticsDashboardFormPage isEditing />,
+      },
+    ],
   },
 ]
 
@@ -684,24 +711,33 @@ const otherRoutes: RouteObject[] = [
 
 const favoritesRoutes: RouteObject[] = [
   {
-    id: 'favorites',
-    path: 'favorites',
-    element: <FavoritesPage filter="all" />,
-  },
-  {
-    id: 'favorites-assistants',
-    path: 'favorites/assistants',
-    element: <FavoritesPage filter="assistant" />,
-  },
-  {
-    id: 'favorites-workflows',
-    path: 'favorites/workflows',
-    element: <FavoritesPage filter="workflow" />,
-  },
-  {
-    id: 'favorites-skills',
-    path: 'favorites/skills',
-    element: <FavoritesPage filter="skill" />,
+    element: (
+      <FeatureGuard featureFlags={[FEATURE_FLAGS.FAVORITES, FEATURE_FLAGS.FAVORITES_PAGE]}>
+        <Outlet />
+      </FeatureGuard>
+    ),
+    children: [
+      {
+        id: 'favorites',
+        path: 'favorites',
+        element: <FavoritesPage filter="all" />,
+      },
+      {
+        id: 'favorites-assistants',
+        path: 'favorites/assistants',
+        element: <FavoritesPage filter="assistant" />,
+      },
+      {
+        id: 'favorites-workflows',
+        path: 'favorites/workflows',
+        element: <FavoritesPage filter="workflow" />,
+      },
+      {
+        id: 'favorites-skills',
+        path: 'favorites/skills',
+        element: <FavoritesPage filter="skill" />,
+      },
+    ],
   },
 ]
 
