@@ -13,12 +13,16 @@
 // limitations under the License.
 //
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { compareFormData } from '../compareFormData'
 
+const { mockAppInfoStore } = vi.hoisted(() => ({
+  mockAppInfoStore: { llmModels: [] as any[], llmRouters: [] as any[] },
+}))
+
 vi.mock('@/store/appInfo', () => ({
-  appInfoStore: { llmModels: [] },
+  appInfoStore: mockAppInfoStore,
 }))
 
 const base = {
@@ -45,6 +49,40 @@ describe('compareFormData — file_attachment_enabled', () => {
   it('treats null and true as the same (attachments allowed)', () => {
     const initial = { ...base, file_attachment_enabled: null }
     const current = { ...base, file_attachment_enabled: true }
+    expect(compareFormData(initial, current)).toBe(false)
+  })
+})
+
+describe('compareFormData — llm_model_type default', () => {
+  afterEach(() => {
+    mockAppInfoStore.llmModels = []
+    mockAppInfoStore.llmRouters = []
+  })
+
+  it('treats an unset model as the default router when a router is the global default', () => {
+    mockAppInfoStore.llmModels = [{ value: 'gpt-4', label: 'GPT-4', isDefault: false }]
+    mockAppInfoStore.llmRouters = [
+      { value: 'smart-router', label: 'Smart Router', isDefault: true },
+    ]
+
+    const initial = { ...base, llm_model_type: '' }
+    const current = { ...base, llm_model_type: 'smart-router' }
+
+    expect(compareFormData(initial, current)).toBe(false)
+  })
+
+  it('treats an unset model as the default model when no router is default', () => {
+    mockAppInfoStore.llmModels = [
+      { value: 'gpt-4', label: 'GPT-4', isDefault: false },
+      { value: 'claude-2', label: 'Claude-2', isDefault: true },
+    ]
+    mockAppInfoStore.llmRouters = [
+      { value: 'smart-router', label: 'Smart Router', isDefault: false },
+    ]
+
+    const initial = { ...base, llm_model_type: '' }
+    const current = { ...base, llm_model_type: 'claude-2' }
+
     expect(compareFormData(initial, current)).toBe(false)
   })
 })

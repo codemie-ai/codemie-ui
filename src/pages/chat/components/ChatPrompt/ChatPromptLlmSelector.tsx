@@ -143,9 +143,14 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     getLLMModels()
   }, [])
 
+  // A router marked default wins, matching the backend's router-first global default.
+  // It is recommended on its own row in the Routers section, so no model row is.
+  const defaultRouter = useMemo(() => llmRouters.find((r) => r.isDefault) ?? null, [llmRouters])
+
   const defaultModel = useMemo(() => {
+    if (defaultRouter) return null
     return llmModels.find((m) => m.isDefault) ?? llmModels[0] ?? null
-  }, [llmModels])
+  }, [llmModels, defaultRouter])
 
   const selectedModel = useMemo(() => {
     if (!currentChat?.llmModel) return null
@@ -305,6 +310,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
       return (
         <ModelOptionRow
           label={router.label}
+          recommended={router.value === defaultRouter?.value}
           isPremium={router.isPremium ?? false}
           selected={state.selected}
         />

@@ -37,9 +37,10 @@ const normalizeStringArrayField = (value: string[] | null | undefined): string[]
   return Array.isArray(value) ? value : []
 }
 
+// Same resolution as LLMSelector's default option, which lists models and then routers.
 const getDefaultLlmModel = (): string | undefined => {
-  const models = appInfoStore.llmModels
-  return (models.find((m) => m.isDefault) ?? models[0])?.value
+  const options = [...appInfoStore.llmModels, ...appInfoStore.llmRouters]
+  return (options.find((m) => m.isDefault) ?? options[0])?.value
 }
 
 const normalizeLlmModelField = (value: string | null | undefined): string => {

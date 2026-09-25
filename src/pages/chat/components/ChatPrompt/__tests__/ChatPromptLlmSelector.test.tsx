@@ -714,4 +714,41 @@ describe('ChatPromptLlmSelector — routers', () => {
 
     expect(screen.getByRole('button', { name: 'Smart Router' })).toBeInTheDocument()
   })
+
+  describe('when a router is the global default', () => {
+    // Mirrors a LiteLLM catalog where only the router carries default_for_categories=[GLOBAL]:
+    // no concrete model is default, so the old lookup fell back to llmModels[0].
+    beforeEach(() => {
+      mockAppInfoStore.llmModels = [
+        { label: 'GPT-4', value: 'gpt-4', isDefault: false },
+        { label: 'Claude-2', value: 'claude-2', isDefault: false },
+      ] as ModelOption[]
+      mockAppInfoStore.llmRouters = [{ ...routerFixture[0], isDefault: true }]
+    })
+
+    it('marks the default router row as Recommended', () => {
+      render(<ChatPromptLlmSelector />)
+
+      const routerRow = document.getElementById('chat-llm-selector-router-option-smart-router')!
+      const meta = routerRow.querySelector<HTMLElement>('[data-testid="llm-option-meta"]')
+
+      expect(meta?.textContent).toBe('Recommended')
+    })
+
+    it('does not mark any concrete model as Recommended', () => {
+      render(<ChatPromptLlmSelector />)
+
+      expect(document.getElementById('chat-llm-selector-option-recommended')).toBeNull()
+      expect(screen.getAllByText('Recommended')).toHaveLength(1)
+    })
+
+    it('keeps the Models header on the first model row', () => {
+      render(<ChatPromptLlmSelector />)
+
+      const modelsHeader = screen.getByText('Models')
+      const firstModelRow = document.getElementById('chat-llm-selector-option-gpt-4')!
+
+      expect(isBefore(modelsHeader, firstModelRow)).toBe(true)
+    })
+  })
 })
