@@ -21,22 +21,14 @@ import PremiumModelBadge from '@/components/PremiumModelBadge'
 import { appInfoStore } from '@/store/appInfo'
 import { cn } from '@/utils/utils'
 
-const PROVIDER_LABELS: Record<string, string> = {
-  azure_openai: 'Azure OpenAI',
-  aws_bedrock: 'AWS Bedrock',
-  google_vertexai: 'Google Vertex AI',
-  anthropic: 'Anthropic',
-  'vertex_ai-anthropic_models': 'Vertex AI Anthropic',
-}
+import RoutersSection from './components/RoutersSection'
+import { CHIP_CLASS, PROVIDER_LABELS } from './constants'
 
 const formatCost = (cost?: { input: number; output: number }) =>
   cost ? `$${(cost.input * 1_000_000).toFixed(2)} / $${(cost.output * 1_000_000).toFixed(2)}` : '—'
 
-const capabilityChipClass =
-  'text-xs border border-border-secondary rounded-full px-2 py-0.5 text-text-quaternary'
-
 const ModelsCatalogPage: FC = () => {
-  const { llmModels, getLLMModels } = useSnapshot(appInfoStore)
+  const { llmModels, llmRouters, getLLMModels } = useSnapshot(appInfoStore)
   const [search, setSearch] = useState('')
   const [provider, setProvider] = useState('')
   const [premiumOnly, setPremiumOnly] = useState(false)
@@ -71,6 +63,8 @@ const ModelsCatalogPage: FC = () => {
           <span className="text-aborted-primary">Premium</span> models are billed at higher rates
           and count against your project&rsquo;s Premium models budget.
         </p>
+
+        <RoutersSection routers={[...llmRouters]} />
 
         <div className="flex items-center gap-3 mb-4 flex-wrap">
           <input
@@ -137,11 +131,9 @@ const ModelsCatalogPage: FC = () => {
                 </td>
                 <td className="px-3 py-2">
                   <span className="flex gap-1 flex-wrap">
-                    {m.multimodal && <span className={capabilityChipClass}>multimodal</span>}
-                    {m.supportsTools && <span className={capabilityChipClass}>tools</span>}
-                    {m.supportsImageGeneration && (
-                      <span className={capabilityChipClass}>image gen</span>
-                    )}
+                    {m.multimodal && <span className={CHIP_CLASS}>multimodal</span>}
+                    {m.supportsTools && <span className={CHIP_CLASS}>tools</span>}
+                    {m.supportsImageGeneration && <span className={CHIP_CLASS}>image gen</span>}
                   </span>
                 </td>
                 <td

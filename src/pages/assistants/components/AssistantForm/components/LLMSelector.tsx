@@ -34,7 +34,13 @@ import { composeRowTooltip } from '@/utils/tooltipContent'
 // show: the full name while this narrow field truncates it, the rate sentence
 // when the model is premium, both when both — the same composition the chat
 // selector's rows use, so hovering a row behaves the same in either dropdown.
-const LlmOptionRow: FC<{ label: string; isPremium: boolean }> = ({ label, isPremium }) => {
+// Router gets the identical meta-line treatment, in blue rather than Premium's
+// amber, joined on the same line when a router also happens to be premium.
+const LlmOptionRow: FC<{ label: string; isPremium: boolean; isRouter?: boolean }> = ({
+  label,
+  isPremium,
+  isRouter = false,
+}) => {
   const labelRef = useRef<HTMLSpanElement>(null)
   const isTruncated = useIsTruncated(labelRef)
   const content = composeRowTooltip([isTruncated && label, isPremium && PREMIUM_MODEL_TOOLTIP])
@@ -48,13 +54,23 @@ const LlmOptionRow: FC<{ label: string; isPremium: boolean }> = ({ label, isPrem
       <span ref={labelRef} className="min-w-0 truncate">
         {label}
       </span>
-      {isPremium && (
+      {(isRouter || isPremium) && (
         <span data-testid="llm-option-meta" className="truncate text-xs text-text-tertiary">
-          <span className="text-aborted-primary">Premium</span>
+          {isRouter && <span className="text-in-progress-primary">Router</span>}
+          {isRouter && isPremium && ' · '}
+          {isPremium && <span className="text-aborted-primary">Premium</span>}
         </span>
       )}
     </span>
   )
+}
+
+interface SelectableModel {
+  value: string
+  label: string
+  isDefault: boolean
+  isPremium?: boolean
+  isRouter?: boolean
 }
 
 interface LLMSelectorProps {
@@ -89,12 +105,38 @@ const LLMSelector = forwardRef<
     },
     ref
   ) => {
-    const { llmModels, imageGenerationModels, getLLMModels, getImageGenerationModels } =
+    const { llmModels, llmRouters, imageGenerationModels, getLLMModels, getImageGenerationModels } =
       useSnapshot(appInfoStore)
     const [invalidModel, setInvalidModel] = useState<string | null>(null)
     const selectRef = useRef<PrimeMultiSelect>(null)
 
-    const models = modelType === 'imageGeneration' ? imageGenerationModels : llmModels
+    // Routers only apply to the 'llm' model type — image generation has no
+    // router concept, so that branch stays untouched.
+    const models = useMemo<SelectableModel[]>(() => {
+      if (modelType === 'imageGeneration') {
+        return imageGenerationModels.map(({ value, label, isDefault, isPremium }) => ({
+          value,
+          label,
+          isDefault,
+          isPremium,
+        }))
+      }
+      return [
+        ...llmModels.map(({ value, label, isDefault, isPremium }) => ({
+          value,
+          label,
+          isDefault,
+          isPremium,
+        })),
+        ...llmRouters.map((router) => ({
+          value: router.value,
+          label: router.label,
+          isDefault: router.isDefault ?? false,
+          isPremium: router.isPremium,
+          isRouter: true,
+        })),
+      ]
+    }, [modelType, imageGenerationModels, llmModels, llmRouters])
     const loadModels = modelType === 'imageGeneration' ? getImageGenerationModels : getLLMModels
 
     useImperativeHandle(
@@ -125,7 +167,12 @@ const LLMSelector = forwardRef<
               },
             ]
           : []),
-        ...models.map(({ label, value, isPremium }) => ({ label, value, isPremium })),
+        ...models.map(({ label, value, isPremium, isRouter }) => ({
+          label,
+          value,
+          isPremium,
+          isRouter,
+        })),
       ],
       [
         allowEmpty,
@@ -160,9 +207,17 @@ const LLMSelector = forwardRef<
       if (invalidModel && value !== defaultLlmModel?.value) setInvalidModel(null)
     }, [defaultLlmModel?.value, invalidModel, value])
 
-    const renderOption = (option: { label: string; isPremium?: boolean } | undefined) => {
+    const renderOption = (
+      option: { label: string; isPremium?: boolean; isRouter?: boolean } | undefined
+    ) => {
       if (!option) return null
-      return <LlmOptionRow label={option.label} isPremium={option.isPremium ?? false} />
+      return (
+        <LlmOptionRow
+          label={option.label}
+          isPremium={option.isPremium ?? false}
+          isRouter={option.isRouter ?? false}
+        />
+      )
     }
 
     // The trigger no longer says "Premium" inline: in a ~380px panel that pill

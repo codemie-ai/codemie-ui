@@ -18,7 +18,7 @@ import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PREMIUM_MODEL_TOOLTIP } from '@/components/PremiumModelBadge'
-import type { ModelOption } from '@/types/entity/configuration'
+import type { LLMRouterOption, ModelOption } from '@/types/entity/configuration'
 
 import ChatPrompt from '../ChatPrompt'
 
@@ -38,6 +38,7 @@ const { mockChatsStore, mockAppInfoStore, mockChatGenerationStore } = vi.hoisted
   },
   mockAppInfoStore: {
     llmModels: [] as ModelOption[],
+    llmRouters: [] as LLMRouterOption[],
     getLLMModels: vi.fn(),
   },
   mockChatGenerationStore: {

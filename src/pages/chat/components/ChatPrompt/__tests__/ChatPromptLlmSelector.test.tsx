@@ -15,10 +15,10 @@
 
 import { fireEvent, render, screen } from '@testing-library/react'
 import React from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { PREMIUM_MODEL_TOOLTIP } from '@/components/PremiumModelBadge'
-import type { ModelOption } from '@/types/entity/configuration'
+import type { LLMRouterOption, ModelOption } from '@/types/entity/configuration'
 import { Conversation } from '@/types/entity/conversation'
 
 import ChatPromptLlmSelector from '../ChatPromptLlmSelector'
@@ -41,6 +41,7 @@ const { mockChatsStore, mockAppInfoStore, mockOverlayHide, mockTruncation } = vi
         { label: 'Claude-2', value: 'claude-2', isDefault: false },
         { label: 'Llama-3', value: 'llama-3', isDefault: false },
       ] as ModelOption[],
+      llmRouters: [] as LLMRouterOption[],
       getLLMModels: vi.fn(),
     },
     mockOverlayHide: vi.fn(),
@@ -616,5 +617,101 @@ describe('ChatPromptLlmSelector — dropdown panel width', () => {
     const trigger = screen.getByRole('button', { name: /Bedrock Claude Opu/ })
     expect(trigger).toHaveTextContent('Premium')
     expect(trigger.querySelector('[data-testid="premium-model-dot"]')).toBeNull()
+  })
+})
+
+describe('ChatPromptLlmSelector — routers', () => {
+  const routerFixture: LLMRouterOption[] = [
+    {
+      value: 'smart-router',
+      label: 'Smart Router',
+      isPremium: false,
+      tiers: {
+        simple: { model: 'gpt-4', label: 'GPT-4' },
+        medium: { model: 'gpt-4', label: 'GPT-4' },
+        complex: { model: 'gpt-4', label: 'GPT-4' },
+        reasoning: { model: 'gpt-4', label: 'GPT-4' },
+      },
+    },
+  ]
+
+  // a before b in document order
+  const isBefore = (a: Element, b: Element) =>
+    // eslint-disable-next-line no-bitwise -- compareDocumentPosition returns a bitmask by spec
+    !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatsStore.currentChat = mockChat
+    mockChatsStore.updateChat = vi.fn()
+    mockAppInfoStore.getLLMModels = vi.fn()
+    mockAppInfoStore.llmModels = [
+      { label: 'GPT-4', value: 'gpt-4', isDefault: true },
+      { label: 'Claude-2', value: 'claude-2', isDefault: false },
+    ] as ModelOption[]
+    mockAppInfoStore.llmRouters = routerFixture
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
+  afterEach(() => {
+    mockAppInfoStore.llmRouters = []
+  })
+
+  it('renders the old flat list — no Routers/Models headers — when there are no routers at all', () => {
+    mockAppInfoStore.llmRouters = []
+    render(<ChatPromptLlmSelector />)
+
+    expect(screen.queryByText('Routers')).not.toBeInTheDocument()
+    expect(screen.queryByText('Models')).not.toBeInTheDocument()
+    // Recommended still shows, right after Default, exactly as before grouping existed.
+    expect(document.getElementById('chat-llm-selector-option-recommended')).not.toBeNull()
+  })
+
+  it('groups into Default, then Routers, then Models (recommended model first) once a router exists', () => {
+    render(<ChatPromptLlmSelector />)
+
+    const defaultRow = screen.getByRole('option', { name: 'Assistant Default' })
+    const routersHeader = screen.getByText('Routers')
+    const routerRow = screen.getByRole('option', { name: /Smart Router/ })
+    const modelsHeader = screen.getByText('Models')
+    const recommendedRow = document.getElementById('chat-llm-selector-option-recommended')!
+
+    expect(isBefore(defaultRow, routersHeader)).toBe(true)
+    expect(isBefore(routersHeader, routerRow)).toBe(true)
+    expect(isBefore(routerRow, modelsHeader)).toBe(true)
+    expect(isBefore(modelsHeader, recommendedRow)).toBe(true)
+  })
+
+  it('selecting a router option calls updateChat with the router value', () => {
+    render(<ChatPromptLlmSelector />)
+
+    fireEvent.click(screen.getByRole('option', { name: /Smart Router/ }))
+
+    expect(mockChatsStore.updateChat).toHaveBeenCalledWith('chat-123', {
+      llmModel: 'smart-router',
+    })
+  })
+
+  it('filters routers by search text same as models, and drops both headers once nothing matches under them', () => {
+    render(<ChatPromptLlmSelector />)
+    const input = screen.getByPlaceholderText('Search models…')
+
+    fireEvent.change(input, { target: { value: 'smart' } })
+
+    expect(screen.getByRole('option', { name: /Smart Router/ })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: /^GPT-4$/ })).not.toBeInTheDocument()
+    expect(screen.getByText('Routers')).toBeInTheDocument()
+    expect(screen.queryByText('Models')).not.toBeInTheDocument()
+  })
+
+  it('shows the router label in the trigger when the current chat has a router selected', () => {
+    mockChatsStore.currentChat = {
+      ...mockChat,
+      llmModel: 'smart-router',
+    } as unknown as Conversation
+
+    render(<ChatPromptLlmSelector />)
+
+    expect(screen.getByRole('button', { name: 'Smart Router' })).toBeInTheDocument()
   })
 })

@@ -58,6 +58,7 @@ const {
         { label: 'GPT-4', value: 'gpt-4', isDefault: true },
         { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
       ],
+      llmRouters: [],
       imageGenerationModels: [{ label: 'GPT Image 1', value: 'gpt-image-1', isDefault: true }],
       getLLMModels: vi.fn(),
       getImageGenerationModels: vi.fn(),

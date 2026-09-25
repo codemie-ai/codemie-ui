@@ -1,0 +1,175 @@
+{
+  "decision": "approve",
+  "rationale": "Original round (2026-09-24, this file): request-changes/low on 8 findings. All 8 are now closed: CR-001, CR-005, CR-007, CR-008 fixed in the worktree diff at docs/superpowers/runs/2026-09-24-model-routers-catalog-fixcheck/code-review.diff; CR-002 and CR-003 reviewed with the user and accepted as-is (low real-world risk / deferred, no code change); CR-004 and CR-006 confirmed by-design, no code change. Closure verified manually (diff read-through against each finding + `npm run typecheck` clean + full unit suite 615 files/6285 tests passed, 0 failed) because the automated code-review.check re-verification round could not complete: its edge-case lens hit the session's API rate limit (HTTP 429) twice and review-triage returned a canonical safe-fail (request-changes/low/0 findings) both times — see code-review-final.json in the fixcheck run_dir. This decision/confidence update is a manual close-out, not an automated check-round verdict.",
+  "confidence": "high",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    { "kind": "spec", "item": "getLLMModels() splits /v1/llm_models by is_router into llmModels and a new llmRouters field", "status": "pass", "notes": "appInfo.ts routerEntries/modelEntries filter on is_router; covered by appInfo.test.ts" },
+    { "kind": "spec", "item": "New types RouterTierModel/RouterTiers/LLMRouterOption added matching the backend contract shape", "status": "pass", "notes": "Types added; RouterTierModel.label optional vs spec's required, but RoutersSection falls back to findLLMLabel so behavior is unaffected" },
+    { "kind": "spec", "item": "RoutersSection renders nothing when routers is empty (no empty state)", "status": "pass", "notes": "routers.length===0 returns null; covered by RoutersSection.test.tsx" },
+    { "kind": "spec", "item": "Section heading 'Routers' + description text", "status": "pass", "notes": "Heading/paragraph text matches verbatim" },
+    { "kind": "spec", "item": "Responsive grid of router cards: grid-cols-1 md:grid-cols-2", "status": "partial", "notes": "Implementation uses grid-cols-1 gap-4 only, no md: breakpoint; cards always stack one-per-row -> CR-006" },
+    { "kind": "spec", "item": "No search/filter controls in routers section; existing filters apply only to the models table", "status": "pass", "notes": "RoutersSection takes only a routers prop; ModelsCatalogPage filters remain scoped to the llmModels table" },
+    { "kind": "spec", "item": "Card row 1: label, PremiumModelBadge if isPremium, provider label", "status": "pass", "notes": "Renders label, conditional badge, PROVIDER_LABELS fallback" },
+    { "kind": "spec", "item": "Card row 2: routerType chip via known-value map with raw fallback, omitted if absent", "status": "pass", "notes": "ROUTER_TYPE_LABELS map with fallback; covered by tests" },
+    { "kind": "spec", "item": "Card row 2: strategy + classifierModel combined into one chip", "status": "pass", "notes": "strategyLabel/classifierLabel logic covered by tests" },
+    { "kind": "spec", "item": "Card row 3: fixed 4-column tier strip, fixed labels, model label underneath", "status": "pass", "notes": "TIER_ORDER/TIER_LABELS constants, covered by tests; unguarded access crashes on missing tier -> CR-007" },
+    { "kind": "spec", "item": "ModelsCatalogPage renders RoutersSection above the filter bar/table", "status": "pass", "notes": "Placed directly above search/filter row; covered by ModelsCatalogPage.test.tsx" },
+    { "kind": "spec", "item": "Decision: router cards always-expanded, no click-to-expand", "status": "pass", "notes": "No expand/collapse state or handlers" },
+    { "kind": "spec", "item": "Decision: counterfactual_model excluded from this feature", "status": "pass", "notes": "No reference anywhere in the diff" },
+    { "kind": "spec", "item": "Decision: tier set fixed at 4 keys in fixed order; strategy stays a separate field", "status": "pass", "notes": "TIER_ORDER hardcoded 4-item array; strategy rendered independently" },
+    { "kind": "spec", "item": "Decision: both router_type values render through the same tier path, no branching", "status": "pass", "notes": "Branches only for the badge label, never for tier rendering" },
+    { "kind": "spec", "item": "Out of scope: no router creation/editing UI added", "status": "pass", "notes": "Diff adds only display + selector changes" },
+    { "kind": "spec", "item": "Out of scope: RoutingAnalyticsSection unaffected", "status": "pass", "notes": "No changes under src/pages/analytics" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 10 commit subjects in range match EPMCDME-14083: Capitalized sentence, no trailing period, per git-workflow.md" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality guide exists and no code_quality ArtifactRef was passed; no documented blocking standard to adjudicate against" },
+    { "kind": "security", "status": "pass", "notes": "Checked 7 changed files against security-patterns.md: no HTML-sink, redirect, postMessage, config-read, or secret-handling issues; no security-sensitive surface touched" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantDetails/components/AssistantDetailsSidebarSections.tsx",
+      "line": 150,
+      "title": "Sidebar shows raw router id, not label",
+      "problem": "assistant.llm_model_type is resolved to a display label via appInfoStore.findLLMLabel, which only searches this.llmModels (appInfo.ts:401-404) and never the new this.llmRouters list this diff introduces. LLMSelector.tsx now lets a router be saved as an assistant's llm_model_type, so that value falls through findLLMLabel's fallback.",
+      "impact": "The assistant details sidebar shows the router's raw slug (e.g. 'smart-router') instead of its friendly label for any assistant configured with a router as its LLM; AssistantDetailsSidebarSections.test.tsx mocks findLLMLabel entirely, so no test exercises real resolution and this ships silently.",
+      "recommendation": "Extend findLLMLabel (or add a sibling resolver) to also search appInfoStore.llmRouters before falling back to the raw value."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx",
+      "line": 153,
+      "title": "Implicit default fallback can silently pick a router",
+      "problem": "defaultLlmModel falls back to models[0] when no model has isDefault true. models is llmModels concatenated with llmRouters, so when llmModels is empty but llmRouters is not, models[0] is a router, silently becoming the 'Default: <label>' option.",
+      "impact": "The effect at line 202 calls onChange(defaultLlmModel?.value) for any empty/invalid value, auto-selecting that router as the assistant's LLM with no explicit user choice or backend default signal — a router becomes the implicit default purely by array position.",
+      "recommendation": "Exclude routers from the implicit-default fallback, e.g. models.find(m => !m.isRouter) ?? models[0], or define an explicit rule for the empty-llmModels case."
+    },
+    {
+      "id": "CR-003",
+      "kind": "decision",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/pages/assistants/utils/temperatureConstraints.ts",
+      "line": 68,
+      "title": "Temperature cap validation ignores router-routed models",
+      "problem": "getTemperatureMax looks up modelValue only in appInfoStore.llmModels; when modelValue is a router (now a valid llm_model_type per this diff), the store lookup misses and falls through to a name-based regex match against the router's own slug, not against any of its tiers' target models.",
+      "impact": "A router whose tiers route to Claude on a capped provider (aws_bedrock/google_vertexai/vertex_ai-anthropic_models) never matches /claude/i on its own slug, so the 1.0 temperature cap is silently skipped; a user can set temperature above 1.0 for an assistant that ultimately routes to Claude, risking a rejected/failed backend call.",
+      "recommendation": "Decide how a router should be validated — e.g. resolve its tiers and apply the strictest matching rule among them, or apply the Claude cap defensively whenever the model is a router. This needs a product decision on intended semantics for multi-tier routers before an unambiguous fix can be written."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx",
+      "line": 303,
+      "title": "Chat router rows lack a visual Router indicator",
+      "problem": "renderOption's router branch passes only label, isPremium and selected into ModelOptionRow — no isRouter prop exists on ModelOptionRow at all — whereas this same diff extended LLMSelector.tsx's sibling row component (LlmOptionRow) with a dedicated blue 'Router' meta line for the identical concept.",
+      "impact": "A router row in the chat prompt dropdown renders identically to a model row and has no marker of its own; it relies entirely on sitting under the 'Routers' section header, which is easy to lose once the header scrolls out of view or during a search.",
+      "recommendation": "Add an isRouter prop to ModelOptionRow (mirroring LlmOptionRow's meta-line treatment) and pass it from the router branch of renderOption."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/hooks/usePremiumModelTip.ts",
+      "line": 47,
+      "title": "Premium tip never fires for a premium router",
+      "problem": "effectiveModel is resolved via llmModels.find(...) only; it never consults llmRouters, even though ChatPromptLlmSelector.tsx (this same diff) already lets a router be saved as currentChat.llmModel and itself uses the exact llmModels-then-llmRouters fallback pattern this hook is missing.",
+      "impact": "When a premium router drives the chat, effectiveModel resolves to null, isPremiumActive is false, and every premium-cost indicator sourced from this hook (ChatPrompt's prompt ring, ChatPremiumModelTipSlot's dismissible tip, ChatHistory's visibility flag) silently stays off even though a premium router is actually driving the chat and its cost.",
+      "recommendation": "Add the same fallback already used in ChatPromptLlmSelector.tsx: llmModels.find(...) ?? llmRouters.find((r) => r.value === currentChat.llmModel) ?? null."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/help/ModelsCatalog/components/RoutersSection.tsx",
+      "line": 58,
+      "title": "Router card grid missing required md:grid-cols-2 breakpoint",
+      "problem": "The spec calls for the router-card grid to be grid-cols-1 md:grid-cols-2 (two columns on wider viewports); the implementation uses grid grid-cols-1 gap-4 with no md: breakpoint.",
+      "impact": "Router cards always stack one-per-row regardless of viewport width, deviating from the approved spec's responsive layout requirement.",
+      "recommendation": "Add the md:grid-cols-2 class to the router cards' grid container."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/help/ModelsCatalog/components/RoutersSection.tsx",
+      "line": 97,
+      "title": "Unguarded router tier access can crash the catalog page",
+      "problem": "LLMRouterOption.tiers is typed as a required RouterTiers object with all four tier keys mandatory, but appInfo.ts:349-359 copies it straight from the untyped v1/llm_models response (tiers: router.tiers) with no runtime validation. RoutersSection.tsx's TIER_ORDER.map then does router.tiers[tier] and immediately reads tierModel.label with no null guard.",
+      "impact": "A router entry missing a tier key (or missing tiers altogether) throws a TypeError reading 'label' of undefined while rendering, crashing the Models Catalog page for every user until the backend payload is corrected — a defensive-coding gap with nothing protecting against a payload that violates the TS-only contract.",
+      "recommendation": "Guard the tier lookup, e.g. const tierModel = router.tiers?.[tier]; if (!tierModel) return null, and/or validate the tiers shape when mapping the API response in appInfo.ts."
+    },
+    {
+      "id": "CR-008",
+      "kind": "decision",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/store/appInfo.ts",
+      "line": 349,
+      "title": "Router 'default' flag from backend is discarded",
+      "problem": "The raw v1/llm_models payload can mark any entry default: true the same way for models and routers, but routerEntries.map (appInfo.ts:349-360) never reads that flag onto LLMRouterOption, and LLMSelector.tsx hardcodes isDefault: false for every router folded into its combined models list.",
+      "impact": "If the backend ever marks a router as the default LLM, that intent is silently discarded end-to-end — no code path lets a router become the resolved default model in any selector.",
+      "recommendation": "Decide whether routers should participate in the 'default' concept at all (the spec's acceptance criteria never addressed it); if yes, thread router.default through LLMRouterOption and the selectors' isDefault comparisons. This needs product confirmation before an unambiguous fix is written."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "appInfo.ts findLLMLabel now falls back to llmRouters after llmModels. Manually verified against src/store/appInfo.ts; typecheck clean; AssistantDetailsSidebarSections.test.tsx still passes (it fully mocks findLLMLabel, so no direct regression test for this path)."
+    },
+    {
+      "id": "CR-002",
+      "status": "accepted",
+      "notes": "User reviewed and accepted: the models[0] positional fallback predates this diff (previously only over llmModels), the router-as-default case only occurs when llmModels is entirely empty (unrealistic deployment state), and CR-008's fix lets a router carry a real isDefault from the backend anyway. No code change."
+    },
+    {
+      "id": "CR-003",
+      "status": "deferred",
+      "notes": "User dismissed for now. temperatureConstraints.ts:68 still resolves a router's own slug via /claude/i instead of its tiers' target models, so the 1.0 cap can still be silently skipped for a router that routes to Claude on a capped provider. Left open, no code change; revisit as a follow-up ticket if desired."
+    },
+    {
+      "id": "CR-004",
+      "status": "by-design",
+      "notes": "User confirmed: chat router rows intentionally have no visual 'Router' marker beyond the 'Routers' section header. No code change."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "usePremiumModelTip.ts effectiveModel now falls back to llmRouters.find(...). Manually verified; usePremiumModelTip.test.ts fixture updated (llmRouters added to mock) and passes; ChatPremiumModelTip/ChatPremiumModelTipSlot/ChatPrompt.premiumTooltip suites all pass."
+    },
+    {
+      "id": "CR-006",
+      "status": "by-design",
+      "notes": "User confirmed: router card grid intentionally stays grid-cols-1 (no md:grid-cols-2). No code change."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "RoutersSection.tsx guards router.tiers?.[tier] and returns null for a missing tier before reading .label, closing the crash. Manually verified; RoutersSection.test.tsx and ModelsCatalogPage.test.tsx pass."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "LLMRouterOption.isDefault added (optional), threaded from router.default in appInfo.ts, consumed via router.isDefault ?? false in LLMSelector.tsx instead of a hardcoded false. Manually verified; typecheck clean; LLMSelector.test.tsx and LLMSelector.premiumLayout.test.tsx pass."
+    }
+  ],
+  "resolution_source": {
+    "fix_diff": "docs/superpowers/runs/2026-09-24-model-routers-catalog-fixcheck/code-review.diff",
+    "automated_recheck": "docs/superpowers/runs/2026-09-24-model-routers-catalog-fixcheck/code-review-final.json (safe-fail: edge-case lens hit HTTP 429 session rate limit, review-triage returned request-changes/low/0 findings both attempts)",
+    "manual_verification": "npm run typecheck (clean); npx vitest run --project unit (615 files / 6285 tests passed, 1 skipped, 0 failed); full diff read-through of src/store/appInfo.ts, src/types/entity/configuration.ts, src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx, src/pages/chat/hooks/usePremiumModelTip.ts, src/pages/help/ModelsCatalog/components/RoutersSection.tsx against each finding"
+  }
+}

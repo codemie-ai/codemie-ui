@@ -17,14 +17,14 @@ import { act, renderHook } from '@testing-library/react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { premiumModelTipStore, PENDING_CHAT_KEY } from '@/store/premiumModelTip'
-import type { ModelOption } from '@/types/entity/configuration'
+import type { LLMRouterOption, ModelOption } from '@/types/entity/configuration'
 import { Conversation } from '@/types/entity/conversation'
 
 import { usePremiumModelTip } from '../usePremiumModelTip'
 
 const { mockChatsStore, mockAppInfoStore } = vi.hoisted(() => ({
   mockChatsStore: { currentChat: null as Conversation | null },
-  mockAppInfoStore: { llmModels: [] as ModelOption[] },
+  mockAppInfoStore: { llmModels: [] as ModelOption[], llmRouters: [] as LLMRouterOption[] },
 }))
 
 vi.mock('valtio', () => ({

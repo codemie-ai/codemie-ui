@@ -24,7 +24,12 @@ import {
 import { RawRelease, Release } from '@/pages/releaseNotes/types'
 import { normalizeRelease } from '@/pages/releaseNotes/utils/normalizeRelease'
 import { profileSettingsStore } from '@/store/userProfileSettings'
-import { ModelOption, SpeechConfig, ConfigItem } from '@/types/entity/configuration'
+import {
+  ModelOption,
+  LLMRouterOption,
+  SpeechConfig,
+  ConfigItem,
+} from '@/types/entity/configuration'
 import api from '@/utils/api'
 
 const TOOL_CONFIG_FIELD_MAP: Record<string, { credentialType: string; fields: string[] }> = {
@@ -75,6 +80,7 @@ export interface AppInfoStoreType {
   appReleases: Release[]
   viewedAppReleaseVersion: string
   llmModels: ModelOption[]
+  llmRouters: LLMRouterOption[]
   imageGenerationModels: ModelOption[]
   embeddingModels: ModelOption[]
   speechConfig: SpeechConfig
@@ -193,6 +199,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   appReleases: [],
   viewedAppReleaseVersion: '',
   llmModels: [],
+  llmRouters: [],
   imageGenerationModels: [],
   embeddingModels: [],
   speechConfig: {},
@@ -308,7 +315,10 @@ export const appInfoStore = proxy<AppInfoStoreType>({
       const response = await api.get('v1/llm_models')
       const data = await response.json()
 
-      appInfoStore.llmModels = data.map((model: any) => ({
+      const routerEntries = data.filter((model: any) => model.is_router)
+      const modelEntries = data.filter((model: any) => !model.is_router)
+
+      appInfoStore.llmModels = modelEntries.map((model: any) => ({
         value: model.base_name,
         label: model.label,
         isDefault: model.default,
@@ -320,6 +330,21 @@ export const appInfoStore = proxy<AppInfoStoreType>({
         defaultForCategories: model.default_for_categories,
         cost: model.cost ? { input: model.cost.input, output: model.cost.output } : undefined,
       }))
+
+      appInfoStore.llmRouters = routerEntries.map((router: any) => ({
+        value: router.base_name,
+        label: router.label,
+        isDefault: router.default,
+        provider: router.provider,
+        isPremium: router.is_premium,
+        multimodal: router.multimodal,
+        supportsTools: router.supports_tools,
+        routerType: router.router_type,
+        strategy: router.strategy,
+        classifierModel: router.classifier_model,
+        tiers: router.tiers,
+      }))
+
       return appInfoStore.llmModels
     } catch (error) {
       console.error('Failed to fetch LLM models:', error)
@@ -361,7 +386,9 @@ export const appInfoStore = proxy<AppInfoStoreType>({
 
   findLLMLabel(value: string) {
     const model = this.llmModels.find((m) => m.value === value)
-    return model ? model.label : value
+    if (model) return model.label
+    const router = this.llmRouters.find((r) => r.value === value)
+    return router ? router.label : value
   },
 
   findEmbeddingLabel(value: string) {

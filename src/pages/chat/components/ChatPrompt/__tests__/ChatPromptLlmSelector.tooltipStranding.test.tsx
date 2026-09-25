@@ -17,7 +17,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ModelOption } from '@/types/entity/configuration'
+import type { LLMRouterOption, ModelOption } from '@/types/entity/configuration'
 import { Conversation } from '@/types/entity/conversation'
 import { setupTooltipCloseBehavior, type GlobalTooltipHandle } from '@/utils/tooltipCloseBehavior'
 
@@ -35,6 +35,7 @@ const { mockChatsStore, mockAppInfoStore } = vi.hoisted(() => ({
       { label: 'GPT-4', value: 'gpt-4', isDefault: true },
       { label: 'Claude-2', value: 'claude-2', isPremium: true },
     ] as ModelOption[],
+    llmRouters: [] as LLMRouterOption[],
     getLLMModels: vi.fn(),
   },
 }))

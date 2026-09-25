@@ -14,9 +14,9 @@
 //
 
 import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ModelOption } from '@/types/entity/configuration'
+import type { LLMRouterOption, ModelOption } from '@/types/entity/configuration'
 
 import ModelsCatalogPage from '../ModelsCatalogPage'
 
@@ -44,7 +44,9 @@ const { mockAppInfoStore } = vi.hoisted(() => ({
         cost: { input: 0.0000025, output: 0.00001 },
       },
     ] as ModelOption[],
+    llmRouters: [] as LLMRouterOption[],
     getLLMModels: vi.fn(),
+    findLLMLabel: vi.fn((value: string) => value),
   },
 }))
 
@@ -94,5 +96,44 @@ describe('ModelsCatalogPage', () => {
     render(<ModelsCatalogPage />)
 
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+})
+
+describe('ModelsCatalogPage routers', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    mockAppInfoStore.llmRouters = []
+  })
+
+  it('does not render a Routers section when there are no routers', () => {
+    render(<ModelsCatalogPage />)
+
+    expect(screen.queryByText('Routers')).not.toBeInTheDocument()
+  })
+
+  it('renders a router card above the models table when routers are present', () => {
+    mockAppInfoStore.llmRouters = [
+      {
+        value: 'smart-router',
+        label: 'Smart Router',
+        provider: 'azure_openai',
+        routerType: 'switchyard',
+        strategy: 'signal',
+        tiers: {
+          simple: { model: 'gpt-5-mini', label: 'GPT-5 mini' },
+          medium: { model: 'gpt-5', label: 'GPT-5' },
+          complex: { model: 'gpt-5', label: 'GPT-5' },
+          reasoning: { model: 'gpt-5-pro', label: 'GPT-5 Pro' },
+        },
+      },
+    ]
+
+    render(<ModelsCatalogPage />)
+
+    expect(screen.getByText('Routers')).toBeInTheDocument()
+    expect(screen.getByText('Smart Router')).toBeInTheDocument()
   })
 })

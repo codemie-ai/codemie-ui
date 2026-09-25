@@ -66,6 +66,7 @@ const { mockAppInfoStore, mockTruncation } = vi.hoisted(() => ({
       },
       { label: 'GPT-4o', value: 'gpt-4o', isDefault: true },
     ],
+    llmRouters: [],
     imageGenerationModels: [],
     getLLMModels: vi.fn(),
     getImageGenerationModels: vi.fn(),

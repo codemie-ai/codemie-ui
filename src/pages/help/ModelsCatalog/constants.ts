@@ -14,3 +14,14 @@
 //
 
 export const HELP_MODELS_ROUTE = '/help/models'
+
+export const PROVIDER_LABELS: Record<string, string> = {
+  azure_openai: 'Azure OpenAI',
+  aws_bedrock: 'AWS Bedrock',
+  google_vertexai: 'Google Vertex AI',
+  anthropic: 'Anthropic',
+  'vertex_ai-anthropic_models': 'Vertex AI Anthropic',
+}
+
+export const CHIP_CLASS =
+  'text-xs border border-border-secondary rounded-full px-2 py-0.5 text-text-quaternary'

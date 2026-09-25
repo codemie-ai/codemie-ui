@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
-import { render as rtlRender, screen } from '@testing-library/react'
+import { fireEvent, render as rtlRender, screen } from '@testing-library/react'
 import { ReactElement } from 'react'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import type { LLMRouterOption } from '@/types/entity/configuration'
 
 import LLMSelector from '../LLMSelector'
 
@@ -30,6 +32,7 @@ const { mockAppInfoStore } = vi.hoisted(() => ({
       { label: 'Claude Opus 4.1', value: 'claude-opus-4-1', isDefault: false, isPremium: true },
       { label: 'GPT-4o', value: 'gpt-4o', isDefault: true },
     ],
+    llmRouters: [] as LLMRouterOption[],
     imageGenerationModels: [],
     getLLMModels: vi.fn(),
     getImageGenerationModels: vi.fn(),
@@ -57,5 +60,85 @@ describe('LLMSelector premium indication', () => {
     render(<LLMSelector value="gpt-4o" onChange={vi.fn()} allowEmpty />)
 
     expect(screen.queryByText('Premium model')).not.toBeInTheDocument()
+  })
+})
+
+// Routers are folded into the same flat option list as regular models (no
+// grouping here — see ChatPromptLlmSelector for the grouped variant), each
+// marked with the same meta-line treatment Premium already uses: a Router
+// line in blue, joined with Premium on one line when both apply.
+describe('LLMSelector — routers', () => {
+  const routerFixture: LLMRouterOption[] = [
+    {
+      value: 'smart-router',
+      label: 'Smart Router',
+      isPremium: false,
+      tiers: {
+        simple: { model: 'gpt-4o', label: 'GPT-4o' },
+        medium: { model: 'gpt-4o', label: 'GPT-4o' },
+        complex: { model: 'gpt-4o', label: 'GPT-4o' },
+        reasoning: { model: 'gpt-4o', label: 'GPT-4o' },
+      },
+    },
+    {
+      value: 'premium-router',
+      label: 'Premium Router',
+      isPremium: true,
+      tiers: {
+        simple: { model: 'claude-opus-4-1', label: 'Claude Opus 4.1' },
+        medium: { model: 'claude-opus-4-1', label: 'Claude Opus 4.1' },
+        complex: { model: 'claude-opus-4-1', label: 'Claude Opus 4.1' },
+        reasoning: { model: 'claude-opus-4-1', label: 'Claude Opus 4.1' },
+      },
+    },
+  ]
+
+  const openPanel = (props: Partial<Parameters<typeof LLMSelector>[0]> = {}) => {
+    const { container } = render(
+      <LLMSelector value="gpt-4o" onChange={vi.fn()} allowEmpty {...props} />
+    )
+    fireEvent.click(container.querySelector('.p-multiselect')!)
+    return container
+  }
+
+  const rowFor = (label: string) =>
+    screen.getAllByTestId('llm-option-row').find((row) => row.textContent?.includes(label))!
+
+  afterEach(() => {
+    mockAppInfoStore.llmRouters = []
+  })
+
+  it('renders a Router meta line, in blue, on a router option row', () => {
+    mockAppInfoStore.llmRouters = routerFixture
+    openPanel()
+
+    const row = rowFor('Smart Router')
+    const meta = row.querySelector<HTMLElement>('[data-testid="llm-option-meta"]')!
+    expect(meta.textContent).toBe('Router')
+    expect(meta.querySelector('.text-in-progress-primary')).not.toBeNull()
+  })
+
+  it('joins Router and Premium on the same meta line when a router is also premium', () => {
+    mockAppInfoStore.llmRouters = routerFixture
+    openPanel()
+
+    const row = rowFor('Premium Router')
+    const meta = row.querySelector<HTMLElement>('[data-testid="llm-option-meta"]')!
+    expect(meta.textContent).toBe('Router · Premium')
+  })
+
+  it('renders no Router meta line on a regular model row', () => {
+    mockAppInfoStore.llmRouters = routerFixture
+    openPanel()
+
+    const row = rowFor('GPT-4o')
+    expect(row.querySelector('[data-testid="llm-option-meta"]')).toBeNull()
+  })
+
+  it('accepts a router value as a valid selection — no invalid-model warning', () => {
+    mockAppInfoStore.llmRouters = routerFixture
+    render(<LLMSelector value="smart-router" onChange={vi.fn()} allowEmpty />)
+
+    expect(screen.queryByText(/is not valid and was reset to default/)).not.toBeInTheDocument()
   })
 })

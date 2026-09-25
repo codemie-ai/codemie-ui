@@ -41,6 +41,7 @@ const LISTBOX_ID = 'chat-llm-selector-listbox'
 const OPTION_ID_DEFAULT = 'chat-llm-selector-option-default'
 const OPTION_ID_RECOMMENDED = 'chat-llm-selector-option-recommended'
 const optionIdForModel = (value: string) => `chat-llm-selector-option-${value}`
+const optionIdForRouter = (value: string) => `chat-llm-selector-router-option-${value}`
 
 // Back to the pre-Task-11 sizing. The wide floor existed only to feed the
 // badge's container query, and the containment that query needed was itself what
@@ -135,7 +136,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
   const [search, setSearch] = useState('')
   const triggerRef = useRef<HTMLButtonElement>(null)
 
-  const { llmModels, getLLMModels } = useSnapshot(appInfoStore)
+  const { llmModels, llmRouters, getLLMModels } = useSnapshot(appInfoStore)
   const { currentChat, updateChat } = useSnapshot(chatsStore) as typeof chatsStore
 
   useEffect(() => {
@@ -148,8 +149,12 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
 
   const selectedModel = useMemo(() => {
     if (!currentChat?.llmModel) return null
-    return llmModels.find((m) => m.value === currentChat.llmModel) ?? null
-  }, [currentChat?.llmModel, llmModels])
+    return (
+      llmModels.find((m) => m.value === currentChat.llmModel) ??
+      llmRouters.find((r) => r.value === currentChat.llmModel) ??
+      null
+    )
+  }, [currentChat?.llmModel, llmModels, llmRouters])
 
   const filteredModels = useMemo(() => {
     if (!search.trim()) return llmModels
@@ -157,19 +162,37 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     return llmModels.filter((m) => m.label.toLowerCase().includes(q))
   }, [llmModels, search])
 
+  const filteredRouters = useMemo(() => {
+    if (!search.trim()) return llmRouters
+    const q = search.toLowerCase()
+    return llmRouters.filter((r) => r.label.toLowerCase().includes(q))
+  }, [llmRouters, search])
+
+  // Grouped layout (Default / Routers / Models, with the recommended model as
+  // the Models section's first row) only kicks in once this deployment has at
+  // least one router — with none, the list stays exactly the old flat shape
+  // (Default, Recommended, then every model), unchanged.
+  const isGrouped = llmRouters.length > 0
+
   const items = useMemo<ComboboxItem<LlmValue>[]>(() => {
     const list: ComboboxItem<LlmValue>[] = []
     if (!search) {
       list.push({ id: OPTION_ID_DEFAULT, value: ASSISTANT_DEFAULT_VALUE })
-      if (defaultModel) {
+      if (!isGrouped && defaultModel) {
         list.push({ id: OPTION_ID_RECOMMENDED, value: defaultModel.value })
       }
+    }
+    filteredRouters.forEach((r) => {
+      list.push({ id: optionIdForRouter(r.value), value: r.value })
+    })
+    if (isGrouped && !search && defaultModel) {
+      list.push({ id: OPTION_ID_RECOMMENDED, value: defaultModel.value })
     }
     filteredModels.forEach((m) => {
       list.push({ id: optionIdForModel(m.value), value: m.value })
     })
     return list
-  }, [search, defaultModel, filteredModels])
+  }, [search, defaultModel, filteredRouters, filteredModels, isGrouped])
 
   const isDefaultSelected = !currentChat?.llmModel
 
@@ -224,9 +247,36 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
   )
 
   const renderSeparatorBefore = (item: ComboboxItem<LlmValue>) => {
-    if (item.id === OPTION_ID_RECOMMENDED) {
-      return <div className="mx-3 my-1 border-t border-border-secondary" />
+    if (!isGrouped) {
+      if (item.id === OPTION_ID_RECOMMENDED) {
+        return <div className="mx-3 my-1 border-t border-border-secondary" />
+      }
+      return null
     }
+
+    if (filteredRouters.length > 0 && item.id === optionIdForRouter(filteredRouters[0].value)) {
+      return (
+        <div className="px-3 pt-2 pb-1 text-xs font-medium text-text-quaternary uppercase">
+          Routers
+        </div>
+      )
+    }
+
+    let firstModelsSectionItemId: string | null = null
+    if (!search && defaultModel) {
+      firstModelsSectionItemId = OPTION_ID_RECOMMENDED
+    } else if (filteredModels.length > 0) {
+      firstModelsSectionItemId = optionIdForModel(filteredModels[0].value)
+    }
+
+    if (firstModelsSectionItemId && item.id === firstModelsSectionItemId) {
+      return (
+        <div className="px-3 pt-2 pb-1 text-xs font-medium text-text-quaternary uppercase">
+          Models
+        </div>
+      )
+    }
+
     return null
   }
 
@@ -246,6 +296,16 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
           label={defaultModel.label}
           recommended
           isPremium={defaultModel.isPremium ?? false}
+          selected={state.selected}
+        />
+      )
+    }
+    const router = llmRouters.find((r) => r.value === item.value)
+    if (router) {
+      return (
+        <ModelOptionRow
+          label={router.label}
+          isPremium={router.isPremium ?? false}
           selected={state.selected}
         />
       )

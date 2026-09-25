@@ -18,11 +18,11 @@ import { useSnapshot } from 'valtio'
 import { appInfoStore } from '@/store/appInfo'
 import { chatsStore } from '@/store/chats'
 import { premiumModelTipStore } from '@/store/premiumModelTip'
-import type { ModelOption } from '@/types/entity/configuration'
+import type { LLMRouterOption, ModelOption } from '@/types/entity/configuration'
 
 interface PremiumModelTipState {
-  /** The model actually driving this conversation, or null while unresolved. */
-  effectiveModel: ModelOption | null
+  /** The model (or router) actually driving this conversation, or null while unresolved. */
+  effectiveModel: ModelOption | LLMRouterOption | null
   isPremiumActive: boolean
   /** `${chatId}:${modelValue}` — null until both parts are known. */
   tipKey: string | null
@@ -40,11 +40,13 @@ interface PremiumModelTipState {
  */
 export const usePremiumModelTip = (): PremiumModelTipState => {
   const { currentChat } = useSnapshot(chatsStore)
-  const { llmModels } = useSnapshot(appInfoStore)
+  const { llmModels, llmRouters } = useSnapshot(appInfoStore)
   const { dismissedKeys } = useSnapshot(premiumModelTipStore)
 
   const effectiveModel = currentChat?.llmModel
-    ? llmModels.find((model) => model.value === currentChat.llmModel) ?? null
+    ? llmModels.find((model) => model.value === currentChat.llmModel) ??
+      llmRouters.find((router) => router.value === currentChat.llmModel) ??
+      null
     : null
   const isPremiumActive = effectiveModel?.isPremium ?? false
   const tipKey = premiumModelTipStore.buildKey(currentChat?.id, effectiveModel?.value)
@@ -55,7 +57,7 @@ export const usePremiumModelTip = (): PremiumModelTipState => {
   const tipIsVisible = isPremiumActive && tipKey !== null && !isDismissed
 
   return {
-    effectiveModel: effectiveModel as ModelOption | null,
+    effectiveModel: effectiveModel as ModelOption | LLMRouterOption | null,
     isPremiumActive,
     tipKey,
     tipIsVisible,

@@ -463,6 +463,78 @@ describe('appInfoStore.getLLMModels', () => {
   })
 })
 
+describe('appInfoStore.getLLMModels routers', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    appInfoStore.llmModels = []
+    appInfoStore.llmRouters = []
+  })
+
+  it('splits router entries into llmRouters and excludes them from llmModels', async () => {
+    mockGet.mockResolvedValue(
+      okResponse([
+        {
+          base_name: 'gpt-4o',
+          label: 'GPT-4o',
+          default: true,
+          provider: 'azure_openai',
+          features: { tools: true },
+        },
+        {
+          base_name: 'smart-router',
+          label: 'Smart Router',
+          is_router: true,
+          provider: 'azure_openai',
+          is_premium: true,
+          multimodal: false,
+          supports_tools: true,
+          router_type: 'switchyard',
+          strategy: 'classifier',
+          classifier_model: 'gpt-5-mini',
+          tiers: {
+            simple: { model: 'gpt-5-mini', label: 'GPT-5 mini' },
+            medium: { model: 'gpt-5', label: 'GPT-5' },
+            complex: { model: 'gpt-5', label: 'GPT-5' },
+            reasoning: { model: 'gpt-5-pro', label: 'GPT-5 Pro' },
+          },
+        },
+      ])
+    )
+
+    await appInfoStore.getLLMModels()
+
+    expect(appInfoStore.llmModels).toHaveLength(1)
+    expect(appInfoStore.llmModels[0].value).toBe('gpt-4o')
+
+    expect(appInfoStore.llmRouters).toHaveLength(1)
+    expect(appInfoStore.llmRouters[0]).toEqual({
+      value: 'smart-router',
+      label: 'Smart Router',
+      provider: 'azure_openai',
+      isPremium: true,
+      multimodal: false,
+      supportsTools: true,
+      routerType: 'switchyard',
+      strategy: 'classifier',
+      classifierModel: 'gpt-5-mini',
+      tiers: {
+        simple: { model: 'gpt-5-mini', label: 'GPT-5 mini' },
+        medium: { model: 'gpt-5', label: 'GPT-5' },
+        complex: { model: 'gpt-5', label: 'GPT-5' },
+        reasoning: { model: 'gpt-5-pro', label: 'GPT-5 Pro' },
+      },
+    })
+  })
+
+  it('returns an empty llmRouters array when the response has no router entries', async () => {
+    mockGet.mockResolvedValue(okResponse([{ base_name: 'gpt-4o', label: 'GPT-4o', default: true }]))
+
+    await appInfoStore.getLLMModels()
+
+    expect(appInfoStore.llmRouters).toEqual([])
+  })
+})
+
 describe('appInfoStore customer config refetch', () => {
   beforeEach(() => {
     vi.clearAllMocks()

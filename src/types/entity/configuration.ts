@@ -49,6 +49,32 @@ export interface ModelOption {
   cost?: { input: number; output: number }
 }
 
+export interface RouterTierModel {
+  model: string
+  label?: string
+}
+
+export interface RouterTiers {
+  simple: RouterTierModel
+  medium: RouterTierModel
+  complex: RouterTierModel
+  reasoning: RouterTierModel
+}
+
+export interface LLMRouterOption {
+  value: string
+  label: string
+  isDefault?: boolean
+  isPremium?: boolean
+  provider?: string
+  multimodal?: boolean
+  supportsTools?: boolean
+  routerType?: string
+  strategy?: string
+  classifierModel?: string
+  tiers: RouterTiers
+}
+
 export interface SpeechConfig {
   [key: string]: any
 }
