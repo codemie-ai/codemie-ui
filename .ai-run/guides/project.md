@@ -43,5 +43,15 @@
 ## Complexity Scoring
 
 **Status**: configured
-**Field**: Total Score
-**Format**: numeric
+**Field**: Labels
+**Format**: t-shirt
+
+## Lifecycle Intent Handling
+
+### record_complexity_score
+Via the `codemie-jira-assistant` skill, add a complexity label to the ticket with the size from `data.complexity_size` (XS–XXL, as-is):
+`initial` → `sdlc-factory-est-<SIZE>`, `actual` → `sdlc-factory-act-<SIZE>`. Add only — never remove or change existing labels, so an `sdlc-standard` ticket ends with both labels.
+Ticket ID: from the branch name (`EPMCDME-\d+`) or the run work item.
+
+### get_field
+For `Labels`: always return `field_value: null` — complexity labels are additive, there is nothing to overwrite.
