@@ -138,6 +138,23 @@ A suite that fails to import adds nothing to the test counter, so a broken envir
 higher passing count than a healthy one. Quote the `Test Files` line. A gate that could not run is
 unverified, not passed.
 
+**When the user reports tests failing in CI but passing locally** (or pastes a CI
+`test:coverage` log):
+
+1. Take the failing tests from the `FAIL` lines at the end of the log.
+2. If the error is `Test timed out in 5000ms` — often followed on the retry by "Found multiple
+   elements" — run only that file with coverage:
+   `npx vitest run --coverage --project <unit|integration> <path>`.
+3. Passes locally → it is coverage overhead in CI. Raise `CI_COVERAGE_TEST_TIMEOUT_MS` in
+   `vitest.workspace.ts`; do not rewrite the test.
+4. Fails locally, fails on every CI run, or fails on an assertion rather than a timeout →
+   the timeout is not the cause. Debug it; a common cause is a mock changed with
+   `mockReturnValue` inside a test instead of reset in `beforeEach`.
+
+The worker cap (`maxWorkers` in `vite.config.ts`), the unit-only coverage pass and the timeout
+are explained in `README.md` § Test workers and timeouts. Do not remove the cap to speed up a
+local run — pass `--maxWorkers` on the command line instead.
+
 ## Boundaries
 
 **Always**

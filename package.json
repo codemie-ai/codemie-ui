@@ -12,7 +12,7 @@
     "test:integration": "vitest run --project integration",
     "test:unit:slnt": "vitest run --project unit --silent",
     "test:integration:slnt": "vitest run --project integration --silent",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --project unit && vitest run --project integration",
     "preview": "vite preview",
     "format": "prettier --write src/ && npm run lint:fix",
     "react-format": "prettier --write src/react",

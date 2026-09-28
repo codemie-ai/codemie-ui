@@ -25,6 +25,12 @@ import { defineWorkspace, configDefaults } from 'vitest/config'
 // Run unit only:   vitest run --project unit
 // Run integration: vitest run --project integration
 
+// CI runs with istanbul coverage (~3× per-test overhead). Heavy tests — a cold dynamic page
+// import in unit, React 19 event work in integration — exceed the 5 000 ms default there while
+// finishing in ~1 s locally. A timed-out body keeps running and leaks a second render into the
+// retry ("Found multiple elements"). If a test fails only in CI with a timeout, raise this value.
+const CI_COVERAGE_TEST_TIMEOUT_MS = 30000
+
 export default defineWorkspace([
   {
     extends: './vite.config.ts',
@@ -34,6 +40,7 @@ export default defineWorkspace([
       include: ['**/__tests__/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
       exclude: [...configDefaults.exclude, '**/__tests__/**/*.integration.test.*'],
       setupFiles: ['./src/setupTests', './src/setupTests.unit'],
+      testTimeout: CI_COVERAGE_TEST_TIMEOUT_MS,
     },
     server: {
       ws: false,
@@ -47,10 +54,8 @@ export default defineWorkspace([
       environment: './vitest-env-integration.ts',
       include: ['**/__tests__/**/*.integration.test.?(c|m)[jt]s?(x)'],
       setupFiles: ['./src/setupTests', './src/setupTests.integration'],
-      // Integration tests run with coverage instrumentation in CI (~3× per-test overhead);
-      // React 19 event work pushes the heaviest interaction tests past 15 000 ms there,
-      // while they finish in ~1 s locally. asyncUtilTimeout stays 15 000 ms per wait.
-      testTimeout: 30000,
+      // asyncUtilTimeout stays 15 000 ms per wait.
+      testTimeout: CI_COVERAGE_TEST_TIMEOUT_MS,
     },
     server: {
       ws: false,

@@ -91,6 +91,11 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       globals: true,
       retry: 1,
+      // Vitest sizes its pool from os.availableParallelism(), which in a CI container reports the
+      // whole node's cores, not the pod's 2-CPU request — it spawned dozens of jsdom+coverage
+      // workers that starved each other. Cap it here; `--maxWorkers` on the CLI still overrides.
+      maxWorkers: 3,
+      minWorkers: 1,
       coverage: {
         provider: 'istanbul',
         reporter: ['text', 'lcov', 'html'],

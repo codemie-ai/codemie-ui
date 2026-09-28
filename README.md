@@ -129,9 +129,25 @@ npm test                     # Run all tests (unit + integration)
 npm run test:unit            # Unit tests only
 npm run test:integration     # Integration tests only
 npm test -- --watch          # Watch mode
-npm run test:coverage        # With coverage report
+npm run test:coverage        # Unit with coverage, then integration without coverage
 npm run sonar-local          # Run shared local SonarQube check
 ```
+
+### Test workers and timeouts
+
+- **Workers are capped at 3** (`maxWorkers` in `vite.config.ts`). Vitest sizes its pool from
+  the host's cores, and the CI pod only requests 2 CPUs — an uncapped run spawned dozens of
+  jsdom workers that starved each other. The cap applies to both `unit` and `integration`,
+  since a workspace shares one pool.
+- **Locally the cap is 3 too**, so a full run on a many-core machine is slower. Override it
+  per run: `npx vitest run --maxWorkers=8`.
+- **3 is an estimate from the pod resources, not a measurement.** Tune it by the CI step
+  duration; raise it if the pod gets more CPU.
+- **`test:coverage` collects coverage from unit tests only.** Integration tests run in a
+  separate pass without instrumentation, which is ~3× faster.
+- **Test timeout is 30 s** (`CI_COVERAGE_TEST_TIMEOUT_MS` in `vitest.workspace.ts`) to absorb
+  coverage overhead in CI. A test that times out only in CI is not a code bug — see
+  `AGENTS.md` § Reading gate output.
 
 ### Sanity UI suite (CodeMie test harness)
 
