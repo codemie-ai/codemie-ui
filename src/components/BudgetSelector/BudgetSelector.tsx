@@ -20,7 +20,7 @@ import { forwardRef, useEffect, useState } from 'react'
 import MultiSelect from '@/components/form/MultiSelect'
 import { budgetsStore } from '@/store/budgets'
 
-import { MultiSelectSize } from '../form/MultiSelect/MultiSelect'
+import { MultiSelectSize, type SelectPanelSize } from '../form/MultiSelect/MultiSelect'
 
 interface BudgetSelectorProps {
   value?: string | string[] | null
@@ -34,6 +34,7 @@ interface BudgetSelectorProps {
   selectDefault?: boolean
   error?: string
   size?: MultiSelectSize | `${MultiSelectSize}`
+  panelSize?: SelectPanelSize
 }
 
 const BudgetSelector = forwardRef<PrimeMultiselect, BudgetSelectorProps>(
@@ -50,6 +51,7 @@ const BudgetSelector = forwardRef<PrimeMultiselect, BudgetSelectorProps>(
       selectDefault = true,
       error,
       size = 'medium',
+      panelSize,
     },
     ref
   ) => {
@@ -115,6 +117,7 @@ const BudgetSelector = forwardRef<PrimeMultiselect, BudgetSelectorProps>(
         showCheckbox={multiple}
         singleValue={!multiple}
         error={error}
+        panelSize={panelSize}
         ref={ref}
       />
     )

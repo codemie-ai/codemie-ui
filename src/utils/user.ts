@@ -54,7 +54,9 @@ export const prioritizeName = (name: string): number => {
  * Formats user options with smart name selection
  * Groups users by ID and creates labels with the best name first
  */
-export const formatUserOptions = (users: any[]): Array<{ label: string; value: string }> => {
+export const formatUserOptions = (
+  users: any[]
+): Array<{ label: string; value: string; email?: string }> => {
   // Group users by ID and merge names
   const userMap = new Map<string, string[]>()
 
@@ -93,9 +95,13 @@ export const formatUserOptions = (users: any[]): Array<{ label: string; value: s
     // Create label with the best name first, others in parentheses
     const label = names.length > 1 ? `${names[0]} (${names.slice(1).join(', ')})` : names[0]
 
+    // Pick the first non-empty email from all entries for this user id
+    const email = users.find((u: any) => u.id === id && u.email)?.email as string | undefined
+
     return {
       label,
       value: id,
+      ...(email ? { email } : {}),
     }
   })
 }

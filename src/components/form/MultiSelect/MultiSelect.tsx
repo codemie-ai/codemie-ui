@@ -83,6 +83,9 @@ export enum MultiSelectSize {
   MEDIUM = 'medium',
 }
 
+/** Semantic width of the overlay panel: 'default' follows the input width, 'md' is a fixed 320px. */
+export type SelectPanelSize = 'default' | 'md'
+
 export type MultiSelectOptionType = Record<
   string,
   string | boolean | undefined | { label: string; value: string | number | boolean }
@@ -134,7 +137,7 @@ export type MultiSelectProps = {
   virtualScrollerOptions?: VirtualScrollerProps
   hasVirtualScroll?: boolean
   onScrollBottom?: () => void
-  panelSize?: 'default' | 'md'
+  panelSize?: SelectPanelSize
   preserveOptionOrder?: boolean
   serverSideFilter?: boolean
   // Extra content rendered inside the dropdown panel, directly below the search box.

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Fix analytics Users filter to search by email and display name+email in item template (EPMCDME-14070); fix administration filter dropdown widths to 320px (EPMCDME-14078)",
+  "generated": "2026-08-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 4, "label": "L" }
+  },
+  "total": 17,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two-repo, two-ticket bundle: backend touches UserListItem Pydantic model (analytics.py) and UserHandler.get_users_list (user_handler.py); frontend touches userStore.getAnalyticsUsers (store/user.ts), formatUserOptions (utils/user.ts), AnalyticsUserFilter.tsx (renderOption template), ActivityEventsPage.tsx, and UsersManagementFilters.tsx — 7+ components across two codebases"
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Four distinct layers in the data flow: API-response-model (Pydantic UserListItem), Service handler (user_handler.py PG path), UI Store/Utility (store/user.ts + utils/user.ts), and UI Components (AnalyticsUserFilter + two admin pages) — full vertical slice from backend model to rendered template"
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Both tickets are concrete and specific (exact width target 320px, exact UI pattern name+email), but two minor ambiguities remain: whether client-side MultiSelect filterBy must include email for non-admin paths, and whether BudgetsManagementPage.tsx Category filter is in scope for EPMCDME-14078"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

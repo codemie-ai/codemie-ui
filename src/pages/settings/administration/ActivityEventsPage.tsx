@@ -291,6 +291,7 @@ const ActivityEventsPage: FC = () => {
               onChange={(e) => setDomain(e.value ?? [])}
               placeholder="All domains"
               showCheckbox
+              panelSize="md"
             />
           </div>
           <div className="w-52">
@@ -301,6 +302,7 @@ const ActivityEventsPage: FC = () => {
               onChange={(e) => setEventType(e.value ?? [])}
               placeholder="All events"
               showCheckbox
+              panelSize="md"
             />
           </div>
           <div className="w-44">
@@ -311,6 +313,7 @@ const ActivityEventsPage: FC = () => {
               onChange={(e) => setEntityType(e.value ?? [])}
               placeholder="All entity types"
               showCheckbox
+              panelSize="md"
             />
           </div>
           <div className="w-52">

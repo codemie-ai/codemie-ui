@@ -23,7 +23,7 @@ import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
 import { userStore } from '@/store/user'
 import { formatProjectLabel } from '@/utils/projectDisplayName'
 
-import { MultiSelectSize } from '../form/MultiSelect/MultiSelect'
+import { MultiSelectSize, type SelectPanelSize } from '../form/MultiSelect/MultiSelect'
 
 const PROJECT_SEARCH_DEBOUNCE_MS = 300
 
@@ -40,6 +40,7 @@ interface ProjectSelectorProps {
   selectDefault?: boolean
   error?: string
   size?: MultiSelectSize | `${MultiSelectSize}`
+  panelSize?: SelectPanelSize
 }
 
 const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
@@ -57,6 +58,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
       selectDefault = true,
       error,
       size = 'medium',
+      panelSize,
     },
     ref
   ) => {
@@ -157,6 +159,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
         showCheckbox={multiple}
         singleValue={!multiple}
         error={error}
+        panelSize={panelSize}
         ref={ref}
       />
     )

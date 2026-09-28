@@ -116,6 +116,7 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
           value={localFilters.projects ?? []}
           onChange={handleProjectsChange}
           size="small"
+          panelSize="md"
         />
       </div>
 
@@ -128,6 +129,7 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
             value={localFilters.budgets ?? []}
             onChange={handleBudgetsChange}
             size="small"
+            panelSize="md"
           />
         </div>
       )}

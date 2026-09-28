@@ -1,0 +1,86 @@
+{
+  "task": "Fix analytics Users filter to show email in dropdown items and support email search (EPMCDME-14070); fix administration filter dropdown panel width to 320px via new panelSize semantic prop on MultiSelect (EPMCDME-14078).",
+  "generated": "2026-08-12T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L",
+      "affected": "MultiSelect (shared UI primitive), BudgetSelector, ProjectSelector, AnalyticsUserFilter, ActivityEventsPage, UsersManagementFilters, user utility",
+      "layers": "UI/Component, Page/Feature, Utility"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Core shared MultiSelect component modified — broad consumer surface; additive-only change mitigates blast radius",
+      "mitigation": "New panelSize prop is optional with no breaking changes to existing consumers; existing pattern of panelStyle extension used"
+    },
+    "file_change_estimate": {
+      "score": 5,
+      "label": "XL",
+      "modified_files": 6,
+      "modified_file_list": [
+        "src/components/BudgetSelector/BudgetSelector.tsx",
+        "src/components/ProjectSelector/ProjectSelector.tsx",
+        "src/components/form/MultiSelect/MultiSelect.tsx",
+        "src/pages/analytics/components/AnalyticsUserFilter.tsx",
+        "src/pages/settings/administration/ActivityEventsPage.tsx",
+        "src/pages/settings/administration/usersManagement/components/UsersManagementFilters.tsx",
+        "src/utils/user.ts"
+      ],
+      "new_files": 1,
+      "new_file_list": [
+        "src/utils/__tests__/user.test.ts"
+      ],
+      "affected_dirs": [
+        "src/components/BudgetSelector",
+        "src/components/ProjectSelector",
+        "src/components/form/MultiSelect",
+        "src/pages/analytics/components",
+        "src/pages/settings/administration",
+        "src/utils"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M",
+      "layers_changed": [
+        "UI/Component",
+        "Page/Feature",
+        "Utility"
+      ],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 17,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 15,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Scored L (4): change originates in the core shared MultiSelect component (broad app-wide consumer surface) and fans out to two selector components, two administration pages, an analytics filter, and a utility module — 7 touch points across 3 layers. Red flag applied: touches core shared utility component."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Scored XL (5): diffstat reports 15 files changed total, which falls in the 11-15 range. Of the 8 explicitly provided files, 7 were modified and 1 is a new test file; the remaining 7 files from the diffstat are likely generated or adjacent files not supplied in changed_files."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M (3) to L (4): touches core shared MultiSelect component used across the entire application"
+  ],
+  "split_recommendation": null
+}

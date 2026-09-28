@@ -22,12 +22,14 @@ import { userStore } from '@/store/user'
 
 import type { MultiSelectChangeEvent } from 'primereact/multiselect'
 
+type UserOption = { label: string; value: string; email?: string }
+
 const SERVER_MATCH_FIELD = 'serverMatchedSearch'
 
 interface AnalyticsUserFilterProps {
   value: string[]
   onChange: (value: string[]) => void
-  userOptions: Array<{ label: string; value: string }>
+  userOptions: Array<UserOption>
   isLoadingOptions?: boolean
   isAdmin?: boolean
   showMeCheckbox?: boolean
@@ -39,6 +41,15 @@ interface AnalyticsUserFilterProps {
    *  pre-selected users remain visible even before `userOptions` is loaded. */
   initialStickyOptions?: Array<{ label: string; value: string }>
 }
+
+const renderUserOption = (option: UserOption) => (
+  <div className="flex flex-col min-w-0">
+    <p className="text-sm font-medium truncate">{option.label}</p>
+    <p className={`text-xs truncate ${option.email ? 'text-text-quaternary' : 'invisible'}`}>
+      {option.email ?? ' '}
+    </p>
+  </div>
+)
 
 const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   value,
@@ -55,7 +66,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   const [currentUserId, setCurrentUserId] = useState<string>('')
 
   const prevCurrentUserIdRef = useRef<string>('')
-  const currentUserOptionRef = useRef<{ label: string; value: string } | null>(null)
+  const currentUserOptionRef = useRef<UserOption | null>(null)
 
   // Find current user ID from available options
   useEffect(() => {
@@ -121,9 +132,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   }, [value, currentUserId, meChecked, userOptions])
 
   // Accumulate option objects for selected users so they persist across search changes
-  const [stickyOptions, setStickyOptions] = useState<Map<string, { label: string; value: string }>>(
-    new Map()
-  )
+  const [stickyOptions, setStickyOptions] = useState<Map<string, UserOption>>(new Map())
 
   // Seed sticky options whenever the initialStickyOptions prop changes so that
   // pre-selected users render with labels even when the options arrive after mount
@@ -230,7 +239,9 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
         filterPlaceholder="Search users"
         showCheckbox
         hasVirtualScroll
-        virtualScrollerOptions={{ itemSize: 32 }}
+        virtualScrollerOptions={{ itemSize: 48 }}
+        renderOption={renderUserOption}
+        panelSize="md"
         filterBy={`label,${SERVER_MATCH_FIELD}`}
       />
     </div>

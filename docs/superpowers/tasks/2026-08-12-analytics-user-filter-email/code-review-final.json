@@ -1,0 +1,40 @@
+{
+  "decision": "request-changes",
+  "rationale": "One major finding: the virtual scroller uses a fixed itemSize of 48px but rows with no email are single-line (~28px) while rows with email are two-line (~44px). Mixed lists will have scroll-height miscalculation causing items to overlap or be unreachable. Fix by making all rows the same height regardless of email presence (e.g. an invisible placeholder on the email line when absent). All 14 acceptance criteria pass; blind lens found no issues; two deferred items (O(n×m) email scan and sticky-cache staleness) are pre-existing patterns with no user-visible bug at current scale.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "14070-1: Backend UserListItem.email field added", "status": "na", "notes": "Backend in separate codemie repo — confirmed by spec summary, not in this diff" },
+    { "criterion": "14070-2: PG handler includes u.email in response dict", "status": "na", "notes": "Backend in separate codemie repo — confirmed by spec summary" },
+    { "criterion": "14070-3: formatUserOptions returns email? — picks first non-null for grouped users", "status": "pass", "notes": "user.ts line 99 correctly picks first truthy email via find; spread is conditional" },
+    { "criterion": "14070-4: Item renders name on top, email below (smaller, dimmed) — email row only when present", "status": "pass", "notes": "renderUserOption: text-sm/font-medium for name; text-xs/text-text-quaternary for email; gated by option.email &&" },
+    { "criterion": "14070-5: itemSize updated from 32 to 48", "status": "pass", "notes": "virtualScrollerOptions={{ itemSize: 48 }} — but see CR-001 for height mismatch concern" },
+    { "criterion": "14070-6: Email guard — null/undefined renders gracefully", "status": "pass", "notes": "option.email && guard prevents null/undefined/empty from rendering" },
+    { "criterion": "14070-7: ES path compatibility — email None does not break anything", "status": "pass", "notes": "Truthy guard in formatUserOptions and item template both handle null/undefined safely" },
+    { "criterion": "14078-1: MultiSelect panelMinWidth?: number prop added", "status": "pass", "notes": "MultiSelect.tsx line 116 type, line 155 destructure" },
+    { "criterion": "14078-2: panelStyle sets minWidth when panelMinWidth provided, independent of width", "status": "pass", "notes": "IIFE builds style object with both conditions independent" },
+    { "criterion": "14078-3: ProjectSelector forwards panelMinWidth", "status": "pass", "notes": "Interface, destructure, and pass-through all present" },
+    { "criterion": "14078-4: BudgetSelector forwards panelMinWidth", "status": "pass", "notes": "Interface, destructure, and pass-through all present" },
+    { "criterion": "14078-5: Domain/Event type/Entity type get panelMinWidth={320}", "status": "pass", "notes": "All three MultiSelects in ActivityEventsPage.tsx updated" },
+    { "criterion": "14078-6: Project/Budget selectors get panelMinWidth={320}", "status": "pass", "notes": "Both components in UsersManagementFilters.tsx updated" },
+    { "criterion": "14078-7: Container div widths unchanged", "status": "pass", "notes": "w-44/w-48/w-52 container classes not touched" }
+  ],
+  "standards_review": [
+    { "standard": "Commit message format: EPMCDME-XXXX: Capital sentence", "status": "pass", "notes": "All 6 commits follow the format" },
+    { "standard": "No --no-verify skips", "status": "pass", "notes": "No evidence of hook bypass" },
+    { "standard": "ESLint no-nested-ternary", "status": "pass", "notes": "panelStyle implemented via IIFE to avoid nested ternary — compliant" },
+    { "standard": "License headers on new files", "status": "pass", "notes": "user.test.ts carries Apache 2.0 header" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/analytics/components/AnalyticsUserFilter.tsx",
+      "line": 214,
+      "problem": "virtualScrollerOptions.itemSize is set to 48 for all rows, but rows without email are single-line (~28px rendered height) while rows with email are two-line (~44px). With a mixed user list, the virtual scroller's scroll-height calculation will be wrong, causing items to overlap or become unreachable at the bottom of the list.",
+      "impact": "Users at the bottom of the dropdown list may be visually cut off or inaccessible when the list contains a mix of users with and without email addresses — the common case since the ES path returns no email.",
+      "recommendation": "Make all rows the same fixed height regardless of email presence. Simplest fix: always render the email line but hide it when absent using CSS visibility: render `<p className=\"text-xs text-text-quaternary truncate invisible\">{option.email || '\\u00A0'}</p>` when email is falsy, so the row height is constant at 48px whether email is present or not."
+    }
+  ]
+}
