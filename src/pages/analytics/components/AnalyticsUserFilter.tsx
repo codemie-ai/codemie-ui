@@ -22,6 +22,8 @@ import { userStore } from '@/store/user'
 
 import type { MultiSelectChangeEvent } from 'primereact/multiselect'
 
+const SERVER_MATCH_FIELD = 'serverMatchedSearch'
+
 interface AnalyticsUserFilterProps {
   value: string[]
   onChange: (value: string[]) => void
@@ -30,6 +32,9 @@ interface AnalyticsUserFilterProps {
   isAdmin?: boolean
   showMeCheckbox?: boolean
   onSearchChange?: (term: string) => void
+  /** Search term the server matched `userOptions` against (e.g. by email); those options stay
+   *  visible for any typed term it contains, everything else is filtered by label. */
+  optionsSearchTerm?: string
   /** Seed options that are merged into the sticky cache on mount so that
    *  pre-selected users remain visible even before `userOptions` is loaded. */
   initialStickyOptions?: Array<{ label: string; value: string }>
@@ -42,6 +47,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   isAdmin = false,
   showMeCheckbox = false,
   onSearchChange = () => {},
+  optionsSearchTerm = '',
   initialStickyOptions,
 }) => {
   const [meChecked, setMeChecked] = useState(false)
@@ -147,8 +153,12 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
   const mergedOptions = useMemo(() => {
     const currentIds = new Set(userOptions.map((o) => o.value))
     const extras = [...stickyOptions.values()].filter((o) => !currentIds.has(o.value))
-    return extras.length === 0 ? userOptions : [...userOptions, ...extras]
-  }, [userOptions, stickyOptions])
+    const current =
+      isAdmin && optionsSearchTerm
+        ? userOptions.map((o) => ({ ...o, [SERVER_MATCH_FIELD]: optionsSearchTerm }))
+        : userOptions
+    return extras.length === 0 ? current : [...current, ...extras]
+  }, [userOptions, stickyOptions, isAdmin, optionsSearchTerm])
 
   // Only show IDs that have a known option — prevents null labels for users
   // whose options haven't been loaded in this session yet.
@@ -221,6 +231,7 @@ const AnalyticsUserFilter: FC<AnalyticsUserFilterProps> = ({
         showCheckbox
         hasVirtualScroll
         virtualScrollerOptions={{ itemSize: 32 }}
+        filterBy={`label,${SERVER_MATCH_FIELD}`}
       />
     </div>
   )

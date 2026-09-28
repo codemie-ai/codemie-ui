@@ -1,0 +1,1 @@
+{"ts":"2026-08-12T07:06:41.830Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","confidence":"high","source":"hitl","human_override":"approved-as-is"},"escalated":false,"prior_context":{"question":"Code review complete. Approve or request changes?","prior_orchestrator_verdict":{"decision":"request-changes","confidence":"medium","findings_count":1}}}

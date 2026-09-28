@@ -15,11 +15,13 @@
 
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { FilterService } from 'primereact/api'
+import { createElement, type ComponentProps } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import AnalyticsUserFilter from '../AnalyticsUserFilter'
 
-const { mockUserStore } = vi.hoisted(() => ({
+const { mockUserStore, multiSelectSpy } = vi.hoisted(() => ({
   mockUserStore: {
     user: {
       userId: 'user-123',
@@ -29,9 +31,23 @@ const { mockUserStore } = vi.hoisted(() => ({
       isMaintainer: false,
     },
   },
+  multiSelectSpy: vi.fn(),
 }))
 
 vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
+
+// Records the props AnalyticsUserFilter passes down while still rendering the real MultiSelect.
+vi.mock('@/components/form/MultiSelect', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/components/form/MultiSelect')>()
+  const Actual = actual.default
+  return {
+    ...actual,
+    default: (props: ComponentProps<typeof Actual>) => {
+      multiSelectSpy(props)
+      return createElement(Actual, props)
+    },
+  }
+})
 
 describe('AnalyticsUserFilter', () => {
   const mockOnChange = vi.fn()
@@ -334,6 +350,87 @@ describe('AnalyticsUserFilter', () => {
 
     const meCheckbox = screen.queryByLabelText('Me')
     expect(meCheckbox).not.toBeInTheDocument()
+  })
+
+  it('should pass onSearchChange as onFilter when isAdmin is true', async () => {
+    const user = userEvent.setup()
+    const onSearchChange = vi.fn()
+    const options = [{ label: 'Some User', value: 'user-abc' }]
+
+    render(
+      <AnalyticsUserFilter
+        value={[]}
+        onChange={mockOnChange}
+        userOptions={options}
+        isAdmin={true}
+        onSearchChange={onSearchChange}
+      />
+    )
+
+    // Open the dropdown so PrimeReact renders the filter input
+    const trigger = document.querySelector('[data-pc-name="multiselect"]') as HTMLElement
+    await user.click(trigger)
+
+    const filterInput = screen.getByPlaceholderText('Search users')
+    expect(filterInput).toBeInTheDocument()
+  })
+
+  describe('dropdown search filtering', () => {
+    const selectedUser = { label: 'Test User', value: 'user-123' }
+    const serverUser = { label: 'Kostiantyn Pshenychnyi1', value: 'user-abc' }
+
+    const renderFilter = (props: Partial<ComponentProps<typeof AnalyticsUserFilter>>) =>
+      render(
+        <AnalyticsUserFilter
+          value={[selectedUser.value]}
+          onChange={mockOnChange}
+          userOptions={[serverUser]}
+          initialStickyOptions={[selectedUser]}
+          onSearchChange={vi.fn()}
+          {...props}
+        />
+      )
+
+    const visibleFor = (term: string) => {
+      const { options, filterBy } = multiSelectSpy.mock.lastCall![0]
+      return FilterService.filter(
+        options,
+        filterBy.split(','),
+        term.toLocaleLowerCase(),
+        'contains'
+      ).map((o: { value: string }) => o.value)
+    }
+
+    beforeEach(() => {
+      multiSelectSpy.mockClear()
+    })
+
+    it('keeps server results that matched the search term on a field other than the label', () => {
+      renderFilter({ isAdmin: true, optionsSearchTerm: 'pshenych@' })
+
+      expect(visibleFor('pshenych@')).toEqual([serverUser.value])
+      expect(visibleFor('pshenych')).toEqual([serverUser.value])
+    })
+
+    it('hides selected users that match neither the server search nor the label', () => {
+      renderFilter({ isAdmin: true, userOptions: [], optionsSearchTerm: 'zzqq' })
+
+      expect(visibleFor('zzqq')).toEqual([])
+      expect(visibleFor('test')).toEqual([selectedUser.value])
+    })
+
+    it('filters by label while results for a longer term are still loading', () => {
+      renderFilter({ isAdmin: true, optionsSearchTerm: 'pshenych@' })
+
+      expect(visibleFor('pshenych@x')).toEqual([])
+      expect(visibleFor('kost')).toEqual([serverUser.value])
+    })
+
+    it('filters by label only for non-admins', () => {
+      renderFilter({ isAdmin: false, optionsSearchTerm: 'pshenych@' })
+
+      expect(visibleFor('pshenych@')).toEqual([])
+    })
   })
 
   it('renders a chip label for a preselected user provided via initialStickyOptions even when userOptions is empty', async () => {

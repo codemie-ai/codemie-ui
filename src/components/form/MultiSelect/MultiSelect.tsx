@@ -18,7 +18,7 @@ import {
   MultiSelect as PrimeMultiselect,
   MultiSelectChangeEvent,
   MultiSelectPassThroughOptions,
-  MultiSelectProps as PrimeMultiSelectProps,
+  type MultiSelectProps as PrimeMultiSelectProps,
 } from 'primereact/multiselect'
 import React, {
   useCallback,
@@ -124,6 +124,7 @@ export type MultiSelectProps = {
   scrollHeight?: string
   required?: boolean
   filterPlaceholder?: string
+  filterBy?: string
   emptyFilterMessage?: string
   emptyMessage?: string
   max?: number
@@ -170,6 +171,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       scrollHeight = '200px',
       required = false,
       filterPlaceholder,
+      filterBy,
       emptyFilterMessage,
       emptyMessage,
       max,
@@ -475,6 +477,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
                     }
                   : {})}
                 filterPlaceholder={filterPlaceholder ?? 'Search'}
+                filterBy={filterBy}
                 emptyFilterMessage={emptyFilterMessage}
                 emptyMessage={emptyMessage}
                 dropdownIcon={<ChevronDownSvg />}

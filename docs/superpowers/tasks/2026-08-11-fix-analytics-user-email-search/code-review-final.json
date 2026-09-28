@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "confidence": "high",
+  "human_override": "approved-as-is",
+  "rationale": "All acceptance criteria are fully met and the core fix is correct. One blocking issue: FilterService.register uses the generic key 'custom' which pollutes PrimeReact's global filter registry — any future consumer passing filterMatchMode='custom' would silently bypass filtering. Renaming to a collision-resistant key fixes this with a one-line change. One deferred test-isolation issue (spy not cleared between tests) is noted but not blocking.",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "onFilter callback contract unchanged — fires on every keystroke", "status": "met" },
+    { "criterion": "serverSideFilter prop is opt-in with false default — existing call sites unaffected", "status": "met" },
+    { "criterion": "Server-returned users survive PrimeReact client-side filter pass when serverSideFilter=true", "status": "met" },
+    { "criterion": "Searching by display name must still work — no regression (non-admin path)", "status": "met" },
+    { "criterion": "serverSideFilter={isAdmin} wired in AnalyticsUserFilter", "status": "met" },
+    { "criterion": "Test (a): serverSideFilter=true asserted when isAdmin=true", "status": "met" },
+    { "criterion": "Test (b): serverSideFilter=false asserted when isAdmin=false", "status": "met" }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "Commit message follows EPMCDME-14070: Capital sentence format" },
+    { "standard": "code-quality", "status": "pass", "notes": "No blocking quality violations; TypeScript cast is documented with a comment" },
+    { "standard": "security", "status": "pass", "notes": "No security concerns — filter bypass is intentional and opt-in only" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "file": "src/components/form/MultiSelect/MultiSelect.tsx",
+      "line": 49,
+      "severity": "major",
+      "problem": "FilterService.register('custom', () => true) uses the generic key 'custom', polluting PrimeReact's global filter registry for the entire application.",
+      "impact": "Any future MultiSelect consumer that passes filterMatchMode='custom' — whether by accident or copy-paste — will silently bypass all client-side filtering with no error or warning.",
+      "recommendation": "Rename the registered key to something collision-resistant, e.g. 'serverside-passthrough', and update the filterMatchMode cast accordingly. One-line change in MultiSelect.tsx."
+    },
+    {
+      "id": "CR-002",
+      "triage": "defer",
+      "file": "src/pages/analytics/components/__tests__/AnalyticsUserFilter.test.tsx",
+      "line": 54,
+      "severity": "minor",
+      "problem": "multiSelectSpy is not cleared in beforeEach — it accumulates calls across tests, making toHaveBeenCalledWith assertions potentially match stale calls from earlier renders.",
+      "impact": "The serverSideFilter tests could produce false positives if test execution order changes.",
+      "recommendation": "Add multiSelectSpy.mockClear() inside the beforeEach block alongside the existing mockOnChange.mockClear()."
+    }
+  ]
+}

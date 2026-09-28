@@ -34,5 +34,7 @@ export const TIME_PERIOD_OPTIONS = [
 
 export const ANALYTICS_DASHBOARDS_KEY = 'analytics-dashboard-list-key'
 
+export const MIN_USER_SEARCH_LENGTH = 2
+
 export const MAX_DASHBOARDS_LIMIT = 5
 export const DASHBOARD_LIMIT_MSG = `Dashboard limit reached (${MAX_DASHBOARDS_LIMIT}). Delete a dashboard to create a new one.`

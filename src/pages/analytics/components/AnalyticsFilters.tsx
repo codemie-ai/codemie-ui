@@ -30,7 +30,7 @@ import { userStore } from '@/store/user'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
 import AnalyticsUserFilter from './AnalyticsUserFilter'
-import { DEFAULT_FILTERS, TIME_PERIOD_OPTIONS } from '../constants'
+import { DEFAULT_FILTERS, MIN_USER_SEARCH_LENGTH, TIME_PERIOD_OPTIONS } from '../constants'
 
 import type { DropdownChangeEvent } from 'primereact/dropdown'
 
@@ -55,6 +55,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
   const showMeCheckbox = isAdmin || isMaintainer || isAuditor
   const isAdminSearch = (isAdmin || isAuditor) && isUserManagementEnabled
   const [userOptions, setUserOptions] = useState<Array<{ label: string; value: string }>>([])
+  const [userOptionsSearchTerm, setUserOptionsSearchTerm] = useState('')
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   const [localFilters, setLocalFilters] = useState<AnalyticsQueryParams>(filters)
   const hasSelectedProjects = (localFilters.projects?.length ?? 0) > 0
@@ -135,6 +136,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
       if (options === null) return
 
       setUserOptions(options)
+      setUserOptionsSearchTerm(searchTerm)
     } catch (error) {
       console.error('Error loading users:', error)
       setUserOptions([])
@@ -165,7 +167,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
   }, [])
 
   const debouncedLoadUsers = useCallback(() => {
-    if (userSearchTermRef.current.length >= 2) {
+    if (userSearchTermRef.current.length >= MIN_USER_SEARCH_LENGTH) {
       loadUsersRef.current().catch(console.error)
     }
   }, [])
@@ -303,6 +305,7 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
             isAdmin={isAdminPgSearch}
             showMeCheckbox={showMeCheckbox}
             onSearchChange={handleSearchChange}
+            optionsSearchTerm={userOptionsSearchTerm}
             initialStickyOptions={initialUserOptions}
           />
         </FilterAccordionItem>

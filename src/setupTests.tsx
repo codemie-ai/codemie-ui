@@ -92,6 +92,9 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
+Element.prototype.scrollTo = vi.fn() as unknown as Element['scrollTo']
+Element.prototype.scrollIntoView = vi.fn()
+
 // JSDOM doesn't implement URL.createObjectURL — needed for file-saver (saveAs) in download flows
 global.URL.createObjectURL = vi.fn()
 global.URL.revokeObjectURL = vi.fn()
