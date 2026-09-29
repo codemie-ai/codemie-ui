@@ -1,0 +1,1 @@
+{"task_id":"1","status":"done","commit":"0320121","test_command":"npx vitest run --project integration src/pages/assistants/__tests__/AssistantDetailsPage.integration.test.tsx"}

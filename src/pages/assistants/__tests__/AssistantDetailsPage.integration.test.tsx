@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { screen, waitFor, fireEvent } from '@testing-library/react'
+import { screen, waitFor, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
@@ -93,6 +93,53 @@ describe('AssistantDetailsPage - Integration', () => {
   })
 
   describe('Initial Page Load', () => {
+    it('renders conversation starters as a semantic list', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({
+          conversation_starters: ['Tell me a joke', 'Explain quantum physics'],
+        })
+      )
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      await waitFor(() => {
+        expect(screen.getByText('Conversation Starters:')).toBeInTheDocument()
+      })
+
+      const list = screen.getByRole('list', { name: /conversation starters/i })
+      const items = within(list).getAllByRole('listitem')
+      expect(items).toHaveLength(2)
+      expect(items[0]).toHaveTextContent('Tell me a joke')
+      expect(items[1]).toHaveTextContent('Explain quantum physics')
+    })
+
+    it('filters whitespace-only conversation starters', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({
+          conversation_starters: ['  ', 'Valid starter', ''],
+        })
+      )
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      await waitFor(() => {
+        expect(screen.getByText('Conversation Starters:')).toBeInTheDocument()
+      })
+
+      const list = screen.getByRole('list', { name: /conversation starters/i })
+      const items = within(list).getAllByRole('listitem')
+      expect(items).toHaveLength(1)
+      expect(items[0]).toHaveTextContent('Valid starter')
+    })
+
     it('loads and displays assistant name with Chat Now and Edit buttons', async () => {
       mockAPI('GET', 'v1/config', [])
       mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture())

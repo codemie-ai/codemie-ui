@@ -18,16 +18,22 @@ interface ConversationStartersProps {
 }
 
 const ConversationStarters = ({ items }: ConversationStartersProps) => {
-  if (!items?.length) return null
+  const visible = (items ?? []).filter((i) => !!i.trim())
+  if (!visible.length) return null
 
   return (
     <div className="flex flex-col gap-2">
       <h5 className="mb-1 text-xs font-bold">Conversation Starters:</h5>
-      {items.map((item) => (
-        <div className="w-fit rounded-lg rounded-br-sm px-4 py-2 text-xs bg-gradient1" key={item}>
-          {item}
-        </div>
-      ))}
+      <ul role="list" aria-label="Conversation starters" className="flex flex-col gap-2">
+        {visible.map((item, index) => (
+          <li
+            className="w-fit rounded-lg rounded-br-sm px-4 py-2 text-xs bg-gradient1"
+            key={`${index}-${item}`}
+          >
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

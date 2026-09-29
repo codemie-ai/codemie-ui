@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-8503_conversation-starters-semantic-list",
+  "head": "0320121a7b3591b3d99546d47b1f477b0cceae8f",
+  "runner": "npm",
+  "started_at": "2026-08-31T11:07:50.000Z",
+  "completed_at": "2026-08-31T11:35:00.000Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9800,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5100,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide skip condition met: no dependency added, removed, or moved (package.json not in branch diff)"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8900,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 324590,
+      "command": "npm run test:unit",
+      "exit_code": 1,
+      "notes": "8 test files failed, 21 tests failed. All failures are in src/pages/settings/administration/usersManagement/ and unrelated to this branch diff. Verified pre-existing: identical failure count (8 failed | 440 passed) reproduced on stash-reverted working tree (without branch working-copy changes). Root cause: system locale decimal separator is comma, tests expect period (e.g. '$120.50' rendered as '$120,50')."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 318030,
+      "command": "npm run test:integration",
+      "exit_code": 1,
+      "notes": "1 test file failed, 1 test failed. Failure in src/pages/settings/administration/__tests__/UsersManagementSpending.integration.test.tsx — same locale decimal-separator issue as unit failures; not in branch diff. Branch-changed integration test (AssistantDetailsPage.integration.test.tsx) passed."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 10200,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 800,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: 'Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN env var to enable locally; runs in CI pipeline."
+    }
+  ],
+  "failures": {
+    "unit": "Test Files  8 failed | 440 passed (448)\n      Tests  21 failed | 4713 passed (4734)\n   Duration  324.59s\n\nAll failing assertions match pattern: expected '$120.50 / $500.00' but found '$120,50 / $500,00'\nFailing file (representative): src/pages/settings/administration/usersManagement/components/__tests__/UserProjectSpendingTable.test.tsx:70\n  expect(screen.getByText('$120.50 / $500.00')).toBeInTheDocument()\n  Received element: <span class=\"whitespace-nowrap text-text-primary\">$120,50 / $500,00</span>\n\nPre-existing confirmation: stash-reverted run (without branch LF/CRLF working-copy changes) produced identical 8 failed | 440 passed result. None of the 8 failing files appear in the branch diff.",
+    "integration": "Test Files  1 failed | 36 passed (37)\n      Tests  1 failed | 489 passed | 1 skipped (491)\n   Duration  318.03s\n\nFailing file: src/pages/settings/administration/__tests__/UsersManagementSpending.integration.test.tsx:136\n  expect(screen.getByText('$120.50 / $500.00')).toBeInTheDocument()\n  Received element: <span>$120,50 / $500,00</span>\n\nSame locale decimal-separator root cause as unit failures. Not in branch diff. Branch-changed file AssistantDetailsPage.integration.test.tsx is in the 36 passed."
+  }
+}

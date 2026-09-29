@@ -1,0 +1,46 @@
+{
+  "decision": "request-changes",
+  "confidence": "low",
+  "rationale": "Edge-case lens found 3 patch findings: a test non-null assertion that hides real failures (CR-001), a missing whitespace filter that renders blank pills (CR-002), and a key-collision risk on duplicate item text (CR-003). No spec/story present — acceptance lens was never dispatched; confidence capped at low. 0 deferred, 0 dismissed.",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/__tests__/AssistantDetailsPage.integration.test.tsx",
+      "line": 113,
+      "title": "Non-null assertion hides closest div failure",
+      "problem": "The test uses `.closest('div')!` to obtain a container before querying the list role. If the component is restructured and the h5 moves outside a div ancestor, `closest('div')` returns null at runtime and `within(null)` throws a TypeError instead of a test-framework assertion failure.",
+      "impact": "A real semantic-list regression would surface as a confusing TypeError in CI rather than a legible failing assertion, obscuring which expectation broke and increasing debug time.",
+      "recommendation": "Query the list directly with `screen.getByRole('list')` — the list itself is the target — eliminating the null-asserted `closest('div')` intermediary and making the test self-explaining on failure."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantDetails/components/ConversationStarters.tsx",
+      "line": 21,
+      "title": "Whitespace-only items bypass empty guard and render blank pills",
+      "problem": "The early-return guard checks `!items?.length`, which is truthy for any non-empty array including `['   ']`. An array of whitespace-only strings passes the guard and each entry is rendered as a styled pill with no visible text.",
+      "impact": "Users see blank conversation-starter bubbles beneath the heading, degrading the usability of the semantic list this WCAG fix introduced and potentially confusing screen-reader users.",
+      "recommendation": "Filter before rendering: change the guard to `const visible = items?.filter(i => i.trim()); if (!visible?.length) return null` and map over `visible`, or inline `.filter(i => i.trim())` in the `.map()` chain."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantDetails/components/ConversationStarters.tsx",
+      "line": 28,
+      "title": "Duplicate item text produces React key collision",
+      "problem": "List items are keyed by their text content (`key={item}`). When two entries share identical text the rendered keys collide; React may silently drop or misassign one of the duplicate nodes during reconciliation.",
+      "impact": "If the backend sends duplicate conversation-starter strings, one entry may silently disappear from the rendered semantic list or item state may be misassigned, breaking both the visual output and the WCAG 1.3.1 list structure this change introduces.",
+      "recommendation": "Use the array index as a key component: `key={\\`${index}-${item}\\`` or simply `key={index}`, ensuring keys are always unique regardless of item content."
+    }
+  ]
+}

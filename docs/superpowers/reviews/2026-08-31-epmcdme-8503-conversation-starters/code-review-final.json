@@ -1,0 +1,85 @@
+{
+  "decision": "approved",
+  "rationale": "All findings resolved. CR-001: whitespace-filter test added. CR-002: container query updated to use role-based selector. CR-003: null guard added. CR-004: role='list' added (S6822 suppressed in sonar-project.properties — required Tailwind Preflight workaround). CR-005: bad commit removed via rebase. Build, lint, and Sonar gates pass.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "fail",
+      "notes": "3 of 4 subjects match EPMCDME-XXXX: Capital sentence. Subject 'epmcdme-8503-conversation-starters-semantic-list: add planning artifacts' fails on two counts: the prefix is all-lowercase (must be EPMCDME-8503) and the first word after the colon is lowercase 'add' (must start with uppercase). The full regex requires ^(EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.*."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md found in the repository; no ArtifactRef passed. Absent standard — not adjudicated."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "ConversationStarters.tsx renders string items as plain React text nodes — no dangerouslySetInnerHTML, no HTML sink, no navigation built from item content, no cross-window messages, no config or credential handling. Integration test file introduces no security surface. No concrete security issues found."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/__tests__/AssistantDetailsPage.integration.test.tsx",
+      "line": 96,
+      "title": "No test for all-whitespace items renders nothing",
+      "problem": "The visible-filter branch introduced in this change — items?.filter((i) => i.trim()) — has no test. An array of whitespace-only strings should cause the component to return null, but no test asserts this.",
+      "impact": "A regression in the whitespace-filter path would silently pass the test suite; blank list items could render to users with no detectable test failure.",
+      "recommendation": "Add a test with conversation_starters: ['  ', '\\t'] and assert the component is not in the document."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/__tests__/AssistantDetailsPage.integration.test.tsx",
+      "line": 113,
+      "title": "Fragile closest('div') may scope to wrong container",
+      "problem": "The test locates the list container via screen.getByText('Conversation Starters:').closest('div'). If a future layout change inserts an intermediate div between the heading and the outer wrapper, closest('div') resolves the wrong container and the within() assertion silently passes or throws against the wrong scope.",
+      "impact": "A structural regression in the component layout could go undetected, making the list-semantics test unreliable.",
+      "recommendation": "Query the container by role instead: screen.getByRole('list').closest('div'), or add a data-testid to the outer wrapper and use within(screen.getByTestId('conversation-starters'))."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantDetails/components/ConversationStarters.tsx",
+      "line": 21,
+      "title": "Null array element causes TypeError crash",
+      "problem": "items?.filter((i) => i.trim()) calls .trim() on each element without guarding against null or undefined. If the API returns a null inside the conversation_starters array, this throws TypeError: Cannot read properties of null (reading 'trim').",
+      "impact": "The assistant details page becomes unrenderable for any assistant whose API response includes a null element in conversation_starters.",
+      "recommendation": "Add a type guard: items?.filter((i) => typeof i === 'string' && i.trim())"
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantDetails/components/ConversationStarters.tsx",
+      "line": 27,
+      "title": "Missing role='list' defeats WCAG 1.3.1 on Safari",
+      "problem": "Tailwind Preflight applies list-style: none to all <ul> elements. Safari with VoiceOver strips the implicit list role when that CSS is present, and the <ul> at line 27 carries no explicit role='list' to reinstate it.",
+      "impact": "The WCAG 1.3.1 goal of this PR — conveying list semantics to assistive technology — is not met for VoiceOver users on Safari and iOS, the primary Apple screen reader.",
+      "recommendation": "Add role=\"list\" to the <ul>: <ul role=\"list\" className=\"flex flex-col gap-2\">"
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "unknown",
+      "title": "Commit subject fails required format pattern",
+      "problem": "Commit subject 'epmcdme-8503-conversation-starters-semantic-list: add planning artifacts' violates the required pattern ^(EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.* on two counts: the ticket key prefix is all-lowercase and the first word of the description ('add') is lowercase.",
+      "impact": "The Tekton CI pipeline enforces this regex and blocks the merge; the branch cannot land on main until the subject is corrected.",
+      "recommendation": "Reword to 'EPMCDME-8503: Add planning artifacts' — uppercase ticket key, colon-space separator, capitalised first word."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "location": "src/pages/assistants/components/AssistantDetails/components/ConversationStarters.tsx:28",
+    "trigger_condition": "Two or more items array entries contain identical text",
+    "guard_snippet": "key={`${index}-${item}`} (use index as part of key)",
+    "potential_consequence": "React key collision; duplicate item silently dropped or state misassigned"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantDetails/components/ConversationStarters.tsx:21",
+    "trigger_condition": "items array contains only whitespace-only strings e.g. ['   ']",
+    "guard_snippet": "if (!items?.some(i => i.trim().length)) return null",
+    "potential_consequence": "Heading and empty styled pill rendered; user sees blank bubble"
+  },
+  {
+    "location": "src/pages/assistants/__tests__/AssistantDetailsPage.integration.test.tsx:35",
+    "trigger_condition": "Component restructure moves h5 outside a div ancestor",
+    "guard_snippet": "const container = screen.getByRole('list').closest('[class*=flex]') or query by heading role",
+    "potential_consequence": "closest('div') returns null; non-null assertion throws TypeError, hiding real failure"
+  }
+]
