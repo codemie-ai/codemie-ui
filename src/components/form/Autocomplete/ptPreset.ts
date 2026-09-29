@@ -60,7 +60,10 @@ const preset: PrimeReactPTOptions['autocomplete'] = {
   emptyMessage: { className: 'py-1.5 leading-none text-sm text-center text-text-quaternary' },
   loadingIcon: { className: 'text-text-quaternary right-3 top-1/2 -mt-2' },
   dropdownButton: {
-    root: { className: 'w-8 absolute h-full right-0 text-text-quaternary' },
+    root: {
+      className: 'w-8 absolute h-full right-0 text-text-quaternary',
+      tabIndex: -1,
+    },
   },
 }
 

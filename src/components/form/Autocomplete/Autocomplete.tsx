@@ -157,9 +157,9 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
       if (allowEmpty && value && !textValue) onChange?.('')
       else if (allowNew) onChange?.(textValue)
     }
-    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
       if (autocompleteEl.current && !disabled && !isPanelOpen.current) {
-        autocompleteEl.current.search(e, '')
+        autocompleteEl.current.search(e as any, '')
       }
     }
 
@@ -172,18 +172,29 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
     }
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && filteredOptions.length > 0) {
+      if (!isPanelOpen.current && autocompleteEl.current && !disabled) {
+        const isOpenKey = e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter'
+        const isSpaceOpen = e.key === ' ' && (!allowNew || !textValue)
+
+        if (isOpenKey || isSpaceOpen) {
+          e.preventDefault()
+          autocompleteEl.current.search(e as any, '')
+          return
+        }
+      }
+
+      if (
+        isPanelOpen.current &&
+        (e.key === 'ArrowDown' || e.key === 'ArrowUp') &&
+        filteredOptions.length > 0
+      ) {
         const panel = document.querySelector('.p-autocomplete-panel')
-        if (panel) {
-          const items = panel.querySelectorAll<HTMLElement>('.p-autocomplete-items > li')
-          if (items.length > 0) {
-            e.preventDefault()
-            if (e.key === 'ArrowDown') {
-              items[0].focus()
-            } else {
-              items[items.length - 1].focus()
-            }
-          }
+        const items = panel?.querySelectorAll<HTMLElement>('.p-autocomplete-items > li')
+
+        if (items && items.length > 0) {
+          e.preventDefault()
+          const targetIndex = e.key === 'ArrowDown' ? 0 : items.length - 1
+          items[targetIndex].focus()
         }
       }
     }
@@ -198,7 +209,7 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
         completeMethod={search}
         onChange={(e) => setTextValue(e.value as unknown as string)}
         onSelect={(e) => updateValue(e.value)}
-        onFocus={handleFocus}
+        onClick={handleClick}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         onShow={() => {

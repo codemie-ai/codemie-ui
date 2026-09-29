@@ -1,0 +1,71 @@
+{
+  "task": "Fix accessibility and UX violation where combobox fields automatically open their suggestion overlays when receiving keyboard focus, and streamline keyboard navigation by removing duplicate chevron tab stops, in compliance with WCAG 2.1 SC 3.2.1.",
+  "generated": "2026-08-28T20:30:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 1,
+      "label": "XS",
+      "affected": "Autocomplete (modified), ptPreset (modified)",
+      "layers": "UI/Component"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 1,
+      "label": "XS",
+      "modified_files": 3,
+      "modified_file_list": [
+        "src/components/form/Autocomplete/Autocomplete.tsx",
+        "src/components/form/Autocomplete/__tests__/Autocomplete.test.tsx",
+        "src/components/form/Autocomplete/ptPreset.ts"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/components/form/Autocomplete"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": [
+        "UI/Component"
+      ],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 6,
+  "size": "XS",
+  "band_range": "1-5",
+  "files_changed": 3,
+  "routing": "straight-to-impl",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Only 3 files modified under the core Autocomplete component directory to enforce WCAG compliant non-auto-open behaviors and remove the duplicate chevron tab stop, validated by a robust 17-test suite."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Completely isolated within the shared form components directory with zero backend or API contract modifications."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

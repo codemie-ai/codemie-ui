@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -153,5 +153,55 @@ describe('Autocomplete', () => {
     const rootElement = container.firstChild as HTMLElement
     expect(rootElement).toHaveClass(customClass)
     expect(rootElement).toHaveClass('flex', 'flex-col')
+  })
+
+  it('does not open dropdown panel when receiving keyboard focus (Tab)', async () => {
+    renderComponent()
+    const autocompleteInput = screen.getByRole('combobox')
+
+    autocompleteInput.focus()
+    expect(autocompleteInput).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('opens dropdown panel when clicking the input field', async () => {
+    renderComponent()
+    const autocompleteInput = screen.getByRole('combobox')
+
+    await user.click(autocompleteInput)
+    await waitFor(() => {
+      expect(autocompleteInput).toHaveAttribute('aria-expanded', 'true')
+    })
+  })
+
+  it('opens dropdown panel when pressing ArrowDown on input', async () => {
+    renderComponent()
+    const autocompleteInput = screen.getByRole('combobox')
+
+    autocompleteInput.focus()
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() => {
+      expect(autocompleteInput).toHaveAttribute('aria-expanded', 'true')
+    })
+  })
+
+  it('closes dropdown panel when pressing Escape', async () => {
+    renderComponent()
+    const autocompleteInput = screen.getByRole('combobox')
+
+    await user.click(autocompleteInput)
+    await waitFor(() => {
+      expect(autocompleteInput).toHaveAttribute('aria-expanded', 'true')
+    })
+
+    fireEvent.keyDown(autocompleteInput, { key: 'Escape', code: 'Escape', keyCode: 27, which: 27 })
+    await waitFor(() => {
+      expect(autocompleteInput).toHaveAttribute('aria-expanded', 'false')
+    })
+  })
+
+  it('dropdown button has tabIndex="-1" to maintain single tab stop', () => {
+    const { container } = renderComponent()
+    const dropdownButton = container.querySelector('.p-autocomplete-dropdown')
+    expect(dropdownButton).toHaveAttribute('tabindex', '-1')
   })
 })
