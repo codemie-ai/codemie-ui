@@ -40,6 +40,7 @@ import {
 import api, { sanitizeFileName } from '@/utils/api'
 import { transformChatBEtoFE } from '@/utils/chatHelpers'
 import { chatSkillsKey, removeChatStorage, sweepOrphanedChatKeys } from '@/utils/chatStorageUtils'
+import { clearSharedFileGrants, setSharedFileGrants } from '@/utils/sharedFileGrants'
 import storage from '@/utils/storage'
 import toaster from '@/utils/toaster'
 import { getRootPath } from '@/utils/utils'
@@ -491,8 +492,11 @@ export const chatsStore = proxy<ChatsStoreType>({
 
   getSharedChat: async (token) => {
     const response = await api.get(`v1/share/conversations/${token}`)
-    const chat = (await response.json()).conversation
-    const chatFE = transformChatBEtoFE(chat)
+    const data = await response.json()
+    // File references in a shared conversation stay bare tokens; the download grant travels in
+    // this map, and every file request has to be resolved through it.
+    setSharedFileGrants(data.shared_file_urls)
+    const chatFE = transformChatBEtoFE(data.conversation)
     return chatsStore.setOpenChat(chatFE, false)
   },
 
@@ -531,6 +535,7 @@ export const chatsStore = proxy<ChatsStoreType>({
 
   clearCurrentChat: () => {
     chatsStore.currentChat = null
+    clearSharedFileGrants()
   },
 
   startNewChat: async (assistantId = '', folder = '', isWorkflow = false) => {

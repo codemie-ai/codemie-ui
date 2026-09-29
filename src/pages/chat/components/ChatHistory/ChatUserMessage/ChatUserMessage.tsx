@@ -31,6 +31,7 @@ import { useChatContext } from '@/pages/chat/hooks/useChatContext'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
 import { ChatMessage } from '@/types/entity/conversation'
+import { resolveSharedFileToken } from '@/utils/sharedFileGrants'
 import toaster from '@/utils/toaster'
 
 import ChatUserMessageActions from './ChatUserMessageActions'
@@ -60,7 +61,7 @@ const ChatUserMessage: FC<ChatUserMessageProps> = ({ message, indexes, onSubmit 
     messageRaw: requestRaw ?? '',
   })
 
-  const initialFilesMetadata = fileNames.map((f) => createFileMetadata(f))
+  const initialFilesMetadata = fileNames.map((f) => createFileMetadata(resolveSharedFileToken(f)))
   const [initialFiles, setInitialFiles] = useState<FileMetadata[]>(initialFilesMetadata)
   const [newFiles, setNewFiles] = useState<FileMetadata[]>(initialFilesMetadata)
 
@@ -159,8 +160,8 @@ const ChatUserMessage: FC<ChatUserMessageProps> = ({ message, indexes, onSubmit 
   }
 
   useEffect(() => {
-    setInitialFiles(fileNames.map((f) => createFileMetadata(f)))
-    setNewFiles(fileNames.map((f) => createFileMetadata(f)))
+    setInitialFiles(fileNames.map((f) => createFileMetadata(resolveSharedFileToken(f))))
+    setNewFiles(fileNames.map((f) => createFileMetadata(resolveSharedFileToken(f))))
     setNewPrompt({ message: message.request ?? '', messageRaw: message.requestRaw ?? '' })
   }, [message])
 

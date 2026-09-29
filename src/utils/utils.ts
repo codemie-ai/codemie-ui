@@ -252,6 +252,8 @@ const FILENAME_SEPARATOR_REGEXP = /^\d+~/
 const FILENAME_SEPARATOR_LEGACY = '_'
 const FILENAME_CHAR_COUNT_REGEXP = /^\d+/
 
+export const stripFileTokenQuery = (fileName: string): string => fileName.split('?')[0]
+
 export const decodeFileName = (fileName: string) => {
   let data: string
 

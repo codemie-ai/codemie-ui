@@ -15,7 +15,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { sanitizeHtmlId } from '@/utils/utils'
+import { sanitizeHtmlId, stripFileTokenQuery } from '@/utils/utils'
 
 describe('sanitizeHtmlId', () => {
   it('should convert spaces to hyphens', () => {
@@ -56,5 +56,19 @@ describe('sanitizeHtmlId', () => {
 
   it('should handle empty string', () => {
     expect(sanitizeHtmlId('')).toBe('')
+  })
+})
+
+describe('stripFileTokenQuery', () => {
+  it('strips everything from the first ? onward', () => {
+    expect(stripFileTokenQuery('YWJjZGVm?share_token=abc123')).toBe('YWJjZGVm')
+  })
+
+  it('returns the input unchanged when there is no query', () => {
+    expect(stripFileTokenQuery('YWJjZGVm')).toBe('YWJjZGVm')
+  })
+
+  it('handles an empty string', () => {
+    expect(stripFileTokenQuery('')).toBe('')
   })
 })

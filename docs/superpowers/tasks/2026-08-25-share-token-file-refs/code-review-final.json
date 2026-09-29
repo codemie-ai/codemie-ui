@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "rationale": "All three lenses ran (blind, edge-case, acceptance) with a spec present; acceptance found 21/21 criteria pass with zero fail/partial. Blind lens raised 7 observations, all non-blocking (a maintainability suggestion to comment the intentional fileUrl/strippedFileUrl asymmetry, and pre-existing edge cases the diff does not regress). Edge-case lens raised 6 items, all dismissed: 4 of them recommend using strippedFileUrl in HTTP request paths, which directly contradicts the approved spec's explicit requirement that requests must carry the full, unstripped fileUrl/fileId so the backend can authorize the share-token download; the other 2 concern an empty-string-after-strip case that already resolves safely today (atob('') does not throw in either decodeFileName implementation) and is unchanged pre-existing behavior. 0 patch/decision_needed findings, 0 defer, 13 dismiss.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "spec", "item": "New helper stripFileTokenQuery exported from src/utils/utils.ts", "status": "pass", "notes": "Added at utils.ts:255 as `export const stripFileTokenQuery = (fileName: string): string => fileName.split('?')[0]`"},
+    {"kind": "spec", "item": "stripFileTokenQuery: no ? present -> returns input unchanged (backward-compatible no-op)", "status": "pass", "notes": "split('?')[0] on a string without '?' returns the original string unchanged; confirmed by test"},
+    {"kind": "spec", "item": "stripFileTokenQuery: empty string input -> returns empty string", "status": "pass", "notes": "confirmed by test 'handles an empty string'"},
+    {"kind": "spec", "item": "stripFileTokenQuery: multiple ? -> only first treated as separator", "status": "pass", "notes": "split('?')[0] naturally drops everything from first '?' onward"},
+    {"kind": "spec", "item": "createFileMetadata decodes with decodeFileName(stripFileTokenQuery(fileInput))", "status": "pass", "notes": "useFileUpload.tsx:74"},
+    {"kind": "spec", "item": "createFileMetadata leaves fileId: fileInput exactly as-is (full string including query)", "status": "pass", "notes": "useFileUpload.tsx:80 unchanged"},
+    {"kind": "spec", "item": "downloadFile strips once and uses strippedFileUrl only for UUID_PATTERN test", "status": "pass", "notes": "files.ts downloadFile"},
+    {"kind": "spec", "item": "downloadFile uses strippedFileUrl only for decodeFileName call, never for request paths", "status": "pass", "notes": "all three request paths use original fileUrl"},
+    {"kind": "spec", "item": "fileId/fileUrl-unstripped-for-HTTP-requests contract", "status": "pass", "notes": "api.downloadFileStream and api.get both use unstripped fileUrl"},
+    {"kind": "spec", "item": "getFileURL is unchanged (raw concatenation must keep forwarding query string)", "status": "pass", "notes": "no changes to getFileURL"},
+    {"kind": "spec", "item": "Out-of-scope files untouched: messageHelpers.ts, Markdown.utils.ts, quillModules.ts, getFileNameFromUrl.ts", "status": "pass", "notes": "none appear in the diff"},
+    {"kind": "spec", "item": "utils.test.ts covers strip/no-op/empty-string cases", "status": "pass", "notes": "describe('stripFileTokenQuery') block added"},
+    {"kind": "spec", "item": "useFileUpload.test.tsx mock factory gains stripFileTokenQuery export", "status": "pass", "notes": "factory updated"},
+    {"kind": "spec", "item": "useFileUpload.test.tsx covers share_token case and backward-compat pin", "status": "pass", "notes": "two new tests in createFileMetadata describe block"},
+    {"kind": "spec", "item": "files.test.ts covers UUID+query and base64+query variants", "status": "pass", "notes": "two new tests added"},
+    {"kind": "spec", "item": "Both decodeFileName implementations protected at their call sites", "status": "pass", "notes": "utils.ts variant via useFileUpload.tsx, helpers.ts variant via files.ts"},
+    {"kind": "spec", "item": "No new test files created", "status": "pass", "notes": "only existing suites extended"},
+    {"kind": "spec", "item": "Backward compatibility: ships independently of backend change", "status": "pass", "notes": "no-op on no-query strings verified by test"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "All 3 implementation commits match `EPMCDME-12708: Capital sentence` per git-workflow.md"},
+    {"kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md present in this repo"},
+    {"kind": "security", "status": "pass", "notes": "No dangerouslySetInnerHTML, redirect, or secret-handling code touched; stripFileTokenQuery is a pure string split with no injection surface; security-patterns.md checklist has no applicable item here"}
+  ],
+  "findings": []
+}

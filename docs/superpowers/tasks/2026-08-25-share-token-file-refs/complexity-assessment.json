@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Add stripFileTokenQuery helper and apply it at file-reference decode points (createFileMetadata, downloadFile) so a ?share_token=... suffix on shared-conversation file references decodes correctly while the full string with query is still used for request URLs.",
+  "generated": "2026-08-25T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 15,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four production files touched across three layers (utils.ts + helpers.ts in Utility, useFileUpload.tsx in Hook, files.ts in Store). Red flag applied: both utils.ts and helpers.ts are shared utilities consumed across the whole codebase, bumping Component Scope from M (3) to L (4)."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The strip-before-decode pattern is well-established and the fix is additive. Red flag applied: share_token is an authorization token used by the backend to gate file downloads, bumping Technical Risk from S (2) to M (3). The key correctness constraint — fileId must remain unstripped so the query reaches the HTTP layer — is explicit in the spec. No novel patterns or security-sensitive logic introduced in the frontend."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Seven files total: 4 production (utils.ts, helpers.ts, useFileUpload.tsx, files.ts) and 3 test files (utils.test.ts, useFileUpload.test.tsx, files.test.ts). At 7 files this sits at the upper bound of the M range (5–7 files), spanning src/utils/, src/hooks/, and src/store/ plus their test directories."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M (3) to L (4): touches core shared utilities src/utils/utils.ts and src/utils/helpers.ts consumed across the entire codebase",
+    "Technical Risk bumped from S (2) to M (3): share_token is an authorization token used by the backend to gate file downloads; preserving it correctly in HTTP request URLs is an authorization-correctness concern"
+  ],
+  "split_recommendation": null
+}

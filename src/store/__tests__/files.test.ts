@@ -55,4 +55,28 @@ describe('filesStore.downloadFile', () => {
     expect(api.get).toHaveBeenCalledWith(`v1/files/${encoded}`)
     expect(downloadSpy).not.toHaveBeenCalled()
   })
+
+  it('calls downloadFileStream with the full URL when fileId is a UUID with a share_token query', async () => {
+    const downloadSpy = vi.spyOn(api, 'downloadFileStream').mockResolvedValue(true)
+    const fileUrl = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890?share_token=abc123'
+
+    await filesStore.downloadFile(fileUrl)
+
+    expect(downloadSpy).toHaveBeenCalledWith(`v1/files/${fileUrl}`)
+    expect(api.get).not.toHaveBeenCalled()
+  })
+
+  it('uses the anchor approach with the full URL when fileId is base64-encoded with a share_token query', async () => {
+    const encoded = btoa('application/xlsx_user_report.xlsx')
+    const fileUrl = `${encoded}?share_token=abc123`
+    vi.mocked(api.get).mockResolvedValueOnce({
+      blob: async () => new Blob(['data'], { type: 'application/xlsx' }),
+    } as any)
+    const downloadSpy = vi.spyOn(api, 'downloadFileStream')
+
+    await filesStore.downloadFile(fileUrl)
+
+    expect(api.get).toHaveBeenCalledWith(`v1/files/${fileUrl}`)
+    expect(downloadSpy).not.toHaveBeenCalled()
+  })
 })

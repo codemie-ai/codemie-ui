@@ -18,7 +18,7 @@ import { proxy } from 'valtio'
 import api from '@/utils/api'
 import { decodeFileName } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
-import { hash } from '@/utils/utils'
+import { hash, stripFileTokenQuery } from '@/utils/utils'
 
 const UPLOAD_ERROR = 'An error occured while uploading file:'
 
@@ -86,14 +86,15 @@ export const filesStore = proxy<FilesStoreType>({
 
   async downloadFile(fileUrl) {
     const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    const strippedFileUrl = stripFileTokenQuery(fileUrl)
 
-    if (UUID_PATTERN.test(fileUrl)) {
+    if (UUID_PATTERN.test(strippedFileUrl)) {
       // UUID fileId: name comes from Content-Disposition header
       await api.downloadFileStream(`v1/files/${fileUrl}`)
       return
     }
 
-    const [_mimeType, _user, originalFileName] = decodeFileName(fileUrl)
+    const [_mimeType, _user, originalFileName] = decodeFileName(strippedFileUrl)
 
     if (originalFileName) {
       // Legacy base64-encoded fileId: name decoded directly from the id
@@ -121,7 +122,11 @@ export const filesStore = proxy<FilesStoreType>({
       { skipErrorHandling: true }
     )
     const { file_url } = await response.json()
-    const svgResponse = await fetch(file_url)
+    // File downloads require auth; a bare fetch sends no credentials cross-origin.
+    const svgResponse = await fetch(file_url, {
+      credentials: 'include',
+      headers: api.authHeaders(),
+    })
     const svgText = await svgResponse.text()
     mermaidCache.set(cacheKey, svgText)
     return svgText

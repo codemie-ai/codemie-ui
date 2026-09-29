@@ -50,6 +50,7 @@ vi.mock('@/utils/utils', () => ({
       originalFileName: fileUrl.split('/').pop() ?? '',
     }
   }),
+  stripFileTokenQuery: (fileUrl: string) => fileUrl.split('?')[0],
 }))
 
 const createMockFile = (name: string, size: number = 1024, type: string = 'text/plain'): File => {
@@ -548,5 +549,23 @@ describe('createFileMetadata', () => {
 
     expect(meta.fileName).toBe('Homework_Business_v1.docx')
     expect(meta.fileId).toBe('Homework_Business_v1.docx')
+  })
+
+  it('decodes the token part and keeps the full string with query as fileId', () => {
+    const meta = createFileMetadata('existing-url?share_token=abc123')
+
+    expect(decodeFileName).toHaveBeenCalledWith('existing-url')
+    expect(meta.fileName).toBe('existing-file.txt')
+    expect(meta.mimeType).toBe('text/plain')
+    expect(meta.fileId).toBe('existing-url?share_token=abc123')
+  })
+
+  it('behaves identically to today when there is no query (backward-compatibility pin)', () => {
+    const meta = createFileMetadata('existing-url')
+
+    expect(decodeFileName).toHaveBeenCalledWith('existing-url')
+    expect(meta.fileName).toBe('existing-file.txt')
+    expect(meta.mimeType).toBe('text/plain')
+    expect(meta.fileId).toBe('existing-url')
   })
 })

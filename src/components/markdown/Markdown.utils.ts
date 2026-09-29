@@ -17,6 +17,7 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 
 import api from '@/utils/api'
+import { resolveSandboxFileUrls } from '@/utils/sharedFileGrants'
 
 import { sanitizeHtmlWithImageAllowList } from './Markdown.sanitize'
 import { FileExtension } from '../CodeBlock/fileExtensions'
@@ -109,11 +110,7 @@ export const markedOptions = {
 } as const
 
 export const getMarkdownTokens = (message: string): MarkdownToken[] => {
-  return marked.lexer(
-    // @ts-expect-error: Property 'replaceAll' does not exist on type 'string'
-    sanitizeMessage(message).replaceAll('sandbox:/v1/files/', `${api.BASE_URL}/v1/files/`),
-    markedOptions
-  )
+  return marked.lexer(resolveSandboxFileUrls(sanitizeMessage(message), api.BASE_URL), markedOptions)
 }
 
 export const markdown2html = (text) => {

@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "source": "guide",
+  "guide_path": ".ai-run/guides/quality-gates.md",
+  "runner": "npm",
+  "gates": [
+    {"id": "lint", "command": "npm run lint", "available": true},
+    {"id": "typecheck", "command": "npm run typecheck", "available": true},
+    {"id": "license-check", "command": "npm run license-check", "available": true, "skipped_reason": "no dependency added, removed, or moved"},
+    {"id": "secrets-check", "command": "npm run secrets:check", "available": true},
+    {"id": "unit", "command": "npm run test:unit", "available": true},
+    {"id": "integration", "command": "npm run test:integration", "available": true}
+  ],
+  "ui_globs": [],
+  "detected_at": "2026-08-25T10:16:44Z"
+}

@@ -18,7 +18,7 @@ import { useSnapshot } from 'valtio'
 
 import { userStore } from '@/store'
 import { filesStore } from '@/store/files'
-import { decodeFileName } from '@/utils/utils'
+import { decodeFileName, stripFileTokenQuery } from '@/utils/utils'
 
 export type FileUploadErrorType = 'SIZE_EXCEEDED_ERROR' | 'LIMIT_EXCEEDED_ERROR' | 'UPLOAD_ERROR'
 
@@ -71,7 +71,7 @@ export const createFileMetadata = (fileInput: File | string): FileMetadata => {
   // whole chat.
   let fileData: ReturnType<typeof decodeFileName>
   try {
-    fileData = decodeFileName(fileInput)
+    fileData = decodeFileName(stripFileTokenQuery(fileInput))
   } catch {
     console.log('decodeFileName failed for input, falling back to raw value:', fileInput)
     fileData = { mimeType: '', user: '', originalFileName: fileInput }
