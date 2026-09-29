@@ -92,6 +92,14 @@ export const getLegacyImportGroupName = (folder?: string | null): string | undef
  * Canonical `importSource` takes priority; falls back to legacy folder-name detection.
  * Display-only — does not determine sidebar grouping placement.
  */
+/**
+ * True for a chat imported from an external client. Such chats reference a placeholder
+ * assistant id that is never a real workspace assistant, so it must not be looked up.
+ */
+export const isImportedConversation = (
+  chat?: { importSource?: ImportSourceKind | null; folder?: string | null } | null
+): boolean => chat != null && resolveImportDisplay(chat) != null
+
 export const resolveImportDisplay = (chat: {
   importSource?: ImportSourceKind | null
   folder?: string | null

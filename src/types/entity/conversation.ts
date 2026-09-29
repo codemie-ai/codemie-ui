@@ -228,6 +228,8 @@ export interface Conversation {
   assistantID?: string
   assistantName?: string
   toolCallPolicy?: string | null
+  /** Set for chats imported from an external client (Claude Code, Claude Desktop, …). */
+  importSource?: ImportSourceKind | null
 }
 
 export interface ChatFolder {

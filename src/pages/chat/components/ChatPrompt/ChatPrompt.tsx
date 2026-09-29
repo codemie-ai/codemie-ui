@@ -28,6 +28,7 @@ import {
 } from '@/components/Editor/quillModules'
 import { sanitizeMessage } from '@/components/markdown/Markdown.utils'
 import { ButtonSize } from '@/constants'
+import { isImportedConversation } from '@/constants/chatImportSources'
 import { FileMetadata, useFileUpload } from '@/hooks/useFileUpload'
 import { useTheme } from '@/hooks/useTheme'
 import ChatControls from '@/pages/chat/components/ChatControls'
@@ -151,7 +152,9 @@ const ChatPrompt: FC<ChatPromptProps> = ({
     }
   }, [canAttachFiles, files.length])
 
-  const toolPermissions = useToolPermissions(currentChat?.isWorkflow)
+  const toolPermissions = useToolPermissions(
+    Boolean(currentChat?.isWorkflow) || isImportedConversation(currentChat)
+  )
   const { isPremiumActive } = usePremiumModelTip()
 
   let promptMode: PromptMode = PROMPT_MODES.DEFAULT

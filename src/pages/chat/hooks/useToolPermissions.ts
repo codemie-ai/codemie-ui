@@ -58,9 +58,12 @@ const reduceAssistantPolicies = (policies: (ToolCallPolicy | undefined)[]): Tool
  * `setPolicy` persists via PUT /v1/conversations/{id}; for a new/empty chat it
  * only writes to local state and gets flushed to the server after the chat is
  * created (see chatGeneration.ts).
+ *
+ * `disabled` skips the assistant lookup entirely: workflow chats have no assistant
+ * policy, and imported chats reference an assistant id that does not exist.
  */
-export function useToolPermissions(isWorkflow: boolean = false): ToolPermissionsState {
-  const enabled = !isWorkflow && isFeatureEnabled(FEATURE_FLAGS.TOOL_PERMISSIONS)
+export function useToolPermissions(disabled: boolean = false): ToolPermissionsState {
+  const enabled = !disabled && isFeatureEnabled(FEATURE_FLAGS.TOOL_PERMISSIONS)
   const { currentChat, isNewChat } = useSnapshot(chatsStore)
   const { defaultAssistant } = useSnapshot(assistantsStore)
 
