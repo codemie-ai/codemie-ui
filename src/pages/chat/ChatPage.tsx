@@ -84,7 +84,7 @@ const ChatPage: FC = () => {
     .join(',')
 
   useEffect(() => {
-    if (pendingIdsKey) return () => {}
+    if (!pendingIdsKey) return () => {}
 
     const controller = new AbortController()
     pendingIdsKey
