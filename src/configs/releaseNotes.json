@@ -1,4 +1,128 @@
 [
+ {
+  "version": "2.54.0",
+  "date": "2026-09-29",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "Claude Sonnet 5.5 availability",
+          "description": "Added the Claude Sonnet 5.5 model to CodeMie.",
+          "issues": [
+            {
+              "key": "EPMCDME-15354",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15354"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Configurable customer banners",
+          "description": "Added support for banner settings in dynamic customer configuration.",
+          "issues": [
+            {
+              "key": "EPMCDME-14649",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14649"
+            }
+          ]
+        },
+        {
+          "title": "Data-source page compatibility",
+          "description": "Fixed blank rendering of the data-source details page for provider-indexed data sources.",
+          "issues": [
+            {
+              "key": "EPMCDME-14832",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14832"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Tool approval settings",
+          "description": "Ensured configured tool-call approval settings are applied.",
+          "issues": [
+            {
+              "key": "EPMCDME-15182",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15182"
+            }
+          ]
+        },
+        {
+          "title": "Disabled-feature access controls",
+          "description": "Blocked routes for disabled features at the CodeMie UI router level.",
+          "issues": [
+            {
+              "key": "EPMCDME-14081",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14081"
+            }
+          ]
+        },
+        {
+          "title": "Microsoft Graph webhook validation",
+          "description": "Returned the required Microsoft Graph subscription validation token from CodeMie webhooks.",
+          "issues": [
+            {
+              "key": "EPMCDME-15334",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15334"
+            }
+          ]
+        },
+        {
+          "title": "Workflow execution behavior",
+          "description": "Removed an unnecessary assistant endpoint request after running a workflow.",
+          "issues": [
+            {
+              "key": "EPMCDME-14804",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14804"
+            }
+          ]
+        },
+        {
+          "title": "Administration and analytics filters",
+          "description": "Improved actor filtering, standardized administration-filter dropdown sizing, enabled user search by email, and prevented duplicate user entries in analytics filters.",
+          "issues": [
+            {
+              "key": "EPMCDME-14079",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14079"
+            },
+            {
+              "key": "EPMCDME-14078",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14078"
+            },
+            {
+              "key": "EPMCDME-14070",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14070"
+            },
+            {
+              "key": "EPMCDME-14069",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14069"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+},
 {
   "version": "2.53.0",
   "date": "2026-09-24",
