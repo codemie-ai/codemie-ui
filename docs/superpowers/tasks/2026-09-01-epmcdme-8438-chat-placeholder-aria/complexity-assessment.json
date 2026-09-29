@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "task": "Add aria-label to Quill contenteditable root in Editor.tsx so screen readers announce the chat input placeholder text",
+  "generated": "2026-09-01T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 7,
+  "size": "XS",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Single file (Editor.tsx), two call sites within the same component. No layer boundary is crossed and no callers need API changes — the existing placeholder prop flows through unchanged."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The pattern is already established: quillModules.ts (lines 113, 141) calls setAttribute('aria-label', ...) imperatively on Quill DOM nodes. Scored S rather than XS because the onLoad site currently lacks the undefined guard present in useEffect, and both sites must stay in sync — a concrete but small and well-understood risk. Bundle XS example epmcdme-10101 scored all dimensions XS (total 6); this task scores one point higher in Technical Risk for that identified guard gap, which remains comfortably within the XS band."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

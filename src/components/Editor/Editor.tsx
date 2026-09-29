@@ -135,6 +135,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(
       const quill = editorRef.current?.getQuill()
       if (quill && placeholder !== undefined) {
         quill.root.setAttribute('data-placeholder', placeholder)
+        quill.root.setAttribute('aria-label', placeholder)
       }
     }, [placeholder])
 

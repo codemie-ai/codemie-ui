@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-8438_chat-placeholder-aria",
+  "head": "e3e4b3779988ff17c12b22f7d577e085eee34597",
+  "runner": "npm",
+  "started_at": "2026-09-01T13:13:09Z",
+  "completed_at": "2026-09-01T16:51:20Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 2000,
+      "command": "npm run secrets:check",
+      "exit_code": 1,
+      "notes": "Self-skip: 'Podman daemon is not running / Run podman machine start to enable secrets detection locally'. Run 'podman machine start' and retry; this gate also runs as gitleaks-scan in the MR pipeline."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 584806,
+      "command": "npm run test:unit",
+      "exit_code": 0
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 247439,
+      "command": "npm run test:integration",
+      "exit_code": 0
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 15000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN env var to enable locally; runs unconditionally in the CI pipeline."
+    }
+  ],
+  "failures": {},
+  "test_harness": {
+    "suite": "sanity-ui",
+    "command": "uvx --python 3.13 codemie-test-harness run sanity-ui -n 1",
+    "run_date": "2026-09-02",
+    "result": "82 passed in 2847.28s (0:47:27)",
+    "passed": 82,
+    "failed": 0,
+    "reruns": 0,
+    "target": "http://localhost:8080",
+    "branch": "EPMCDME-8438_chat-placeholder-aria",
+    "notes": "-n 1 used deliberately; Vite dev server on /mnt/c (9p) FS cannot serve concurrent cold page loads within 5s Playwright timeouts under -n 3/-n 4. All affected tests pass solo and in this full -n 1 run. sanity-api ran separately: 189 passed, 4 skipped, 0 failed.",
+    "evidence": {
+      "log": "test-harness-sanity-ui-2026-09-02-PASS.log",
+      "screenshot": "Screenshot 2026-09-02 185025.png",
+      "nvda_announcement": "Ask anything or add an assistant with '@'  section  multi line  editable  blank"
+    }
+  }
+}

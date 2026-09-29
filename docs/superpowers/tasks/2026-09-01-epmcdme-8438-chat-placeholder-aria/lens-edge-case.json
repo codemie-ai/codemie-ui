@@ -1,0 +1,20 @@
+[
+  {
+    "location": "src/components/Editor/Editor.tsx:130-133",
+    "trigger_condition": "placeholder prop transitions from a string to undefined at runtime",
+    "guard_snippet": "} else if (quill) { quill.root.removeAttribute('aria-label') }",
+    "potential_consequence": "Stale aria-label persists; AT announces old placeholder after it is cleared"
+  },
+  {
+    "location": "src/components/Editor/Editor.tsx:132",
+    "trigger_condition": "placeholder is an empty string (passes !== undefined, fails as label)",
+    "guard_snippet": "if (quill && placeholder) { /* non-empty check */ }",
+    "potential_consequence": "aria-label written as empty string; AT may announce 'blank' or omit field purpose"
+  },
+  {
+    "location": "src/components/Editor/Editor.tsx:189-191",
+    "trigger_condition": "placeholder is an empty string at onLoad time",
+    "guard_snippet": "if (placeholder) { quill.root.setAttribute('aria-label', placeholder) }",
+    "potential_consequence": "aria-label=\"\" set at mount; empty label is worse than absent for screen readers"
+  }
+]
