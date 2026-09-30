@@ -14,7 +14,7 @@
 //
 
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import NavigationLogo from '../NavigationLogo'
 
@@ -210,6 +210,35 @@ describe('NavigationLogo', () => {
       expect(screen.getByTestId('logo-light')).toBeInTheDocument()
       const logoContainer = container.querySelector('div')
       expect(logoContainer).toHaveClass('w-[156px]')
+    })
+  })
+
+  describe('decorative image accessibility', () => {
+    afterEach(() => {
+      delete (mockUseTheme as any).appearance
+    })
+
+    it('hides dark logo svg from assistive technologies', () => {
+      mockUseTheme.isDark = true
+      render(<NavigationLogo isExpanded={false} onClick={mockOnClick} />)
+      expect(screen.getByTestId('logo-dark')).toHaveAttribute('aria-hidden', 'true')
+    })
+
+    it('hides light logo svg from assistive technologies', () => {
+      mockUseTheme.isDark = false
+      render(<NavigationLogo isExpanded={false} onClick={mockOnClick} />)
+      expect(screen.getByTestId('logo-light')).toHaveAttribute('aria-hidden', 'true')
+    })
+
+    it('marks custom logo img as decorative with empty alt', () => {
+      ;(mockUseTheme as any).appearance = {
+        logoMode: 'custom',
+        squareLogo: 'https://example.com/logo.png',
+      }
+      mockUseTheme.isDark = false
+      const { container } = render(<NavigationLogo isExpanded={false} onClick={mockOnClick} />)
+      const img = container.querySelector('img')
+      expect(img).toHaveAttribute('alt', '')
     })
   })
 })

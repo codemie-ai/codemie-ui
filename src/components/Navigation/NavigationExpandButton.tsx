@@ -41,6 +41,7 @@ const NavigationExpandButton: FC<NavigationExpandButtonProps> = ({ onClick }) =>
       data-tooltip-place="right"
     >
       <SidebarSvg
+        aria-hidden="true"
         className={cn('min-w-4 transition-transform', {
           'rotate-180': !navigationExpanded,
         })}

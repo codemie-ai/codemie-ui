@@ -1,0 +1,75 @@
+{
+  "task": "EPMCDME-8455: Fix decorative icons in collapsed Navigation Sidebar by adding aria-hidden to SVG wrappers and empty alt on custom logo img.",
+  "generated": "2026-09-06T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 2,
+      "label": "S",
+      "affected": "NavigationLink, NavigationExpandButton, NavigationLogo",
+      "layers": "UI"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS",
+      "risk_factors": null,
+      "mitigation": null
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M",
+      "modified_files": 6,
+      "modified_file_list": [
+        "src/components/Navigation/NavigationSection/NavigationLink.tsx",
+        "src/components/Navigation/NavigationExpandButton.tsx",
+        "src/components/Navigation/NavigationLogo.tsx",
+        "src/components/Navigation/NavigationSection/__tests__/NavigationLink.test.tsx",
+        "src/components/Navigation/__tests__/NavigationExpandButton.test.tsx",
+        "src/components/Navigation/__tests__/NavigationLogo.test.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/components/Navigation/",
+        "src/components/Navigation/NavigationSection/",
+        "src/components/Navigation/__tests__/",
+        "src/components/Navigation/NavigationSection/__tests__/"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 6,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "6 files touched (3 source + 3 test), all under src/components/Navigation/, placing it in the M (5-7) file-count band. Test files were existing and augmented with 1+1+3 new assertions."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "3 sibling Navigation components modified — NavigationLink (aria-hidden on icon wrapper div), NavigationExpandButton (aria-hidden on SidebarSvg), NavigationLogo (aria-hidden on both SVG logos, alt='' on custom img). All in the same UI layer with no cross-cutting concerns."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

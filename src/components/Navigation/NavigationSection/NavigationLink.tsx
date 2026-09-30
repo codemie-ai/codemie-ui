@@ -92,6 +92,7 @@ const NavigationLink: FC<NavigationLinkProps> = ({ item, isBottomSection }) => {
     >
       {Icon && (
         <div
+          aria-hidden="true"
           className={cn(
             'min-w-4.5 flex-shrink-0 transition-colors duration-100',
             isBottomSection

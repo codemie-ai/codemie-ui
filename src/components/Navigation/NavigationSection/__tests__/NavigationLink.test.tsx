@@ -156,6 +156,13 @@ describe('NavigationLink', () => {
       renderWithRouter(<NavigationLink item={item} />)
       expect(screen.getByTestId('integration-icon')).toBeInTheDocument()
     })
+
+    it('hides icon wrapper from assistive technologies', () => {
+      const item = { label: 'Chat', icon: IconType.CHAT, route: '/chat' }
+      renderWithRouter(<NavigationLink item={item} />)
+      const icon = screen.getByTestId('chat-icon')
+      expect(icon.parentElement).toHaveAttribute('aria-hidden', 'true')
+    })
   })
 
   describe('label display', () => {

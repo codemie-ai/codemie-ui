@@ -48,14 +48,19 @@ const NavigationLogo: React.FC<NavigationLogoProps> = ({ isExpanded, onClick }) 
         <img
           src={customLogo}
           className={cn('h-[40px] object-contain', isExpanded ? 'w-[156px]' : 'w-[39px]')}
-          alt="EPAM AI/Run Codemie logo"
+          alt=""
         />
       )
     }
 
-    if (isDark) return <LogoFullDarkSvg className="svg-logo-navigation h-[40px] w-[156px]" />
+    if (isDark)
+      return (
+        <LogoFullDarkSvg aria-hidden="true" className="svg-logo-navigation h-[40px] w-[156px]" />
+      )
 
-    return <LogoFullLightSvg className="svg-logo-navigation h-[40px] w-[156px]" />
+    return (
+      <LogoFullLightSvg aria-hidden="true" className="svg-logo-navigation h-[40px] w-[156px]" />
+    )
   }
 
   return (

@@ -192,4 +192,9 @@ describe('NavigationExpandButton', () => {
     rerender(<NavigationExpandButton onClick={mockOnClick} />)
     expect(screen.getByRole('button', { name: /show menu/i })).toBeInTheDocument()
   })
+
+  it('hides sidebar icon from assistive technologies', () => {
+    render(<NavigationExpandButton onClick={mockOnClick} />)
+    expect(screen.getByTestId('sidebar-icon')).toHaveAttribute('aria-hidden', 'true')
+  })
 })
