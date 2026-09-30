@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15061_toggle-sidebar-button-overlaps-tooltip",
+  "head": "0ecc829829f848f7b4e90f48a7352f3d94dacab1",
+  "runner": "npm",
+  "started_at": "2026-09-18T11:52:00Z",
+  "completed_at": "2026-09-18T13:55:35Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 120000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency added, removed, or moved in this diff; guide Skip-if condition satisfied"
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 54700,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 1030210,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 368610,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2000,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: 'No staged files found.' — working tree is clean; would lint staged .tsx/.ts files on git add"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 30000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: 'Skipping Sonar scan because SONAR_TOKEN is not set.' — set SONAR_TOKEN env var and ensure SonarQube server is reachable to enable this gate locally; CI runs it unconditionally"
+    }
+  ],
+  "failures": {
+    "unit": "Failed Suites 1\n\nFAIL |unit| scripts/license_headers/__tests__/check_license_headers.test.js\nSyntaxError: Invalid or unexpected token\n  at new Script node:vm:117:7\n  at createScript node:vm:269:10\n  at Object.runInThisContext node:vm:317:10\n  at scripts/license_headers/__tests__/check_license_headers.test.js:3:31\n     1| // Copyright 2026 EPAM Systems, Inc. (\"EPAM\")\n     2| //\n     3| // Licensed under the Apache License, Version 2.0 (the \"License\");\n        ^\n     4| // you may not use this file except in compliance with the License.\n     5| // You may obtain a copy of the License at\n\nFailed Tests 1\n\nFAIL |unit| src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts > modal surfaces host the live region > recognises the surfaces that already carry the host\nAssertionError: expected [ ...(2) ] to include 'components/Popup/Popup.tsx'\n  at src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts:73:23\n     71|       .map(({ path }) => path)\n     72|\n     73|     expect(declaring).toContain('components/Popup/Popup.tsx')\n        |                      ^\n     74|     expect(declaring).toContain('components/Navigation/NavigationProfi...')\n     75|   })\n\nTest Files  2 failed | 562 passed (564)\n      Tests  1 failed | 5737 passed (5738)\n   Start at  15:02:18\n   Duration  1030.21s\nEXIT_CODE:1\n\nNote: both failures are in files unrelated to the branch diff (src/components/Hint/Hint.tsx, src/components/Hint/__tests__/Hint.test.tsx). These appear to be pre-existing failures on this tree."
+  }
+}

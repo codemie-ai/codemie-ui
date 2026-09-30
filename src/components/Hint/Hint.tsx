@@ -26,12 +26,14 @@ interface HintProps {
   hint?: string | null
 }
 
+const appendToBody = () => document.body
+
 const Hint: React.FC<HintProps> = ({ id, showDelay, position, hint }) => {
   if (!hint) return null
 
   return (
     <>
-      <Tooltip target={`#${id}`} showDelay={showDelay} position={position}>
+      <Tooltip target={`#${id}`} showDelay={showDelay} position={position} appendTo={appendToBody}>
         {hint}
       </Tooltip>
       <div

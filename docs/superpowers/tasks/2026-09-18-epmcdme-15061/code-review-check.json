@@ -1,0 +1,36 @@
+{
+  "decision": "approve",
+  "confidence": "low",
+  "risk_flags": [],
+  "gate_id": "code-review.check",
+  "artifacts_reviewed": {
+    "prior_verdict": "docs/superpowers/tasks/2026-09-18-epmcdme-15061/code-review-final.json",
+    "diff": "docs/superpowers/tasks/2026-09-18-epmcdme-15061/code-review-check.local.diff"
+  },
+  "business_review": [
+    {
+      "id": "AC1",
+      "status": "pass",
+      "notes": "Users information tooltip is no longer covered by the Toggle Sidebar button"
+    }
+  ],
+  "standards_review": [
+    { "id": "git-workflow", "status": "pass", "notes": "fix-up commit carries the ticket key" },
+    {
+      "id": "code-quality",
+      "status": "pass",
+      "notes": "typecheck and eslint clean after extracting appendToBody constant"
+    },
+    { "id": "security", "status": "pass", "notes": "no network, storage, auth, or HTML sink touched" },
+    { "id": "testing", "status": "pass", "notes": "8 Hint unit tests pass; appendTo contract verified" }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Extracted inline `() => document.body` to a module-level constant `appendToBody` in src/components/Hint/Hint.tsx. PrimeReact now receives a stable function reference across re-renders, preventing portal container re-mount accumulation."
+    }
+  ],
+  "findings": [],
+  "rationale": "CR-001 is resolved: the fix is a one-line extraction of a stable constant with no functional change. The portal-to-body behaviour is preserved and verified by the existing Hint test suite (8 tests). No new risk introduced: no network, storage, auth, HTML sink, or public API is touched. Confidence remains low because this flow has no spec and ran a compact (single-lens) review."
+}

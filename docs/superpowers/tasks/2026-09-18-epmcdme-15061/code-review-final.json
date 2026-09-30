@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "No acceptance lens ran (no story/spec ArtifactRef; no-spec round); confidence is low. One edge-case finding kept with uncertain reachability — PrimeReact's internal comparison strategy for function-typed appendTo props could not be confirmed from static analysis alone. Two candidates dismissed: a test guard style concern below the emission floor, and a portal-cleanup test gap whose suggested assertion would trivially pass with the current mock.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards intentionally omitted — compact profile selected and no project guide present." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards intentionally omitted — compact profile selected and no project guide present." },
+    { "kind": "security", "status": "na", "notes": "Standards intentionally omitted — compact profile selected and no project guide present." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Hint/Hint.tsx",
+      "line": 38,
+      "title": "Inline appendTo function creates new reference each render",
+      "problem": "appendTo={() => document.body} allocates a new function object on every render of Hint. PrimeReact's Tooltip receives it and may compare appendTo by reference to decide whether to re-mount its portal container, triggering unnecessary portal operations on every parent re-render.",
+      "impact": "If PrimeReact uses reference equality when diffing appendTo, each parent re-render appends a new portal element to document.body without removing the previous one, accumulating orphaned DOM nodes across the SPA lifetime. Reachability is uncertain — PrimeReact's internal diffing of function-typed appendTo props could not be confirmed from static analysis alone.",
+      "recommendation": "Replace the inline arrow with a module-level constant (const appendToBody = () => document.body hoisted above the Hint component) or a useCallback(() => document.body, []) inside the component, so the reference is stable across re-renders."
+    }
+  ]
+}

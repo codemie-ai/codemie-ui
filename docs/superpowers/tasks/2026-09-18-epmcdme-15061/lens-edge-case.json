@@ -1,0 +1,20 @@
+[
+  {
+    "location": "src/components/Hint/Hint.tsx:38",
+    "trigger_condition": "Parent component re-renders while Hint is mounted",
+    "guard_snippet": "const appendToBody = useCallback(() => document.body, []); /* or module-level const */",
+    "potential_consequence": "PrimeReact detects new appendTo reference and re-appends portal, leaking DOM nodes in document.body"
+  },
+  {
+    "location": "src/components/Hint/__tests__/Hint.test.tsx:79",
+    "trigger_condition": "MockTooltip is never called due to a rendering defect",
+    "guard_snippet": "expect(MockTooltip).toHaveBeenCalled(); // before const [[props]] = MockTooltip.mock.calls",
+    "potential_consequence": "Destructuring TypeError masks the real failure; test gives no useful assertion message"
+  },
+  {
+    "location": "src/components/Hint/__tests__/Hint.test.tsx:hunk",
+    "trigger_condition": "hint prop transitions from truthy to null/undefined after initial render",
+    "guard_snippet": "rerender(<Hint id=\"x\" hint={null} />); expect(document.body.querySelector('.p-tooltip')).toBeNull()",
+    "potential_consequence": "Orphaned tooltip portal left in document.body is undetected; accumulates over SPA lifetime"
+  }
+]
