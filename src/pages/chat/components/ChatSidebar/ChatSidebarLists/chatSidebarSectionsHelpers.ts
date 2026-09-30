@@ -17,11 +17,13 @@ import { FocusedView } from './focusedChatSidebarHelpers'
 
 export type FocusedNavigationSection = 'pinned' | 'workflow-runs'
 
+// Pinned is deliberately absent: its expand state is the user's persisted choice, which revealing
+// the current chat must not override.
 interface SectionExpansionActions {
-  setPinned: (expanded: boolean) => void
   setRecent: (expanded: boolean) => void
   setWorkflowRuns: (expanded: boolean) => void
   setFolders: (expanded: boolean) => void
+  setActiveFolder: (folder: string | null) => void
 }
 
 export const getFocusedView = (
@@ -56,13 +58,12 @@ export const expandSectionForLocation = (
       actions.setWorkflowRuns(true)
       actions.setFolders(false)
       break
-    case 'pinned':
-      actions.setPinned(true)
-      break
     case 'folder':
       actions.setRecent(false)
       actions.setWorkflowRuns(false)
       actions.setFolders(true)
+      actions.setActiveFolder(null)
+      actions.setActiveFolder(location.folderName ?? null)
       break
     case 'recent':
       actions.setRecent(true)

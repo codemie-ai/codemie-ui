@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "task": "Open last chat after page change and collapse other folders in the redesigned Chats side panel.",
+  "generated": "2026-09-25T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S"
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M"
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS"
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M"
+    }
+  },
+  "total": 17,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Coordinates two code paths: useChatNavigation.tsx (router-level last-chat resolution) and expandSectionForLocation in chatSidebarSectionsHelpers.ts (sidebar folder-tab opening). Both must cooperate correctly to avoid regressing the folder-accumulation bug prevented by the existing 'clear then open one' pattern elsewhere in the sidebar hooks."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "No exact precedent in the useChatNavigation or expandSectionForLocation paths themselves, though the 'clear then open one' pattern is well-established in expandFolder/scrollToChat/handleCreateFolder. Regression risk is concrete: neither useChatNavigation nor the 'folder' branch of expandSectionForLocation has any existing test coverage, and the folder-accumulation failure mode the pattern prevents is documented in useChatSidebarNavigation.ts (lines 115–116) as a previously-hit bug."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Clear and unambiguous: 'open last chat after page change' leverages existing chatsStore.currentChat → getLastChat() logic; 'collapse other folders' applies the proven 'clear then open one' pattern to the'folder' branch of expandSectionForLocation. Technical analysis identifies the exact code seams and precedent patterns."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: Coordinates two code paths (useChatNavigation + expandSectionForLocation) with regression risk (folder-accumulation bug that the existing 'clear then open one' pattern was designed to prevent)."
+  ],
+  "split_recommendation": null
+}

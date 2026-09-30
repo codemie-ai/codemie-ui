@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ChatOrganizeMode, chatViewSettingsStore } from '@/store/chatViewSettings'
@@ -78,18 +78,37 @@ vi.mock('../ChatSidebarLists/ChatSidebarAccordion', () => ({
 }))
 
 vi.mock('../ChatList/ChatList', () => ({
+  // Registers a real <li> ref per chat via registerChatElement, the same way the real
+  // ChatList/ChatListItem does — CR-007 requires the reveal effect in useChatSidebarSections.ts
+  // to be exercised through actual DOM registration, not by calling revealChat directly.
   default: ({
     chats,
     currentChatId,
+    registerChatElement,
   }: {
     chats: Record<string, unknown>[]
     currentChatId?: string
+    registerChatElement?: (chatId: string, element: HTMLLIElement | null) => void
   }) => (
     <div
       data-testid="chat-list"
       data-active-visible={chats.some((chat) => chat.id === currentChatId)}
       data-chat-ids={chats.map((chat) => chat.id).join(',')}
-    />
+    >
+      {chats.map((chat) => (
+        <li
+          key={chat.id as string}
+          data-testid={`chat-row-${chat.id}`}
+          ref={(element) => {
+            // jsdom doesn't implement scrollIntoView; stub it so the reveal effect's deferred
+            // requestAnimationFrame call (which can resolve after an unrelated test has already
+            // moved on) never throws for tests that don't care about revealing this row.
+            if (element && !element.scrollIntoView) element.scrollIntoView = vi.fn()
+            registerChatElement?.(chat.id as string, element)
+          }}
+        />
+      ))}
+    </div>
   ),
 }))
 
@@ -156,6 +175,29 @@ vi.mock('../FolderList/FolderFormPopup', () => ({
 
 afterEach(cleanup)
 
+const nextFrame = () =>
+  new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve())
+  })
+
+// revealChat waits two frames, then runs one step per frame before reading the registered
+// element and scrolling — see useChatSidebarNavigation.ts.
+const nextFrames = (count: number): Promise<void> =>
+  count === 0 ? Promise.resolve() : nextFrame().then(() => nextFrames(count - 1))
+
+const flushScrollFrames = async () => {
+  await act(() => nextFrames(6))
+}
+
+// revealChat only scrolls a row that is out of its list's view.
+const placeRowOutOfView = (row: HTMLElement) => {
+  const list = row.parentElement as HTMLElement
+  list.style.overflowY = 'auto'
+  list.getBoundingClientRect = () => ({ top: 0, bottom: 100 } as DOMRect)
+  row.getBoundingClientRect = () => ({ top: 200, bottom: 230 } as DOMRect)
+  row.scrollIntoView = vi.fn()
+}
+
 describe('ChatSidebarLists', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -168,7 +210,7 @@ describe('ChatSidebarLists', () => {
     mockMoveOrderStore.getMoveOrder.mockReturnValue({})
   })
 
-  it('shows a folder chat in Recent and keeps Recent expanded', async () => {
+  it("opens the current chat's folder while keeping the chat listed in Recent", async () => {
     const activeChat = {
       id: 'chat-1',
       name: 'Active chat',
@@ -184,16 +226,15 @@ describe('ChatSidebarLists', () => {
     render(<ChatSidebarLists />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('recent chats-section')).toHaveAttribute('data-expanded', 'true')
-      expect(screen.getByTestId('folders-section')).toHaveAttribute('data-expanded', 'false')
+      expect(screen.getByTestId('recent chats-section')).toHaveAttribute('data-expanded', 'false')
+      expect(screen.getByTestId('folders-section')).toHaveAttribute('data-expanded', 'true')
       expect(screen.getByTestId('chat-list')).toHaveAttribute('data-chat-ids', 'chat-1')
-      expect(screen.getByTestId('chat-list')).toHaveAttribute('data-active-visible', 'true')
-      expect(screen.getByTestId('folder-list')).toHaveAttribute('data-active-folder-indices', '')
+      expect(screen.getByTestId('folder-list')).toHaveAttribute('data-active-folder-indices', '0')
       expect(screen.getByTestId('folder-list')).toHaveAttribute('data-active-visible', 'true')
     })
   })
 
-  it('keeps every folder collapsed when Folders is expanded, and expands only the one clicked', async () => {
+  it("opens only the current chat's folder, and a clicked folder replaces it", async () => {
     const activeChat = {
       id: 'chat-1',
       name: 'Active chat',
@@ -211,12 +252,10 @@ describe('ChatSidebarLists', () => {
 
     render(<ChatSidebarLists />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Folders' }))
-
     await waitFor(() => {
       expect(screen.getByTestId('folders-section')).toHaveAttribute('data-expanded', 'true')
-      // The current chat lives in "Project", but no folder should pre-open itself.
-      expect(screen.getByTestId('folder-list')).toHaveAttribute('data-active-folder-indices', '')
+      // The current chat lives in "Project": only that folder opens.
+      expect(screen.getByTestId('folder-list')).toHaveAttribute('data-active-folder-indices', '0')
     })
 
     fireEvent.click(screen.getByTestId('expand-folder-custom:Archive'))
@@ -514,6 +553,59 @@ describe('ChatSidebarLists', () => {
     expect(mockMoveOrderStore.getMoveOrder).toHaveBeenCalled()
   })
 
+  describe('Reveals the resolved chat into view (EPMCDME-15211 CR-007/CR-008)', () => {
+    it("scrolls the resolved chat's row into view once its element registers through real ChatList wiring", async () => {
+      const activeChat = {
+        id: 'chat-1',
+        name: 'Active chat',
+        pinned: false,
+        folder: null,
+        updateDate: '2026-07-16T09:00:00.000Z',
+      }
+      mockChatsStore.chats = [activeChat]
+      mockChatsStore.currentChat = activeChat
+
+      render(<ChatSidebarLists />)
+
+      const chatRow = screen.getByTestId('chat-row-chat-1')
+      placeRowOutOfView(chatRow)
+
+      await flushScrollFrames()
+
+      expect(chatRow.scrollIntoView).toHaveBeenCalled()
+    })
+
+    it('retries the reveal once the row registers late instead of skipping it permanently (CR-008)', async () => {
+      mockChatsStore.chats = []
+      mockChatsStore.currentChat = { id: 'chat-1', pinned: false, folder: null }
+
+      const { rerender } = render(<ChatSidebarLists />)
+
+      // First pass: the chat's row hasn't rendered yet (e.g. still loading), so revealChat finds
+      // nothing — the guard must not lock in on this miss.
+      await flushScrollFrames()
+      expect(screen.queryByTestId('chat-row-chat-1')).not.toBeInTheDocument()
+
+      const activeChat = {
+        id: 'chat-1',
+        name: 'Active chat',
+        pinned: false,
+        folder: null,
+        updateDate: '2026-07-16T09:00:00.000Z',
+      }
+      mockChatsStore.chats = [activeChat]
+      mockChatsStore.currentChat = activeChat
+      rerender(<ChatSidebarLists />)
+
+      const chatRow = screen.getByTestId('chat-row-chat-1')
+      placeRowOutOfView(chatRow)
+
+      await flushScrollFrames()
+
+      expect(chatRow.scrollIntoView).toHaveBeenCalled()
+    })
+  })
+
   it('resorts folders to the destination when the most-recently-active chat is moved, with no reload (EPMCDME-15165)', () => {
     mockChatsStore.chatFolders = [
       { name: 'Folder A', updateDate: '2026-07-01T09:00:00.000Z' },
@@ -584,8 +676,8 @@ describe('ChatSidebarLists', () => {
       try {
         render(<ChatSidebarLists />)
 
+        fireEvent.click(screen.getByRole('button', { name: 'Recent Chats' }))
         expect(screen.getByTestId('recent chats-section')).toHaveAttribute('data-expanded', 'true')
-        expect(screen.getByTestId('workflows-section')).toHaveAttribute('data-expanded', 'true')
 
         fireEvent.click(screen.getByRole('button', { name: 'Create Folder' }))
         fireEvent.click(screen.getByRole('button', { name: 'Submit folder' }))

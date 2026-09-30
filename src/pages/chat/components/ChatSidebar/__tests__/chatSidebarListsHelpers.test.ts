@@ -268,7 +268,16 @@ describe('buildUnifiedChatSidebarViewModel', () => {
       'pinned-folder',
     ])
     expect(viewModel.foldersToChatsMap['legacy-import:Claude Imports']).toEqual([importedChat])
-    expect(viewModel.chatLocations['regular-folder']).toEqual({ section: 'recent' })
+    // Listed in Recent / Pinned, but revealed in their folder.
+    expect(viewModel.chatLocations['regular-folder']).toEqual({
+      section: 'folder',
+      folderName: 'custom:Project',
+    })
+    expect(viewModel.chatLocations['pinned-folder']).toEqual({
+      section: 'folder',
+      folderName: 'custom:Project',
+    })
+    expect(viewModel.chatLocations.unfiled).toEqual({ section: 'recent' })
     expect(viewModel.chatLocations['cli-import']).toEqual({
       section: 'folder',
       folderName: 'legacy-import:Claude Imports',
@@ -689,8 +698,15 @@ describe('buildFocusedChatSidebarViewModel', () => {
     const viewModel = buildFocusedChatSidebarViewModel(chats, focusedSettings)
 
     expect(viewModel.pinnedChats.map((chat) => chat.id)).toEqual(['newer-pinned', 'older-pinned'])
-    expect(viewModel.chatLocations['newer-pinned']).toEqual({ section: 'pinned' })
-    expect(viewModel.chatLocations['older-pinned']).toEqual({ section: 'pinned' })
+    // Still listed in Pinned, but revealed in their folder's drilldown.
+    expect(viewModel.chatLocations['newer-pinned']).toEqual({
+      section: 'folder',
+      folderName: 'Project',
+    })
+    expect(viewModel.chatLocations['older-pinned']).toEqual({
+      section: 'folder',
+      folderName: 'Project',
+    })
     expect(viewModel.groups.find((group) => group.name === 'Project')?.chats).toHaveLength(3)
   })
 
@@ -704,7 +720,10 @@ describe('buildFocusedChatSidebarViewModel', () => {
     const viewModel = buildFocusedChatSidebarViewModel([pinnedChat], focusedSettings)
 
     expect(viewModel.pinnedChats).toEqual([pinnedChat])
-    expect(viewModel.chatLocations[pinnedChat.id]).toEqual({ section: 'pinned' })
+    expect(viewModel.chatLocations[pinnedChat.id]).toEqual({
+      section: 'folder',
+      folderName: 'Project',
+    })
   })
 
   it('does not create an annotated assistant row for a pinned chat without an assistant', () => {

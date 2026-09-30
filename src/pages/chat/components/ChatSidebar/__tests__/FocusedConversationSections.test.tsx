@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ChatListDensity } from '@/store/chatViewSettings'
@@ -23,47 +23,30 @@ import FocusedConversationSections from '../ChatSidebarLists/FocusedConversation
 
 import type { ReactNode } from 'react'
 
-const infiniteScrollMock = vi.hoisted(() => ({
-  options: null as null | {
-    enabled: boolean
-    onLoadMore: () => void
-  },
-}))
-
-vi.mock('@/hooks/useInfiniteScroll', () => ({
-  useInfiniteScroll: vi.fn((options) => {
-    infiniteScrollMock.options = options
-    return { current: null }
-  }),
-}))
-
 vi.mock('../ChatSidebarLists/ChatSidebarAccordion', () => ({
   default: ({
     children,
     isCollapsible = true,
-    onScrollIntent,
     title,
   }: {
     children: ReactNode
     isCollapsible?: boolean
-    onScrollIntent?: () => void
     title: string
   }) => (
     <section aria-label={title} data-collapsible={isCollapsible}>
-      <button type="button" onClick={onScrollIntent}>
-        Scroll {title}
-      </button>
       {children}
     </section>
   ),
 }))
 
-vi.mock('../ChatList/ChatListItem', () => ({
-  default: ({ chat }: { chat: ChatListItem }) => <li>chat:{chat.id}</li>,
-}))
-
 vi.mock('../ChatList/ChatList', () => ({
-  default: () => null,
+  default: ({ chats }: { chats: ChatListItem[] }) => (
+    <ul>
+      {chats.map((chat) => (
+        <li key={chat.id}>chat:{chat.id}</li>
+      ))}
+    </ul>
+  ),
 }))
 
 const createChat = (id: string, hour: number): ChatListItem => ({
@@ -80,13 +63,10 @@ const createChat = (id: string, hour: number): ChatListItem => ({
   assistantNames: ['Assistant A'],
 })
 
-afterEach(() => {
-  cleanup()
-  infiniteScrollMock.options = null
-})
+afterEach(cleanup)
 
 describe('FocusedConversationSections', () => {
-  it('renders individual pinned chat rows and loads them in batches', () => {
+  it('passes every pinned chat to the list, in order, without batching', () => {
     const pinnedChats = [
       createChat('chat-10', 10),
       createChat('chat-8', 8),
@@ -109,20 +89,8 @@ describe('FocusedConversationSections', () => {
     )
 
     expect(screen.getByLabelText('Pinned')).toHaveTextContent(
-      'chat:chat-10chat:chat-8chat:chat-6chat:chat-4chat:chat-2'
+      'chat:chat-10chat:chat-8chat:chat-6chat:chat-4chat:chat-2chat:chat-1'
     )
-    expect(screen.queryByText('chat:chat-1')).not.toBeInTheDocument()
-    expect(infiniteScrollMock.options?.enabled).toBe(false)
-
-    fireEvent.click(screen.getByRole('button', { name: 'Scroll Pinned' }))
-
-    expect(infiniteScrollMock.options?.enabled).toBe(true)
-
-    act(() => {
-      infiniteScrollMock.options?.onLoadMore()
-    })
-
-    expect(screen.getByText('chat:chat-1')).toBeInTheDocument()
   })
 
   it('renders Recent as a non-collapsible section', () => {

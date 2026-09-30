@@ -13,13 +13,18 @@
 // limitations under the License.
 //
 
-import { forwardRef, memo, type Ref } from 'react'
+import { forwardRef, memo, useCallback, useContext, useLayoutEffect, type Ref } from 'react'
 
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { ChatListDensity } from '@/store/chatViewSettings'
 import { ChatListItem as ChatListItemType } from '@/types/entity/conversation'
 
-import ChatListItem, { ChatListItemActions, RegisterChatElement } from './ChatListItem'
+import ChatListItem, {
+  ChatListItemActions,
+  getChatRowHeightRem,
+  RegisterChatElement,
+} from './ChatListItem'
+import { ChatListScrollerRegistryContext } from './chatListVirtualization'
+import { getRootFontSizePx, useSidebarVirtualList } from './useSidebarVirtualList'
 
 interface ChatListProps {
   currentChatId?: string
@@ -27,10 +32,6 @@ interface ChatListProps {
   chats: ChatListItemType[]
   hideAvatar?: boolean | ((chat: ChatListItemType) => boolean)
   id?: string
-  onLoadMore?: () => void
-  hasMore?: boolean
-  isLoading?: boolean
-  isLazyLoadingEnabled?: boolean
   density?: ChatListDensity
   showRelativeTimestamp?: boolean
   registerChatElement?: RegisterChatElement
@@ -43,42 +44,86 @@ const ChatListInner = (
     chats,
     hideAvatar,
     id,
-    onLoadMore = () => undefined,
-    hasMore = false,
-    isLoading = false,
-    isLazyLoadingEnabled = false,
     density = ChatListDensity.DETAILED,
     showRelativeTimestamp = false,
     registerChatElement,
   }: ChatListProps,
   ref: Ref<HTMLUListElement>
 ) => {
-  const sentinelRef = useInfiniteScroll({
-    enabled: isLazyLoadingEnabled,
-    isLoading,
-    hasMore,
-    onLoadMore,
-  })
+  const registerScroller = useContext(ChatListScrollerRegistryContext)
+
+  const estimateSize = useCallback(
+    (index: number) =>
+      getChatRowHeightRem(chats[index], density, showRelativeTimestamp) * getRootFontSizePx(),
+    [chats, density, showRelativeTimestamp]
+  )
+  const getItemKey = useCallback((index: number) => chats[index].id, [chats])
+  const {
+    listRef,
+    isVirtual,
+    isAwaitingScrollElement,
+    virtualizer,
+    virtualItems,
+    paddingTop,
+    paddingBottom,
+    measureRow,
+  } = useSidebarVirtualList({ count: chats.length, estimateSize, getItemKey })
+
+  const setListRef = useCallback(
+    (element: HTMLUListElement | null) => {
+      listRef.current = element
+      if (typeof ref === 'function') ref(element)
+      else if (ref) (ref as { current: HTMLUListElement | null }).current = element
+    },
+    [listRef, ref]
+  )
+
+  useLayoutEffect(() => {
+    const unregister =
+      isVirtual && registerScroller
+        ? registerScroller({
+            listId: id,
+            scrollToChat: (chatId, align) => {
+              const index = chats.findIndex((chat) => chat.id === chatId)
+              if (index < 0) return false
+              virtualizer.scrollToIndex(index, { align })
+              return true
+            },
+          })
+        : undefined
+    return unregister
+  }, [chats, id, isVirtual, registerScroller, virtualizer])
+
+  const registerRow = useCallback<RegisterChatElement>(
+    (chatId, element) => {
+      registerChatElement?.(chatId, element)
+      measureRow(element)
+    },
+    [measureRow, registerChatElement]
+  )
+
+  const renderRow = (chat: ChatListItemType, virtualIndex?: number) => (
+    <ChatListItem
+      key={chat.id}
+      chat={chat}
+      actions={chatActions}
+      currentChatId={currentChatId}
+      hideAvatar={typeof hideAvatar === 'function' ? hideAvatar(chat) : hideAvatar === true}
+      density={density}
+      showRelativeTimestamp={showRelativeTimestamp}
+      registerChatElement={registerRow}
+      virtualIndex={virtualIndex}
+    />
+  )
+
+  let rows = isAwaitingScrollElement ? [] : chats.map((chat) => renderRow(chat))
+  if (isVirtual) rows = virtualItems.map((item) => renderRow(chats[item.index], item.index))
 
   return (
-    <ul ref={ref} id={id}>
-      {chats.map((chat) => (
-        <ChatListItem
-          key={chat.id}
-          chat={chat}
-          actions={chatActions}
-          currentChatId={currentChatId}
-          hideAvatar={typeof hideAvatar === 'function' ? hideAvatar(chat) : hideAvatar === true}
-          density={density}
-          showRelativeTimestamp={showRelativeTimestamp}
-          registerChatElement={registerChatElement}
-        />
-      ))}
-      {hasMore && (
-        <li aria-hidden="true">
-          <div ref={sentinelRef} className="h-px" />
-        </li>
-      )}
+    <ul ref={setListRef} id={id}>
+      {paddingTop > 0 && <li aria-hidden="true" style={{ height: paddingTop }} />}
+      {rows}
+      {paddingBottom > 0 && <li aria-hidden="true" style={{ height: paddingBottom }} />}
     </ul>
   )
 }

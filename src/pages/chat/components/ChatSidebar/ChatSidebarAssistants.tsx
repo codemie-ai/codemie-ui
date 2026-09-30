@@ -24,7 +24,6 @@ import PlusSvg from '@/assets/icons/plus.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import { AvatarType } from '@/constants/avatar'
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { getAssistantEditRoute } from '@/pages/assistants/utils/getAssistantLink'
 import { assistantsStore } from '@/store/assistants'
@@ -32,11 +31,16 @@ import { chatsStore } from '@/store/chats'
 import { Assistant } from '@/types/entity/assistant'
 import { canEdit } from '@/utils/entity'
 
+import {
+  getPersistedSidebarSections,
+  setPersistedSidebarSection,
+  useResyncPersistedSidebarSections,
+} from './ChatSidebarLists/useChatSidebarSectionPersistence'
 import ChatsSidebarSection from './ChatSidebarSection'
 import RecentAssistantsPickerPopup from './RecentAssistantsPickerPopup'
 
 const MAX_NAME_LENGTH = 20
-const RECENT_ASSISTANTS_BATCH_SIZE = 5
+const VISIBLE_ASSISTANT_ROWS = 5
 const RECENT_ASSISTANT_ROW_HEIGHT_PX = 36
 
 interface ChatSidebarAssistantsProps {
@@ -56,22 +60,15 @@ const ChatSidebarAssistants = ({
   const router = useVueRouter()
   const { recentAssistants } = useSnapshot(assistantsStore)
   const [isPickerVisible, setIsPickerVisible] = useState(false)
-  const [visibleAssistantsCount, setVisibleAssistantsCount] = useState(RECENT_ASSISTANTS_BATCH_SIZE)
-  const [hasScrollIntent, setHasScrollIntent] = useState(false)
-
-  const visibleAssistants = recentAssistants.slice(0, visibleAssistantsCount)
-  const hasMoreAssistants = visibleAssistants.length < recentAssistants.length
-  const loadMoreAssistants = useCallback(() => {
-    setVisibleAssistantsCount((count) =>
-      Math.min(count + RECENT_ASSISTANTS_BATCH_SIZE, recentAssistants.length)
+  const [isRecentAssistantsExpanded, setIsRecentAssistantsExpanded] = useState(
+    () => getPersistedSidebarSections().recentAssistantsExpanded
+  )
+  useResyncPersistedSidebarSections(
+    useCallback(
+      () => setIsRecentAssistantsExpanded(getPersistedSidebarSections().recentAssistantsExpanded),
+      []
     )
-  }, [recentAssistants.length])
-  const sentinelRef = useInfiniteScroll({
-    enabled: hasScrollIntent,
-    isLoading: false,
-    hasMore: hasMoreAssistants,
-    onLoadMore: loadMoreAssistants,
-  })
+  )
 
   const editAssistant = (assistant: Assistant) => {
     router.push(getAssistantEditRoute(assistant))
@@ -124,6 +121,12 @@ const ChatSidebarAssistants = ({
     <>
       <ChatsSidebarSection
         title="Recent Assistants"
+        activeIndex={isRecentAssistantsExpanded ? 0 : null}
+        onActiveIndexChange={(index) => {
+          const expanded = index !== null
+          setIsRecentAssistantsExpanded(expanded)
+          setPersistedSidebarSection({ recentAssistantsExpanded: expanded })
+        }}
         headerContent={
           <button
             type="button"
@@ -143,12 +146,9 @@ const ChatSidebarAssistants = ({
         <div
           data-testid="recent-assistants-scroll-container"
           className="flex flex-col overflow-y-auto"
-          style={{ maxHeight: RECENT_ASSISTANTS_BATCH_SIZE * RECENT_ASSISTANT_ROW_HEIGHT_PX }}
-          onScroll={() => setHasScrollIntent(true)}
-          onWheel={() => setHasScrollIntent(true)}
-          onTouchMove={() => setHasScrollIntent(true)}
+          style={{ maxHeight: VISIBLE_ASSISTANT_ROWS * RECENT_ASSISTANT_ROW_HEIGHT_PX }}
         >
-          {visibleAssistants.map((assistant) => (
+          {recentAssistants.map((assistant) => (
             <div
               key={assistant.id}
               className="flex h-9 shrink-0 min-w-0 items-center justify-between gap-2 px-1.5"
@@ -186,7 +186,6 @@ const ChatSidebarAssistants = ({
               </div>
             </div>
           ))}
-          {hasMoreAssistants && <div ref={sentinelRef} className="h-px shrink-0" aria-hidden />}
         </div>
       </ChatsSidebarSection>
       <RecentAssistantsPickerPopup

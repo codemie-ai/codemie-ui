@@ -24,7 +24,7 @@ import {
   useInteractions,
   useRole,
 } from '@floating-ui/react'
-import { useState, useRef, FC, memo } from 'react'
+import { useState, useRef, FC, memo, useContext } from 'react'
 import { useSnapshot } from 'valtio'
 
 import AssistantSVG from '@/assets/icons/assistant.svg?react'
@@ -48,6 +48,7 @@ import { cn } from '@/utils/utils'
 
 import ChatListItemContextMenu from './ChatListItemContextMenu'
 import ChatListItemTooltip from './ChatListItemTooltip'
+import { ChatSidebarSelectContext } from './chatSidebarSelection'
 
 const DEFAULT_CHAT_NAME = 'New chat'
 
@@ -60,6 +61,24 @@ const getRowSpacingClassName = (isCompact: boolean, hasRelativeTimestamp: boolea
   if (isCompact) return 'h-8 mb-1'
   if (hasRelativeTimestamp) return 'min-h-12 py-1 mb-1.5'
   return 'h-9 mb-1.5'
+}
+
+const hasChatRelativeTimestamp = (
+  chat: ChatListItem,
+  isCompact: boolean,
+  showRelativeTimestamp: boolean
+) => !isCompact && showRelativeTimestamp && !!(chat.updateDate || chat.date)
+
+// Height plus bottom margin in rem, matching getRowSpacingClassName.
+export const getChatRowHeightRem = (
+  chat: ChatListItem,
+  density: ChatListDensity,
+  showRelativeTimestamp: boolean
+) => {
+  const isCompact = density === ChatListDensity.COMPACT
+  if (isCompact) return 2.25
+  if (hasChatRelativeTimestamp(chat, isCompact, showRelativeTimestamp)) return 3.375
+  return 2.625
 }
 
 export interface ChatListItemActions {
@@ -78,6 +97,7 @@ interface ChatListItemProps {
   density?: ChatListDensity
   showRelativeTimestamp?: boolean
   registerChatElement?: RegisterChatElement
+  virtualIndex?: number
 }
 
 const ChatListItem: FC<ChatListItemProps> = memo(
@@ -89,6 +109,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
     density = ChatListDensity.DETAILED,
     showRelativeTimestamp = false,
     registerChatElement,
+    virtualIndex,
   }) => {
     const { renameChat, pinChat } = useSnapshot(chatsStore)
     const { iconUrl: resolvedIconUrl, name: resolvedName } = useResolveChatAvatar(chat)
@@ -98,13 +119,13 @@ const ChatListItem: FC<ChatListItemProps> = memo(
     const [isMenuOpen, setIsMenuOpen] = useState(false)
 
     const router = useVueRouter()
+    const onSidebarSelect = useContext(ChatSidebarSelectContext)
     const editNameInputRef = useRef<HTMLInputElement>(null)
     const { announcement, announce } = useAnnouncementQueue()
     const isActive = chat.id === currentChatId
     const isImportChat = isImportedChat(chat)
     const isCompact = density === ChatListDensity.COMPACT
-    const hasRelativeTimestamp =
-      !isCompact && showRelativeTimestamp && !!(chat.updateDate || chat.date)
+    const hasRelativeTimestamp = hasChatRelativeTimestamp(chat, isCompact, showRelativeTimestamp)
     const rowSpacingClassName = getRowSpacingClassName(isCompact, hasRelativeTimestamp)
 
     const hasTooltipContent = !!(resolvedName || chat.date)
@@ -131,6 +152,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
       folder === AVATAR_CHAT_FOLDER ? 'avatar-chat' : 'chats'
 
     const select = () => {
+      onSidebarSelect?.(chat.id)
       router.push({ name: resolveRouteName(chat.folder), params: { id: chat.id } })
     }
 
@@ -163,8 +185,11 @@ const ChatListItem: FC<ChatListItemProps> = memo(
           aria-selected={isActive}
           ref={(element) => registerChatElement?.(chat.id, element)}
           data-chat-id={chat.id}
+          data-index={virtualIndex}
           className={cn(
-            'flex items-center justify-between rounded-lg px-2 text-text-secondary transition-colors duration-150 hover:text-text-primary',
+            // relative: contains the absolutely positioned sr-only "Pinned" label, which otherwise
+            // escapes the list's scroll clipping and stretches the whole page.
+            'relative flex items-center justify-between rounded-lg px-2 text-text-secondary transition-colors duration-150 hover:text-text-primary',
             rowSpacingClassName,
             isActive && '!text-text-primary bg-surface-specific-dropdown-hover'
           )}

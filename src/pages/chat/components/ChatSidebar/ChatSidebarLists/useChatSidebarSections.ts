@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { DEFAULT_CHAT_FOLDER } from '@/constants/chats'
 import { ChatListItem, FolderListItem } from '@/types/entity/conversation'
@@ -23,7 +23,10 @@ import { FocusedNavigationSection } from './chatSidebarSectionsHelpers'
 import { useChatSidebarExpansion } from './useChatSidebarExpansion'
 import { useChatSidebarFolders } from './useChatSidebarFolders'
 import { ChatSidebarListsRef, useChatSidebarNavigation } from './useChatSidebarNavigation'
-import { useChatSidebarPagination } from './useChatSidebarPagination'
+import {
+  getPersistedSidebarSections,
+  useResyncPersistedSidebarSections,
+} from './useChatSidebarSectionPersistence'
 
 import type { FocusedChatSidebarViewModel } from './chatSidebarListsHelpers'
 import type { FocusedView } from './focusedChatSidebarHelpers'
@@ -33,9 +36,6 @@ export type { ChatSidebarListsRef }
 
 interface UseChatSidebarSectionsParams {
   ref: ForwardedRef<ChatSidebarListsRef>
-  pinnedChats: ChatListItem[]
-  recentChats: ChatListItem[]
-  workflowChats: ChatListItem[]
   chatLocations: Record<string, ChatSidebarLocation>
   chatFolders: readonly FolderListItem[]
   foldersToChatsMap: Record<string, ChatListItem[]>
@@ -52,9 +52,6 @@ interface UseChatSidebarSectionsParams {
 export const useChatSidebarSections = (params: UseChatSidebarSectionsParams) => {
   const {
     ref,
-    pinnedChats,
-    recentChats,
-    workflowChats,
     chatLocations,
     chatFolders,
     foldersToChatsMap,
@@ -69,34 +66,20 @@ export const useChatSidebarSections = (params: UseChatSidebarSectionsParams) => 
   } = params
 
   const [disableAccordionAnimation, setDisableAccordionAnimation] = useState(false)
+  // A chat opened by clicking its sidebar row is already where the user is looking.
+  const sidebarSelectedChatIdRef = useRef<string | undefined>(undefined)
+  const markSidebarSelection = useCallback((chatId: string) => {
+    sidebarSelectedChatIdRef.current = chatId
+  }, [])
   const { folders, folderKinds, activeFolderIndices, setActiveFolder, setActiveFolders } =
     useChatSidebarFolders({ chatFolders, foldersToChatsMap })
-  const {
-    isPinnedExpanded,
-    setIsPinnedExpanded,
-    revealPinnedChat,
-    revealRecentChat,
-    revealWorkflowRun,
-    visiblePinnedChats,
-    loadMorePinnedChats,
-    hasPinnedScrollIntent,
-    setHasPinnedScrollIntent,
-    visibleRecentChats,
-    loadMoreRecentChats,
-    hasRecentScrollIntent,
-    setHasRecentScrollIntent,
-    visibleWorkflowRuns,
-    loadMoreWorkflowRuns,
-    hasWorkflowRunsScrollIntent,
-    setHasWorkflowRunsScrollIntent,
-    resetRecentChats,
-  } = useChatSidebarPagination({
-    pinnedChats,
-    recentChats,
-    workflowChats,
-    currentChat,
-    isChatsLoading,
-  })
+  const [isPinnedExpanded, setIsPinnedExpanded] = useState(
+    () => getPersistedSidebarSections().pinnedExpanded
+  )
+  useResyncPersistedSidebarSections(
+    useCallback(() => setIsPinnedExpanded(getPersistedSidebarSections().pinnedExpanded), [])
+  )
+  const revealPinnedChat = useCallback(() => setIsPinnedExpanded(true), [])
   const {
     isRecentExpanded,
     setIsRecentExpanded,
@@ -112,27 +95,53 @@ export const useChatSidebarSections = (params: UseChatSidebarSectionsParams) => 
     isChatsLoading,
     isFocused,
     setIsPinnedExpanded,
-  })
-  useEffect(() => {
-    if (!isRecentExpanded) resetRecentChats()
-  }, [isRecentExpanded, resetRecentChats])
-
-  const { registerChatElement, registerFolderElement } = useChatSidebarNavigation({
-    ref,
-    isFocused,
+    sidebarSelectedChatIdRef,
+    setActiveFolder,
     focusedViewModel,
-    chatLocations,
     setFocusedView,
     setFocusedNavigationSection,
-    setRecentExpanded: setIsRecentExpanded,
-    setWorkflowRunsExpanded: setIsWorkflowRunsExpanded,
-    setFoldersExpanded: setIsFoldersExpanded,
-    setActiveFolder,
-    setDisableAccordionAnimation,
-    revealPinnedChat,
-    revealRecentChat,
-    revealWorkflowRun,
   })
+  const { registerChatElement, registerFolderElement, registerChatListScroller, revealChat } =
+    useChatSidebarNavigation({
+      ref,
+      isFocused,
+      focusedViewModel,
+      chatLocations,
+      setFocusedView,
+      setFocusedNavigationSection,
+      setRecentExpanded: setIsRecentExpanded,
+      setWorkflowRunsExpanded: setIsWorkflowRunsExpanded,
+      setFoldersExpanded: setIsFoldersExpanded,
+      setActiveFolder,
+      setDisableAccordionAnimation,
+      revealPinnedChat,
+    })
+
+  // Reveals the resolved chat once per id, after T1/T2 above have applied the folder/drilldown
+  // state for it — the double-RAF inside revealChat waits for that state to reach the DOM.
+  // Locks in only once revealChat reports the element was actually found — if the chat's row
+  // (or folder fallback) isn't registered yet, the ref stays unset so the next render (e.g. once
+  // more chats/folders finish rendering) retries instead of skipping the reveal forever.
+  // Keyed on the id, not the chat object: the object changes with every streamed message chunk.
+  const currentChatId = currentChat?.id
+  const revealedChatIdRef = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (!currentChatId || revealedChatIdRef.current === currentChatId) return
+    const chatId = currentChatId
+    if (sidebarSelectedChatIdRef.current === chatId) {
+      revealedChatIdRef.current = chatId
+      // Consumed: arriving at this chat again later (e.g. via Back) should reveal it.
+      sidebarSelectedChatIdRef.current = undefined
+      return
+    }
+    // An accordion still animating open clips its content, so the scroll could not reach a row
+    // deep inside the chat's folder.
+    setDisableAccordionAnimation(true)
+    revealChat(chatId, (found) => {
+      if (found) revealedChatIdRef.current = chatId
+      setDisableAccordionAnimation(false)
+    })
+  }, [currentChatId, revealChat])
 
   const handleMoveChat = useCallback(
     (folderName: string, selectedChat?: ChatListItem) => {
@@ -172,24 +181,14 @@ export const useChatSidebarSections = (params: UseChatSidebarSectionsParams) => 
     setActiveFolder,
     setActiveFolders,
     disableAccordionAnimation,
-    visiblePinnedChats,
-    loadMorePinnedChats,
-    hasPinnedScrollIntent,
-    setHasPinnedScrollIntent,
-    visibleRecentChats,
-    loadMoreRecentChats,
-    hasRecentScrollIntent,
-    setHasRecentScrollIntent,
-    visibleWorkflowRuns,
-    loadMoreWorkflowRuns,
-    hasWorkflowRunsScrollIntent,
-    setHasWorkflowRunsScrollIntent,
     folders,
     folderLabels,
     folderKinds,
     activeFolderIndices,
     registerChatElement,
     registerFolderElement,
+    registerChatListScroller,
+    markSidebarSelection,
     handleToggleSection,
     handleMoveChat,
     handleCreateFolder,

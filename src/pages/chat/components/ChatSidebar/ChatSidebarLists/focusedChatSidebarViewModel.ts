@@ -44,7 +44,8 @@ const buildFolderGroups = (
   for (const [name, chats] of sourceFolders) {
     folders.set(name, { name, chats })
     for (const chat of chats) {
-      if (!chat.pinned && locations[chat.id]?.section !== 'workflow-runs') {
+      // Pinned chats too: a chat in a folder is revealed in that folder's drilldown.
+      if (locations[chat.id]?.section !== 'workflow-runs') {
         locations[chat.id] = { section: 'folder', folderName: name }
       }
     }

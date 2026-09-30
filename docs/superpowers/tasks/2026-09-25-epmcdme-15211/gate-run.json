@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15211_placeholder-task",
+  "head": "1169ec16c5308dcc281b0392d8353bd43d84f5f2",
+  "runner": "npm",
+  "started_at": "2026-09-25T17:04:00Z",
+  "completed_at": "2026-09-25T17:10:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 3000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 45000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8000,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "no leaks found"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 128930,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "621 test files passed, 6325 tests passed, 1 skipped"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 59780,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "48 test files passed, 547 tests passed, 1 skipped"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2000,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "No staged files found"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 15000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "2214 files checked, 0 missing license headers"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Skipping Sonar scan because SONAR_TOKEN is not set"
+    }
+  ],
+  "failures": {}
+}

@@ -15,10 +15,12 @@
 
 import { Accordion, AccordionTab } from 'primereact/accordion'
 import { CSSTransitionProps } from 'primereact/csstransition'
-import { FC, ReactNode } from 'react'
+import { FC, ReactNode, useState } from 'react'
 
 import ChevronRightIcon from '@/assets/icons/chevron-right.svg?react'
 import { cn } from '@/utils/utils'
+
+import { ChatListScrollElementContext } from '../ChatList/chatListVirtualization'
 
 const accordionPt = {
   root: { className: 'flex flex-col min-h-10 shrink-0' },
@@ -51,7 +53,6 @@ interface ChatSidebarAccordionProps {
   children: ReactNode
   headerContentTemplate?: ReactNode
   onToggle?: () => void
-  onScrollIntent?: () => void
   transitionOptions?: CSSTransitionProps
   groupId?: string
   scrollable?: boolean
@@ -67,12 +68,15 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
   children,
   headerContentTemplate,
   onToggle,
-  onScrollIntent,
   transitionOptions,
   groupId,
   scrollable,
   contentClassName,
 }) => {
+  // State rather than a ref: lists inside mount before this div's ref is attached, so they need
+  // a re-render once the scroll element exists.
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null)
+
   const header = (
     <div
       className={cn(
@@ -99,16 +103,18 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
 
   const content = (
     <div
+      ref={setScrollElement}
       className={cn(
-        'flex flex-col overflow-y-auto min-h-0 pb-2',
+        // No browser scroll anchoring: the virtualized lists inside swap rows for spacers, which
+        // Chrome misreads as content shifting and "corrects" by jumping the scroll position.
+        'flex flex-col overflow-y-auto [overflow-anchor:none] min-h-0 pb-2',
         !isCollapsible && scrollable && 'flex-1',
         contentClassName
       )}
-      onScroll={onScrollIntent}
-      onWheel={onScrollIntent}
-      onTouchMove={onScrollIntent}
     >
-      {children}
+      <ChatListScrollElementContext.Provider value={scrollElement}>
+        {children}
+      </ChatListScrollElementContext.Provider>
     </div>
   )
 

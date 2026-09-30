@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "generated": "2026-09-25T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 3,
+      "label": "M"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S"
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M"
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS"
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M"
+    }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 18,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three components modified (ChatSidebarAssistants, FocusedChatSidebar, ChatSidebarSection) plus new persistence hook and 4 extracted state-management hooks; work spans UI and state layers but follows established patterns (Valtio + React hooks)"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "18 files changed (5 new implementation files + 8 new test files + 5 modified component files); 1262 insertions across feature logic, helper utilities, and comprehensive test coverage"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

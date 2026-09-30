@@ -23,21 +23,32 @@ export interface ChatsSidebarSectionProps {
   title: string
   children?: ReactNode
   headerContent?: ReactNode
+  activeIndex?: number | null
+  onActiveIndexChange?: (index: number | null) => void
 }
 
 const ChatsSidebarSection: React.FC<ChatsSidebarSectionProps> = ({
   title,
   children,
   headerContent,
+  activeIndex: controlledActiveIndex,
+  onActiveIndexChange,
 }) => {
-  const [activeIndex, setActiveIndex] = useState<number | null>(0)
+  const [internalActiveIndex, setInternalActiveIndex] = useState<number | null>(0)
+  const isControlled = controlledActiveIndex !== undefined
+  const activeIndex = isControlled ? controlledActiveIndex : internalActiveIndex
+
+  const handleTabChange = (index: number | null) => {
+    onActiveIndexChange?.(index)
+    if (!isControlled) setInternalActiveIndex(index)
+  }
 
   return (
     <Accordion
       expandIcon={() => null}
       collapseIcon={() => null}
       activeIndex={activeIndex}
-      onTabChange={(e) => setActiveIndex(e.index as number | null)}
+      onTabChange={(e) => handleTabChange(e.index as number | null)}
       pt={{ root: { className: 'shrink-0' } }}
     >
       <AccordionTab

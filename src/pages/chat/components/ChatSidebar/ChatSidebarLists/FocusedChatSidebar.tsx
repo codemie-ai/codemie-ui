@@ -13,20 +13,24 @@
 // limitations under the License.
 //
 
-import { FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FC, ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { ChatListDensity } from '@/store/chatViewSettings'
 
 import ChatSidebarAccordion from './ChatSidebarAccordion'
-import FocusedAggregateRow from './FocusedAggregateRow'
 import {
   createEmptyAssistantChat,
   getChatDisplayName,
   getFocusedViewKey,
 } from './focusedChatSidebarHelpers'
 import FocusedConversationSections from './FocusedConversationSections'
+import FocusedGroupList from './FocusedGroupList'
 import FocusedViewHeader from './FocusedViewHeader'
+import {
+  getPersistedSidebarSections,
+  setPersistedSidebarSection,
+  useResyncPersistedSidebarSections,
+} from './useChatSidebarSectionPersistence'
 import ChatList from '../ChatList/ChatList'
 import { ChatListItemActions, RegisterChatElement } from '../ChatList/ChatListItem'
 
@@ -35,11 +39,6 @@ import type {
   FocusedChatSidebarViewModel,
 } from './chatSidebarListsHelpers'
 import type { FocusedView } from './focusedChatSidebarHelpers'
-
-const WORKFLOW_RUNS_BATCH_SIZE = 20
-// Folder rows are heavy (menu, avatars, counters); rendering all of them at once froze expanding
-// Folders for users with hundreds of folders, so they load in batches as the list scrolls.
-const FOLDERS_BATCH_SIZE = 20
 
 interface FocusedChatSidebarProps {
   view: FocusedView
@@ -68,15 +67,16 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
   createFolderButton,
   expandFoldersSignal = 0,
 }) => {
-  const [isPinnedExpanded, setIsPinnedExpanded] = useState(true)
-  const [isRecentExpanded, setIsRecentExpanded] = useState(true)
-  const [isWorkflowRunsExpanded, setIsWorkflowRunsExpanded] = useState(true)
-  const [isGroupsExpanded, setIsGroupsExpanded] = useState(false)
+  const [isPinnedExpanded, setIsPinnedExpanded] = useState(
+    () => getPersistedSidebarSections().pinnedExpanded
+  )
+  const [isRecentExpanded, setIsRecentExpanded] = useState(false)
+  useResyncPersistedSidebarSections(
+    useCallback(() => setIsPinnedExpanded(getPersistedSidebarSections().pinnedExpanded), [])
+  )
+  const [isWorkflowRunsExpanded, setIsWorkflowRunsExpanded] = useState(false)
+  const [isGroupsExpanded, setIsGroupsExpanded] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [visibleWorkflowRunsCount, setVisibleWorkflowRunsCount] = useState(WORKFLOW_RUNS_BATCH_SIZE)
-  const [hasWorkflowRunsScrollIntent, setHasWorkflowRunsScrollIntent] = useState(false)
-  const [visibleGroupsCount, setVisibleGroupsCount] = useState(FOLDERS_BATCH_SIZE)
-  const [hasGroupsScrollIntent, setHasGroupsScrollIntent] = useState(false)
 
   const selectedViewKey = getFocusedViewKey(view)
 
@@ -103,8 +103,6 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
     if (expandFoldersSignal === lastExpandFoldersSignalRef.current) return
     lastExpandFoldersSignalRef.current = expandFoldersSignal
     setIsGroupsExpanded(true)
-    // Raised after creating a folder: a new empty folder sorts last, so show the whole list.
-    setVisibleGroupsCount(Number.MAX_SAFE_INTEGER)
     setIsRecentExpanded(false)
     setIsWorkflowRunsExpanded(false)
   }, [expandFoldersSignal])
@@ -117,48 +115,15 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
     }
   }, [navigationSection])
 
-  useEffect(() => {
-    const targetChatId = view.targetChatId ?? currentChatId
-    const currentWorkflowRunIndex = viewModel.workflowChats.findIndex(
-      (chat) => chat.id === targetChatId
-    )
-    if (currentWorkflowRunIndex >= 0) {
-      setVisibleWorkflowRunsCount((count) => Math.max(count, currentWorkflowRunIndex + 1))
-    }
-  }, [currentChatId, view.targetChatId, viewModel.workflowChats])
-
-  const loadMoreWorkflowRuns = useCallback(() => {
-    setVisibleWorkflowRunsCount((count) =>
-      Math.min(count + WORKFLOW_RUNS_BATCH_SIZE, viewModel.workflowChats.length)
-    )
-  }, [viewModel.workflowChats.length])
-
-  const visibleWorkflowRuns = useMemo(
-    () => viewModel.workflowChats.slice(0, visibleWorkflowRunsCount),
-    [viewModel.workflowChats, visibleWorkflowRunsCount]
-  )
-
-  useEffect(() => {
-    if (isGroupsExpanded) return
-    setVisibleGroupsCount(FOLDERS_BATCH_SIZE)
-    setHasGroupsScrollIntent(false)
-  }, [isGroupsExpanded])
-
-  const loadMoreGroups = useCallback(() => {
-    setVisibleGroupsCount((count) => Math.min(count + FOLDERS_BATCH_SIZE, viewModel.groups.length))
-  }, [viewModel.groups.length])
-
-  const visibleGroups = useMemo(
-    () => viewModel.groups.slice(0, visibleGroupsCount),
-    [viewModel.groups, visibleGroupsCount]
-  )
-  const hasMoreGroups = visibleGroups.length < viewModel.groups.length
-  const groupsSentinelRef = useInfiniteScroll({
-    enabled: isGroupsExpanded && hasGroupsScrollIntent,
-    isLoading: false,
-    hasMore: hasMoreGroups,
-    onLoadMore: loadMoreGroups,
-  })
+  // Shared by both the drilldown and root views' Pinned toggle, so a manual toggle persists
+  // regardless of which view triggered it.
+  const handleTogglePinned = () => {
+    setIsPinnedExpanded((value) => {
+      const shouldExpand = !value
+      setPersistedSidebarSection({ pinnedExpanded: shouldExpand })
+      return shouldExpand
+    })
+  }
 
   let selectedAggregate: FocusedChatSidebarAggregate | undefined
   if (view.type === 'assistant') {
@@ -214,10 +179,9 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
             recentChats={selectedRecentChats}
             chatActions={chatActions}
             currentChatId={currentChatId}
-            revealChatId={view.targetChatId}
             density={density}
             isPinnedExpanded={isPinnedExpanded}
-            onTogglePinned={() => setIsPinnedExpanded((value) => !value)}
+            onTogglePinned={handleTogglePinned}
             showRelativeTimestamp
             registerChatElement={registerChatElement}
           />
@@ -258,12 +222,11 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
         recentChats={viewModel.recentChats}
         chatActions={chatActions}
         currentChatId={currentChatId}
-        revealChatId={view.targetChatId}
         density={density}
         isPinnedExpanded={isPinnedExpanded}
         isRecentCollapsible
         isRecentExpanded={isRecentExpanded}
-        onTogglePinned={() => setIsPinnedExpanded((value) => !value)}
+        onTogglePinned={handleTogglePinned}
         onToggleRecent={handleToggleRecent}
         recentTitle="Recent Chats"
         showRecentWhenEmpty
@@ -276,16 +239,12 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
           count={viewModel.workflowChats.length}
           isExpanded={isWorkflowRunsExpanded}
           onToggle={handleToggleWorkflowRuns}
-          onScrollIntent={() => setHasWorkflowRunsScrollIntent(true)}
           scrollable
         >
           <ChatList
-            chats={visibleWorkflowRuns}
+            chats={viewModel.workflowChats}
             chatActions={chatActions}
             currentChatId={currentChatId}
-            onLoadMore={loadMoreWorkflowRuns}
-            hasMore={visibleWorkflowRuns.length < viewModel.workflowChats.length}
-            isLazyLoadingEnabled={isWorkflowRunsExpanded && hasWorkflowRunsScrollIntent}
             density={density}
             registerChatElement={registerChatElement}
           />
@@ -298,30 +257,14 @@ const FocusedChatSidebar: FC<FocusedChatSidebarProps> = ({
         isExpanded={isGroupsExpanded}
         headerContentTemplate={createFolderButton}
         onToggle={handleToggleGroups}
-        onScrollIntent={() => setHasGroupsScrollIntent(true)}
         scrollable
       >
-        {visibleGroups.map((group) => (
-          <FocusedAggregateRow
-            key={`${group.kind}:${group.id}`}
-            aggregate={group}
-            density={density}
-            onSelect={() =>
-              onViewChange(
-                group.kind === 'assistant'
-                  ? {
-                      type: 'assistant',
-                      id: group.id,
-                      name: group.name,
-                      iconUrl: group.iconUrl,
-                    }
-                  : { type: 'folder', name: group.name }
-              )
-            }
-            onNewChat={group.kind === 'assistant' ? () => onNewChat(group) : undefined}
-          />
-        ))}
-        {hasMoreGroups && <div ref={groupsSentinelRef} aria-hidden="true" className="h-px" />}
+        <FocusedGroupList
+          groups={viewModel.groups}
+          density={density}
+          onViewChange={onViewChange}
+          onNewChat={onNewChat}
+        />
       </ChatSidebarAccordion>
     </div>
   )

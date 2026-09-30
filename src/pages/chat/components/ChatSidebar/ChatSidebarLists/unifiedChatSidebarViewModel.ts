@@ -131,8 +131,15 @@ export const buildUnifiedChatSidebarViewModel = (
   }
   for (const chat of chats) {
     const location = getChatLocation(chat, settings)
-    if (location) viewModel.chatLocations[chat.id] = location
     const folderKey = getFolderKey(chat, registeredNames, viewModel.folderLabels)
+    // A chat in a user folder is also listed in Recent or Pinned, but is revealed in its folder.
+    const customKey = chat.folder ? customFolderKey(chat.folder) : null
+    const isListedOutsideFolder = location?.section === 'recent' || location?.section === 'pinned'
+    if (isListedOutsideFolder && customKey && folderKey === customKey) {
+      viewModel.chatLocations[chat.id] = { section: 'folder', folderName: customKey }
+    } else if (location) {
+      viewModel.chatLocations[chat.id] = location
+    }
     if (folderKey) {
       viewModel.foldersToChatsMap[folderKey] ??= []
       viewModel.foldersToChatsMap[folderKey].push(chat)

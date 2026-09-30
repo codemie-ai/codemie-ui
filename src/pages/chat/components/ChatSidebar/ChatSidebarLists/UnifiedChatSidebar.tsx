@@ -59,18 +59,6 @@ const UnifiedChatSidebar: FC<UnifiedChatSidebarProps> = ({
     isFoldersExpanded,
     setActiveFolders,
     disableAccordionAnimation,
-    visiblePinnedChats,
-    loadMorePinnedChats,
-    hasPinnedScrollIntent,
-    setHasPinnedScrollIntent,
-    visibleRecentChats,
-    loadMoreRecentChats,
-    hasRecentScrollIntent,
-    setHasRecentScrollIntent,
-    visibleWorkflowRuns,
-    loadMoreWorkflowRuns,
-    hasWorkflowRunsScrollIntent,
-    setHasWorkflowRunsScrollIntent,
     folders,
     folderKinds,
     activeFolderIndices,
@@ -86,19 +74,16 @@ const UnifiedChatSidebar: FC<UnifiedChatSidebarProps> = ({
       {pinnedChats.length > 0 && (
         <ChatSidebarAccordion
           title="Pinned"
+          count={pinnedChats.length}
           isExpanded={isPinnedExpanded}
           onToggle={() => handleToggleSection('pinned')}
-          onScrollIntent={() => setHasPinnedScrollIntent(true)}
           transitionOptions={transitionOptions}
           contentClassName="max-h-52"
         >
           <ChatList
             chatActions={chatActions}
-            chats={visiblePinnedChats}
+            chats={pinnedChats}
             currentChatId={currentChatId}
-            onLoadMore={loadMorePinnedChats}
-            hasMore={visiblePinnedChats.length < pinnedChats.length}
-            isLazyLoadingEnabled={isPinnedExpanded && hasPinnedScrollIntent}
             density={density}
             registerChatElement={registerChatElement}
           />
@@ -110,7 +95,6 @@ const UnifiedChatSidebar: FC<UnifiedChatSidebarProps> = ({
         title="Recent Chats"
         isExpanded={isRecentExpanded}
         onToggle={() => handleToggleSection('recent')}
-        onScrollIntent={() => setHasRecentScrollIntent(true)}
         transitionOptions={transitionOptions}
         groupId="chat-tree-group-chats"
         scrollable
@@ -118,11 +102,8 @@ const UnifiedChatSidebar: FC<UnifiedChatSidebarProps> = ({
         {recentChats.length > 0 ? (
           <ChatList
             chatActions={chatActions}
-            chats={visibleRecentChats}
+            chats={recentChats}
             currentChatId={currentChatId}
-            onLoadMore={loadMoreRecentChats}
-            hasMore={visibleRecentChats.length < recentChats.length}
-            isLazyLoadingEnabled={isRecentExpanded && hasRecentScrollIntent}
             density={density}
             registerChatElement={registerChatElement}
           />
@@ -136,17 +117,13 @@ const UnifiedChatSidebar: FC<UnifiedChatSidebarProps> = ({
           title="Workflows"
           isExpanded={isWorkflowRunsExpanded}
           onToggle={() => handleToggleSection('workflow-runs')}
-          onScrollIntent={() => setHasWorkflowRunsScrollIntent(true)}
           transitionOptions={transitionOptions}
           scrollable
         >
           <ChatList
             chatActions={chatActions}
-            chats={visibleWorkflowRuns}
+            chats={workflowChats}
             currentChatId={currentChatId}
-            onLoadMore={loadMoreWorkflowRuns}
-            hasMore={visibleWorkflowRuns.length < workflowChats.length}
-            isLazyLoadingEnabled={isWorkflowRunsExpanded && hasWorkflowRunsScrollIntent}
             density={density}
             registerChatElement={registerChatElement}
           />
@@ -177,6 +154,7 @@ const UnifiedChatSidebar: FC<UnifiedChatSidebarProps> = ({
             density={density}
             registerChatElement={registerChatElement}
             registerFolderElement={registerFolderElement}
+            transitionOptions={transitionOptions}
           />
         </ChatSidebarAccordion>
       </div>

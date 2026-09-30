@@ -1,0 +1,122 @@
+{
+  "decision": "request-changes",
+  "rationale": "8 blocking findings verified against real source: focused-view drilldown timing/re-entry gaps (CR-002/CR-003), the reveal and auto-scroll effects (CR-004/CR-007/CR-008), a pinned-toggle closure race (CR-001), an untested persisted-init (CR-005), and anonymous-bucket preference mixing before auth resolves (CR-006); all four lenses and the standards audit ran and parsed cleanly, 2.3 reachability was fully verified for every candidate with no budget shortfall, and standards coverage_gap is false. 1 finding deferred as pre-existing (unguarded JSON.parse in src/utils/storage.ts, inherited rather than introduced — see code-review-deferred.md) and 5 dismissed as verified false positives or unreachable paths (a batching claim disproven by useChatSidebarFolders.ts's array semantics, non-boolean/multi-tab localStorage edge cases, ChatSidebarSection's currently-unused controlled-mode footgun, and the Workflow-Runs/Folders persistence item which the spec explicitly marks a non-goal).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "Unified view: resolved chat's folder tab opens automatically; no other folder tab stays open", "status": "pass", "notes": "setActiveFolder(null) then setActiveFolder(folderKey) in chatSidebarSectionsHelpers.ts; verified by chatSidebarSectionsHelpers.test.ts." },
+    { "kind": "story-ac", "item": "Unified view: resolved chat in Recent/Workflow Runs — behavior unchanged, no folder tab opens", "status": "pass", "notes": "recent/workflow-runs switch cases in chatSidebarSectionsHelpers.ts are untouched by the diff." },
+    { "kind": "story-ac", "item": "Focused view: resolved chat's folder/assistant drilldown opens with the chat highlighted", "status": "pass", "notes": "useChatSidebarExpansion.ts new isFocused branch; covered by useChatSidebarExpansion.test.ts. See CR-002/CR-003 for a load-order/re-entry gap in that branch." },
+    { "kind": "story-ac", "item": "Both modes: resolved chat's row is scrolled into view automatically if not already visible", "status": "pass", "notes": "revealChat wired via useChatSidebarSections.ts's reveal effect. See CR-004/CR-007/CR-008 for a dead fallback, a stale-guard, and a test-coverage gap." },
+    { "kind": "story-ac", "item": "Pinned/Recent Chats/Recent Assistants restore last toggled expand state from localStorage unless the resolved chat forces a section open", "status": "pass", "notes": "useChatSidebarSectionPersistence.ts wired into pagination/expansion/assistants hooks. See CR-005/CR-006 for a coverage gap and an anonymous-bucket race." },
+    { "kind": "story-ac", "item": "Empty chat list: folder auto-open unchanged; persisted Pinned/Recent/Recent Assistants state still restores normally", "status": "pass", "notes": "expandSectionForLocation gated on currentChat truthiness; persisted-default reads run unconditionally on mount." },
+    { "kind": "story-ac", "item": "hasManuallyExpandedSection guard still suppresses the unified-view auto-expand-for-location behavior as before", "status": "pass", "notes": "guard condition in useChatSidebarExpansion.ts is unchanged by the diff." },
+    { "kind": "story-ac", "item": "No regression opening chats manually or switching folders/drilldowns while already on /chats", "status": "pass", "notes": "handleMoveChat/handleCreateFolder and the non-persistence toggle branches are unchanged aside from the added persistence calls." },
+    { "kind": "spec", "item": "Non-goal: useChatNavigation.tsx's chat-resolution order and router calls are untouched", "status": "pass", "notes": "the file does not appear in the diff." },
+    { "kind": "spec", "item": "Non-goal: Folders group / active folder tab state (activeFolders, isFoldersExpanded) is not persisted", "status": "pass", "notes": "no persistence read/write touches isFoldersExpanded or activeFolders anywhere in the diff." },
+    { "kind": "spec", "item": "Non-goal: Workflow Runs' expand/collapse state is not persisted", "status": "pass", "notes": "isWorkflowRunsExpanded remains a hardcoded useState(true) in both FocusedChatSidebar.tsx and useChatSidebarExpansion.ts." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 6 commits match the required EPMCDME-XXXX: Capital sentence format with uppercase first word and non-zero ticket IDs" },
+    { "kind": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md does not exist in the repository; no documented code-quality standard to adjudicate" },
+    { "kind": "security", "status": "pass", "notes": "No HTML sinks, redirects from untrusted input, cross-window messages, or credential storage. localStorage persistence of UI state (expand/collapse booleans) is appropriate. All files properly licensed." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/useChatSidebarExpansion.ts",
+      "line": 73,
+      "title": "Pinned toggle loses functional-updater safety",
+      "problem": "handleToggleSection('pinned') was changed from setIsPinnedExpanded((value) => !value) to `const shouldExpand = !isPinnedExpanded; setIsPinnedExpanded(shouldExpand)`, so it can capture shouldExpand for setPersistedSidebarSection. Two synchronous invocations of this callback in the same render tick now read the same stale isPinnedExpanded closure and compute the same shouldExpand, so the toggle only flips once instead of twice.",
+      "impact": "The Pinned section can silently fail to alternate on a rapid double-fire (e.g. two overlapping event sources bound to the same control), and the regression is asymmetric: FocusedChatSidebar.tsx's handleTogglePinned still uses the safe setIsPinnedExpanded((value) => {...}) form, so the two view modes now behave differently under the same input.",
+      "recommendation": "Keep the functional updater form and read the resulting value from its callback (or from a ref) before calling setPersistedSidebarSection, instead of computing shouldExpand from the closure ahead of the setState call."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/useChatSidebarExpansion.ts",
+      "line": 119,
+      "title": "Focused drilldown never updates for a later chat in the same session",
+      "problem": "hasInitializedFocusedViewRef.current is reset only on enteredFocusedView (the unified→focused mode transition); once set true it stays true for the rest of that focused session. If currentChat changes to a different resolved chat while isFocused stays true throughout (e.g. across a page change that does not toggle sidebar mode), the effect's `if (currentChat && !hasInitializedFocusedViewRef.current)` branch never runs again.",
+      "impact": "The focused view's drilldown (setFocusedNavigationSection/setFocusedView) keeps showing the previous chat's folder/assistant location instead of the newly resolved last-active chat, breaking the 'consistent across supported sidebar states/modes' acceptance criterion specifically for repeated page changes while in Focused mode.",
+      "recommendation": "Also reset hasInitializedFocusedViewRef.current when currentChat?.id changes (not only on the isFocused edge), so a newly resolved chat re-triggers the drilldown resolution."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/useChatSidebarExpansion.ts",
+      "line": 120,
+      "title": "Focused-view drilldown can lock onto data resolved before chats finish loading",
+      "problem": "The focused-view branch resolves currentChat's drilldown location purely on currentChat truthiness and immediately locks hasInitializedFocusedViewRef.current = true, unlike the sibling unified-view branch a few lines below which re-applies expandSectionForLocation while isChatsLoading is true. currentChat is set independently by chatsStore's single-chat fetch (getChat), so it can become truthy before focusedViewModel.chatLocations (built from the full chats/folders list fetch) has finished loading.",
+      "impact": "On a page load or page change where the resolved chat arrives before the full chat/folder list, the folder/assistant drilldown is computed from an incomplete chatLocations map (e.g. resolves to 'root' instead of the real folder) and is never retried afterward, since the ref guard is now permanently true — directly undermining the 'last active chat opens automatically' criterion under realistic load timing.",
+      "recommendation": "Gate the focused-view branch's first resolution on the same readiness signal the unified branch uses (isChatsLoading), or reset/re-run the resolution once focusedViewModel.chatLocations actually contains the resolved chat's location."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/useChatSidebarNavigation.ts",
+      "line": 109,
+      "title": "revealChat's documented folder fallback can never match",
+      "problem": "revealChat is documented as 'Falls back to the chat's folder element when the chat's own row is not yet registered', implemented as chatElementsRef.current.get(chatId) ?? folderElementsRef.current.get(chatId). Every registerFolderElement call site (FolderList.tsx:228) keys folderElementsRef by folder name, and every registerChatElement call site (ChatListItem.tsx:151) keys chatElementsRef by chat id — the two maps are keyed by disjoint id spaces, so the fallback lookup can only succeed on an accidental string collision between a chat id and a folder name.",
+      "impact": "When a chat's own row isn't registered yet at the moment revealChat's two animation frames elapse (e.g. a folder that just expanded hasn't finished rendering its rows), the intended 'scroll to the folder instead' fallback silently no-ops rather than degrading gracefully, so scrollIntoView is skipped entirely for that reveal.",
+      "recommendation": "Look up the chat's own folder key (e.g. via chatLocations[chatId]/focusedViewModel) and fall back to folderElementsRef.current.get(thatFolderKey), instead of reusing chatId as the folder map's key."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/useChatSidebarPagination.ts",
+      "line": 41,
+      "title": "Unified-view Pinned persisted-init has no test",
+      "problem": "isPinnedExpanded now initializes from getPersistedSidebarSections().pinnedExpanded instead of a hardcoded useState(true), but no test exercises this: no useChatSidebarPagination.test.ts and no UnifiedChatSidebar.test.tsx exist, and ChatSidebarLists.test.tsx never mocks useChatSidebarSectionPersistence so it only exercises the real DEFAULTS path.",
+      "impact": "The equivalent persisted-init for isRecentExpanded (useChatSidebarExpansion.test.ts) and for the Focused view's isPinnedExpanded/isRecentExpanded (FocusedChatSidebar.test.tsx) are both covered, but a regression that reverts this one initializer back to a hardcoded true, or wires it to the wrong persisted key, would ship silently for the unified view's Pinned section.",
+      "recommendation": "Add a test (unit for useChatSidebarPagination, or an integration test on the unified view) asserting isPinnedExpanded starts false when getPersistedSidebarSections().pinnedExpanded is mocked to false."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/useChatSidebarSectionPersistence.ts",
+      "line": 37,
+      "title": "Sidebar section prefs cache the anonymous bucket before auth resolves",
+      "problem": "getPersistedSidebarSections/setPersistedSidebarSection key storage on userStore.user?.userId ?? ''. Multiple consumers (useChatSidebarPagination.ts, useChatSidebarExpansion.ts, FocusedChatSidebar.tsx, ChatSidebarAssistants.tsx) read this once via a lazy useState(() => getPersistedSidebarSections()...) initializer at mount, and useInitialDataFetch.tsx shows userStore.loadUser() resolving asynchronously after the app (and plausibly the sidebar) has already rendered, so the initial read/write can land on the shared '' bucket before the real userId is known — and it is never re-read once the user hydrates.",
+      "impact": "On a shared machine, a sidebar mounted before auth resolves reads/writes the anonymous bucket's expand/collapse prefs instead of the current user's, silently mixing one user's UI preference with another's, with no later re-sync in the same session.",
+      "recommendation": "Follow the same pattern already used by pinOrder.ts/moveOrder.ts in this codebase: guard on userStore.user?.userId being present before reading/writing, and re-read the persisted sections (or defer the lazy initializer) once the real userId becomes available."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/useChatSidebarSections.ts",
+      "line": 146,
+      "title": "Auto-scroll-into-view effect has no test through real DOM registration",
+      "problem": "The effect that calls revealChat(currentChat.id) once per resolved chat id is only reachable through real ref registration from ChatList/FolderList. ChatSidebarLists.test.tsx and the new FocusedChatSidebar.test.tsx both mock ChatList to a stub that never calls registerChatElement, and no UnifiedChatSidebar test file exists; useChatSidebarNavigation.test.ts only calls the hook's own registerChatElement/revealChat directly, never through this wrapping effect.",
+      "impact": "Removing or inverting the revealedChatIdRef guard, dropping this effect, or breaking the revealChat call would ship silently in both view modes: the sidebar would stop auto-scrolling to the resolved chat, and no test in the repository would fail.",
+      "recommendation": "Add an integration-level test that renders ChatSidebarLists (or UnifiedChatSidebar/FocusedChatSidebar) with a real ChatList registering a chat element, sets chatsStore.currentChat, and asserts scrollIntoView is called for that chat's row."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/useChatSidebarSections.ts",
+      "line": 146,
+      "title": "Reveal guard never retries a chat whose row wasn't ready",
+      "problem": "revealedChatIdRef only compares currentChat.id: `if (!currentChat || revealedChatIdRef.current === currentChat.id) return`. It marks the id as revealed before revealChat's double-requestAnimationFrame wait confirms the element actually resolved, and nothing resets it if the same chat is revisited after the underlying chat/folder elements remount (e.g. a data reload re-renders ChatList).",
+      "impact": "If the chat's row (or its folder fallback, see CR-004) isn't registered within revealChat's two animation frames, or if the DOM is torn down and rebuilt for the same chat id after a reload, the reveal is permanently skipped for that id — scrollIntoView never fires again even once the data/DOM is ready.",
+      "recommendation": "Only mark revealedChatIdRef.current as done once getElement() inside revealChat actually resolves to an element (retry otherwise), and reset the ref when the underlying chat/folder registration for that id changes."
+    }
+  ]
+}

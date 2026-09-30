@@ -14,12 +14,12 @@
 //
 
 import { Accordion, AccordionTab } from 'primereact/accordion'
-import { ComponentProps, FC, useCallback, useState } from 'react'
+import { CSSTransitionProps } from 'primereact/csstransition'
+import { FC, useCallback, useContext, useLayoutEffect, useMemo, useRef } from 'react'
 
 import AvatarGroup from '@/components/Avatar/AvatarGroup'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Tooltip from '@/components/Tooltip'
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import {
   resolveChatAvatar,
   resolveGroupChatAvatars,
@@ -37,7 +37,16 @@ import { useFolderListActions } from './useFolderListActions'
 import AddChatsToFolderPopup from '../AddChatsToFolderPopup'
 import AssistantFolderDeletePopup from './AssistantFolderDeletePopup'
 import ChatList from '../ChatList/ChatList'
-import { ChatListItemActions, RegisterChatElement } from '../ChatList/ChatListItem'
+import {
+  ChatListItemActions,
+  getChatRowHeightRem,
+  RegisterChatElement,
+} from '../ChatList/ChatListItem'
+import {
+  ChatListScrollerRegistryContext,
+  getFolderChatListId,
+} from '../ChatList/chatListVirtualization'
+import { getRootFontSizePx, useSidebarVirtualList } from '../ChatList/useSidebarVirtualList'
 import {
   FolderKind,
   getFolderDisplayName,
@@ -46,40 +55,7 @@ import {
 import FolderTypeIcon from '../FolderTypeIcon'
 
 const FOLDER_TOOLTIP_MIN_LENGTH = 23
-// Folders render in batches as the list scrolls: rendering hundreds of folder rows at once froze
-// expanding the Folders section.
-const FOLDERS_BATCH_SIZE = 20
-const FOLDER_CHATS_BATCH_SIZE = 20
-
-type FolderChatListProps = Omit<
-  ComponentProps<typeof ChatList>,
-  'onLoadMore' | 'hasMore' | 'isLazyLoadingEnabled'
->
-
-/**
- * Chats of one expanded folder, rendered in batches as the list scrolls. It lives inside the
- * folder's accordion tab, which unmounts when collapsed, so each expand starts from one batch.
- */
-const FolderChatList: FC<FolderChatListProps> = ({ chats, currentChatId, ...chatListProps }) => {
-  const [visibleCount, setVisibleCount] = useState(FOLDER_CHATS_BATCH_SIZE)
-  // The current chat is always rendered, so navigating to it (e.g. from search) finds its row.
-  const currentChatIndex = chats.findIndex((chat) => chat.id === currentChatId)
-  const visibleChats = chats.slice(0, Math.max(visibleCount, currentChatIndex + 1))
-  const loadMore = useCallback(() => {
-    setVisibleCount((count) => Math.min(count + FOLDER_CHATS_BATCH_SIZE, chats.length))
-  }, [chats.length])
-
-  return (
-    <ChatList
-      {...chatListProps}
-      chats={visibleChats}
-      currentChatId={currentChatId}
-      onLoadMore={loadMore}
-      hasMore={visibleChats.length < chats.length}
-      isLazyLoadingEnabled
-    />
-  )
-}
+const FOLDERS_LIST_ID = 'chat-tree-folders'
 
 const resolveFolderUniqueAvatars = (
   folderChats: ChatListItemType[],
@@ -125,6 +101,7 @@ interface FolderListProps {
   density?: ChatListDensity
   registerChatElement?: RegisterChatElement
   registerFolderElement?: (folderName: string, element: HTMLDivElement | null) => void
+  transitionOptions?: CSSTransitionProps
 }
 
 const FolderList: FC<FolderListProps> = ({
@@ -142,6 +119,7 @@ const FolderList: FC<FolderListProps> = ({
   density = ChatListDensity.DETAILED,
   registerChatElement,
   registerFolderElement,
+  transitionOptions,
 }) => {
   const avatarStores = useAvatarStores()
   const isCompact = density === ChatListDensity.COMPACT
@@ -167,132 +145,210 @@ const FolderList: FC<FolderListProps> = ({
   const resolvedActiveFolderIndices =
     activeFolderIndices ?? (activeFolderIndex == null ? [] : [activeFolderIndex])
 
-  const [visibleFoldersCount, setVisibleFoldersCount] = useState(FOLDERS_BATCH_SIZE)
-  // Expanded folders are addressed by index (and navigation can open one far down the list), so
-  // the batch always reaches the last expanded folder. Indices below it match the full list.
-  const lastActiveFolderIndex = Math.max(-1, ...resolvedActiveFolderIndices)
-  const visibleFolders = folders.slice(0, Math.max(visibleFoldersCount, lastActiveFolderIndex + 1))
-  const hasMoreFolders = visibleFolders.length < folders.length
-  const loadMoreFolders = useCallback(() => {
-    setVisibleFoldersCount((count) => Math.min(count + FOLDERS_BATCH_SIZE, folders.length))
-  }, [folders.length])
-  const foldersSentinelRef = useInfiniteScroll({
-    enabled: true,
-    isLoading: false,
-    hasMore: hasMoreFolders,
-    onLoadMore: loadMoreFolders,
+  const getFolderKind = useCallback(
+    (folder: string) => folderKinds?.[folder] ?? getFolderKindFromKey(folder),
+    [folderKinds]
+  )
+  const getFolderChats = useCallback(
+    (folder: string) => {
+      const legacyKey = `legacy-import:${folder}`
+      const chatMapKey =
+        getFolderKind(folder) === 'legacy-import' && legacyKey in foldersToChatsMap
+          ? legacyKey
+          : folder
+      return foldersToChatsMap[chatMapKey] ?? []
+    },
+    [foldersToChatsMap, getFolderKind]
+  )
+
+  const activeFolderSet = useMemo(
+    () => new Set(resolvedActiveFolderIndices.map((index) => folders[index])),
+    [folders, resolvedActiveFolderIndices]
+  )
+  // Header only for a closed folder; an open one adds its chat rows. Measured once rendered.
+  const estimateSize = useCallback(
+    (index: number) => {
+      const folder = folders[index]
+      let rem = isCompact ? 2 : 2.5
+      if (activeFolderSet.has(folder)) {
+        for (const chat of getFolderChats(folder)) rem += getChatRowHeightRem(chat, density, false)
+      }
+      return rem * getRootFontSizePx()
+    },
+    [activeFolderSet, density, folders, getFolderChats, isCompact]
+  )
+  const getItemKey = useCallback((index: number) => folders[index], [folders])
+  const {
+    listRef,
+    isVirtual,
+    isAwaitingScrollElement,
+    virtualizer,
+    virtualItems,
+    paddingTop,
+    paddingBottom,
+    measureRow,
+  } = useSidebarVirtualList({ count: folders.length, estimateSize, getItemKey })
+
+  const accordionWrapperRef = useRef<HTMLDivElement | null>(null)
+  // AccordionTab exposes no ref, so rendered tabs are measured through their data-index.
+  useLayoutEffect(() => {
+    if (!isVirtual) return
+    accordionWrapperRef.current
+      ?.querySelectorAll(':scope > .p-accordion > .p-accordion-tab[data-index]')
+      .forEach((tab) => measureRow(tab))
   })
+
+  const registerScroller = useContext(ChatListScrollerRegistryContext)
+  useLayoutEffect(() => {
+    const unregister =
+      isVirtual && registerScroller
+        ? registerScroller({
+            listId: FOLDERS_LIST_ID,
+            scrollToFolder: (folderKey, align) => {
+              const index = folders.indexOf(folderKey)
+              if (index < 0) return false
+              virtualizer.scrollToIndex(index, { align })
+              return true
+            },
+          })
+        : undefined
+    return unregister
+  }, [folders, isVirtual, registerScroller, virtualizer])
+
+  let renderedIndices = isAwaitingScrollElement ? [] : folders.map((_, index) => index)
+  if (isVirtual) renderedIndices = virtualItems.map((item) => item.index)
+  // Accordion addresses tabs by their position among the rendered ones; folders open outside
+  // the rendered window must survive a toggle made inside it.
+  const renderedActiveIndices = renderedIndices.flatMap((folderIndex, position) =>
+    resolvedActiveFolderIndices.includes(folderIndex) ? [position] : []
+  )
+  const handleTabChange = (positions: number[]) => {
+    const openOutside = resolvedActiveFolderIndices.filter(
+      (folderIndex) => !renderedIndices.includes(folderIndex)
+    )
+    setActiveFolderIndices([
+      ...openOutside,
+      ...positions.map((position) => renderedIndices[position]),
+    ])
+  }
 
   return (
     <div>
       <Tooltip target=".chat-sidebar-folder" appendTo={null} delay={0} />
-      <Accordion
-        multiple
-        activeIndex={resolvedActiveFolderIndices}
-        onTabChange={(e) => setActiveFolderIndices(e.index as number[])}
-        expandIcon={() => null}
-        collapseIcon={() => null}
+      <div
+        ref={(element) => {
+          listRef.current = element
+          accordionWrapperRef.current = element
+        }}
       >
-        {visibleFolders.map((folder) => {
-          const kind = folderKinds?.[folder] ?? getFolderKindFromKey(folder)
-          const isImportFolder = kind === 'import' || kind === 'legacy-import'
-          const folderKey = encodeURIComponent(folder)
-          const legacyKey = `legacy-import:${folder}`
-          let chatMapKey = folder
-          if (kind === 'legacy-import' && legacyKey in foldersToChatsMap) {
-            chatMapKey = legacyKey
-          }
-          const displayName = folderLabels?.[folder] ?? getFolderDisplayName(folder)
-          const showFolderTooltip = displayName.length >= FOLDER_TOOLTIP_MIN_LENGTH
-          const folderChats = foldersToChatsMap[chatMapKey] ?? []
+        {paddingTop > 0 && <div aria-hidden="true" style={{ height: paddingTop }} />}
+        <Accordion
+          multiple
+          activeIndex={renderedActiveIndices}
+          onTabChange={(e) => handleTabChange(e.index as number[])}
+          expandIcon={() => null}
+          collapseIcon={() => null}
+          transitionOptions={transitionOptions}
+        >
+          {renderedIndices.map((folderIndex) => {
+            const folder = folders[folderIndex]
+            const kind = getFolderKind(folder)
+            const isImportFolder = kind === 'import' || kind === 'legacy-import'
+            const folderKey = encodeURIComponent(folder)
+            const displayName = folderLabels?.[folder] ?? getFolderDisplayName(folder)
+            const showFolderTooltip = displayName.length >= FOLDER_TOOLTIP_MIN_LENGTH
+            const folderChats = getFolderChats(folder)
 
-          const uniqueAvatarItems = resolveFolderUniqueAvatars(folderChats, avatarStores)
+            const uniqueAvatarItems = resolveFolderUniqueAvatars(folderChats, avatarStores)
 
-          return (
-            <AccordionTab
-              key={folder}
-              pt={{
-                headerAction: (opts) => ({
-                  href: null,
-                  tabIndex: 0,
-                  'aria-label': folder,
-                  'data-folder': folder,
-                  'data-folder-open': opts?.context.selected,
-                  role: 'treeitem',
-                  'aria-expanded': opts?.context.selected ?? false,
-                  'aria-owns': `chat-tree-folder-group-${folderKey}`,
-                }),
-              }}
-              header={() => (
-                <div
-                  ref={(element) => registerFolderElement?.(folder, element)}
-                  className="flex min-w-0 items-center justify-between gap-2 px-2 text-sm"
-                >
+            return (
+              <AccordionTab
+                key={folder}
+                pt={{
+                  root: { 'data-index': isVirtual ? folderIndex : undefined },
+                  headerAction: (opts) => ({
+                    href: null,
+                    tabIndex: 0,
+                    'aria-label': folder,
+                    'data-folder': folder,
+                    'data-folder-open': opts?.context.selected,
+                    role: 'treeitem',
+                    'aria-expanded': opts?.context.selected ?? false,
+                    'aria-owns': `chat-tree-folder-group-${folderKey}`,
+                  }),
+                }}
+                header={() => (
                   <div
-                    className={cn(
-                      'flex min-w-0 flex-1 items-center overflow-hidden whitespace-nowrap',
-                      isCompact ? 'h-8' : 'h-10'
-                    )}
+                    ref={(element) => registerFolderElement?.(folder, element)}
+                    className="flex min-w-0 items-center justify-between gap-2 px-2 text-sm"
                   >
-                    <FolderTypeIcon kind={kind} className="mr-2" />
-                    <p
-                      id={`folder-name-${folderKey}`}
-                      data-pr-tooltip={showFolderTooltip ? displayName : ''}
-                      className="chat-sidebar-folder min-w-0 flex-1 truncate font-semibold"
+                    <div
+                      className={cn(
+                        'flex min-w-0 flex-1 items-center overflow-hidden whitespace-nowrap',
+                        isCompact ? 'h-8' : 'h-10'
+                      )}
                     >
-                      {displayName}
-                    </p>
-                  </div>
+                      <FolderTypeIcon kind={kind} className="mr-2" />
+                      <p
+                        id={`folder-name-${folderKey}`}
+                        data-pr-tooltip={showFolderTooltip ? displayName : ''}
+                        className="chat-sidebar-folder min-w-0 flex-1 truncate font-semibold"
+                      >
+                        {displayName}
+                      </p>
+                    </div>
 
-                  <div className="flex shrink-0 items-center">
-                    {!isCompact &&
-                      !isImportFolder &&
-                      uniqueAvatarItems.length > (kind === 'assistant' ? 1 : 0) && (
-                        <AvatarGroup
-                          iconUrls={uniqueAvatarItems.map((avatar) => avatar.iconUrl)}
-                          names={uniqueAvatarItems.map((avatar) => avatar.name)}
-                          className="mr-1 shrink-0"
+                    <div className="flex shrink-0 items-center">
+                      {!isCompact &&
+                        !isImportFolder &&
+                        uniqueAvatarItems.length > (kind === 'assistant' ? 1 : 0) && (
+                          <AvatarGroup
+                            iconUrls={uniqueAvatarItems.map((avatar) => avatar.iconUrl)}
+                            names={uniqueAvatarItems.map((avatar) => avatar.name)}
+                            className="mr-1 shrink-0"
+                          />
+                        )}
+                      {getMenuItems(folder, kind).length > 0 && (
+                        <NavigationMore
+                          renderInRoot
+                          placement="right-end"
+                          hideOnClickInside
+                          className="size-6 shrink-0"
+                          buttonClassName="m-0 flex size-6 items-center justify-center p-0"
+                          contextId={`folder-name-${folderKey}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                          }}
+                          items={getMenuItems(folder, kind)}
                         />
                       )}
-                    {getMenuItems(folder, kind).length > 0 && (
-                      <NavigationMore
-                        renderInRoot
-                        placement="right-end"
-                        hideOnClickInside
-                        className="size-6 shrink-0"
-                        buttonClassName="m-0 flex size-6 items-center justify-center p-0"
-                        contextId={`folder-name-${folderKey}`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          e.preventDefault()
-                        }}
-                        items={getMenuItems(folder, kind)}
-                      />
-                    )}
+                    </div>
                   </div>
+                )}
+              >
+                <div className="ml-4 flex min-w-0 flex-col border-l border-border-secondary pl-4">
+                  {/* All of the folder's chats: ChatList virtualizes long lists itself. */}
+                  <ChatList
+                    chats={folderChats}
+                    chatActions={chatActions}
+                    currentChatId={currentChatId}
+                    hideAvatar={
+                      kind === 'assistant'
+                        ? (chat) => !chat.isGroup || new Set(chat.assistantIds).size <= 1
+                        : false
+                    }
+                    density={density}
+                    registerChatElement={registerChatElement}
+                    id={getFolderChatListId(folder)}
+                  />
                 </div>
-              )}
-            >
-              <div className="ml-4 flex min-w-0 flex-col border-l border-border-secondary pl-4">
-                <FolderChatList
-                  chats={folderChats}
-                  chatActions={chatActions}
-                  currentChatId={currentChatId}
-                  hideAvatar={
-                    kind === 'assistant'
-                      ? (chat) => !chat.isGroup || new Set(chat.assistantIds).size <= 1
-                      : false
-                  }
-                  density={density}
-                  registerChatElement={registerChatElement}
-                  id={`chat-tree-folder-group-${folderKey}`}
-                />
-              </div>
-            </AccordionTab>
-          )
-        })}
-      </Accordion>
-      {hasMoreFolders && <div ref={foldersSentinelRef} aria-hidden="true" className="h-px" />}
+              </AccordionTab>
+            )
+          })}
+        </Accordion>
+        {paddingBottom > 0 && <div aria-hidden="true" style={{ height: paddingBottom }} />}
+      </div>
 
       <DeleteFolderPopup
         selectedFolder={selectedFolder}

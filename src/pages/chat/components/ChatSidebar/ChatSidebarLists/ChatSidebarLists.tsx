@@ -35,6 +35,8 @@ import FocusedChatSidebar from './FocusedChatSidebar'
 import { FocusedView } from './focusedChatSidebarHelpers'
 import UnifiedChatSidebar from './UnifiedChatSidebar'
 import { ChatSidebarListsRef, useChatSidebarSections } from './useChatSidebarSections'
+import { ChatListScrollerRegistryContext } from '../ChatList/chatListVirtualization'
+import { ChatSidebarSelectContext } from '../ChatList/chatSidebarSelection'
 import DeleteChatPopup from '../ChatList/DeleteChatPopup'
 import MoveChatPopup from '../ChatList/MoveChatPopup'
 import RemoveChatFromFolderPopup from '../ChatList/RemoveChatFromFolderPopup'
@@ -114,9 +116,6 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
 
   const sections = useChatSidebarSections({
     ref,
-    pinnedChats,
-    recentChats,
-    workflowChats,
     chatLocations,
     chatFolders,
     foldersToChatsMap,
@@ -130,7 +129,13 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
     requestExpandFocusedFolders,
   })
 
-  const { handleMoveChat, handleCreateFolder, registerChatElement } = sections
+  const {
+    handleMoveChat,
+    handleCreateFolder,
+    registerChatElement,
+    registerChatListScroller,
+    markSidebarSelection,
+  } = sections
 
   const handleHidePopup = () => setActivePopup(null)
 
@@ -196,68 +201,72 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
   if (isChatsLoading) return <Spinner inline className="mx-auto" />
 
   return (
-    <div className="flex flex-col w-full grow min-h-0">
-      {isFocused ? (
-        <FocusedChatSidebar
-          view={focusedView}
-          viewModel={focusedViewModel}
-          chatActions={chatActions}
-          currentChatId={currentChat?.id}
-          density={density}
-          navigationSection={focusedNavigationSection}
-          onViewChange={setFocusedView}
-          onNewChat={handleFocusedNewChat}
-          registerChatElement={registerChatElement}
-          createFolderButton={createFolderButton}
-          expandFoldersSignal={expandFocusedFoldersSignal}
-        />
-      ) : (
-        <UnifiedChatSidebar
-          pinnedChats={pinnedChats}
-          recentChats={recentChats}
-          workflowChats={workflowChats}
-          foldersToChatsMap={foldersToChatsMap}
-          folderLabels={folderLabels}
-          currentChatId={currentChat?.id}
-          density={density}
-          chatActions={chatActions}
-          createFolderButton={createFolderButton}
-          onOpenAssistantHistory={(assistantId) =>
-            setFocusedView({ type: 'assistant', id: assistantId })
-          }
-          sections={sections}
-        />
-      )}
+    <ChatListScrollerRegistryContext.Provider value={registerChatListScroller}>
+      <ChatSidebarSelectContext.Provider value={markSidebarSelection}>
+        <div className="flex flex-col w-full grow min-h-0">
+          {isFocused ? (
+            <FocusedChatSidebar
+              view={focusedView}
+              viewModel={focusedViewModel}
+              chatActions={chatActions}
+              currentChatId={currentChat?.id}
+              density={density}
+              navigationSection={focusedNavigationSection}
+              onViewChange={setFocusedView}
+              onNewChat={handleFocusedNewChat}
+              registerChatElement={registerChatElement}
+              createFolderButton={createFolderButton}
+              expandFoldersSignal={expandFocusedFoldersSignal}
+            />
+          ) : (
+            <UnifiedChatSidebar
+              pinnedChats={pinnedChats}
+              recentChats={recentChats}
+              workflowChats={workflowChats}
+              foldersToChatsMap={foldersToChatsMap}
+              folderLabels={folderLabels}
+              currentChatId={currentChat?.id}
+              density={density}
+              chatActions={chatActions}
+              createFolderButton={createFolderButton}
+              onOpenAssistantHistory={(assistantId) =>
+                setFocusedView({ type: 'assistant', id: assistantId })
+              }
+              sections={sections}
+            />
+          )}
 
-      <DeleteChatPopup
-        onHide={handleHidePopup}
-        isVisible={activePopup === 'delete-chat'}
-        selectedChat={selectedChat}
-      />
-      <MoveChatPopup
-        onHide={handleHidePopup}
-        isVisible={activePopup === 'move-chat'}
-        selectedChat={selectedChat}
-        onMove={(folderName) => handleMoveChat(folderName, selectedChat)}
-      />
-      <RemoveChatFromFolderPopup
-        onHide={handleHidePopup}
-        isVisible={activePopup === 'remove-chat-from-folder'}
-        selectedChat={selectedChat}
-        onRemove={() => handleMoveChat(DEFAULT_CHAT_FOLDER, selectedChat)}
-      />
-      <FolderFormPopup
-        onHide={handleHidePopup}
-        isVisible={activePopup === 'folder-form'}
-        onCreate={handleCreateFolder}
-      />
-      {/* New chat popup disabled; direct default-chat behavior restored above. Kept for quick re-enable.
+          <DeleteChatPopup
+            onHide={handleHidePopup}
+            isVisible={activePopup === 'delete-chat'}
+            selectedChat={selectedChat}
+          />
+          <MoveChatPopup
+            onHide={handleHidePopup}
+            isVisible={activePopup === 'move-chat'}
+            selectedChat={selectedChat}
+            onMove={(folderName) => handleMoveChat(folderName, selectedChat)}
+          />
+          <RemoveChatFromFolderPopup
+            onHide={handleHidePopup}
+            isVisible={activePopup === 'remove-chat-from-folder'}
+            selectedChat={selectedChat}
+            onRemove={() => handleMoveChat(DEFAULT_CHAT_FOLDER, selectedChat)}
+          />
+          <FolderFormPopup
+            onHide={handleHidePopup}
+            isVisible={activePopup === 'folder-form'}
+            onCreate={handleCreateFolder}
+          />
+          {/* New chat popup disabled; direct default-chat behavior restored above. Kept for quick re-enable.
       <StartNewChatModal
         isVisible={newChatFolder !== undefined}
         folder={newChatFolder}
         onHide={() => setNewChatFolder(undefined)}
       /> */}
-    </div>
+        </div>
+      </ChatSidebarSelectContext.Provider>
+    </ChatListScrollerRegistryContext.Provider>
   )
 })
 

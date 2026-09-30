@@ -125,6 +125,49 @@ describe('ChatsSidebarSection', () => {
     })
   })
 
+  it('renders collapsed when activeIndex is controlled to null (EPMCDME-15211)', () => {
+    render(
+      <ChatsSidebarSection title="Test Section" activeIndex={null}>
+        <div data-testid="content">Content</div>
+      </ChatsSidebarSection>
+    )
+
+    expect(screen.queryByTestId('content')).not.toBeInTheDocument()
+  })
+
+  it('calls onActiveIndexChange instead of toggling internal state when controlled (EPMCDME-15211)', async () => {
+    const onActiveIndexChange = vi.fn()
+    const { rerender } = render(
+      <ChatsSidebarSection
+        title="Test Section"
+        activeIndex={0}
+        onActiveIndexChange={onActiveIndexChange}
+      >
+        <div data-testid="content">Content</div>
+      </ChatsSidebarSection>
+    )
+
+    const header = screen.getByRole('button')
+    await user.click(header)
+
+    expect(onActiveIndexChange).toHaveBeenCalledWith(null)
+    // Controlled: content stays expanded until the caller re-renders with a new activeIndex.
+    expect(screen.getByTestId('content')).toBeInTheDocument()
+
+    rerender(
+      <ChatsSidebarSection
+        title="Test Section"
+        activeIndex={null}
+        onActiveIndexChange={onActiveIndexChange}
+      >
+        <div data-testid="content">Content</div>
+      </ChatsSidebarSection>
+    )
+    await waitFor(() => {
+      expect(screen.queryByTestId('content')).not.toBeInTheDocument()
+    })
+  })
+
   it('maintains state across multiple toggle interactions', async () => {
     render(
       <ChatsSidebarSection title="Test Section">

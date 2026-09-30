@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -27,14 +27,17 @@ const mockRouter = {
   push: vi.fn(),
 }
 
-interface MockInfiniteScrollOptions {
-  enabled: boolean
-  isLoading: boolean
-  hasMore: boolean
-  onLoadMore: () => void
-}
+const persistenceMock = vi.hoisted(() => ({
+  getPersistedSidebarSections: vi.fn(() => ({
+    pinnedExpanded: true,
+    recentAssistantsExpanded: true,
+  })),
+  setPersistedSidebarSection: vi.fn(),
+  useResyncPersistedSidebarSections: vi.fn(),
+}))
+vi.mock('../ChatSidebarLists/useChatSidebarSectionPersistence', () => persistenceMock)
 
-const { mockAssistantsStore, mockChatsStore, mockUseInfiniteScroll } = vi.hoisted(() => {
+const { mockAssistantsStore, mockChatsStore } = vi.hoisted(() => {
   return {
     mockAssistantsStore: {
       recentAssistants: [] as Assistant[],
@@ -45,13 +48,8 @@ const { mockAssistantsStore, mockChatsStore, mockUseInfiniteScroll } = vi.hoiste
     mockChatsStore: {
       startNewChat: vi.fn(),
     },
-    mockUseInfiniteScroll: vi.fn((_options: MockInfiniteScrollOptions) => vi.fn()),
   }
 })
-
-vi.mock('@/hooks/useInfiniteScroll', () => ({
-  useInfiniteScroll: mockUseInfiniteScroll,
-}))
 
 vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: vi.fn(() => mockRouter),
@@ -104,10 +102,13 @@ vi.mock('@/components/Avatar/Avatar', () => ({
   ),
 }))
 
-vi.mock('./ChatSidebarSection', () => ({
-  default: ({ title, children }: any) => (
-    <div data-testid="sidebar-section">
+vi.mock('../ChatSidebarSection', () => ({
+  default: ({ title, children, activeIndex, onActiveIndexChange }: any) => (
+    <div data-testid="sidebar-section" data-active-index={String(activeIndex)}>
       <div data-testid="section-title">{title}</div>
+      <button type="button" onClick={() => onActiveIndexChange?.(activeIndex === null ? 0 : null)}>
+        Toggle {title}
+      </button>
       {children}
     </div>
   ),
@@ -199,7 +200,11 @@ describe('ChatSidebarAssistants', () => {
     mockAssistantsStore.updateRecentAssistants = vi.fn()
     mockChatsStore.startNewChat = vi.fn()
     mockRouter.push = vi.fn()
-    mockUseInfiniteScroll.mockReturnValue(vi.fn())
+    persistenceMock.getPersistedSidebarSections.mockReturnValue({
+      pinnedExpanded: true,
+      recentAssistantsExpanded: true,
+    })
+    persistenceMock.setPersistedSidebarSection.mockReset()
   })
 
   it('renders without crashing and fetches recent assistants', () => {
@@ -243,7 +248,7 @@ describe('ChatSidebarAssistants', () => {
     expect(screen.queryByText(/\.\.\./)).not.toBeInTheDocument()
   })
 
-  it('renders recent assistants in batches of five inside a five-row viewport', () => {
+  it('renders every recent assistant inside a five-row scroll viewport', () => {
     const manyAssistants = Array.from({ length: 10 }, (_, i) => ({
       ...mockAssistants[0],
       id: `assistant-${i}`,
@@ -253,20 +258,10 @@ describe('ChatSidebarAssistants', () => {
     render(<ChatSidebarAssistants />)
 
     expect(screen.getByText('Assistant 0')).toBeInTheDocument()
-    expect(screen.getByText('Assistant 4')).toBeInTheDocument()
-    expect(screen.queryByText('Assistant 5')).not.toBeInTheDocument()
-    expect(screen.queryByText('Assistant 9')).not.toBeInTheDocument()
-
-    const scrollContainer = screen.getByTestId('recent-assistants-scroll-container')
-    expect(scrollContainer).toHaveStyle({ maxHeight: '180px' })
-    fireEvent.scroll(scrollContainer)
-
-    const infiniteScrollOptions = mockUseInfiniteScroll.mock.calls.at(-1)?.[0]
-    expect(infiniteScrollOptions?.enabled).toBe(true)
-    act(() => infiniteScrollOptions?.onLoadMore())
-
-    expect(screen.getByText('Assistant 5')).toBeInTheDocument()
     expect(screen.getByText('Assistant 9')).toBeInTheDocument()
+    expect(screen.getByTestId('recent-assistants-scroll-container')).toHaveStyle({
+      maxHeight: '180px',
+    })
   })
 
   it('starts new chat and navigates when assistant is clicked', async () => {
@@ -397,5 +392,26 @@ describe('ChatSidebarAssistants', () => {
 
     const navMore = screen.getByTestId('navigation-more')
     expect(navMore).toHaveAttribute('data-context-id', 'sidebar-assistant-name-assistant-1')
+  })
+
+  it('renders collapsed when getPersistedSidebarSections returns recentAssistantsExpanded: false (EPMCDME-15211)', () => {
+    persistenceMock.getPersistedSidebarSections.mockReturnValue({
+      pinnedExpanded: true,
+      recentAssistantsExpanded: false,
+    })
+
+    render(<ChatSidebarAssistants />)
+
+    expect(screen.getByTestId('sidebar-section')).toHaveAttribute('data-active-index', 'null')
+  })
+
+  it('persists the new value when the section header is toggled (EPMCDME-15211)', async () => {
+    render(<ChatSidebarAssistants />)
+
+    await user.click(screen.getByRole('button', { name: 'Toggle Recent Assistants' }))
+
+    expect(persistenceMock.setPersistedSidebarSection).toHaveBeenCalledWith({
+      recentAssistantsExpanded: false,
+    })
   })
 })
