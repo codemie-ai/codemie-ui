@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-8456_placeholder",
+  "merge_base": "origin/main",
+  "head": "1575661bde9d236b5b9bc86f7e232f4f0fd5fe8a",
+  "surface_changes": [
+    "src/pages/workflows/editor/EditorBackground.tsx"
+  ],
+  "tool": "unconfigured",
+  "tool_resolution_notes": "No playwright.config, no cypress.config, no @playwright/test or cypress in package.json, no .ai-run/sdlc-factory/config.json with feature_verification.command",
+  "dynamic_install_allowed": false,
+  "status": "BLOCKED",
+  "detected_at": "2026-09-04T00:00:00.000Z"
+}

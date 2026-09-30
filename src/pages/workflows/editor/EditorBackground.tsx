@@ -32,12 +32,12 @@ const EditorBackground = ({ isFullscreen }: EditorBackgroundProps) => {
           <img
             src={gradientDark}
             className="absolute bottom-0 left-[-100px] min-w-[450px] codemieLight:hidden pointer-events-none select-none"
-            alt="background-gradient"
+            alt=""
           />
           <img
             src={gradientLight}
             className="absolute bottom-0 left-[-100px] min-w-[450px] codemieDark:hidden pointer-events-none select-none"
-            alt="background-gradient"
+            alt=""
           />
         </>
       )}

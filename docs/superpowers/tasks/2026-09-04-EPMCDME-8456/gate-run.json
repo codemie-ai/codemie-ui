@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-8456_placeholder",
+  "head": "1575661bde9d236b5b9bc86f7e232f4f0fd5fe8a",
+  "runner": "npm",
+  "started_at": "2026-09-04T15:00:00.000Z",
+  "completed_at": "2026-09-04T15:40:00.000Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 95000,
+      "command": "npm run lint",
+      "exit_code": 1,
+      "notes": "5 errors in src/a2ui/config.ts (import/no-unresolved for @a2ui/* packages). Pre-existing issue unrelated to branch changes (branch only modifies src/pages/workflows/editor/EditorBackground.tsx). Not auto-fixable."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 30000,
+      "command": "npm run typecheck",
+      "exit_code": 1,
+      "notes": "Errors in src/a2ui/config.ts and src/a2ui/useA2uiSurface.ts — Cannot find module '@a2ui/web_core/v0_9/basic_catalog' and related. Pre-existing, unrelated to branch changes."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 599000,
+      "command": "npm run test:unit -- --run",
+      "exit_code": 0,
+      "notes": "134 test files failed, 364 passed (3947 total). Exit code 0 but failures present — guide pass criterion requires all suites pass. Failures include unhandled rejection: require() of ES Module quill.js not supported (ERR_REQUIRE_ESM) in primereact/editor. Pre-existing environment issue unrelated to branch changes."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 79000,
+      "command": "npm run test:integration -- --run",
+      "exit_code": 1,
+      "notes": "35 test files failed, 5 passed. Failures caused by pre-existing @a2ui module resolution error: 'Failed to resolve import @a2ui/web_core/v0_9/basic_catalog'. Unrelated to branch changes."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "N/A",
+      "exit_code": null,
+      "notes": "UI surface changed (EditorBackground.tsx matches .tsx glob) but no configured UI test script (test:ui not in package.json scripts); browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 45000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Skipped: 'Podman daemon is not running'. Run 'podman machine start' to enable secrets detection locally. This gate also runs as gitleaks-scan in the MR pipeline."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN to run locally. Runs in CI pipeline."
+    }
+  ],
+  "failures": {
+    "lint": "C:\\Users\\Yauheni_Hil\\repos\\codemie-dev\\codemie-ui\\src\\a2ui\\config.ts\n  35:37  error  Unable to resolve path to module '@a2ui/web_core/v0_9/basic_catalog'  import/no-unresolved\n  45:60  error  Unable to resolve path to module '@a2ui/react/v0_9'                   import/no-unresolved\n  55:51  error  Unable to resolve path to module '@a2ui/react/v0_9'                   import/no-unresolved\n  57:56  error  Unable to resolve path to module '@a2ui/web_core/v0_9'                import/no-unresolved\n  87:8   error  Unable to resolve path to module '@a2ui/web_core/v0_9/basic_catalog'  import/no-unresolved\n\n✖ 5 problems (5 errors, 0 warnings)",
+    "typecheck": "src/a2ui/config.ts(35,37): error TS2307: Cannot find module '@a2ui/web_core/v0_9/basic_catalog' or its corresponding type declarations.\nsrc/a2ui/config.ts(45,60): error TS2307: Cannot find module '@a2ui/react/v0_9' or its corresponding type declarations.\nsrc/a2ui/config.ts(55,51): error TS2307: Cannot find module '@a2ui/react/v0_9' or its corresponding type declarations.\nsrc/a2ui/config.ts(57,56): error TS2307: Cannot find module '@a2ui/web_core/v0_9' or its corresponding type declarations.\nsrc/a2ui/config.ts(87,8): error TS2307: Cannot find module '@a2ui/web_core/v0_9/basic_catalog' or its corresponding type declarations.\nsrc/a2ui/useA2uiSurface.ts(79,5): error TS2769: No overload matches this call.",
+    "unit": "Test Files  134 failed | 364 passed (498)\n      Tests   57 failed | 3890 passed (3947)\n     Errors   1 error\nUnhandled Rejection: Error: require() of ES Module node_modules/quill/quill.js from node_modules/primereact/editor/editor.cjs.js not supported.",
+    "integration": "Test Files  35 failed | 5 passed (40)\n      Tests  20 passed (20)\nError: Failed to resolve import \"@a2ui/web_core/v0_9/basic_catalog\" from \"src/a2ui/config.ts\". Does the file exist?"
+  }
+}

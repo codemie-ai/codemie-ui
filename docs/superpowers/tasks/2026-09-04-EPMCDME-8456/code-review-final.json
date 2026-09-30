@@ -1,0 +1,29 @@
+{
+  "decision": "request-changes",
+  "rationale": "One patch finding: both decorative <img> elements are missing aria-hidden=\"true\", which leaves them exposed to touch-exploration on older VoiceOver/iOS ATs despite role=\"presentation\" and alt=\"\". All acceptance criteria pass or are pending Stage 7 verification; 0 deferred, 0 dismissed.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "acceptance", "item": "EditorBackground.tsx contains no alt=\"background-gradient\" attribute", "status": "pass", "notes": "Both removed; no remaining occurrence." },
+    { "kind": "acceptance", "item": "Both <img> elements have alt=\"\"", "status": "pass", "notes": "alt=\"\" set on each image." },
+    { "kind": "acceptance", "item": "Both <img> elements have role=\"presentation\"", "status": "pass", "notes": "role=\"presentation\" added to each image." },
+    { "kind": "acceptance", "item": "Workflow editor renders visually identically in fullscreen and non-fullscreen modes", "status": "pending-stage-7", "notes": "No visual attributes changed; requires browser/screenshot verification." },
+    { "kind": "acceptance", "item": "NVDA does not announce the gradient images when navigating the workflow editor", "status": "pending-stage-7", "notes": "Code evidence sufficient for NVDA; live AT confirmation still required." },
+    { "kind": "acceptance", "item": "Lint and type-check gates pass", "status": "pending-stage-7", "notes": "No lint/type rules visibly broken; requires CI execution." }
+  ],
+  "standards_review": [],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/EditorBackground.tsx",
+      "line": 32,
+      "title": "aria-hidden missing on decorative images",
+      "problem": "Both <img> elements have alt=\"\" and role=\"presentation\" but no aria-hidden=\"true\". Some assistive technologies (e.g. older VoiceOver on iOS) surface role=\"presentation\" nodes via touch exploration regardless of the role.",
+      "impact": "A user on an affected AT will hear the decorative gradient images announced while navigating the workflow editor, defeating the intent of the accessibility fix.",
+      "recommendation": "Add aria-hidden=\"true\" to both <img> elements alongside the existing alt=\"\" and role=\"presentation\"."
+    }
+  ]
+}

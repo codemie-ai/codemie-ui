@@ -1,0 +1,23 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: aria-hidden=\"true\" is now present on both decorative <img> elements at lines 37 and 44 of EditorBackground.tsx, alongside the existing alt=\"\" and role=\"presentation\".",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "acceptance", "item": "EditorBackground.tsx contains no alt=\"background-gradient\" attribute", "status": "pass", "notes": "Both removed; no remaining occurrence." },
+    { "kind": "acceptance", "item": "Both <img> elements have alt=\"\"", "status": "pass", "notes": "alt=\"\" set on each image." },
+    { "kind": "acceptance", "item": "Both <img> elements have role=\"presentation\"", "status": "pass", "notes": "role=\"presentation\" added to each image." },
+    { "kind": "acceptance", "item": "Workflow editor renders visually identically in fullscreen and non-fullscreen modes", "status": "pending-stage-7", "notes": "No visual attributes changed; requires browser/screenshot verification." },
+    { "kind": "acceptance", "item": "NVDA does not announce the gradient images when navigating the workflow editor", "status": "pending-stage-7", "notes": "Code evidence sufficient for NVDA; live AT confirmation still required." },
+    { "kind": "acceptance", "item": "Lint and type-check gates pass", "status": "pending-stage-7", "notes": "No lint/type rules visibly broken; requires CI execution." }
+  ],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "aria-hidden=\"true\" added to both <img> elements (lines 37 and 44). Fix confirmed in current source."
+    }
+  ]
+}

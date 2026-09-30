@@ -1,0 +1,8 @@
+[
+  {
+    "location": "src/pages/workflows/editor/EditorBackground.tsx:9-11,16-18",
+    "trigger_condition": "AT (e.g. older VoiceOver/iOS) that tracks role=\"presentation\" elements but still exposes them via touch exploration",
+    "guard_snippet": "add aria-hidden=\"true\" alongside role=\"presentation\" and alt=\"\"",
+    "potential_consequence": "Some AT announces decorative gradient; NVDA fix holds but other ATs may not"
+  }
+]

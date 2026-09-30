@@ -28,16 +28,8 @@ const Gradient: FC = () => {
         getSidebarMaxWidthClass()
       )}
     >
-      <img
-        src={GradientLight}
-        className="min-w-[450px] codemieLight:hidden"
-        alt="background-gradient"
-      />
-      <img
-        src={GradientDark}
-        className="min-w-[600px] codemieDark:hidden"
-        alt="background-gradient"
-      />
+      <img src={GradientLight} className="min-w-[450px] codemieLight:hidden" alt="" />
+      <img src={GradientDark} className="min-w-[600px] codemieDark:hidden" alt="" />
     </div>
   )
 }

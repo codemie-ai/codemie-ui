@@ -240,7 +240,7 @@ Use `focus:not-sr-only` for skip links:
 | Image type | Alt value |
 |------------|-----------|
 | Informative | Descriptive text: `'AI assistant avatar'` |
-| Decorative | Empty string: `alt=''` + `role='presentation'` |
+| Decorative | Empty string: `alt=''` (alone — `role='presentation'`/`aria-hidden` are redundant on an `<img>` with an empty `alt`) |
 | Decorative SVG | `aria-hidden='true'` on the `<svg>` element |
 
 ---

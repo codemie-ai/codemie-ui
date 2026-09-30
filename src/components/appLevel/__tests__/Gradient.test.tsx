@@ -55,7 +55,7 @@ describe('Gradient', () => {
       const { container } = render(<Gradient />)
       const images = container.querySelectorAll('img')
       const lightImage = images[0]
-      expect(lightImage).toHaveAttribute('alt', 'background-gradient')
+      expect(lightImage).toHaveAttribute('alt', '')
       expect(lightImage).toHaveClass('codemieLight:hidden')
     })
 
@@ -63,16 +63,16 @@ describe('Gradient', () => {
       const { container } = render(<Gradient />)
       const images = container.querySelectorAll('img')
       const darkImage = images[1]
-      expect(darkImage).toHaveAttribute('alt', 'background-gradient')
+      expect(darkImage).toHaveAttribute('alt', '')
       expect(darkImage).toHaveClass('min-w-[600px]')
       expect(darkImage).toHaveClass('codemieDark:hidden')
     })
 
-    it('both images have alt text for accessibility', () => {
+    it('both images are hidden from assistive technologies', () => {
       const { container } = render(<Gradient />)
       const images = container.querySelectorAll('img')
       images.forEach((img) => {
-        expect(img).toHaveAttribute('alt', 'background-gradient')
+        expect(img).toHaveAttribute('alt', '')
       })
     })
 

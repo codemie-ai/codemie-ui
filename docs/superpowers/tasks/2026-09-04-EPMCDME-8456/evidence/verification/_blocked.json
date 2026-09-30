@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "head": "1575661bde9d236b5b9bc86f7e232f4f0fd5fe8a",
+  "result": "BLOCKED",
+  "reason": "UI surface changed (src/pages/workflows/editor/EditorBackground.tsx) but no browser verification tool is configured. No playwright.config or cypress.config found; neither @playwright/test nor cypress is in package.json; no .ai-run/sdlc-factory/config.json with feature_verification.command; dynamic Playwright installation not permitted without explicit config opt-in.",
+  "changed_files": [
+    "src/pages/workflows/editor/EditorBackground.tsx"
+  ],
+  "change_summary": "Decorative background images marked aria-hidden=true and role=presentation; alt text cleared to empty string — pure accessibility fix with no interactive behavior.",
+  "remediation": "Install Playwright (npm i -D @playwright/test && npx playwright install) or set feature_verification.command in .ai-run/sdlc-factory/config.json, then re-run this skill."
+}
