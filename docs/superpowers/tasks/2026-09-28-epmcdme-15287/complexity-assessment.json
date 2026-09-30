@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Fix Focused view pinned-chat sorting to use pin-order (like Unified view) instead of last-activity recency.",
+  "generated": "2026-09-28T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 11,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Two components across two layers (focusedChatSidebarViewModel.ts sort logic; ChatSidebarLists.tsx container wiring of pinOrderStore into the Focused builder), but the pattern is exactly precedented by the sibling Unified-view implementation (sortPinnedByPinOrder)." },
+    { "dimension": "technical_risk", "reason": "Exact pattern already exists and is fully unit-tested in the Unified view (pinOrderStore + sortPinnedByPinOrder); this is a copy-and-adapt into the Focused builder. Slight risk from changing a positionally-parameterized function signature and two existing tests that currently assert the buggy date-based order, which keeps this from scoring pure XS." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

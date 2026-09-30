@@ -21,6 +21,7 @@ import {
   getValidDateTimestamp,
   isAssistantNameFolder,
   sortChatsByMostRecent,
+  sortPinnedByPinOrder,
 } from './chatSidebarCollectionHelpers'
 import {
   assistantFolderKey,
@@ -77,14 +78,6 @@ const addChatToSection = (
   if (location.section === 'workflow-runs') viewModel.workflowChats.push(chat)
   else if (location.section === 'pinned') viewModel.pinnedChats.push(chat)
   else if (location.section === 'recent') viewModel.recentChats.push(chat)
-}
-
-const sortPinnedByPinOrder = (chats: ChatListItem[], pinOrder: Record<string, string>) => {
-  chats.sort((a, b) => {
-    const aTs = getValidDateTimestamp(pinOrder[a.id]) || getValidDateTimestamp(a.updateDate, a.date)
-    const bTs = getValidDateTimestamp(pinOrder[b.id]) || getValidDateTimestamp(b.updateDate, b.date)
-    return bTs - aTs
-  })
 }
 
 // Folder lists must keep reflecting real activity, unlike Pinned — so a move only wins the sort

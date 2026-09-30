@@ -105,7 +105,8 @@ const ChatSidebarLists = forwardRef<ChatSidebarListsRef, ChatSidebarListsProps>(
         showWorkflowRunsSeparately,
       },
       assistantFolders,
-      chatFolders
+      chatFolders,
+      pinOrderStore.getPinOrder()
     )
     return viewModel
   }, [assistantFolders, chatFolders, chats, showRecentAssistants, showWorkflowRunsSeparately])

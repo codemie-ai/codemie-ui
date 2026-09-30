@@ -665,8 +665,9 @@ describe('buildFocusedChatSidebarViewModel', () => {
       createChat({ id: 'pinned-a', pinned: true }),
       createChat({ id: 'recent-a', date: '2026-07-29T09:00:00.000Z' }),
     ]
+    const pinOrder = { 'pinned-a': '2026-08-01T00:00:00.000Z' }
 
-    const viewModel = buildFocusedChatSidebarViewModel(chats, focusedSettings)
+    const viewModel = buildFocusedChatSidebarViewModel(chats, focusedSettings, [], [], pinOrder)
 
     expect(viewModel.pinnedChats.map((chat) => chat.id)).toEqual(['pinned-a'])
     expect(viewModel.groups).toHaveLength(1)
@@ -674,7 +675,7 @@ describe('buildFocusedChatSidebarViewModel', () => {
     expect(viewModel.recentChats.map((chat) => chat.id)).toEqual(['recent-a'])
   })
 
-  it('shows two pinned folder chats as individual rows without aggregation', () => {
+  it('shows two pinned folder chats as individual rows ordered by pin time, not date', () => {
     const chats = [
       createChat({
         id: 'older-pinned',
@@ -688,16 +689,17 @@ describe('buildFocusedChatSidebarViewModel', () => {
         pinned: true,
         date: '2026-07-29T10:00:00.000Z',
       }),
-      createChat({
-        id: 'recent-in-folder',
-        folder: 'Project',
-        date: '2026-07-29T09:00:00.000Z',
-      }),
+      createChat({ id: 'recent-in-folder', folder: 'Project', date: '2026-07-29T09:00:00.000Z' }),
     ]
+    // older-pinned was pinned more recently than newer-pinned, despite having the older `date`.
+    const pinOrder = {
+      'older-pinned': '2026-08-02T00:00:00.000Z',
+      'newer-pinned': '2026-08-01T00:00:00.000Z',
+    }
 
-    const viewModel = buildFocusedChatSidebarViewModel(chats, focusedSettings)
+    const viewModel = buildFocusedChatSidebarViewModel(chats, focusedSettings, [], [], pinOrder)
 
-    expect(viewModel.pinnedChats.map((chat) => chat.id)).toEqual(['newer-pinned', 'older-pinned'])
+    expect(viewModel.pinnedChats.map((chat) => chat.id)).toEqual(['older-pinned', 'newer-pinned'])
     // Still listed in Pinned, but revealed in their folder's drilldown.
     expect(viewModel.chatLocations['newer-pinned']).toEqual({
       section: 'folder',
@@ -828,6 +830,153 @@ describe('buildFocusedChatSidebarViewModel', () => {
 
     expect(customGroup?.folderKind).toBe('custom')
     expect(importGroup?.folderKind).toBe('legacy-import')
+  })
+
+  describe('pinned section ordering', () => {
+    it('sorts pinned chats by pin-order, not by updateDate', () => {
+      const olderPin = createChat({
+        id: 'older-pin',
+        pinned: true,
+        updateDate: '2026-07-01T00:00:00.000Z',
+      })
+      const newerPin = createChat({
+        id: 'newer-pin',
+        pinned: true,
+        updateDate: '2026-01-01T00:00:00.000Z',
+      })
+      const pinOrder = {
+        'older-pin': '2026-08-01T00:00:00.000Z',
+        'newer-pin': '2026-09-01T00:00:00.000Z',
+      }
+
+      const viewModel = buildFocusedChatSidebarViewModel(
+        [olderPin, newerPin],
+        focusedSettings,
+        [],
+        [],
+        pinOrder
+      )
+
+      expect(viewModel.pinnedChats.map((chat) => chat.id)).toEqual(['newer-pin', 'older-pin'])
+    })
+
+    it('does not reorder the Pinned section when a pinned chat gets a fresh updateDate from real usage', () => {
+      const firstPinned = createChat({
+        id: 'first-pinned',
+        pinned: true,
+        updateDate: '2026-01-01T00:00:00.000Z',
+      })
+      const secondPinned = createChat({
+        id: 'second-pinned',
+        pinned: true,
+        updateDate: '2026-01-02T00:00:00.000Z',
+      })
+      const pinOrder = {
+        'first-pinned': '2026-08-01T00:00:00.000Z',
+        'second-pinned': '2026-08-02T00:00:00.000Z',
+      }
+
+      const before = buildFocusedChatSidebarViewModel(
+        [firstPinned, secondPinned],
+        focusedSettings,
+        [],
+        [],
+        pinOrder
+      )
+      expect(before.pinnedChats.map((chat) => chat.id)).toEqual(['second-pinned', 'first-pinned'])
+
+      const firstPinnedAfterUsage = { ...firstPinned, updateDate: '2026-09-01T00:00:00.000Z' }
+      const after = buildFocusedChatSidebarViewModel(
+        [firstPinnedAfterUsage, secondPinned],
+        focusedSettings,
+        [],
+        [],
+        pinOrder
+      )
+      expect(after.pinnedChats.map((chat) => chat.id)).toEqual(['second-pinned', 'first-pinned'])
+    })
+
+    it('unpinning a chat preserves the relative order of the remaining pinned chats', () => {
+      const chatA = createChat({ id: 'chat-a', pinned: true })
+      const chatB = createChat({ id: 'chat-b', pinned: true })
+      const chatC = createChat({ id: 'chat-c', pinned: true })
+      const pinOrder = {
+        'chat-a': '2026-08-01T00:00:00.000Z',
+        'chat-b': '2026-08-02T00:00:00.000Z',
+        'chat-c': '2026-08-03T00:00:00.000Z',
+      }
+
+      const before = buildFocusedChatSidebarViewModel(
+        [chatA, chatB, chatC],
+        focusedSettings,
+        [],
+        [],
+        pinOrder
+      )
+      expect(before.pinnedChats.map((chat) => chat.id)).toEqual(['chat-c', 'chat-b', 'chat-a'])
+
+      const chatBUnpinned = { ...chatB, pinned: false }
+      const { 'chat-b': _removed, ...pinOrderAfterUnpin } = pinOrder
+      const after = buildFocusedChatSidebarViewModel(
+        [chatA, chatBUnpinned, chatC],
+        focusedSettings,
+        [],
+        [],
+        pinOrderAfterUnpin
+      )
+      expect(after.pinnedChats.map((chat) => chat.id)).toEqual(['chat-c', 'chat-a'])
+    })
+
+    it('falls back to updateDate for a pinned chat with no recorded pin-order entry', () => {
+      const withEntry = createChat({
+        id: 'with-entry',
+        pinned: true,
+        updateDate: '2026-01-01T00:00:00.000Z',
+      })
+      const withoutEntry = createChat({
+        id: 'without-entry',
+        pinned: true,
+        updateDate: '2026-06-01T00:00:00.000Z',
+      })
+      const pinOrder = { 'with-entry': '2026-02-01T00:00:00.000Z' }
+
+      const viewModel = buildFocusedChatSidebarViewModel(
+        [withEntry, withoutEntry],
+        focusedSettings,
+        [],
+        [],
+        pinOrder
+      )
+
+      expect(viewModel.pinnedChats.map((chat) => chat.id)).toEqual(['without-entry', 'with-entry'])
+    })
+
+    it('uses an epoch-0 pin-order entry as a real pin time instead of falling back to updateDate', () => {
+      const epochPinned = createChat({
+        id: 'epoch-pinned',
+        pinned: true,
+        updateDate: '2026-09-01T00:00:00.000Z',
+      })
+      const laterPinned = createChat({
+        id: 'later-pinned',
+        pinned: true,
+        updateDate: '2026-01-01T00:00:00.000Z',
+      })
+      const pinOrder = {
+        'epoch-pinned': '1970-01-01T00:00:00.000Z',
+        'later-pinned': '2026-02-01T00:00:00.000Z',
+      }
+
+      const viewModel = buildFocusedChatSidebarViewModel(
+        [epochPinned, laterPinned],
+        focusedSettings,
+        [],
+        [],
+        pinOrder
+      )
+
+      expect(viewModel.pinnedChats.map((chat) => chat.id)).toEqual(['later-pinned', 'epoch-pinned'])
+    })
   })
 
   describe('assistantHistory', () => {

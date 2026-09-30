@@ -700,7 +700,6 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       id: chat.id,
       initialAssistantId: chat.initialAssistantId ?? '',
       isGroup: mergedAssistantIds.length > 1,
-      pinned: !!chat.pinned,
     }
   },
 

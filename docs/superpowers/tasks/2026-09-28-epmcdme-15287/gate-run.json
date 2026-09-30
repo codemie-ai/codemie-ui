@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15287-preflight",
+  "head": "798bbd748f6edbe5727c3882349b9b2dae568445",
+  "runner": "npm",
+  "started_at": "2026-09-28T11:24:20Z",
+  "completed_at": "2026-09-28T11:30:39Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25929,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19698,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency added/removed/moved. git diff origin/main...HEAD touches no package.json or package-lock.json."
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 22102,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks image pulled and scanned ~118.66MB; 'no leaks found'. Also satisfies the pre-commit hook and the MR pipeline's gitleaks-scan task for this working tree (working-tree-only scan, not git history)."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 129088,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 616 passed (616); Tests 6307 passed | 1 skipped (6308)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 68264,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 48 passed (48); Tests 547 passed | 1 skipped (548)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (src/pages/chat/components/ChatSidebar/ChatSidebarLists/ChatSidebarLists.tsx matches ui_globs) but no configured UI test script (no test:ui entry in package.json); browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 344,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Pre-commit hook step not otherwise covered by a guide gate. Checked 2209 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 183,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: script printed 'Skipping Sonar scan because SONAR_TOKEN is not set.' and exited 0. Set SONAR_TOKEN (and ensure the SonarQube host in .sonarlint/connectedMode.json is reachable) to run this locally; CI will still run the real scan."
+    },
+    {
+      "id": "pre-ci-guard",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "gitlab-ci wait-ci-init (external contexts: ci-pipeline, compliance-report)",
+      "exit_code": null,
+      "notes": ".gitlab-ci.yml only defines a wait-ci-init job (via included epm-cdme/codemie-gitlab-templates pre-ci-guard.yml) that blocks on external GitLab status contexts 'ci-pipeline' and 'compliance-report'; these run server-side in a merge_request_event pipeline and are unreachable from this checkout."
+    }
+  ],
+  "failures": {}
+}

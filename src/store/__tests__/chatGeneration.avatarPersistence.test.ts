@@ -244,6 +244,20 @@ describe('_updateChatMetadata — returns correct chat list item payload', () =>
     })
   })
 
+  it('does not clobber an existing pinned chat list item (EPMCDME-15287)', () => {
+    const chat = makeConversation({
+      assistantIds: ['a1'],
+      assistantData: [{ id: 'a1', name: 'Assistant A1' }],
+      history: [[makeMsg()]],
+    })
+    const update = chatGenerationStore._updateChatMetadata(
+      chat,
+      makeAssistant('a1', 'Assistant A1')
+    )
+
+    expect(update).not.toHaveProperty('pinned')
+  })
+
   it('does NOT set isGroup: true for a solo-assistant chat', () => {
     mockChatsStore.chats = [makeListItem({ assistantIds: ['a1'], isGroup: false })]
 

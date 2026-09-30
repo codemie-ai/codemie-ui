@@ -20,6 +20,7 @@ import {
   buildAggregates,
   getValidDateTimestamp,
   sortChatsByMostRecent,
+  sortPinnedByPinOrder,
 } from './chatSidebarCollectionHelpers'
 import {
   classifyFolderListItemName,
@@ -95,7 +96,8 @@ export const buildFocusedChatSidebarViewModel = (
   chats: ChatListItem[],
   settings: UnifiedChatViewSettings,
   assistantFolders: AssistantFolderListItem[] = [],
-  chatFolders: FolderListItem[] = []
+  chatFolders: FolderListItem[] = [],
+  pinOrder: Record<string, string> = {}
 ): FocusedChatSidebarViewModel => {
   const registeredNames = new Map(
     assistantFolders.map((folder) => [folder.assistant_id, folder.name])
@@ -124,7 +126,7 @@ export const buildFocusedChatSidebarViewModel = (
     collections.sourceFolderChats.set(folder.name, [])
   }
   const folders = buildFolderGroups(collections.sourceFolderChats, collections.chatLocations)
-  sortChatsByMostRecent(collections.pinnedChats)
+  sortPinnedByPinOrder(collections.pinnedChats, pinOrder)
   sortChatsByMostRecent(collections.recentChats)
   sortChatsByMostRecent(collections.workflowChats)
   return {

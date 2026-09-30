@@ -1,0 +1,49 @@
+{
+  "decision": "approve",
+  "rationale": "Both prior blocking findings resolved on current-source inspection at HEAD fba8a5a: CR-001's `||` fallback replaced by passing pinOrder first to getValidDateTimestamp (epoch 0 now honored, test added), and CR-002's merge round-trip is now tested in chats.pinRenameUpdateDate.test.ts against the real updateChatListItem. Confidence medium because CR-002's fix landed in a different test file than the finding cited and uses a hand-built update shape rather than _updateChatMetadata's actual output (the existing no-pinned-key assertion covers that half); brief written to code-review-brief.md.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1: Focused Pinned section ordered by pinOrder, not updateDate/date", "status": "pass", "notes": "focusedChatSidebarViewModel.ts calls sortPinnedByPinOrder(collections.pinnedChats, pinOrder); confirmed by reading source." },
+    { "kind": "story-ac", "item": "AC2: updateDate change does not reorder Pinned; assistant reply does not clear pinned", "status": "partial", "notes": "Both fixes correct on source read (pinned key removed from _updateChatMetadata's return); required merge round-trip test not added." },
+    { "kind": "story-ac", "item": "AC3: newly pinned chat positioned via same pin-order comparator", "status": "pass", "notes": "pinChat/recordPin write a fresh ISO timestamp consumed by the same sortPinnedByPinOrder." },
+    { "kind": "story-ac", "item": "AC4: pin order survives a page refresh within one browser/device", "status": "pass", "notes": "No change to pinOrderStore persistence; out of this diff's scope." },
+    { "kind": "story-ac", "item": "AC5: recentChats/workflowChats/Focused groups remain sorted by recency", "status": "pass", "notes": "sortChatsByMostRecent still used for those collections; unaffected by the diff." },
+    { "kind": "story-ac", "item": "AC6: sortPinnedByPinOrder exists once, imported by both view-model files", "status": "pass", "notes": "Single implementation in chatSidebarCollectionHelpers.ts, imported by unified and focused view models." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "compact profile omits the standards audit this round; not a coverage gap." },
+    { "kind": "code-quality", "status": "na", "notes": "compact profile omits the standards audit this round; not a coverage gap." },
+    { "kind": "security", "status": "na", "notes": "compact profile omits the standards audit this round; not a coverage gap." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatSidebar/ChatSidebarLists/chatSidebarCollectionHelpers.ts",
+      "line": 42,
+      "title": "Pin-order epoch-0 timestamp falls back to recency",
+      "problem": "sortPinnedByPinOrder computes `getValidDateTimestamp(pinOrder[a.id]) || getValidDateTimestamp(a.updateDate, a.date)`. If pinOrder[a.id] is a valid ISO string that parses to exactly epoch 0 (1970-01-01T00:00:00.000Z), the left side is the falsy value 0, so the `||` silently falls through to the updateDate/date fallback instead of using the recorded pin order.",
+      "impact": "A pinned chat whose recorded pin-order timestamp is exactly epoch 0 (e.g. malformed/legacy backend date data reaching ensurePinOrder's fallbackIso in src/store/chats.ts:326) sorts by recency again, reproducing the exact defect this ticket fixes for that one chat. This comparator is shared by both the Focused and Unified views (chatSidebarCollectionHelpers.ts, imported by both view models), so the mis-sort is not confined to one view.",
+      "recommendation": "Distinguish 'no recorded pin order' from 'recorded as 0ms' explicitly instead of relying on truthiness, e.g. check `pinOrder[a.id] !== undefined` before falling back to updateDate/date."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/__tests__/chatGeneration.avatarPersistence.test.ts",
+      "line": 247,
+      "title": "Pinned-flag fix lacks merge round-trip test",
+      "problem": "The added 'does not clobber an existing pinned chat list item' test asserts only that _updateChatMetadata's bare return value has no `pinned` key (line 258: `expect(update).not.toHaveProperty('pinned')`). It never seeds an existing pinned:true ChatListItem in mockChatsStore.chats nor asserts the post-merge `pinned` value through chatsStore.updateChatListItem, as the spec's Testing section explicitly requested.",
+      "impact": "The behavior actually being fixed — updateChatListItem's definedUpdates merge clobbering an existing pinned:true with a stray pinned:false from _updateChatMetadata's return — is confirmed correct only by reading chatGeneration.ts and chats.ts directly, not by the test suite. A future change that reintroduces a `pinned` key on that code path would not be caught by this test.",
+      "recommendation": "Extend or add a test that seeds mockChatsStore.chats with a pinned:true ChatListItem, runs the resulting update object through chatsStore.updateChatListItem, and asserts the stored item's `pinned` flag is still true afterward."
+    }
+  ],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "HEAD line 43-44 pass pinOrder[id] as first arg to getValidDateTimestamp, which returns the first non-NaN parse, so epoch 0 is used; new epoch-0 test in chatSidebarListsHelpers.test.ts." },
+    { "id": "CR-002", "status": "resolved", "notes": "New test in chats.pinRenameUpdateDate.test.ts seeds pinned:true and merges via real updateChatListItem (chats.ts:744-751); update shape hand-built, not _updateChatMetadata output." }
+  ]
+}

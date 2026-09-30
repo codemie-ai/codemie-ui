@@ -115,3 +115,31 @@ describe('pinChat / renameChat leave updateDate untouched', () => {
     expect(chat.updateDate).toBe('2020-01-01T00:00:00.000Z')
   })
 })
+
+describe('updateChatListItem keeps pinned state', () => {
+  it('leaves a pinned chat pinned when the update carries no pinned key (EPMCDME-15287)', () => {
+    chatsStore.chats = [
+      {
+        id: 'chat-1',
+        name: 'Chat 1',
+        pinned: true,
+        assistantIds: ['a1'],
+        updateDate: '2020-01-01T00:00:00.000Z',
+      } as any,
+    ]
+
+    // Shape of the update applied after an assistant reply (_updateChatMetadata + updateDate).
+    chatsStore.updateChatListItem({
+      id: 'chat-1',
+      assistantIds: ['a1'],
+      assistantNames: ['Assistant A1'],
+      initialAssistantId: 'a1',
+      isGroup: false,
+      updateDate: '2026-09-28T12:00:00.000Z',
+    })
+
+    const chat = chatsStore.chats[0]
+    expect(chat.pinned).toBe(true)
+    expect(chat.updateDate).toBe('2026-09-28T12:00:00.000Z')
+  })
+})

@@ -37,6 +37,14 @@ export const sortChatsByMostRecent = (chats: ChatListItem[]) => {
   )
 }
 
+export const sortPinnedByPinOrder = (chats: ChatListItem[], pinOrder: Record<string, string>) => {
+  chats.sort((a, b) => {
+    const aTs = getValidDateTimestamp(pinOrder[a.id], a.updateDate, a.date)
+    const bTs = getValidDateTimestamp(pinOrder[b.id], b.updateDate, b.date)
+    return bTs - aTs
+  })
+}
+
 export const getAssistantIdentity = (
   chat: ChatListItem,
   registeredAssistantNames: ReadonlyMap<string, string> = new Map()
