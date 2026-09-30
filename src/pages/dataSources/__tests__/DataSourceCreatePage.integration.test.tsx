@@ -430,6 +430,22 @@ describe('DataSourceCreatePage - xWiki', () => {
     expect(option.parentElement).toHaveTextContent('NEW')
   })
 
+  it('does not mark X-ray, SharePoint, SVN, or Azure DevOps Work Item with a NEW badge', async () => {
+    const user = userEvent.setup()
+    renderPage('/data-sources/create')
+    await waitForFormReady()
+
+    const selector = await getAutocomplete('Datasource Type')
+    await openAutocompleteDropdown(selector, user)
+
+    const options = await Promise.all(
+      ['X-ray', 'SharePoint', 'SVN', 'Azure Devops Work Item'].map((label) =>
+        screen.findByText(label)
+      )
+    )
+    options.forEach((option) => expect(option.parentElement).not.toHaveTextContent('NEW'))
+  })
+
   it('omits the wiki key entirely when the Wiki field is left empty', async () => {
     mockAPI('POST', 'v1/index/health', { implemented: false })
     mockAPI('POST', 'v1/index/knowledge_base/xwiki', { id: 'ds-xwiki-3' })

@@ -129,7 +129,7 @@ Each assistant can be tailored with:
     {
       id: 'skills',
       actionType: 'Highlight',
-      title: 'Skills - Extend AI Capabilities (NEW!)',
+      title: 'Skills - Extend AI Capabilities',
       target: () => findNavLinkByText('Skills'),
       description: `Skills are specialized capabilities that enhance your assistants' abilities.
 
@@ -137,9 +137,7 @@ What are skills?
 - Reusable tools and functions that assistants can use
 - Examples: web search, code execution, API integrations
 - Can be enabled/disabled per assistant
-- Custom skills can be created for your needs
-
-This is a new feature marked with the "NEW" badge!`,
+- Custom skills can be created for your needs`,
       condition: () => {
         // Check if Skills nav item exists
         return !!findNavLinkByText('Skills')
@@ -231,7 +229,7 @@ How it works:
     {
       id: 'ai-katas',
       actionType: 'Highlight',
-      title: 'AI Katas - Learning Challenges (NEW!)',
+      title: 'AI Katas - Learning Challenges',
       target: () => findNavLinkByText('AI Katas'),
       description: `AI Katas are interactive learning challenges to help you master AI-assisted development.
 
@@ -256,7 +254,7 @@ This is a brand new feature - try it out!`,
     {
       id: 'analytics',
       actionType: 'Highlight',
-      title: 'Analytics - Insights & Metrics (NEW!)',
+      title: 'Analytics - Insights & Metrics',
       target: () => findNavLinkByText('Analytics'),
       description: `The Analytics section provides insights into how you're using CodeMie.
 

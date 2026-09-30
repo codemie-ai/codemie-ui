@@ -19,11 +19,14 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import DataSourceFilters from '../DataSourceFilters'
 
 let capturedOnProjectFilter: (value: string) => void = () => {}
+let capturedIndexTypeOptions: any[] = []
 
 vi.mock('@/components/Filters', () => ({
   default: ({ filterDefinitions }: { filterDefinitions: any[] }) => {
     const projectDef = filterDefinitions?.find((d: any) => d.name === 'project')
     if (projectDef?.config?.onFilter) capturedOnProjectFilter = projectDef.config.onFilter
+    const indexTypeDef = filterDefinitions?.find((d: any) => d.name === 'index_type')
+    if (indexTypeDef) capturedIndexTypeOptions = indexTypeDef.options
     return null
   },
 }))
@@ -57,6 +60,13 @@ describe('DataSourceFilters — project search debounce', () => {
     vi.useRealTimers()
     vi.clearAllMocks()
     capturedOnProjectFilter = () => {}
+    capturedIndexTypeOptions = []
+  })
+
+  it('marks only xWiki with a NEW badge in the type filter', () => {
+    render(<DataSourceFilters onApplyFilters={vi.fn()} />)
+    const badged = capturedIndexTypeOptions.filter((o) => o.badge === 'NEW')
+    expect(badged.map((o) => o.label)).toEqual(['xWiki'])
   })
 
   it('debounces project search: rapid keystrokes produce a single request after 1 second', async () => {

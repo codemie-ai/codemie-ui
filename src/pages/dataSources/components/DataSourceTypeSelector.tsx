@@ -62,14 +62,8 @@ const DataSourceTypeSelector = ({
           label: humanize(INDEX_TYPES[key]),
         }
 
-        // Add NEW badge for X-ray, Azure DevOps Work Item, SharePoint, and SVN types
-        if (
-          INDEX_TYPES[key] === INDEX_TYPES.XRAY ||
-          INDEX_TYPES[key] === INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM ||
-          INDEX_TYPES[key] === INDEX_TYPES.SHAREPOINT ||
-          INDEX_TYPES[key] === INDEX_TYPES.SVN ||
-          INDEX_TYPES[key] === INDEX_TYPES.XWIKI
-        ) {
+        // Add NEW badge for the xWiki type only
+        if (INDEX_TYPES[key] === INDEX_TYPES.XWIKI) {
           return { ...option, badge: 'NEW' }
         }
 

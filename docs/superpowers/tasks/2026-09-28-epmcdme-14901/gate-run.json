@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14901_remove-new-badges",
+  "head": "ba51415daa075f366f784b40dbede1e8ed78cc2f",
+  "runner": "npm",
+  "started_at": "2026-09-28T15:36:35Z",
+  "completed_at": "2026-09-28T17:44:40Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 24000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency was added, removed, or moved. Diff vs merge_base touches no package.json/package-lock.json."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17000,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 222000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 617 passed (617); Tests 6316 passed | 1 skipped (6317)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 92000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 48 passed (48); Tests 548 passed | 1 skipped (549)"
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 500,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2210 files, 0 missing license headers. Not covered by the guide's gate list (distinct from npm run license-check, which validates dependency licences); added because it is chained in .husky/pre-commit."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 500,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 is not evidence it ran. To enable locally, export SONAR_TOKEN for https://sonar.core.kuberocketci.io (project key codemie-ui, per .sonarlint/connectedMode.json) before running; otherwise only the MR pipeline's Sonar job settles this check."
+    }
+  ],
+  "failures": {}
+}

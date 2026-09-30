@@ -89,7 +89,6 @@ const Navigation: React.FC<NavigationProps> = () => {
         label: 'Skills',
         icon: IconType.SKILL,
         route: router.resolve({ name: 'skills' }).fullPath,
-        badge: 'NEW',
       })
     }
 
@@ -126,7 +125,6 @@ const Navigation: React.FC<NavigationProps> = () => {
         label: 'AI Katas',
         icon: IconType.KATA,
         route: router.resolve({ name: 'katas' }).fullPath,
-        badge: 'NEW',
       },
     ]
 
@@ -135,6 +133,7 @@ const Navigation: React.FC<NavigationProps> = () => {
         label: 'Schedulers',
         icon: IconType.SCHEDULER,
         route: router.resolve({ name: SCHEDULERS }).fullPath,
+        badge: 'NEW',
       })
     }
 
@@ -143,7 +142,6 @@ const Navigation: React.FC<NavigationProps> = () => {
         label: 'Analytics',
         icon: IconType.ANALYTICS,
         route: router.resolve({ name: ANALYTICS }).fullPath,
-        badge: 'NEW',
       })
     }
 

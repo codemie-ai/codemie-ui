@@ -223,6 +223,34 @@ describe('Navigation', () => {
     ] as any
     renderWithRouter(<Navigation />)
 
-    expect(screen.getByRole('link', { name: 'Schedulers' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Schedulers/ })).toBeInTheDocument()
+  })
+
+  it('shows a NEW badge on Schedulers when the flag is on', () => {
+    mockAppInfoStore.configs = [
+      { id: 'features:schedulersView', settings: { enabled: true } },
+    ] as any
+    renderWithRouter(<Navigation />)
+
+    expect(screen.getByText('Schedulers').closest('a')).toHaveTextContent('NEW')
+  })
+
+  it('does not show a NEW badge on Skills when the flag is on', () => {
+    mockAppInfoStore.configs = [{ id: 'skills', settings: { enabled: true } }] as any
+    renderWithRouter(<Navigation />)
+    expect(screen.getByText('Skills').closest('a')).not.toHaveTextContent('NEW')
+  })
+
+  it('does not show a NEW badge on Analytics when enterprise edition is on', () => {
+    mockAppInfoStore.configs = [
+      { id: 'features:enterpriseEdition', settings: { enabled: true } },
+    ] as any
+    renderWithRouter(<Navigation />)
+    expect(screen.getByText('Analytics').closest('a')).not.toHaveTextContent('NEW')
+  })
+
+  it('does not show a NEW badge on AI Katas', () => {
+    renderWithRouter(<Navigation />)
+    expect(screen.getByText('AI Katas').closest('a')).not.toHaveTextContent('NEW')
   })
 })

@@ -1,0 +1,38 @@
+{
+  "decision": "request-changes",
+  "rationale": "No spec/story existed for this ticket (acceptance lens did not run), so both surviving findings were unambiguous fixes re-routed to patch/major per no-spec rules rather than decision_needed. Both concern src/configs/onboarding/navigationIntroduction.tsx: it still tells users the Skills/AI Katas/Analytics nav items are marked with a NEW badge even though this change removed those badges from Navigation.tsx, and the flow is live via src/store/onboarding.ts. Standards review was not expected for the compact profile (rows na, no coverage gap); nothing was deferred or dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards review not expected for the compact profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards review not expected for the compact profile." },
+    { "kind": "security", "status": "na", "notes": "Standards review not expected for the compact profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/configs/onboarding/navigationIntroduction.tsx",
+      "line": 142,
+      "title": "Skills onboarding text still cites NEW badge",
+      "problem": "The Skills onboarding tour step description states 'This is a new feature marked with the \"NEW\" badge!' but Navigation.tsx no longer renders a NEW badge on the Skills nav item after this change.",
+      "impact": "Users taking the guided tour are told to look for a badge that no longer exists, producing confusing, stale onboarding copy on a live, registered flow (src/store/onboarding.ts).",
+      "recommendation": "Remove or rewrite the 'marked with the \"NEW\" badge!' sentence in the Skills tour step description to match the badge removal."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/configs/onboarding/navigationIntroduction.tsx",
+      "line": 234,
+      "title": "AI Katas / Analytics tour titles still say NEW",
+      "problem": "The AI Katas ('AI Katas - Learning Challenges (NEW!)', line 234) and Analytics ('Analytics - Insights & Metrics (NEW!)', line 259) onboarding tour step titles still carry a '(NEW!)' suffix after the corresponding Navigation.tsx badges were removed in this change.",
+      "impact": "The onboarding tour keeps flagging these sections as new even though the UI no longer does, producing inconsistent, stale messaging on a live, registered onboarding flow.",
+      "recommendation": "Drop the '(NEW!)' suffix from the AI Katas and Analytics tour step titles to match the nav."
+    }
+  ]
+}
