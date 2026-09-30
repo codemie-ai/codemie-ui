@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import React, { forwardRef, InputHTMLAttributes, ReactNode } from 'react'
+import React, { forwardRef, InputHTMLAttributes, ReactNode, useId } from 'react'
 
 import FieldAnnouncer from '@/components/form/FieldAnnouncer'
 import Hint from '@/components/Hint'
@@ -83,6 +83,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    const reactId = useId()
+    const inputId = id ?? reactId
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (keyfilter) e.target.value = e.target.value.replace(keyfilter, '')
       onChange?.(e)
@@ -98,12 +101,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const callerDescribedBy = (rest as { 'aria-describedby'?: string })['aria-describedby']
 
     return (
-      <label
-        htmlFor={id}
-        className={cn('flex flex-col gap-y-2 w-full min-w-0 input-field-wrapper', rootClass)}
-      >
+      <div className={cn('flex flex-col gap-y-2 w-full min-w-0 input-field-wrapper', rootClass)}>
         <FieldAnnouncer
-          id={id}
+          id={inputId}
           error={error}
           describedBy={callerDescribedBy}
           errorClassName={cn('text-sm text-failed-secondary input-error-message', errorClassName)}
@@ -118,12 +118,20 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               {label && (
                 <div className="flex justify-between">
                   <div className="flex items-center gap-x-1 input-label-container">
-                    <div className="flex text-xs text-text-quaternary input-label">
+                    <label
+                      htmlFor={inputId}
+                      className="flex text-xs text-text-quaternary input-label"
+                    >
                       {label}
                       {required && (
-                        <span className="text-text-error input-label-required ml-0.5">*</span>
+                        <span
+                          className="text-text-error input-label-required ml-0.5"
+                          aria-hidden="true"
+                        >
+                          *
+                        </span>
                       )}
-                    </div>
+                    </label>
                     {hint && <TooltipButton className="ml-1" content={hint} />}
                   </div>
                   {labelContent}
@@ -164,7 +172,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                     </div>
                   )}
                   <input
-                    id={id}
+                    id={inputId}
                     ref={ref}
                     name={name}
                     type={inputType}
@@ -180,6 +188,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                       inputClass
                     )}
                     {...rest}
+                    aria-required={required ? 'true' : rest['aria-required']}
                     aria-invalid={ariaInvalid}
                     aria-describedby={ariaDescribedBy}
                   />
@@ -199,7 +208,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
         </FieldAnnouncer>
-      </label>
+      </div>
     )
   }
 )

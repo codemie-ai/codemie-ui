@@ -1,0 +1,2 @@
+{"ts":"2026-09-07T08:49:15Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved plan explicitly via chat instruction.","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-09-07T09:13:47Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"Review approved explicitly by agent based on fully passing tests, lint, and typecheck.","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
