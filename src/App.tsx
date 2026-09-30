@@ -21,6 +21,7 @@ import { useSnapshot } from 'valtio'
 import AutoPopupManager from '@/components/appLevel/AutoPopupManager'
 import Banner from '@/components/appLevel/Banner'
 import Gradient from '@/components/appLevel/Gradient'
+import ReleaseNotificationBar from '@/components/appLevel/ReleaseNotificationBar'
 import SessionExpiredPopup from '@/components/appLevel/SessionExpiredPopup'
 import ToastContainer from '@/components/appLevel/ToastContainer'
 import { UnsavedChangesPopup } from '@/components/appLevel/UnsavedChangesPopup'
@@ -70,6 +71,7 @@ const App: React.FC = () => {
         <UnsavedChangesProvider>
           {user && isConfigFetched && <SkipLink />}
           <Banner />
+          <ReleaseNotificationBar />
           <ToastContainer />
 
           {!user || !isConfigFetched ? (

@@ -132,16 +132,17 @@ describe('AutoPopupManager — release popup vs. profile-settings fetch race', (
     mockProfileSettingsStore.error = null
   })
 
-  it('does not show the release popup while the profile-settings fetch is still pending', () => {
+  it('does not load release notes while the profile-settings fetch is still pending', () => {
     mockProfileSettingsStore.profileSettings = null
     mockProfileSettingsStore.error = null
 
     renderWithRouter()
 
+    expect(mockAppInfoStore.loadReleaseNotes).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog', { name: 'New CodeMie Release' })).not.toBeInTheDocument()
   })
 
-  it('shows the release popup once the profile-settings fetch resolves successfully', () => {
+  it('loads release notes once the profile-settings fetch resolves successfully', () => {
     mockProfileSettingsStore.profileSettings = {
       user_id: 'user-123',
       theme: 'system',
@@ -153,15 +154,17 @@ describe('AutoPopupManager — release popup vs. profile-settings fetch race', (
 
     renderWithRouter()
 
-    expect(screen.getByRole('dialog', { name: 'New CodeMie Release' })).toBeInTheDocument()
+    expect(mockAppInfoStore.loadReleaseNotes).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog', { name: 'New CodeMie Release' })).not.toBeInTheDocument()
   })
 
-  it('shows the release popup once the profile-settings fetch fails, instead of hanging forever', () => {
+  it('loads release notes once the profile-settings fetch fails, instead of hanging forever', () => {
     mockProfileSettingsStore.profileSettings = null
     mockProfileSettingsStore.error = 'Failed to load profile settings'
 
     renderWithRouter()
 
-    expect(screen.getByRole('dialog', { name: 'New CodeMie Release' })).toBeInTheDocument()
+    expect(mockAppInfoStore.loadReleaseNotes).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog', { name: 'New CodeMie Release' })).not.toBeInTheDocument()
   })
 })

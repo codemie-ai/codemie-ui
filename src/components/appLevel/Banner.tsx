@@ -19,7 +19,7 @@ import { Link } from 'react-router'
 import { useSnapshot } from 'valtio'
 
 import { CONFIG_KEYS } from '@/constants/configKeys'
-import { appInfoStore } from '@/store/appInfo'
+import { appInfoStore, BANNER_SHOWN_STORAGE_KEY_PREFIX, hash } from '@/store/appInfo'
 import { getConfigItemSettings } from '@/utils/settings'
 
 // values reaching Link also arrive from customer config, which server-side validation never sees
@@ -32,16 +32,6 @@ const isSafeLinkTarget = (target: string): boolean => {
     .join('')
 
   return !SCRIPTING_SCHEME.test(canonical)
-}
-
-const hash = (str: string): string => {
-  let hash = 0
-  for (let i = 0; i < str.length; i += 1) {
-    const char = str.charCodeAt(i)
-    hash = hash * 32 - hash + char
-    hash = Math.trunc(hash)
-  }
-  return Math.abs(hash).toString(36)
 }
 
 const Banner: FC = () => {
@@ -57,7 +47,7 @@ const Banner: FC = () => {
   useEffect(() => {
     if (!messages.current) return
 
-    const storageKey = 'bannerShown-' + hash(message)
+    const storageKey = BANNER_SHOWN_STORAGE_KEY_PREFIX + hash(message)
     if (!message || localStorage.getItem(storageKey) === 'true') {
       messages.current.clear()
       return
@@ -86,7 +76,7 @@ const Banner: FC = () => {
   // key off the closed message, which may already differ from the one being rendered
   const handleRemove = (closed: MessagesMessage) => {
     const dismissed = typeof closed?.id === 'string' ? closed.id : message
-    localStorage.setItem('bannerShown-' + hash(dismissed), 'true')
+    appInfoStore.dismissAdminBanner(dismissed)
   }
 
   return (
@@ -98,7 +88,10 @@ const Banner: FC = () => {
         icon: { className: '!hidden' },
         summary: { className: '!hidden' },
         detail: { className: 'grow text-center text-white' },
-        button: { className: 'shrink-0 !text-white' },
+        button: {
+          className:
+            'shrink-0 !text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded',
+        },
         wrapper: {
           className:
             'bg-gradient4 w-full min-h-12 flex items-center justify-between gap-3 text-sm py-2 px-3 whitespace-pre-line',

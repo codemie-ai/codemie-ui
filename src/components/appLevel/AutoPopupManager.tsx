@@ -18,12 +18,9 @@ import { useMatches } from 'react-router'
 import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
-import Link from '@/components/Link'
 import OnboardingFlowCard from '@/components/Onboarding/OnboardingFlowCard'
 import Popup from '@/components/Popup'
-import { ButtonType } from '@/constants'
 import { HelpPageId, ROUTE_ID_TO_PAGE_ID } from '@/constants/helpLinks'
-import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { onboardingStore } from '@/store/onboarding'
 import { userStore } from '@/store/user'
@@ -35,21 +32,20 @@ const NAVIGATION_INTRODUCTION_FLOW_ID = 'navigation-introduction'
 /**
  * Manages all automatic popups with strict priority ordering:
  *   P1 (highest): Onboarding intro flow — new SSO users
- *   P2:           New release popup — returning users with unseen release
- *   P3 (lowest):  First-time page popup — first visit to a page with guided tours
+ *   P2 (lowest):  First-time page popup — first visit to a page with guided tours
  *
- * P3 is suppressed while P1 or P2 is active. After P2 is dismissed on a
- * first-visit page, P3 will trigger automatically.
+ * P2 is suppressed while P1 is active.
+ *
+ * Note: The previous P2 release modal has been migrated to the non-blocking
+ * ReleaseNotificationBar component.
  */
 const AutoPopupManager: FC = () => {
-  const router = useVueRouter()
   const { user } = useSnapshot(userStore)
   const { profileSettings, error: profileSettingsError } = useSnapshot(profileSettingsStore)
-  const { appReleases } = useSnapshot(appInfoStore)
   const { isActive: isOnboardingActive } = useSnapshot(onboardingStore)
   const matches = useMatches()
 
-  const [activePopup, setActivePopup] = useState<'release' | 'page' | null>(null)
+  const [activePopup, setActivePopup] = useState<'page' | null>(null)
   const [pageFlows, setPageFlows] = useState<OnboardingFlow[]>([])
 
   const currentPageId = useMemo(() => {
@@ -63,7 +59,7 @@ const AutoPopupManager: FC = () => {
   }, [matches])
 
   // Effect 1: app-level popups — runs once when user is loaded
-  // Handles P1 (onboarding intro) and P2 (new release)
+  // Handles P1 (onboarding intro) and loads release notes for top bar
   useEffect(() => {
     if (!user) return
     if (profileSettings === null && profileSettingsError === null) return
@@ -74,13 +70,10 @@ const AutoPopupManager: FC = () => {
     }
 
     appInfoStore.loadReleaseNotes()
-    if (appInfoStore.isOnboardingCompleted() && appInfoStore.isAppReleaseNew()) {
-      setActivePopup('release')
-    }
   }, [user, profileSettings, profileSettingsError])
 
   // Effect 2: first-time page popup — runs on each route change
-  // Handles P3; suppressed when a higher-priority popup or onboarding session is active
+  // Handles P2; suppressed when onboarding session is active
   useEffect(() => {
     if (!currentPageId || !user) return
     if (isOnboardingActive) {
@@ -103,28 +96,7 @@ const AutoPopupManager: FC = () => {
     }
   }, [currentPageId, user, activePopup, isOnboardingActive])
 
-  // Release popup (P2) handlers
-  const latestVersion = appReleases[0]?.version
-  const releaseFlows = latestVersion ? onboardingStore.getFlowsForRelease(latestVersion) : []
-
-  const closeReleasePopup = () => setActivePopup(null)
-
-  const updateViewedRelease = () => {
-    appInfoStore.setViewedAppVersion(latestVersion)
-    closeReleasePopup()
-  }
-
-  const onNavigateToReleaseNotes = () => {
-    router.push({ name: 'release-notes' })
-    closeReleasePopup()
-  }
-
-  const handleStartReleaseFlow = (flowId: string) => {
-    updateViewedRelease()
-    onboardingStore.startFlow(flowId)
-  }
-
-  // Page popup (P3) handlers
+  // Page popup (P2) handlers
   const closePagePopup = () => setActivePopup(null)
 
   const handleStartPageFlow = (flowId: string) => {
@@ -134,77 +106,6 @@ const AutoPopupManager: FC = () => {
 
   return (
     <>
-      <Popup
-        limitWidth
-        hideFooter
-        onHide={closeReleasePopup}
-        visible={activePopup === 'release'}
-        header="New CodeMie Release"
-      >
-        <div className="p-5 pt-3">
-          <div className="text-center">
-            <span>
-              Great news! We&apos;ve rolled out new <b>CodeMie</b> version <b>{latestVersion}</b> to
-              enhance your experience. Take a moment to explore what&apos;s new and discover how
-              these changes can benefit you! Please review{' '}
-            </span>
-            <Link
-              target="_self"
-              url={
-                router.resolve({
-                  name: 'release-notes',
-                }).href
-              }
-              onClick={onNavigateToReleaseNotes}
-              className="text-text-primary hover:text-text-primary font-bold decoration-text-primary"
-            >
-              Release Notes
-            </Link>
-            !
-          </div>
-
-          {releaseFlows.length > 0 && (
-            <div className="flex flex-col gap-3 mt-5 pt-4 border-t border-border-structural">
-              <div className="flex flex-col gap-1">
-                <h3 className="text-sm font-semibold text-text-primary">
-                  What&apos;s New in This Release
-                </h3>
-                <p className="text-xs text-text-secondary">
-                  Explore guided tours to discover the new features in this version.
-                </p>
-              </div>
-              <div className="flex flex-col gap-2">
-                {releaseFlows.map((flow) => (
-                  <OnboardingFlowCard
-                    key={flow.id}
-                    flowId={flow.id}
-                    name={flow.name}
-                    description={flow.description}
-                    duration={flow.duration}
-                    emoji={flow.emoji}
-                    size="small"
-                    onStart={handleStartReleaseFlow}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-5 flex justify-center">
-            <Button
-              className="mr-3 w-32"
-              variant={ButtonType.SECONDARY}
-              onClick={updateViewedRelease}
-            >
-              Got It, Thanks!
-            </Button>
-            <Button className="w-32" onClick={onNavigateToReleaseNotes}>
-              Tell Me More
-            </Button>
-          </div>
-        </div>
-      </Popup>
-
       {pageFlows.length > 0 && (
         <Popup
           limitWidth
