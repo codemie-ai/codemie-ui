@@ -30,8 +30,10 @@ vi.mock('../hooks/useCliAnalyticsEfficiency', () => ({
       avg_context_per_call: 15000,
       worst_session_ctx_per_call: 28000,
       worst_session_prompt: 'Refactor the analytics dashboard components',
+      worst_session_trace_id: null,
       cache_read_cost_usd: 1.25,
       bloat_pct: 12.3,
+      total_cost_usd: 10.0,
     },
     deadSessions: {
       count: 8,
@@ -96,9 +98,12 @@ vi.mock('../../AnalyticsWidget', () => ({
 }))
 
 vi.mock('../../widgets/MetricCard', () => ({
-  default: ({ metric }: { metric: { id: string; label: string } }) => (
+  default: ({ metric }: { metric: { id: string; label: string; description?: string } }) => (
     <div data-testid={`metric-${metric.id}`}>
       <span>{metric.label}</span>
+      {metric.description && (
+        <span data-testid={`metric-${metric.id}-description`}>{metric.description}</span>
+      )}
     </div>
   ),
 }))
@@ -152,6 +157,46 @@ describe('EfficiencyView', () => {
     expect(screen.getByTestId('metric-avg_cost_per_dead')).toBeInTheDocument()
   })
 
+  it('computes the wasted-cost subtitle from wasted_cost_usd / total_cost_usd', () => {
+    // wasted_cost_usd: 0.42, total_cost_usd: 10.0 -> 4.20% of spend.
+    // Prior to the fix this divided by cache_read_cost_usd (1.25), yielding 33.60% of spend.
+    render(<EfficiencyView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByTestId('metric-wasted_cost_usd-description')).toHaveTextContent(
+      '4.20% of spend'
+    )
+  })
+
+  it('falls back to 0% of spend when total_cost_usd is missing (NaN guard)', () => {
+    vi.mocked(useCliAnalyticsEfficiency).mockReturnValueOnce({
+      kpis: {
+        avg_context_per_call: 15000,
+        worst_session_ctx_per_call: 28000,
+        worst_session_prompt: 'Refactor the analytics dashboard components',
+        worst_session_trace_id: null,
+        cache_read_cost_usd: 1.25,
+        bloat_pct: 12.3,
+        total_cost_usd: undefined as unknown as number,
+      },
+      deadSessions: {
+        count: 8,
+        pct_of_sessions: 5.6,
+        wasted_cost_usd: 0.42,
+        avg_cost_per_dead: 0.05,
+      },
+      sessionDepth: [],
+      codeChanges: null,
+      loading: false,
+      error: null,
+    })
+
+    render(<EfficiencyView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByTestId('metric-wasted_cost_usd-description')).toHaveTextContent(
+      '0% of spend'
+    )
+  })
+
   it('renders the session depth widget', () => {
     render(<EfficiencyView filters={MOCK_FILTERS} />)
 
@@ -194,9 +239,10 @@ describe('EfficiencyView', () => {
         avg_context_per_call: 15000,
         worst_session_ctx_per_call: 28000,
         worst_session_prompt: 'Refactor the analytics dashboard components',
+        worst_session_trace_id: null,
         cache_read_cost_usd: 1.25,
         bloat_pct: 12.3,
-        worst_session_trace_id: null,
+        total_cost_usd: 10.0,
       },
       deadSessions: {
         count: 8,

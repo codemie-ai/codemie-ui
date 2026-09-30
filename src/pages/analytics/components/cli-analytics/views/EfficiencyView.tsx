@@ -158,9 +158,10 @@ function wastedCostSubtitle(
   kpis: CliAnalyticsEfficiencyKPIs | null,
   deadSessions: CliAnalyticsDeadSessionsKPIs | null
 ): string {
-  if (!kpis || kpis.cache_read_cost_usd <= 0 || !deadSessions) return '0% of spend'
+  if (!kpis || !Number.isFinite(kpis.total_cost_usd) || kpis.total_cost_usd <= 0 || !deadSessions)
+    return '0% of spend'
   return `${formatMetricValue(
-    (deadSessions.wasted_cost_usd / kpis.cache_read_cost_usd) * 100,
+    (deadSessions.wasted_cost_usd / kpis.total_cost_usd) * 100,
     MetricFormat.PERCENTAGE
   )} of spend`
 }

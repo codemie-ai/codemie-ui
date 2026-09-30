@@ -1,0 +1,48 @@
+{
+  "decision": "approve",
+  "rationale": "Re-review after fixing both patch-bucket findings from the prior round. CR-001 (no regression test for the wasted-cost percentage text) is resolved: the EfficiencyView.test.tsx MetricCard mock now surfaces metric.description, and a new test asserts wasted_cost_usd / total_cost_usd renders as '4.20% of spend' for the fixture (0.42 / 10.0), which would have failed against the old, buggy cache_read_cost_usd denominator (33.60%). CR-002 (total_cost_usd guard missed undefined/NaN) is resolved: wastedCostSubtitle() now guards with !Number.isFinite(kpis.total_cost_usd) in addition to <= 0, and a new test asserts the fallback '0% of spend' when total_cost_usd is undefined. Verification this round: vitest run on the affected test file (11/11 passed, including the 2 new tests); tsc --noEmit (clean); eslint (clean); npm run build:prod (typecheck + vite build succeeded). Also ran the full unit suite: 2 pre-existing failures (src/a2ui/__tests__/manifest.test.ts, src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts) reproduce identically with this branch's changes stashed out, confirming they are unrelated to this fix. No correctness bug survived verification in the actual fix code this round. Confidence stays low per the no-spec-round policy (no story/spec artifact supplied for this standalone review), independent of the clean outcome. Two non-blocking process observations surfaced by this round's full-diff sweep are recorded under findings as defer/out-of-scope: they predate or sit outside this ticket's code fix and are not correctness issues in wastedCostSubtitle().",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Commit subject 'EPMCDME-15207: Fix wasted-cost percentage in CLI Analytics Efficiency' matches the required 'EPMCDME-XXXX: Capital sentence' format in .ai-run/guides/standards/git-workflow.md."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Diff touches only a numeric type field, a percentage-calculation guard/denominator, and test coverage inside a pure display-formatting function; no HTML sinks, navigation from untrusted input, cross-window messaging, secrets, or config changes per .ai-run/guides/development/security-patterns.md."
+    },
+    {
+      "kind": "quality-gates",
+      "status": "pass",
+      "notes": "npm run lint: clean. tsc --noEmit: clean. npm run build:prod (typecheck + vite build): succeeded. vitest run on EfficiencyView.test.tsx: 11/11 passed."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-003",
+      "severity": "minor",
+      "triage": "defer",
+      "file": "src/types/cliAnalytics.ts",
+      "line": 220,
+      "title": "total_cost_usd typed as required number though the backend can omit it",
+      "problem": "CliAnalyticsEfficiencyKPIs.total_cost_usd is declared as a required `number`, but the commit's own root-cause note says the backend /efficiency API did not expose this field during the bug window.",
+      "impact": "The only current protection against a missing total_cost_usd is the manual Number.isFinite guard inside wastedCostSubtitle(); the type system doesn't enforce that check at any future call site that reads kpis.total_cost_usd directly.",
+      "recommendation": "Consider typing it as total_cost_usd?: number so TypeScript forces a null/undefined check at every new call site. Deferred: out of scope for this fix, which already closes the runtime gap with the Number.isFinite guard and is covered by a regression test."
+    },
+    {
+      "id": "CR-004",
+      "severity": "minor",
+      "triage": "defer",
+      "file": "package.json",
+      "line": 24,
+      "title": "Uncommitted test-harness:win script edit is unrelated to this ticket",
+      "problem": "An uncommitted change to the test-harness:win script (uv-cache Scripts-path discovery/PATH logic) sits in the working tree alongside this ticket's EfficiencyView fix.",
+      "impact": "If committed together with the wasted-cost fix it would mix an unrelated change into the ticket's commit, per .ai-run/guides/standards/git-workflow.md's one-logical-change-per-commit rule.",
+      "recommendation": "Commit this script change separately (or not at all in this branch) rather than folding it into the EPMCDME-15207 commit. Deferred: pre-existing in the working tree before this review round; not part of the wasted-cost-pct fix itself."
+    }
+  ]
+}

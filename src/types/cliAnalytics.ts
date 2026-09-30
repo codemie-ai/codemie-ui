@@ -217,6 +217,7 @@ export interface CliAnalyticsEfficiencyKPIs {
   worst_session_trace_id: string | null
   cache_read_cost_usd: number
   bloat_pct: number
+  total_cost_usd: number
 }
 
 export interface CliAnalyticsDeadSessionsKPIs {
