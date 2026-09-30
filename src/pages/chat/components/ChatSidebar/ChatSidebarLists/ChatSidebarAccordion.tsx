@@ -107,7 +107,9 @@ const ChatSidebarAccordion: FC<ChatSidebarAccordionProps> = ({
       className={cn(
         // No browser scroll anchoring: the virtualized lists inside swap rows for spacers, which
         // Chrome misreads as content shifting and "corrects" by jumping the scroll position.
-        'flex flex-col overflow-y-auto [overflow-anchor:none] min-h-0 pb-2',
+        // relative: contains absolutely positioned sr-only rows content (e.g. live regions), which
+        // otherwise escapes this scroll container and stretches the whole page.
+        'relative flex flex-col overflow-y-auto [overflow-anchor:none] min-h-0 pb-2',
         !isCollapsible && scrollable && 'flex-1',
         contentClassName
       )}
