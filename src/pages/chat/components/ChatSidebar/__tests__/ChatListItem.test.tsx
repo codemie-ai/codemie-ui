@@ -34,7 +34,7 @@ vi.mock('@/store/chats', () => ({
   chatsStore: {
     openChat: { id: 'chat1' },
     renameChat: vi.fn().mockResolvedValue(undefined),
-    pinChat: vi.fn(),
+    pinChat: vi.fn().mockResolvedValue(undefined),
   },
 }))
 

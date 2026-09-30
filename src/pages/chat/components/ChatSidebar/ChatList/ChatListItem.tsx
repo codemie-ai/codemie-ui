@@ -28,10 +28,12 @@ import { useState, useRef, FC, memo } from 'react'
 import { useSnapshot } from 'valtio'
 
 import AssistantSVG from '@/assets/icons/assistant.svg?react'
+import Announcement from '@/components/Announcement'
 import Avatar from '@/components/Avatar/Avatar'
 import AvatarGroup from '@/components/Avatar/AvatarGroup'
 import { AvatarType } from '@/constants/avatar'
 import { AVATAR_CHAT_FOLDER } from '@/constants/chats'
+import { useAnnouncementQueue } from '@/hooks/useAnnouncementQueue'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { isImportedChat } from '@/pages/chat/components/ChatSidebar/ChatSidebarLists/chatSidebarFolderHelpers'
 import {
@@ -97,6 +99,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
 
     const router = useVueRouter()
     const editNameInputRef = useRef<HTMLInputElement>(null)
+    const { announcement, announce } = useAnnouncementQueue()
     const isActive = chat.id === currentChatId
     const isImportChat = isImportedChat(chat)
     const isCompact = density === ChatListDensity.COMPACT
@@ -141,6 +144,16 @@ const ChatListItem: FC<ChatListItemProps> = memo(
       if (!isEditing) return
       await renameChat(chat.id, value?.trim())
       setIsEditing(false)
+    }
+
+    const handlePin = () => {
+      const willBePinned = !chat.pinned
+      pinChat(chat.id).then(() => {
+        announce(willBePinned ? 'Chat pinned' : 'Chat unpinned')
+        setTimeout(() => {
+          document.getElementById(`chat-name-${chat.id}`)?.focus()
+        }, 0)
+      })
     }
 
     return (
@@ -226,7 +239,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
               <ChatListItemContextMenu
                 chat={chat}
                 isImportChat={isImportChat}
-                pinChat={pinChat}
+                pinChat={handlePin}
                 moveChat={moveChat}
                 removeChatFromFolder={removeChatFromFolder}
                 deleteChat={deleteChat}
@@ -254,6 +267,7 @@ const ChatListItem: FC<ChatListItemProps> = memo(
             isImportChat={isImportChat}
           />
         )}
+        <Announcement announcement={announcement} />
       </>
     )
   }

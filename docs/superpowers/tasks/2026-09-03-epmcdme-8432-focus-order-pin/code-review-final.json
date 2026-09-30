@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "rationale": "All acceptance criteria met. Focus restores to nameButtonRef after pin/unpin via prevPinnedRef-guarded useEffect (AC-001, AC-002). useAnnouncementQueue + Announcement is the codebase-established polite live-region pattern (confirmed from RecordInput/FilesDropzone/useAnnouncementQueue source): clears region then sets via rAF, ensuring re-announcement of repeated values (AC-003, AC-004). Mount guard (prevPinnedRef.current === chat.pinned on init) prevents focus side-effect at mount (AC-005). Existing tests unchanged and pass (AC-006). Commit subject matches EPMCDME-XXXX: Capital sentence pattern. No security issues. Four edge-case findings reviewed: (1) isEditing + null ref — ?. operator is already the safe guard, no focus-stealing occurs (DISMISS); (2) prevPinnedRef after remount — React key reconciliation prevents remount in this list, theoretical virtual-list edge only (DEFER); (3) announce/focus call order — both synchronous, rAF fires after regardless of ordering within the effect (DISMISS); (4) per-item aria-live regions — real JAWS concern for large lists, but RecordInput and FilesDropzone follow the same per-component pattern; a bounded refactor to a shared region is a follow-up improvement (DEFER). 1 deferred item logged.",
+  "findings": [],
+  "business_review": [
+    { "criterion": "After Pin, focus lands on the chat name button", "status": "met" },
+    { "criterion": "After Unpin, focus lands on the chat name button", "status": "met" },
+    { "criterion": "NVDA announces 'Chat pinned' after pin", "status": "met" },
+    { "criterion": "NVDA announces 'Chat unpinned' after unpin", "status": "met" },
+    { "criterion": "No focus side-effect on initial mount", "status": "met" },
+    { "criterion": "Existing accessibility tests continue to pass", "status": "met" }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-commit-format",
+      "status": "pass",
+      "notes": "EPMCDME-8432: Fix focus order and announce pin state change in chat sidebar — matches EPMCDME-XXXX: Capital sentence regex"
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "No user-input rendering, no HTML injection surface, no secrets, no unsafe DOM ops"
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "Follows useAnnouncementQueue + Announcement per-component pattern established in RecordInput and FilesDropzone"
+    }
+  ],
+  "risk_flags": [],
+  "confidence": "medium"
+}

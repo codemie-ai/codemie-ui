@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Fix WCAG 2.4.3/4.1.2 accessibility bug: after pinning a chat from the More Options menu in the Chats Sidebar, return focus to the chat name button and have NVDA announce the new pinned state.",
+  "generated": "2026-09-03T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Primary fix is fully contained in ChatListItem.tsx. The Announcement component and useAnnouncementQueue hook are existing utilities reused in place — no new components created, no shared utilities modified."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Acceptance criteria are explicit: focus returns to chat name button, NVDA announces 'pinned'. WCAG criteria are named (2.4.3, 4.1.2). The stale-ref-after-remount nuance is documented and solved by useEffect + document.getElementById — minor adaptation of an established pattern, no ambiguity."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Exact analogous patterns exist: NavigationProfile uses setTimeout(ref.current.focus, 0) for focus return; RecordInput and FilesDropzone use useAnnouncementQueue + Announcement for live-region announcements. The DOM-remount nuance is documented and has a known solution. No security or performance concerns; rollback is trivial."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
