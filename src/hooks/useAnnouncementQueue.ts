@@ -65,7 +65,8 @@ export function useAnnouncementQueue({
 
   const announce = useCallback(
     (message: string) => {
-      if (!message) return
+      // Guard against empty or whitespace-only messages
+      if (!message?.trim()) return
 
       queueRef.current = [...queueRef.current, message].slice(-maxQueueSize)
 

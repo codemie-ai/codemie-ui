@@ -13,11 +13,11 @@
 // limitations under the License.
 //
 
-import { FC, useMemo } from 'react'
+import { FC } from 'react'
 
 import InfoSvg from '@/assets/icons/info.svg?react'
 import ProgressBar from '@/components/ProgressBar/ProgressBar'
-import { INDEX_TYPES } from '@/constants'
+import { getDataSourceStatusInfo } from '@/pages/dataSources/utils/dataSourceStatus'
 import { DatasetResponse } from '@/types/entity/dataSource'
 import { cn } from '@/utils/utils'
 
@@ -26,61 +26,8 @@ interface Props {
 }
 
 const DataSourceStatus: FC<Props> = ({ item }) => {
-  const statusInfo = {
-    isQueued: item.is_queued && !item.completed && !item.error,
-    isFetching: item.is_fetching && !item.error,
-    isInProgress: !item.completed && !item.error && !item.is_fetching && !item.is_queued,
-    isError: item.error,
-    isCompleted: item.completed,
-  }
-
-  const isProviderInProgress = statusInfo.isInProgress && item.index_type === INDEX_TYPES.PROVIDER
-  const isTag =
-    statusInfo.isQueued ||
-    statusInfo.isFetching ||
-    statusInfo.isCompleted ||
-    statusInfo.isError ||
-    isProviderInProgress
-
-  const { title, classes, dotColor } = useMemo(() => {
-    if (statusInfo.isQueued) {
-      return {
-        title: 'Queued',
-        classes: 'bg-not-started-tertiary border-not-started-secondary text-not-started-primary',
-        dotColor: 'bg-not-started-primary',
-      }
-    }
-
-    if (statusInfo.isFetching) {
-      return {
-        title: 'Fetching',
-        classes: 'bg-aborted-tertiary border-aborted-secondary text-aborted-primary',
-        dotColor: 'bg-aborted-primary animate-pulse',
-      }
-    }
-
-    if (statusInfo.isInProgress) {
-      return {
-        title: 'Processing',
-        classes: 'bg-aborted-tertiary border-aborted-secondary text-aborted-primary',
-        dotColor: 'bg-aborted-primary animate-pulse',
-      }
-    }
-
-    if (statusInfo.isCompleted) {
-      return {
-        title: 'Completed',
-        classes: 'bg-success-secondary border-success-primary text-success-primary',
-        dotColor: 'bg-success-primary',
-      }
-    }
-
-    return {
-      title: 'Error',
-      classes: 'bg-failed-tertiary border-failed-secondary text-failed-secondary',
-      dotColor: 'bg-failed-secondary',
-    }
-  }, [statusInfo.isQueued, statusInfo.isFetching, statusInfo.isCompleted, statusInfo.isError])
+  const { title, classes, dotColor, isProviderInProgress, isTag, isInProgress } =
+    getDataSourceStatusInfo(item)
 
   return (
     <div data-onboarding="datasource-status-badge" className="flex items-center gap-2">
@@ -105,7 +52,7 @@ const DataSourceStatus: FC<Props> = ({ item }) => {
         </span>
       )}
 
-      {statusInfo.isInProgress && !isProviderInProgress && (
+      {isInProgress && !isProviderInProgress && (
         <ProgressBar value={item.current_state} max={item.complete_state} />
       )}
     </div>

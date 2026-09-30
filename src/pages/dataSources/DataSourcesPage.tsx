@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import PlusIcon from '@/assets/icons/plus.svg?react'
+import Announcement from '@/components/Announcement/Announcement'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
 import { renderProjectNameCell } from '@/components/ProjectNameCell'
@@ -34,6 +35,7 @@ import {
   DataSourceStatus,
 } from '@/pages/dataSources/components'
 import DataSourceName from '@/pages/dataSources/components/DataSourceName'
+import { useDataSourceStatusAnnouncer } from '@/pages/dataSources/hooks/useDataSourceStatusAnnouncer'
 import { appInfoStore } from '@/store/appInfo'
 import { dataSourceStore } from '@/store/dataSources'
 import { DataSource } from '@/types/entity/dataSource'
@@ -53,10 +55,17 @@ const DataSourcesPage = () => {
     dataSourceStore
   ) as typeof dataSourceStore
 
-  const { sort, onSort, onPaginationUpdate, pagination, applyFilters } = useTableFilters({
+  const { sort, onSort, onPaginationUpdate, pagination, filters, applyFilters } = useTableFilters({
     filterKey: FILTER_ENTITY.DATASOURCES,
     initialPagination: { page: 0, perPage: indexStatusesPagination.perPage },
   })
+
+  const viewKey = useMemo(
+    () => JSON.stringify({ page: pagination.page, perPage: pagination.perPage, sort, filters }),
+    [pagination, sort, filters]
+  )
+
+  const { announcement } = useDataSourceStatusAnnouncer(indexStatuses, viewKey)
 
   const getStatuses = useCallback(
     async (isRefresh?: boolean) => {
@@ -183,6 +192,7 @@ const DataSourcesPage = () => {
           />
         </div>
         <Tooltip target=".target-tooltip" textStyles="text-h5" />
+        <Announcement announcement={announcement} />
       </PageLayout>
     </div>
   )

@@ -1,0 +1,3 @@
+{"task_id":"task-1","status":"done","commit":"51240c76d","test_command":"npm test -- src/pages/dataSources/utils/__tests__/dataSourceStatus.test.ts"}
+{"task_id":"task-2","status":"done","commit":"486a556ce","test_command":"npm test -- src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts"}
+{"task_id":"task-3","status":"done","commit":"d1e31c8ea","test_command":"npm test -- src/pages/dataSources/__tests__/DataSourcesPage.accessibility.test.tsx"}

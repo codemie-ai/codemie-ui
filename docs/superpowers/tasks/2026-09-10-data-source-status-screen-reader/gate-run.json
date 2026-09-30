@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-8557-data-source-status-screen-reader",
+  "head": "a9caddae06b69613d004b32de80333515fe7d7b7",
+  "runner": "npm",
+  "started_at": "2026-09-10T00:00:00Z",
+  "completed_at": "2026-09-10T00:00:00Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 360000,
+      "command": "npm run test:unit",
+      "exit_code": 1,
+      "notes": "Unit test failure in src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts"
+    }
+  ],
+  "failures": {
+    "unit": "src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts (2 tests | 1 failed) 600ms\n\nFailed assertion:\n  → expected [ …(2) ] to include 'components/Popup/Popup.tsx'\n  → expected [ …(2) ] to include 'components/Popup/Popup.tsx'\n\nTest: modal surfaces host the live region > recognises the surfaces that already carry the host\n\nThis test validates that the ToasterAnnouncer identifies all surfaces that host the live region, including components/Popup/Popup.tsx, but the assertion is failing, indicating the component is not being recognized."
+  }
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "location": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:34",
+    "trigger_condition": "complete_state is zero or negative",
+    "guard_snippet": "if (item.complete_state <= 0) return ''; // or use safe default",
+    "potential_consequence": "Division by zero or Infinity percentage shown to screen reader"
+  },
+  {
+    "location": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:34",
+    "trigger_condition": "current_state exceeds complete_state",
+    "guard_snippet": "Math.min(Math.round((item.current_state / item.complete_state) * 100), 100)",
+    "potential_consequence": "Percentage over 100% announced; semantically incorrect progress"
+  },
+  {
+    "location": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:30",
+    "trigger_condition": "items array becomes empty after having items",
+    "guard_snippet": "Track removed items and announce departure or clear announcement",
+    "potential_consequence": "No announcer for rows removed from table; silent deletion not confirmed to screen reader"
+  },
+  {
+    "location": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:36",
+    "trigger_condition": "repo_name is null, undefined, or empty string",
+    "guard_snippet": "const safeName = item.repo_name || `Datasource ${item.id}`",
+    "potential_consequence": "Announcement reads ': Completed' without source identification"
+  },
+  {
+    "location": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:32-35",
+    "trigger_condition": "isInProgress true but getDataSourceStatusInfo not called for percentage condition",
+    "guard_snippet": "Ensure getDataSourceStatusInfo runs before percentage check or memoize result",
+    "potential_consequence": "Stale isInProgress flag if getDataSourceStatusInfo has side effects or timing issues"
+  },
+  {
+    "location": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:24",
+    "trigger_condition": "component unmounts while items still updating",
+    "guard_snippet": "Add cleanup: return () => previousRef.current.clear()",
+    "potential_consequence": "previousRef persists across remounts; re-announcement logic breaks on second mount"
+  },
+  {
+    "location": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:39",
+    "trigger_condition": "announce called with whitespace-only or control characters",
+    "guard_snippet": "if (!text.trim()) return; // before announce call",
+    "potential_consequence": "Screen reader receives empty or whitespace announcement; no audible notification"
+  },
+  {
+    "location": "src/pages/dataSources/utils/dataSourceStatus.ts:32",
+    "trigger_condition": "Item has error=true AND is_fetching=true simultaneously",
+    "guard_snippet": "Add explicit priority: error takes precedence (e.g., check error first)",
+    "potential_consequence": "Ambiguous status announcement; 'Fetching' announced instead of 'Error'"
+  },
+  {
+    "location": "src/pages/dataSources/utils/dataSourceStatus.ts:32",
+    "trigger_condition": "Item has completed=true AND is_queued=true simultaneously",
+    "guard_snippet": "Enforce invariant: completed and is_queued are mutually exclusive",
+    "potential_consequence": "isQueued check passes despite completed; wrong status announced"
+  },
+  {
+    "location": "src/pages/dataSources/DataSourcesPage.tsx:58",
+    "trigger_condition": "indexStatuses undefined or null instead of array",
+    "guard_snippet": "const items = indexStatuses ?? [] in hook call",
+    "potential_consequence": "forEach fails on null/undefined; hook crashes, no announcements fire"
+  },
+  {
+    "location": "src/pages/dataSources/DataSourcesPage.tsx:58",
+    "trigger_condition": "getIndexesStatuses store fetch fails, no error boundary",
+    "guard_snippet": "Wrap hook or fetch in try-catch; announce error state",
+    "potential_consequence": "Failed fetch leaves stale indexStatuses; misleading old announcements replay"
+  },
+  {
+    "location": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:28",
+    "trigger_condition": "items array order changes but content identical",
+    "guard_snippet": "Treat as no-change since Map keys are item.id, not position",
+    "potential_consequence": "Correct: no re-announcement on reorder. Implicit path verified."
+  },
+  {
+    "location": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:39",
+    "trigger_condition": "Multiple rows change status between renders; only first announced if announce is sync",
+    "guard_snippet": "Verify useAnnouncementQueue queues all calls before render",
+    "potential_consequence": "If announce is async or debounced, middle updates lost in burst"
+  },
+  {
+    "location": "src/pages/dataSources/utils/dataSourceStatus.ts:37",
+    "trigger_condition": "INDEX_TYPES.PROVIDER not defined or imported",
+    "guard_snippet": "Add guard: if (!INDEX_TYPES.PROVIDER) treat as non-provider",
+    "potential_consequence": "Type equality check fails silently; percentage shown for provider progress"
+  },
+  {
+    "location": "src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts:124-140",
+    "trigger_condition": "Percentage calculation result is NaN (e.g., 0/0 case edge)",
+    "guard_snippet": "Guard before Math.round: if (isNaN(ratio)) percentage = ''",
+    "potential_consequence": "Announcement contains 'NaN%' literal string to screen reader"
+  }
+]

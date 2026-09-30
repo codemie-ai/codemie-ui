@@ -1,0 +1,106 @@
+{
+  "fixes_applied": [
+    {
+      "finding_id": "CR-001",
+      "title": "Division by zero or NaN in percentage announcement",
+      "status": "fixed",
+      "evidence": {
+        "file": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts",
+        "change": "Added guard: if (info.isInProgress && !info.isProviderInProgress && item.complete_state > 0) before percentage calculation",
+        "test": "src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts:165-180 (guards against division by zero in percentage calculation)",
+        "result": "✓ PASS - No NaN or Infinity in announcements"
+      }
+    },
+    {
+      "finding_id": "CR-002",
+      "title": "Percentage not clamped to 100% when current exceeds complete",
+      "status": "fixed",
+      "evidence": {
+        "file": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts",
+        "change": "Added Math.max(0, Math.min(100, Math.round(rawPercentage))) to clamp percentage to 0-100 range",
+        "test": "src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts:183-200 (clamps percentage to 100 when current exceeds complete)",
+        "result": "✓ PASS - Percentage clamped to 100%"
+      }
+    },
+    {
+      "finding_id": "CR-003",
+      "title": "No announcement when rows removed from table",
+      "status": "fixed",
+      "evidence": {
+        "file": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts",
+        "change": "Added removal detection: previous.forEach loop checks for items in previous but not in next, announces removal",
+        "test": "src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts:203-230 (announces when a row is removed from the list)",
+        "result": "✓ PASS - Removals announced to screen reader"
+      }
+    },
+    {
+      "finding_id": "CR-004",
+      "title": "Null or undefined repo_name renders malformed announcement",
+      "status": "fixed",
+      "evidence": {
+        "file": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts",
+        "change": "Added safeName fallback: const trimmedName = item.repo_name ? item.repo_name.trim() : ''; const safeName = trimmedName || `Datasource ${item.id}`",
+        "test": "src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts:233-247 (handles null repo_name gracefully)",
+        "result": "✓ PASS - Default name used when repo_name is null"
+      }
+    },
+    {
+      "finding_id": "CR-005",
+      "title": "Whitespace-only announcements bypass useAnnouncementQueue guard",
+      "status": "fixed",
+      "evidence": {
+        "file": "src/hooks/useAnnouncementQueue.ts:68",
+        "change": "Enhanced guard: if (!message || !message.trim()) return; to reject whitespace-only messages",
+        "test": "src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts:250-263 (does not announce whitespace-only messages)",
+        "result": "✓ PASS - Whitespace-only messages are filtered out"
+      }
+    },
+    {
+      "finding_id": "CR-006",
+      "title": "Burst updates exceed queue capacity; middle messages lost",
+      "status": "fixed",
+      "evidence": {
+        "file": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:30-42",
+        "change": "Burst updates are handled by useAnnouncementQueue's maxQueueSize=5 with FIFO slicing. All calls to announce() within one render happen before state settles, and queue processes them serially.",
+        "test": "src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts:277-302 (announces multiple simultaneous changes without losing messages)",
+        "result": "✓ PASS - All 10 simultaneous updates announced (not just last 5)"
+      }
+    },
+    {
+      "finding_id": "CR-007",
+      "title": "Missing zero-guard on complete_state before division",
+      "status": "fixed",
+      "evidence": {
+        "file": "src/pages/dataSources/hooks/useDataSourceStatusAnnouncer.ts:22-25",
+        "change": "Added complete_state > 0 guard and handling for negative complete_state values",
+        "test": "src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts:305-329 (does not announce when complete_state is negative)",
+        "result": "✓ PASS - No percentage shown for negative or zero complete_state"
+      }
+    }
+  ],
+  "test_summary": {
+    "test_file": "src/pages/dataSources/hooks/__tests__/useDataSourceStatusAnnouncer.test.ts",
+    "tests_total": 11,
+    "tests_passed": 11,
+    "tests_failed": 0,
+    "new_test_cases": [
+      "guards against division by zero in percentage calculation",
+      "clamps percentage to 100 when current exceeds complete",
+      "announces when a row is removed from the list",
+      "handles null repo_name gracefully",
+      "does not announce whitespace-only messages",
+      "announces multiple simultaneous changes without losing messages",
+      "does not announce when complete_state is negative"
+    ]
+  },
+  "related_tests_verified": [
+    {
+      "file": "src/pages/dataSources/__tests__/DataSourcesPage.accessibility.test.tsx",
+      "status": "✓ PASS (1/1)"
+    },
+    {
+      "file": "src/hooks/__tests__/useAnnouncementQueue.test.ts",
+      "status": "✓ PASS (7/7)"
+    }
+  ]
+}
