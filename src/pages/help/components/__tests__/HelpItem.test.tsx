@@ -17,6 +17,8 @@ import { render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { useIsTruncated } from '@/hooks/useIsTruncated'
+
 import HelpItem from '../HelpItem'
 
 const renderWithRouter = (component: React.ReactElement) => {
@@ -37,6 +39,12 @@ vi.mock('@/assets/icons/external.svg?react', () => ({
 
 vi.mock('@/assets/images/ai-avatar.png', () => ({
   default: 'ai-avatar.png',
+}))
+
+vi.mock('@/components/Tooltip/Tooltip', () => ({
+  default: ({ target, event }: { target: string; event?: string }) => (
+    <div data-testid="tooltip" data-target={target} data-event={event} />
+  ),
 }))
 
 const TestIconSvg = (props: any) => <svg data-testid="test-icon" {...props} />
@@ -149,6 +157,19 @@ describe('HelpItem', () => {
     expect(linkWithRel).toHaveAttribute('href', 'https://example.com')
   })
 
+  it('does not set data-pr-tooltip when text is not truncated', () => {
+    renderWithRouter(<HelpItem {...defaultProps} />)
+    const link = screen.getByRole('link')
+    expect(link).not.toHaveAttribute('data-pr-tooltip')
+  })
+
+  it('sets data-pr-tooltip to description when text is truncated', () => {
+    vi.mocked(useIsTruncated).mockReturnValueOnce(true)
+    renderWithRouter(<HelpItem {...defaultProps} />)
+    const link = screen.getByRole('link')
+    expect(link).toHaveAttribute('data-pr-tooltip', defaultProps.description)
+  })
+
   it('renders with all props combined', () => {
     renderWithRouter(
       <HelpItem
@@ -169,5 +190,15 @@ describe('HelpItem', () => {
     const img = screen.getByRole('presentation')
     expect(img).toHaveAttribute('src', 'https://example.com/avatar.png')
     expect(img).toHaveAttribute('alt', '')
+  })
+
+  it('renders Tooltip component in the DOM', () => {
+    renderWithRouter(<HelpItem {...defaultProps} />)
+    expect(screen.getByTestId('tooltip')).toBeInTheDocument()
+  })
+
+  it('renders Tooltip with event="both" for keyboard accessibility', () => {
+    renderWithRouter(<HelpItem {...defaultProps} />)
+    expect(screen.getByTestId('tooltip')).toHaveAttribute('data-event', 'both')
   })
 })

@@ -13,13 +13,14 @@
 // limitations under the License.
 //
 
-import { FC, useRef } from 'react'
+import { FC, useId, useRef } from 'react'
 import { Link } from 'react-router'
 
 import ChatNewFilledSvg from '@/assets/icons/chat-new-filled.svg?react'
 import ExternalSvg from '@/assets/icons/external.svg?react'
 import DefaultIconPng from '@/assets/images/ai-avatar.png'
 import Button from '@/components/Button'
+import Tooltip from '@/components/Tooltip'
 import { ButtonType } from '@/constants'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 
@@ -37,51 +38,58 @@ const HelpItem: FC<HelpItemType> = ({
 }) => {
   const descriptionRef = useRef<HTMLParagraphElement>(null)
   const isTruncated = useIsTruncated(descriptionRef)
+  const uid = useId()
   const finalButtonText = buttonText ?? (type === 'chat' ? 'Chat Now' : 'Explore')
+  const tooltipTargetClass = `help-item-${uid.replace(/:/g, '')}`
 
   return (
-    <Link
-      to={link}
-      target={isExternal ? '_blank' : ''}
-      rel={isExternal ? 'noreferrer' : undefined}
-      className="flex justify-between p-4 items-center border border-border-specific-panel-outline rounded-lg bg-surface-base-chat hover:bg-opacity-30 transition cursor-pointer hover:no-underline"
-    >
-      <div className="flex items-center gap-x-5 flex-1 min-w-0">
-        <div className="border flex justify-center items-center rounded-full size-8 min-w-8 min-h-8 overflow-hidden border-border-specific-icon-outline bg-surface-interactive-active">
-          {iconUrl && <img src={iconUrl} alt="" role="presentation" />}
-          {!iconUrl &&
-            (Icon ? (
-              <Icon aria-hidden="true" />
-            ) : (
-              <img src={DefaultIconPng} alt="" role="presentation" />
-            ))}
-        </div>
-        <div className="flex flex-col pr-2 min-w-0">
-          <h3 className="font-medium">{name}</h3>
-          <p
-            ref={descriptionRef}
-            data-tooltip-id="react-tooltip"
-            data-tooltip-place="bottom"
-            data-tooltip-content={isTruncated ? description : ''}
-            className="text-xs-1 text-text-quaternary line-clamp-2"
-          >
-            {description}
-          </p>
-        </div>
-      </div>
-      <Button
-        variant={ButtonType.SECONDARY}
-        className="shrink-0"
-        aria-label={`${finalButtonText} ${name}`}
+    <>
+      <Tooltip
+        target={`.${tooltipTargetClass}`}
+        event="both"
+        position="bottom"
+        showDelay={100}
+        style={{ maxWidth: '500px' }}
+        closeOnEscape
+      />
+      <Link
+        to={link}
+        target={isExternal ? '_blank' : ''}
+        rel={isExternal ? 'noreferrer' : undefined}
+        {...(isTruncated ? { 'data-pr-tooltip': description } : {})}
+        className={`flex justify-between p-4 items-center border border-border-specific-panel-outline rounded-lg bg-surface-base-chat hover:bg-opacity-30 transition cursor-pointer hover:no-underline ${tooltipTargetClass}`}
       >
-        {type === 'chat' && !isExternal ? (
-          <ChatNewFilledSvg aria-hidden="true" />
-        ) : (
-          <ExternalSvg aria-hidden="true" />
-        )}
-        {finalButtonText}
-      </Button>
-    </Link>
+        <div className="flex items-center gap-x-5 flex-1 min-w-0">
+          <div className="border flex justify-center items-center rounded-full size-8 min-w-8 min-h-8 overflow-hidden border-border-specific-icon-outline bg-surface-interactive-active">
+            {iconUrl && <img src={iconUrl} alt="" role="presentation" />}
+            {!iconUrl &&
+              (Icon ? (
+                <Icon aria-hidden="true" />
+              ) : (
+                <img src={DefaultIconPng} alt="" role="presentation" />
+              ))}
+          </div>
+          <div className="flex flex-col pr-2 min-w-0">
+            <h3 className="font-medium">{name}</h3>
+            <p ref={descriptionRef} className="text-xs-1 text-text-quaternary line-clamp-2">
+              {description}
+            </p>
+          </div>
+        </div>
+        <Button
+          variant={ButtonType.SECONDARY}
+          className="shrink-0"
+          aria-label={`${finalButtonText} ${name}`}
+        >
+          {type === 'chat' && !isExternal ? (
+            <ChatNewFilledSvg aria-hidden="true" />
+          ) : (
+            <ExternalSvg aria-hidden="true" />
+          )}
+          {finalButtonText}
+        </Button>
+      </Link>
+    </>
   )
 }
 

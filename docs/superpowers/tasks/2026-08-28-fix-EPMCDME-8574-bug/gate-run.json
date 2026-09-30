@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-8574_keyboard-accessible-faq-help",
+  "head": "173e894d45142c3dde5b95519a9a6ce07ab8dce0",
+  "runner": "npm",
+  "started_at": "2026-08-28T13:10:00.000Z",
+  "completed_at": "2026-08-28T13:17:00.000Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 10000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide Skip if: no dependency added, removed, or moved. Diff touches only src/pages/help/components/HelpItem.tsx and its test file — no package.json changes."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8000,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 148060,
+      "command": "npm run test:unit",
+      "exit_code": 0
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 85010,
+      "command": "npm run test:integration",
+      "exit_code": 0
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 5000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: 'Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN in the environment to enable this gate locally. The ci-pipeline context in GitLab CI will run it for real on push."
+    }
+  ],
+  "failures": {}
+}

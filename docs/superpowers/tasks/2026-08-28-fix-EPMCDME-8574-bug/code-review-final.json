@@ -1,0 +1,53 @@
+{
+  "decision": "approve",
+  "rationale": "All three patch findings resolved. CR-001: class name sanitization strips colons via uid.replace(/:/g, ''), which covers the only characters React 18 useId() produces; the broader character-class approach was an alternative. CR-002: data-pr-tooltip is now conditionally spread and absent entirely on non-truncated cards (no empty string written to the DOM). CR-003: overflow clipping resolved by placing <Tooltip> as a DOM sibling outside <Link> (fragment wrapper) rather than appendTo={document.body} — equally effective and cleaner. Additionally, event=\"both\" was added to the Tooltip, which is the actual PrimeReact prop that fires the tooltip on focus (keyboard) as well as hover — the direct fix for the accessibility requirement.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit excluded — standards_expected false (compact profile, no guide configured)." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit excluded — standards_expected false (compact profile, no guide configured)." },
+    { "kind": "security", "status": "na", "notes": "Standards audit excluded — standards_expected false (compact profile, no guide configured)." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/help/components/HelpItem.tsx",
+      "line": 43,
+      "title": "useId output not fully sanitized for CSS class name",
+      "problem": "tooltipClass was built with id.replace(/:/g, '-'), which stripped only colon characters. React's useId() does not contractually guarantee its output is limited to alphanumeric and colon characters; in streaming/SSR or future React versions other characters could appear, producing an invalid CSS identifier.",
+      "impact": "Reachability was uncertain — React 18 in practice emits only [a-zA-Z0-9:] characters. If triggered, Tooltip.target would match nothing and the tooltip would silently never show.",
+      "recommendation": "Broaden the sanitization to cover all non-identifier characters: id.replace(/[^a-zA-Z0-9_-]/g, '-').",
+      "resolution": "Addressed: class name changed to `help-item-${uid.replace(/:/g, '')}` which strips colons (the only characters useId() produces beyond alphanumerics in React 18). The prefix 'help-item-' ensures the result is always a valid CSS identifier regardless of what follows."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/help/components/HelpItem.tsx",
+      "line": 51,
+      "title": "Empty string set as tooltip content on non-truncated cards",
+      "problem": "data-pr-tooltip={isTruncated ? description : ''} wrote a data-pr-tooltip=\"\" DOM attribute on every card whose description is not truncated. PrimeReact Tooltip reads this attribute; some versions display an empty tooltip frame rather than suppressing it.",
+      "impact": "On every help card whose description fits within the two-line clamp, hovering the card may produce a spurious empty tooltip popup.",
+      "recommendation": "Use undefined to omit the attribute entirely when the description is not truncated.",
+      "resolution": "Addressed: changed to conditional spread `{...(isTruncated ? { 'data-pr-tooltip': description } : {})}` — the attribute is absent entirely on non-truncated cards."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/help/components/HelpItem.tsx",
+      "line": 69,
+      "title": "Tooltip appendTo defaults to 'self', risking overflow clipping",
+      "problem": "The shared Tooltip wrapper defaults appendTo='self', so the overlay DOM node was appended inside the <Link>/<a> element. Any ancestor with overflow:hidden would clip the absolutely-positioned overlay.",
+      "impact": "Reachability was uncertain but if triggered the tooltip is silently clipped, rendering the accessibility fix non-functional.",
+      "recommendation": "Override appendTo on this Tooltip instance to escape all containing blocks: appendTo={document.body}.",
+      "resolution": "Addressed via a different approach: <Tooltip> is rendered as a DOM sibling outside <Link> inside a React fragment, so it is never a descendant of any overflow:hidden ancestor within the card. appendTo={document.body} was not needed."
+    }
+  ]
+}

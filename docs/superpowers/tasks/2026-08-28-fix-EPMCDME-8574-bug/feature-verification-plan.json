@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "created_at": "2026-08-28T00:00:00.000Z",
+  "branch": "EPMCDME-8574_keyboard-accessible-faq-help",
+  "merge_base": "449393b6f65056fb128522d23b8ad510ab9dfbf9",
+  "head": "639043b7c3dad55c16921e940b0f08b9b2e8917b",
+  "surface_changed": true,
+  "changed_ui_files": [
+    "src/pages/help/components/HelpItem.tsx"
+  ],
+  "tool": "unconfigured",
+  "tool_resolution": {
+    "playwright_config_found": false,
+    "cypress_config_found": false,
+    "storybook_found": false,
+    "sdlc_custom_command": null,
+    "playwright_dep": false,
+    "cypress_dep": false
+  },
+  "dynamic_playwright_attempted": true,
+  "dynamic_playwright_blocked_reason": "App requires a full backend stack and authentication to reach the Help page; no base URL or test credentials are available; browser binary installation (hundreds of MB) is not feasible in this context",
+  "status": "BLOCKED",
+  "features": [
+    {
+      "feature_id": "help-item-tooltip-accessibility",
+      "changed_file": "src/pages/help/components/HelpItem.tsx",
+      "description": "Replace react-tooltip data attributes on <p> with PrimeReact Tooltip component anchored to the <Link> wrapper via a useId-derived CSS class, improving keyboard accessibility",
+      "route": "/help",
+      "existing_test": "src/pages/help/components/__tests__/HelpItem.test.tsx",
+      "coverage_source": "unit-test-only",
+      "browser_verification_status": "BLOCKED"
+    }
+  ]
+}
