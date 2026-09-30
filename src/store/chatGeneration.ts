@@ -46,12 +46,16 @@ import { isAuthenticatingGateRow, parseMCPAuthRequiredErrorPayload } from '@/uti
 import {
   getPendingInitiate,
   getRecoverableAuthStatus,
+  INVALID_AUTH_URL_MESSAGE,
   MISSING_REDIRECT_HOSTNAME_MESSAGE,
   POPUP_BLOCKED_AUTH_MESSAGE,
+  SIGN_IN_WINDOW_CLOSED_MESSAGE,
 } from '@/utils/mcpAuthInitiate'
 import { OAuthConnectAggregate, parseOAuthConnectRequired } from '@/utils/oauthConnectAggregate'
+import { openSignInWindow } from '@/utils/openSignInWindow'
 import Stream, { streamChunkToObject } from '@/utils/stream'
 import toaster from '@/utils/toaster'
+import { watchSignInWindow } from '@/utils/watchSignInWindow'
 
 import { assistantsStore } from './assistants'
 import { chatsStore } from './chats'
@@ -132,6 +136,7 @@ interface ChatGenerationStoreType {
   ) => void
   markPromptAuthSuccess: (chatId: string, authConfigId: string) => void
   rollbackPromptAuthRow: (chatId: string, authConfigId: string, errorContext: string | null) => void
+  showPromptAuthHint: (chatId: string, authConfigId: string, hint: string) => void
 
   // Private methods
   _getAssistant: (assistantId: string | undefined) => Promise<Assistant>
@@ -229,6 +234,13 @@ const getCurrentChatById = (chatId: string): Conversation | null => {
   return currentChat
 }
 
+// A sign-in window outlives the chat on screen, so its outcome must reach the chat that opened it:
+// the current chat first, then the opened-chats cache, which keeps a chat whose gate is pending.
+const getOpenedChatById = (chatId: string): Conversation | null =>
+  getCurrentChatById(chatId) ??
+  chatsStore.openedChatsHistory.find((chat) => chat.id === chatId) ??
+  null
+
 const getPromptRecoverableStatus = (row: MCPAuthGateServer): MCPAuthRecoverableStatus =>
   getRecoverableAuthStatus(row)
 
@@ -312,10 +324,31 @@ const finalizeFailedRequest = (historyItem: ChatMessage, startTime: Date): void 
   historyItem.processingTime = (endTime.getTime() - startTime.getTime()) / MS_PER_SECOND
 }
 
+// Sign-in window watchers, keyed by auth_config_id. Module-level because a watcher must
+// outlive any single store call - and the chat on screen, since the opener is cut and it is the
+// only completion channel - yet die with the row it reports on.
+const signInWatcherStops = new Map<string, () => void>()
+
+const stopSignInWatcher = (authConfigId: string | null | undefined): void => {
+  if (!authConfigId) return
+
+  signInWatcherStops.get(authConfigId)?.()
+  signInWatcherStops.delete(authConfigId)
+}
+
+const stopWatchersForRows = (historyItem: ChatMessage): void =>
+  (historyItem.mcpAuthPromptRows ?? []).forEach((row) => stopSignInWatcher(row.auth_config_id))
+
+const PROMPT_OPEN_FAILURE_MESSAGES = {
+  blocked: POPUP_BLOCKED_AUTH_MESSAGE,
+  invalid_url: INVALID_AUTH_URL_MESSAGE,
+} as const
+
 // Auth prompts (MCP + the three provider connect gates) are mutually exclusive on a message.
 // ChatAiMessage renders them by priority (mcp → gitlab → jira → confluence), so a stale
 // higher-priority field would mask the current one — clear all of them before setting one.
 const clearAuthPrompts = (historyItem: ChatMessage): void => {
+  stopWatchersForRows(historyItem)
   historyItem.mcpAuthPromptRows = null
   historyItem.gitlabAuthPrompt = null
   historyItem.jiraAuthPrompt = null
@@ -450,6 +483,96 @@ const getAuthenticatingPromptIdsFromChat = (chat: Conversation): string[] => {
   })
 
   return [...authConfigIds]
+}
+
+const rollbackPromptRow = (
+  chat: Conversation,
+  authConfigId: string,
+  errorContext: string | null
+): void => {
+  updatePromptAuthRow(chat, authConfigId, isLateCallbackTarget, (row) => ({
+    ...row,
+    status: getPromptRecoverableStatus(row),
+    error_context: errorContext,
+  }))
+}
+
+const markPromptSignInWindowClosed = (chat: Conversation, authConfigId: string): void => {
+  stopSignInWatcher(authConfigId)
+  updatePromptAuthRow(chat, authConfigId, isLateCallbackTarget, (row) => ({
+    ...row,
+    status: getPromptRecoverableStatus(row),
+    error_context: SIGN_IN_WINDOW_CLOSED_MESSAGE,
+    sign_in_window_closed: true,
+  }))
+}
+
+interface PromptRowPosition {
+  historyIndex: number
+  messageIndex: number
+}
+
+// The window must open synchronously inside the user gesture and never inside a row mapper,
+// which is required to stay pure.
+const openPromptSignIn = (
+  chat: Conversation,
+  { historyIndex, messageIndex }: PromptRowPosition,
+  row: MCPAuthGateServer,
+  authUrl: string
+): void => {
+  const authConfigId = row.auth_config_id
+  stopSignInWatcher(authConfigId)
+
+  const result = openSignInWindow(authUrl)
+
+  if (result.status !== 'opened') {
+    updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
+      rows.map((item) =>
+        item.mcp_config_id === row.mcp_config_id
+          ? {
+              ...item,
+              // A malformed url fails identically on retry, so it must not keep the confirmation.
+              pending_initiate: result.status === 'invalid_url' ? null : item.pending_initiate,
+              error_context: PROMPT_OPEN_FAILURE_MESSAGES[result.status],
+              recoverable_status: getPromptRecoverableStatus(item),
+            }
+          : item
+      )
+    )
+    return
+  }
+
+  if (authConfigId) {
+    signInWatcherStops.set(
+      authConfigId,
+      watchSignInWindow({
+        window: result.window,
+        mcpConfigId: row.mcp_config_id,
+        onAuthenticated: () => chatGenerationStore.markPromptAuthSuccess(chat.id, authConfigId),
+        onClosedEarly: () => {
+          const openedChat = getOpenedChatById(chat.id)
+          if (openedChat && !openedChat.isWorkflow) {
+            markPromptSignInWindowClosed(openedChat, authConfigId)
+          }
+        },
+      })
+    )
+  }
+
+  updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
+    rows.map((item) =>
+      item.mcp_config_id === row.mcp_config_id
+        ? {
+            ...item,
+            status: 'authenticating',
+            pending_initiate: null,
+            error_context: null,
+            sign_in_window_closed: false,
+            recoverable_status: getPromptRecoverableStatus(item),
+          }
+        : item
+    )
+  )
 }
 
 const buildPendingChatUpdates = (
@@ -1207,18 +1330,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         return
       }
 
-      window.open(payload.auth_url, '_blank')
-      updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
-        rows.map((item) =>
-          item.mcp_config_id === mcpConfigId
-            ? {
-                ...item,
-                status: 'authenticating',
-                recoverable_status: getPromptRecoverableStatus(item),
-              }
-            : item
-        )
-      )
+      openPromptSignIn(chat, { historyIndex, messageIndex }, row, payload.auth_url)
     } catch (error) {
       console.error('Failed to initiate conversation authentication:', error)
     }
@@ -1228,35 +1340,23 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const chat = getCurrentChatById(chatId)
     if (!chat || chat.isWorkflow) return
 
-    updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
-      rows.map((item) => {
-        if (item.mcp_config_id !== mcpConfigId || !item.pending_initiate) return item
-
-        const popup = window.open(item.pending_initiate.auth_url, '_blank')
-
-        if (popup === null) {
-          return {
-            ...item,
-            error_context: POPUP_BLOCKED_AUTH_MESSAGE,
-            recoverable_status: getPromptRecoverableStatus(item),
-          }
-        }
-
-        return {
-          ...item,
-          status: 'authenticating',
-          pending_initiate: null,
-          error_context: null,
-          recoverable_status: getPromptRecoverableStatus(item),
-        }
-      })
+    const row = getPromptRows(getPromptMessage(chat, historyIndex, messageIndex)).find(
+      (item) => item.mcp_config_id === mcpConfigId
     )
+    if (!row?.pending_initiate) return
+
+    openPromptSignIn(chat, { historyIndex, messageIndex }, row, row.pending_initiate.auth_url)
   },
 
   cancelPromptAuth(chatId, historyIndex, messageIndex, mcpConfigId) {
     const chat = getCurrentChatById(chatId)
     if (!chat || chat.isWorkflow) return
 
+    stopSignInWatcher(
+      getPromptRows(getPromptMessage(chat, historyIndex, messageIndex)).find(
+        (item) => item.mcp_config_id === mcpConfigId
+      )?.auth_config_id
+    )
     updatePromptRowsAtIndexes(chat, historyIndex, messageIndex, (rows) =>
       rows.map((item) =>
         item.mcp_config_id === mcpConfigId
@@ -1270,9 +1370,10 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   markPromptAuthSuccess(chatId, authConfigId) {
-    const chat = getCurrentChatById(chatId)
+    const chat = getOpenedChatById(chatId)
     if (!chat || chat.isWorkflow) return
 
+    stopSignInWatcher(authConfigId)
     updatePromptAuthRow(chat, authConfigId, isLateCallbackTarget, (row) => ({
       ...row,
       status: 'authenticated',
@@ -1281,14 +1382,20 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   rollbackPromptAuthRow(chatId, authConfigId, errorContext) {
-    const chat = getCurrentChatById(chatId)
+    const chat = getOpenedChatById(chatId)
     if (!chat || chat.isWorkflow) return
 
-    updatePromptAuthRow(chat, authConfigId, isLateCallbackTarget, (row) => ({
-      ...row,
-      status: getPromptRecoverableStatus(row),
-      error_context: errorContext,
-    }))
+    stopSignInWatcher(authConfigId)
+    rollbackPromptRow(chat, authConfigId, errorContext)
+  },
+
+  // The hint only advises: the sign-in window is still open and its watcher is the sole way left
+  // to learn of a completion, so unlike a real error the watcher keeps running.
+  showPromptAuthHint(chatId, authConfigId, hint) {
+    const chat = getOpenedChatById(chatId)
+    if (!chat || chat.isWorkflow) return
+
+    rollbackPromptRow(chat, authConfigId, hint)
   },
 
   async _sendRequest(
@@ -1440,10 +1547,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
     historyItem.response = errorText
     historyItem.loginUrl = error?.error?.login_url ?? error?.login_url
-    historyItem.mcpAuthPromptRows = null
-    historyItem.gitlabAuthPrompt = null
-    historyItem.jiraAuthPrompt = null
-    historyItem.confluenceAuthPrompt = null
+    clearAuthPrompts(historyItem)
     finalizeFailedRequest(historyItem, startTime)
   },
 
@@ -1456,6 +1560,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     for (let groupIndex = chat.history.length - 1; groupIndex >= 0; groupIndex -= 1) {
       const messageIndex = chat.history[groupIndex].indexOf(historyItem)
       if (messageIndex === -1) continue
+      stopWatchersForRows(historyItem)
       chat.history[groupIndex].splice(messageIndex, 1)
       if (chat.history[groupIndex].length === 0) chat.history.splice(groupIndex, 1)
       return

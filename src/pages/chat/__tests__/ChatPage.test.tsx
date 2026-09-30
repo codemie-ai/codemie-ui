@@ -59,6 +59,7 @@ const { mockChatsStore, mockChatGenerationStore, mockUseAuthCallbackListener } =
   mockChatGenerationStore: {
     markPromptAuthSuccess: vi.fn(),
     rollbackPromptAuthRow: vi.fn(),
+    showPromptAuthHint: vi.fn(),
   },
   mockUseAuthCallbackListener: vi.fn((_options?: any) => ({ authFlows: {} })),
 }))
@@ -363,14 +364,12 @@ describe('ChatPage', () => {
     listenerOptions.onError('auth-2', 'idp_denied')
     listenerOptions.onTimeout('auth-2')
 
-    expect(mockChatGenerationStore.rollbackPromptAuthRow).toHaveBeenNthCalledWith(
-      1,
+    expect(mockChatGenerationStore.rollbackPromptAuthRow).toHaveBeenCalledWith(
       'chat-1',
       'auth-2',
       'idp_denied'
     )
-    expect(mockChatGenerationStore.rollbackPromptAuthRow).toHaveBeenNthCalledWith(
-      2,
+    expect(mockChatGenerationStore.showPromptAuthHint).toHaveBeenCalledWith(
       'chat-1',
       'auth-2',
       AUTH_CALLBACK_HINT_MESSAGE

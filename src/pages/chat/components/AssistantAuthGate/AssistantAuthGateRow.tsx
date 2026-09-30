@@ -48,6 +48,8 @@ const STATUS_BADGES: Record<MCPAuthGateStatus, { status: StatusType; text: strin
   discovery_failed: { status: StatusEnum.Warning, text: 'Unavailable' },
 }
 
+const OPEN_SIGN_IN_IN_NEW_TAB_LABEL = 'Open sign-in in a new tab'
+
 const isRenderableStatus = (status: string): status is MCPAuthGateStatus => status in STATUS_BADGES
 
 const getInfoWarningProps = (
@@ -139,7 +141,7 @@ const AssistantAuthGateRow: React.FC<AssistantAuthGateRowProps> = ({
                   disabled={!row.initiate_url}
                   onClick={() => onAuthenticate(row.mcp_config_id)}
                 >
-                  Authenticate
+                  {row.sign_in_window_closed ? OPEN_SIGN_IN_IN_NEW_TAB_LABEL : 'Authenticate'}
                 </Button>
               )}
 
@@ -150,7 +152,7 @@ const AssistantAuthGateRow: React.FC<AssistantAuthGateRowProps> = ({
                   disabled={!row.initiate_url}
                   onClick={() => onAuthenticate(row.mcp_config_id)}
                 >
-                  Re-authenticate
+                  {row.sign_in_window_closed ? OPEN_SIGN_IN_IN_NEW_TAB_LABEL : 'Re-authenticate'}
                 </Button>
               )}
             </>

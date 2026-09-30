@@ -81,6 +81,28 @@ describe('useAuthCallbackListener', () => {
     expect(result.current.authFlows['auth-1']).toEqual({ status: 'authenticating' })
   })
 
+  it('still warns about a callback from an unexpected origin, but not about malformed payloads', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    renderHook(() => useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'] }))
+
+    act(() => {
+      dispatchMessage('https://api.example.com', { type: 'mcp_auth_callback', status: 'success' })
+      dispatchMessage('https://frontend.example.com', {
+        type: 'mcp_auth_callback',
+        status: 'success',
+        auth_config_id: 'auth-1',
+      })
+    })
+
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[mcp-auth] Ignoring auth callback from unexpected origin',
+      expect.objectContaining({ origin: 'https://frontend.example.com', authConfigId: 'auth-1' })
+    )
+
+    warnSpy.mockRestore()
+  })
+
   it('ignores unrelated auth_config_id values', () => {
     const { result } = renderHook(() =>
       useAuthCallbackListener({ trackedAuthConfigIds: ['auth-1'] })
@@ -418,6 +440,7 @@ describe('useAuthCallbackListener', () => {
   it('drops a callback dispatched after the acceptance deadline as untracked', async () => {
     const onSuccess = vi.fn()
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {})
     const { rerender } = renderHook(
       ({ trackedAuthConfigIds }) =>
         useAuthCallbackListener({ trackedAuthConfigIds, timeoutMs: 1000, onSuccess }),
@@ -444,11 +467,14 @@ describe('useAuthCallbackListener', () => {
     })
 
     expect(onSuccess).not.toHaveBeenCalled()
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[mcp-auth] Ignoring auth callback for untracked auth_config_id',
+    const untrackedMessage = '[mcp-auth] Ignoring auth callback for untracked auth_config_id'
+    expect(debugSpy).toHaveBeenCalledWith(
+      untrackedMessage,
       expect.objectContaining({ authConfigId: 'auth-1' })
     )
+    expect(warnSpy).not.toHaveBeenCalledWith(untrackedMessage, expect.anything())
 
+    debugSpy.mockRestore()
     warnSpy.mockRestore()
   })
 

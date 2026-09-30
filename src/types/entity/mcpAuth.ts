@@ -45,6 +45,7 @@ export interface MCPAuthGateServer {
   initiate_url?: string | null
   recoverable_status?: MCPAuthRecoverableStatus | null
   pending_initiate?: MCPAuthPendingInitiate | null
+  sign_in_window_closed?: boolean
 }
 
 export interface MCPAuthStatusResponse extends MCPAuthGateServer {

@@ -53,13 +53,15 @@ export const useChatAuthCallbacks = (currentChat: Conversation | null | undefine
       // after the user has moved on, and a switch away never ends it.
       contextKey: currentChat.id,
       trackedAuthConfigIds: getAuthenticatingPromptIds(promptRows),
-      liveAuthConfigIds: getLiveAuthConfigIds(promptRows),
+      liveAuthConfigIds: getLiveAuthConfigIds(
+        promptRows.filter((row) => !row.sign_in_window_closed)
+      ),
       onSuccess: (authConfigId: string) =>
         chatGenerationStore.markPromptAuthSuccess(currentChat.id, authConfigId),
       onError: (authConfigId: string, errorCode?: string) =>
         chatGenerationStore.rollbackPromptAuthRow(currentChat.id, authConfigId, errorCode ?? null),
       onTimeout: (authConfigId: string) =>
-        chatGenerationStore.rollbackPromptAuthRow(
+        chatGenerationStore.showPromptAuthHint(
           currentChat.id,
           authConfigId,
           AUTH_CALLBACK_HINT_MESSAGE

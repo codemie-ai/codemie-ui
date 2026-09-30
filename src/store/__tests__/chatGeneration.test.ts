@@ -71,6 +71,10 @@ vi.mock('@/store/workflowExecutions', () => ({
   },
 }))
 
+// These tests drive the sign-in window through openSignInWindow; a real watcher would leave a
+// polling interval running after each of them.
+vi.mock('@/utils/watchSignInWindow', () => ({ watchSignInWindow: () => () => undefined }))
+
 vi.mock('@/utils/helpers', () => ({
   fileToBase64: vi.fn(),
 }))
@@ -111,6 +115,9 @@ const createHistoryItem = (overrides: Partial<ChatMessage> = {}): ChatMessage =>
   executionId: null,
   ...overrides,
 })
+
+const createFakeSignInWindow = () =>
+  ({ closed: false, close: vi.fn(), opener: window, location: { href: '' } } as unknown as Window)
 
 const createChat = (historyItem: ChatMessage): Conversation =>
   ({
@@ -421,19 +428,21 @@ describe('chatGenerationStore', () => {
     mockPost.mockResolvedValueOnce({
       json: async () => ({ auth_url: 'https://idp.example.com/saml/start' }),
     })
-    vi.mocked(window.open).mockReturnValue(window)
+    const signInWindow = createFakeSignInWindow()
+    vi.mocked(window.open).mockReturnValue(signInWindow)
 
     const { chatGenerationStore } = await import('@/store/chatGeneration')
     await chatGenerationStore.initiatePromptAuth('chat-1', 0, 0, 'mcp-1')
 
-    expect(window.open).toHaveBeenCalledWith('https://idp.example.com/saml/start', '_blank')
+    expect(window.open).toHaveBeenCalledWith('', '_blank')
+    expect(signInWindow.location.href).toBe('https://idp.example.com/saml/start')
     expect(historyItem.mcpAuthPromptRows?.[0]).toEqual(
       expect.objectContaining({
         status: 'authenticating',
         recoverable_status: 'session_expired',
       })
     )
-    expect(historyItem.mcpAuthPromptRows?.[0].pending_initiate).toBeUndefined()
+    expect(historyItem.mcpAuthPromptRows?.[0].pending_initiate).toBeNull()
   })
 
   it('continues pending OAuth2 prompt auth and handles popup blockers without losing metadata', async () => {
@@ -453,7 +462,7 @@ describe('chatGenerationStore', () => {
     const { chatGenerationStore } = await import('@/store/chatGeneration')
     await chatGenerationStore.continuePromptAuth('chat-1', 0, 0, 'mcp-1')
 
-    expect(window.open).toHaveBeenCalledWith('https://idp.example.com/start', '_blank')
+    expect(window.open).toHaveBeenCalledWith('', '_blank')
     expect(historyItem.mcpAuthPromptRows?.[0]).toEqual(
       expect.objectContaining({
         status: 'authentication_required',
@@ -466,9 +475,11 @@ describe('chatGenerationStore', () => {
       })
     )
 
-    vi.mocked(window.open).mockReturnValue(window)
+    const signInWindow = createFakeSignInWindow()
+    vi.mocked(window.open).mockReturnValue(signInWindow)
     await chatGenerationStore.continuePromptAuth('chat-1', 0, 0, 'mcp-1')
 
+    expect(signInWindow.location.href).toBe('https://idp.example.com/start')
     expect(historyItem.mcpAuthPromptRows?.[0]).toEqual(
       expect.objectContaining({
         status: 'authenticating',

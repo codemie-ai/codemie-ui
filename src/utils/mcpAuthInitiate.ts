@@ -26,6 +26,12 @@ export const MISSING_REDIRECT_HOSTNAME_MESSAGE =
 export const POPUP_BLOCKED_AUTH_MESSAGE =
   'Browser blocked the sign-in window. Allow popups and try again.'
 
+export const INVALID_AUTH_URL_MESSAGE =
+  'Authentication response contained an invalid sign-in URL. Retry authentication.'
+
+export const SIGN_IN_WINDOW_CLOSED_MESSAGE =
+  'The sign-in window closed before authentication finished. Your identity provider may require an extra step (for example a device compliance check). Open sign-in in a new tab to complete it.'
+
 export const getRecoverableAuthStatus = (row: MCPAuthGateServer): MCPAuthRecoverableStatus =>
   row.recoverable_status ??
   (row.status === 'session_expired' ? 'session_expired' : 'authentication_required')

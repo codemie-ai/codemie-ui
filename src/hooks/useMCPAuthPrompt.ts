@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   AUTH_CALLBACK_HINT_MESSAGE,
@@ -29,10 +29,14 @@ import {
 import {
   getPendingInitiate,
   getRecoverableAuthStatus,
+  INVALID_AUTH_URL_MESSAGE,
   MISSING_REDIRECT_HOSTNAME_MESSAGE,
   POPUP_BLOCKED_AUTH_MESSAGE,
+  SIGN_IN_WINDOW_CLOSED_MESSAGE,
 } from '@/utils/mcpAuthInitiate'
+import { openSignInWindow } from '@/utils/openSignInWindow'
 import toaster from '@/utils/toaster'
+import { watchSignInWindow } from '@/utils/watchSignInWindow'
 
 interface UseMCPAuthPromptOptions {
   onAllAuthenticated: () => void
@@ -68,28 +72,169 @@ const safeOrigin = (url: string): string | null => {
   }
 }
 
+const OPEN_FAILURE_MESSAGES = {
+  blocked: POPUP_BLOCKED_AUTH_MESSAGE,
+  invalid_url: INVALID_AUTH_URL_MESSAGE,
+} as const
+
 export const useMCPAuthPrompt = ({
   onAllAuthenticated,
 }: UseMCPAuthPromptOptions): UseMCPAuthPromptResult => {
   const [rows, setRows] = useState<MCPAuthGateServer[]>([])
   const onAllAuthenticatedRef = useRef(onAllAuthenticated)
   onAllAuthenticatedRef.current = onAllAuthenticated
+  const watchersRef = useRef<Map<string, () => void>>(new Map())
 
-  const handleAuthRequiredError = useCallback(async (error: unknown): Promise<boolean> => {
-    if (!(error instanceof Response)) return false
+  const stopWatcher = useCallback((authConfigId: string | null | undefined) => {
+    if (!authConfigId) return
 
-    let parsed: MCPAuthGateServer[] | null = null
-    try {
-      parsed = parseMCPAuthRequiredErrorPayload(await error.clone().json())
-    } catch {
-      return false
-    }
-
-    if (!parsed) return false
-
-    setRows(parsed)
-    return true
+    watchersRef.current.get(authConfigId)?.()
+    watchersRef.current.delete(authConfigId)
   }, [])
+
+  const stopAllWatchers = useCallback(() => {
+    watchersRef.current.forEach((stop) => stop())
+    watchersRef.current.clear()
+  }, [])
+
+  useEffect(() => stopAllWatchers, [stopAllWatchers])
+
+  const handleAuthRequiredError = useCallback(
+    async (error: unknown): Promise<boolean> => {
+      if (!(error instanceof Response)) return false
+
+      let parsed: MCPAuthGateServer[] | null = null
+      try {
+        parsed = parseMCPAuthRequiredErrorPayload(await error.clone().json())
+      } catch {
+        return false
+      }
+
+      if (!parsed) return false
+
+      stopAllWatchers()
+      setRows(parsed)
+      return true
+    },
+    [stopAllWatchers]
+  )
+
+  const onSuccess = useCallback(
+    (authConfigId: string) => {
+      stopWatcher(authConfigId)
+      setRows((current) => {
+        // The poll and the postMessage can both report the same success; handle it once.
+        const target = current.find((row) => row.auth_config_id === authConfigId)
+        if (!target || target.status === 'authenticated') return current
+
+        const next = updateRowByAuthConfigId(current, authConfigId, (row) => ({
+          ...row,
+          status: 'authenticated',
+          error_context: null,
+        }))
+
+        if (next.every((row) => row.status === 'authenticated')) {
+          queueMicrotask(() => {
+            onAllAuthenticatedRef.current()
+            setRows([])
+          })
+        }
+
+        return next
+      })
+    },
+    [stopWatcher]
+  )
+
+  const onError = useCallback(
+    (authConfigId: string, errorCode: string | undefined) => {
+      stopWatcher(authConfigId)
+      setRows((current) =>
+        updateRowByAuthConfigId(current, authConfigId, (row) => ({
+          ...row,
+          status: getRecoverableAuthStatus(row),
+          error_context: errorCode ?? null,
+        }))
+      )
+    },
+    [stopWatcher]
+  )
+
+  const onTimeout = useCallback((authConfigId: string) => {
+    setRows((current) =>
+      updateRowByAuthConfigId(current, authConfigId, (row) => ({
+        ...row,
+        status: getRecoverableAuthStatus(row),
+        error_context: AUTH_CALLBACK_HINT_MESSAGE,
+      }))
+    )
+  }, [])
+
+  const onSignInWindowClosed = useCallback(
+    (authConfigId: string) => {
+      stopWatcher(authConfigId)
+      setRows((current) =>
+        updateRowByAuthConfigId(current, authConfigId, (row) => ({
+          ...row,
+          status: getRecoverableAuthStatus(row),
+          error_context: SIGN_IN_WINDOW_CLOSED_MESSAGE,
+          sign_in_window_closed: true,
+        }))
+      )
+    },
+    [stopWatcher]
+  )
+
+  const openSignIn = useCallback(
+    (row: MCPAuthGateServer, authUrl: string) => {
+      const authConfigId = row.auth_config_id
+      stopWatcher(authConfigId)
+
+      const result = openSignInWindow(authUrl)
+      console.info('[mcp-auth] opened auth tab', {
+        authUrlOrigin: safeOrigin(authUrl),
+        windowOrigin: window.location.origin,
+        popupBlocked: result.status === 'blocked',
+      })
+
+      if (result.status !== 'opened') {
+        setRows((current) =>
+          updateRow(current, row.mcp_config_id, (item) => ({
+            ...item,
+            // A malformed url fails identically on retry, so it must not keep the confirmation.
+            pending_initiate: result.status === 'invalid_url' ? null : item.pending_initiate,
+            error_context: OPEN_FAILURE_MESSAGES[result.status],
+            recoverable_status: getRecoverableAuthStatus(item),
+          }))
+        )
+        return
+      }
+
+      if (authConfigId) {
+        watchersRef.current.set(
+          authConfigId,
+          watchSignInWindow({
+            window: result.window,
+            mcpConfigId: row.mcp_config_id,
+            onAuthenticated: () => onSuccess(authConfigId),
+            onClosedEarly: () => onSignInWindowClosed(authConfigId),
+          })
+        )
+      }
+
+      setRows((current) =>
+        updateRow(current, row.mcp_config_id, (item) => ({
+          ...item,
+          status: 'authenticating',
+          pending_initiate: null,
+          error_context: null,
+          sign_in_window_closed: false,
+          recoverable_status: getRecoverableAuthStatus(item),
+        }))
+      )
+    },
+    [onSuccess, onSignInWindowClosed, stopWatcher]
+  )
 
   const initiate = useCallback(
     async (mcpConfigId: string) => {
@@ -131,122 +276,54 @@ export const useMCPAuthPrompt = ({
           return
         }
 
-        const popup = window.open(payload.auth_url, '_blank')
-        console.info('[mcp-auth] opened auth tab', {
-          authUrlOrigin: safeOrigin(payload.auth_url),
-          windowOrigin: window.location.origin,
-          popupBlocked: popup === null,
-        })
-        setRows((current) =>
-          updateRow(current, mcpConfigId, (item) => ({
-            ...item,
-            status: 'authenticating',
-            recoverable_status: getRecoverableAuthStatus(item),
-          }))
-        )
+        openSignIn(row, payload.auth_url)
       } catch (error) {
         console.error('Failed to initiate MCP authentication:', error)
         toaster.error('Failed to start MCP server authentication.')
       }
     },
-    [rows]
+    [rows, openSignIn]
   )
 
   const continueAuth = useCallback(
     (mcpConfigId: string) => {
-      const pendingInitiate = rows.find(
-        (row) => row.mcp_config_id === mcpConfigId
-      )?.pending_initiate
-      if (!pendingInitiate) return
+      const row = rows.find((item) => item.mcp_config_id === mcpConfigId)
+      if (!row?.pending_initiate) return
 
-      const popup = window.open(pendingInitiate.auth_url, '_blank')
-      console.info('[mcp-auth] opened auth tab', {
-        authUrlOrigin: safeOrigin(pendingInitiate.auth_url),
-        windowOrigin: window.location.origin,
-        popupBlocked: popup === null,
-      })
-
-      setRows((current) =>
-        updateRow(current, mcpConfigId, (row) => {
-          if (!row.pending_initiate) return row
-
-          if (popup === null) {
-            return {
-              ...row,
-              error_context: POPUP_BLOCKED_AUTH_MESSAGE,
-              recoverable_status: getRecoverableAuthStatus(row),
-            }
-          }
-
-          return {
-            ...row,
-            status: 'authenticating',
-            pending_initiate: null,
-            error_context: null,
-            recoverable_status: getRecoverableAuthStatus(row),
-          }
-        })
-      )
+      openSignIn(row, row.pending_initiate.auth_url)
     },
-    [rows]
+    [rows, openSignIn]
   )
 
-  const cancel = useCallback((mcpConfigId: string) => {
-    setRows((current) =>
-      updateRow(current, mcpConfigId, (row) => ({
-        ...row,
-        pending_initiate: null,
-      }))
-    )
-  }, [])
+  const cancel = useCallback(
+    (mcpConfigId: string) => {
+      stopWatcher(rows.find((row) => row.mcp_config_id === mcpConfigId)?.auth_config_id)
+      setRows((current) =>
+        updateRow(current, mcpConfigId, (row) => ({
+          ...row,
+          pending_initiate: null,
+        }))
+      )
+    },
+    [rows, stopWatcher]
+  )
 
-  const clearRows = useCallback(() => setRows([]), [])
+  const clearRows = useCallback(() => {
+    stopAllWatchers()
+    setRows([])
+  }, [stopAllWatchers])
 
   const trackedAuthConfigIds = useMemo(
     () => rows.filter(isAuthenticatingGateRow).map((row) => row.auth_config_id as string),
     [rows]
   )
 
-  const liveAuthConfigIds = useMemo(() => getLiveAuthConfigIds(rows), [rows])
-
-  const onSuccess = useCallback((authConfigId: string) => {
-    setRows((current) => {
-      const next = updateRowByAuthConfigId(current, authConfigId, (row) => ({
-        ...row,
-        status: 'authenticated',
-        error_context: null,
-      }))
-
-      if (next.length > 0 && next.every((row) => row.status === 'authenticated')) {
-        queueMicrotask(() => {
-          onAllAuthenticatedRef.current()
-          setRows([])
-        })
-      }
-
-      return next
-    })
-  }, [])
-
-  const onError = useCallback((authConfigId: string, errorCode: string | undefined) => {
-    setRows((current) =>
-      updateRowByAuthConfigId(current, authConfigId, (row) => ({
-        ...row,
-        status: getRecoverableAuthStatus(row),
-        error_context: errorCode ?? null,
-      }))
-    )
-  }, [])
-
-  const onTimeout = useCallback((authConfigId: string) => {
-    setRows((current) =>
-      updateRowByAuthConfigId(current, authConfigId, (row) => ({
-        ...row,
-        status: getRecoverableAuthStatus(row),
-        error_context: AUTH_CALLBACK_HINT_MESSAGE,
-      }))
-    )
-  }, [])
+  // A row whose window closed early can no longer receive a callback, so its id stops being live
+  // and the listener ends the acceptance window instead of beaconing a false timeout.
+  const liveAuthConfigIds = useMemo(
+    () => getLiveAuthConfigIds(rows.filter((row) => !row.sign_in_window_closed)),
+    [rows]
+  )
 
   useAuthCallbackListener({
     trackedAuthConfigIds,

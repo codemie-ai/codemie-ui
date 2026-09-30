@@ -30,6 +30,7 @@ const { mockChatsStore, mockChatGenerationStore } = vi.hoisted(() => ({
   mockChatGenerationStore: {
     markPromptAuthSuccess: vi.fn(),
     rollbackPromptAuthRow: vi.fn(),
+    showPromptAuthHint: vi.fn(),
   },
 }))
 

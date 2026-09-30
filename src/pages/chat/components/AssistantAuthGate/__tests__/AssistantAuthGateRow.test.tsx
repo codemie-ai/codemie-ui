@@ -128,4 +128,49 @@ describe('AssistantAuthGateRow', () => {
     expect(screen.getByRole('button', { name: 'Authenticate' })).toBeInTheDocument()
     expect(screen.queryByText(/^Redirect URI:/)).not.toBeInTheDocument()
   })
+
+  describe.each([
+    { status: 'authentication_required', defaultLabel: 'Authenticate' },
+    { status: 'session_expired', defaultLabel: 'Re-authenticate' },
+  ] as const)('when the row status is $status', ({ status, defaultLabel }) => {
+    it('offers "Open sign-in in a new tab" that re-runs authentication once the sign-in window closed', async () => {
+      const user = userEvent.setup()
+      const onAuthenticate = vi.fn()
+
+      render(
+        <AssistantAuthGateRow
+          row={createRow({
+            status,
+            recoverable_status: status,
+            sign_in_window_closed: true,
+          })}
+          onAuthenticate={onAuthenticate}
+          onContinue={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      )
+
+      expect(screen.queryByRole('button', { name: defaultLabel })).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Open sign-in in a new tab' }))
+
+      expect(onAuthenticate).toHaveBeenCalledWith('mcp-1')
+    })
+
+    it(`keeps the "${defaultLabel}" label while the sign-in window has not closed`, () => {
+      render(
+        <AssistantAuthGateRow
+          row={createRow({ status, recoverable_status: status, sign_in_window_closed: false })}
+          onAuthenticate={vi.fn()}
+          onContinue={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      )
+
+      expect(screen.getByRole('button', { name: defaultLabel })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Open sign-in in a new tab' })
+      ).not.toBeInTheDocument()
+    })
+  })
 })

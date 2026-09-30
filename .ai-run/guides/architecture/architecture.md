@@ -60,7 +60,14 @@ single custom fetch-based API client. Styling is Tailwind CSS exclusively.
 | Store | Render JSX; call `useNavigate`; import React components |
 | Integration | Manage state; transform domain objects |
 | Hook | Call `api.*` directly; import Valtio stores from outside |
-| Utils | Mutate global state; trigger side effects |
+| Utils | Mutate global state; trigger side effects (one deliberate exception, below) |
+
+**Utils exception — sign-in window helpers.** `src/utils/openSignInWindow.ts` and
+`src/utils/watchSignInWindow.ts` are deliberate side-effecting helpers: they open a browser window,
+poll the backend and send a diagnostics beacon (`src/utils/mcpAuthDiagnostics.ts`, the beacon they
+share with the auth callback listener hook). They sit in `src/utils/` so the hooks and the chat store
+use one copy of the window logic. They must still not import hooks, stores or components. New side
+effects do not belong in Utils on this precedent.
 
 ---
 

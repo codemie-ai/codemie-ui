@@ -28,21 +28,27 @@ interface ListenerHandlers {
   onTimeout?: (authConfigId: string) => void
 }
 
-const { listenerCalls, listenerHandlers, mockMarkPromptAuthSuccess, mockRollbackPromptAuthRow } =
-  vi.hoisted(() => ({
-    listenerCalls: [] as Array<{
-      trackedAuthConfigIds: string[]
-      liveAuthConfigIds?: string[]
-      contextKey?: string
-    }>,
-    listenerHandlers: {} as {
-      onSuccess?: (authConfigId: string) => void
-      onError?: (authConfigId: string, errorCode?: string) => void
-      onTimeout?: (authConfigId: string) => void
-    },
-    mockMarkPromptAuthSuccess: vi.fn(),
-    mockRollbackPromptAuthRow: vi.fn(),
-  }))
+const {
+  listenerCalls,
+  listenerHandlers,
+  mockMarkPromptAuthSuccess,
+  mockRollbackPromptAuthRow,
+  mockShowPromptAuthHint,
+} = vi.hoisted(() => ({
+  listenerCalls: [] as Array<{
+    trackedAuthConfigIds: string[]
+    liveAuthConfigIds?: string[]
+    contextKey?: string
+  }>,
+  listenerHandlers: {} as {
+    onSuccess?: (authConfigId: string) => void
+    onError?: (authConfigId: string, errorCode?: string) => void
+    onTimeout?: (authConfigId: string) => void
+  },
+  mockMarkPromptAuthSuccess: vi.fn(),
+  mockRollbackPromptAuthRow: vi.fn(),
+  mockShowPromptAuthHint: vi.fn(),
+}))
 
 vi.mock('@/hooks/useAuthCallbackListener', () => ({
   AUTH_CALLBACK_HINT_MESSAGE:
@@ -69,6 +75,7 @@ vi.mock('@/store/chatGeneration', () => ({
   chatGenerationStore: {
     markPromptAuthSuccess: (...args: unknown[]) => mockMarkPromptAuthSuccess(...args),
     rollbackPromptAuthRow: (...args: unknown[]) => mockRollbackPromptAuthRow(...args),
+    showPromptAuthHint: (...args: unknown[]) => mockShowPromptAuthHint(...args),
   },
 }))
 
@@ -155,6 +162,25 @@ describe('useChatAuthCallbacks', () => {
     expect(listenerCalls.at(-1)?.contextKey).toBe('chat-42')
   })
 
+  it('excludes rows whose sign-in window was closed from the live ids', () => {
+    const testChat = chat([
+      [
+        message([
+          gateRow({ auth_config_id: 'auth-1' }),
+          gateRow({
+            mcp_config_id: 'mcp-2',
+            auth_config_id: 'auth-2',
+            sign_in_window_closed: true,
+          }),
+        ]),
+      ],
+    ])
+
+    renderHook(() => useChatAuthCallbacks(testChat))
+
+    expect(listenerCalls.at(-1)?.liveAuthConfigIds).toEqual(['auth-1'])
+  })
+
   it('reports no live ids for a chat it does not drive, leaving another chat flow alone', () => {
     renderHook(() => useChatAuthCallbacks(null))
 
@@ -177,6 +203,7 @@ describe('useChatAuthCallbacks', () => {
 
     expect(mockMarkPromptAuthSuccess).not.toHaveBeenCalled()
     expect(mockRollbackPromptAuthRow).not.toHaveBeenCalled()
+    expect(mockShowPromptAuthHint).not.toHaveBeenCalled()
   })
 
   it('tracks nothing and passes callable no-op handlers for a null chat', () => {
@@ -193,6 +220,7 @@ describe('useChatAuthCallbacks', () => {
 
     expect(mockMarkPromptAuthSuccess).not.toHaveBeenCalled()
     expect(mockRollbackPromptAuthRow).not.toHaveBeenCalled()
+    expect(mockShowPromptAuthHint).not.toHaveBeenCalled()
   })
 
   it('calls markPromptAuthSuccess with the chat id and auth_config_id on success', () => {
@@ -222,27 +250,28 @@ describe('useChatAuthCallbacks', () => {
     expect(mockRollbackPromptAuthRow).toHaveBeenCalledWith('chat-42', 'auth-1', null)
   })
 
-  it('calls rollbackPromptAuthRow with the hint message on timeout', () => {
+  it('shows the hint on timeout without ending the sign-in watcher', () => {
     const testChat = chat([[message([gateRow({ auth_config_id: 'auth-1' })])]])
 
     renderHook(() => useChatAuthCallbacks(testChat))
     listenerHandlers.onTimeout?.('auth-1')
 
-    expect(mockRollbackPromptAuthRow).toHaveBeenCalledWith(
+    expect(mockShowPromptAuthHint).toHaveBeenCalledWith(
       'chat-42',
       'auth-1',
       AUTH_CALLBACK_HINT_MESSAGE
     )
+    expect(mockRollbackPromptAuthRow).not.toHaveBeenCalled()
   })
 
-  it('still applies a success delivered after onTimeout rolled the row back (late-callback contract)', () => {
+  it('still applies a success delivered after onTimeout showed the hint (late-callback contract)', () => {
     const testChat = chat([[message([gateRow({ auth_config_id: 'auth-1' })])]])
 
     renderHook(() => useChatAuthCallbacks(testChat))
     listenerHandlers.onTimeout?.('auth-1')
     listenerHandlers.onSuccess?.('auth-1')
 
-    expect(mockRollbackPromptAuthRow).toHaveBeenCalledWith(
+    expect(mockShowPromptAuthHint).toHaveBeenCalledWith(
       'chat-42',
       'auth-1',
       AUTH_CALLBACK_HINT_MESSAGE

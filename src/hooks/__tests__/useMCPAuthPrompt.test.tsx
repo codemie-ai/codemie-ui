@@ -17,6 +17,11 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AUTH_CALLBACK_HINT_MESSAGE } from '@/hooks/useAuthCallbackListener'
+import {
+  INVALID_AUTH_URL_MESSAGE,
+  POPUP_BLOCKED_AUTH_MESSAGE,
+  SIGN_IN_WINDOW_CLOSED_MESSAGE,
+} from '@/utils/mcpAuthInitiate'
 
 import { useMCPAuthPrompt } from '../useMCPAuthPrompt'
 
@@ -26,7 +31,14 @@ interface ListenerHandlers {
   onTimeout?: (authConfigId: string) => void
 }
 
-const { listenerCalls, listenerHandlers, mockPost, mockToasterError } = vi.hoisted(() => ({
+const {
+  listenerCalls,
+  listenerHandlers,
+  mockPost,
+  mockToasterError,
+  mockOpenSignInWindow,
+  mockWatchSignInWindow,
+} = vi.hoisted(() => ({
   listenerCalls: [] as Array<{ trackedAuthConfigIds: string[]; liveAuthConfigIds?: string[] }>,
   listenerHandlers: {} as {
     onSuccess?: (authConfigId: string) => void
@@ -35,6 +47,8 @@ const { listenerCalls, listenerHandlers, mockPost, mockToasterError } = vi.hoist
   },
   mockPost: vi.fn(),
   mockToasterError: vi.fn(),
+  mockOpenSignInWindow: vi.fn(),
+  mockWatchSignInWindow: vi.fn(),
 }))
 
 vi.mock('@/hooks/useAuthCallbackListener', () => ({
@@ -48,6 +62,14 @@ vi.mock('@/hooks/useAuthCallbackListener', () => ({
     listenerHandlers.onError = args.onError
     listenerHandlers.onTimeout = args.onTimeout
   },
+}))
+
+vi.mock('@/utils/openSignInWindow', () => ({
+  openSignInWindow: (...args: unknown[]) => mockOpenSignInWindow(...args),
+}))
+
+vi.mock('@/utils/watchSignInWindow', () => ({
+  watchSignInWindow: (...args: unknown[]) => mockWatchSignInWindow(...args),
 }))
 
 vi.mock('@/utils/api', () => ({
@@ -80,15 +102,53 @@ const oauth2Server = {
   initiate_url: '/v1/mcp-auth/oauth2/initiate',
 }
 
+const NON_HTTP_AUTH_URL = 'ftp://idp.example.com/start'
+
+const fakeSignInWindow = { closed: false } as Window
+const openedResult = { status: 'opened', window: fakeSignInWindow } as const
+
+const samlServer = {
+  ...oauth2Server,
+  auth_type: 'saml',
+  initiate_url: '/v1/mcp-auth/saml/initiate',
+  status: 'session_expired',
+}
+
+interface WatcherOptions {
+  window: Window
+  mcpConfigId: string
+  onAuthenticated: () => void
+  onClosedEarly: () => void
+}
+
+const lastWatcherOptions = (): WatcherOptions => mockWatchSignInWindow.mock.calls.at(-1)?.[0]
+
 describe('useMCPAuthPrompt', () => {
+  let stopWatcher: ReturnType<typeof vi.fn>
+
   beforeEach(() => {
     vi.clearAllMocks()
     listenerCalls.length = 0
     listenerHandlers.onSuccess = undefined
     listenerHandlers.onError = undefined
     listenerHandlers.onTimeout = undefined
-    vi.spyOn(window, 'open').mockImplementation(() => null)
+    stopWatcher = vi.fn()
+    mockOpenSignInWindow.mockReset().mockReturnValue({ status: 'blocked' })
+    mockWatchSignInWindow.mockReset().mockReturnValue(stopWatcher)
   })
+
+  const initiateSaml = async (
+    result: { current: ReturnType<typeof useMCPAuthPrompt> },
+    authUrl = 'https://idp.example.com/saml/start'
+  ) => {
+    await act(async () => {
+      await result.current.handleAuthRequiredError(authRequiredResponse([samlServer]))
+    })
+    mockPost.mockResolvedValueOnce({ json: async () => ({ auth_url: authUrl }) })
+    await act(async () => {
+      await result.current.initiate('mcp-1')
+    })
+  }
 
   it('stores OAuth2 pending redirect metadata and excludes it from callback tracking', async () => {
     const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
@@ -107,7 +167,7 @@ describe('useMCPAuthPrompt', () => {
       await result.current.initiate('mcp-1')
     })
 
-    expect(window.open).not.toHaveBeenCalled()
+    expect(mockOpenSignInWindow).not.toHaveBeenCalled()
     expect(result.current.rows[0]).toEqual(
       expect.objectContaining({
         status: 'authentication_required',
@@ -153,7 +213,7 @@ describe('useMCPAuthPrompt', () => {
       await result.current.initiate('mcp-1')
     })
 
-    expect(window.open).not.toHaveBeenCalled()
+    expect(mockOpenSignInWindow).not.toHaveBeenCalled()
     expect(mockToasterError).toHaveBeenCalledWith(
       'Authentication response did not include a redirect URI hostname. Retry authentication.'
     )
@@ -184,13 +244,13 @@ describe('useMCPAuthPrompt', () => {
     mockPost.mockResolvedValueOnce({
       json: async () => ({ auth_url: 'https://idp.example.com/saml/start' }),
     })
-    vi.mocked(window.open).mockReturnValue(window)
+    mockOpenSignInWindow.mockReturnValue(openedResult)
 
     await act(async () => {
       await result.current.initiate('mcp-1')
     })
 
-    expect(window.open).toHaveBeenCalledWith('https://idp.example.com/saml/start', '_blank')
+    expect(mockOpenSignInWindow).toHaveBeenCalledWith('https://idp.example.com/saml/start')
     expect(result.current.rows[0].status).toBe('authenticating')
     expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual(['auth-1'])
   })
@@ -225,12 +285,12 @@ describe('useMCPAuthPrompt', () => {
       expect.objectContaining({
         status: 'authentication_required',
         pending_initiate: expect.any(Object),
-        error_context: 'Browser blocked the sign-in window. Allow popups and try again.',
+        error_context: POPUP_BLOCKED_AUTH_MESSAGE,
       })
     )
     expect(result.current.rows[1].pending_initiate).toBeUndefined()
 
-    vi.mocked(window.open).mockReturnValue(window)
+    mockOpenSignInWindow.mockReturnValue(openedResult)
     await act(async () => {
       result.current.continue('mcp-1')
     })
@@ -271,7 +331,7 @@ describe('useMCPAuthPrompt', () => {
       result.current.cancel('mcp-1')
     })
 
-    expect(window.open).not.toHaveBeenCalled()
+    expect(mockOpenSignInWindow).not.toHaveBeenCalled()
     expect(result.current.rows[0]).toEqual(
       expect.objectContaining({
         status: 'authentication_required',
@@ -300,7 +360,7 @@ describe('useMCPAuthPrompt', () => {
       await result.current.initiate('mcp-1')
     })
 
-    // window.open returns null (default mock) -> popup blocked
+    // openSignInWindow reports blocked (default mock)
     await act(async () => {
       result.current.continue('mcp-1')
     })
@@ -319,7 +379,7 @@ describe('useMCPAuthPrompt', () => {
 
   it('logs the opened auth tab on SAML immediate open with popupBlocked false', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-    vi.mocked(window.open).mockReturnValue(window)
+    mockOpenSignInWindow.mockReturnValue(openedResult)
     const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
 
     await act(async () => {
@@ -372,7 +432,7 @@ describe('useMCPAuthPrompt', () => {
     mockPost.mockResolvedValueOnce({
       json: async () => ({ auth_url: 'https://idp.example.com/saml/start' }),
     })
-    vi.mocked(window.open).mockReturnValue(window)
+    mockOpenSignInWindow.mockReturnValue(openedResult)
 
     await act(async () => {
       await result.current.initiate('mcp-1')
@@ -419,7 +479,7 @@ describe('useMCPAuthPrompt', () => {
       await result.current.initiate('mcp-1')
     })
 
-    vi.mocked(window.open).mockReturnValue(window)
+    mockOpenSignInWindow.mockReturnValue(openedResult)
     await act(async () => {
       result.current.continue('mcp-1')
     })
@@ -428,7 +488,7 @@ describe('useMCPAuthPrompt', () => {
       expect.objectContaining({ status: 'authenticating', pending_initiate: null })
     )
     expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual(['auth-1'])
-    expect(window.open).toHaveBeenCalledTimes(1)
+    expect(mockOpenSignInWindow).toHaveBeenCalledTimes(1)
 
     act(() => {
       listenerHandlers.onTimeout?.('auth-1')
@@ -468,7 +528,7 @@ describe('useMCPAuthPrompt', () => {
       })
     )
     // The retry only re-fetches pending metadata; it must not re-open the popup itself.
-    expect(window.open).toHaveBeenCalledTimes(1)
+    expect(mockOpenSignInWindow).toHaveBeenCalledTimes(1)
   })
 
   it('lands an error context on the row when onError arrives after a hint expiry', async () => {
@@ -484,7 +544,7 @@ describe('useMCPAuthPrompt', () => {
     mockPost.mockResolvedValueOnce({
       json: async () => ({ auth_url: 'https://idp.example.com/saml/start' }),
     })
-    vi.mocked(window.open).mockReturnValue(window)
+    mockOpenSignInWindow.mockReturnValue(openedResult)
 
     await act(async () => {
       await result.current.initiate('mcp-1')
@@ -504,5 +564,248 @@ describe('useMCPAuthPrompt', () => {
         error_context: 'access_denied',
       })
     )
+  })
+
+  describe('sign-in window handling', () => {
+    it('sets the popup-blocked message and a recoverable status when SAML initiate is blocked', async () => {
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+
+      await initiateSaml(result)
+
+      expect(result.current.rows[0]).toEqual(
+        expect.objectContaining({
+          status: 'session_expired',
+          error_context: POPUP_BLOCKED_AUTH_MESSAGE,
+          recoverable_status: 'session_expired',
+        })
+      )
+      expect(mockWatchSignInWindow).not.toHaveBeenCalled()
+      expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual([])
+    })
+
+    it('sets the invalid-url message when SAML initiate returns an unusable url', async () => {
+      mockOpenSignInWindow.mockReturnValue({ status: 'invalid_url' })
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+
+      await initiateSaml(result, NON_HTTP_AUTH_URL)
+
+      expect(result.current.rows[0]).toEqual(
+        expect.objectContaining({
+          status: 'session_expired',
+          error_context: INVALID_AUTH_URL_MESSAGE,
+          recoverable_status: 'session_expired',
+        })
+      )
+      expect(mockWatchSignInWindow).not.toHaveBeenCalled()
+    })
+
+    it('sets the invalid-url message and drops the pending initiate on OAuth2 continue', async () => {
+      mockOpenSignInWindow.mockReturnValue({ status: 'invalid_url' })
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await act(async () => {
+        await result.current.handleAuthRequiredError(authRequiredResponse([oauth2Server]))
+      })
+      mockPost.mockResolvedValueOnce({
+        json: async () => ({
+          auth_url: NON_HTTP_AUTH_URL,
+          redirect_uri_hostname: 'api.example.com',
+        }),
+      })
+      await act(async () => {
+        await result.current.initiate('mcp-1')
+      })
+
+      await act(async () => {
+        result.current.continue('mcp-1')
+      })
+
+      expect(result.current.rows[0]).toEqual(
+        expect.objectContaining({
+          status: 'authentication_required',
+          pending_initiate: null,
+          error_context: INVALID_AUTH_URL_MESSAGE,
+        })
+      )
+      expect(mockWatchSignInWindow).not.toHaveBeenCalled()
+    })
+
+    it('watches the opened window keyed by auth config id', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+
+      await initiateSaml(result)
+
+      expect(mockWatchSignInWindow).toHaveBeenCalledWith(
+        expect.objectContaining({ window: fakeSignInWindow, mcpConfigId: 'mcp-1' })
+      )
+    })
+
+    it('marks success once when both the poll and the postMessage report it', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const onAllAuthenticated = vi.fn()
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated }))
+      await initiateSaml(result)
+
+      await act(async () => {
+        lastWatcherOptions().onAuthenticated()
+        listenerHandlers.onSuccess?.('auth-1')
+        await Promise.resolve()
+      })
+
+      expect(onAllAuthenticated).toHaveBeenCalledTimes(1)
+      expect(stopWatcher).toHaveBeenCalled()
+      expect(result.current.rows).toEqual([])
+    })
+
+    it('stops the watcher when the postMessage reports success', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await initiateSaml(result)
+
+      await act(async () => {
+        listenerHandlers.onSuccess?.('auth-1')
+        await Promise.resolve()
+      })
+
+      expect(stopWatcher).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops the watcher when the postMessage reports an error', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await initiateSaml(result)
+
+      act(() => {
+        listenerHandlers.onError?.('auth-1', 'access_denied')
+      })
+
+      expect(stopWatcher).toHaveBeenCalledTimes(1)
+    })
+
+    it('records an early close as a recoverable row with the closed flag', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await initiateSaml(result)
+
+      act(() => {
+        lastWatcherOptions().onClosedEarly()
+      })
+
+      expect(result.current.rows[0]).toEqual(
+        expect.objectContaining({
+          status: 'session_expired',
+          error_context: SIGN_IN_WINDOW_CLOSED_MESSAGE,
+          sign_in_window_closed: true,
+        })
+      )
+      expect(stopWatcher).toHaveBeenCalledTimes(1)
+      expect(listenerCalls.at(-1)?.trackedAuthConfigIds).toEqual([])
+    })
+
+    it('stops reporting the id as live after an early close so the listener ends its acceptance window', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await initiateSaml(result)
+      expect(listenerCalls.at(-1)?.liveAuthConfigIds).toEqual(['auth-1'])
+
+      act(() => {
+        lastWatcherOptions().onClosedEarly()
+      })
+
+      expect(listenerCalls.at(-1)?.liveAuthConfigIds).toEqual([])
+    })
+
+    it('clears the closed flag and the old watcher when the user signs in again', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await initiateSaml(result)
+      act(() => {
+        lastWatcherOptions().onClosedEarly()
+      })
+      stopWatcher.mockClear()
+
+      mockPost.mockResolvedValueOnce({
+        json: async () => ({ auth_url: 'https://idp.example.com/saml/start-2' }),
+      })
+      await act(async () => {
+        await result.current.initiate('mcp-1')
+      })
+
+      expect(result.current.rows[0]).toEqual(
+        expect.objectContaining({
+          status: 'authenticating',
+          error_context: null,
+          sign_in_window_closed: false,
+        })
+      )
+      expect(mockWatchSignInWindow).toHaveBeenCalledTimes(2)
+    })
+
+    it('stops the previous watcher before watching a re-authentication of the same id', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await initiateSaml(result)
+      act(() => {
+        listenerHandlers.onTimeout?.('auth-1')
+      })
+
+      mockPost.mockResolvedValueOnce({
+        json: async () => ({ auth_url: 'https://idp.example.com/saml/start-2' }),
+      })
+      await act(async () => {
+        await result.current.initiate('mcp-1')
+      })
+
+      expect(stopWatcher).toHaveBeenCalledTimes(1)
+      expect(mockWatchSignInWindow).toHaveBeenCalledTimes(2)
+    })
+
+    it('stops the watcher when a pending row is cancelled', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await initiateSaml(result)
+
+      act(() => {
+        result.current.cancel('mcp-1')
+      })
+
+      expect(stopWatcher).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops every watcher when the rows are cleared', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await initiateSaml(result)
+
+      act(() => {
+        result.current.clearRows()
+      })
+
+      expect(stopWatcher).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops every watcher when a new auth-required error replaces the rows', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result } = renderHook(() => useMCPAuthPrompt({ onAllAuthenticated: vi.fn() }))
+      await initiateSaml(result)
+
+      await act(async () => {
+        await result.current.handleAuthRequiredError(authRequiredResponse([oauth2Server]))
+      })
+
+      expect(stopWatcher).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops every watcher on unmount', async () => {
+      mockOpenSignInWindow.mockReturnValue(openedResult)
+      const { result, unmount } = renderHook(() =>
+        useMCPAuthPrompt({ onAllAuthenticated: vi.fn() })
+      )
+      await initiateSaml(result)
+
+      unmount()
+
+      expect(stopWatcher).toHaveBeenCalledTimes(1)
+    })
   })
 })
