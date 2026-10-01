@@ -17,28 +17,13 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-import { appInfoStore, hash } from '@/store/appInfo'
+import { appInfoStore } from '@/store/appInfo'
 
 import Banner from '../Banner'
 
-vi.mock('@/store/appInfo', () => {
-  const hash = (str: string): string => {
-    let h = 0
-    for (let i = 0; i < str.length; i += 1) {
-      h = h * 32 - h + str.charCodeAt(i)
-      h = Math.trunc(h)
-    }
-    return Math.abs(h).toString(36)
-  }
-  return {
-    appInfoStore: {
-      configs: [],
-      dismissAdminBanner: vi.fn(),
-    },
-    BANNER_SHOWN_STORAGE_KEY_PREFIX: 'bannerShown-',
-    hash,
-  }
-})
+vi.mock('@/store/appInfo', () => ({
+  appInfoStore: { configs: [] },
+}))
 
 const setBanner = (config: { message?: string; linkLabel?: string; linkRoute?: string }) => {
   appInfoStore.configs = [
@@ -119,6 +104,17 @@ describe('Banner', () => {
     it('does not show banner if already closed', () => {
       const message = 'Already closed message'
       setBanner({ message })
+
+      // Calculate the correct hash for the message
+      const hash = (str: string): string => {
+        let hash = 0
+        for (let i = 0; i < str.length; i += 1) {
+          const char = str.charCodeAt(i)
+          hash = hash * 32 - hash + char
+          hash = Math.trunc(hash)
+        }
+        return Math.abs(hash).toString(36)
+      }
 
       // Simulate banner was already closed
       const storageKey = 'bannerShown-' + hash(message)
@@ -251,7 +247,7 @@ describe('Banner', () => {
       expect(screen.getByRole('link', { name: 'Review Terms and Conditions' })).toBeInTheDocument()
     })
 
-    it('calls dismissAdminBanner when the close button is clicked', () => {
+    it('uses only the message to determine the dismissal storage key', () => {
       const message = 'Terms have been updated.'
       setBanner({
         message,
@@ -263,7 +259,16 @@ describe('Banner', () => {
       const closeButton = container.querySelector('button[aria-label="Close"]')
       fireEvent.click(closeButton!)
 
-      expect(appInfoStore.dismissAdminBanner).toHaveBeenCalled()
+      const hash = (str: string): string => {
+        let value = 0
+        for (let i = 0; i < str.length; i += 1) {
+          value = value * 32 - value + str.charCodeAt(i)
+          value = Math.trunc(value)
+        }
+        return Math.abs(value).toString(36)
+      }
+
+      expect(localStorage.setItem).toHaveBeenCalledWith(`bannerShown-${hash(message)}`, 'true')
     })
   })
 

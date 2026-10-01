@@ -79,7 +79,6 @@ vi.mock('@/components/Onboarding', () => ({
 
 vi.mock('@/components/appLevel/AutoPopupManager', () => ({ default: () => null }))
 vi.mock('@/components/appLevel/Banner', () => ({ default: () => null }))
-vi.mock('@/components/appLevel/ReleaseNotificationBar', () => ({ default: () => null }))
 vi.mock('@/components/appLevel/Gradient', () => ({ default: () => null }))
 vi.mock('@/components/appLevel/SessionExpiredPopup', () => ({ default: () => null }))
 vi.mock('@/components/appLevel/ToastContainer', () => ({ default: () => null }))

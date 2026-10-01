@@ -50,18 +50,6 @@ const TOOL_CONFIG_FIELD_MAP: Record<string, { credentialType: string; fields: st
   sharepointconfig: { credentialType: 'sharepoint', fields: ['url'] },
 }
 
-export const DISMISSED_RELEASE_BAR_KEY = 'codemie-dismissed-release-bar'
-export const BANNER_SHOWN_STORAGE_KEY_PREFIX = 'bannerShown-'
-
-export const hash = (str: string): string => {
-  let hash = 0
-  for (let i = 0; i < str.length; i += 1) {
-    const char = str.charCodeAt(i)
-    hash = hash * 32 - hash + char
-    hash = Math.trunc(hash)
-  }
-  return Math.abs(hash).toString(36)
-}
 const ONBOARDING_COMPLETED_KEY = 'codemie-onboarding-completed'
 const QUICK_ACTIONS_COLLAPSED_KEY = 'codemie-quick-actions-collapsed'
 const NAVIGATION_EXPANDED_KEY = 'codemie-navigation-expanded'
@@ -124,12 +112,6 @@ export interface AppInfoStoreType {
   toggleSidebar: () => void
   setIsSidebarExpanded: () => void
   setSidebarExpanded: (expanded: boolean) => void
-  dismissedReleaseBarVersion: string
-  isAdminBannerDismissed: boolean
-  isAdminBannerActive: (configsList?: ConfigItem[]) => boolean
-  isReleaseBarDismissed: (version: string) => boolean
-  dismissReleaseBar: (version: string) => void
-  dismissAdminBanner: (dismissedMessage?: string) => void
 }
 
 function extractConfigEntry(
@@ -155,16 +137,6 @@ function extractConfigEntry(
       placeholders[`${mapping.credentialType}.${fieldName}`] = placeholderVal
     }
   }
-}
-
-function getBannerConfigSettings(
-  configs: readonly ConfigItem[] | undefined
-): ConfigItem['settings'] | null {
-  if (!configs) return null
-  const item = Array.isArray(configs)
-    ? configs.find((i: any) => i.id === CONFIG_KEYS.BANNER)
-    : Object.values(configs).find((i: any) => i.id === CONFIG_KEYS.BANNER)
-  return item?.settings ?? null
 }
 
 export const appInfoStore = proxy<AppInfoStoreType>({
@@ -226,8 +198,6 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   fileDatasourceMaxUploadCount: DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT,
   appReleases: [],
   viewedAppReleaseVersion: '',
-  dismissedReleaseBarVersion: localStorage.getItem(DISMISSED_RELEASE_BAR_KEY) ?? '',
-  isAdminBannerDismissed: false,
   llmModels: [],
   llmRouters: [],
   imageGenerationModels: [],
@@ -312,35 +282,6 @@ export const appInfoStore = proxy<AppInfoStoreType>({
         last_viewed_release_version: version,
       })
       .catch((e) => console.error('Failed to save release version', e))
-  },
-
-  isAdminBannerActive(configsList?: ConfigItem[]): boolean {
-    const cfgs = configsList ?? this.configs
-    const settings = getBannerConfigSettings(cfgs)
-    const isEnabled = Boolean(settings?.enabled)
-    const message = isEnabled ? settings?.message ?? '' : ''
-    if (!message) return false
-    const storageKey = BANNER_SHOWN_STORAGE_KEY_PREFIX + hash(message)
-    return localStorage.getItem(storageKey) !== 'true' && !this.isAdminBannerDismissed
-  },
-
-  isReleaseBarDismissed(version: string): boolean {
-    return this.dismissedReleaseBarVersion === version
-  },
-
-  dismissReleaseBar(version: string) {
-    localStorage.setItem(DISMISSED_RELEASE_BAR_KEY, version)
-    this.dismissedReleaseBarVersion = version
-  },
-
-  dismissAdminBanner(dismissedMessage?: string) {
-    const settings = getBannerConfigSettings(this.configs)
-    const message = dismissedMessage ?? (settings?.enabled ? settings.message ?? '' : '')
-    if (message) {
-      const storageKey = BANNER_SHOWN_STORAGE_KEY_PREFIX + hash(message)
-      localStorage.setItem(storageKey, 'true')
-    }
-    this.isAdminBannerDismissed = true
   },
 
   isAppReleaseNew() {

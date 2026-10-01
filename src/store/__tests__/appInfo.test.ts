@@ -95,8 +95,7 @@ vi.mock('@/configs/releaseNotes.json', () => ({
 }))
 
 // Import after mock so the store picks up the mocked api
-const { appInfoStore, DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT, DISMISSED_RELEASE_BAR_KEY } =
-  await import('@/store/appInfo')
+const { appInfoStore, DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT } = await import('@/store/appInfo')
 const { getConfigItemSettings } = await import('@/utils/settings')
 
 const okResponse = (data: unknown) => ({
@@ -578,60 +577,5 @@ describe('appInfoStore customer config refetch', () => {
     await appInfoStore.fetchCustomerConfig()
 
     expect(getConfigItemSettings(appInfoStore.configs, 'chatDisclaimer')).toBeNull()
-  })
-
-  describe('release bar and admin banner dismissal state', () => {
-    beforeEach(() => {
-      localStorage.clear()
-      appInfoStore.configs = []
-      appInfoStore.dismissedReleaseBarVersion = ''
-      appInfoStore.isAdminBannerDismissed = false
-    })
-
-    it('correctly tracks and dismisses release bar version in store and localStorage', () => {
-      expect(appInfoStore.isReleaseBarDismissed('2.46.0')).toBe(false)
-
-      appInfoStore.dismissReleaseBar('2.46.0')
-
-      expect(appInfoStore.dismissedReleaseBarVersion).toBe('2.46.0')
-      expect(appInfoStore.isReleaseBarDismissed('2.46.0')).toBe(true)
-      expect(localStorage.getItem(DISMISSED_RELEASE_BAR_KEY)).toBe('2.46.0')
-    })
-
-    it('determines isAdminBannerActive based on message, dismissal, and localStorage', () => {
-      expect(appInfoStore.isAdminBannerActive()).toBe(false)
-
-      appInfoStore.configs = [
-        { id: 'banner', settings: { enabled: true, message: 'Scheduled maintenance' } },
-      ]
-      expect(appInfoStore.isAdminBannerActive()).toBe(true)
-
-      appInfoStore.dismissAdminBanner()
-      expect(appInfoStore.isAdminBannerDismissed).toBe(true)
-      expect(appInfoStore.isAdminBannerActive()).toBe(false)
-    })
-
-    it('returns false for isAdminBannerActive if banner is disabled', () => {
-      appInfoStore.configs = [
-        { id: 'banner', settings: { enabled: false, message: 'Scheduled maintenance' } },
-      ]
-      expect(appInfoStore.isAdminBannerActive()).toBe(false)
-    })
-
-    it('detects previously dismissed banner in localStorage', () => {
-      appInfoStore.configs = [
-        { id: 'banner', settings: { enabled: true, message: 'Scheduled maintenance' } },
-      ]
-      appInfoStore.dismissAdminBanner()
-
-      appInfoStore.isAdminBannerDismissed = false
-      expect(appInfoStore.isAdminBannerActive()).toBe(false)
-    })
-
-    it('dismissAdminBanner handles empty message gracefully', () => {
-      appInfoStore.configs = []
-      appInfoStore.dismissAdminBanner()
-      expect(appInfoStore.isAdminBannerDismissed).toBe(true)
-    })
   })
 })

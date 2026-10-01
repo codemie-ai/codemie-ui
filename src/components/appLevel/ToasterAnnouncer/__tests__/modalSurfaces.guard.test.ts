@@ -53,10 +53,7 @@ const collectTsx = (dir: string, found: string[] = []): string[] => {
 describe('modal surfaces host the live region', () => {
   it('every component that opens a modal renders <ModalAnnouncerHost />', () => {
     const offenders = collectTsx(SRC)
-      .map((path) => ({
-        path: relative(SRC, path).replace(/\\/g, '/'),
-        source: readFileSync(path, 'utf-8'),
-      }))
+      .map((path) => ({ path: relative(SRC, path), source: readFileSync(path, 'utf-8') }))
       .filter(({ path }) => !EXEMPT.some((dir) => path.startsWith(dir)))
       .filter(({ source }) => MODAL_MARKERS.some((marker) => marker.test(source)))
       .filter(({ source }) => !source.includes('ModalAnnouncerHost'))
@@ -69,10 +66,7 @@ describe('modal surfaces host the live region', () => {
   it('recognises the surfaces that already carry the host', () => {
     // Guards the guard: a marker list that matched nothing would pass the test above vacuously.
     const declaring = collectTsx(SRC)
-      .map((path) => ({
-        path: relative(SRC, path).replace(/\\/g, '/'),
-        source: readFileSync(path, 'utf-8'),
-      }))
+      .map((path) => ({ path: relative(SRC, path), source: readFileSync(path, 'utf-8') }))
       .filter(({ source }) => MODAL_MARKERS.some((marker) => marker.test(source)))
       .map(({ path }) => path)
 
