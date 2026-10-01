@@ -117,7 +117,7 @@ const NavigationLink: FC<NavigationLinkProps> = ({ item, isBottomSection }) => {
       {item.badge && (
         <span
           className={cn(
-            'absolute right-[5px] px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-specific-navigation-badge text-text-specific-navigation-badge leading-none',
+            'absolute right-1 px-1 py-[3px] rounded text-[9px] font-semibold bg-surface-specific-navigation-badge text-text-specific-navigation-badge leading-none',
             'transition-opacity duration-200 ease-in-out transform-gpu',
             navigationExpanded ? 'opacity-100' : 'opacity-0'
           )}
