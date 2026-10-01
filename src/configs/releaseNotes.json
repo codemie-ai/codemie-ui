@@ -65,17 +65,6 @@
               "link": "https://jiraeu.epam.com/browse/EPMCDME-15211"
             }
           ]
-        },
-        {
-          "title": "Release notification moved to the top bar",
-          "description": "Replaces the “New CodeMie Release” popup with a top-bar notification.",
-          "issues": [
-            {
-              "key": "EPMCDME-12330",
-              "type": "STORY",
-              "link": "https://jiraeu.epam.com/browse/EPMCDME-12330"
-            }
-          ]
         }
       ]
     },
