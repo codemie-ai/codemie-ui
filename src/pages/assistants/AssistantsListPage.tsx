@@ -83,22 +83,46 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
     router.push({ name: NEW_REMOTE_ASSISTANT })
   }, [router])
 
+  const isRemoteAssistantEnabled = isConfigItemEnabled(appInfo.configs, 'remoteAssistant')
+
   const headerActions = React.useMemo(
     () => (
-      <div className="flex gap-3">
-        <Button type="primary" onClick={handleCreateAssistant} size={ButtonSize.MEDIUM}>
+      <div
+        className={cn('flex gap-3', {
+          // On phones both actions share one row in equal columns, with the shorter labels below.
+          'max-sm:grid max-sm:w-full max-sm:grid-cols-2 max-sm:gap-2': isRemoteAssistantEnabled,
+        })}
+      >
+        <Button
+          type="primary"
+          onClick={handleCreateAssistant}
+          size={ButtonSize.MEDIUM}
+          aria-label="Create Assistant"
+        >
           <PlusIcon />
-          Create Assistant
+          <span>
+            <span className={cn({ 'max-sm:hidden': isRemoteAssistantEnabled })}>Create </span>
+            {'Assistant'}
+          </span>
         </Button>
-        {isConfigItemEnabled(appInfo.configs, 'remoteAssistant') && (
-          <Button type="primary" size={ButtonSize.MEDIUM} onClick={handleCreateRemoteAssistant}>
+        {isRemoteAssistantEnabled && (
+          <Button
+            type="primary"
+            size={ButtonSize.MEDIUM}
+            onClick={handleCreateRemoteAssistant}
+            aria-label="Create Remote Assistant"
+          >
             <PlusIcon />
-            Create Remote Assistant
+            <span>
+              <span className="max-sm:hidden">Create </span>
+              {'Remote'}
+              <span className="max-sm:hidden"> Assistant</span>
+            </span>
           </Button>
         )}
       </div>
     ),
-    [handleCreateAssistant, appInfo]
+    [handleCreateAssistant, handleCreateRemoteAssistant, isRemoteAssistantEnabled]
   )
 
   const reloadAssistants = () => {

@@ -23,7 +23,7 @@ interface AutoCredentialsSwitchProps {
 export const AutoCredentialsSwitch = ({ isAutoMode, onChange }: AutoCredentialsSwitchProps) => (
   <Switch
     label="Automatic Credentials Lookup"
-    labelClassName="font-geist-mono text-sm text-text-primary whitespace-nowrap"
+    labelClassName="font-geist-mono text-sm text-text-primary whitespace-nowrap max-sm:whitespace-normal"
     hint={
       isAutoMode
         ? 'Each user will use their own integration automatically. Recommended for shared assistants.'

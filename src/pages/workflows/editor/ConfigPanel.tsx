@@ -556,7 +556,9 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
                 NodeTypes.SUB_WORKFLOW,
               ].includes(selectedNode.type as any),
             'w-80 max-w-80': isCollapsed,
-          }
+          },
+          // Phones: a full-width sheet under the toolbar instead of a desktop-width panel.
+          'max-sm:left-4 max-sm:!w-auto max-sm:!max-w-none'
         )}
       >
         <div

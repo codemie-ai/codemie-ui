@@ -70,7 +70,9 @@ const EditorActions = ({
   const documentationUrl = getConfigItemSettings(configs, 'workflowDocumentation')?.url
 
   return (
-    <div className="absolute top-4 right-4 z-10 flex gap-4">
+    // Below lg the toolbar spans the editor and scrolls sideways when the buttons do not fit;
+    // the auto margin keeps them right-aligned whenever they do.
+    <div className="absolute top-4 right-4 z-10 flex gap-4 max-lg:left-4 max-lg:gap-2 max-lg:overflow-x-auto max-lg:[&>*]:shrink-0 max-lg:[&>:first-child]:ml-auto">
       {issues !== null && (
         <Button
           variant="delete"

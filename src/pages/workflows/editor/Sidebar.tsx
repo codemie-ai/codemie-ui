@@ -19,6 +19,7 @@ import SidebarSVG from '@/assets/icons/sidebar.svg?react'
 import Button from '@/components/Button'
 import { ButtonType } from '@/constants'
 import { useSubWorkflowEnabled } from '@/hooks/useFeatureFlags'
+import { matchesMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useDnD } from '@/hooks/useReactFlowDnD'
 import {
   NodeType,
@@ -80,7 +81,8 @@ const Sidebar: React.FC<NodeEditorSidebarProps> = ({ createState, disabled = fal
     (t) => t.type !== NodeTypes.SUB_WORKFLOW || isSubWorkflowEnabled
   )
   const [ghostType, setGhostType] = useState<NodeType>()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  // On small screens the open list would hide most of the canvas, so it starts collapsed.
+  const [isCollapsed, setIsCollapsed] = useState(matchesMobileLayout)
 
   const handleDragStart = (event, type: NodeType) => {
     if (disabled) return
@@ -90,6 +92,8 @@ const Sidebar: React.FC<NodeEditorSidebarProps> = ({ createState, disabled = fal
 
   const handleDragEnd = (position, type: NodeType) => {
     createState(type, position)
+    // Small screens: show the canvas with the new node instead of the list.
+    if (matchesMobileLayout()) setIsCollapsed(true)
   }
 
   const toggleSidebar = () => {
@@ -103,6 +107,8 @@ const Sidebar: React.FC<NodeEditorSidebarProps> = ({ createState, disabled = fal
         id="nodes-sidebar"
         className={cn(
           'absolute top-4 left-6 bg-surface-base-chat border-border-structural border-1 z-[10] rounded-lg',
+          // Below lg the editor toolbar spans the top row, so the list opens under it.
+          'max-lg:top-16 max-lg:left-4 max-lg:max-h-[calc(100%-5rem)] max-lg:overflow-y-auto',
           'transition-all duration-200',
           {
             'w-[190px] p-4 pb-2': !isCollapsed,

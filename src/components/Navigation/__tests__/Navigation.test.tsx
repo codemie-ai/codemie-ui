@@ -13,9 +13,11 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+import { mockMobileLayout } from '@/test-utils/mobileLayout'
 
 import Navigation from '../Navigation'
 
@@ -35,6 +37,8 @@ const {
       toggleNavigationExpanded: vi.fn(),
       configs: [],
       isConfigFetched: true,
+      mobileNavigationOpen: false,
+      setMobileNavigationOpen: vi.fn(),
     },
     mockApplicationsStore: {
       applications: [],
@@ -252,5 +256,63 @@ describe('Navigation', () => {
   it('does not show a NEW badge on AI Katas', () => {
     renderWithRouter(<Navigation />)
     expect(screen.getByText('AI Katas').closest('a')).not.toHaveTextContent('NEW')
+  })
+})
+
+describe('Navigation on mobile', () => {
+  let restoreLayout = () => {}
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    restoreLayout = mockMobileLayout().restore
+    mockAppInfoStore.mobileNavigationOpen = false
+    mockRouter.resolve.mockImplementation(({ path, name }: any) => ({
+      fullPath: `/${(path ?? name ?? '').replace(/^\//, '')}`,
+    }))
+  })
+
+  afterEach(() => {
+    restoreLayout()
+  })
+
+  it('renders nothing while the menu is closed (the top bar opens it)', () => {
+    const { container } = renderWithRouter(<Navigation />)
+
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('renders the full-screen, expanded menu while open', () => {
+    mockAppInfoStore.mobileNavigationOpen = true
+    const { container } = renderWithRouter(<Navigation />)
+
+    const menu = container.querySelector('header#navigation-menu')
+    expect(menu).toHaveClass('fixed')
+    expect(menu).not.toHaveClass('w-navbar')
+    expect(screen.getByRole('link', { name: 'Help' })).toBeInTheDocument()
+  })
+
+  it('closes the menu on Escape', () => {
+    mockAppInfoStore.mobileNavigationOpen = true
+    renderWithRouter(<Navigation />)
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    expect(mockAppInfoStore.setMobileNavigationOpen).toHaveBeenCalledWith(false)
+  })
+  it('leaves Escape to a dialog opened from the menu', () => {
+    mockAppInfoStore.mobileNavigationOpen = true
+    render(
+      <BrowserRouter>
+        <Navigation />
+        <dialog open>
+          <button type="button">Profile action</button>
+        </dialog>
+      </BrowserRouter>
+    )
+    screen.getByRole('button', { name: 'Profile action' }).focus()
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    expect(mockAppInfoStore.setMobileNavigationOpen).not.toHaveBeenCalled()
   })
 })

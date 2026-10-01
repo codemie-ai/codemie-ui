@@ -15,6 +15,8 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
+
 import { CHAT_CONFIG_DEFAULT_WIDTH } from './chatConfigWidth'
 
 import type { PanelImperativeHandle, PanelSize } from 'react-resizable-panels'
@@ -46,6 +48,10 @@ export const useChatConfigResize = ({
     [onClose, onOpen]
   )
 
+  // The mobile layout has no panel (the configuration is an overlay there), so switching back to
+  // the desktop layout mounts a fresh, collapsed panel that needs the same sync.
+  const isMobileLayout = useIsMobileLayout()
+
   useEffect(() => {
     const panel = panelRef.current
     if (!panel) return
@@ -55,7 +61,7 @@ export const useChatConfigResize = ({
     } else if (!isConfigVisible && !panel.isCollapsed()) {
       panel.collapse()
     }
-  }, [isConfigVisible])
+  }, [isConfigVisible, isMobileLayout])
 
   return { panelRef, handleResize }
 }

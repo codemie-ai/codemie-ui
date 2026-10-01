@@ -44,6 +44,7 @@ import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { FormIDs } from '@/constants/formIds'
 import { MAX_SKILLS_PER_ASSISTANT } from '@/constants/skills'
 import { useFeatureFlag, useRequestHedgingEnabled } from '@/hooks/useFeatureFlags'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import MissingIntegrationsModal from '@/pages/assistants/components/MissingIntegrationsModal'
 import {
@@ -221,6 +222,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     ref
   ) => {
     const [isRequestHedgingEnabled] = useRequestHedgingEnabled()
+    const isMobileLayout = useIsMobileLayout()
     const isCodemieAssistant = !assistant?.type || assistant.type === AssistantType.CODEMIE
     const { builtinSubagentsCatalog, getBuiltinSubagentsCatalog } = useSnapshot(assistantsStore)
     const toolPermissionsEnabled = isFeatureEnabled(FEATURE_FLAGS.TOOL_PERMISSIONS)
@@ -501,7 +503,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           name="tool_call_policy"
           control={control}
           render={({ field }) => (
-            <div className="flex flex-nowrap items-center gap-2">
+            <div className="flex flex-nowrap items-center gap-2 max-lg:flex-wrap">
               <span className="text-sm text-text-tertiary shrink-0">{TOOL_PERMISSIONS_LABEL}</span>
               <ToolCallPolicyDropdown
                 value={field.value as ToolCallPolicy}
@@ -611,7 +613,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           onSubmit={handleFormSubmit}
           className={cn(
             'relative flex flex-col gap-y-6 p-6 pb-10 w-full',
-            isChatConfig && 'pl-4 pr-2 pt-0 max-w-full'
+            isChatConfig ? 'pl-4 pr-2 pt-0 max-w-full' : 'max-lg:px-0'
           )}
         >
           {isChatConfig && (
@@ -639,7 +641,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             setAiGeneratedFieldMarkers={setAiGeneratedFieldMarkers}
             promptVariables={promptVariables}
             onNameChange={handleNameChange}
-            isCompactView={isChatConfig}
+            isCompactView={isChatConfig || isMobileLayout}
           />
 
           <InteractiveFeaturesAccordion control={control} />

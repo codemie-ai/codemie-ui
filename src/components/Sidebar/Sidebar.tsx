@@ -13,14 +13,16 @@
 // limitations under the License.
 //
 
-import { ReactNode, useState } from 'react'
+import { ReactNode, useRef, useState } from 'react'
 import { subscribe } from 'valtio'
 
+import { MOBILE_OVERLAY_CLASS_NAME } from '@/constants/mobileLayout'
 import { useTheme } from '@/hooks/useTheme'
 import { appInfoStore } from '@/store/appInfo'
 import { cn } from '@/utils/utils'
 
 import SidebarToggle from './SidebarToggle'
+import { useMobileSidebar } from './useMobileSidebar'
 
 interface SidebarProps {
   id?: string
@@ -54,6 +56,8 @@ const Sidebar = ({
 }: SidebarProps) => {
   const [isVisible, setIsVisible] = useState<boolean>(appInfoStore.sidebarExpanded)
   const { appearance } = useTheme()
+  const asideRef = useRef<HTMLElement>(null)
+  const { isMobileLayout, isMobileSidebarOpen } = useMobileSidebar(asideRef)
 
   subscribe(appInfoStore, () => {
     setIsVisible(appInfoStore.sidebarExpanded)
@@ -63,25 +67,32 @@ const Sidebar = ({
 
   return (
     <aside
+      ref={asideRef}
       id={id}
       className={cn(
-        'flex flex-col min-h-full',
-        showGradient && 'bg-sidebar-gradient',
-        'transition-all ease-in-out duration-150 overflow-x-hidden shrink-0',
-        {
-          'w-full h-full': fillContainer,
-          'w-sidebar max-w-sidebar': !fillContainer && isVisible,
-          'w-0': !fillContainer && !isVisible,
-          'border-r': isVisible,
-          'border-border-specific-sidebar': !appearance,
-          'border-border-structural': Boolean(appearance),
-        }
+        'flex flex-col',
+        isMobileLayout
+          ? [MOBILE_OVERLAY_CLASS_NAME, 'bg-surface-base-sidebar', !isMobileSidebarOpen && 'hidden']
+          : [
+              'min-h-full',
+              showGradient && 'bg-sidebar-gradient',
+              'transition-all ease-in-out duration-150 overflow-x-hidden shrink-0',
+              {
+                'w-full h-full': fillContainer,
+                'w-sidebar max-w-sidebar': !fillContainer && isVisible,
+                'w-0': !fillContainer && !isVisible,
+                'border-r': isVisible,
+                'border-border-specific-sidebar': !appearance,
+                'border-border-structural': Boolean(appearance),
+              },
+            ]
       )}
     >
       <div
         className={cn(
-          'pt-10 flex h-full flex-col',
-          fillContainer ? 'w-full' : 'min-w-sidebar w-sidebar max-w-sidebar'
+          'flex h-full flex-col',
+          isMobileLayout ? 'pt-6 w-full' : 'pt-10',
+          !isMobileLayout && (fillContainer ? 'w-full' : 'min-w-sidebar w-sidebar max-w-sidebar')
         )}
       >
         {!hideHeader && (
@@ -106,7 +117,7 @@ const Sidebar = ({
           {children}
         </div>
       </div>
-      <SidebarToggle />
+      {!isMobileLayout && <SidebarToggle />}
     </aside>
   )
 }

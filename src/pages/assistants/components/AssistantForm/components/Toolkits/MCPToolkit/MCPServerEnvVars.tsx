@@ -62,13 +62,14 @@ const MCPServerEnvVars: React.FC<MCPServerEnvVarsProps> = ({
       <div className="flex flex-col gap-3">
         {envVars.map((envVar) => (
           <div key={envVar.name} className="flex flex-col gap-1">
-            <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+            {/* Phones stack Key above Value, each at full width. */}
+            <div className="grid grid-cols-[auto_1fr] gap-4 items-start max-sm:grid-cols-1 max-sm:gap-3">
               {/* Key Column */}
-              <div className="flex flex-col gap-1 min-w-[200px]">
+              <div className="flex flex-col gap-1 min-w-[200px] max-sm:min-w-0">
                 <label className="text-sm font-medium text-text-quaternary">
                   Key{envVar.required && '*'}:
                 </label>
-                <div className="px-3 py-2 bg-surface-elevated border border-border-structural rounded-lg text-sm text-text-quaternary font-mono">
+                <div className="px-3 py-2 bg-surface-elevated border border-border-structural rounded-lg text-sm text-text-quaternary font-mono max-sm:break-all">
                   {envVar.name}
                 </div>
               </div>

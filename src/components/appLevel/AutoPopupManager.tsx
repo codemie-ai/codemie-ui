@@ -23,6 +23,7 @@ import OnboardingFlowCard from '@/components/Onboarding/OnboardingFlowCard'
 import Popup from '@/components/Popup'
 import { ButtonType } from '@/constants'
 import { HelpPageId, ROUTE_ID_TO_PAGE_ID } from '@/constants/helpLinks'
+import { matchesMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { onboardingStore } from '@/store/onboarding'
@@ -69,7 +70,9 @@ const AutoPopupManager: FC = () => {
     if (profileSettings === null && profileSettingsError === null) return
 
     if (!appInfoStore.isOnboardingCompleted() && userStore.isSSOUser()) {
-      onboardingStore.startFlow(NAVIGATION_INTRODUCTION_FLOW_ID)
+      // Tours point at the desktop layout (navigation rail, side panels): on a phone or tablet the
+      // introduction stays pending for the next desktop session.
+      if (!matchesMobileLayout()) onboardingStore.startFlow(NAVIGATION_INTRODUCTION_FLOW_ID)
       return
     }
 
@@ -92,6 +95,8 @@ const AutoPopupManager: FC = () => {
     }
     if (activePopup !== null) return
     if (!appInfoStore.isOnboardingCompleted() && userStore.isSSOUser()) return
+    // Page tours target the desktop layout too; the first visit is kept for a desktop session.
+    if (matchesMobileLayout()) return
 
     if (onboardingStore.isFirstPageVisit(currentPageId)) {
       onboardingStore.markPageVisited(currentPageId)

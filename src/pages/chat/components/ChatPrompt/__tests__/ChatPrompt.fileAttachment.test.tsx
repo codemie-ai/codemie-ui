@@ -231,4 +231,21 @@ describe('ChatPrompt file attachment gating', () => {
 
     expect(screen.getByTestId('file-count')).toHaveTextContent('0')
   })
+  it('starts with the attachments handed over after a layout switch', () => {
+    render(<ChatPrompt initialFiles={[{ fileName: 'a.txt', fileId: 'id-a.txt' } as any]} />)
+
+    expect(screen.getByTestId('file-count')).toHaveTextContent('1')
+  })
+
+  it('reports its attachments as they change', () => {
+    const onFilesChange = vi.fn()
+    render(<ChatPrompt onFilesChange={onFilesChange} />)
+    expect(onFilesChange).toHaveBeenLastCalledWith([])
+
+    act(() => {
+      mockEditorProps.current.onAddFiles([new File(['x'], 'a.txt')])
+    })
+
+    expect(onFilesChange).toHaveBeenLastCalledWith([{ fileName: 'a.txt', fileId: 'id-a.txt' }])
+  })
 })

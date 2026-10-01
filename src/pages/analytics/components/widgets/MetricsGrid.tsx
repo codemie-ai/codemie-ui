@@ -58,7 +58,8 @@ const MetricsGrid: FC<MetricsGridProps> = ({
   return (
     <div
       className={cn(
-        'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3',
+        // Two tiles per row even on phones, so a dashboard is not one long column of numbers.
+        'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-sm:gap-2',
         size === WidgetSize.HALF && !isExpanded && 'xl:grid-cols-3 lg:grid-cols-2',
         className
       )}

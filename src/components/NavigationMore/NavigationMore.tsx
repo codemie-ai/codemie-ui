@@ -16,6 +16,7 @@
 import {
   useFloating,
   offset,
+  flip,
   shift,
   autoPlacement,
   useDismiss,
@@ -31,6 +32,7 @@ import { Link } from 'react-router'
 
 import NavigationMoreSvg from '@/assets/icons/navigation-more.svg?react'
 import { useFocusReturn } from '@/hooks/useFocusReturn'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { cn } from '@/utils/utils'
 
 export interface NavigationItem {
@@ -110,11 +112,14 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   const hasMenuContent =
     Boolean(children) || (visibleItems?.some((item) => !isNavigationDivider(item)) ?? false)
 
+  const isMobileLayout = useIsMobileLayout()
+
   const { refs, floatingStyles, context } = useFloating({
     open: show,
     placement,
+    // A fixed side can run off a phone screen, so there the menu may flip to the other side.
     middleware: placement
-      ? [offset(4), shift({ padding: 8 })]
+      ? [offset(4), ...(isMobileLayout ? [flip()] : []), shift({ padding: 8 })]
       : [offset(4), autoPlacement({ alignment, autoAlignment }), shift({ padding: 8 })],
     onOpenChange: handleOpenChange,
     strategy: renderInRoot ? 'fixed' : 'absolute',

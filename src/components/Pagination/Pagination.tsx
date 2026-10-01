@@ -21,6 +21,7 @@ import ChevronRightSvg from '@/assets/icons/chevron-right.svg?react'
 import contentGradient from '@/assets/images/content-gradient.png'
 import Select from '@/components/form/Select/Select'
 import { DEFAULT_PAGINATION_OPTIONS } from '@/constants'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/utils/utils'
 
@@ -44,6 +45,7 @@ const Pagination: React.FC<PaginationProps> = ({
   responsive = false,
 }) => {
   const { isDark, appearance } = useTheme()
+  const isMobileLayout = useIsMobileLayout()
   const isContentGradientEnabled = appearance?.gradients ?? true
   const labelId = useId()
   const [currentPerPage, setCurrentPerPage] = useState<number | undefined>(perPage)
@@ -60,12 +62,15 @@ const Pagination: React.FC<PaginationProps> = ({
     setSpan(2)
   }, [responsive])
 
+  // Small screens show the responsive span, so the page buttons fit a phone-width footer.
+  const pageSpan = isMobileLayout ? 2 : span
+
   const pageNumbers = useMemo(() => {
     const numbers = Array.from({ length: totalPages }, (_, i) => i)
-    const minPage = Math.max(0, currentPage - span)
-    const maxPage = Math.min(totalPages, currentPage + span)
+    const minPage = Math.max(0, currentPage - pageSpan)
+    const maxPage = Math.min(totalPages, currentPage + pageSpan)
     return numbers.slice(minPage, maxPage)
-  }, [currentPage, totalPages, span])
+  }, [currentPage, totalPages, pageSpan])
 
   const hasFirstPage = pageNumbers.includes(0)
   const hasLastPage = pageNumbers.includes(totalPages - 1)
@@ -103,6 +108,8 @@ const Pagination: React.FC<PaginationProps> = ({
     <div
       className={cn(
         'flex items-center text-sm gap-2 border-t-1 border-border-structural bg-surface-base-primary bg-no-repeat bg-right-bottom',
+        // On small screens the page size moves to its own line rather than past the screen edge.
+        'max-lg:flex-wrap',
         responsive && 'flex-wrap',
         className
       )}
@@ -111,11 +118,14 @@ const Pagination: React.FC<PaginationProps> = ({
       }}
     >
       {pageNumbers.length > 1 && (
-        <nav aria-labelledby={labelId} className="flex items-center gap-2 flex-shrink-0">
-          <div id={labelId} className="text-text-quaternary text-h5 flex-shrink-0">
+        <nav
+          aria-labelledby={labelId}
+          className="flex items-center gap-2 flex-shrink-0 max-lg:shrink max-lg:min-w-0"
+        >
+          <div id={labelId} className="text-text-quaternary text-h5 flex-shrink-0 max-sm:sr-only">
             Page:
           </div>
-          <ul className="flex list-none gap-[4px] items-stretch h-[32px]">
+          <ul className="flex list-none gap-[4px] items-stretch h-[32px] max-lg:overflow-x-auto">
             {currentPage !== 0 && (
               <li className="flex">
                 <button
@@ -199,7 +209,9 @@ const Pagination: React.FC<PaginationProps> = ({
 
       {perPage && (
         <div className={cn('flex items-center justify-center ml-auto flex-shrink-0')}>
-          <div className="text-text-quaternary text-h5 mr-3.5 flex-shrink-0">Show:</div>
+          <div className="text-text-quaternary text-h5 mr-3.5 flex-shrink-0 max-sm:sr-only">
+            Show:
+          </div>
           <Select
             id="per-page"
             name="perPage"

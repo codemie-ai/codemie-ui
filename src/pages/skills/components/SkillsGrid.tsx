@@ -44,7 +44,7 @@ const SkillsGrid: React.FC<SkillsGridProps> = ({
 
   if (!skills || skills.length === 0) {
     return (
-      <div className="flex justify-center m-40">
+      <div className="flex justify-center m-40 max-lg:mx-0">
         <h2>No skills found.</h2>
       </div>
     )

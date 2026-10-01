@@ -29,6 +29,8 @@ const SidebarNode = ({ template, onDragStart }: SidebarNodeProps) => {
       key={template.type}
       className={cn(
         'cursor-grab active:cursor-grabbing w-full',
+        // Touch screens would otherwise turn the drag into a scroll gesture and cancel it.
+        'max-lg:touch-none',
         'transition-all group duration-100 ',
         'rounded-[9px] border-1 border-transparent hover:bg-surface-specific-dropdown-hover'
       )}

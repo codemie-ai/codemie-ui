@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { PanelImperativeHandle, PanelSize } from 'react-resizable-panels'
 import { useSnapshot } from 'valtio'
 
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
 
@@ -123,6 +124,10 @@ export const useChatSidebarResize = () => {
     [userId]
   )
 
+  // The mobile layout has no panel (the chat list is an overlay there), so switching back to the
+  // desktop layout mounts a fresh, expanded panel that needs the same sync.
+  const isMobileLayout = useIsMobileLayout()
+
   useEffect(() => {
     const panel = panelRef.current
     if (!panel) return
@@ -135,7 +140,7 @@ export const useChatSidebarResize = () => {
     } else if (!sidebarExpanded && !panel.isCollapsed()) {
       panel.collapse()
     }
-  }, [sidebarExpanded])
+  }, [sidebarExpanded, isMobileLayout])
 
   return { panelRef, initialWidth, handleResize }
 }

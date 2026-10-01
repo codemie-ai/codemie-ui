@@ -15,7 +15,6 @@
 
 import { FC } from 'react'
 import { NavLink, useMatch, useMatches } from 'react-router'
-import { useSnapshot } from 'valtio'
 
 import ApplicationSvg from '@/assets/icons/applications.svg?react'
 import AssistantSvg from '@/assets/icons/assistant.svg?react'
@@ -30,12 +29,13 @@ import SkillSvg from '@/assets/icons/lightning-duotone.svg?react'
 import PaperSvg from '@/assets/icons/paper.svg?react'
 import StarFilledSvg from '@/assets/icons/star-filled.svg?react'
 import WorkflowSvg from '@/assets/icons/workflow.svg?react'
-import { appInfoStore } from '@/store/appInfo'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { cn } from '@/utils/utils'
 
 import { IconType } from '../constants'
+import { useNavigationExpanded } from '../useNavigationExpanded'
 
-const iconComponents = {
+export const iconComponents = {
   [IconType.CHAT]: ChatSvg,
   [IconType.ASSISTANT]: AssistantSvg,
   [IconType.SKILL]: SkillSvg,
@@ -65,7 +65,10 @@ interface NavigationLinkProps {
 }
 
 const NavigationLink: FC<NavigationLinkProps> = ({ item, isBottomSection }) => {
-  const { navigationExpanded } = useSnapshot(appInfoStore)
+  const navigationExpanded = useNavigationExpanded()
+  const isMobileLayout = useIsMobileLayout()
+  // The bottom section is styled for the rail's gradient; the mobile menu has a plain background.
+  const hasBottomStyle = isBottomSection && !isMobileLayout
   const matches = useMatches()
   const isActiveRoute = useMatch(`${item.route}/*`) && matches.at(-1)?.id !== 'start-assistant-chat'
 
@@ -84,10 +87,10 @@ const NavigationLink: FC<NavigationLinkProps> = ({ item, isBottomSection }) => {
         'gap-4',
         isActiveRoute &&
           'bg-surface-specific-navigation-link text-text-specific-navigation-link-hover',
-        isBottomSection
+        hasBottomStyle
           ? 'text-text-specific-bottom-navigation-label hover:bg-surface-specific-bottom-navigation-label gap-5'
           : 'hover:text-text-specific-navigation-link-hover',
-        isBottomSection && isActiveRoute && 'bg-surface-specific-bottom-navigation-label'
+        hasBottomStyle && isActiveRoute && 'bg-surface-specific-bottom-navigation-label'
       )}
     >
       {Icon && (
@@ -95,10 +98,10 @@ const NavigationLink: FC<NavigationLinkProps> = ({ item, isBottomSection }) => {
           aria-hidden="true"
           className={cn(
             'min-w-4.5 flex-shrink-0 transition-colors duration-100',
-            isBottomSection
+            hasBottomStyle
               ? ''
               : 'group-hover:text-text-specific-navigation-icon-hover text-text-specific-navigation-icon',
-            !isBottomSection && isActiveRoute ? 'text-text-specific-navigation-icon-hover' : ''
+            !hasBottomStyle && isActiveRoute ? 'text-text-specific-navigation-icon-hover' : ''
           )}
         >
           <Icon />

@@ -107,7 +107,7 @@ const ToolCallPolicyDropdown: FC<ToolCallPolicyDropdownProps> = ({
     return (
       <div className="flex items-center gap-1.5">
         <Icon className="w-3.5 h-3.5 shrink-0" />
-        <span className={cn(isToolbar && 'text-xs font-medium')}>{label}</span>
+        <span className={cn(isToolbar && 'text-xs font-medium max-lg:sr-only')}>{label}</span>
       </div>
     )
   }

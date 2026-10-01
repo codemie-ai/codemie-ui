@@ -45,6 +45,8 @@ const TabsButton = <TabId extends string>({
       isActive && 'border-text-primary hover:border-text-primary font-semibold cursor-default',
       isEmbedded && 'max-h-[600px]',
       isSmall && 'p-2.5 text-xs',
+      // Labels stay on one line on small screens; the tab strip scrolls instead.
+      'max-lg:whitespace-nowrap max-lg:shrink-0',
       className
     )}
   >

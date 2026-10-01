@@ -13,10 +13,11 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
-import { afterEach, describe, it, expect } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, it, expect } from 'vitest'
 
 import { appInfoStore } from '@/store/appInfo'
+import { mockMobileLayout } from '@/test-utils/mobileLayout'
 
 import Sidebar from '../Sidebar'
 
@@ -63,5 +64,78 @@ describe('Sidebar', () => {
     expect(aside).not.toHaveClass('w-sidebar')
     expect(aside).not.toHaveClass('max-w-sidebar')
     expect(aside).not.toHaveClass('w-0')
+  })
+})
+
+describe('Sidebar on mobile', () => {
+  let restoreLayout = () => {}
+
+  beforeEach(() => {
+    restoreLayout = mockMobileLayout().restore
+  })
+
+  afterEach(() => {
+    cleanup()
+    restoreLayout()
+    appInfoStore.mobileSidebarOpen = false
+    appInfoStore.pageSidebarCount = 0
+  })
+
+  it('registers with the top bar and stays hidden until opened', () => {
+    const { container, unmount } = render(<Sidebar title="Assistants" />)
+
+    expect(appInfoStore.pageSidebarCount).toBe(1)
+    expect(container.querySelector('aside')).toHaveClass('hidden')
+    expect(screen.queryByRole('button', { name: /sidebar/i })).not.toBeInTheDocument()
+
+    unmount()
+    expect(appInfoStore.pageSidebarCount).toBe(0)
+  })
+
+  it('shows the overlay while open and closes it on Escape', () => {
+    appInfoStore.mobileSidebarOpen = true
+    const { container } = render(<Sidebar title="Assistants" />)
+
+    expect(container.querySelector('aside')).not.toHaveClass('hidden')
+    expect(container.querySelector('aside')).toHaveClass('fixed')
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(appInfoStore.mobileSidebarOpen).toBe(false)
+  })
+  it('makes the page behind the open overlay inert', () => {
+    appInfoStore.mobileSidebarOpen = true
+    const { rerender } = render(
+      <div data-app-content>
+        <Sidebar title="Assistants" />
+        <main>page content</main>
+      </div>
+    )
+    expect(screen.getByRole('main', { hidden: true })).toHaveAttribute('inert')
+
+    appInfoStore.mobileSidebarOpen = false
+    rerender(
+      <div data-app-content>
+        <Sidebar title="Assistants" />
+        <main>page content</main>
+      </div>
+    )
+    expect(screen.getByRole('main')).not.toHaveAttribute('inert')
+  })
+
+  it('leaves Escape to a dialog opened over the overlay', () => {
+    appInfoStore.mobileSidebarOpen = true
+    render(
+      <>
+        <Sidebar title="Assistants" />
+        <dialog open>
+          <button type="button">Rename</button>
+        </dialog>
+      </>
+    )
+    screen.getByRole('button', { name: 'Rename' }).focus()
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    expect(appInfoStore.mobileSidebarOpen).toBe(true)
   })
 })

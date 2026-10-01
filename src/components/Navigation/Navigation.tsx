@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
+import { MOBILE_OVERLAY_CLASS_NAME } from '@/constants/mobileLayout'
 import { ANALYTICS, SCHEDULERS } from '@/constants/routes'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 import {
   useFeatureFlag,
   useFavoritesEnabled,
@@ -24,12 +26,14 @@ import {
   usePinnedAssistantsEnabled,
   useSchedulersViewEnabled,
 } from '@/hooks/useFeatureFlags'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useTheme } from '@/hooks/useTheme'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { applicationsStore } from '@/store/applications'
 import { chatsStore } from '@/store/chats'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
+import { isNestedLayerFocused } from '@/utils/mobileOverlay'
 import { cn } from '@/utils/utils'
 
 import { IconType } from './constants'
@@ -39,6 +43,7 @@ import NavigationPinnedSection from './NavigationPinnedSection/NavigationPinnedS
 import NavigationProfile from './NavigationProfile'
 import { NavigationLinkItem } from './NavigationSection/NavigationLink'
 import NavigationSection from './NavigationSection/NavigationSection'
+import { useNavigationExpanded } from './useNavigationExpanded'
 
 interface NavigationProps {
   infoMessageVisible?: boolean
@@ -47,13 +52,21 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = () => {
   const router = useVueRouter()
   const { isDark, appearance } = useTheme()
-  const { navigationExpanded } = useSnapshot(appInfoStore)
+  const { mobileNavigationOpen } = useSnapshot(appInfoStore)
+  const isMobileLayout = useIsMobileLayout()
 
   const showGradient = appearance?.gradients ?? true
   const showBorder = appearance?.navigationBorder ?? !isDark
   const { applications } = useSnapshot(applicationsStore)
 
-  const isExpanded = navigationExpanded
+  const isExpanded = useNavigationExpanded()
+  const isMobileMenuOpen = isMobileLayout && mobileNavigationOpen
+
+  // A dialog or menu opened from the menu (e.g. the profile) closes first on Escape.
+  const closeMobileMenu = useCallback(() => {
+    if (!isNestedLayerFocused()) appInfoStore.setMobileNavigationOpen(false)
+  }, [])
+  useEscapeKey(closeMobileMenu, isMobileMenuOpen)
 
   const toggleNavigation = () => {
     appInfoStore.toggleNavigationExpanded()
@@ -175,20 +188,28 @@ const Navigation: React.FC<NavigationProps> = () => {
     backgroundClass = isDark ? 'bg-gradient-to-b from-black to-black/15' : ''
   }
 
+  // On mobile the navigation is the menu opened from the top bar, which also holds the logo.
+  if (isMobileLayout && !mobileNavigationOpen) return null
+
   return (
     <header
+      id="navigation-menu"
       className={cn(
-        'flex flex-col h-full',
-        'relative px-2 pt-6 pb-4 transition-width duration-200 ease-in-out',
-        'will-change-[width] transform-gpu',
-        isExpanded ? 'min-w-navbar-expanded w-navbar-expanded' : 'w-navbar',
-        backgroundClass,
-        showBorder && 'border-r border-border-structural'
+        'flex flex-col',
+        isMobileLayout
+          ? [MOBILE_OVERLAY_CLASS_NAME, 'overflow-y-auto px-2 pt-2 pb-4 bg-surface-base-navigation']
+          : [
+              'h-full relative px-2 pt-6 pb-4 transition-width duration-200 ease-in-out',
+              'will-change-[width] transform-gpu',
+              isExpanded ? 'min-w-navbar-expanded w-navbar-expanded' : 'w-navbar',
+              backgroundClass,
+              showBorder && 'border-r border-border-structural',
+            ]
       )}
       data-onboarding="navigation-menu"
     >
       <div className="flex flex-col px-2">
-        <NavigationLogo isExpanded={isExpanded} onClick={handleCreateChat} />
+        {!isMobileLayout && <NavigationLogo isExpanded={isExpanded} onClick={handleCreateChat} />}
         <NavigationSection items={upperItems} className="mt-4" />
         <div className="h-px my-4 bg-border-primary mx-2" />
         <NavigationSection items={upperSecondaryItems} />
@@ -203,12 +224,17 @@ const Navigation: React.FC<NavigationProps> = () => {
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             <NavigationPinnedSection />
           </div>
-          <div className={cn('mb-2 h-px mx-2', appearance ? 'bg-border-primary' : 'bg-white/20')} />
+          <div
+            className={cn(
+              'mb-2 h-px mx-2',
+              appearance || isMobileLayout ? 'bg-border-primary' : 'bg-white/20'
+            )}
+          />
           <NavigationSection isBottomSection items={lowerItems} />
         </nav>
 
         <NavigationProfile isExpanded={isExpanded} />
-        <NavigationExpandButton onClick={toggleNavigation} />
+        {!isMobileLayout && <NavigationExpandButton onClick={toggleNavigation} />}
       </div>
     </header>
   )

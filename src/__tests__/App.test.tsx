@@ -16,6 +16,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { mockMobileLayout } from '@/test-utils/mobileLayout'
+
 import App from '../App'
 
 vi.hoisted(() => vi.resetModules())
@@ -27,6 +29,7 @@ const { mockUserStore, mockAppInfoStore } = vi.hoisted(() => {
     },
     mockAppInfoStore: {
       isConfigFetched: false,
+      mobileNavigationOpen: false,
     },
   }
 })
@@ -86,6 +89,7 @@ vi.mock('@/components/appLevel/UnsavedChangesPopup', () => ({ UnsavedChangesPopu
 vi.mock('@/components/FloatingKataWindow', () => ({ default: () => null }))
 vi.mock('@/components/HelpLauncher', () => ({ HelpPanel: () => null }))
 vi.mock('@/components/Navigation/Navigation', () => ({ default: () => null }))
+vi.mock('@/components/Navigation/MobileTopBar', () => ({ default: () => null }))
 vi.mock('@/components/Spinner', () => ({ default: () => <div data-testid="spinner" /> }))
 
 vi.mock('primereact/api', () => ({
@@ -101,6 +105,7 @@ describe('App', () => {
     vi.clearAllMocks()
     mockUserStore.user = null
     mockAppInfoStore.isConfigFetched = false
+    mockAppInfoStore.mobileNavigationOpen = false
   })
 
   it('does not render the skip link while the app is loading (no user, config not fetched)', () => {
@@ -125,5 +130,28 @@ describe('App', () => {
     render(<App />)
 
     expect(screen.getByRole('link', { name: 'Skip to main content' })).toBeInTheDocument()
+  })
+  it('makes the page content inert while the mobile navigation menu covers it', () => {
+    const { restore } = mockMobileLayout()
+    mockUserStore.user = { id: 'u1' }
+    mockAppInfoStore.isConfigFetched = true
+    mockAppInfoStore.mobileNavigationOpen = true
+
+    try {
+      const { container } = render(<App />)
+      expect(container.querySelector('[data-app-content]')).toHaveAttribute('inert')
+    } finally {
+      restore()
+    }
+  })
+
+  it('keeps the page content interactive on desktop', () => {
+    mockUserStore.user = { id: 'u1' }
+    mockAppInfoStore.isConfigFetched = true
+    mockAppInfoStore.mobileNavigationOpen = true
+
+    const { container } = render(<App />)
+
+    expect(container.querySelector('[data-app-content]')).not.toHaveAttribute('inert')
   })
 })

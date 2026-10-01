@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "task": "Responsive phone and tablet adaptation of CodeMie UI following the Figma mobile section: mobile top bar and navigation overlay, page sidebars as overlays, tables as cards, small-screen dialogs, chat without resizable side panels, adapted forms, analytics, katas and login. Desktop (>= 1024px) must stay unchanged.",
+  "generated": "2026-09-25T15:12:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 21,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches the app shell, navigation, page sidebars, tables, dialogs, page header, cards and the chat page, plus page-level adjustments in assistants, skills, data sources, workflows, analytics, katas, settings and login. Needs new abstractions (mobile shell state, top bar, card list) and a second layout for shared components rendered on nearly every page."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Figma defines the mobile shell (top bar, navigation overlay, sidebar and right-panel overlays, card rows) and some screens; pages without designs (workflow editor, analytics widgets, katas, login) need assumptions, and the breakpoint that separates the two layouts is not specified."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "No responsive precedent in the codebase. Desktop must stay identical for about 50k users while shared components gain a mobile branch; window resizes and tablet rotations cross the breakpoint at runtime; Mobile Safari needs viewport, dvh and input-zoom handling; the global matchMedia test stub means existing tests only exercise desktop. UI-only, so rollback is a plain revert."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Expected 40+ modified files across components, pages, hooks, store and global styles, plus 4-6 new files (media-query hook, layout constants, top bar, card list)."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): shared foundations (Table, Sidebar, PageLayout, Popup, Card, Navigation) are rendered by nearly every page."
+  ],
+  "split_recommendation": null
+}

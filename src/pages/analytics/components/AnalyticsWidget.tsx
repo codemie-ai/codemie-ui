@@ -119,18 +119,24 @@ const AnalyticsWidget: FC<AnalyticsWidgetProps> = ({
   return (
     <div
       className={cn(
-        'bg-surface-base-secondary rounded-lg border border-border-specific-panel-outline p-6',
+        'bg-surface-base-secondary rounded-lg border border-border-specific-panel-outline p-6 max-sm:p-4',
         className
       )}
     >
-      <div className={cn('flex items-start justify-between', contentVisible && 'mb-4')}>
-        <div className="flex-1">
+      {/* Below lg the controls move under the title when both do not fit on one line. */}
+      <div
+        className={cn(
+          'flex items-start justify-between max-lg:flex-wrap max-lg:gap-x-4 max-lg:gap-y-3',
+          contentVisible && 'mb-4'
+        )}
+      >
+        <div className="flex-1 max-lg:min-w-48">
           <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
           {typeof description === 'string'
             ? description && <p className="text-sm text-text-quaternary mt-1">{description}</p>
             : description}
         </div>
-        <div className="flex items-center gap-2 ml-4">
+        <div className="flex items-center gap-2 ml-4 max-lg:ml-0 max-lg:flex-wrap">
           {actions}
           {expandable && (
             <button

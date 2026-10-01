@@ -67,7 +67,7 @@ const ViewWorkflowTemplateInfo: React.FC<ViewWorkflowTemplateInfoProps> = ({ tem
       </div>
 
       <div className="sticky max-view-details-bp:relative max-view-details-bp:top-0 top-8 h-fit">
-        <aside className="min-w-[320px] flex flex-col gap-2 bg-surface-base-secondary border-1 border-border-primary rounded-lg p-4 max-view-details-bp:order-1 max-view-details-bp:relative max-view-details-bp:mb-6 max-view-details-bp:w-full relative">
+        <aside className="min-w-[320px] max-sm:min-w-0 flex flex-col gap-2 bg-surface-base-secondary border-1 border-border-primary rounded-lg p-4 max-view-details-bp:order-1 max-view-details-bp:relative max-view-details-bp:mb-6 max-view-details-bp:w-full relative">
           <div
             className="absolute top-[-60px] left-[-53px] z-[-1] max-view-details-bp:hidden"
             dangerouslySetInnerHTML={{ __html: gradientSvg }}
@@ -75,7 +75,7 @@ const ViewWorkflowTemplateInfo: React.FC<ViewWorkflowTemplateInfoProps> = ({ tem
 
           <span className="text-text-base uppercase font-semibold">Overview</span>
 
-          <div>
+          <div className="max-sm:break-words">
             <span className="text-text-quaternary">Project: </span>
             {template.project}
           </div>

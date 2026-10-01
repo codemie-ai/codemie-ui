@@ -22,13 +22,13 @@ import { ONBOARDING_ASSISTANT_SLUG, CHATBOT_ASSISTANT_SLUG } from '@/constants/a
 import { AvatarType } from '@/constants/avatar'
 import { useFeatureFlag, usePinnedAssistantsEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
-import { appInfoStore } from '@/store/appInfo'
 import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
 import { Assistant } from '@/types/entity/assistant'
 import { generateAssistantAvatarDataUrl } from '@/utils/assistantAvatar'
 import { cn } from '@/utils/utils'
 
+import { useNavigationExpanded } from '../useNavigationExpanded'
 import OverflowButton from './OverflowButton'
 import PinnedAssistantsOverflowDropdown from './PinnedAssistantsOverflowDropdown'
 import PinnedRow from './PinnedRow'
@@ -53,7 +53,7 @@ export interface NavSectionItem {
 
 const NavigationPinnedSection: React.FC = () => {
   const { pinnedAssistants, helpAssistants, helpAssistantsFetched } = useSnapshot(assistantsStore)
-  const { navigationExpanded } = useSnapshot(appInfoStore)
+  const navigationExpanded = useNavigationExpanded()
   useSnapshot(chatsStore)
 
   const router = useVueRouter()

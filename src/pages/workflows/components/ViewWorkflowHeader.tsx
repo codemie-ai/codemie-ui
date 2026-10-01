@@ -89,7 +89,7 @@ const ViewWorkflowHeader: React.FC<ViewWorkflowHeaderProps> = ({
   return (
     <>
       <Tooltip target={'.' + tooltipClass} position="bottom" showDelay={100} />
-      <div className="flex flex-row max-view-details-bp:flex-col max-view-details-bp:items-center min-w-96 gap-3 overflow-x-hidden justify-between">
+      <div className="flex flex-row max-view-details-bp:flex-col max-view-details-bp:items-center min-w-96 max-sm:min-w-0 gap-3 overflow-x-hidden justify-between">
         <div className="flex flex-row gap-4 min-w-0 max-w-full items-center">
           <Avatar
             iconUrl={workflow.icon_url}
@@ -103,12 +103,12 @@ const ViewWorkflowHeader: React.FC<ViewWorkflowHeaderProps> = ({
               ref={titleRef}
               data-pr-tooltip={isTitleTruncated ? workflow.name : ''}
               data-pr-position="bottom"
-              className={`text-2xl font-semibold leading-9 mt-0.5 truncate ${tooltipClass}`}
+              className={`text-2xl font-semibold leading-9 mt-0.5 truncate max-sm:whitespace-normal max-sm:line-clamp-2 max-sm:break-words ${tooltipClass}`}
             >
               {workflow.name}
             </h4>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 max-sm:flex-wrap">
               <span className="text-text-quaternary text-xs">
                 by {createdBy(workflow.created_by)} |
               </span>

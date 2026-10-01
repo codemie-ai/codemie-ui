@@ -36,6 +36,7 @@ import { ButtonSize, ButtonType } from '@/constants'
 import { AvatarType } from '@/constants/avatar'
 import { WORKFLOW_PROGRESS_RESTORE_FAILED_MESSAGE } from '@/constants/chats'
 import { WORKFLOW_FINAL_STATUSES, WORKFLOW_STATUSES } from '@/constants/workflows'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
@@ -71,6 +72,7 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
   onChangeMessageIndex,
 }) => {
   const router = useVueRouter()
+  const isMobileLayout = useIsMobileLayout()
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
   const { selectedAssistant, openConfigForm, closeConfig, isSharedPage, hideToolOutputs } =
     useChatContext()
@@ -234,22 +236,33 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
     />
   ) : null
 
+  const avatar = (
+    <Avatar
+      type={isMobileLayout ? AvatarType.SMALL : AvatarType.CHAT}
+      iconUrl={message.assistant?.iconUrl}
+      name={message.assistant?.name}
+      onClick={handleAvatarClick}
+      withTooltip
+    />
+  )
+
   return (
     <div className="flex gap-4 min-w-0" data-onboarding="chat-ai-message">
-      <Avatar
-        type={AvatarType.CHAT}
-        iconUrl={message.assistant?.iconUrl}
-        name={message.assistant?.name}
-        onClick={handleAvatarClick}
-        withTooltip
-      />
+      {/* On phones the reply takes the full width: the avatar moves into the header row. */}
+      {!isMobileLayout && avatar}
 
       <div className="flex flex-col grow min-w-0">
-        <div className="flex items-center h-10">
+        <div className="flex items-center h-10 max-lg:gap-2">
+          {isMobileLayout && avatar}
           {!isInProgress && (
-            <div className="flex gap-2 text-xs items-center text-text-quaternary">
+            <div className="flex gap-2 text-xs items-center text-text-quaternary max-lg:whitespace-nowrap">
               <ProcessingCompleteSvg />
-              {processingTime !== null && <>Processed in: {processingTime}s / </>}
+              {processingTime !== null && (
+                <>
+                  {!isMobileLayout && 'Processed in: '}
+                  {processingTime}s /{' '}
+                </>
+              )}
               <span>{formatDateTime(message.createdAt, 'short')} </span>
             </div>
           )}

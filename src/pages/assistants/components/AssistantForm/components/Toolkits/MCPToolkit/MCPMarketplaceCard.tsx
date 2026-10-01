@@ -145,9 +145,10 @@ const MCPMarketplaceCard: React.FC<MCPMarketplaceCardProps> = ({
 
         {/* Name and Badges */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
+          {/* Phones put the badges under the name, so the name is not cut after a few letters. */}
+          <div className="flex items-start justify-between gap-2 mb-1 max-sm:flex-wrap max-sm:justify-start max-sm:gap-1">
             <h3
-              className="text-h3 text-text-primary font-semibold truncate"
+              className="text-h3 text-text-primary font-semibold truncate max-sm:basis-full"
               data-tooltip-id="react-tooltip"
               data-tooltip-content={config.name}
             >

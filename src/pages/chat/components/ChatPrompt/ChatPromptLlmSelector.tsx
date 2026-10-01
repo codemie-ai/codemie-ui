@@ -238,14 +238,14 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
       {...triggerTooltipProps}
       data-onboarding="chat-llm-selector"
       className={cn(
-        'flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+        'flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors max-lg:min-w-0',
         'text-text-quaternary hover:text-text-primary hover:bg-surface-elevated',
         !isDefaultSelected && 'text-text-primary bg-surface-elevated',
         disabled && 'opacity-50 cursor-not-allowed hover:bg-transparent'
       )}
     >
       <AiGenerateSvg aria-hidden="true" className="w-4 h-4 shrink-0" />
-      <span className="text-xs font-medium">{triggerLabel}</span>
+      <span className="text-xs font-medium max-lg:truncate">{triggerLabel}</span>
       {showPremiumBadge && <PremiumModelBadge />}
       <ChevronDownSvg aria-hidden="true" className="w-3 h-3 shrink-0 opacity-60" />
     </button>

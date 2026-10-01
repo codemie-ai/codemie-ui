@@ -17,6 +17,7 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
 
 import { appInfoStore } from '@/store/appInfo'
+import { mockMobileLayout } from '@/test-utils/mobileLayout'
 
 import { useSidebarOffsetClass } from '../useSidebarOffsetClass'
 
@@ -48,5 +49,19 @@ describe('useSidebarOffsetClass', () => {
     const { result } = renderHook(() => useSidebarOffsetClass())
 
     expect(result.current).toBe('left-navbar')
+  })
+})
+
+describe('useSidebarOffsetClass on mobile', () => {
+  it('pins to the left edge, where page sidebars are overlays', () => {
+    const { restore } = mockMobileLayout()
+    appInfoStore.sidebarExpanded = true
+
+    try {
+      const { result } = renderHook(() => useSidebarOffsetClass())
+      expect(result.current).toBe('left-0')
+    } finally {
+      restore()
+    }
   })
 })

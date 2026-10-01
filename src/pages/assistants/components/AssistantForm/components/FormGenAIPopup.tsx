@@ -160,7 +160,7 @@ const FormGenAIPopup = ({ isVisible, onHide, onGenerated }: GenWithAIPopupProps)
       )}
 
       {!isLoading && (
-        <div className="flex items-center my-4">
+        <div className="flex items-center my-4 max-lg:flex-wrap max-lg:gap-3">
           <Switch
             value={shouldIncludeTools}
             disabled={isLoading}

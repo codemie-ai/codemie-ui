@@ -88,7 +88,8 @@ const ViewWorkflowTemplatePage: React.FC = () => {
           </Button>
         }
       >
-        <div className="px-6 py-8">
+        {/* PageLayout already pads the content; phones do not need the second gutter. */}
+        <div className="px-6 py-8 max-sm:px-0">
           {isLoading && (
             <div className="flex justify-center p-8">
               <Spinner />

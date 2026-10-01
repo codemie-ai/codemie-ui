@@ -96,8 +96,8 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
   }
 
   return (
-    <div className="flex gap-4">
-      <div className="w-48">
+    <div className="flex gap-4 max-lg:grid max-lg:grid-cols-2 max-lg:w-full">
+      <div className="w-48 max-lg:w-auto">
         <Input
           label="Search"
           placeholder="Search"
@@ -108,7 +108,7 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
         />
       </div>
 
-      <div className="w-48">
+      <div className="w-48 max-lg:w-auto">
         <ProjectSelector
           label="Project"
           fullWidth
@@ -121,7 +121,7 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
       </div>
 
       {isBudgetManagementEnabled && canManageBudgets && (
-        <div className="w-48">
+        <div className="w-48 max-lg:w-auto">
           <BudgetSelector
             label="Budget"
             fullWidth
@@ -134,7 +134,7 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
         </div>
       )}
 
-      <div className="w-36">
+      <div className="w-36 max-lg:w-auto">
         <Select
           label="Platform Role"
           placeholder="Platform Role"

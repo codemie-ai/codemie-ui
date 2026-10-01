@@ -47,6 +47,8 @@ export interface ColumnDefinition {
   shrink?: boolean
   semiBold?: boolean
   tooltip?: string
+  /** In the small-screen card view, the field spans the whole card instead of one column. */
+  fullWidthInCard?: boolean
 }
 
 export interface TableItem {

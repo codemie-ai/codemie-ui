@@ -248,7 +248,7 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center mt-2 gap-2">
+          <div className="flex items-center mt-2 gap-2 max-lg:flex-wrap">
             {isTemplate ? (
               <Button
                 type="action"

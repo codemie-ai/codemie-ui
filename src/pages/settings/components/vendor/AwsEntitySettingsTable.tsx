@@ -255,7 +255,7 @@ const AwsEntitySettingsTable: FC<Props> = ({ originType, entityType }) => {
           <div className="text-center text-text-primary mt-3 text-sm">
             No AWS integrations found
           </div>
-          <div className="text-center text-text-quaternary mt-8 w-[467px] text-sm">
+          <div className="text-center text-text-quaternary mt-8 w-[467px] max-w-full text-sm">
             To import data from AWS Bedrock, first set up an AWS integration in your workspace
             settings. Go to <Link target="_self" onClick={goToIntegrations} label="Integrations" />{' '}
             and connect your AWS account to continue.

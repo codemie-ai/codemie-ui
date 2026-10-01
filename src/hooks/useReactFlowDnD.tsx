@@ -26,6 +26,7 @@ import {
 } from 'react'
 import { useSnapshot } from 'valtio'
 
+import { matchesMobileLayout } from '@/hooks/useIsMobileLayout'
 import { appInfoStore } from '@/store/appInfo'
 
 export type OnDropAction = ({ position }: { position: XYPosition }) => void
@@ -153,6 +154,14 @@ export const useDnD = () => {
 
       if (isOverCanvas && !isOverSidebar) {
         flowPosition = screenToFlowPosition({ x: event.clientX, y: event.clientY })
+      } else if (matchesMobileLayout()) {
+        // Small screens: a tap on a node, or a drop off the canvas, adds it in the middle of the
+        // visible canvas. The desktop default below can land outside a phone screen.
+        const canvasRect = canvas.getBoundingClientRect()
+        flowPosition = screenToFlowPosition({
+          x: canvasRect.left + canvasRect.width / 2,
+          y: canvasRect.top + canvasRect.height / 2,
+        })
       } else {
         let adjustedX = DEFAULT_POSITION.X
 
@@ -182,16 +191,21 @@ export const useDnD = () => {
     ]
   )
 
+  // A cancelled pointer (e.g. a touch the browser took over) ends the drag without adding a node.
+  const onDragCancel = useCallback(() => setIsDragging(false), [setIsDragging])
+
   // Add global touch event listeners
   useEffect(() => {
     if (!isDragging) return () => {}
 
     document.addEventListener('pointerup', onDragEnd)
+    document.addEventListener('pointercancel', onDragCancel)
 
     return () => {
       document.removeEventListener('pointerup', onDragEnd)
+      document.removeEventListener('pointercancel', onDragCancel)
     }
-  }, [onDragEnd, isDragging])
+  }, [onDragEnd, onDragCancel, isDragging])
 
   return {
     isDragging,

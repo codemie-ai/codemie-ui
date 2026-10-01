@@ -21,6 +21,7 @@ import Accordion from '@/components/Accordion'
 import Spinner from '@/components/Spinner'
 import { MCP_SETTINGS_TYPE } from '@/constants/settings'
 import { useMcpEnabled } from '@/hooks/useFeatureFlags'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useToolkitSelection } from '@/hooks/useToolkitSelection'
 import { assistantsStore } from '@/store'
 import { settingsStore } from '@/store/settings'
@@ -88,6 +89,8 @@ const ToolsConfiguration = ({
   const { settings, indexSettings } = useSnapshot(settingsStore)
   const { availableToolkits, getAssistantToolkits } = useSnapshot(assistantsStore)
   const { project, isChatConfig } = useContext(AssistantFormContext)
+  const isMobileLayout = useIsMobileLayout()
+  const isCompactView = isChatConfig || isMobileLayout
 
   const [isMcpFeatureEnabled] = useMcpEnabled()
 
@@ -233,7 +236,7 @@ const ToolsConfiguration = ({
             defaultOpen={
               defaultOpenSection ? defaultOpenSection === SECTION.TOOLS : singleToolSelection
             }
-            isCompactView={isChatConfig}
+            isCompactView={isCompactView}
             customToolkitRenderer={customToolkitRenderer}
             availableToolsDescription={availableToolsDescription}
           />
@@ -246,7 +249,7 @@ const ToolsConfiguration = ({
         project={project}
         singleToolSelection={singleToolSelection}
         showNewIntegrationPopup={showNewIntegrationPopup}
-        isCompactView={isChatConfig}
+        isCompactView={isCompactView}
       />
 
       {showMcpServers && isMcpFeatureEnabled && (
@@ -260,7 +263,7 @@ const ToolsConfiguration = ({
           singleToolSelection={singleToolSelection}
           defaultOpen={defaultOpenSection ? defaultOpenSection === SECTION.MCP : !showInternalTools}
           scrollRef={mcpAccordionRef}
-          isCompactView={isChatConfig}
+          isCompactView={isCompactView}
         />
       )}
     </div>

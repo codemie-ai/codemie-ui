@@ -56,7 +56,7 @@ const SkillInstructions = forwardRef<TextareaRef, SkillInstructionsProps>(
     return (
       <>
         <div className="flex flex-col h-full">
-          <div className="flex justify-between items-end min-h-8 max-h-8 mb-4">
+          <div className="flex justify-between items-end min-h-8 max-h-8 mb-4 max-lg:max-h-none max-lg:flex-wrap max-lg:gap-2">
             <p className="text-sm font-semibold">
               Instructions ({charCount.toLocaleString()}/{maxContentLength.toLocaleString()})
             </p>

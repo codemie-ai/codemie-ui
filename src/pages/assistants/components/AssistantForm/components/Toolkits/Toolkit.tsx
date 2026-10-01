@@ -140,7 +140,7 @@ const Toolkit = ({
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="h-[86px] flex items-center gap-4 px-6 bg-surface-base-chat border-b border-border-structural">
+      <div className="h-[86px] flex items-center gap-4 px-6 bg-surface-base-chat border-b border-border-structural max-sm:px-4">
         <div className="flex justify-center items-center size-8 min-w-8 rounded-lg bg-accordion-icon-bg border border-border-specific-icon-outline">
           <ToolkitIcon toolkitType={toolkit.toolkit} />
         </div>
@@ -149,7 +149,8 @@ const Toolkit = ({
         </div>
       </div>
 
-      <div className="flex gap-6 p-6 w-full">
+      {/* Narrow screens stack the integration selector below the tools list. */}
+      <div className="flex gap-6 p-6 w-full max-md:flex-col max-sm:p-4">
         {/* Left: tools list */}
         <div className="flex flex-col gap-4 flex-1 min-w-0">
           <h3 className="text-xs text-text-tertiary overflow-hidden overflow-ellipsis text-nowrap">
@@ -256,7 +257,8 @@ const Toolkit = ({
               !toolkit.is_external &&
               toolkitSettingsOptions?.length
               ? 'w-80'
-              : 'min-w-[50px] max-w-[180px]'
+              : 'min-w-[50px] max-w-[180px]',
+            'max-md:w-full max-md:max-w-full max-md:empty:hidden'
           )}
         >
           {toolkit.settings_config &&

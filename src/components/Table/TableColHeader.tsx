@@ -42,6 +42,33 @@ interface TableColHeaderProps<T> {
   sortProps?: SortProps
 }
 
+/** The "select all" checkbox of the table header, also used by the card layout (TableCardList). */
+export const getSelectAllState = <T,>(selectionProps?: SelectionProps<T>) => {
+  const getIsAllPageSelected = () => {
+    if (!selectionProps || selectionProps.items.length === 0) return false
+    if (selectionProps.isLazyMode) return selectionProps.isAllSelected
+    return selectionProps.selected?.length === selectionProps.items.length
+  }
+
+  const isAllPageSelected = getIsAllPageSelected()
+  const hasSelection = selectionProps?.selected && selectionProps.selected.length > 0
+  const isIndeterminate = Boolean(hasSelection && !isAllPageSelected)
+
+  const toggleAll = () => {
+    if (!selectionProps) return
+
+    if (selectionProps.isLazyMode) {
+      selectionProps.onSelectAllChange?.(!isAllPageSelected)
+    } else if (isAllPageSelected) {
+      selectionProps.onSelectRow?.([])
+    } else {
+      selectionProps.onSelectRow?.(selectionProps.items as T[])
+    }
+  }
+
+  return { isAllPageSelected, isIndeterminate, toggleAll }
+}
+
 const TableColHeader = <T,>({
   column,
   isFirst,
@@ -53,29 +80,13 @@ const TableColHeader = <T,>({
   const isExpandColumn = column.type === DefinitionTypes.Expand
   const isSortableColumn = sortProps && column.sortable && !isExpandColumn
 
-  const getIsAllPageSelected = () => {
-    if (!selectionProps || selectionProps.items.length === 0) return false
-    if (selectionProps.isLazyMode) return selectionProps.isAllSelected
-    return selectionProps.selected?.length === selectionProps.items.length
-  }
-
-  const isAllPageSelected = getIsAllPageSelected()
-  const hasSelection = selectionProps?.selected && selectionProps.selected.length > 0
-  const isIndeterminate = Boolean(hasSelection && !isAllPageSelected)
+  const {
+    isAllPageSelected,
+    isIndeterminate,
+    toggleAll: handleSelectionChange,
+  } = getSelectAllState(selectionProps)
 
   const isSorted = Boolean(sortProps && sortProps.sort.sortKey === column.key)
-
-  const handleSelectionChange = () => {
-    if (!selectionProps) return
-
-    if (selectionProps.isLazyMode) {
-      selectionProps.onSelectAllChange?.(!isAllPageSelected)
-    } else if (isAllPageSelected) {
-      selectionProps.onSelectRow?.([])
-    } else {
-      selectionProps.onSelectRow?.(selectionProps.items as T[])
-    }
-  }
 
   const handleSortClick = () => {
     sortProps?.onSort?.(column.key)

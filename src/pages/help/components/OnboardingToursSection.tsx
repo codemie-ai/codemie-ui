@@ -17,15 +17,18 @@ import { FC } from 'react'
 import { useSnapshot } from 'valtio'
 
 import OnboardingFlowCard from '@/components/Onboarding/OnboardingFlowCard'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { onboardingStore } from '@/store/onboarding'
 
 const OnboardingToursSection: FC = () => {
   // Subscribe so the section re-renders when flows complete
   useSnapshot(onboardingStore)
+  const isMobileLayout = useIsMobileLayout()
 
   const flows = onboardingStore.getAllFlows()
 
-  if (flows.length === 0) return null
+  // The tours point at the desktop layout (navigation rail, side panels).
+  if (flows.length === 0 || isMobileLayout) return null
 
   return (
     <section

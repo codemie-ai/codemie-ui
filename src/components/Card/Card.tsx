@@ -79,8 +79,9 @@ const Card: React.FC<CardProps> = ({
           {topRight && <div className="absolute top-2 right-2 z-10 flex gap-1">{topRight}</div>}
         </div>
 
-        <div className="body h-card flex flex-col justify-between p-4">
-          <div className="flex flex-row gap-4 min-h-[88px]">
+        <div className="body h-card flex flex-col justify-between p-4 max-sm:p-3">
+          {/* Phones: compact rows, and the title wraps to two lines instead of truncating early. */}
+          <div className="flex flex-row gap-4 min-h-[88px] max-sm:gap-3 max-sm:min-h-0">
             {avatar}
             <div className="flex flex-row items-center gap-3 basis-full overflow-hidden">
               <div className="flex flex-col flex-1 min-w-0">
@@ -97,6 +98,7 @@ const Card: React.FC<CardProps> = ({
                     data-pr-position="bottom"
                     className={classNames(
                       'font-semibold whitespace-nowrap text-ellipsis truncate z-[1]',
+                      'max-sm:whitespace-normal max-sm:line-clamp-2 max-sm:break-words',
                       tooltipClass
                     )}
                   >
@@ -121,7 +123,7 @@ const Card: React.FC<CardProps> = ({
                   data-pr-tooltip={isDescriptionTruncated ? truncateInput(description, 1000) : ''}
                   data-pr-position="left"
                   className={classNames(
-                    'z-[1] text-xs mb-0 mt-4 line-clamp-2 text-text-tertiary h-8 overflow-hidden text-ellipsis',
+                    'z-[1] text-xs mb-0 mt-4 line-clamp-2 text-text-tertiary h-8 overflow-hidden text-ellipsis max-sm:mt-2 max-sm:h-auto',
                     tooltipClass
                   )}
                 >
@@ -131,7 +133,9 @@ const Card: React.FC<CardProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center mt-3 h-7">
+          {/* On narrow cards the status wraps below the actions; children drop their full-height sizing
+              so the first line stays one row tall. */}
+          <div className="flex items-center mt-3 h-7 max-lg:flex-wrap max-lg:h-auto max-lg:gap-y-2 max-lg:[&>*]:h-auto max-sm:mt-2">
             {actions}
 
             {status && (

@@ -53,6 +53,8 @@ export interface PopupProps {
   limitWidth?: boolean
   isMagic?: boolean
   hideHeader?: boolean
+  /** Opens as a full-screen sheet on phones. Defaults to `isFullWidth`. */
+  fullScreenOnMobile?: boolean
 }
 
 const Popup: React.FC<PopupProps> = ({
@@ -82,8 +84,10 @@ const Popup: React.FC<PopupProps> = ({
   submitButtonType,
   isMagic = false,
   hideHeader = false,
+  fullScreenOnMobile,
 }) => {
   const headerId = useId()
+  const isMobileSheet = fullScreenOnMobile ?? !!isFullWidth
   const { registerDialog, dialogContainerRef, isTopmost } = useTopmostDialog(visible ?? false)
 
   useFocusTrap(dialogContainerRef, visible ?? false)
@@ -196,10 +200,18 @@ const Popup: React.FC<PopupProps> = ({
         isFullWidth && 'w-full max-w-[90vw] xl:max-w-6xl',
         !isMagic && 'border border-border-specific-panel-outline',
         className,
-        limitWidth && 'max-w-lg w-full'
+        limitWidth && 'max-w-lg w-full',
+        // Callers size dialogs in desktop pixels; on smaller screens they never outgrow the
+        // mask, which keeps a small gap to the screen edges.
+        'max-lg:!max-w-full max-lg:!min-w-0',
+        // Large dialogs fill a phone screen instead of floating over the top bar.
+        isMobileSheet &&
+          'max-sm:!w-full max-sm:!h-full max-sm:!max-h-full max-sm:!rounded-none max-sm:!border-0'
       )}
       contentClassName={cn('px-4 pt-4 overflow-auto flex-1 overflow-y-auto', bodyClassName)}
-      maskClassName={`fixed top-0 left-0 w-full h-full z-50 bg-black bg-opacity-50 ${overlayClassName}`}
+      maskClassName={`fixed top-0 left-0 w-full h-full z-50 bg-black bg-opacity-50 max-lg:p-4 ${
+        isMobileSheet ? 'max-sm:!p-0 ' : ''
+      }${overlayClassName}`}
       showHeader={!hideHeader}
       modal
       dismissableMask={dismissableMask}

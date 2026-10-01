@@ -86,6 +86,10 @@ export interface AppInfoStoreType {
   speechConfig: SpeechConfig
   navigationExpanded: boolean
   sidebarExpanded: boolean
+  // Mobile/tablet shell (below the `lg` breakpoint). Not persisted: both overlays start closed.
+  mobileNavigationOpen: boolean
+  mobileSidebarOpen: boolean
+  pageSidebarCount: number
 
   toolFieldDefaults: Record<string, string | boolean>
   toolFieldPlaceholders: Record<string, string>
@@ -112,6 +116,9 @@ export interface AppInfoStoreType {
   toggleSidebar: () => void
   setIsSidebarExpanded: () => void
   setSidebarExpanded: (expanded: boolean) => void
+  setMobileNavigationOpen: (open: boolean) => void
+  setMobileSidebarOpen: (open: boolean) => void
+  registerPageSidebar: () => () => void
 }
 
 function extractConfigEntry(
@@ -144,6 +151,9 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   isConfigFetched: false,
   navigationExpanded: getStoredNavigationExpanded(),
   sidebarExpanded: getStoredSidebarExpanded(),
+  mobileNavigationOpen: false,
+  mobileSidebarOpen: false,
+  pageSidebarCount: 0,
 
   getIdpProvider(): string {
     const item = this.configs.find((c) => c.id === CONFIG_KEYS.IDP_PROVIDER)
@@ -437,5 +447,28 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   setSidebarExpanded(expanded: boolean) {
     this.sidebarExpanded = expanded
     localStorage.setItem(SIDEBAR_EXPANDED_KEY, expanded.toString())
+  },
+
+  // The navigation menu and the page sidebar share the screen on mobile, so opening one closes
+  // the other.
+  setMobileNavigationOpen(open: boolean) {
+    this.mobileNavigationOpen = open
+    if (open) this.mobileSidebarOpen = false
+  },
+
+  setMobileSidebarOpen(open: boolean) {
+    this.mobileSidebarOpen = open
+    if (open) this.mobileNavigationOpen = false
+  },
+
+  // A page sidebar is registered while it is mounted, so the mobile top bar only offers the menu
+  // button that opens it on pages that actually have one.
+  registerPageSidebar() {
+    this.pageSidebarCount += 1
+
+    return () => {
+      this.pageSidebarCount -= 1
+      if (this.pageSidebarCount === 0) this.mobileSidebarOpen = false
+    }
   },
 })

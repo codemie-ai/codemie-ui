@@ -53,6 +53,8 @@ const PageLayout = ({
 
   const isContentGradientEnabled = appearance?.gradients ?? true
   const isPageHeaderElevated = appearance?.pageHeaderElevated ?? false
+  // Without a title the header holds only its actions; on phones they take the whole row.
+  const hasTitleBlock = !!(title || subtitle || showBack || onBack)
 
   const handleBack = () => {
     if (onBack) {
@@ -75,17 +77,24 @@ const PageLayout = ({
           <div
             className={cn(
               'min-h-layout-header h-layout-header border-b border-border-specific-panel-outline p-3 px-6 flex items-center justify-between',
+              // Actions that do not fit next to the title move to their own line on small screens.
+              'max-lg:h-auto max-lg:flex-wrap max-lg:px-4 max-lg:gap-3',
               isPageHeaderElevated ? 'bg-surface-specific-page-header' : ''
             )}
           >
             {renderHeader || (
               <>
-                <div className="flex items-center gap-6 flex-1 min-w-0">
+                <div
+                  className={cn(
+                    'flex items-center gap-6 flex-1 min-w-0 max-lg:flex-auto max-lg:gap-3',
+                    !hasTitleBlock && 'max-sm:hidden'
+                  )}
+                >
                   {(showBack || onBack) && (
                     <Button
                       variant="secondary"
                       onClick={handleBack}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 max-lg:shrink-0"
                       aria-label="Back"
                     >
                       <ArrowLeftIcon />
@@ -96,7 +105,11 @@ const PageLayout = ({
                       'text-center': centerTitle,
                     })}
                   >
-                    {title && <h1 className="text-lg text-text-primary font-semibold">{title}</h1>}
+                    {title && (
+                      <h1 className="text-lg text-text-primary font-semibold max-lg:text-base max-lg:truncate">
+                        {title}
+                      </h1>
+                    )}
                     {subtitle && (
                       <div className="text-xs text-text-quaternary whitespace-nowrap overflow-hidden text-ellipsis">
                         {subtitle}
@@ -104,7 +117,16 @@ const PageLayout = ({
                     )}
                   </div>
                 </div>
-                {rightContent && <div>{rightContent}</div>}
+                {rightContent && (
+                  <div
+                    className={cn(
+                      'max-lg:max-w-full max-lg:[&>*]:flex-wrap',
+                      !hasTitleBlock && 'max-sm:flex max-sm:w-full max-sm:justify-end'
+                    )}
+                  >
+                    {rightContent}
+                  </div>
+                )}
               </>
             )}
           </div>

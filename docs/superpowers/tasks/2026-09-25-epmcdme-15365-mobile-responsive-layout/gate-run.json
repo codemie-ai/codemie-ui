@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15365",
+  "head": "91c6ad8b9e2415f698ab26c87515a38cc509c4a9",
+  "runner": "npm",
+  "started_at": "2026-09-29T10:25:08.000Z",
+  "completed_at": "2026-09-29T10:45:52.000Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17000,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "No errors; only the existing 'React version not specified' plugin warning"
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 11000,
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "notes": "Silent output"
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2000,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Licence summary printed; no dependency added, removed or moved by this change"
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output confirmed: 'no leaks found'"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 184000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 625 passed (625); Tests 6374 passed | 1 skipped (6375)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 63110,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Final run: Test Files 48 passed (48); Tests 547 passed, 1 skipped. The two runs before it failed only 'DataSourceCreatePage - xWiki' tests that save and wait for the POST (1, then 2 failures). That flake is pre-existing: in 9 alternating runs of that file per tree, origin/main (d676180ef) failed 3 times and this branch 3 times."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "PASS",
+      "command": "Manual browser verification against http://localhost:5173",
+      "exit_code": null,
+      "notes": "Before the merge: 375x812, 360x740, 768x1024 and 1440x900, light and dark themes, ~21 routes without horizontal overflow, mobile flows for chats, assistants, skills, data sources, users, katas, analytics, help, workflow execution history and login. After merging main: 390x844 (2x, touch) and 768x1024 — chat conversation, chat list drawer, new chat from the drawer and the logo, navigation menu (Escape closes), configuration overlay, assistants, assistant and skill forms, data sources, analytics, katas without overflow; 1440x900 desktop layout unchanged. After the Sonar fixes: phone cards grow to their content (204px, no clipping) while desktop cards stay 158px, and the navigation menu closes after a same-URL link without the removed click handler. After the last review fixes: the content behind an open overlay is inert (nothing inert on desktop), a chat menu over the chat list closes on the first Escape and the list on the second, and an uploaded attachment survives 1440 -> 390 -> 1440px. After the Sonar dialog fix: not re-run in the browser — the change is test fixtures plus native <dialog> support in the Escape guard, and no app code renders a native <dialog>."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2227 files, 0 missing license headers"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "PASS",
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Ran in the Husky pre-commit hook for every commit on the branch (all succeeded). 'npx prettier --check' on every changed .ts/.tsx/.scss/.html file also reports 'All matched files use Prettier code style!'."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' The MR pipeline runs the Sonar scan."
+    },
+    {
+      "id": "build",
+      "source": "ci",
+      "status": "PASS",
+      "duration_ms": 12000,
+      "command": "npx vite build --outDir <scratch>/dist-check --emptyOutDir",
+      "exit_code": 0,
+      "notes": "Production bundle built in 10.23s into a scratch folder (local dist/ untouched); only the existing chunk-size warning"
+    }
+  ],
+  "failures": {}
+}

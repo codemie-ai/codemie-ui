@@ -63,13 +63,13 @@ const ChatPromptSkillsButton: FC<ChatPromptSkillsButtonProps> = ({ disabled = fa
           'Skills already assigned to the assistant are automatically skipped to avoid duplication.'
         }
         className={cn(
-          'flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+          'flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors max-lg:shrink-0',
           'text-text-quaternary hover:text-text-primary hover:bg-surface-elevated',
           disabled && 'opacity-50 cursor-not-allowed hover:bg-transparent'
         )}
       >
         <LightningSvg className="w-4 h-4" />
-        <span className="text-xs font-medium">Skills</span>
+        <span className="text-xs font-medium max-lg:sr-only">Skills</span>
         {selectedCount > 0 && (
           <span className="flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium rounded-full bg-action-primary-solid text-text-on-primary">
             {selectedCount}

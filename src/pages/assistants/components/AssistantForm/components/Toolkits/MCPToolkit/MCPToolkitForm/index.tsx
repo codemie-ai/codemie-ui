@@ -121,13 +121,18 @@ const MCPToolkitForm = ({
   }
 
   const renderHeader = () => {
+    // Phones show only the current step, so the header stays on one line.
     return (
       <div className="flex items-center gap-2">
-        <span className={cn(wizardStep !== WIZARD_STEPS.CONFIGURE_SERVER && 'opacity-70')}>
+        <span
+          className={cn(wizardStep !== WIZARD_STEPS.CONFIGURE_SERVER && 'opacity-70 max-sm:hidden')}
+        >
           Step 1: Configure MCP Server
         </span>
-        <span className="opacity-70">•</span>
-        <span className={cn(wizardStep !== WIZARD_STEPS.SELECT_TOOLS && 'opacity-70')}>
+        <span className="opacity-70 max-sm:hidden">•</span>
+        <span
+          className={cn(wizardStep !== WIZARD_STEPS.SELECT_TOOLS && 'opacity-70 max-sm:hidden')}
+        >
           Step 2: Select Tools
         </span>
       </div>
@@ -141,6 +146,7 @@ const MCPToolkitForm = ({
       className="w-full max-w-3xl"
       visible={isVisible}
       onHide={handleHide}
+      fullScreenOnMobile
     >
       <form ref={formRef} className="flex flex-col gap-4 pb-4" onSubmit={onSubmit}>
         {wizardStep === WIZARD_STEPS.CONFIGURE_SERVER ? (

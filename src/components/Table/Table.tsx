@@ -17,6 +17,7 @@ import { classNames as cn } from 'primereact/utils'
 import React, { memo, MouseEvent, useCallback, useMemo } from 'react'
 
 import Spinner from '@/components/Spinner'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useSidebarOffsetClass } from '@/hooks/useSidebarOffsetClass'
 import {
   ColumnDefinition,
@@ -27,6 +28,7 @@ import {
 } from '@/types/table'
 
 import EmptyList from './EmptyList'
+import TableCardList from './TableCardList'
 import TableCell from './TableCell'
 import TableColHeader, { SelectionProps, SortProps } from './TableColHeader'
 import { propsAreEqual } from './utils'
@@ -172,6 +174,21 @@ const Table = <T,>({
     [handleRowSelect]
   )
 
+  const isMobileLayout = useIsMobileLayout()
+  // Narrow screens get one card per row. Totals footers, nested tables and custom row renders
+  // are laid out as table rows, so those keep the table.
+  const showCards =
+    isMobileLayout &&
+    variant === 'default' &&
+    !footer &&
+    !items.some((item) => (item as { _meta?: { customRender?: unknown } })._meta?.customRender)
+
+  const idField = (idPath ?? 'id') as keyof T
+  const getRowId = (item: T, rowIndex: number) => {
+    const idValue = item[idField]
+    return idValue ? String(idValue) : `fallback-row-${rowIndex}`
+  }
+
   return (
     <div className={cn('w-full relative flex flex-col', { 'pb-20': !embedded && !!pagination })}>
       {loading && (
@@ -184,95 +201,114 @@ const Table = <T,>({
           'overflow-auto min-h-[300px] show-scroll': !embedded,
         })}
       >
-        <table
-          className={cn(
-            'mt-4 border-separate border-spacing-0 w-full text-[12px] leading-tight',
-            TABLE_VARIANT_CLASSES[variant],
-            tableClassName,
-            className
-          )}
-        >
-          <thead className="bg-surface-base-tertiary text-text-primary sticky top-0 z-20">
-            <tr className="font-semibold border-y">
-              {renderedColumns.map((column, i) => (
-                <TableColHeader
-                  key={column.key}
-                  column={column}
-                  isFirst={i === 0}
-                  isLast={i === renderedColumns.length - 1}
-                  selectionProps={selectionProps}
-                  sortProps={sortProps}
-                />
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {!items.length ? (
-              <EmptyList colSpan={renderedColumns.length} />
-            ) : (
-              items.map((value, rowIndex) => {
-                const idField = idPath ?? 'id'
-                const idValue = value[idField]
-                const rowKey = idValue ? String(idValue) : `fallback-row-${rowIndex}`
-                const isSelected = !!selected?.find((s) => s[idField as keyof T] === value[idField])
-
-                if (value._meta?.customRender) return value._meta?.customRender(value)
-
-                const isExpanded = isExpandable && !!expandedRowIds?.includes(String(idValue))
-                const isLastRow = items.length - 1 === rowIndex
-                const isExpansionLast = isLastRow && isExpanded && !footer
-
-                return (
-                  <React.Fragment key={rowKey}>
-                    <tr
-                      onClick={(e) => handleRowClick(value, e)}
-                      className={cn(
-                        onSelectRow &&
-                          !isSelected &&
-                          '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
-                        isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer'
-                      )}
-                    >
-                      {renderedColumns.map((definition, colIndex) => (
-                        <TableCell
-                          value={value}
-                          index={isExpandable ? colIndex - 1 : colIndex}
-                          key={definition.key}
-                          definition={definition}
-                          colIndex={colIndex}
-                          isLastRow={isLastRow && !isExpanded}
-                          hasFooter={!!footer}
-                          columnsLength={renderedColumns.length}
-                          customRender={customRenderColumns[definition.key]}
-                          shrink={definition.shrink}
-                          noWrap={noWrap}
-                          isSelected={isSelected}
-                          onSelect={() => handleRowSelect(value)}
-                          isExpanded={isExpanded}
-                          onToggleExpand={() => onToggleExpand?.(String(idValue))}
-                        />
-                      ))}
-                    </tr>
-                    {isExpanded && (
-                      <tr>
-                        <td
-                          colSpan={renderedColumns.length}
-                          className={cn(
-                            'bg-surface-base-secondary/40 border-b border-l border-r border-border-structural p-0',
-                            isExpansionLast && 'rounded-b-lg overflow-hidden'
-                          )}
-                        >
-                          {renderExpandedRow?.(value)}
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                )
-              })
+        {showCards ? (
+          <TableCardList
+            items={items}
+            columnDefinitions={columnDefinitions}
+            customRenderColumns={customRenderColumns}
+            getRowId={getRowId}
+            isRowSelected={(item) => !!selected?.find((s) => s[idField] === item[idField])}
+            onRowSelect={handleRowSelect}
+            onCardSelect={onSelectRow ? handleRowSelect : undefined}
+            selectionProps={selectionProps}
+            sortProps={sortProps}
+            expandedRowIds={expandedRowIds}
+            onToggleExpand={onToggleExpand}
+            renderExpandedRow={renderExpandedRow}
+          />
+        ) : (
+          <table
+            className={cn(
+              'mt-4 border-separate border-spacing-0 w-full text-[12px] leading-tight',
+              TABLE_VARIANT_CLASSES[variant],
+              tableClassName,
+              className
             )}
-          </tbody>
-          {footer && <tfoot>{footer}</tfoot>}
-        </table>
+          >
+            <thead className="bg-surface-base-tertiary text-text-primary sticky top-0 z-20">
+              <tr className="font-semibold border-y">
+                {renderedColumns.map((column, i) => (
+                  <TableColHeader
+                    key={column.key}
+                    column={column}
+                    isFirst={i === 0}
+                    isLast={i === renderedColumns.length - 1}
+                    selectionProps={selectionProps}
+                    sortProps={sortProps}
+                  />
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {!items.length ? (
+                <EmptyList colSpan={renderedColumns.length} />
+              ) : (
+                items.map((value, rowIndex) => {
+                  const idField = idPath ?? 'id'
+                  const idValue = value[idField]
+                  const rowKey = idValue ? String(idValue) : `fallback-row-${rowIndex}`
+                  const isSelected = !!selected?.find(
+                    (s) => s[idField as keyof T] === value[idField]
+                  )
+
+                  if (value._meta?.customRender) return value._meta?.customRender(value)
+
+                  const isExpanded = isExpandable && !!expandedRowIds?.includes(String(idValue))
+                  const isLastRow = items.length - 1 === rowIndex
+                  const isExpansionLast = isLastRow && isExpanded && !footer
+
+                  return (
+                    <React.Fragment key={rowKey}>
+                      <tr
+                        onClick={(e) => handleRowClick(value, e)}
+                        className={cn(
+                          onSelectRow &&
+                            !isSelected &&
+                            '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
+                          isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer'
+                        )}
+                      >
+                        {renderedColumns.map((definition, colIndex) => (
+                          <TableCell
+                            value={value}
+                            index={isExpandable ? colIndex - 1 : colIndex}
+                            key={definition.key}
+                            definition={definition}
+                            colIndex={colIndex}
+                            isLastRow={isLastRow && !isExpanded}
+                            hasFooter={!!footer}
+                            columnsLength={renderedColumns.length}
+                            customRender={customRenderColumns[definition.key]}
+                            shrink={definition.shrink}
+                            noWrap={noWrap}
+                            isSelected={isSelected}
+                            onSelect={() => handleRowSelect(value)}
+                            isExpanded={isExpanded}
+                            onToggleExpand={() => onToggleExpand?.(String(idValue))}
+                          />
+                        ))}
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td
+                            colSpan={renderedColumns.length}
+                            className={cn(
+                              'bg-surface-base-secondary/40 border-b border-l border-r border-border-structural p-0',
+                              isExpansionLast && 'rounded-b-lg overflow-hidden'
+                            )}
+                          >
+                            {renderExpandedRow?.(value)}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  )
+                })
+              )}
+            </tbody>
+            {footer && <tfoot>{footer}</tfoot>}
+          </table>
+        )}
       </div>
 
       {pagination && !embedded && (

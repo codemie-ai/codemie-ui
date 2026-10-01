@@ -79,6 +79,9 @@ interface ChatPromptProps {
   resizable?: boolean
   externalPrompt?: string | null
   onExternalPromptConsumed?: () => void
+  /** Attachments to start with, when the prompt remounts after a layout switch. */
+  initialFiles?: FileMetadata[]
+  onFilesChange?: (files: FileMetadata[]) => void
 }
 
 const getBorderWrapperClassName = (
@@ -89,6 +92,9 @@ const getBorderWrapperClassName = (
 ) =>
   cn(
     'box-content p-px rounded-xl w-full max-w-5xl mx-auto',
+    // The 1px border padding must stay inside the width on small screens, or the chat scrolls
+    // sideways by 2px.
+    'max-lg:box-border',
     resizable ? 'h-full flex flex-col' : 'min-h-fit',
     !isInterrupted && 'border-gradient promp-shadow prompt-border-gradient',
     !isInterrupted && isEditorFocused && 'prompt-border-gradient-focused',
@@ -108,6 +114,8 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   resizable = false,
   externalPrompt,
   onExternalPromptConsumed,
+  initialFiles,
+  onFilesChange,
 }) => {
   const editorRef = useRef<EditorRef>(null)
   const { isDark } = useTheme()
@@ -120,7 +128,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   const [isEditorFocused, setIsEditorFocused] = useState(false)
   const [prompt, setPrompt] = useState<{ message: string; messageRaw: string }>(initial)
 
-  const [files, setFiles] = useState<FileMetadata[]>([])
+  const [files, setFiles] = useState<FileMetadata[]>(initialFiles ?? [])
   const fileUpload = useFileUpload({
     files,
     setFiles,
@@ -259,6 +267,10 @@ const ChatPrompt: FC<ChatPromptProps> = ({
     saveDraft(prompt)
   }, [prompt, saveDraft])
 
+  useEffect(() => {
+    onFilesChange?.(files)
+  }, [files, onFilesChange])
+
   return (
     <div className={cn('relative w-full z-20', resizable && 'h-full flex flex-col')}>
       {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
@@ -310,7 +322,15 @@ const ChatPrompt: FC<ChatPromptProps> = ({
               onKeyDown={handleKeyDown}
               className="flex justify-between items-center pl-2"
             >
-              <div className={cn('flex items-center gap-2', isPromptDisabled && 'opacity-60')}>
+              <div
+                className={cn(
+                  'flex items-center gap-2',
+                  // On narrow screens the tools are icon-first and the model name truncates, so
+                  // the send button always fits.
+                  'max-lg:min-w-0 max-lg:gap-1',
+                  isPromptDisabled && 'opacity-60'
+                )}
+              >
                 {assistantFeatures.fileAttachment && canAttachFiles && (
                   <ChatPromptFileUpload {...fileUpload} files={files} />
                 )}
@@ -339,7 +359,10 @@ const ChatPrompt: FC<ChatPromptProps> = ({
               </div>
 
               <div
-                className={cn('flex items-center ml-auto', isInProgress && 'pointer-events-auto')}
+                className={cn(
+                  'flex items-center ml-auto max-lg:shrink-0 max-lg:pl-2',
+                  isInProgress && 'pointer-events-auto'
+                )}
               >
                 {isVoiceRecorderVisible && (
                   <ChatPromptVoiceRecorder

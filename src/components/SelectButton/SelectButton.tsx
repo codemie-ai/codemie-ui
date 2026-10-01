@@ -55,7 +55,10 @@ const SelectButton: FC<Props> = ({ caption, value = '', options = [], onChange }
 
   return (
     <div className="flex items-center gap-2">
-      {caption ? <div className="text-h5 text-text-primary">{caption}</div> : null}
+      {caption ? (
+        // Headers have no room for the caption on small screens; screen readers keep it.
+        <div className="text-h5 text-text-primary max-lg:sr-only">{caption}</div>
+      ) : null}
       <PrimeSelectButton
         pt={{
           root: {

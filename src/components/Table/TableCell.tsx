@@ -74,22 +74,29 @@ const DateContent = ({ rawDate }: { rawDate: string | null | undefined }): React
   )
 }
 
-const TableCell = <T,>({
+type TableCellContentProps<T> = Pick<
+  TableCellProps<T>,
+  | 'index'
+  | 'value'
+  | 'definition'
+  | 'customRender'
+  | 'isSelected'
+  | 'onSelect'
+  | 'isExpanded'
+  | 'onToggleExpand'
+>
+
+// The value of a cell, shared by the table cell and the mobile card layout (TableCardList).
+export const TableCellContent = <T,>({
   index,
   definition,
   value,
-  isLastRow = false,
-  hasFooter = false,
-  colIndex,
-  columnsLength,
   customRender,
-  shrink = false,
-  noWrap = false,
   isSelected,
   onSelect,
   isExpanded = false,
   onToggleExpand,
-}: TableCellProps<T>): React.ReactNode => {
+}: TableCellContentProps<T>): React.ReactNode => {
   let content: React.ReactNode = null
 
   const getTooltipValue = (value: unknown, maxLength?: number) => {
@@ -133,6 +140,27 @@ const TableCell = <T,>({
     )
   }
 
+  return content
+}
+
+const TableCell = <T,>({
+  index,
+  definition,
+  value,
+  isLastRow = false,
+  hasFooter = false,
+  colIndex,
+  columnsLength,
+  customRender,
+  shrink = false,
+  noWrap = false,
+  isSelected,
+  onSelect,
+  isExpanded = false,
+  onToggleExpand,
+}: TableCellProps<T>): React.ReactNode => {
+  const isSelectionCell = definition.type === DefinitionTypes.Selection
+  const isExpandCell = definition.type === DefinitionTypes.Expand
   const isSemiBold = definition.semiBold === true
 
   return (
@@ -153,7 +181,16 @@ const TableCell = <T,>({
         }
       )}
     >
-      {content}
+      <TableCellContent
+        index={index}
+        definition={definition}
+        value={value}
+        customRender={customRender}
+        isSelected={isSelected}
+        onSelect={onSelect}
+        isExpanded={isExpanded}
+        onToggleExpand={onToggleExpand}
+      />
     </td>
   )
 }

@@ -23,6 +23,7 @@ import HistorySVG from '@/assets/icons/history.svg?react'
 import Button from '@/components/Button'
 import Textarea, { TextareaRef } from '@/components/form/Textarea'
 import { SYSTEM_PROMPT_VARIABLES } from '@/constants'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useTheme } from '@/hooks/useTheme'
 import { AssistantPromptVariable } from '@/types/entity/assistant'
 import { humanize } from '@/utils/helpers'
@@ -64,6 +65,9 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
     _ref
   ) => {
     const { isChatConfig } = useContext(AssistantFormContext)
+    const isMobileLayout = useIsMobileLayout()
+    // The chat configuration panel and phones are both too narrow for the side-by-side toolbar.
+    const isCompactLayout = isChatConfig || isMobileLayout
     const { isDark } = useTheme()
     const textAreaRef = useRef<TextareaRef>(null)
 
@@ -85,13 +89,15 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
         <div
           className={cn(
             'flex justify-between items-center gap-2 mb-2.5',
-            isChatConfig && !isExpanded && 'flex-col items-end'
+            isCompactLayout && !isExpanded && 'flex-col items-end'
           )}
         >
           {showLabel && (
             <p className="text-sm font-mono text-text-quaternary">System Instructions</p>
           )}
-          <div className={cn('flex gap-2', isChatConfig && !isExpanded ? 'flex-wrap' : 'ml-auto')}>
+          <div
+            className={cn('flex gap-2', isCompactLayout && !isExpanded ? 'flex-wrap' : 'ml-auto')}
+          >
             <Button type="magical" size="medium" className="py-1 gap-2" onClick={onShowGenAIPopup}>
               <AIGenerateSVG />
               {value ? 'Refine with AI' : 'Generate with AI'}
@@ -126,7 +132,7 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
             <div
               className={cn(
                 'flex gap-4 flex-1',
-                isChatConfig ? 'flex-col items-stretch' : 'items-center'
+                isCompactLayout ? 'flex-col items-stretch' : 'items-center'
               )}
             >
               <div className="flex flex-wrap items-center gap-0.5 flex-1">
@@ -157,7 +163,7 @@ const SystemPromptCurrentTab = forwardRef<TextareaRef, SystemPromptCurrentTabPro
               <Button
                 type="primary"
                 onClick={onManagePromptVariables}
-                className={cn(isChatConfig && 'ml-auto')}
+                className={cn(isCompactLayout && 'ml-auto')}
               >
                 <ConfigureSVG />
                 Manage Prompt Vars

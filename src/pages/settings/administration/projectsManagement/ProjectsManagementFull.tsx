@@ -151,6 +151,7 @@ const columnDefinitions: ColumnDefinition[] = [
     label: 'Assignments',
     type: DefinitionTypes.Custom,
     headClassNames: 'w-[21%]',
+    fullWidthInCard: true,
   },
   { key: 'users', label: 'Users', type: DefinitionTypes.Custom, headClassNames: 'w-[5%]' },
   { key: 'actions', label: 'Actions', type: DefinitionTypes.Custom, headClassNames: 'w-[6%]' },
@@ -574,7 +575,7 @@ const ProjectsManagementFull: FC = () => {
     return (
       <div className="flex flex-col h-full pt-4">
         <div className="mb-4 flex flex-wrap items-end gap-4">
-          <div className="w-48">
+          <div className="w-48 max-sm:w-full">
             <Input
               label="Search"
               placeholder="Search"
@@ -593,7 +594,7 @@ const ProjectsManagementFull: FC = () => {
           )}
           {isBudgetManagementEnabled && (
             <>
-              <div className="w-48">
+              <div className="w-48 max-sm:w-full">
                 <Select
                   id="budget-assignment-filter"
                   name="budget-assignment-filter"
@@ -604,7 +605,7 @@ const ProjectsManagementFull: FC = () => {
                   appendTo={document.body}
                 />
               </div>
-              <div className="w-48">
+              <div className="w-48 max-sm:w-full">
                 <Select
                   id="budget-category-filter"
                   name="budget-category-filter"

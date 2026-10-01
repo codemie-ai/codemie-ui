@@ -13,9 +13,10 @@
 // limitations under the License.
 //
 
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+import { mockMobileLayout } from '@/test-utils/mobileLayout'
 import { Assistant } from '@/types/entity/assistant'
 import { Conversation } from '@/types/entity/conversation'
 
@@ -40,6 +41,7 @@ const {
       selectedSkills: [],
       setSelectedSkills: vi.fn(),
       closeConfigForm: vi.fn(),
+      closeConfig: vi.fn(),
       openConfigForm: vi.fn(),
       hideToolOutputs: false,
       setHideToolOutputs: vi.fn(),
@@ -287,5 +289,37 @@ describe('focus management', () => {
     } finally {
       document.body.removeChild(triggerButton)
     }
+  })
+})
+
+describe('ChatConfiguration on mobile', () => {
+  let restoreLayout = () => {}
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    restoreLayout = mockMobileLayout().restore
+    mockChatContext.isConfigVisible = true
+    mockChatContext.isConfigFormVisible = false
+    mockChatsStore.currentChat = mockChat
+    mockCanEdit.mockReturnValue(true)
+  })
+
+  afterEach(() => {
+    restoreLayout()
+  })
+
+  it('closes the full-screen configuration from its close button', () => {
+    render(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close configuration' }))
+
+    expect(mockChatContext.closeConfig).toHaveBeenCalledTimes(1)
+  })
+
+  it('has no close button on desktop, where the panel has its own toggle', () => {
+    restoreLayout()
+    render(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
+
+    expect(screen.queryByRole('button', { name: 'Close configuration' })).not.toBeInTheDocument()
   })
 })

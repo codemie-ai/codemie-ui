@@ -112,8 +112,9 @@ const ToolkitsPanelLayout = ({
 
   return (
     <div className="w-full h-[662px] bg-surface-base-secondary rounded-lg overflow-hidden p-4">
-      <div className="relative grid grid-cols-[320px_1fr] h-full border border-border-primary rounded-2xl overflow-hidden">
-        <div className="absolute top-0 bottom-0 left-[320px] border-l border-border-structural z-10" />
+      {/* Narrow screens stack the list above the selected toolkit. */}
+      <div className="relative grid grid-cols-[320px_1fr] max-lg:grid-cols-1 max-lg:grid-rows-2 h-full border border-border-primary rounded-2xl overflow-hidden">
+        <div className="absolute top-0 bottom-0 left-[320px] border-l border-border-structural z-10 max-lg:hidden" />
 
         {/* Left: Toolkit list */}
         <div
@@ -152,7 +153,7 @@ const ToolkitsPanelLayout = ({
 
         {/* Right: Selected toolkit content */}
         <div
-          className="bg-surface-base-primary h-full overflow-y-auto show-scroll"
+          className="bg-surface-base-primary h-full overflow-y-auto show-scroll max-lg:border-t max-lg:border-border-structural"
           data-onboarding="assistant-toolkits-right-panel"
         >
           {filteredToolkits[selectedIndex] ? (

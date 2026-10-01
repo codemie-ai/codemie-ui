@@ -16,6 +16,7 @@
 import { useState, useEffect } from 'react'
 import { subscribe } from 'valtio'
 
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { appInfoStore } from '@/store/appInfo'
 
 // 308px matches CHAT_SIDEBAR_DEFAULT_WIDTH in
@@ -31,6 +32,7 @@ const computeOffsetClass = (): string => {
 
 export const useSidebarOffsetClass = () => {
   const [offsetClass, setOffsetClass] = useState<string>(() => computeOffsetClass())
+  const isMobileLayout = useIsMobileLayout()
 
   useEffect(() => {
     setOffsetClass(computeOffsetClass())
@@ -42,5 +44,6 @@ export const useSidebarOffsetClass = () => {
     }
   }, [])
 
-  return offsetClass
+  // The mobile layout has no navigation rail or inline sidebar to clear.
+  return isMobileLayout ? 'left-0' : offsetClass
 }

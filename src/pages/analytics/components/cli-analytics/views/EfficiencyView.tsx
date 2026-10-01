@@ -265,7 +265,7 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
         loading={loading}
         error={errorDetails}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 max-sm:gap-2">
           {contextBloatMetrics.map((metric) => (
             <MetricCard key={metric.id} metric={metric} />
           ))}

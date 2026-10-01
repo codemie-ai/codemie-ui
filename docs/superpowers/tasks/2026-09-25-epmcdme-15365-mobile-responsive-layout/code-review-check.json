@@ -1,0 +1,116 @@
+{
+  "decision": "approve",
+  "rationale": "Implementer's fix-up record for the round-2 verdict, not an independent review-triage round: a re-review was not run at the user's request. All 22 blocking findings are resolved. Each has code evidence and tests (new unit tests for the mobile layout) and, where it is user-visible, a browser check at 390, 768 and 1440px. Confidence is medium because the record is self-verified.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "FloatingKataWindow re-measures the viewport on resize and rotation, and the saved position is clamped into the new bounds. Tests: FloatingKataWindow.test.tsx (\"follows the screen when it rotates\", \"pulls a position saved on a larger screen back into view\")."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "New FloatingKataWindow.test.tsx: the fixed 500px width and 650px height on desktop, and 359px width with a 544px height limit on a 375x560 phone."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "The height is capped at the viewport height minus 16px and the content limit follows it (650 - 60 = 590px on desktop, as before). Test: \"fits a short phone screen\"."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "Tests added at the user's request (fixing the MR build). src/components/Navigation/__tests__/MobileTopBar.test.tsx: section label and fallbacks, menu and sidebar buttons, overlays closing on navigation (not on a query-only change, but on a same-URL pick), new chat from the logo, the published bottom edge and the reset on unmount."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "Mobile overlays ignore Escape while focus is in a dialog, menu or list box (isNestedLayerFocused, src/utils/mobileOverlay.ts), so that layer closes first; useEscapeKey itself is unchanged. Tests: Sidebar and Navigation Escape cases. Browser: with a chat menu open over the chat list, the first Escape closes the menu and the second the list."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "Tests added at the user's request (fixing the MR build). src/components/Navigation/__tests__/Navigation.test.tsx (\"Navigation on mobile\"): renders nothing while closed, the full-screen expanded menu while open, and Escape closes it. The link-click delegation was removed (every item navigates and the top bar closes the overlays)."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "While an overlay is open, the app content it covers is inert: App sets inert on the content area under the open navigation menu, and useMobileSidebar makes everything behind an open page sidebar inert (makeContentBehindInert). The top bar and dialogs portalled to <body> stay usable. Tests: mobileOverlay.test.ts plus the Sidebar and App cases. Browser: nothing is inert on desktop."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "Tests added at the user's request (fixing the MR build). src/components/Sidebar/__tests__/Sidebar.test.tsx (\"Sidebar on mobile\"): registers with the top bar and unregisters on unmount, stays hidden until opened, has no SidebarToggle, and Escape closes it."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "notes": "TableCardList renders a toolbar above the cards: 'Select all' through getSelectAllState, shared with TableColHeader (same lazy-mode semantics), and 'Sort by' buttons calling the same onSort. Browser: data sources sort ascending and descending by Created; Users 'Select all' selects and clears 5 of 5; the desktop header select-all is unchanged."
+    },
+    {
+      "id": "CR-010",
+      "status": "resolved",
+      "notes": "Tests added at the user's request (fixing the MR build). src/components/Table/__tests__/TableCardList.test.tsx: cards instead of the table, empty state, table kept for footers, custom rows and nested tables, drill-down selection from the card button (tap and Enter) with inner controls kept separate, checkbox selection, select-all (page and lazy), sort toolbar and expansion."
+    },
+    {
+      "id": "CR-011",
+      "status": "resolved",
+      "notes": "Cards no longer have a click handler on <li>. Tables with a selection column select through its checkbox; drill-down tables use a real button under the card content, and expanded content captures its own taps. Covered by TableCardList.test.tsx; browser-verified on Users (tap inside an expanded card does not select it)."
+    },
+    {
+      "id": "CR-012",
+      "status": "resolved",
+      "notes": "AutoPopupManager skips the navigation-introduction auto-start and the first-visit page popup while matchesMobileLayout() is true, without consuming the first-visit token. The existing AutoPopupManager tests pass (desktop path). Not browser-verified: that needs resetting the account's server-side onboarding state."
+    },
+    {
+      "id": "CR-013",
+      "status": "resolved",
+      "notes": "Tests added at the user's request (fixing the MR build). src/hooks/__tests__/useIsMobileLayout.test.ts with the shared mockMobileLayout() helper (src/test-utils/mobileLayout.ts): desktop and mobile values, re-render when the viewport crosses the breakpoint, and the fallback without matchMedia."
+    },
+    {
+      "id": "CR-014",
+      "status": "resolved",
+      "notes": "Tests added at the user's request (fixing the MR build). src/hooks/__tests__/useSidebarOffsetClass.test.ts: 'left-0' in the mobile layout."
+    },
+    {
+      "id": "CR-015",
+      "status": "resolved",
+      "notes": "Tests added at the user's request (fixing the MR build). src/pages/chat/components/ChatConfiguration/__tests__/ChatConfiguration.test.tsx (\"ChatConfiguration on mobile\"): the close button calls closeConfig; there is no close button on desktop."
+    },
+    {
+      "id": "CR-016",
+      "status": "resolved",
+      "notes": "ChatPage closes the configuration when the chat id changes in the mobile layout. Browser: configuration open, another chat picked from the chat list, configuration hidden and the new chat shown."
+    },
+    {
+      "id": "CR-017",
+      "status": "resolved",
+      "notes": "ChatPage hands the prompt's attachments across a layout switch (usePromptFilesHandoff): the remounted prompt starts with the finished uploads, while a chat switch or a new visit starts empty as before. Tests: usePromptFilesHandoff.test.ts and ChatPrompt.fileAttachment.test.tsx. Browser: an uploaded attachment survives 1440 -> 390 -> 1440px."
+    },
+    {
+      "id": "CR-018",
+      "status": "resolved",
+      "notes": "useChatConfigResize re-runs its sync effect when the layout switches. Browser: configuration opened at 375px, window widened to 1440px, desktop panel opened at 384px."
+    },
+    {
+      "id": "CR-019",
+      "status": "resolved",
+      "notes": "useChatSidebarResize re-runs its sync effect when the layout switches. Browser: chat list collapsed at 1440px, then 375px, then back to 1440px: the panel stays at 0 and the toggle reads 'Open Sidebar'."
+    },
+    {
+      "id": "CR-020",
+      "status": "resolved",
+      "notes": "OnboardingToursSection returns null in the mobile layout. Browser: the Help page at 375px has no Interactive Tours section; at 1440px all 6 tours are shown in 2 columns."
+    },
+    {
+      "id": "CR-021",
+      "status": "resolved",
+      "notes": "WorkflowExecutions uses useMobileSidebar: an overlay under the top bar registered with it, SidebarToggle on desktop only. Browser (workflow API stubbed in the page): the history opens full-width from the top bar, picking an execution navigates to it and closes the overlay; desktop keeps the 308px aside and its toggle."
+    }
+  ]
+}

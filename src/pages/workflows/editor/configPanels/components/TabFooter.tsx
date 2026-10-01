@@ -36,7 +36,8 @@ const TabFooter: React.FC<TabFooterProps> = ({
   saveDisabled = false,
 }) => {
   return (
-    <div className="sticky bottom-0 py-4 mt-4 flex gap-2 justify-between bg-surface-base-chat border-t border-border-structural z-[10]">
+    // On phones Cancel/Save move to their own line when the row does not fit the panel.
+    <div className="sticky bottom-0 py-4 mt-4 flex gap-2 justify-between bg-surface-base-chat border-t border-border-structural z-[10] max-sm:flex-wrap">
       <div className="flex gap-2">
         {onDelete && (
           <Button
@@ -59,7 +60,7 @@ const TabFooter: React.FC<TabFooterProps> = ({
           </Button>
         )}
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 max-sm:ml-auto">
         {onCancel && (
           <Button variant={ButtonType.SECONDARY} onClick={onCancel}>
             Cancel

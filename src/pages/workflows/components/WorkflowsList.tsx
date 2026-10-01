@@ -264,7 +264,7 @@ const WorkflowsList: React.FC<WorkflowsListProps> = ({ scope, filters = {} }) =>
 
   if (!activeLoading && !activeWorkflows?.length) {
     return (
-      <div className="flex justify-center m-40">
+      <div className="flex justify-center m-40 max-lg:mx-0">
         <h2>No workflows found.</h2>
       </div>
     )

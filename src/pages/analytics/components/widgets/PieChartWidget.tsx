@@ -185,9 +185,10 @@ const PieChartWidget: FC<PieChartWidgetProps> = ({
     }
 
     return (
-      <div className="flex gap-4 w-full h-[400px] p-4 overflow-hidden">
+      // Phones stack the legend under the chart so neither gets squeezed.
+      <div className="flex gap-4 w-full h-[400px] p-4 overflow-hidden max-sm:h-auto max-sm:flex-col max-sm:p-0">
         {/* Chart */}
-        <div className="flex-1 flex justify-center items-center min-w-0">
+        <div className="flex-1 flex justify-center items-center min-w-0 max-sm:h-56 max-sm:flex-none">
           <Pie data={chartData} options={chartOptions} />
         </div>
 

@@ -266,7 +266,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
         iconUrl={assistant.icon_url}
         name={assistant.name}
         type={AvatarType.MEDIUM}
-        className="shrink-0"
+        className="shrink-0 max-sm:size-12 max-sm:min-w-12 max-sm:min-h-12"
       />
     )
   }

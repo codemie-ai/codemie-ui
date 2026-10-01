@@ -193,9 +193,10 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
   }
 
   const headerContent = (
-    <div className="flex items-center justify-between w-full">
+    // Phones: the title gets its own line and the actions wrap below it.
+    <div className="flex items-center justify-between w-full max-sm:flex-col max-sm:items-start max-sm:gap-2">
       <h4 className="text-base font-semibold mb-0">Create New Skill</h4>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 max-sm:flex-wrap">
         <Button variant="tertiary" size="small" onClick={downloadSkillExample}>
           Download Example
         </Button>
@@ -216,6 +217,7 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
         bodyClassName="show-scroll overflow-y-auto"
         headerContent={headerContent}
         dismissableMask={false}
+        fullScreenOnMobile
       >
         <input
           ref={fileInputRef}

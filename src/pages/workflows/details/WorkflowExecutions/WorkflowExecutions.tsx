@@ -13,11 +13,13 @@
 // limitations under the License.
 //
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import SidebarToggle from '@/components/Sidebar/SidebarToggle'
+import { useMobileSidebar } from '@/components/Sidebar/useMobileSidebar'
 import Spinner from '@/components/Spinner'
+import { MOBILE_OVERLAY_CLASS_NAME } from '@/constants/mobileLayout'
 import { WORKFLOW_FINAL_STATUSES } from '@/constants/workflows'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { usePolling } from '@/hooks/usePolling'
@@ -32,6 +34,8 @@ import useExecutionsContext from '../hooks/useExecutionsContext'
 const WorkflowExecutions = () => {
   const { workflowId, executionId } = useExecutionsContext()
   const { sidebarExpanded } = useSnapshot(appInfoStore)
+  const asideRef = useRef<HTMLElement>(null)
+  const { isMobileLayout, isMobileSidebarOpen } = useMobileSidebar(asideRef)
   const { executions, executionsPagination, isLoadingMoreExecutions, hasMoreExecutions } =
     useSnapshot(workflowExecutionsStore) as typeof workflowExecutionsStore
 
@@ -68,12 +72,23 @@ const WorkflowExecutions = () => {
 
   return (
     <aside
+      ref={asideRef}
       className={cn(
-        'transition-all shrink-0 duration-150 overflow-x-hidden border-border-specific-sidebar border-r bg-sidebar-gradient',
-        sidebarExpanded ? 'w-workflow-exec-sidebar' : 'w-0'
+        // On mobile the history is a page sidebar overlay, opened from the top bar like the others.
+        isMobileLayout
+          ? [MOBILE_OVERLAY_CLASS_NAME, 'bg-surface-base-sidebar', !isMobileSidebarOpen && 'hidden']
+          : [
+              'transition-all shrink-0 duration-150 overflow-x-hidden border-border-specific-sidebar border-r bg-sidebar-gradient',
+              sidebarExpanded ? 'w-workflow-exec-sidebar' : 'w-0',
+            ]
       )}
     >
-      <div className="flex flex-col w-workflow-exec-sidebar max-h-full h-full">
+      <div
+        className={cn(
+          'flex flex-col max-h-full h-full',
+          isMobileLayout ? 'w-full' : 'w-workflow-exec-sidebar'
+        )}
+      >
         <h2 className="pt-4 pb-3 pl-2 font-semibold mx-4">Workflow Execution History</h2>
         {!hasExecutions && (
           <h3 className="text-text-secondary text-sm mx-auto mt-[10%]">No Executions Yet</h3>
@@ -100,7 +115,7 @@ const WorkflowExecutions = () => {
         </div>
       </div>
 
-      <SidebarToggle />
+      {!isMobileLayout && <SidebarToggle />}
     </aside>
   )
 }

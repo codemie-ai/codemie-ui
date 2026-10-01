@@ -24,6 +24,7 @@ import Avatar from '@/components/Avatar/Avatar'
 import Button from '@/components/Button'
 import DataOverlayButton from '@/components/DataOverlayButton/DataOverlayButton'
 import { AvatarType } from '@/constants/avatar'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { appInfoStore } from '@/store/appInfo'
@@ -41,6 +42,8 @@ const ChatHeader: FC = () => {
   const router = useVueRouter()
   const { isConfigVisible, attemptToggleConfigVisibility } = useChatContext()
   const { sidebarExpanded } = useSnapshot(appInfoStore)
+  // On mobile new chats start from the chat sidebar or the logo, and actions are icon-only.
+  const isMobileLayout = useIsMobileLayout()
   const { currentChat, getMetrics, startNewChat, isNewChat } = useSnapshot(
     chatsStore
   ) as typeof chatsStore
@@ -89,9 +92,9 @@ const ChatHeader: FC = () => {
     : currentChat?.assistantData[0]?.name
 
   return (
-    <div className="flex justify-between items-center grow">
+    <div className="flex justify-between items-center grow max-lg:min-w-0">
       <div className="flex items-center min-w-0 flex-1">
-        {!sidebarExpanded && (
+        {!sidebarExpanded && !isMobileLayout && (
           <Button onClick={handleCreateChat} className="mr-4 shrink-0">
             <Plus />
             New Chat
@@ -126,7 +129,7 @@ const ChatHeader: FC = () => {
                 withTooltip
               />
               <span
-                className="ml-2 line-clamp-1 font-semibold text-text-primary"
+                className="ml-2 line-clamp-1 font-semibold text-text-primary max-sm:hidden"
                 data-tooltip-id="react-tooltip"
                 data-tooltip-content={assistantDisplayName}
               >
@@ -137,7 +140,10 @@ const ChatHeader: FC = () => {
       </div>
 
       {currentChat && (
-        <div className="flex gap-2 ml-auto shrink-0" data-onboarding="chat-header-actions">
+        <div
+          className="flex gap-2 ml-auto shrink-0 max-lg:shrink max-lg:min-w-0 max-lg:overflow-x-auto"
+          data-onboarding="chat-header-actions"
+        >
           {hasAssistant && !isNewChat && (
             <Button
               type="secondary"
@@ -182,7 +188,7 @@ const ChatHeader: FC = () => {
             </>
           )}
 
-          <div className="mx-2 my-auto text-border-primary">|</div>
+          <div className="mx-2 my-auto text-border-primary max-lg:hidden">|</div>
 
           {currentChat.isWorkflow ? (
             <Button
@@ -191,7 +197,7 @@ const ChatHeader: FC = () => {
               onClick={handleViewWorkflowDetails}
             >
               <InfoSvg className="text-text-accent" />
-              Workflow Details
+              {!isMobileLayout && 'Workflow Details'}
             </Button>
           ) : (
             <Button
@@ -206,7 +212,7 @@ const ChatHeader: FC = () => {
                   'rotate-180': isConfigVisible,
                 })}
               />
-              Configuration
+              {!isMobileLayout && 'Configuration'}
             </Button>
           )}
         </div>

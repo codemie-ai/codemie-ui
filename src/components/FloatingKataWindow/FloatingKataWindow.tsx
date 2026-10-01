@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Draggable, { DraggableData, DraggableEvent } from 'react-draggable'
 import { useNavigate } from 'react-router'
 import { useSnapshot } from 'valtio'
@@ -28,15 +28,43 @@ import { floatingKataStore } from '@/store/floatingKata'
 import { katasStore } from '@/store/katas'
 import { cn } from '@/utils/utils'
 
+// Space kept between the window and the screen edges when the screen is smaller than the window.
+const VIEWPORT_MARGIN = 16
+// The header's share of the 650px window; the content scrolls within the rest.
+const HEADER_HEIGHT = 60
+
+const readViewport = () => ({ width: window.innerWidth, height: window.innerHeight })
+
+// A position saved on a larger screen (or before a rotation) is pulled back into view.
+const clampToBounds = (
+  position: { x: number; y: number },
+  bounds?: { left: number; top: number; right: number; bottom: number }
+) =>
+  bounds
+    ? {
+        x: Math.min(Math.max(position.x, bounds.left), bounds.right),
+        y: Math.min(Math.max(position.y, bounds.top), bounds.bottom),
+      }
+    : { x: position.x, y: position.y }
+
 const FloatingKataWindow = () => {
   const navigate = useNavigate()
   const store = useSnapshot(floatingKataStore)
   const [showCompleteConfirmation, setShowCompleteConfirmation] = useState(false)
   const [isCompleting, setIsCompleting] = useState(false)
   const nodeRef = useRef<HTMLDivElement>(null)
+  const [viewport, setViewport] = useState(readViewport)
 
-  const windowWidth = store.isCollapsed ? 300 : 500
-  const windowHeight = store.isCollapsed ? 60 : 650
+  // Re-measured on resize and rotation, so the window keeps fitting the screen.
+  useEffect(() => {
+    const handleResize = () => setViewport(readViewport())
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Never larger than the screen (minus a small margin); desktop screens keep the fixed size.
+  const windowWidth = Math.min(store.isCollapsed ? 300 : 500, viewport.width - VIEWPORT_MARGIN)
+  const windowHeight = Math.min(store.isCollapsed ? 60 : 650, viewport.height - VIEWPORT_MARGIN)
 
   // Handle drag stop to save position
   const handleDragStop = (_e: DraggableEvent, data: DraggableData) => {
@@ -52,8 +80,8 @@ const FloatingKataWindow = () => {
       : {
           left: 0,
           top: 0,
-          right: window.innerWidth - windowWidth,
-          bottom: window.innerHeight - windowHeight,
+          right: Math.max(0, viewport.width - windowWidth),
+          bottom: Math.max(0, viewport.height - windowHeight),
         }
   }
 
@@ -114,7 +142,7 @@ const FloatingKataWindow = () => {
   return (
     <Draggable
       nodeRef={nodeRef}
-      position={{ x: store.position.x, y: store.position.y }}
+      position={clampToBounds(store.position, getBounds())}
       onStop={handleDragStop}
       bounds={getBounds()}
       handle=".drag-handle"
@@ -180,7 +208,10 @@ const FloatingKataWindow = () => {
 
         {/* Content - Only show when expanded */}
         {!store.isCollapsed && (
-          <div className="p-4 overflow-y-auto max-h-[590px]">
+          <div
+            className="p-4 overflow-y-auto"
+            style={{ maxHeight: `${windowHeight - HEADER_HEIGHT}px` }}
+          >
             <StepByStepNavigator
               markdownContent={store.markdownContent}
               onExitStepMode={handleExitStepMode}

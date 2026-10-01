@@ -16,7 +16,9 @@
 import { FC, useRef, useEffect } from 'react'
 import { useSnapshot } from 'valtio'
 
+import CrossSvg from '@/assets/icons/cross.svg?react'
 import { useFocusOnVisible } from '@/hooks/useFocusOnVisible'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { useChatContext } from '@/pages/chat/hooks/useChatContext'
 import { chatsStore } from '@/store/chats'
@@ -33,8 +35,9 @@ interface ChatConfigurationProps {
 }
 
 const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup }) => {
-  const { isConfigVisible, isConfigFormVisible } = useChatContext()
+  const { isConfigVisible, isConfigFormVisible, closeConfig } = useChatContext()
   const { currentChat } = useSnapshot(chatsStore)
+  const isMobileLayout = useIsMobileLayout()
   const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
 
   const sidebarRef = useRef<HTMLElement>(null)
@@ -60,6 +63,17 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
     >
       {isConfigVisible && (
         <div className="flex flex-col w-full pl-2 pr-2 h-full">
+          {/* On mobile the panel covers the chat header that toggles it on desktop. */}
+          {isMobileLayout && (
+            <button
+              type="button"
+              aria-label="Close configuration"
+              className="self-end flex items-center justify-center h-8 w-8 mt-2 mr-2 rounded-lg text-text-primary hover:bg-surface-specific-secondary-button-hover"
+              onClick={closeConfig}
+            >
+              <CrossSvg aria-hidden="true" />
+            </button>
+          )}
           {isConfigFormVisible ? (
             <ChatConfigAssistantForm showNewIntegrationPopup={showNewIntegrationPopup} />
           ) : (

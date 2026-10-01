@@ -72,6 +72,8 @@ const Tabs = <TabId extends string = string>({
           role="tablist"
           className={cn(
             'flex items-stretch border-b border-border-specific-panel-outline mb-4',
+            // Tabs that outgrow a narrow screen scroll instead of widening the page.
+            'max-lg:overflow-x-auto',
             headerClassName
           )}
         >

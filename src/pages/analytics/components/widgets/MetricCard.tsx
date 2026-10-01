@@ -38,9 +38,10 @@ const MetricCard: FC<MetricCardProps> = ({
 }) => {
   return (
     <div className="bg-surface-elevated rounded-md p-3 border border-border-specific-panel-outline shadow-sm">
-      <div className="mb-1 flex items-start justify-between gap-2">
+      {/* Phones: the label keeps its own line and a period badge goes below it. */}
+      <div className="mb-1 flex items-start justify-between gap-2 max-sm:flex-wrap max-sm:gap-1">
         <p
-          className={`min-w-0 text-[11px] font-semibold uppercase tracking-[0.03em] leading-4 line-clamp-2 ${mutedTextClassName}`}
+          className={`min-w-0 text-[11px] font-semibold uppercase tracking-[0.03em] leading-4 line-clamp-2 max-sm:basis-full ${mutedTextClassName}`}
         >
           {metric.label}
         </p>

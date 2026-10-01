@@ -382,7 +382,7 @@ const UsersManagementPage: FC = () => {
       rightContent={renderHeaderActions}
       content={
         <div className="flex flex-col h-full">
-          <div className="mt-4 flex items-end justify-between gap-4 pr-4 h-[68px]">
+          <div className="mt-4 flex items-end justify-between gap-4 pr-4 h-[68px] max-lg:h-auto max-lg:flex-wrap max-lg:pr-0">
             <UsersManagementFilters
               onFilterChange={handleFilterChange}
               filters={effectiveFilters}

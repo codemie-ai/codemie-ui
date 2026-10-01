@@ -551,7 +551,8 @@ export default {
         'chat-content': '64rem',
       },
       height: {
-        card: '158px',
+        // Fixed on desktop; main.scss sets --card-height to auto below the lg breakpoint.
+        card: 'var(--card-height, 158px)',
         'layout-header': '56px',
       },
       minHeight: {

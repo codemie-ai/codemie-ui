@@ -25,6 +25,7 @@ import ModalAnnouncerHost from '@/components/appLevel/ToasterAnnouncer/ModalAnno
 import { APP_VERSION } from '@/constants'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { FOCUSABLE_SELECTOR, useFocusTrap } from '@/hooks/useFocusTrap'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { authStore } from '@/store/auth'
@@ -39,6 +40,7 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
   const router = useVueRouter()
   const { user } = useSnapshot(userStore)
   const { apiVersion } = useSnapshot(appInfoStore)
+  const isMobileLayout = useIsMobileLayout()
   const panelRef = useRef<OverlayPanel>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelContentRef = useRef<HTMLDivElement>(null)
@@ -119,7 +121,11 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
 
         <div
           className={cn(
-            'grow text-left text-text-specific-bottom-navigation-label rounded-lg mr-2 px-1.5 py-2 transition-all duration-200 ease-in-out transform-gpu group-hover:bg-surface-specific-bottom-navigation-label',
+            'grow text-left rounded-lg mr-2 px-1.5 py-2 transition-all duration-200 ease-in-out transform-gpu',
+            // Styled for the rail's gradient; the mobile menu has a plain background.
+            isMobileLayout
+              ? 'text-text-specific-navigation-link group-hover:bg-surface-specific-navigation-link'
+              : 'text-text-specific-bottom-navigation-label group-hover:bg-surface-specific-bottom-navigation-label',
             isExpanded ? 'opacity-100' : 'opacity-0'
           )}
         >

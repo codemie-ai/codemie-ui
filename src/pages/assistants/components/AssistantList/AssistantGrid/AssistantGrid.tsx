@@ -54,7 +54,7 @@ const AssistantGrid: React.FC<AssistantGridProps> = ({
 
   if (assistantList.length === 0) {
     return (
-      <div className="flex justify-center m-40">
+      <div className="flex justify-center m-40 max-sm:mx-0 max-sm:my-20 max-sm:text-center">
         <h2>{isTemplate ? 'No templates found.' : 'No assistants found.'}</h2>
       </div>
     )
@@ -73,6 +73,8 @@ const AssistantGrid: React.FC<AssistantGridProps> = ({
           'min-w-80 grid auto-rows-min grid-cols-1 card-grid-2:grid-cols-2 card-grid-3:grid-cols-3 gap-2.5 justify-items-center',
           {
             'pb-20': !isTemplate,
+            // Keeps the last template card above the fixed pagination on small screens.
+            'max-lg:pb-20': isTemplate,
           }
         )}
       >

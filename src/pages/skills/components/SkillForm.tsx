@@ -222,9 +222,12 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
 
     return (
       <>
-        <form onSubmit={handleFormSubmit} className="relative flex flex-col gap-y-6 p-6 pb-10">
+        <form
+          onSubmit={handleFormSubmit}
+          className="relative flex flex-col gap-y-6 p-6 pb-10 max-lg:px-0"
+        >
           <FormSection title="Skill Setup">
-            <div className="flex gap-4 items-end">
+            <div className="flex gap-4 items-end max-lg:flex-wrap">
               <Controller
                 name="project"
                 control={control}

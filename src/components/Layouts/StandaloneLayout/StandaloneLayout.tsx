@@ -112,14 +112,19 @@ const StandaloneLayout: React.FC<StandaloneLayoutProps> = ({ children, headerCon
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 pt-20">
         {/* Logo */}
-        <div className="absolute left-[112px] top-[80px] h-[48px] w-[192px]">{renderLogo()}</div>
+        <div className="absolute left-[112px] top-[80px] h-[48px] w-[192px] max-sm:left-4 max-sm:top-6 max-sm:h-10 max-sm:w-40">
+          {renderLogo()}
+        </div>
 
         {/* Header content (e.g., Sign In/Sign Up buttons) */}
         <div className="ml-auto">{headerContent}</div>
       </header>
 
-      {/* Content - centered on full screen */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center">{children}</div>
+      {/* Content - centered on full screen. On phones it starts below the header and nothing in
+          it (auth forms are sized in desktop pixels) may be wider than the screen. */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center max-sm:px-4 max-sm:pb-8 max-sm:pt-32 max-sm:[&_*]:max-w-full">
+        {children}
+      </div>
     </div>
   )
 }

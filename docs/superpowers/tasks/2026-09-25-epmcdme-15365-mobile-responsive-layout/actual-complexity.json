@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "generated": "2026-09-29T09:30:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 5,
+      "label": "XL"
+    },
+    "requirements_clarity": {
+      "score": 4,
+      "label": "L"
+    },
+    "technical_risk": {
+      "score": 4,
+      "label": "L"
+    },
+    "file_change_estimate": {
+      "score": 6,
+      "label": "XXL"
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS"
+    },
+    "affected_layers": {
+      "score": 2,
+      "label": "S"
+    }
+  },
+  "total": 22,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 84,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Shared foundations gained a mobile branch (App shell, Navigation, Sidebar, PageLayout, Popup, Table, Card, Tabs) plus the chat page and page-level adjustments in 9 feature areas. New abstractions: mobile shell state in appInfoStore, MobileTopBar, TableCardList, useMobileSidebar, useIsMobileLayout."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Raised from M to L: a second feedback round added requirements (chat toolbar, AI message metadata, skill form, katas, analytics, login), and the review surfaced behaviour the Figma does not define (tours on mobile, card-mode sorting and selection, state across the breakpoint), each needing a decision and rework."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Confirmed L: the review found breakpoint-crossing desyncs in the chat panels and interaction gaps in card mode, fixed with small effect-dependency and handler changes. Desktop class sets stayed identical, and the existing suites (desktop-only through the matchMedia stub) pass unchanged."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "84 files: 62 production source files, 12 test and test-utility files, index.html, tailwind.config.ts and 8 SDLC artifacts; 12 new files, among them mobileLayout.ts, useIsMobileLayout.ts, MobileTopBar.tsx, useNavigationExpanded.ts, TableCardList.tsx, useMobileSidebar.ts and the mobileLayout test helper. +3127/-326 lines, part of which is re-indentation in Table.tsx and ChatPage.tsx."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): shared foundations (Table, Sidebar, PageLayout, Popup, Card, Navigation) are rendered by nearly every page."
+  ],
+  "split_recommendation": null
+}

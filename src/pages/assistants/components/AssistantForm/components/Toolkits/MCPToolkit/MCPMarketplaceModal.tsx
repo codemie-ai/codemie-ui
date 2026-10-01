@@ -111,10 +111,11 @@ const MCPMarketplaceModal: React.FC<MCPMarketplaceModalProps> = ({
       hideFooter
       className="w-full max-w-[1200px] h-[80vh] !bg-surface-base-primary"
       bodyClassName="!bg-surface-base-primary"
+      fullScreenOnMobile
     >
       <div className="flex flex-col h-full relative">
-        {/* Search and Filters */}
-        <div className="flex gap-4 mb-6">
+        {/* Search and Filters (stacked on phones so the search keeps its width) */}
+        <div className="flex gap-4 mb-6 max-sm:flex-col max-sm:gap-3">
           <SearchBar
             searchInputRef={searchInputRef}
             inputValue={inputValue}
@@ -123,7 +124,7 @@ const MCPMarketplaceModal: React.FC<MCPMarketplaceModalProps> = ({
           />
 
           {/* Category Filter */}
-          <div className="w-48">
+          <div className="w-48 max-sm:w-full">
             <Select
               value={selectedCategory ?? 'all'}
               onChange={(e) => handleCategoryChange(e.target.value)}

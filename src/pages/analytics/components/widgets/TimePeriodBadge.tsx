@@ -25,7 +25,7 @@ const TimePeriodBadge: FC<TimePeriodBadgeProps> = ({ label, tooltip }) => {
     <span
       data-tooltip-id={tooltip ? 'react-tooltip' : undefined}
       data-tooltip-content={tooltip}
-      className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold bg-surface-base-secondary border border-border-secondary whitespace-nowrap"
+      className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold bg-surface-base-secondary border border-border-secondary whitespace-nowrap max-w-full max-sm:whitespace-normal"
     >
       <svg
         className="w-3 h-3 shrink-0"

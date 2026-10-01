@@ -26,6 +26,7 @@ import ToastContainer from '@/components/appLevel/ToastContainer'
 import { UnsavedChangesPopup } from '@/components/appLevel/UnsavedChangesPopup'
 import FloatingKataWindow from '@/components/FloatingKataWindow'
 import { HelpPanel } from '@/components/HelpLauncher'
+import MobileTopBar from '@/components/Navigation/MobileTopBar'
 import Navigation from '@/components/Navigation/Navigation'
 import { OnboardingProvider } from '@/components/Onboarding'
 import SkipLink from '@/components/SkipLink/SkipLink'
@@ -35,6 +36,7 @@ import { useHistoryStack } from '@/hooks/appLevel/useHistoryStack'
 import useInitialDataFetch from '@/hooks/appLevel/useInitialDataFetch'
 import { usePageTitle } from '@/hooks/appLevel/usePageTitle'
 import usePrismThemeToggle from '@/hooks/appLevel/usePrismThemeToggle'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useTheme } from '@/hooks/useTheme'
 import { UnsavedChangesProvider } from '@/hooks/useUnsavedChangesWarning'
 import { chatViewSettingsStore, setChatViewSettingsUserId } from '@/store/chatViewSettings'
@@ -45,8 +47,9 @@ import { appInfoStore } from './store/appInfo'
 
 const App: React.FC = () => {
   const { user } = useSnapshot(userStore)
-  const { isConfigFetched } = useSnapshot(appInfoStore)
+  const { isConfigFetched, mobileNavigationOpen } = useSnapshot(appInfoStore)
   const { appearance } = useTheme()
+  const isMobileLayout = useIsMobileLayout()
 
   useHistoryStack()
   usePrismThemeToggle()
@@ -75,10 +78,18 @@ const App: React.FC = () => {
           {!user || !isConfigFetched ? (
             <Spinner className="w-20 h-20" />
           ) : (
-            <div className="min-h-0 grow flex bg-surface-base-sidebar">
-              {showGradient && <Gradient />}
+            <div className="min-h-0 grow flex max-lg:flex-col bg-surface-base-sidebar">
+              {showGradient && !isMobileLayout && <Gradient />}
+              {isMobileLayout && <MobileTopBar />}
               <Navigation />
-              <div className="z-0 grow min-w-0">{user && <Outlet />}</div>
+              {/* data-app-content: the area mobile overlays cover (see utils/mobileOverlay). */}
+              <div
+                data-app-content
+                inert={isMobileLayout && mobileNavigationOpen}
+                className="z-0 grow min-w-0 max-lg:min-h-0"
+              >
+                {user && <Outlet />}
+              </div>
             </div>
           )}
 
@@ -87,7 +98,9 @@ const App: React.FC = () => {
               <AutoPopupManager />
               <FloatingKataWindow />
               <UnsavedChangesPopup />
-              <HelpPanel />
+              {/* Its floating button would cover primary actions on small screens and its
+                  product tours target the desktop layout; Help stays in the navigation menu. */}
+              {!isMobileLayout && <HelpPanel />}
             </>
           )}
           <SessionExpiredPopup />

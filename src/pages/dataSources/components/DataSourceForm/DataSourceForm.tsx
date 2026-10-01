@@ -318,7 +318,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
         )}
       >
         <div data-onboarding="datasource-common-fields" className="flex flex-col gap-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 max-lg:flex-wrap">
             <Controller
               name="projectName"
               control={control}
@@ -330,12 +330,12 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                       shouldDirty: false,
                     })
                   }
-                  className="w-80"
+                  className="w-80 max-w-full"
                   disabled={!!defaultProject}
                 />
               )}
             />
-            <div className="flex items-center mt-6">
+            <div className="flex items-center mt-6 max-lg:mt-0">
               <Controller
                 name="projectSpaceVisible"
                 control={control}

@@ -200,8 +200,9 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
     }
 
     return (
-      <div className="flex h-[400px] w-full gap-4 overflow-hidden p-4">
-        <div className="flex min-w-0 flex-1 items-center justify-center">
+      // Phones stack the legend under the chart so neither gets squeezed.
+      <div className="flex h-[400px] w-full gap-4 overflow-hidden p-4 max-sm:h-auto max-sm:flex-col max-sm:p-0">
+        <div className="flex min-w-0 flex-1 items-center justify-center max-sm:h-56 max-sm:flex-none">
           <Doughnut data={chartData} options={chartOptions} />
         </div>
         <ChartLegend items={legendItems} />

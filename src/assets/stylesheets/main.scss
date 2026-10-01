@@ -72,6 +72,12 @@ body,
 #app {
   @apply flex flex-col h-screen max-h-screen;
 
+  // Mobile browsers size 100vh as if their toolbars were hidden, which pushes the bottom of the
+  // app (e.g. the chat prompt) under them. dvh follows the visible viewport; on desktop it equals vh.
+  @supports (height: 100dvh) {
+    @apply h-dvh max-h-dvh;
+  }
+
   //Hides scrollbars in WebKit-based browsers for all elements except textareas
   :not(textarea):not(.show-scroll)::-webkit-scrollbar {
     display: none;
@@ -125,6 +131,26 @@ body,
   /* Firefox scrollbar styling */
   scrollbar-width: thin;
   scrollbar-color: theme("colors.border.structural") transparent;
+}
+
+// iOS Safari zooms the page into any focused field whose text is smaller than 16px; phones and
+// portrait tablets get 16px fields instead (desktop and the desktop layout are unaffected).
+// !important: field text sizes come from utility classes, which an element selector cannot beat.
+@media (pointer: coarse) and (max-width: 1023px) {
+  input,
+  textarea,
+  select,
+  .ql-editor {
+    font-size: 16px !important;
+  }
+}
+
+// Cards (the h-card height) take the height of their content on phones and tablets, where their
+// footer can wrap onto a second line.
+@media not all and (min-width: 1024px) {
+  :root {
+    --card-height: auto;
+  }
 }
 
 // Generic styles to override default HTML

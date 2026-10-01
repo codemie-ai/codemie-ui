@@ -14,8 +14,11 @@
 //
 
 import { render, screen } from '@testing-library/react'
-import { BrowserRouter } from 'react-router'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { BrowserRouter, UIMatch, useMatches } from 'react-router'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+import { HelpPageId } from '@/constants/helpLinks'
+import { mockMobileLayout } from '@/test-utils/mobileLayout'
 
 import AutoPopupManager from '../AutoPopupManager'
 
@@ -163,5 +166,77 @@ describe('AutoPopupManager — release popup vs. profile-settings fetch race', (
     renderWithRouter()
 
     expect(screen.getByRole('dialog', { name: 'New CodeMie Release' })).toBeInTheDocument()
+  })
+})
+
+describe('AutoPopupManager — tours on phones and tablets', () => {
+  let restoreLayout = () => {}
+
+  const firstTimeSsoUser = () => {
+    mockUserStore.isSSOUser = vi.fn(() => true)
+    mockAppInfoStore.isOnboardingCompleted = vi.fn(() => false)
+    mockProfileSettingsStore.profileSettings = {}
+  }
+
+  const firstVisitToChats = () => {
+    mockAppInfoStore.isAppReleaseNew = vi.fn(() => false)
+    mockOnboardingStore.isFirstPageVisit = vi.fn(() => true)
+    mockOnboardingStore.getFlowsForFirstTimePageVisit = vi.fn(() => [
+      { id: 'chat-basics', name: 'Chat basics' },
+    ]) as any
+    vi.mocked(useMatches).mockReturnValue([{ id: 'chats' } as UIMatch])
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUserStore.user = mockUser
+    mockUserStore.isSSOUser = vi.fn(() => false)
+    mockAppInfoStore.isOnboardingCompleted = vi.fn(() => true)
+    mockAppInfoStore.isAppReleaseNew = vi.fn(() => true)
+    mockOnboardingStore.isActive = false
+    mockOnboardingStore.isFirstPageVisit = vi.fn(() => false)
+    mockProfileSettingsStore.profileSettings = null
+    mockProfileSettingsStore.error = null
+    vi.mocked(useMatches).mockReturnValue([])
+  })
+
+  afterEach(() => {
+    restoreLayout()
+    restoreLayout = () => {}
+  })
+
+  it('starts the navigation tour for a first-time SSO user on desktop', () => {
+    firstTimeSsoUser()
+
+    renderWithRouter()
+
+    expect(mockOnboardingStore.startFlow).toHaveBeenCalledWith('navigation-introduction')
+  })
+
+  it('leaves the navigation tour pending on mobile', () => {
+    restoreLayout = mockMobileLayout().restore
+    firstTimeSsoUser()
+
+    renderWithRouter()
+
+    expect(mockOnboardingStore.startFlow).not.toHaveBeenCalled()
+  })
+
+  it('offers page tours on a first visit on desktop', () => {
+    firstVisitToChats()
+
+    renderWithRouter()
+
+    expect(mockOnboardingStore.markPageVisited).toHaveBeenCalledWith(HelpPageId.CHAT)
+  })
+
+  it('keeps the first visit for a desktop session on mobile', () => {
+    restoreLayout = mockMobileLayout().restore
+    firstVisitToChats()
+
+    renderWithRouter()
+
+    expect(mockOnboardingStore.markPageVisited).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

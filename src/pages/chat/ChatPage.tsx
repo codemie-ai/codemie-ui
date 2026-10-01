@@ -19,11 +19,14 @@ import { useSnapshot } from 'valtio'
 
 import PageLayout from '@/components/Layouts/Layout'
 import ResizableSeparator from '@/components/ResizableSeparator/ResizableSeparator'
+import { MOBILE_OVERLAY_CLASS_NAME } from '@/constants/mobileLayout'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useNewIntegrationPopup } from '@/hooks/useNewIntegrationPopup'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
 import { assistantsStore } from '@/store'
 import { chatsStore } from '@/store/chats'
+import { cn } from '@/utils/utils'
 
 import ChatConfigResizableSeparator from './components/ChatConfiguration/ChatConfigResizableSeparator'
 import ChatConfiguration from './components/ChatConfiguration/ChatConfiguration'
@@ -55,6 +58,7 @@ import { useChatInitialPrompt } from './hooks/useChatInitialPrompt'
 import { useChatNavigation } from './hooks/useChatNavigation'
 import { useChatPromptResize } from './hooks/useChatPromptResize'
 import { usePremiumModelTip } from './hooks/usePremiumModelTip'
+import { usePromptFilesHandoff } from './hooks/usePromptFilesHandoff'
 import { useWorkflowExecutionPoll } from './hooks/useWorkflowExecutionPoll'
 
 const ChatPage: FC = () => {
@@ -69,6 +73,7 @@ const ChatPage: FC = () => {
   useChatNavigation()
   useChatInitialPrompt()
   const { panelRef, initialWidth, handleResize } = useChatSidebarResize()
+  const isMobileLayout = useIsMobileLayout()
 
   const router = useVueRouter()
   const { currentChat } = useSnapshot(chatsStore) as typeof chatsStore
@@ -133,6 +138,9 @@ const ChatPage: FC = () => {
   // Only read for the panel floor: the tip row itself renders from the slot.
   const { tipIsVisible } = usePremiumModelTip()
 
+  // Keeps unsent attachments when crossing the mobile breakpoint remounts the chat area.
+  const promptFiles = usePromptFilesHandoff(currentChat?.id, isMobileLayout)
+
   const [starterPrompt, setStarterPrompt] = useState<string | null>(null)
   const handleStarterClick = useCallback((text: string) => setStarterPrompt(text), [])
   const clearStarterPrompt = useCallback(() => setStarterPrompt(null), [])
@@ -143,95 +151,134 @@ const ChatPage: FC = () => {
     onClose: chatConfiguration.closeConfig,
     onOpen: chatConfiguration.toggleConfigVisibility,
   })
+
+  // On mobile the configuration covers the chat: a chat picked from the chat list has to show up
+  // instead of staying behind it.
+  const { closeConfig } = chatConfiguration
+  useEffect(() => {
+    if (isMobileLayout) closeConfig()
+  }, [currentChat?.id, isMobileLayout, closeConfig])
+
   const chatContextValue: ChatContextValue = useMemo(
     () => ({ ...chatConfiguration, isSharedPage: false, canAttachFiles }),
     [chatConfiguration, canAttachFiles]
   )
 
-  return (
-    <ChatContext.Provider value={chatContextValue}>
-      <Group orientation="horizontal" className="h-full">
-        <Panel
-          id="chat-sidebar-panel"
-          panelRef={panelRef}
-          defaultSize={initialWidth}
-          minSize={CHAT_SIDEBAR_MIN_WIDTH}
-          maxSize={CHAT_SIDEBAR_MAX_WIDTH}
-          collapsible
-          collapsedSize={0}
-          groupResizeBehavior="preserve-pixel-size"
-          onResize={handleResize}
-        >
-          <ChatSidebar />
+  const chatArea = currentChat && (
+    <div className="flex flex-col h-full pb-7">
+      <Group
+        key={hasHistory ? userId : `empty-${userId}`}
+        orientation="vertical"
+        defaultLayout={defaultLayout}
+        onLayoutChanged={debouncedOnLayoutChanged}
+        className="flex-1 min-h-0"
+      >
+        <Panel id="chat-history" minSize={chatHistoryPanelMinSize(tipIsVisible)}>
+          {/* The tip slot lives outside the history/starters branch so it
+              is present in both page states, directly above the prompt. */}
+          <div className="h-full flex flex-col">
+            <div className="flex-1 min-h-0">
+              {hasHistory ? (
+                <ChatHistory />
+              ) : (
+                <div className="h-full flex flex-col">
+                  <ChatPromptStarters onStarterClick={handleStarterClick} />
+                </div>
+              )}
+            </div>
+            <ChatPremiumModelTipSlot />
+          </div>
         </Panel>
-
-        <ResizableSeparator orientation="horizontal" />
-
-        <Panel id="chat-main-content" minSize={400}>
-          <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
-            <Group orientation="horizontal" className="h-full">
-              <Panel id="chat-area" minSize={CHAT_AREA_MIN_WIDTH}>
-                {currentChat && (
-                  <div className="flex flex-col h-full pb-7">
-                    <Group
-                      key={hasHistory ? userId : `empty-${userId}`}
-                      orientation="vertical"
-                      defaultLayout={defaultLayout}
-                      onLayoutChanged={debouncedOnLayoutChanged}
-                      className="flex-1 min-h-0"
-                    >
-                      <Panel id="chat-history" minSize={chatHistoryPanelMinSize(tipIsVisible)}>
-                        {/* The tip slot lives outside the history/starters branch so it
-                            is present in both page states, directly above the prompt. */}
-                        <div className="h-full flex flex-col">
-                          <div className="flex-1 min-h-0">
-                            {hasHistory ? (
-                              <ChatHistory />
-                            ) : (
-                              <div className="h-full flex flex-col">
-                                <ChatPromptStarters onStarterClick={handleStarterClick} />
-                              </div>
-                            )}
-                          </div>
-                          <ChatPremiumModelTipSlot />
-                        </div>
-                      </Panel>
-                      <ChatResizableSeparator />
-                      <Panel id="chat-prompt" defaultSize={130} minSize={130}>
-                        <ChatPrompt
-                          resizable
-                          externalPrompt={starterPrompt}
-                          onExternalPromptConsumed={clearStarterPrompt}
-                        />
-                      </Panel>
-                    </Group>
-
-                    {/* Outside the resizable group so it never competes with the
-                        composer panel's minSize or the resize handlers. */}
-                    <ChatDisclaimer />
-                  </div>
-                )}
-              </Panel>
-
-              <ChatConfigResizableSeparator />
-
-              <Panel
-                id="chat-config"
-                panelRef={configPanelRef}
-                defaultSize={0}
-                minSize={CHAT_CONFIG_MIN_WIDTH}
-                maxSize={CHAT_CONFIG_MAX_WIDTH}
-                collapsible
-                collapsedSize={0}
-                groupResizeBehavior="preserve-pixel-size"
-                onResize={handleConfigResize}
-              >
-                <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
-              </Panel>
-            </Group>
-          </PageLayout>
+        <ChatResizableSeparator />
+        <Panel id="chat-prompt" defaultSize={130} minSize={130}>
+          <ChatPrompt
+            resizable
+            externalPrompt={starterPrompt}
+            onExternalPromptConsumed={clearStarterPrompt}
+            initialFiles={promptFiles.initialFiles}
+            onFilesChange={promptFiles.onFilesChange}
+          />
         </Panel>
       </Group>
+
+      {/* Outside the resizable group so it never competes with the
+          composer panel's minSize or the resize handlers. */}
+      <ChatDisclaimer />
+    </div>
+  )
+
+  const chatConfigurationPanel = (
+    <ChatConfiguration showNewIntegrationPopup={showNewIntegrationPopup} />
+  )
+
+  // Phones and portrait tablets have no room for side-by-side resizable panels: the chat list
+  // becomes the page sidebar overlay and the configuration a full-width overlay.
+  const mobileLayout = (
+    <div className="flex h-full">
+      <ChatSidebar />
+      <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
+        {chatArea}
+      </PageLayout>
+      {/* Below the chat list overlay, which the top bar can open on top of it. */}
+      <div
+        className={cn(MOBILE_OVERLAY_CLASS_NAME, 'z-40', {
+          hidden: !chatConfiguration.isConfigVisible,
+        })}
+      >
+        {chatConfigurationPanel}
+      </div>
+    </div>
+  )
+
+  const desktopLayout = (
+    <Group orientation="horizontal" className="h-full">
+      <Panel
+        id="chat-sidebar-panel"
+        panelRef={panelRef}
+        defaultSize={initialWidth}
+        minSize={CHAT_SIDEBAR_MIN_WIDTH}
+        maxSize={CHAT_SIDEBAR_MAX_WIDTH}
+        collapsible
+        collapsedSize={0}
+        groupResizeBehavior="preserve-pixel-size"
+        onResize={handleResize}
+      >
+        <ChatSidebar />
+      </Panel>
+
+      <ResizableSeparator orientation="horizontal" />
+
+      <Panel id="chat-main-content" minSize={400}>
+        <PageLayout key={currentChat?.id} childrenClassName="px-0" renderHeader={<ChatHeader />}>
+          <Group orientation="horizontal" className="h-full">
+            <Panel id="chat-area" minSize={CHAT_AREA_MIN_WIDTH}>
+              {chatArea}
+            </Panel>
+
+            <ChatConfigResizableSeparator />
+
+            <Panel
+              id="chat-config"
+              panelRef={configPanelRef}
+              defaultSize={0}
+              minSize={CHAT_CONFIG_MIN_WIDTH}
+              maxSize={CHAT_CONFIG_MAX_WIDTH}
+              collapsible
+              collapsedSize={0}
+              groupResizeBehavior="preserve-pixel-size"
+              onResize={handleConfigResize}
+            >
+              {chatConfigurationPanel}
+            </Panel>
+          </Group>
+        </PageLayout>
+      </Panel>
+    </Group>
+  )
+
+  return (
+    <ChatContext.Provider value={chatContextValue}>
+      {isMobileLayout ? mobileLayout : desktopLayout}
 
       <NewIntegrationPopup
         visible={showNewIntegration}

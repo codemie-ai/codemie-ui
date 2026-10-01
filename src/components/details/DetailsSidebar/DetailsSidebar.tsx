@@ -33,7 +33,8 @@ const DetailsSidebar = ({ children, classNames = '', fullWidth = false }: Detail
         classNames
       )}
     >
-      <DetailsGradientSvg className="absolute -z-10 top-[-60px] left-[-53px] pointer-events-none" />
+      {/* Decorative glow; on phones it would stick out past the screen edge. */}
+      <DetailsGradientSvg className="absolute -z-10 top-[-60px] left-[-53px] pointer-events-none max-sm:hidden" />
       {children}
     </div>
   )
