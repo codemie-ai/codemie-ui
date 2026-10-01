@@ -1,4 +1,225 @@
 [
+  {
+  "version": "2.55.0",
+  "date": "2026-09-30",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "GPT Sol 6.1 is now available in CodeMie",
+          "description": "Adds GPT Sol 6.1 as a supported model.",
+          "issues": [
+            {
+              "key": "EPMCDME-15410",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15410"
+            }
+          ]
+        },
+        {
+          "title": "Routing analytics and savings visibility",
+          "description": "Introduces analytics and savings insights for model routing.",
+          "issues": [
+            {
+              "key": "EPMCDME-14888",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14888"
+            }
+          ]
+        },
+        {
+          "title": "Intelligent model routing",
+          "description": "Adds NVIDIA NeMo Switchyard and LiteLLM autorouter support for intelligent model selection.",
+          "issues": [
+            {
+              "key": "EPMCDME-14083",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14083"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Simplified test harness dependencies",
+          "description": "Removes Plugin and NATS tests along with the codemie-plugins dependency from the test harness.",
+          "issues": [
+            {
+              "key": "EPMCDME-15217",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15217"
+            }
+          ]
+        },
+        {
+          "title": "Improved chat navigation after page changes",
+          "description": "Opens the most recently used chat after a page change and collapses other folders.",
+          "issues": [
+            {
+              "key": "EPMCDME-15211",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15211"
+            }
+          ]
+        },
+        {
+          "title": "Release notification moved to the top bar",
+          "description": "Replaces the “New CodeMie Release” popup with a top-bar notification.",
+          "issues": [
+            {
+              "key": "EPMCDME-12330",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-12330"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Imported Claude sessions open correctly",
+          "description": "Resolves an “Assistant not found” error when opening imported Claude sessions.",
+          "issues": [
+            {
+              "key": "EPMCDME-15403",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15403"
+            }
+          ]
+        },
+        {
+          "title": "MCP OAuth sign-in works with EPAM IdP",
+          "description": "Prevents the OAuth sign-in window from being closed before the callback completes.",
+          "issues": [
+            {
+              "key": "EPMCDME-15382",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15382"
+            }
+          ]
+        },
+        {
+          "title": "Pinned chats retain the intended order",
+          "description": "Sorts pinned chats by pinning time rather than recent chat activity.",
+          "issues": [
+            {
+              "key": "EPMCDME-15287",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15287"
+            }
+          ]
+        },
+        {
+          "title": "More reliable Confluence indexing",
+          "description": "Retries transient connection failures instead of aborting indexing.",
+          "issues": [
+            {
+              "key": "EPMCDME-15184",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15184"
+            }
+          ]
+        },
+        {
+          "title": "Analytics sidebar tooltip layout",
+          "description": "Prevents the sidebar toggle from overlapping the Users information tooltip.",
+          "issues": [
+            {
+              "key": "EPMCDME-15061",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15061"
+            }
+          ]
+        },
+        {
+          "title": "Claude CLI context configuration",
+          "description": "Enables the 1M context window by default for supported Claude models.",
+          "issues": [
+            {
+              "key": "EPMCDME-14763",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14763"
+            }
+          ]
+        },
+        {
+          "title": "DOCX file conversion",
+          "description": "Routes valid DOCX files to the appropriate converter.",
+          "issues": [
+            {
+              "key": "EPMCDME-13887",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-13887"
+            }
+          ]
+        },
+        {
+          "title": "Folder name normalization",
+          "description": "Prevents leading or trailing whitespace from creating separate folders.",
+          "issues": [
+            {
+              "key": "EPMCDME-13806",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-13806"
+            }
+          ]
+        },
+        {
+          "title": "Accessibility improvements across the interface",
+          "description": "Improves keyboard navigation, screen-reader announcements, semantic grouping, and handling of decorative images in chats, navigation, data sources, integrations, and assistant configuration.",
+          "issues": [
+            {
+              "key": "EPMCDME-8574",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8574"
+            },
+            {
+              "key": "EPMCDME-8557",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8557"
+            },
+            {
+              "key": "EPMCDME-8546",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8546"
+            },
+            {
+              "key": "EPMCDME-8539",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8539"
+            },
+            {
+              "key": "EPMCDME-8503",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8503"
+            },
+            {
+              "key": "EPMCDME-8456",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8456"
+            },
+            {
+              "key": "EPMCDME-8455",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8455"
+            },
+            {
+              "key": "EPMCDME-8438",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8438"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+},
  {
   "version": "2.54.0",
   "date": "2026-09-29",
