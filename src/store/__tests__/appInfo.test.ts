@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const mockGet = vi.fn()
 
@@ -577,5 +577,25 @@ describe('appInfoStore customer config refetch', () => {
     await appInfoStore.fetchCustomerConfig()
 
     expect(getConfigItemSettings(appInfoStore.configs, 'chatDisclaimer')).toBeNull()
+  })
+})
+
+describe('appInfoStore.isReleasePopupDisabled', () => {
+  afterEach(() => {
+    localStorage.removeItem('disable-release-popup')
+  })
+
+  it('returns false when the key is absent', () => {
+    expect(appInfoStore.isReleasePopupDisabled()).toBe(false)
+  })
+
+  it('returns true when the key is "True"', () => {
+    localStorage.setItem('disable-release-popup', 'True')
+    expect(appInfoStore.isReleasePopupDisabled()).toBe(true)
+  })
+
+  it('returns false when the key holds an unrelated value', () => {
+    localStorage.setItem('disable-release-popup', 'False')
+    expect(appInfoStore.isReleasePopupDisabled()).toBe(false)
   })
 })

@@ -77,7 +77,11 @@ const AutoPopupManager: FC = () => {
     }
 
     appInfoStore.loadReleaseNotes()
-    if (appInfoStore.isOnboardingCompleted() && appInfoStore.isAppReleaseNew()) {
+    if (
+      !appInfoStore.isReleasePopupDisabled() &&
+      appInfoStore.isOnboardingCompleted() &&
+      appInfoStore.isAppReleaseNew()
+    ) {
       setActivePopup('release')
     }
   }, [user, profileSettings, profileSettingsError])

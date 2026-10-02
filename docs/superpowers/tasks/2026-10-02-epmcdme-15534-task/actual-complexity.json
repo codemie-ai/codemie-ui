@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "generated": "2026-10-02T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 4,
+      "label": "L"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S"
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M"
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS"
+    },
+    "affected_layers": {
+      "score": 2,
+      "label": "S"
+    }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "AutoPopupManager coordinates three priority-ordered popup flows (onboarding intro, release notes, first-visit page tours) across multiple stores (userStore, appInfoStore, onboardingStore, profileSettingsStore). Two effects manage distinct lifecycle concerns — app-level popups and route-based page tours. Full-stack integration across UI and Service layers with clear but multi-concern responsibility."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Four files changed: new AutoPopupManager.tsx component (260 lines), new test for AutoPopupManager (278 lines), extended appInfo.ts store with isReleasePopupDisabled() method (3 lines added), and extended appInfo.test.ts with 18-test suite validating the override flag logic (68 lines added). Total 67 insertions indicates M-scale changes across test and implementation."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

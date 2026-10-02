@@ -39,6 +39,7 @@ const { mockUserStore, mockAppInfoStore, mockOnboardingStore, mockProfileSetting
         isOnboardingCompleted: vi.fn(() => true),
         loadReleaseNotes: vi.fn(),
         isAppReleaseNew: vi.fn(() => true),
+        isReleasePopupDisabled: vi.fn(() => false),
         setViewedAppVersion: vi.fn(),
       },
       mockOnboardingStore: {
@@ -129,6 +130,7 @@ describe('AutoPopupManager — release popup vs. profile-settings fetch race', (
     mockUserStore.isSSOUser = vi.fn(() => false)
     mockAppInfoStore.isOnboardingCompleted = vi.fn(() => true)
     mockAppInfoStore.isAppReleaseNew = vi.fn(() => true)
+    mockAppInfoStore.isReleasePopupDisabled = vi.fn(() => false)
     mockOnboardingStore.isActive = false
     mockOnboardingStore.getFlowsForRelease = vi.fn(() => [])
     mockProfileSettingsStore.profileSettings = null
@@ -145,6 +147,38 @@ describe('AutoPopupManager — release popup vs. profile-settings fetch race', (
   })
 
   it('shows the release popup once the profile-settings fetch resolves successfully', () => {
+    mockProfileSettingsStore.profileSettings = {
+      user_id: 'user-123',
+      theme: 'system',
+      onboarding: { completed: true, completed_flows: [], visited_pages: [] },
+      recent_assistant_ids: [],
+      last_viewed_release_version: '2.40.0',
+    }
+    mockProfileSettingsStore.error = null
+
+    renderWithRouter()
+
+    expect(screen.getByRole('dialog', { name: 'New CodeMie Release' })).toBeInTheDocument()
+  })
+
+  it('does not show the release popup when the disable-release-popup override is active, even though all other conditions allow it', () => {
+    mockAppInfoStore.isReleasePopupDisabled = vi.fn(() => true)
+    mockProfileSettingsStore.profileSettings = {
+      user_id: 'user-123',
+      theme: 'system',
+      onboarding: { completed: true, completed_flows: [], visited_pages: [] },
+      recent_assistant_ids: [],
+      last_viewed_release_version: '2.40.0',
+    }
+    mockProfileSettingsStore.error = null
+
+    renderWithRouter()
+
+    expect(screen.queryByRole('dialog', { name: 'New CodeMie Release' })).not.toBeInTheDocument()
+  })
+
+  it('still shows the release popup when the override is inactive and existing rules allow it', () => {
+    mockAppInfoStore.isReleasePopupDisabled = vi.fn(() => false)
     mockProfileSettingsStore.profileSettings = {
       user_id: 'user-123',
       theme: 'system',
@@ -193,6 +227,7 @@ describe('AutoPopupManager — tours on phones and tablets', () => {
     mockUserStore.isSSOUser = vi.fn(() => false)
     mockAppInfoStore.isOnboardingCompleted = vi.fn(() => true)
     mockAppInfoStore.isAppReleaseNew = vi.fn(() => true)
+    mockAppInfoStore.isReleasePopupDisabled = vi.fn(() => false)
     mockOnboardingStore.isActive = false
     mockOnboardingStore.isFirstPageVisit = vi.fn(() => false)
     mockProfileSettingsStore.profileSettings = null

@@ -55,6 +55,7 @@ const QUICK_ACTIONS_COLLAPSED_KEY = 'codemie-quick-actions-collapsed'
 const NAVIGATION_EXPANDED_KEY = 'codemie-navigation-expanded'
 const SIDEBAR_EXPANDED_KEY = 'codemie-sidebar-expanded'
 const DATASOURCE_PER_PAGE_KEY = 'codemie-datasource-per-page'
+const DISABLE_RELEASE_POPUP_KEY = 'disable-release-popup'
 
 const getStoredNavigationExpanded = () => localStorage.getItem(NAVIGATION_EXPANDED_KEY) === 'true'
 const getStoredSidebarExpanded = () =>
@@ -100,6 +101,7 @@ export interface AppInfoStoreType {
   loadSpeechConfig: () => Promise<SpeechConfig>
   setViewedAppVersion: (version: string) => Promise<void>
   isAppReleaseNew: () => boolean
+  isReleasePopupDisabled: () => boolean
   isOnboardingCompleted: () => boolean
   completeOnboarding: () => Promise<void>
   getLLMModels: () => Promise<ModelOption[]>
@@ -296,6 +298,10 @@ export const appInfoStore = proxy<AppInfoStoreType>({
 
   isAppReleaseNew() {
     return this.viewedAppReleaseVersion !== this.appReleases[0]?.version
+  },
+
+  isReleasePopupDisabled() {
+    return localStorage.getItem(DISABLE_RELEASE_POPUP_KEY)?.toLowerCase() === 'true'
   },
 
   isOnboardingCompleted() {

@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case lens ran clean after verification: both candidates (unmatched whitespace in the stored flag value; an unguarded localStorage.getItem) were checked against src/store/appInfo.ts and dismissed as noise — neither trims existing boolean flags in that file, and every other getter there makes the same unguarded localStorage call, so neither is a risk this change introduces. No story/spec artifact existed, so acceptance did not run (genuine no-spec, confidence capped low); blind and verification-gap were not dispatched under the compact profile; standards was not expected for this profile (standards_expected: false), so its rows are na with no coverage gap. 0 deferred, 2 dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for the compact review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for the compact review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for the compact review profile." }
+  ],
+  "findings": []
+}
