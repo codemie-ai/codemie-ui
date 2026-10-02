@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-09-29T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 6, "label": "XXL" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 27,
+  "size": "XL",
+  "band_range": "27-31",
+  "files_changed": 29,
+  "routing": "split-required",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "The change reaches several subsystems at once. These are the build pipeline (vite.config.ts moves to Rolldown with rolldownOptions, postcss.config.js becomes ESM, and \"type\": \"module\" is set), the test harness (vitest.workspace.ts is replaced by test.projects, plus vitest-env-integration.ts, src/setupTests.tsx and the new src/types/jest-dom-vitest.d.ts), the TypeScript baseline (tsconfig.json moves to ES2024), browser targeting (browserslist feeding build.target), the Keycloak theme build and the federation host. Scored L as a base and bumped to XL because this migrates a large subsystem." },
+    { "dimension": "technical_risk", "reason": "There is no in-repo precedent for two major toolchain jumps at once (Vite 5.4 to 8, which swaps the bundler to Rolldown and Oxc, and Vitest 1.6 to 5, which changes the defaults for hooks order, fake timers and coverage). Build-level regressions only showed up late: Keycloak theme asset URLs returned 404 and needed keycloakify 11.15.14, and lint failed after the dependency move. Raising the browser target to ES2024 drops older browsers. The rollback is still a git revert, so this scores L, not XL." },
+    { "dimension": "file_change_estimate", "reason": "29 files: package.json, package-lock.json, vite.config.ts, tsconfig.json, postcss.config.js, vitest-env-integration.ts, src/setupTests.tsx, src/vite-env.d.ts, three src utilities (helpers.ts, api.ts, Markdown.utils.ts), about 12 test files, AGENTS.md and 3 .ai-run guides. One file is new (src/types/jest-dom-vitest.d.ts) and one is deleted (vitest.workspace.ts). That is well above the 16+ XXL threshold, although most of the line count is package-lock.json." },
+    { "dimension": "dependencies", "reason": "Major upgrades: vite 8.3.1, vitest and @vitest/coverage-istanbul 5.0.2, @vitejs/plugin-react 6.1.1 and vite-plugin-svgr 5.2.0. New packages: vite-node 6.0.0 and browserslist-to-esbuild 2.1.1. Also added: overrides for @a2ui/markdown-it and @babel/plugin-transform-runtime. Also: keycloakify patch bump, express and vite-svg-loader removed, packages moved between dependency sections. Several major upgrades of a heavyweight toolchain score XXL." },
+    { "dimension": "file_change_estimate", "reason": "The assessor had no shell and reconstructed the count from the per-commit file lists; the orchestrator confirmed it on 2026-09-29 with `git diff --shortstat origin/main...HEAD`: 29 files changed, 1567 insertions(+), 1827 deletions(-), most of them in package-lock.json." },
+    { "dimension": "calibration", "reason": "The nearest bundled example, xl/epmcdme-10303-integrate-new-cloud-service (total 27), reaches XL through technical risk and cross-system layers. This task reaches the same total through file count and dependency churn, and its layer spread is narrower (Infrastructure/tooling plus UI output). That disagrees in profile but not in band. Total 26->27 is a boundary case; the rule says lean higher because Component Scope is XL." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: migrates large subsystems (build toolchain Vite 5->8 and test runner Vitest 1->5)"
+  ],
+  "split_recommendation": "by-dependency (single repo codemie-ui): (1) the toolchain bump plus the Vitest 5 test migration, including coverage, setup hardening and flaky-test fixes; (2) declare browserslist, raise the ES level to ES2024 and clean up build config (rolldownOptions, ESM postcss, dependency moves, keycloakify bump). Slice 2 depends on slice 1. In hindsight, each slice is about M-sized."
+}

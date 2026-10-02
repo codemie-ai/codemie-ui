@@ -16,7 +16,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { cleanup } from '@testing-library/react'
 import { type ReactNode } from 'react'
-import { vi, afterEach } from 'vitest'
+import { vi, afterEach, beforeEach } from 'vitest'
 import '@testing-library/jest-dom'
 
 import { requestRegistry, navigate as navigateMock } from './test-utils/_mock-state'
@@ -52,6 +52,15 @@ console.warn = (...params) => {
   originalConsoleWarn(...params)
 }
 
+// Vitest 5 creates jsdom before it installs the test console, so jsdom's own errors go to the
+// original Node console and bypass the filter above. Route them through the current console.
+const jsdomVirtualConsole = (globalThis as { jsdom?: { virtualConsole?: NodeJS.EventEmitter } })
+  .jsdom?.virtualConsole
+jsdomVirtualConsole?.removeAllListeners('jsdomError')
+jsdomVirtualConsole?.on('jsdomError', (error: Error & { detail?: unknown }) =>
+  console.error(error.stack, error.detail)
+)
+
 // ─── Browser globals ──────────────────────────────────────────────────────────
 
 const localStorageMock = (() => {
@@ -80,17 +89,24 @@ Object.defineProperty(global, 'localStorage', {
   writable: true,
 })
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}))
+// Constructed with `new`: Vitest 5 requires a `function` (not an arrow) implementation.
+// Passed to vi.fn() directly so that mockReset() restores it instead of dropping it.
+global.ResizeObserver = vi.fn(function () {
+  return {
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+  }
+})
 
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}))
+// Only the methods the code calls are mocked, hence the cast
+global.IntersectionObserver = vi.fn(function () {
+  return {
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+  }
+}) as unknown as typeof IntersectionObserver
 
 Element.prototype.scrollTo = vi.fn() as unknown as Element['scrollTo']
 Element.prototype.scrollIntoView = vi.fn()
@@ -295,6 +311,12 @@ const matchDefaults = (path: string): Response | null => {
   })
 }
 
+// Closed from the start of afterEach until the next test begins. A request that misses the
+// registry and would settle in that window belongs to the finished test (the registry is
+// already cleared); answering it with the null fallback would write null into a real store
+// that the next test then renders. Such requests never settle instead.
+let acceptingRequests = true
+
 const fetchMock = vi
   .fn()
   .mockImplementation(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -316,6 +338,7 @@ const fetchMock = vi
 
     if (registryFactory) return registryFactory(body)
     if (defaultResponse) return defaultResponse
+    if (!acceptingRequests) return new Promise<Response>(() => {})
 
     return new Response(JSON.stringify(null), { status: 200 })
   })
@@ -335,7 +358,12 @@ vi.mock('react-router', async (importOriginal) => {
 
 // ─── Test lifecycle ───────────────────────────────────────────────────────────
 
+beforeEach(() => {
+  acceptingRequests = true
+})
+
 afterEach(async () => {
+  acceptingRequests = false
   requestRegistry.clear()
   navigateMock.mockClear()
   fetchMock.mockClear()

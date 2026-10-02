@@ -43,6 +43,8 @@ vi.mock('@/store/appInfo', () => ({
   appInfoStore: {
     api: { BASE_URL: 'https://test' },
     fetchCustomerConfig: vi.fn().mockResolvedValue(null),
+    // Read by useFeatureFlag in SettingsForm
+    configs: [],
     toolFieldDefaults: {},
   },
 }))

@@ -1,0 +1,350 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted check of both prior blockers: CR-001 resolved by id-mapped evidence (lockfile-comparison.txt sha256 matches, commands exit 0 and bound to current HEAD 981725a00) showing only target packages and their required transitive entries moved, so the lockfile was not regenerated; CR-002 resolved in source, util.test.ts:41 now asserts getMode() falls back to build-time VITE_ENV 'local' when window._env_.VITE_ENV is empty. business_review and standards_review carried forward from the final round; the AC6/lockfile rows there are superseded by CR-001's resolution. No new findings (targeted round).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Packages: vite 8.3.1, vitest/@vitest/coverage-istanbul 5.0.2, @vitejs/plugin-react 6.1.1, vite-plugin-svgr 5.2.0, exact versions",
+      "status": "pass",
+      "notes": "exact pins in package.json"
+    },
+    {
+      "kind": "spec",
+      "item": "Add vite-node 6.0.0 (dev) for a2ui:manifest",
+      "status": "pass",
+      "notes": "devDependency present; a2ui:manifest script uses it"
+    },
+    {
+      "kind": "spec",
+      "item": "overrides: @a2ui/markdown-it 0.1.1 and @babel/plugin-transform-runtime ^7.29.0",
+      "status": "pass",
+      "notes": "overrides block present"
+    },
+    {
+      "kind": "spec",
+      "item": "keycloakify 11.15.0 -> 11.15.14",
+      "status": "pass",
+      "notes": "package.json and lockfile"
+    },
+    {
+      "kind": "spec",
+      "item": "Lockfile updated package by package, never regenerated",
+      "status": "partial",
+      "notes": "lockfile hunks absent from frozen diff; resolved versions match, method unaudited (CR-001)"
+    },
+    {
+      "kind": "spec",
+      "item": "vitest.workspace.ts replaced by test.projects (unit, integration)",
+      "status": "pass",
+      "notes": "workspace file deleted; projects inline, inherit root via Vitest 5 default extends:true"
+    },
+    {
+      "kind": "spec",
+      "item": "vitest-env-integration.ts uses vitest/runtime and viteEnvironment",
+      "status": "pass",
+      "notes": "viteEnvironment 'client'"
+    },
+    {
+      "kind": "spec",
+      "item": "Keep Vitest 1 behaviour: sequence.hooks parallel, fakeTimers.toFake timers+Date",
+      "status": "pass",
+      "notes": "vite.config.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Constructor mocks become functions",
+      "status": "pass",
+      "notes": "setupTests.tsx, api.test.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Mock / vi.fn generics move to Vitest 5 syntax",
+      "status": "pass",
+      "notes": "affected tests updated"
+    },
+    {
+      "kind": "spec",
+      "item": "jest-dom matchers via Vitest Matchers interface",
+      "status": "pass",
+      "notes": "src/types/jest-dom-vitest.d.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "coverage.include src/**/*.{ts,tsx} keeps untested files in report",
+      "status": "pass",
+      "notes": "vite.config.ts coverage.include"
+    },
+    {
+      "kind": "spec",
+      "item": "Fix retry-only tests (SettingsForm x3, DataSourceCreatePage xWiki); suite passes with --retry 0",
+      "status": "pending-stage-7",
+      "notes": "fixes present; --retry 0 run is execution evidence"
+    },
+    {
+      "kind": "spec",
+      "item": "package.json browserslist: chrome/edge>=119, firefox>=128, safari/ios_saf>=17.4",
+      "status": "pass",
+      "notes": "matches exactly"
+    },
+    {
+      "kind": "spec",
+      "item": "build.target via browserslist-to-esbuild; Keycloak theme same target; autoprefixer reads list",
+      "status": "pass",
+      "notes": "shared build.target"
+    },
+    {
+      "kind": "spec",
+      "item": "tsconfig target/lib ES2024; remove four unused @ts-expect-error directives",
+      "status": "pass",
+      "notes": "tsconfig.json; four directives removed"
+    },
+    {
+      "kind": "spec",
+      "item": "Cleanup: rollupOptions -> rolldownOptions",
+      "status": "pass",
+      "notes": "vite.config.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Cleanup: type module, postcss export default, import.meta.dirname",
+      "status": "pass",
+      "notes": "no remaining CJS .js files outside vendored bundle"
+    },
+    {
+      "kind": "spec",
+      "item": "Cleanup: drop scss.api option and top-level types key in tsconfig",
+      "status": "pass",
+      "notes": "removed"
+    },
+    {
+      "kind": "spec",
+      "item": "Cleanup: build-only packages to devDependencies; keycloakify stays",
+      "status": "pass",
+      "notes": "moved as specified"
+    },
+    {
+      "kind": "spec",
+      "item": "Cleanup: remove express and vite-svg-loader",
+      "status": "pass",
+      "notes": "no remaining imports in src, scripts or Dockerfiles"
+    },
+    {
+      "kind": "spec",
+      "item": "Unchanged: application code apart from four @ts-expect-error lines",
+      "status": "pass",
+      "notes": "only type-only src changes"
+    },
+    {
+      "kind": "spec",
+      "item": "Unchanged: runtime config.js, federation plugin 1.4.1, prismjs plugin, Node in CI/Docker",
+      "status": "pass",
+      "notes": "none changed"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: build.target or lib must not exceed ES2024",
+      "status": "pass",
+      "notes": "ES2024"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no Node upgrade, prismjs replacement, React Compiler, a2ui 0.11, code splitting",
+      "status": "pass",
+      "notes": "none in diff"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC1: vite 8.x, vitest 5.x, coverage-istanbul 5.x, plugin-react 6.x, vite-plugin-svgr 5.x",
+      "status": "pass",
+      "notes": "8.3.1 / 5.0.2 / 5.0.2 / 6.1.1 / 5.2.0"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: vite-node added for a2ui:manifest, subject to approval",
+      "status": "pass",
+      "notes": "approval is a process step"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: vitest.workspace.ts replaced with test.projects",
+      "status": "pass",
+      "notes": "vite.config.ts"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: vitest-env-integration.ts uses the new environment API",
+      "status": "pass",
+      "notes": "vitest/runtime, viteEnvironment"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC5: tests broken by new mocking rules and stricter types fixed; tsc clean",
+      "status": "pending-stage-7",
+      "notes": "tsc result is execution evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC6: lockfile updated package by package",
+      "status": "partial",
+      "notes": "method not auditable from the review diff (CR-001)"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC7: all unit and integration tests pass",
+      "status": "pending-stage-7",
+      "notes": "Stage 7"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC8: Test Files count unchanged; MR quotes before/after",
+      "status": "pending-stage-7",
+      "notes": "execution/handoff evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC9: production build passes on Node 20.19+",
+      "status": "pending-stage-7",
+      "notes": "build evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC10: Keycloak theme build passes on Node 20.19+",
+      "status": "pending-stage-7",
+      "notes": "build evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC11: build:keycloak produces dist_keycloak/keycloak-theme-codemie.jar",
+      "status": "pending-stage-7",
+      "notes": "artifact evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC12: multistage.kc-theme.Dockerfile image builds",
+      "status": "pending-stage-7",
+      "notes": "image build evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC13: Keycloak shows the CodeMie login page",
+      "status": "pending-stage-7",
+      "notes": "browser evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC14: login works end to end incl. Entra sign-in and OTP pages",
+      "status": "pending-stage-7",
+      "notes": "browser evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC15: module federation verified via /applications/<slug>",
+      "status": "pending-stage-7",
+      "notes": "no automated coverage of federation host under Rolldown; runtime check required"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC16: DevOps confirms whether any environment still uses module applications",
+      "status": "pending-stage-7",
+      "notes": "organisational confirmation outside the code change; lens marked na"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC17: if federation does not work, stop and choose @module-federation/vite or Vite 7",
+      "status": "pending-stage-7",
+      "notes": "conditional on AC15 outcome; lens marked na"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC18: manual smoke passes (chat, editors, workflow graph, highlighting, toasts, SVG icons)",
+      "status": "pending-stage-7",
+      "notes": "browser evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC19: npm run test-harness passes against dedicated environment",
+      "status": "pending-stage-7",
+      "notes": "execution evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC20: browserslist applied to build.target, autoprefixer and Keycloak theme build",
+      "status": "pass",
+      "notes": "package.json, vite.config.ts"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC21: tsconfig target and lib ES2024; tsc passes with no new errors",
+      "status": "pending-stage-7",
+      "notes": "tsconfig set; tsc is execution evidence"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC22: cleanup (rolldownOptions, type module, devDependencies, removals, two overrides)",
+      "status": "pass",
+      "notes": "all present"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC23: MR records verification results incl. browser list and resulting build.target",
+      "status": "pending-stage-7",
+      "notes": "MR description evidence"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "all 10 commit subjects in e421ad1d..HEAD match the git-workflow.md pattern EPMCDME-XXXX: Capital sentence (non-zero ticket 15243, capitalised first word, no trailing period)"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no code_quality ref passed; absent standard, not adjudicated"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "security-patterns.md checked against the 29 changed files: no new or changed HTML sinks, navigation from untrusted input, postMessage listeners, VITE_*/window._env_ secrets, nosonar or sonar.issue.ignore changes, gitleaks allowlist or nginx header edits; removed lines in src/utils/api.ts, helpers.ts and Markdown.utils.ts are @ts-expect-error comments made obsolete by the ES2024 lib, not Sonar suppressions; vite.config.ts changes are Vitest project config"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "evidence",
+      "severity": "major",
+      "triage": "patch",
+      "file": "package-lock.json",
+      "title": "Lockfile update method unevidenced (spec, AC6)",
+      "problem": "The spec and AC6 require the lockfile to be updated package by package, never regenerated. package-lock.json changed across five commits, but none of its hunks were in the frozen review diff. Only the resolved versions (vite 8.3.1, vitest 5.0.2, keycloakify 11.15.14, @a2ui/markdown-it 0.1.1) could be spot-checked, so the required method is only partially met.",
+      "impact": "A regenerated lockfile silently re-resolves unrelated transitive dependencies across the whole tree. That is a supply-chain and runtime-regression risk the requirement exists to prevent. Reachability is unconfirmed: the method could not be established from the available input.",
+      "recommendation": "Provide evidence that the lockfile diff (origin/main..HEAD -- package-lock.json) only touches the targeted packages and their required transitive entries. If unrelated entries moved, restore them from origin/main and re-apply the upgrades package by package."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/__tests__/util.test.ts",
+      "line": 41,
+      "title": "getMode build-time fallback no longer tested",
+      "problem": "The test that asserted getMode() returns 'local' via the build-time fallback (window._env_.VITE_ENV empty -> import.meta.env.VITE_ENV, src/utils/utils.ts:62) now stubs VITE_ENV to '' and expects ''. The neighbouring test named for the fallback sets window._env_.VITE_ENV='development', so it never reaches it. No test now tells the fallback apart from a plain return of window._env_.VITE_ENV. Runtime code is unchanged; this is a broken-verification gap the change introduced.",
+      "impact": "Local-mode detection depends on this fallback: getMode() === ENV.LOCAL in src/store/auth.ts:90 and the dev user-id header in src/utils/api.ts:438. A regression in the fallback would pass the suite unnoticed.",
+      "recommendation": "Keep the '' case, and add or restore a case that sets window._env_ = { VITE_ENV: '', VITE_API_URL: '' }, runs vi.stubEnv('VITE_ENV', 'local') and expects getMode() to be 'local'. Also rename or fix the misnamed 'import.meta.env.VITE_ENV' test so it actually exercises the fallback."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "evidence/lockfile-comparison.txt signature verified; 22 version changes all target or range-required transitive, adds/removals match Vite 8/Vitest 5 trees; commands exit 0 at HEAD 981725a00"
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "src/utils/__tests__/util.test.ts:41-45 sets VITE_ENV '' in window._env_, stubEnv 'local', expects 'local'; exercises utils.ts getMode fallback"
+    }
+  ]
+}

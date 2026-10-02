@@ -220,9 +220,9 @@ describe('downloadFileStream', () => {
       body: stream,
       headers: { get: (key: string) => headers[key] ?? null },
     })
-    vi.spyOn(global, 'Response').mockImplementation(
-      () => ({ blob: () => Promise.resolve(blob) } as any)
-    )
+    vi.spyOn(global, 'Response').mockImplementation(function () {
+      return { blob: () => Promise.resolve(blob) } as any
+    })
   }
 
   beforeEach(() => {

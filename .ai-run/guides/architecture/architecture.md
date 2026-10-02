@@ -2,7 +2,7 @@
 
 ## Overview
 
-CodeMie UI is a React 18.3.1 / TypeScript 5.8.3 / Vite 5.4.21 SPA with hash-based routing,
+CodeMie UI is a React 18.3.1 / TypeScript 5.8.3 / Vite 8.3.1 SPA with hash-based routing,
 module federation (micro-frontend host), and dual-mode authentication (local email/password
 or Keycloak SSO). All state is managed through Valtio proxy stores. All HTTP goes through a
 single custom fetch-based API client. Styling is Tailwind CSS exclusively.

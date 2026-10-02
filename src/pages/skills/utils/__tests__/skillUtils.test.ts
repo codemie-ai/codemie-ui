@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 
 import { Skill, SkillVisibility } from '@/types/entity/skill'
 
@@ -26,13 +26,15 @@ import {
 
 describe('skillUtils', () => {
   describe('downloadSkillExample', () => {
-    let createObjectURLMock: ReturnType<typeof vi.fn<[Blob | MediaSource], string>>
-    let revokeObjectURLMock: ReturnType<typeof vi.fn>
-    let clickSpy: ReturnType<typeof vi.fn>
-    let linkEl: { href: string; download: string; click: ReturnType<typeof vi.fn> }
+    let createObjectURLMock: ReturnType<typeof vi.fn<(obj: Blob | MediaSource) => string>>
+    let revokeObjectURLMock: Mock
+    let clickSpy: Mock
+    let linkEl: { href: string; download: string; click: Mock }
 
     beforeEach(() => {
-      createObjectURLMock = vi.fn<[Blob | MediaSource], string>().mockReturnValue('blob:test-url')
+      createObjectURLMock = vi
+        .fn<(obj: Blob | MediaSource) => string>()
+        .mockReturnValue('blob:test-url')
       revokeObjectURLMock = vi.fn()
       URL.createObjectURL = createObjectURLMock
       URL.revokeObjectURL = revokeObjectURLMock
@@ -72,11 +74,13 @@ describe('skillUtils', () => {
   })
 
   describe('downloadSkillAsMarkdown', () => {
-    let createObjectURLMock: ReturnType<typeof vi.fn<[Blob | MediaSource], string>>
-    let linkEl: { href: string; download: string; click: ReturnType<typeof vi.fn> }
+    let createObjectURLMock: ReturnType<typeof vi.fn<(obj: Blob | MediaSource) => string>>
+    let linkEl: { href: string; download: string; click: Mock }
 
     beforeEach(() => {
-      createObjectURLMock = vi.fn<[Blob | MediaSource], string>().mockReturnValue('blob:test-url')
+      createObjectURLMock = vi
+        .fn<(obj: Blob | MediaSource) => string>()
+        .mockReturnValue('blob:test-url')
       URL.createObjectURL = createObjectURLMock
       URL.revokeObjectURL = vi.fn()
 

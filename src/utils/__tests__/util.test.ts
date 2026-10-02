@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { EnvConfig } from '@/types/global'
 import { getMode, hash } from '@/utils/utils'
@@ -21,6 +21,10 @@ import { getMode, hash } from '@/utils/utils'
 describe('util.js', () => {
   beforeEach(() => {
     window._env_ = undefined
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('getMode', () => {
@@ -34,10 +38,16 @@ describe('util.js', () => {
       expect(getMode()).toBe('development')
     })
 
-    it('should return local when neither environment variable is available', () => {
+    it('should fall back to the build-time VITE_ENV when window._env_.VITE_ENV is empty', () => {
       window._env_ = { VITE_ENV: '', VITE_API_URL: '' } as EnvConfig
-      ;(import.meta.env as any) = {}
+      vi.stubEnv('VITE_ENV', 'local')
       expect(getMode()).toBe('local')
+    })
+
+    it('should return an empty string when neither environment variable is set', () => {
+      window._env_ = { VITE_ENV: '', VITE_API_URL: '' } as EnvConfig
+      vi.stubEnv('VITE_ENV', '')
+      expect(getMode()).toBe('')
     })
   })
 

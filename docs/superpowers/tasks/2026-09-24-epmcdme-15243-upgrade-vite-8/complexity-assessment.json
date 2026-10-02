@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "task": "Upgrade codemie-ui build and test tooling from Vite 5.4 / Vitest 1.6 to Vite 8 / Vitest 5 (with plugin-react 6, svgr 5, coverage-istanbul 5), migrate the test projects and integration environment, fix tests broken by new mocking/type rules, declare an ES2024 browser baseline, clean up dependencies, and verify the Keycloak theme, module federation and CI/Docker on Node 20.19+.",
+  "generated": "2026-09-29T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 6, "label": "XXL" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 26,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single tooling tier, but several distinct components change together: vite.config (Rolldown options, plugins), test configuration (workspace -> test.projects, custom integration environment), global test setup (observer mocks, fetch mock/hook ordering, jest-dom typings), tsconfig/browserslist, Keycloak theme build and the federation host. Base M, bumped to L because the build and test infrastructure is shared by every build, test, Docker image and the Keycloak theme." },
+    { "dimension": "technical_risk", "reason": "No in-repo precedent for a multi-major bundler/test-runner jump. Known breakages: Oxc template-literal output breaking bundle post-processors (keycloakify 11.15.0, @originjs federation, which is unmaintained), silent browser-target change, test semantics drift (hook order, fake timers, mock reset) that can hide behind retry: 1, and coverage.all removal. Offset: a PoC already builds and passes tests, and rollback is a plain revert with no data/API/runtime-config impact, so L rather than XL. The test-template auto-bump was considered and not applied: the AC list verification scenarios (Keycloak pages, federation, smoke) rather than defensive edge/error cases, and they are covered by build-level checks, not a unit-test template." },
+    { "dimension": "file_change_estimate", "reason": "About 30 files modified: build and TS config, package.json and lockfile, test setup and integration environment, ~15 test files, AGENTS.md and .ai-run testing/architecture guides, plus removal of vitest.workspace.ts. Well past the 16+ threshold and touching shared foundations." },
+    { "dimension": "dependencies", "reason": "Major upgrades of vite (5->8), vitest and @vitest/coverage-istanbul (1->5), @vitejs/plugin-react (4->6), vite-plugin-svgr (4->5); keycloakify patch bump; one new package (vite-node); two npm overrides for ERESOLVE blockers (@a2ui peer chain, Babel 8 optional-peer chain); removals (express, vite-svg-loader) and moves to devDependencies; EBADENGINE warnings for 19 packages on Node 20. Lockfile must be updated package by package." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: touches core shared build and test infrastructure used by every build, test, Docker image and the Keycloak theme"
+  ],
+  "split_recommendation": null
+}

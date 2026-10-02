@@ -170,7 +170,7 @@ describe('ProjectsManagementFull — edit save flow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
 
-    const { onSubmit } = projectModalMock.mock.calls.at(-1)[0]
+    const { onSubmit } = projectModalMock.mock.calls.at(-1)![0]
     await act(async () => {
       await onSubmit({
         name: 'my-project',
@@ -194,7 +194,7 @@ describe('ProjectsManagementFull — edit save flow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
 
-    const { onSubmit } = projectModalMock.mock.calls.at(-1)[0]
+    const { onSubmit } = projectModalMock.mock.calls.at(-1)![0]
     await act(async () => {
       await onSubmit({
         name: 'my-project',
@@ -217,7 +217,7 @@ describe('ProjectsManagementFull — edit save flow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
 
-    const { onSubmit } = projectModalMock.mock.calls.at(-1)[0]
+    const { onSubmit } = projectModalMock.mock.calls.at(-1)![0]
     await act(async () => {
       await onSubmit({
         name: undefined,

@@ -62,7 +62,7 @@ vi.mock('../AnalyticsUserFilter', () => ({
 describe('AnalyticsFilters - Race Condition Fix', () => {
   const mockOnFiltersChange = vi.fn()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let consoleErrorSpy: MockInstance<[message?: any, ...optionalParams: any[]], void>
+  let consoleErrorSpy: MockInstance<(message?: any, ...optionalParams: any[]) => void>
 
   beforeEach(() => {
     vi.clearAllMocks()

@@ -14,7 +14,7 @@
 //
 
 import { renderHook } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
 import { INDEX_TYPES } from '@/constants/dataSources'
 import * as useAnnouncementQueueModule from '@/hooks/useAnnouncementQueue'
@@ -48,7 +48,7 @@ const createMockDataSource = (overrides: Partial<DataSource> = {}): DataSource =
 })
 
 describe('useDataSourceStatusAnnouncer', () => {
-  let mockAnnounce: ReturnType<typeof vi.fn>
+  let mockAnnounce: Mock<(message: string) => void>
 
   beforeEach(() => {
     mockAnnounce = vi.fn()

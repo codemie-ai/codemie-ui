@@ -14,9 +14,9 @@
 //
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { builtinEnvironments } from 'vitest/environments'
+import { builtinEnvironments } from 'vitest/runtime'
 
-import type { Environment } from 'vitest'
+import type { Environment } from 'vitest/runtime'
 
 // Custom Vitest environment for integration tests.
 //
@@ -33,7 +33,7 @@ import type { Environment } from 'vitest'
 
 const integrationEnvironment: Environment = {
   name: 'jsdom-integration',
-  transformMode: 'web',
+  viteEnvironment: 'client',
   async setup(global: any, options: any) {
     const NativeAbortController = global.AbortController
     const NativeAbortSignal = global.AbortSignal

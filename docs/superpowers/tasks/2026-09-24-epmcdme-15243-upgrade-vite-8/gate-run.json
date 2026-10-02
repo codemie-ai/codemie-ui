@@ -1,0 +1,139 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15243_upgrade-vite-8",
+  "head": "e0803a37dbe08527e6c5ebdff5d1677cd89bb621",
+  "runner": "npm",
+  "started_at": "2026-09-29T13:55:48Z",
+  "completed_at": "2026-09-29T14:00:44Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 15107,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Skip-if not met (src/ touched). Only a non-blocking eslint-plugin-react 'React version not specified' warning."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 11454,
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "notes": "Also covers the lint-staged 'bash -c tsc --noEmit' hook step."
+    },
+    {
+      "id": "typecheck-node",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 894,
+      "command": "npx tsc -p tsconfig.node.json --noEmit",
+      "exit_code": 0,
+      "notes": "Caller-requested supplement, not in guide: tsc --noEmit does not cover vite.config.ts (tsconfig.node.json). Leftover untracked tsconfig.node.tsbuildinfo deleted."
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1321,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Run because package.json/package-lock.json changed deps. Summary table printed, no disallowed licence."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13139,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Quoted: 'no leaks found' (gitleaks via docker, working tree only). Also covers CI gitleaks-scan and the hook secrets step."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 160651,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  619 passed (619); Tests  6337 passed | 1 skipped (6338)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 54786,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  48 passed (48); Tests  549 passed | 1 skipped (550)."
+    },
+    {
+      "id": "lint-staged-prettier",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 948,
+      "command": "npx prettier --check .ai-run/guides/architecture/architecture.md .ai-run/guides/testing/qa-strategy.md .ai-run/guides/testing/testing-patterns.md AGENTS.md README.md package-lock.json package.json postcss.config.js src/components/AceEditor/__tests__/AceEditor.test.tsx src/hooks/__tests__/useToolkitSelection.test.ts src/pages/analytics/components/__tests__/AnalyticsFilters.test.tsx src/pages/chat/components/ChatConfiguration/__tests__/useChatConfigResize.test.ts src/pages/dataSources/__tests__/DataSourceCreatePage.integration.test.tsx src/pages/integrations/components/SettingsForm/__tests__/SettingsForm.autoFill.test.tsx src/pages/integrations/components/SettingsForm/__tests__/SettingsForm.resourceReset.test.tsx src/pages/integrations/components/SettingsForm/__tests__/SettingsForm.sharePointAuth.test.tsx src/pages/settings/administration/projectsManagement/__tests__/ProjectsManagementFull.editFlow.test.tsx src/pages/skills/utils/__tests__/skillUtils.test.ts src/setupTests.tsx src/types/jest-dom-vitest.d.ts src/utils/__tests__/api.test.ts src/utils/__tests__/util.test.ts src/utils/api.ts src/utils/helpers.ts src/vite-env.d.ts tsconfig.json vite.config.ts vitest-env-integration.ts",
+      "exit_code": 0,
+      "notes": "Hook runs 'npx lint-staged' (prettier --write, eslint --fix, tsc --noEmit), which mutates files and is a no-op with nothing staged; ran non-mutating prettier --check over changed (non-deleted) files instead: 'All matched files use Prettier code style!'. eslint/tsc steps covered by lint/typecheck gates."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 226,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2213 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 138,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip, exit 0: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' (.env.local absent). Enable by exporting SONAR_TOKEN; CI sonar task still owed."
+    },
+    {
+      "id": "build",
+      "source": "ci",
+      "status": "PASS",
+      "duration_ms": 15211,
+      "command": "npm run build",
+      "exit_code": 0,
+      "notes": "Local proxy for CI dockerbuild-verify (npm run build = typecheck + vite build, rolldown). '✓ built in 4.93s'; only chunk-size and Tailwind @tailwindcss/line-clamp deprecation warnings. Guide omits build; mismatch noted."
+    },
+    {
+      "id": "dockerfile-lint",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "hadolint Dockerfile multistage.Dockerfile multistage.kc-theme.Dockerfile",
+      "exit_code": null,
+      "notes": "hadolint not installed locally and pipeline defined outside repo; CI-only. Install hadolint to run locally."
+    },
+    {
+      "id": "dockerbuild-verify",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(KubeRocketCI MR pipeline, defined outside repo)",
+      "exit_code": null,
+      "notes": "Docker image builds run in KubeRocketCI MR pipeline (dhi.io base images, not verified reachable). Note multistage.Dockerfile uses node:20-alpine; Vite 8 needs Node >=20.19. Owed to CI."
+    },
+    {
+      "id": "sonar",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(KubeRocketCI MR pipeline sonar task)",
+      "exit_code": null,
+      "notes": "Server-side SAST in MR pipeline; needs SONAR_TOKEN/server. Owed to CI."
+    }
+  ],
+  "failures": {}
+}

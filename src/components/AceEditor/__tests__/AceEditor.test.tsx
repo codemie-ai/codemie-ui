@@ -69,7 +69,7 @@ describe('AceEditor keyboard focus trap fix', () => {
     render(<AceEditor value="" />)
 
     const names = mockEditor.commands.addCommand.mock.calls.map(
-      ([cmd]: [{ name: string }]) => cmd.name
+      ([cmd]: { name: string }[]) => cmd.name
     )
 
     expect(names).not.toContain('escapeEditor')
@@ -80,7 +80,7 @@ describe('AceEditor keyboard focus trap fix', () => {
     render(<AceEditor value="" readonly />)
 
     const { calls } = mockEditor.renderer.scroller.setAttribute.mock
-    const ariaLabelCall = calls.find(([attr]: [string]) => attr === 'aria-label')
+    const ariaLabelCall = calls.find(([attr]: string[]) => attr === 'aria-label')
 
     expect(ariaLabelCall).toBeDefined()
     expect(ariaLabelCall![1]).not.toContain('start editing')
@@ -91,7 +91,7 @@ describe('AceEditor keyboard focus trap fix', () => {
     render(<AceEditor value="" />)
 
     const { calls } = mockEditor.renderer.scroller.setAttribute.mock
-    const ariaLabelCall = calls.find(([attr]: [string]) => attr === 'aria-label')
+    const ariaLabelCall = calls.find(([attr]: string[]) => attr === 'aria-label')
 
     expect(ariaLabelCall).toBeDefined()
     expect(ariaLabelCall![1]).toBe('Editor content, press Enter to start editing')

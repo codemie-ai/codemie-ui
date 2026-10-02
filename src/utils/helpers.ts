@@ -311,7 +311,6 @@ export const navigateBack = async (...allowedRoutesArgs: AllowedRoute[]): Promis
     .map((route) => route.name)
     .filter((name) => name !== hashRouter.state.matches.at(-1)?.route.id)
 
-  // @ts-expect-error: roperty 'findLast' does not exist on type 'HistoryStoreItem[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.ts(2550)
   const prevRoute = history.stack.findLast((item: any) => allowedRouteNames.includes(item.name))
   if (prevRoute) {
     const { name, params, query } = prevRoute
@@ -323,7 +322,6 @@ export const navigateBack = async (...allowedRoutesArgs: AllowedRoute[]): Promis
   const currentRoute = hashRouter.state.matches.at(-1)
   const currentParams = currentRoute?.params ?? {}
 
-  // @ts-expect-error: Property 'toReversed' does not exist on type 'string[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.ts(2550)
   for (const allowedRouteName of allowedRouteNames.toReversed()) {
     const allowedRouteObject = findRouteObject(allowedRouteName)
     if (allowedRouteObject) {

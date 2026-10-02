@@ -6,8 +6,8 @@
 
 | Framework | Type | Config file | Test directories |
 |---|---|---|---|
-| Vitest 1.6.1 + React Testing Library 16.3 | unit | `vitest.workspace.ts`, `vite.config.ts` | `src/**/__tests__/` |
-| Vitest 1.6.1 + React Testing Library 16.3 | integration | `vitest.workspace.ts` | `src/**/__tests__/` |
+| Vitest 5 + React Testing Library 16.3 | unit | `vite.config.ts` (`test.projects`) | `src/**/__tests__/` |
+| Vitest 5 + React Testing Library 16.3 | integration | `vite.config.ts` (`test.projects`), `vitest-env-integration.ts` | `src/**/__tests__/` |
 | pytest 8.4.1 + pytest-playwright | API + UI E2E | `../codemie-sdk/test-harness/pyproject.toml` | `../codemie-sdk/test-harness/codemie_test_harness/tests/` |
 
 ## Test Types in Use

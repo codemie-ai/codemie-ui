@@ -138,33 +138,27 @@ npm run sonar-local          # Run shared local SonarQube check
 - **Workers are capped at 3** (`maxWorkers` in `vite.config.ts`). Vitest sizes its pool from
   the host's cores, and the CI pod only requests 2 CPUs — an uncapped run spawned dozens of
   jsdom workers that starved each other. The cap applies to both `unit` and `integration`,
-  since a workspace shares one pool.
+  since the test projects share one pool.
 - **Locally the cap is 3 too**, so a full run on a many-core machine is slower. Override it
   per run: `npx vitest run --maxWorkers=8`.
 - **3 is an estimate from the pod resources, not a measurement.** Tune it by the CI step
   duration; raise it if the pod gets more CPU.
 - **`test:coverage` collects coverage from unit tests only.** Integration tests run in a
   separate pass without instrumentation, which is ~3× faster.
-- **Test timeout is 30 s** (`CI_COVERAGE_TEST_TIMEOUT_MS` in `vitest.workspace.ts`) to absorb
+- **Test timeout is 30 s** (`CI_COVERAGE_TEST_TIMEOUT_MS` in `vite.config.ts`) to absorb
   coverage overhead in CI. A test that times out only in CI is not a code bug — see
   `AGENTS.md` § Reading gate output.
 
 ### Sanity UI suite (CodeMie test harness)
 
-Requires `~/.codemie/test-harness.json` and a running backend. The `:mac`/`:win`
-variants build the app and serve it with `vite preview` on port 5173 first — faster
-and less flaky than testing against the dev server.
+Requires `~/.codemie/test-harness.json` and a running backend. Start `npm run dev`
+first — no build is needed: the dev server runs in Vite's full bundle mode
+(`experimental.bundledDev` in `vite.config.ts`), so the suite runs about as fast and
+as stable against it as against a production build.
 
 ```bash
-npm run test-harness         # Against whatever already serves port 5173
-npm run test-harness:mac     # Build + vite preview, then sanity UI (macOS/Linux)
-npm run test-harness:win     # Same flow on Windows (PowerShell)
-npm run test-harness:fast    # Same flow via Docker/nginx (compose profile `uitest`)
+npm run test-harness   # Against whatever serves port 5173 (local or Docker dev server)
 ```
-
-Every variant shuts its server down when the run ends. `:mac` and `:win` exit 0
-even when tests fail, so read their output rather than the exit code; `test-harness`
-and `:fast` report the real status.
 
 ## Code Quality
 

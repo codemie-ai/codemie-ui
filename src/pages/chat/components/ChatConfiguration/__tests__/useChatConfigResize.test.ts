@@ -14,7 +14,7 @@
 //
 
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 
 import { CHAT_CONFIG_DEFAULT_WIDTH } from '../chatConfigWidth'
 import { useChatConfigResize } from '../useChatConfigResize'
@@ -33,8 +33,8 @@ const makeMockPanel = (): PanelImperativeHandle =>
   } as unknown as PanelImperativeHandle)
 
 describe('useChatConfigResize', () => {
-  let mockOnClose: ReturnType<typeof vi.fn>
-  let mockOnOpen: ReturnType<typeof vi.fn>
+  let mockOnClose: Mock
+  let mockOnOpen: Mock
   let mockPanel: PanelImperativeHandle
 
   beforeEach(() => {

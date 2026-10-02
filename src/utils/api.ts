@@ -117,7 +117,6 @@ export function formatErrorMessage(body: ErrorBody, includeHelp = true): string 
     let formattedError = message
 
     if (strDetails) {
-      // @ts-expect-error: Property 'replaceAll' does not exist on type 'string'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2021' or later
       formattedError += `<br> ${strDetails.replaceAll('<br>', '').trim()}`
     }
 

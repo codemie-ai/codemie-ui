@@ -14,7 +14,7 @@
 //
 
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
 import type { AssistantToolkit, Tool } from '@/types/entity/assistant'
 
@@ -40,7 +40,7 @@ const makeToolkit = (
 })
 
 describe('useToolkitSelection', () => {
-  let onToolkitsChange: ReturnType<typeof vi.fn>
+  let onToolkitsChange: Mock
 
   beforeEach(() => {
     onToolkitsChange = vi.fn()
@@ -533,7 +533,7 @@ describe('useToolkitSelection — enabling auto lookup clears the pinned integra
 })
 
 describe('pinning an integration records the auto-lookup decision', () => {
-  let onToolkitsChange: ReturnType<typeof vi.fn>
+  let onToolkitsChange: Mock
 
   beforeEach(() => {
     onToolkitsChange = vi.fn()

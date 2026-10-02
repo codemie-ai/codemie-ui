@@ -72,7 +72,7 @@ from the same source tree.
 | Install dependencies | `.ai-run/guides/quality-gates.md` | `package.json`, `package-lock.json` | Run before trusting any other gate. |
 | Lint and format | `.ai-run/guides/quality-gates.md` | `package.json` scripts, `.eslintrc.cjs` | Load the guide for the exact command and skip policy. |
 | Type-check | `.ai-run/guides/quality-gates.md` | `package.json` scripts, `tsconfig.json` | |
-| Tests and coverage | `.ai-run/guides/testing/testing-patterns.md` | `package.json` scripts, `vitest.workspace.ts` | Only run or write tests when explicitly requested. |
+| Tests and coverage | `.ai-run/guides/testing/testing-patterns.md` | `package.json` scripts, `vite.config.ts` (`test.projects`) | Only run or write tests when explicitly requested. |
 | Licence and secret checks | `.ai-run/guides/quality-gates.md` | `package.json` scripts, `.gitleaks.toml` | Read the output, not the exit code. |
 | Run the app, Docker, Keycloak theme | `README.md` | `package.json` scripts, Dockerfiles | Human-facing setup lives in the README. |
 | Fixing a reported CVE or scanner finding | `.ai-run/guides/security/README.md` | `package.json`, Dockerfiles, git history | Covers dependency surfaces, image rebuild, verification, MR handoff. |
@@ -81,7 +81,7 @@ from the same source tree.
 
 ## Stack
 
-React 18 · TypeScript 5 · Vite 5 · Tailwind 3 · Valtio (state) · react-router 7 ·
+React 18 · TypeScript 5 · Vite 8 · Tailwind 3 · Valtio (state) · react-router 7 ·
 react-hook-form · PrimeReact · marked + DOMPurify (markdown) · Keycloakify (login theme).
 Tests: Vitest with React Testing Library, two projects — `unit` and `integration`.
 
@@ -146,7 +146,7 @@ unverified, not passed.
    elements" — run only that file with coverage:
    `npx vitest run --coverage --project <unit|integration> <path>`.
 3. Passes locally → it is coverage overhead in CI. Raise `CI_COVERAGE_TEST_TIMEOUT_MS` in
-   `vitest.workspace.ts`; do not rewrite the test.
+   `vite.config.ts`; do not rewrite the test.
 4. Fails locally, fails on every CI run, or fails on an assertion rather than a timeout →
    the timeout is not the cause. Debug it; a common cause is a mock changed with
    `mockReturnValue` inside a test instead of reset in `beforeEach`.

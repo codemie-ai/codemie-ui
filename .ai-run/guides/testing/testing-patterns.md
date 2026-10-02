@@ -1,6 +1,6 @@
 # Testing Patterns — CodeMie UI
 
-> Vitest 1.6.1 + React Testing Library. Two workspace projects: `unit` and `integration`.
+> Vitest 5 + React Testing Library. Two test projects: `unit` and `integration`.
 
 ---
 
@@ -30,7 +30,7 @@ src/pages/settings/administration/
 | `*.test.tsx` | `unit` | Single-component isolation |
 | `*.integration.test.tsx` | `integration` | Component → Store → API → UI chain |
 
-Workspace config: `vitest.workspace.ts` — two projects with separate setup files.
+Projects config: `test.projects` in `vite.config.ts` — two projects with separate setup files.
 
 ### Setup Files
 
@@ -270,4 +270,10 @@ await userEvent.click(within(row).getByTestId('actions-menu'))
 | `NavigationMore` dropdown not found | Dropdown renders asynchronously | Use `await screen.findByRole(...)` or `waitFor` |
 | "proxyState is not iterable" | SettingsLayout pulled into test | Already mocked globally — do not re-mock |
 | `mockRequest` TypeScript error | Old API removed | Replace with `mockAPI` |
+| `TypeError: … is not a constructor`, stderr says "The vi.fn() mock did not use 'function' or 'class'" | The code calls the mock with `new` (`ResizeObserver`, `Response`, a class from a library); Vitest 5 cannot construct an arrow-function implementation | `vi.fn(function () { return { … } })` or a `class`. Pass the implementation to `vi.fn()` itself, not `.mockImplementation()`, so `mockReset()` keeps it |
+| Property `toBeInTheDocument` (or another jest-dom matcher) does not exist on type `Assertion` | jest-dom augments `Assertion<T>`; Vitest 5 declares `Assertion<R, T>`, so that augmentation does not merge | The matchers are added through Vitest's `Matchers` in `src/types/jest-dom-vitest.d.ts`; keep that file |
+| A test with `vi.useFakeTimers()` stops seeing its `requestAnimationFrame` / `performance` stub | Vitest 5 fakes every timer API by default | `vite.config.ts` pins `fakeTimers.toFake` to the timers and `Date` (the Vitest 1 set). To fake more in one test: `vi.useFakeTimers({ toFake: [...] })` |
+| A `vi.fn()` return value set in one test leaks into the next | `vi.restoreAllMocks()` only undoes `vi.spyOn` in Vitest 3+; `clearMocks` (default `true`) clears calls, not implementations | Reset `vi.fn()` state with `vi.resetAllMocks()` or `mock.mockReset()` |
+| Assigning to `import.meta.env` does not compile | Vite 8 turns `import.meta.env` into an expression, and it never reached other modules anyway | `vi.stubEnv('VITE_X', value)` plus `vi.unstubAllEnvs()` in `afterEach` |
+| A test depends on the order of `afterEach` hooks | `vite.config.ts` pins `sequence.hooks: 'parallel'` (Vitest 1 behaviour; Vitest 5 defaults to `'stack'`) | Don't depend on hook order between `setupTests*` and the test file. A request that misses `mockAPI` after the test ended never settles, so it cannot leak `null` into the next test |
 | Test passes alone, crashes an unrelated *later* test with e.g. `ReferenceError: localStorage is not defined` | Page under test has a self-rescheduling `setTimeout`/`setInterval` background poll (e.g. `DataSourcesPage`'s 5s `REFRESH_TIMEOUT`); a request resolving after unmount reschedules a timer nothing clears, which fires after that test's jsdom is torn down | Track real timers created during the test and force-clear them in `afterEach` — do **not** reach for `vi.useFakeTimers()` (it also fakes `waitFor`/`userEvent`'s internal timers and trades one flake for another). Full pattern + code: integration-tester skill's `references/setup.md` → "Background Polling / Self-Rescheduling Timers" |

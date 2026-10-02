@@ -74,6 +74,13 @@ const selectConfluenceType = async (user: ReturnType<typeof userEvent.setup>) =>
   await selectAutocompleteOption('Datasource Type', 'Confluence', { user })
 }
 
+// Pre-mark the data sources page as visited so AutoPopupManager does not open the
+// "Guided Tour Available" first-time popup mid-test: it takes focus, and the rest of
+// a user.type() then goes to its Close button. Key format: {userId}_{VISITED_PAGES_KEY}
+beforeEach(() => {
+  localStorage.setItem('test-user-id_onboarding-visited-pages', JSON.stringify(['datasources']))
+})
+
 describe('DataSourceCreatePage - Google Docs Integration', () => {
   let restoreUnhandledRejection: (() => void) | null = null
 

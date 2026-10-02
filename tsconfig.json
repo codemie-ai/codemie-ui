@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2024",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -29,6 +29,5 @@
     "noImplicitAny": false
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "references": [{ "path": "./tsconfig.node.json" }],
-  "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
