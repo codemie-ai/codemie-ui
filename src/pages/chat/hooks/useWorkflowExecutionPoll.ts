@@ -19,19 +19,48 @@ import { useSnapshot } from 'valtio'
 import { WORKFLOW_STATUSES } from '@/constants/workflows'
 import { usePolling } from '@/hooks/usePolling'
 import { chatsStore } from '@/store/chats'
+import type { Conversation } from '@/types/entity/conversation'
 
 const WORKFLOW_CHAT_POLL_INTERVAL_MS = 4000
+const WORKFLOW_CHAT_POLL_IDLE_BACKOFF = { threshold: 3, multiplier: 2, maxInterval: 30_000 }
+
+// Covers every field the backend changes during a run, so real updates never count as idle.
+// Workflow thoughts are hydrated flat (children always empty, no routing/content).
+const progressSignature = (chat: Conversation): string =>
+  JSON.stringify({
+    isInterrupted: chat.isInterrupted ?? false,
+    history: chat.history.map((group) =>
+      group.map((message) => ({
+        executionId: message.executionId,
+        executionStatus: message.executionStatus ?? null,
+        inProgress: message.inProgress ?? false,
+        response: message.response ?? '',
+        thoughts: (message.thoughts ?? []).map((thought) => ({
+          id: thought.id,
+          in_progress: thought.in_progress,
+          aborted: thought.aborted ?? false,
+          interrupted: thought.interrupted ?? false,
+          message: thought.message ?? '',
+          tool_name: thought.tool_name ?? '',
+          author_name: thought.author_name ?? '',
+          input_text: thought.input_text ?? '',
+          output_format: thought.output_format ?? '',
+          error: thought.error ?? false,
+        })),
+      }))
+    ),
+  })
 
 const isLiveStreaming = (message: { stream?: unknown }): boolean => Boolean(message.stream)
 
+// executionStatus alone decides liveness: the backend copies the run's status onto every turn.
 const hasInProgressExecution = (chat: typeof chatsStore.currentChat): boolean =>
   !!chat?.history?.some((group) =>
     group.some(
       (message) =>
         !message.generationStopped &&
         !isLiveStreaming(message) &&
-        (message.executionStatus === WORKFLOW_STATUSES.RUNNING ||
-          !!message.thoughts?.some((thought) => thought.in_progress))
+        message.executionStatus === WORKFLOW_STATUSES.RUNNING
     )
   )
 
@@ -44,13 +73,25 @@ export const useWorkflowExecutionPoll = (chatId: string | undefined): void => {
   )
 
   const fetchFn = useCallback(async () => {
-    if (!chatId) return
+    if (!chatId) return false
+    const findChat = () => chatsStore.openedChatsHistory.find((chat) => chat.id === chatId)
+
+    const before = findChat()
+    const beforeSignature = before ? progressSignature(before) : null
+
     await chatsStore.refreshWorkflowExecutionIds(chatId)
+
+    const after = findChat()
+    const afterSignature = after ? progressSignature(after) : null
+
+    return beforeSignature !== afterSignature
   }, [chatId])
 
   usePolling({
     interval: WORKFLOW_CHAT_POLL_INTERVAL_MS,
     enabled,
     fetchFn,
+    pauseWhenHidden: true,
+    idleBackoff: WORKFLOW_CHAT_POLL_IDLE_BACKOFF,
   })
 }

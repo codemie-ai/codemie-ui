@@ -16,7 +16,7 @@
 import { describe, it, expect, vi } from 'vitest'
 
 import { ROLE_ASSISTANT, ROLE_USER } from '@/constants'
-import { WORKFLOW_STATUSES } from '@/constants/workflows'
+import { WORKFLOW_FINAL_STATUSES, WORKFLOW_STATUSES } from '@/constants/workflows'
 import type { ChatBackend } from '@/types/entity/conversation'
 import {
   transformChatBEtoFE,
@@ -248,10 +248,7 @@ describe('transformChatBEtoFE', () => {
     expect(result.history[0][0].a2uiDataModel).toBeNull()
   })
 
-  const workflowHistoryChat = (
-    assistantOverrides: Record<string, unknown> = {},
-    chatOverrides: Record<string, unknown> = {}
-  ): ChatBackend =>
+  const workflowHistoryChat = (assistantOverrides: Record<string, unknown> = {}): ChatBackend =>
     ({
       id: 'wf-1',
       conversation_name: 'WF',
@@ -283,7 +280,6 @@ describe('transformChatBEtoFE', () => {
           ...assistantOverrides,
         },
       ],
-      ...chatOverrides,
     } as ChatBackend)
 
   it('preserves in-progress workflow thoughts when executionStatus is In Progress', () => {
@@ -347,21 +343,88 @@ describe('transformChatBEtoFE', () => {
     expect(message.thoughts![0]!.aborted).toBe(false)
   })
 
-  it('preserves in-progress thoughts on a workflow chat when executionStatus is missing but a thought is in_progress', () => {
-    const result = transformChatBEtoFE(
-      workflowHistoryChat(
-        {
-          executionStatus: undefined,
-          thoughts: [{ id: 's1', message: '', in_progress: true, interrupted: false }],
-        },
-        { is_workflow: true }
+  it.each(WORKFLOW_FINAL_STATUSES)(
+    'treats a %s turn with a stuck in_progress thought as not in progress (aborts the thought)',
+    (status) => {
+      const result = transformChatBEtoFE(
+        workflowHistoryChat({
+          executionStatus: status,
+          thoughts: [
+            {
+              id: 's1',
+              author_name: 'Find Items Todo',
+              author_type: 'WorkflowState',
+              message: '',
+              in_progress: true,
+              interrupted: false,
+              aborted: false,
+            },
+          ],
+        })
       )
+      const message = result.history[0]![0]!
+      expect(message.inProgress).toBe(false)
+      expect(message.thoughts![0]!.in_progress).toBe(false)
+      expect(message.thoughts![0]!.interrupted).toBe(false)
+      expect(message.thoughts![0]!.aborted).toBe(true)
+    }
+  )
+
+  it('treats a turn with missing executionStatus and a stuck in_progress thought as not in progress (aborts the thought)', () => {
+    const result = transformChatBEtoFE(
+      workflowHistoryChat({
+        executionStatus: undefined,
+        thoughts: [
+          {
+            id: 's1',
+            author_name: 'Find Items Todo',
+            author_type: 'WorkflowState',
+            message: '',
+            in_progress: true,
+            interrupted: false,
+            aborted: false,
+          },
+        ],
+      })
     )
     const message = result.history[0]![0]!
-    expect(message.inProgress).toBe(true)
-    expect(message.thoughts![0]!.in_progress).toBe(true)
-    expect(message.thoughts![0]!.interrupted).toBe(false)
+    expect(message.inProgress).toBe(false)
+    expect(message.thoughts![0]!.in_progress).toBe(false)
+    expect(message.thoughts![0]!.aborted).toBe(true)
+  })
+
+  it('on an Interrupted turn, keeps the interrupted thought interrupted and aborts a separate stuck thought', () => {
+    const result = transformChatBEtoFE(
+      workflowHistoryChat({
+        executionStatus: WORKFLOW_STATUSES.INTERRUPTED,
+        thoughts: [
+          {
+            id: 's1',
+            author_name: 'Step 1',
+            author_type: 'WorkflowState',
+            message: 'partial',
+            in_progress: false,
+            interrupted: true,
+            aborted: false,
+          },
+          {
+            id: 's2',
+            author_name: 'Step 2',
+            author_type: 'WorkflowState',
+            message: '',
+            in_progress: true,
+            interrupted: false,
+            aborted: false,
+          },
+        ],
+      })
+    )
+    const message = result.history[0]![0]!
+    expect(message.inProgress).toBe(false)
+    expect(message.thoughts![0]!.interrupted).toBe(true)
     expect(message.thoughts![0]!.aborted).toBe(false)
+    expect(message.thoughts![1]!.in_progress).toBe(false)
+    expect(message.thoughts![1]!.aborted).toBe(true)
   })
 
   it('preserves routing for backend thoughts', () => {

@@ -60,7 +60,6 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
     assistantData: chatBE.assistant_data,
     folder: chatBE.folder || undefined,
     importSource,
-    isWorkflow: transformedChat.isWorkflow,
   })
 
   return transformedChat
@@ -99,15 +98,8 @@ export const transformWorkflowExecutionHistoryBEtoFE = (
   return history
 }
 
-const isActiveWorkflowTurn = (assistantItem: HistoryItemBackend, isWorkflow: boolean): boolean => {
-  if (assistantItem.executionStatus === WORKFLOW_STATUSES.RUNNING) return true
-  return Boolean(
-    isWorkflow &&
-      assistantItem.executionId &&
-      assistantItem.workflowExecutionRef &&
-      assistantItem.thoughts?.some((thought) => thought.in_progress)
-  )
-}
+const isActiveWorkflowTurn = (assistantItem: HistoryItemBackend): boolean =>
+  assistantItem.executionStatus === WORKFLOW_STATUSES.RUNNING
 
 function groupAndTransformHistory(
   history: HistoryItemBackend[],
@@ -115,12 +107,10 @@ function groupAndTransformHistory(
     assistantData = [],
     folder,
     importSource,
-    isWorkflow = false,
   }: {
     assistantData?: AssistantDataBackend[]
     folder?: string
     importSource?: ImportSourceKind | null
-    isWorkflow?: boolean
   }
 ): any[][] {
   const groupedHistory = history.reduce((acc: Record<number, HistoryItemBackend[]>, item) => {
@@ -133,7 +123,7 @@ function groupAndTransformHistory(
   }, {})
 
   return Object.values(groupedHistory).map((group) =>
-    transformHistoryGroup(group, { assistantData, folder, importSource, isWorkflow })
+    transformHistoryGroup(group, { assistantData, folder, importSource })
   )
 }
 
@@ -143,12 +133,10 @@ function transformHistoryGroup(
     assistantData,
     folder,
     importSource,
-    isWorkflow = false,
   }: {
     assistantData?: AssistantDataBackend[]
     folder?: string
     importSource?: ImportSourceKind | null
-    isWorkflow?: boolean
   }
 ): any[] {
   // Imported chats (e.g. Claude Desktop) reference an assistant that isn't in the
@@ -168,7 +156,7 @@ function transformHistoryGroup(
     const assistant =
       assistantData?.find((assistant) => assistant.assistant_id === assistantItem.assistantId) ?? {}
     const isAssistantInProgress =
-      isActiveWorkflowTurn(assistantItem, isWorkflow) ||
+      isActiveWorkflowTurn(assistantItem) ||
       Boolean(assistantItem.in_progress ?? (assistantItem as any).inProgress ?? false)
     return {
       request: userItem.message ?? '',

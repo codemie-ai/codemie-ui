@@ -368,7 +368,7 @@ export const chatsStore = proxy<ChatsStoreType>({
         import('./chatGeneration').then(({ chatGenerationStore }) => {
           chatGenerationStore.reconnectChatStream(openedChat)
         })
-      } else {
+      } else if (!chat.isWorkflow) {
         chatsStore.pollIncompleteChat(id)
       }
     }

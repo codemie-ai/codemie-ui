@@ -56,7 +56,7 @@ describe('pollIncompleteChat and stopChatGeneration', () => {
     chatsStore.currentChat = null
   })
 
-  it('triggers pollIncompleteChat on getChat if history contains inProgress message', async () => {
+  it('does not trigger pollIncompleteChat on getChat for an in-progress workflow chat', async () => {
     const mockChatResponse = {
       id: 'chat-1',
       conversation_name: 'Active Chat',
@@ -84,7 +84,62 @@ describe('pollIncompleteChat and stopChatGeneration', () => {
 
     await chatsStore.getChat('chat-1')
 
-    expect(spyPoll).toHaveBeenCalledWith('chat-1')
+    expect(spyPoll).not.toHaveBeenCalled()
+  })
+
+  it('calls pollIncompleteChat for a non-workflow in-progress chat when setOpenChat returns falsy', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      json: () =>
+        Promise.resolve({
+          id: 'chat-2',
+          conversation_name: 'Non-workflow',
+          is_workflow_conversation: false,
+          history: [
+            { historyIndex: 0, message: 'Hi', date: '2026-09-25T12:00:00Z' },
+            {
+              historyIndex: 0,
+              message: 'Pending',
+              date: '2026-09-25T12:00:01Z',
+              in_progress: true,
+            },
+          ],
+        }),
+    } as any)
+    vi.spyOn(chatsStore, 'setOpenChat').mockReturnValueOnce(undefined as any)
+    const spyPoll = vi.spyOn(chatsStore, 'pollIncompleteChat')
+
+    await chatsStore.getChat('chat-2')
+
+    expect(spyPoll).toHaveBeenCalledWith('chat-2')
+  })
+
+  it('reconnects the stream instead of polling for a non-workflow in-progress chat with an openedChat', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      json: () =>
+        Promise.resolve({
+          id: 'chat-3',
+          conversation_name: 'Non-workflow open',
+          is_workflow_conversation: false,
+          history: [
+            { historyIndex: 0, message: 'Hi', date: '2026-09-25T12:00:00Z' },
+            {
+              historyIndex: 0,
+              message: 'Pending',
+              date: '2026-09-25T12:00:01Z',
+              in_progress: true,
+            },
+          ],
+        }),
+    } as any)
+    const spyPoll = vi.spyOn(chatsStore, 'pollIncompleteChat')
+    const spyReconnect = vi
+      .spyOn(chatGenerationStore, 'reconnectChatStream')
+      .mockResolvedValue(undefined)
+
+    await chatsStore.getChat('chat-3')
+    await vi.waitFor(() => expect(spyReconnect).toHaveBeenCalled())
+
+    expect(spyPoll).not.toHaveBeenCalled()
   })
 
   it('polls api and updates history reactively until complete', async () => {
