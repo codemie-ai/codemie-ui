@@ -1,5 +1,97 @@
 [
   {
+    "version": "2.56.0",
+    "date": "2026-10-05",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Mobile-ready CodeMie interface",
+            "description": "Improved the CodeMie UI experience for mobile phones and tablets.",
+            "issues": [
+              {
+                "key": "EPMCDME-15365",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15365"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "More efficient conversations and workflow status updates",
+            "description": "Reduced conversation-query load and improved how completed workflows are reflected.",
+            "issues": [
+              {
+                "key": "EPMCDME-15256",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15256"
+              }
+            ]
+          },
+          {
+            "title": "Project budget administration controls",
+            "description": "Project administrators can override personal spend directly from the project details page.",
+            "issues": [
+              {
+                "key": "EPMCDME-15234",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15234"
+              }
+            ]
+          },
+          {
+            "title": "Updated frontend build and test tooling",
+            "description": "Modernized codemie-ui tooling with Vite 8 and Vitest 5.",
+            "issues": [
+              {
+                "key": "EPMCDME-15243",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15243"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Security remediation activities",
+            "description": "Completed security remediation and dependency-maintenance activities across CodeMie services.",
+            "issues": []
+          },
+          {
+            "title": "Reliable Claude Sonnet tool use with Amazon Bedrock",
+            "description": "Prevented interrupted generations when a Bedrock tool-use name exceeds the supported length.",
+            "issues": [
+              {
+                "key": "EPMCDME-15051",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15051"
+              }
+            ]
+          },
+          {
+            "title": "Accurate budget redistribution visibility",
+            "description": "Fixed the project UI so removed budget spending is displayed correctly after budget redistribution.",
+            "issues": [
+              {
+                "key": "EPMCDME-15048",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15048"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
   "version": "2.55.0",
   "date": "2026-09-30",
   "sections": [
