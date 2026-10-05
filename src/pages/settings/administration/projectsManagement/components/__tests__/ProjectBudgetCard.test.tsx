@@ -179,11 +179,11 @@ describe('ProjectBudgetCard unassigned category spend', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByText('— not assigned —')).toBeInTheDocument()
+    expect(screen.queryByText('— not assigned —')).not.toBeInTheDocument()
+    expect(screen.getByText('Budget')).toBeInTheDocument()
+    expect(screen.getByText('not assigned')).toBeInTheDocument()
     const header = screen.getByText('$0.14').closest('div')
-    expect(header).toHaveTextContent('Premium models')
     expect(header).toHaveTextContent('Spend')
-    expect(header).not.toHaveTextContent('— not assigned —')
   })
 
   it('shows no spend on an empty card without a spend row', () => {

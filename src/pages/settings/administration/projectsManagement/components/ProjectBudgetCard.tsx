@@ -22,7 +22,9 @@ import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import RefreshSvg from '@/assets/icons/refresh.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
+import Hint from '@/components/Hint'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
+import StatusBadge, { StatusEnum } from '@/components/StatusBadge'
 import { ButtonSize, ButtonType } from '@/constants'
 import { HELP_MODELS_ROUTE } from '@/pages/help/ModelsCatalog'
 import { getBudgetCategoryLabel, BudgetCategory } from '@/types/entity/budget'
@@ -108,21 +110,38 @@ const EmptyCard: FC<ProjectBudgetCardEmptyProps & { mode: 'manage' | 'view' }> =
   mode,
 }) => (
   <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4 flex flex-col gap-3 min-h-[160px]">
-    <div className="flex items-center gap-2 min-w-0">
-      <div className="text-sm font-medium text-text-primary shrink-0">
+    <div className="flex flex-col gap-2 min-w-0 w-full">
+      <div className="flex flex-row gap-2 text-sm font-medium text-text-primary shrink-0 items-center">
         {getBudgetCategoryLabel(category)}
+        <StatusBadge status={StatusEnum.NotStarted} text={'Disabled'} />
       </div>
+
       {spendingRow != null && (
-        <span className="text-sm">
-          <span className="text-text-quaternary">Spend</span>
-          <span className="ml-1 text-text-primary">
-            {formatCurrency(spendingRow.current_spending)}
+        <div className="flex flex-col gap-1 text-xs">
+          <span>
+            <span className="text-text-quaternary">Spend</span>
+            <span className="ml-2 text-text-primary">
+              {formatCurrency(spendingRow.current_spending)}
+            </span>
           </span>
-        </span>
+
+          <span>
+            <span className="text-text-quaternary">Budget</span>
+            <span className="ml-2 text-text-primary">
+              not assigned
+              <Hint
+                id={`project-budget-card-not-assigned-${category}`}
+                hint="This category has no active budget, but spend from before it was removed or redistributed is still shown here."
+                position="bottom"
+              />
+            </span>
+          </span>
+        </div>
       )}
     </div>
     <div className="flex-1 flex flex-col items-center justify-center gap-2">
-      <div className="text-xs text-text-quaternary">— not assigned —</div>
+      {spendingRow == null && <div className="text-xs text-text-quaternary">— not assigned —</div>}
+
       {mode === 'manage' ? (
         <Button
           size={ButtonSize.SMALL}
