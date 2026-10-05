@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "No blocking findings: all 9 lens candidates were checked against the source and dismissed. Personal projects and a disabled budget feature are already gated, the override error path is toasted by projectBudgetsStore, super-admin exclusion matches the ticket's maintainer-or-project-admin rule, and the remaining items were test-style nits below the emission floor. Acceptance did not run (no spec/story), so confidence is low; 0 deferred, no standards coverage gap (code-quality na: no guide).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "1 commit subject in range matches the git-workflow.md regex EPMCDME-XXXX: Capital sentence (non-zero ticket 15234, capitalised first word, no trailing period)"},
+    {"kind": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md is absent from the repo and no code_quality ref was passed; no documented code-quality standard to adjudicate"},
+    {"kind": "security", "status": "pass", "notes": "security-patterns.md checklist not engaged: change is client-side role gating in ProjectDetailsPage.tsx with no sink, redirect, postMessage, config or secret; no concrete security issue observed"}
+  ],
+  "findings": []
+}

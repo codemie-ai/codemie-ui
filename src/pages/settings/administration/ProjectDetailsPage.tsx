@@ -94,6 +94,7 @@ const ProjectDetailsPage = () => {
   const isMaintainer = currentUser?.isMaintainer ?? false
   const isAuditor = currentUser?.isAuditor ?? false
   const isProjectAdmin = currentUser?.applicationsAdmin?.includes(project?.name ?? '') ?? false
+  const canSeeMemberBudgets = isMaintainer || isProjectAdmin
   const canManageProject = !isPersonalProject && (isAdmin || isProjectAdmin)
   const canViewBudgets =
     isBudgetManagementEnabled &&
@@ -295,7 +296,7 @@ const ProjectDetailsPage = () => {
                 <ProjectBudgetsSection
                   projectName={project.name}
                   spendingRows={project.spending_widget?.data?.rows}
-                  onBudgetsChanged={isMaintainer ? setBudgets : undefined}
+                  onBudgetsChanged={canSeeMemberBudgets ? setBudgets : undefined}
                   onProjectChanged={loadProject}
                   onBudgetReset={() => setSpendingRefreshKey((k) => k + 1)}
                   access={budgetsAccess}
@@ -309,8 +310,8 @@ const ProjectDetailsPage = () => {
                 <ProjectMembersManager
                   project={project}
                   onMembersChanged={loadProject}
-                  budgets={isMaintainer ? budgets : undefined}
-                  onBudgetsChanged={isMaintainer ? setBudgets : undefined}
+                  budgets={canSeeMemberBudgets ? budgets : undefined}
+                  onBudgetsChanged={canSeeMemberBudgets ? setBudgets : undefined}
                   spendingRefreshKey={spendingRefreshKey}
                 />
               </section>

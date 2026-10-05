@@ -494,4 +494,88 @@ describe('budgetsAccess — project-admin access control (EPMCDME-13962)', () =>
 
     expect(screen.queryByTestId('project-budgets-section')).not.toBeInTheDocument()
   })
+
+  describe('member budget override props (EPMCDME-15234)', () => {
+    const lastMembersProps = () => projectMembersManagerMock.mock.calls.at(-1)?.[0]
+    const lastSectionProps = () => projectBudgetsSectionMock.mock.calls.at(-1)?.[0]
+    const user = (overrides: Partial<NonNullable<typeof mockUserStore.user>>) => ({
+      isAdmin: false,
+      isMaintainer: false,
+      isAuditor: false,
+      applicationsAdmin: [] as string[],
+      ...overrides,
+    })
+
+    const expectMemberBudgetPropsGranted = () => {
+      expect(Array.isArray(lastMembersProps().budgets)).toBe(true)
+      expect(typeof lastMembersProps().onBudgetsChanged).toBe('function')
+      expect(typeof lastSectionProps().onBudgetsChanged).toBe('function')
+    }
+
+    const expectMemberBudgetPropsWithheld = () => {
+      expect(lastMembersProps().budgets).toBeUndefined()
+      expect(lastMembersProps().onBudgetsChanged).toBeUndefined()
+    }
+
+    it('project admin of this project gets member budgets and the override callback', async () => {
+      mockUserStore.user = user({ applicationsAdmin: ['Test Project'] })
+
+      render(<ProjectDetailsPage />)
+
+      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+      expectMemberBudgetPropsGranted()
+    })
+
+    it('maintainer keeps member budgets and the override callback', async () => {
+      mockUserStore.user = user({ isMaintainer: true })
+
+      render(<ProjectDetailsPage />)
+
+      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+      expectMemberBudgetPropsGranted()
+    })
+
+    it('regular user does not get member budgets', async () => {
+      mockUserStore.user = user({})
+
+      render(<ProjectDetailsPage />)
+
+      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+      expectMemberBudgetPropsWithheld()
+    })
+
+    it('project admin of a different project does not get member budgets', async () => {
+      mockUserStore.user = user({ applicationsAdmin: ['Other Project'] })
+
+      render(<ProjectDetailsPage />)
+
+      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+      expectMemberBudgetPropsWithheld()
+    })
+
+    it('super admin who is not a maintainer does not get member budgets but keeps distribution access', async () => {
+      mockUserStore.user = user({ isAdmin: true })
+
+      render(<ProjectDetailsPage />)
+
+      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+      expectMemberBudgetPropsWithheld()
+      expect(lastSectionProps().onBudgetsChanged).toBeUndefined()
+      expect(lastSectionProps().access).toBe('distribution')
+    })
+
+    it('grants member budgets when the project admin user resolves after the project loads', async () => {
+      mockUserStore.user = null
+
+      const { rerender } = render(<ProjectDetailsPage />)
+
+      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+      expect(lastMembersProps().onBudgetsChanged).toBeUndefined()
+
+      mockUserStore.user = user({ applicationsAdmin: ['Test Project'] })
+      rerender(<ProjectDetailsPage />)
+
+      await waitFor(() => expectMemberBudgetPropsGranted())
+    })
+  })
 })
