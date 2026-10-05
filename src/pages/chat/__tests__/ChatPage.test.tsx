@@ -18,6 +18,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AUTH_CALLBACK_HINT_MESSAGE } from '@/hooks/useAuthCallbackListener'
 import type { Conversation } from '@/types/entity/conversation'
+import api from '@/utils/api'
 
 import ChatPage from '../ChatPage'
 import {
@@ -420,6 +421,24 @@ describe('ChatPage', () => {
 
     expect(screen.getByTestId('chat-history')).toBeInTheDocument()
     expect(screen.getByTestId('chat-prompt')).toBeInTheDocument()
+  })
+
+  it('does not fetch assistant details for a workflow chat with unresolved assistant data', () => {
+    mockChatsStore.currentChat = {
+      id: 'chat-1',
+      history: [[{ createdAt: '2026-04-29T00:00:00Z' }]],
+      assistantIds: ['workflow-1'],
+      assistantData: [{ id: 'workflow-1', fileAttachmentEnabled: undefined }],
+      initialAssistantId: 'workflow-1',
+      isWorkflow: true,
+    } as unknown as Conversation
+
+    render(<ChatPage />)
+
+    expect(api.get).not.toHaveBeenCalledWith(
+      expect.stringContaining('v1/assistants/id/'),
+      expect.anything()
+    )
   })
 
   it('renders the resize separator when chat has history', () => {

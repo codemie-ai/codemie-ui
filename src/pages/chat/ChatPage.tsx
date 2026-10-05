@@ -90,6 +90,7 @@ const ChatPage: FC = () => {
 
   useEffect(() => {
     if (!pendingIdsKey) return () => {}
+    if (currentChat?.isWorkflow) return () => {}
 
     const controller = new AbortController()
     pendingIdsKey
@@ -109,7 +110,7 @@ const ChatPage: FC = () => {
         }
       })
     return () => controller.abort()
-  }, [pendingIdsKey])
+  }, [pendingIdsKey, currentChat])
 
   const enrichedAssistantData = (currentChat?.assistantData ?? []).map((a) => ({
     ...a,
