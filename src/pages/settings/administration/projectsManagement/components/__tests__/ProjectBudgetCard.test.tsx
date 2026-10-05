@@ -18,6 +18,7 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 
 import { ProjectBudget } from '@/types/entity/projectBudget'
+import { ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
 
 import ProjectBudgetCard from '../ProjectBudgetCard'
 
@@ -151,5 +152,48 @@ describe('ProjectBudgetCard Budget Stopped indicator', () => {
     )
 
     expect(screen.queryByText('Budget Stopped')).not.toBeInTheDocument()
+  })
+})
+
+const unassignedPremiumRow: ProjectSpendingWidgetRow = {
+  budget_id: 'project-3-premium_models-8ebdcd4c',
+  budget_category: 'premium_models',
+  is_assigned: false,
+  current_spending: 0.1444,
+  budget_reset_at: '2026-10-01T00:00:00Z',
+  time_until_reset: '1 day',
+  budget_limit: null,
+  total: 0,
+}
+
+describe('ProjectBudgetCard unassigned category spend', () => {
+  it('shows the current-period spend in the header next to the category name', () => {
+    render(
+      <MemoryRouter>
+        <ProjectBudgetCard
+          variant="empty"
+          mode="view"
+          category="premium_models"
+          spendingRow={unassignedPremiumRow}
+        />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('— not assigned —')).toBeInTheDocument()
+    const header = screen.getByText('$0.14').closest('div')
+    expect(header).toHaveTextContent('Premium models')
+    expect(header).toHaveTextContent('Spend')
+    expect(header).not.toHaveTextContent('— not assigned —')
+  })
+
+  it('shows no spend on an empty card without a spend row', () => {
+    render(
+      <MemoryRouter>
+        <ProjectBudgetCard variant="empty" mode="view" category="premium_models" />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('— not assigned —')).toBeInTheDocument()
+    expect(screen.queryByText('Spend')).not.toBeInTheDocument()
   })
 })

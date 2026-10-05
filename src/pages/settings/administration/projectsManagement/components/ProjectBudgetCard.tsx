@@ -36,6 +36,7 @@ import { calculateHardLimitPercentage, getHardLimitSpendColor } from './budgetSp
 interface ProjectBudgetCardEmptyProps {
   category: BudgetCategory
   onAddBudget?: (category: BudgetCategory) => void
+  spendingRow?: ProjectSpendingWidgetRow | null
 }
 
 interface ProjectBudgetCardAssignedProps {
@@ -103,10 +104,23 @@ const SyncStatusBadge: FC<{ status: BudgetSyncStatus | null | undefined }> = ({ 
 const EmptyCard: FC<ProjectBudgetCardEmptyProps & { mode: 'manage' | 'view' }> = ({
   category,
   onAddBudget,
+  spendingRow,
   mode,
 }) => (
   <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4 flex flex-col gap-3 min-h-[160px]">
-    <div className="text-sm font-medium text-text-primary">{getBudgetCategoryLabel(category)}</div>
+    <div className="flex items-center gap-2 min-w-0">
+      <div className="text-sm font-medium text-text-primary shrink-0">
+        {getBudgetCategoryLabel(category)}
+      </div>
+      {spendingRow != null && (
+        <span className="text-sm">
+          <span className="text-text-quaternary">Spend</span>
+          <span className="ml-1 text-text-primary">
+            {formatCurrency(spendingRow.current_spending)}
+          </span>
+        </span>
+      )}
+    </div>
     <div className="flex-1 flex flex-col items-center justify-center gap-2">
       <div className="text-xs text-text-quaternary">— not assigned —</div>
       {mode === 'manage' ? (
@@ -293,7 +307,14 @@ const AssignedCard: FC<ProjectBudgetCardAssignedProps & { mode?: 'manage' | 'vie
 
 const ProjectBudgetCard: FC<ProjectBudgetCardProps> = (props) => {
   if (props.variant === 'empty') {
-    return <EmptyCard category={props.category} onAddBudget={props.onAddBudget} mode={props.mode} />
+    return (
+      <EmptyCard
+        category={props.category}
+        onAddBudget={props.onAddBudget}
+        spendingRow={props.spendingRow}
+        mode={props.mode}
+      />
+    )
   }
   return (
     <AssignedCard

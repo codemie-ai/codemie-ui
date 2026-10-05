@@ -178,6 +178,15 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     {}
   )
 
+  const unassignedSpendingByCategory = (spendingRows ?? []).reduce<
+    Partial<Record<BudgetCategory, ProjectSpendingWidgetRow>>
+  >((acc, row) => {
+    if (row.is_assigned === false && row.budget_category) {
+      acc[row.budget_category] = row
+    }
+    return acc
+  }, {})
+
   const budgetByCategory = BUDGET_CATEGORIES.reduce<Record<BudgetCategory, ProjectBudget | null>>(
     (acc, category) => {
       acc[category] = budgets.find((b) => b.budget_category === category) ?? null
@@ -220,7 +229,13 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
               )
             }
             return (
-              <ProjectBudgetCard key={category} variant="empty" mode="view" category={category} />
+              <ProjectBudgetCard
+                key={category}
+                variant="empty"
+                mode="view"
+                category={category}
+                spendingRow={unassignedSpendingByCategory[category] ?? null}
+              />
             )
           })}
         </div>

@@ -78,6 +78,8 @@ export interface ProjectSpendingWidgetColumn {
 
 export interface ProjectSpendingWidgetRow {
   budget_id: string
+  budget_category: BudgetCategory | null
+  is_assigned: boolean
   current_spending: number
   budget_reset_at: string | null
   time_until_reset: string | null

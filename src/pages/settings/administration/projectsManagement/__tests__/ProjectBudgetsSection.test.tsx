@@ -13,10 +13,10 @@
 // limitations under the License.
 //
 
-import { act, render, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { ProjectDetail } from '@/types/entity/projectManagement'
+import { ProjectDetail, ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
 
 import ProjectBudgetsSection from '../ProjectBudgetsSection'
 
@@ -104,5 +104,46 @@ describe('ProjectBudgetsSection chargeback prop wiring', () => {
     // Budgets reloaded and the project refetched (chargeback lives on the project).
     expect(listProjectBudgets).toHaveBeenCalled()
     expect(onProjectChanged).toHaveBeenCalled()
+  })
+})
+
+const unassignedPremiumRow: ProjectSpendingWidgetRow = {
+  budget_id: 'project-3-premium_models-8ebdcd4c',
+  budget_category: 'premium_models',
+  is_assigned: false,
+  current_spending: 0.1444,
+  budget_reset_at: '2026-10-01T00:00:00Z',
+  time_until_reset: '1 day',
+  budget_limit: null,
+  total: 0,
+}
+
+describe('ProjectBudgetsSection unassigned category spend', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    listProjectBudgets.mockResolvedValue([])
+    listProjectBudgetGroups.mockResolvedValue([])
+  })
+
+  it('shows the spend of a category without an active budget on its empty card', async () => {
+    render(
+      <ProjectBudgetsSection projectName="p1" access="view" spendingRows={[unassignedPremiumRow]} />
+    )
+
+    expect(await screen.findByText('$0.14')).toBeInTheDocument()
+  })
+
+  it('does not put assigned rows on empty cards', async () => {
+    render(
+      <ProjectBudgetsSection
+        projectName="p1"
+        access="view"
+        spendingRows={[{ ...unassignedPremiumRow, is_assigned: true }]}
+      />
+    )
+
+    await waitFor(() => expect(listProjectBudgets).toHaveBeenCalled())
+    expect(await screen.findAllByText('— not assigned —')).toHaveLength(3)
+    expect(screen.queryByText('$0.14')).not.toBeInTheDocument()
   })
 })
