@@ -1,6 +1,6 @@
 include:
   - project: "epm-cdme/codemie-gitlab-templates"
-    ref: "0.1.1"
+    ref: "0.1.2"
     file: "/templates/pre-ci-guard.yml"
 
 workflow:
