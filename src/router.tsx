@@ -23,8 +23,11 @@ import {
   ANALYTICS,
   ANALYTICS_EDIT_DASHBOARD,
   ANALYTICS_NEW_DASHBOARD,
+  PRODUCTS,
+  SHOPPING_CART,
   VIEW_WORKFLOW,
   WOKRFLOW_EXECUTIONS,
+  WORK_ITEMS,
 } from '@/constants/routes'
 import AnalyticsDashboardFormPage from '@/pages/analytics/AnalyticsDashboardFormPage'
 import AnalyticsPage from '@/pages/analytics/AnalyticsPage'
@@ -91,6 +94,8 @@ import {
   AwsAgentCoreRuntimeDetailPage,
 } from '@/pages/settings/aws'
 import ProfilePage from '@/pages/settings/ProfilePage'
+import ProductListPage from '@/pages/shopping/ProductListPage'
+import ShoppingCartPage from '@/pages/shopping/ShoppingCartPage'
 import { SkillTab } from '@/pages/skills/components/SkillsNavigation'
 import EditSkillPage from '@/pages/skills/EditSkillPage'
 import NewSkillPage from '@/pages/skills/NewSkillPage'
@@ -103,6 +108,7 @@ import NewWorkflowPage from '@/pages/workflows/NewWorkflowPage'
 import ViewWorkflowTemplatePage from '@/pages/workflows/ViewWorkflowTemplatePage'
 import WorkflowDetailsPage from '@/pages/workflows/WorkflowDetailsPage'
 import WorkflowsListPage from '@/pages/workflows/WorkflowsListPage'
+import WorkItemsListPage from '@/pages/workItems/WorkItemsListPage'
 
 import App from './App'
 import { FeatureGuard } from './components/FeatureGuard'
@@ -682,6 +688,27 @@ const analyticsRoutes: RouteObject[] = [
   },
 ]
 
+const workItemsRoutes: RouteObject[] = [
+  {
+    id: WORK_ITEMS,
+    path: 'work-items',
+    Component: WorkItemsListPage,
+  },
+]
+
+const shoppingRoutes: RouteObject[] = [
+  {
+    id: PRODUCTS,
+    path: 'products',
+    Component: ProductListPage,
+  },
+  {
+    id: SHOPPING_CART,
+    path: 'cart',
+    Component: ShoppingCartPage,
+  },
+]
+
 const otherRoutes: RouteObject[] = [
   {
     index: true,
@@ -757,6 +784,8 @@ export const routes: RouteObject[] = [
       ...schedulerRoutes,
       ...katasRoutes,
       ...workflowRoutes,
+      ...workItemsRoutes,
+      ...shoppingRoutes,
       ...applicationRoutes,
       ...analyticsRoutes,
       ...settingsRoutes,

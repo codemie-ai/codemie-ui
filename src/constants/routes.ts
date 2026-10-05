@@ -77,3 +77,10 @@ export const SETTINGS_AWS_AGENTCORE_RUNTIMES_LIST_PATH =
   '/settings/aws/agentcore-runtimes/:settingId'
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES_RUNTIME_PATH =
   '/settings/aws/agentcore-runtimes/:settingId/:runtimeId'
+
+export const WORK_ITEMS = 'work-items'
+export const NEW_WORK_ITEM = 'new-work-item'
+export const EDIT_WORK_ITEM = 'edit-work-item'
+
+export const SHOPPING_CART = 'shopping-cart'
+export const PRODUCTS = 'products'
