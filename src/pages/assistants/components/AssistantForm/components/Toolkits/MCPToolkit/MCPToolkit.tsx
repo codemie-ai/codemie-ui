@@ -20,11 +20,11 @@ import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import InfoWarning from '@/components/InfoWarning'
 import { ButtonType, InfoWarningType } from '@/constants'
-import { MCP_CUSTOM_SERVERS_DISABLED_CONFIG_ID } from '@/constants/mcp'
 import { appInfoStore } from '@/store/appInfo'
 import { mcpStore } from '@/store/mcp'
 import { MCPConfig, MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
+import { isMCPRestrictedMode } from '@/utils/mcpMode'
 
 import MCPActionButtons from './MCPActionButtons'
 import MCPDetailModal from './MCPDetailModal'
@@ -64,9 +64,7 @@ const MCPToolkit = ({
 
   const mcpSnapshot = useSnapshot(mcpStore)
   const appInfoSnapshot = useSnapshot(appInfoStore)
-  const isRestricted = appInfoSnapshot.configs.some(
-    (c) => c.id === MCP_CUSTOM_SERVERS_DISABLED_CONFIG_ID && c.settings.enabled === true
-  )
+  const isRestricted = isMCPRestrictedMode(appInfoSnapshot.configs)
 
   useEffect(() => {
     setSelectedIndex(0)

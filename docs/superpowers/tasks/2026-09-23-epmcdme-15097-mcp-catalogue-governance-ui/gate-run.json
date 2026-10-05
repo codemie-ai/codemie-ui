@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "branch": "feature/EPMCDME-15094-mcp-catalogue-governance",
+  "head": "d30dc8004cd75709b0ab42227f81f0ef1fb66ec4",
+  "runner": "npm",
+  "started_at": "2026-09-23T15:22:25+00:00",
+  "completed_at": "2026-09-23T16:07:20+00:00",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 157426,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 80982,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if condition met per quality-gates.md: package.json and package-lock.json are unchanged in this diff (git diff --name-only <merge_base>...HEAD -- package.json package-lock.json returned nothing) — no dependency added, removed, or moved."
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25045,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Real gitleaks scan ran via Rancher Desktop Docker engine (daemon reachable); output: 'scanned ~24.71 MB in 20.3s' / 'no leaks found'. Scans the working tree only, not git history — the server-side MR pipeline's gitleaks-scan task (documented in .ai-run/guides/security/verification.md) also covers git history and is not runnable from this checkout."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 1428103,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "4 test files failed / 610 passed (614); 3 tests failed / 6209 passed (6212). Failing files: src/a2ui/__tests__/manifest.test.ts, src/components/Popup/__tests__/Popup.test.tsx, src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts, scripts/license_headers/__tests__/check_license_headers.test.js. None of the failing files are among the 16 files changed in this branch's diff against the merge base (which touches only MCPToolkit components, mcpMode, backendErrorHandler, and the assistants store) — reported as-is per gate result, no root-cause investigation performed."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 388010,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 47 passed (47); Tests 539 passed | 1 skipped (540)."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 5412,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Husky pre-commit runs this and it is not listed as its own gate in quality-gates.md (distinct from the guide's 'License check' gate, which checks dependency licences via license-checker). Checked 2204 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 4257,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: exits 0 without analysing anything. Exact output line: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Not covered by any quality-gates.md gate. To run for real locally: export SONAR_TOKEN for the SonarQube project named in .sonarlint/connectedMode.json, ensure that host is reachable, then re-run — it will execute `npm run test:coverage` plus `sonar-scanner -Dsonar.qualitygate.wait=true`. This is also the SAST gate the real MR pipeline's `sonar` task performs server-side and posts to the MR; a PASSED/SKIPPED local result here does not mean that CI task will be green."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 3978,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: exact output 'No staged files found.' Nothing is staged in this working tree (HEAD is already committed), so lint-staged's per-staged-file checks (prettier, eslint --fix, tsc --noEmit) had no input. Its scope is already superseded in this full-HEAD verification run by the full-tree 'lint' and 'typecheck' gates above, which ran on every file rather than only staged ones."
+    }
+  ],
+  "failures": {
+    "unit": " FAIL  |unit| src/components/Popup/__tests__/Popup.test.tsx > Popup — stacked dialogs > traps focus in the topmost (inner) dialog when two dialogs are stacked\nError: expect(element).toHaveFocus()\n\nExpected element with focus:\n  <button\n  class=\"relative flex justify-center transition whitespace-nowrap rounded-lg border button min-w-14 bg-button-primary-bg hover:bg-button-primary-bg-hover text-text-accent py-0.5 px-3 has-[>svg:first-child]:pl-2 gap-1.5 items-center text-xs font-semibold leading-6 tracking-tight h-7\"\n  type=\"button\"\n>\n  Create\n</button>\nReceived element with focus:\n  <button\n  aria-label=\"Close\"\n  class=\"p-dialog-header-icon p-dialog-header-close p-link\"\n  data-pc-section=\"closebutton\"\n  type=\"button\"\n>\n  <span\n    aria-label=\"close icon\"\n  />\n</button>\n ❯ src/components/Popup/__tests__/Popup.test.tsx:273:23\n    271|\n    272|     await user.tab()\n    273|     expect(createBtn).toHaveFocus()\n       |                       ^\n    274|\n    275|     await user.tab() // wraps to first\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯\n\n FAIL  |unit| src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts > modal surfaces host the live region > recognises the surfaces that already carry the host\n FAIL  |unit| src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts > modal surfaces host the live region > recognises the surfaces that already carry the host\nAssertionError: expected [ …(2) ] to include 'components/Popup/Popup.tsx'\n ❯ src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts:73:23\n     71|       .map(({ path }) => path)\n     72|\n     73|     expect(declaring).toContain('components/Popup/Popup.tsx')\n       |                       ^\n     74|     expect(declaring).toContain('components/Navigation/NavigationProfi…\n     75|   })\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯\n\n Test Files  4 failed | 610 passed (614)\n      Tests  3 failed | 6209 passed (6212)\n   Start at  17:35:03\n   Duration  1400.32s (transform 193.03s, setup 541.86s, collect 6755.34s, tests 604.95s, environment 1181.99s, prepare 277.45s)"
+  }
+}

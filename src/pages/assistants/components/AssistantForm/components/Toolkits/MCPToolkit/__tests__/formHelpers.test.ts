@@ -50,4 +50,36 @@ describe('buildServerConfig', () => {
     const result = buildServerConfig({ ...baseValues, connectUrl: '', tokensSizeLimit: 5000 })
     expect(result.tools_tokens_size_limit).toBe(5000)
   })
+
+  describe('catalogue-referenced servers under governance', () => {
+    it('forces use_custom_config false and drops the custom config when isCatalogRef is true, even if a stale custom config was set', () => {
+      const result = buildServerConfig(
+        {
+          ...baseValues,
+          connectUrl: '',
+          useCustomConfig: true,
+          configJson: '{"command":"stale-custom-command"}',
+        },
+        'catalog-config-id',
+        true
+      )
+      expect(result.use_custom_config).toBe(false)
+      expect(result.config).toBeUndefined()
+    })
+
+    it('keeps the custom config when isCatalogRef is false', () => {
+      const result = buildServerConfig(
+        {
+          ...baseValues,
+          connectUrl: '',
+          useCustomConfig: true,
+          configJson: '{"command":"custom-command"}',
+        },
+        'catalog-config-id',
+        false
+      )
+      expect(result.use_custom_config).toBe(true)
+      expect(result.config).toEqual({ command: 'custom-command' })
+    })
+  })
 })

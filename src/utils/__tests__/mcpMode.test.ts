@@ -51,4 +51,12 @@ describe('isMCPRestrictedMode', () => {
     appInfoStore.configs = [{ id: 'somethingElse', settings: { enabled: true } } as any]
     expect(isMCPRestrictedMode()).toBe(false)
   })
+
+  it('uses the passed configs array instead of the store when provided', () => {
+    appInfoStore.configs = []
+    const overrideConfigs = [
+      { id: MCP_CUSTOM_SERVERS_DISABLED_CONFIG_ID, settings: { enabled: true } } as any,
+    ]
+    expect(isMCPRestrictedMode(overrideConfigs)).toBe(true)
+  })
 })

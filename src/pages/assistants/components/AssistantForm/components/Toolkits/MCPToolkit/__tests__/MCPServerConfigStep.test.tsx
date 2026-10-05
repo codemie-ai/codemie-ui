@@ -20,7 +20,11 @@ import { describe, it, expect, vi } from 'vitest'
 import MCPServerConfigStep from '../MCPToolkitForm/MCPServerConfigStep'
 
 vi.mock('../MCPToolkitTest', () => ({ default: () => <button>Test Connection</button> }))
-vi.mock('../MCPConfigSection', () => ({ default: () => <div data-testid="mcp-config-section" /> }))
+vi.mock('../MCPConfigSection', () => ({
+  default: (props: any) => (
+    <div data-testid="mcp-config-section" data-is-catalog-ref={String(props.isCatalogRef)} />
+  ),
+}))
 vi.mock('../MCPBasicFields', () => ({
   default: ({ customSetupEnabled }: any) => (
     <div data-testid="mcp-basic-fields" data-readonly={!customSetupEnabled ? 'true' : ''} />
@@ -75,5 +79,11 @@ describe('MCPServerConfigStep', () => {
     render(<Wrapper isCatalogRef />)
     const fields = screen.getByTestId('mcp-basic-fields')
     expect(fields.getAttribute('data-readonly')).toBe('true')
+  })
+
+  it('forwards isCatalogRef to MCPConfigSection', () => {
+    render(<Wrapper isCatalogRef />)
+    const configSection = screen.getByTestId('mcp-config-section')
+    expect(configSection.getAttribute('data-is-catalog-ref')).toBe('true')
   })
 })

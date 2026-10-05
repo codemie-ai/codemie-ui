@@ -1,0 +1,62 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance did not run (no story/spec artifact), so business-criteria coverage is unavailable and confidence is capped at low. Edge-case lens raised 4 candidates; 3 verified as real, reachable defects — buildServerConfig() never receives isCatalogRef so a catalogue-restricted server's pre-existing custom config keeps resubmitting unchanged on every save (critical), a matching MCPConfigSection display bug shows stale custom JSON under a 'Global' label (major), and processBackendError's new string-details branch leaves a dangling colon on empty strings (major) — while the mcpMode.ts null-configs concern was dismissed as unreachable (its only call site always passes an array). Standards audit is clean: commit-format and security pass; code-quality has no guide (na, not a gap).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 5 commit subjects in range match EPMCDME-XXXX: Capital sentence format with real ticket id, capitalized first word, no trailing period."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality guide found at .ai-run/guides/standards/code-quality.md and no ArtifactRef passed for code_quality; absent standard, not a gap."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "security-patterns.md checklist checked against changed files: no unsafe sinks, redirects, postMessage, env/secret reads, or nosonar additions; the isCatalogRef/isMCPRestrictedMode logic is UI-affordance only, no concrete security defect found."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/MCPToolkit/MCPConfigSection.tsx",
+      "line": 137,
+      "title": "Read-only field can show stale config, not catalog",
+      "problem": "The read-only textarea's displayed value only checks `!useCustomConfig`, not `isCatalogRef` — when isCatalogRef is true but useCustomConfig is still true (a custom copy saved before restricted mode was enabled), the box renders the stale custom JSON via `field.value` instead of catalogConfig.",
+      "impact": "The field is disabled and labeled '- Global' (governance-enforced) but visibly displays outdated custom configuration, misleading an admin about what configuration will actually be used once governance is enforced.",
+      "recommendation": "Include isCatalogRef in the display condition, e.g. `(isCatalogRef || !useCustomConfig) && hasCatalogReference && catalogConfig ? JSON.stringify(catalogConfig, null, 2) : field.value`."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/MCPToolkit/MCPToolkitForm/formHelpers.ts",
+      "line": 38,
+      "title": "Custom config not cleared for catalogue-restricted servers",
+      "problem": "buildServerConfig() is called as `buildServerConfig(values, mcpServer?.mcp_config_id)` and never receives isCatalogRef; it unconditionally sets `mcpServer.use_custom_config = values.useCustomConfig` and keeps `mcpServer.config = config` whenever `values.useCustomConfig` is true, with no override for the catalogue-restricted case. formHelpers.test.ts has no test covering isCatalogRef at all.",
+      "impact": "When editing a pre-existing custom-config catalogue server after restricted mode is turned on, the Global/Custom toggle is hidden and the JSON field is disabled, but every save still resubmits `use_custom_config: true` plus the old custom JSON unchanged — even for edits to unrelated fields — so the frontend never actually enforces catalogue-only config at the data layer, only in the display.",
+      "recommendation": "Pass isCatalogRef into buildServerConfig (or apply the same override where it is called in MCPToolkitForm/index.tsx) and force `use_custom_config: false` / `config: undefined` whenever isCatalogRef is true, mirroring what MCPConfigSection already enforces visually."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/workflowEditor/helpers/backendErrorHandler.ts",
+      "line": 69,
+      "title": "Empty details string leaves dangling colon",
+      "problem": "processBackendError appends `: ${error.details}` whenever `typeof error.details === 'string'`, with no check that it is non-empty, so an empty-string `details` still enters the branch. No test in backendErrorHandler.test.ts covers an empty-string details value.",
+      "impact": "The general error text shown to the user ends with a dangling 'message: ' instead of a clean message for the one input shape this branch was added to handle correctly.",
+      "recommendation": "Guard the branch with a non-empty check, e.g. `typeof error.details === 'string' && error.details`."
+    }
+  ]
+}

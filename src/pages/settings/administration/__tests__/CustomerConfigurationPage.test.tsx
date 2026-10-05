@@ -266,4 +266,33 @@ describe('CustomerConfigurationPage', () => {
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/settings/administration'))
   })
+
+  it('renders a switch-only declared setting generically (mcpCustomServersDisabled shape)', async () => {
+    const setting = declaration({
+      component_id: 'mcpCustomServersDisabled',
+      label: 'Restrict to catalog MCP servers',
+      description: 'Reject custom MCP server configs platform-wide',
+      value: { enabled: false },
+      fields: [
+        {
+          name: 'enabled',
+          type: 'switch',
+          label: 'Restrict to catalog MCP servers',
+          description: null,
+          required: false,
+          max_length: null,
+          pattern: null,
+          pattern_message: null,
+          markup: 'plain',
+        },
+      ],
+    })
+    withSettings([setting])
+    render(<CustomerConfigurationPage />)
+    // The fixture's setting label and its single field's label are the same string, so both
+    // the SettingCard heading and the SchemaForm field label render it — assert at least one.
+    await waitFor(() =>
+      expect(screen.getAllByText('Restrict to catalog MCP servers').length).toBeGreaterThan(0)
+    )
+  })
 })

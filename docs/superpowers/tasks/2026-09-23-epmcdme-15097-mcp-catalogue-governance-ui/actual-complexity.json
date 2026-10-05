@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "generated": "2026-09-23T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk": { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 2, "label": "S" }
+  },
+  "total": 19,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 16,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches four distinct components across two subsystems in a single repo: the MCP toolkit form tree (MCPConfigSection.tsx, MCPToolkitForm/index.tsx, MCPServerConfigStep.tsx, formHelpers.ts), the shared mcpMode.ts restricted-mode accessor, the assistants store (createAssistant/updateAssistant error surfacing), and workflowEditor/helpers/backendErrorHandler.ts. Base L (shared utilities involved) bumped to XL because the change spans both the assistants flow and the workflow-create flow (multiple workflows/agents red flag)."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "diffstat reports 16 files changed (8 source files + 8 test files), which maps to the 16+ = XXL band in the actual-mode file-count table, even though the net diff is modest (250 insertions / 32 deletions) and no new source files were created — all 16 are modifications to pre-existing files."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: change spans the assistants MCP-toolkit flow and the workflowEditor backendErrorHandler flow for workflow-create — two distinct workflows/agents touched by one change.",
+    "Technical Risk bumped from S to M: MCP catalogue governance enforcement (forcing read-only under restricted mode, blocking stale custom-config resubmission) is a compliance/governance requirement, even though it reuses the existing isMCPRestrictedMode/isReadOnly gating pattern."
+  ],
+  "split_recommendation": null
+}

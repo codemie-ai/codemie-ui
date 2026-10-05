@@ -131,4 +131,15 @@ describe('MCPToolkit', () => {
     render(<MCPToolkit {...defaultProps} mcpServers={[baseServer]} />)
     expect(mcpStore.getConfig).not.toHaveBeenCalled()
   })
+
+  it('hides the Manual Setup/Add Custom affordance when governance restricts custom servers', () => {
+    mockUseSnapshot.mockImplementation((store: any) => {
+      if (store === appInfoStore) {
+        return { configs: [{ id: 'mcpCustomServersDisabled', settings: { enabled: true } }] }
+      }
+      return defaultSnapshot
+    })
+    render(<MCPToolkit {...defaultProps} mcpServers={[]} />)
+    expect(screen.queryByText(/manual setup/i)).not.toBeInTheDocument()
+  })
 })

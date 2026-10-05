@@ -83,8 +83,8 @@ const MCPToolkitForm = ({
 
   const serverConfig = useMemo(() => {
     const values = getValues()
-    return buildServerConfig(values, mcpServer?.mcp_config_id)
-  }, [watch()])
+    return buildServerConfig(values, mcpServer?.mcp_config_id, isCatalogRef)
+  }, [watch(), isCatalogRef])
 
   const onSubmit = handleSubmit(async () => {
     await handleFormSubmit({

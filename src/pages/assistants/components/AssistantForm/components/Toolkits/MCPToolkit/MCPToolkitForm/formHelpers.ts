@@ -19,7 +19,11 @@ import toaster from '@/utils/toaster'
 
 import { parseConfigJson } from '../validators'
 
-export const buildServerConfig = (values: any, mcpConfigId?: string | null): MCPServerDetails => {
+export const buildServerConfig = (
+  values: any,
+  mcpConfigId?: string | null,
+  isCatalogRef?: boolean
+): MCPServerDetails => {
   const mcpServer: MCPServerDetails = {
     name: values.name,
     description: values.description,
@@ -35,9 +39,13 @@ export const buildServerConfig = (values: any, mcpConfigId?: string | null): MCP
     mcpServer.tools_tokens_size_limit = values.tokensSizeLimit
   }
 
-  mcpServer.use_custom_config = values.useCustomConfig
+  // Under governance, a catalogue-referenced server is always Global — never persist a
+  // stale/edited custom config, regardless of what the form's useCustomConfig field says.
+  const useCustomConfig = isCatalogRef ? false : values.useCustomConfig
 
-  if (values.useCustomConfig || !mcpConfigId) {
+  mcpServer.use_custom_config = useCustomConfig
+
+  if (useCustomConfig || !mcpConfigId) {
     mcpServer.config = config
   } else {
     mcpServer.config = undefined

@@ -17,6 +17,8 @@ import { render, screen } from '@testing-library/react'
 import { useForm } from 'react-hook-form'
 import { describe, it, expect, vi } from 'vitest'
 
+import { MCPServerConfig } from '@/types/entity/mcp'
+
 import { MCPFormValues } from '../formTypes'
 import MCPConfigSection from '../MCPConfigSection'
 
@@ -35,9 +37,38 @@ const defaultValues: MCPFormValues = {
   useCustomConfig: false,
 }
 
-const Wrapper = ({ configHasEnv = false }: { configHasEnv?: boolean }) => {
-  const { control, setValue } = useForm<MCPFormValues>({ defaultValues })
-  return <MCPConfigSection control={control} configHasEnv={configHasEnv} setValue={setValue} />
+const Wrapper = ({
+  configHasEnv = false,
+  hasCatalogReference,
+  isCatalogRef,
+  useCustomConfig,
+  configJson,
+  catalogConfig,
+}: {
+  configHasEnv?: boolean
+  hasCatalogReference?: boolean
+  isCatalogRef?: boolean
+  useCustomConfig?: boolean
+  configJson?: string
+  catalogConfig?: MCPServerConfig
+}) => {
+  const { control, setValue } = useForm<MCPFormValues>({
+    defaultValues: {
+      ...defaultValues,
+      useCustomConfig: useCustomConfig ?? defaultValues.useCustomConfig,
+      configJson: configJson ?? defaultValues.configJson,
+    },
+  })
+  return (
+    <MCPConfigSection
+      control={control}
+      configHasEnv={configHasEnv}
+      setValue={setValue}
+      hasCatalogReference={hasCatalogReference}
+      isCatalogRef={isCatalogRef}
+      catalogConfig={catalogConfig}
+    />
+  )
 }
 
 describe('MCPConfigSection', () => {
@@ -70,5 +101,30 @@ describe('MCPConfigSection', () => {
   it('shows hint about required command or url field', () => {
     render(<Wrapper />)
     expect(screen.getByText(/Must include at least.*command.*or.*url.*field/i)).toBeInTheDocument()
+  })
+
+  it('hides the Global/Custom toggle and forces read-only when isCatalogRef is true', () => {
+    render(<Wrapper hasCatalogReference isCatalogRef useCustomConfig />)
+    expect(screen.queryByText('Custom')).not.toBeInTheDocument()
+    // getByLabelText's regex would also match the label's nested TooltipButton (a labelable
+    // <button>), unrelated to this task — scope to the textbox role to target the field itself.
+    expect(screen.getByRole('textbox', { name: /Configuration \(JSON format\)/i })).toBeDisabled()
+  })
+
+  it('displays the catalog config, not a stale custom config, when isCatalogRef is true', () => {
+    render(
+      <Wrapper
+        hasCatalogReference
+        isCatalogRef
+        useCustomConfig
+        configJson={'{"command":"stale-custom-command"}'}
+        catalogConfig={{ command: 'catalog-command' }}
+      />
+    )
+    const textarea = screen.getByRole<HTMLTextAreaElement>('textbox', {
+      name: /Configuration \(JSON format\)/i,
+    })
+    expect(textarea.value).toContain('catalog-command')
+    expect(textarea.value).not.toContain('stale-custom-command')
   })
 })

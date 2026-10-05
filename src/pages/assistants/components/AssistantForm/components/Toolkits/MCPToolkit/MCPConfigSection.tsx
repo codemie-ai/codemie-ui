@@ -47,6 +47,7 @@ interface MCPConfigSectionProps {
   catalogConfig?: MCPServerConfig
   catalogConfigLoading?: boolean
   catalogConfigError?: string | null
+  isCatalogRef?: boolean
 }
 
 const ENV_SENSITIVE_WARNING =
@@ -64,6 +65,7 @@ const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({
   catalogConfig,
   catalogConfigLoading,
   catalogConfigError,
+  isCatalogRef,
 }) => {
   const debouncedFormatJson = useCallback(
     debounce((value: string) => formatJson(value, setValue), 1000),
@@ -72,7 +74,7 @@ const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({
 
   const useCustomConfig = useWatch({ control, name: 'useCustomConfig' })
   const configJson = useWatch({ control, name: 'configJson' })
-  const isReadOnly = hasCatalogReference && !useCustomConfig
+  const isReadOnly = hasCatalogReference && (isCatalogRef || !useCustomConfig)
 
   // When switching to Custom mode with empty config, populate from catalog
   useEffect(() => {
@@ -88,7 +90,7 @@ const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({
         <label htmlFor="json-config" className="font-bold text-sm">
           MCP Configuration
         </label>
-        {hasCatalogReference && (
+        {hasCatalogReference && !isCatalogRef && (
           <div className="flex items-center gap-2">
             <Controller
               name="useCustomConfig"
@@ -133,7 +135,7 @@ const MCPConfigSection: React.FC<MCPConfigSectionProps> = ({
               disabled={isReadOnly}
               {...field}
               value={
-                !useCustomConfig && hasCatalogReference && catalogConfig
+                isReadOnly && hasCatalogReference && catalogConfig
                   ? JSON.stringify(catalogConfig, null, 2)
                   : field.value
               }

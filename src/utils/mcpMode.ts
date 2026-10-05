@@ -15,8 +15,9 @@
 
 import { MCP_CUSTOM_SERVERS_DISABLED_CONFIG_ID } from '@/constants/mcp'
 import { appInfoStore } from '@/store/appInfo'
+import { ConfigItem } from '@/types/entity/configuration'
 
-export const isMCPRestrictedMode = (): boolean => {
-  const config = appInfoStore.configs.find((c) => c.id === MCP_CUSTOM_SERVERS_DISABLED_CONFIG_ID)
+export const isMCPRestrictedMode = (configs: ConfigItem[] = appInfoStore.configs): boolean => {
+  const config = configs.find((c) => c.id === MCP_CUSTOM_SERVERS_DISABLED_CONFIG_ID)
   return config?.settings.enabled === true
 }

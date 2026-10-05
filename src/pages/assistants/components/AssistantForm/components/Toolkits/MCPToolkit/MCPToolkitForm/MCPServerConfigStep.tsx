@@ -137,6 +137,7 @@ const MCPServerConfigStep = ({
           catalogConfig={catalogConfig}
           catalogConfigLoading={catalogConfigLoading}
           catalogConfigError={catalogConfigError}
+          isCatalogRef={isCatalogRef}
         />
 
         <MCPEnvVarsSection

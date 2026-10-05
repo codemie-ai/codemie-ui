@@ -1,0 +1,79 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted check of 3 prior blocking findings: CR-001 and CR-002 are resolved in current source (isReadOnly now drives the catalogue display; buildServerConfig takes isCatalogRef and forces use_custom_config false/config undefined, with tests). CR-003 is superseded because the string-details branch was removed entirely from processBackendError, but that fix-up also reverted the parsedError.message extraction in createAssistant/updateAssistant, which Stage 7 or a final re-review should confirm against the 'show the backend-reported reason' criterion; confidence is medium for that reason.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 5 commit subjects in range match EPMCDME-XXXX: Capital sentence format with real ticket id, capitalized first word, no trailing period."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality guide found at .ai-run/guides/standards/code-quality.md and no ArtifactRef passed for code_quality; absent standard, not a gap."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "security-patterns.md checklist checked against changed files: no unsafe sinks, redirects, postMessage, env/secret reads, or nosonar additions; the isCatalogRef/isMCPRestrictedMode logic is UI-affordance only, no concrete security defect found."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/MCPToolkit/MCPConfigSection.tsx",
+      "line": 137,
+      "title": "Read-only field can show stale config, not catalog",
+      "problem": "The read-only textarea's displayed value only checked `!useCustomConfig`, not `isCatalogRef`, so a stale custom JSON could display under a 'Global' label.",
+      "impact": "Misleading display of the configuration that would actually be used under governance.",
+      "recommendation": "Include isCatalogRef in the display condition."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/MCPToolkit/MCPToolkitForm/formHelpers.ts",
+      "line": 38,
+      "title": "Custom config not cleared for catalogue-restricted servers",
+      "problem": "buildServerConfig() never received isCatalogRef and resubmitted use_custom_config true plus the old custom JSON on every save.",
+      "impact": "Frontend did not enforce catalogue-only config at the data layer.",
+      "recommendation": "Pass isCatalogRef into buildServerConfig and force use_custom_config false / config undefined."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/workflowEditor/helpers/backendErrorHandler.ts",
+      "line": 69,
+      "title": "Empty details string leaves dangling colon",
+      "problem": "processBackendError appended `: ${error.details}` for any string details, including empty.",
+      "impact": "Dangling colon in the general error text.",
+      "recommendation": "Guard the branch with a non-empty check."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "MCPConfigSection.tsx:138 now uses isReadOnly (= hasCatalogReference && (isCatalogRef || !useCustomConfig)) for the catalogue display; test added."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "formHelpers.ts takes isCatalogRef and forces use_custom_config false and config undefined when a config id exists; MCPToolkitForm/index.tsx:86 passes isCatalogRef; tests added."
+    },
+    {
+      "id": "CR-003",
+      "status": "superseded",
+      "notes": "The string-details branch no longer exists in backendErrorHandler.ts (details is object-only), so the dangling-colon case is moot. Side effect: the parsedError.message extraction in the assistants store was also reverted."
+    }
+  ]
+}
