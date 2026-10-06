@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -46,6 +46,17 @@ vi.mock('@/components/Popup', () => ({
         </button>
       </div>
     ) : null,
+}))
+
+// Icon mocks forward props so the class assertions below can actually fail.
+vi.mock('@/assets/icons/thumb-up.svg?react', () => ({
+  default: (props: any) => <svg data-testid="thumb-up-outline" {...props} />,
+}))
+vi.mock('@/assets/icons/thumb-down.svg?react', () => ({
+  default: (props: any) => <svg data-testid="thumb-down-outline" {...props} />,
+}))
+vi.mock('@/assets/icons/thumb-up-filled.svg?react', () => ({
+  default: (props: any) => <svg data-testid="thumb-up-filled" {...props} />,
 }))
 
 const message = { role: 'Assistant', createdAt: '2026-09-16T00:00:00Z', assistantId: 'a1' } as any
@@ -129,5 +140,33 @@ describe('MessageFeedbackActions — like path (EPMCDME-14625)', () => {
     expect(toaster.info).not.toHaveBeenCalled()
     // Mark reverted to "not liked" — the label goes back to its pre-click text.
     expect(screen.getByRole('button', { name: 'Like this response' })).toBeInTheDocument()
+  })
+})
+
+describe('MessageFeedbackActions — selected state icons (EPMCDME-14840)', () => {
+  const withMark = (mark: string) => ({ ...message, userMark: { mark } })
+
+  it('liked state renders the filled icon with the existing accent class', () => {
+    render(<MessageFeedbackActions message={withMark('correct')} indexes={indexes} />)
+    const button = screen.getByRole('button', { name: 'Click to remove your positive feedback' })
+    const icon = within(button).getByTestId('thumb-up-filled')
+    expect(icon).toHaveClass('text-text-accent')
+    expect(icon).not.toHaveClass('rotate-180')
+  })
+
+  it('disliked state renders the filled icon rotated', () => {
+    render(<MessageFeedbackActions message={withMark('wrong')} indexes={indexes} />)
+    const button = screen.getByRole('button', { name: 'Click to remove your negative feedback' })
+    const icon = within(button).getByTestId('thumb-up-filled')
+    expect(icon).toHaveClass('rotate-180')
+    expect(icon).toHaveClass('text-failed-secondary')
+  })
+
+  it('unselected state renders outline icons', () => {
+    render(<MessageFeedbackActions message={message} indexes={indexes} />)
+    const like = screen.getByRole('button', { name: 'Like this response' })
+    const dislike = screen.getByRole('button', { name: 'Dislike this response' })
+    expect(within(like).getByTestId('thumb-up-outline')).toBeInTheDocument()
+    expect(within(dislike).getByTestId('thumb-down-outline')).toBeInTheDocument()
   })
 })

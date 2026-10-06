@@ -17,6 +17,7 @@ import { FC, useEffect, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import ThumbDownSvg from '@/assets/icons/thumb-down.svg?react'
+import ThumbUpFilledSvg from '@/assets/icons/thumb-up-filled.svg?react'
 import ThumbUpSvg from '@/assets/icons/thumb-up.svg?react'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import { ButtonType } from '@/constants'
@@ -165,17 +166,17 @@ const MessageFeedbackActions: FC<MessageFeedbackActionsProps> = ({ message, inde
   return (
     <>
       <ChatMessageAction
-        icon={ThumbUpSvg}
+        icon={isLiked ? ThumbUpFilledSvg : ThumbUpSvg}
         onClick={handleLike}
         iconClassName={cn('h-4', isLiked && 'text-text-accent')}
         label={isLiked ? 'Click to remove your positive feedback' : 'Like this response'}
       />
 
       <ChatMessageAction
-        icon={ThumbDownSvg}
+        icon={isDisliked ? ThumbUpFilledSvg : ThumbDownSvg}
         onClick={handleDislike}
-        iconClassName={cn('h-4', isDisliked && 'text-failed-secondary')}
-        label={isDisliked ? 'Click to remove yout negative feedback' : 'Dislike this response'}
+        iconClassName={cn('h-4', isDisliked && 'rotate-180 text-failed-secondary')}
+        label={isDisliked ? 'Click to remove your negative feedback' : 'Dislike this response'}
       />
 
       <ConfirmationModal
