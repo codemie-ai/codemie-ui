@@ -25,34 +25,41 @@ import ChatPromptLlmSelector from '../ChatPromptLlmSelector'
 
 vi.hoisted(() => vi.resetModules())
 
-const { mockChatsStore, mockAppInfoStore, mockOverlayHide, mockTruncation } = vi.hoisted(() => {
-  return {
-    // jsdom has no layout, so the real hook can never report truncation. The row
-    // composes its hover text from this flag, so the tests drive it directly.
-    mockTruncation: { isTruncated: false },
-    mockChatsStore: {
-      currentChat: null as Conversation | null,
-      updateChat: vi.fn(),
-    },
-    mockAppInfoStore: {
-      llmModels: [
-        { label: 'GPT-4', value: 'gpt-4', isDefault: true },
-        { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
-        { label: 'Claude-2', value: 'claude-2', isDefault: false },
-        { label: 'Llama-3', value: 'llama-3', isDefault: false },
-      ] as ModelOption[],
-      llmRouters: [] as LLMRouterOption[],
-      getLLMModels: vi.fn(),
-    },
-    mockOverlayHide: vi.fn(),
-  }
-})
+const { mockChatsStore, mockAppInfoStore, mockProjectsStore, mockOverlayHide, mockTruncation } =
+  vi.hoisted(() => {
+    return {
+      // jsdom has no layout, so the real hook can never report truncation. The row
+      // composes its hover text from this flag, so the tests drive it directly.
+      mockTruncation: { isTruncated: false },
+      mockChatsStore: {
+        currentChat: null as Conversation | null,
+        updateChat: vi.fn(),
+        getModelsForCurrentChat: vi.fn().mockResolvedValue([]),
+        filteredModels: [] as ModelOption[],
+      },
+      mockAppInfoStore: {
+        llmModels: [
+          { label: 'GPT-4', value: 'gpt-4', isDefault: true },
+          { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
+          { label: 'Claude-2', value: 'claude-2', isDefault: false },
+          { label: 'Llama-3', value: 'llama-3', isDefault: false },
+        ] as ModelOption[],
+        llmRouters: [] as LLMRouterOption[],
+        getLLMModels: vi.fn(),
+      },
+      mockProjectsStore: {
+        getProject: vi.fn(),
+      },
+      mockOverlayHide: vi.fn(),
+    }
+  })
 
 vi.mock('valtio', () => ({
   proxy: (obj: any) => obj,
   useSnapshot: vi.fn((store) => {
     if (store === mockChatsStore) return mockChatsStore
     if (store === mockAppInfoStore) return mockAppInfoStore
+    if (store === mockProjectsStore) return mockProjectsStore
     return store
   }),
   subscribe: vi.fn(),
@@ -66,8 +73,18 @@ vi.mock('@/store/appInfo', () => ({
   appInfoStore: mockAppInfoStore,
 }))
 
+vi.mock('@/store/projects', () => ({
+  projectsStore: mockProjectsStore,
+}))
+
 vi.mock('@/hooks/useIsTruncated', () => ({
   useIsTruncated: () => mockTruncation.isTruncated,
+}))
+
+vi.mock('@/utils/toaster', () => ({
+  default: {
+    success: vi.fn(),
+  },
 }))
 
 vi.mock('primereact/overlaypanel', () => ({
@@ -81,6 +98,10 @@ vi.mock('primereact/overlaypanel', () => ({
   }),
 }))
 
+// No projectId by default: `modelsToDisplay` falls back to the global
+// `llmModels` list, which is what every describe block below populates and
+// asserts against. The dedicated "project filtering" block below sets
+// `projectId` explicitly per test, exercising the project-scoped path.
 const mockChat: Conversation = {
   id: 'chat-123',
   name: 'Test Chat',
@@ -95,6 +116,10 @@ describe('ChatPromptLlmSelector — keyboard navigation', () => {
     mockChatsStore.currentChat = mockChat
     mockChatsStore.updateChat = vi.fn()
     mockAppInfoStore.getLLMModels = vi.fn()
+    mockProjectsStore.getProject = vi.fn().mockResolvedValue({
+      name: 'test-project',
+      default_model: 'gpt-4',
+    })
     // jsdom does not implement scrollIntoView; stub it so the
     // scroll-into-view effect (added in Task 6) does not throw.
     Element.prototype.scrollIntoView = vi.fn()
@@ -151,7 +176,7 @@ describe('ChatPromptLlmSelector — keyboard navigation', () => {
     expect(mockOverlayHide).toHaveBeenCalled()
   })
 
-  it('Enter on the Assistant Default row calls updateChat with llmModel: null', () => {
+  it('Enter on the Default row calls updateChat with llmModel: null', () => {
     render(<ChatPromptLlmSelector />)
     const input = screen.getByPlaceholderText('Search models…')
 
@@ -670,7 +695,7 @@ describe('ChatPromptLlmSelector — routers', () => {
   it('groups into Default, then Routers, then Models (recommended model first) once a router exists', () => {
     render(<ChatPromptLlmSelector />)
 
-    const defaultRow = screen.getByRole('option', { name: 'Assistant Default' })
+    const defaultRow = screen.getByRole('option', { name: 'Default' })
     const routersHeader = screen.getByText('Routers')
     const routerRow = screen.getByRole('option', { name: /Smart Router/ })
     const modelsHeader = screen.getByText('Models')
@@ -750,5 +775,52 @@ describe('ChatPromptLlmSelector — routers', () => {
 
       expect(isBefore(modelsHeader, firstModelRow)).toBe(true)
     })
+  })
+})
+
+describe('ChatPromptLlmSelector — project filtering', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatsStore.currentChat = null
+    mockChatsStore.updateChat = vi.fn()
+    mockChatsStore.getModelsForCurrentChat = vi.fn().mockResolvedValue([])
+    mockChatsStore.filteredModels = []
+    mockAppInfoStore.getLLMModels = vi.fn()
+    mockAppInfoStore.llmModels = [
+      { label: 'GPT-4', value: 'gpt-4', isDefault: true },
+      { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
+      { label: 'Claude-2', value: 'claude-2', isDefault: false },
+    ] as ModelOption[]
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
+  it('calls getModelsForCurrentChat on mount when projectId exists', () => {
+    mockChatsStore.currentChat = {
+      ...mockChat,
+      projectId: 'zoo',
+    } as unknown as Conversation
+
+    render(<ChatPromptLlmSelector />)
+
+    // The component should call getModelsForCurrentChat when it mounts with a projectId
+    expect(mockChatsStore.getModelsForCurrentChat).toHaveBeenCalled()
+  })
+
+  it('uses filtered models when available instead of all llmModels', () => {
+    mockChatsStore.currentChat = {
+      ...mockChat,
+      projectId: 'zoo',
+      llmModel: 'gpt-4',
+    } as unknown as Conversation
+    mockChatsStore.filteredModels = [
+      { label: 'GPT-4', value: 'gpt-4', isDefault: true },
+    ] as ModelOption[]
+
+    render(<ChatPromptLlmSelector />)
+
+    // When filtered models exist, they should be used for display
+    // The trigger should still show the selected model
+    const trigger = screen.getByRole('button', { name: /GPT-4/ })
+    expect(trigger).toBeInTheDocument()
   })
 })

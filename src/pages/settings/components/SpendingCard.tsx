@@ -241,20 +241,12 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
     )
   }
 
-  const renderSpendCell = (
-    colId: string,
-    data: TabularResponse['data'],
-    item: Record<string, MetricValue>
-  ) => {
+  const renderSpendCell = (colId: string, item: Record<string, MetricValue>) => {
     const value = item[colId]
     const percentage: number = typeof value === 'number' ? value : 0
-    const rawRow = data.rows.find((row) => row.project_name === item.project_name)
-    const rawSpend = rawRow?.current_spending
-    const spend = typeof rawSpend === 'number' && rawSpend >= 0 ? rawSpend : null
     return (
       <SpendingProgressBar
         percentage={percentage}
-        spend={spend}
         dangerThreshold={SPENDING_DANGER_THRESHOLD}
         warningThreshold={SPENDING_WARNING_THRESHOLD}
       />
@@ -271,7 +263,7 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
     const customColumns: Record<string, (item: Record<string, MetricValue>) => ReactElement> = {}
 
     data.columns.filter(isTotalPercentageColumn).forEach((col) => {
-      customColumns[col.id] = (item) => renderSpendCell(col.id, data, item)
+      customColumns[col.id] = (item) => renderSpendCell(col.id, item)
     })
 
     return Object.keys(customColumns).length > 0 ? customColumns : undefined

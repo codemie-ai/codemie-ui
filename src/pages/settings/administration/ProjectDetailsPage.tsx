@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 import { useCallback, useEffect, useState } from 'react'
 import { useSnapshot } from 'valtio'
@@ -31,36 +30,47 @@ import ProjectModal, {
   ProjectFormData,
 } from '@/pages/settings/administration/projectsManagement/ProjectModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
+import { projectBudgetsStore } from '@/store/projectBudgets'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { ProjectType } from '@/types/entity/project'
 import { ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
-import { formatCurrency } from '@/utils/currency'
-import { formatDateTime } from '@/utils/helpers'
 import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
-import { displayValue } from '@/utils/utils'
 
 import ProjectBudgetsSection, {
   ProjectBudgetsAccess,
 } from './projectsManagement/ProjectBudgetsSection'
+import ProjectDetailsNavigation, {
+  getProjectDetailsTab,
+  ProjectDetailsTab,
+} from './projectsManagement/ProjectDetailsNavigation'
+import ProjectIntegrationsSection from './projectsManagement/ProjectIntegrationsSection'
 import ProjectMembersManager from './projectsManagement/ProjectMembersManager'
+import ProjectModelsSection from './projectsManagement/ProjectModelsSection'
+import ProjectOverviewSection from './projectsManagement/ProjectOverviewSection'
 import { goBackProjectDetails } from './utils/goBackAdministration'
 
-function chargebackStatusLabel(
-  enabled?: boolean,
-  attribution?: string,
-  costCentersEnabled?: boolean
-): string {
-  if (!enabled) return 'Disabled'
-  // Cost-center attribution is only meaningful when the feature is on; otherwise the
-  // project is the only possible target, so never surface a cost center.
-  return costCentersEnabled && attribution === 'cost_center'
-    ? 'Enabled, attributed to a cost center'
-    : 'Enabled'
-}
+/** Tabs a viewer can open; each section enforces its own finer-grained actions. */
+const getVisibleTabs = ({
+  isPersonalProject,
+  canManageProject,
+  canViewBudgets,
+  isModelsConfigEnabled,
+}: {
+  isPersonalProject: boolean
+  canManageProject: boolean
+  canViewBudgets: boolean
+  isModelsConfigEnabled: boolean
+}): ProjectDetailsTab[] => [
+  'overview',
+  ...(isPersonalProject ? [] : (['members'] as const)),
+  ...(canManageProject && isModelsConfigEnabled ? (['models'] as const) : []),
+  ...(canViewBudgets ? (['budgets'] as const) : []),
+  ...(canManageProject ? (['integrations'] as const) : []),
+]
 
 const resolveBudgetsAccess = ({
   isMaintainer,
@@ -80,44 +90,84 @@ const ProjectDetailsPage = () => {
   const router = useVueRouter()
   const { user: currentUser } = useSnapshot(userStore)
   const projectName = router.params.projectName as string
+  const activeTab = getProjectDetailsTab(router.name)
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAGS.COST_CENTERS)
   const [isChargebackFeatureEnabled] = useProjectChargebackEnabled()
   const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
+  const [isModelsConfigEnabled] = useFeatureFlag(FEATURE_FLAGS.PROJECT_MODEL_OVERRIDE)
   const [project, setProject] = useState<ProjectDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditPopupVisible, setIsEditPopupVisible] = useState(false)
   const [budgets, setBudgets] = useState<ProjectBudget[]>([])
-  const [spendingRefreshKey, setSpendingRefreshKey] = useState(0)
 
   const isPersonalProject = project?.project_type === ProjectType.PERSONAL
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
   const isAuditor = currentUser?.isAuditor ?? false
   const isProjectAdmin = currentUser?.applicationsAdmin?.includes(project?.name ?? '') ?? false
-  const canSeeMemberBudgets = isMaintainer || isProjectAdmin
   const canManageProject = !isPersonalProject && (isAdmin || isProjectAdmin)
   const canViewBudgets =
     isBudgetManagementEnabled &&
     !isPersonalProject &&
     (isAdmin || isMaintainer || isAuditor || isProjectAdmin)
-  const budgetsAccess = resolveBudgetsAccess({ isMaintainer, isAdmin, isProjectAdmin })
+  // Maintainers get full budget control; admins and project admins keep the reduced
+  // "distribution" capability (redistribute an existing budget's member split, EPMCDME-13962)
+  // instead of losing budget management entirely — resolveBudgetsAccess is the single source
+  // for this tier, used identically on Overview and the Budgets tab.
+  const budgetsAccess: ProjectBudgetsAccess = isBudgetManagementEnabled
+    ? resolveBudgetsAccess({ isMaintainer, isAdmin, isProjectAdmin })
+    : 'view'
+  const visibleTabs = getVisibleTabs({
+    isPersonalProject,
+    canManageProject,
+    canViewBudgets,
+    isModelsConfigEnabled,
+  })
+  const canOpenActiveTab = visibleTabs.includes(activeTab)
 
-  const loadProject = useCallback(async () => {
-    setLoading(true)
-    try {
-      const data = await projectsStore.getProject(projectName, true)
-      setProject(data)
-    } catch (error) {
-      console.error('Failed to load project:', error)
-      setProject(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [projectName])
+  // `guard` is only set by the mount/projectName-change effect below, so a manual refresh call
+  // (e.g. after saving the project or a members/budgets change) always applies its result.
+  const loadProject = useCallback(
+    async (guard?: { cancelled: boolean }) => {
+      setLoading(true)
+      try {
+        const data = await projectsStore.getProject(projectName, true)
+        if (!guard?.cancelled) setProject(data)
+      } catch (error) {
+        console.error('Failed to load project:', error)
+        if (!guard?.cancelled) setProject(null)
+      } finally {
+        if (!guard?.cancelled) setLoading(false)
+      }
+    },
+    [projectName]
+  )
 
   useEffect(() => {
-    loadProject()
+    const guard = { cancelled: false }
+    loadProject(guard)
+    return () => {
+      guard.cancelled = true
+    }
   }, [loadProject])
+
+  useEffect(() => {
+    let cancelled = false
+    if (activeTab !== 'members' || !canViewBudgets || !projectName) {
+      return () => {
+        cancelled = true
+      }
+    }
+    projectBudgetsStore
+      .listProjectBudgets({ projectName })
+      .then((data) => {
+        if (!cancelled) setBudgets(data)
+      })
+      .catch((error) => console.error('Failed to load project budgets for members:', error))
+    return () => {
+      cancelled = true
+    }
+  }, [activeTab, canViewBudgets, projectName])
 
   const handleBack = useCallback(() => {
     goBackProjectDetails()
@@ -159,7 +209,7 @@ const ProjectDetailsPage = () => {
           params: { projectName: updatedProject.name },
         })
       } else {
-        await loadProject()
+        await loadProject().catch((error) => console.error('Failed to reload project', error))
       }
     } catch (error: any) {
       const errorMessage =
@@ -206,117 +256,67 @@ const ProjectDetailsPage = () => {
           ) : null
         }
         content={
-          <div className="flex flex-col gap-6 pt-6 pb-8">
-            <section className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
-                <div className="text-xs text-text-quaternary mb-2">Description</div>
-                <div className="text-sm text-text-primary whitespace-pre-wrap">
-                  {displayValue(project.description)}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-border-structural bg-surface-base-secondary p-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-xs text-text-quaternary mb-1">Total Users</div>
-                    <div>{project.user_count}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-text-quaternary mb-1">Admins</div>
-                    <div>{project.admin_count}</div>
-                  </div>
-                  {project.spending && (
-                    <>
-                      <div>
-                        <div className="text-xs text-text-quaternary mb-1">Budget Period Spend</div>
-                        <div>{formatCurrency(project.spending.current_spending)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-text-quaternary mb-1">Lifetime Spend</div>
-                        <div>
-                          {formatCurrency(
-                            project.spending.cumulative_spend ?? project.spending.current_spending
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  {isCostCentersEnabled && (
-                    <div>
-                      <div className="text-xs text-text-quaternary mb-1">Cost center</div>
-                      {project.cost_center_id && project.cost_center_name ? (
-                        <button
-                          type="button"
-                          className="text-text-accent-status hover:text-text-accent-status-hover"
-                          onClick={handleCostCenterOpen}
-                        >
-                          {project.cost_center_name}
-                        </button>
-                      ) : (
-                        <div>-</div>
-                      )}
-                    </div>
-                  )}
-                  {isChargebackFeatureEnabled && (
-                    <div>
-                      <div className="text-xs text-text-quaternary mb-1">Chargeback</div>
-                      <div>
-                        {chargebackStatusLabel(
-                          project.chargeback_enabled,
-                          project.chargeback_attribution,
-                          isCostCentersEnabled
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-xs text-text-quaternary mb-1">Type</div>
-                    <div className="capitalize">{project.project_type}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-text-quaternary mb-1">
-                      Enforce member spend limits
-                    </div>
-                    <div>{project.enforce_member_spend_limits ? 'Enabled' : 'Disabled'}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-text-quaternary mb-1">Created by</div>
-                    <div>{displayValue(project.created_by)}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-text-quaternary mb-1">Created at</div>
-                    <div>{formatDateTime(project.created_at)}</div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {canViewBudgets && (
-              <section>
-                <ProjectBudgetsSection
-                  projectName={project.name}
-                  spendingRows={project.spending_widget?.data?.rows}
-                  onBudgetsChanged={canSeeMemberBudgets ? setBudgets : undefined}
-                  onProjectChanged={loadProject}
-                  onBudgetReset={() => setSpendingRefreshKey((k) => k + 1)}
-                  access={budgetsAccess}
-                  project={project}
-                />
-              </section>
+          <>
+            <ProjectDetailsNavigation
+              projectName={project.name}
+              activeTab={activeTab}
+              visibleTabs={visibleTabs}
+            />
+            {activeTab === 'overview' && (
+              <ProjectOverviewSection
+                project={project}
+                onCostCenterOpen={handleCostCenterOpen}
+                budgetsAccess={budgetsAccess}
+                isChargebackFeatureEnabled={isChargebackFeatureEnabled}
+                costCentersEnabled={isCostCentersEnabled}
+                canViewBudgets={canViewBudgets}
+                canManageProject={canManageProject}
+                isModelsConfigEnabled={isModelsConfigEnabled}
+                spendingRows={canViewBudgets ? project.spending_widget?.data?.rows : undefined}
+                onProjectChanged={loadProject}
+              />
             )}
-
-            {!isPersonalProject && (
-              <section>
+            {activeTab === 'models' && canOpenActiveTab && (
+              <ProjectModelsSection projectName={project.name} />
+            )}
+            {activeTab === 'integrations' && canOpenActiveTab && (
+              <ProjectIntegrationsSection projectName={project.name} />
+            )}
+            {activeTab === 'members' && canOpenActiveTab && (
+              <div className="pt-5 pb-8">
                 <ProjectMembersManager
                   project={project}
                   onMembersChanged={loadProject}
-                  budgets={canSeeMemberBudgets ? budgets : undefined}
-                  onBudgetsChanged={canSeeMemberBudgets ? setBudgets : undefined}
-                  spendingRefreshKey={spendingRefreshKey}
+                  budgets={isMaintainer || isProjectAdmin ? budgets : undefined}
+                  onBudgetsChanged={isMaintainer || isProjectAdmin ? setBudgets : undefined}
+                  // Per-member model overrides have no backend support yet (EPMCDME-14349
+                  // scoped the FE to the flat project-level allow-list); keep this entry
+                  // point hidden regardless of the Models tab's own feature flag.
+                  isModelsConfigEnabled={false}
                 />
-              </section>
+              </div>
             )}
-          </div>
+            {activeTab === 'budgets' && canOpenActiveTab && (
+              <div className="pt-5 pb-8">
+                <ProjectBudgetsSection
+                  projectName={project.name}
+                  project={project}
+                  access={budgetsAccess}
+                  onProjectChanged={loadProject}
+                  spendingRows={project.spending_widget?.data?.rows}
+                  onBudgetsChanged={isMaintainer || isProjectAdmin ? setBudgets : undefined}
+                  spending={project.spending}
+                />
+              </div>
+            )}
+            {!canOpenActiveTab && (
+              <div className="pt-6 text-sm text-text-quaternary">
+                {isPersonalProject
+                  ? 'This section is not available for personal projects.'
+                  : 'You do not have access to this section.'}
+              </div>
+            )}
+          </>
         }
       />
 

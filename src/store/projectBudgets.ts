@@ -56,9 +56,10 @@ interface ProjectBudgetsStore {
   overrideMemberAllocation: (
     budgetId: string,
     userId: string,
-    payload: MemberAllocationOverridePayload
+    payload: MemberAllocationOverridePayload,
+    silent?: boolean
   ) => Promise<ProjectBudgetMemberAllocation>
-  clearMemberOverride: (budgetId: string, userId: string) => Promise<void>
+  clearMemberOverride: (budgetId: string, userId: string, silent?: boolean) => Promise<void>
   listProjectBudgetGroups: (projectName: string) => Promise<ProjectBudgetGroup[]>
   getProjectBudgetGroup: (groupId: string) => Promise<ProjectBudgetGroup>
   createProjectBudgetGroup: (
@@ -229,7 +230,8 @@ export const projectBudgetsStore = proxy<ProjectBudgetsStore>({
   async overrideMemberAllocation(
     budgetId: string,
     userId: string,
-    payload: MemberAllocationOverridePayload
+    payload: MemberAllocationOverridePayload,
+    silent = false
   ) {
     this.loading = true
     this.error = null
@@ -245,14 +247,14 @@ export const projectBudgetsStore = proxy<ProjectBudgetsStore>({
       const msg =
         error?.parsedError?.message ?? error?.message ?? 'Failed to override member allocation'
       this.error = msg
-      toaster.error(msg)
+      if (!silent) toaster.error(msg)
       throw error
     } finally {
       this.loading = false
     }
   },
 
-  async clearMemberOverride(budgetId: string, userId: string) {
+  async clearMemberOverride(budgetId: string, userId: string, silent = false) {
     this.loading = true
     this.error = null
 
@@ -263,7 +265,7 @@ export const projectBudgetsStore = proxy<ProjectBudgetsStore>({
     } catch (error: any) {
       const msg = error?.parsedError?.message ?? error?.message ?? 'Failed to clear member override'
       this.error = msg
-      toaster.error(msg)
+      if (!silent) toaster.error(msg)
       throw error
     } finally {
       this.loading = false

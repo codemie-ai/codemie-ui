@@ -25,6 +25,7 @@ import { history } from '@/hooks/appLevel/useHistoryStack'
 import { useWorkflowAIEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
+import { projectsStore } from '@/store/projects'
 import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
 import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
@@ -74,6 +75,7 @@ const NewWorkflowPage: React.FC = () => {
   const [issues, setIssues] = useState<WorkflowIssue[] | null>(null)
 
   const { configs } = useSnapshot(appInfoStore)
+  const { selectedProject } = useSnapshot(projectsStore)
 
   const visualEditorEnabled = isVisualEditorEnabled(configs as ConfigItem[])
 
@@ -88,6 +90,36 @@ const NewWorkflowPage: React.FC = () => {
   const [headline, setHeadline] = useState(DEFAULT_HEADLINE)
   const [_submitName, setSubmitName] = useState(DEFAULT_SUBMIT)
   const materializeGenerationRef = useRef(0)
+
+  // Make /v1/llm_models project-aware for this page so backend applies project.default_model.
+  useEffect(() => {
+    let cancelled = false
+    const previousModels = appInfoStore.llmModels
+
+    const applyProjectScopedModels = async () => {
+      // Backend resolves project by "name" (e.g. zoo_2) even though param is called project_id.
+      const projectName =
+        (selectedProject as any)?.name ??
+        (selectedProject as any)?.slug ??
+        (selectedProject as any)?.key
+
+      if (!projectName) return
+
+      const models = await appInfoStore.getLLMModels(projectName)
+      if (cancelled) return
+
+      // Override global list so workflow editor uses correct default model.
+      appInfoStore.llmModels = models
+    }
+
+    applyProjectScopedModels()
+
+    return () => {
+      cancelled = true
+      // Restore to avoid affecting other pages.
+      appInfoStore.llmModels = previousModels
+    }
+  }, [selectedProject])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -136,7 +168,9 @@ const NewWorkflowPage: React.FC = () => {
           }
         } else {
           resetPlaceholderState()
-          setTemplate({})
+          setTemplate({
+            project: selectedProject?.id || null,
+          })
           setLoading(false)
         }
       } catch (error: any) {

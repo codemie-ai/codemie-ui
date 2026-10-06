@@ -13,12 +13,19 @@
 // limitations under the License.
 //
 
-import { fireEvent, render as rtlRender, screen } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render as rtlRender,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import { ReactElement } from 'react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LLMRouterOption } from '@/types/entity/configuration'
+import type { LLMRouterOption, ModelOption } from '@/types/entity/configuration'
 
 import LLMSelector from '../LLMSelector'
 
@@ -34,7 +41,9 @@ const { mockAppInfoStore } = vi.hoisted(() => ({
     ],
     llmRouters: [] as LLMRouterOption[],
     imageGenerationModels: [],
+    projectLlmModels: {} as Record<string, ModelOption[]>,
     getLLMModels: vi.fn(),
+    getProjectLLMModels: vi.fn(),
     getImageGenerationModels: vi.fn(),
   },
 }))
@@ -140,5 +149,119 @@ describe('LLMSelector — routers', () => {
     render(<LLMSelector value="smart-router" onChange={vi.fn()} allowEmpty />)
 
     expect(screen.queryByText(/is not valid and was reset to default/)).not.toBeInTheDocument()
+  })
+})
+
+describe('LLMSelector workflow model selection', () => {
+  const projectModels: ModelOption[] = [
+    {
+      value: 'project-model',
+      deploymentName: 'project-deployment',
+      label: 'Project model',
+      isDefault: true,
+    },
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAppInfoStore.projectLlmModels = {}
+  })
+
+  afterEach(cleanup)
+
+  it('preserves an unavailable selection and displays its stored name', async () => {
+    mockAppInfoStore.projectLlmModels = { project: projectModels }
+    const onChange = vi.fn()
+    render(
+      <LLMSelector
+        projectId="project"
+        value="blocked-model"
+        onChange={onChange}
+        allowEmpty
+        preserveUnavailableSelection
+      />
+    )
+    await act(async () => {})
+
+    expect(screen.getByText('blocked-model')).toBeInTheDocument()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('keeps an empty custom-node selection so execution can choose the project default', async () => {
+    mockAppInfoStore.projectLlmModels = { project: projectModels }
+    const onChange = vi.fn()
+    const { container } = render(
+      <LLMSelector
+        projectId="project"
+        value=""
+        onChange={onChange}
+        allowEmpty
+        preserveUnavailableSelection
+      />
+    )
+    fireEvent.click(container.querySelector('.p-multiselect')!)
+
+    expect(await screen.findByText('Project model')).toBeInTheDocument()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('does not offer global models while loading or when the project list is empty', async () => {
+    // projectLlmModels has no entry for 'project', so the hook returns an empty list
+    // (and triggers a fetch) instead of falling back to the unfiltered platform list.
+    const onChange = vi.fn()
+    const { container } = render(
+      <LLMSelector
+        projectId="project"
+        value="blocked-model"
+        onChange={onChange}
+        preserveUnavailableSelection
+      />
+    )
+    fireEvent.click(container.querySelector('.p-multiselect')!)
+
+    expect(screen.queryByRole('option', { name: /GPT-4o/ })).not.toBeInTheDocument()
+    expect(mockAppInfoStore.getProjectLLMModels).toHaveBeenCalledWith('project')
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('accepts a deployment alias and displays the model label', async () => {
+    mockAppInfoStore.projectLlmModels = { project: projectModels }
+    const onChange = vi.fn()
+    render(
+      <LLMSelector
+        projectId="project"
+        value="project-deployment"
+        onChange={onChange}
+        preserveUnavailableSelection
+      />
+    )
+
+    expect(await screen.findByText('Project model')).toBeInTheDocument()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('continues replacing an unavailable selection in ordinary assistant forms', async () => {
+    mockAppInfoStore.projectLlmModels = { project: projectModels }
+    const onChange = vi.fn()
+    render(<LLMSelector projectId="project" value="blocked-model" onChange={onChange} />)
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith('project-model'))
+  })
+
+  it('does not leak another project’s cached models into this one', async () => {
+    mockAppInfoStore.projectLlmModels = {
+      old: [{ value: 'old-model', label: 'Old model', isDefault: true }],
+    }
+    const props = {
+      value: 'blocked-model',
+      onChange: vi.fn(),
+      allowEmpty: true,
+      preserveUnavailableSelection: true,
+    }
+    const { container } = render(<LLMSelector {...props} projectId="new" />)
+    fireEvent.click(container.querySelector('.p-multiselect')!)
+
+    expect(screen.queryByText('Old model')).not.toBeInTheDocument()
+    expect(mockAppInfoStore.getProjectLLMModels).toHaveBeenCalledWith('new')
   })
 })

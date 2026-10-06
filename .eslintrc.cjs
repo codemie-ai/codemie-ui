@@ -20,6 +20,9 @@ module.exports = {
   },
   plugins: ['@stylistic', 'sonarjs', 'react-hooks', 'jsx-a11y'],
   settings: {
+    react: {
+      version: 'detect',
+    },
     'import/resolver': {
       alias: {
         map: [['@', './src']],
@@ -28,12 +31,20 @@ module.exports = {
     },
     'import/core-modules': ['virtual:__federation__'],
   },
-  ignorePatterns: ['.eslintrc.cjs', '*.config.js', '*.config.ts', '**/assets/**'],
+  ignorePatterns: [
+    '.eslintrc.cjs',
+    '*.config.js',
+    '*.config.ts',
+    '**/assets/**',
+    '**/*.e2e.js',
+    '**/*.e2e.ts',
+  ],
   overrides: [
     {
       files: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
       rules: {
         'sonarjs/no-duplicate-string': 'off',
+        'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
       },
     },
   ],

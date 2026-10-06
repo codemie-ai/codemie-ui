@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import Popup from '@/components/Popup'
@@ -24,6 +24,7 @@ import { UserListItem } from '@/types/entity/user'
 interface BulkResetBudgetsPopupProps {
   isOpen: boolean
   selectedUsers: UserListItem[]
+  categories?: BudgetCategory[]
   onClose: () => void
   onSave: () => void
 }
@@ -31,11 +32,22 @@ interface BulkResetBudgetsPopupProps {
 const BulkResetBudgetsPopup: FC<BulkResetBudgetsPopupProps> = ({
   isOpen,
   selectedUsers,
+  categories,
   onClose,
   onSave,
 }) => {
-  const [selectedCategories, setSelectedCategories] = useState<BudgetCategory[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<BudgetCategory[]>(
+    categories?.length ? categories : BUDGET_CATEGORY_OPTIONS.map((option) => option.value)
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedCategories(
+        categories?.length ? categories : BUDGET_CATEGORY_OPTIONS.map((option) => option.value)
+      )
+    }
+  }, [categories, isOpen])
 
   const handleToggleCategory = (category: BudgetCategory) => {
     setSelectedCategories((prev) =>
@@ -44,11 +56,12 @@ const BulkResetBudgetsPopup: FC<BulkResetBudgetsPopupProps> = ({
   }
 
   const handleClose = () => {
-    setSelectedCategories([])
+    setSelectedCategories(BUDGET_CATEGORY_OPTIONS.map((option) => option.value))
     onClose()
   }
 
   const handleSubmit = async () => {
+    if (selectedCategories.length === 0) return
     setIsSubmitting(true)
     try {
       const userIds = selectedUsers.map((u) => u.id)
@@ -68,7 +81,7 @@ const BulkResetBudgetsPopup: FC<BulkResetBudgetsPopupProps> = ({
       header="Reset Budgets"
       className="w-[480px]"
       submitText="Reset"
-      submitDisabled={isSubmitting}
+      submitDisabled={isSubmitting || selectedCategories.length === 0}
       visible={isOpen}
       onHide={handleClose}
       onSubmit={handleSubmit}
@@ -81,16 +94,14 @@ const BulkResetBudgetsPopup: FC<BulkResetBudgetsPopupProps> = ({
         </p>
 
         <div>
-          <p className="text-xs text-text-quaternary mb-2">
-            Select categories to reset (leave all unchecked to reset all categories):
-          </p>
+          <p className="text-xs text-text-quaternary mb-2">Select categories to reset:</p>
           <div className="flex flex-col gap-2">
             {BUDGET_CATEGORY_OPTIONS.map((option) => (
               <Checkbox
                 key={option.value}
                 label={option.label}
                 checked={selectedCategories.includes(option.value)}
-                onChange={() => handleToggleCategory(option.value as BudgetCategory)}
+                onChange={() => handleToggleCategory(option.value)}
               />
             ))}
           </div>

@@ -19,76 +19,52 @@ import { describe, it, expect } from 'vitest'
 import SpendingProgressBar from '../SpendingProgressBar'
 
 describe('SpendingProgressBar', () => {
-  it('renders spend and rounded percentage together', () => {
-    render(<SpendingProgressBar spend={12.34} percentage={44.5} />)
-    expect(screen.getByText('$12.34 (45%)')).toBeInTheDocument()
+  it('renders the rounded percentage', () => {
+    render(<SpendingProgressBar percentage={44.5} />)
+    expect(screen.getByText('44.5%')).toBeInTheDocument()
   })
 
-  it('renders unclamped spend but clamped percentage', () => {
-    render(<SpendingProgressBar spend={120} percentage={250} />)
-    expect(screen.getByText('$120.00 (100%)')).toBeInTheDocument()
+  it('clamps percentage above 100 to 100', () => {
+    render(<SpendingProgressBar percentage={250} />)
+    expect(screen.getByText('100.0%')).toBeInTheDocument()
   })
 
-  it('renders dash for null spend with percentage', () => {
-    render(<SpendingProgressBar spend={null} percentage={30} />)
-    expect(screen.getByText('- (30%)')).toBeInTheDocument()
+  it('clamps negative percentage to 0', () => {
+    render(<SpendingProgressBar percentage={-30} />)
+    expect(screen.getByText('0.0%')).toBeInTheDocument()
   })
 
-  it('renders dash for undefined spend with percentage', () => {
-    render(<SpendingProgressBar spend={undefined} percentage={30} />)
-    expect(screen.getByText('- (30%)')).toBeInTheDocument()
+  it('applies the fixed-width class by default (not fullWidth)', () => {
+    const { container } = render(<SpendingProgressBar percentage={30} />)
+    const track = container.querySelector('.relative')
+    expect(track).toHaveClass('w-[110px]')
   })
 
-  it('renders zero spend as $0.00, not dash', () => {
-    render(<SpendingProgressBar spend={0} percentage={0} />)
-    expect(screen.getByText('$0.00 (0%)')).toBeInTheDocument()
+  it('drops the fixed width class when fullWidth is set', () => {
+    const { container } = render(<SpendingProgressBar percentage={30} fullWidth />)
+    const track = container.querySelector('.relative')
+    expect(track).not.toHaveClass('w-[110px]')
+    expect(track).toHaveClass('flex-1')
   })
 
-  it('does not include w-12 class on label', () => {
-    const { container } = render(<SpendingProgressBar spend={12.34} percentage={44.5} />)
-    const span = container.querySelector('span')
-    expect(span).toHaveClass('whitespace-nowrap')
-    expect(span).toHaveClass('text-right')
-    expect(span).not.toHaveClass('w-12')
-  })
-
-  it('color derives from percentage only, unchanged when spend is null', () => {
-    const { rerender, container: firstContainer } = render(
-      <SpendingProgressBar spend={50} percentage={30} />
+  it('color derives from percentage and thresholds, matching between equal inputs', () => {
+    const { container: firstContainer } = render(
+      <SpendingProgressBar percentage={95} dangerThreshold={90} warningThreshold={75} />
     )
     const firstSpan = firstContainer.querySelector('span')
     const firstColor = firstSpan?.style.color
 
-    rerender(<SpendingProgressBar spend={null} percentage={30} />)
-    const secondSpan = firstContainer.querySelector('span')
+    const { container: secondContainer } = render(
+      <SpendingProgressBar percentage={95} dangerThreshold={90} warningThreshold={75} />
+    )
+    const secondSpan = secondContainer.querySelector('span')
     const secondColor = secondSpan?.style.color
 
     expect(firstColor).toBe(secondColor)
   })
 
-  it('flex wrapper has min-w-0 for proper overflow handling', () => {
-    const { container } = render(<SpendingProgressBar spend={1234.56} percentage={100} />)
-    const wrapper = container.querySelector('.flex')
-    expect(wrapper).toHaveClass('min-w-0')
-  })
-
-  it('renders dash for NaN spend', () => {
-    render(<SpendingProgressBar spend={NaN} percentage={30} />)
-    expect(screen.getByText('- (30%)')).toBeInTheDocument()
-  })
-
-  it('renders dash for Infinity spend', () => {
-    render(<SpendingProgressBar spend={Infinity} percentage={30} />)
-    expect(screen.getByText('- (30%)')).toBeInTheDocument()
-  })
-
-  it('renders dash for negative Infinity spend', () => {
-    render(<SpendingProgressBar spend={-Infinity} percentage={30} />)
-    expect(screen.getByText('- (30%)')).toBeInTheDocument()
-  })
-
-  it('renders dash for negative spend', () => {
-    render(<SpendingProgressBar spend={-5.5} percentage={30} />)
-    expect(screen.getByText('- (30%)')).toBeInTheDocument()
+  it('applies a custom className to the wrapper', () => {
+    const { container } = render(<SpendingProgressBar percentage={30} className="my-class" />)
+    expect(container.querySelector('.my-class')).toBeInTheDocument()
   })
 })

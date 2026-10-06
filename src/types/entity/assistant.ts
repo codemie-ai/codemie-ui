@@ -135,6 +135,8 @@ export interface Assistant {
   hedging_config?: HedgingConfig | null
   /** Single switch enabling the A2UI interactive catalog for this assistant. */
   interactive_enabled?: boolean
+  effective_llm_model?: string | null
+  effective_llm_model_source?: 'assistant' | 'project_default' | null
   system_prompt_history: {
     date: string
     system_prompt: string

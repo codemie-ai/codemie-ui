@@ -20,6 +20,7 @@ import PageLayout from '@/components/Layouts/Layout'
 import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
 import { ButtonType } from '@/constants'
+import { PROJECTS_MANAGEMENT_INTEGRATIONS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { navigateBack } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
@@ -68,11 +69,16 @@ const EditSettingPageBase = ({
     currentRoute: { value: route },
   } = router
   const { query } = route
+  const projectName = query.project_name as string | undefined
 
   const [setting, setSetting] = useState<EditableSetting | null>(null)
   const [credentialValues, setCredentialValues] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(true)
   const formRef = useRef<SettingsFormRef>(null)
+
+  const allowedBackRoutes = projectName
+    ? [{ name: PROJECTS_MANAGEMENT_INTEGRATIONS, params: { projectName } }, backRoute]
+    : [backRoute]
 
   const handleUpdate = async (values: Record<string, unknown>) => {
     if (!setting) return
@@ -86,21 +92,21 @@ const EditSettingPageBase = ({
       }
 
       toaster.info(successMessage)
-      navigateBack(backRoute)
+      navigateBack(...allowedBackRoutes)
     } catch (error: unknown) {
       toaster.error(getErrorMessage(error))
     }
   }
 
   const handleBack = () => {
-    navigateBack(backRoute)
+    navigateBack(...allowedBackRoutes)
   }
 
   useEffect(() => {
     const load = async () => {
       if (!query.project_name || !query.credential_type || !query.alias) {
         toaster.error('Missing required parameters')
-        navigateBack(backRoute)
+        navigateBack(...allowedBackRoutes)
         return
       }
       setLoading(true)
@@ -120,18 +126,19 @@ const EditSettingPageBase = ({
           setCredentialValues(values)
         } else {
           toaster.error('Setting not found')
-          navigateBack(backRoute)
+          navigateBack(...allowedBackRoutes)
         }
       } catch {
         toaster.error('Failed to load settings')
-        navigateBack(backRoute)
+        navigateBack(...allowedBackRoutes)
       } finally {
         setLoading(false)
       }
     }
 
     load()
-  }, [query.project_name, query.credential_type, query.alias, fetchSetting, backRoute])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query.project_name, query.credential_type, query.alias, fetchSetting, backRoute, projectName])
 
   return (
     <div className="flex h-full">

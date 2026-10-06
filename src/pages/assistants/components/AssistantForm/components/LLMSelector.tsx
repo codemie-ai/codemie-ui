@@ -14,7 +14,16 @@
 //
 
 import { MultiSelect as PrimeMultiSelect } from 'primereact/multiselect'
-import { useState, forwardRef, useEffect, useMemo, useImperativeHandle, useRef, FC } from 'react'
+import {
+  useState,
+  forwardRef,
+  useContext,
+  useEffect,
+  useMemo,
+  useImperativeHandle,
+  useRef,
+  FC,
+} from 'react'
 import { Link } from 'react-router'
 import { useSnapshot } from 'valtio'
 
@@ -24,9 +33,13 @@ import { PREMIUM_MODEL_TOOLTIP } from '@/components/PremiumModelBadge'
 import TooltipButton from '@/components/TooltipButton'
 import { InfoWarningType } from '@/constants'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
+import { useProjectLLMModels } from '@/hooks/useProjectLLMModels'
 import { HELP_MODELS_ROUTE } from '@/pages/help/ModelsCatalog'
 import { appInfoStore } from '@/store/appInfo'
+import { ModelOption } from '@/types/entity/configuration'
 import { composeRowTooltip } from '@/utils/tooltipContent'
+
+import { AssistantFormContext } from '../AssistantForm'
 
 // Premium reads on a second line under the model name instead of a badge beside
 // it, so the name keeps the row's full width. The row is the single tooltip
@@ -67,6 +80,7 @@ const LlmOptionRow: FC<{ label: string; isPremium: boolean; isRouter?: boolean }
 
 interface SelectableModel {
   value: string
+  deploymentName?: string
   label: string
   isDefault: boolean
   isPremium?: boolean
@@ -83,6 +97,16 @@ interface LLMSelectorProps {
   defaultOptionLabelPrefix?: string
   allowEmpty?: boolean
   modelType?: 'llm' | 'imageGeneration'
+  /**
+   * Project whose model settings narrow the LLM list. Defaults to the enclosing assistant
+   * form's project; without either the full platform list is shown. `projectId` is accepted
+   * as an alias so existing callers keep working.
+   */
+  project?: string | null
+  projectId?: string | null
+  filteredModels?: ModelOption[]
+  preserveUnavailableSelection?: boolean
+  onDropdownOpen?: () => void
   onChange: (value: string) => void
 }
 
@@ -102,42 +126,39 @@ const LLMSelector = forwardRef<
       modelType = 'llm',
       hint,
       error,
+      project,
+      projectId,
+      filteredModels,
+      preserveUnavailableSelection = false,
+      onDropdownOpen,
     },
     ref
   ) => {
-    const { llmModels, llmRouters, imageGenerationModels, getLLMModels, getImageGenerationModels } =
-      useSnapshot(appInfoStore)
+    const { imageGenerationModels, getImageGenerationModels } = useSnapshot(appInfoStore)
+    const { project: formProject } = useContext(AssistantFormContext)
+    const scopedProject = modelType === 'llm' ? project ?? projectId ?? (formProject || null) : null
+    // Project-scoped when a project is known; routers arrive flagged `isRouter` in the same list.
+    const llmModels = useProjectLLMModels(scopedProject)
     const [invalidModel, setInvalidModel] = useState<string | null>(null)
     const selectRef = useRef<PrimeMultiSelect>(null)
 
-    // Routers only apply to the 'llm' model type — image generation has no
-    // router concept, so that branch stays untouched.
-    const models = useMemo<SelectableModel[]>(() => {
-      if (modelType === 'imageGeneration') {
-        return imageGenerationModels.map(({ value, label, isDefault, isPremium }) => ({
-          value,
-          label,
-          isDefault,
-          isPremium,
-        }))
-      }
-      return [
-        ...llmModels.map(({ value, label, isDefault, isPremium }) => ({
-          value,
-          label,
-          isDefault,
-          isPremium,
-        })),
-        ...llmRouters.map((router) => ({
-          value: router.value,
-          label: router.label,
-          isDefault: router.isDefault ?? false,
-          isPremium: router.isPremium,
-          isRouter: true,
-        })),
-      ]
-    }, [modelType, imageGenerationModels, llmModels, llmRouters])
-    const loadModels = modelType === 'imageGeneration' ? getImageGenerationModels : getLLMModels
+    // Routers only apply to the 'llm' model type — image generation has no router concept.
+    const globalModels = useMemo<SelectableModel[]>(() => {
+      const source = modelType === 'imageGeneration' ? imageGenerationModels : llmModels
+      return source.map(({ value, deploymentName, label, isDefault, isPremium, isRouter }) => ({
+        value,
+        deploymentName,
+        label,
+        isDefault,
+        isPremium,
+        isRouter: modelType === 'llm' && !!isRouter,
+      }))
+    }, [modelType, imageGenerationModels, llmModels])
+
+    // Explicit filteredModels (e.g. passed down from chat) win over the project-scoped list.
+    // Checked by length because an empty array is truthy but should fall back while loading.
+    const hasFilteredModels = filteredModels && filteredModels.length > 0
+    const models = hasFilteredModels ? (filteredModels as SelectableModel[]) : globalModels
 
     useImperativeHandle(
       ref,
@@ -159,7 +180,7 @@ const LLMSelector = forwardRef<
     const options = useMemo(
       () => [
         ...(allowEmpty ? [{ label: placeholder, value: '' }] : []),
-        ...(!allowEmpty
+        ...(!allowEmpty && defaultLlmModel?.value
           ? [
               {
                 label: `${defaultOptionLabelPrefix}: ${defaultLlmModel?.label}`,
@@ -185,8 +206,8 @@ const LLMSelector = forwardRef<
     )
 
     useEffect(() => {
-      loadModels()
-    }, [loadModels])
+      if (modelType === 'imageGeneration') getImageGenerationModels()
+    }, [getImageGenerationModels, modelType])
 
     useEffect(() => {
       // While the model list has not loaded yet every stored model looks invalid, and the branch
@@ -195,17 +216,27 @@ const LLMSelector = forwardRef<
       // had it, and saving the assistant failed with 422 "llm_model_type is required".
       if (!models.length) return
       if (value) {
-        const isValidModel = models.some((model) => model.value === value)
-        if (!isValidModel) onChange(allowEmpty ? '' : defaultLlmModel?.value)
-        setInvalidModel(isValidModel ? null : value)
-      } else if (!allowEmpty) {
-        onChange(defaultLlmModel?.value)
+        // Only raise the warning here; the effect below clears it. Clearing on a valid value
+        // would hide it the moment the reset value arrives, i.e. before anyone could read it.
+        const isValidModel = models.some(
+          (model) => model.value === value || model.deploymentName === value
+        )
+        if (!isValidModel && !preserveUnavailableSelection) {
+          onChange(allowEmpty ? '' : defaultLlmModel?.value)
+          setInvalidModel(value)
+        } else if (!isValidModel && preserveUnavailableSelection) {
+          setInvalidModel(null)
+        }
+      } else if (!allowEmpty && defaultLlmModel?.value) {
+        onChange(defaultLlmModel.value)
       }
-    }, [allowEmpty, defaultLlmModel?.value, models, onChange, value])
+    }, [allowEmpty, defaultLlmModel?.value, models, onChange, preserveUnavailableSelection, value])
 
+    // The warning stays while the field holds the reset value and goes once the user picks another.
+    const resetValue = (allowEmpty ? '' : defaultLlmModel?.value) || ''
     useEffect(() => {
-      if (invalidModel && value !== defaultLlmModel?.value) setInvalidModel(null)
-    }, [defaultLlmModel?.value, invalidModel, value])
+      if (invalidModel && (value || '') !== resetValue) setInvalidModel(null)
+    }, [invalidModel, resetValue, value])
 
     const renderOption = (
       option: { label: string; isPremium?: boolean; isRouter?: boolean } | undefined
@@ -236,6 +267,16 @@ const LLMSelector = forwardRef<
       ? models.find((model) => model.value === value)?.isPremium ?? false
       : false
 
+    // Falls back to the raw value (rather than its label) when preserveUnavailableSelection
+    // keeps a value that isn't in `models` — see the invalid-model warning below for that case.
+    const getSelectedItemLabel = (selectedValue?: string) => {
+      if (!selectedValue) return placeholder
+      const match = models.find(
+        (model) => model.value === selectedValue || model.deploymentName === selectedValue
+      )
+      return match?.label ?? selectedValue
+    }
+
     return (
       <div className="flex flex-col gap-2 grow">
         <MultiSelect
@@ -249,7 +290,9 @@ const LLMSelector = forwardRef<
           options={options}
           onChange={(e) => onChange(e.target.value ?? '')}
           onFilter={() => {}}
+          onShow={onDropdownOpen}
           renderOption={renderOption}
+          selectedItemTemplate={preserveUnavailableSelection ? getSelectedItemLabel : undefined}
           ref={selectRef}
         />
         {isPremiumSelected && (
@@ -275,7 +318,11 @@ const LLMSelector = forwardRef<
         {invalidModel && (
           <InfoWarning
             type={InfoWarningType.WARNING}
-            message={`Model ${invalidModel} is not valid and was reset to default`}
+            message={
+              scopedProject
+                ? `Model ${invalidModel} is not available in project ${scopedProject} and was reset to default`
+                : `Model ${invalidModel} is not valid and was reset to default`
+            }
           />
         )}
       </div>

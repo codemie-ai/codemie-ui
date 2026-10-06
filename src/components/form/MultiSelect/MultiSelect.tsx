@@ -105,6 +105,7 @@ export type MultiSelectProps = {
   options: MultiSelectOptionType[]
   onChange: (e: MultiSelectChangeEvent) => void
   onFilter?: (filter: string) => void
+  onShow?: () => void
   disabled?: boolean
   hideLabel?: boolean
   className?: string
@@ -156,6 +157,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       errorClassName,
       onChange,
       onFilter,
+      onShow,
       disabled = false,
       hideLabel = false,
       id,
@@ -434,6 +436,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
                 onChange={(e) => handleChange(e, selectRef)}
                 onShow={() => {
                   setIsPanelOpen(true)
+                  onShow?.()
                   if (onScrollBottom) attachScrollListener()
                 }}
                 onHide={() => {

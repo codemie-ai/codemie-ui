@@ -23,6 +23,7 @@ import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 
+const routeState = vi.hoisted(() => ({ name: 'projects-management-detail' }))
 const pushMock = vi.fn()
 const projectMembersManagerMock = vi.fn()
 const projectBudgetsSectionMock = vi.fn()
@@ -54,12 +55,14 @@ vi.mock('@/pages/settings/administration/projectsManagement/ProjectBudgetsSectio
     projectBudgetsSectionMock(props)
     return <div data-testid="project-budgets-section" data-access={props.access} />
   },
+  ProjectBudgetManagementControl: () => <div data-testid="project-budget-management-control" />,
 }))
 
 vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: () => ({
     push: pushMock,
     params: { projectName: 'Test Project' },
+    name: routeState.name,
   }),
 }))
 
@@ -104,8 +107,7 @@ vi.mock('@/utils/toaster', () => ({
   },
 }))
 
-const { chargebackFlag, costCentersFlag, budgetManagementFlag } = vi.hoisted(() => ({
-  chargebackFlag: vi.fn(() => [false, true] as [boolean, boolean]),
+const { costCentersFlag, budgetManagementFlag } = vi.hoisted(() => ({
   costCentersFlag: vi.fn(() => [true, true] as [boolean, boolean]),
   budgetManagementFlag: vi.fn(() => [false, true] as [boolean, boolean]),
 }))
@@ -114,7 +116,7 @@ vi.mock('@/hooks/useFeatureFlags', () => ({
   useFeatureFlag: (flag: string) =>
     flag === FEATURE_FLAGS.COST_CENTERS ? costCentersFlag() : [true, true],
   useBudgetManagementEnabled: () => budgetManagementFlag(),
-  useProjectChargebackEnabled: () => chargebackFlag(),
+  useProjectChargebackEnabled: () => [false, true] as [boolean, boolean],
 }))
 
 const mockProject: ProjectDetail = {
@@ -134,102 +136,18 @@ const mockProject: ProjectDetail = {
 describe('ProjectDetailsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    routeState.name = 'projects-management-overview'
     mockUserStore.user = null
-    chargebackFlag.mockReturnValue([false, true])
     costCentersFlag.mockReturnValue([true, true])
     projectsStore.getProject = vi.fn().mockResolvedValue(mockProject)
     projectsStore.updateProject = vi.fn().mockResolvedValue(mockProject)
+    userStore.user = { isAdmin: true } as any
     userStore.getCurrentUser = vi.fn().mockResolvedValue(userStore.user)
     projectDisplayNamesStore.invalidate = vi.fn()
   })
 
-  it('shows chargeback enabled and attributed to a cost center in the details card', async () => {
-    chargebackFlag.mockReturnValue([true, true])
-    projectsStore.getProject = vi.fn().mockResolvedValue({
-      ...mockProject,
-      chargeback_enabled: true,
-      chargeback_attribution: 'cost_center',
-    })
-
-    render(<ProjectDetailsPage />)
-
-    expect(await screen.findByText('Chargeback')).toBeInTheDocument()
-    expect(screen.getByText('Enabled, attributed to a cost center')).toBeInTheDocument()
-  })
-
-  it('does not surface cost-center attribution when cost centers are disabled', async () => {
-    chargebackFlag.mockReturnValue([true, true])
-    costCentersFlag.mockReturnValue([false, true])
-    projectsStore.getProject = vi.fn().mockResolvedValue({
-      ...mockProject,
-      chargeback_enabled: true,
-      chargeback_attribution: 'cost_center',
-      enforce_member_spend_limits: false,
-    })
-
-    render(<ProjectDetailsPage />)
-
-    expect(await screen.findByText('Chargeback')).toBeInTheDocument()
-    // Cost centers are off, so the label degrades to a plain "Enabled".
-    expect(screen.getByText('Enabled')).toBeInTheDocument()
-    expect(screen.queryByText('Enabled, attributed to a cost center')).not.toBeInTheDocument()
-  })
-
-  it('shows chargeback disabled in the details card when off', async () => {
-    chargebackFlag.mockReturnValue([true, true])
-    projectsStore.getProject = vi.fn().mockResolvedValue({
-      ...mockProject,
-      chargeback_enabled: false,
-      enforce_member_spend_limits: false,
-    })
-
-    render(<ProjectDetailsPage />)
-
-    expect(await screen.findByText('Chargeback')).toBeInTheDocument()
-    expect(screen.getAllByText('Disabled').length).toBeGreaterThan(0)
-  })
-
-  it('shows the Chargeback status exactly once for an admin viewer (EPMCDME-14757)', async () => {
-    mockUserStore.user = {
-      isAdmin: true,
-      isMaintainer: false,
-      isAuditor: false,
-      applicationsAdmin: [],
-    }
-    chargebackFlag.mockReturnValue([true, true])
-    projectsStore.getProject = vi.fn().mockResolvedValue({
-      ...mockProject,
-      chargeback_enabled: true,
-      chargeback_attribution: 'cost_center',
-    })
-
-    render(<ProjectDetailsPage />)
-
-    expect((await screen.findAllByText('Chargeback')).length).toBe(1)
-  })
-
-  it('shows the same single Chargeback status for a non-admin viewer (EPMCDME-14757)', async () => {
-    chargebackFlag.mockReturnValue([true, true])
-    projectsStore.getProject = vi.fn().mockResolvedValue({
-      ...mockProject,
-      chargeback_enabled: true,
-      chargeback_attribution: 'cost_center',
-    })
-
-    render(<ProjectDetailsPage />)
-
-    expect((await screen.findAllByText('Chargeback')).length).toBe(1)
-    expect(screen.getByText('Enabled, attributed to a cost center')).toBeInTheDocument()
-  })
-
-  it('hides the chargeback field when the feature flag is off', async () => {
-    render(<ProjectDetailsPage />)
-
-    await waitFor(() => expect(projectsStore.getProject).toHaveBeenCalled())
-    expect(screen.queryByText('Chargeback')).not.toBeInTheDocument()
-  })
-
   it('renders ProjectMembersManager with the loaded project', async () => {
+    routeState.name = 'projects-management-members'
     render(<ProjectDetailsPage />)
 
     await waitFor(() => {
@@ -237,15 +155,11 @@ describe('ProjectDetailsPage', () => {
     })
 
     expect(await screen.findByTestId('project-members-manager')).toHaveTextContent('Test Project')
-    expect(projectMembersManagerMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        project: mockProject,
-        onMembersChanged: expect.any(Function),
-      })
-    )
+    expect(screen.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('refreshes project details through onMembersChanged callback', async () => {
+  it('renders Members as a route-level section', async () => {
+    routeState.name = 'projects-management-members'
     render(<ProjectDetailsPage />)
 
     await waitFor(() => {
@@ -259,6 +173,7 @@ describe('ProjectDetailsPage', () => {
 
     expect(projectsStore.getProject).toHaveBeenCalledTimes(2)
     expect(projectsStore.getProject).toHaveBeenNthCalledWith(2, 'Test Project', true)
+    routeState.name = 'projects-management-detail'
   })
 
   it('renders the no-value placeholder when the project description is null (EPMCDME-14336)', async () => {
@@ -272,14 +187,31 @@ describe('ProjectDetailsPage', () => {
     const descriptionLabel = await screen.findByText('Description')
     const descriptionSection = descriptionLabel.parentElement
     expect(descriptionSection).toBeTruthy()
-    expect(descriptionSection?.textContent).toContain('-')
+    expect(descriptionSection?.textContent).toContain('No description')
+  })
+
+  it('explains why Members is unavailable for a personal project', async () => {
+    routeState.name = 'projects-management-members'
+    projectsStore.getProject = vi.fn().mockResolvedValue({
+      ...mockProject,
+      project_type: 'personal',
+    })
+
+    render(<ProjectDetailsPage />)
+
+    expect(
+      await screen.findByText('This section is not available for personal projects.')
+    ).toBeInTheDocument()
+    expect(projectMembersManagerMock).not.toHaveBeenCalled()
+
+    routeState.name = 'projects-management-detail'
   })
 
   it('renders project member budget tracking status', async () => {
     render(<ProjectDetailsPage />)
 
-    expect(await screen.findByText('Enforce member spend limits')).toBeInTheDocument()
-    expect(screen.getByText('Enabled')).toBeInTheDocument()
+    expect(await screen.findByText('Member spend limits')).toBeInTheDocument()
+    expect(screen.getAllByText('Enabled').length).toBeGreaterThan(0)
   })
 
   it('forwards the edited display_name to updateProject and refreshes stale caches on save', async () => {
@@ -360,6 +292,7 @@ describe('ProjectDetailsPage', () => {
 describe('budgetsAccess — project-admin access control (EPMCDME-13962)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    routeState.name = 'projects-management-budgets'
     projectsStore.getProject = vi.fn().mockResolvedValue(mockProject)
     budgetManagementFlag.mockReturnValue([true, true])
   })
@@ -506,9 +439,26 @@ describe('budgetsAccess — project-admin access control (EPMCDME-13962)', () =>
       ...overrides,
     })
 
-    const expectMemberBudgetPropsGranted = () => {
+    // ProjectDetailsPage now renders one tab at a time, so Members and Budgets props
+    // can't be observed from the same render — check each tab separately.
+    const renderMembersTab = async () => {
+      routeState.name = 'projects-management-members'
+      render(<ProjectDetailsPage />)
+      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+    }
+
+    const renderBudgetsTab = async () => {
+      routeState.name = 'projects-management-budgets'
+      render(<ProjectDetailsPage />)
+      await waitFor(() => expect(projectBudgetsSectionMock).toHaveBeenCalled())
+    }
+
+    const expectMemberBudgetPropsGranted = async () => {
       expect(Array.isArray(lastMembersProps().budgets)).toBe(true)
       expect(typeof lastMembersProps().onBudgetsChanged).toBe('function')
+
+      vi.clearAllMocks()
+      await renderBudgetsTab()
       expect(typeof lastSectionProps().onBudgetsChanged).toBe('function')
     }
 
@@ -520,52 +470,49 @@ describe('budgetsAccess — project-admin access control (EPMCDME-13962)', () =>
     it('project admin of this project gets member budgets and the override callback', async () => {
       mockUserStore.user = user({ applicationsAdmin: ['Test Project'] })
 
-      render(<ProjectDetailsPage />)
-
-      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
-      expectMemberBudgetPropsGranted()
+      await renderMembersTab()
+      mockUserStore.user = user({ applicationsAdmin: ['Test Project'] })
+      await expectMemberBudgetPropsGranted()
     })
 
     it('maintainer keeps member budgets and the override callback', async () => {
       mockUserStore.user = user({ isMaintainer: true })
 
-      render(<ProjectDetailsPage />)
-
-      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
-      expectMemberBudgetPropsGranted()
+      await renderMembersTab()
+      mockUserStore.user = user({ isMaintainer: true })
+      await expectMemberBudgetPropsGranted()
     })
 
     it('regular user does not get member budgets', async () => {
       mockUserStore.user = user({})
 
-      render(<ProjectDetailsPage />)
-
-      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+      await renderMembersTab()
       expectMemberBudgetPropsWithheld()
     })
 
     it('project admin of a different project does not get member budgets', async () => {
       mockUserStore.user = user({ applicationsAdmin: ['Other Project'] })
 
-      render(<ProjectDetailsPage />)
-
-      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+      await renderMembersTab()
       expectMemberBudgetPropsWithheld()
     })
 
     it('super admin who is not a maintainer does not get member budgets but keeps distribution access', async () => {
       mockUserStore.user = user({ isAdmin: true })
 
-      render(<ProjectDetailsPage />)
-
-      await waitFor(() => expect(projectMembersManagerMock).toHaveBeenCalled())
+      await renderMembersTab()
       expectMemberBudgetPropsWithheld()
+
+      vi.clearAllMocks()
+      mockUserStore.user = user({ isAdmin: true })
+      await renderBudgetsTab()
       expect(lastSectionProps().onBudgetsChanged).toBeUndefined()
       expect(lastSectionProps().access).toBe('distribution')
     })
 
     it('grants member budgets when the project admin user resolves after the project loads', async () => {
       mockUserStore.user = null
+      routeState.name = 'projects-management-members'
 
       const { rerender } = render(<ProjectDetailsPage />)
 
@@ -575,7 +522,10 @@ describe('budgetsAccess — project-admin access control (EPMCDME-13962)', () =>
       mockUserStore.user = user({ applicationsAdmin: ['Test Project'] })
       rerender(<ProjectDetailsPage />)
 
-      await waitFor(() => expectMemberBudgetPropsGranted())
+      await waitFor(() => {
+        expect(Array.isArray(lastMembersProps().budgets)).toBe(true)
+        expect(typeof lastMembersProps().onBudgetsChanged).toBe('function')
+      })
     })
   })
 })

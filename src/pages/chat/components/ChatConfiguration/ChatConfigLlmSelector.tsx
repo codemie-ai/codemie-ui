@@ -20,25 +20,32 @@ import LLMSelector from '@/pages/assistants/components/AssistantForm/components/
 import { chatsStore } from '@/store/chats'
 
 const ChatConfigLlmSelector: FC = () => {
-  const { currentChat, updateChat } = useSnapshot(chatsStore) as typeof chatsStore
+  const { currentChat, filteredModels } = useSnapshot(chatsStore)
 
-  const onLlmModelChange = (llmModel: string) => {
-    updateChat(currentChat!.id, { llmModel })
+  const onLlmModelChange = (llmModel: string | null) => {
+    chatsStore.updateChat(currentChat!.id, { llmModel })
   }
 
   const llmModelValue = useMemo(() => {
     return currentChat?.llmModel
   }, [currentChat?.llmModel])
 
+  const projectId = useMemo(() => {
+    return currentChat?.projectId
+  }, [currentChat?.projectId])
+
   return (
     currentChat && (
       <LLMSelector
         label="LLM Model"
-        placeholder="Assistant Default"
+        placeholder="Default"
         defaultOptionLabelPrefix="Recommended"
+        project={currentChat.project}
         value={llmModelValue ?? undefined}
         allowEmpty
-        hint="Selecting LLM model in this field will force each assistant to use it while answering in this chat. 'Assistant Default' means using the model defined in the configuration of each assistant."
+        projectId={projectId}
+        filteredModels={filteredModels.length > 0 ? filteredModels : undefined}
+        hint="Selecting LLM model in this field will force each assistant to use it while answering in this chat. 'Default' means using the model defined in the configuration of each assistant."
         onChange={onLlmModelChange}
       />
     )

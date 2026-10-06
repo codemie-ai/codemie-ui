@@ -1,0 +1,267 @@
+{
+  "decision": "request-changes",
+  "rationale": "Oversized diff prevents complete code-path verification (2.3 budget: 30 calls exhausted before full reachability assessment). Edge-case lens completed with 25 unverified candidates capped at major severity. Commit format violations block CI pipeline (5 commits use conventional format instead of documented 'EPMCDME-XXXX: ' pattern). Blind and verification-gap lenses failed; acceptance has no spec. Standards partially checked: security passes, commit-format fails (blocking), code-quality standard does not exist.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "fail",
+      "notes": "5 of 13 commits violate format; CI blocks these (feat(EPMCDME-14452): ... instead of EPMCDME-14452: ...)"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality.md guide exists"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Project-id URL encoding and API response handling verified safe"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/ChatPage.tsx",
+      "line": 127,
+      "title": "getModelsForCurrentChat called unconditionally on projectId change",
+      "problem": "currentChat exists but projectId is null/undefined; getModelsForCurrentChat() called without guard, possible API error or stale state in chatsStore.filteredModels",
+      "impact": "Non-project chat triggers getModelsForCurrentChat() unnecessarily; API call fails silently or filteredModels becomes stale and out-of-sync with actual model list",
+      "recommendation": "Guard with if (!currentChat?.projectId) return before calling getModelsForCurrentChat()"
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx",
+      "line": 146,
+      "title": "Project model fetch may fail without error handling",
+      "problem": "getLLMModels(projectId).then() without .catch(); if fetch fails, projectModels stays empty array, falls through to globalModels",
+      "impact": "API failure silently defeats project-scoped filtering; user sees all models instead of project-allowed subset",
+      "recommendation": "Add .catch() handler to log error and fall back to global models, or retry with exponential backoff"
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx",
+      "line": 158,
+      "title": "Stale projectId when dependency updates race",
+      "problem": "currentChat.projectId changes rapidly or becomes null during dependency updates; filteredModels may not refresh in lockstep, causing mismatch between selector state and store",
+      "impact": "Switching projects rapidly shows stale model lists; wrong models displayed briefly or selector receives projectId that doesn't match loaded models",
+      "recommendation": "Use a dedicated useEffect with currentChat?.projectId in dependency list, and clear projectModels synchronously before fetching new ones"
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx",
+      "line": 117,
+      "title": "defaultModel may be null if filtered list is empty",
+      "problem": "filteredModels.length > 0 but contains no isDefault model; modelsToDisplay computed from empty set; defaultModel lookup fails",
+      "impact": "Dropdown renders nothing when filtered models lack a default; UI breaks when all available models are filtered out and none has isDefault flag",
+      "recommendation": "Check if filtered list is empty and fall back to first global model, or show a 'no models available' message"
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/types/entity/conversation.ts",
+      "line": 223,
+      "title": "Conversation interface projectId field requires spec clarification",
+      "problem": "projectId is optional on Conversation; unclear if null/undefined means 'no project restriction' or 'legacy chat'; affects filtering logic interpretation",
+      "impact": "Ambiguous intent makes filtering logic error-prone; code may interpret missing projectId incorrectly (treat as unrestricted vs. invalid)",
+      "recommendation": "Document in spec whether projectId absence means 'unrestricted' or 'invalid'; ensure backend API contract clarifies the distinction"
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx",
+      "line": 860,
+      "title": "useParams returns undefined projectName; defaults to 'demo'",
+      "problem": "projectName derived from useParams but may be undefined; component silently defaults to 'demo' project config, polluting wrong project when URL param missing",
+      "impact": "Model settings applied to 'demo' project if route param missing; user loses settings for actual project or corrupts demo project config",
+      "recommendation": "Validate projectName early; throw error or redirect if missing instead of silently defaulting to 'demo'"
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx",
+      "line": 895,
+      "title": "All models marked disabled when no backend restrictions exist",
+      "problem": "storedEnabledModelIds.size === 0 AND initialSettings computed from empty set; all models marked 'disabled'; defaultModel logic fails; firstDefault empty string",
+      "impact": "Apply button becomes disabled; user cannot proceed with saving config; UI state inconsistent with expectations (unrestricted should allow selecting models)",
+      "recommendation": "Distinguish between 'no restrictions stored' (all models should default to enabled) vs 'restrictions exist but none enabled' (all disabled is valid)"
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx",
+      "line": 960,
+      "title": "saveChanges() failure not validated before navigation",
+      "problem": "saveChanges() returns false on validation failure but applyChangesAndNavigate proceeds to router.push() regardless; unsaved state navigated away",
+      "impact": "User loses unsaved model configuration changes; change appears to complete but was never persisted",
+      "recommendation": "Check saveChanges() return value in applyChangesAndNavigate; only proceed to navigate if save succeeds"
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx",
+      "line": 920,
+      "title": "useBlocker never shows navigation prompt on unsaved changes",
+      "problem": "blocker.reset() or blocker.proceed() called when blocker.state is not 'blocked'; state machine deadlock possible; dialog never shows on back/route-change",
+      "impact": "User can navigate away and lose unsaved model configuration without warning; no confirmation dialog shown",
+      "recommendation": "Check blocker.state === 'blocked' before calling reset/proceed; ensure dialog visibility toggle syncs with blocker state"
+    },
+    {
+      "id": "CR-010",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx",
+      "line": 947,
+      "title": "Disabling current default model leaves defaultIsValid false; Apply button stuck disabled",
+      "problem": "setModelEnabled(model, false) when model === projectDefault; projectDefault set to empty string; defaultIsValid check now false; UI not updated; Apply button becomes disabled",
+      "impact": "User disables the default model, Apply button disables permanently; user cannot save the config even though selection is valid",
+      "recommendation": "After setting model disabled, auto-select next enabled model as default, or trigger UI update immediately to show new default"
+    },
+    {
+      "id": "CR-011",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/projectModelConfiguration.ts",
+      "line": 5452,
+      "title": "Failed backend fetch treated as 'no restrictions' instead of error",
+      "problem": "getProjectModelConfigurationFromBackend() returns null on API error; null config interpreted as 'unrestricted'; filtering bypassed completely",
+      "impact": "Network error or 404 silently enables all models regardless of backend policy; project restrictions effectively disappear on fetch failure",
+      "recommendation": "Distinguish between 'no restrictions' (explicit policy) and 'fetch failed' (error); show error to user or retry"
+    },
+    {
+      "id": "CR-012",
+      "kind": "code",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/pages/settings/administration/projectsManagement/components/projectModelConfiguration.ts",
+      "line": 5456,
+      "title": "Empty array semantic ambiguity: disabled vs. unrestricted",
+      "problem": "allowed_models undefined falls back to []; empty array may mean 'all disabled' or 'no restrictions'; semantic inversion possible depending on interpretation",
+      "impact": "Code that reads allowed_models may filter incorrectly; empty array could disable all models when intent is unrestricted",
+      "recommendation": "Document backend contract: is allowed_models: [] ever used? If so, clarify meaning; consider using null for 'unrestricted'"
+    },
+    {
+      "id": "CR-013",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx",
+      "line": 3530,
+      "title": "API failure retry loop may cause infinite calls if models change",
+      "problem": "loadModels useEffect depends on currentAllowedModels; if API fails and currentAllowedModels changes (due to user selection), loadModels runs again; infinite retry loop possible",
+      "impact": "Excessive API calls; toaster spam; performance degradation; user experience broken by repeated failed requests",
+      "recommendation": "Use a separate loading state and retry counter; break retry loop after N attempts or use exponential backoff"
+    },
+    {
+      "id": "CR-014",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx",
+      "line": 3536,
+      "title": "Uncaught JSON parse error during model mapping",
+      "problem": "chatResp.json() or imageResp.json() throws; mapped models may be partially initialized; uncaught promise rejection",
+      "impact": "Component unmounts; UI breaks if JSON parsing fails; no error boundary catches the rejection",
+      "recommendation": "Wrap .json() calls in try-catch; handle parse errors explicitly"
+    },
+    {
+      "id": "CR-015",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx",
+      "line": 3564,
+      "title": "Empty model list validation silent on no available models",
+      "problem": "currentAllowedModels null (means all allowed) but chatData/imageData empty arrays; allModels.length === 0; selectedModels empty Set; saving validation fails",
+      "impact": "UI appears functional but save fails silently; user cannot proceed; no error message explaining why models list is empty",
+      "recommendation": "Show explicit error 'No models available for this project' when allModels.length === 0"
+    },
+    {
+      "id": "CR-016",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx",
+      "line": 3596,
+      "title": "Validation fails with confusing message when API response empty",
+      "problem": "validateSelection() called when chatModels.length === 0 from failed API; returns false with 'No chat models available' instead of 'API failed to load models'",
+      "impact": "User sees confusing error message; cannot distinguish between 'no models exist' and 'failed to load models'",
+      "recommendation": "Clarify validation error message to distinguish API failure from legitimate 'no models' scenario"
+    },
+    {
+      "id": "CR-017",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/ModelConfigurationTable.tsx",
+      "line": 4939,
+      "title": "Invalid model selection accepted without validation",
+      "problem": "onDefaultChange called with modelId not in models array; state becomes inconsistent; radio button shows checked but model doesn't exist",
+      "impact": "UI state mismatched to data model; saving invalid default model may fail on backend or corrupt project config",
+      "recommendation": "Validate modelId against models array before updating; reject or show error if invalid"
+    },
+    {
+      "id": "CR-018",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/projects.ts",
+      "line": 0,
+      "title": "updateAllowedModels method missing or unimplemented",
+      "problem": "updateAllowedModels() called but method may not exist or endpoint 404s; error toasted but UI state not rolled back",
+      "impact": "Save fails; user thinks change was applied but it was not; project config left in invalid state",
+      "recommendation": "Verify updateAllowedModels exists in projects store; add error handling to roll back UI state on failure"
+    },
+    {
+      "id": "CR-019",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectDetailsNavigation.tsx",
+      "line": 3791,
+      "title": "Navigation failure not caught; Models tab click may fail silently",
+      "problem": "router.push() called without try-catch; route name may not exist; error thrown but not caught",
+      "impact": "User clicks Models tab but navigation fails; page does not update; user confused about state",
+      "recommendation": "Add try-catch around router.push() or use route validation before push"
+    },
+    {
+      "id": "CR-020",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/ProjectDetailsPage.tsx",
+      "line": 3117,
+      "title": "ActiveTab defaults to overview when route unknown",
+      "problem": "getActiveTab(router.name) receives undefined or unknown route name; defaults to 'overview'; tab navigation broken",
+      "impact": "Models tab displays overview tab content; navigation between project detail tabs broken",
+      "recommendation": "Validate router.name against known routes; show error or redirect if route unknown"
+    }
+  ],
+  "finding_status": []
+}

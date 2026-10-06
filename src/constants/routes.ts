@@ -65,6 +65,11 @@ export const EDIT_SKILL = 'edit-skill'
 
 export const PROJECTS_MANAGEMENT = 'projects-management'
 export const PROJECTS_MANAGEMENT_DETAIL = 'projects-management-detail'
+export const PROJECTS_MANAGEMENT_OVERVIEW = 'projects-management-overview'
+export const PROJECTS_MANAGEMENT_MEMBERS = 'projects-management-members'
+export const PROJECTS_MANAGEMENT_MODELS = 'projects-management-models'
+export const PROJECTS_MANAGEMENT_BUDGETS = 'projects-management-budgets'
+export const PROJECTS_MANAGEMENT_INTEGRATIONS = 'projects-management-integrations'
 export const ADMINISTRATION_USERS = 'administration-users'
 export const COST_CENTERS_MANAGEMENT_DETAIL = 'cost-centers-management-detail'
 

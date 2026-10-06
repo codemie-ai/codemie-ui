@@ -213,13 +213,14 @@ function sonarRequestJson(sonarHostUrl, sonarToken, endpoint, searchParams = {})
       }
     }
 
+    const basicAuthBuffer = Buffer.from(`${sonarToken}:`).toString('base64')
     const request = createRequestModule(requestUrl).request(
       requestUrl,
       {
         method: 'GET',
         timeout: SERVER_TIMEOUT_MS,
         headers: {
-          Authorization: `Basic ${Buffer.from(`${sonarToken}:`).toString('base64')}`,
+          Authorization: `Basic ${basicAuthBuffer}`,
           Accept: 'application/json',
         },
       },

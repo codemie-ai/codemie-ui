@@ -33,6 +33,7 @@ import { buildCommonStateConfig } from './utils/formUtils'
 
 interface CustomTabProps {
   project: string
+  isGlobal?: boolean
   stateId: string
   config: WorkflowConfiguration
   onConfigChange: (updates: ConfigurationUpdate) => void
@@ -68,6 +69,7 @@ const CustomTab = forwardRef<CustomTabRef, CustomTabProps>(
     {
       stateId,
       project,
+      isGlobal,
       config,
       onConfigChange,
       onClose,
@@ -184,6 +186,7 @@ const CustomTab = forwardRef<CustomTabRef, CustomTabProps>(
             <CustomNodeForm
               ref={customNodeFormRef}
               project={project}
+              isGlobal={isGlobal}
               customNodeConfig={customNodeActorConfig}
             />
           </ConfigAccordion>

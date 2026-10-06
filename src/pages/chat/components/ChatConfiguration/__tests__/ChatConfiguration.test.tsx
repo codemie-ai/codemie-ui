@@ -48,6 +48,7 @@ const {
     },
     mockChatsStore: {
       currentChat: null as Conversation | null,
+      filteredModels: [] as { label: string; value: string; isDefault?: boolean }[],
       updateChat: vi.fn(),
     },
     mockAssistantsStore: {
@@ -112,13 +113,19 @@ vi.mock('@/hooks/useFeatureFlags', () => ({
   useFeatureFlag: vi.fn(() => [false, true]),
 }))
 
-vi.mock('@/pages/assistants/components/AssistantForm/AssistantForm', () => ({
-  default: ({ assistant }: any) => (
-    <div data-testid="assistant-form">
-      <div data-testid="form-assistant-name">{assistant?.name}</div>
-    </div>
-  ),
-}))
+vi.mock('@/pages/assistants/components/AssistantForm/AssistantForm', async () => {
+  const { createContext } = await import('react')
+  return {
+    default: ({ assistant }: any) => (
+      <div data-testid="assistant-form">
+        <div data-testid="form-assistant-name">{assistant?.name}</div>
+      </div>
+    ),
+    // LLMSelector reads the enclosing form's project via this context; outside a form
+    // (as here) it falls back to the same default the real module exports.
+    AssistantFormContext: createContext({ project: '' }),
+  }
+})
 
 const mockShowNewIntegrationPopup = vi.fn()
 

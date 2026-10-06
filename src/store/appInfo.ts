@@ -82,6 +82,8 @@ export interface AppInfoStoreType {
   viewedAppReleaseVersion: string
   llmModels: ModelOption[]
   llmRouters: LLMRouterOption[]
+  /** Project-scoped model lists (project model settings applied), keyed by project name. */
+  projectLlmModels: Record<string, ModelOption[]>
   imageGenerationModels: ModelOption[]
   embeddingModels: ModelOption[]
   speechConfig: SpeechConfig
@@ -104,7 +106,9 @@ export interface AppInfoStoreType {
   isReleasePopupDisabled: () => boolean
   isOnboardingCompleted: () => boolean
   completeOnboarding: () => Promise<void>
-  getLLMModels: () => Promise<ModelOption[]>
+  getLLMModels: (projectId?: string) => Promise<ModelOption[]>
+  getProjectLLMModels: (projectName: string) => Promise<ModelOption[]>
+  invalidateProjectLLMModels: (projectName?: string) => void
   getImageGenerationModels: () => Promise<ModelOption[]>
   getEmbeddingsModels: () => Promise<ModelOption[]>
   findLLMLabel: (value: string) => string
@@ -147,6 +151,24 @@ function extractConfigEntry(
     }
   }
 }
+
+/** Deduplicates concurrent project model requests from several selectors on one page. */
+const projectLlmModelsInFlight = new Map<string, Promise<ModelOption[]>>()
+
+const mapLlmModel = (model: any): ModelOption => ({
+  value: model.base_name,
+  deploymentName: model.deployment_name,
+  label: model.label,
+  isDefault: model.default,
+  provider: model.provider,
+  isPremium: model.is_premium,
+  isRouter: model.is_router,
+  multimodal: model.multimodal,
+  supportsImageGeneration: model.supports_image_generation,
+  supportsTools: model.features?.tools ?? model.supports_tools,
+  defaultForCategories: model.default_for_categories,
+  cost: model.cost ? { input: model.cost.input, output: model.cost.output } : undefined,
+})
 
 export const appInfoStore = proxy<AppInfoStoreType>({
   configs: [],
@@ -212,6 +234,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   viewedAppReleaseVersion: '',
   llmModels: [],
   llmRouters: [],
+  projectLlmModels: {},
   imageGenerationModels: [],
   embeddingModels: [],
   speechConfig: {},
@@ -326,26 +349,17 @@ export const appInfoStore = proxy<AppInfoStoreType>({
     })
   },
 
-  async getLLMModels() {
+  async getLLMModels(projectId?: string) {
     try {
-      const response = await api.get('v1/llm_models')
+      const response = await api.get(
+        projectId ? `v1/llm_models?project_id=${projectId}` : 'v1/llm_models'
+      )
       const data = await response.json()
 
       const routerEntries = data.filter((model: any) => model.is_router)
       const modelEntries = data.filter((model: any) => !model.is_router)
 
-      appInfoStore.llmModels = modelEntries.map((model: any) => ({
-        value: model.base_name,
-        label: model.label,
-        isDefault: model.default,
-        provider: model.provider,
-        isPremium: model.is_premium,
-        multimodal: model.multimodal,
-        supportsImageGeneration: model.supports_image_generation,
-        supportsTools: model.features?.tools,
-        defaultForCategories: model.default_for_categories,
-        cost: model.cost ? { input: model.cost.input, output: model.cost.output } : undefined,
-      }))
+      appInfoStore.llmModels = modelEntries.map(mapLlmModel)
 
       appInfoStore.llmRouters = routerEntries.map((router: any) => ({
         value: router.base_name,
@@ -366,6 +380,33 @@ export const appInfoStore = proxy<AppInfoStoreType>({
       console.error('Failed to fetch LLM models:', error)
       return []
     }
+  },
+
+  async getProjectLLMModels(projectName) {
+    if (!projectName) return appInfoStore.getLLMModels()
+    const pending = projectLlmModelsInFlight.get(projectName)
+    if (pending) return pending
+
+    const request = (async () => {
+      try {
+        const response = await api.get('v1/llm_models', { params: { project_id: projectName } })
+        const data = await response.json()
+        appInfoStore.projectLlmModels[projectName] = data.map(mapLlmModel)
+        return appInfoStore.projectLlmModels[projectName]
+      } catch (error) {
+        console.error('Failed to fetch project LLM models:', error)
+        return []
+      } finally {
+        projectLlmModelsInFlight.delete(projectName)
+      }
+    })()
+    projectLlmModelsInFlight.set(projectName, request)
+    return request
+  },
+
+  invalidateProjectLLMModels(projectName) {
+    if (projectName) delete appInfoStore.projectLlmModels[projectName]
+    else appInfoStore.projectLlmModels = {}
   },
 
   async getImageGenerationModels() {

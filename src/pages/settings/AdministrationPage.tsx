@@ -14,6 +14,7 @@
 //
 
 import { FC } from 'react'
+import { Outlet } from 'react-router'
 import { useSnapshot } from 'valtio'
 
 import { userStore } from '@/store'
@@ -28,6 +29,7 @@ const AdministrationPage: FC = () => {
     return (
       <div className="settings-cards flex flex-col gap-6 max-w-lg pt-8 gap-x-6">
         {user?.isAdmin ? <AdminToolsCard /> : null}
+        <Outlet />
       </div>
     )
   }

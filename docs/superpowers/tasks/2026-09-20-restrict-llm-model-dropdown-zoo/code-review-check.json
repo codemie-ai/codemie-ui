@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "gate": "code-review.check",
+  "run_dir": "docs/superpowers/tasks/2026-09-20-restrict-llm-model-dropdown-zoo",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "id": "STD-1",
+      "standard": "git-workflow commit format",
+      "status": "pass",
+      "notes": "code-review-final.json claimed '5 of 13 commits use conventional format instead of EPMCDME-XXXX:'. `git log main..HEAD --oneline` on this branch now shows 14 commits; only 2 (dc52bbe33, fd2be1109) match the 'EPMCDME-XXXX: Capital sentence' pattern and the other 12 lack a ticket prefix entirely (not just wrong format) — so the original count was itself inaccurate. More importantly, .ai-run/guides/standards/git-workflow.md states this repo uses squash-merge: 'Each feature branch becomes one commit on main. The squash commit subject should follow the same EPMCDME-XXXX: Capital sentence format.' The Tekton commit-format regex gate therefore applies to the single squash-merge commit set at merge time, not to every intermediate commit on the feature branch. Intermediate commit wording does not block CI and is not a legitimate review blocker."
+    },
+    {
+      "id": "STD-2",
+      "standard": "code-quality",
+      "status": "na",
+      "notes": "No code-quality.md guide exists in .ai-run/guides/, consistent with the prior review's own note."
+    },
+    {
+      "id": "STD-3",
+      "standard": "security",
+      "status": "pass",
+      "notes": "Re-verified: project-id values are passed through encodeURIComponent in src/store/appInfo.ts (getLLMModels) and src/store/projects.ts (updateAllowedModels); no untrusted HTML sinks introduced in the reviewed files."
+    }
+  ],
+  "findings": [],
+  "finding_status": {
+    "CR-001": "not-applicable",
+    "CR-002": "not-applicable",
+    "CR-003": "not-applicable",
+    "CR-004": "not-applicable",
+    "CR-005": "resolved-by-interpretation",
+    "CR-006": "not-applicable",
+    "CR-007": "not-applicable",
+    "CR-008": "not-applicable",
+    "CR-009": "not-applicable",
+    "CR-010": "not-applicable",
+    "CR-011": "not-applicable",
+    "CR-012": "resolved-by-interpretation",
+    "CR-013": "not-applicable",
+    "CR-014": "not-applicable",
+    "CR-015": "resolved-by-interpretation",
+    "CR-016": "resolved-by-interpretation",
+    "CR-017": "not-applicable",
+    "CR-018": "not-applicable",
+    "CR-019": "resolved-by-interpretation",
+    "CR-020": "resolved-by-interpretation"
+  },
+  "finding_notes": {
+    "CR-001": "Checked src/pages/chat/ChatPage.tsx:127-140 (claimed line 127; file is 262 lines). The effect already guards: `if (currentChat?.projectId) { chatsStore.getModelsForCurrentChat() } else { console.warn(...) }`. getModelsForCurrentChat is never called when projectId is falsy. Stale finding.",
+    "CR-002": "Checked src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx:215-217 (claimed line 146; actual fetch is at 215) and src/store/appInfo.ts:313-360. appInfoStore.getLLMModels() wraps its body in try/catch internally and returns [] on any failure (line 356-359), so the `.then()` call site in LLMSelector can never reject — there is no unhandled-rejection path to catch.",
+    "CR-003": "Checked src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx:211-224 (claimed line 158). This component takes `projectId` as a prop, not `currentChat.projectId` (that identifier does not exist in this file). The effect already uses a `cancelled` flag to drop stale async results on rapid projectId/modelType changes before applying setProjectModels. No race bug reproduces.",
+    "CR-004": "Checked src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx:177-181 (claimed line 117). `defaultLlmModel = models.find(isDefault) ?? models[0] ?? {}` already falls back gracefully when the filtered list is empty or lacks an isDefault entry; `options` simply omits the default-prefixed entry in that case rather than crashing or rendering nothing meaningful. Dropdown degrades to placeholder-only, not broken.",
+    "CR-005": "Checked src/types/entity/conversation.ts:233 and usage in src/pages/chat/ChatPage.tsx:134 and LLMSelector.tsx:156/161/213. The codebase already treats absent `projectId` consistently as 'unrestricted/global chat' everywhere it's read (falls through to global models). This is a sane, consistently-applied interpretation already in place; no spec contradiction found that would justify changing behavior speculatively.",
+    "CR-006": "Checked src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx. Grepped the whole repo for `ProjectModelsSection` — it is referenced nowhere except its own file; it is not imported by any router/page, i.e. this component is dead code superseded by AvailableModelsSection.tsx (which IS wired into src/pages/settings/administration/ProjectDetailsPage.tsx:201-207 with the real project.name, no 'demo' fallback). Finding targets unreachable code.",
+    "CR-007": "Same unreachable ProjectModelsSection.tsx file as CR-006. Also re-checked the logic itself at lines 44-50: when `storedConfiguration` is null (no local restrictions saved), the ternary `storedConfiguration && !storedEnabledModelIds.has(...) ? 'disabled' : 'enabled'` short-circuits to 'enabled' for every model, not 'disabled' as the finding claims. Both unreachable and already correct.",
+    "CR-008": "Same unreachable ProjectModelsSection.tsx file as CR-006. Also re-checked: `applyChangesAndNavigate` (lines 161-166) already does `if (saveChanges()) { ...; blocker.proceed?.() }` — navigation is already gated on save success.",
+    "CR-009": "Same unreachable ProjectModelsSection.tsx file as CR-006. Also re-checked: the effect at lines 86-88 already does `if (blocker.state === 'blocked') setNavigationDialogVisible(true)` before showing the dialog; no unconditional reset/proceed call exists.",
+    "CR-010": "Same unreachable ProjectModelsSection.tsx file as CR-006. Also re-checked: `setModelEnabled` clearing `projectDefault` when its model is disabled, and the Apply button disabling via `defaultIsValid`, is the intended validation flow (forces the user to pick a new default) — not a stuck/deadlocked state; the UI shows 'Select a default model' explaining what to do.",
+    "CR-011": "Checked src/pages/settings/administration/projectsManagement/components/projectModelConfiguration.ts in full (57 lines). No function named `getProjectModelConfigurationFromBackend` exists anywhere in the repo (grepped). The real `getStoredProjectModelConfiguration` reads only localStorage with a try/catch returning null on parse failure — there is no backend fetch to fail, and callers never treat 'no stored config' as bypassing filtering (ProjectModelsSection, the only consumer, is itself unreachable per CR-006).",
+    "CR-012": "Checked the actual allowed_models flow: src/pages/settings/administration/ProjectDetailsPage.tsx:203 passes `project.allowed_models ?? null`, and src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx:103-107 treats `null` as 'all models allowed' and otherwise seeds the selection from the explicit array. `validateSelection` (lines 143-152) and the save guard (line 159) both refuse to persist an empty allowed-models set, so '[] meaning all-disabled' can't silently happen through this UI. The null-vs-[] contract is consistent and already defended against the ambiguous case; no backend contract change was invented.",
+    "CR-013": "Checked src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx:57-119. `loadModels` depends only on the `currentAllowedModels`/`currentDefaultModel` props from the parent; it never mutates those props itself, so a failed fetch cannot retrigger the effect. Errors are caught and toasted (lines 110-111), not re-thrown into a retry loop.",
+    "CR-014": "Checked src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx:58-114. Both `chatResp.json()` and `imageResp.json()` calls (lines 63-64) are already inside the surrounding try/catch block that ends at line 114; a parse failure is caught and toasted, not uncaught.",
+    "CR-015": "Checked src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx:154-168. When `allModels.length === 0`, `selectedModels.size === 0` too, and `handleSave`'s explicit guard already toasts 'Validation error / Select at least one model' before any backend call — failure is not silent. Acceptable existing behavior.",
+    "CR-016": "Checked src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx:57-152. An API failure during load already produces a distinct toast ('Failed to load models', line 110-111) separate from the selection-validation message ('At least one chat model must remain allowed', line 148) — so the two scenarios the finding worried about conflating are already distinguishable to the user.",
+    "CR-017": "Checked src/pages/settings/administration/projectsManagement/components/ModelConfigurationTable.tsx:66-76. The default-model radio's `onChange` only ever calls `onDefaultChange(model.value)` for a `model` drawn from the same `models` array being rendered, and is `disabled` when that row is unchecked. There is no code path by which an id outside the rendered list can reach `onDefaultChange`.",
+    "CR-018": "Checked src/store/projects.ts:447-495. `updateAllowedModels` exists, is fully implemented, wraps the PATCH in try/catch, sets `this.error` and re-throws on failure. The caller (AvailableModelsSection.handleSave) never optimistically mutates `selectedModels`/`defaultModel` before the await resolves, so there is no UI state that needs rolling back on failure.",
+    "CR-019": "Checked src/pages/settings/administration/projectsManagement/ProjectDetailsNavigation.tsx:14-19,45. `router.push`'s `name` always comes from the hardcoded `allTabs` constant, never from user input, so there is no reachable 'route doesn't exist' failure mode to wrap in try/catch.",
+    "CR-020": "Checked src/pages/settings/administration/ProjectDetailsPage.tsx:44-57. `getActiveTab`'s switch covers all four routes this page's own navigation can produce (ProjectDetailsNavigation.tsx's `allTabs`); the default-to-'overview' branch is an unreachable-in-practice, defensible fallback for an exhaustive fixed route set, matching the same pattern used elsewhere in the codebase."
+  },
+  "rationale": "Re-verified all 20 findings from code-review-final.json (decision: request-changes, confidence: low, which the artifact itself attributed to an exhausted review budget and uncompleted lenses) directly against the current branch source. Every claimed line number was stale (several pointed past end-of-file, e.g. line 5452 in a 57-line file), confirming the hallucination pattern the task flagged. After reading each target file in full and tracing the described logic by name: 14 findings (CR-001, CR-002, CR-003, CR-004, CR-006, CR-007, CR-008, CR-009, CR-010, CR-011, CR-013, CR-014, CR-017, CR-018) do not reproduce — the described code either already has the guard/handling claimed missing, or (CR-006/007/008/009/010) targets ProjectModelsSection.tsx, a component that is not imported or rendered anywhere in the app and has been superseded by AvailableModelsSection.tsx, which is the component actually wired into ProjectDetailsPage.tsx. The remaining 6 (CR-005, CR-012, CR-015, CR-016, CR-019, CR-020) are interpretive/product-ambiguity concerns where the current code already has a sane, consistent, defensible behavior (e.g. null vs [] for allowed_models, missing projectId meaning 'unrestricted'); no new API contract or behavior was invented to resolve them, per the task's constraint. No source edits were made because no genuine, currently-reproducible defect was found. `npx tsc --noEmit -p tsconfig.json` and `npx eslint` on all 10 files named across the 20 findings both ran clean. Separately, the standards_review commit-format blocker is corrected: the branch's 14 commits mostly lack any EPMCDME- prefix (worse than the original '5 of 13 wrong format' claim), but .ai-run/guides/standards/git-workflow.md confirms this repo squash-merges feature branches, so only the single squash-merge commit at merge time must match 'EPMCDME-XXXX: Capital sentence' — intermediate commit wording on this branch is not a CI/merge blocker. No remaining unresolved real defects; decision is approve."
+}

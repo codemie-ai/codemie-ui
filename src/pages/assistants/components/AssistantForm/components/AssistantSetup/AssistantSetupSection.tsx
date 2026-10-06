@@ -71,6 +71,8 @@ const AssistantSetupSection = ({
   isCompactView = false,
 }: AssistantSetupSectionProps) => {
   const selectedModel = useWatch({ control, name: 'llm_model_type' })
+  const projectId = useWatch({ control, name: 'project' }) || undefined
+  const isGlobal = useWatch({ control, name: 'is_global' })
   const temperatureMax = getTemperatureMax(selectedModel)
   const temperaturePlaceholder = `${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}-${temperatureMax}`
 
@@ -282,6 +284,7 @@ const AssistantSetupSection = ({
                         placeholder="LLM model"
                         className="w-full"
                         value={field.value ?? ''}
+                        projectId={isGlobal ? undefined : projectId}
                         onChange={(value) =>
                           setValue('llm_model_type', value, { shouldDirty: false })
                         }

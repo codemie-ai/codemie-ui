@@ -43,6 +43,8 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
     initialAssistantId: chatBE.initial_assistant_id,
     toolCallPolicy: chatBE.tool_call_policy ?? null,
     importSource,
+    project: chatBE.project ?? null,
+    projectId: chatBE.project ?? undefined,
     assistantData:
       chatBE.assistant_data?.map((data) => ({
         id: data.assistant_id,

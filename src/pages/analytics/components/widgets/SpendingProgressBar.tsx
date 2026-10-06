@@ -19,21 +19,20 @@ import {
   getStatusColor,
   getStatusColorWithOpacity,
 } from '@/pages/analytics/components/widgets/RatioWidget/utils'
-import { formatSpend } from '@/utils/currency'
 import { cn } from '@/utils/utils'
 
 interface SpendingProgressBarProps {
   percentage: number
-  spend?: number | null
   className?: string
+  fullWidth?: boolean
   dangerThreshold?: number
   warningThreshold?: number
 }
 
 const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
   percentage,
-  spend,
   className,
+  fullWidth = false,
   dangerThreshold = 90,
   warningThreshold = 75,
 }) => {
@@ -49,16 +48,12 @@ const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
     [normalizedPercentage, dangerThreshold, warningThreshold]
   )
 
-  // Validate spend: accept only finite, non-negative numbers
-  const label = useMemo(() => {
-    const validatedSpend =
-      typeof spend === 'number' && Number.isFinite(spend) && spend >= 0 ? spend : null
-    return `${formatSpend(validatedSpend)} (${Math.round(normalizedPercentage)}%)`
-  }, [spend, normalizedPercentage])
-
   return (
-    <div className={cn('flex items-center gap-2 min-w-0', className)}>
-      <div className="relative h-2 w-[110px] rounded-[99px]" style={{ backgroundColor: bgColor }}>
+    <div className={cn('flex items-center gap-2 w-full', className)}>
+      <div
+        className={cn('relative h-2 rounded-[99px] min-w-0 flex-1', !fullWidth && 'w-[110px]')}
+        style={{ backgroundColor: bgColor }}
+      >
         <div
           className="absolute top-0 left-0 h-full rounded-[99px] transition-all"
           style={{
@@ -68,10 +63,10 @@ const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
         />
       </div>
       <span
-        className="text-sm font-semibold leading-none whitespace-nowrap text-right"
+        className="text-sm font-semibold leading-none whitespace-nowrap w-12 text-right"
         style={{ color: barColor }}
       >
-        {label}
+        {normalizedPercentage.toFixed(1)}%
       </span>
     </div>
   )

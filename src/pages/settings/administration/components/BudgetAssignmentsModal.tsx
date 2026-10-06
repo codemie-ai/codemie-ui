@@ -15,7 +15,9 @@
 
 import { FC, useEffect, useState } from 'react'
 
+import Button from '@/components/Button'
 import Popup from '@/components/Popup'
+import { ButtonSize, ButtonType } from '@/constants'
 import { BudgetAssignment } from '@/types/entity/budget'
 
 import BudgetAssignmentsEditor from './BudgetAssignmentsEditor'
@@ -26,6 +28,7 @@ interface BudgetAssignmentsModalProps {
   initialAssignments?: BudgetAssignment[]
   onHide: () => void
   onSubmit: (assignments: BudgetAssignment[]) => Promise<void>
+  onReset?: () => void
 }
 
 const BudgetAssignmentsModal: FC<BudgetAssignmentsModalProps> = ({
@@ -34,6 +37,7 @@ const BudgetAssignmentsModal: FC<BudgetAssignmentsModalProps> = ({
   initialAssignments = [],
   onHide,
   onSubmit,
+  onReset,
 }) => {
   const [assignments, setAssignments] = useState<BudgetAssignment[]>(initialAssignments)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -56,6 +60,32 @@ const BudgetAssignmentsModal: FC<BudgetAssignmentsModalProps> = ({
     }
   }
 
+  const footerContent = onReset ? (
+    <div className="flex w-full items-center justify-between">
+      <Button
+        size={ButtonSize.SMALL}
+        variant={ButtonType.SECONDARY}
+        onClick={onReset}
+        disabled={isSubmitting}
+      >
+        Reset budget usage
+      </Button>
+      <div className="flex gap-3">
+        <Button
+          size={ButtonSize.SMALL}
+          variant={ButtonType.SECONDARY}
+          onClick={onHide}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </Button>
+        <Button size={ButtonSize.SMALL} onClick={handleSubmit} disabled={isSubmitting}>
+          Save
+        </Button>
+      </div>
+    </div>
+  ) : undefined
+
   return (
     <Popup
       visible={visible}
@@ -67,6 +97,7 @@ const BudgetAssignmentsModal: FC<BudgetAssignmentsModalProps> = ({
       cancelText="Cancel"
       className="w-full max-w-2xl"
       withBorderBottom={false}
+      footerContent={footerContent}
     >
       <BudgetAssignmentsEditor value={assignments} onChange={setAssignments} />
     </Popup>

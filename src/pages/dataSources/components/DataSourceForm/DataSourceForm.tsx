@@ -223,18 +223,23 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
   useEffect(() => {
     const initialize = async () => {
       try {
-        if (!llmModels.length) await appInfoStore.getLLMModels()
-        if (!embeddingModels.length) await appInfoStore.getEmbeddingsModels()
+        await Promise.all([
+          llmModels.length ? Promise.resolve() : appInfoStore.getLLMModels(),
+          embeddingModels.length ? Promise.resolve() : appInfoStore.getEmbeddingsModels(),
+        ])
 
         setValue('embeddingsModel', getDefaultEmbeddingModel(getValues('embeddingsModel')!))
         setValue(
           'summarizationModel',
           getDefaultSummarizationModel(getValues('summarizationModel')!)
         )
-        await userSettingsStore.indexSettings()
-        await dataSourceStore.getProviderIndexSchemas()
+
+        const [, , { googleDocsGuideEnabled, googleDocsGuideConfig }] = await Promise.all([
+          userSettingsStore.indexSettings(),
+          dataSourceStore.getProviderIndexSchemas(),
+          checkCustomerConfig(),
+        ])
         setIsProviderSchemasLoaded(true)
-        const { googleDocsGuideEnabled, googleDocsGuideConfig } = await checkCustomerConfig()
         setGoogleDocsGuideConfig(googleDocsGuideConfig)
         setGoogleDocsGuideEnabled(googleDocsGuideEnabled)
       } finally {

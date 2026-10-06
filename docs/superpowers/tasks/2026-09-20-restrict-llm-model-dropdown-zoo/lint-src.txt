@@ -1,0 +1,27 @@
+npm notice run ai-assistant@0.0.0 lint
+npm notice run eslint . --ext .js,.jsx,.cjs,.mjs,.tsx,.ts --ignore-path .gitignore src/
+Warning: React version not specified in eslint-plugin-react settings. See https://github.com/jsx-eslint/eslint-plugin-react#configuration .
+
+C:\Users\MaximGorbunov\source\repos\SDAI\codemie-ui\tests\e2e\projects-models.e2e.js
+    4:36  error    Unable to resolve path to module '@playwright/test'                                       import/no-unresolved
+   20:7   warning  'API_BASE' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+   22:7   warning  'TEST_USER' is assigned a value but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+   23:7   warning  'TEST_PASSWORD' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   56:32  error    Define a constant instead of duplicating this literal 13 times                            sonarjs/no-duplicate-string
+   78:45  error    Unary operator '++' used                                                                  no-plusplus
+   82:7   error    Unexpected `await` inside a loop                                                          no-await-in-loop
+   83:7   error    Unexpected `await` inside a loop                                                          no-await-in-loop
+  128:50  error    Define a constant instead of duplicating this literal 9 times                             sonarjs/no-duplicate-string
+  132:25  error    Unexpected `await` inside a loop                                                          no-await-in-loop
+  135:40  error    Unexpected `await` inside a loop                                                          no-await-in-loop
+  176:11  error    Unexpected `await` inside a loop                                                          no-await-in-loop
+  177:9   error    Unexpected `await` inside a loop                                                          no-await-in-loop
+  296:11  error    Either use this collection's contents or remove the collection                            sonarjs/no-unused-collection
+  298:26  error    Unexpected `await` inside a loop                                                          no-await-in-loop
+  318:7   error    Unexpected `await` inside a loop                                                          no-await-in-loop
+  405:47  error    Unary operator '++' used                                                                  no-plusplus
+  407:11  error    Unexpected `await` inside a loop                                                          no-await-in-loop
+  408:9   error    Unexpected `await` inside a loop                                                          no-await-in-loop
+
+✖ 19 problems (16 errors, 3 warnings)
+

@@ -230,6 +230,9 @@ export interface Conversation {
   toolCallPolicy?: string | null
   /** Set for chats imported from an external client (Claude Code, Claude Desktop, …). */
   importSource?: ImportSourceKind | null
+  /** Project of the assistant the chat was started with; scopes the model pickers. */
+  project?: string | null
+  projectId?: string
 }
 
 export interface ChatFolder {
@@ -335,6 +338,7 @@ export interface ChatBackend {
   is_workflow_conversation?: boolean
   import_source?: string | null
   tool_call_policy?: string | null
+  project?: string | null
 }
 
 export interface StreamChunk {

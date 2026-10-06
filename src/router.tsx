@@ -47,7 +47,7 @@ import DataSourcesPage from '@/pages/dataSources/DataSourcesPage'
 import ErrorPage from '@/pages/error/ErrorPage'
 import FavoritesPage from '@/pages/favorites/FavoritesPage'
 import HelpPage from '@/pages/help/HelpPage'
-import ModelsCatalogPage from '@/pages/help/ModelsCatalog'
+import ReadOnlyModelsCatalogPage from '@/pages/help/ModelsCatalog/ReadOnlyModelsCatalogPage'
 import EditProjectIntegrationPage from '@/pages/integrations/EditProjectIntegrationPage'
 import EditUserIntegrationPage from '@/pages/integrations/EditUserIntegrationPage'
 import IntegrationsPage from '@/pages/integrations/IntegrationsPage'
@@ -72,6 +72,7 @@ import CategoriesManagementPage from '@/pages/settings/administration/Categories
 import CostCenterDetailsPage from '@/pages/settings/administration/CostCenterDetailsPage'
 import CostCentersManagementPage from '@/pages/settings/administration/CostCentersManagementPage'
 import CustomerConfigurationPage from '@/pages/settings/administration/CustomerConfigurationPage'
+import GlobalModelsManagementPage from '@/pages/settings/administration/GlobalModelsManagementPage'
 import MCPManagementPage from '@/pages/settings/administration/MCPManagementPage'
 import ProjectDetailsPage from '@/pages/settings/administration/ProjectDetailsPage'
 import ProjectsManagementPage from '@/pages/settings/administration/ProjectsManagementPage'
@@ -505,8 +506,9 @@ const settingsRoutes: RouteObject[] = [
     Component: ProfilePage,
   },
   {
-    path: '/settings/administration',
-    Component: AdministrationPage,
+    id: 'models-management',
+    path: '/settings/administration/models',
+    Component: GlobalModelsManagementPage,
   },
   {
     id: 'projects-management',
@@ -521,6 +523,35 @@ const settingsRoutes: RouteObject[] = [
   {
     id: 'projects-management-detail',
     path: '/settings/administration/projects/:projectName',
+    Component: ProjectDetailsPage,
+  },
+  {
+    id: 'projects-management-overview',
+    path: '/settings/administration/projects/:projectName/overview',
+    Component: ProjectDetailsPage,
+  },
+  {
+    id: 'projects-management-members',
+    path: '/settings/administration/projects/:projectName/members',
+    Component: ProjectDetailsPage,
+  },
+  {
+    id: 'projects-management-models',
+    path: '/settings/administration/projects/:projectName/models',
+    element: (
+      <FeatureGuard featureFlags={FEATURE_FLAGS.PROJECT_MODEL_OVERRIDE}>
+        <ProjectDetailsPage />
+      </FeatureGuard>
+    ),
+  },
+  {
+    id: 'projects-management-budgets',
+    path: '/settings/administration/projects/:projectName/budgets',
+    Component: ProjectDetailsPage,
+  },
+  {
+    id: 'projects-management-integrations',
+    path: '/settings/administration/projects/:projectName/integrations',
     Component: ProjectDetailsPage,
   },
   {
@@ -611,6 +642,10 @@ const settingsRoutes: RouteObject[] = [
         <ProvidersEditPage />
       </FeatureGuard>
     ),
+  },
+  {
+    path: '/settings/administration',
+    Component: AdministrationPage,
   },
 ]
 
@@ -737,7 +772,7 @@ const otherRoutes: RouteObject[] = [
   {
     id: 'help-models',
     path: 'help/models',
-    Component: ModelsCatalogPage,
+    Component: ReadOnlyModelsCatalogPage,
   },
   {
     id: 'terms-and-conditions',

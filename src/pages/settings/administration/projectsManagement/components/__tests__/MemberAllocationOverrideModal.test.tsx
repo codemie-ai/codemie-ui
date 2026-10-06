@@ -44,7 +44,6 @@ const baseProps = {
   initialCategory: null,
   onHide: vi.fn(),
   onSubmit: vi.fn(),
-  onClearOverride: vi.fn(),
 }
 
 describe('MemberAllocationOverrideModal', () => {

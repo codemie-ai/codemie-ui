@@ -303,6 +303,7 @@ const themeTokens: ThemeConfig = {
         secondary: [c['neutral']['925'], c['blue']['50']],
       },
       'toggle-button-hover': [c['neutral']['725'], c['full-transparent']],
+      'button-magic--from': [c['brand']['a99'], c['blue']['400']],
       'bottom-navigation-label': [c['white']['a15'], c['white']['a15']],
       'navigation-badge': [c['purple']['accent-1'], c['purple']['accent-1']],
       'navigation-link': [c['neutral']['875'], c['blue']['50']],

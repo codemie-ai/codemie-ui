@@ -38,10 +38,13 @@ export interface ConfigItem {
 
 export interface ModelOption {
   value: string
+  deploymentName?: string
   label: string
   isDefault: boolean
   provider?: string
   isPremium?: boolean
+  /** Virtual model that routes each request to one of several concrete models. */
+  isRouter?: boolean
   multimodal?: boolean
   supportsImageGeneration?: boolean
   supportsTools?: boolean

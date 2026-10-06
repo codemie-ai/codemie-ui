@@ -25,8 +25,11 @@ import {
 } from 'react'
 import { useSnapshot } from 'valtio'
 
+import AiGenerateSvg from '@/assets/icons/ai-generate.svg?react'
+import CurrencySvg from '@/assets/icons/currency.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import AnalyticsSvg from '@/assets/icons/diagram-duotone.svg?react'
+import InfoSvg from '@/assets/icons/info.svg?react'
 import ImportSvg from '@/assets/icons/input.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import Button from '@/components/Button'
@@ -44,34 +47,72 @@ import AddUserModal, {
   AddUserFormData,
 } from '@/pages/settings/administration/components/AddUserModal'
 import ProjectMembersBulkActions from '@/pages/settings/administration/components/projectsManagement/ProjectMembersBulkActions'
+import ResetBudgetPopup from '@/pages/settings/administration/usersManagement/components/popups/ResetBudgetPopup'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
-import { analyticsStore } from '@/store/analytics'
 import { projectBudgetsStore } from '@/store/projectBudgets'
+import { projectModelSettingsStore } from '@/store/projectModelSettings'
 import { userStore } from '@/store/user'
-import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
+import { BudgetCategory } from '@/types/entity/budget'
 import { ProjectRole, ProjectType } from '@/types/entity/project'
-import {
-  MemberAllocationOverridePayload,
-  ProjectBudget,
-  ProjectBudgetMemberAllocation,
-} from '@/types/entity/projectBudget'
+import { ProjectBudget, ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { UserListItem } from '@/types/entity/user'
-import { getCategorySpend, ProjectMemberSpendingRow } from '@/types/entity/userProjectSpending'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
-import { formatCurrency, formatSpend } from '@/utils/currency'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
+import { isUserManagementEnabled } from '@/utils/featureFlags'
 import { getAnalyticsMemberLink } from '@/utils/getAnalyticsMemberLink'
 import toaster from '@/utils/toaster'
 
-import MemberAllocationOverrideModal from './components/MemberAllocationOverrideModal'
+import MemberAllocationOverrideModal, {
+  MemberAllocationOverrideUpdate,
+} from './components/MemberAllocationOverrideModal'
+import ProjectMemberModelOverrideModal from './components/ProjectMemberModelOverrideModal'
+import UserBudgetsCell, {
+  BudgetAllocationLookup,
+  getUserBudgetUsage,
+} from './components/UserBudgetsCell'
 import ImportUsersModal from './ImportUsersModal'
 import ProjectMembersFilters, {
   PROJECT_MEMBERS_INITIAL_FILTERS,
+  BudgetUsageFilter,
+  isDefaultBudgetUsageFilter,
   ProjectMembersFiltersState,
+  ModelSettingsFilterValue,
 } from './ProjectMembersFilters'
 
-const BUDGET_CATEGORIES: BudgetCategory[] = ['platform', 'cli', 'premium_models']
+const matchesBudgetUsage = (
+  user: UserListItem,
+  budgetAllocationLookup: BudgetAllocationLookup,
+  filter: BudgetUsageFilter
+): boolean => {
+  const matchesUsage = filter.categories.some((category) => {
+    const usage = getUserBudgetUsage(user, budgetAllocationLookup, category)
+    if (usage == null) return false
+
+    return filter.usageRanges.some((range) => {
+      if (range === 'low') return usage < 50
+      if (range === 'medium') return usage >= 50 && usage <= 70
+      return usage > 70
+    })
+  })
+
+  if (!matchesUsage) return false
+  if (!filter.overrideOnly) return true
+
+  return filter.categories.some(
+    (category) => budgetAllocationLookup?.[user.id]?.[category]?.allocation_mode === 'fixed'
+  )
+}
+
+const matchesModelSettings = (
+  userId: string,
+  modelSettingsFilter: ModelSettingsFilterValue,
+  userModelOverrides: Record<string, boolean>
+): boolean => {
+  if (modelSettingsFilter === 'all') return true
+  const hasOverride = userModelOverrides[userId] ?? false
+  return modelSettingsFilter === 'custom' ? hasOverride : !hasOverride
+}
 
 // Stops the row-select click/keydown from bubbling past the actions cell without
 // putting a literal onClick/onKeyDown JSX attribute on the wrapping div.
@@ -80,66 +121,12 @@ const stopRowPropagationProps = {
   onKeyDown: (e: KeyboardEvent) => e.stopPropagation(),
 }
 
-interface UserBudgetsCellProps {
-  user: UserListItem
-  budgetAllocationLookup: Record<
-    string,
-    Record<BudgetCategory, ProjectBudgetMemberAllocation>
-  > | null
-  spendingRow: ProjectMemberSpendingRow | undefined
-  onOverride: (userId: string, category: BudgetCategory) => void
-}
-
-const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
-  user,
-  budgetAllocationLookup,
-  spendingRow,
-  onOverride,
-}) => {
-  if (!budgetAllocationLookup) return null
-  const userAllocations = budgetAllocationLookup[user.id]
-  if (!userAllocations || !Object.keys(userAllocations).length) {
-    return <span className="text-xs text-text-quaternary">—</span>
-  }
-  return (
-    <div className="flex flex-col gap-1">
-      {BUDGET_CATEGORIES.map((cat) => {
-        const alloc = userAllocations[cat]
-        if (!alloc) return null
-        const isFixed = alloc.allocation_mode === 'fixed'
-        return (
-          <button
-            key={cat}
-            type="button"
-            className="flex items-center gap-2 text-xs text-left w-full hover:bg-surface-specific-dropdown-hover rounded px-1 -mx-1 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation()
-              onOverride(user.id, cat)
-            }}
-            data-tooltip-id="react-tooltip"
-            data-tooltip-content="Click to override allocation"
-          >
-            <span className="text-text-quaternary w-28 shrink-0">
-              {getBudgetCategoryLabel(cat)}
-            </span>
-            <span className={isFixed ? 'text-text-warning' : 'text-text-primary'}>
-              {formatSpend(spendingRow ? getCategorySpend(spendingRow, cat) : null)} /{' '}
-              {formatCurrency(alloc.allocated_max_budget)}
-              {isFixed && <span className="ml-1 text-text-warning">★</span>}
-            </span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 interface ProjectMembersManagerProps {
   project: ProjectDetail
   onMembersChanged?: () => Promise<void> | void
   budgets?: ProjectBudget[]
   onBudgetsChanged?: (budgets: ProjectBudget[]) => void
-  spendingRefreshKey?: number
+  isModelsConfigEnabled?: boolean
 }
 
 const personalProjectTooltip = (action: string) =>
@@ -150,7 +137,25 @@ const ROLE_OPTIONS = [
   { label: 'Project Admin', value: ProjectRole.ADMINISTRATOR },
 ]
 
-const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnDefinition[] => {
+const getUserColumnWidth = (canManage: boolean, showBudgets: boolean): string => {
+  if (canManage && showBudgets) return 'w-[34%]'
+  if (canManage) return 'w-[56%]'
+  if (showBudgets) return 'w-[28%]'
+  return 'w-[52%]'
+}
+
+const getRoleColumnWidth = (canManage: boolean, showBudgets: boolean): string => {
+  if (canManage && showBudgets) return 'w-[20%]'
+  if (canManage) return 'w-[30%]'
+  if (showBudgets) return 'w-[24%]'
+  return 'w-[48%]'
+}
+
+const getColumnDefinitions = (
+  canManage: boolean,
+  showBudgets: boolean,
+  showModelOverride: boolean
+): ColumnDefinition[] => {
   const columns: ColumnDefinition[] = []
 
   if (canManage) {
@@ -161,47 +166,39 @@ const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnD
     })
   }
 
-  let userColumnWidth = 'w-[52%]'
-  if (canManage && showBudgets) {
-    userColumnWidth = 'w-[24%]'
-  } else if (canManage) {
-    userColumnWidth = 'w-[60%]'
-  } else if (showBudgets) {
-    userColumnWidth = 'w-[28%]'
+  const userColumnWidth = getUserColumnWidth(canManage, showBudgets)
+  const modelOverrideColumnWidth = !canManage && !showBudgets ? 'w-0' : 'w-[4%]'
+  const roleColumnWidth = getRoleColumnWidth(canManage, showBudgets)
+
+  columns.push({
+    key: 'user',
+    label: 'User',
+    type: DefinitionTypes.Custom,
+    headClassNames: userColumnWidth,
+  })
+
+  if (showModelOverride) {
+    columns.push({
+      key: 'modelOverride',
+      label: '',
+      type: DefinitionTypes.Custom,
+      headClassNames: modelOverrideColumnWidth,
+    })
   }
 
-  let roleColumnWidth = 'w-[48%]'
-  if (canManage && showBudgets) {
-    roleColumnWidth = 'w-[22%]'
-  } else if (canManage) {
-    roleColumnWidth = 'w-[30%]'
-  } else if (showBudgets) {
-    roleColumnWidth = 'w-[24%]'
-  }
-
-  columns.push(
-    {
-      key: 'user',
-      label: 'User',
-      type: DefinitionTypes.Custom,
-      headClassNames: userColumnWidth,
-    },
-    {
-      key: 'role',
-      label: 'Role',
-      type: DefinitionTypes.Custom,
-      headClassNames: roleColumnWidth,
-    }
-  )
-
-  const actionsColumnWidth = 'w-[6%]'
+  columns.push({
+    key: 'role',
+    label: 'Role',
+    type: DefinitionTypes.Custom,
+    headClassNames: roleColumnWidth,
+  })
 
   if (showBudgets) {
     columns.push({
       key: 'budgets',
       label: 'Budget Allocations',
       type: DefinitionTypes.Custom,
-      headClassNames: canManage ? 'w-[44%]' : 'w-[48%]',
+      headClassNames: canManage ? 'w-[36%]' : 'w-[48%]',
     })
   }
 
@@ -210,11 +207,25 @@ const getColumnDefinitions = (canManage: boolean, showBudgets: boolean): ColumnD
       key: 'actions',
       label: '',
       type: DefinitionTypes.Custom,
-      headClassNames: actionsColumnWidth,
+      headClassNames: 'w-[10%]',
     })
   }
 
   return columns
+}
+
+const renderModelOverrideCell = (hasOverride: boolean) => {
+  if (!hasOverride) return null
+  return (
+    <div className="flex items-center justify-center">
+      <span
+        data-tooltip-id="react-tooltip"
+        data-tooltip-content="This user uses custom models instead of project settings"
+      >
+        <AiGenerateSvg className="w-4 h-4 text-icon-primary" />
+      </span>
+    </div>
+  )
 }
 
 const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
@@ -222,7 +233,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   onMembersChanged,
   budgets,
   onBudgetsChanged,
-  spendingRefreshKey,
+  isModelsConfigEnabled = false,
 }) => {
   const snap = useSnapshot(userStore)
   const currentUser = snap.user
@@ -250,17 +261,18 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   const [overrideContext, setOverrideContext] = useState<{
     userId: string
     userName: string | null
-    category: BudgetCategory
+    category: BudgetCategory | null
   } | null>(null)
-  const [spendingByUserId, setSpendingByUserId] = useState<
-    Record<string, ProjectMemberSpendingRow>
-  >({})
-  const [spendingLoading, setSpendingLoading] = useState(false)
+  const [modelOverrideUsers, setModelOverrideUsers] = useState<UserListItem[]>([])
+  const [resetBudgetUser, setResetBudgetUser] = useState<UserListItem | null>(null)
 
   // Budgets fetched independently for the "View analytics" link — entirely
   // separate from the `budgets` prop which drives the Budget Allocations column.
   const [memberBudgets, setMemberBudgets] = useState<ProjectBudget[]>([])
   const [budgetsLoaded, setBudgetsLoaded] = useState(false)
+
+  // Model overrides per user for filtering
+  const [userModelOverrides, setUserModelOverrides] = useState<Record<string, boolean>>({})
 
   const tableContainerRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -293,46 +305,104 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     return lookup
   }, [budgets])
 
+  const budgetAllocationLookupRef = useRef(budgetAllocationLookup)
+  budgetAllocationLookupRef.current = budgetAllocationLookup
+  const userModelOverridesRef = useRef(userModelOverrides)
+  userModelOverridesRef.current = userModelOverrides
+
+  const hasBudgetUsageFilter = !isDefaultBudgetUsageFilter(filters.budgetUsage)
+  const hasModelSettingsFilter = filters.modelSettings !== 'all'
+  const visibleUsers = users
+
+  const handleFiltersChange = useCallback((nextFilters: ProjectMembersFiltersState) => {
+    setFilters(nextFilters)
+    setPagination((current) => ({ ...current, page: 0 }))
+  }, [])
+
   const columnDefinitions = useMemo(
-    () => getColumnDefinitions(canManageProject, showBudgets),
-    [canManageProject, showBudgets]
+    () => getColumnDefinitions(canManageProject, showBudgets, isModelsConfigEnabled),
+    [canManageProject, showBudgets, isModelsConfigEnabled]
   )
 
   const perPageRef = useRef(pagination.per_page)
   perPageRef.current = pagination.per_page
 
+  const getBaseUserFilters = useCallback(
+    () => ({
+      projects: [project.name],
+      search: filters.search || undefined,
+      platform_role: filters.role === 'all' ? null : filters.role,
+    }),
+    [filters.role, filters.search, project.name]
+  )
+
+  const fetchAllMatchingUsers = useCallback(async () => {
+    const pageSize = 100
+    // Filters are computed once up front so every page request — including the parallel
+    // ones below — uses the exact same snapshot, regardless of fetch order or timing.
+    const filters = getBaseUserFilters()
+    const firstPage = await userStore.getUsers({ page: 0, perPage: pageSize, filters })
+    const totalPages = Math.ceil(firstPage.pagination.total / pageSize)
+
+    const restPages = await Promise.all(
+      Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
+        userStore.getUsers({ page: index + 1, perPage: pageSize, filters })
+      )
+    )
+
+    return [firstPage, ...restPages].flatMap((result) => result.data)
+  }, [getBaseUserFilters])
+
   const fetchUsers = useCallback(
     async (page: number, perPage: number) => {
-      const result = await userStore.getUsers({
-        page,
-        perPage,
-        filters: {
-          projects: [project.name],
-          search: filters.search || undefined,
-          platform_role: filters.role === 'all' ? null : filters.role,
-        },
-      })
+      if (!hasBudgetUsageFilter && !hasModelSettingsFilter) {
+        const result = await userStore.getUsers({
+          page,
+          perPage,
+          filters: getBaseUserFilters(),
+        })
+        setUsers(result.data)
+        setPagination(result.pagination)
+        return result
+      }
+
+      const allUsers = await fetchAllMatchingUsers()
+      const filteredUsers = allUsers.filter(
+        (user) =>
+          matchesBudgetUsage(user, budgetAllocationLookupRef.current, filters.budgetUsage) &&
+          matchesModelSettings(user.id, filters.modelSettings, userModelOverridesRef.current)
+      )
+      const start = page * perPage
+      const result = {
+        data: filteredUsers.slice(start, start + perPage),
+        pagination: { page, per_page: perPage, total: filteredUsers.length },
+      }
       setUsers(result.data)
       setPagination(result.pagination)
       return result
     },
-    [project.name, filters]
+    [
+      fetchAllMatchingUsers,
+      filters.budgetUsage,
+      filters.modelSettings,
+      getBaseUserFilters,
+      hasBudgetUsageFilter,
+      hasModelSettingsFilter,
+    ]
   )
 
   const tableSelection = useTableSelection<UserListItem>({
     totalCount: pagination.total,
-    currentItems: users,
+    currentItems: visibleUsers,
     onFetchAll: async () => {
-      const response = await userStore.getUsers({
-        page: 0,
-        perPage: pagination.total,
-        filters: {
-          projects: [project.name],
-          search: filters.search || undefined,
-          platform_role: filters.role === 'all' ? null : filters.role,
-        },
-      })
-      return response.data
+      const allUsers = await fetchAllMatchingUsers()
+      return hasBudgetUsageFilter || hasModelSettingsFilter
+        ? allUsers.filter(
+            (user) =>
+              matchesBudgetUsage(user, budgetAllocationLookupRef.current, filters.budgetUsage) &&
+              matchesModelSettings(user.id, filters.modelSettings, userModelOverridesRef.current)
+          )
+        : allUsers
     },
   })
 
@@ -395,37 +465,31 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     }
   }, [canManageProject, project.name])
 
+  // Fetch project model settings to identify users with custom model overrides
   useEffect(() => {
+    if (!isModelsConfigEnabled) {
+      // Bail out via the updater so an already-empty map keeps its reference — otherwise a
+      // fresh `{}` here cascades through fetchUsers -> loadUsers and double-fetches the table.
+      setUserModelOverrides((prev) => (Object.keys(prev).length ? {} : prev))
+      return () => {}
+    }
     let cancelled = false
-
-    if (!showBudgets) {
-      setSpendingLoading(false)
-      return () => {
-        cancelled = true
-      }
-    }
-
-    setSpendingLoading(true)
-
-    const loadSpending = async () => {
-      try {
-        const result = await analyticsStore.fetchProjectMemberSpending(project.name)
-        if (cancelled) return
-        const rows = (result?.data?.rows as unknown as ProjectMemberSpendingRow[]) ?? []
-        setSpendingByUserId(Object.fromEntries(rows.map((row) => [row.user_id, row])))
-      } catch (error) {
-        console.error('Failed to fetch project member spending:', error)
-        if (!cancelled) setSpendingByUserId({})
-      } finally {
-        if (!cancelled) setSpendingLoading(false)
-      }
-    }
-
-    loadSpending()
+    projectModelSettingsStore
+      .fetchSettings(project.name)
+      .then((settings) => {
+        if (!cancelled) {
+          setUserModelOverrides(
+            Object.fromEntries(
+              Object.entries(settings.member_overrides).map(([userId]) => [userId, true])
+            )
+          )
+        }
+      })
+      .catch(console.error)
     return () => {
       cancelled = true
     }
-  }, [project.name, showBudgets, spendingRefreshKey])
+  }, [project.name, isModelsConfigEnabled])
 
   const handlePageChange = useCallback(
     async (page: number, newPerPage?: number) => {
@@ -544,19 +608,30 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   }, [project.name, budgets, onBudgetsChanged])
 
   const handleOverrideMember = useCallback(
-    async (budgetId: string, userId: string, payload: MemberAllocationOverridePayload) => {
-      await projectBudgetsStore.overrideMemberAllocation(budgetId, userId, payload)
-      toaster.info('Member allocation overridden successfully')
-      setOverrideContext(null)
-      await refreshBudgets()
-    },
-    [refreshBudgets]
-  )
-
-  const handleClearMemberOverride = useCallback(
-    async (budgetId: string, userId: string) => {
-      await projectBudgetsStore.clearMemberOverride(budgetId, userId)
-      toaster.info('Member override cleared successfully')
+    async (updates: MemberAllocationOverrideUpdate[]) => {
+      try {
+        // Backend rebalances after every request, so changed categories must be sequential.
+        for (const { budgetId, userId, payload, removeOverride } of updates) {
+          if (removeOverride) {
+            // eslint-disable-next-line no-await-in-loop
+            await projectBudgetsStore.clearMemberOverride(budgetId, userId, true)
+          } else {
+            // eslint-disable-next-line no-await-in-loop
+            await projectBudgetsStore.overrideMemberAllocation(budgetId, userId, payload, true)
+          }
+        }
+      } catch (error: any) {
+        // silent=true above suppresses the store's own per-request toast so a multi-category
+        // update doesn't show one per category; surface the backend's specific reason here
+        // instead of a generic message that hides which category failed and why.
+        const message =
+          error?.parsedError?.message ??
+          error?.message ??
+          'Failed to update member budget configuration'
+        toaster.error(message)
+        throw error instanceof Error ? error : new Error(message)
+      }
+      toaster.success('Member budget configuration updated successfully')
       setOverrideContext(null)
       await refreshBudgets()
     },
@@ -570,6 +645,10 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     },
     [project.name]
   )
+
+  const openModelOverrides = useCallback((members: UserListItem[]) => {
+    setModelOverrideUsers(members)
+  }, [])
 
   const customRenderColumns = useMemo(
     () => ({
@@ -589,6 +668,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           </div>
         </div>
       ),
+      modelOverride: (user: UserListItem) =>
+        renderModelOverrideCell(isModelsConfigEnabled && (userModelOverrides[user.id] ?? false)),
       role: (user: UserListItem) => {
         const currentRole = getUserRole(user)
         const isCurrentUser = currentUser?.userId === user.id
@@ -609,7 +690,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
                 disabled={isDisabled}
                 onChange={(e) => handleRoleChange(user, e.value)}
                 options={ROLE_OPTIONS}
-                rootClassName="w-48"
+                rootClassName="w-40"
               />
             </span>
           </div>
@@ -618,8 +699,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       budgets: (user: UserListItem) => (
         <UserBudgetsCell
           user={user}
+          enforceMemberSpendLimits={!!project.enforce_member_spend_limits}
           budgetAllocationLookup={budgetAllocationLookup}
-          spendingRow={spendingByUserId[user.id]}
           onOverride={(userId, category) =>
             setOverrideContext({ userId, userName: user.name, category })
           }
@@ -639,6 +720,35 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             disabled: !budgetsLoaded,
           })
         }
+
+        menuItems.push(
+          {
+            title: 'Details',
+            icon: <InfoSvg className="w-[18px] h-[18px]" />,
+            onClick: () => {
+              if (isUserManagementEnabled()) {
+                router.push({ name: 'administration-users' })
+              } else {
+                toaster.info('Users Management is unavailable in this environment')
+              }
+            },
+          },
+          {
+            title: 'Override budgets',
+            icon: <CurrencySvg className="w-[18px] h-[18px]" />,
+            onClick: () =>
+              setOverrideContext({ userId: user.id, userName: user.name, category: null }),
+            // Member allocation overrides are maintainer-only on the backend; the page passes
+            // `budgets` only to maintainers, so without it there is no dialog to open.
+            hidden: !showBudgets,
+          },
+          {
+            title: 'Override models',
+            icon: <AiGenerateSvg className="w-[18px] h-[18px]" />,
+            onClick: () => openModelOverrides([user]),
+            hidden: !isModelsConfigEnabled,
+          }
+        )
 
         menuItems.push({
           title: 'Unassign from Project',
@@ -664,6 +774,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       canManageProject,
       isPersonal,
       handleDeleteUser,
+      budgetAllocationLookup,
+      openModelOverrides,
       memberBudgets,
       budgetsLoaded,
       router,
@@ -671,8 +783,10 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       isProjectAdmin,
       getUserRole,
       handleRoleChange,
-      budgetAllocationLookup,
-      spendingByUserId,
+      budgets,
+      showBudgets,
+      userModelOverrides,
+      isModelsConfigEnabled,
     ]
   )
 
@@ -705,28 +819,44 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     <>
       <section>
         <div className="flex justify-between items-center mb-5">
-          <div className="text-sm font-semibold text-text-primary">Project members</div>
+          <div>
+            <div className="text-sm font-semibold text-text-primary">Project members</div>
+            <div className="text-xs text-text-quaternary mt-1">
+              {project.user_count} project member{project.user_count === 1 ? '' : 's'}
+            </div>
+          </div>
           {headerActions}
         </div>
 
-        <div className="flex justify-between items-center gap-4 h-10 mb-5">
-          <ProjectMembersFilters onFilterChange={setFilters} />
-          {canManageProject && (
+        <div className="mb-5">
+          <ProjectMembersFilters
+            onFilterChange={handleFiltersChange}
+            isModelsConfigEnabled={isModelsConfigEnabled}
+          />
+        </div>
+
+        {canManageProject && (
+          <div className="mb-4 flex justify-end">
             <ProjectMembersBulkActions
               projectName={project.name}
               selectedUsers={selected}
               currentUserId={currentUser?.userId}
               canManageProject={canManageProject}
               isProjectAdmin={isProjectAdmin}
+              canManageBudgets={canManageProject && !!currentUser?.isMaintainer}
               onClearSelection={clearSelection}
               refresh={refreshFromFirstPage}
               onSuccess={onMembersChanged}
+              onOverrideModels={() => openModelOverrides(selected)}
+              isModelsConfigEnabled={isModelsConfigEnabled}
+              budgets={budgets ?? []}
+              budgetAllocationLookup={budgetAllocationLookup}
             />
-          )}
-        </div>
+          </div>
+        )}
 
         <div ref={tableContainerRef} className="overflow-y-auto show-scroll min-h-0 mb-5 relative">
-          {loading || spendingLoading ? (
+          {loading ? (
             <div className="flex items-center justify-center min-h-[220px]">
               <Spinner inline rootClassName="min-h-0" />
             </div>
@@ -736,7 +866,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
                 <Table
                   idPath="id"
                   {...(canManageProject ? selection : {})}
-                  items={users}
+                  items={visibleUsers}
                   selected={canManageProject ? selected : undefined}
                   columnDefinitions={columnDefinitions}
                   customRenderColumns={customRenderColumns}
@@ -824,9 +954,30 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           initialCategory={overrideContext?.category ?? null}
           onHide={() => setOverrideContext(null)}
           onSubmit={handleOverrideMember}
-          onClearOverride={handleClearMemberOverride}
+          onResetUsage={async () => {
+            const user = users.find((item) => item.id === overrideContext?.userId)
+            setOverrideContext(null)
+            setResetBudgetUser(user ?? null)
+          }}
         />
       )}
+
+      <ResetBudgetPopup
+        isOpen={!!resetBudgetUser}
+        user={resetBudgetUser}
+        onClose={() => setResetBudgetUser(null)}
+        onSave={() => {
+          setResetBudgetUser(null)
+          refreshFromFirstPage()
+        }}
+      />
+
+      <ProjectMemberModelOverrideModal
+        isOpen={modelOverrideUsers.length > 0}
+        users={modelOverrideUsers}
+        projectName={project.name}
+        onClose={() => setModelOverrideUsers([])}
+      />
     </>
   )
 }

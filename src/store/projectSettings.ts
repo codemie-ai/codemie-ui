@@ -20,6 +20,7 @@ import { ProjectSetting } from '@/types/entity/setting'
 import api from '@/utils/api'
 
 const DEFAULT_PER_PAGE = 10
+const ALL_SETTINGS_PAGE_SIZE = 100
 
 interface ProjectSettingsStoreType {
   projectSettings: ProjectSetting[]
@@ -29,6 +30,8 @@ interface ProjectSettingsStoreType {
     perPage?: number,
     filters?: Record<string, unknown>
   ) => Promise<void>
+  /** Every integration of one project; leaves the paginated list state untouched. */
+  listAllProjectSettings: (projectName: string) => Promise<ProjectSetting[]>
   findProjectSetting: (
     projectName: string,
     credentialType: string,
@@ -67,6 +70,25 @@ export const projectSettingsStore = proxy<ProjectSettingsStoreType>({
       totalPages: pagination.pages,
       totalCount: pagination.total,
     }
+  },
+
+  async listAllProjectSettings(projectName) {
+    const filters = encodeURIComponent(JSON.stringify({ project: [projectName] }))
+    const fetchPage = async (page: number) => {
+      const response = await api.get(
+        `v1/settings/project?page=${page}&per_page=${ALL_SETTINGS_PAGE_SIZE}&filters=${filters}`
+      )
+      return response.json() as Promise<{ data: ProjectSetting[]; pagination: { pages: number } }>
+    }
+
+    // Page count is only known after the first response, so page 0 goes first; every remaining
+    // page's filter/sort snapshot is identical, so those can be fetched in parallel.
+    const first = await fetchPage(0)
+    const totalPages = Math.max(1, first.pagination.pages)
+    const rest = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, index) => fetchPage(index + 1))
+    )
+    return [first, ...rest].flatMap((result) => result.data)
   },
 
   async findProjectSetting(projectName, credentialType, alias) {

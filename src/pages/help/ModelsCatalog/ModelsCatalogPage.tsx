@@ -16,8 +16,13 @@
 import { FC, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import { Checkbox } from '@/components/form/Checkbox'
+import Input from '@/components/form/Input'
+import Select from '@/components/form/Select'
 import PageLayout from '@/components/Layouts/Layout'
+import NavigationMore from '@/components/NavigationMore'
 import PremiumModelBadge from '@/components/PremiumModelBadge'
+import BulkActions from '@/components/Table/BulkActions'
 import { appInfoStore } from '@/store/appInfo'
 import { cn } from '@/utils/utils'
 
@@ -27,11 +32,19 @@ import { CHIP_CLASS, PROVIDER_LABELS } from './constants'
 const formatCost = (cost?: { input: number; output: number }) =>
   cost ? `$${(cost.input * 1_000_000).toFixed(2)} / $${(cost.output * 1_000_000).toFixed(2)}` : '—'
 
+const getModelStatus = (model: any) => {
+  if (model.deprecated) return 'deprecated'
+  if (model.disabled) return 'disabled'
+  return 'enabled'
+}
+
 const ModelsCatalogPage: FC = () => {
   const { llmModels, llmRouters, getLLMModels } = useSnapshot(appInfoStore)
   const [search, setSearch] = useState('')
-  const [provider, setProvider] = useState('')
+  const [provider, setProvider] = useState<string | number | null>('all')
   const [premiumOnly, setPremiumOnly] = useState(false)
+  const [status, setStatus] = useState<string | number | null>('all')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     getLLMModels()
@@ -42,17 +55,55 @@ const ModelsCatalogPage: FC = () => {
     [llmModels]
   )
 
+  const statusOptions = useMemo(
+    () => [
+      { label: 'All statuses', value: 'all' },
+      { label: 'Enabled', value: 'enabled' },
+      { label: 'Disabled', value: 'disabled' },
+      { label: 'Deprecated', value: 'deprecated' },
+    ],
+    []
+  )
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return llmModels.filter(
       (m) =>
         (!q || m.label.toLowerCase().includes(q)) &&
-        (!provider || m.provider === provider) &&
-        (!premiumOnly || m.isPremium)
+        (provider === 'all' || m.provider === provider) &&
+        (!premiumOnly || m.isPremium) &&
+        (status === 'all' || getModelStatus(m) === status)
     )
-  }, [llmModels, search, provider, premiumOnly])
+  }, [llmModels, search, provider, premiumOnly, status])
 
   const premiumCount = llmModels.filter((m) => m.isPremium).length
+
+  const toggleSelection = (modelValue: string) => {
+    const next = new Set(selected)
+    if (next.has(modelValue)) next.delete(modelValue)
+    else next.add(modelValue)
+    setSelected(next)
+  }
+
+  const toggleAllVisible = () => {
+    if (selected.size === filtered.length && filtered.length > 0) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(filtered.map((m) => m.value)))
+    }
+  }
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selected.size === 0 || !newStatus) return
+
+    const selectedArray = Array.from(selected)
+    console.log(`Updating ${selectedArray.length} models to status: ${newStatus}`)
+    setSelected(new Set())
+  }
+
+  const handleSingleStatusChange = async (modelValue: string, newStatus: string) => {
+    console.log(`Updating single model ${modelValue} to status: ${newStatus}`)
+  }
 
   return (
     <PageLayout>
@@ -66,91 +117,186 @@ const ModelsCatalogPage: FC = () => {
 
         <RoutersSection routers={[...llmRouters]} />
 
-        <div className="flex items-center gap-3 mb-4 flex-wrap">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search models…"
-            className="bg-surface-base-secondary border border-border-secondary rounded-lg px-3 py-2 text-sm text-text-primary w-60"
-          />
-          <select
-            aria-label="Filter by provider"
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            className="bg-surface-base-secondary border border-border-secondary rounded-lg px-3 py-2 text-sm text-text-primary"
-          >
-            <option value="">All providers</option>
-            {providers.map((p) => (
-              <option key={p} value={p}>
-                {PROVIDER_LABELS[p] ?? p}
-              </option>
-            ))}
-          </select>
-          <label className="flex items-center gap-2 text-sm text-text-primary cursor-pointer">
-            <input
-              type="checkbox"
-              checked={premiumOnly}
-              onChange={(e) => setPremiumOnly(e.target.checked)}
-              aria-label="Premium only"
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              aria-label="Search models"
+              placeholder="Search models"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              rootClass="w-full sm:w-64"
             />
-            <span>Premium only</span>
-          </label>
-          <span className="ml-auto text-xs text-text-quaternary">
-            {filtered.length} models · {premiumCount} premium
-          </span>
+            <Select
+              aria-label="Provider"
+              value={provider}
+              onChangeValue={setProvider}
+              options={[
+                { label: 'All providers', value: 'all' },
+                ...providers.map((p) => ({ label: PROVIDER_LABELS[p] ?? p, value: p })),
+              ]}
+              rootClassName="w-44"
+            />
+            <Select
+              aria-label="Filter by status"
+              value={status}
+              onChangeValue={(value) => setStatus(value ?? 'all')}
+              options={statusOptions}
+              rootClassName="w-44"
+            />
+            <Checkbox
+              label="Premium only"
+              checked={premiumOnly}
+              onChange={setPremiumOnly}
+              rootClassName="self-center"
+            />
+            <span className="ml-auto text-xs text-text-quaternary">
+              {filtered.length} models · {premiumCount} premium
+            </span>
+          </div>
         </div>
 
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-surface-specific-table-header text-text-quaternary text-xs uppercase">
-              <th className="text-left px-3 py-2 font-medium">Model</th>
-              <th className="text-left px-3 py-2 font-medium">Provider</th>
-              <th className="text-left px-3 py-2 font-medium">Capabilities</th>
-              <th className="text-left px-3 py-2 font-medium">Cost / 1M tokens (in / out)</th>
-              <th className="text-left px-3 py-2 font-medium">Default for</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((m) => (
-              <tr
-                key={m.value}
-                className={cn(
-                  'border-b border-border-structural',
-                  m.isPremium && 'bg-yellow-500/5'
-                )}
-              >
-                <td className="px-3 py-2">
-                  <span className="flex items-center gap-2 text-text-primary font-medium">
-                    {m.label}
-                    {m.isPremium && <PremiumModelBadge />}
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-text-tertiary">
-                  {(m.provider && (PROVIDER_LABELS[m.provider] ?? m.provider)) || '—'}
-                </td>
-                <td className="px-3 py-2">
-                  <span className="flex gap-1 flex-wrap">
-                    {m.multimodal && <span className={CHIP_CLASS}>multimodal</span>}
-                    {m.supportsTools && <span className={CHIP_CLASS}>tools</span>}
-                    {m.supportsImageGeneration && <span className={CHIP_CLASS}>image gen</span>}
-                  </span>
-                </td>
-                <td
+        {selected.size > 0 && (
+          <div className="mb-4 flex justify-end">
+            <BulkActions selected={selected.size} onUnselect={() => setSelected(new Set())}>
+              <NavigationMore
+                renderInRoot
+                hideOnClickInside
+                menuClassName="!p-0 !w-auto"
+                customIcon={
+                  <span className="flex items-center gap-2 whitespace-nowrap">Bulk Actions</span>
+                }
+                buttonClassName="!m-0 flex h-7 items-center justify-center gap-1.5 rounded-lg border button bg-button-primary-bg px-2 py-0.5 text-xs font-semibold leading-6 tracking-tight text-text-accent transition-colors whitespace-nowrap hover:bg-button-primary-bg-hover"
+                items={[
+                  {
+                    title: 'Enable',
+                    onClick: () => {
+                      handleBulkStatusChange('enabled')
+                    },
+                  },
+                  {
+                    title: 'Disable',
+                    onClick: () => {
+                      handleBulkStatusChange('disabled')
+                    },
+                  },
+                  {
+                    title: 'Deprecate',
+                    onClick: () => {
+                      handleBulkStatusChange('deprecated')
+                    },
+                  },
+                ]}
+              />
+            </BulkActions>
+          </div>
+        )}
+
+        <div className="overflow-hidden rounded-lg border border-border-structural">
+          <table className="w-full table-fixed text-sm text-left">
+            <colgroup>
+              <col className="w-[4%]" />
+              <col className="w-[24%]" />
+              <col className="w-[14%]" />
+              <col className="w-[14%]" />
+              <col className="w-[24%]" />
+              <col className="w-[20%]" />
+            </colgroup>
+            <thead className="bg-surface-base-secondary text-xs text-text-quaternary border-b border-border-structural">
+              <tr>
+                <th className="w-12 px-4 py-3">
+                  <Checkbox
+                    label=""
+                    checked={selected.size === filtered.length && filtered.length > 0}
+                    mixed={selected.size > 0 && selected.size < filtered.length}
+                    onChange={toggleAllVisible}
+                  />
+                </th>
+                <th className="px-4 py-3 font-medium">Model</th>
+                <th className="px-4 py-3 font-medium">Provider</th>
+                <th className="px-4 py-3 font-medium">Capabilities</th>
+                <th className="px-4 py-3 font-medium whitespace-nowrap">
+                  Cost / 1M tokens (IN / OUT)
+                </th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-structural">
+              {filtered.map((m) => (
+                <tr
+                  key={m.value}
                   className={cn(
-                    'px-3 py-2 font-geist-mono text-xs',
-                    m.isPremium ? 'text-aborted-primary' : 'text-text-primary'
+                    m.isPremium && 'bg-yellow-500/5',
+                    selected.has(m.value) && 'bg-primary-500/10'
                   )}
                 >
-                  {formatCost(m.cost)}
-                </td>
-                <td className="px-3 py-2 text-text-tertiary">
-                  {m.defaultForCategories?.length ? m.defaultForCategories.join(', ') : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <td className="px-4 py-3 align-middle">
+                    <Checkbox
+                      label=""
+                      checked={selected.has(m.value)}
+                      onChange={() => toggleSelection(m.value)}
+                    />
+                  </td>
+                  <td className="break-words px-4 py-3 font-medium text-text-primary">
+                    <span className="flex items-center gap-2">
+                      {m.label}
+                      {m.isPremium && <PremiumModelBadge />}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-text-quaternary">
+                    {(m.provider && (PROVIDER_LABELS[m.provider] ?? m.provider)) || '—'}
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <div className="flex flex-col items-start gap-1">
+                      {m.multimodal || m.supportsTools || m.supportsImageGeneration ? (
+                        <>
+                          {m.multimodal && <span className={CHIP_CLASS}>multimodal</span>}
+                          {m.supportsTools && <span className={CHIP_CLASS}>tools</span>}
+                          {m.supportsImageGeneration && (
+                            <span className={CHIP_CLASS}>image gen</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-text-quaternary">—</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-text-primary">
+                    <div
+                      className="flex items-center font-geist-mono text-xs"
+                      style={{ color: m.isPremium ? '#E6A700' : 'inherit' }}
+                    >
+                      {formatCost(m.cost)}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <Select
+                      value={getModelStatus(m)}
+                      onChangeValue={(value) => {
+                        if (value && value !== getModelStatus(m)) {
+                          handleSingleStatusChange(m.value, value)
+                        }
+                      }}
+                      options={[
+                        { label: 'Enabled', value: 'enabled' },
+                        { label: 'Disabled', value: 'disabled' },
+                        { label: 'Deprecated', value: 'deprecated' },
+                      ]}
+                      rootClassName="min-w-32"
+                    />
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-text-quaternary">
+                    No models match your search or filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </PageLayout>
   )

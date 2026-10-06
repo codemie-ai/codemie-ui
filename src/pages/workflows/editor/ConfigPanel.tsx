@@ -423,12 +423,14 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
             onDelete={onDeleteNode}
             onDuplicate={onDuplicateNode}
             project={project ?? ''}
+            {...{ isGlobal: Boolean(workflow?.is_global) }}
           />
         ),
       }
     }, [
       config,
       project,
+      workflow?.is_global,
       selectedNode,
       updateIssues,
       onUpdateConfig,

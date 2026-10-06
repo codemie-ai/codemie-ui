@@ -147,8 +147,9 @@ const AssistantDetailsSidebarSections = ({
   }, [assistant.context, onContextClick])
 
   const llmModelLabel = useMemo(() => {
-    return assistant.llm_model_type ? appInfoStore.findLLMLabel(assistant.llm_model_type) : null
-  }, [assistant.llm_model_type])
+    const modelValue = assistant.effective_llm_model ?? assistant.llm_model_type
+    return modelValue ? appInfoStore.findLLMLabel(modelValue) : null
+  }, [assistant.effective_llm_model, assistant.llm_model_type, appInfoStore.llmModels])
 
   return (
     <>

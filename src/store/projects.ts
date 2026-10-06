@@ -77,6 +77,11 @@ interface ProjectsStore {
   bulkRemoveUsersFromProject: (projectName: string, userIds: string[]) => Promise<void>
   validateImportUsers: (projectId: string, formData: FormData) => Promise<ImportValidationResult>
   importUsers: (projectId: string, formData: FormData) => Promise<ImportUsersResult>
+  updateAllowedModels: (
+    projectName: string,
+    allowedModels: string[] | null,
+    defaultModel?: string | null
+  ) => Promise<ProjectDetail>
 }
 
 const DEFAULT_PAGE = 0
@@ -433,6 +438,56 @@ export const projectsStore = proxy<ProjectsStore>({
       const contextualError = error.response?.data?.message ?? error.message
       this.error = `Failed to bulk remove users: ${contextualError}`
       console.error('Projects Store Error (bulkRemoveUsersFromProject):', error)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async updateAllowedModels(
+    projectName: string,
+    allowedModels: string[] | null,
+    defaultModel?: string | null
+  ) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const payload: any = { allowed_models: allowedModels }
+      if (defaultModel) {
+        payload.default_model = defaultModel
+      }
+
+      const response = await api.patch(
+        `v1/projects/${encodeURIComponent(projectName)}/allowed-models`,
+        payload,
+        {
+          // Prevent api.handleError() from showing its own toaster.error(...)
+          // (otherwise UI catch() also shows toast -> duplicates)
+          skipErrorHandling: true,
+        }
+      )
+      const result = await response.json()
+
+      const project = {
+        ...result,
+        id: result.name,
+      }
+
+      const index = this.projects.findIndex((p) => p.id === project.id)
+      if (index !== -1) {
+        this.projects[index] = project
+      }
+
+      if (this.selectedProject?.id === project.id) {
+        this.selectedProject = project
+      }
+
+      return project
+    } catch (error: any) {
+      const contextualError = error.response?.data?.message ?? error.message
+      this.error = `Failed to update allowed models: ${contextualError}`
+      console.error('Projects Store Error (updateAllowedModels):', error)
       throw error
     } finally {
       this.loading = false

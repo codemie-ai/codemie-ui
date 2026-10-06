@@ -75,6 +75,7 @@ interface NavigationMoreProps {
   onOpenChange?: (open: boolean) => void
   className?: string
   buttonClassName?: string
+  menuClassName?: string
   'data-tooltip-content'?: string
   contextId?: string
 }
@@ -91,6 +92,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   autoAlignment,
   className,
   buttonClassName,
+  menuClassName,
   onClick,
   onOpenChange,
   'data-tooltip-content': dataTooltipContent,
@@ -155,7 +157,10 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
       >
         <div
           id={menuId}
-          className="z-50 flex w-max min-w-44 max-w-[calc(100vw-1rem)] flex-col rounded-lg border border-border-structural bg-surface-base-secondary px-2 py-2"
+          className={cn(
+            'z-50 flex w-max min-w-44 max-w-[calc(100vw-1rem)] flex-col rounded-lg border border-border-structural bg-surface-base-secondary px-2 py-2',
+            menuClassName
+          )}
           role="menu"
           aria-label="Options"
         >

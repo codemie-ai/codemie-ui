@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "generated": "2026-09-24T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 5, "label": "XL" }
+  },
+  "total": 26,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 63,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Spans two repositories: backend storage/API/policy/runtime-guard (4 new/changed backend modules) plus frontend Models tab, member-override modal, six model-picker consumers (chat prompt/config, assistant form, two workflow-editor forms), Overview indicators, and IA/permission fixes. Full-stack across two applications sharing one API contract — XL, not XXL, since it is one product's two repos with an internal contract, not multiple external services."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "New access-control surface: the first review round found two real information-disclosure gaps (an unauthenticated project-model probe, member_overrides leaked to non-managers) plus a fallback-resolution bug that could have left a live agent constructed with an unresolved model. Security-sensitive, on a path that affects live agent construction — XL."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "63 files changed across both repos (git diff --stat vs main): 55 in codemie-ui, 8 in codemie. Well past the 16+/6+ new files XXL threshold — driven by the number of model-picker consumers touched plus the pre-existing budget/member-management work carried in the same MR by explicit user direction."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Ticket had 11 acceptance criteria but no attachments, comments, or linked spec; criterion 3's 'clients' scope was undefined and remains unresolved (flagged partial in every review pass). Existing patterns (the chargeback JSONB-column precedent, the existing GET /v1/llm_models endpoint) applied directly once found, keeping this at L rather than XL."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "UI + API + service/policy + persistence (new column + migration) + the runtime agent-construction layer, plus a cross-cutting concern (authorization) added to two endpoints mid-implementation. XL: full stack plus a cross-cutting concern, per the dimension's own XL example."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

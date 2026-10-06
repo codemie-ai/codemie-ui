@@ -1,0 +1,136 @@
+{
+  "decision": "request-changes",
+  "confidence": "high",
+  "rationale": "First full review round, run against branch Variant-1-Project-Hub at 1f045ba64 (codemie-ui) and EPMCDME-14781_project-model-settings at 7476f850b (codemie backend) — the state after the acceptance-criteria implementation but before any review fix-up. Six parallel finder lenses (blind scan, removed-behavior audit, cross-file trace, reuse/simplification/efficiency, altitude/conventions on the UI diff; one combined-angle pass on the backend diff) produced ~24 deduplicated candidates. Four 1-vote verifiers (recall-biased) covering every candidate confirmed 22 and refuted 2 (a claimed stale-data race in projectModelSettingsStore.saveMemberOverrides — refuted, it re-fetches fresh server state; a claimed redundant per-category `reason` write in BulkBudgetOverrideModal — refuted, required for correct per-category submission against a shared input field). Per the ranking rule, correctness/security findings outrank cleanup findings when a cap forces a cut; ranked by severity, the 10 emitted below are the blocking set (2 security, 8 correctness) and 12 confirmed cleanup/duplication findings were reported separately as non-blocking.",
+  "risk_flags": ["security"],
+  "business_review": [
+    { "criterion": "Updated Project Details information architecture is provided", "status": "pass", "notes": "Overview/Members/Models/Budgets/Integrations tabs, each gated to the viewer's actual permission; Budgets tab route no longer redirects away." },
+    { "criterion": "UX supports project-level model allow-list or deny-list management", "status": "pass", "notes": "Models tab persists mode/models to PUT /v1/projects/{name}/model-settings." },
+    { "criterion": "Design supports restricting models for selected projects or clients", "status": "partial", "notes": "Per-project restriction is implemented; the platform has no 'client' entity separate from project, so that half of the criterion is not addressed and needs product clarification." },
+    { "criterion": "Design supports hiding expensive models from selected projects", "status": "pass", "notes": "hide_premium_models flag, backed by the platform's existing premium-model alias config; no longer a hardcoded label list." },
+    { "criterion": "Model restrictions represented wherever a model can be selected (chats, assistants, workflows)", "status": "pass", "notes": "GET /v1/llm_models?project= filters the list; chat, assistant-form, and workflow-editor selectors resolve project and call it via useProjectLLMModels. (Blocking finding CR-002 below shows this endpoint itself was not yet access-checked at this round.)" },
+    { "criterion": "UX supports enabling or disabling automatic model routing for a project", "status": "pass", "notes": "auto_routing_enabled switch on the Models tab, with per-router availability shown." },
+    { "criterion": "Automatic routing respects project model-availability restrictions", "status": "pass", "notes": "A Switchyard router is offered only when both its capable/efficient candidates are allowed; a LiteLLM auto-router only when the project restricts nothing, since its candidates aren't visible to CodeMie." },
+    { "criterion": "Project Overview is compact and easy to scan", "status": "pass", "notes": "Existing card layout preserved; new indicators follow the same card pattern." },
+    { "criterion": "Project Overview represents users, spend/budgets, model usage/distribution, integrations, routing impact", "status": "pass", "notes": "Added model-availability, 30-day model-usage, integrations-count, and routing-impact cards alongside the existing users/spend/budget cards; routing card is gated behind the routing-analytics feature flag." },
+    { "criterion": "Structure supports adding future project-level capabilities without a full redesign", "status": "pass", "notes": "Each tab is one route id, one PROJECT_DETAILS_TABS entry, and one render branch; adding e.g. MCP follows the same three-point pattern." },
+    { "criterion": "Design unblocks model-related work first while remaining extensible for integrations, MCP, budgets", "status": "partial", "notes": "Model work is fully implemented, but the MR (by explicit user direction, kept from the prior designer-approved redesign) also ships substantial budget/member-management work; there is no MCP section or placeholder yet." }
+  ],
+  "standards_review": [
+    { "standard": "commit-format", "status": "pass", "notes": "All commits on both branches use the 'EPMCDME-14781: ...' prefix." },
+    { "standard": "code-quality", "status": "pass", "notes": "npx tsc --noEmit and eslint clean on every changed frontend file; ruff check/format clean on every changed backend file." },
+    { "standard": "security", "status": "fail", "notes": "CR-001 and CR-002 below are concrete access-control gaps in the new endpoints." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/codemie/rest_api/routers/projects.py",
+      "line": 1424,
+      "title": "Model-settings GET leaks peer member_overrides to any project member",
+      "problem": "get_project_model_settings() gates only on Action.READ, which any regular project member (Role.SHARED_WITH) satisfies, and returns the full ProjectModelSettings including member_overrides verbatim.",
+      "impact": "A non-admin member calling this endpoint can see every other member's user_id, disabled_models, and default_model — an information disclosure of peer-level administrative restrictions.",
+      "recommendation": "Strip member_overrides from the response for callers who cannot manage the project (i.e. lack Action.WRITE)."
+    },
+    {
+      "id": "CR-002",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/codemie/rest_api/routers/llm_models.py",
+      "line": 41,
+      "title": "GET /v1/llm_models?project= has no membership check",
+      "problem": "get_llm_models() loads and applies an arbitrary caller-supplied project's model_settings with no project_access_check(), unlike assistant.py's create/update_assistant which check access before consulting the same service.",
+      "impact": "Any authenticated user can pass a project name they do not belong to and learn its model policy (allow/deny list, hidden premium models, resolved default) from the response shape.",
+      "recommendation": "Call project_access_check(user, project) before loading settings, matching the pattern already used elsewhere in the codebase."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/service/project/project_model_settings_service.py",
+      "line": 181,
+      "title": "resolve_runtime_model returns the unresolved value instead of the fallback",
+      "problem": "`effective = requested or llm_service.default_llm_model` computes the model to actually use, but the allowed-model branch returns `requested` (possibly None/empty) instead of `effective`.",
+      "impact": "When the caller passed no model, the fallback this function exists to provide is defeated: `None` propagates into agent construction instead of the resolved default.",
+      "recommendation": "Return `effective`, not `requested`, on the allowed-model path."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/__tests__/ProjectDetailsPage.test.tsx",
+      "line": 289,
+      "title": "Test still asserts the old tab-specific unavailable copy",
+      "problem": "The unavailable-tab placeholder text was generalized to \"This section is not available for personal projects.\" but the test still asserts \"Members are not available for personal projects.\"",
+      "impact": "Confirmed failing; breaks CI on this branch.",
+      "recommendation": "Update the assertion to the new copy."
+    },
+    {
+      "id": "CR-005",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/user.ts",
+      "line": 680,
+      "title": "bulkResetBudgets resolves even when every reset failed",
+      "problem": "Switched to Promise.allSettled and never throws when all per-user requests fail — it only shows a toaster.error.",
+      "impact": "BulkResetBudgetsPopup awaits the call with no exception, so it clears selection and refreshes as if the reset succeeded, alongside a contradictory error toast.",
+      "recommendation": "Throw when nothing succeeded so the caller does not treat the batch as completed."
+    },
+    {
+      "id": "CR-006",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/ProjectMemberModelOverrideModal.tsx",
+      "line": 189,
+      "title": "Bulk model override can save a default that the same edit just disabled",
+      "problem": "buildUserOverride preserves a member's stale default_model verbatim during bulk edits even when the admin's bulk toggle just disabled that exact model for them.",
+      "impact": "The saved override can have default_model equal to a model also present in disabled_models for that user — an internally inconsistent state that nothing blocks saving.",
+      "recommendation": "Re-validate the carried-forward default against the newly computed disabled set before saving; fall back to null (project default) if it's now disabled."
+    },
+    {
+      "id": "CR-007",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 623,
+      "title": "Budget override errors collapse to one generic toast",
+      "problem": "handleOverrideMember calls store methods with silent=true and replaces any thrown error with a hardcoded generic message.",
+      "impact": "The backend's specific rejection reason (e.g. allocation exceeds available budget, 409 conflict) is discarded, leaving the admin no indication which category failed or why.",
+      "recommendation": "Surface the caught error's own message (parsedError.message / message) instead of a hardcoded string."
+    },
+    {
+      "id": "CR-008",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 156,
+      "title": "Budget allocations cell can render blank",
+      "problem": "UserBudgetsCell dropped the guard that rendered an explicit placeholder when no category had allocation data; the new per-category filter can leave zero rows.",
+      "impact": "A member with no budget_assignments and no allocation lookup entry (e.g. a non-maintainer viewer, or a newly added member) sees an empty cell instead of a placeholder.",
+      "recommendation": "Render a placeholder when the filtered row list is empty."
+    },
+    {
+      "id": "CR-009",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/projectsManagement/BudgetOverrideCategoryCard.tsx",
+      "line": 98,
+      "title": "Undo control disappears after \"Use project allocation\"",
+      "problem": "hasCategoryAction is gated on allocationState === 'override' only, so once a category flips to 'pending-project' the action button (which the parent still wires as an undo handler for that state) is hidden.",
+      "impact": "After clicking \"Use project allocation\", the admin has no button-based way to undo the choice before saving.",
+      "recommendation": "Also show the action button for 'pending-project', with a label reflecting the undo action."
+    },
+    {
+      "id": "CR-010",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectBudgetsSection.tsx",
+      "line": 96,
+      "title": "\"View details\" override button is a no-op",
+      "problem": "OverridesSummary's \"View details\" button has an empty onClick handler.",
+      "impact": "Any category card with overrides shows a clickable control that does nothing, with no way to reach per-member override detail from that entry point.",
+      "recommendation": "Wire it to navigate to the Members tab (or a dedicated overrides view)."
+    }
+  ]
+}

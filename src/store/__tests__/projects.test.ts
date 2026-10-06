@@ -630,4 +630,135 @@ describe('projectsStore', () => {
       expect(projectsStore.loading).toBe(false)
     })
   })
+
+  describe('updateAllowedModels', () => {
+    it('should call PATCH endpoint with allowed_models payload', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({
+          name: 'test-project',
+          allowed_models: ['model-1', 'model-2'],
+        }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateAllowedModels('test-project', ['model-1', 'model-2'])
+
+      expect(mockPatch).toHaveBeenCalledWith(
+        'v1/projects/test-project/allowed-models',
+        {
+          allowed_models: ['model-1', 'model-2'],
+        },
+        { skipErrorHandling: true }
+      )
+    })
+
+    it('should update cached project data after successful update', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({
+          name: 'test-project',
+          allowed_models: ['model-1'],
+        }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      projectsStore.projects = [
+        { id: 'test-project', name: 'test-project', description: '' } as any,
+      ]
+      await projectsStore.updateAllowedModels('test-project', ['model-1'])
+
+      const updated = projectsStore.projects.find((p) => p.id === 'test-project')
+      expect((updated as any)?.allowed_models).toEqual(['model-1'])
+    })
+
+    it('should update selectedProject if it matches', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({
+          name: 'test-project',
+          allowed_models: ['model-1'],
+        }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      projectsStore.selectedProject = {
+        id: 'test-project',
+        name: 'test-project',
+        description: '',
+      } as any
+      await projectsStore.updateAllowedModels('test-project', ['model-1'])
+
+      expect((projectsStore.selectedProject as any)?.allowed_models).toEqual(['model-1'])
+    })
+
+    it('should URL-encode project name for special characters', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({
+          name: 'project with spaces',
+          allowed_models: ['model-1'],
+        }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateAllowedModels('project with spaces', ['model-1'])
+
+      const url = mockPatch.mock.calls[0][0] as string
+      expect(url).toContain('project%20with%20spaces')
+    })
+
+    it('should accept null for allowed_models (all models allowed)', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({
+          name: 'test-project',
+          allowed_models: null,
+        }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateAllowedModels('test-project', null)
+
+      expect(mockPatch).toHaveBeenCalledWith(
+        'v1/projects/test-project/allowed-models',
+        {
+          allowed_models: null,
+        },
+        { skipErrorHandling: true }
+      )
+    })
+
+    it('should throw error when PATCH fails', async () => {
+      mockPatch.mockRejectedValue(new Error('Network error'))
+
+      const { projectsStore } = await import('@/store/projects')
+      await expect(projectsStore.updateAllowedModels('test-project', ['model-1'])).rejects.toThrow(
+        'Network error'
+      )
+      expect(projectsStore.loading).toBe(false)
+    })
+
+    it('should set error message on API failure', async () => {
+      mockPatch.mockRejectedValue(new Error('Update failed'))
+
+      const { projectsStore } = await import('@/store/projects')
+      try {
+        await projectsStore.updateAllowedModels('test-project', ['model-1'])
+      } catch {
+        // expected
+      }
+      expect(projectsStore.error).toContain('Failed to update allowed models')
+    })
+
+    it('should return the updated project with id set to name', async () => {
+      mockPatch.mockResolvedValue({
+        json: async () => ({
+          name: 'test-project',
+          allowed_models: ['model-1'],
+        }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      const result = await projectsStore.updateAllowedModels('test-project', ['model-1'])
+
+      expect((result as any).id).toBe('test-project')
+      expect((result as any).allowed_models).toEqual(['model-1'])
+    })
+  })
 })

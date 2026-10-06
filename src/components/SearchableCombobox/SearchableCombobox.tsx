@@ -66,6 +66,8 @@ export interface SearchableComboboxProps<T> {
   disabled?: boolean
   /** Ref to the trigger element. When provided, focus returns to it when the overlay closes. */
   triggerRef?: RefObject<HTMLElement | null>
+  /** Called when the dropdown panel opens */
+  onOpen?: () => void
 }
 
 const SearchableCombobox = <T,>({
@@ -88,6 +90,7 @@ const SearchableCombobox = <T,>({
   contentClassName,
   disabled = false,
   triggerRef,
+  onOpen,
 }: SearchableComboboxProps<T>) => {
   const overlayRef = useRef<OverlayPanel>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -143,6 +146,7 @@ const SearchableCombobox = <T,>({
   const handleOverlayShow = () => {
     setHighlightedIndex(0)
     onSearchChange('')
+    onOpen?.()
     setTimeout(() => searchInputRef.current?.focus(), 50)
   }
 

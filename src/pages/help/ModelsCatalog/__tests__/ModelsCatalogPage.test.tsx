@@ -76,7 +76,7 @@ describe('ModelsCatalogPage', () => {
   it('filters by search text', () => {
     render(<ModelsCatalogPage />)
 
-    fireEvent.change(screen.getByPlaceholderText('Search models…'), { target: { value: 'opus' } })
+    fireEvent.change(screen.getByPlaceholderText('Search models'), { target: { value: 'opus' } })
 
     expect(screen.getByText('Claude Opus 4.1')).toBeInTheDocument()
     expect(screen.queryByText('GPT-4o')).not.toBeInTheDocument()

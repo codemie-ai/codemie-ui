@@ -110,7 +110,7 @@ interface UserStoreType {
   bulkAssignToProject: (userIds: string[], projectName: string, role: string) => Promise<void>
   bulkUnassignFromProject: (userIds: string[], projectName: string) => Promise<void>
   bulkSetBudgets: (userIds: string[], assignments: BudgetAssignment[]) => Promise<void>
-  resetUserBudget: (userId: string, categories?: string[]) => Promise<void>
+  resetUserBudget: (userId: string, categories?: string[], silent?: boolean) => Promise<void>
   bulkResetBudgets: (userIds: string[], categories?: string[]) => Promise<void>
 }
 
@@ -661,7 +661,7 @@ export const userStore = proxy<UserStoreType>({
     }
   },
 
-  async resetUserBudget(userId, categories) {
+  async resetUserBudget(userId, categories, silent = false) {
     const body = categories?.length ? { categories } : {}
     try {
       const response = await api.post(
@@ -670,9 +670,9 @@ export const userStore = proxy<UserStoreType>({
         { skipErrorHandling: true }
       )
       if (response.status !== 204) await response.json()
-      toaster.info('Budget reset successfully')
+      if (!silent) toaster.info('Budget usage reset successfully.')
     } catch (error) {
-      toaster.error('Failed to reset budget')
+      if (!silent) toaster.error('Failed to reset budget')
       throw error
     }
   },
@@ -680,18 +680,28 @@ export const userStore = proxy<UserStoreType>({
   async bulkResetBudgets(userIds, categories) {
     const body = categories?.length ? { categories } : {}
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         userIds.map((id) =>
-          api
-            .post(`v1/admin/users/${encodeURIComponent(id)}/budgets/reset`, body, {
-              skipErrorHandling: true,
-            })
-            .then((r) => (r.status !== 204 ? r.json() : undefined))
+          api.post(`v1/admin/users/${encodeURIComponent(id)}/budgets/reset`, body, {
+            skipErrorHandling: true,
+          })
         )
       )
-      toaster.info(`Reset budgets for ${userIds.length} user(s) successfully`)
+      const succeeded = results.filter((result) => result.status === 'fulfilled').length
+      const failed = userIds.length - succeeded
+      if (!failed) {
+        toaster.info(`Budget usage reset for ${userIds.length} users.`)
+      } else if (succeeded) {
+        toaster.info(
+          `Budget usage reset for ${succeeded} of ${userIds.length} users. ${failed} failed.`
+        )
+      } else {
+        // Nothing succeeded: throw so the caller does not treat this as a completed reset
+        // (e.g. clearing selection or refreshing as if the data actually changed).
+        throw new Error(`Failed to reset budget usage for ${userIds.length} users.`)
+      }
     } catch (error) {
-      toaster.error('Failed to reset budgets for some users')
+      toaster.error(`Failed to reset budget usage for ${userIds.length} users.`)
       throw error
     }
   },

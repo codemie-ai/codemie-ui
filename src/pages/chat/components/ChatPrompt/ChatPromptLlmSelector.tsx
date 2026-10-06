@@ -24,6 +24,8 @@ import SearchableCombobox, { ComboboxItem } from '@/components/SearchableCombobo
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { appInfoStore } from '@/store/appInfo'
 import { chatsStore } from '@/store/chats'
+import { projectsStore } from '@/store/projects'
+import toaster from '@/utils/toaster'
 import { composeRowTooltip } from '@/utils/tooltipContent'
 import { cn } from '@/utils/utils'
 
@@ -34,7 +36,7 @@ interface ChatPromptLlmSelectorProps {
 type LlmValue = string | null
 
 const ASSISTANT_DEFAULT_VALUE = null
-const ASSISTANT_DEFAULT_LABEL = 'Assistant Default'
+const ASSISTANT_DEFAULT_LABEL = 'Default'
 const MAX_LABEL_LENGTH = 18
 
 const LISTBOX_ID = 'chat-llm-selector-listbox'
@@ -134,14 +136,46 @@ const ModelOptionRow: FC<{
 
 const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = false }) => {
   const [search, setSearch] = useState('')
+  const [projectDefaultModelId, setProjectDefaultModelId] = useState<string | null>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const notifiedModelIdRef = useRef<string | null>(null)
 
   const { llmModels, llmRouters, getLLMModels } = useSnapshot(appInfoStore)
-  const { currentChat, updateChat } = useSnapshot(chatsStore) as typeof chatsStore
+  const { currentChat, filteredModels: projectFilteredModels, updateChat } = useSnapshot(chatsStore)
 
+  // Only fetch global models when there is no project context.
+  // For project chats we must display project-scoped models only.
   useEffect(() => {
-    getLLMModels()
-  }, [])
+    if (!currentChat?.projectId) getLLMModels()
+  }, [currentChat?.projectId, getLLMModels])
+
+  // Fetch filtered models when projectId changes
+  useEffect(() => {
+    if (!currentChat) return
+    chatsStore.getModelsForCurrentChat().catch(() => {})
+  }, [currentChat?.id, currentChat?.projectId])
+
+  // Fetch project default model on initial load
+  useEffect(() => {
+    if (!currentChat?.projectId) return
+    const fetchDefaultModel = async () => {
+      try {
+        const project = await projectsStore.getProject(currentChat.projectId)
+        setProjectDefaultModelId(project.default_model ?? null)
+      } catch (error) {
+        console.error('Failed to fetch project default model:', error)
+      }
+    }
+    fetchDefaultModel()
+  }, [currentChat?.projectId])
+
+  const projectId = currentChat?.projectId
+
+  // IMPORTANT: never fall back to global model list for project chats.
+  const modelsToDisplay = useMemo(() => {
+    if (projectId) return projectFilteredModels
+    return llmModels
+  }, [projectId, projectFilteredModels, llmModels])
 
   // A router marked default wins, matching the backend's router-first global default.
   // It is recommended on its own row in the Routers section, so no model row is.
@@ -149,23 +183,43 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
 
   const defaultModel = useMemo(() => {
     if (defaultRouter) return null
-    return llmModels.find((m) => m.isDefault) ?? llmModels[0] ?? null
-  }, [llmModels, defaultRouter])
+    return modelsToDisplay.find((m) => m.isDefault) ?? modelsToDisplay[0] ?? null
+  }, [modelsToDisplay, defaultRouter])
 
   const selectedModel = useMemo(() => {
     if (!currentChat?.llmModel) return null
     return (
-      llmModels.find((m) => m.value === currentChat.llmModel) ??
+      modelsToDisplay.find((m) => m.value === currentChat.llmModel) ??
       llmRouters.find((r) => r.value === currentChat.llmModel) ??
       null
     )
-  }, [currentChat?.llmModel, llmModels, llmRouters])
+  }, [currentChat?.llmModel, modelsToDisplay, llmRouters])
 
-  const filteredModels = useMemo(() => {
-    if (!search.trim()) return llmModels
+  // A model the project's model settings hid after it was picked would otherwise read as
+  // "Default" here while the backend quietly ran a different model; say so and clear it.
+  const unavailableModel =
+    currentChat?.llmModel && modelsToDisplay.length > 0 && !selectedModel
+      ? currentChat.llmModel
+      : null
+  const announcedUnavailableRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!unavailableModel || !currentChat) return
+    // The snapshot re-renders before updateChat lands; announce each chat/model pair once.
+    const key = `${currentChat.id}:${unavailableModel}`
+    if (announcedUnavailableRef.current === key) return
+    announcedUnavailableRef.current = key
+    const scope = currentChat.project ? ` in project ${currentChat.project}` : ''
+    toaster.info(
+      `Model ${unavailableModel} is not available${scope}. The default model will be used.`
+    )
+    updateChat(currentChat.id, { llmModel: null })
+  }, [unavailableModel, currentChat, updateChat])
+
+  const filteredSearchResults = useMemo(() => {
+    if (!search.trim()) return modelsToDisplay
     const q = search.toLowerCase()
-    return llmModels.filter((m) => m.label.toLowerCase().includes(q))
-  }, [llmModels, search])
+    return modelsToDisplay.filter((m) => m.label.toLowerCase().includes(q))
+  }, [modelsToDisplay, search])
 
   const filteredRouters = useMemo(() => {
     if (!search.trim()) return llmRouters
@@ -193,25 +247,44 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     if (isGrouped && !search && defaultModel) {
       list.push({ id: OPTION_ID_RECOMMENDED, value: defaultModel.value })
     }
-    filteredModels.forEach((m) => {
+    filteredSearchResults.forEach((m) => {
       list.push({ id: optionIdForModel(m.value), value: m.value })
     })
     return list
-  }, [search, defaultModel, filteredRouters, filteredModels, isGrouped])
+  }, [search, defaultModel, filteredRouters, filteredSearchResults, isGrouped])
 
   const isDefaultSelected = !currentChat?.llmModel
 
   const handleSelect = (value: LlmValue) => {
     if (!currentChat) return
-    updateChat(currentChat.id, { llmModel: value })
+    chatsStore.updateChat(currentChat.id, { llmModel: value })
     setSearch('')
+  }
+
+  const handleDropdownOpen = async () => {
+    if (!currentChat?.projectId) return
+    try {
+      const project = await projectsStore.getProject(currentChat.projectId)
+      const newDefaultId = project.default_model ?? null
+
+      if (newDefaultId !== projectDefaultModelId && notifiedModelIdRef.current !== newDefaultId) {
+        const modelName =
+          modelsToDisplay.find((m) => m.value === newDefaultId)?.label ?? newDefaultId ?? 'Unknown'
+        toaster.success(`Default model updated to ${modelName}. Default has been updated.`)
+        notifiedModelIdRef.current = newDefaultId
+      }
+
+      setProjectDefaultModelId(newDefaultId)
+    } catch (error) {
+      console.error('Failed to sync project default model:', error)
+    }
   }
 
   const isOptionSelected = (item: ComboboxItem<LlmValue>) => {
     return (currentChat?.llmModel ?? null) === item.value
   }
 
-  const triggerLabel = selectedModel ? truncateLabel(selectedModel.label) : 'Default'
+  const triggerLabel = selectedModel ? truncateLabel(selectedModel.label) : ASSISTANT_DEFAULT_LABEL
   const showPremiumBadge = selectedModel?.isPremium ?? false
   // When the badge is shown it already anchors the premium tooltip; a second
   // anchor on the surrounding button made the tooltip flicker as the pointer
@@ -270,8 +343,8 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     let firstModelsSectionItemId: string | null = null
     if (!search && defaultModel) {
       firstModelsSectionItemId = OPTION_ID_RECOMMENDED
-    } else if (filteredModels.length > 0) {
-      firstModelsSectionItemId = optionIdForModel(filteredModels[0].value)
+    } else if (filteredSearchResults.length > 0) {
+      firstModelsSectionItemId = optionIdForModel(filteredSearchResults[0].value)
     }
 
     if (firstModelsSectionItemId && item.id === firstModelsSectionItemId) {
@@ -316,7 +389,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
         />
       )
     }
-    const model = llmModels.find((m) => m.value === item.value)
+    const model = modelsToDisplay.find((m) => m.value === item.value)
     if (!model) return null
     return (
       <ModelOptionRow
@@ -355,6 +428,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
       optionClassName={optionClassName}
       contentClassName={PANEL_CONTENT_CLASS}
       disabled={disabled}
+      onOpen={handleDropdownOpen}
     />
   )
 }

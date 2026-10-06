@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 
 import { Checkbox } from '@/components/form/Checkbox'
 import Popup from '@/components/Popup'
@@ -29,7 +29,9 @@ interface ResetBudgetPopupProps {
 }
 
 const ResetBudgetPopup: FC<ResetBudgetPopupProps> = ({ isOpen, user, onClose, onSave }) => {
-  const [selectedCategories, setSelectedCategories] = useState<BudgetCategory[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<BudgetCategory[]>(
+    BUDGET_CATEGORY_OPTIONS.map((option) => option.value)
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleToggleCategory = (category: BudgetCategory) => {
@@ -38,13 +40,19 @@ const ResetBudgetPopup: FC<ResetBudgetPopupProps> = ({ isOpen, user, onClose, on
     )
   }
 
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedCategories(BUDGET_CATEGORY_OPTIONS.map((option) => option.value))
+    }
+  }, [isOpen])
+
   const handleClose = () => {
-    setSelectedCategories([])
+    setSelectedCategories(BUDGET_CATEGORY_OPTIONS.map((option) => option.value))
     onClose()
   }
 
   const handleSubmit = async () => {
-    if (!user) return
+    if (!user || selectedCategories.length === 0) return
     setIsSubmitting(true)
     try {
       const categories = selectedCategories.length > 0 ? selectedCategories : undefined
@@ -63,7 +71,7 @@ const ResetBudgetPopup: FC<ResetBudgetPopupProps> = ({ isOpen, user, onClose, on
       header="Reset Budget"
       className="w-[480px]"
       submitText="Reset"
-      submitDisabled={isSubmitting}
+      submitDisabled={isSubmitting || selectedCategories.length === 0}
       visible={isOpen}
       onHide={handleClose}
       onSubmit={handleSubmit}
@@ -75,16 +83,14 @@ const ResetBudgetPopup: FC<ResetBudgetPopupProps> = ({ isOpen, user, onClose, on
         </p>
 
         <div>
-          <p className="text-xs text-text-quaternary mb-2">
-            Select categories to reset (leave all unchecked to reset all categories):
-          </p>
+          <p className="text-xs text-text-quaternary mb-2">Select categories to reset:</p>
           <div className="flex flex-col gap-2">
             {BUDGET_CATEGORY_OPTIONS.map((option) => (
               <Checkbox
                 key={option.value}
                 label={option.label}
                 checked={selectedCategories.includes(option.value)}
-                onChange={() => handleToggleCategory(option.value as BudgetCategory)}
+                onChange={() => handleToggleCategory(option.value)}
               />
             ))}
           </div>

@@ -130,6 +130,13 @@ const ChatPage: FC = () => {
     }
   }, [chatId])
 
+  // Fetch filtered models when currentChat or its projectId changes
+  useEffect(() => {
+    if (currentChat?.projectId) {
+      chatsStore.getModelsForCurrentChat()
+    }
+  }, [currentChat?.projectId])
+
   useWorkflowExecutionPoll(chatId)
 
   useChatAuthCallbacks(currentChat)

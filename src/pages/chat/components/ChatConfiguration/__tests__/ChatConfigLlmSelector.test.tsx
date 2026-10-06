@@ -26,6 +26,7 @@ const { mockChatsStore, mockAppInfoStore } = vi.hoisted(() => {
   return {
     mockChatsStore: {
       currentChat: null as Conversation | null,
+      filteredModels: [] as { label: string; value: string; isDefault?: boolean }[],
       updateChat: vi.fn(),
     },
     mockAppInfoStore: {
@@ -35,8 +36,10 @@ const { mockChatsStore, mockAppInfoStore } = vi.hoisted(() => {
         { label: 'Claude-2', value: 'claude-2', isDefault: false },
       ],
       llmRouters: [],
+      projectLlmModels: {} as Record<string, { label: string; value: string }[]>,
       imageGenerationModels: [{ label: 'GPT Image 1', value: 'gpt-image-1', isDefault: true }],
       getLLMModels: vi.fn(),
+      getProjectLLMModels: vi.fn(),
       getImageGenerationModels: vi.fn(),
     },
   }
@@ -66,6 +69,7 @@ const mockChat: Conversation = {
   llmModel: 'gpt-4',
   isGroup: false,
   assistantData: [],
+  projectId: 'project-123',
 } as unknown as Conversation
 
 const mockChatNoModel: Conversation = {
@@ -74,6 +78,7 @@ const mockChatNoModel: Conversation = {
   llmModel: null,
   isGroup: false,
   assistantData: [],
+  projectId: 'project-456',
 } as unknown as Conversation
 
 describe('ChatConfigLlmSelector', () => {
@@ -81,8 +86,20 @@ describe('ChatConfigLlmSelector', () => {
     vi.clearAllMocks()
     mockChatsStore.currentChat = mockChat
     mockChatsStore.updateChat = vi.fn()
-    mockAppInfoStore.getLLMModels = vi.fn()
-    mockAppInfoStore.getImageGenerationModels = vi.fn()
+    mockAppInfoStore.projectLlmModels = {}
+    mockAppInfoStore.getLLMModels = vi.fn().mockResolvedValue([
+      { label: 'GPT-4', value: 'gpt-4', isDefault: true },
+      { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
+      { label: 'Claude-2', value: 'claude-2', isDefault: false },
+    ])
+    mockAppInfoStore.getProjectLLMModels = vi.fn().mockResolvedValue([
+      { label: 'GPT-4', value: 'gpt-4', isDefault: true },
+      { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
+      { label: 'Claude-2', value: 'claude-2', isDefault: false },
+    ])
+    mockAppInfoStore.getImageGenerationModels = vi
+      .fn()
+      .mockResolvedValue([{ label: 'GPT Image 1', value: 'gpt-image-1', isDefault: true }])
   })
 
   it('does not render when currentChat is null', () => {
@@ -106,11 +123,11 @@ describe('ChatConfigLlmSelector', () => {
     expect(screen.getByText('LLM Model')).toBeInTheDocument()
   })
 
-  it('calls getLLMModels on mount', () => {
+  it('calls getProjectLLMModels on mount with projectId', () => {
     mockChatsStore.currentChat = mockChat
     render(<ChatConfigLlmSelector />)
 
-    expect(mockAppInfoStore.getLLMModels).toHaveBeenCalled()
+    expect(mockAppInfoStore.getProjectLLMModels).toHaveBeenCalledWith('project-123')
   })
 
   it('calls updateChat when LLM model changes', async () => {

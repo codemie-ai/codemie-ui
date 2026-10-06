@@ -1,0 +1,278 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "Check round against the fix-up diff: backend commits 4367502fe (CR-001, CR-002, CR-003) and 461ca1ae4 (test fix for CR-003's new call site); frontend commits 8b4d81b11 (CR-004 through CR-010) and 2faef9c2f (the 12 previously-deferred, non-blocking cleanup findings, addressed after user request). All 10 prior blocking findings verified resolved: each fix was re-read in place, and where a fix touched test-observable behavior (CR-004's copy change, CR-005's throw path) the specific test file was re-run and confirmed passing. Full-repo verification then run for final confidence: npx tsc --noEmit and eslint clean on the whole frontend src tree; ruff check + format clean on all changed backend files; the full backend router/service/workflow-assistant test files (178 tests) pass; the full frontend unit suite (6224 tests) passes except tests in 4-5 files confirmed pre-existing and unrelated to this diff, none of it touched by this diff: Windows path-separator and CRLF platform bugs in modalSurfaces.guard.test.ts, a2ui/manifest.test.ts and check_license_headers.test.js (deterministic, reproduce standalone), plus test-isolation flakes in Popup.test.tsx and NewWorkflowPage.test.tsx that pass standalone and appear/disappear between full-suite runs depending on run order (both confirmed passing in isolation; NewWorkflowPage passed in the final full run, failed in the prior one). The final full run: 613/617 files, 6220/6224 tests passed, 1 skipped, 3 failed (the 3 deterministic platform bugs). No new high-risk issue was introduced by the fix-up diff itself. ADDENDUM (commit 151bbedc0, after this round's original approval): while writing the companion codemie-sdk regression tests, the user asked whether an item from the pre-review notes ('project admins lost budget distribution, EPMCDME-13962 regression') should be in scope. Re-investigation found it was a live, currently-broken regression, not a stale note — confirmed against the test-harness's own EPMCDME-13962 UI test, which requires the exact control this bug removed. Recorded as CR-011 below, fixed, and re-verified. ADDENDUM 2 (second independent review, 2026-09-25): a fresh pass over the whole feature found eight more in-scope issues, recorded as CR-012..CR-019 and fixed. Four further items were judged outside this story's acceptance criteria by the user and deferred as follow-up candidates, not fixed here: enforcing project model settings in the LiteLLM proxy used by the CLI/IDE, optimistic concurrency (revision + 409) on the settings PUT, an activity-log audit trail for settings changes, and a cache for per-request settings reads.",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Updated Project Details information architecture is provided",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up."
+    },
+    {
+      "criterion": "UX supports project-level model allow-list or deny-list management",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up."
+    },
+    {
+      "criterion": "Design supports restricting models for selected projects or clients",
+      "status": "partial",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up. The 'clients' half still needs product clarification."
+    },
+    {
+      "criterion": "Design supports hiding expensive models from selected projects",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up."
+    },
+    {
+      "criterion": "Model restrictions represented wherever a model can be selected (chats, assistants, workflows)",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json. CR-002's access-control gap on this same endpoint is now closed."
+    },
+    {
+      "criterion": "UX supports enabling or disabling automatic model routing for a project",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up."
+    },
+    {
+      "criterion": "Automatic routing respects project model-availability restrictions",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up."
+    },
+    {
+      "criterion": "Project Overview is compact and easy to scan",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up."
+    },
+    {
+      "criterion": "Project Overview represents users, spend/budgets, model usage/distribution, integrations, routing impact",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up."
+    },
+    {
+      "criterion": "Structure supports adding future project-level capabilities without a full redesign",
+      "status": "pass",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up."
+    },
+    {
+      "criterion": "Design unblocks model-related work first while remaining extensible for integrations, MCP, budgets",
+      "status": "partial",
+      "notes": "Carried forward from code-review-final.json; unaffected by the fix-up."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Carried forward; the fix-up commits also use the 'EPMCDME-14781: ...' prefix."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "Re-verified: full-tree typecheck and lint clean on both repos after the fix-up (see rationale)."
+    },
+    {
+      "standard": "security",
+      "status": "pass",
+      "notes": "CR-001 and CR-002 resolved and re-verified: project_access_check() now gates GET /v1/llm_models?project=; GET .../model-settings strips member_overrides for callers without Action.WRITE. No new security-relevant finding in the fix-up diff."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-011",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/ProjectDetailsPage.tsx",
+      "line": 106,
+      "title": "Project admins lost budget distribution access (EPMCDME-13962 regression)",
+      "problem": "canManageBudgets was computed as isBudgetManagementEnabled && isMaintainer only. ProjectBudgetsSection still received the correct 3-tier `access` prop (full/distribution/view) but a second `mode` prop, always derived from this maintainer-only boolean, unconditionally overrode it inside the component.",
+      "impact": "A platform admin or project admin (the 'distribution' tier from EPMCDME-13962 restore an existing budget's member split, not create/reset/rebalance/delete it) saw no budget control at all, on Overview or the Budgets tab — not reduced capability, none. Confirmed as a live regression against test-harness's own test_project_admin_updates_distribution_via_ui (EPMCDME-13962 TC-02), which requires this control for a project-admin persona.",
+      "recommendation": "Remove the `mode` prop; drive ProjectBudgetManagementControl from `access` alone, restoring the original hasFullAccess/isDistributionOnly split (including UnifiedProjectBudgetModal's distributionOnly flag, which had been disconnected)."
+    },
+    {
+      "id": "CR-012",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/service/assistant_service.py",
+      "line": 546,
+      "title": "Project restrictions could be bypassed through shared or marketplace assistants",
+      "problem": "Runtime resolution applied the policy of assistant.project (the owning project), not the caller's.",
+      "impact": "A member of a restricted project reached hidden models by chatting with an assistant owned by an unrestricted project (AC 3, AC 5).",
+      "recommendation": "Govern members by the entity's project and non-members by every restricting project they belong to (policy_for)."
+    },
+    {
+      "id": "CR-013",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/rest_api/routers/llm_models.py",
+      "line": 68,
+      "title": "Chat model picker empty for marketplace assistants (regression from the CR-002 fix)",
+      "problem": "GET /v1/llm_models?project= returned 403 to non-members; the chat picker requests the assistant owner's project.",
+      "impact": "Conversations with an assistant from another project showed no selectable model.",
+      "recommendation": "Answer non-members with their own policy; the owner project's settings are neither applied nor revealed."
+    },
+    {
+      "id": "CR-014",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/workflows/nodes/state_processor_node.py",
+      "line": 132,
+      "title": "Workflow custom nodes bypassed project model settings",
+      "problem": "custom_node.model went straight to get_llm_by_credentials; workflow save never validated models.",
+      "impact": "A workflow YAML could run any model regardless of the project's restrictions (AC 5 names workflows).",
+      "recommendation": "Resolve the node model through resolve_runtime_model; reject hidden assistant/custom-node models on workflow create and update."
+    },
+    {
+      "id": "CR-015",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/service/project/project_model_settings_service.py",
+      "line": 76,
+      "title": "Saving model settings could be blocked by a model removed from the catalog",
+      "problem": "validate() rejected every name missing from the catalog, including names already stored (e.g. in other members' overrides).",
+      "impact": "After a model left the platform config, every later save of the project failed with 422 until each stale reference was found by hand.",
+      "recommendation": "Prune previously stored names that left the catalog before validating; still reject newly introduced unknown names."
+    },
+    {
+      "id": "CR-016",
+      "severity": "minor",
+      "triage": "patch",
+      "file": "src/codemie/service/project/project_model_settings_service.py",
+      "line": 330,
+      "title": "Settings leaving no model available passed validation",
+      "problem": "An allow list of only premium models plus hide_premium_models, or an override disabling a member's last model, saved successfully.",
+      "impact": "Every chat for the project (or member) then failed at runtime with 403.",
+      "recommendation": "Reject such settings with 422; the Models tab now says 'Enable at least one model that is not hidden'."
+    },
+    {
+      "id": "CR-017",
+      "severity": "minor",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx",
+      "line": 163,
+      "title": "Model fallback was invisible to the user",
+      "problem": "The chat selector showed a now-hidden chat model as 'Default' while the backend ran another model; LLMSelector's reset warning cleared itself in the same render it was raised.",
+      "impact": "Users were never told their selected model had been replaced.",
+      "recommendation": "Chat: announce and clear a hidden chat model once. LLMSelector: keep the warning while the reset value is shown."
+    },
+    {
+      "id": "CR-018",
+      "severity": "major",
+      "triage": "patch",
+      "file": "tests/",
+      "line": null,
+      "title": "No unit tests for the new backend and frontend code",
+      "problem": "Only the SDK/test-harness API tests (which need a live server) covered the feature.",
+      "impact": "Sonar new-code coverage would block the MR and regressions would go unnoticed.",
+      "recommendation": "Add backend service/router/node/assignment tests and frontend store/hook/helper/component tests."
+    },
+    {
+      "id": "CR-019",
+      "severity": "minor",
+      "triage": "patch",
+      "file": "src/codemie/service/project/project_assignment_service.py",
+      "line": 649,
+      "title": "Member model overrides survived removal from the project",
+      "problem": "Removing a member left their entry in member_overrides.",
+      "impact": "A re-added member silently regained old restrictions.",
+      "recommendation": "Drop the member's override on single and bulk removal."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "projects.py now strips member_overrides via Ability(user).can(Action.WRITE, project) before returning; verified by reading the fix and re-running the router test file (110 passed)."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "llm_models.py now calls project_access_check(user, project) before loading settings; verified by reading the fix and re-running the router test file (110 passed)."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "resolve_runtime_model now returns `effective` on the allowed-model path; verified with a standalone scripted check of the allowed/disallowed/empty-requested cases, and by re-running the workflow-assistant service tests (68 passed) after also fixing the 3 tests the new user.id read exposed."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "Test assertion updated to the new copy; ProjectDetailsPage.test.tsx re-run, 21/21 passed."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "bulkResetBudgets now throws when nothing succeeded, inside the same try/catch so only one toast fires."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "buildUserOverride now excludes a carried-forward default that the same edit disabled, falling back to null (project default)."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "handleOverrideMember now surfaces error.parsedError.message ?? error.message instead of a hardcoded string."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "UserBudgetsCell (extracted in the cleanup pass) renders a '-' placeholder when the filtered row list is empty; ProjectMembersSpending.test.tsx re-run, 4/4 passed after aligning the placeholder character with that test's expectation."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "notes": "hasCategoryAction now also covers 'pending-project', with the button label switching to 'Undo' for that state."
+    },
+    {
+      "id": "CR-010",
+      "status": "resolved",
+      "notes": "\"View details\" now navigates to the Members tab via useVueRouter."
+    },
+    {
+      "id": "CR-011",
+      "status": "resolved",
+      "notes": "mode prop removed; ProjectBudgetManagementControl now takes access alone and restores full/distribution/view, with distributionOnly wired into UnifiedProjectBudgetModal. ProjectDetailsPage.test.tsx re-run (21/21, including the existing EPMCDME-13962 access-tier suite) and ProjectBudgetsSection.test.tsx re-run (3/3), both unchanged — they assert the prop contract into the component, which was already correct; the bug was internal to the component and untested at the unit level."
+    },
+    {
+      "id": "CR-012",
+      "status": "resolved",
+      "notes": "Fixed in the second-review commits on both branches; covered by the new unit tests."
+    },
+    {
+      "id": "CR-013",
+      "status": "resolved",
+      "notes": "Fixed in the second-review commits on both branches; covered by the new unit tests."
+    },
+    {
+      "id": "CR-014",
+      "status": "resolved",
+      "notes": "Fixed in the second-review commits on both branches; covered by the new unit tests."
+    },
+    {
+      "id": "CR-015",
+      "status": "resolved",
+      "notes": "Fixed in the second-review commits on both branches; covered by the new unit tests."
+    },
+    {
+      "id": "CR-016",
+      "status": "resolved",
+      "notes": "Fixed in the second-review commits on both branches; covered by the new unit tests."
+    },
+    {
+      "id": "CR-017",
+      "status": "resolved",
+      "notes": "Fixed in the second-review commits on both branches; covered by the new unit tests."
+    },
+    {
+      "id": "CR-018",
+      "status": "resolved",
+      "notes": "Fixed in the second-review commits on both branches; covered by the new unit tests."
+    },
+    {
+      "id": "CR-019",
+      "status": "resolved",
+      "notes": "Fixed in the second-review commits on both branches; covered by the new unit tests."
+    }
+  ]
+}

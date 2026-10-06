@@ -57,6 +57,8 @@ export interface ProjectDetail extends ProjectListItem {
   members: ProjectMember[]
   spending?: ProjectSpendingSummary | null
   spending_widget?: ProjectSpendingWidget | null
+  allowed_models?: string[] | null
+  default_model?: string | null
 }
 
 export interface ProjectSpendingSummary {

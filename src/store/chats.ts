@@ -37,14 +37,17 @@ import {
   FeedbackSubmission,
   FolderListItem,
 } from '@/types/entity'
+import { ModelOption } from '@/types/entity/configuration'
 import api, { sanitizeFileName } from '@/utils/api'
 import { transformChatBEtoFE } from '@/utils/chatHelpers'
 import { chatSkillsKey, removeChatStorage, sweepOrphanedChatKeys } from '@/utils/chatStorageUtils'
+import { getFilteredModelsForProject } from '@/utils/projectModelFiltering'
 import { clearSharedFileGrants, setSharedFileGrants } from '@/utils/sharedFileGrants'
 import storage from '@/utils/storage'
 import toaster from '@/utils/toaster'
 import { getRootPath } from '@/utils/utils'
 
+import { appInfoStore } from './appInfo'
 import { moveOrderStore } from './moveOrder'
 import { pinOrderStore } from './pinOrder'
 import { premiumModelTipStore } from './premiumModelTip'
@@ -193,6 +196,9 @@ export interface ChatsStoreType {
   isMovingChatsToFolder: boolean
   isNewChat: boolean
   newChatParams: NewChatParams | null
+  filteredModels: ModelOption[]
+  loading: boolean
+  error: string | null
 
   // Chat management methods
   getLastChat(): string | null
@@ -226,6 +232,7 @@ export interface ChatsStoreType {
   updateChatListItem(newChatListItem: Partial<ChatListItem> & { id: string }): void
   refreshWorkflowExecutionIds(id: string): Promise<void>
   getConversationName(id: string): Promise<string | null>
+  getModelsForCurrentChat(): Promise<ModelOption[]>
 
   // Folder management methods
   createFolder(folder: string): Promise<any>
@@ -303,6 +310,9 @@ export const chatsStore = proxy<ChatsStoreType>({
   isNewChat: false,
   newChatParams: null,
   abortControllers: {},
+  filteredModels: [],
+  loading: false,
+  error: null,
 
   getLastChat() {
     return storage.get(userStore.user!.userId, LAST_CHAT_ID) as unknown as string
@@ -1038,5 +1048,28 @@ export const chatsStore = proxy<ChatsStoreType>({
 
   addRecentChat(chat: Omit<RecentChat, 'openedAt'>) {
     recentChatsStore.addRecentChat(chat)
+  },
+
+  async getModelsForCurrentChat() {
+    try {
+      chatsStore.loading = true
+      chatsStore.error = null
+      const projectId = chatsStore.currentChat?.projectId
+      if (!appInfoStore.llmModels || appInfoStore.llmModels.length === 0) {
+        await appInfoStore.getLLMModels()
+      }
+      chatsStore.filteredModels = (await getFilteredModelsForProject(
+        projectId,
+        appInfoStore.llmModels
+      )) as ModelOption[]
+      return chatsStore.filteredModels
+    } catch (error) {
+      chatsStore.error = error instanceof Error ? error.message : 'Failed to filter models'
+      console.error('Error filtering models for chat:', error)
+      toaster.error(chatsStore.error)
+      throw error
+    } finally {
+      chatsStore.loading = false
+    }
   },
 })

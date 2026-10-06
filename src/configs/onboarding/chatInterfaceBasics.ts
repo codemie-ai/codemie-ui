@@ -196,7 +196,7 @@ Your tool settings are saved per conversation and restored when you return.`,
       description: `Override the AI model used for this conversation with the model selector button.
 
 Options include:
-- Assistant Default — uses the model the assistant was configured with
+- Default — uses the model the assistant was configured with
 - Recommended — the platform's recommended model
 - Any available model, searchable by name
 

@@ -50,6 +50,7 @@ registerFields(['assistant_id'], NodeTypes.ASSISTANT, 'resource_validation')
 
 interface AssistantTabProps {
   project: string
+  isGlobal?: boolean
   stateId: string
   config: WorkflowConfiguration
   onConfigChange: (updates: ConfigurationUpdate) => void
@@ -100,6 +101,7 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
     {
       stateId,
       project,
+      isGlobal,
       config,
       onConfigChange,
       onClose,
@@ -353,6 +355,7 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
                 <VirtualAssistantForm
                   ref={virtualAssistantFormRef}
                   project={project}
+                  isGlobal={isGlobal}
                   assistantConfig={assistantActorConfig}
                   showNewIntegrationPopup={showNewIntegrationPopup}
                   onContentChange={(isEmpty) => setIsAssistantEmpty(isEmpty)}

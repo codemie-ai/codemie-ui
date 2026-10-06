@@ -50,6 +50,7 @@ import {
   getTemperatureMax,
 } from '@/pages/assistants/utils/temperatureConstraints'
 import { assistantsStore } from '@/store'
+import { projectsStore } from '@/store/projects'
 import { settingsStore } from '@/store/settings'
 import { isWorkflowAssistantToolIssue, isWorkflowAssistantMcpIssue } from '@/types/entity'
 import {
@@ -61,6 +62,7 @@ import { MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 import { NodeTypes } from '@/types/workflowEditor/base'
 import { AssistantConfiguration } from '@/types/workflowEditor/configuration'
+import toaster from '@/utils/toaster'
 import { getMCPServersFromConfiguration, getToolkitsFromConfiguration } from '@/utils/workflows'
 
 import FieldController from './FieldController'
@@ -85,6 +87,7 @@ export interface VirtualAssistantFormValues {
 
 interface VirtualAssistantFormProps {
   project: string
+  isGlobal?: boolean
   assistantConfig?: AssistantConfiguration
   showNewIntegrationPopup: (project: string, credentialType: string) => void
   onContentChange?: (isEmpty: boolean) => void
@@ -137,11 +140,13 @@ const getDefaultValues = (config?: AssistantConfiguration): VirtualAssistantForm
 })
 
 const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistantFormProps>(
-  ({ assistantConfig, showNewIntegrationPopup, project, onContentChange }, ref) => {
+  ({ assistantConfig, showNewIntegrationPopup, project, isGlobal, onContentChange }, ref) => {
     const { availableContext, availableToolkits } = useSnapshot(assistantsStore)
     const { activeIssue } = useWorkflowContext()
     const { settings } = useSnapshot(settingsStore)
     const [isSkillsEnabled] = useFeatureFlag('skills')
+    const [projectDefaultModelId, setProjectDefaultModelId] = useState<string | null>(null)
+    const notifiedModelIdRef = useRef<string | null>(null)
     const {
       control,
       getValues,
@@ -170,6 +175,37 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
     useEffect(() => {
       trigger('temperature')
     }, [selectedModel, trigger])
+
+    // Fetch project default model on initial load
+    useEffect(() => {
+      if (!project || isGlobal) return
+      const fetchDefaultModel = async () => {
+        try {
+          const projectData = await projectsStore.getProject(project)
+          setProjectDefaultModelId(projectData.default_model ?? null)
+        } catch (error) {
+          console.error('Failed to fetch project default model:', error)
+        }
+      }
+      fetchDefaultModel()
+    }, [project, isGlobal])
+
+    const handleLLMDropdownOpen = async () => {
+      if (!project || isGlobal) return
+      try {
+        const projectData = await projectsStore.getProject(project)
+        const newDefaultId = projectData.default_model ?? null
+
+        if (newDefaultId !== projectDefaultModelId && notifiedModelIdRef.current !== newDefaultId) {
+          notifiedModelIdRef.current = newDefaultId
+          toaster.success(`Default model updated. Default has been updated.`)
+        }
+
+        setProjectDefaultModelId(newDefaultId)
+      } catch (error) {
+        console.error('Failed to sync project default model:', error)
+      }
+    }
 
     // eslint-disable-next-line consistent-return
     const defaultOpenToolkitSection = useMemo(() => {
@@ -339,7 +375,11 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
                   label="LLM model"
                   placeholder="Select model"
                   className="grow max-w-sm"
+                  project={project}
                   error={fieldState.error?.message}
+                  projectId={isGlobal ? undefined : project}
+                  preserveUnavailableSelection
+                  onDropdownOpen={handleLLMDropdownOpen}
                   {...field}
                 />
               )}

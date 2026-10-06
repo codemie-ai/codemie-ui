@@ -20,7 +20,7 @@ import PageLayout from '@/components/Layouts/Layout'
 import Sidebar from '@/components/Sidebar'
 import { ButtonType } from '@/constants'
 import { isFoldedOAuth } from '@/constants/integration'
-import { INTEGRATIONS } from '@/constants/routes'
+import { INTEGRATIONS, PROJECTS_MANAGEMENT_INTEGRATIONS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { projectSettingsStore } from '@/store/projectSettings'
 import { navigateBack } from '@/utils/helpers'
@@ -34,6 +34,10 @@ import { getErrorMessage } from './utils/getErrorMessage'
 
 const NewProjectIntegrationPage = () => {
   const router = useVueRouter()
+  const {
+    currentRoute: { value: route },
+  } = router
+  const projectName = route.query.project_name as string | undefined
 
   const formRef = useRef<SettingsFormRef>(null)
   const [credentialType, setCredentialType] = useState('')
@@ -43,11 +47,19 @@ const NewProjectIntegrationPage = () => {
     try {
       await projectSettingsStore.createProjectSetting(values)
       toaster.info('Integration created successfully')
-      router.push({ name: 'integrations' })
+      router.push(
+        projectName
+          ? { name: PROJECTS_MANAGEMENT_INTEGRATIONS, params: { projectName } }
+          : { name: 'integrations' }
+      )
 
       // Refresh the integrations list
       setTimeout(() => {
-        projectSettingsStore.fetchProjectSettings()
+        projectSettingsStore.fetchProjectSettings(
+          0,
+          100,
+          projectName ? { project: [projectName] } : undefined
+        )
       }, 1000)
     } catch (error: any) {
       const errorText = getErrorMessage(error)
@@ -56,6 +68,10 @@ const NewProjectIntegrationPage = () => {
   }
 
   const onBack = () => {
+    if (projectName) {
+      router.push({ name: PROJECTS_MANAGEMENT_INTEGRATIONS, params: { projectName } })
+      return
+    }
     navigateBack(INTEGRATIONS)
   }
 
@@ -97,7 +113,9 @@ const NewProjectIntegrationPage = () => {
         <SettingsForm
           ref={formRef}
           onSubmit={createProjectSetting}
+          projectName={projectName}
           settingType="project"
+          disableProject={!!projectName}
           hideActions={true}
           onCredentialValuesChange={setCredentialValues}
           onCredentialTypeChange={(type: string) => setCredentialType(type)}

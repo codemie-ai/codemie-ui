@@ -42,6 +42,7 @@ registerFields(['name', 'custom_node_id', 'model', 'system_prompt', /^config\./]
 
 interface CustomNodeFormProps {
   project: string
+  isGlobal?: boolean
   customNodeConfig: CustomNodeConfiguration
 }
 
@@ -51,6 +52,7 @@ export interface CustomNodeFormValues {
   model?: string
   system_prompt?: string
   config?: CustomNodeConfigurationValues
+  project?: string
 }
 
 export interface CustomNodeFormRef {
@@ -109,7 +111,7 @@ const getDefaultValues = (config?: CustomNodeConfiguration): Partial<CustomNodeF
 })
 
 const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
-  ({ customNodeConfig }, ref) => {
+  ({ customNodeConfig, project, isGlobal }, ref) => {
     const [dynamicSchema, setDynamicSchema] = useState(() => getValidationSchema([]))
     const isInitialLoad = useRef(true)
 
@@ -295,7 +297,11 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
               label="LLM model"
               placeholder="Select model (optional)"
               className="w-full"
+              project={project}
               error={fieldState.error?.message}
+              projectId={isGlobal ? undefined : project}
+              allowEmpty
+              preserveUnavailableSelection
               {...field}
             />
           )}

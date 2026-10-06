@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "task": "Close the gap between MR !1917's existing (mocked, localStorage-backed) Project Details redesign and ticket EPMCDME-14781's 11 acceptance criteria: a real backend contract for project-level model availability, automatic-routing gating, and Overview indicators.",
+  "generated": "2026-09-24T00:00:00Z",
+  "note": "No blind pre-implementation estimate was performed in this session — work started directly from the ticket and the existing MR's diff, not through a separate complexity-scoring gate. This file is a retroactive reconstruction, not a distinct earlier measurement, and its dimension scores are deliberately identical to actual-complexity.json's rather than a fabricated different guess. The only estimation-relevant fact knowable before coding (and not fully knowable after) is initial routing: given the ticket's ambiguity (undefined 'clients' scope, no attachments/spec) and the two-repo scope visible from the ticket text alone, a genuine upfront estimate would very likely have also landed in the L band and routed through brainstorming first, matching what actually happened operationally (substantial upfront codebase research, documented in technical-analysis.md, before any code was written).",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 5, "label": "XL" }
+  },
+  "total": 26,
+  "size": "L",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "See actual-complexity.json — this dimension's real drivers (two repos, six model-picker consumers) were visible from the ticket's own 'Affected areas' list (model controls, routing, Overview, integrations, budgets) plus a first read of the existing MR diff, so a genuine upfront estimate would have scored this the same."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Unlike component_scope, this dimension's real driver (the two access-control gaps found in review) was NOT knowable before implementation — a genuine upfront estimate would more defensibly have scored this M (new-but-standard-pattern), not XL. Left at XL here only for consistency with the honest post-hoc measurement; see the note above."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

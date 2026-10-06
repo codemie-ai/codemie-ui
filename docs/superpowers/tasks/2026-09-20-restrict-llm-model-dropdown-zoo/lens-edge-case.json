@@ -1,0 +1,176 @@
+[
+  {
+    "location": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx:753-758",
+    "trigger_condition": "projectId provided but getLLMModels(projectId) fails or returns undefined",
+    "guard_snippet": "if (projectId && modelType === 'llm') { const result = await getLLMModels(projectId); if (result) setProjectModels(result); } else { loadModels(); }",
+    "potential_consequence": "projectModels remains empty array; falls back to globalModels, defeating project-scoped filtering"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx:743",
+    "trigger_condition": "modelType is not 'llm' or imageGeneration (invalid value passed)",
+    "guard_snippet": "const models = (modelType === 'imageGeneration' ? imageGenerationModels : modelType === 'llm' ? (projectId ? projectModels : llmModels) : llmModels)",
+    "potential_consequence": "Falls through to llmModels silently; invalid modelType accepted without error"
+  },
+  {
+    "location": "src/pages/chat/ChatPage.tsx:122-128",
+    "trigger_condition": "currentChat exists but projectId is null/undefined; getModelsForCurrentChat() called unconditionally",
+    "guard_snippet": "if (currentChat?.projectId) { chatsStore.getModelsForCurrentChat() } else if (currentChat && !projectId) { return; }",
+    "potential_consequence": "getModelsForCurrentChat() called on non-project chat; possible API error or stale state in chatsStore.filteredModels"
+  },
+  {
+    "location": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx:906-910",
+    "trigger_condition": "currentChat.projectId changes rapidly or becomes null during dependency updates",
+    "guard_snippet": "if (!projectId) { setProjectModels([]); } const projectId = currentChat?.projectId;",
+    "potential_consequence": "filteredModels stale when switching projects; wrong models displayed briefly or llmModels/filteredModels mismatch"
+  },
+  {
+    "location": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx:927-936",
+    "trigger_condition": "filteredModels.length > 0 but contains no isDefault model; search also filters results",
+    "guard_snippet": "const defaultModel = useMemo(() => { const opts = modelsToDisplay.length > 0 ? modelsToDisplay : llmModels; return opts.find((m) => m.isDefault) ?? opts[0] ?? null; }, [modelsToDisplay, llmModels])",
+    "potential_consequence": "defaultModel may be null if filtered list is empty; selectedModel lookup fails; recommendation dropdown shows nothing"
+  },
+  {
+    "location": "src/pages/settings/administration/ProjectDetailsPage.tsx:146-151",
+    "trigger_condition": "activeTab === 'members' but canViewBudgets is false; projectBudgetsStore.listProjectBudgets() not called",
+    "guard_snippet": "useEffect(() => { if (activeTab !== 'members' || !canViewBudgets || !projectName) return; projectBudgetsStore.listProjectBudgets(...); }, [...])",
+    "potential_consequence": "Members tab renders without budgets data; budgets prop is undefined, ProjectMembersManager receives no data for budget display"
+  },
+  {
+    "location": "src/pages/settings/administration/ProjectDetailsPage.tsx:173-174",
+    "trigger_condition": "router.push({ name: 'projects-management-detail' }) called but route not defined or projectName is empty/invalid",
+    "guard_snippet": "if (projectName) { router.push({ name: 'projects-management-detail', params: { projectName: updatedProject.name } }); }",
+    "potential_consequence": "Navigation fails silently; page doesn't update if route is missing; user stays on stale project details"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx:860",
+    "trigger_condition": "useParams returns undefined projectName; defaults to 'demo'",
+    "guard_snippet": "const { projectName = 'demo' } = useParams<{ projectName: string }>(); if (!projectName || projectName === 'demo') console.warn('ProjectModelsSection: projectName undefined, using demo');",
+    "potential_consequence": "Always loads 'demo' project config if URL param missing; model settings applied to wrong project; demo project polluted"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx:873-904",
+    "trigger_condition": "appInfoStore.getLLMModels() or getProjectModelConfigurationFromBackend() fails/rejects; no error handling in Promise.then chain",
+    "guard_snippet": "appInfoStore.getLLMModels().then(...).catch(e => { console.error(e); setModels([]); }) and getProjectModelConfigurationFromBackend().then(...).catch(e => { console.error(e); });",
+    "potential_consequence": "Models array stays empty; projectSettings undefined; component renders with zero models; Apply button always disabled"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx:889-895",
+    "trigger_condition": "storedEnabledModelIds.size === 0 (no models in backend) AND initialSettings computed from empty set",
+    "guard_snippet": "const initialSettings = Object.fromEntries(mappedModels.map((model) => [model.value, storedEnabledModelIds.size === 0 ? 'disabled' : storedEnabledModelIds.has(model.value) ? 'enabled' : 'disabled']));",
+    "potential_consequence": "All models marked disabled; defaultModel logic fails; firstDefault empty string; state inconsistent with UI expectations"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx:960",
+    "trigger_condition": "saveChanges() called when hasChanges is false or defaultIsValid is false; premature return not validated",
+    "guard_snippet": "const saveChanges = async () => { if (!hasChanges) { toaster.warn('No changes to save'); return false; } if (!defaultIsValid) { toaster.error('Default model invalid'); return false; } ... }",
+    "potential_consequence": "Silently returns false; caller (applyChangesAndNavigate) proceeds with navigation despite save failure"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx:918-925",
+    "trigger_condition": "blocker.reset() or blocker.proceed() called when blocker state is not 'blocked'",
+    "guard_snippet": "const cancelNavigation = () => { if (blocker.state === 'blocked') { setNavigationDialogVisible(false); blocker.reset?.(); } };",
+    "potential_consequence": "Calling undefined methods; navigation dialog stuck open; state machine deadlock"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx:947",
+    "trigger_condition": "setModelEnabled called with disabled=true and model.value === projectDefault; projectDefault set to empty string",
+    "guard_snippet": "const setModelEnabled = (model: ModelOption, enabled: boolean) => { setProjectSettings(current => ({ ...current, [model.value]: enabled ? 'enabled' : 'disabled' })); if (!enabled && model.value === projectDefault) { const newDefault = models.find(m => projectSettings[m.value] === 'enabled')?.value ?? ''; setProjectDefault(newDefault); } };",
+    "potential_consequence": "defaultIsValid check now false but UI not updated; Apply button becomes disabled; user cannot save intended config"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx:984",
+    "trigger_condition": "useBlocker navigation promise never resolves; previousLocation/nextLocation comparison fails",
+    "guard_snippet": "if (blocker.state === 'blocked' && blocker.location) { console.log('blocked nav to:', blocker.location); setNavigationDialogVisible(true); }",
+    "potential_consequence": "Dialog never shows; user clicks back/route change; loses unsaved data without warning"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectOverviewSection.tsx:4328-4334",
+    "trigger_condition": "loadProjectBudgets called but projectBudgetsStore.listProjectBudgets() rejects; catch silently sets empty array",
+    "guard_snippet": "const loadProjectBudgets = useCallback(() => { return projectBudgetsStore.listProjectBudgets({ projectName: project.name }).then(setProjectBudgets).catch(err => { console.error('Failed to load budgets:', err); setProjectBudgets([]); }); }, [project.name]);",
+    "potential_consequence": "Budget display shows empty state; Financial summary shows no data; user cannot see project spend; confused about actual state"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/components/projectModelConfiguration.ts:5452",
+    "trigger_condition": "getProjectModelConfigurationFromBackend() called but fetch response is not ok; null returned",
+    "guard_snippet": "if (!response.ok) { console.error('Failed to fetch config:', response.status); return null; }",
+    "potential_consequence": "Null config treated as 'no restrictions'; all models enabled regardless of backend; filtering bypassed"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/components/projectModelConfiguration.ts:5456",
+    "trigger_condition": "project.allowed_models is undefined; falls back to empty array",
+    "guard_snippet": "enabledModelIds: project.allowed_models || [],",
+    "potential_consequence": "Empty array means all models disabled, not unrestricted; semantic inversion breaks model filtering logic"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx:3530-3578",
+    "trigger_condition": "loadModels() API call fails; catch block catches but loadModels dependency chain may retry infinitely",
+    "guard_snippet": "const loadModels = useCallback(async () => { setLoading(true); try { ... } catch (error) { setLoading(false); toaster.error(...); } }, [currentAllowedModels, currentDefaultModel]); useEffect(() => { loadModels(); }, [loadModels]); dependency on currentAllowedModels means re-render triggers new attempt",
+    "potential_consequence": "Infinite retry loop if currentAllowedModels changes and API keeps failing; excessive API calls; toaster spam"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx:3536",
+    "trigger_condition": "chatResp.json() or imageResp.json() throws; mapped models may be partially initialized",
+    "guard_snippet": "const chatData = ((await chatResp.json()) || []).map(...); const imageData = ((await imageResp.json()) || []).map(...);",
+    "potential_consequence": "Uncaught promise rejection; component unmounts; UI broken if error during JSON parsing"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx:3564",
+    "trigger_condition": "currentAllowedModels is null (means all allowed) but chatData and imageData are empty arrays",
+    "guard_snippet": "const allModels = [...(chatData || []), ...(imageData || [])]; if (allModels.length === 0) { console.warn('No models available'); } setSelectedModels(new Set(allModels.map(m => m.id)));",
+    "potential_consequence": "selectedModels is empty Set; no models checked; saving will fail validation; user cannot proceed"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/AvailableModelsSection.tsx:3596-3604",
+    "trigger_condition": "validateSelection() called when chatModels is empty; selectedChatModels will be empty; always returns false",
+    "guard_snippet": "if (chatModels.length === 0) { setValidationError('No chat models available'); return false; }",
+    "potential_consequence": "Cannot save any config when chat models unavailable; UI reports validation error instead of 'no models' error"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/components/ModelConfigurationTable.tsx:4939",
+    "trigger_condition": "onDefaultChange called with modelId but model.value not in models array; state becomes inconsistent",
+    "guard_snippet": "const onDefaultChange = (modelId: string) => { if (!models.find(m => m.value === modelId)) { console.error('Invalid model:', modelId); return; } onDefaultChange(modelId); };",
+    "potential_consequence": "defaultModel set to invalid value; radio button shows checked but not in list; mismatch in parent state"
+  },
+  {
+    "location": "src/store/projects.ts (inferred from diff usage)",
+    "trigger_condition": "projectsStore.updateAllowedModels() called but method not implemented or endpoint 404s",
+    "guard_snippet": "export const updateAllowedModels = async (projectName, allowedModels, defaultModel) => { const response = await api.patch(`/v1/projects/${encodeURIComponent(projectName)}/allowed-models`, { allowed_models: allowedModels, default_model: defaultModel }); if (!response.ok) throw new Error('Failed to update'); return response.json(); };",
+    "potential_consequence": "Save fails silently; error toasted but UI state not rolled back; component in inconsistent state"
+  },
+  {
+    "location": "src/types/entity/conversation.ts (inferred from ChatPage usage)",
+    "trigger_condition": "Conversation type missing projectId field; currentChat?.projectId returns undefined",
+    "guard_snippet": "interface Conversation { projectId?: string; }",
+    "potential_consequence": "Project filtering never triggers; filteredModels never populated; uses global model list for all chats"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectDetailsNavigation.tsx:3791",
+    "trigger_condition": "router.push({ name: tab.route, params: { projectName } }) fails; route name not registered",
+    "guard_snippet": "onClick={() => { try { router.push({ name: tab.route, params: { projectName } }); } catch (err) { console.error('Navigation failed:', tab.id, err); toaster.error('Navigation failed'); } }",
+    "potential_consequence": "Tab click fails silently; user clicks Models tab but route doesn't exist; error thrown but not caught"
+  },
+  {
+    "location": "src/pages/settings/administration/ProjectDetailsPage.tsx:3117",
+    "trigger_condition": "getActiveTab(router.name) receives undefined or unknown route name; defaults to 'overview'",
+    "guard_snippet": "const activeTab = getActiveTab(router.name); if (!activeTab) { console.warn('Unknown route:', router.name); }",
+    "potential_consequence": "Always shows overview even when on different tab; tab navigation broken; component renders wrong section"
+  },
+  {
+    "location": "src/store/appInfo.ts (inferred)",
+    "trigger_condition": "appInfoStore.getLLMModels(projectId) called but method signature doesn't support projectId parameter",
+    "guard_snippet": "export const getLLMModels = async (projectId?: string) => { const url = projectId ? `/v1/llm_models?project_id=${encodeURIComponent(projectId)}` : '/v1/llm_models'; return api.get(url); };",
+    "potential_consequence": "projectId parameter ignored; always fetches global models; project filtering doesn't work"
+  },
+  {
+    "location": "src/pages/chat/components/ChatConfiguration/ChatConfigLlmSelector.tsx:4031-4034",
+    "trigger_condition": "currentChat?.projectId changes between memo dependency capture and render; stale projectId passed to LLMSelector",
+    "guard_snippet": "const projectId = useMemo(() => { return currentChat?.projectId; }, [currentChat?.projectId]);",
+    "potential_consequence": "LLMSelector receives stale projectId; loads wrong project's models; mismatched state between selector and store"
+  },
+  {
+    "location": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx:4045-4048",
+    "trigger_condition": "ModelConfigurationTable receives models but onSelectionChange is setModelEnabled which updates projectSettings state",
+    "guard_snippet": "const onSelectionChange = (model: ModelOption, enabled: boolean) => { if (!projectSettings[model.value]) { console.error('Unknown model in settings:', model.value); } setModelEnabled(model, enabled); };",
+    "potential_consequence": "Model not in projectSettings; state becomes corrupted; settings array missing key; save filters out unknown models"
+  }
+]

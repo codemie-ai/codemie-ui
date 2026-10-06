@@ -119,7 +119,11 @@ export const Checkbox = forwardRef<HTMLInputElement, Props>(
 
 const checkboxPT: CheckboxPassThroughOptions = {
   root: {
-    className: 'w-fit h-fit',
+    className: 'relative w-fit h-fit',
+  },
+  input: {
+    className:
+      'absolute inset-0 z-10 m-0 h-full w-full cursor-pointer appearance-none p-0 opacity-0 outline-none',
   },
   box: () => [
     'w-4 h-4 rounded-[4px] border transition-colors',

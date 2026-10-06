@@ -34,7 +34,9 @@ const { mockChatsStore, mockAppInfoStore, mockChatGenerationStore } = vi.hoisted
       isWorkflow: false,
       assistantIds: ['assistant-1'],
     } as any,
+    filteredModels: [] as ModelOption[],
     updateChat: vi.fn(),
+    getModelsForCurrentChat: vi.fn().mockResolvedValue([]),
   },
   mockAppInfoStore: {
     llmModels: [] as ModelOption[],

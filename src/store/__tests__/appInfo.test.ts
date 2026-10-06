@@ -599,3 +599,33 @@ describe('appInfoStore.isReleasePopupDisabled', () => {
     expect(appInfoStore.isReleasePopupDisabled()).toBe(false)
   })
 })
+
+describe('appInfoStore.getLLMModels deployment aliases', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it.each([undefined, 'project'])(
+    'retains deployment names for %s model lists',
+    async (projectId) => {
+      mockGet.mockResolvedValue(
+        okResponse([
+          {
+            base_name: 'model',
+            deployment_name: 'deployment-alias',
+            label: 'Model',
+            default: true,
+          },
+        ])
+      )
+      const models = await appInfoStore.getLLMModels(projectId)
+
+      expect(models).toEqual([
+        expect.objectContaining({ value: 'model', deploymentName: 'deployment-alias' }),
+      ])
+      expect(mockGet).toHaveBeenCalledWith(
+        projectId ? 'v1/llm_models?project_id=project' : 'v1/llm_models'
+      )
+    }
+  )
+})

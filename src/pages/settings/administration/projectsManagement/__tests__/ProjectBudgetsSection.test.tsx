@@ -20,6 +20,12 @@ import { ProjectDetail, ProjectSpendingWidgetRow } from '@/types/entity/projectM
 
 import ProjectBudgetsSection from '../ProjectBudgetsSection'
 
+// helpers.ts imports @/router which cascades into the a2ui build-time failure.
+vi.mock('@/utils/helpers', () => ({
+  formatDateTime: (d: string | null) => d ?? '',
+  formatCurrency: (v: number | null) => (v == null ? '—' : `$${v.toFixed(2)}`),
+}))
+
 // Capture the props the budget modal receives so the wiring can be asserted.
 const modalProps = vi.fn()
 vi.mock('@/pages/settings/administration/components/UnifiedProjectBudgetModal', () => ({
@@ -72,14 +78,10 @@ describe('ProjectBudgetsSection chargeback prop wiring', () => {
     expect(props.canManageBudgets).toBe(true)
   })
 
-  it('passes null project and canManageBudgets=false through by default (CR-004)', async () => {
+  it('does not render the budget modal when access is not manage (CR-004)', async () => {
     render(<ProjectBudgetsSection projectName="p1" access="distribution" />)
-
-    await waitFor(() => expect(modalProps).toHaveBeenCalled())
-
-    const props = modalProps.mock.calls.at(-1)![0]
-    expect(props.project).toBeNull()
-    expect(props.canManageBudgets).toBe(false)
+    await waitFor(() => expect(listProjectBudgets).toHaveBeenCalled())
+    expect(screen.queryByTestId('unified-modal')).not.toBeInTheDocument()
   })
 
   it('reloads budgets and the project after the budget modal saves', async () => {

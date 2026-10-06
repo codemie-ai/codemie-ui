@@ -56,6 +56,7 @@ const { mockChatsStore, mockChatGenerationStore, mockUseAuthCallbackListener } =
   mockChatsStore: {
     currentChat: null as Conversation | null,
     getChat: vi.fn(),
+    getModelsForCurrentChat: vi.fn(),
   },
   mockChatGenerationStore: {
     markPromptAuthSuccess: vi.fn(),
@@ -500,5 +501,21 @@ describe('ChatPage', () => {
 
     expect(screen.getByTestId('resizable-separator')).toBeInTheDocument()
     expect(screen.getByTestId('chat-history')).toBeInTheDocument()
+  })
+
+  it('fetches filtered models when page loads with projectId', () => {
+    mockChatsStore.currentChat = {
+      id: 'chat-1',
+      history: [[{ createdAt: '2026-04-29T00:00:00Z' }]],
+      assistantIds: ['assistant-1'],
+      assistantData: [],
+      initialAssistantId: 'assistant-1',
+      projectId: 'zoo',
+      isWorkflow: false,
+    } as unknown as Conversation
+
+    render(<ChatPage />)
+
+    expect(mockChatsStore.getModelsForCurrentChat).toHaveBeenCalled()
   })
 })

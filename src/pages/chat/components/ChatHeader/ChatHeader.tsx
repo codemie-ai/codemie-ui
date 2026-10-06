@@ -74,9 +74,10 @@ const ChatHeader: FC = () => {
   const hasAssistant = !!currentChat?.initialAssistantId || !!currentChat?.assistantIds?.length
 
   const handleViewWorkflowDetails = () => {
-    if (currentChat?.initialAssistantId) {
-      router.push({ name: 'view-workflow', params: { id: currentChat.initialAssistantId } })
-    }
+    // Matches ChatAiMessage's handleAvatarClick: for a workflow chat, the route's
+    // `workflowId` param is the chat's assistant id, not a separate workflow id.
+    const assistantId = currentChat?.initialAssistantId ?? currentChat?.assistantIds?.[0]
+    if (assistantId) router.push({ name: 'view-workflow', params: { workflowId: assistantId } })
   }
 
   const handleAvatarClick = () => {

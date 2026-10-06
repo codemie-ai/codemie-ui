@@ -39,12 +39,13 @@ interface PremiumModelTipState {
  * one and dismissed in the other.
  */
 export const usePremiumModelTip = (): PremiumModelTipState => {
-  const { currentChat } = useSnapshot(chatsStore)
+  const { currentChat, filteredModels } = useSnapshot(chatsStore)
   const { llmModels, llmRouters } = useSnapshot(appInfoStore)
   const { dismissedKeys } = useSnapshot(premiumModelTipStore)
 
+  const models = currentChat?.projectId ? filteredModels ?? [] : llmModels
   const effectiveModel = currentChat?.llmModel
-    ? llmModels.find((model) => model.value === currentChat.llmModel) ??
+    ? models.find((model) => model.value === currentChat.llmModel) ??
       llmRouters.find((router) => router.value === currentChat.llmModel) ??
       null
     : null

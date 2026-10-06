@@ -13,18 +13,12 @@
 // limitations under the License.
 //
 
-// Import order matters: @/test-utils/integration must evaluate BEFORE @/store/* imports.
-// Entering the module graph through a @/store/* module first triggers the circular chain
-// @/store/* → @/utils/api → @/store (barrel), which leaves the barrel's re-exported
-// userStore undefined and crashes rendering that depends on it.
-// eslint-disable-next-line import/order
-import '@/test-utils/integration'
 import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import ProjectMembersManager from '@/pages/settings/administration/projectsManagement/ProjectMembersManager'
-import { analyticsStore } from '@/store/analytics'
 import { userStore } from '@/store/user'
+import { BudgetAssignment } from '@/types/entity/budget'
 import { ProjectBudget, ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 
@@ -73,7 +67,12 @@ const mockBudgets: ProjectBudget[] = [
   },
 ]
 
-const buildUser = (id: string, name: string, email: string) => ({
+const buildUser = (
+  id: string,
+  name: string,
+  email: string,
+  budget_assignments?: BudgetAssignment[]
+) => ({
   id,
   name,
   username: name,
@@ -86,17 +85,12 @@ const buildUser = (id: string, name: string, email: string) => ({
   projects: [{ name: 'Test Project', is_project_admin: false }],
   picture: null,
   date: null,
+  ...(budget_assignments ? { budget_assignments } : {}),
 })
 
 const usersResponse = (data: unknown[]) => ({
   data,
   pagination: { page: 0, per_page: 10, total: data.length },
-})
-
-const spendingResponse = (rows: unknown[]) => ({
-  data: { columns: [], rows },
-  metadata: { timestamp: '', data_as_of: '' },
-  pagination: { page: 0, per_page: 50, total_count: rows.length, has_more: false },
 })
 
 describe('ProjectMembersManager — merged Spending column', () => {
@@ -106,9 +100,6 @@ describe('ProjectMembersManager — merged Spending column', () => {
     userStore.getUsers = vi
       .fn()
       .mockResolvedValue(usersResponse([buildUser('u-1', 'Jane Doe', 'jane@epam.com')]))
-    vi.spyOn(analyticsStore, 'fetchProjectMemberSpending').mockResolvedValue(
-      spendingResponse([]) as never
-    )
   })
 
   it('renders the merged Spending column header', async () => {
@@ -119,50 +110,45 @@ describe('ProjectMembersManager — merged Spending column', () => {
   })
 
   it('shows spend and allocation together on one line per category', async () => {
-    vi.spyOn(analyticsStore, 'fetchProjectMemberSpending').mockResolvedValue(
-      spendingResponse([{ user_id: 'u-1', platform: 120.5, platform_limit: 500 }]) as never
-    )
+    userStore.getUsers = vi
+      .fn()
+      .mockResolvedValue(
+        usersResponse([
+          buildUser('u-1', 'Jane Doe', 'jane@epam.com', [
+            { category: 'platform', budget_id: null, current_spending: 120.5, max_budget: null },
+          ]),
+        ])
+      )
 
     render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
 
     await waitFor(() => {
-      expect(screen.getByText(/\$120\.50 \/ \$0\.00/)).toBeInTheDocument()
+      expect(screen.getByText('$120.50')).toBeInTheDocument()
+      expect(screen.getByText('$0.00')).toBeInTheDocument()
     })
   })
 
   it('renders a dash for the spend side when a member has no spending row', async () => {
-    vi.spyOn(analyticsStore, 'fetchProjectMemberSpending').mockResolvedValue(
-      spendingResponse([]) as never
-    )
-
     render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
 
     await screen.findByText('Jane Doe')
 
     await waitFor(() => {
-      expect(analyticsStore.fetchProjectMemberSpending).toHaveBeenCalledWith('Test Project')
+      expect(screen.getByText('-')).toBeInTheDocument()
+      expect(screen.getByText('$0.00')).toBeInTheDocument()
     })
-
-    const dashes = await screen.findAllByText(/^- \/ \$0\.00$/)
-    expect(dashes.length).toBeGreaterThan(0)
   })
 
-  it('still renders the table with dashes when the spending fetch rejects', async () => {
-    vi.spyOn(analyticsStore, 'fetchProjectMemberSpending').mockRejectedValue(
-      new Error('Spending endpoint not implemented')
-    )
-
+  it('still renders the table with dashes when a member has no budget_assignments', async () => {
     render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
-
-    await waitFor(() => {
-      expect(analyticsStore.fetchProjectMemberSpending).toHaveBeenCalledWith('Test Project')
-    })
 
     await screen.findByText('Jane Doe')
 
     expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument()
 
-    const dashes = await screen.findAllByText(/^- \/ \$0\.00$/)
-    expect(dashes.length).toBeGreaterThan(0)
+    await waitFor(() => {
+      expect(screen.getByText('-')).toBeInTheDocument()
+      expect(screen.getByText('$0.00')).toBeInTheDocument()
+    })
   })
 })

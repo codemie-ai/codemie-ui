@@ -28,7 +28,9 @@ vi.hoisted(() => vi.resetModules())
 const { mockChatsStore, mockAppInfoStore } = vi.hoisted(() => ({
   mockChatsStore: {
     currentChat: null as Conversation | null,
+    filteredModels: [] as ModelOption[],
     updateChat: vi.fn(),
+    getModelsForCurrentChat: vi.fn().mockResolvedValue([]),
   },
   mockAppInfoStore: {
     llmModels: [
